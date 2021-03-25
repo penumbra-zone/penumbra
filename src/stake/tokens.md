@@ -8,7 +8,13 @@ Stake bonded with different validators is not fungible, as different validators 
 
 Each flavor of `PENb` is its own first-class token, and like any other token can be transferred between addresses, traded, sent over IBC, etc. Penumbra itself does not attempt to pool risk across validators, but nothing prevents third parties from building stake pools composed of these assets.
 
-The base reward rate for bonded stake is a parameter $r_e$ indexed by epoch and controlled by governance.  This parameter can be thought of as a "Layer 1 Base Operating Rate", or "L1BOR", in that it serves as a reference rate for the entire chain.
+The base reward rate for bonded stake is a parameter $r_e$ indexed by epoch.
+This parameter can be thought of as a "Layer 1 Base Operating Rate", or
+"L1BOR", in that it serves as a reference rate for the entire chain. Its
+value is set on a per-epoch basis by a formula involving the ratio of bonded
+and unbonded stake, increasing when there is relatively less bonded stake and
+decreasing when there is relatively more. This formula should be decided and
+adjusted by governance.
 
 Each validator declares a commission percentage $c_{v,e} \in [0,1]$, also indexed by epoch, which is subtracted from the base reward rate to get a validator-specific reward rate $$r_{v,e} = (1 - c_{v,e})r_e.$$
 

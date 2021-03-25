@@ -1,9 +1,8 @@
 # Summary
 
 [Penumbra](./penumbra.md)
-- [IBC-enabled Shielded Transactions]()
-  - [Transaction Model]()
-  - [Transfers into Penumbra]()
+- [IBC-enabled Shielded Transactions](./transactions.md)
+  - [Transfers into Penumbra](./transactions/ibc-in.md)
   - [Transfers out of Penumbra]()
 - [Epochs](./epochs.md)
 - [Homomorphic Threshold Decryption](./threshold.md)
@@ -18,5 +17,5 @@
 - [Private DEX](./dex.md)
   - [Swaps](./dex/swaps.md)
   - [Liquidity Provision]()
-  - [Liquidity Incentives]()
+  - [Liquidity Incentives for `PEN` Markets](./dex/incentives.md)
   - [Why You Can Build a Private DEX]()
