@@ -1,0 +1,14 @@
+[book]
+authors = ["Henry de Valence"]
+language = "en"
+multilingual = false
+src = "src"
+title = "Penumbra"
+
+[preprocessor.katex]
+
+[output.html]
+default-theme = "coal"
+preferred-dark-theme = "coal"
+curly-quotes = true
+

@@ -1,0 +1,11 @@
+# Private Proof-of-Stake
+
+In a proof-of-stake system like the Cosmos Hub, stakeholders delegate staking tokens by bonding them to validators.  Validators participate in Tendermint consensus with voting power determined by their delegation size, and delegators receive staking rewards in exchange for taking on the risk of being penalized for validator misbehavior (slashing).
+
+Integrating privacy and proof of stake poses significant challenges.  If delegations are public, holders of the staking token must choose between privacy on the one hand and staking rewards and participation in consensus on the other hand.  Because the majority of the stake will be bonded to validators, privacy becomes an uncommon, opt-in case.  But if delegations are private, issuing staking rewards becomes very difficult, because the chain no longer knows the amount and duration of each address' delegations.
+
+Penumbra sidesteps this problem using a new mechanism that eliminates staking rewards entirely, treating unbonded and bonded stake as separate assets, with an epoch-varying exchange rate that prices in what would be a staking reward in other systems.  This mechanism ensures that all delegations to a particular validator are fungible, and can be represented by a single token representing a share of that validator's delegation pool, in effect a first-class staking derivative.  Although delegation fungibility is key to enabling privacy, as a side effect, delegators do not realize any income while their stake is bonded, only a capital gain (or loss) on unbonding.
+
+The total amount of stake bonded to each validator is part of the public chain state and determines consensus weight, but the bonded stake itself is just another token to be recorded in a multi-asset shielded pool.  This provides accountability for validators and privacy and flexibility for delegators.
+
+It also provides an alternate perspective on the debate between fixed-supply and inflation-based rewards. Choosing the unbonded token as the numéraire, delegators are rewarded by inflation for taking on the risk of validator misbehavior, and the token supply grows over time. Choosing the bonded token as the numéraire, non-delegators are punished by depreciation for not taking on any risk of misbehavior, and the token supply is fixed.
