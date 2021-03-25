@@ -51,5 +51,42 @@ transfer. For this reason, client software should create and submit a
 transaction with a sweep description immediately after observing that its
 transaction with a swap description was included in a block, rather than
 waiting for some future use of the new assets. This ensures that future
-transactions involving the new assets are indistinguishable from any other
-shielded transactions.
+shielded transactions involving the new assets are not trivially linkable to
+the swap.
+
+This design reveals only the net flow across a trading pair in each batch,
+not the amounts of any individual swap. However, this provides no protection
+if the batch contains a single swap, and limited protection when there are
+only a few other swaps. This is likely to be an especially severe problem
+until the protocol has a significant base of active users, so it is worth
+examining the impact of amount disclosure and potential mitigations.
+
+Assuming that all amounts are disclosed, an attacker could attempt to
+deanonymize parts of the transaction graph by tracing amounts, using
+strategies similar to those in [An Empirical Analysis of Anonymity in
+Zcash][zcash_anon]. That research attempted to deanonymize transactions by
+analysing movement between Zcash's transparent and shielded pools, with some
+notable successes (e.g., identifying transactions associated to the sale of
+stolen NSA documents). Unlike Zcash, where opt-in privacy means the bulk of
+the transaction graph is exposed, Penumbra does not have a transparent pool,
+and the bulk of the transaction graph is hidden, but there are several
+potential places to try to correlate amounts:
+
+- IBC transfers into Penumbra are analogous to `t2z` transactions and disclose types and amounts and accounts on the source chain;
+- IBC transfers out of Penumbra are analogous to `z2t` transactions and disclose types and amounts and accounts on the destination chain;
+- Each unbonding discloses the precise amount of newly unbonded stake and the validator;
+- Each epoch discloses the net amount of newly bonded stake for each validator;
+- Liquidity pool deposits disclose the precise type and amount of newly deposited reserves;
+- Liquidity pool deposits disclose the precise type and amount of newly withdrawn reserves;
+
+The existence of the swap mechanism potentially makes correlation by amount more difficult, by expanding the search space from all amounts of one type to all combinations of all amounts of any tradeable type and all historic clearing prices.  However, assuming rational trades may cut this search space considerably.[^1]
+
+## TODO
+
+- [ ] a short block time means a narrow window for batching -- should swaps have their own sub-epochs, e.g., batches are every 2 minutes? or have the batch time adaptive between an upper bound timeout and a max batch size (past 128 or whatever, sub-batches are revealed anyways).
+
+- [ ] consider the effect of multi-asset support on correlations more deeply.
+
+[zcash_anon]: https://arxiv.org/pdf/1805.03180.pdf
+
+[^1]: Thanks to Guillermo Angeris for this observation.
