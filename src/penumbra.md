@@ -15,4 +15,10 @@ anonymously swap one type of asset to another. Swaps are performed using
 sealed-bid batch auctions that prevent frontrunning and reveal only the net
 flow across a pair of assets in each block, rather than each individual trade.
 
-This website is a living document containing unfinished public research, and is subject to revision.  If you're interested in technical discussion about these ideas, why not join [the discord?](https://discord.gg/hKvkrqa3zC)
+This website is a living document containing unfinished public research, and
+is subject to revision. If you're interested in technical discussion about
+these ideas, why not join [the discord?](https://discord.gg/hKvkrqa3zC)
+
+Slides from a presentation at the ZKValidator Cosmos Privacy Showcase can be
+found [here](./penumbra-zkv-showcase.pdf).
+
