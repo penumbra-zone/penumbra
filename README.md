@@ -1,5 +1,5 @@
 
-<img style="width: 25%; max-width: 11em; float: left; margin: 1em;" src="./penumbra-glow-alpha-mask.png">
+<img style="width: 25%; max-width: 11em; float: left; margin: 1em;" src="https://penumbra.zone/penumbra-glow-alpha-mask.png">
 
 Penumbra is an research project towards a design for a fully private
 proof-of-stake network interoperable with the Cosmos ecosystem.

@@ -1,6 +1,6 @@
 # Summary
 
-[Penumbra](./penumbra.md)
+[Penumbra](../README.md)
 - [IBC-enabled Shielded Transactions](./transactions.md)
   - [Transfers into Penumbra](./transactions/ibc-in.md)
   - [Transfers out of Penumbra]()
