@@ -1,2 +1,4 @@
 book
 .firebase/
+# For some reason mdbook dumps this here because the main page is ../README.md
+index.html
