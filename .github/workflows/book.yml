@@ -1,0 +1,41 @@
+name: Render and Deploy Notes
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+
+  build:
+    name: Render and Deploy Notes
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout the source code
+      uses: actions/checkout@v2
+
+    - name: Install Rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+
+    - name: Install mdbook
+      run: |
+        curl -L https://github.com/rust-lang/mdBook/releases/download/v0.4.7/mdbook-v0.4.7-x86_64-unknown-linux-gnu.tar.gz | tar xz
+        # Add the working directory to the $PATH
+        echo "$GITHUB_WORKSPACE" >> $GITHUB_PATH
+    
+    - name: Build Penumbra notes
+      run: |
+        mdbook build
+    
+    - name: Deploy notes to firebase
+      uses: w9jds/firebase-action@v2.0.0
+      with:
+        args: deploy
+      env:
+        FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        PROJECT_PATH: book/
+        PROJECT_ID: penumbra-e3789
