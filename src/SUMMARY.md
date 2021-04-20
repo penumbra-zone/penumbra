@@ -1,5 +1,3 @@
-# Summary
-
 [Penumbra](../README.md)
 - [IBC-enabled Shielded Transactions](./transactions.md)
   - [Transfers into Penumbra](./transactions/ibc-in.md)
@@ -21,3 +19,9 @@
   - [Liquidity Incentives for `PEN` Markets](./dex/incentives.md)
   - [Liquidity Pool Governance]()
   - [Why You Can Build a Private DEX]()
+
+- [Project Updates](./updates.md)
+  - [2020-04-20: Project update log and issue tracker](./updates/2020-04-20.md)
+  - [2020-04-16: ABCI domain types](./updates/2020-04-16.md)
+  - [2020-04-12: `tower-abci`](./updates/2020-04-12.md)
+  - [2020-03-26: Design presentation](./updates/2020-03-26.md)

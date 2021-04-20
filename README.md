@@ -17,8 +17,13 @@ flow across a pair of assets in each block, rather than each individual trade.
 
 This website is a living document containing unfinished public research, and
 is subject to revision. If you're interested in technical discussion about
-these ideas, why not join [the discord?](https://discord.gg/hKvkrqa3zC)
+these ideas, why not
+
+- join [the discord](https://discord.gg/hKvkrqa3zC), 
+- check out [the repo and issue tracker](https://github.com/hdevalence/penumbra-notes),
+- or [follow the project on Twitter](https://twitter.com/penumbrazone) for updates.
 
 Slides from a presentation at the ZKValidator Cosmos Privacy Showcase can be
 found [here](./penumbra-zkv-showcase.pdf).
 
+<a class="twitter-timeline" data-dnt="true" data-theme="dark" href="https://twitter.com/penumbrazone?ref_src=twsrc%5Etfw">Tweets by @penumbrazone</a> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
