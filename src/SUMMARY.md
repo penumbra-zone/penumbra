@@ -16,6 +16,8 @@
   - [Example Staking Dynamics](./stake/example.md)
 - [Private DEX](./dex.md)
   - [Swaps](./dex/swaps.md)
+  - [Limit Swaps](./dex/limit.md)
   - [Liquidity Provision]()
   - [Liquidity Incentives for `PEN` Markets](./dex/incentives.md)
+  - [Liquidity Pool Governance]()
   - [Why You Can Build a Private DEX]()
