@@ -16,7 +16,10 @@ sealed-bid batch auctions that prevent frontrunning and reveal only the net
 flow across a pair of assets in each block, rather than each individual trade.
 
 This website is a living document containing unfinished public research, and
-is subject to revision. If you're interested in technical discussion about
+is subject to revision.  The [updates section](./updates.md) has a list of
+design updates.
+
+If you're interested in technical discussion about
 these ideas, why not
 
 - join [the discord](https://discord.gg/hKvkrqa3zC), 

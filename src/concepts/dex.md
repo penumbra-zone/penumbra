@@ -1,6 +1,7 @@
 # Private DEX
 
-Penumbra supports private, sealed-bid batch swaps, using a constant-product market maker similar to Uniswap.
+Penumbra supports private, sealed-bid batch swaps, using a constant-product
+market maker similar to Uniswap.
 
 At a high level, these swaps work as follows: users privately burn funds of
 one kind in a coordinated way that allows the chain to compute a per-block
