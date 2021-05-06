@@ -2,7 +2,7 @@
 authors = ["Henry de Valence"]
 language = "en"
 multilingual = false
-src = "src"
+src = "notes"
 title = "Penumbra"
 
 [preprocessor.katex]
