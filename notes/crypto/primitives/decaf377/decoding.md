@@ -14,7 +14,7 @@ skip this step).
 
 5. `(was_square, v) = sqrt_ratio_zeta(1, u_2 * u_1^2)`, rejecting if `was_square` is false.
 
-6. `v \gets -v` if $2s u_1 v$ is negative (sign check 2).
+6. $v \gets -v$ if $2s u_1 v$ is negative (sign check 2).
 
 7. $(x, y) \gets (2s v^2 u_1 u_2, (1+s^2)vu_2)$.
 

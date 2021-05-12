@@ -4,7 +4,7 @@ Given a representative in extended coordinates $(X,Y,Z,T)$, encoding works as fo
 
 1. $u_1 \gets (X+T)(Y-T)$.
 
-2. `(_ignored, v) = sqrt_ratio_zeta(1, u_1 * (1 - d) * x^2)`.
+2. `(_ignored, v) = sqrt_ratio_zeta(1, u_1 * (-1 - d) * x^2)`.
 
 3. $u_2 \gets |v u_1|$ (sign check 1).
 

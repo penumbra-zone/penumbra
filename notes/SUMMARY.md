@@ -31,6 +31,7 @@
   - [Primitives](./crypto/primitives.md)
     - [Proof System](./crypto/primitives/proofs.md)
     - [The `decaf377` group](./crypto/primitives/decaf377.md)
+      - [Costs and Alternatives](./crypto/primitives/decaf377/costs.md)
       - [Inverse Square Roots](./crypto/primitives/decaf377/invsqrt.md)
       - [Decoding](./crypto/primitives/decaf377/decoding.md)
       - [Encoding](./crypto/primitives/decaf377/encoding.md)
