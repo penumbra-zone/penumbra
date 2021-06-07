@@ -23,10 +23,7 @@ jobs:
 
     - name: Install mdbook
       run: |
-        curl -L https://github.com/rust-lang/mdBook/releases/download/v0.4.7/mdbook-v0.4.7-x86_64-unknown-linux-gnu.tar.gz | tar xz
-        # Add the working directory to the $PATH
-        echo "$GITHUB_WORKSPACE" >> $GITHUB_PATH
-        cargo install mdbook-katex
+        cargo install mdbook mdbook-katex
     
     - name: Build Penumbra notes
       run: |
