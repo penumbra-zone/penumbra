@@ -1,19 +1,21 @@
 
 <img style="width: 25%; max-width: 11em; float: left; margin: 1em;" src="https://penumbra.zone/penumbra-glow-alpha-mask.png">
 
-Penumbra is an research project towards a design for a fully private
-proof-of-stake network interoperable with the Cosmos ecosystem.
+
+Penumbra is a fully private proof-of-stake network providing privacy to the
+Cosmos ecosystem.
 
 Penumbra integrates privacy with proof-of-stake through a novel private
-delegation mechanism that provides staking derivatives, tax-efficient
-staking, and on-chain governance with private voting. Penumbra connects to
-the Cosmos ecosystem via IBC, acting as an ecosystem-wide shielded pool and
-allowing private transactions in any IBC-compatible asset. Penumbra also
-provides a private decentralized exchange, allowing users to use their assets
-to provide liquidity in exchange for fees and liquidity rewards, or to
-anonymously swap one type of asset to another. Swaps are performed using
-sealed-bid batch auctions that prevent frontrunning and reveal only the net
-flow across a pair of assets in each block, rather than each individual trade.
+delegation mechanism that provides staking derivatives, tax-efficient staking,
+and on-chain governance with private voting. Penumbra connects to the Cosmos
+ecosystem via IBC, acting as an ecosystem-wide shielded pool and allowing
+private transactions in any IBC-compatible asset.  Users can also swap these
+assets using ZSwap, a private decentralized exchange supporting sealed-bid batch
+auctions and Uniswap-v3-style concentrated liquidity.  Sealed-bid batch auctions
+prevent frontrunning, provide better execution, and reveal only the net flow
+across a pair of assets in each block, and liquidity positions are created
+anonymously, allowing traders to approximate their desired trading function
+without revealing their individual beliefs about prices.
 
 This website is a living document containing unfinished public research, and
 is subject to revision.  The [updates section](./updates.md) has a list of

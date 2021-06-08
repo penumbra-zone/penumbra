@@ -1,18 +1,19 @@
 # Overview
 
-Penumbra is an research project towards a design for a fully private
-proof-of-stake network interoperable with the Cosmos ecosystem.
+Penumbra is a fully private proof-of-stake network providing privacy to the
+Cosmos ecosystem.
 
 Penumbra integrates privacy with proof-of-stake through a novel private
-delegation mechanism that provides staking derivatives, tax-efficient
-staking, and on-chain governance with private voting. Penumbra connects to
-the Cosmos ecosystem via IBC, acting as an ecosystem-wide shielded pool and
-allowing private transactions in any IBC-compatible asset. Penumbra also
-provides a private decentralized exchange, allowing users to use their assets
-to provide liquidity in exchange for fees and liquidity rewards, or to
-anonymously swap one type of asset to another. Swaps are performed using
-sealed-bid batch auctions that prevent frontrunning and reveal only the net
-flow across a pair of assets in each block, rather than each individual trade.
+delegation mechanism that provides staking derivatives, tax-efficient staking,
+and on-chain governance with private voting. Penumbra connects to the Cosmos
+ecosystem via IBC, acting as an ecosystem-wide shielded pool and allowing
+private transactions in any IBC-compatible asset.  Users can also swap these
+assets using ZSwap, a private decentralized exchange supporting sealed-bid batch
+auctions and Uniswap-v3-style concentrated liquidity.  Sealed-bid batch auctions
+prevent frontrunning, provide better execution, and reveal only the net flow
+across a pair of assets in each block, and liquidity positions are created
+anonymously, allowing traders to approximate their desired trading function
+without revealing their individual beliefs about prices.
 
 ## Private Transactions
 
@@ -84,13 +85,15 @@ encrypted votes and decrypt only the per-epoch totals.
 
 ## Private DEX
 
-Penumbra supports private, sealed-bid batch swaps, using a constant-product
-market maker similar to Uniswap.
-
-At a high level, these swaps work as follows: users privately burn funds of
-one kind in a coordinated way that allows the chain to compute a per-block
-clearing price, and mint or burn liquidity pool reserves. Later, users prove
-they previously burned funds of one kind and privately mint funds of the
-other kind, proving that the minted amount is consistent with the computed
-price and the amount they burned. No interaction or transfer of funds between
-users or the liquidity pool reserves is required.
+Penumbra provides private, sealed-bid batch swaps using
+[ZSwap](./concepts/zswap.md).  ZSwap allows users to privately swap between any
+pair of assets.  Individual swaps do not reveal trade amounts.  Instead, all
+swaps in each block are executed in a single batch.  Only the total amount in
+each batch is revealed, and only after the batch has been finalized. This
+prevents front-running and provides better execution, but also provides
+long-term privacy for individual swaps.  Users can also provide liquidity by
+anonymously creating Uniswap-v3-style concentrated liquidity positions.  These
+positions reveal the amount of liquidity and the bounds in which it is
+concentrated, but are not otherwise linked to any identity, so that (with some
+care) users can privately approximate arbitrary trading functions without
+revealing their specific views about prices.
