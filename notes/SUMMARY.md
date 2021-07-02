@@ -22,7 +22,7 @@
     - [Counting Votes](./concepts/governance/counting.md)
   - [ZSwap](./concepts/zswap.md)
     - [Sealed-Bid Batch Auctions](./concepts/zswap/auction.md)
-    - [Concentrated Liquidity]()
+    - [Concentrated Liquidity](./concepts/zswap/concentrated_liquidity.md)
     - [Opening Positions]()
     - [Liquidity Mining]()
     - [Closing Positions]()
