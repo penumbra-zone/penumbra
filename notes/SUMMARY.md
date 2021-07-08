@@ -39,6 +39,7 @@
     - [Poseidon for BLS12-377](./crypto/primitives/poseidon.md)
       - [Test Vectors]()
     - [`zk555`, a STROBE for circuits](./crypto/primitives/strobe.md)
+    - [Fuzzy Message Detection](./crypto/primitives/fmd.md)
   - [Homomorphic Threshold Decryption](./crypto/threshold.md)
     - [Encryption]()
     - [Distributed Key Generation]()
