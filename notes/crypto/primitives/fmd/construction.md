@@ -134,8 +134,8 @@ For $i = 1,\ldots,\gamma$, choose $x_i \xleftarrow \\$ \Z_q$ and compute $X_i =
 
 ###### `S-FMD2/Flag`
 
-On input $fk$, first parse $(X_1, \ldots, X_n) \gets fk$, then proceed as
-follows:
+On input flag key $fk$, first parse $(X_1, \ldots, X_n) \gets fk$, then proceed
+as follows:
 
 1. Choose $r \xleftarrow \\$ \Z_q$ and compute $P \gets [r]B$.
 2. Choose $z \xleftarrow \\$ \Z_q$ and compute $Q \gets [z]B$.
@@ -149,8 +149,9 @@ Return the *flag ciphertext* $fc \gets (P, y, c_1, \ldots, c_n)$.
 
 ###### `S-FMD2/Test`
 
-On input $dk$, $fc$, first parse $(x_1, \ldots, x_\gamma) \gets dk$ and 
-$(P, y, c_1, \ldots, c_n) \gets fc$, then proceed as follows:
+On input detection key $dk$ and flag ciphertext $fc$, first parse $(x_1, \ldots,
+x_\gamma) \gets dk$ and $(P, y, c_1, \ldots, c_n) \gets fc$, then proceed as
+follows:
 
 1. Compute $m \gets H_2(P || n || c_1 || \cdots || c_n)$.
 2. Recompute $Q$ as $Q \gets [y]P + [m]B$.
@@ -275,11 +276,60 @@ If all plaintext bits $b_i = 1$, return $1$ (match); otherwise, return $0$.
 
 ## Deterministic flag key generation
 
-- [ ] TODO
+One remaining obstacle is the size of the flag keys.  A flag key supporting
+false positive probabilities down to $2^{-\gamma}$ requires $\gamma$ group
+elements; for instance, supporting probabilities down to $2^{-14} = 1/16384$
+with a 256-bit group requires 448-byte flag keys.  It would be much more
+convenient to have smaller keys.
+
+One way to do this is to use a deterministic key derivation mechanism similar to
+[BIP32] to derive a sequence of child keypairs from a single parent keypair, and
+use that sequence as the components of a flag / detection keypair.  To do this,
+we define a hash function $H_4 : \mathbb G \times \mathbb Z \rightarrow \mathbb
+Z_q$.  Then given a parent keypair $(x, X = [x]B)$, child keys can be derived as 
+$$
+\begin{align}
+x_i &\gets x + H_4(X || i) \\
+X_i &\gets X + [H_4(X || i)] B
+\end{align}
+$$
+with $X_i = [x_i]B$.  Unlike BIP32, there is only one sequence of keypairs, so
+there is no need for a chain code to namespace different levels of derivation,
+although of course the hash function $H_4$ should be domain-separated.
+
+Applying this to S-FMD2, the scalar $x$ becomes the *compact detection key*, and
+the point $X$ becomes the *compact flag key*.  The full detection key $(x_1,
+\ldots, x_\gamma)$ can be derived from the compact detection key $x$, and the
+full flag key $(X_1, \ldots, X_\gamma)$ can be derived from the compact flag key
+$X$.  In addition, it is no longer necessary to select the minimum false
+positive probability as a global parameter $\gamma$ prior to key generation, as
+the compact keys can be extended to arbitrary length (and thus arbitrary false
+positive probabilities).
+
+Deterministic derivation is only possible in the S-FMD setting, not the R-FMD
+setting, because S-FMD does not require any separation of capability between the
+component keys used for each bit of the Bloom filter.  Public deterministic
+derivation does not allow separation of capability: given $X$ and any child
+secret $x_i$, it's possible to recover the parent secret $x$ and therefore the
+entire subtree of secret keys.  Thus, it cannot be used for R-FMD, where the
+detection key is created by disclosing only some of the bits of the root key.
+
+Unfortunately, this optimization does not seem to be possible to combine with
+diversified detection.  The detection key components $x_i$ must be derived from
+the parent secret and (the hash of) public data, but diversified detection
+requires that different public data (flag keys) have the same detection key
+components.
+
+- [ ] Is there some clever way to sidestep this issue? seems somewhat fundamental.
+
 
 ## Sapling Integration
 
-- [ ] TODO
+- [ ] Pick diversified detection XOR deterministic flag key generation
+- [ ] Addresses include a flag key / compact flag key
+  - [ ] 32-byte compact flag keys are probably workable, 320-448 byte full flag keys are probably not.
 
 
 [fmd-paper]: https://eprint.iacr.org/2021/089
+[BIP32]: https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki
+[ZIP32]: https://zips.z.cash/zip-0032
