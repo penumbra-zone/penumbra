@@ -22,7 +22,8 @@ body {
 
 code {
     font-family: "Source Code Pro", Consolas, "Ubuntu Mono", Menlo, "DejaVu Sans Mono", monospace, monospace !important;
-    font-size: 0.875em; /* please adjust the ace font size accordingly in editor.js */
+    /* this seems too small ? */
+    /* font-size: 0.875em; /* please adjust the ace font size accordingly in editor.js */
 }
 
 /* Don't change font size in headers. */
@@ -64,6 +65,10 @@ h6 {
     margin-right: 1em;
     float: left;
     font-size: 1em;
+}
+
+h6 code {
+    color: var(--inline-code-color);
 }
 
 /* This is broken on Safari as of version 14, but is fixed
