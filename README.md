@@ -21,7 +21,7 @@ This website is a living document containing unfinished public research, and
 is subject to revision.  The [updates section](./updates.md) has a list of
 design updates.
 
-**Penumbra is hiring!! Check out [the job description](https://hackmd.io/@hdevalence/SkDmoRhCu) for details.**
+**Penumbra is hiring!! Check out [the job board](https://boards.greenhouse.io/penumbralabs/) for details.**
 
 If you're interested in technical discussion about
 these ideas, why not
