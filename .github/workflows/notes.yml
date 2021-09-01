@@ -16,6 +16,10 @@ jobs:
     - name: Checkout the source code
       uses: actions/checkout@v2
 
+    - name: Load get-version action to grab version component of deployment path
+      uses: battila7/get-version-action@v2
+      id: get_version
+
     - name: Install Rust toolchain
       uses: actions-rs/toolchain@v1
       with:
@@ -28,6 +32,11 @@ jobs:
     - name: Build Penumbra notes
       run: |
         mdbook build
+
+    - name: Move notes to subdirectory
+      run: |
+        mkdir firebase-tmp
+        mv book firebase-tmp/${{ steps.get_version.outputs.version }}
     
     - name: Deploy notes to firebase
       uses: w9jds/firebase-action@v2.0.0
@@ -35,5 +44,4 @@ jobs:
         args: deploy
       env:
         FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-        PROJECT_PATH: book/
         PROJECT_ID: penumbra-e3789
