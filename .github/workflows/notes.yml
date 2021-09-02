@@ -1,4 +1,4 @@
-name: Render and Deploy Notes
+name: Render and Deploy Docs
 
 on:
   workflow_dispatch:
@@ -9,39 +9,55 @@ on:
 jobs:
 
   build:
-    name: Render and Deploy Notes
+    name: Render and deploy protocol and API docs
     timeout-minutes: 30
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout the source code
-      uses: actions/checkout@v2
+      - name: Checkout the source code
+        uses: actions/checkout@v2
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - name: Load Rust caching
+        uses: Swatinem/rust-cache@v1
+      - name: Load get-version action to grab version component of deployment path
+        uses: battila7/get-version-action@v2
+        id: get_version
+      - name: Install mdbook
+        run: |
+          cargo install mdbook mdbook-katex
 
-    - name: Load get-version action to grab version component of deployment path
-      uses: battila7/get-version-action@v2
-      id: get_version
+      - name: Build API docs
+        run: |
+          cargo doc --no-deps
+      - name: Move API docs to subdirectory
+        run: |
+          if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
+          mkdir firebase-tmp
+          mv target/doc firebase-tmp/${{ steps.get_version.outputs.version }}
+      - name: Deploy API docs to firebase
+        uses: w9jds/firebase-action@v2.0.0
+        with:
+          args: deploy
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          PROJECT_ID: penumbra-doc
 
-    - name: Install Rust toolchain
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-
-    - name: Install mdbook
-      run: |
-        cargo install mdbook mdbook-katex
-    
-    - name: Build Penumbra notes
-      run: |
-        mdbook build
-
-    - name: Move notes to subdirectory
-      run: |
-        mkdir firebase-tmp
-        mv book firebase-tmp/${{ steps.get_version.outputs.version }}
-    
-    - name: Deploy notes to firebase
-      uses: w9jds/firebase-action@v2.0.0
-      with:
-        args: deploy
-      env:
-        FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-        PROJECT_ID: penumbra-e3789
+      - name: Build protocol docs
+        run: |
+          mdbook build
+      - name: Move protocol docs to subdirectory
+        run: |
+          if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
+          mkdir firebase-tmp
+          mv book firebase-tmp/${{ steps.get_version.outputs.version }}
+      - name: Deploy notes to firebase
+        uses: w9jds/firebase-action@v2.0.0
+        with:
+          args: deploy
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          PROJECT_ID: penumbra-e3789
