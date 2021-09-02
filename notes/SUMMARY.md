@@ -79,6 +79,7 @@
   - [App Hashes]()
 ---
 - [Project Updates](./updates.md)
+  - [2020-09-02: Implementation Kickoff](./updates/2020-09-02.md)
   - [2020-06-07: ZSwap](./updates/2020-06-07.md)
   - [2020-05-11: Cryptography design](./updates/2020-05-11.md)
   - [2020-04-20: Project update log and issue tracker](./updates/2020-04-20.md)
