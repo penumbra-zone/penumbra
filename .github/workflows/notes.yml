@@ -15,8 +15,6 @@ jobs:
     steps:
       - name: Checkout the source code
         uses: actions/checkout@v2
-        with:
-          submodules: true
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -35,6 +33,7 @@ jobs:
       - name: Build API docs
         run: |
           cargo doc --no-deps
+          cargo doc --no-deps -p tower-abci
       - name: Move API docs to subdirectory
         run: |
           if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi

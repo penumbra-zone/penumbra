@@ -2,10 +2,7 @@
 
 members = [
   "penumbra",
-  "tower-abci",
 ]
-
-## Used for tower-abci
 
 [patch.crates-io]
 tracing = { git = "https://github.com/tokio-rs/tracing/", branch = "v0.1.x" }
