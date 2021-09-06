@@ -1,0 +1,10 @@
+notes/**
+.github
+.firebaserc
+theme
+book.toml
+*.md
+Dockerfile
+docker-compose.yml
+*.json
+target/**
