@@ -1,39 +1,39 @@
 version: "3.9"
 services:
-    # The Penumbra daemon
-    pd:
-        container_name: penumbra
-        build: "."
-        environment:
-            - RUST_LOG=${RUST_LOG:-warn,pd=info,penumbra=info}
-        command:
-            pd --host 0.0.0.0
-        networks:
-            localnet:
-                ipv4_address: 192.167.10.6
+  # The Penumbra daemon
+  pd:
+    container_name: penumbra
+    build: "."
+    environment:
+      - RUST_LOG=${RUST_LOG:-warn,pd=info,penumbra=info}
+    command:
+      pd --host 0.0.0.0
+    networks:
+      localnet:
+        ipv4_address: 192.167.10.6
 
-    # The Tendermint node
-    tendermint:
-        container_name: tendermint
-        image: "tendermint/tendermint"
-        ports:
-            - "26656-26657:26656-26657"
-            - "6060:6060"
-            - "27000:26660"
-        volumes:
-            - "/tmp:/tendermint"
-        command: node --proxy-app=tcp://pd:26658
-        depends_on:
-            - pd
-        networks:
-            localnet:
-                ipv4_address: 192.167.10.2
+  # The Tendermint node
+  tendermint:
+    container_name: tendermint
+    image: "tendermint/tendermint"
+    ports:
+      - "26656-26657:26656-26657"
+      - "6060:6060"
+      - "27000:26660"
+    volumes:
+      - "/tmp:/tendermint"
+    command: node --proxy-app=tcp://pd:26658
+    depends_on:
+      - pd
+    networks:
+      localnet:
+        ipv4_address: 192.167.10.2
 
 networks:
-    localnet:
-        driver: bridge
-        ipam:
-            driver: default
-            config:
-            -
-                subnet: 192.167.10.0/16
+  localnet:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+      -
+        subnet: 192.167.10.0/16
