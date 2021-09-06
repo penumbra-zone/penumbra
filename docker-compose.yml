@@ -21,7 +21,7 @@ services:
       - "6060:6060"
       - "27000:26660"
     volumes:
-      - "/tmp:/tendermint"
+      - "tendermint_data:/tendermint"
     command: node --proxy-app=tcp://pd:26658
     depends_on:
       - pd
@@ -37,3 +37,6 @@ networks:
       config:
       -
         subnet: 192.167.10.0/16
+
+volumes:
+  tendermint_data: {}
