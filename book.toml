@@ -11,4 +11,5 @@ title = "Penumbra"
 default-theme = "coal"
 preferred-dark-theme = "coal"
 curly-quotes = true
+fold = { enable = true, level = 1 }
 
