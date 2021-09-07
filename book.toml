@@ -12,4 +12,6 @@ default-theme = "coal"
 preferred-dark-theme = "coal"
 curly-quotes = true
 fold = { enable = true, level = 1 }
+git-repository-url = "https://github.com/penumbra-zone/penumbra"
+
 
