@@ -34,6 +34,9 @@ jobs:
         run: |
           cargo doc --no-deps
           cargo doc --no-deps -p tower-abci
+          # This is useful until ABCI changes are merged upstream
+          # https://github.com/informalsystems/tendermint-rs/pull/862
+          cargo doc --no-deps -p tendermint
       - name: Move API docs to subdirectory
         run: |
           if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
