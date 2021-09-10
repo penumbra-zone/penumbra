@@ -9,10 +9,7 @@ use bytes::Bytes;
 use futures::future::FutureExt;
 use tower::Service;
 
-use tendermint::abci::{
-    event::{Event, EventAttributeIndexExt},
-    response, Request, Response,
-};
+use tendermint::abci::{response, Event, EventAttributeIndexExt, Request, Response};
 
 use tower_abci::BoxError;
 
