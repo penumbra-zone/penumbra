@@ -51,7 +51,7 @@
     - [Spend Authorization Signatures]()
     - [Binding Signatures]()
   - [Key Agreement on `decaf377`]()
-  - [Addresses and Keys]()
+  - [Addresses and Keys](./crypto/addresses_keys.md)
     - [Validator Addresses]()
     - [Payment Addresses]()
     - [Viewing Keys]()
