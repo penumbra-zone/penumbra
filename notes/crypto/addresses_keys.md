@@ -2,6 +2,68 @@
 
 The key hierarchy is based on a modified [Zcash Sapling](https://github.com/zcash/zips/blob/main/protocol/sapling.pdf) design, which we summarize here.
 
+```mermaid
+flowchart BT
+    subgraph Address
+        direction TB;
+        d2[d];
+        pk_d;
+        cfk_d;
+    end;
+    subgraph D[Diversifier]
+        d1[d];
+    end;
+    subgraph DTK[Detection Key]
+        cdtk_d;
+    end;
+    subgraph IVK[Incoming Viewing Key]
+        ivk;
+    end;
+    subgraph FVK[Full Viewing Key]
+        direction TB;
+        ak2[ak];
+        nk;
+        ovk2[ovk];
+    end;
+    subgraph PAK[Proof Authorizing Key]
+        direction TB;
+        ak1[ak];
+        nsk2[nsk];
+    end;
+    subgraph ESK[Expanded Spending Key]
+        direction TB;
+        ask;
+        nsk1[nsk];
+        ovk1[ovk];
+    end;
+    subgraph SK[Spending Key]
+        sk;
+    end;
+
+    sk --> ask;
+    sk --> nsk1;
+    sk --> ovk1;
+
+    ask --> ak1;
+    nsk1 --- nsk2;
+    ovk1 --- ovk2;
+    
+    ak1 --- ak2;
+    nsk2 --> nk;
+
+    ak2 --> ivk;
+    nk --> ivk;
+
+    ivk --> pk_d;
+
+    d1 --- d2;
+    d1 --> pk_d;
+
+    ivk --> cdtk_d;
+    d1 --> cdtk_d;
+    cdtk_d --> cfk_d;
+```
+
 All addresses and keys are ultimately derived from a secret *spending key* $sk$, which is a 32-byte random number. From this *spending key* $sk$, we derive several other keys, each described in more detail in its own section:
 
 * an expanded form of the spending key called the [*expanded spending key*](./addresses_keys/expanded_spending_keys.md) which has components used to derive *viewing keys* and the *proof authorizion key* as described below,
