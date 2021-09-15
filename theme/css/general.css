@@ -189,3 +189,15 @@ blockquote {
     margin: 5px 0px;
     font-weight: bold;
 }
+
+/* These make the mermaid diagram arrows align with the selected theme */
+/* --sidebar-active is chosen for a bit of color */
+/* TODO: can the entire flowchart be themed? */
+
+.flowchart-link {
+    stroke: var(--sidebar-active) !important;
+}
+.marker {
+    stroke: var(--sidebar-active) !important;
+    fill: var(--sidebar-active) !important;
+}
