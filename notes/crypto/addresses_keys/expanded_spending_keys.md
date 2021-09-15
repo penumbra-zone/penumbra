@@ -25,12 +25,10 @@ The outgoing viewing key is derived by taking the first 32 bytes of the hash:
 
 $ovk = truncate_{32}( BLAKE2b-512(``Penumbra\_ExpandSeed", encode(sk) || 2 )$
 
-TODO: Can ask be 0? If yes, we need to discard $sk$ and $ask$ and generate a new $sk$.
+## TODOs
 
-TODO: Define encoding of sk, LEBS2OSP in Zcash spec
-
-TODO: Define $ToScalar^{decaf377}$ function.
-
-TODO: Poseidon instead of Blake2b?
-
-TK: FMD flag key goes in here derived from $sk$?
+- [ ] Can ask be 0? If yes, we need to discard $sk$ and $ask$ and generate a new $sk$.
+- [ ] Define encoding of sk, LEBS2OSP in Zcash spec
+- [ ] Define $ToScalar^{decaf377}$ function.
+- [ ] Poseidon instead of Blake2b here?
+- [ ] FMD flag key goes in here derived from $sk$?
