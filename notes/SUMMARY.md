@@ -1,5 +1,6 @@
 [Penumbra](../README.md)
 - [Overview](./overview.md)
+  - [Terminology](./overview/terminology.md)
 - [Concepts and Mechanisms](./concepts.md)
   - [Validators]()
   - [Epochs and Threshold Decryption](./concepts/epochs_threshold.md)
