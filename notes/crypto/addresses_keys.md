@@ -1,6 +1,6 @@
 # Addresses and Keys
 
-The key hierarchy is based on a modified [Zcash Sapling][sapling-pdf] design,
+The key hierarchy is based on a modified [Zcash Sapling](https://zips.z.cash/protocol/protocol.pdf) design,
 which we summarize here.  In contrast to Sapling, Penumbra's transaction system
 includes support for [fuzzy message detection](./primitives/fmd.md), uses
 Poseidon for hashing, and uses `decaf377` instead of Jubjub, so that it can be

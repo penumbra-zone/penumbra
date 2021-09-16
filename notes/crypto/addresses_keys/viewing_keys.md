@@ -2,10 +2,12 @@
 
 A *full viewing key* enables one to identify incoming and outgoing notes only. It consists of three components:
 
-* $ak$, the *authorization key*, a point on the `decaf377` curve, derived from multiplying $ask$ by a fixed generator point on `decaf377`
-* $nk$, the *nullifier deriving key*, used for deriving nullifiers for notes, derived from multiplying $nsk$ by a fixed generator point on `decaf377`
-* $ovk$, the *outgoing viewing key*, defined as above in `Expanded Spending Keys`
+* $ak$, the *authorization key*, a point on the `decaf377` curve, derived as described in the [*proof authorization keys*](./proof_authorization_keys.md) section,
+* $nk$, the *nullifier deriving key*, used for deriving nullifiers for notes, derived from multiplying $nsk$ by a fixed generator point on `decaf377`,
+* $ovk$, the *outgoing viewing key*, derived as described in the [*expanded spending keys*](./expanded_spending_keys.md) section,
 
-An *incoming viewing key* $ivk$ is derived from hashing $ak$ and $nk$.
+The nullifier deriving key is generating by multiplying the scalar $nsk$ (from the expanded spending key) by a fixed generator point [$B$](../primitives/decaf377/test_vectors.md) on the `decaf377` curve:
 
-TODO: Confirm $CRH^{ivk}$ unchanged from Sapling
+$nk = B * nsk$
+
+The *incoming viewing key* $ivk$ is derived from hashing together $ak$ and $nk$. 
