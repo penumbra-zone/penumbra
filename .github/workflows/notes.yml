@@ -28,7 +28,7 @@ jobs:
         id: get_version
       - name: Install mdbook
         run: |
-          cargo install mdbook mdbook-katex
+          cargo install mdbook mdbook-katex mdbook-mermaid
 
       - name: Build API docs
         run: |
