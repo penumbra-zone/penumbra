@@ -8,6 +8,6 @@ A *full viewing key* enables one to identify incoming and outgoing notes only. I
 
 The nullifier deriving key is generating by multiplying the scalar $nsk$ (from the expanded spending key) by a fixed generator point [$B$](../primitives/decaf377/test_vectors.md) on the `decaf377` curve:
 
-$nk = B * nsk$
+$nk = [nsk]B$
 
 The *incoming viewing key* $ivk$ is derived from hashing together $ak$ and $nk$. 
