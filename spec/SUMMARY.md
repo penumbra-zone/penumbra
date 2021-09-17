@@ -38,7 +38,6 @@
     - [Test Vectors](./crypto/decaf377/test_vectors.md)
   - [Poseidon for BLS12-377](./crypto/poseidon.md)
     - [Test Vectors]()
-  - [`zk555`, a STROBE for circuits](./crypto/strobe.md)
   - [Fuzzy Message Detection](./crypto/fmd.md)
     - [Sender and Receiver FMD](./crypto/fmd/sender-receiver.md)
     - [Constructing S-FMD](./crypto/fmd/construction.md)
