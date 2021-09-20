@@ -1,0 +1,81 @@
+syntax = "proto3";
+package penumbra.transaction;
+
+// A Penumbra transaction.
+message Transaction {
+  TransactionBody body = 1;
+  // The binding signature is stored separately from the transaction body that it signs.
+  bytes binding_sig = 2;
+}
+
+// The body of a transaction.
+message TransactionBody {
+  // A list of actions (state changes) performed by this transaction.
+  repeated Action actions = 1;
+  // The root of some previous state of the note commitment tree.
+  bytes anchor = 2;
+  // The maximum height that this transaction can be included in the chain.
+  uint32 expiry_height = 3;
+  // The chain this transaction is intended for.  Including this prevents
+  // replaying a transaction on one chain onto a different chain.
+  string chain_id = 4;
+}
+
+// A state change performed by a transaction.
+message Action {
+  oneof action {
+    Fee fee = 1;
+    Spend spend = 2;
+    Output output = 3;
+  }
+}
+
+// Specifies fees paid by a transaction.
+message Fee {
+    uint64 amount = 1;
+}
+
+// Spends a shielded note.
+message Spend {
+  SpendBody body = 1;
+  // The spend authorization signature is stored separately from the spend body it authorizes.
+  bytes auth_sig = 2;
+}
+
+// The body of a spend description, stored separately from the signatures that authorize it.
+message SpendBody {
+  // A commitment to the value of the input note.
+  bytes cv = 1;
+  // The nullifier of the input note.
+  bytes nullifier = 3;
+  // The randomized validating key for the spend authorization signature.
+  bytes rk = 4;
+  // The spend proof.
+  bytes zkproof = 5;
+}
+
+// Creates a new shielded note.
+message Output {
+  OutputBody body = 1;
+  // An encrypted memo. 528 bytes.
+  bytes encrypted_memo = 2;
+  // The key material used for note encryption, wrapped in encryption to the
+  // sender's outgoing viewing key. 80 bytes.
+  bytes ovk_wrapped_key = 3;
+}
+
+// The body of an output description, not including a memo or ovk wrapping.
+// Splitting this data out allows its use where the memo / ovk wrapping is not
+// required (e.g., IBC).
+message OutputBody {
+  // A commitment to the value of the output note. 32 bytes.
+  bytes cv = 1;
+  // The u-coordinate of the note commitment for the output note. 32 bytes.
+  bytes cmu = 2;
+  // The encoding of an ephemeral public key. 32 bytes.
+  bytes ephemeral_key = 3;
+  // An encryption of the newly created note. 80 bytes.
+  bytes encrypted_note = 4;
+  // The output proof. 192 bytes.
+  bytes zkproof = 5;
+}
