@@ -16,6 +16,7 @@ publish = false
 penumbra-proto = { path = "../proto" }
 # Penumbra dependencies
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
+poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377" }
 tower-abci = { git = "https://github.com/penumbra-zone/tower-abci/" }
 tendermint-proto = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "abci-domain-types" }
 tendermint = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "abci-domain-types" }
