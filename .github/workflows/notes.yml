@@ -32,12 +32,14 @@ jobs:
 
       - name: Build API docs
         run: |
-          cargo doc --no-deps -p decaf377
-          cargo doc --no-deps -p tower-abci
-          cargo doc --no-deps
-          # This is useful until ABCI changes are merged upstream
-          # https://github.com/informalsystems/tendermint-rs/pull/862
-          cargo doc --no-deps -p tendermint
+          # Explicitly specify which crates should be included.
+          # Guidelines:
+          # - workspace crates are included
+          # - git dependencies are included
+          # - published crates are excluded
+          # Doing this in one go is useful because the JSON file with search
+          # indexes is overwritten on each cargo doc invocation.
+          cargo doc --no-deps -p tendermint -p ark-sponge -p decaf377 -p poseidon377 -p penumbra-proto -p penumbra -p pd -p pcli
       - name: Move API docs to subdirectory
         run: |
           if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
