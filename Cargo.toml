@@ -2,9 +2,14 @@
 
 members = [
   "proto",
+  "crypto",
   "penumbra",
 ]
 
 [patch.crates-io]
 tracing = { git = "https://github.com/tokio-rs/tracing/", branch = "v0.1.x" }
 tracing-subscriber = { git = "https://github.com/tokio-rs/tracing/", branch = "v0.1.x" }
+
+# The "ours" branch is based off of v0.3.0
+ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
+ark-serialize = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
