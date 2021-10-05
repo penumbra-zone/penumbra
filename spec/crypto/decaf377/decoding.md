@@ -1,6 +1,6 @@
 # Decoding
 
-Decoding to works as follows:
+Decoding to a point works as follows:
 
 1. Decode `s_bytes` to a field element $s$, rejecting if the encoding is
 non-canonical.  (If the input is already a field element in the circuit case,

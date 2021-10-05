@@ -28,4 +28,4 @@ A work-in-progress implementation of `decaf377` can be found [here][impl].
 
 [why-ristretto]: https://ristretto.group/why_ristretto.html
 [Decaf]: https://www.shiftleft.org/papers/decaf/
-[impl]: https://github.com/hdevalence/decaf377
+[impl]: https://github.com/penumbra-zone/decaf377
