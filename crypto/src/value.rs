@@ -28,12 +28,6 @@ impl Value {
         let H = VALUE_BLINDING_GENERATOR.deref();
 
         let v = Fr::from(self.amount);
-
-        // XXX would be more convenient for decaf377 not to
-        // have a custom scalar type ?
-        let v = decaf377::Scalar::from(v);
-        let blinding = decaf377::Scalar::from(blinding);
-
         let C = v * G_v + blinding * H;
 
         Commitment(C)
@@ -116,7 +110,6 @@ mod tests {
         let b0 = b1 - b2 - b3 + b4 + b5 - b6;
 
         // so c0 = 0 * G_v1 + 0 * G_v2 + b0 * H
-        let b0 = decaf377::Scalar::from(b0);
         assert_eq!(c0.0, b0 * VALUE_BLINDING_GENERATOR.deref());
     }
 }
