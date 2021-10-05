@@ -39,7 +39,7 @@ jobs:
           # - published crates are excluded
           # Doing this in one go is useful because the JSON file with search
           # indexes is overwritten on each cargo doc invocation.
-          cargo doc --no-deps -p tendermint -p ark-sponge -p decaf377 -p poseidon377 -p penumbra-proto -p penumbra
+          cargo doc --no-deps -p tendermint -p ark-sponge -p decaf377 -p poseidon377 -p penumbra-crypto -p penumbra-proto -p penumbra
       - name: Move API docs to subdirectory
         run: |
           if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
