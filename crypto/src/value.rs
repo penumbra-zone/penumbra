@@ -10,6 +10,7 @@ use crate::{asset, Fq, Fr};
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Value {
     pub amount: u64,
+    // The asset ID. 256 bits.
     pub asset_id: asset::Id,
 }
 
