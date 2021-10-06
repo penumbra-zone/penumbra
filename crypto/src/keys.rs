@@ -57,6 +57,15 @@ impl SpendAuthorizationKey {
             .expect("hash is long enough to convert to array");
         Self(decaf377_rdsa::SigningKey::try_from(ask_bytes).expect("can create SigningKey"))
     }
+
+    pub fn randomize(
+        &self,
+        randomizer: Fr,
+    ) -> decaf377_rdsa::VerificationKey<decaf377_rdsa::SpendAuth> {
+        let rk: decaf377_rdsa::VerificationKey<decaf377_rdsa::SpendAuth> =
+            self.0.randomize(&randomizer).into();
+        rk
+    }
 }
 
 pub struct NullifierPrivateKey(pub Fr);
@@ -110,6 +119,13 @@ impl OutgoingViewingKey {
 }
 
 pub struct EphemeralPublicKey(pub decaf377::Element);
+
+// This is going away when key agreement is in place
+impl EphemeralPublicKey {
+    pub fn new() -> EphemeralPublicKey {
+        todo!("key agreement")
+    }
+}
 
 pub struct ProofAuthorizationKey {
     pub ak: AuthorizationKey,

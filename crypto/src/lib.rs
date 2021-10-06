@@ -1,5 +1,6 @@
 pub use decaf377::{Fq, Fr};
 
+pub mod actions;
 pub mod addresses;
 pub mod asset;
 pub mod key_agreement;
@@ -9,7 +10,6 @@ pub mod merkle;
 pub mod note;
 pub mod nullifier;
 pub mod proofs;
-pub mod scratch;
 pub mod sign;
 pub mod value;
 

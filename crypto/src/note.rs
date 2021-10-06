@@ -15,10 +15,10 @@ pub struct Note {
     // Diversifier. 11 bytes.
     pub diversifier: keys::Diversifier,
 
-    // 256 + 256
+    // Value (32-byte asset ID plus 32-byte amount). 64 bytes.
     pub value: Value,
 
-    // Commitment trapdoor. 256 bits.
+    // Commitment trapdoor. 32 bytes.
     pub note_blinding: Fq,
 }
 

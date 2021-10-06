@@ -1,1 +1,1 @@
-struct Nullifier {}
+pub struct Nullifier {}
