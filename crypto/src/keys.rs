@@ -1,7 +1,8 @@
-use std::convert::TryInto;
+use std::convert::{TryFrom, TryInto};
 
 use ark_ff::PrimeField;
 use decaf377;
+use decaf377_rdsa;
 use once_cell::sync::Lazy;
 use rand_core::{CryptoRng, RngCore};
 
@@ -9,14 +10,16 @@ use crate::{Fq, Fr};
 
 pub const DIVERSIFIER_LEN_BYTES: usize = 11;
 pub const SPEND_LEN_BYTES: usize = 32;
+pub const NK_LEN_BYTES: usize = 32;
 pub const OVK_LEN_BYTES: usize = 32;
+pub const IVK_LEN_BYTES: usize = 32;
 
 pub struct SpendingKey(pub [u8; SPEND_LEN_BYTES]);
 
 impl SpendingKey {
     pub fn generate<R: RngCore + CryptoRng>(mut rng: R) -> Self {
         let mut key = [0u8; SPEND_LEN_BYTES];
-        // Better to use Rng trait here?
+        // Better to use Rng trait here (instead of RngCore)?
         rng.fill_bytes(&mut key);
         SpendingKey(key)
     }
@@ -38,11 +41,21 @@ impl ExpandedSpendingKey {
     }
 }
 
-pub struct SpendAuthorizationKey(pub Fr);
+#[derive(Clone, Copy)]
+pub struct SpendAuthorizationKey(pub decaf377_rdsa::SigningKey<decaf377_rdsa::SpendAuth>);
 
 impl SpendAuthorizationKey {
     pub fn derive(key: &SpendingKey) -> Self {
-        todo!("need to_scalar for decaf377")
+        let mut hasher = blake2b_simd::State::new();
+        hasher.update(b"Penumbra_ExpandSeed");
+        hasher.update(&key.0);
+        hasher.update(&[0; 1]);
+        let hash_result = hasher.finalize();
+
+        let ask_bytes: [u8; SPEND_LEN_BYTES] = hash_result.as_bytes()[0..SPEND_LEN_BYTES]
+            .try_into()
+            .expect("hash is long enough to convert to array");
+        Self(decaf377_rdsa::SigningKey::try_from(ask_bytes).expect("can create SigningKey"))
     }
 }
 
@@ -50,40 +63,46 @@ pub struct NullifierPrivateKey(pub Fr);
 
 impl NullifierPrivateKey {
     pub fn derive(key: &SpendingKey) -> Self {
-        let mut input = Vec::<u8>::new();
-        input.extend_from_slice(b"Penumbra_ExpandSeed");
-        input.extend_from_slice(&key.0);
-        input.extend_from_slice(&[0; 1]);
-        let hash_input = blake2b_simd::blake2b(&input).as_bytes();
-        todo!("need to_scalar for decaf377")
+        let mut hasher = blake2b_simd::State::new();
+        hasher.update(b"Penumbra_ExpandSeed");
+        hasher.update(&key.0);
+        hasher.update(&[1; 1]);
+        let hash_result = hasher.finalize();
+
+        Self(Fr::from_le_bytes_mod_order(hash_result.as_bytes()))
     }
 }
 
+/// An `IncomingViewingKey` allows one to identify incoming notes.
 pub struct IncomingViewingKey(pub Fr);
 
 impl IncomingViewingKey {
-    pub fn derive(ak: AuthorizationKey, nk: NullifierDerivingKey) -> Self {
-        let mut input = Vec::<u8>::new();
-        input.extend_from_slice(b"Penumbra_IncomingViewingKey");
-        input.extend_from_slice(&ak.0.compress().into());
-        input.extend_from_slice(&nk.0.compress().into());
-        let hash = blake2b_simd::blake2b(&input).as_bytes();
-        Self(hash)
+    pub fn derive(ak: &AuthorizationKey, nk: &NullifierDerivingKey) -> Self {
+        let mut hasher = blake2b_simd::State::new();
+        hasher.update(b"Penumbra_IncomingViewingKey");
+        let ak_bytes: [u8; SPEND_LEN_BYTES] = ak.0.into();
+        hasher.update(&ak_bytes);
+        let nk_bytes: [u8; NK_LEN_BYTES] = nk.0.compress().into();
+        hasher.update(&nk_bytes);
+        let hash_result = hasher.finalize();
+
+        Self(Fr::from_le_bytes_mod_order(hash_result.as_bytes()))
     }
 }
 
+/// An `OutgoingViewingKey` allows one to identify outgoing notes.
 pub struct OutgoingViewingKey(pub [u8; OVK_LEN_BYTES]);
 
 impl OutgoingViewingKey {
     pub fn derive(key: &SpendingKey) -> Self {
-        let mut input = Vec::<u8>::new();
-        input.extend_from_slice(b"Penumbra_ExpandSeed");
-        input.extend_from_slice(&key.0);
-        input.extend_from_slice(&[1; 2]);
-        let hash_result = blake2b_simd::blake2b(&input).as_bytes();
+        let mut hasher = blake2b_simd::State::new();
+        hasher.update(b"Penumbra_ExpandSeed");
+        hasher.update(&key.0);
+        hasher.update(&[2; 1]);
+        let hash_result = hasher.finalize();
 
         Self(
-            hash_result[0..OVK_LEN_BYTES]
+            hash_result.as_bytes()[0..OVK_LEN_BYTES]
                 .try_into()
                 .expect("hash is long enough to convert to array"),
         )
@@ -97,13 +116,13 @@ pub struct ProofAuthorizationKey {
     pub nsk: NullifierPrivateKey,
 }
 
-pub struct AuthorizationKey(pub decaf377::Element);
+pub struct AuthorizationKey(pub decaf377_rdsa::VerificationKey<decaf377_rdsa::SpendAuth>);
 
 impl AuthorizationKey {
     #[allow(non_snake_case)]
-    pub fn derive_public(ask: SpendAuthorizationKey) -> Self {
-        let B = decaf377::Element::basepoint();
-        AuthorizationKey(ask.0 * B)
+    /// Derive a verification key from the corresponding `SpendAuthorizationKey`.
+    pub fn derive(ask: &SpendAuthorizationKey) -> Self {
+        Self(ask.0.into())
     }
 }
 
@@ -115,20 +134,6 @@ pub struct FullViewingKey {
 }
 
 pub struct NullifierDerivingKey(decaf377::Element);
-
-// TODO: Add CompactFlagKey into the PaymentAddress
-pub struct CompactFlagKey(pub decaf377::Element);
-
-impl CompactDetectionKey {
-    #[allow(non_snake_case)]
-    pub fn derive_flag_key(&self) -> CompactFlagKey {
-        let B = decaf377::Element::basepoint();
-        CompactFlagKey(self.0 * B)
-    }
-}
-
-/// Represents a diversified compact detection key.
-pub struct CompactDetectionKey(Fr);
 
 pub struct Diversifier(pub [u8; DIVERSIFIER_LEN_BYTES]);
 
@@ -155,4 +160,5 @@ impl Diversifier {
     }
 }
 
+/// Represents a (diversified) transmission key.
 pub struct TransmissionKey(pub decaf377::Element);

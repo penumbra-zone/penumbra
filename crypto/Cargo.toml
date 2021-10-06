@@ -8,6 +8,7 @@ edition = "2018"
 [dependencies]
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377" }
+decaf377-rdsa = { git = "https://github.com/penumbra-zone/decaf377-rdsa", branch = "stuff-for-pen-keys" }
 hex = "0.4"
 blake2b_simd = "0.5"
 ark-ff = "0.3"
