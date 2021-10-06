@@ -135,6 +135,7 @@ pub struct FullViewingKey {
 
 pub struct NullifierDerivingKey(decaf377::Element);
 
+#[derive(Copy, Clone)]
 pub struct Diversifier(pub [u8; DIVERSIFIER_LEN_BYTES]);
 
 /// The domain separator used to generate diversified generators.

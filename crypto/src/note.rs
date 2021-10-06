@@ -27,20 +27,28 @@ static NOTECOMMIT_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
     Fq::from_le_bytes_mod_order(blake2b_simd::blake2b(b"penumbra.notecommit").as_bytes())
 });
 
+impl Note {
+    pub fn new(dest: &PaymentAddress, value: &Value, note_blinding: &Fq) -> Self {
+        Note {
+            diversifier: dest.diversifier,
+            value: *value,
+            note_blinding: *note_blinding,
+        }
+    }
+}
+
 // Note commitment `cm`.
 pub struct NoteCommitment(pub Fq);
 
 impl NoteCommitment {
-    pub fn new(dest: &PaymentAddress, v: &Value, note_blinding: &Fq) -> Self {
-        let g_d = dest.diversifier.diversified_generator();
-
+    pub fn new(dest: &PaymentAddress, value: &Value, note_blinding: &Fq) -> Self {
         let commit = hash_5(
             &NOTECOMMIT_DOMAIN_SEP,
             (
                 *note_blinding,
-                v.amount.into(),
-                v.asset_id.0,
-                g_d.compress_to_field(),
+                value.amount.into(),
+                value.asset_id.0,
+                dest.g_d.compress_to_field(),
                 dest.transmission_key.0.compress_to_field(),
             ),
         );
