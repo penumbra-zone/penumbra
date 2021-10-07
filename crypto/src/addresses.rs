@@ -11,11 +11,11 @@ pub struct PaymentAddress {
 }
 
 impl PaymentAddress {
-    pub fn new(diversifier: Diversifier, transmission_key: TransmissionKey) -> Self {
+    pub fn new(diversifier: &Diversifier, transmission_key: &TransmissionKey) -> Self {
         PaymentAddress {
-            diversifier,
+            diversifier: *diversifier,
             g_d: diversifier.diversified_generator(),
-            transmission_key,
+            transmission_key: *transmission_key,
         }
     }
 }
