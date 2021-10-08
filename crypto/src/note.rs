@@ -3,7 +3,7 @@ use once_cell::sync::Lazy;
 
 use crate::addresses::PaymentAddress;
 use crate::keys;
-use crate::poseidon_hash::hash_4;
+use crate::poseidon_hash::hash_5;
 use crate::value::Value;
 use crate::Fq;
 
@@ -15,37 +15,44 @@ pub struct Note {
     // Diversifier. 11 bytes.
     pub diversifier: keys::Diversifier,
 
-    // 256 + 256
+    // Value (32-byte asset ID plus 32-byte amount). 64 bytes.
     pub value: Value,
 
-    // Commitment trapdoor. 256 bits.
+    // Commitment trapdoor. 32 bytes.
     pub note_blinding: Fq,
 }
 
-/// The domain separator used to generate note commitment.
-static _NOTECOMMIT_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
+/// The domain separator used to generate note commitments.
+static NOTECOMMIT_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
     Fq::from_le_bytes_mod_order(blake2b_simd::blake2b(b"penumbra.notecommit").as_bytes())
 });
 
-// Note commitment `cm`.
-pub struct NoteCommitment(pub Fq);
+impl Note {
+    pub fn new(dest: &PaymentAddress, value: &Value, note_blinding: &Fq) -> Self {
+        Note {
+            diversifier: dest.diversifier,
+            value: *value,
+            note_blinding: *note_blinding,
+        }
+    }
+}
 
-impl NoteCommitment {
-    // TODO: We are temporarily using the note_blinding randomness as the domain separator
-    // until a rate 5 poseidon instance is added. Or see if we don't need the domain separator at all.
-    pub fn new(dest: &PaymentAddress, v: &Value, note_blinding: &Fq) -> Self {
-        let g_d = dest.diversifier.diversified_generator();
+// Note commitment.
+pub struct Commitment(pub Fq);
 
-        let commit = hash_4(
-            &note_blinding,
+impl Commitment {
+    pub fn new(dest: &PaymentAddress, value: &Value, note_blinding: &Fq) -> Self {
+        let commit = hash_5(
+            &NOTECOMMIT_DOMAIN_SEP,
             (
-                v.amount.into(),
-                v.asset_id.0,
-                g_d.compress_to_field(),
+                *note_blinding,
+                value.amount.into(),
+                value.asset_id.0,
+                dest.g_d.compress_to_field(),
                 dest.transmission_key.0.compress_to_field(),
             ),
         );
 
-        NoteCommitment(commit)
+        Self(commit)
     }
 }
