@@ -3,6 +3,7 @@
 members = [
   "proto",
   "crypto",
+  "decaf377-ka",
   "penumbra",
 ]
 
