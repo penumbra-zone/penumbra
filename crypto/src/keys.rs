@@ -14,6 +14,10 @@ pub const NK_LEN_BYTES: usize = 32;
 pub const OVK_LEN_BYTES: usize = 32;
 pub const IVK_LEN_BYTES: usize = 32;
 
+pub use decaf377_rdsa::SigningKey;
+pub use decaf377_rdsa::SpendAuth;
+pub use decaf377_rdsa::VerificationKey;
+
 pub struct SpendingKey(pub [u8; SPEND_LEN_BYTES]);
 
 impl SpendingKey {
@@ -26,26 +30,14 @@ impl SpendingKey {
 }
 
 pub struct ExpandedSpendingKey {
-    pub ask: SpendAuthorizationKey,
+    pub ask: SigningKey<SpendAuth>,
     pub nsk: NullifierPrivateKey,
     pub ovk: OutgoingViewingKey,
 }
 
 impl ExpandedSpendingKey {
     pub fn derive(key: &SpendingKey) -> Self {
-        Self {
-            ask: SpendAuthorizationKey::derive(&key),
-            nsk: NullifierPrivateKey::derive(&key),
-            ovk: OutgoingViewingKey::derive(&key),
-        }
-    }
-}
-
-#[derive(Clone, Copy)]
-pub struct SpendAuthorizationKey(pub decaf377_rdsa::SigningKey<decaf377_rdsa::SpendAuth>);
-
-impl SpendAuthorizationKey {
-    pub fn derive(key: &SpendingKey) -> Self {
+        // Generation of the spend authorization key.
         let mut hasher = blake2b_simd::State::new();
         hasher.update(b"Penumbra_ExpandSeed");
         hasher.update(&key.0);
@@ -55,16 +47,13 @@ impl SpendAuthorizationKey {
         let ask_bytes: [u8; SPEND_LEN_BYTES] = hash_result.as_bytes()[0..SPEND_LEN_BYTES]
             .try_into()
             .expect("hash is long enough to convert to array");
-        Self(decaf377_rdsa::SigningKey::try_from(ask_bytes).expect("can create SigningKey"))
-    }
+        let ask = SigningKey::try_from(ask_bytes).expect("can create SigningKey");
 
-    pub fn randomize(
-        &self,
-        randomizer: Fr,
-    ) -> decaf377_rdsa::VerificationKey<decaf377_rdsa::SpendAuth> {
-        let rk: decaf377_rdsa::VerificationKey<decaf377_rdsa::SpendAuth> =
-            self.0.randomize(&randomizer).into();
-        rk
+        Self {
+            ask,
+            nsk: NullifierPrivateKey::derive(&key),
+            ovk: OutgoingViewingKey::derive(&key),
+        }
     }
 }
 
@@ -86,10 +75,10 @@ impl NullifierPrivateKey {
 pub struct IncomingViewingKey(pub Fr);
 
 impl IncomingViewingKey {
-    pub fn derive(ak: &AuthorizationKey, nk: &NullifierDerivingKey) -> Self {
+    pub fn derive(ak: &VerificationKey<SpendAuth>, nk: &NullifierDerivingKey) -> Self {
         let mut hasher = blake2b_simd::State::new();
         hasher.update(b"Penumbra_IncomingViewingKey");
-        let ak_bytes: [u8; SPEND_LEN_BYTES] = ak.0.into();
+        let ak_bytes: [u8; SPEND_LEN_BYTES] = ak.into();
         hasher.update(&ak_bytes);
         let nk_bytes: [u8; NK_LEN_BYTES] = nk.0.compress().into();
         hasher.update(&nk_bytes);
@@ -128,23 +117,13 @@ impl EphemeralPublicKey {
 }
 
 pub struct ProofAuthorizationKey {
-    pub ak: AuthorizationKey,
+    pub ak: VerificationKey<SpendAuth>,
     pub nsk: NullifierPrivateKey,
-}
-
-pub struct AuthorizationKey(pub decaf377_rdsa::VerificationKey<decaf377_rdsa::SpendAuth>);
-
-impl AuthorizationKey {
-    #[allow(non_snake_case)]
-    /// Derive a verification key from the corresponding `SpendAuthorizationKey`.
-    pub fn derive(ask: &SpendAuthorizationKey) -> Self {
-        Self(ask.0.into())
-    }
 }
 
 /// The `FullViewingKey` allows one to identify incoming and outgoing notes only.
 pub struct FullViewingKey {
-    pub ak: AuthorizationKey,
+    pub ak: VerificationKey<SpendAuth>,
     pub nk: NullifierDerivingKey,
     pub ovk: OutgoingViewingKey,
 }

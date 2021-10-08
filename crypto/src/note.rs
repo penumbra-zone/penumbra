@@ -37,10 +37,10 @@ impl Note {
     }
 }
 
-// Note commitment `cm`.
-pub struct NoteCommitment(pub Fq);
+// Note commitment.
+pub struct Commitment(pub Fq);
 
-impl NoteCommitment {
+impl Commitment {
     pub fn new(dest: &PaymentAddress, value: &Value, note_blinding: &Fq) -> Self {
         let commit = hash_5(
             &NOTECOMMIT_DOMAIN_SEP,
@@ -53,6 +53,6 @@ impl NoteCommitment {
             ),
         );
 
-        NoteCommitment(commit)
+        Self(commit)
     }
 }
