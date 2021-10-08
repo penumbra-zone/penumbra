@@ -5,13 +5,7 @@ use rand_core::{CryptoRng, RngCore};
 
 /// A `SharedSecret` derived at the end of the key agreement protocol.
 #[derive(Debug, PartialEq)]
-pub struct SharedSecret(pub(crate) decaf377::Element);
-
-impl SharedSecret {
-    pub fn derive(other_public_key: &EphemeralPublicKey, secret_key: EphemeralSecretKey) -> Self {
-        Self(other_public_key.0 * secret_key.0)
-    }
-}
+pub struct SharedSecret(pub [u8; 32]);
 
 /// An `EphemeralSecretKey` is used once and consumed when forming a `SharedSecret`.
 pub struct EphemeralSecretKey(pub(crate) decaf377::Fr);
@@ -23,6 +17,10 @@ impl EphemeralSecretKey {
 
     pub fn derive_public(&self) -> EphemeralPublicKey {
         EphemeralPublicKey(self.0 * decaf377::Element::basepoint())
+    }
+
+    pub fn key_agreement_with(self, other: &EphemeralPublicKey) -> SharedSecret {
+        SharedSecret((other.0 * self.0).compress().into())
     }
 }
 
@@ -44,8 +42,8 @@ mod tests {
         let alice_pubkey = alice_secret.derive_public();
         let bob_pubkey = bob_secret.derive_public();
 
-        let alice_sharedsecret = SharedSecret::derive(&bob_pubkey, alice_secret);
-        let bob_sharedsecret = SharedSecret::derive(&alice_pubkey, bob_secret);
+        let alice_sharedsecret = alice_secret.key_agreement_with(&bob_pubkey);
+        let bob_sharedsecret = bob_secret.key_agreement_with(&alice_pubkey);
 
         assert_eq!(alice_sharedsecret, bob_sharedsecret);
     }
