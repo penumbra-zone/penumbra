@@ -38,6 +38,7 @@ impl Note {
 }
 
 // Note commitment.
+#[derive(Clone, Copy)]
 pub struct Commitment(pub Fq);
 
 impl Commitment {

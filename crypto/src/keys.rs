@@ -1,12 +1,12 @@
 use std::convert::{TryFrom, TryInto};
 
+use crate::{Fq, Fr};
 use ark_ff::PrimeField;
 use decaf377;
+use decaf377::FrExt;
 use decaf377_rdsa;
 use once_cell::sync::Lazy;
 use rand_core::{CryptoRng, RngCore};
-
-use crate::{Fq, Fr};
 
 pub const DIVERSIFIER_LEN_BYTES: usize = 11;
 pub const SPEND_LEN_BYTES: usize = 32;
@@ -47,7 +47,9 @@ impl ExpandedSpendingKey {
         let ask_bytes: [u8; SPEND_LEN_BYTES] = hash_result.as_bytes()[0..SPEND_LEN_BYTES]
             .try_into()
             .expect("hash is long enough to convert to array");
-        let ask = SigningKey::try_from(ask_bytes).expect("can create SigningKey");
+
+        let field_elem = Fr::from_le_bytes_mod_order(&ask_bytes);
+        let ask = SigningKey::try_from(field_elem.to_bytes()).expect("can create SigningKey");
 
         Self {
             ask,
@@ -55,8 +57,24 @@ impl ExpandedSpendingKey {
             ovk: OutgoingViewingKey::derive(&key),
         }
     }
+
+    pub fn derive_proof_authorization_key(&self) -> ProofAuthorizationKey {
+        ProofAuthorizationKey {
+            ak: self.ask.into(),
+            nsk: self.nsk,
+        }
+    }
+
+    pub fn derive_full_viewing_key(&self) -> FullViewingKey {
+        FullViewingKey {
+            ak: self.ask.into(),
+            nk: NullifierDerivingKey::derive(&self.nsk),
+            ovk: self.ovk,
+        }
+    }
 }
 
+#[derive(Copy, Clone)]
 pub struct NullifierPrivateKey(pub Fr);
 
 impl NullifierPrivateKey {
@@ -86,9 +104,16 @@ impl IncomingViewingKey {
 
         Self(Fr::from_le_bytes_mod_order(hash_result.as_bytes()))
     }
+
+    #[allow(non_snake_case)]
+    pub fn derive_transmission_key(&self, d: &Diversifier) -> TransmissionKey {
+        let B_d = d.diversified_generator();
+        TransmissionKey(self.0 * B_d)
+    }
 }
 
 /// An `OutgoingViewingKey` allows one to identify outgoing notes.
+#[derive(Copy, Clone)]
 pub struct OutgoingViewingKey(pub [u8; OVK_LEN_BYTES]);
 
 impl OutgoingViewingKey {
@@ -130,6 +155,12 @@ pub struct FullViewingKey {
 
 pub struct NullifierDerivingKey(decaf377::Element);
 
+impl NullifierDerivingKey {
+    pub fn derive(nsk: &NullifierPrivateKey) -> Self {
+        Self(decaf377::Element::basepoint() * nsk.0)
+    }
+}
+
 #[derive(Copy, Clone)]
 pub struct Diversifier(pub [u8; DIVERSIFIER_LEN_BYTES]);
 
@@ -139,6 +170,14 @@ static DIVERSIFY_GENERATOR_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
 });
 
 impl Diversifier {
+    /// Generate a new random diversifier.
+    pub fn generate<R: RngCore + CryptoRng>(mut rng: R) -> Self {
+        // TODO: Switch to Poseidon based diversifier
+        let mut diversifier = [0u8; DIVERSIFIER_LEN_BYTES];
+        rng.fill_bytes(&mut diversifier);
+        Diversifier(diversifier)
+    }
+
     /// Generate the diversified basepoint.
     pub fn diversified_generator(&self) -> decaf377::Element {
         use crate::poseidon_hash::hash_1;
@@ -148,13 +187,30 @@ impl Diversifier {
         );
         decaf377::Element::map_to_group_cdh(&hash)
     }
-
-    #[allow(non_snake_case)]
-    pub fn derive_transmission_key(&self, ivk: IncomingViewingKey) -> TransmissionKey {
-        let B_d = self.diversified_generator();
-        TransmissionKey(ivk.0 * B_d)
-    }
 }
 
 /// Represents a (diversified) transmission key.
+#[derive(Copy, Clone)]
 pub struct TransmissionKey(pub decaf377::Element);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use rand_core::OsRng;
+
+    use crate::addresses::PaymentAddress;
+
+    #[test]
+    fn complete_key_generation_happy_path() {
+        let mut rng = OsRng;
+        let diversifier = Diversifier::generate(&mut rng);
+        let sk = SpendingKey::generate(&mut rng);
+        let expanded_sk = ExpandedSpendingKey::derive(&sk);
+        let proof_auth_key = expanded_sk.derive_proof_authorization_key();
+        let fvk = expanded_sk.derive_full_viewing_key();
+        let ivk = IncomingViewingKey::derive(&proof_auth_key.ak, &fvk.nk);
+        let pk_d = ivk.derive_transmission_key(&diversifier);
+        let _dest = PaymentAddress::new(diversifier, pk_d);
+    }
+}
