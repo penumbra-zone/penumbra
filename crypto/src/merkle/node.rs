@@ -1,7 +1,7 @@
 use decaf377::Fq;
 
-use crate::error::MerkleTreeError;
 use crate::merkle::constants::{ARITY, MERKLE_PADDING};
+use crate::merkle::error::Error;
 use crate::merkle::hash::merkle_hash;
 use crate::note;
 
@@ -14,7 +14,7 @@ pub struct Node {
 
 impl Node {
     /// Create a `Node` from the four hash values of its children.
-    pub(crate) fn new_parent(layer: usize, children: [Fq; ARITY]) -> Result<Self, MerkleTreeError> {
+    pub(crate) fn new_parent(layer: usize, children: [Fq; ARITY]) -> Result<Self, Error> {
         Ok(Node {
             hash_value: merkle_hash(
                 layer as u32,

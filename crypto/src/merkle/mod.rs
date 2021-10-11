@@ -1,5 +1,6 @@
-pub mod constants;
-pub mod hash;
-pub mod node;
-pub mod proof;
-pub mod tree;
+mod constants;
+mod error;
+mod hash;
+mod node;
+mod proof;
+mod tree;

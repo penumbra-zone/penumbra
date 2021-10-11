@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use decaf377::Fq;
 
-use crate::error::MerkleTreeError;
 use crate::merkle::constants::{ARITY, MERKLE_DEPTH};
+use crate::merkle::error::Error;
 use crate::merkle::node::Node;
 use crate::note;
 
@@ -31,14 +31,14 @@ pub struct Tree {
 
 impl Tree {
     /// Creates an entirely new tree from a list of note commitments.
-    pub fn new(items: Vec<note::Commitment>) -> Result<Self, MerkleTreeError> {
+    pub fn new(items: Vec<note::Commitment>) -> Result<Self, Error> {
         let mut leaves: Vec<Node> = Vec::new();
         for item in &items {
             leaves.push(Node::new_leaf(*item));
         }
 
         if leaves.len() > Tree::number_nodes_at_layer(MERKLE_DEPTH) {
-            return Err(MerkleTreeError::TooLarge);
+            return Err(Error::TooLarge);
         }
 
         let mut internals = HashMap::new();
@@ -90,13 +90,9 @@ impl Tree {
     }
 
     // Get an array of the children hash values for this node, filling with padding values as needed.
-    pub fn get_child_hashes(
-        &self,
-        layer: usize,
-        lr_position: usize,
-    ) -> Result<[Fq; ARITY], MerkleTreeError> {
+    pub fn get_child_hashes(&self, layer: usize, lr_position: usize) -> Result<[Fq; ARITY], Error> {
         if layer == MERKLE_DEPTH {
-            Err(MerkleTreeError::LeafHasNoChild)
+            Err(Error::LeafHasNoChild)
         } else {
             Ok([
                 self.get_hash_value(layer + 1, lr_position * ARITY + 0),
@@ -108,9 +104,9 @@ impl Tree {
     }
 
     // Get the hash of the parent of the node at a given position.
-    pub fn get_parent_hash(&self, layer: usize, lr_position: usize) -> Result<Fq, MerkleTreeError> {
+    pub fn get_parent_hash(&self, layer: usize, lr_position: usize) -> Result<Fq, Error> {
         if layer == 0 {
-            Err(MerkleTreeError::RootHasNoParent)
+            Err(Error::RootHasNoParent)
         } else {
             Ok(self.get_hash_value(layer - 1, lr_position / 4))
         }
@@ -192,10 +188,7 @@ mod tests {
 
     use crate::addresses::PaymentAddress;
     use crate::asset;
-    use crate::keys::{
-        Diversifier, ExpandedSpendingKey, FullViewingKey, IncomingViewingKey,
-        ProofAuthorizationKey, SpendingKey,
-    };
+    use crate::keys::{Diversifier, ExpandedSpendingKey, IncomingViewingKey, SpendingKey};
     use crate::merkle::constants::MERKLE_DEPTH;
     use crate::merkle::hash::merkle_hash;
     use crate::value::Value;
@@ -212,12 +205,11 @@ mod tests {
         let diversifier = Diversifier::generate(&mut rng);
         let sk = SpendingKey::generate(&mut rng);
         let expanded_sk = ExpandedSpendingKey::derive(&sk);
-        let proof_auth_key = ProofAuthorizationKey::derive(&expanded_sk.ask, &expanded_sk.nsk);
-        let fvk = FullViewingKey::derive(&proof_auth_key.ak, &proof_auth_key.nsk, &expanded_sk.ovk);
+        let proof_auth_key = expanded_sk.derive_proof_authorization_key();
+        let fvk = expanded_sk.derive_full_viewing_key();
         let ivk = IncomingViewingKey::derive(&proof_auth_key.ak, &fvk.nk);
-
-        let pk_d = diversifier.derive_transmission_key(&ivk);
-        let dest = PaymentAddress::new(&diversifier, &pk_d);
+        let pk_d = ivk.derive_transmission_key(&diversifier);
+        let dest = PaymentAddress::new(diversifier, pk_d);
 
         let mut cms = Vec::<note::Commitment>::new();
         for _i in 0..n {

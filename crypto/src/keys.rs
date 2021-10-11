@@ -57,6 +57,21 @@ impl ExpandedSpendingKey {
             ovk: OutgoingViewingKey::derive(&key),
         }
     }
+
+    pub fn derive_proof_authorization_key(&self) -> ProofAuthorizationKey {
+        ProofAuthorizationKey {
+            ak: self.ask.into(),
+            nsk: self.nsk,
+        }
+    }
+
+    pub fn derive_full_viewing_key(&self) -> FullViewingKey {
+        FullViewingKey {
+            ak: self.ask.into(),
+            nk: NullifierDerivingKey::derive(&self.nsk),
+            ovk: self.ovk,
+        }
+    }
 }
 
 #[derive(Copy, Clone)]
@@ -88,6 +103,12 @@ impl IncomingViewingKey {
         let hash_result = hasher.finalize();
 
         Self(Fr::from_le_bytes_mod_order(hash_result.as_bytes()))
+    }
+
+    #[allow(non_snake_case)]
+    pub fn derive_transmission_key(&self, d: &Diversifier) -> TransmissionKey {
+        let B_d = d.diversified_generator();
+        TransmissionKey(self.0 * B_d)
     }
 }
 
@@ -125,34 +146,11 @@ pub struct ProofAuthorizationKey {
     pub nsk: NullifierPrivateKey,
 }
 
-impl ProofAuthorizationKey {
-    pub fn derive(ask: &SigningKey<SpendAuth>, nsk: &NullifierPrivateKey) -> Self {
-        Self {
-            ak: ask.into(),
-            nsk: *nsk,
-        }
-    }
-}
-
 /// The `FullViewingKey` allows one to identify incoming and outgoing notes only.
 pub struct FullViewingKey {
     pub ak: VerificationKey<SpendAuth>,
     pub nk: NullifierDerivingKey,
     pub ovk: OutgoingViewingKey,
-}
-
-impl FullViewingKey {
-    pub fn derive(
-        ak: &VerificationKey<SpendAuth>,
-        nsk: &NullifierPrivateKey,
-        ovk: &OutgoingViewingKey,
-    ) -> Self {
-        Self {
-            ak: *ak,
-            nk: NullifierDerivingKey::derive(&nsk),
-            ovk: *ovk,
-        }
-    }
 }
 
 pub struct NullifierDerivingKey(decaf377::Element);
@@ -174,6 +172,7 @@ static DIVERSIFY_GENERATOR_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
 impl Diversifier {
     /// Generate a new random diversifier.
     pub fn generate<R: RngCore + CryptoRng>(mut rng: R) -> Self {
+        // TODO: Switch to Poseidon based diversifier
         let mut diversifier = [0u8; DIVERSIFIER_LEN_BYTES];
         rng.fill_bytes(&mut diversifier);
         Diversifier(diversifier)
@@ -187,12 +186,6 @@ impl Diversifier {
             Fq::from_le_bytes_mod_order(&self.0[..]),
         );
         decaf377::Element::map_to_group_cdh(&hash)
-    }
-
-    #[allow(non_snake_case)]
-    pub fn derive_transmission_key(&self, ivk: &IncomingViewingKey) -> TransmissionKey {
-        let B_d = self.diversified_generator();
-        TransmissionKey(ivk.0 * B_d)
     }
 }
 
@@ -214,10 +207,10 @@ mod tests {
         let diversifier = Diversifier::generate(&mut rng);
         let sk = SpendingKey::generate(&mut rng);
         let expanded_sk = ExpandedSpendingKey::derive(&sk);
-        let proof_auth_key = ProofAuthorizationKey::derive(&expanded_sk.ask, &expanded_sk.nsk);
-        let fvk = FullViewingKey::derive(&proof_auth_key.ak, &proof_auth_key.nsk, &expanded_sk.ovk);
+        let proof_auth_key = expanded_sk.derive_proof_authorization_key();
+        let fvk = expanded_sk.derive_full_viewing_key();
         let ivk = IncomingViewingKey::derive(&proof_auth_key.ak, &fvk.nk);
-        let pk_d = diversifier.derive_transmission_key(&ivk);
-        let _dest = PaymentAddress::new(&diversifier, &pk_d);
+        let pk_d = ivk.derive_transmission_key(&diversifier);
+        let _dest = PaymentAddress::new(diversifier, pk_d);
     }
 }
