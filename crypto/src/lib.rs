@@ -4,7 +4,6 @@ pub mod action;
 pub mod addresses;
 pub mod asset;
 pub mod error;
-pub mod key_agreement;
 pub mod keys;
 pub mod memo;
 pub mod merkle;

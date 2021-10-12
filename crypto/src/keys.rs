@@ -132,15 +132,6 @@ impl OutgoingViewingKey {
     }
 }
 
-pub struct EphemeralPublicKey(pub decaf377::Element);
-
-// This is going away when key agreement is in place
-impl EphemeralPublicKey {
-    pub fn new() -> EphemeralPublicKey {
-        todo!("key agreement")
-    }
-}
-
 pub struct ProofAuthorizationKey {
     pub ak: VerificationKey<SpendAuth>,
     pub nsk: NullifierPrivateKey,
