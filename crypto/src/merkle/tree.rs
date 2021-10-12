@@ -188,7 +188,7 @@ mod tests {
 
     use crate::addresses::PaymentAddress;
     use crate::asset;
-    use crate::keys::{Diversifier, ExpandedSpendingKey, IncomingViewingKey, SpendingKey};
+    use crate::keys::{Diversifier, IncomingViewingKey, SpendKey};
     use crate::merkle::constants::MERKLE_DEPTH;
     use crate::merkle::hash::merkle_hash;
     use crate::value::Value;
@@ -203,10 +203,9 @@ mod tests {
         };
 
         let diversifier = Diversifier::generate(&mut rng);
-        let sk = SpendingKey::generate(&mut rng);
-        let expanded_sk = ExpandedSpendingKey::derive(&sk);
-        let proof_auth_key = expanded_sk.derive_proof_authorization_key();
-        let fvk = expanded_sk.derive_full_viewing_key();
+        let expanded_sk = SpendKey::generate(&mut rng);
+        let proof_auth_key = expanded_sk.proof_authorization_key();
+        let fvk = expanded_sk.full_viewing_key();
         let ivk = IncomingViewingKey::derive(&proof_auth_key.ak, &fvk.nk);
         let pk_d = ivk.derive_transmission_key(&diversifier);
         let dest = PaymentAddress::new(diversifier, pk_d);

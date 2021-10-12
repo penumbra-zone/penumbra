@@ -1,6 +1,6 @@
 use super::{NullifierPrivateKey, SpendAuth, VerificationKey};
 
-pub struct ProofAuthorizationKey {
+pub struct ProofAuthKey {
     pub ak: VerificationKey<SpendAuth>,
     pub nsk: NullifierPrivateKey,
 }
