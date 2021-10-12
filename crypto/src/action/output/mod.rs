@@ -2,9 +2,9 @@ use ark_ff::UniformRand;
 use rand_core::{CryptoRng, RngCore};
 
 use decaf377::{Fq, Fr};
+use decaf377_ka::{EphemeralPublicKey, EphemeralSecretKey};
 
 use crate::addresses::PaymentAddress;
-use crate::keys::EphemeralPublicKey;
 use crate::note;
 use crate::value;
 use crate::{Note, Value};
@@ -31,9 +31,8 @@ impl Body {
         let _note = Note::new(&dest, &value, &note_blinding);
         // TODO: Encrypt note here and add to a field in the Body struct (later).
 
-        // TODO: This interface will change once we instantiate a key agreement scheme
-        // on decaf377 similar to sec 5.4.5.3 in the ZCash spec.
-        let ephemeral_key = EphemeralPublicKey::new();
+        let esk = EphemeralSecretKey::generate(&mut rng);
+        let ephemeral_key = esk.derive_public();
 
         Self {
             value_commitment,
