@@ -1,188 +1,24 @@
-use std::convert::{TryFrom, TryInto};
+mod diversifier;
+pub use diversifier::{Diversifier, DIVERSIFIER_LEN_BYTES};
 
-use crate::{Fq, Fr};
-use ark_ff::PrimeField;
-use decaf377;
-use decaf377::FrExt;
-use decaf377_rdsa;
-use once_cell::sync::Lazy;
-use rand_core::{CryptoRng, RngCore};
+mod nullifier;
+pub use nullifier::{NullifierDerivingKey, NullifierPrivateKey, NK_LEN_BYTES};
 
-pub const DIVERSIFIER_LEN_BYTES: usize = 11;
-pub const SPEND_LEN_BYTES: usize = 32;
-pub const NK_LEN_BYTES: usize = 32;
-pub const OVK_LEN_BYTES: usize = 32;
-pub const IVK_LEN_BYTES: usize = 32;
+mod proof;
+pub use proof::ProofAuthorizationKey;
 
-pub use decaf377_rdsa::SigningKey;
-pub use decaf377_rdsa::SpendAuth;
-pub use decaf377_rdsa::VerificationKey;
+mod spend;
+pub use spend::{ExpandedSpendingKey, SpendingKey, SPEND_LEN_BYTES};
 
-pub struct SpendingKey(pub [u8; SPEND_LEN_BYTES]);
+mod transmission;
+pub use transmission::TransmissionKey;
 
-impl SpendingKey {
-    pub fn generate<R: RngCore + CryptoRng>(mut rng: R) -> Self {
-        let mut key = [0u8; SPEND_LEN_BYTES];
-        // Better to use Rng trait here (instead of RngCore)?
-        rng.fill_bytes(&mut key);
-        SpendingKey(key)
-    }
-}
+mod view;
+pub use view::{
+    FullViewingKey, IncomingViewingKey, OutgoingViewingKey, IVK_LEN_BYTES, OVK_LEN_BYTES,
+};
 
-pub struct ExpandedSpendingKey {
-    pub ask: SigningKey<SpendAuth>,
-    pub nsk: NullifierPrivateKey,
-    pub ovk: OutgoingViewingKey,
-}
-
-impl ExpandedSpendingKey {
-    pub fn derive(key: &SpendingKey) -> Self {
-        // Generation of the spend authorization key.
-        let mut hasher = blake2b_simd::State::new();
-        hasher.update(b"Penumbra_ExpandSeed");
-        hasher.update(&key.0);
-        hasher.update(&[0; 1]);
-        let hash_result = hasher.finalize();
-
-        let ask_bytes: [u8; SPEND_LEN_BYTES] = hash_result.as_bytes()[0..SPEND_LEN_BYTES]
-            .try_into()
-            .expect("hash is long enough to convert to array");
-
-        let field_elem = Fr::from_le_bytes_mod_order(&ask_bytes);
-        let ask = SigningKey::try_from(field_elem.to_bytes()).expect("can create SigningKey");
-
-        Self {
-            ask,
-            nsk: NullifierPrivateKey::derive(&key),
-            ovk: OutgoingViewingKey::derive(&key),
-        }
-    }
-
-    pub fn derive_proof_authorization_key(&self) -> ProofAuthorizationKey {
-        ProofAuthorizationKey {
-            ak: self.ask.into(),
-            nsk: self.nsk,
-        }
-    }
-
-    pub fn derive_full_viewing_key(&self) -> FullViewingKey {
-        FullViewingKey {
-            ak: self.ask.into(),
-            nk: NullifierDerivingKey::derive(&self.nsk),
-            ovk: self.ovk,
-        }
-    }
-}
-
-#[derive(Copy, Clone)]
-pub struct NullifierPrivateKey(pub Fr);
-
-impl NullifierPrivateKey {
-    pub fn derive(key: &SpendingKey) -> Self {
-        let mut hasher = blake2b_simd::State::new();
-        hasher.update(b"Penumbra_ExpandSeed");
-        hasher.update(&key.0);
-        hasher.update(&[1; 1]);
-        let hash_result = hasher.finalize();
-
-        Self(Fr::from_le_bytes_mod_order(hash_result.as_bytes()))
-    }
-}
-
-/// An `IncomingViewingKey` allows one to identify incoming notes.
-pub struct IncomingViewingKey(pub Fr);
-
-impl IncomingViewingKey {
-    pub fn derive(ak: &VerificationKey<SpendAuth>, nk: &NullifierDerivingKey) -> Self {
-        let mut hasher = blake2b_simd::State::new();
-        hasher.update(b"Penumbra_IncomingViewingKey");
-        let ak_bytes: [u8; SPEND_LEN_BYTES] = ak.into();
-        hasher.update(&ak_bytes);
-        let nk_bytes: [u8; NK_LEN_BYTES] = nk.0.compress().into();
-        hasher.update(&nk_bytes);
-        let hash_result = hasher.finalize();
-
-        Self(Fr::from_le_bytes_mod_order(hash_result.as_bytes()))
-    }
-
-    #[allow(non_snake_case)]
-    pub fn derive_transmission_key(&self, d: &Diversifier) -> TransmissionKey {
-        let B_d = d.diversified_generator();
-        TransmissionKey(self.0 * B_d)
-    }
-}
-
-/// An `OutgoingViewingKey` allows one to identify outgoing notes.
-#[derive(Copy, Clone)]
-pub struct OutgoingViewingKey(pub [u8; OVK_LEN_BYTES]);
-
-impl OutgoingViewingKey {
-    pub fn derive(key: &SpendingKey) -> Self {
-        let mut hasher = blake2b_simd::State::new();
-        hasher.update(b"Penumbra_ExpandSeed");
-        hasher.update(&key.0);
-        hasher.update(&[2; 1]);
-        let hash_result = hasher.finalize();
-
-        Self(
-            hash_result.as_bytes()[0..OVK_LEN_BYTES]
-                .try_into()
-                .expect("hash is long enough to convert to array"),
-        )
-    }
-}
-
-pub struct ProofAuthorizationKey {
-    pub ak: VerificationKey<SpendAuth>,
-    pub nsk: NullifierPrivateKey,
-}
-
-/// The `FullViewingKey` allows one to identify incoming and outgoing notes only.
-pub struct FullViewingKey {
-    pub ak: VerificationKey<SpendAuth>,
-    pub nk: NullifierDerivingKey,
-    pub ovk: OutgoingViewingKey,
-}
-
-pub struct NullifierDerivingKey(decaf377::Element);
-
-impl NullifierDerivingKey {
-    pub fn derive(nsk: &NullifierPrivateKey) -> Self {
-        Self(decaf377::Element::basepoint() * nsk.0)
-    }
-}
-
-#[derive(Copy, Clone)]
-pub struct Diversifier(pub [u8; DIVERSIFIER_LEN_BYTES]);
-
-/// The domain separator used to generate diversified generators.
-static DIVERSIFY_GENERATOR_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
-    Fq::from_le_bytes_mod_order(blake2b_simd::blake2b(b"penumbra.diversifier.generator").as_bytes())
-});
-
-impl Diversifier {
-    /// Generate a new random diversifier.
-    pub fn generate<R: RngCore + CryptoRng>(mut rng: R) -> Self {
-        // TODO: Switch to Poseidon based diversifier
-        let mut diversifier = [0u8; DIVERSIFIER_LEN_BYTES];
-        rng.fill_bytes(&mut diversifier);
-        Diversifier(diversifier)
-    }
-
-    /// Generate the diversified basepoint.
-    pub fn diversified_generator(&self) -> decaf377::Element {
-        use crate::poseidon_hash::hash_1;
-        let hash = hash_1(
-            &DIVERSIFY_GENERATOR_DOMAIN_SEP,
-            Fq::from_le_bytes_mod_order(&self.0[..]),
-        );
-        decaf377::Element::map_to_group_cdh(&hash)
-    }
-}
-
-/// Represents a (diversified) transmission key.
-#[derive(Copy, Clone)]
-pub struct TransmissionKey(pub decaf377::Element);
+pub use decaf377_rdsa::{Binding, SigningKey, SpendAuth, VerificationKey};
 
 #[cfg(test)]
 mod tests {
@@ -192,8 +28,10 @@ mod tests {
 
     use crate::addresses::PaymentAddress;
 
+    // Remove this when the code is more complete; it's just
+    // a way to exercise the codepaths.
     #[test]
-    fn complete_key_generation_happy_path() {
+    fn scratch_complete_key_generation_happy_path() {
         let mut rng = OsRng;
         let diversifier = Diversifier::generate(&mut rng);
         let sk = SpendingKey::generate(&mut rng);
