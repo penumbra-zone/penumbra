@@ -5,10 +5,10 @@ mod nullifier;
 pub use nullifier::{NullifierDerivingKey, NullifierPrivateKey, NK_LEN_BYTES};
 
 mod proof;
-pub use proof::ProofAuthorizationKey;
+pub use proof::ProofAuthKey;
 
 mod spend;
-pub use spend::{ExpandedSpendingKey, SpendingKey, SPEND_LEN_BYTES};
+pub use spend::{SpendKey, SpendSeed, SPENDSEED_LEN_BYTES};
 
 mod transmission;
 pub use transmission::TransmissionKey;
@@ -34,10 +34,9 @@ mod tests {
     fn scratch_complete_key_generation_happy_path() {
         let mut rng = OsRng;
         let diversifier = Diversifier::generate(&mut rng);
-        let sk = SpendingKey::generate(&mut rng);
-        let expanded_sk = ExpandedSpendingKey::derive(&sk);
-        let proof_auth_key = expanded_sk.derive_proof_authorization_key();
-        let fvk = expanded_sk.derive_full_viewing_key();
+        let sk = SpendKey::generate(&mut rng);
+        let proof_auth_key = sk.proof_authorization_key();
+        let fvk = sk.full_viewing_key();
         let ivk = IncomingViewingKey::derive(&proof_auth_key.ak, &fvk.nk);
         let pk_d = ivk.derive_transmission_key(&diversifier);
         let _dest = PaymentAddress::new(diversifier, pk_d);

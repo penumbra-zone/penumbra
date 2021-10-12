@@ -1,6 +1,6 @@
 # Addresses
 
-Addresses in Penumbra are diversified payment addresses as in Zcash Sapling but with an additional key for [FMD](../../crypto/fmd.md) support. For each *spending key*, there are many possible diversified payment addresses, all of which share viewing keys. Each address consists of three components:
+Addresses in Penumbra are diversified payment addresses as in Zcash Sapling but with an additional key for [FMD](../../crypto/fmd.md) support. For each *spend key*, there are many possible diversified payment addresses, all of which share viewing keys. Each address consists of three components:
 
 * a *diversifier* $d$, an 11 byte random number
 * a *transmission key* $pk_d$, a point on the `decaf377` curve

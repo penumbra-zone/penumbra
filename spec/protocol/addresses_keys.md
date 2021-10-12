@@ -34,19 +34,19 @@ flowchart BT
         ak1[ak];
         nsk2[nsk];
     end;
-    subgraph ESK[Expanded Spending Key]
+    subgraph SK[Spending Key]
         direction TB;
         ask;
         nsk1[nsk];
         ovk1[ovk];
     end;
-    subgraph SK[Spending Key]
-        sk;
+    subgraph SS[Spend Seed]
+        ss;
     end;
 
-    sk --> ask;
-    sk --> nsk1;
-    sk --> ovk1;
+    ss --> ask;
+    ss --> nsk1;
+    ss --> ovk1;
 
     ask --> ak1;
     nsk1 --- nsk2;
@@ -68,9 +68,12 @@ flowchart BT
     cdtk_d --> cfk_d;
 ```
 
-All addresses and keys are ultimately derived from a secret *spending key* $sk$, which is a random 32-byte string. From this *spending key* $sk$, we derive several other keys, each described in more detail in its own section:
+All addresses and keys are ultimately derived from a secret *spend seed* $ss$.
+This is a random 32-byte string which acts as the root key material for a
+particular spending authority. From this *spend seed* $ss$, we derive several
+other keys, each described in more detail in its own section:
 
-* an expanded form of the spending key called the [*expanded spending key*](./addresses_keys/expanded_spending_keys.md) which has components used to derive *viewing keys* and the *proof authorization key* as described below,
+* a [*spend key*](./addresses_keys/spend_key.md) which has components used to derive *viewing keys* and the *proof authorization key* as described below,
 * a [*proof authorization key*](./addresses_keys/proof_authorization_keys.md), which lets the holder spend notes associated with the *spending key*,
-* [*viewing keys*](./addresses_keys/viewing_keys.md) which allow the holder to identify but not spend notes associated with the *spending key*,
+* [*viewing keys*](./addresses_keys/viewing_keys.md) which allow the holder to identify but not spend notes associated with the *spend key*,
 * [*addresses*](./addresses_keys/addresses.md), which can be shared in order to receive payments.

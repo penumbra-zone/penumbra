@@ -7,64 +7,122 @@ use rand_core::{CryptoRng, RngCore};
 use crate::Fr;
 
 use super::{
-    FullViewingKey, NullifierDerivingKey, NullifierPrivateKey, OutgoingViewingKey,
-    ProofAuthorizationKey, SigningKey, SpendAuth,
+    FullViewingKey, NullifierDerivingKey, NullifierPrivateKey, OutgoingViewingKey, ProofAuthKey,
+    SigningKey, SpendAuth, OVK_LEN_BYTES,
 };
 
-pub const SPEND_LEN_BYTES: usize = 32;
+pub const SPENDSEED_LEN_BYTES: usize = 32;
 
-pub struct SpendingKey(pub [u8; SPEND_LEN_BYTES]);
+/// The root key material for a [`SpendKey`].
+#[derive(Clone, Debug)]
+pub struct SpendSeed(pub [u8; SPENDSEED_LEN_BYTES]);
 
-impl SpendingKey {
+/// A key representing a single spending authority.
+pub struct SpendKey {
+    seed: SpendSeed,
+    ask: SigningKey<SpendAuth>,
+    fvk: FullViewingKey,
+    pak: ProofAuthKey,
+}
+
+impl SpendKey {
+    /// Generates a new [`SpendKey`] from the supplied RNG.
     pub fn generate<R: RngCore + CryptoRng>(mut rng: R) -> Self {
-        let mut key = [0u8; SPEND_LEN_BYTES];
-        // Better to use Rng trait here (instead of RngCore)?
-        rng.fill_bytes(&mut key);
-        SpendingKey(key)
+        let mut seed_bytes = [0u8; SPENDSEED_LEN_BYTES];
+        rng.fill_bytes(&mut seed_bytes);
+        Self::from_seed(SpendSeed(seed_bytes))
     }
-}
 
-pub struct ExpandedSpendingKey {
-    pub ask: SigningKey<SpendAuth>,
-    pub nsk: NullifierPrivateKey,
-    pub ovk: OutgoingViewingKey,
-}
+    /// Loads a [`SpendKey`] from the provided [`SpendSeed`].
+    pub fn from_seed(seed: SpendSeed) -> Self {
+        let ask = {
+            let mut hasher = blake2b_simd::State::new();
+            hasher.update(b"Penumbra_ExpandSeed");
+            hasher.update(&seed.0);
+            hasher.update(&[0; 1]);
+            let hash_result = hasher.finalize();
 
-impl ExpandedSpendingKey {
-    pub fn derive(key: &SpendingKey) -> Self {
-        // Generation of the spend authorization key.
-        let mut hasher = blake2b_simd::State::new();
-        hasher.update(b"Penumbra_ExpandSeed");
-        hasher.update(&key.0);
-        hasher.update(&[0; 1]);
-        let hash_result = hasher.finalize();
+            let ask_bytes: [u8; SPENDSEED_LEN_BYTES] = hash_result.as_bytes()
+                [0..SPENDSEED_LEN_BYTES]
+                .try_into()
+                .expect("hash is long enough to convert to array");
 
-        let ask_bytes: [u8; SPEND_LEN_BYTES] = hash_result.as_bytes()[0..SPEND_LEN_BYTES]
-            .try_into()
-            .expect("hash is long enough to convert to array");
+            let field_elem = Fr::from_le_bytes_mod_order(&ask_bytes);
 
-        let field_elem = Fr::from_le_bytes_mod_order(&ask_bytes);
-        let ask = SigningKey::try_from(field_elem.to_bytes()).expect("can create SigningKey");
+            SigningKey::try_from(field_elem.to_bytes()).expect("can create SigningKey")
+        };
+
+        let nsk = {
+            let mut hasher = blake2b_simd::State::new();
+            hasher.update(b"Penumbra_ExpandSeed");
+            hasher.update(&seed.0);
+            hasher.update(&[1; 1]);
+            let hash_result = hasher.finalize();
+
+            NullifierPrivateKey(Fr::from_le_bytes_mod_order(hash_result.as_bytes()))
+        };
+
+        // XXX naming abbreviations don't match / but we might not even want this
+        let pak = ProofAuthKey {
+            nsk,
+            ak: ask.into(),
+        };
+
+        let ovk = {
+            let mut hasher = blake2b_simd::State::new();
+            hasher.update(b"Penumbra_ExpandSeed");
+            hasher.update(&seed.0);
+            hasher.update(&[2; 1]);
+            let hash_result = hasher.finalize();
+
+            OutgoingViewingKey(
+                hash_result.as_bytes()[0..OVK_LEN_BYTES]
+                    .try_into()
+                    .expect("hash is long enough to convert to array"),
+            )
+        };
+
+        let fvk = FullViewingKey {
+            ak: ask.into(),
+            nk: NullifierDerivingKey(decaf377::Element::basepoint() * &pak.nsk.0),
+            ovk,
+        };
 
         Self {
+            seed,
             ask,
-            nsk: NullifierPrivateKey::derive(&key),
-            ovk: OutgoingViewingKey::derive(&key),
+            pak,
+            fvk,
         }
     }
 
-    pub fn derive_proof_authorization_key(&self) -> ProofAuthorizationKey {
-        ProofAuthorizationKey {
-            ak: self.ask.into(),
-            nsk: self.nsk,
-        }
+    /// Get the [`SpendSeed`] this [`SpendKey`] was derived from.
+    ///
+    /// This is useful for serialization.
+    pub fn seed(&self) -> &SpendSeed {
+        &self.seed
     }
 
-    pub fn derive_full_viewing_key(&self) -> FullViewingKey {
-        FullViewingKey {
-            ak: self.ask.into(),
-            nk: NullifierDerivingKey::derive(&self.nsk),
-            ovk: self.ovk,
-        }
+    // XXX how many of these do we need? leave them for now
+    // but don't document until design is more settled
+
+    pub fn spend_auth_key(&self) -> &SigningKey<SpendAuth> {
+        &self.ask
+    }
+
+    pub fn nullifier_private_key(&self) -> &NullifierPrivateKey {
+        &self.pak.nsk
+    }
+
+    pub fn outgoing_viewing_key(&self) -> &OutgoingViewingKey {
+        &self.fvk.ovk
+    }
+
+    pub fn proof_authorization_key(&self) -> &ProofAuthKey {
+        &self.pak
+    }
+
+    pub fn full_viewing_key(&self) -> &FullViewingKey {
+        &self.fvk
     }
 }
