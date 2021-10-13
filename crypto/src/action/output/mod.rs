@@ -4,7 +4,7 @@ use rand_core::{CryptoRng, RngCore};
 use crate::{
     addresses::PaymentAddress,
     ka,
-    keys::SpendKey,
+    keys::OutgoingViewingKey,
     note, value, Fq, Fr, Note, Value,
     {memo::MemoCiphertext, memo::MemoPlaintext},
 };
@@ -22,7 +22,7 @@ impl Output {
         dest: &PaymentAddress,
         value: Value,
         memo: MemoPlaintext, // Better to be Option<MemoPlaintext>?
-        esk: &SpendKey,
+        ovk: &OutgoingViewingKey,
     ) -> Self {
         let body = Body::new(&mut rng, value, dest);
 

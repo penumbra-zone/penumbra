@@ -18,7 +18,7 @@ pub struct Spend {
 impl Spend {
     pub fn new<R: RngCore + CryptoRng>(
         mut rng: R,
-        diversifier: Diversifier,
+        diversifier: &Diversifier,
         spend_key: SpendKey,
         merkle_path: MerklePath,
         note: Note,
