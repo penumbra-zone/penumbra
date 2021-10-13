@@ -1,21 +1,46 @@
+use ark_serialize::CanonicalDeserialize;
 use decaf377;
 
-use crate::keys::{Diversifier, TransmissionKey};
+use crate::{ka, keys::Diversifier, Fq};
 
-/// Represents a diversified Payment Address.
+/// A valid payment address.
 pub struct PaymentAddress {
-    pub diversifier: Diversifier,
-    // The diversified generator.
-    pub g_d: decaf377::Element,
-    pub transmission_key: TransmissionKey,
+    diversifier: Diversifier,
+    diversified_generator: decaf377::Element,
+    transmission_key: ka::Public,
+    // A cached copy of the s value of the transmission key's encoding.
+    tk_s: Fq,
 }
 
 impl PaymentAddress {
-    pub fn new(diversifier: Diversifier, transmission_key: TransmissionKey) -> Self {
+    pub fn new(ivk: ka::Secret, diversifier: Diversifier) -> Self {
+        let diversified_generator = diversifier.diversified_generator();
+        let transmission_key = ivk.diversified_public(&diversified_generator);
+        // XXX ugly -- better way to get our hands on the s value?
+        // add to decaf377::Encoding? there's compress_to_field already...
+        let tk_s = Fq::deserialize(&transmission_key.0[..]).expect("transmission key is valid");
+
         PaymentAddress {
             diversifier,
-            g_d: diversifier.diversified_generator(),
+            diversified_generator,
             transmission_key,
+            tk_s,
         }
+    }
+
+    pub fn diversifier(&self) -> &Diversifier {
+        &self.diversifier
+    }
+
+    pub fn diversified_generator(&self) -> &decaf377::Element {
+        &self.diversified_generator
+    }
+
+    pub fn transmission_key(&self) -> &ka::Public {
+        &self.transmission_key
+    }
+
+    pub(crate) fn tk_s(&self) -> &Fq {
+        &self.tk_s
     }
 }

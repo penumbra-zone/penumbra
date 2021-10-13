@@ -20,13 +20,13 @@ impl Body {
         let value_commitment = value.commit(v_blinding);
 
         let note_blinding = Fq::rand(&mut rng);
-        let note_commitment = note::Commitment::new(&dest, &value, &note_blinding);
+        let note_commitment = note::Commitment::new(&dest, &value, &note_blinding).unwrap();
 
-        let _note = Note::new(&dest, &value, &note_blinding);
+        let _note = Note::new(&dest, value, note_blinding);
         // TODO: Encrypt note here and add to a field in the Body struct (later).
 
         let esk = ka::Secret::new(&mut rng);
-        let ephemeral_key = esk.public();
+        let ephemeral_key = esk.diversified_public(dest.diversified_generator());
 
         Self {
             value_commitment,
