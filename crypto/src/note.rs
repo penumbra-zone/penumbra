@@ -1,11 +1,7 @@
 use ark_ff::PrimeField;
 use once_cell::sync::Lazy;
 
-use crate::addresses::PaymentAddress;
-use crate::keys;
-use crate::poseidon_hash::hash_5;
-use crate::value::Value;
-use crate::Fq;
+use crate::{addresses::PaymentAddress, ka, keys, poseidon_hash::hash_5, Fq, Value};
 
 // TODO: Should have a `leadByte` as in Sapling and Orchard note plaintexts?
 // Do we need that in addition to the tx version?
@@ -28,11 +24,11 @@ static NOTECOMMIT_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
 });
 
 impl Note {
-    pub fn new(dest: &PaymentAddress, value: &Value, note_blinding: &Fq) -> Self {
+    pub fn new(dest: &PaymentAddress, value: Value, note_blinding: Fq) -> Self {
         Note {
-            diversifier: dest.diversifier,
-            value: *value,
-            note_blinding: *note_blinding,
+            diversifier: *dest.diversifier(),
+            value: value,
+            note_blinding: note_blinding,
         }
     }
 }
@@ -42,18 +38,22 @@ impl Note {
 pub struct Commitment(pub Fq);
 
 impl Commitment {
-    pub fn new(dest: &PaymentAddress, value: &Value, note_blinding: &Fq) -> Self {
+    pub fn new(
+        dest: &PaymentAddress,
+        value: &Value,
+        note_blinding: &Fq,
+    ) -> Result<Self, ka::Error> {
         let commit = hash_5(
             &NOTECOMMIT_DOMAIN_SEP,
             (
                 *note_blinding,
                 value.amount.into(),
                 value.asset_id.0,
-                dest.g_d.compress_to_field(),
-                dest.transmission_key.0.compress_to_field(),
+                dest.diversified_generator().compress_to_field(),
+                *dest.tk_s(),
             ),
         );
 
-        Self(commit)
+        Ok(Self(commit))
     }
 }

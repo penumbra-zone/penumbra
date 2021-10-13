@@ -188,7 +188,7 @@ mod tests {
 
     use crate::addresses::PaymentAddress;
     use crate::asset;
-    use crate::keys::{Diversifier, IncomingViewingKey, SpendKey};
+    use crate::keys::{Diversifier, SpendKey};
     use crate::merkle::constants::MERKLE_DEPTH;
     use crate::merkle::hash::merkle_hash;
     use crate::value::Value;
@@ -204,16 +204,15 @@ mod tests {
 
         let diversifier = Diversifier::generate(&mut rng);
         let expanded_sk = SpendKey::generate(&mut rng);
-        let proof_auth_key = expanded_sk.proof_authorization_key();
+        let _proof_auth_key = expanded_sk.proof_authorization_key();
         let fvk = expanded_sk.full_viewing_key();
-        let ivk = IncomingViewingKey::derive(&proof_auth_key.ak, &fvk.nk);
-        let pk_d = ivk.derive_transmission_key(&diversifier);
-        let dest = PaymentAddress::new(diversifier, pk_d);
+        let ivk = fvk.incoming();
+        let dest = PaymentAddress::new(ivk, diversifier);
 
         let mut cms = Vec::<note::Commitment>::new();
         for _i in 0..n {
             let note_blinding = Fq::rand(&mut rng);
-            let cm = note::Commitment::new(&dest, &value, &note_blinding);
+            let cm = note::Commitment::new(&dest, &value, &note_blinding).unwrap();
             cms.push(cm);
         }
         cms
