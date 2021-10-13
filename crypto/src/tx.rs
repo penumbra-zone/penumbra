@@ -22,10 +22,6 @@ pub struct TransactionBuilder {
     // Put chain_id and anchor in here too?
 }
 
-// Idea TransactionBuilder.finalize() -> UnsignedTransaction
-// UnsignedTransaction.sign -> Transaction --- this applies the binding_sig
-// or Maybe directly TransactionBuilder.finalize() -> Transaction
-
 impl TransactionBuilder {
     pub fn new() -> Self {
         Self {
@@ -73,7 +69,24 @@ impl TransactionBuilder {
         // Check all assets are the same?
         todo!()
     }
+
+    pub fn finalize() -> TransactionBody {
+        // Randomize outputs
+
+        // Apply sig
+        todo!();
+    }
 }
+
+pub struct TransactionBody {}
+
+impl TransactionBody {
+    pub fn sign() -> Transaction {
+        todo!()
+    }
+}
+
+pub struct Transaction {}
 
 #[cfg(test)]
 mod tests {
