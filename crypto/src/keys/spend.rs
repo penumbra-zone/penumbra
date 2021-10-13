@@ -77,7 +77,7 @@ impl SpendKey {
 
         let fvk = FullViewingKey {
             ak: ask.into(),
-            nk: NullifierDerivingKey(decaf377::Element::basepoint() * &pak.nsk.0),
+            nk: NullifierDerivingKey(decaf377::basepoint() * &pak.nsk.0),
             ovk,
         };
 
