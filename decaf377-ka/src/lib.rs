@@ -1,50 +1,103 @@
 use ark_ff::UniformRand;
+use rand_core::{CryptoRng, RngCore};
+use zeroize::Zeroize;
 
 use decaf377;
-use rand_core::{CryptoRng, RngCore};
 
-/// A `SharedSecret` derived at the end of the key agreement protocol.
-#[derive(Debug, PartialEq)]
+/// A public key sent to the counterparty in the key agreement protocol.
+///
+/// This is a refinement type around `[u8; 32]` that marks the bytes as being a
+/// public key.  Not all 32-byte arrays are valid public keys; invalid public
+/// keys will error during key agreement.
+#[derive(Clone)]
+pub struct Public(pub [u8; 32]);
+
+/// A secret key used to perform key agreement using the counterparty's public key.
+#[derive(Clone, Zeroize)]
+#[zeroize(drop)]
+pub struct Secret(decaf377::Fr);
+
+/// The shared secret derived at the end of the key agreement protocol.
+#[derive(PartialEq, Eq, Clone, Zeroize)]
+#[zeroize(drop)]
 pub struct SharedSecret(pub [u8; 32]);
 
-/// An `EphemeralSecretKey` is used once and consumed when forming a `SharedSecret`.
-pub struct EphemeralSecretKey(pub(crate) decaf377::Fr);
+/// An error during key agreement.
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("Invalid public key")]
+    InvalidPublic(Public),
+}
 
-impl EphemeralSecretKey {
-    pub fn generate<R: RngCore + CryptoRng>(mut rng: R) -> Self {
+impl Secret {
+    /// Generate a new secret key using `rng`.
+    pub fn new<R: RngCore + CryptoRng>(mut rng: R) -> Self {
         Self(decaf377::Fr::rand(&mut rng))
     }
 
-    pub fn derive_public(&self) -> EphemeralPublicKey {
-        EphemeralPublicKey(self.0 * decaf377::Element::basepoint())
+    /// Use the supplied field element as the secret key directly.
+    ///
+    /// # Warning
+    ///
+    /// This function exists to allow custom key derivation; it's the caller's
+    /// responsibility to ensure that the input was generated securely.
+    pub fn new_from_field(sk: decaf377::Fr) -> Self {
+        Self(sk)
     }
 
-    pub fn key_agreement_with(self, other: &EphemeralPublicKey) -> SharedSecret {
-        SharedSecret((other.0 * self.0).compress().into())
+    /// Derive a public key for this secret key, using the conventional
+    /// `decaf377` generator.
+    pub fn public(&self) -> Public {
+        self.diversified_public(&decaf377::basepoint())
+    }
+
+    /// Derive a diversified public key for this secret key, using the provided
+    /// `diversified_generator`.
+    ///
+    /// Since key agreement does not depend on the basepoint, only on the secret
+    /// key and the public key, a single secret key can correspond to many
+    /// different (unlinkable) public keys.
+    pub fn diversified_public(&self, diversified_generator: &decaf377::Element) -> Public {
+        Public((self.0 * diversified_generator).compress().into())
+    }
+
+    /// Perform key agreement with the provided public key.
+    ///
+    /// Fails if the provided public key is invalid.
+    pub fn key_agreement_with(&self, other: &Public) -> Result<SharedSecret, Error> {
+        let pk = decaf377::Encoding(other.0)
+            .decompress()
+            .map_err(|_| Error::InvalidPublic(other.clone()))?;
+
+        Ok(SharedSecret((self.0 * pk).compress().into()))
     }
 }
 
-/// An `EphemeralPublicKey` sent to the other participant in the key agreement protocol.
-pub struct EphemeralPublicKey(pub(crate) decaf377::Element);
+impl std::fmt::Debug for Public {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "decaf377_ka::Public({})",
+            hex::encode(&self.0[..])
+        ))
+    }
+}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+impl std::fmt::Debug for Secret {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use decaf377::FrExt;
+        let bytes = self.0.to_bytes();
+        f.write_fmt(format_args!(
+            "decaf377_ka::Secret({})",
+            hex::encode(&bytes[..])
+        ))
+    }
+}
 
-    #[test]
-    fn test_key_agreement_happy_path() {
-        use rand_core::OsRng;
-
-        let mut rng = OsRng;
-        let alice_secret = EphemeralSecretKey::generate(&mut rng);
-        let bob_secret = EphemeralSecretKey::generate(&mut rng);
-
-        let alice_pubkey = alice_secret.derive_public();
-        let bob_pubkey = bob_secret.derive_public();
-
-        let alice_sharedsecret = alice_secret.key_agreement_with(&bob_pubkey);
-        let bob_sharedsecret = bob_secret.key_agreement_with(&alice_pubkey);
-
-        assert_eq!(alice_sharedsecret, bob_sharedsecret);
+impl std::fmt::Debug for SharedSecret {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "decaf377_ka::SharedSecret({})",
+            hex::encode(&self.0[..])
+        ))
     }
 }

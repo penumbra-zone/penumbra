@@ -2,7 +2,7 @@ use ark_ff::UniformRand;
 use rand_core::{CryptoRng, RngCore};
 
 use decaf377::{Fq, Fr};
-use decaf377_ka::{EphemeralPublicKey, EphemeralSecretKey};
+use decaf377_ka::{Public, Secret};
 
 use crate::addresses::PaymentAddress;
 use crate::note;
@@ -14,7 +14,7 @@ pub struct Body {
     pub value_commitment: value::Commitment,
     // Note commitment.
     pub note_commitment: note::Commitment,
-    pub ephemeral_key: EphemeralPublicKey,
+    pub ephemeral_key: Public,
     // TODO: Encrypted note
     // TODO: Proof
 }
@@ -31,8 +31,8 @@ impl Body {
         let _note = Note::new(&dest, &value, &note_blinding);
         // TODO: Encrypt note here and add to a field in the Body struct (later).
 
-        let esk = EphemeralSecretKey::generate(&mut rng);
-        let ephemeral_key = esk.derive_public();
+        let esk = Secret::new(&mut rng);
+        let ephemeral_key = esk.public();
 
         Self {
             value_commitment,

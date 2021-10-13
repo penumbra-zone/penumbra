@@ -9,3 +9,9 @@ edition = "2018"
 ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 rand_core = { version = "0.6.3", features = ["getrandom"] }
+thiserror = "1"
+hex = "0.4"
+zeroize = "1.4"
+
+[dev-dependencies]
+proptest = "1"
