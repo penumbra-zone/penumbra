@@ -42,13 +42,8 @@ impl SpendKey {
             hasher.update(&[0; 1]);
             let hash_result = hasher.finalize();
 
-            let ask_bytes: [u8; SPENDSEED_LEN_BYTES] = hash_result.as_bytes()
-                [0..SPENDSEED_LEN_BYTES]
-                .try_into()
-                .expect("hash is long enough to convert to array");
-
-            let field_elem = Fr::from_le_bytes_mod_order(&ask_bytes);
-
+            // XXX: add Fr constructor to SigningKey
+            let field_elem = Fr::from_le_bytes_mod_order(hash_result.as_bytes());
             SigningKey::try_from(field_elem.to_bytes()).expect("can create SigningKey")
         };
 
