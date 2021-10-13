@@ -1,7 +1,7 @@
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryInto;
 
 use ark_ff::PrimeField;
-use decaf377::{self, FrExt};
+use decaf377;
 use rand_core::{CryptoRng, RngCore};
 
 use crate::Fr;
@@ -42,9 +42,7 @@ impl SpendKey {
             hasher.update(&[0; 1]);
             let hash_result = hasher.finalize();
 
-            // XXX: add Fr constructor to SigningKey
-            let field_elem = Fr::from_le_bytes_mod_order(hash_result.as_bytes());
-            SigningKey::try_from(field_elem.to_bytes()).expect("can create SigningKey")
+            SigningKey::new_from_field(Fr::from_le_bytes_mod_order(hash_result.as_bytes()))
         };
 
         let nsk = {
