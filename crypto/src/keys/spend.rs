@@ -4,11 +4,14 @@ use ark_ff::PrimeField;
 use decaf377;
 use rand_core::{CryptoRng, RngCore};
 
-use crate::Fr;
+use crate::{
+    rdsa::{SigningKey, SpendAuth},
+    Fr,
+};
 
 use super::{
     FullViewingKey, NullifierDerivingKey, NullifierPrivateKey, OutgoingViewingKey, ProofAuthKey,
-    SigningKey, SpendAuth, OVK_LEN_BYTES,
+    OVK_LEN_BYTES,
 };
 
 pub const SPENDSEED_LEN_BYTES: usize = 32;

@@ -18,8 +18,6 @@ pub use view::{
     FullViewingKey, IncomingViewingKey, OutgoingViewingKey, IVK_LEN_BYTES, OVK_LEN_BYTES,
 };
 
-pub use decaf377_rdsa::{Binding, SigningKey, SpendAuth, VerificationKey};
-
 #[cfg(test)]
 mod tests {
     use super::*;

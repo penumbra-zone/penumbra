@@ -1,12 +1,15 @@
-use crate::Fr;
 use ark_ff::PrimeField;
+
+use crate::{
+    rdsa::{SpendAuth, VerificationKey},
+    Fr,
+};
 
 pub const OVK_LEN_BYTES: usize = 32;
 pub const IVK_LEN_BYTES: usize = 32;
 
 use super::{
-    Diversifier, NullifierDerivingKey, SpendAuth, TransmissionKey, VerificationKey, NK_LEN_BYTES,
-    SPENDSEED_LEN_BYTES,
+    Diversifier, NullifierDerivingKey, TransmissionKey, NK_LEN_BYTES, SPENDSEED_LEN_BYTES,
 };
 
 /// An `IncomingViewingKey` allows one to identify incoming notes.

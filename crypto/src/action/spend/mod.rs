@@ -3,9 +3,10 @@ use rand_core::{CryptoRng, RngCore};
 
 use decaf377::Fr;
 
-use crate::keys::{SigningKey, SpendAuth, VerificationKey};
-use crate::nullifier::Nullifier;
-use crate::value;
+use crate::{
+    rdsa::{SigningKey, SpendAuth, VerificationKey},
+    value, Nullifier,
+};
 
 pub struct Body {
     pub value_commitment: value::Commitment,
