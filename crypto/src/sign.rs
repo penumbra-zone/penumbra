@@ -1,2 +1,0 @@
-// BindingSig
-// AuthSig

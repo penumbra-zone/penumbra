@@ -6,14 +6,12 @@ pub use decaf377_rdsa as rdsa;
 pub mod action;
 pub mod addresses;
 pub mod asset;
-pub mod error;
 pub mod keys;
 pub mod memo;
 pub mod merkle;
 pub mod note;
 pub mod nullifier;
 pub mod proofs;
-pub mod sign;
 pub mod value;
 
 mod poseidon_hash;
