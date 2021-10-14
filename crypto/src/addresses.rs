@@ -4,6 +4,7 @@ use decaf377;
 use crate::{ka, keys::Diversifier, Fq};
 
 /// A valid payment address.
+#[derive(Clone)]
 pub struct PaymentAddress {
     diversifier: Diversifier,
     diversified_generator: decaf377::Element,

@@ -5,5 +5,5 @@ mod constants;
 mod error;
 mod hash;
 mod node;
-mod proof;
+pub mod proof;
 mod tree;

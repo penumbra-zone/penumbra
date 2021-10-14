@@ -1,4 +1,21 @@
-// Memo - not inside the Note (plaintext)
+use crate::{
+    addresses::PaymentAddress,
+    constants::{MEMO_CIPHERTEXT_LEN_BYTES, MEMO_LEN_BYTES},
+};
 
-// MemoCiphertext
-// 16 bytes of MAC
+// The memo is stored separately from the `Note`.
+pub struct MemoPlaintext([u8; MEMO_LEN_BYTES]);
+
+impl Default for MemoPlaintext {
+    fn default() -> MemoPlaintext {
+        MemoPlaintext([0u8; MEMO_LEN_BYTES])
+    }
+}
+
+impl MemoPlaintext {
+    pub fn encrypt(&self, _key: &PaymentAddress) -> MemoCiphertext {
+        todo!()
+    }
+}
+
+pub struct MemoCiphertext([u8; MEMO_CIPHERTEXT_LEN_BYTES]);

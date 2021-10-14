@@ -19,14 +19,15 @@ message TransactionBody {
   // The chain this transaction is intended for.  Including this prevents
   // replaying a transaction on one chain onto a different chain.
   string chain_id = 4;
+  // The transaction fee.
+  Fee fee = 5;
 }
 
 // A state change performed by a transaction.
 message Action {
   oneof action {
-    Fee fee = 1;
-    Spend spend = 2;
-    Output output = 3;
+    Spend spend = 1;
+    Output output = 2;
   }
 }
 

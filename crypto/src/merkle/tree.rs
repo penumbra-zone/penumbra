@@ -192,6 +192,7 @@ mod tests {
     use crate::merkle::constants::MERKLE_DEPTH;
     use crate::merkle::hash::merkle_hash;
     use crate::value::Value;
+    use crate::Note;
 
     fn note_commitment_factory(n: usize) -> Vec<note::Commitment> {
         let mut rng = OsRng;
@@ -212,7 +213,8 @@ mod tests {
         let mut cms = Vec::<note::Commitment>::new();
         for _i in 0..n {
             let note_blinding = Fq::rand(&mut rng);
-            let cm = note::Commitment::new(&dest, &value, &note_blinding).unwrap();
+            let note = Note::new(dest.clone(), value, note_blinding);
+            let cm = note.commit().unwrap();
             cms.push(cm);
         }
         cms

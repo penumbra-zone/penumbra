@@ -8,14 +8,15 @@ use crate::{addresses::PaymentAddress, ka, keys, poseidon_hash::hash_5, Fq, Valu
 
 /// A plaintext Penumbra note.
 pub struct Note {
-    // Diversifier. 11 bytes.
-    pub diversifier: keys::Diversifier,
-
     // Value (32-byte asset ID plus 32-byte amount). 64 bytes.
     pub value: Value,
 
     // Commitment trapdoor. 32 bytes.
     pub note_blinding: Fq,
+
+    // Destination
+    // TODO: only the diversified base and transmission key of address needed?
+    pub dest: PaymentAddress,
 }
 
 /// The domain separator used to generate note commitments.
@@ -24,36 +25,34 @@ static NOTECOMMIT_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
 });
 
 impl Note {
-    pub fn new(dest: &PaymentAddress, value: Value, note_blinding: Fq) -> Self {
+    pub fn new(dest: PaymentAddress, value: Value, note_blinding: Fq) -> Self {
         Note {
-            diversifier: *dest.diversifier(),
             value: value,
             note_blinding: note_blinding,
+            dest,
         }
+    }
+
+    pub fn diversifier(&self) -> &keys::Diversifier {
+        self.dest.diversifier()
+    }
+
+    pub fn commit(&self) -> Result<Commitment, ka::Error> {
+        let commit = hash_5(
+            &NOTECOMMIT_DOMAIN_SEP,
+            (
+                self.note_blinding,
+                self.value.amount.into(),
+                self.value.asset_id.0,
+                self.dest.diversified_generator().compress_to_field(),
+                *self.dest.tk_s(),
+            ),
+        );
+
+        Ok(Commitment(commit))
     }
 }
 
 // Note commitment.
 #[derive(Clone, Copy)]
 pub struct Commitment(pub Fq);
-
-impl Commitment {
-    pub fn new(
-        dest: &PaymentAddress,
-        value: &Value,
-        note_blinding: &Fq,
-    ) -> Result<Self, ka::Error> {
-        let commit = hash_5(
-            &NOTECOMMIT_DOMAIN_SEP,
-            (
-                *note_blinding,
-                value.amount.into(),
-                value.asset_id.0,
-                dest.diversified_generator().compress_to_field(),
-                *dest.tk_s(),
-            ),
-        );
-
-        Ok(Self(commit))
-    }
-}
