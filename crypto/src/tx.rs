@@ -4,7 +4,7 @@ use rand_core::{CryptoRng, RngCore};
 use crate::{
     addresses::PaymentAddress,
     asset,
-    keys::{Diversifier, OutgoingViewingKey, SpendKey},
+    keys::{OutgoingViewingKey, SpendKey},
     memo::MemoPlaintext,
     merkle::proof::MerklePath,
     Note, Output, Spend, Value,
@@ -38,13 +38,12 @@ impl TransactionBuilder {
     pub fn add_spend<R: RngCore + CryptoRng>(
         &mut self,
         rng: &mut R,
-        diversifier: &Diversifier,
         spend_key: SpendKey,
         merkle_path: MerklePath,
         note: Note,
     ) {
         self.balance -= note.value.amount as i64;
-        let spend = Spend::new(rng, diversifier, spend_key, merkle_path, note);
+        let spend = Spend::new(rng, spend_key, merkle_path, note);
         self.spends.push(spend);
     }
 
@@ -98,13 +97,13 @@ pub struct Transaction {}
 mod tests {
     use super::*;
 
+    use crate::keys::Diversifier;
     use rand_core::OsRng;
 
     // Not really a test - just to exercise the code path for now
     #[test]
     fn test_transaction_create() {
         let mut rng = OsRng;
-        let diversifier = Diversifier::generate(&mut rng);
         let sk_sender = SpendKey::generate(&mut rng);
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.outgoing();
@@ -121,6 +120,7 @@ mod tests {
         let pen_trace = b"pen";
         let pen_id = asset::Id::from(&pen_trace[..]);
         let memo = MemoPlaintext::default();
-        builder.add_output(&mut rng, &dest, pen_id, 10, memo, ivk_sender);
+        builder.add_output(&mut rng, dest, pen_id, 10, memo, ivk_sender);
+        builder.set_fee(10);
     }
 }

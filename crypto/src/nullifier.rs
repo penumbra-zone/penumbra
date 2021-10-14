@@ -2,6 +2,7 @@ pub struct Nullifier {}
 
 impl Nullifier {
     pub fn new() -> Self {
-        todo!()
+        // TODO when we have merkle proof implemented
+        Nullifier {}
     }
 }

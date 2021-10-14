@@ -1,11 +1,12 @@
 use ark_ff::UniformRand;
 use rand_core::{CryptoRng, RngCore};
 
-use decaf377::Fr;
+use crate::Fr;
 
 use crate::{
-    keys::{Diversifier, SpendKey},
+    keys::SpendKey,
     merkle::proof::MerklePath,
+    proofs::transparent::SpendProof,
     rdsa::{Signature, SigningKey, SpendAuth, VerificationKey},
     value, Note, Nullifier,
 };
@@ -18,15 +19,17 @@ pub struct Spend {
 impl Spend {
     pub fn new<R: RngCore + CryptoRng>(
         mut rng: R,
-        diversifier: &Diversifier,
         spend_key: SpendKey,
-        merkle_path: MerklePath,
+        _merkle_path: MerklePath,
         note: Note,
     ) -> Self {
-        // Derive nullifier from MerklePath and key
-        let nullifier = todo!();
+        // TODO: Derive nullifier from note commitment, note position, and
+        // nullifier deriving key
+        // See p.55 ZCash spec
+        let nullifier = Nullifier::new();
 
-        let value_commitment = todo!(); //note.value.commit();
+        let v_blinding = Fr::rand(&mut rng);
+        let value_commitment = note.value.commit(v_blinding);
 
         let body = Body::new(
             &mut rng,
@@ -35,7 +38,10 @@ impl Spend {
             *spend_key.spend_auth_key(),
         );
 
-        let auth_sig = todo!();
+        let spend_auth_randomizer = Fr::rand(&mut rng);
+        let rsk = spend_key.spend_auth_key().randomize(&spend_auth_randomizer);
+
+        let auth_sig = rsk.sign(rng, &body.serialize());
 
         Spend { body, auth_sig }
     }
@@ -46,7 +52,7 @@ pub struct Body {
     pub nullifier: Nullifier,
     // Randomized verification key.
     pub rk: VerificationKey<SpendAuth>,
-    // TODO: Proof
+    pub proof: SpendProof,
 }
 
 impl Body {
@@ -58,14 +64,17 @@ impl Body {
     ) -> Body {
         let a = Fr::rand(&mut rng);
         let rk = ask.randomize(&a).into();
+        let proof = SpendProof::new();
         Body {
             value_commitment,
             nullifier,
             rk,
+            proof,
         }
     }
 
-    pub fn sign(&self) -> Signature<SpendAuth> {
-        todo!()
+    // xx Replace with proto serialization into `SpendBody`?
+    pub fn serialize(&self) -> &[u8] {
+        todo!();
     }
 }

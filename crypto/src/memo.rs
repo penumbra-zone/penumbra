@@ -13,7 +13,7 @@ impl Default for MemoPlaintext {
 }
 
 impl MemoPlaintext {
-    pub fn encrypt(&self, key: &PaymentAddress) -> MemoCiphertext {
+    pub fn encrypt(&self, _key: &PaymentAddress) -> MemoCiphertext {
         todo!()
     }
 }
