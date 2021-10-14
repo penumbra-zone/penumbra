@@ -1,3 +1,4 @@
+use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
 
 use crate::{
@@ -16,9 +17,9 @@ pub struct TransactionBuilder {
     // Notes we'll create in this transaction.
     outputs: Vec<Output>,
     // Transaction fee.
-    fee: u32,
+    fee: u64,
     // Total value changed in this transaction.
-    balance: u32,
+    balance: i64,
     // Put chain_id and anchor in here too?
 }
 
@@ -41,6 +42,7 @@ impl TransactionBuilder {
         merkle_path: MerklePath,
         note: Note,
     ) {
+        self.balance -= note.value.amount as i64;
         let spend = Spend::new(rng, diversifier, spend_key, merkle_path, note);
         self.spends.push(spend);
     }
@@ -50,28 +52,31 @@ impl TransactionBuilder {
         &mut self,
         rng: &mut R,
         dest: &PaymentAddress,
-        value: Value,
+        asset_id: asset::Id,
+        amount: u64,
         memo: MemoPlaintext,
         ovk: &OutgoingViewingKey,
     ) {
-        let output = Output::new(rng, dest, value, memo, ovk);
+        let value_to_send = Value { amount, asset_id };
+        self.balance += value_to_send.amount as i64;
+        let output = Output::new(rng, dest, value_to_send, memo, ovk);
         self.outputs.push(output);
     }
 
     /// Set the transaction fee in PEN.
-    pub fn set_fee(&mut self, fee: u32) {
+    pub fn set_fee(&mut self, fee: u64) {
+        self.balance -= fee as i64;
         self.fee = fee
     }
 
-    /// Add and subtract value commitments to compute transaction balance.
-    pub fn compute_balance_check() -> Value {
-        // Balance is in PEN?
-        // Check all assets are the same?
-        todo!()
-    }
-
-    pub fn finalize() -> TransactionBody {
-        // Randomize outputs
+    // xx Uses rand::RngCore instead of RngCore
+    pub fn finalize<R: CryptoRng + rand::RngCore + rand::seq::SliceRandom>(
+        &mut self,
+        rng: &mut R,
+    ) -> TransactionBody {
+        // Randomize outputs to minimize info leakage.
+        self.outputs.shuffle(rng);
+        self.spends.shuffle(rng);
 
         // Apply sig
         todo!();
@@ -114,13 +119,7 @@ mod tests {
 
         let pen_trace = b"pen";
         let pen_id = asset::Id::from(&pen_trace[..]);
-        let value_to_send = Value {
-            amount: 10,
-            asset_id: pen_id,
-        };
         let memo = MemoPlaintext::default();
-
-        // xx Kind of awkward api, pass in ID and amount instead?
-        builder.add_output(&mut rng, &dest, value_to_send, memo, ivk_sender);
+        builder.add_output(&mut rng, &dest, pen_id, 10, memo, ivk_sender);
     }
 }

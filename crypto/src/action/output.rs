@@ -22,7 +22,7 @@ impl Output {
         dest: &PaymentAddress,
         value: Value,
         memo: MemoPlaintext, // Better to be Option<MemoPlaintext>?
-        ovk: &OutgoingViewingKey,
+        _ovk: &OutgoingViewingKey,
     ) -> Self {
         let body = Body::new(&mut rng, value, dest);
 
