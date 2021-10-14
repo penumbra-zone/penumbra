@@ -29,6 +29,7 @@ impl TransactionBuilder {
             spends: Vec::<Spend>::new(),
             outputs: Vec::<Output>::new(),
             fee: 0,
+            // xx Per asset?
             balance: 0,
         }
     }
@@ -51,7 +52,7 @@ impl TransactionBuilder {
     pub fn add_output<R: RngCore + CryptoRng>(
         &mut self,
         rng: &mut R,
-        dest: &PaymentAddress,
+        dest: PaymentAddress,
         asset_id: asset::Id,
         amount: u64,
         memo: MemoPlaintext,

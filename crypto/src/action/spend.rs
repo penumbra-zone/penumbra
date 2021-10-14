@@ -26,7 +26,7 @@ impl Spend {
         // Derive nullifier from MerklePath and key
         let nullifier = todo!();
 
-        let value_commitment = todo!();
+        let value_commitment = todo!(); //note.value.commit();
 
         let body = Body::new(
             &mut rng,
