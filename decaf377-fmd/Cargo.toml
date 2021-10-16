@@ -1,0 +1,18 @@
+[package]
+name = "decaf377-fmd"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
+ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
+ark-serialize = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
+thiserror = "1"
+rand_core = { version = "0.6.3", features = ["getrandom"] }
+bitvec = "0.22"
+blake2b_simd = "0.5"
+
+[dev-dependencies]
+proptest = "1"
