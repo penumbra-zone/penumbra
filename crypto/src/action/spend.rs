@@ -4,6 +4,7 @@ use rand_core::{CryptoRng, RngCore};
 use crate::Fr;
 
 use crate::{
+    merkle,
     proofs::transparent::SpendProof,
     rdsa::{Signature, SigningKey, SpendAuth, VerificationKey},
     value, Nullifier,
@@ -29,10 +30,14 @@ impl Body {
         nullifier: Nullifier,
         ask: SigningKey<SpendAuth>,
         spend_auth_randomizer: Fr,
+        merkle_path: merkle::Path,
     ) -> Body {
         let a = Fr::rand(rng);
         let rk = ask.randomize(&a).into();
-        let proof = SpendProof::new(spend_auth_randomizer);
+        let proof = SpendProof {
+            spend_auth_randomizer,
+            merkle_path,
+        };
         Body {
             value_commitment,
             nullifier,

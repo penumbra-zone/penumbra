@@ -36,7 +36,22 @@ pub fn hash_1(domain_separator: &Fq, value: Fq) -> Fq {
     out_vec.into_iter().next().unwrap()
 }
 
-pub fn hash_4(domain_separator: &Fq, value: (Fq, Fq, Fq, Fq)) -> Fq {
+pub fn hash_2(domain_separator: &Fq, value: (Fq, Fq)) -> Fq {
+    let mut sponge = PoseidonSponge::new(&poseidon377::params::rate_2());
+    assert_eq!(sponge.state.len(), 3);
+    sponge.state[1] = *domain_separator;
+
+    // now use absorb to set the rate (hopefully)
+    sponge.absorb(&value.0);
+    sponge.absorb(&value.1);
+
+    // and squeeze an element
+    let out_vec = sponge.squeeze_native_field_elements(1);
+
+    out_vec.into_iter().next().unwrap()
+}
+
+pub fn _hash_4(domain_separator: &Fq, value: (Fq, Fq, Fq, Fq)) -> Fq {
     let mut sponge = PoseidonSponge::new(&poseidon377::params::rate_4());
     assert_eq!(sponge.state.len(), 5);
     sponge.state[1] = *domain_separator;
