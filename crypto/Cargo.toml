@@ -10,6 +10,7 @@ thiserror = "1"
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 decaf377-ka = { path = "../decaf377-ka/" }
 decaf377-rdsa = { git = "https://github.com/penumbra-zone/decaf377-rdsa" }
+incrementalmerkletree = { git = "https://github.com/penumbra-zone/incrementalmerkletree" }
 poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377" }
 hex = "0.4"
 blake2b_simd = "0.5"
