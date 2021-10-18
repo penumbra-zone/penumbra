@@ -1,13 +1,16 @@
+use ark_ff::UniformRand;
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
 
 use crate::{
+    action::{output, spend},
     addresses::PaymentAddress,
     asset,
     keys::{OutgoingViewingKey, SpendKey},
     memo::MemoPlaintext,
     merkle::proof::MerklePath,
-    Note, Output, Spend, Value,
+    nullifier::Nullifier,
+    Fr, Note, Output, Spend, Value,
 };
 
 /// Used to construct a Penumbra transaction.
@@ -29,11 +32,34 @@ impl TransactionBuilder {
         &mut self,
         rng: &mut R,
         spend_key: SpendKey,
-        merkle_path: MerklePath,
+        _merkle_path: MerklePath,
         note: Note,
     ) {
         self.balance -= note.value.amount as i64;
-        let spend = Spend::new(rng, spend_key, merkle_path, note);
+
+        // TODO: Derive nullifier from note commitment, note position, and
+        // nullifier deriving key
+        // See p.55 ZCash spec
+        let nullifier = Nullifier::new();
+
+        let v_blinding = Fr::rand(rng);
+        let value_commitment = note.value.commit(v_blinding);
+
+        let spend_auth_randomizer = Fr::rand(rng);
+        let rsk = spend_key.spend_auth_key().randomize(&spend_auth_randomizer);
+
+        let body = spend::Body::new(
+            rng,
+            value_commitment,
+            nullifier,
+            *spend_key.spend_auth_key(),
+            spend_auth_randomizer,
+        );
+
+        let auth_sig = rsk.sign(rng, &body.serialize());
+
+        let spend = Spend { body, auth_sig };
+
         self.spends.push(spend);
     }
 
@@ -45,11 +71,27 @@ impl TransactionBuilder {
         asset_id: asset::Id,
         amount: u64,
         memo: MemoPlaintext,
-        ovk: &OutgoingViewingKey,
+        _ovk: &OutgoingViewingKey,
     ) {
         let value_to_send = Value { amount, asset_id };
         self.balance += value_to_send.amount as i64;
-        let output = Output::new(rng, dest, value_to_send, memo, ovk);
+
+        let body = output::Body::new(rng, value_to_send, dest);
+
+        // Encrypted to receipient diversified payment addr?
+        //let encrypted_memo = memo.encrypt(dest);
+        // In Sapling, it seems like the memo field is encrypted as part of the
+        // note, but in our protos we have the memo broken out.
+        // TEMP: Transparent memos
+
+        //let ovk_wrapped_key = todo!();
+
+        let output = Output {
+            body,
+            memo,
+            //encrypted_memo,
+            // ovk_wrapped_key,
+        };
         self.outputs.push(output);
     }
 
