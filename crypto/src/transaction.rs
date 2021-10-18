@@ -1,12 +1,19 @@
 use ark_ff::Zero;
 
-use crate::{merkle, Fr, Output, Spend};
-
-use crate::builder::TransactionBuilder;
+use crate::{
+    action::Action,
+    builder::TransactionBuilder,
+    merkle,
+    rdsa::{Binding, Signature},
+    Fr, Output, Spend,
+};
 
 pub struct TransactionBody {
+    pub actions: Vec<Action>,
     pub merkle_root: merkle::Root,
-    // TK from proto
+    pub expiry_height: u32,
+    pub chain_id: String,
+    pub fee: u64,
 }
 
 impl TransactionBody {
@@ -15,17 +22,24 @@ impl TransactionBody {
     }
 }
 
-pub struct Transaction {}
+// temp: remove dead code when Transaction fields are read
+#[allow(dead_code)]
+pub struct Transaction {
+    transaction_body: TransactionBody,
+    binding_sig: Signature<Binding>,
+}
 
 impl Transaction {
     /// Start building a transaction relative to a given [`merkle::Root`].
     pub fn build_with_root(merkle_root: merkle::Root) -> TransactionBuilder {
         TransactionBuilder {
-            spends: Vec::<Spend>::new(),
-            outputs: Vec::<Output>::new(),
+            spends: Vec::<Action>::new(),
+            outputs: Vec::<Action>::new(),
             fee: None,
             synthetic_blinding_factor: Fr::zero(),
             merkle_root,
+            expiry_height: None,
+            chain_id: None,
         }
     }
 }

@@ -71,8 +71,8 @@ message Output {
 message OutputBody {
   // A commitment to the value of the output note. 32 bytes.
   bytes cv = 1;
-  // The u-coordinate of the note commitment for the output note. 32 bytes.
-  bytes cmu = 2;
+  // The note commitment for the output note. 32 bytes.
+  bytes cm = 2;
   // The encoding of an ephemeral public key. 32 bytes.
   bytes ephemeral_key = 3;
   // An encryption of the newly created note. 80 bytes.
