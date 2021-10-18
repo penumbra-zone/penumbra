@@ -1,17 +1,11 @@
 //! Transparent proofs for `MVP1` of the Penumbra system.
+use crate::merkle;
 use crate::Fr;
 
 pub struct SpendProof {
-    _spend_auth_randomizer: Fr,
+    pub spend_auth_randomizer: Fr,
+    pub merkle_path: merkle::Path,
     // more TK
 }
 
-impl SpendProof {
-    pub fn new(spend_auth_randomizer: Fr) -> Self {
-        Self {
-            _spend_auth_randomizer: spend_auth_randomizer,
-        }
-    }
-}
-
-// OutputProof
+pub struct OutputProof {}

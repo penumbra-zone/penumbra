@@ -1,14 +1,13 @@
-use ark_ff::UniformRand;
+use ark_ff::{UniformRand, Zero};
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
 
 use crate::{
     action::{output, spend},
     addresses::PaymentAddress,
-    asset,
     keys::{OutgoingViewingKey, SpendKey},
     memo::MemoPlaintext,
-    merkle::proof::MerklePath,
+    merkle,
     nullifier::Nullifier,
     Fr, Note, Output, Spend, Value,
 };
@@ -21,22 +20,21 @@ pub struct TransactionBuilder {
     outputs: Vec<Output>,
     // Transaction fee. None if unset.
     fee: Option<u64>,
-    // Total value changed in this transaction.
-    balance: i64,
-    // Put chain_id and anchor in here too?
+    // Sum of blinding factors for each value commitment.
+    synthetic_blinding_factor: Fr,
+    // Put chain_id in here too?
+    merkle_root: merkle::Root,
 }
 
 impl TransactionBuilder {
     /// Create a new `Spend` to spend an existing note.
     pub fn add_spend<R: RngCore + CryptoRng>(
-        &mut self,
+        mut self,
         rng: &mut R,
         spend_key: SpendKey,
-        _merkle_path: MerklePath,
+        merkle_path: merkle::Path,
         note: Note,
-    ) {
-        self.balance -= note.value.amount as i64;
-
+    ) -> Self {
         // TODO: Derive nullifier from note commitment, note position, and
         // nullifier deriving key
         // See p.55 ZCash spec
@@ -44,6 +42,8 @@ impl TransactionBuilder {
 
         let v_blinding = Fr::rand(rng);
         let value_commitment = note.value.commit(v_blinding);
+        // We add to the transaction's value balance.
+        self.synthetic_blinding_factor += v_blinding;
 
         let spend_auth_randomizer = Fr::rand(rng);
         let rsk = spend_key.spend_auth_key().randomize(&spend_auth_randomizer);
@@ -54,6 +54,7 @@ impl TransactionBuilder {
             nullifier,
             *spend_key.spend_auth_key(),
             spend_auth_randomizer,
+            merkle_path,
         );
 
         let auth_sig = rsk.sign(rng, &body.serialize());
@@ -61,22 +62,24 @@ impl TransactionBuilder {
         let spend = Spend { body, auth_sig };
 
         self.spends.push(spend);
+
+        self
     }
 
     /// Create a new `Output` to create a new note.
     pub fn add_output<R: RngCore + CryptoRng>(
-        &mut self,
+        mut self,
         rng: &mut R,
         dest: &PaymentAddress,
-        asset_id: asset::Id,
-        amount: u64,
+        value_to_send: Value,
         memo: MemoPlaintext,
         _ovk: &OutgoingViewingKey,
-    ) {
-        let value_to_send = Value { amount, asset_id };
-        self.balance += value_to_send.amount as i64;
+    ) -> Self {
+        let v_blinding = Fr::rand(rng);
+        // We subtract from the transaction's value balance.
+        self.synthetic_blinding_factor -= v_blinding;
 
-        let body = output::Body::new(rng, value_to_send, dest);
+        let body = output::Body::new(rng, value_to_send, v_blinding, dest);
 
         // Encrypted to receipient diversified payment addr?
         //let encrypted_memo = memo.encrypt(dest);
@@ -93,41 +96,34 @@ impl TransactionBuilder {
             // ovk_wrapped_key,
         };
         self.outputs.push(output);
+
+        self
     }
 
     /// Set the transaction fee in PEN.
-    pub fn set_fee(&mut self, fee: u64) {
-        self.balance -= fee as i64;
-        self.fee = Some(fee)
+    pub fn set_fee(mut self, fee: u64) -> Self {
+        self.fee = Some(fee);
+        self
     }
 
-    // xx Uses rand::RngCore instead of RngCore
-    pub fn finalize<R: CryptoRng + rand::RngCore + rand::seq::SliceRandom>(
-        &mut self,
-        rng: &mut R,
-    ) -> TransactionBody {
+    pub fn finalize<R: CryptoRng + RngCore>(mut self, rng: &mut R) -> Transaction {
         // Randomize outputs to minimize info leakage.
         self.outputs.shuffle(rng);
         self.spends.shuffle(rng);
+
+        let _tx_body = TransactionBody {
+            merkle_root: self.merkle_root,
+        };
 
         // Apply sig
         todo!();
     }
 }
 
-impl Default for TransactionBuilder {
-    fn default() -> Self {
-        Self {
-            spends: Vec::<Spend>::new(),
-            outputs: Vec::<Output>::new(),
-            fee: None,
-            // xx Per asset?
-            balance: 0,
-        }
-    }
+pub struct TransactionBody {
+    pub merkle_root: merkle::Root,
+    // TK from proto
 }
-
-pub struct TransactionBody {}
 
 impl TransactionBody {
     pub fn sign() -> Transaction {
@@ -138,8 +134,15 @@ impl TransactionBody {
 pub struct Transaction {}
 
 impl Transaction {
-    pub fn builder() -> TransactionBuilder {
-        Default::default()
+    /// Start building a transaction relative to a given [`merkle::Root`].
+    pub fn build_with_root(merkle_root: merkle::Root) -> TransactionBuilder {
+        TransactionBuilder {
+            spends: Vec::<Spend>::new(),
+            outputs: Vec::<Output>::new(),
+            fee: None,
+            synthetic_blinding_factor: Fr::zero(),
+            merkle_root,
+        }
     }
 }
 
@@ -148,6 +151,7 @@ mod tests {
     use super::*;
 
     use crate::keys::Diversifier;
+    use crate::Fq;
     use rand_core::OsRng;
 
     // Not really a test - just to exercise the code path for now
@@ -164,13 +168,20 @@ mod tests {
         let ivk_recipient = fvk_recipient.incoming();
         let dest = PaymentAddress::new(ivk_recipient, diversifier_recipient);
 
-        let mut builder = Transaction::builder();
-        builder.set_fee(20);
-
-        let pen_trace = b"pen";
-        let pen_id = asset::Id::from(&pen_trace[..]);
-        let memo = MemoPlaintext::default();
-        builder.add_output(&mut rng, &dest, pen_id, 10, memo, ivk_sender);
-        builder.set_fee(10);
+        let merkle_root = merkle::Root(Fq::zero());
+        let _tx_builder = Transaction::build_with_root(merkle_root)
+            .set_fee(20)
+            .add_output(
+                &mut rng,
+                &dest,
+                Value {
+                    amount: 10,
+                    asset_id: b"pen".as_ref().into(),
+                },
+                MemoPlaintext::default(),
+                ivk_sender,
+            );
+        // Commented out since .finalize() will currently fail the test.
+        //let tx = tx_builder.finalize(&mut rng);
     }
 }

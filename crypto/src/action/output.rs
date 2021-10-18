@@ -24,9 +24,13 @@ pub struct Body {
 }
 
 impl Body {
-    pub fn new<R: RngCore + CryptoRng>(rng: &mut R, value: Value, dest: &PaymentAddress) -> Body {
+    pub fn new<R: RngCore + CryptoRng>(
+        rng: &mut R,
+        value: Value,
+        v_blinding: Fr,
+        dest: &PaymentAddress,
+    ) -> Body {
         // TODO: p. 43 Spec. Decide whether to do leadByte 0x01 method or 0x02 or other.
-        let v_blinding = Fr::rand(rng);
         let value_commitment = value.commit(v_blinding);
 
         let note_blinding = Fq::rand(rng);
