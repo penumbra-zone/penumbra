@@ -1,7 +1,9 @@
-use crate::{
-    addresses::PaymentAddress,
-    constants::{MEMO_CIPHERTEXT_LEN_BYTES, MEMO_LEN_BYTES},
-};
+use crate::addresses::PaymentAddress;
+
+pub const MEMO_CIPHERTEXT_LEN_BYTES: usize = 528;
+
+// This is the `MEMO_CIPHERTEXT_LEN_BYTES` - MAC size (16 bytes).
+pub const MEMO_LEN_BYTES: usize = 512;
 
 // The memo is stored separately from the `Note`.
 pub struct MemoPlaintext([u8; MEMO_LEN_BYTES]);
