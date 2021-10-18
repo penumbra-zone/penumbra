@@ -12,7 +12,7 @@ pub mod merkle;
 pub mod note;
 pub mod nullifier;
 pub mod proofs;
-pub mod tx;
+pub mod transaction;
 pub mod value;
 
 mod poseidon_hash;
