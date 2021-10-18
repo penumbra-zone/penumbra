@@ -6,6 +6,8 @@ use crate::{
     Fr, Note, Value,
 };
 
+pub const OVK_WRAPPED_LEN_BYTES: usize = 80;
+
 pub struct Output {
     pub body: Body,
     //pub encrypted_memo: MemoCiphertext,
@@ -17,7 +19,7 @@ pub struct Output {
 impl Output {
     pub fn new<R: RngCore + CryptoRng>(
         mut rng: R,
-        dest: PaymentAddress,
+        dest: &PaymentAddress,
         value: Value,
         memo: MemoPlaintext, // Better to be Option<MemoPlaintext>?
         _ovk: &OutgoingViewingKey,
@@ -52,7 +54,7 @@ pub struct Body {
 }
 
 impl Body {
-    pub fn new<R: RngCore + CryptoRng>(mut rng: R, value: Value, dest: PaymentAddress) -> Body {
+    pub fn new<R: RngCore + CryptoRng>(mut rng: R, value: Value, dest: &PaymentAddress) -> Body {
         // TODO: p. 43 Spec. Decide whether to do leadByte 0x01 method or 0x02 or other.
         let v_blinding = Fr::rand(&mut rng);
         let value_commitment = value.commit(v_blinding);
@@ -60,7 +62,7 @@ impl Body {
         let note_blinding = Fq::rand(&mut rng);
 
         let note = Note::new(dest, value, note_blinding);
-        let note_commitment = note.commit().unwrap();
+        let note_commitment = note.commit();
         // TODO: Encrypt note here and add to a field in the Body struct (later).
 
         let esk = ka::Secret::new(&mut rng);

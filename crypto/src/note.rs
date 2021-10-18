@@ -1,7 +1,7 @@
 use ark_ff::PrimeField;
 use once_cell::sync::Lazy;
 
-use crate::{addresses::PaymentAddress, ka, keys, poseidon_hash::hash_5, Fq, Value};
+use crate::{addresses::PaymentAddress, keys, poseidon_hash::hash_5, Fq, Value};
 
 // TODO: Should have a `leadByte` as in Sapling and Orchard note plaintexts?
 // Do we need that in addition to the tx version?
@@ -25,11 +25,11 @@ static NOTECOMMIT_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
 });
 
 impl Note {
-    pub fn new(dest: PaymentAddress, value: Value, note_blinding: Fq) -> Self {
+    pub fn new(dest: &PaymentAddress, value: Value, note_blinding: Fq) -> Self {
         Note {
             value: value,
             note_blinding: note_blinding,
-            dest,
+            dest: dest.clone(),
         }
     }
 
@@ -37,7 +37,7 @@ impl Note {
         self.dest.diversifier()
     }
 
-    pub fn commit(&self) -> Result<Commitment, ka::Error> {
+    pub fn commit(&self) -> Commitment {
         let commit = hash_5(
             &NOTECOMMIT_DOMAIN_SEP,
             (
@@ -49,7 +49,7 @@ impl Note {
             ),
         );
 
-        Ok(Commitment(commit))
+        Commitment(commit)
     }
 }
 

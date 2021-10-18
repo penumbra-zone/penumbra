@@ -213,8 +213,8 @@ mod tests {
         let mut cms = Vec::<note::Commitment>::new();
         for _i in 0..n {
             let note_blinding = Fq::rand(&mut rng);
-            let note = Note::new(dest.clone(), value, note_blinding);
-            let cm = note.commit().unwrap();
+            let note = Note::new(&dest, value, note_blinding);
+            let cm = note.commit();
             cms.push(cm);
         }
         cms

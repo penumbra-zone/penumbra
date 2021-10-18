@@ -16,24 +16,14 @@ pub struct TransactionBuilder {
     spends: Vec<Spend>,
     // Notes we'll create in this transaction.
     outputs: Vec<Output>,
-    // Transaction fee.
-    fee: u64,
+    // Transaction fee. None if unset.
+    fee: Option<u64>,
     // Total value changed in this transaction.
     balance: i64,
     // Put chain_id and anchor in here too?
 }
 
 impl TransactionBuilder {
-    pub fn new() -> Self {
-        Self {
-            spends: Vec::<Spend>::new(),
-            outputs: Vec::<Output>::new(),
-            fee: 0,
-            // xx Per asset?
-            balance: 0,
-        }
-    }
-
     /// Create a new `Spend` to spend an existing note.
     pub fn add_spend<R: RngCore + CryptoRng>(
         &mut self,
@@ -51,7 +41,7 @@ impl TransactionBuilder {
     pub fn add_output<R: RngCore + CryptoRng>(
         &mut self,
         rng: &mut R,
-        dest: PaymentAddress,
+        dest: &PaymentAddress,
         asset_id: asset::Id,
         amount: u64,
         memo: MemoPlaintext,
@@ -66,7 +56,7 @@ impl TransactionBuilder {
     /// Set the transaction fee in PEN.
     pub fn set_fee(&mut self, fee: u64) {
         self.balance -= fee as i64;
-        self.fee = fee
+        self.fee = Some(fee)
     }
 
     // xx Uses rand::RngCore instead of RngCore
@@ -83,6 +73,18 @@ impl TransactionBuilder {
     }
 }
 
+impl Default for TransactionBuilder {
+    fn default() -> Self {
+        Self {
+            spends: Vec::<Spend>::new(),
+            outputs: Vec::<Output>::new(),
+            fee: None,
+            // xx Per asset?
+            balance: 0,
+        }
+    }
+}
+
 pub struct TransactionBody {}
 
 impl TransactionBody {
@@ -92,6 +94,12 @@ impl TransactionBody {
 }
 
 pub struct Transaction {}
+
+impl Transaction {
+    pub fn builder() -> TransactionBuilder {
+        Default::default()
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -114,13 +122,13 @@ mod tests {
         let ivk_recipient = fvk_recipient.incoming();
         let dest = PaymentAddress::new(ivk_recipient, diversifier_recipient);
 
-        let mut builder = TransactionBuilder::new();
+        let mut builder = Transaction::builder();
         builder.set_fee(20);
 
         let pen_trace = b"pen";
         let pen_id = asset::Id::from(&pen_trace[..]);
         let memo = MemoPlaintext::default();
-        builder.add_output(&mut rng, dest, pen_id, 10, memo, ivk_sender);
+        builder.add_output(&mut rng, &dest, pen_id, 10, memo, ivk_sender);
         builder.set_fee(10);
     }
 }
