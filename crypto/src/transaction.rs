@@ -111,7 +111,7 @@ impl TransactionBuilder {
         self.outputs.shuffle(rng);
         self.spends.shuffle(rng);
 
-        let _tx_body = TransactionBody {
+        let _transaction_body = TransactionBody {
             merkle_root: self.merkle_root,
         };
 
@@ -169,7 +169,7 @@ mod tests {
         let dest = PaymentAddress::new(ivk_recipient, diversifier_recipient);
 
         let merkle_root = merkle::Root(Fq::zero());
-        let _tx_builder = Transaction::build_with_root(merkle_root)
+        let _transaction_builder = Transaction::build_with_root(merkle_root)
             .set_fee(20)
             .add_output(
                 &mut rng,
@@ -182,6 +182,6 @@ mod tests {
                 ivk_sender,
             );
         // Commented out since .finalize() will currently fail the test.
-        //let tx = tx_builder.finalize(&mut rng);
+        //let transaction = transaction_builder.finalize(&mut rng);
     }
 }
