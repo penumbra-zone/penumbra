@@ -2,11 +2,14 @@ use ark_ff::UniformRand;
 use bytes::Bytes;
 use rand_core::{CryptoRng, RngCore};
 use std::convert::{TryFrom, TryInto};
-use thiserror;
 
 use penumbra_proto::{transaction, Protobuf};
 
 use crate::{
+    action::{
+        constants::{NOTE_ENCRYPTION_BYTES, OVK_WRAPPED_LEN_BYTES},
+        error::Error,
+    },
     addresses::PaymentAddress,
     ka,
     memo::MemoCiphertext,
@@ -14,29 +17,6 @@ use crate::{
     proofs::transparent::{OutputProof, OUTPUT_PROOF_LEN_BYTES},
     value, Fq, Fr, Note, Value,
 };
-
-#[derive(thiserror::Error, Debug)]
-pub enum Error {
-    #[error("Error converting from protobuf: field is missing")]
-    ProtobufMissingFieldError,
-    #[error("OutputBody could not be converted from protobuf")]
-    ProtobufOutputBodyMalformed,
-    #[error("Memo ciphertext malformed")]
-    MemoCiphertextMalformed,
-    #[error("Outgoing viewing key malformed")]
-    OutgoingViewingKeyMalformed,
-    #[error("Value commitment malformed")]
-    ValueCommitmentMalformed,
-    #[error("Encrypted note malformed")]
-    EncryptedNoteMalformed,
-    #[error("Ephemeral public key malformed")]
-    EphemeralPubKeyMalformed,
-    #[error("Note commitment malformed")]
-    NoteCommitmentMalformed,
-}
-
-pub const OVK_WRAPPED_LEN_BYTES: usize = 80;
-pub const NOTE_ENCRYPTION_BYTES: usize = 80;
 
 pub struct Output {
     pub body: Body,
