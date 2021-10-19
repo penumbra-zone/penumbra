@@ -1,5 +1,8 @@
 // XXX move into poseidon377 crate?
 
+// allow unused since this module is garbage stub code
+#![allow(unused)]
+
 use crate::Fq;
 
 use poseidon377::ark_sponge::{
@@ -39,7 +42,7 @@ pub fn hash_1(domain_separator: &Fq, value: Fq) -> Fq {
 pub fn hash_2(domain_separator: &Fq, value: (Fq, Fq)) -> Fq {
     let mut sponge = PoseidonSponge::new(&poseidon377::params::rate_2());
     assert_eq!(sponge.state.len(), 3);
-    sponge.state[1] = *domain_separator;
+    sponge.state[2] = *domain_separator;
 
     // now use absorb to set the rate (hopefully)
     sponge.absorb(&value.0);
@@ -51,10 +54,10 @@ pub fn hash_2(domain_separator: &Fq, value: (Fq, Fq)) -> Fq {
     out_vec.into_iter().next().unwrap()
 }
 
-pub fn _hash_4(domain_separator: &Fq, value: (Fq, Fq, Fq, Fq)) -> Fq {
+pub fn hash_4(domain_separator: &Fq, value: (Fq, Fq, Fq, Fq)) -> Fq {
     let mut sponge = PoseidonSponge::new(&poseidon377::params::rate_4());
     assert_eq!(sponge.state.len(), 5);
-    sponge.state[1] = *domain_separator;
+    sponge.state[4] = *domain_separator;
 
     // now use absorb to set the rate (hopefully)
     sponge.absorb(&value.0);
@@ -71,7 +74,7 @@ pub fn _hash_4(domain_separator: &Fq, value: (Fq, Fq, Fq, Fq)) -> Fq {
 pub fn hash_5(domain_separator: &Fq, value: (Fq, Fq, Fq, Fq, Fq)) -> Fq {
     let mut sponge = PoseidonSponge::new(&poseidon377::params::rate_5());
     assert_eq!(sponge.state.len(), 6);
-    sponge.state[1] = *domain_separator;
+    sponge.state[5] = *domain_separator;
 
     // now use absorb to set the rate (hopefully)
     sponge.absorb(&value.0);
