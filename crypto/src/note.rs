@@ -1,7 +1,8 @@
 use crate::{addresses::PaymentAddress, keys, Fq, Value};
 use ark_ff::PrimeField;
-use ark_serialize::CanonicalSerialize;
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use once_cell::sync::Lazy;
+use thiserror;
 
 // TODO: Should have a `leadByte` as in Sapling and Orchard note plaintexts?
 // Do we need that in addition to the tx version?
@@ -23,6 +24,12 @@ pub struct Note {
 static NOTECOMMIT_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
     Fq::from_le_bytes_mod_order(blake2b_simd::blake2b(b"penumbra.notecommit").as_bytes())
 });
+
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("Invalid note commitment")]
+    InvalidNoteCommitment,
+}
 
 impl Note {
     pub fn new(dest: &PaymentAddress, value: Value, note_blinding: Fq) -> Self {
@@ -64,5 +71,17 @@ impl Into<[u8; 32]> for Commitment {
             .serialize(&mut bytes[..])
             .expect("serialization into array should be infallible");
         bytes
+    }
+}
+
+impl std::convert::TryFrom<[u8; 32]> for Commitment {
+    type Error = Error;
+
+    fn try_from(bytes: [u8; 32]) -> Result<Commitment, Self::Error> {
+        let inner = match Fq::deserialize(&bytes[..]) {
+            Err(_) => return Err(Error::InvalidNoteCommitment),
+            Ok(inner) => inner,
+        };
+        Ok(Commitment(inner))
     }
 }

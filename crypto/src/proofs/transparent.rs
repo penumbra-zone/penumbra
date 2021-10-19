@@ -14,7 +14,7 @@ pub struct OutputProof {}
 
 impl Into<[u8; OUTPUT_PROOF_LEN_BYTES]> for OutputProof {
     fn into(self) -> [u8; OUTPUT_PROOF_LEN_BYTES] {
-        let mut bytes = [0u8; OUTPUT_PROOF_LEN_BYTES];
+        let bytes = [0u8; OUTPUT_PROOF_LEN_BYTES];
         // When we put more stuff into this transparent output proof, add here.
         bytes
     }
