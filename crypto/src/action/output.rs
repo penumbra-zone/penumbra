@@ -7,7 +7,11 @@ use thiserror;
 use penumbra_proto::{transaction, Protobuf};
 
 use crate::{
-    addresses::PaymentAddress, ka, memo::MemoCiphertext, note, proofs::transparent::OutputProof,
+    addresses::PaymentAddress,
+    ka,
+    memo::MemoCiphertext,
+    note,
+    proofs::transparent::{OutputProof, OUTPUT_PROOF_LEN_BYTES},
     value, Fq, Fr, Note, Value,
 };
 
@@ -37,7 +41,6 @@ impl Protobuf<transaction::Output> for Output {}
 impl From<Output> for transaction::Output {
     fn from(msg: Output) -> Self {
         transaction::Output {
-            // Below Body conversion won't work for now
             body: Some(msg.body.into()),
             encrypted_memo: Bytes::from_static(&msg.encrypted_memo.0),
             ovk_wrapped_key: Bytes::from_static(&msg.ovk_wrapped_key),
@@ -53,7 +56,7 @@ impl TryFrom<transaction::Output> for Output {
             return Err(Error::ProtobufMissingFieldError);
         }
 
-        // Wont work until done implementing conversions for body
+        // Wont work until done implementing conversion for body
         let body = Body::try_from(proto.body);
 
         if body.is_err() {
@@ -119,3 +122,22 @@ impl Body {
         }
     }
 }
+
+// impl Protobuf<transaction::OutputBody> for Body {}
+
+impl From<Body> for transaction::OutputBody {
+    fn from(msg: Body) -> Self {
+        let cv_bytes: [u8; 32] = msg.value_commitment.into();
+        let cm_bytes: [u8; 32] = msg.note_commitment.into();
+        let proof_bytes: [u8; OUTPUT_PROOF_LEN_BYTES] = msg.proof.into();
+        transaction::OutputBody {
+            cv: Bytes::from_static(&cv_bytes),
+            cm: Bytes::from_static(&cm_bytes),
+            ephemeral_key: Bytes::from_static(&msg.ephemeral_key.0),
+            encrypted_note: Bytes::from_static(&msg.encrypted_note),
+            zkproof: Bytes::from_static(&proof_bytes),
+        }
+    }
+}
+
+// impl TryFrom<transaction::OutputBody> for Body {}

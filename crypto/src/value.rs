@@ -49,6 +49,12 @@ impl std::ops::Sub<Commitment> for Commitment {
     }
 }
 
+impl Into<[u8; 32]> for Commitment {
+    fn into(self) -> [u8; 32] {
+        self.0.compress().0
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

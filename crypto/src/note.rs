@@ -1,7 +1,7 @@
-use ark_ff::PrimeField;
-use once_cell::sync::Lazy;
-
 use crate::{addresses::PaymentAddress, keys, Fq, Value};
+use ark_ff::PrimeField;
+use ark_serialize::CanonicalSerialize;
+use once_cell::sync::Lazy;
 
 // TODO: Should have a `leadByte` as in Sapling and Orchard note plaintexts?
 // Do we need that in addition to the tx version?
@@ -56,3 +56,13 @@ impl Note {
 // Note commitment.
 #[derive(Clone, Copy)]
 pub struct Commitment(pub Fq);
+
+impl Into<[u8; 32]> for Commitment {
+    fn into(self) -> [u8; 32] {
+        let mut bytes = [0u8; 32];
+        self.0
+            .serialize(&mut bytes[..])
+            .expect("serialization into array should be infallible");
+        bytes
+    }
+}
