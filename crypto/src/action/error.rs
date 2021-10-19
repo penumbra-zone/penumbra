@@ -18,4 +18,10 @@ pub enum Error {
     EphemeralPubKeyMalformed,
     #[error("Note commitment malformed")]
     NoteCommitmentMalformed,
+    #[error("Nullifier malformed")]
+    NullifierMalformed,
+    #[error("Randomized key malformed")]
+    RandomizedKeyMalformed,
+    #[error("Spend proof malformed")]
+    SpendProofMalformed,
 }

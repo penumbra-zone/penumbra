@@ -1,13 +1,17 @@
+use std::convert::{TryFrom, TryInto};
+
 use ark_ff::UniformRand;
+use bytes::Bytes;
 use rand_core::{CryptoRng, RngCore};
 
-use crate::Fr;
+use penumbra_proto::{transaction, Protobuf};
 
 use crate::{
+    action::error::Error,
     merkle,
-    proofs::transparent::SpendProof,
+    proofs::transparent::{SpendProof, SPEND_PROOF_LEN_BYTES},
     rdsa::{Signature, SigningKey, SpendAuth, VerificationKey},
-    value, Nullifier,
+    value, Fr, Nullifier,
 };
 
 pub struct Spend {
@@ -49,5 +53,54 @@ impl Body {
     // xx Replace with proto serialization into `SpendBody`?
     pub fn serialize(&self) -> &[u8] {
         todo!();
+    }
+}
+
+impl Protobuf<transaction::SpendBody> for Body {}
+
+impl From<Body> for transaction::SpendBody {
+    fn from(msg: Body) -> Self {
+        let cv_bytes: [u8; 32] = msg.value_commitment.into();
+        let nullifier_bytes: [u8; 32] = msg.nullifier.into();
+        let rk_bytes: [u8; 32] = msg.rk.into();
+        let proof_bytes: [u8; SPEND_PROOF_LEN_BYTES] = msg.proof.into();
+        transaction::SpendBody {
+            cv: Bytes::copy_from_slice(&cv_bytes),
+            nullifier: Bytes::copy_from_slice(&nullifier_bytes),
+            rk: Bytes::copy_from_slice(&rk_bytes),
+            zkproof: Bytes::copy_from_slice(&proof_bytes),
+        }
+    }
+}
+
+impl TryFrom<transaction::SpendBody> for Body {
+    type Error = Error;
+
+    fn try_from(proto: transaction::SpendBody) -> Result<Self, Self::Error> {
+        let value_commitment: value::Commitment = (proto.cv[..])
+            .try_into()
+            .map_err(|_| Error::ValueCommitmentMalformed)?;
+
+        let nullifier = (proto.nullifier[..])
+            .try_into()
+            .map_err(|_| Error::NullifierMalformed)?;
+
+        let rk_bytes: [u8; 32] = (proto.rk[..])
+            .try_into()
+            .map_err(|_| Error::RandomizedKeyMalformed)?;
+        let rk = rk_bytes
+            .try_into()
+            .map_err(|_| Error::RandomizedKeyMalformed)?;
+
+        let proof = (proto.zkproof[..])
+            .try_into()
+            .map_err(|_| Error::SpendProofMalformed)?;
+
+        Ok(Body {
+            value_commitment,
+            nullifier,
+            rk,
+            proof,
+        })
     }
 }

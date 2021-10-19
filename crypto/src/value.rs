@@ -1,5 +1,6 @@
 //! Values (?)
 
+use std::convert::{TryFrom, TryInto};
 use std::ops::Deref;
 use thiserror;
 
@@ -62,14 +63,30 @@ impl Into<[u8; 32]> for Commitment {
     }
 }
 
-impl std::convert::TryFrom<[u8; 32]> for Commitment {
+impl TryFrom<[u8; 32]> for Commitment {
     type Error = Error;
 
     fn try_from(bytes: [u8; 32]) -> Result<Commitment, Self::Error> {
-        let inner = match decaf377::Encoding(bytes).decompress() {
-            Err(_) => return Err(Error::InvalidValueCommitment),
-            Ok(inner) => inner,
-        };
+        let inner = decaf377::Encoding(bytes)
+            .decompress()
+            .map_err(|_| Error::InvalidValueCommitment)?;
+
+        Ok(Commitment(inner))
+    }
+}
+
+impl TryFrom<&[u8]> for Commitment {
+    type Error = Error;
+
+    fn try_from(slice: &[u8]) -> Result<Commitment, Self::Error> {
+        let bytes = slice[..]
+            .try_into()
+            .map_err(|_| Error::InvalidValueCommitment)?;
+
+        let inner = decaf377::Encoding(bytes)
+            .decompress()
+            .map_err(|_| Error::InvalidValueCommitment)?;
+
         Ok(Commitment(inner))
     }
 }

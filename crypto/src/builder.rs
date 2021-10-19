@@ -4,6 +4,7 @@ use rand_core::{CryptoRng, RngCore};
 use thiserror;
 
 use crate::{
+    action::constants::OVK_WRAPPED_LEN_BYTES,
     action::{output, spend, Action},
     addresses::PaymentAddress,
     keys::{OutgoingViewingKey, SpendKey},
@@ -95,9 +96,11 @@ impl TransactionBuilder {
 
         let body = output::Body::new(rng, value_to_send, v_blinding, dest);
 
+        // TODO!
         let encrypted_memo = memo.encrypt(dest);
 
-        let ovk_wrapped_key = todo!();
+        // TODO!
+        let ovk_wrapped_key = [0u8; OVK_WRAPPED_LEN_BYTES];
 
         let output = Action::Output(Output {
             body,

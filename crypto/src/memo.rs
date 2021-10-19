@@ -16,7 +16,9 @@ impl Default for MemoPlaintext {
 
 impl MemoPlaintext {
     pub fn encrypt(&self, _key: &PaymentAddress) -> MemoCiphertext {
-        todo!()
+        // TODO!
+        let memo_bytes = [0u8; MEMO_CIPHERTEXT_LEN_BYTES];
+        MemoCiphertext(memo_bytes)
     }
 }
 

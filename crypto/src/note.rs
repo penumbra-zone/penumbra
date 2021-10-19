@@ -1,8 +1,10 @@
-use crate::{addresses::PaymentAddress, keys, Fq, Value};
 use ark_ff::PrimeField;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use once_cell::sync::Lazy;
+use std::convert::{TryFrom, TryInto};
 use thiserror;
+
+use crate::{addresses::PaymentAddress, keys, Fq, Value};
 
 // TODO: Should have a `leadByte` as in Sapling and Orchard note plaintexts?
 // Do we need that in addition to the tx version?
@@ -74,14 +76,26 @@ impl Into<[u8; 32]> for Commitment {
     }
 }
 
-impl std::convert::TryFrom<[u8; 32]> for Commitment {
+impl TryFrom<[u8; 32]> for Commitment {
     type Error = Error;
 
     fn try_from(bytes: [u8; 32]) -> Result<Commitment, Self::Error> {
-        let inner = match Fq::deserialize(&bytes[..]) {
-            Err(_) => return Err(Error::InvalidNoteCommitment),
-            Ok(inner) => inner,
-        };
+        let inner = Fq::deserialize(&bytes[..]).map_err(|_| Error::InvalidNoteCommitment)?;
+
+        Ok(Commitment(inner))
+    }
+}
+
+impl TryFrom<&[u8]> for Commitment {
+    type Error = Error;
+
+    fn try_from(slice: &[u8]) -> Result<Commitment, Self::Error> {
+        let bytes: [u8; 32] = slice[..]
+            .try_into()
+            .map_err(|_| Error::InvalidNoteCommitment)?;
+
+        let inner = Fq::deserialize(&bytes[..]).map_err(|_| Error::InvalidNoteCommitment)?;
+
         Ok(Commitment(inner))
     }
 }

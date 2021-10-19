@@ -131,38 +131,22 @@ impl TryFrom<transaction::OutputBody> for Body {
     type Error = Error;
 
     fn try_from(proto: transaction::OutputBody) -> Result<Self, Self::Error> {
-        let proto_cv_bytes: [u8; 32] = match proto.cv[..].try_into() {
-            Err(_) => return Err(Error::ValueCommitmentMalformed),
-            Ok(inner) => inner,
-        };
-        let value_commitment: value::Commitment = match proto_cv_bytes.try_into() {
-            Err(_) => return Err(Error::ValueCommitmentMalformed),
-            Ok(inner) => inner,
-        };
+        let value_commitment: value::Commitment = (proto.cv[..])
+            .try_into()
+            .map_err(|_| Error::ValueCommitmentMalformed)?;
 
-        let cm_bytes: [u8; 32] = match proto.cm[..].try_into() {
-            Err(_) => return Err(Error::NoteCommitmentMalformed),
-            Ok(inner) => inner,
-        };
-        let note_commitment: note::Commitment = match cm_bytes.try_into() {
-            Err(_) => return Err(Error::NoteCommitmentMalformed),
-            Ok(inner) => inner,
-        };
+        let note_commitment: note::Commitment = (proto.cm[..])
+            .try_into()
+            .map_err(|_| Error::NoteCommitmentMalformed)?;
 
-        // xx additional validation here of the pubkey bytes before constructing ka::Public?
-        let ephemeral_key_bytes: [u8; 32] = match proto.ephemeral_key[..].try_into() {
-            Err(_) => return Err(Error::EphemeralPubKeyMalformed),
-            Ok(inner) => inner,
-        };
-        let ephemeral_key = ka::Public(ephemeral_key_bytes);
+        let ephemeral_key = ka::Public::try_from(&proto.ephemeral_key[..])
+            .map_err(|_| Error::EphemeralPubKeyMalformed)?;
 
-        let encrypted_note: [u8; NOTE_ENCRYPTION_BYTES] = match proto.encrypted_note[..].try_into()
-        {
-            Err(_) => return Err(Error::EncryptedNoteMalformed),
-            Ok(inner) => inner,
-        };
+        let encrypted_note: [u8; NOTE_ENCRYPTION_BYTES] = proto.encrypted_note[..]
+            .try_into()
+            .map_err(|_| Error::EncryptedNoteMalformed)?;
 
-        // Nothing in this proof yet.
+        // xx Nothing in this proof yet.
         let proof = OutputProof {};
 
         Ok(Body {
