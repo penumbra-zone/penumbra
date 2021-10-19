@@ -5,7 +5,7 @@ use crate::{
     builder::TransactionBuilder,
     merkle,
     rdsa::{Binding, Signature},
-    Fr, Output, Spend,
+    Fr,
 };
 
 pub struct TransactionBody {
@@ -33,8 +33,7 @@ impl Transaction {
     /// Start building a transaction relative to a given [`merkle::Root`].
     pub fn build_with_root(merkle_root: merkle::Root) -> TransactionBuilder {
         TransactionBuilder {
-            spends: Vec::<Action>::new(),
-            outputs: Vec::<Action>::new(),
+            actions: Vec::<Action>::new(),
             fee: None,
             synthetic_blinding_factor: Fr::zero(),
             merkle_root,

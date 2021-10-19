@@ -20,15 +20,14 @@ pub enum Error {
     NoChainID,
     #[error("Expiry height not set")]
     ExpiryHeightNotSet,
+    #[error("Fee not set")]
+    FeeNotSet,
 }
 
 /// Used to construct a Penumbra transaction.
 pub struct TransactionBuilder {
-    // xx need to get spends and outputs back to Vec<Spend>, Vec<Output>
-    // Notes we'll consume in this transaction.
-    pub spends: Vec<Action>,
-    // Notes we'll create in this transaction.
-    pub outputs: Vec<Action>,
+    // Actions we'll perform in this transaction.
+    pub actions: Vec<Action>,
     // Transaction fee. None if unset.
     pub fee: Option<u64>,
     // Sum of blinding factors for each value commitment.
@@ -76,7 +75,7 @@ impl TransactionBuilder {
 
         let spend = Action::Spend(Spend { body, auth_sig });
 
-        self.spends.push(spend);
+        self.actions.push(spend);
 
         self
     }
@@ -105,7 +104,7 @@ impl TransactionBuilder {
             encrypted_memo,
             ovk_wrapped_key,
         });
-        self.outputs.push(output);
+        self.actions.push(output);
 
         self
     }
@@ -129,13 +128,8 @@ impl TransactionBuilder {
     }
 
     pub fn finalize<R: CryptoRng + RngCore>(mut self, rng: &mut R) -> Result<Transaction, Error> {
-        // Randomize outputs to minimize info leakage.
-        self.outputs.shuffle(rng);
-        self.spends.shuffle(rng);
-
-        let mut actions: Vec<Action> = Vec::new();
-        actions.extend(self.outputs);
-        actions.extend(self.spends);
+        // Randomize all actions (including outputs) to minimize info leakage.
+        self.actions.shuffle(rng);
 
         if self.chain_id.is_none() {
             return Err(Error::NoChainID);
@@ -145,13 +139,16 @@ impl TransactionBuilder {
             return Err(Error::ExpiryHeightNotSet);
         }
 
+        if self.fee.is_none() {
+            return Err(Error::FeeNotSet);
+        }
+
         let _transaction_body = TransactionBody {
             merkle_root: self.merkle_root,
-            actions,
+            actions: self.actions,
             expiry_height: self.expiry_height.unwrap(),
             chain_id: self.chain_id.unwrap(),
-            // or do we want the fee not being set to err?
-            fee: self.fee.unwrap_or(0),
+            fee: self.fee.unwrap(),
         };
 
         // Apply sig
