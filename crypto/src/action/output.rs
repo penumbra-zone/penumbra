@@ -39,7 +39,7 @@ impl From<Output> for transaction::Output {
 impl TryFrom<transaction::Output> for Output {
     type Error = ProtoError;
 
-    fn try_from(proto: transaction::Output) -> Result<Self, Self::Error> {
+    fn try_from(proto: transaction::Output) -> anyhow::Result<Self, Self::Error> {
         let body = proto
             .body
             .ok_or(ProtoError::OutputBodyMalformed)?
@@ -49,12 +49,12 @@ impl TryFrom<transaction::Output> for Output {
         let encrypted_memo = MemoCiphertext(
             proto.encrypted_memo[..]
                 .try_into()
-                .map_err(|_| ProtoError::MemoCiphertextMalformed)?,
+                .map_err(|_| ProtoError::OutputMalformed)?,
         );
 
         let ovk_wrapped_key: [u8; OVK_WRAPPED_LEN_BYTES] = proto.ovk_wrapped_key[..]
             .try_into()
-            .map_err(|_| ProtoError::OutgoingViewingKeyMalformed)?;
+            .map_err(|_| ProtoError::OutputMalformed)?;
 
         Ok(Output {
             body,
@@ -125,19 +125,19 @@ impl From<Body> for transaction::OutputBody {
 impl TryFrom<transaction::OutputBody> for Body {
     type Error = ProtoError;
 
-    fn try_from(proto: transaction::OutputBody) -> Result<Self, Self::Error> {
+    fn try_from(proto: transaction::OutputBody) -> anyhow::Result<Self, Self::Error> {
         Ok(Body {
             value_commitment: (proto.cv[..])
                 .try_into()
-                .map_err(|_| ProtoError::ValueCommitmentMalformed)?,
+                .map_err(|_| ProtoError::OutputBodyMalformed)?,
             note_commitment: (proto.cm[..])
                 .try_into()
-                .map_err(|_| ProtoError::NoteCommitmentMalformed)?,
+                .map_err(|_| ProtoError::OutputBodyMalformed)?,
             ephemeral_key: ka::Public::try_from(&proto.ephemeral_key[..])
-                .map_err(|_| ProtoError::EphemeralPubKeyMalformed)?,
+                .map_err(|_| ProtoError::OutputBodyMalformed)?,
             encrypted_note: proto.encrypted_note[..]
                 .try_into()
-                .map_err(|_| ProtoError::EncryptedNoteMalformed)?,
+                .map_err(|_| ProtoError::OutputBodyMalformed)?,
             // xx Nothing in this proof yet.
             proof: OutputProof {},
         })

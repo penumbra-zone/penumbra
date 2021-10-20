@@ -76,25 +76,25 @@ impl From<Body> for transaction::SpendBody {
 impl TryFrom<transaction::SpendBody> for Body {
     type Error = ProtoError;
 
-    fn try_from(proto: transaction::SpendBody) -> Result<Self, Self::Error> {
+    fn try_from(proto: transaction::SpendBody) -> anyhow::Result<Self, Self::Error> {
         let value_commitment: value::Commitment = (proto.cv[..])
             .try_into()
-            .map_err(|_| ProtoError::ValueCommitmentMalformed)?;
+            .map_err(|_| ProtoError::SpendBodyMalformed)?;
 
         let nullifier = (proto.nullifier[..])
             .try_into()
-            .map_err(|_| ProtoError::NullifierMalformed)?;
+            .map_err(|_| ProtoError::SpendBodyMalformed)?;
 
         let rk_bytes: [u8; 32] = (proto.rk[..])
             .try_into()
-            .map_err(|_| ProtoError::RandomizedKeyMalformed)?;
+            .map_err(|_| ProtoError::SpendBodyMalformed)?;
         let rk = rk_bytes
             .try_into()
-            .map_err(|_| ProtoError::RandomizedKeyMalformed)?;
+            .map_err(|_| ProtoError::SpendBodyMalformed)?;
 
         let proof = (proto.zkproof[..])
             .try_into()
-            .map_err(|_| ProtoError::SpendProofMalformed)?;
+            .map_err(|_| ProtoError::SpendBodyMalformed)?;
 
         Ok(Body {
             value_commitment,
