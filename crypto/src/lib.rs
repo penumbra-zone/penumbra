@@ -16,8 +16,6 @@ pub mod proofs;
 pub mod transaction;
 pub mod value;
 
-mod poseidon_hash;
-
 pub use action::output::Output;
 pub use action::spend::Spend;
 pub use note::Note;
