@@ -1,7 +1,9 @@
 //! Transparent proofs for `MVP1` of the Penumbra system.
 
-use ark_ff::Zero;
 use ark_serialize::CanonicalSerialize;
+use decaf377::FieldExt;
+use std::convert::TryFrom;
+use thiserror;
 
 use crate::merkle;
 use crate::Fr;
@@ -9,6 +11,12 @@ use crate::Fr;
 pub const OUTPUT_PROOF_LEN_BYTES: usize = 192;
 // xx check the spend proof len
 pub const SPEND_PROOF_LEN_BYTES: usize = 192;
+
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("Invalid spend auth randomizer")]
+    InvalidSpendAuthRandomizer,
+}
 
 pub struct SpendProof {
     pub spend_auth_randomizer: Fr,
@@ -33,19 +41,27 @@ impl Into<[u8; SPEND_PROOF_LEN_BYTES]> for SpendProof {
     }
 }
 
-impl From<&[u8]> for SpendProof {
-    fn from(_raw_proof: &[u8]) -> SpendProof {
-        // let bytes: [u8; SPEND_PROOF_LEN_BYTES] = ...
+impl TryFrom<&[u8]> for SpendProof {
+    type Error = Error;
 
-        // TODO!
-        SpendProof {
-            spend_auth_randomizer: Fr::zero(),
+    fn try_from(bytes: &[u8]) -> Result<SpendProof, Self::Error> {
+        let mut spend_auth_randomizer_bytes = [0u8; 32];
+        spend_auth_randomizer_bytes.copy_from_slice(&bytes[0..32]);
+
+        let spend_auth_randomizer = Fr::from_bytes(spend_auth_randomizer_bytes)
+            .map_err(|_| Error::InvalidSpendAuthRandomizer)?;
+
+        // TODO! Merkle path serialization.
+        Ok(SpendProof {
+            spend_auth_randomizer,
             merkle_path: merkle::Path::default(),
-        }
+        })
     }
 }
 
-pub struct OutputProof {}
+pub struct OutputProof {
+    // TK
+}
 
 impl Into<[u8; OUTPUT_PROOF_LEN_BYTES]> for OutputProof {
     fn into(self) -> [u8; OUTPUT_PROOF_LEN_BYTES] {

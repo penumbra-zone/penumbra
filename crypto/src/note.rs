@@ -1,5 +1,5 @@
 use ark_ff::PrimeField;
-use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
+use decaf377::FieldExt;
 use once_cell::sync::Lazy;
 use std::convert::{TryFrom, TryInto};
 use thiserror;
@@ -68,11 +68,7 @@ pub struct Commitment(pub Fq);
 
 impl Into<[u8; 32]> for Commitment {
     fn into(self) -> [u8; 32] {
-        let mut bytes = [0u8; 32];
-        self.0
-            .serialize(&mut bytes[..])
-            .expect("serialization into array should be infallible");
-        bytes
+        self.0.to_bytes()
     }
 }
 
@@ -80,7 +76,7 @@ impl TryFrom<[u8; 32]> for Commitment {
     type Error = Error;
 
     fn try_from(bytes: [u8; 32]) -> Result<Commitment, Self::Error> {
-        let inner = Fq::deserialize(&bytes[..]).map_err(|_| Error::InvalidNoteCommitment)?;
+        let inner = Fq::from_bytes(bytes).map_err(|_| Error::InvalidNoteCommitment)?;
 
         Ok(Commitment(inner))
     }
@@ -94,7 +90,7 @@ impl TryFrom<&[u8]> for Commitment {
             .try_into()
             .map_err(|_| Error::InvalidNoteCommitment)?;
 
-        let inner = Fq::deserialize(&bytes[..]).map_err(|_| Error::InvalidNoteCommitment)?;
+        let inner = Fq::from_bytes(bytes).map_err(|_| Error::InvalidNoteCommitment)?;
 
         Ok(Commitment(inner))
     }

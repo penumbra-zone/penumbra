@@ -19,6 +19,39 @@ pub struct Spend {
     pub auth_sig: Signature<SpendAuth>,
 }
 
+impl Protobuf<transaction::Spend> for Spend {}
+
+impl From<Spend> for transaction::Spend {
+    fn from(msg: Spend) -> Self {
+        let sig_bytes: [u8; 64] = msg.auth_sig.into();
+        transaction::Spend {
+            body: Some(msg.body.into()),
+            auth_sig: Bytes::copy_from_slice(&sig_bytes),
+        }
+    }
+}
+
+impl TryFrom<transaction::Spend> for Spend {
+    type Error = ProtoError;
+
+    fn try_from(proto: transaction::Spend) -> anyhow::Result<Self, Self::Error> {
+        let body = proto
+            .body
+            .ok_or(ProtoError::SpendBodyMalformed)?
+            .try_into()
+            .map_err(|_| ProtoError::SpendBodyMalformed)?;
+
+        let sig_bytes: [u8; 64] = proto.auth_sig[..]
+            .try_into()
+            .map_err(|_| ProtoError::SpendBodyMalformed)?;
+
+        Ok(Spend {
+            body,
+            auth_sig: sig_bytes.into(),
+        })
+    }
+}
+
 pub struct Body {
     pub value_commitment: value::Commitment,
     pub nullifier: Nullifier,

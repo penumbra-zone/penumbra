@@ -1,7 +1,7 @@
 use std::convert::{TryFrom, TryInto};
 
 use ark_ff::Zero;
-use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
+use decaf377::FieldExt;
 use thiserror;
 
 use crate::Fq;
@@ -23,11 +23,7 @@ impl Nullifier {
 
 impl Into<[u8; 32]> for Nullifier {
     fn into(self) -> [u8; 32] {
-        let mut bytes = [0u8; 32];
-        self.0
-            .serialize(&mut bytes[..])
-            .expect("serialization into array should be infallible");
-        bytes
+        self.0.to_bytes()
     }
 }
 
@@ -36,7 +32,7 @@ impl TryFrom<&[u8]> for Nullifier {
 
     fn try_from(slice: &[u8]) -> Result<Nullifier, Self::Error> {
         let bytes: [u8; 32] = slice[..].try_into().map_err(|_| Error::InvalidNullifier)?;
-        let inner = Fq::deserialize(&bytes[..]).map_err(|_| Error::InvalidNullifier)?;
+        let inner = Fq::from_bytes(bytes).map_err(|_| Error::InvalidNullifier)?;
         Ok(Nullifier(inner))
     }
 }
