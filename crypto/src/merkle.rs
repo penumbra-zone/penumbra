@@ -5,7 +5,6 @@ use incrementalmerkletree;
 use once_cell::sync::Lazy;
 
 use crate::note;
-use crate::poseidon_hash::hash_2;
 
 pub use incrementalmerkletree::{
     bridgetree::{self, AuthFragment, BridgeTree},
@@ -46,6 +45,6 @@ impl Hashable for note::Commitment {
         // extend to build domain sep
         let level_fq: Fq = u8::from(level).into();
         let level_domain_sep: Fq = *MERKLE_DOMAIN_SEP + level_fq;
-        note::Commitment(hash_2(&level_domain_sep, (a.0, b.0)))
+        note::Commitment(poseidon377::hash_2(&level_domain_sep, (a.0, b.0)))
     }
 }

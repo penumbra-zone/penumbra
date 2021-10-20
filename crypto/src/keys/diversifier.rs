@@ -26,11 +26,9 @@ impl Diversifier {
 
     /// Generate the diversified basepoint.
     pub fn diversified_generator(&self) -> decaf377::Element {
-        use crate::poseidon_hash::hash_1;
-        let hash = hash_1(
+        decaf377::Element::map_to_group_cdh(&poseidon377::hash_1(
             &DIVERSIFY_GENERATOR_DOMAIN_SEP,
             Fq::from_le_bytes_mod_order(&self.0[..]),
-        );
-        decaf377::Element::map_to_group_cdh(&hash)
+        ))
     }
 }

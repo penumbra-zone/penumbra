@@ -57,9 +57,10 @@ static VALUE_GENERATOR_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
 impl Id {
     /// Compute the value commitment generator for this asset.
     pub fn value_generator(&self) -> decaf377::Element {
-        use crate::poseidon_hash::hash_1;
-        let hash = hash_1(&VALUE_GENERATOR_DOMAIN_SEP, self.0);
-        decaf377::Element::map_to_group_cdh(&hash)
+        decaf377::Element::map_to_group_cdh(&poseidon377::hash_1(
+            &VALUE_GENERATOR_DOMAIN_SEP,
+            self.0,
+        ))
     }
 }
 

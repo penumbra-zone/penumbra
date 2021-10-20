@@ -1,7 +1,7 @@
 use ark_ff::PrimeField;
 use once_cell::sync::Lazy;
 
-use crate::{addresses::PaymentAddress, keys, poseidon_hash::hash_5, Fq, Value};
+use crate::{addresses::PaymentAddress, keys, Fq, Value};
 
 // TODO: Should have a `leadByte` as in Sapling and Orchard note plaintexts?
 // Do we need that in addition to the tx version?
@@ -38,7 +38,7 @@ impl Note {
     }
 
     pub fn commit(&self) -> Commitment {
-        let commit = hash_5(
+        let commit = poseidon377::hash_5(
             &NOTECOMMIT_DOMAIN_SEP,
             (
                 self.note_blinding,
