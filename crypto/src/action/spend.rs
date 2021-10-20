@@ -7,7 +7,7 @@ use rand_core::{CryptoRng, RngCore};
 use penumbra_proto::{transaction, Protobuf};
 
 use crate::{
-    action::error::Error,
+    action::error::ProtoError,
     merkle,
     proofs::transparent::{SpendProof, SPEND_PROOF_LEN_BYTES},
     rdsa::{Signature, SigningKey, SpendAuth, VerificationKey},
@@ -74,27 +74,27 @@ impl From<Body> for transaction::SpendBody {
 }
 
 impl TryFrom<transaction::SpendBody> for Body {
-    type Error = Error;
+    type Error = ProtoError;
 
     fn try_from(proto: transaction::SpendBody) -> Result<Self, Self::Error> {
         let value_commitment: value::Commitment = (proto.cv[..])
             .try_into()
-            .map_err(|_| Error::ValueCommitmentMalformed)?;
+            .map_err(|_| ProtoError::ValueCommitmentMalformed)?;
 
         let nullifier = (proto.nullifier[..])
             .try_into()
-            .map_err(|_| Error::NullifierMalformed)?;
+            .map_err(|_| ProtoError::NullifierMalformed)?;
 
         let rk_bytes: [u8; 32] = (proto.rk[..])
             .try_into()
-            .map_err(|_| Error::RandomizedKeyMalformed)?;
+            .map_err(|_| ProtoError::RandomizedKeyMalformed)?;
         let rk = rk_bytes
             .try_into()
-            .map_err(|_| Error::RandomizedKeyMalformed)?;
+            .map_err(|_| ProtoError::RandomizedKeyMalformed)?;
 
         let proof = (proto.zkproof[..])
             .try_into()
-            .map_err(|_| Error::SpendProofMalformed)?;
+            .map_err(|_| ProtoError::SpendProofMalformed)?;
 
         Ok(Body {
             value_commitment,

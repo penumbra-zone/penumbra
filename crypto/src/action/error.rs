@@ -1,11 +1,9 @@
 use thiserror;
 
 #[derive(thiserror::Error, Debug)]
-pub enum Error {
-    #[error("Error converting from protobuf: field is missing")]
-    ProtobufMissingFieldError,
-    #[error("OutputBody could not be converted from protobuf")]
-    ProtobufOutputBodyMalformed,
+pub enum ProtoError {
+    #[error("OutputBody is malformed")]
+    OutputBodyMalformed,
     #[error("Memo ciphertext malformed")]
     MemoCiphertextMalformed,
     #[error("Outgoing viewing key malformed")]

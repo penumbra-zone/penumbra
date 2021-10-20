@@ -19,8 +19,6 @@ use crate::{
 pub enum Error {
     #[error("Chain ID not set")]
     NoChainID,
-    #[error("Expiry height not set")]
-    ExpiryHeightNotSet,
     #[error("Fee not set")]
     FeeNotSet,
 }
@@ -136,10 +134,6 @@ impl TransactionBuilder {
 
         if self.chain_id.is_none() {
             return Err(Error::NoChainID);
-        }
-
-        if self.expiry_height.is_none() {
-            return Err(Error::ExpiryHeightNotSet);
         }
 
         if self.fee.is_none() {

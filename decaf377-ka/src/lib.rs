@@ -28,8 +28,8 @@ pub struct SharedSecret(pub [u8; 32]);
 pub enum Error {
     #[error("Invalid public key")]
     InvalidPublic(Public),
-    #[error("Cannot deserialize public key")]
-    PublicKeyDeserializationError,
+    #[error("Public key bytes are incorrect length")]
+    SliceLenError,
 }
 
 impl Secret {
@@ -109,15 +109,7 @@ impl std::convert::TryFrom<&[u8]> for Public {
     type Error = Error;
 
     fn try_from(slice: &[u8]) -> Result<Public, Error> {
-        let bytes: [u8; 32] = slice
-            .try_into()
-            .map_err(|_| Error::PublicKeyDeserializationError)?;
-
-        // Check key is a valid decaf377 point
-        decaf377::Encoding(bytes)
-            .decompress()
-            .map_err(|_| Error::PublicKeyDeserializationError)?;
-
+        let bytes: [u8; 32] = slice.try_into().map_err(|_| Error::SliceLenError)?;
         Ok(Public(bytes))
     }
 }

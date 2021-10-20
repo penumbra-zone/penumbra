@@ -5,11 +5,11 @@ use std::convert::{TryFrom, TryInto};
 
 use penumbra_proto::{transaction, Protobuf};
 
+use super::{
+    constants::{NOTE_ENCRYPTION_BYTES, OVK_WRAPPED_LEN_BYTES},
+    error::ProtoError,
+};
 use crate::{
-    action::{
-        constants::{NOTE_ENCRYPTION_BYTES, OVK_WRAPPED_LEN_BYTES},
-        error::Error,
-    },
     addresses::PaymentAddress,
     ka,
     memo::MemoCiphertext,
@@ -37,32 +37,27 @@ impl From<Output> for transaction::Output {
 }
 
 impl TryFrom<transaction::Output> for Output {
-    type Error = Error;
+    type Error = ProtoError;
 
     fn try_from(proto: transaction::Output) -> Result<Self, Self::Error> {
-        if proto.body.is_none() {
-            return Err(Error::ProtobufMissingFieldError);
-        }
+        let body = proto
+            .body
+            .ok_or(ProtoError::OutputBodyMalformed)?
+            .try_into()
+            .map_err(|_| ProtoError::OutputBodyMalformed)?;
 
-        let body = Body::try_from(proto.body.unwrap());
+        let encrypted_memo = MemoCiphertext(
+            proto.encrypted_memo[..]
+                .try_into()
+                .map_err(|_| ProtoError::MemoCiphertextMalformed)?,
+        );
 
-        if body.is_err() {
-            return Err(Error::ProtobufOutputBodyMalformed);
-        }
-
-        let encrypted_memo: MemoCiphertext = match proto.encrypted_memo[..].try_into() {
-            Err(_) => return Err(Error::MemoCiphertextMalformed),
-            Ok(inner) => MemoCiphertext(inner),
-        };
-
-        let ovk_wrapped_key: [u8; OVK_WRAPPED_LEN_BYTES] =
-            match proto.ovk_wrapped_key[..].try_into() {
-                Err(_) => return Err(Error::OutgoingViewingKeyMalformed),
-                Ok(inner) => inner,
-            };
+        let ovk_wrapped_key: [u8; OVK_WRAPPED_LEN_BYTES] = proto.ovk_wrapped_key[..]
+            .try_into()
+            .map_err(|_| ProtoError::OutgoingViewingKeyMalformed)?;
 
         Ok(Output {
-            body: body.unwrap(),
+            body,
             encrypted_memo,
             ovk_wrapped_key,
         })
@@ -128,33 +123,23 @@ impl From<Body> for transaction::OutputBody {
 }
 
 impl TryFrom<transaction::OutputBody> for Body {
-    type Error = Error;
+    type Error = ProtoError;
 
     fn try_from(proto: transaction::OutputBody) -> Result<Self, Self::Error> {
-        let value_commitment: value::Commitment = (proto.cv[..])
-            .try_into()
-            .map_err(|_| Error::ValueCommitmentMalformed)?;
-
-        let note_commitment: note::Commitment = (proto.cm[..])
-            .try_into()
-            .map_err(|_| Error::NoteCommitmentMalformed)?;
-
-        let ephemeral_key = ka::Public::try_from(&proto.ephemeral_key[..])
-            .map_err(|_| Error::EphemeralPubKeyMalformed)?;
-
-        let encrypted_note: [u8; NOTE_ENCRYPTION_BYTES] = proto.encrypted_note[..]
-            .try_into()
-            .map_err(|_| Error::EncryptedNoteMalformed)?;
-
-        // xx Nothing in this proof yet.
-        let proof = OutputProof {};
-
         Ok(Body {
-            value_commitment,
-            note_commitment,
-            ephemeral_key,
-            encrypted_note,
-            proof,
+            value_commitment: (proto.cv[..])
+                .try_into()
+                .map_err(|_| ProtoError::ValueCommitmentMalformed)?,
+            note_commitment: (proto.cm[..])
+                .try_into()
+                .map_err(|_| ProtoError::NoteCommitmentMalformed)?,
+            ephemeral_key: ka::Public::try_from(&proto.ephemeral_key[..])
+                .map_err(|_| ProtoError::EphemeralPubKeyMalformed)?,
+            encrypted_note: proto.encrypted_note[..]
+                .try_into()
+                .map_err(|_| ProtoError::EncryptedNoteMalformed)?,
+            // xx Nothing in this proof yet.
+            proof: OutputProof {},
         })
     }
 }
