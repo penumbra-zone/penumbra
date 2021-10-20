@@ -1,5 +1,7 @@
 use ark_ff::Zero;
 
+use penumbra_proto::{transaction, Protobuf};
+
 use crate::{
     action::Action,
     builder::TransactionBuilder,
@@ -13,7 +15,7 @@ pub struct TransactionBody {
     pub merkle_root: merkle::Root,
     pub expiry_height: u32,
     pub chain_id: String,
-    pub fee: u64,
+    pub fee: Fee,
 }
 
 impl TransactionBody {
@@ -21,6 +23,8 @@ impl TransactionBody {
         todo!()
     }
 }
+
+pub struct Fee(pub u64);
 
 // temp: remove dead code when Transaction fields are read
 #[allow(dead_code)]
@@ -40,6 +44,20 @@ impl Transaction {
             expiry_height: None,
             chain_id: None,
         }
+    }
+}
+
+impl Protobuf<transaction::Fee> for Fee {}
+
+impl From<Fee> for transaction::Fee {
+    fn from(fee: Fee) -> Self {
+        transaction::Fee { amount: fee.0 }
+    }
+}
+
+impl From<transaction::Fee> for Fee {
+    fn from(proto: transaction::Fee) -> Self {
+        Fee(proto.amount)
     }
 }
 

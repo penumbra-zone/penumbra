@@ -11,7 +11,7 @@ use crate::{
     memo::MemoPlaintext,
     merkle,
     nullifier::Nullifier,
-    transaction::{Transaction, TransactionBody},
+    transaction::{Fee, Transaction, TransactionBody},
     Fr, Note, Output, Spend, Value,
 };
 
@@ -28,7 +28,7 @@ pub struct TransactionBuilder {
     // Actions we'll perform in this transaction.
     pub actions: Vec<Action>,
     // Transaction fee. None if unset.
-    pub fee: Option<u64>,
+    pub fee: Option<Fee>,
     // Sum of blinding factors for each value commitment.
     pub synthetic_blinding_factor: Fr,
     // The root of the note commitment merkle tree.
@@ -112,7 +112,7 @@ impl TransactionBuilder {
 
     /// Set the transaction fee in PEN.
     pub fn set_fee(mut self, fee: u64) -> Self {
-        self.fee = Some(fee);
+        self.fee = Some(Fee(fee));
         self
     }
 
