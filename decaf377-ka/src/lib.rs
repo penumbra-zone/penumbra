@@ -84,7 +84,7 @@ impl std::fmt::Debug for Public {
 
 impl std::fmt::Debug for Secret {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use decaf377::FrExt;
+        use decaf377::FieldExt;
         let bytes = self.0.to_bytes();
         f.write_fmt(format_args!(
             "decaf377_ka::Secret({})",

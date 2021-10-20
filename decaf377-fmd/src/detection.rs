@@ -3,7 +3,7 @@ use std::convert::TryFrom;
 use ark_ff::{UniformRand, Zero};
 use ark_serialize::CanonicalDeserialize;
 use bitvec::{order, slice::BitSlice};
-use decaf377::{Fr, FrExt};
+use decaf377::{FieldExt, Fr};
 use rand_core::{CryptoRng, RngCore};
 
 use crate::{hash, hkd, Address, Clue, Error, MAX_PRECISION};
