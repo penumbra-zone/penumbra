@@ -1,6 +1,8 @@
 //! Values (?)
 
+use std::convert::{TryFrom, TryInto};
 use std::ops::Deref;
+use thiserror;
 
 use ark_ff::PrimeField;
 use once_cell::sync::Lazy;
@@ -21,6 +23,12 @@ static VALUE_BLINDING_GENERATOR: Lazy<decaf377::Element> = Lazy::new(|| {
     let s = Fq::from_le_bytes_mod_order(blake2b_simd::blake2b(b"penumbra.val.blinding").as_bytes());
     decaf377::Element::map_to_group_cdh(&s)
 });
+
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("Invalid valid commitment")]
+    InvalidValueCommitment,
+}
 
 impl Value {
     #[allow(non_snake_case)]
@@ -46,6 +54,40 @@ impl std::ops::Sub<Commitment> for Commitment {
     type Output = Commitment;
     fn sub(self, rhs: Commitment) -> Self::Output {
         Commitment(self.0 - rhs.0)
+    }
+}
+
+impl Into<[u8; 32]> for Commitment {
+    fn into(self) -> [u8; 32] {
+        self.0.compress().0
+    }
+}
+
+impl TryFrom<[u8; 32]> for Commitment {
+    type Error = Error;
+
+    fn try_from(bytes: [u8; 32]) -> Result<Commitment, Self::Error> {
+        let inner = decaf377::Encoding(bytes)
+            .decompress()
+            .map_err(|_| Error::InvalidValueCommitment)?;
+
+        Ok(Commitment(inner))
+    }
+}
+
+impl TryFrom<&[u8]> for Commitment {
+    type Error = Error;
+
+    fn try_from(slice: &[u8]) -> Result<Commitment, Self::Error> {
+        let bytes = slice[..]
+            .try_into()
+            .map_err(|_| Error::InvalidValueCommitment)?;
+
+        let inner = decaf377::Encoding(bytes)
+            .decompress()
+            .map_err(|_| Error::InvalidValueCommitment)?;
+
+        Ok(Commitment(inner))
     }
 }
 

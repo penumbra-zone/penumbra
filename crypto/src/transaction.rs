@@ -1,12 +1,21 @@
 use ark_ff::Zero;
 
-use crate::{merkle, Fr, Output, Spend};
+use penumbra_proto::{transaction, Protobuf};
 
-use crate::builder::TransactionBuilder;
+use crate::{
+    action::Action,
+    builder::TransactionBuilder,
+    merkle,
+    rdsa::{Binding, Signature},
+    Fr,
+};
 
 pub struct TransactionBody {
+    pub actions: Vec<Action>,
     pub merkle_root: merkle::Root,
-    // TK from proto
+    pub expiry_height: u32,
+    pub chain_id: String,
+    pub fee: Fee,
 }
 
 impl TransactionBody {
@@ -15,18 +24,40 @@ impl TransactionBody {
     }
 }
 
-pub struct Transaction {}
+pub struct Fee(pub u64);
+
+// temp: remove dead code when Transaction fields are read
+#[allow(dead_code)]
+pub struct Transaction {
+    transaction_body: TransactionBody,
+    binding_sig: Signature<Binding>,
+}
 
 impl Transaction {
     /// Start building a transaction relative to a given [`merkle::Root`].
     pub fn build_with_root(merkle_root: merkle::Root) -> TransactionBuilder {
         TransactionBuilder {
-            spends: Vec::<Spend>::new(),
-            outputs: Vec::<Output>::new(),
+            actions: Vec::new(),
             fee: None,
             synthetic_blinding_factor: Fr::zero(),
             merkle_root,
+            expiry_height: None,
+            chain_id: None,
         }
+    }
+}
+
+impl Protobuf<transaction::Fee> for Fee {}
+
+impl From<Fee> for transaction::Fee {
+    fn from(fee: Fee) -> Self {
+        transaction::Fee { amount: fee.0 }
+    }
+}
+
+impl From<transaction::Fee> for Fee {
+    fn from(proto: transaction::Fee) -> Self {
+        Fee(proto.amount)
     }
 }
 

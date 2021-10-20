@@ -1,5 +1,6 @@
 use ark_ff::UniformRand;
 use rand_core::{CryptoRng, RngCore};
+use std::convert::TryInto;
 use zeroize::Zeroize;
 
 use decaf377;
@@ -27,6 +28,8 @@ pub struct SharedSecret(pub [u8; 32]);
 pub enum Error {
     #[error("Invalid public key")]
     InvalidPublic(Public),
+    #[error("Public key bytes are incorrect length")]
+    SliceLenError,
 }
 
 impl Secret {
@@ -84,7 +87,7 @@ impl std::fmt::Debug for Public {
 
 impl std::fmt::Debug for Secret {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use decaf377::FrExt;
+        use decaf377::FieldExt;
         let bytes = self.0.to_bytes();
         f.write_fmt(format_args!(
             "decaf377_ka::Secret({})",
@@ -99,5 +102,14 @@ impl std::fmt::Debug for SharedSecret {
             "decaf377_ka::SharedSecret({})",
             hex::encode(&self.0[..])
         ))
+    }
+}
+
+impl std::convert::TryFrom<&[u8]> for Public {
+    type Error = Error;
+
+    fn try_from(slice: &[u8]) -> Result<Public, Error> {
+        let bytes: [u8; 32] = slice.try_into().map_err(|_| Error::SliceLenError)?;
+        Ok(Public(bytes))
     }
 }

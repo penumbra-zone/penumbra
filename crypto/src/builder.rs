@@ -1,30 +1,42 @@
 use ark_ff::UniformRand;
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
+use thiserror;
 
 use crate::{
-    action::{output, spend},
+    action::constants::OVK_WRAPPED_LEN_BYTES,
+    action::{output, spend, Action},
     addresses::PaymentAddress,
     keys::{OutgoingViewingKey, SpendKey},
     memo::MemoPlaintext,
     merkle,
     nullifier::Nullifier,
-    transaction::{Transaction, TransactionBody},
+    transaction::{Fee, Transaction, TransactionBody},
     Fr, Note, Output, Spend, Value,
 };
 
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("Chain ID not set")]
+    NoChainID,
+    #[error("Fee not set")]
+    FeeNotSet,
+}
+
 /// Used to construct a Penumbra transaction.
 pub struct TransactionBuilder {
-    // Notes we'll consume in this transaction.
-    pub spends: Vec<Spend>,
-    // Notes we'll create in this transaction.
-    pub outputs: Vec<Output>,
+    // Actions we'll perform in this transaction.
+    pub actions: Vec<Action>,
     // Transaction fee. None if unset.
-    pub fee: Option<u64>,
+    pub fee: Option<Fee>,
     // Sum of blinding factors for each value commitment.
     pub synthetic_blinding_factor: Fr,
-    // Put chain_id in here too?
+    // The root of the note commitment merkle tree.
     pub merkle_root: merkle::Root,
+    // Expiry height. None if unset.
+    pub expiry_height: Option<u32>,
+    // Chain ID. None if unset.
+    pub chain_id: Option<String>,
 }
 
 impl TransactionBuilder {
@@ -60,9 +72,9 @@ impl TransactionBuilder {
 
         let auth_sig = rsk.sign(rng, &body.serialize());
 
-        let spend = Spend { body, auth_sig };
+        let spend = Action::Spend(Spend { body, auth_sig });
 
-        self.spends.push(spend);
+        self.actions.push(spend);
 
         self
     }
@@ -82,38 +94,58 @@ impl TransactionBuilder {
 
         let body = output::Body::new(rng, value_to_send, v_blinding, dest);
 
-        // Encrypted to receipient diversified payment addr?
-        //let encrypted_memo = memo.encrypt(dest);
-        // In Sapling, it seems like the memo field is encrypted as part of the
-        // note, but in our protos we have the memo broken out.
-        // TEMP: Transparent memos
+        // TODO!
+        let encrypted_memo = memo.encrypt(dest);
 
-        //let ovk_wrapped_key = todo!();
+        // TODO!
+        let ovk_wrapped_key = [0u8; OVK_WRAPPED_LEN_BYTES];
 
-        let output = Output {
+        let output = Action::Output(Output {
             body,
-            memo,
-            //encrypted_memo,
-            // ovk_wrapped_key,
-        };
-        self.outputs.push(output);
+            encrypted_memo,
+            ovk_wrapped_key,
+        });
+        self.actions.push(output);
 
         self
     }
 
     /// Set the transaction fee in PEN.
     pub fn set_fee(mut self, fee: u64) -> Self {
-        self.fee = Some(fee);
+        self.fee = Some(Fee(fee));
         self
     }
 
-    pub fn finalize<R: CryptoRng + RngCore>(mut self, rng: &mut R) -> Transaction {
-        // Randomize outputs to minimize info leakage.
-        self.outputs.shuffle(rng);
-        self.spends.shuffle(rng);
+    /// Set the expiry height.
+    pub fn set_expiry_height(mut self, expiry_height: u32) -> Self {
+        self.expiry_height = Some(expiry_height);
+        self
+    }
+
+    /// Set the chain ID.
+    pub fn set_chain_id(mut self, chain_id: String) -> Self {
+        self.chain_id = Some(chain_id);
+        self
+    }
+
+    pub fn finalize<R: CryptoRng + RngCore>(mut self, rng: &mut R) -> Result<Transaction, Error> {
+        // Randomize all actions (including outputs) to minimize info leakage.
+        self.actions.shuffle(rng);
+
+        if self.chain_id.is_none() {
+            return Err(Error::NoChainID);
+        }
+
+        if self.fee.is_none() {
+            return Err(Error::FeeNotSet);
+        }
 
         let _transaction_body = TransactionBody {
             merkle_root: self.merkle_root,
+            actions: self.actions,
+            expiry_height: self.expiry_height.unwrap(),
+            chain_id: self.chain_id.unwrap(),
+            fee: self.fee.unwrap(),
         };
 
         // Apply sig

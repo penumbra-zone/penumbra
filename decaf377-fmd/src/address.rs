@@ -1,6 +1,6 @@
 use ark_ff::{Field, UniformRand};
 use bitvec::{array::BitArray, order};
-use decaf377::{Fr, FrExt};
+use decaf377::{FieldExt, Fr};
 use rand_core::{CryptoRng, RngCore};
 
 use crate::{hash, hkd, Clue, Error, MAX_PRECISION};
