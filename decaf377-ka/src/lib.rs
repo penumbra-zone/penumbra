@@ -1,9 +1,9 @@
 use ark_ff::UniformRand;
 use rand_core::{CryptoRng, RngCore};
-use std::convert::TryInto;
+use std::convert::{TryFrom, TryInto};
 use zeroize::Zeroize;
 
-use decaf377;
+use decaf377::{self, FieldExt};
 
 /// A public key sent to the counterparty in the key agreement protocol.
 ///
@@ -28,7 +28,9 @@ pub struct SharedSecret(pub [u8; 32]);
 pub enum Error {
     #[error("Invalid public key")]
     InvalidPublic(Public),
-    #[error("Public key bytes are incorrect length")]
+    #[error("Invalid secret key")]
+    InvalidSecret,
+    #[error("Supplied bytes are incorrect length")]
     SliceLenError,
 }
 
@@ -74,6 +76,13 @@ impl Secret {
 
         Ok(SharedSecret((self.0 * pk).compress().into()))
     }
+
+    /// Convert this shared secret to bytes.
+    ///
+    /// Convenience wrapper around an [`Into`] impl.
+    pub fn to_bytes(&self) -> [u8; 32] {
+        self.into()
+    }
 }
 
 impl std::fmt::Debug for Public {
@@ -87,7 +96,6 @@ impl std::fmt::Debug for Public {
 
 impl std::fmt::Debug for Secret {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use decaf377::FieldExt;
         let bytes = self.0.to_bytes();
         f.write_fmt(format_args!(
             "decaf377_ka::Secret({})",
@@ -105,11 +113,34 @@ impl std::fmt::Debug for SharedSecret {
     }
 }
 
-impl std::convert::TryFrom<&[u8]> for Public {
+impl TryFrom<&[u8]> for Public {
     type Error = Error;
 
     fn try_from(slice: &[u8]) -> Result<Public, Error> {
         let bytes: [u8; 32] = slice.try_into().map_err(|_| Error::SliceLenError)?;
         Ok(Public(bytes))
+    }
+}
+
+impl TryFrom<&[u8]> for Secret {
+    type Error = Error;
+
+    fn try_from(slice: &[u8]) -> Result<Secret, Error> {
+        let bytes: [u8; 32] = slice.try_into().map_err(|_| Error::SliceLenError)?;
+        bytes.try_into()
+    }
+}
+
+impl TryFrom<[u8; 32]> for Secret {
+    type Error = Error;
+    fn try_from(bytes: [u8; 32]) -> Result<Secret, Error> {
+        let x = decaf377::Fr::from_bytes(bytes).map_err(|_| Error::InvalidSecret)?;
+        Ok(Secret(x))
+    }
+}
+
+impl From<&Secret> for [u8; 32] {
+    fn from(s: &Secret) -> Self {
+        s.0.to_bytes()
     }
 }
