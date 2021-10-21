@@ -8,7 +8,7 @@ use crate::note;
 
 pub use incrementalmerkletree::{
     bridgetree::{self, AuthFragment, BridgeTree},
-    Altitude, Hashable, Tree,
+    Altitude, Hashable, Position, Tree,
 };
 
 pub const MERKLE_DEPTH: usize = 32;

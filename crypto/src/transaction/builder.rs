@@ -10,7 +10,7 @@ use crate::{
     memo::MemoPlaintext,
     merkle,
     transaction::{Fee, Transaction, TransactionBody},
-    Address, Fr, Note, Nullifier, Output, Spend, Value,
+    Address, Fr, Note, Output, Spend, Value,
 };
 
 #[derive(thiserror::Error, Debug)]
@@ -45,11 +45,9 @@ impl Builder {
         spend_key: SpendKey,
         merkle_path: merkle::Path,
         note: Note,
+        position: merkle::Position,
     ) -> Self {
-        // TODO: Derive nullifier from note commitment, note position, and
-        // nullifier deriving key
-        // See p.55 ZCash spec
-        let nullifier = Nullifier::new();
+        let nullifier = note.nf(position, spend_key.nullifier_key());
 
         let v_blinding = Fr::rand(rng);
         let value_commitment = note.value.commit(v_blinding);

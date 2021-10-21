@@ -1,10 +1,16 @@
 use ark_ff::PrimeField;
 use decaf377::FieldExt;
 use once_cell::sync::Lazy;
+use poseidon377::hash_3;
 use std::convert::{TryFrom, TryInto};
 use thiserror;
 
-use crate::{keys, Address, Fq, Value};
+use crate::{
+    keys,
+    merkle::Position,
+    nullifier::{Nullifier, NULLIFIER_DOMAIN_SEP},
+    Address, Fq, Value,
+};
 
 // TODO: Should have a `leadByte` as in Sapling and Orchard note plaintexts?
 // Do we need that in addition to the tx version?
@@ -59,6 +65,13 @@ impl Note {
         );
 
         Commitment(commit)
+    }
+
+    pub fn nf(&self, pos: Position, nk: &keys::NullifierKey) -> Nullifier {
+        Nullifier(hash_3(
+            &NULLIFIER_DOMAIN_SEP,
+            (nk.0, self.commit().0, (u64::from(pos)).into()),
+        ))
     }
 }
 
