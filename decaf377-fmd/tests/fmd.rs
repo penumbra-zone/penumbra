@@ -4,7 +4,7 @@ use rand_core::OsRng;
 #[test]
 fn detection_distribution_matches_expectation() {
     let alice_dk = fmd::DetectionKey::new(OsRng);
-    let alice_address = alice_dk.address().expand().unwrap();
+    let alice_clue_key = alice_dk.clue_key().expand().unwrap();
     // alice's friend bobce, whose name has the same number of letters
     let bobce_dk = fmd::DetectionKey::new(OsRng);
 
@@ -12,7 +12,7 @@ fn detection_distribution_matches_expectation() {
     const PRECISION_BITS: usize = 4; // p = 1/16
 
     let clues = (0..NUM_CLUES)
-        .map(|_| alice_address.create_clue(PRECISION_BITS, OsRng).unwrap())
+        .map(|_| alice_clue_key.create_clue(PRECISION_BITS, OsRng).unwrap())
         .collect::<Vec<_>>();
 
     let alice_detections = clues.iter().filter(|clue| alice_dk.examine(clue)).count();

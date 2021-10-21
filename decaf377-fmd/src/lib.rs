@@ -1,10 +1,10 @@
-mod address;
+mod clue_key;
 mod detection;
 mod error;
 mod hash;
 mod hkd;
 
-pub use address::{Address, ExpandedAddress};
+pub use clue_key::{ClueKey, ExpandedClueKey};
 pub use detection::DetectionKey;
 pub use error::Error;
 

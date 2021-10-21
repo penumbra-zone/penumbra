@@ -6,12 +6,12 @@ use bitvec::{order, slice::BitSlice};
 use decaf377::{FieldExt, Fr};
 use rand_core::{CryptoRng, RngCore};
 
-use crate::{hash, hkd, Address, Clue, Error, MAX_PRECISION};
+use crate::{hash, hkd, Clue, ClueKey, Error, MAX_PRECISION};
 
 // TODO serialization?
 
 /// Used to examine [`Clue`]s and determine whether they were possibly sent to
-/// the detection key's [`Address`].
+/// the detection key's [`ClueKey`].
 pub struct DetectionKey {
     /// The compact detection key.
     cdk: Fr,
@@ -61,13 +61,13 @@ impl DetectionKey {
         Ok(Self::from_field(cdk))
     }
 
-    /// Obtain the address corresponding to this detection key.
-    pub fn address(&self) -> Address {
-        Address((self.cdk * decaf377::basepoint()).compress().0)
+    /// Obtain the clue key corresponding to this detection key.
+    pub fn clue_key(&self) -> ClueKey {
+        ClueKey((self.cdk * decaf377::basepoint()).compress().0)
     }
 
     /// Use this detection key to examine the given `clue`, returning `true` if the
-    /// clue was possibly sent to this detection key's address.
+    /// clue was possibly sent to this detection key's clue key.
     ///
     /// This test has false positives, but no false negatives.
     ///

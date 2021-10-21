@@ -5,31 +5,31 @@ use rand_core::{CryptoRng, RngCore};
 
 use crate::{hash, hkd, Clue, Error, MAX_PRECISION};
 
-/// Bytes representing an address corresponding to some
+/// Bytes representing a clue key corresponding to some
 /// [`DetectionKey`](crate::DetectionKey).
 ///
 /// This type is a refinement type for plain bytes, and is suitable for use in
-/// situations where an address might or might not actually be used.  This saves
-/// computation; at the point that an address will be used to create a [`Clue`],
-/// it can be expanded to an [`ExpandedAddress`].
-pub struct Address(pub [u8; 32]);
+/// situations where clue key might or might not actually be used.  This saves
+/// computation; at the point that a clue key will be used to create a [`Clue`],
+/// it can be expanded to an [`ExpandedClueKey`].
+pub struct ClueKey(pub [u8; 32]);
 
-/// An expanded and validated address that can be used to create [`Clue`]s
-/// intended for the address's [`DetectionKey`](crate::DetectionKey).
+/// An expanded and validated clue key that can be used to create [`Clue`]s
+/// intended for the corresponding [`DetectionKey`](crate::DetectionKey).
 #[allow(non_snake_case)]
-pub struct ExpandedAddress {
+pub struct ExpandedClueKey {
     // should this really generate everything upfront?
     Xs: [decaf377::Element; MAX_PRECISION],
 }
 
-impl Address {
-    /// Validate and expand this address encoding.
+impl ClueKey {
+    /// Validate and expand this clue key encoding.
     ///
     /// # Errors
     ///
-    /// Fails if the address bytes don't encode a valid address.
+    /// Fails if the bytes don't encode a valid clue key.
     #[allow(non_snake_case)]
-    pub fn expand(&self) -> Result<ExpandedAddress, Error> {
+    pub fn expand(&self) -> Result<ExpandedClueKey, Error> {
         let root_pub_enc = decaf377::Encoding(self.0);
         let root_pub = root_pub_enc
             .decompress()
@@ -42,13 +42,13 @@ impl Address {
             Xs[i] = hkd::derive_public(&root_pub, &root_pub_enc, i as u8);
         }
 
-        Ok(ExpandedAddress { Xs })
+        Ok(ExpandedClueKey { Xs })
     }
 }
 
-impl ExpandedAddress {
-    /// Create a [`Clue`] intended for this address's
-    /// [`DetectionKey`](crate::DetectionKey).
+impl ExpandedClueKey {
+    /// Create a [`Clue`] intended for the [`DetectionKey`](crate::DetectionKey)
+    /// corresponding to this clue key.
     ///
     /// The clue will be detected by the intended detection key with probability
     /// 1, and by other detection keys with probability `2^{-precision_bits}`.
