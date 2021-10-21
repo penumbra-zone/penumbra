@@ -5,7 +5,7 @@ pub use decaf377_ka as ka;
 pub use decaf377_rdsa as rdsa;
 
 pub mod action;
-pub mod addresses;
+mod address;
 pub mod asset;
 pub mod keys;
 pub mod memo;
@@ -18,6 +18,7 @@ pub mod value;
 
 pub use action::output::Output;
 pub use action::spend::Spend;
+pub use address::Address;
 pub use note::Note;
 pub use nullifier::Nullifier;
 pub use value::Value;

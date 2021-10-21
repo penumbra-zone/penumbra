@@ -1,4 +1,4 @@
-use crate::addresses::PaymentAddress;
+use crate::Address;
 
 pub const MEMO_CIPHERTEXT_LEN_BYTES: usize = 528;
 
@@ -15,7 +15,7 @@ impl Default for MemoPlaintext {
 }
 
 impl MemoPlaintext {
-    pub fn encrypt(&self, _key: &PaymentAddress) -> MemoCiphertext {
+    pub fn encrypt(&self, _key: &Address) -> MemoCiphertext {
         // TODO!
         let memo_bytes = [0u8; MEMO_CIPHERTEXT_LEN_BYTES];
         MemoCiphertext(memo_bytes)

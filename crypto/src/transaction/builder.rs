@@ -6,13 +6,12 @@ use thiserror;
 use crate::{
     action::constants::OVK_WRAPPED_LEN_BYTES,
     action::{output, spend, Action},
-    addresses::PaymentAddress,
     keys::{OutgoingViewingKey, SpendKey},
     memo::MemoPlaintext,
     merkle,
     nullifier::Nullifier,
     transaction::{Fee, Transaction, TransactionBody},
-    Fr, Note, Output, Spend, Value,
+    Address, Fr, Note, Output, Spend, Value,
 };
 
 #[derive(thiserror::Error, Debug)]
@@ -83,7 +82,7 @@ impl Builder {
     pub fn add_output<R: RngCore + CryptoRng>(
         mut self,
         rng: &mut R,
-        dest: &PaymentAddress,
+        dest: &Address,
         value_to_send: Value,
         memo: MemoPlaintext,
         _ovk: &OutgoingViewingKey,
