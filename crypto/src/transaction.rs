@@ -1,9 +1,14 @@
+use std::convert::{TryFrom, TryInto};
+
 use ark_ff::Zero;
+use bytes::Bytes;
+
+use decaf377::FieldExt;
 
 use penumbra_proto::{transaction, Protobuf};
 
 use crate::{
-    action::Action,
+    action::{error::ProtoError, Action},
     merkle,
     rdsa::{Binding, Signature},
     Fr,
@@ -23,6 +28,62 @@ pub struct TransactionBody {
 impl TransactionBody {
     pub fn sign() -> Transaction {
         todo!()
+    }
+}
+
+impl Protobuf<transaction::TransactionBody> for TransactionBody {}
+
+impl From<TransactionBody> for transaction::TransactionBody {
+    fn from(msg: TransactionBody) -> Self {
+        transaction::TransactionBody {
+            actions: msg.actions.into_iter().map(|x| x.into()).collect(),
+            anchor: Bytes::copy_from_slice(&msg.merkle_root.0.to_bytes()),
+            expiry_height: msg.expiry_height,
+            chain_id: msg.chain_id,
+            fee: Some(msg.fee.into()),
+        }
+    }
+}
+
+impl TryFrom<transaction::TransactionBody> for TransactionBody {
+    type Error = ProtoError;
+
+    fn try_from(proto: transaction::TransactionBody) -> anyhow::Result<Self, Self::Error> {
+        let mut actions = Vec::<Action>::new();
+        for action in proto.actions {
+            actions.push(
+                action
+                    .try_into()
+                    .map_err(|_| ProtoError::TransactionBodyMalformed)?,
+            );
+        }
+
+        let merkle_root = proto.anchor[..]
+            .try_into()
+            .map_err(|_| ProtoError::TransactionBodyMalformed)?;
+
+        let expiry_height = proto
+            .expiry_height
+            .try_into()
+            .map_err(|_| ProtoError::TransactionBodyMalformed)?;
+
+        let chain_id = proto
+            .chain_id
+            .try_into()
+            .map_err(|_| ProtoError::TransactionBodyMalformed)?;
+
+        let fee: Fee = proto
+            .fee
+            .ok_or(ProtoError::TransactionBodyMalformed)?
+            .into();
+
+        Ok(TransactionBody {
+            actions,
+            merkle_root,
+            expiry_height,
+            chain_id,
+            fee,
+        })
     }
 }
 
@@ -46,6 +107,39 @@ impl Transaction {
             expiry_height: None,
             chain_id: None,
         }
+    }
+}
+
+impl Protobuf<transaction::Transaction> for Transaction {}
+
+impl From<Transaction> for transaction::Transaction {
+    fn from(msg: Transaction) -> Self {
+        let sig_bytes: [u8; 64] = msg.binding_sig.into();
+        transaction::Transaction {
+            body: Some(msg.transaction_body.into()),
+            binding_sig: Bytes::copy_from_slice(&sig_bytes),
+        }
+    }
+}
+
+impl TryFrom<transaction::Transaction> for Transaction {
+    type Error = ProtoError;
+
+    fn try_from(proto: transaction::Transaction) -> anyhow::Result<Self, Self::Error> {
+        let transaction_body = proto
+            .body
+            .ok_or(ProtoError::TransactionMalformed)?
+            .try_into()
+            .map_err(|_| ProtoError::TransactionBodyMalformed)?;
+
+        let sig_bytes: [u8; 64] = proto.binding_sig[..]
+            .try_into()
+            .map_err(|_| ProtoError::TransactionMalformed)?;
+
+        Ok(Transaction {
+            transaction_body,
+            binding_sig: sig_bytes.into(),
+        })
     }
 }
 

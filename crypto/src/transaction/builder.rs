@@ -141,7 +141,7 @@ impl Builder {
         let _transaction_body = TransactionBody {
             merkle_root: self.merkle_root,
             actions: self.actions,
-            expiry_height: self.expiry_height.unwrap(),
+            expiry_height: self.expiry_height.unwrap_or(0),
             chain_id: self.chain_id.unwrap(),
             fee: self.fee.unwrap(),
         };
