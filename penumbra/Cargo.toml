@@ -34,5 +34,3 @@ hex = "0.4"
 
 [build-dependencies]
 vergen = "5"
-
-
