@@ -1,8 +1,9 @@
 use ark_ff::PrimeField;
 use ark_ff::Zero;
-use decaf377::Fq;
+use decaf377::{FieldExt, Fq};
 use incrementalmerkletree;
 use once_cell::sync::Lazy;
+use std::convert::{TryFrom, TryInto};
 
 use crate::note;
 
@@ -22,6 +23,18 @@ pub static MERKLE_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
 pub type Path = (usize, Vec<note::Commitment>);
 
 pub struct Root(pub Fq);
+
+impl TryFrom<&[u8]> for Root {
+    type Error = anyhow::Error;
+
+    fn try_from(slice: &[u8]) -> Result<Root, Self::Error> {
+        let bytes: [u8; 32] = slice[..].try_into()?;
+
+        let inner = Fq::from_bytes(bytes)?;
+
+        Ok(Root(inner))
+    }
+}
 
 pub trait TreeExt {
     fn root2(&self) -> Root;

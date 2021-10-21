@@ -141,6 +141,8 @@ impl Builder {
         let _transaction_body = TransactionBody {
             merkle_root: self.merkle_root,
             actions: self.actions,
+            // TODO: Remove unwrap - What is a good `expiry_height` as a default value?
+            // (required by our transaction proto)
             expiry_height: self.expiry_height.unwrap(),
             chain_id: self.chain_id.unwrap(),
             fee: self.fee.unwrap(),

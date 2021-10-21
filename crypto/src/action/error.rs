@@ -12,4 +12,8 @@ pub enum ProtoError {
     SpendBodyMalformed,
     #[error("Action malformed")]
     ActionMalformed,
+    #[error("TransactionBody malformed")]
+    TransactionBodyMalformed,
+    #[error("Transaction malformed")]
+    TransactionMalformed,
 }
