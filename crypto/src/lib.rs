@@ -11,7 +11,7 @@ pub mod keys;
 pub mod memo;
 pub mod merkle;
 pub mod note;
-pub mod nullifier;
+mod nullifier;
 pub mod proofs;
 pub mod transaction;
 pub mod value;
