@@ -110,6 +110,39 @@ impl Transaction {
     }
 }
 
+impl Protobuf<transaction::Transaction> for Transaction {}
+
+impl From<Transaction> for transaction::Transaction {
+    fn from(msg: Transaction) -> Self {
+        let sig_bytes: [u8; 64] = msg.binding_sig.into();
+        transaction::Transaction {
+            body: Some(msg.transaction_body.into()),
+            binding_sig: Bytes::copy_from_slice(&sig_bytes),
+        }
+    }
+}
+
+impl TryFrom<transaction::Transaction> for Transaction {
+    type Error = ProtoError;
+
+    fn try_from(proto: transaction::Transaction) -> anyhow::Result<Self, Self::Error> {
+        let transaction_body = proto
+            .body
+            .ok_or(ProtoError::TransactionMalformed)?
+            .try_into()
+            .map_err(|_| ProtoError::TransactionBodyMalformed)?;
+
+        let sig_bytes: [u8; 64] = proto.binding_sig[..]
+            .try_into()
+            .map_err(|_| ProtoError::TransactionMalformed)?;
+
+        Ok(Transaction {
+            transaction_body,
+            binding_sig: sig_bytes.into(),
+        })
+    }
+}
+
 impl Protobuf<transaction::Fee> for Fee {}
 
 impl From<Fee> for transaction::Fee {
