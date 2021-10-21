@@ -13,9 +13,9 @@ use crate::{hash, hkd, Clue, ClueKey, Error, MAX_PRECISION};
 /// Used to examine [`Clue`]s and determine whether they were possibly sent to
 /// the detection key's [`ClueKey`].
 pub struct DetectionKey {
-    /// The compact detection key.
-    cdk: Fr,
-    /// Cached copies of the child detection keys; these can be fully derived from `cdk`.
+    /// The detection key.
+    dtk: Fr,
+    /// Cached copies of the child detection keys; these can be fully derived from `dtk`.
     xs: [Fr; MAX_PRECISION],
 }
 
@@ -30,10 +30,10 @@ impl DetectionKey {
     /// # Warning
     ///
     /// This function exists to support custom key derivation mechanisms; it's
-    /// the caller's responsibility to construct the compact detection key `cdk`
+    /// the caller's responsibility to construct the detection key `dtk`
     /// correctly.
-    pub fn from_field(cdk: Fr) -> Self {
-        let root_pub = cdk * decaf377::basepoint();
+    pub fn from_field(dtk: Fr) -> Self {
+        let root_pub = dtk * decaf377::basepoint();
         let root_pub_enc = root_pub.compress();
 
         // would be nice to avoid this initialization,
@@ -41,29 +41,29 @@ impl DetectionKey {
         let mut xs = [Fr::default(); MAX_PRECISION];
         for i in 0..MAX_PRECISION {
             xs[i] = hkd::derive_private(
-                &cdk,
+                &dtk,
                 &root_pub_enc,
                 u8::try_from(i).expect("i < MAX_PRECISION < 256"),
             );
         }
 
-        Self { cdk, xs }
+        Self { dtk, xs }
     }
 
     /// Serialize this detection key to bytes.
     pub fn to_bytes(&self) -> [u8; 32] {
-        self.cdk.to_bytes()
+        self.dtk.to_bytes()
     }
 
     /// Deserialize a detection key from bytes.
     pub fn from_bytes(bytes: [u8; 32]) -> Result<Self, Error> {
-        let cdk = Fr::from_bytes(bytes).map_err(|_| Error::InvalidDetectionKey)?;
-        Ok(Self::from_field(cdk))
+        let dtk = Fr::from_bytes(bytes).map_err(|_| Error::InvalidDetectionKey)?;
+        Ok(Self::from_field(dtk))
     }
 
     /// Obtain the clue key corresponding to this detection key.
     pub fn clue_key(&self) -> ClueKey {
-        ClueKey((self.cdk * decaf377::basepoint()).compress().0)
+        ClueKey((self.dtk * decaf377::basepoint()).compress().0)
     }
 
     /// Use this detection key to examine the given `clue`, returning `true` if the
