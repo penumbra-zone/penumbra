@@ -5,8 +5,7 @@ use decaf377::FieldExt;
 use std::convert::TryFrom;
 use thiserror;
 
-use crate::merkle;
-use crate::Fr;
+use crate::{ka, merkle, note, value, Fq, Fr, Value};
 
 pub const OUTPUT_PROOF_LEN_BYTES: usize = 192;
 // xx check the spend proof len
@@ -59,8 +58,41 @@ impl TryFrom<&[u8]> for SpendProof {
     }
 }
 
+/// Transparent proof for new note creation.
+///
+/// This structure keeps track of the auxiliary (private) inputs.
+/// To generate the final proof, one calls `generate` and provides the
+/// public inputs.
 pub struct OutputProof {
-    // TK
+    // The diversified base for the destination address.
+    pub g_d: decaf377::Element,
+    // The transmission key for the destination address.
+    pub pk_d: ka::Public,
+    // The value of the newly created note.
+    pub value: Value,
+    // The blinding factor used for generating the value commitment.
+    pub v_blinding: Fr,
+    // The blinding factor used for generating the note commitment.
+    pub note_blinding: Fq,
+    // The ephemeral secret key that corresponds to the public key.
+    pub esk: ka::Secret,
+}
+
+impl OutputProof {
+    /// Called to generate the proof using public inputs.
+    ///
+    /// The public inputs are:
+    /// * value commitment of the new note,
+    /// * note commitment of the new note,
+    /// * the ephemeral public key used to generate the new note.
+    pub fn generate(
+        value_commitment: value::Commitment,
+        note_commitment: note::Commitment,
+        epk: ka::Public,
+    ) {
+        // This would return the generated proof.
+        todo!()
+    }
 }
 
 impl Into<[u8; OUTPUT_PROOF_LEN_BYTES]> for OutputProof {

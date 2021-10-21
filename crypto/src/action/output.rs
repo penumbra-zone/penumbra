@@ -92,7 +92,14 @@ impl Body {
         let esk = ka::Secret::new(rng);
         let ephemeral_key = esk.diversified_public(note.dest.diversified_generator());
 
-        let proof = OutputProof {};
+        let proof = OutputProof {
+            g_d: *dest.diversified_generator(),
+            pk_d: *dest.transmission_key(),
+            value,
+            v_blinding,
+            note_blinding,
+            esk,
+        };
 
         Self {
             value_commitment,
@@ -137,7 +144,7 @@ impl TryFrom<transaction::OutputBody> for Body {
             encrypted_note: proto.encrypted_note[..]
                 .try_into()
                 .map_err(|_| ProtoError::OutputBodyMalformed)?,
-            // xx Nothing in this proof yet.
+            // TK: protos for serializing proofs (for early MVPs only)
             proof: OutputProof {},
         })
     }
