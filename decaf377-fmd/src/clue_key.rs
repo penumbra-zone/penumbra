@@ -12,6 +12,7 @@ use crate::{hash, hkd, Clue, Error, MAX_PRECISION};
 /// situations where clue key might or might not actually be used.  This saves
 /// computation; at the point that a clue key will be used to create a [`Clue`],
 /// it can be expanded to an [`ExpandedClueKey`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub struct ClueKey(pub [u8; 32]);
 
 /// An expanded and validated clue key that can be used to create [`Clue`]s
