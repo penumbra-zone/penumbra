@@ -1,18 +1,17 @@
 use std::convert::{TryFrom, TryInto};
 
-use ark_ff::Zero;
+use ark_ff::PrimeField;
 use decaf377::FieldExt;
+use once_cell::sync::Lazy;
 
 use crate::Fq;
 
 pub struct Nullifier(pub Fq);
 
-impl Nullifier {
-    pub fn new() -> Self {
-        // TODO! Zero is just a dummy value.
-        Nullifier(Fq::zero())
-    }
-}
+/// The domain separator used to derive nullifiers.
+pub static NULLIFIER_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
+    Fq::from_le_bytes_mod_order(blake2b_simd::blake2b(b"penumbra.nullifier").as_bytes())
+});
 
 impl Into<[u8; 32]> for Nullifier {
     fn into(self) -> [u8; 32] {
