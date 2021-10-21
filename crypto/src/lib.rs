@@ -7,7 +7,6 @@ pub use decaf377_rdsa as rdsa;
 pub mod action;
 pub mod addresses;
 pub mod asset;
-pub mod builder;
 pub mod keys;
 pub mod memo;
 pub mod merkle;

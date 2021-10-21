@@ -24,7 +24,7 @@ pub enum Error {
 }
 
 /// Used to construct a Penumbra transaction.
-pub struct TransactionBuilder {
+pub struct Builder {
     // Actions we'll perform in this transaction.
     pub actions: Vec<Action>,
     // Transaction fee. None if unset.
@@ -39,7 +39,7 @@ pub struct TransactionBuilder {
     pub chain_id: Option<String>,
 }
 
-impl TransactionBuilder {
+impl Builder {
     /// Create a new `Spend` to spend an existing note.
     pub fn add_spend<R: RngCore + CryptoRng>(
         mut self,

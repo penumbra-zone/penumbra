@@ -4,11 +4,13 @@ use penumbra_proto::{transaction, Protobuf};
 
 use crate::{
     action::Action,
-    builder::TransactionBuilder,
     merkle,
     rdsa::{Binding, Signature},
     Fr,
 };
+
+mod builder;
+pub use builder::Builder;
 
 pub struct TransactionBody {
     pub actions: Vec<Action>,
@@ -35,8 +37,8 @@ pub struct Transaction {
 
 impl Transaction {
     /// Start building a transaction relative to a given [`merkle::Root`].
-    pub fn build_with_root(merkle_root: merkle::Root) -> TransactionBuilder {
-        TransactionBuilder {
+    pub fn build_with_root(merkle_root: merkle::Root) -> Builder {
+        Builder {
             actions: Vec::new(),
             fee: None,
             synthetic_blinding_factor: Fr::zero(),
