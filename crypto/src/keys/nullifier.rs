@@ -1,8 +1,7 @@
-use crate::Fr;
+use crate::Fq;
 
 pub const NK_LEN_BYTES: usize = 32;
 
-#[derive(Copy, Clone)]
-pub struct NullifierPrivateKey(pub Fr);
-
-pub struct NullifierDerivingKey(pub decaf377::Element);
+/// Allows deriving the nullifier associated with a note.
+#[derive(Clone)]
+pub struct NullifierKey(pub Fq);

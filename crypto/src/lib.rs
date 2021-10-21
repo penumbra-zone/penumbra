@@ -1,5 +1,6 @@
 pub use decaf377::{Fq, Fr};
 
+pub use decaf377_fmd as fmd;
 pub use decaf377_ka as ka;
 pub use decaf377_rdsa as rdsa;
 

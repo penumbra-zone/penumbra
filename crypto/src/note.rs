@@ -54,7 +54,7 @@ impl Note {
                 self.value.amount.into(),
                 self.value.asset_id.0,
                 self.dest.diversified_generator().compress_to_field(),
-                *self.dest.tk_s(),
+                *self.dest.transmission_key_field(),
             ),
         );
 

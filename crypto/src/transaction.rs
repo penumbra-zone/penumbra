@@ -67,8 +67,7 @@ mod tests {
 
     use rand_core::OsRng;
 
-    use crate::addresses::PaymentAddress;
-    use crate::keys::{Diversifier, SpendKey};
+    use crate::keys::SpendKey;
     use crate::memo::MemoPlaintext;
     use crate::{Fq, Value};
 
@@ -81,10 +80,9 @@ mod tests {
         let ivk_sender = fvk_sender.outgoing();
 
         let sk_recipient = SpendKey::generate(&mut rng);
-        let diversifier_recipient = Diversifier::generate(&mut rng);
         let fvk_recipient = sk_recipient.full_viewing_key();
         let ivk_recipient = fvk_recipient.incoming();
-        let dest = PaymentAddress::new(ivk_recipient, diversifier_recipient);
+        let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
 
         let merkle_root = merkle::Root(Fq::zero());
         let _transaction_builder = Transaction::build_with_root(merkle_root)
