@@ -2,10 +2,11 @@
 
 use ark_serialize::CanonicalSerialize;
 use decaf377::FieldExt;
+use decaf377_rdsa::{SpendAuth, VerificationKey};
 use std::convert::TryFrom;
 use thiserror;
 
-use crate::{ka, merkle, note, value, Fq, Fr, Value};
+use crate::{ka, keys, merkle, note, value, Fq, Fr, Nullifier, Value};
 
 pub const OUTPUT_PROOF_LEN_BYTES: usize = 192;
 // xx check the spend proof len
@@ -17,10 +18,53 @@ pub enum Error {
     InvalidSpendAuthRandomizer,
 }
 
+/// Transparent proof for spending existing notes.
+///
+/// This structure keeps track of the auxiliary (private) inputs.
+/// To generate the final proof, one calls `generate` and provides the
+/// public inputs.
 pub struct SpendProof {
-    pub spend_auth_randomizer: Fr,
+    // Path to the note being spent in the note commitment merkle tree.
     pub merkle_path: merkle::Path,
-    // more TK
+    // Position of the note being spent in the note commitment merkle tree.
+    pub position: merkle::Position,
+    // The diversified base for the address.
+    pub g_d: decaf377::Element,
+    // The transmission key for the address.
+    pub pk_d: ka::Public,
+    // The value of the note.
+    pub value: Value,
+    // The blinding factor used for generating the value commitment.
+    pub v_blinding: Fr,
+    // The note commitment.
+    pub note_commitment: note::Commitment,
+    // The blinding factor used for generating the note commitment.
+    pub note_blinding: Fq,
+    // The randomizer used for generating the randomized spend auth key.
+    pub spend_auth_randomizer: Fr,
+    // The spend authorization key.
+    pub ak: VerificationKey<SpendAuth>,
+    // The nullifier deriving key.
+    pub nk: keys::NullifierKey,
+}
+
+impl SpendProof {
+    /// Called to generate the proof using public inputs.
+    ///
+    /// The public inputs are:
+    /// * the merkle root of the note commitment tree,
+    /// * value commitment of the note to be spent,
+    /// * nullifier of the note to be spent,
+    /// * the randomized verification spend key,
+    pub fn generate(
+        anchor: merkle::Root,
+        value_commitment: value::Commitment,
+        nullifier: Nullifier,
+        rk: VerificationKey<SpendAuth>,
+    ) {
+        // This would return the generated proof.
+        todo!()
+    }
 }
 
 impl Into<[u8; SPEND_PROOF_LEN_BYTES]> for SpendProof {

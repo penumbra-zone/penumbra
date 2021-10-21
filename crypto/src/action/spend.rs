@@ -8,10 +8,10 @@ use penumbra_proto::{transaction, Protobuf};
 
 use crate::{
     action::error::ProtoError,
-    merkle,
+    keys, merkle,
     proofs::transparent::{SpendProof, SPEND_PROOF_LEN_BYTES},
     rdsa::{Signature, SigningKey, SpendAuth, VerificationKey},
-    value, Fr, Nullifier,
+    value, Fr, Note, Nullifier,
 };
 
 pub struct Spend {
@@ -64,20 +64,32 @@ impl Body {
     pub fn new<R: RngCore + CryptoRng>(
         rng: &mut R,
         value_commitment: value::Commitment,
-        nullifier: Nullifier,
         ask: SigningKey<SpendAuth>,
         spend_auth_randomizer: Fr,
         merkle_path: merkle::Path,
+        position: merkle::Position,
+        note: Note,
+        v_blinding: Fr,
+        nk: keys::NullifierKey,
     ) -> Body {
         let a = Fr::rand(rng);
         let rk = ask.randomize(&a).into();
         let proof = SpendProof {
-            spend_auth_randomizer,
             merkle_path,
+            position,
+            g_d: *note.dest.diversified_generator(),
+            pk_d: *note.dest.transmission_key(),
+            value: note.value,
+            v_blinding,
+            note_commitment: note.commit(),
+            note_blinding: note.note_blinding,
+            spend_auth_randomizer,
+            ak: ask.into(),
+            nk,
         };
         Body {
             value_commitment,
-            nullifier,
+            nullifier: note.nf(position, &nk),
             rk,
             proof,
         }
