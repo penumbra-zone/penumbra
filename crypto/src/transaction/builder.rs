@@ -9,9 +9,8 @@ use crate::{
     keys::{OutgoingViewingKey, SpendKey},
     memo::MemoPlaintext,
     merkle,
-    nullifier::Nullifier,
     transaction::{Fee, Transaction, TransactionBody},
-    Address, Fr, Note, Output, Spend, Value,
+    Address, Fr, Note, Nullifier, Output, Spend, Value,
 };
 
 #[derive(thiserror::Error, Debug)]

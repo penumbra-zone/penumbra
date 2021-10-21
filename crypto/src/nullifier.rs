@@ -2,15 +2,8 @@ use std::convert::{TryFrom, TryInto};
 
 use ark_ff::Zero;
 use decaf377::FieldExt;
-use thiserror;
 
 use crate::Fq;
-
-#[derive(thiserror::Error, Debug)]
-pub enum Error {
-    #[error("Invalid nullifier")]
-    InvalidNullifier,
-}
 
 pub struct Nullifier(pub Fq);
 
@@ -28,11 +21,11 @@ impl Into<[u8; 32]> for Nullifier {
 }
 
 impl TryFrom<&[u8]> for Nullifier {
-    type Error = Error;
+    type Error = anyhow::Error;
 
     fn try_from(slice: &[u8]) -> Result<Nullifier, Self::Error> {
-        let bytes: [u8; 32] = slice[..].try_into().map_err(|_| Error::InvalidNullifier)?;
-        let inner = Fq::from_bytes(bytes).map_err(|_| Error::InvalidNullifier)?;
+        let bytes: [u8; 32] = slice[..].try_into()?;
+        let inner = Fq::from_bytes(bytes)?;
         Ok(Nullifier(inner))
     }
 }
