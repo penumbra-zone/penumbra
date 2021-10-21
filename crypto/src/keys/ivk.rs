@@ -1,6 +1,6 @@
 use ark_ff::PrimeField;
 
-use crate::{addresses::PaymentAddress, fmd, ka, Fr};
+use crate::{fmd, ka, Address, Fr};
 
 use super::{DiversifierIndex, DiversifierKey};
 
@@ -16,7 +16,7 @@ pub struct IncomingViewingKey {
 
 impl IncomingViewingKey {
     /// Derive a shielded payment address with the given [`DiversifierIndex`].
-    pub fn payment_address(&self, index: DiversifierIndex) -> (PaymentAddress, fmd::DetectionKey) {
+    pub fn payment_address(&self, index: DiversifierIndex) -> (Address, fmd::DetectionKey) {
         let d = self.dk.diversifier_for_index(&index);
         let g_d = d.diversified_generator();
         let pk_d = self.ivk.diversified_public(&g_d);
@@ -33,7 +33,7 @@ impl IncomingViewingKey {
         let ck_d = dtk_d.clue_key();
 
         (
-            PaymentAddress::from_components(d, g_d, pk_d, ck_d).expect("pk_d is valid"),
+            Address::from_components(d, g_d, pk_d, ck_d).expect("pk_d is valid"),
             dtk_d,
         )
     }

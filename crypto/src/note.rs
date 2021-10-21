@@ -4,7 +4,7 @@ use once_cell::sync::Lazy;
 use std::convert::{TryFrom, TryInto};
 use thiserror;
 
-use crate::{addresses::PaymentAddress, keys, Fq, Value};
+use crate::{keys, Address, Fq, Value};
 
 // TODO: Should have a `leadByte` as in Sapling and Orchard note plaintexts?
 // Do we need that in addition to the tx version?
@@ -19,7 +19,7 @@ pub struct Note {
 
     // Destination
     // TODO: only the diversified base and transmission key of address needed?
-    pub dest: PaymentAddress,
+    pub dest: Address,
 }
 
 /// The domain separator used to generate note commitments.
@@ -34,7 +34,7 @@ pub enum Error {
 }
 
 impl Note {
-    pub fn new(dest: &PaymentAddress, value: Value, note_blinding: Fq) -> Self {
+    pub fn new(dest: &Address, value: Value, note_blinding: Fq) -> Self {
         Note {
             value: value,
             note_blinding: note_blinding,

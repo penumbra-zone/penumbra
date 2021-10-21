@@ -5,7 +5,7 @@ use crate::{fmd, ka, keys::Diversifier, Fq};
 
 /// A valid payment address.
 #[derive(Clone)]
-pub struct PaymentAddress {
+pub struct Address {
     d: Diversifier,
     /// cached copy of the diversified base
     g_d: decaf377::Element,
@@ -21,7 +21,7 @@ pub struct PaymentAddress {
     ck_d: fmd::ClueKey,
 }
 
-impl PaymentAddress {
+impl Address {
     /// Constructs a payment address from its components.
     ///
     /// Returns `None` if the bytes in pk_d are a non-canonical representation

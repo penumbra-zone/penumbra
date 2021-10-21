@@ -10,12 +10,11 @@ use super::{
     error::ProtoError,
 };
 use crate::{
-    addresses::PaymentAddress,
     ka,
     memo::MemoCiphertext,
     note,
     proofs::transparent::{OutputProof, OUTPUT_PROOF_LEN_BYTES},
-    value, Fq, Fr, Note, Value,
+    value, Address, Fq, Fr, Note, Value,
 };
 
 pub struct Output {
@@ -77,7 +76,7 @@ impl Body {
         rng: &mut R,
         value: Value,
         v_blinding: Fr,
-        dest: &PaymentAddress,
+        dest: &Address,
     ) -> Body {
         // TODO: p. 43 Spec. Decide whether to do leadByte 0x01 method or 0x02 or other.
         let value_commitment = value.commit(v_blinding);
