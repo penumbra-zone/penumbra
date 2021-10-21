@@ -6,74 +6,66 @@ includes support for [fuzzy message detection](./primitives/fmd.md), uses
 Poseidon for hashing, and uses `decaf377` instead of Jubjub, so that it can be
 used with the BLS12-377 curve instead of the BLS12-381 curve.
 
+WARNING/TODO: this is a work-in-progress; only the diagram is currently roughly accurate.
+
 ```mermaid
 flowchart BT
     subgraph Address
         direction TB;
         d2[d];
         pk_d;
-        cfk_d;
-    end;
-    subgraph D[Diversifier]
-        d1[d];
+        ck_d;
     end;
     subgraph DTK[Detection Key]
-        cdtk_d;
+        dtk_d;
     end;
     subgraph IVK[Incoming Viewing Key]
         ivk;
+        dk;
+    end;
+    subgraph OVK[Outgoing Viewing Key]
+        ovk;
     end;
     subgraph FVK[Full Viewing Key]
-        direction TB;
-        ak2[ak];
+        ak;
         nk;
-        ovk2[ovk];
-    end;
-    subgraph PAK[Proof Authorizing Key]
-        direction TB;
-        ak1[ak];
-        nsk2[nsk];
     end;
     subgraph SK[Spending Key]
-        direction TB;
+        direction LR;
         ask;
-        nsk1[nsk];
-        ovk1[ovk];
-    end;
-    subgraph SS[Spend Seed]
-        ss;
+        sk;
     end;
 
-    ss --> ask;
-    ss --> nsk1;
-    ss --> ovk1;
+    sk --> ask;
+    sk --> nk;
 
-    ask --> ak1;
-    nsk1 --- nsk2;
-    ovk1 --- ovk2;
+    ask --> ak;
 
-    ak1 --- ak2;
-    nsk2 --> nk;
+    ak & nk --> fvk_blake{ };
+    ak & nk --> fvk_poseidon{ };
+    fvk_blake --> ovk & dk;
+    fvk_poseidon --> ivk;
 
-    ak2 --> ivk;
-    nk --> ivk;
-
-    ivk --> pk_d;
+    index(Diversifier Index);
+    d1[d];
 
     d1 --- d2;
-    d1 --> pk_d;
 
-    ivk --> cdtk_d;
-    d1 --> cdtk_d;
-    cdtk_d --> cfk_d;
+    index --> aes_ff1{ };
+    dk ---> aes_ff1{ };
+    aes_ff1 --> d1;
+
+    d1 & ivk --> scmul_ivk{ };
+    scmul_ivk --> pk_d;
+
+    d1 & ivk --> dtk_blake{ };
+    dtk_blake --> dtk_d;
+    dtk_d --> ck_d;
 ```
 
-All addresses and keys are ultimately derived from a secret *spend seed* $ss$.
+All addresses and keys are ultimately derived from a secret *spending key* $sk$.
 This is a random 32-byte string which acts as the root key material for a
-particular spending authority. From this *spend seed* $ss$, we derive several
+particular spending authority. From this *spend key* $sk$, we derive several
 other keys, each described in more detail in its own section:
 
-* a [*spend key*](./addresses_keys/spend_key.md) which has components used to derive *viewing keys* and the *proof authorization key* as described below,
-* a [*proof authorization key*](./addresses_keys/proof_authorization_keys.md), which lets the holder spend notes associated with the *spending key*,
-* [*viewing keys*](./addresses_keys/viewing_keys.md) which allow the holder to identify but not spend notes associated with the *spend key*,
 * [*addresses*](./addresses_keys/addresses.md), which can be shared in order to receive payments.
