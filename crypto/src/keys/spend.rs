@@ -1,18 +1,12 @@
-use std::convert::TryInto;
-
 use ark_ff::PrimeField;
-use decaf377;
 use rand_core::{CryptoRng, RngCore};
 
 use crate::{
     rdsa::{SigningKey, SpendAuth},
-    Fr,
+    Fq, Fr,
 };
 
-use super::{
-    FullViewingKey, NullifierDerivingKey, NullifierPrivateKey, OutgoingViewingKey, ProofAuthKey,
-    OVK_LEN_BYTES,
-};
+use super::{FullViewingKey, IncomingViewingKey, NullifierKey, OutgoingViewingKey};
 
 pub const SPENDSEED_LEN_BYTES: usize = 32;
 
@@ -25,7 +19,6 @@ pub struct SpendKey {
     seed: SpendSeed,
     ask: SigningKey<SpendAuth>,
     fvk: FullViewingKey,
-    pak: ProofAuthKey,
 }
 
 impl SpendKey {
@@ -40,7 +33,7 @@ impl SpendKey {
     pub fn from_seed(seed: SpendSeed) -> Self {
         let ask = {
             let mut hasher = blake2b_simd::State::new();
-            hasher.update(b"Penumbra_ExpandSeed");
+            hasher.update(b"Penumbra_ExpndSd");
             hasher.update(&seed.0);
             hasher.update(&[0; 1]);
             let hash_result = hasher.finalize();
@@ -48,48 +41,19 @@ impl SpendKey {
             SigningKey::new_from_field(Fr::from_le_bytes_mod_order(hash_result.as_bytes()))
         };
 
-        let nsk = {
+        let nk = {
             let mut hasher = blake2b_simd::State::new();
-            hasher.update(b"Penumbra_ExpandSeed");
+            hasher.update(b"Penumbra_ExpndSd");
             hasher.update(&seed.0);
             hasher.update(&[1; 1]);
             let hash_result = hasher.finalize();
 
-            NullifierPrivateKey(Fr::from_le_bytes_mod_order(hash_result.as_bytes()))
+            NullifierKey(Fq::from_le_bytes_mod_order(hash_result.as_bytes()))
         };
 
-        // XXX naming abbreviations don't match / but we might not even want this
-        let pak = ProofAuthKey {
-            nsk,
-            ak: ask.into(),
-        };
+        let fvk = FullViewingKey::from_components(ask.into(), nk);
 
-        let ovk = {
-            let mut hasher = blake2b_simd::State::new();
-            hasher.update(b"Penumbra_ExpandSeed");
-            hasher.update(&seed.0);
-            hasher.update(&[2; 1]);
-            let hash_result = hasher.finalize();
-
-            OutgoingViewingKey(
-                hash_result.as_bytes()[0..OVK_LEN_BYTES]
-                    .try_into()
-                    .expect("hash is long enough to convert to array"),
-            )
-        };
-
-        let fvk = FullViewingKey {
-            ak: ask.into(),
-            nk: NullifierDerivingKey(decaf377::basepoint() * &pak.nsk.0),
-            ovk,
-        };
-
-        Self {
-            seed,
-            ask,
-            pak,
-            fvk,
-        }
+        Self { seed, ask, fvk }
     }
 
     /// Get the [`SpendSeed`] this [`SpendKey`] was derived from.
@@ -106,19 +70,19 @@ impl SpendKey {
         &self.ask
     }
 
-    pub fn nullifier_private_key(&self) -> &NullifierPrivateKey {
-        &self.pak.nsk
+    pub fn full_viewing_key(&self) -> &FullViewingKey {
+        &self.fvk
+    }
+
+    pub fn nullifier_key(&self) -> &NullifierKey {
+        self.fvk.nullifier_key()
     }
 
     pub fn outgoing_viewing_key(&self) -> &OutgoingViewingKey {
-        &self.fvk.ovk
+        self.fvk.outgoing()
     }
 
-    pub fn proof_authorization_key(&self) -> &ProofAuthKey {
-        &self.pak
-    }
-
-    pub fn full_viewing_key(&self) -> &FullViewingKey {
-        &self.fvk
+    pub fn incoming_viewing_key(&self) -> &IncomingViewingKey {
+        self.fvk.incoming()
     }
 }
