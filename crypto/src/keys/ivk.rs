@@ -37,4 +37,9 @@ impl IncomingViewingKey {
             dtk_d,
         )
     }
+
+    /// Derive a transmission key from the given diversified base.
+    pub fn diversified_public(&self, diversified_generator: &decaf377::Element) -> ka::Public {
+        self.ivk.diversified_public(diversified_generator)
+    }
 }

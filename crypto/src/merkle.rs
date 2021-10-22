@@ -9,7 +9,7 @@ use crate::note;
 
 pub use incrementalmerkletree::{
     bridgetree::{self, AuthFragment, BridgeTree},
-    Altitude, Hashable, Position, Tree,
+    Altitude, Hashable, Position, Recording, Tree,
 };
 
 pub const MERKLE_DEPTH: usize = 32;
@@ -22,6 +22,7 @@ pub static MERKLE_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
 // Return value from `Tree::authentication_path(value: &note::Commitment)`
 pub type Path = (usize, Vec<note::Commitment>);
 
+#[derive(PartialEq)]
 pub struct Root(pub Fq);
 
 impl TryFrom<&[u8]> for Root {

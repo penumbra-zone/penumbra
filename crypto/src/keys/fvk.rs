@@ -22,7 +22,7 @@ pub struct FullViewingKey {
 
 impl FullViewingKey {
     /// Construct a full viewing key from its components.
-    pub(super) fn from_components(ak: VerificationKey<SpendAuth>, nk: NullifierKey) -> Self {
+    pub fn from_components(ak: VerificationKey<SpendAuth>, nk: NullifierKey) -> Self {
         let (ovk, dk) = {
             let mut hasher = blake2b_simd::State::new();
             hasher.update(b"Penumbra_ExpndVK");

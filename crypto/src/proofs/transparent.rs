@@ -8,7 +8,8 @@ use thiserror;
 use penumbra_proto::{transparent_proofs, Message, Protobuf};
 
 use crate::{
-    action::error::ProtoError, asset, ka, keys, merkle, note, value, Fq, Fr, Note, Nullifier, Value,
+    action::error::ProtoError, asset, ka, keys, merkle, merkle::Hashable, note, value, Fq, Fr,
+    Note, Nullifier, Value,
 };
 
 #[derive(thiserror::Error, Debug)]
@@ -54,12 +55,83 @@ impl SpendProof {
     /// * nullifier of the note to be spent,
     /// * the randomized verification spend key,
     pub fn verify(
+        &self,
         anchor: merkle::Root,
         value_commitment: value::Commitment,
         nullifier: Nullifier,
         rk: VerificationKey<SpendAuth>,
     ) -> bool {
-        todo!()
+        let mut proof_verifies = true;
+
+        // Note commitment integrity.
+        let note_commitment_test =
+            Note::new(&self.g_d, &self.pk_d, self.value, self.note_blinding).commit();
+        if note_commitment_test.is_err() || self.note_commitment != note_commitment_test.unwrap() {
+            proof_verifies = false;
+        }
+
+        // Merkle path integrity.
+        // 1. Check the Merkle path is a depth of `merkle::MERKLE_DEPTH`.
+        if self.merkle_path.1.len() != merkle::MERKLE_DEPTH {
+            proof_verifies = false;
+        }
+
+        // 2. Check the Merkle path leads to the expected anchor (`merkle::Root`).
+        let mut cur = self.note_commitment;
+
+        // This logic is from `incrementalmerkletree`'s `compute_root_from_auth_path` function which is
+        // `pub(crate)` so is included below.
+        let mut lvl = merkle::Altitude::zero();
+        for (i, v) in self.merkle_path.1.iter().enumerate().map(|(i, v)| {
+            (
+                ((<usize>::try_from(self.position).unwrap() >> i) & 1) == 1,
+                v,
+            )
+        }) {
+            if i {
+                cur = note::Commitment::combine(lvl, v, &cur);
+            } else {
+                cur = note::Commitment::combine(lvl, &cur, v);
+            }
+            lvl = lvl + 1;
+        }
+        let expected_root = merkle::Root(cur.0);
+        if expected_root != anchor {
+            proof_verifies = false;
+        }
+
+        // Value commitment integrity.
+        if self.value.commit(self.v_blinding) != value_commitment {
+            proof_verifies = false;
+        }
+
+        // The use of decaf means that we do not need to check that the
+        // diversified basepoint is of small order. However we instead
+        // check it is not identity.
+        if self.g_d.is_identity() || self.ak.is_identity() {
+            proof_verifies = false;
+        }
+
+        // Nullifier integrity.
+        if nullifier != self.nk.nf(self.position, &self.note_commitment) {
+            proof_verifies = false;
+        }
+
+        // Spend authority.
+        let rk_bytes: [u8; 32] = rk.into();
+        let rk_test_bytes: [u8; 32] = self.ak.randomize(&self.spend_auth_randomizer).into();
+        if rk_bytes != rk_test_bytes {
+            proof_verifies = false;
+        }
+
+        // Diversified address integrity.
+        let fvk = keys::FullViewingKey::from_components(self.ak, self.nk);
+        let ivk = fvk.incoming();
+        if self.pk_d != ivk.diversified_public(&self.g_d) {
+            proof_verifies = false;
+        }
+
+        proof_verifies
     }
 }
 
@@ -95,6 +167,7 @@ impl OutputProof {
         epk: ka::Public,
     ) -> bool {
         let mut proof_verifies = true;
+
         // Note commitment integrity.
         let note_commitment_test =
             Note::new(&self.g_d, &self.pk_d, self.value, self.note_blinding).commit();
