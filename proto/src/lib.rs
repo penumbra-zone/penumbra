@@ -19,6 +19,10 @@ pub mod transaction {
     include!(concat!(env!("OUT_DIR"), "/penumbra.transaction.rs"));
 }
 
+/// Transparent proofs
+///
+/// Note that these are protos for the "MVP" transparent version of Penumbra,
+/// i.e. not for production use and intentionally not private.
 pub mod transparent_proofs {
     include!(concat!(env!("OUT_DIR"), "/penumbra.transparent_proofs.rs"));
 }

@@ -125,7 +125,7 @@ impl From<Body> for transaction::OutputBody {
             cm: Bytes::copy_from_slice(&cm_bytes),
             ephemeral_key: Bytes::copy_from_slice(&msg.ephemeral_key.0),
             encrypted_note: Bytes::copy_from_slice(&msg.encrypted_note),
-            zkproof: Bytes::copy_from_slice(&proof[..]),
+            zkproof: proof.into(),
         }
     }
 }

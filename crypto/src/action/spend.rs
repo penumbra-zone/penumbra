@@ -114,7 +114,7 @@ impl From<Body> for transaction::SpendBody {
             cv: Bytes::copy_from_slice(&cv_bytes),
             nullifier: Bytes::copy_from_slice(&nullifier_bytes),
             rk: Bytes::copy_from_slice(&rk_bytes),
-            zkproof: Bytes::copy_from_slice(&proof[..]),
+            zkproof: proof.into(),
         }
     }
 }

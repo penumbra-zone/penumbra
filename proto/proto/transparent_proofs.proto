@@ -1,10 +1,6 @@
 syntax = "proto3";
 package penumbra.transparent_proofs;
 
-// Note that these are protos for the "MVP"
-// transparent version of Penumbra, i.e. not for production use and
-// intentionally not private.
-
 // A Penumbra transparent Spend Proof.
 message SpendProof {
   // Auxiliary inputs
