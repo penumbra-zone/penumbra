@@ -10,11 +10,8 @@ use super::{
     error::ProtoError,
 };
 use crate::{
-    ka,
-    memo::MemoCiphertext,
-    note,
-    proofs::transparent::{OutputProof, OUTPUT_PROOF_LEN_BYTES},
-    value, Address, Fq, Fr, Note, Value,
+    ka, memo::MemoCiphertext, note, proofs::transparent::OutputProof, value, Address, Fq, Fr, Note,
+    Value,
 };
 
 pub struct Output {
@@ -83,16 +80,28 @@ impl Body {
 
         let note_blinding = Fq::rand(rng);
 
-        let note = Note::new(dest, value, note_blinding);
-        let note_commitment = note.commit();
+        let note = Note::new(
+            dest.diversified_generator(),
+            dest.transmission_key(),
+            value,
+            note_blinding,
+        );
+        let note_commitment = note.commit().expect("transmission key is valid");
         // TODO: Encrypt note here and add to a field in the Body struct (later).
         // TEMP
         let encrypted_note = [0u8; NOTE_ENCRYPTION_BYTES];
 
         let esk = ka::Secret::new(rng);
-        let ephemeral_key = esk.diversified_public(note.dest.diversified_generator());
+        let ephemeral_key = esk.diversified_public(&note.diversified_generator);
 
-        let proof = OutputProof {};
+        let proof = OutputProof {
+            g_d: *dest.diversified_generator(),
+            pk_d: *dest.transmission_key(),
+            value,
+            v_blinding,
+            note_blinding,
+            esk,
+        };
 
         Self {
             value_commitment,
@@ -110,13 +119,13 @@ impl From<Body> for transaction::OutputBody {
     fn from(msg: Body) -> Self {
         let cv_bytes: [u8; 32] = msg.value_commitment.into();
         let cm_bytes: [u8; 32] = msg.note_commitment.into();
-        let proof_bytes: [u8; OUTPUT_PROOF_LEN_BYTES] = msg.proof.into();
+        let proof: Vec<u8> = msg.proof.into();
         transaction::OutputBody {
             cv: Bytes::copy_from_slice(&cv_bytes),
             cm: Bytes::copy_from_slice(&cm_bytes),
             ephemeral_key: Bytes::copy_from_slice(&msg.ephemeral_key.0),
             encrypted_note: Bytes::copy_from_slice(&msg.encrypted_note),
-            zkproof: Bytes::copy_from_slice(&proof_bytes),
+            zkproof: proof.into(),
         }
     }
 }
@@ -137,8 +146,9 @@ impl TryFrom<transaction::OutputBody> for Body {
             encrypted_note: proto.encrypted_note[..]
                 .try_into()
                 .map_err(|_| ProtoError::OutputBodyMalformed)?,
-            // xx Nothing in this proof yet.
-            proof: OutputProof {},
+            proof: proto.zkproof[..]
+                .try_into()
+                .map_err(|_| ProtoError::OutputBodyMalformed)?,
         })
     }
 }

@@ -47,8 +47,6 @@ impl Builder {
         note: Note,
         position: merkle::Position,
     ) -> Self {
-        let nullifier = note.nf(position, spend_key.nullifier_key());
-
         let v_blinding = Fr::rand(rng);
         let value_commitment = note.value.commit(v_blinding);
         // We add to the transaction's value balance.
@@ -60,10 +58,13 @@ impl Builder {
         let body = spend::Body::new(
             rng,
             value_commitment,
-            nullifier,
             *spend_key.spend_auth_key(),
             spend_auth_randomizer,
             merkle_path,
+            position,
+            note,
+            v_blinding,
+            *spend_key.nullifier_key(),
         );
 
         let auth_sig = rsk.sign(rng, &body.serialize());

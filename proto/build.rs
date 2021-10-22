@@ -25,5 +25,6 @@ fn main() -> Result<()> {
     ]);
 
     config.compile_protos(&["proto/transaction.proto"], &["proto/"])?;
+    config.compile_protos(&["proto/transparent_proofs.proto"], &["proto/"])?;
     Ok(())
 }

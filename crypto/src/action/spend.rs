@@ -8,10 +8,10 @@ use penumbra_proto::{transaction, Protobuf};
 
 use crate::{
     action::error::ProtoError,
-    merkle,
-    proofs::transparent::{SpendProof, SPEND_PROOF_LEN_BYTES},
+    keys, merkle,
+    proofs::transparent::SpendProof,
     rdsa::{Signature, SigningKey, SpendAuth, VerificationKey},
-    value, Fr, Nullifier,
+    value, Fr, Note, Nullifier,
 };
 
 pub struct Spend {
@@ -64,20 +64,33 @@ impl Body {
     pub fn new<R: RngCore + CryptoRng>(
         rng: &mut R,
         value_commitment: value::Commitment,
-        nullifier: Nullifier,
         ask: SigningKey<SpendAuth>,
         spend_auth_randomizer: Fr,
         merkle_path: merkle::Path,
+        position: merkle::Position,
+        note: Note,
+        v_blinding: Fr,
+        nk: keys::NullifierKey,
     ) -> Body {
         let a = Fr::rand(rng);
         let rk = ask.randomize(&a).into();
+        let note_commitment = note.commit().expect("transmission key is valid");
         let proof = SpendProof {
-            spend_auth_randomizer,
             merkle_path,
+            position,
+            g_d: note.diversified_generator,
+            pk_d: note.transmission_key,
+            value: note.value,
+            v_blinding,
+            note_commitment,
+            note_blinding: note.note_blinding,
+            spend_auth_randomizer,
+            ak: ask.into(),
+            nk,
         };
         Body {
             value_commitment,
-            nullifier,
+            nullifier: nk.nf(position, &note_commitment),
             rk,
             proof,
         }
@@ -96,12 +109,12 @@ impl From<Body> for transaction::SpendBody {
         let cv_bytes: [u8; 32] = msg.value_commitment.into();
         let nullifier_bytes: [u8; 32] = msg.nullifier.into();
         let rk_bytes: [u8; 32] = msg.rk.into();
-        let proof_bytes: [u8; SPEND_PROOF_LEN_BYTES] = msg.proof.into();
+        let proof: Vec<u8> = msg.proof.into();
         transaction::SpendBody {
             cv: Bytes::copy_from_slice(&cv_bytes),
             nullifier: Bytes::copy_from_slice(&nullifier_bytes),
             rk: Bytes::copy_from_slice(&rk_bytes),
-            zkproof: Bytes::copy_from_slice(&proof_bytes),
+            zkproof: proof.into(),
         }
     }
 }
