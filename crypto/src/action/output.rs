@@ -141,7 +141,6 @@ impl TryFrom<transaction::OutputBody> for Body {
             encrypted_note: proto.encrypted_note[..]
                 .try_into()
                 .map_err(|_| ProtoError::OutputBodyMalformed)?,
-            // TK: protos for serializing proofs (for early MVPs only)
             proof: proto.zkproof[..]
                 .try_into()
                 .map_err(|_| ProtoError::OutputBodyMalformed)?,

@@ -8,7 +8,7 @@ use thiserror;
 use penumbra_proto::{transparent_proofs, Message, Protobuf};
 
 use crate::{
-    action::error::ProtoError, asset, ka, keys, merkle, note, value, Fq, Fr, Nullifier, Value,
+    action::error::ProtoError, asset, ka, keys, merkle, note, value, Fq, Fr, Note, Nullifier, Value,
 };
 
 #[derive(thiserror::Error, Debug)]
@@ -89,11 +89,33 @@ impl OutputProof {
     /// * note commitment of the new note,
     /// * the ephemeral public key used to generate the new note.
     pub fn verify(
+        &self,
         value_commitment: value::Commitment,
         note_commitment: note::Commitment,
         epk: ka::Public,
     ) -> bool {
-        todo!()
+        let mut proof_verifies = false;
+        // Note commitment integrity.
+        //TK
+
+        // Value commitment integrity.
+        if self.value.commit(self.v_blinding) != value_commitment {
+            proof_verifies = false;
+        }
+
+        // Ephemeral public key integrity.
+        if self.esk.diversified_public(&self.g_d) != epk {
+            proof_verifies = false;
+        }
+
+        // The use of decaf means that we do not need to check that the
+        // diversified basepoint is of small order. However we instead
+        // check it is not identity.
+        if self.g_d.is_identity() {
+            proof_verifies = false;
+        }
+
+        proof_verifies
     }
 }
 
