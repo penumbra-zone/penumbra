@@ -19,5 +19,9 @@ pub mod transaction {
     include!(concat!(env!("OUT_DIR"), "/penumbra.transaction.rs"));
 }
 
+pub mod transparent_proofs {
+    include!(concat!(env!("OUT_DIR"), "/penumbra.transparent_proofs.rs"));
+}
+
 mod protobuf;
 pub use protobuf::Protobuf;
