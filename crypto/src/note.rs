@@ -66,7 +66,7 @@ impl Note {
 }
 
 // Note commitment.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct Commitment(pub Fq);
 
 impl Into<[u8; 32]> for Commitment {

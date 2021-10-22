@@ -94,9 +94,13 @@ impl OutputProof {
         note_commitment: note::Commitment,
         epk: ka::Public,
     ) -> bool {
-        let mut proof_verifies = false;
+        let mut proof_verifies = true;
         // Note commitment integrity.
-        //TK
+        let note_commitment_test =
+            Note::new(&self.g_d, &self.pk_d, self.value, self.note_blinding).commit();
+        if note_commitment_test.is_err() || note_commitment != note_commitment_test.unwrap() {
+            proof_verifies = false;
+        }
 
         // Value commitment integrity.
         if self.value.commit(self.v_blinding) != value_commitment {
