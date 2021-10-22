@@ -80,14 +80,19 @@ impl Body {
 
         let note_blinding = Fq::rand(rng);
 
-        let note = Note::new(dest, value, note_blinding);
-        let note_commitment = note.commit();
+        let note = Note::new(
+            dest.diversified_generator(),
+            dest.transmission_key(),
+            value,
+            note_blinding,
+        );
+        let note_commitment = note.commit().expect("transmission key is valid");
         // TODO: Encrypt note here and add to a field in the Body struct (later).
         // TEMP
         let encrypted_note = [0u8; NOTE_ENCRYPTION_BYTES];
 
         let esk = ka::Secret::new(rng);
-        let ephemeral_key = esk.diversified_public(note.dest.diversified_generator());
+        let ephemeral_key = esk.diversified_public(&note.diversified_generator);
 
         let proof = OutputProof {
             g_d: *dest.diversified_generator(),

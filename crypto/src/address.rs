@@ -63,9 +63,4 @@ impl Address {
     pub fn clue_key(&self) -> &fmd::ClueKey {
         &self.ck_d
     }
-
-    pub(crate) fn transmission_key_field(&self) -> &Fq {
-        // the bytes of pk_d might not be a canonical encoding
-        &self.cached_s
-    }
 }

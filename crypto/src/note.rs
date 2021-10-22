@@ -1,16 +1,10 @@
 use ark_ff::PrimeField;
 use decaf377::FieldExt;
 use once_cell::sync::Lazy;
-use poseidon377::hash_3;
 use std::convert::{TryFrom, TryInto};
 use thiserror;
 
-use crate::{
-    keys,
-    merkle::Position,
-    nullifier::{Nullifier, NULLIFIER_DOMAIN_SEP},
-    Address, Fq, Value,
-};
+use crate::{ka, Fq, Value};
 
 // TODO: Should have a `leadByte` as in Sapling and Orchard note plaintexts?
 // Do we need that in addition to the tx version?
@@ -23,9 +17,9 @@ pub struct Note {
     // Commitment trapdoor. 32 bytes.
     pub note_blinding: Fq,
 
-    // Destination
-    // TODO: only the diversified base and transmission key of address needed?
-    pub dest: Address,
+    // The diversified base and transmission key of the destination address.
+    pub diversified_generator: decaf377::Element,
+    pub transmission_key: ka::Public,
 }
 
 /// The domain separator used to generate note commitments.
@@ -40,38 +34,34 @@ pub enum Error {
 }
 
 impl Note {
-    pub fn new(dest: &Address, value: Value, note_blinding: Fq) -> Self {
+    pub fn new(
+        diversified_generator: &decaf377::Element,
+        transmission_key: &ka::Public,
+        value: Value,
+        note_blinding: Fq,
+    ) -> Self {
         Note {
             value: value,
             note_blinding: note_blinding,
-            dest: dest.clone(),
+            diversified_generator: diversified_generator.clone(),
+            transmission_key: transmission_key.clone(),
         }
     }
 
-    pub fn diversifier(&self) -> &keys::Diversifier {
-        self.dest.diversifier()
-    }
-
-    pub fn commit(&self) -> Commitment {
+    pub fn commit(&self) -> Result<Commitment, Error> {
         let commit = poseidon377::hash_5(
             &NOTECOMMIT_DOMAIN_SEP,
             (
                 self.note_blinding,
                 self.value.amount.into(),
                 self.value.asset_id.0,
-                self.dest.diversified_generator().compress_to_field(),
-                *self.dest.transmission_key_field(),
+                self.diversified_generator.compress_to_field(),
+                Fq::from_bytes(self.transmission_key.0)
+                    .map_err(|_| Error::InvalidNoteCommitment)?,
             ),
         );
 
-        Commitment(commit)
-    }
-
-    pub fn nf(&self, pos: Position, nk: &keys::NullifierKey) -> Nullifier {
-        Nullifier(hash_3(
-            &NULLIFIER_DOMAIN_SEP,
-            (nk.0, self.commit().0, (u64::from(pos)).into()),
-        ))
+        Ok(Commitment(commit))
     }
 }
 

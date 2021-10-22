@@ -74,14 +74,15 @@ impl Body {
     ) -> Body {
         let a = Fr::rand(rng);
         let rk = ask.randomize(&a).into();
+        let note_commitment = note.commit().expect("transmission key is valid");
         let proof = SpendProof {
             merkle_path,
             position,
-            g_d: *note.dest.diversified_generator(),
-            pk_d: *note.dest.transmission_key(),
+            g_d: note.diversified_generator,
+            pk_d: note.transmission_key,
             value: note.value,
             v_blinding,
-            note_commitment: note.commit(),
+            note_commitment,
             note_blinding: note.note_blinding,
             spend_auth_randomizer,
             ak: ask.into(),
@@ -89,7 +90,7 @@ impl Body {
         };
         Body {
             value_commitment,
-            nullifier: note.nf(position, &nk),
+            nullifier: nk.nf(position, &note_commitment),
             rk,
             proof,
         }
