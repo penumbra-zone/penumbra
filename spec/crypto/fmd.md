@@ -32,13 +32,13 @@ generalization of the original definition where the false positive probability
 is set by the sender instead of the receiver, and discusses why this is useful.
 
 * In [Constructing S-FMD](./fmd/construction.md), we realize the new definition
-using a variant of one of the original FMD constructions, and extend it in two
-ways:
-    1. to support *diversified detection*, allowing multiple, publicly
-    unlinkable addresses to be scanned by a single detection key; 
-    2. to support arbitrarily precise detection with compact, constant-size keys.  
+using a variant of one of the original FMD constructions, and extend it in two ways:
+    1. to support arbitrarily precise detection with compact, constant-size keys;
+    2. to support *diversified detection*, allowing multiple, publicly
+    unlinkable addresses to be scanned by a single detection key.
 
-    The resulting construction can then be integrated into the Sapling key heirarchy.
+Unfortunately, these extensions are not mutually compatible, so we only use the
+first one, and record the second for posterity.
 
 * In [Parameter Considerations](./fmd/considerations.md), we discuss how the
 false positive rates should be chosen.

@@ -22,30 +22,29 @@ probability.
 ## Receiver FMD
 
 The paper's original definition of fuzzy message detection is as a tuple of
-algorithms `(KeyGen, Flag, Extract, Test)`.  The receiver uses `KeyGen` to
-generate a *root key* and a *flag key*[^1].  A sender uses the
-receiver's flag key as input to `Flag` to produce a *flag ciphertext*.  The
-`Extract` algorithm takes the root key and a false positive rate $p$
-(chosen from some set of supported rates), and produces a *detection key*.  This
-detection key can be applied to a flag ciphertext using `Test` to produce a
-detection result.
+algorithms `(KeyGen, CreateClue, Extract, Examine)`.[^1]  The receiver uses
+`KeyGen` to generate a *root key* and a *clue key*.  A sender uses the
+receiver's clue key as input to `CreateClue` to produce a *clue*.  The `Extract`
+algorithm takes the root key and a false positive rate $p$ (chosen from some set
+of supported rates), and produces a *detection key*.  The `Examine` algorithm
+uses a detection key to examine a clue and produce a detection result.
 
 This scheme should satisfy certain properties, formalizations of which can be
 found in the paper:
 
 ###### Correctness.
 
-Valid matches must always be detected by `Test`; i.e., there are no false negatives.
+Valid matches must always be detected by `Examine`; i.e., there are no false negatives.
 
 ###### Fuzziness.
 
 Invalid matches should produce false positives with probability approximately
-$p$, as long as the flag ciphertexts and detection keys were honestly generated.
+$p$, as long as the clues and detection keys were honestly generated.
 
 ###### Detection Ambiguity.
 
 An adversarial detector must be unable to distinguish between a true positive
-and a false positive, as long as the flag ciphertexts and detection keys were
+and a false positive, as long as the clues and detection keys were
 honestly generated.
 
 In this original definition, the receiver has control over how much detection
@@ -65,21 +64,21 @@ To address this problem, we generalize the original definition (now *Receiver
 FMD*) to *Sender FMD*, in which the false positive probability is chosen by the
 sender.
 
-Like R-FMD, S-FMD consists of a tuple of
-algorithms `(KeyGen, Flag, Extract, Test)`.  Like R-FMD, `KeyGen` generates a
-root key and a flag key, and `Test` takes a detection key and a flag ciphertext
-and produces a detection result.  Unlike R-FMD, `Extract` produces a detection
-key directly from the root key, and `Flag` takes the false positive rate $p$ and
-the receiver's flag key to produce a flag ciphertext.  As discussed below, S-FMD
-can be realized using tweaks to either of the R-FMD constructions in the
-original paper.
+S-FMD consists of a tuple of algorithms `(KeyGen, CreateClue, Examine)`.  Like
+R-FMD, `CreateClue` creates a clue and `Examine` takes a detection key and a
+clue and produces a detection result.  As discussed in the [next
+section](./construction.md), S-FMD can be realized using tweaks to either of the
+R-FMD constructions in the original paper.
+
+Unlike R-FMD, the false positive rate is set by the sender, so `CreateClue`
+takes both the false positive rate $p$ and the receiver's clue key.  Because the
+false postive rate is set by the sender, there is no separation of capability
+between the root key and a detection key, so `KeyGen` outputs a clue key and a
+detection key, and `Extract` disappears.
 
 In R-FMD, flag ciphertexts are universal with respect to the false positive
 rate, which is applied to the detection key; in S-FMD, the false positive rate
-is applied to the flag ciphertext and the detection key is universal.  (This
-means there is no meaningful difference in capability between the root key and
-the detection key, so the distinction is maintained just for ease of comparison
-between the two variants).
+is applied to the flag ciphertext and the detection key is universal.
 
 Unlike R-FMD, S-FMD allows detection precision to be adaptive, by having senders
 use a (consensus-determined) false positive parameter.  This parameter should
@@ -87,8 +86,12 @@ vary as the global message rates vary, so that filtered message streams have a
 bounded rate, and it should be the same for all users, so that messages cannot
 be distinguished by their false positive rate.
 
-[^1]: The paper calls these the secret and public keys respectively, but we
-avoid this in favor of capability-based terminology that names keys according to
-the precise capability they allow.
+[^1]: We change terminology from the FMD paper; the paper calls detection and
+clue keys the secret and public keys respectively, but we avoid this in favor of
+capability-based terminology that names keys according to the precise capability
+they allow.  The "clue" terminology is adopted from the [_Oblivious Message
+Retrieval_][omr] paper of Zeyu Liu and Eran Tromer; we `CreateClue` and `Examine` clues
+rather than `Flag` and `Test` flag ciphertexts.
 
 [macaroons]: https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/41892.pdf
+[omr]: https://eprint.iacr.org/2021/1256
