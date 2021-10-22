@@ -10,7 +10,7 @@ use decaf377::{self, FieldExt};
 /// This is a refinement type around `[u8; 32]` that marks the bytes as being a
 /// public key.  Not all 32-byte arrays are valid public keys; invalid public
 /// keys will error during key agreement.
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct Public(pub [u8; 32]);
 
 /// A secret key used to perform key agreement using the counterparty's public key.

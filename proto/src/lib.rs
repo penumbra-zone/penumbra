@@ -24,4 +24,5 @@ pub mod transparent_proofs {
 }
 
 mod protobuf;
+pub use prost::Message;
 pub use protobuf::Protobuf;

@@ -1,20 +1,15 @@
 //! Transparent proofs for `MVP1` of the Penumbra system.
 
-use ark_serialize::CanonicalSerialize;
 use decaf377::FieldExt;
 use decaf377_rdsa::{SpendAuth, VerificationKey};
 use std::convert::{TryFrom, TryInto};
 use thiserror;
 
-use penumbra_proto::{transparent_proofs, Protobuf};
+use penumbra_proto::{transparent_proofs, Message, Protobuf};
 
 use crate::{
     action::error::ProtoError, asset, ka, keys, merkle, note, value, Fq, Fr, Nullifier, Value,
 };
-
-pub const OUTPUT_PROOF_LEN_BYTES: usize = 192;
-// xx check the spend proof len
-pub const SPEND_PROOF_LEN_BYTES: usize = 192;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -287,45 +282,40 @@ impl TryFrom<transparent_proofs::OutputProof> for OutputProof {
     }
 }
 
-impl Into<[u8; SPEND_PROOF_LEN_BYTES]> for SpendProof {
-    fn into(self) -> [u8; SPEND_PROOF_LEN_BYTES] {
-        let mut spend_auth_randomizer_bytes = [0u8; 32];
-        self.spend_auth_randomizer
-            .serialize(&mut spend_auth_randomizer_bytes[..])
-            .expect("serialization into array should be infallible");
-
-        let mut bytes = [0u8; SPEND_PROOF_LEN_BYTES];
-        bytes.copy_from_slice(&spend_auth_randomizer_bytes);
-
-        // TODO: Merkle path serialization and add in here
-
-        // When we put more stuff into this transparent spend proof, add here.
-        bytes
+impl Into<Vec<u8>> for SpendProof {
+    fn into(self) -> Vec<u8> {
+        let protobuf_serialized_proof: transparent_proofs::SpendProof = self.into();
+        protobuf_serialized_proof.encode_to_vec()
     }
 }
 
 impl TryFrom<&[u8]> for SpendProof {
-    type Error = Error;
+    type Error = ProtoError;
 
     fn try_from(bytes: &[u8]) -> Result<SpendProof, Self::Error> {
-        let mut spend_auth_randomizer_bytes = [0u8; 32];
-        spend_auth_randomizer_bytes.copy_from_slice(&bytes[0..32]);
-
-        let spend_auth_randomizer = Fr::from_bytes(spend_auth_randomizer_bytes)
-            .map_err(|_| Error::InvalidSpendAuthRandomizer)?;
-
-        // TODO! Merkle path serialization.
-        Ok(SpendProof {
-            spend_auth_randomizer,
-            merkle_path: merkle::Path::default(),
-        })
+        let protobuf_serialized_proof = transparent_proofs::SpendProof::decode(bytes)
+            .map_err(|_| ProtoError::ProofMalformed)?;
+        Ok(protobuf_serialized_proof
+            .try_into()
+            .map_err(|_| ProtoError::ProofMalformed)?)
     }
 }
 
-impl Into<[u8; OUTPUT_PROOF_LEN_BYTES]> for OutputProof {
-    fn into(self) -> [u8; OUTPUT_PROOF_LEN_BYTES] {
-        let bytes = [0u8; OUTPUT_PROOF_LEN_BYTES];
-        // When we put more stuff into this transparent output proof, add here.
-        bytes
+impl Into<Vec<u8>> for OutputProof {
+    fn into(self) -> Vec<u8> {
+        let protobuf_serialized_proof: transparent_proofs::OutputProof = self.into();
+        protobuf_serialized_proof.encode_to_vec()
+    }
+}
+
+impl TryFrom<&[u8]> for OutputProof {
+    type Error = ProtoError;
+
+    fn try_from(bytes: &[u8]) -> Result<OutputProof, Self::Error> {
+        let protobuf_serialized_proof = transparent_proofs::OutputProof::decode(bytes)
+            .map_err(|_| ProtoError::ProofMalformed)?;
+        Ok(protobuf_serialized_proof
+            .try_into()
+            .map_err(|_| ProtoError::ProofMalformed)?)
     }
 }

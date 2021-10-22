@@ -9,7 +9,7 @@ use penumbra_proto::{transaction, Protobuf};
 use crate::{
     action::error::ProtoError,
     keys, merkle,
-    proofs::transparent::{SpendProof, SPEND_PROOF_LEN_BYTES},
+    proofs::transparent::SpendProof,
     rdsa::{Signature, SigningKey, SpendAuth, VerificationKey},
     value, Fr, Note, Nullifier,
 };
@@ -108,12 +108,12 @@ impl From<Body> for transaction::SpendBody {
         let cv_bytes: [u8; 32] = msg.value_commitment.into();
         let nullifier_bytes: [u8; 32] = msg.nullifier.into();
         let rk_bytes: [u8; 32] = msg.rk.into();
-        let proof_bytes: [u8; SPEND_PROOF_LEN_BYTES] = msg.proof.into();
+        let proof: Vec<u8> = msg.proof.into();
         transaction::SpendBody {
             cv: Bytes::copy_from_slice(&cv_bytes),
             nullifier: Bytes::copy_from_slice(&nullifier_bytes),
             rk: Bytes::copy_from_slice(&rk_bytes),
-            zkproof: Bytes::copy_from_slice(&proof_bytes),
+            zkproof: Bytes::copy_from_slice(&proof[..]),
         }
     }
 }

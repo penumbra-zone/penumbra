@@ -10,11 +10,8 @@ use super::{
     error::ProtoError,
 };
 use crate::{
-    ka,
-    memo::MemoCiphertext,
-    note,
-    proofs::transparent::{OutputProof, OUTPUT_PROOF_LEN_BYTES},
-    value, Address, Fq, Fr, Note, Value,
+    ka, memo::MemoCiphertext, note, proofs::transparent::OutputProof, value, Address, Fq, Fr, Note,
+    Value,
 };
 
 pub struct Output {
@@ -117,13 +114,13 @@ impl From<Body> for transaction::OutputBody {
     fn from(msg: Body) -> Self {
         let cv_bytes: [u8; 32] = msg.value_commitment.into();
         let cm_bytes: [u8; 32] = msg.note_commitment.into();
-        let proof_bytes: [u8; OUTPUT_PROOF_LEN_BYTES] = msg.proof.into();
+        let proof: Vec<u8> = msg.proof.into();
         transaction::OutputBody {
             cv: Bytes::copy_from_slice(&cv_bytes),
             cm: Bytes::copy_from_slice(&cm_bytes),
             ephemeral_key: Bytes::copy_from_slice(&msg.ephemeral_key.0),
             encrypted_note: Bytes::copy_from_slice(&msg.encrypted_note),
-            zkproof: Bytes::copy_from_slice(&proof_bytes),
+            zkproof: Bytes::copy_from_slice(&proof[..]),
         }
     }
 }
@@ -145,7 +142,9 @@ impl TryFrom<transaction::OutputBody> for Body {
                 .try_into()
                 .map_err(|_| ProtoError::OutputBodyMalformed)?,
             // TK: protos for serializing proofs (for early MVPs only)
-            proof: OutputProof {},
+            proof: proto.zkproof[..]
+                .try_into()
+                .map_err(|_| ProtoError::OutputBodyMalformed)?,
         })
     }
 }
