@@ -12,15 +12,15 @@ use crate::{ka, keys::Diversifier, Fq, Value};
 /// A plaintext Penumbra note.
 pub struct Note {
     // Value (32-byte asset ID plus 32-byte amount). 64 bytes.
-    pub value: Value,
+    value: Value,
 
     // Commitment trapdoor. 32 bytes.
-    pub note_blinding: Fq,
+    note_blinding: Fq,
 
     // The diversifier of the destination address.
-    pub diversifier: Diversifier,
+    diversifier: Diversifier,
 
-    pub transmission_key: ka::Public,
+    transmission_key: ka::Public,
     // The s-component of the transmission key of the destination address.
     transmission_key_s: Fq,
 }
@@ -57,6 +57,22 @@ impl Note {
 
     pub fn diversified_generator(&self) -> decaf377::Element {
         self.diversifier.diversified_generator()
+    }
+
+    pub fn transmission_key(&self) -> ka::Public {
+        self.transmission_key
+    }
+
+    pub fn diversifier(&self) -> Diversifier {
+        self.diversifier
+    }
+
+    pub fn note_blinding(&self) -> Fq {
+        self.note_blinding
+    }
+
+    pub fn value(&self) -> Value {
+        self.value
     }
 
     pub fn commit(&self) -> Commitment {

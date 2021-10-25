@@ -48,7 +48,7 @@ impl Builder {
         position: merkle::Position,
     ) -> Self {
         let v_blinding = Fr::rand(rng);
-        let value_commitment = note.value.commit(v_blinding);
+        let value_commitment = note.value().commit(v_blinding);
         // We add to the transaction's value balance.
         self.synthetic_blinding_factor += v_blinding;
 
