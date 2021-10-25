@@ -9,7 +9,7 @@ use penumbra_proto::{transparent_proofs, Message, Protobuf};
 
 use crate::{
     action::error::ProtoError, asset, ka, keys, merkle, merkle::Hashable, note, value, Fq, Fr,
-    Note, Nullifier, Value,
+    Nullifier, Value,
 };
 
 #[derive(thiserror::Error, Debug)]
@@ -64,10 +64,20 @@ impl SpendProof {
         let mut proof_verifies = true;
 
         // Note commitment integrity.
-        let note_commitment_test =
-            Note::new(&self.g_d, &self.pk_d, self.value, self.note_blinding).commit();
-        if note_commitment_test.is_err() || self.note_commitment != note_commitment_test.unwrap() {
+        let s_component_transmission_key = Fq::from_bytes(self.pk_d.0);
+        if s_component_transmission_key.is_err() {
             proof_verifies = false;
+        } else {
+            let note_commitment_test = note::Commitment::new(
+                self.note_blinding,
+                self.value,
+                self.g_d,
+                s_component_transmission_key.unwrap(),
+            );
+
+            if self.note_commitment != note_commitment_test {
+                proof_verifies = false;
+            }
         }
 
         // Merkle path integrity.
@@ -169,10 +179,20 @@ impl OutputProof {
         let mut proof_verifies = true;
 
         // Note commitment integrity.
-        let note_commitment_test =
-            Note::new(&self.g_d, &self.pk_d, self.value, self.note_blinding).commit();
-        if note_commitment_test.is_err() || note_commitment != note_commitment_test.unwrap() {
+        let s_component_transmission_key = Fq::from_bytes(self.pk_d.0);
+        if s_component_transmission_key.is_err() {
             proof_verifies = false;
+        } else {
+            let note_commitment_test = note::Commitment::new(
+                self.note_blinding,
+                self.value,
+                self.g_d,
+                s_component_transmission_key.unwrap(),
+            );
+
+            if note_commitment != note_commitment_test {
+                proof_verifies = false;
+            }
         }
 
         // Value commitment integrity.
