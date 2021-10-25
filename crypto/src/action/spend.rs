@@ -4,7 +4,7 @@ use ark_ff::UniformRand;
 use bytes::Bytes;
 use rand_core::{CryptoRng, RngCore};
 
-use penumbra_proto::{transaction, Protobuf};
+use penumbra_proto::{transaction, Message, Protobuf};
 
 use crate::{
     action::error::ProtoError,
@@ -14,6 +14,7 @@ use crate::{
     value, Fr, Note, Nullifier,
 };
 
+#[derive(Clone)]
 pub struct Spend {
     pub body: Body,
     pub auth_sig: Signature<SpendAuth>,
@@ -52,6 +53,7 @@ impl TryFrom<transaction::Spend> for Spend {
     }
 }
 
+#[derive(Clone)]
 pub struct Body {
     pub value_commitment: value::Commitment,
     pub nullifier: Nullifier,
@@ -95,10 +97,12 @@ impl Body {
             proof,
         }
     }
+}
 
-    // xx Replace with proto serialization into `SpendBody`?
-    pub fn serialize(&self) -> &[u8] {
-        todo!();
+impl Into<Vec<u8>> for Body {
+    fn into(self) -> Vec<u8> {
+        let protobuf_serialized: transaction::SpendBody = self.into();
+        protobuf_serialized.encode_to_vec()
     }
 }
 

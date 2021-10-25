@@ -5,7 +5,7 @@ use bytes::Bytes;
 
 use decaf377::FieldExt;
 
-use penumbra_proto::{transaction, Protobuf};
+use penumbra_proto::{transaction, Message, Protobuf};
 
 use crate::{
     action::{error::ProtoError, Action},
@@ -17,6 +17,7 @@ use crate::{
 mod builder;
 pub use builder::Builder;
 
+#[derive(Clone)]
 pub struct TransactionBody {
     pub actions: Vec<Action>,
     pub merkle_root: merkle::Root,
@@ -25,9 +26,10 @@ pub struct TransactionBody {
     pub fee: Fee,
 }
 
-impl TransactionBody {
-    pub fn sign() -> Transaction {
-        todo!()
+impl Into<Vec<u8>> for TransactionBody {
+    fn into(self) -> Vec<u8> {
+        let protobuf_serialized: transaction::TransactionBody = self.into();
+        protobuf_serialized.encode_to_vec()
     }
 }
 
@@ -87,6 +89,7 @@ impl TryFrom<transaction::TransactionBody> for TransactionBody {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct Fee(pub u64);
 
 // temp: remove dead code when Transaction fields are read
@@ -103,6 +106,8 @@ impl Transaction {
             actions: Vec::new(),
             fee: None,
             synthetic_blinding_factor: Fr::zero(),
+            value_balance: decaf377::Element::default(),
+            value_commitments: decaf377::Element::default(),
             merkle_root,
             expiry_height: None,
             chain_id: None,
@@ -167,13 +172,12 @@ mod tests {
     use crate::memo::MemoPlaintext;
     use crate::{Fq, Value};
 
-    // Not really a test - just to exercise the code path for now
     #[test]
-    fn test_transaction_create() {
+    fn test_transaction_output_create_happy() {
         let mut rng = OsRng;
         let sk_sender = SpendKey::generate(&mut rng);
         let fvk_sender = sk_sender.full_viewing_key();
-        let ivk_sender = fvk_sender.outgoing();
+        let ovk_sender = fvk_sender.outgoing();
 
         let sk_recipient = SpendKey::generate(&mut rng);
         let fvk_recipient = sk_recipient.full_viewing_key();
@@ -181,8 +185,9 @@ mod tests {
         let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
 
         let merkle_root = merkle::Root(Fq::zero());
-        let _transaction_builder = Transaction::build_with_root(merkle_root)
+        let transaction_builder = Transaction::build_with_root(merkle_root)
             .set_fee(20)
+            .set_chain_id("Pen".to_string())
             .add_output(
                 &mut rng,
                 &dest,
@@ -191,9 +196,11 @@ mod tests {
                     asset_id: b"pen".as_ref().into(),
                 },
                 MemoPlaintext::default(),
-                ivk_sender,
+                ovk_sender,
             );
-        // Commented out since .finalize() will currently fail the test.
-        //let transaction = transaction_builder.finalize(&mut rng);
+
+        let transaction = transaction_builder.finalize(&mut rng);
+
+        assert!(transaction.is_ok());
     }
 }

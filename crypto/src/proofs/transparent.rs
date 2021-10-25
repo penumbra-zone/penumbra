@@ -21,6 +21,7 @@ pub enum Error {
 /// Transparent proof for spending existing notes.
 ///
 /// This structure keeps track of the auxiliary (private) inputs.
+#[derive(Clone)]
 pub struct SpendProof {
     // Path to the note being spent in the note commitment merkle tree.
     pub merkle_path: merkle::Path,
@@ -148,6 +149,7 @@ impl SpendProof {
 /// Transparent proof for new note creation.
 ///
 /// This structure keeps track of the auxiliary (private) inputs.
+#[derive(Clone)]
 pub struct OutputProof {
     // The diversified base for the destination address.
     pub g_d: decaf377::Element,

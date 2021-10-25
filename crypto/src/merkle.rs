@@ -22,7 +22,7 @@ pub static MERKLE_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
 // Return value from `Tree::authentication_path(value: &note::Commitment)`
 pub type Path = (usize, Vec<note::Commitment>);
 
-#[derive(PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Root(pub Fq);
 
 impl TryFrom<&[u8]> for Root {

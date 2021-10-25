@@ -14,6 +14,7 @@ use crate::{
     Value,
 };
 
+#[derive(Clone)]
 pub struct Output {
     pub body: Body,
     pub encrypted_memo: MemoCiphertext,
@@ -60,6 +61,7 @@ impl TryFrom<transaction::Output> for Output {
     }
 }
 
+#[derive(Clone)]
 pub struct Body {
     pub value_commitment: value::Commitment,
     pub note_commitment: note::Commitment,
