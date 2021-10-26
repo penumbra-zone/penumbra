@@ -21,8 +21,13 @@ pub struct Spend {
 }
 
 impl Spend {
+    /// Verify an auth sig using the provided randomized verification key.
     pub fn verify_auth_sig(&self) -> bool {
-        todo!()
+        let body_serialized: Vec<u8> = self.body.clone().into();
+        self.body
+            .rk
+            .verify(&body_serialized, &self.auth_sig)
+            .is_ok()
     }
 }
 
