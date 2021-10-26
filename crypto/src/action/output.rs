@@ -1,4 +1,3 @@
-use ark_ff::UniformRand;
 use bytes::Bytes;
 use rand_core::{CryptoRng, RngCore};
 use std::convert::{TryFrom, TryInto};
@@ -10,8 +9,7 @@ use super::{
     error::ProtoError,
 };
 use crate::{
-    ka, memo::MemoCiphertext, note, proofs::transparent::OutputProof, value, Address, Fq, Fr, Note,
-    Value,
+    ka, memo::MemoCiphertext, note, proofs::transparent::OutputProof, value, Address, Fr, Note,
 };
 
 #[derive(Clone)]
@@ -73,22 +71,12 @@ pub struct Body {
 impl Body {
     pub fn new<R: RngCore + CryptoRng>(
         rng: &mut R,
-        value: Value,
+        note: Note,
         v_blinding: Fr,
         dest: &Address,
     ) -> Body {
         // TODO: p. 43 Spec. Decide whether to do leadByte 0x01 method or 0x02 or other.
-        let value_commitment = value.commit(v_blinding);
-
-        let note_blinding = Fq::rand(rng);
-
-        let note = Note::new(
-            *dest.diversifier(),
-            dest.transmission_key(),
-            value,
-            note_blinding,
-        )
-        .expect("transmission key is valid");
+        let value_commitment = note.value().commit(v_blinding);
         let note_commitment = note.commit();
         // TODO: Encrypt note here and add to a field in the Body struct (later).
         // TEMP
@@ -100,9 +88,9 @@ impl Body {
         let proof = OutputProof {
             g_d: *dest.diversified_generator(),
             pk_d: *dest.transmission_key(),
-            value,
+            value: note.value(),
             v_blinding,
-            note_blinding,
+            note_blinding: note.note_blinding(),
             esk,
         };
 

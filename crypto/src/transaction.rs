@@ -170,10 +170,11 @@ mod tests {
 
     use crate::keys::SpendKey;
     use crate::memo::MemoPlaintext;
-    use crate::{Fq, Value};
+    use crate::transaction::builder::Error;
+    use crate::{note, Fq, Note, Value};
 
     #[test]
-    fn test_transaction_output_create_happy() {
+    fn test_transaction_single_output_fails_due_to_nonzero_value_balance() {
         let mut rng = OsRng;
         let sk_sender = SpendKey::generate(&mut rng);
         let fvk_sender = sk_sender.full_viewing_key();
@@ -185,7 +186,7 @@ mod tests {
         let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
 
         let merkle_root = merkle::Root(Fq::zero());
-        let transaction_builder = Transaction::build_with_root(merkle_root)
+        let transaction = Transaction::build_with_root(merkle_root)
             .set_fee(20)
             .set_chain_id("Pen".to_string())
             .add_output(
@@ -197,10 +198,58 @@ mod tests {
                 },
                 MemoPlaintext::default(),
                 ovk_sender,
-            );
+            )
+            .finalize(&mut rng);
 
-        let transaction = transaction_builder.finalize(&mut rng);
+        assert!(transaction.is_err());
+        assert_eq!(transaction.err(), Some(Error::NonZeroValueBalance));
+    }
+
+    #[test]
+    fn test_transaction_succeeds_if_values_balance() {
+        let mut rng = OsRng;
+        let sk_sender = SpendKey::generate(&mut rng);
+        let fvk_sender = sk_sender.full_viewing_key();
+        let ovk_sender = fvk_sender.outgoing();
+
+        let sk_recipient = SpendKey::generate(&mut rng);
+        let fvk_recipient = sk_recipient.full_viewing_key();
+        let ivk_recipient = fvk_recipient.incoming();
+        let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
+
+        let merkle_root = merkle::Root(Fq::zero());
+        let mut merkle_siblings = Vec::new();
+        for _i in 0..merkle::MERKLE_DEPTH {
+            merkle_siblings.push(note::Commitment(Fq::zero()))
+        }
+        let dummy_merkle_path: merkle::Path = (merkle::MERKLE_DEPTH, merkle_siblings);
+
+        let value_to_send = Value {
+            amount: 10,
+            asset_id: b"pen".as_ref().into(),
+        };
+        let dummy_note = Note::new(
+            *dest.diversifier(),
+            dest.transmission_key(),
+            value_to_send,
+            Fq::zero(),
+        )
+        .expect("transmission key is valid");
+
+        let transaction = Transaction::build_with_root(merkle_root)
+            .set_fee(20)
+            .set_chain_id("Pen".to_string())
+            .add_output(
+                &mut rng,
+                &dest,
+                value_to_send,
+                MemoPlaintext::default(),
+                ovk_sender,
+            )
+            .add_spend(&mut rng, sk_sender, dummy_merkle_path, dummy_note, 0.into())
+            .finalize(&mut rng);
 
         assert!(transaction.is_ok());
+        assert_eq!(transaction.unwrap().transaction_body.expiry_height, 0);
     }
 }

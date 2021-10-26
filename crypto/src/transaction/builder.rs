@@ -12,15 +12,17 @@ use crate::{
     memo::MemoPlaintext,
     merkle,
     transaction::{Fee, Transaction, TransactionBody},
-    value, Address, Fr, Note, Output, Spend, Value,
+    value, Address, Fq, Fr, Note, Output, Spend, Value,
 };
 
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error, Debug, PartialEq, Eq)]
 pub enum Error {
     #[error("Chain ID not set")]
     NoChainID,
     #[error("Fee not set")]
     FeeNotSet,
+    #[error("Value balance of this transaction is not zero")]
+    NonZeroValueBalance,
 }
 
 /// Used to construct a Penumbra transaction.
@@ -33,7 +35,7 @@ pub struct Builder {
     pub synthetic_blinding_factor: Fr,
     // Sum of value commitments.
     pub value_commitments: decaf377::Element,
-    // Sum of value balance.
+    // Value balance.
     pub value_balance: decaf377::Element,
     // The root of the note commitment merkle tree.
     pub merkle_root: merkle::Root,
@@ -74,7 +76,7 @@ impl Builder {
             v_blinding,
             *spend_key.nullifier_key(),
         );
-        self.value_commitments = self.value_commitments + value_commitment.0;
+        self.value_commitments += value_commitment.0;
 
         let body_serialized: Vec<u8> = body.clone().into();
         let auth_sig = rsk.sign(rng, &body_serialized);
@@ -101,8 +103,17 @@ impl Builder {
         self.value_balance -=
             Fr::from(value_to_send.amount) * value_to_send.asset_id.value_generator();
 
-        let body = output::Body::new(rng, value_to_send, v_blinding, dest);
-        self.value_commitments = self.value_commitments - body.value_commitment.0;
+        let note_blinding = Fq::rand(rng);
+
+        let note = Note::new(
+            *dest.diversifier(),
+            dest.transmission_key(),
+            value_to_send,
+            note_blinding,
+        )
+        .expect("transmission key is valid");
+        let body = output::Body::new(rng, note, v_blinding, dest);
+        self.value_commitments -= body.value_commitment.0;
 
         // TODO!
         let encrypted_memo = memo.encrypt(dest);
@@ -147,13 +158,14 @@ impl Builder {
     ) -> Signature<Binding> {
         let binding_signing_key: SigningKey<Binding> = self.synthetic_blinding_factor.into();
 
+        // Check that the derived verification key corresponds to the signing key to be used.
         let H = value::VALUE_BLINDING_GENERATOR.deref();
         let binding_verification_key_raw = (self.synthetic_blinding_factor * H).compress().0;
 
-        // Verifies that:
-        // (value commitments) - (value balance) = binding_signing_key * H
-        let computed_key = (self.value_commitments - self.value_balance).compress().0;
-        assert_eq!(binding_verification_key_raw, computed_key);
+        // If value balance is non-zero, the verification key would be value_commitments - value_balance,
+        // but value_balance should always be zero.
+        let computed_verification_key = self.value_commitments.compress().0;
+        assert_eq!(binding_verification_key_raw, computed_verification_key);
 
         let transaction_body_serialized: Vec<u8> = transaction_body.into();
         binding_signing_key.sign(rng, &transaction_body_serialized)
@@ -169,6 +181,10 @@ impl Builder {
 
         if self.fee.is_none() {
             return Err(Error::FeeNotSet);
+        }
+
+        if self.value_balance != decaf377::Element::default() {
+            return Err(Error::NonZeroValueBalance);
         }
 
         let transaction_body = TransactionBody {
