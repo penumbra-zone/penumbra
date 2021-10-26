@@ -29,7 +29,8 @@ impl FullNodeState {
         }
 
         // 2. Check all spend auth signatures using provided spend auth keys
-        // and check all proofs verify.
+        // and check all proofs verify. If any action does not verify, the entire
+        // transaction has failed.
         for action in transaction.transaction_body().actions {
             match action {
                 Action::Output(inner) => {
@@ -42,7 +43,6 @@ impl FullNodeState {
                     }
                 }
                 Action::Spend(inner) => {
-                    // If any spend does not verify, the entire transaction has failed.
                     if !inner.verify_auth_sig() {
                         return false;
                     }
