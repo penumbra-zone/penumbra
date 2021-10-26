@@ -6,7 +6,7 @@ use once_cell::sync::Lazy;
 
 use crate::Fq;
 
-#[derive(PartialEq, Eq, Clone)]
+#[derive(PartialEq, Eq, Clone, Hash)]
 pub struct Nullifier(pub Fq);
 
 /// The domain separator used to derive nullifiers.
