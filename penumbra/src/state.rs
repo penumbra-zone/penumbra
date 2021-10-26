@@ -1,19 +1,21 @@
 //! In-memory storage of state for MVP1 of the Penumbra node software.
 use std::collections::HashSet;
 
-use penumbra_crypto::{merkle, merkle::TreeExt, note, Action, Nullifier, Transaction};
+use penumbra_crypto::{
+    merkle, merkle::Frontier, merkle::TreeExt, note, Action, Nullifier, Transaction,
+};
 
 pub const MAX_MERKLE_CHECKPOINTS: usize = 100;
 
 pub struct FullNodeState {
-    node_commitment_tree: merkle::BridgeTree<note::Commitment, { merkle::DEPTH as u8 }>,
+    note_commitment_tree: merkle::BridgeTree<note::Commitment, { merkle::DEPTH as u8 }>,
     nullifier_set: HashSet<Nullifier>,
 }
 
 impl FullNodeState {
     pub fn new() -> Self {
         Self {
-            node_commitment_tree: merkle::BridgeTree::new(MAX_MERKLE_CHECKPOINTS),
+            note_commitment_tree: merkle::BridgeTree::new(MAX_MERKLE_CHECKPOINTS),
             // TODO: Store cached merkle root to prevent recomputing it - currently
             // this is happening for each spend (since we pass in the merkle_root when
             // verifying the spend proof).
@@ -32,6 +34,8 @@ impl FullNodeState {
         // and check all proofs verify. If any action does not verify, the entire
         // transaction has failed.
         let mut nullifiers_to_add = HashSet::<Nullifier>::new();
+        let mut note_commitments_to_add = Vec::<note::Commitment>::new();
+
         for action in transaction.transaction_body().actions {
             match action {
                 Action::Output(inner) => {
@@ -42,6 +46,9 @@ impl FullNodeState {
                     ) {
                         return false;
                     }
+
+                    // Queue up the state changes.
+                    note_commitments_to_add.push(inner.body.note_commitment);
                 }
                 Action::Spend(inner) => {
                     if !inner.verify_auth_sig() {
@@ -49,7 +56,7 @@ impl FullNodeState {
                     }
 
                     if !inner.body.proof.verify(
-                        self.node_commitment_tree.root2(),
+                        self.note_commitment_tree.root2(),
                         inner.body.value_commitment,
                         inner.body.nullifier.clone(),
                         inner.body.rk,
@@ -65,7 +72,7 @@ impl FullNodeState {
                         return false;
                     }
 
-                    // Queue up these state changes.
+                    // Queue up the state changes.
                     nullifiers_to_add.insert(inner.body.nullifier.clone());
                 }
             }
@@ -75,7 +82,9 @@ impl FullNodeState {
         for nf in nullifiers_to_add {
             self.nullifier_set.insert(nf);
         }
-        // TK: NCT update
+        for commitment in note_commitments_to_add {
+            self.note_commitment_tree.append(&commitment);
+        }
 
         return true;
     }
