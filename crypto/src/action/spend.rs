@@ -20,6 +20,12 @@ pub struct Spend {
     pub auth_sig: Signature<SpendAuth>,
 }
 
+impl Spend {
+    pub fn verify_auth_sig(&self) -> bool {
+        todo!()
+    }
+}
+
 impl Protobuf<transaction::Spend> for Spend {}
 
 impl From<Spend> for transaction::Spend {

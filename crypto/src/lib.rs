@@ -18,7 +18,9 @@ pub mod value;
 
 pub use action::output::Output;
 pub use action::spend::Spend;
+pub use action::Action;
 pub use address::Address;
 pub use note::Note;
 pub use nullifier::Nullifier;
+pub use transaction::Transaction;
 pub use value::Value;
