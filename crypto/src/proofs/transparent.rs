@@ -82,8 +82,8 @@ impl SpendProof {
         }
 
         // Merkle path integrity.
-        // 1. Check the Merkle path is a depth of `merkle::MERKLE_DEPTH`.
-        if self.merkle_path.1.len() != merkle::MERKLE_DEPTH {
+        // 1. Check the Merkle path is a depth of `merkle::DEPTH`.
+        if self.merkle_path.1.len() != merkle::DEPTH {
             proof_verifies = false;
         }
 

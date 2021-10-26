@@ -219,10 +219,10 @@ mod tests {
 
         let merkle_root = merkle::Root(Fq::zero());
         let mut merkle_siblings = Vec::new();
-        for _i in 0..merkle::MERKLE_DEPTH {
+        for _i in 0..merkle::DEPTH {
             merkle_siblings.push(note::Commitment(Fq::zero()))
         }
-        let dummy_merkle_path: merkle::Path = (merkle::MERKLE_DEPTH, merkle_siblings);
+        let dummy_merkle_path: merkle::Path = (merkle::DEPTH, merkle_siblings);
 
         let value_to_send = Value {
             amount: 10,
