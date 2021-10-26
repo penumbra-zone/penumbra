@@ -4,7 +4,7 @@ use once_cell::sync::Lazy;
 use std::convert::{TryFrom, TryInto};
 use thiserror;
 
-use crate::{ka, Fq, Value};
+use crate::{ka, keys::Diversifier, Fq, Value};
 
 // TODO: Should have a `leadByte` as in Sapling and Orchard note plaintexts?
 // Do we need that in addition to the tx version?
@@ -12,14 +12,17 @@ use crate::{ka, Fq, Value};
 /// A plaintext Penumbra note.
 pub struct Note {
     // Value (32-byte asset ID plus 32-byte amount). 64 bytes.
-    pub value: Value,
+    value: Value,
 
     // Commitment trapdoor. 32 bytes.
-    pub note_blinding: Fq,
+    note_blinding: Fq,
 
-    // The diversified base and transmission key of the destination address.
-    pub diversified_generator: decaf377::Element,
-    pub transmission_key: ka::Public,
+    // The diversifier of the destination address.
+    diversifier: Diversifier,
+
+    transmission_key: ka::Public,
+    // The s-component of the transmission key of the destination address.
+    transmission_key_s: Fq,
 }
 
 /// The domain separator used to generate note commitments.
@@ -31,43 +34,82 @@ static NOTECOMMIT_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
 pub enum Error {
     #[error("Invalid note commitment")]
     InvalidNoteCommitment,
+    #[error("Invalid transmission key")]
+    InvalidTransmissionKey,
 }
 
 impl Note {
     pub fn new(
-        diversified_generator: &decaf377::Element,
+        diversifier: Diversifier,
         transmission_key: &ka::Public,
         value: Value,
         note_blinding: Fq,
-    ) -> Self {
-        Note {
+    ) -> Result<Self, Error> {
+        Ok(Note {
             value: value,
-            note_blinding: note_blinding,
-            diversified_generator: diversified_generator.clone(),
-            transmission_key: transmission_key.clone(),
-        }
+            note_blinding,
+            diversifier,
+            transmission_key: *transmission_key,
+            transmission_key_s: Fq::from_bytes(transmission_key.0)
+                .map_err(|_| Error::InvalidTransmissionKey)?,
+        })
     }
 
-    pub fn commit(&self) -> Result<Commitment, Error> {
-        let commit = poseidon377::hash_5(
-            &NOTECOMMIT_DOMAIN_SEP,
-            (
-                self.note_blinding,
-                self.value.amount.into(),
-                self.value.asset_id.0,
-                self.diversified_generator.compress_to_field(),
-                Fq::from_bytes(self.transmission_key.0)
-                    .map_err(|_| Error::InvalidNoteCommitment)?,
-            ),
-        );
+    pub fn diversified_generator(&self) -> decaf377::Element {
+        self.diversifier.diversified_generator()
+    }
 
-        Ok(Commitment(commit))
+    pub fn transmission_key(&self) -> ka::Public {
+        self.transmission_key
+    }
+
+    pub fn diversifier(&self) -> Diversifier {
+        self.diversifier
+    }
+
+    pub fn note_blinding(&self) -> Fq {
+        self.note_blinding
+    }
+
+    pub fn value(&self) -> Value {
+        self.value
+    }
+
+    pub fn commit(&self) -> Commitment {
+        Commitment::new(
+            self.note_blinding,
+            self.value,
+            self.diversified_generator(),
+            self.transmission_key_s,
+        )
     }
 }
 
 // Note commitment.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Commitment(pub Fq);
+
+impl Commitment {
+    pub fn new(
+        note_blinding: Fq,
+        value: Value,
+        diversified_generator: decaf377::Element,
+        transmission_key_s: Fq,
+    ) -> Self {
+        let commit = poseidon377::hash_5(
+            &NOTECOMMIT_DOMAIN_SEP,
+            (
+                note_blinding,
+                value.amount.into(),
+                value.asset_id.0,
+                diversified_generator.compress_to_field(),
+                transmission_key_s,
+            ),
+        );
+
+        Commitment(commit)
+    }
+}
 
 impl Into<[u8; 32]> for Commitment {
     fn into(self) -> [u8; 32] {
