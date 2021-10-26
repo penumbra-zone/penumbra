@@ -12,7 +12,7 @@ pub use incrementalmerkletree::{
     Altitude, Hashable, Position, Recording, Tree,
 };
 
-pub const MERKLE_DEPTH: usize = 32;
+pub const DEPTH: usize = 32;
 
 /// The domain separator used to hash items into the Merkle tree.
 pub static MERKLE_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
