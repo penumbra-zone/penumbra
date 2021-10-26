@@ -10,7 +10,7 @@ use penumbra_proto::{transaction, Message, Protobuf};
 use crate::{
     action::{error::ProtoError, Action},
     merkle,
-    rdsa::{Binding, Signature},
+    rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
     Fr,
 };
 
@@ -95,8 +95,8 @@ pub struct Fee(pub u64);
 // temp: remove dead code when Transaction fields are read
 #[allow(dead_code)]
 pub struct Transaction {
-    pub transaction_body: TransactionBody,
-    pub binding_sig: Signature<Binding>,
+    transaction_body: TransactionBody,
+    binding_sig: Signature<Binding>,
 }
 
 impl Transaction {
@@ -114,9 +114,38 @@ impl Transaction {
         }
     }
 
+    pub fn transaction_body(&self) -> TransactionBody {
+        self.transaction_body.clone()
+    }
+
+    pub fn binding_sig(&self) -> Signature<Binding> {
+        self.binding_sig
+    }
+
     /// Verify the binding signature.
     pub fn verify_binding_sig(&self) -> bool {
-        todo!()
+        let mut value_commitments = decaf377::Element::default();
+        for action in self.transaction_body.actions.clone() {
+            match action {
+                Action::Output(inner) => {
+                    value_commitments -= inner.body.value_commitment.0;
+                }
+                Action::Spend(inner) => {
+                    value_commitments += inner.body.value_commitment.0;
+                }
+            }
+        }
+
+        let binding_verification_key_bytes: VerificationKeyBytes<Binding> =
+            value_commitments.compress().0.into();
+        let binding_verification_key: VerificationKey<Binding> = binding_verification_key_bytes
+            .try_into()
+            .expect("verification key is valid");
+
+        let transaction_body_serialized: Vec<u8> = self.transaction_body.clone().into();
+        binding_verification_key
+            .verify(&transaction_body_serialized, &self.binding_sig)
+            .is_ok()
     }
 }
 

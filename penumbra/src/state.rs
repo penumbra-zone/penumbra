@@ -30,7 +30,7 @@ impl FullNodeState {
 
         // 2. Check all spend auth signatures using provided spend auth keys
         // and check all proofs verify.
-        for action in transaction.transaction_body.actions {
+        for action in transaction.transaction_body().actions {
             match action {
                 Action::Output(inner) => {
                     if !inner.body.proof.verify(
@@ -77,7 +77,7 @@ mod tests {
 
     #[test]
     fn test_transaction_verification() {
-        let state = FullNodeState::new();
+        let mut state = FullNodeState::new();
 
         let mut rng = OsRng;
         let sk_sender = SpendKey::generate(&mut rng);
@@ -124,5 +124,6 @@ mod tests {
         assert!(transaction.is_ok());
 
         // Now we verify this transaction.
+        //state.verify_transaction(transaction.unwrap());
     }
 }
