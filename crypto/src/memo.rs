@@ -6,6 +6,7 @@ pub const MEMO_CIPHERTEXT_LEN_BYTES: usize = 528;
 pub const MEMO_LEN_BYTES: usize = 512;
 
 // The memo is stored separately from the `Note`.
+#[derive(Clone)]
 pub struct MemoPlaintext(pub [u8; MEMO_LEN_BYTES]);
 
 impl Default for MemoPlaintext {
@@ -22,4 +23,5 @@ impl MemoPlaintext {
     }
 }
 
+#[derive(Clone)]
 pub struct MemoCiphertext(pub [u8; MEMO_CIPHERTEXT_LEN_BYTES]);
