@@ -95,8 +95,8 @@ pub struct Fee(pub u64);
 // temp: remove dead code when Transaction fields are read
 #[allow(dead_code)]
 pub struct Transaction {
-    transaction_body: TransactionBody,
-    binding_sig: Signature<Binding>,
+    pub transaction_body: TransactionBody,
+    pub binding_sig: Signature<Binding>,
 }
 
 impl Transaction {
@@ -112,6 +112,11 @@ impl Transaction {
             expiry_height: None,
             chain_id: None,
         }
+    }
+
+    /// Verify the binding signature.
+    pub fn verify_binding_sig(&self) -> bool {
+        todo!()
     }
 }
 
