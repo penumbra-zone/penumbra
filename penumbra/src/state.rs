@@ -31,6 +31,7 @@ impl FullNodeState {
         // 2. Check all spend auth signatures using provided spend auth keys
         // and check all proofs verify. If any action does not verify, the entire
         // transaction has failed.
+        let mut nullifiers_to_add = HashSet::<Nullifier>::new();
         for action in transaction.transaction_body().actions {
             match action {
                 Action::Output(inner) => {
@@ -50,17 +51,31 @@ impl FullNodeState {
                     if !inner.body.proof.verify(
                         self.node_commitment_tree.root2(),
                         inner.body.value_commitment,
-                        inner.body.nullifier,
+                        inner.body.nullifier.clone(),
                         inner.body.rk,
                     ) {
                         return false;
                     }
+
+                    // Check nullifier is not already in the nullifier set OR
+                    // has been revealed already in this transaction.
+                    if self.nullifier_set.contains(&inner.body.nullifier.clone())
+                        || nullifiers_to_add.contains(&inner.body.nullifier.clone())
+                    {
+                        return false;
+                    }
+
+                    // Queue up these state changes.
+                    nullifiers_to_add.insert(inner.body.nullifier.clone());
                 }
             }
         }
 
         // 3. Update note state.
-        todo!();
+        for nf in nullifiers_to_add {
+            self.nullifier_set.insert(nf);
+        }
+        // TK: NCT update
 
         return true;
     }
@@ -76,7 +91,7 @@ mod tests {
     use penumbra_crypto::{keys::SpendKey, memo::MemoPlaintext, Fq, Note, Value};
 
     #[test]
-    fn test_transaction_verification() {
+    fn test_transaction_verification_fails_for_dummy_merkle_tree() {
         let mut state = FullNodeState::new();
 
         let mut rng = OsRng;
@@ -121,9 +136,7 @@ mod tests {
             .add_spend(&mut rng, sk_sender, dummy_merkle_path, dummy_note, 0.into())
             .finalize(&mut rng);
 
-        assert!(transaction.is_ok());
-
-        // Now we verify this transaction.
-        //state.verify_transaction(transaction.unwrap());
+        // The merkle path is invalid, so this transaction should not verify.
+        assert_eq!(state.verify_transaction(transaction.unwrap()), false);
     }
 }
