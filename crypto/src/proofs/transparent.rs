@@ -440,3 +440,177 @@ impl TryFrom<&[u8]> for OutputProof {
             .map_err(|_| ProtoError::ProofMalformed)?)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ark_ff::UniformRand;
+    use rand_core::OsRng;
+
+    use crate::{keys::SpendKey, note, Note, Value};
+
+    #[test]
+    fn test_output_proof_verification_success() {
+        let mut rng = OsRng;
+
+        let sk_recipient = SpendKey::generate(&mut rng);
+        let fvk_recipient = sk_recipient.full_viewing_key();
+        let ivk_recipient = fvk_recipient.incoming();
+        let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
+
+        let value_to_send = Value {
+            amount: 10,
+            asset_id: b"pen".as_ref().into(),
+        };
+        let note_blinding = Fq::rand(&mut rng);
+        let v_blinding = Fr::rand(&mut rng);
+        let note = Note::new(
+            *dest.diversifier(),
+            dest.transmission_key(),
+            value_to_send,
+            note_blinding,
+        )
+        .expect("transmission key is valid");
+        let esk = ka::Secret::new(rng);
+        let epk = esk.diversified_public(&note.diversified_generator());
+
+        let proof = OutputProof {
+            g_d: *dest.diversified_generator(),
+            pk_d: *dest.transmission_key(),
+            value: value_to_send,
+            v_blinding,
+            note_blinding,
+            esk,
+        };
+
+        assert!(proof.verify(value_to_send.commit(v_blinding), note.commit(), epk));
+    }
+
+    #[test]
+    fn test_output_proof_verification_note_commitment_integrity_failure() {
+        let mut rng = OsRng;
+
+        let sk_recipient = SpendKey::generate(&mut rng);
+        let fvk_recipient = sk_recipient.full_viewing_key();
+        let ivk_recipient = fvk_recipient.incoming();
+        let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
+
+        let value_to_send = Value {
+            amount: 10,
+            asset_id: b"pen".as_ref().into(),
+        };
+        let note_blinding = Fq::rand(&mut rng);
+        let v_blinding = Fr::rand(&mut rng);
+        let note = Note::new(
+            *dest.diversifier(),
+            dest.transmission_key(),
+            value_to_send,
+            note_blinding,
+        )
+        .expect("transmission key is valid");
+        let esk = ka::Secret::new(rng);
+        let epk = esk.diversified_public(&note.diversified_generator());
+
+        let proof = OutputProof {
+            g_d: *dest.diversified_generator(),
+            pk_d: *dest.transmission_key(),
+            value: value_to_send,
+            v_blinding,
+            note_blinding,
+            esk,
+        };
+
+        let incorrect_note_commitment = note::Commitment::new(
+            Fq::rand(&mut rng),
+            value_to_send,
+            note.diversified_generator(),
+            note.transmission_key_s(),
+        );
+
+        assert!(!proof.verify(
+            value_to_send.commit(v_blinding),
+            incorrect_note_commitment,
+            epk
+        ));
+    }
+
+    #[test]
+    fn test_output_proof_verification_value_commitment_integrity_failure() {
+        let mut rng = OsRng;
+
+        let sk_recipient = SpendKey::generate(&mut rng);
+        let fvk_recipient = sk_recipient.full_viewing_key();
+        let ivk_recipient = fvk_recipient.incoming();
+        let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
+
+        let value_to_send = Value {
+            amount: 10,
+            asset_id: b"pen".as_ref().into(),
+        };
+        let note_blinding = Fq::rand(&mut rng);
+        let v_blinding = Fr::rand(&mut rng);
+        let note = Note::new(
+            *dest.diversifier(),
+            dest.transmission_key(),
+            value_to_send,
+            note_blinding,
+        )
+        .expect("transmission key is valid");
+        let esk = ka::Secret::new(rng);
+        let correct_epk = esk.diversified_public(&note.diversified_generator());
+
+        let proof = OutputProof {
+            g_d: *dest.diversified_generator(),
+            pk_d: *dest.transmission_key(),
+            value: value_to_send,
+            v_blinding,
+            note_blinding,
+            esk,
+        };
+        let incorrect_value_commitment = value_to_send.commit(Fr::rand(&mut rng));
+
+        assert!(!proof.verify(incorrect_value_commitment, note.commit(), correct_epk));
+    }
+
+    #[test]
+    fn test_output_proof_verification_ephemeral_public_key_integrity_failure() {
+        let mut rng = OsRng;
+
+        let sk_recipient = SpendKey::generate(&mut rng);
+        let fvk_recipient = sk_recipient.full_viewing_key();
+        let ivk_recipient = fvk_recipient.incoming();
+        let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
+
+        let value_to_send = Value {
+            amount: 10,
+            asset_id: b"pen".as_ref().into(),
+        };
+        let note_blinding = Fq::rand(&mut rng);
+        let v_blinding = Fr::rand(&mut rng);
+        let note = Note::new(
+            *dest.diversifier(),
+            dest.transmission_key(),
+            value_to_send,
+            note_blinding,
+        )
+        .expect("transmission key is valid");
+        let esk = ka::Secret::new(rng);
+
+        let proof = OutputProof {
+            g_d: *dest.diversified_generator(),
+            pk_d: *dest.transmission_key(),
+            value: value_to_send,
+            v_blinding,
+            note_blinding,
+            esk,
+        };
+        let incorrect_esk = ka::Secret::new(rng);
+        let incorrect_epk = incorrect_esk.diversified_public(&note.diversified_generator());
+
+        assert!(!proof.verify(
+            value_to_send.commit(v_blinding),
+            note.commit(),
+            incorrect_epk
+        ));
+    }
+}
