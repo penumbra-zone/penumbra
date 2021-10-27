@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeSet, HashMap},
     future::Future,
     pin::Pin,
     task::{Context, Poll},
@@ -26,7 +26,7 @@ pub struct App {
     height: u64,
     app_hash: [u8; 8],
     note_commitment_tree: merkle::BridgeTree<note::Commitment, { merkle::DEPTH as u8 }>,
-    nullifier_set: HashSet<Nullifier>,
+    nullifier_set: BTreeSet<Nullifier>,
 }
 
 impl Service<Request> for App {
@@ -74,7 +74,7 @@ impl Default for App {
             // TODO: Store cached merkle root to prevent recomputing it - currently
             // this is happening for each spend (since we pass in the merkle_root when
             // verifying the spend proof).
-            nullifier_set: HashSet::new(),
+            nullifier_set: BTreeSet::new(),
         }
     }
 }
@@ -149,7 +149,7 @@ impl App {
         // 2. Check all spend auth signatures using provided spend auth keys
         // and check all proofs verify. If any action does not verify, the entire
         // transaction has failed.
-        let mut nullifiers_to_add = HashSet::<Nullifier>::new();
+        let mut nullifiers_to_add = BTreeSet::<Nullifier>::new();
         let mut note_commitments_to_add = Vec::<note::Commitment>::new();
 
         for action in transaction.transaction_body().actions {
