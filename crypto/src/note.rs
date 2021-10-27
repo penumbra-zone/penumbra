@@ -63,6 +63,10 @@ impl Note {
         self.transmission_key
     }
 
+    pub fn transmission_key_s(&self) -> Fq {
+        self.transmission_key_s
+    }
+
     pub fn diversifier(&self) -> Diversifier {
         self.diversifier
     }
