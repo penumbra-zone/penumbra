@@ -447,7 +447,12 @@ mod tests {
     use ark_ff::UniformRand;
     use rand_core::OsRng;
 
-    use crate::{keys::SpendKey, note, Note, Value};
+    use crate::{
+        keys::SpendKey,
+        merkle,
+        merkle::{Frontier, Tree, TreeExt},
+        note, Note, Value,
+    };
 
     #[test]
     fn test_output_proof_verification_success() {
@@ -612,5 +617,250 @@ mod tests {
             note.commit(),
             incorrect_epk
         ));
+    }
+
+    #[test]
+    fn test_output_proof_verification_identity_check_failure() {
+        let mut rng = OsRng;
+
+        let sk_recipient = SpendKey::generate(&mut rng);
+        let fvk_recipient = sk_recipient.full_viewing_key();
+        let ivk_recipient = fvk_recipient.incoming();
+        let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
+
+        let value_to_send = Value {
+            amount: 10,
+            asset_id: b"pen".as_ref().into(),
+        };
+        let note_blinding = Fq::rand(&mut rng);
+        let v_blinding = Fr::rand(&mut rng);
+        let note = Note::new(
+            *dest.diversifier(),
+            dest.transmission_key(),
+            value_to_send,
+            note_blinding,
+        )
+        .expect("transmission key is valid");
+        let esk = ka::Secret::new(rng);
+        let epk = esk.diversified_public(&note.diversified_generator());
+
+        let proof = OutputProof {
+            g_d: decaf377::Element::default(),
+            pk_d: *dest.transmission_key(),
+            value: value_to_send,
+            v_blinding,
+            note_blinding,
+            esk,
+        };
+
+        assert!(!proof.verify(value_to_send.commit(v_blinding), note.commit(), epk));
+    }
+
+    #[test]
+    fn test_spend_proof_verification_success() {
+        let mut rng = OsRng;
+        let sk_sender = SpendKey::generate(&mut rng);
+        let fvk_sender = sk_sender.full_viewing_key();
+        let ivk_sender = fvk_sender.incoming();
+        let (sender, _dtk_d) = ivk_sender.payment_address(0u64.into());
+
+        let value_to_send = Value {
+            amount: 10,
+            asset_id: b"pen".as_ref().into(),
+        };
+        let note_blinding = Fq::rand(&mut rng);
+        let v_blinding = Fr::rand(&mut rng);
+        let note = Note::new(
+            *sender.diversifier(),
+            sender.transmission_key(),
+            value_to_send,
+            note_blinding,
+        )
+        .expect("transmission key is valid");
+        let note_commitment = note.commit();
+        let spend_auth_randomizer = Fr::rand(&mut rng);
+        let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
+        let nk = *sk_sender.nullifier_key();
+        let ak = sk_sender.spend_auth_key().into();
+        let mut nct = merkle::BridgeTree::<note::Commitment, 32>::new(5);
+        nct.append(&note_commitment);
+        let anchor = nct.root2();
+        nct.witness();
+        let auth_path = nct.authentication_path(&note_commitment).unwrap();
+        let merkle_path = (u64::from(auth_path.0) as usize, auth_path.1);
+
+        let proof = SpendProof {
+            merkle_path,
+            position: 0.into(),
+            g_d: *sender.diversified_generator(),
+            pk_d: *sender.transmission_key(),
+            value: value_to_send,
+            v_blinding,
+            note_commitment,
+            note_blinding,
+            spend_auth_randomizer,
+            ak,
+            nk,
+        };
+
+        let rk: VerificationKey<SpendAuth> = rsk.into();
+        let nf = nk.nf(0.into(), &note_commitment);
+        assert!(proof.verify(anchor, value_to_send.commit(v_blinding), nf, rk));
+    }
+
+    #[test]
+    fn test_spend_proof_verification_merkle_path_integrity_failure() {
+        let mut rng = OsRng;
+        let sk_sender = SpendKey::generate(&mut rng);
+        let fvk_sender = sk_sender.full_viewing_key();
+        let ivk_sender = fvk_sender.incoming();
+        let (sender, _dtk_d) = ivk_sender.payment_address(0u64.into());
+
+        let value_to_send = Value {
+            amount: 10,
+            asset_id: b"pen".as_ref().into(),
+        };
+        let note_blinding = Fq::rand(&mut rng);
+        let v_blinding = Fr::rand(&mut rng);
+        let note = Note::new(
+            *sender.diversifier(),
+            sender.transmission_key(),
+            value_to_send,
+            note_blinding,
+        )
+        .expect("transmission key is valid");
+        let note_commitment = note.commit();
+        let spend_auth_randomizer = Fr::rand(&mut rng);
+        let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
+        let nk = *sk_sender.nullifier_key();
+        let ak = sk_sender.spend_auth_key().into();
+        let mut nct = merkle::BridgeTree::<note::Commitment, 32>::new(5);
+        let incorrect_anchor = nct.root2();
+        nct.append(&note_commitment);
+        nct.witness();
+        let auth_path = nct.authentication_path(&note_commitment).unwrap();
+        let merkle_path = (u64::from(auth_path.0) as usize, auth_path.1);
+
+        let proof = SpendProof {
+            merkle_path,
+            position: 0.into(),
+            g_d: *sender.diversified_generator(),
+            pk_d: *sender.transmission_key(),
+            value: value_to_send,
+            v_blinding,
+            note_commitment,
+            note_blinding,
+            spend_auth_randomizer,
+            ak,
+            nk,
+        };
+
+        let rk: VerificationKey<SpendAuth> = rsk.into();
+        let nf = nk.nf(0.into(), &note_commitment);
+        assert!(!proof.verify(incorrect_anchor, value_to_send.commit(v_blinding), nf, rk));
+    }
+
+    #[test]
+    fn test_spend_proof_verification_value_commitment_integrity_failure() {
+        let mut rng = OsRng;
+        let sk_sender = SpendKey::generate(&mut rng);
+        let fvk_sender = sk_sender.full_viewing_key();
+        let ivk_sender = fvk_sender.incoming();
+        let (sender, _dtk_d) = ivk_sender.payment_address(0u64.into());
+
+        let value_to_send = Value {
+            amount: 10,
+            asset_id: b"pen".as_ref().into(),
+        };
+        let note_blinding = Fq::rand(&mut rng);
+        let v_blinding = Fr::rand(&mut rng);
+        let note = Note::new(
+            *sender.diversifier(),
+            sender.transmission_key(),
+            value_to_send,
+            note_blinding,
+        )
+        .expect("transmission key is valid");
+        let note_commitment = note.commit();
+        let spend_auth_randomizer = Fr::rand(&mut rng);
+        let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
+        let nk = *sk_sender.nullifier_key();
+        let ak = sk_sender.spend_auth_key().into();
+        let mut nct = merkle::BridgeTree::<note::Commitment, 32>::new(5);
+        nct.append(&note_commitment);
+        nct.witness();
+        let anchor = nct.root2();
+        let auth_path = nct.authentication_path(&note_commitment).unwrap();
+        let merkle_path = (u64::from(auth_path.0) as usize, auth_path.1);
+
+        let proof = SpendProof {
+            merkle_path,
+            position: 0.into(),
+            g_d: *sender.diversified_generator(),
+            pk_d: *sender.transmission_key(),
+            value: value_to_send,
+            v_blinding,
+            note_commitment,
+            note_blinding,
+            spend_auth_randomizer,
+            ak,
+            nk,
+        };
+
+        let rk: VerificationKey<SpendAuth> = rsk.into();
+        let nf = nk.nf(0.into(), &note_commitment);
+        assert!(!proof.verify(anchor, value_to_send.commit(Fr::rand(&mut rng)), nf, rk));
+    }
+
+    #[test]
+    fn test_spend_proof_verification_nullifier_integrity_failure() {
+        let mut rng = OsRng;
+        let sk_sender = SpendKey::generate(&mut rng);
+        let fvk_sender = sk_sender.full_viewing_key();
+        let ivk_sender = fvk_sender.incoming();
+        let (sender, _dtk_d) = ivk_sender.payment_address(0u64.into());
+
+        let value_to_send = Value {
+            amount: 10,
+            asset_id: b"pen".as_ref().into(),
+        };
+        let note_blinding = Fq::rand(&mut rng);
+        let v_blinding = Fr::rand(&mut rng);
+        let note = Note::new(
+            *sender.diversifier(),
+            sender.transmission_key(),
+            value_to_send,
+            note_blinding,
+        )
+        .expect("transmission key is valid");
+        let note_commitment = note.commit();
+        let spend_auth_randomizer = Fr::rand(&mut rng);
+        let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
+        let nk = *sk_sender.nullifier_key();
+        let ak = sk_sender.spend_auth_key().into();
+        let mut nct = merkle::BridgeTree::<note::Commitment, 32>::new(5);
+        nct.append(&note_commitment);
+        nct.witness();
+        let anchor = nct.root2();
+        let auth_path = nct.authentication_path(&note_commitment).unwrap();
+        let merkle_path = (u64::from(auth_path.0) as usize, auth_path.1);
+
+        let proof = SpendProof {
+            merkle_path,
+            position: 0.into(),
+            g_d: *sender.diversified_generator(),
+            pk_d: *sender.transmission_key(),
+            value: value_to_send,
+            v_blinding,
+            note_commitment,
+            note_blinding,
+            spend_auth_randomizer,
+            ak,
+            nk,
+        };
+
+        let rk: VerificationKey<SpendAuth> = rsk.into();
+        let incorrect_nf = nk.nf(5.into(), &note_commitment);
+        assert!(!proof.verify(anchor, value_to_send.commit(v_blinding), incorrect_nf, rk));
     }
 }
