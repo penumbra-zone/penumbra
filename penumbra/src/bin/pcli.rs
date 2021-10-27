@@ -41,6 +41,8 @@ struct ClientState {
     received_set: HashSet<(Note, MemoPlaintext)>,
     // Notes that we have spent.
     spent_set: HashSet<Note>,
+    // Transaction IDs we have visibility into.
+    transactions: Vec<Vec<u8>>,
 }
 
 impl Default for ClientState {
@@ -52,12 +54,13 @@ impl Default for ClientState {
             nullifier_map: BTreeMap::new(),
             received_set: HashSet::new(),
             spent_set: HashSet::new(),
+            transactions: Vec::new(),
         }
     }
 }
 
 impl ClientState {
-    // TODO: For each output in incoming transactions, try to decrypt the note ciphertext.
+    // TODO: For each output in scanned transactions, try to decrypt the note ciphertext.
     // If the note decrypts, we:
     // * add the (note plaintext, memo) to the received_set.
     // * compute and add the nullifier to the nullifier map.
