@@ -15,16 +15,22 @@
 //! The [`Protobuf`] marker trait can be implemented on a domain type to ensure
 //! these conversions exist.
 
+/// Transaction structures.
 pub mod transaction {
     include!(concat!(env!("OUT_DIR"), "/penumbra.transaction.rs"));
 }
 
-/// Transparent proofs
+/// Transparent proofs.
 ///
 /// Note that these are protos for the "MVP" transparent version of Penumbra,
 /// i.e. not for production use and intentionally not private.
 pub mod transparent_proofs {
     include!(concat!(env!("OUT_DIR"), "/penumbra.transparent_proofs.rs"));
+}
+
+/// Wallet protocol structures.
+pub mod wallet {
+    tonic::include_proto!("penumbra.wallet");
 }
 
 mod protobuf;
