@@ -1,18 +1,25 @@
 use ark_ff::PrimeField;
+use chacha20poly1305::aead::{Aead, NewAead};
+use chacha20poly1305::{ChaCha20Poly1305, Key, Nonce};
 use decaf377::FieldExt;
 use once_cell::sync::Lazy;
 use std::convert::{TryFrom, TryInto};
 use thiserror;
 
-use crate::{asset, ka, keys::Diversifier, Fq, Value};
+use crate::{
+    asset, ka,
+    keys::{Diversifier, SpendKey},
+    Fq, Value,
+};
 
 // TODO: Should have a `leadByte` as in Sapling and Orchard note plaintexts?
 // Do we need that in addition to the tx version?
 
-const NOTE_LEN_BYTES: usize = 116;
+pub const NOTE_LEN_BYTES: usize = 116;
+pub const NOTE_CIPHERTEXT_BYTES: usize = 132;
 
 // Can add to this/make this an enum when we add additional types of notes.
-const NOTE_TYPE: u8 = 0;
+pub const NOTE_TYPE: u8 = 0;
 
 /// A plaintext Penumbra note.
 pub struct Note {
@@ -90,6 +97,54 @@ impl Note {
         self.value
     }
 
+    /// Encrypt a note.
+    pub fn encrypt(&self, our_secret: &ka::Secret) -> [u8; NOTE_CIPHERTEXT_BYTES] {
+        let note_encoded: [u8; NOTE_LEN_BYTES] = self.into();
+        let epk = our_secret.diversified_public(&self.diversified_generator());
+        let shared_secret = our_secret
+            .key_agreement_with(&self.transmission_key())
+            .expect("key agreement success");
+
+        let mut kdf_input = Vec::new();
+        kdf_input.copy_from_slice(&shared_secret.0);
+        kdf_input.copy_from_slice(&epk.0);
+        let kdf_output = blake2b_simd::blake2b(&kdf_input);
+        let key = Key::from_slice(kdf_output.as_bytes());
+
+        let cipher = ChaCha20Poly1305::new(key);
+        let nonce = Nonce::from_slice(&[0u8; 12]);
+
+        let encryption_result = cipher
+            .encrypt(nonce, note_encoded.as_ref())
+            .expect("encryption failure!");
+
+        let ciphertext: [u8; NOTE_CIPHERTEXT_BYTES] = encryption_result
+            .try_into()
+            .expect("can fit in ciphertext len");
+
+        ciphertext
+
+        // TODO: Error handling.
+        // TODO: May as well do ovk/C_out in here too?
+    }
+
+    /// Decrypt a note ciphertext.
+    pub fn decrypt(
+        ciphertext: [u8; NOTE_CIPHERTEXT_BYTES],
+        our_key: SpendKey,
+        their_key: ka::Public,
+    ) -> Self {
+        todo!();
+
+        // TODO: Derive key
+
+        let cipher = ChaCha20Poly1305::new(key);
+        let nonce = Nonce::from_slice(&[0u8; 12]);
+        let plaintext = cipher
+            .decrypt(nonce, ciphertext.as_ref())
+            .expect("decryption failure!");
+    }
+
     pub fn commit(&self) -> Commitment {
         Commitment::new(
             self.note_blinding,
@@ -110,6 +165,12 @@ impl From<Note> for [u8; NOTE_LEN_BYTES] {
         bytes[52..84].copy_from_slice(&note.note_blinding.to_bytes());
         bytes[84..116].copy_from_slice(&note.transmission_key.0);
         bytes
+    }
+}
+
+impl From<&Note> for [u8; NOTE_LEN_BYTES] {
+    fn from(note: &Note) -> [u8; NOTE_LEN_BYTES] {
+        note.into()
     }
 }
 

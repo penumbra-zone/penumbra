@@ -4,10 +4,7 @@ use std::convert::{TryFrom, TryInto};
 
 use penumbra_proto::{transaction, Protobuf};
 
-use super::{
-    constants::{NOTE_ENCRYPTION_BYTES, OVK_WRAPPED_LEN_BYTES},
-    error::ProtoError,
-};
+use super::{constants::OVK_WRAPPED_LEN_BYTES, error::ProtoError};
 use crate::{
     ka, memo::MemoCiphertext, note, proofs::transparent::OutputProof, value, Address, Fr, Note,
 };
@@ -64,7 +61,7 @@ pub struct Body {
     pub value_commitment: value::Commitment,
     pub note_commitment: note::Commitment,
     pub ephemeral_key: ka::Public,
-    pub encrypted_note: [u8; NOTE_ENCRYPTION_BYTES],
+    pub encrypted_note: [u8; note::NOTE_CIPHERTEXT_BYTES],
     pub proof: OutputProof,
 }
 
@@ -78,11 +75,10 @@ impl Body {
         // TODO: p. 43 Spec. Decide whether to do leadByte 0x01 method or 0x02 or other.
         let value_commitment = note.value().commit(v_blinding);
         let note_commitment = note.commit();
-        // TODO: Encrypt note here.
-        let encrypted_note = [0u8; NOTE_ENCRYPTION_BYTES];
 
         let esk = ka::Secret::new(rng);
         let ephemeral_key = esk.diversified_public(&note.diversified_generator());
+        let encrypted_note = note.encrypt(&esk);
 
         let proof = OutputProof {
             g_d: *dest.diversified_generator(),
