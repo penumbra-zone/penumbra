@@ -9,6 +9,11 @@ use crate::{ka, keys::Diversifier, Fq, Value};
 // TODO: Should have a `leadByte` as in Sapling and Orchard note plaintexts?
 // Do we need that in addition to the tx version?
 
+const NOTE_LEN_BYTES: usize = 116;
+
+// Can add to this when we add additional types of notes.
+const NOTE_TYPE: u8 = 0;
+
 /// A plaintext Penumbra note.
 pub struct Note {
     // Value (32-byte asset ID plus 8-byte amount).
@@ -17,10 +22,12 @@ pub struct Note {
     // Commitment trapdoor. 32 bytes.
     note_blinding: Fq,
 
-    // The diversifier of the destination address.
+    // The diversifier of the destination address. 11 bytes.
     diversifier: Diversifier,
 
+    // The diversified transmission key of the destination address. 32 bytes.
     transmission_key: ka::Public,
+
     // The s-component of the transmission key of the destination address.
     transmission_key_s: Fq,
 }
@@ -86,6 +93,19 @@ impl Note {
             self.diversified_generator(),
             self.transmission_key_s,
         )
+    }
+}
+
+impl From<Note> for [u8; NOTE_LEN_BYTES] {
+    fn from(note: Note) -> [u8; NOTE_LEN_BYTES] {
+        let mut bytes = [0u8; NOTE_LEN_BYTES];
+        bytes[0] = NOTE_TYPE;
+        bytes[1..12].copy_from_slice(&note.diversifier.0);
+        bytes[12..20].copy_from_slice(&note.value.amount.to_le_bytes());
+        bytes[20..52].copy_from_slice(&note.value.asset_id.0.to_bytes());
+        bytes[52..84].copy_from_slice(&note.note_blinding.to_bytes());
+        bytes[84..116].copy_from_slice(&note.transmission_key.0);
+        bytes
     }
 }
 
