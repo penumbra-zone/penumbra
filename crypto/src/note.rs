@@ -11,7 +11,7 @@ use crate::{ka, keys::Diversifier, Fq, Value};
 
 /// A plaintext Penumbra note.
 pub struct Note {
-    // Value (32-byte asset ID plus 32-byte amount). 64 bytes.
+    // Value (32-byte asset ID plus 8-byte amount).
     value: Value,
 
     // Commitment trapdoor. 32 bytes.
