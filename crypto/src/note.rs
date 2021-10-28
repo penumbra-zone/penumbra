@@ -4,14 +4,14 @@ use once_cell::sync::Lazy;
 use std::convert::{TryFrom, TryInto};
 use thiserror;
 
-use crate::{ka, keys::Diversifier, Fq, Value};
+use crate::{asset, ka, keys::Diversifier, Fq, Value};
 
 // TODO: Should have a `leadByte` as in Sapling and Orchard note plaintexts?
 // Do we need that in addition to the tx version?
 
 const NOTE_LEN_BYTES: usize = 116;
 
-// Can add to this when we add additional types of notes.
+// Can add to this/make this an enum when we add additional types of notes.
 const NOTE_TYPE: u8 = 0;
 
 /// A plaintext Penumbra note.
@@ -43,6 +43,10 @@ pub enum Error {
     InvalidNoteCommitment,
     #[error("Invalid transmission key")]
     InvalidTransmissionKey,
+    #[error("Note type unsupported")]
+    NoteTypeUnsupported,
+    #[error("Note deserialization error")]
+    NoteDeserializationError,
 }
 
 impl Note {
@@ -106,6 +110,42 @@ impl From<Note> for [u8; NOTE_LEN_BYTES] {
         bytes[52..84].copy_from_slice(&note.note_blinding.to_bytes());
         bytes[84..116].copy_from_slice(&note.transmission_key.0);
         bytes
+    }
+}
+
+impl TryFrom<[u8; NOTE_LEN_BYTES]> for Note {
+    type Error = Error;
+
+    fn try_from(bytes: [u8; NOTE_LEN_BYTES]) -> Result<Note, Self::Error> {
+        if bytes[0] != NOTE_TYPE {
+            return Err(Error::NoteTypeUnsupported);
+        }
+
+        let amount_bytes: [u8; 8] = bytes[12..20]
+            .try_into()
+            .map_err(|_| Error::NoteDeserializationError)?;
+        let asset_id_bytes: [u8; 32] = bytes[20..52]
+            .try_into()
+            .map_err(|_| Error::NoteDeserializationError)?;
+        let note_blinding_bytes: [u8; 32] = bytes[52..84]
+            .try_into()
+            .map_err(|_| Error::NoteDeserializationError)?;
+
+        Note::new(
+            bytes[1..12]
+                .try_into()
+                .map_err(|_| Error::NoteDeserializationError)?,
+            &bytes[84..116]
+                .try_into()
+                .map_err(|_| Error::NoteDeserializationError)?,
+            Value {
+                amount: u64::from_le_bytes(amount_bytes),
+                asset_id: asset::Id(
+                    Fq::from_bytes(asset_id_bytes).map_err(|_| Error::NoteDeserializationError)?,
+                ),
+            },
+            Fq::from_bytes(note_blinding_bytes).map_err(|_| Error::NoteDeserializationError)?,
+        )
     }
 }
 

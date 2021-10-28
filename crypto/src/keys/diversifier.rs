@@ -1,7 +1,9 @@
 use aes::Aes256;
+use anyhow::anyhow;
 use ark_ff::PrimeField;
 use fpe::ff1;
 use once_cell::sync::Lazy;
+use std::convert::TryFrom;
 
 use crate::Fq;
 
@@ -25,9 +27,26 @@ impl Diversifier {
     }
 }
 
-impl AsRef<[u8; 11]> for Diversifier {
-    fn as_ref(&self) -> &[u8; 11] {
+impl AsRef<[u8; DIVERSIFIER_LEN_BYTES]> for Diversifier {
+    fn as_ref(&self) -> &[u8; DIVERSIFIER_LEN_BYTES] {
         &self.0
+    }
+}
+
+impl TryFrom<&[u8]> for Diversifier {
+    type Error = anyhow::Error;
+
+    fn try_from(slice: &[u8]) -> Result<Diversifier, Self::Error> {
+        if slice.len() != DIVERSIFIER_LEN_BYTES {
+            return Err(anyhow!(
+                "diversifier must be 11 bytes, got {:?}",
+                slice.len()
+            ));
+        }
+
+        let mut bytes = [0u8; DIVERSIFIER_LEN_BYTES];
+        bytes.copy_from_slice(&slice[0..11]);
+        Ok(Diversifier(bytes))
     }
 }
 
