@@ -45,7 +45,7 @@ impl MemoPlaintext {
         let key = Key::from_slice(kdf_output.as_bytes());
 
         let cipher = ChaCha20Poly1305::new(key);
-        let nonce = Nonce::from_slice(&[0u8; 12]);
+        let nonce = Nonce::from_slice(&[1u8; 12]);
 
         let encryption_result = cipher
             .encrypt(nonce, self.0.as_ref())
@@ -78,7 +78,7 @@ impl MemoPlaintext {
         let key = Key::from_slice(kdf_output.as_bytes());
 
         let cipher = ChaCha20Poly1305::new(key);
-        let nonce = Nonce::from_slice(&[0u8; 12]);
+        let nonce = Nonce::from_slice(&[1u8; 12]);
         let plaintext = cipher
             .decrypt(nonce, ciphertext.0.as_ref())
             .map_err(|_| anyhow!("decryption error"))?;
