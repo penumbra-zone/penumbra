@@ -4,7 +4,7 @@ use std::convert::{TryFrom, TryInto};
 
 use penumbra_proto::{transaction, Protobuf};
 
-use super::{constants::OVK_WRAPPED_LEN_BYTES, error::ProtoError};
+use super::error::ProtoError;
 use crate::{
     ka, memo::MemoCiphertext, note, proofs::transparent::OutputProof, value, Address, Fr, Note,
 };
@@ -13,7 +13,7 @@ use crate::{
 pub struct Output {
     pub body: Body,
     pub encrypted_memo: MemoCiphertext,
-    pub ovk_wrapped_key: [u8; OVK_WRAPPED_LEN_BYTES],
+    pub ovk_wrapped_key: [u8; note::OVK_WRAPPED_LEN_BYTES],
 }
 
 impl Protobuf<transaction::Output> for Output {}
@@ -44,7 +44,7 @@ impl TryFrom<transaction::Output> for Output {
                 .map_err(|_| ProtoError::OutputMalformed)?,
         );
 
-        let ovk_wrapped_key: [u8; OVK_WRAPPED_LEN_BYTES] = proto.ovk_wrapped_key[..]
+        let ovk_wrapped_key: [u8; note::OVK_WRAPPED_LEN_BYTES] = proto.ovk_wrapped_key[..]
             .try_into()
             .map_err(|_| ProtoError::OutputMalformed)?;
 
@@ -71,12 +71,12 @@ impl Body {
         note: Note,
         v_blinding: Fr,
         dest: &Address,
+        esk: &ka::Secret,
     ) -> Body {
         // TODO: p. 43 Spec. Decide whether to do leadByte 0x01 method or 0x02 or other.
         let value_commitment = note.value().commit(v_blinding);
         let note_commitment = note.commit();
 
-        let esk = ka::Secret::new(rng);
         let ephemeral_key = esk.diversified_public(&note.diversified_generator());
         let encrypted_note = note.encrypt(&esk);
 
@@ -86,7 +86,7 @@ impl Body {
             value: note.value(),
             v_blinding,
             note_blinding: note.note_blinding(),
-            esk,
+            esk: *esk,
         };
 
         Self {

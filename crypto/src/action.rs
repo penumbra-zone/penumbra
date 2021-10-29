@@ -1,7 +1,6 @@
 use penumbra_proto::{transaction, Protobuf};
 use std::convert::{TryFrom, TryInto};
 
-pub mod constants;
 pub mod error;
 pub mod output;
 pub mod spend;

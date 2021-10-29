@@ -8,8 +8,8 @@ use thiserror;
 
 use crate::{
     asset, ka,
-    keys::{Diversifier, SpendKey},
-    Fq, Value,
+    keys::{Diversifier, OutgoingViewingKey, SpendKey},
+    value, Fq, Value,
 };
 
 // TODO: Should have a `leadByte` as in Sapling and Orchard note plaintexts?
@@ -17,6 +17,7 @@ use crate::{
 
 pub const NOTE_LEN_BYTES: usize = 116;
 pub const NOTE_CIPHERTEXT_BYTES: usize = 132;
+pub const OVK_WRAPPED_LEN_BYTES: usize = 80;
 
 // Can add to this/make this an enum when we add additional types of notes.
 pub const NOTE_TYPE: u8 = 0;
@@ -97,11 +98,11 @@ impl Note {
         self.value
     }
 
-    /// Encrypt a note.
-    pub fn encrypt(&self, our_secret: &ka::Secret) -> [u8; NOTE_CIPHERTEXT_BYTES] {
+    /// Encrypt a note, returning its ciphertext.
+    pub fn encrypt(&self, esk: &ka::Secret) -> [u8; NOTE_CIPHERTEXT_BYTES] {
         let note_encoded: [u8; NOTE_LEN_BYTES] = self.into();
-        let epk = our_secret.diversified_public(&self.diversified_generator());
-        let shared_secret = our_secret
+        let epk = esk.diversified_public(&self.diversified_generator());
+        let shared_secret = esk
             .key_agreement_with(&self.transmission_key())
             .expect("key agreement success");
 
@@ -125,7 +126,45 @@ impl Note {
         ciphertext
 
         // TODO: Error handling.
-        // TODO: May as well do ovk/C_out in here too?
+    }
+
+    /// Generate encrypted outgoing cipher key for use with this note.
+    pub fn encrypt_key(
+        &self,
+        esk: &ka::Secret,
+        ovk: &OutgoingViewingKey,
+        cv: value::Commitment,
+    ) -> [u8; OVK_WRAPPED_LEN_BYTES] {
+        let cv_bytes: [u8; 32] = cv.into();
+        let cm_bytes: [u8; 32] = self.commit().into();
+        let epk = esk.diversified_public(&self.diversified_generator());
+
+        // Derive a key `ock` from the value commitment, note commitment, the
+        // ephemeral public key, and the outgoing viewing key.
+        let mut kdf_input = Vec::new();
+        kdf_input.copy_from_slice(&ovk.0);
+        kdf_input.copy_from_slice(&cv_bytes);
+        kdf_input.copy_from_slice(&cm_bytes);
+        kdf_input.copy_from_slice(&epk.0);
+        let kdf_output = blake2b_simd::blake2b(&kdf_input);
+        let ock = Key::from_slice(kdf_output.as_bytes());
+
+        let mut op = Vec::new();
+        op.extend_from_slice(&self.transmission_key().0);
+        op.extend_from_slice(&esk.to_bytes());
+
+        let cipher = ChaCha20Poly1305::new(ock);
+        let nonce = Nonce::from_slice(&[0u8; 12]);
+
+        let encryption_result = cipher
+            .encrypt(nonce, op.as_ref())
+            .expect("encryption failure!");
+
+        let wrapped_ovk: [u8; OVK_WRAPPED_LEN_BYTES] = encryption_result
+            .try_into()
+            .expect("can fit in ciphertext len");
+
+        wrapped_ovk
     }
 
     /// Decrypt a note ciphertext.
