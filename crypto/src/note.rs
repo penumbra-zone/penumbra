@@ -58,6 +58,8 @@ pub enum Error {
     NoteTypeUnsupported,
     #[error("Note deserialization error")]
     NoteDeserializationError,
+    #[error("Encryption error")]
+    EncryptionError,
 }
 
 impl Note {
@@ -102,11 +104,11 @@ impl Note {
     }
 
     /// Encrypt a note, returning its ciphertext.
-    pub fn encrypt(&self, esk: &ka::Secret) -> [u8; NOTE_CIPHERTEXT_BYTES] {
+    pub fn encrypt(&self, esk: &ka::Secret) -> Result<[u8; NOTE_CIPHERTEXT_BYTES], Error> {
         let epk = esk.diversified_public(&self.diversified_generator());
         let shared_secret = esk
             .key_agreement_with(&self.transmission_key())
-            .expect("key agreement success");
+            .map_err(|_| Error::EncryptionError)?;
 
         // Use Blake2b-256 to derive encryption key.
         let mut kdf_params = blake2b_simd::Params::new();
@@ -123,15 +125,13 @@ impl Note {
         let note_plaintext: Vec<u8> = self.into();
         let encryption_result = cipher
             .encrypt(nonce, note_plaintext.as_ref())
-            .expect("encryption failure!");
+            .map_err(|_| Error::EncryptionError)?;
 
         let ciphertext: [u8; NOTE_CIPHERTEXT_BYTES] = encryption_result
             .try_into()
-            .expect("can fit in ciphertext len");
+            .map_err(|_| Error::EncryptionError)?;
 
-        ciphertext
-
-        // TODO: Error handling.
+        Ok(ciphertext)
     }
 
     /// Generate encrypted outgoing cipher key for use with this note.
@@ -140,7 +140,7 @@ impl Note {
         esk: &ka::Secret,
         ovk: &OutgoingViewingKey,
         cv: value::Commitment,
-    ) -> [u8; OVK_WRAPPED_LEN_BYTES] {
+    ) -> Result<[u8; OVK_WRAPPED_LEN_BYTES], Error> {
         let cv_bytes: [u8; 32] = cv.into();
         let cm_bytes: [u8; 32] = self.commit().into();
         let epk = esk.diversified_public(&self.diversified_generator());
@@ -166,13 +166,13 @@ impl Note {
 
         let encryption_result = cipher
             .encrypt(nonce, op.as_ref())
-            .expect("encryption failure!");
+            .map_err(|_| Error::EncryptionError)?;
 
         let wrapped_ovk: [u8; OVK_WRAPPED_LEN_BYTES] = encryption_result
             .try_into()
-            .expect("can fit in ciphertext len");
+            .map_err(|_| Error::EncryptionError)?;
 
-        wrapped_ovk
+        Ok(wrapped_ovk)
     }
 
     /// Decrypt a note ciphertext.

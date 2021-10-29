@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use chacha20poly1305::{
     aead::{Aead, NewAead},
     ChaCha20Poly1305, Key, Nonce,
@@ -28,11 +29,11 @@ impl MemoPlaintext {
         esk: &ka::Secret,
         transmission_key: &ka::Public,
         diversified_generator: &decaf377::Element,
-    ) -> MemoCiphertext {
+    ) -> Result<MemoCiphertext, anyhow::Error> {
         let epk = esk.diversified_public(diversified_generator);
         let shared_secret = esk
             .key_agreement_with(&transmission_key)
-            .expect("key agreement success");
+            .map_err(|_| anyhow!("could not perform key agreement"))?;
 
         // Use Blake2b-256 to derive encryption key.
         let mut kdf_params = blake2b_simd::Params::new();
@@ -48,13 +49,13 @@ impl MemoPlaintext {
 
         let encryption_result = cipher
             .encrypt(nonce, self.0.as_ref())
-            .expect("encryption failure!");
+            .map_err(|_| anyhow!("encryption error!"))?;
 
         let ciphertext: [u8; MEMO_CIPHERTEXT_LEN_BYTES] = encryption_result
             .try_into()
-            .expect("can fit in ciphertext len");
+            .map_err(|_| anyhow!("memo encryption result does not fit in ciphertext len"))?;
 
-        MemoCiphertext(ciphertext)
+        Ok(MemoCiphertext(ciphertext))
     }
 }
 
