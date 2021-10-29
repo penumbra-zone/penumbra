@@ -10,12 +10,9 @@ use thiserror;
 
 use crate::{
     asset, ka,
-    keys::{Diversifier, OutgoingViewingKey, SpendKey},
+    keys::{Diversifier, IncomingViewingKey, OutgoingViewingKey},
     value, Fq, Value,
 };
-
-// TODO: Should have a `leadByte` as in Sapling and Orchard note plaintexts?
-// Do we need that in addition to the tx version?
 
 pub const NOTE_LEN_BYTES: usize = 116;
 pub const NOTE_CIPHERTEXT_BYTES: usize = 132;
@@ -25,7 +22,7 @@ pub const OVK_WRAPPED_LEN_BYTES: usize = 80;
 pub const NOTE_TYPE: u8 = 0;
 
 /// A plaintext Penumbra note.
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Note {
     // Value (32-byte asset ID plus 8-byte amount).
     value: Value,
@@ -60,6 +57,8 @@ pub enum Error {
     NoteDeserializationError,
     #[error("Encryption error")]
     EncryptionError,
+    #[error("Decryption error")]
+    DecryptionError,
 }
 
 impl Note {
@@ -175,21 +174,37 @@ impl Note {
         Ok(wrapped_ovk)
     }
 
-    /// Decrypt a note ciphertext.
+    /// Decrypt a note ciphertext to generate a plaintext `Note`.
     pub fn decrypt(
         ciphertext: [u8; NOTE_CIPHERTEXT_BYTES],
-        our_key: SpendKey,
-        their_key: ka::Public,
-    ) -> Self {
-        todo!();
+        ivk: &IncomingViewingKey,
+        epk: &ka::Public,
+    ) -> Result<Note, Error> {
+        let shared_secret = ivk
+            .key_agreement_with(epk)
+            .map_err(|_| Error::DecryptionError)?;
 
-        // TODO: Derive key
+        // Use Blake2b-256 to derive decryption key.
+        let mut kdf_params = blake2b_simd::Params::new();
+        kdf_params.hash_length(32);
+        let mut kdf = kdf_params.to_state();
+        kdf.update(&shared_secret.0);
+        kdf.update(&epk.0);
+        let kdf_output = kdf.finalize();
+        let key = Key::from_slice(kdf_output.as_bytes());
 
-        //let cipher = ChaCha20Poly1305::new(key);
+        let cipher = ChaCha20Poly1305::new(key);
         let nonce = Nonce::from_slice(&[0u8; 12]);
-        // let plaintext = cipher
-        //     .decrypt(nonce, ciphertext.as_ref())
-        //     .expect("decryption failure!");
+        let plaintext = cipher
+            .decrypt(nonce, ciphertext.as_ref())
+            .map_err(|_| Error::DecryptionError)?;
+
+        let plaintext_bytes: [u8; NOTE_LEN_BYTES] =
+            plaintext.try_into().map_err(|_| Error::DecryptionError)?;
+
+        Ok(plaintext_bytes
+            .try_into()
+            .map_err(|_| Error::DecryptionError)?)
     }
 
     pub fn commit(&self) -> Commitment {
@@ -343,20 +358,24 @@ mod tests {
         let ivk = fvk.incoming();
         let (dest, _dtk_d) = ivk.payment_address(0u64.into());
 
+        let value = Value {
+            amount: 10,
+            asset_id: b"pen".as_ref().into(),
+        };
         let note = Note::new(
             *dest.diversifier(),
             dest.transmission_key(),
-            Value {
-                amount: 10,
-                asset_id: b"pen".as_ref().into(),
-            },
+            value,
             Fq::rand(&mut rng),
         )
         .expect("can create note");
         let esk = ka::Secret::new(&mut rng);
 
-        let _ciphertext = note.encrypt(&esk);
+        let ciphertext = note.encrypt(&esk).expect("can encrypt note");
 
-        // TODO: Decryption
+        let epk = esk.diversified_public(&dest.diversified_generator());
+        let plaintext = Note::decrypt(ciphertext, ivk, &epk).expect("can decrypt note");
+
+        assert_eq!(plaintext, note);
     }
 }

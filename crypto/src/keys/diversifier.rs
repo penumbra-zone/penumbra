@@ -9,7 +9,7 @@ use crate::Fq;
 
 pub const DIVERSIFIER_LEN_BYTES: usize = 11;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Diversifier(pub [u8; DIVERSIFIER_LEN_BYTES]);
 
 /// The domain separator used to generate diversified generators.
