@@ -1,6 +1,8 @@
 use ark_ff::PrimeField;
-use chacha20poly1305::aead::{Aead, NewAead};
-use chacha20poly1305::{ChaCha20Poly1305, Key, Nonce};
+use chacha20poly1305::{
+    aead::{Aead, NewAead},
+    ChaCha20Poly1305, Key, Nonce,
+};
 use decaf377::FieldExt;
 use once_cell::sync::Lazy;
 use std::convert::{TryFrom, TryInto};

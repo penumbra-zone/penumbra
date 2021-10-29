@@ -116,7 +116,11 @@ impl Builder {
         let body = output::Body::new(rng, note, v_blinding, dest, &esk);
         self.value_commitments -= body.value_commitment.0;
 
-        let encrypted_memo = memo.encrypt(dest);
+        let encrypted_memo = memo.encrypt(
+            &esk,
+            &note.transmission_key(),
+            &note.diversified_generator(),
+        );
         let ovk_wrapped_key = note.encrypt_key(&esk, &ovk, body.value_commitment);
 
         let output = Action::Output(Output {
