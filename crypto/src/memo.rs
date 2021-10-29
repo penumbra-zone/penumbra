@@ -5,7 +5,7 @@ use chacha20poly1305::{
 };
 use std::convert::TryInto;
 
-use crate::ka;
+use crate::{ka, keys::IncomingViewingKey};
 
 pub const MEMO_CIPHERTEXT_LEN_BYTES: usize = 528;
 
@@ -13,7 +13,7 @@ pub const MEMO_CIPHERTEXT_LEN_BYTES: usize = 528;
 pub const MEMO_LEN_BYTES: usize = 512;
 
 // The memo is stored separately from the `Note`.
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MemoPlaintext(pub [u8; MEMO_LEN_BYTES]);
 
 impl Default for MemoPlaintext {
@@ -23,7 +23,7 @@ impl Default for MemoPlaintext {
 }
 
 impl MemoPlaintext {
-    // Encrypt a memo, returning its ciphertext.
+    /// Encrypt a memo, returning its ciphertext.
     pub fn encrypt(
         &self,
         esk: &ka::Secret,
@@ -57,6 +57,38 @@ impl MemoPlaintext {
 
         Ok(MemoCiphertext(ciphertext))
     }
+
+    /// Decrypt a `MemoCiphertext` to generate a plaintext `Memo`.
+    pub fn decrypt(
+        ciphertext: MemoCiphertext,
+        ivk: &IncomingViewingKey,
+        epk: &ka::Public,
+    ) -> Result<MemoPlaintext, anyhow::Error> {
+        let shared_secret = ivk
+            .key_agreement_with(epk)
+            .map_err(|_| anyhow!("could not perform key agreement"))?;
+
+        // Use Blake2b-256 to derive decryption key.
+        let mut kdf_params = blake2b_simd::Params::new();
+        kdf_params.hash_length(32);
+        let mut kdf = kdf_params.to_state();
+        kdf.update(&shared_secret.0);
+        kdf.update(&epk.0);
+        let kdf_output = kdf.finalize();
+        let key = Key::from_slice(kdf_output.as_bytes());
+
+        let cipher = ChaCha20Poly1305::new(key);
+        let nonce = Nonce::from_slice(&[0u8; 12]);
+        let plaintext = cipher
+            .decrypt(nonce, ciphertext.0.as_ref())
+            .map_err(|_| anyhow!("decryption error"))?;
+
+        let plaintext_bytes: [u8; MEMO_LEN_BYTES] = plaintext
+            .try_into()
+            .map_err(|_| anyhow!("could not fit plaintext into memo size"))?;
+
+        Ok(MemoPlaintext(plaintext_bytes))
+    }
 }
 
 #[derive(Clone)]
@@ -85,8 +117,13 @@ mod tests {
 
         let memo = MemoPlaintext(memo_bytes);
 
-        let _ciphertext = memo.encrypt(&esk, dest.transmission_key(), dest.diversified_generator());
+        let ciphertext = memo
+            .encrypt(&esk, dest.transmission_key(), dest.diversified_generator())
+            .expect("can encrypt memo");
 
-        // TODO: Decryption
+        let epk = esk.diversified_public(&dest.diversified_generator());
+        let plaintext = MemoPlaintext::decrypt(ciphertext, ivk, &epk).expect("can decrypt memo");
+
+        assert_eq!(plaintext, memo);
     }
 }
