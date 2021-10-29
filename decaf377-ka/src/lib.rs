@@ -36,8 +36,8 @@ pub enum Error {
 
 impl Secret {
     /// Generate a new secret key using `rng`.
-    pub fn new<R: RngCore + CryptoRng>(mut rng: R) -> Self {
-        Self(decaf377::Fr::rand(&mut rng))
+    pub fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
+        Self(decaf377::Fr::rand(rng))
     }
 
     /// Use the supplied field element as the secret key directly.

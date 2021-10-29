@@ -34,10 +34,13 @@ impl MemoPlaintext {
             .key_agreement_with(&transmission_key)
             .expect("key agreement success");
 
-        let mut kdf_input = Vec::new();
-        kdf_input.copy_from_slice(&shared_secret.0);
-        kdf_input.copy_from_slice(&epk.0);
-        let kdf_output = blake2b_simd::blake2b(&kdf_input);
+        // Use Blake2b-256 to derive encryption key.
+        let mut kdf_params = blake2b_simd::Params::new();
+        kdf_params.hash_length(32);
+        let mut kdf = kdf_params.to_state();
+        kdf.update(&shared_secret.0);
+        kdf.update(&epk.0);
+        let kdf_output = kdf.finalize();
         let key = Key::from_slice(kdf_output.as_bytes());
 
         let cipher = ChaCha20Poly1305::new(key);
@@ -57,3 +60,32 @@ impl MemoPlaintext {
 
 #[derive(Clone)]
 pub struct MemoCiphertext(pub [u8; MEMO_CIPHERTEXT_LEN_BYTES]);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use crate::keys::SpendKey;
+    use rand_core::OsRng;
+
+    #[test]
+    fn test_memo_encryption_and_decryption() {
+        let mut rng = OsRng;
+
+        let sk = SpendKey::generate(&mut rng);
+        let fvk = sk.full_viewing_key();
+        let ivk = fvk.incoming();
+        let (dest, _dtk_d) = ivk.payment_address(0u64.into());
+
+        let mut memo_bytes = [0u8; MEMO_LEN_BYTES];
+        memo_bytes[0..2].copy_from_slice(b"Hi");
+
+        let esk = ka::Secret::new(&mut rng);
+
+        let memo = MemoPlaintext(memo_bytes);
+
+        let _ciphertext = memo.encrypt(&esk, dest.transmission_key(), dest.diversified_generator());
+
+        // TODO: Decryption
+    }
+}

@@ -25,6 +25,7 @@ pub const OVK_WRAPPED_LEN_BYTES: usize = 80;
 pub const NOTE_TYPE: u8 = 0;
 
 /// A plaintext Penumbra note.
+#[derive(Clone)]
 pub struct Note {
     // Value (32-byte asset ID plus 8-byte amount).
     value: Value,
@@ -108,10 +109,13 @@ impl Note {
             .key_agreement_with(&self.transmission_key())
             .expect("key agreement success");
 
-        let mut kdf_input = Vec::new();
-        kdf_input.copy_from_slice(&shared_secret.0);
-        kdf_input.copy_from_slice(&epk.0);
-        let kdf_output = blake2b_simd::blake2b(&kdf_input);
+        // Use Blake2b-256 to derive encryption key.
+        let mut kdf_params = blake2b_simd::Params::new();
+        kdf_params.hash_length(32);
+        let mut kdf = kdf_params.to_state();
+        kdf.update(&shared_secret.0);
+        kdf.update(&epk.0);
+        let kdf_output = kdf.finalize();
         let key = Key::from_slice(kdf_output.as_bytes());
 
         let cipher = ChaCha20Poly1305::new(key);
@@ -141,14 +145,16 @@ impl Note {
         let cm_bytes: [u8; 32] = self.commit().into();
         let epk = esk.diversified_public(&self.diversified_generator());
 
-        // Derive a key `ock` from the value commitment, note commitment, the
-        // ephemeral public key, and the outgoing viewing key.
-        let mut kdf_input = Vec::new();
-        kdf_input.copy_from_slice(&ovk.0);
-        kdf_input.copy_from_slice(&cv_bytes);
-        kdf_input.copy_from_slice(&cm_bytes);
-        kdf_input.copy_from_slice(&epk.0);
-        let kdf_output = blake2b_simd::blake2b(&kdf_input);
+        // Use Blake2b-256 to derive an encryption key `ock` from the value commitment,
+        // note commitment, the ephemeral public key, and the outgoing viewing key.
+        let mut kdf_params = blake2b_simd::Params::new();
+        kdf_params.hash_length(32);
+        let mut kdf = kdf_params.to_state();
+        kdf.update(&ovk.0);
+        kdf.update(&cv_bytes);
+        kdf.update(&cm_bytes);
+        kdf.update(&epk.0);
+        let kdf_output = kdf.finalize();
         let ock = Key::from_slice(kdf_output.as_bytes());
 
         let mut op = Vec::new();
@@ -179,11 +185,11 @@ impl Note {
 
         // TODO: Derive key
 
-        let cipher = ChaCha20Poly1305::new(key);
+        //let cipher = ChaCha20Poly1305::new(key);
         let nonce = Nonce::from_slice(&[0u8; 12]);
-        let plaintext = cipher
-            .decrypt(nonce, ciphertext.as_ref())
-            .expect("decryption failure!");
+        // let plaintext = cipher
+        //     .decrypt(nonce, ciphertext.as_ref())
+        //     .expect("decryption failure!");
     }
 
     pub fn commit(&self) -> Commitment {

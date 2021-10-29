@@ -1,5 +1,4 @@
 use bytes::Bytes;
-use rand_core::{CryptoRng, RngCore};
 use std::convert::{TryFrom, TryInto};
 
 use penumbra_proto::{transaction, Protobuf};
@@ -66,13 +65,7 @@ pub struct Body {
 }
 
 impl Body {
-    pub fn new<R: RngCore + CryptoRng>(
-        rng: &mut R,
-        note: Note,
-        v_blinding: Fr,
-        dest: &Address,
-        esk: &ka::Secret,
-    ) -> Body {
+    pub fn new(note: Note, v_blinding: Fr, dest: &Address, esk: &ka::Secret) -> Body {
         // TODO: p. 43 Spec. Decide whether to do leadByte 0x01 method or 0x02 or other.
         let value_commitment = note.value().commit(v_blinding);
         let note_commitment = note.commit();
@@ -86,7 +79,7 @@ impl Body {
             value: note.value(),
             v_blinding,
             note_blinding: note.note_blinding(),
-            esk: *esk,
+            esk: esk.clone(),
         };
 
         Self {
