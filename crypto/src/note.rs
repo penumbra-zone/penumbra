@@ -103,7 +103,6 @@ impl Note {
 
     /// Encrypt a note, returning its ciphertext.
     pub fn encrypt(&self, esk: &ka::Secret) -> [u8; NOTE_CIPHERTEXT_BYTES] {
-        let note_encoded: [u8; NOTE_LEN_BYTES] = self.into();
         let epk = esk.diversified_public(&self.diversified_generator());
         let shared_secret = esk
             .key_agreement_with(&self.transmission_key())
@@ -121,8 +120,9 @@ impl Note {
         let cipher = ChaCha20Poly1305::new(key);
         let nonce = Nonce::from_slice(&[0u8; 12]);
 
+        let note_plaintext: Vec<u8> = self.into();
         let encryption_result = cipher
-            .encrypt(nonce, note_encoded.as_ref())
+            .encrypt(nonce, note_plaintext.as_ref())
             .expect("encryption failure!");
 
         let ciphertext: [u8; NOTE_CIPHERTEXT_BYTES] = encryption_result
@@ -221,6 +221,19 @@ impl From<&Note> for [u8; NOTE_LEN_BYTES] {
     }
 }
 
+impl From<&Note> for Vec<u8> {
+    fn from(note: &Note) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        bytes.push(NOTE_TYPE);
+        bytes.extend_from_slice(&note.diversifier.0);
+        bytes.extend_from_slice(&note.value.amount.to_le_bytes());
+        bytes.extend_from_slice(&note.value.asset_id.0.to_bytes());
+        bytes.extend_from_slice(&note.note_blinding.to_bytes());
+        bytes.extend_from_slice(&note.transmission_key.0);
+        bytes
+    }
+}
+
 impl TryFrom<[u8; NOTE_LEN_BYTES]> for Note {
     type Error = Error;
 
@@ -310,5 +323,40 @@ impl TryFrom<&[u8]> for Commitment {
         let inner = Fq::from_bytes(bytes).map_err(|_| Error::InvalidNoteCommitment)?;
 
         Ok(Commitment(inner))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use crate::keys::SpendKey;
+    use ark_ff::UniformRand;
+    use rand_core::OsRng;
+
+    #[test]
+    fn test_note_encryption_and_decryption() {
+        let mut rng = OsRng;
+
+        let sk = SpendKey::generate(&mut rng);
+        let fvk = sk.full_viewing_key();
+        let ivk = fvk.incoming();
+        let (dest, _dtk_d) = ivk.payment_address(0u64.into());
+
+        let note = Note::new(
+            *dest.diversifier(),
+            dest.transmission_key(),
+            Value {
+                amount: 10,
+                asset_id: b"pen".as_ref().into(),
+            },
+            Fq::rand(&mut rng),
+        )
+        .expect("can create note");
+        let esk = ka::Secret::new(&mut rng);
+
+        let _ciphertext = note.encrypt(&esk);
+
+        // TODO: Decryption
     }
 }
