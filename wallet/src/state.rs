@@ -1,28 +1,53 @@
-use penumbra_crypto::{keys, memo::MemoPlaintext, merkle, note, Note, Nullifier, Transaction};
+use rand_core::{CryptoRng, OsRng, RngCore};
 use std::collections::{BTreeMap, HashSet};
+
+use penumbra_crypto::{keys, memo::MemoPlaintext, merkle, note, Note, Nullifier};
 
 const MAX_MERKLE_CHECKPOINTS_CLIENT: usize = 10;
 
 /// State about the chain and our transactions.
 pub struct ClientState {
     // The first block height we've scanned from.
-    first_block_height: i64,
+    pub first_block_height: i64,
     // The last block height we've scanned to.
-    last_block_height: i64,
+    pub last_block_height: i64,
     // Note commitment tree.
-    note_commitment_tree: merkle::BridgeTree<note::Commitment, { merkle::DEPTH as u8 }>,
+    pub note_commitment_tree: merkle::BridgeTree<note::Commitment, { merkle::DEPTH as u8 }>,
     // Our nullifiers and the notes they correspond to.
-    nullifier_map: BTreeMap<Nullifier, Note>,
+    pub nullifier_map: BTreeMap<Nullifier, Note>,
     // Notes that we have received.
-    received_set: HashSet<(Note, MemoPlaintext)>,
+    pub received_set: HashSet<(Note, MemoPlaintext)>,
     // Notes that we have spent.
-    spent_set: HashSet<Note>,
+    pub spent_set: HashSet<Note>,
     // Transaction IDs we have visibility into.
-    transactions: Vec<Vec<u8>>,
+    pub transactions: Vec<Vec<u8>>,
+    // Key material.
+    // TODO: Allow multiple spend authorities.
+    // By making this Vec<Wallet>?
+    pub wallet: Wallet,
+}
+
+/// Store all key material for a single spend authority.
+pub struct Wallet {
+    pub spend_key: keys::SpendKey,
+    // Store derived keys here?
+}
+
+impl Wallet {
+    /// Generate key material for a new spend authority.
+    pub fn generate<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
+        Wallet {
+            spend_key: keys::SpendKey::generate(rng),
+        }
+
+        // TODO: Persist to disk.
+    }
 }
 
 impl Default for ClientState {
     fn default() -> Self {
+        let mut rng = OsRng;
+
         Self {
             first_block_height: 0,
             last_block_height: 0,
@@ -31,6 +56,7 @@ impl Default for ClientState {
             received_set: HashSet::new(),
             spent_set: HashSet::new(),
             transactions: Vec::new(),
+            wallet: Wallet::generate(&mut rng),
         }
     }
 }

@@ -29,7 +29,9 @@ enum Command {
 async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
     let opt = Opt::from_args();
-    let client = state::ClientState::default();
+    // xxx If keys exist, load them from disk. If this is first run,
+    // we generate keys and start syncing with the chain.
+    let _client = state::ClientState::default();
 
     // XXX probably good to move towards using the tendermint-rs RPC functionality
 
