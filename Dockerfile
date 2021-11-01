@@ -1,4 +1,7 @@
-FROM rust:1.54.0 as build
+FROM rust:1.56 as build
+
+RUN curl https://sh.rustup.rs -sSf | sh -s -- --no-modify-path --default-toolchain none -y
+RUN rustup component add rustfmt
 
 WORKDIR /usr/src
 COPY . .
