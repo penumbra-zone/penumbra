@@ -1,4 +1,4 @@
-use penumbra::db::{db_bootstrap, db_connection, db_insert, NoteCommitmentTreeAnchor};
+use penumbra::db::{db_bootstrap, db_connection, db_insert, db_read, NoteCommitmentTreeAnchor};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -35,8 +35,8 @@ async fn main() {
     v.push(3);
     let _db_insert_dummy_row = db_insert(
         NoteCommitmentTreeAnchor {
-            id: 0 as i64,
-            height: 2312312312312 as i64,
+            id: 0 as i32,
+            height: 23123122 as i64,
             anchor: v.clone(),
         },
         pool.clone(),
@@ -45,7 +45,13 @@ async fn main() {
     .unwrap();
 
     // read stuff, hope its not rough
+    let _db_read_dummy_row = db_read(pool.clone()).await.unwrap();
+    println!(
+        "raw height {} raw anchor {:?}",
+        _db_read_dummy_row[0].height, _db_read_dummy_row[0].anchor
+    );
 
+    // app
     let app = penumbra::App::default();
 
     use tower_abci::{split, Server};

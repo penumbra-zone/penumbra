@@ -1,13 +1,11 @@
-use sqlx::postgres::{PgPoolOptions, PgQueryResult, PgRow};
-use sqlx::FromRow;
-use sqlx::Row;
+use sqlx::postgres::{PgPoolOptions, PgQueryResult};
 use sqlx::{query, query_as, Error};
 use sqlx::{Pool, Postgres};
 use std::env;
 
 #[derive(Debug, sqlx::FromRow)]
 pub struct NoteCommitmentTreeAnchor {
-    pub id: i64,
+    pub id: i32,
     pub height: i64,
     pub anchor: Vec<u8>,
 }
@@ -60,4 +58,16 @@ pub async fn db_insert(
         .rows_affected();
 
     Ok(id)
+}
+
+pub async fn db_read(pool: Pool<Postgres>) -> Result<Vec<NoteCommitmentTreeAnchor>, Error> {
+    let mut p = pool.acquire().await?;
+    let rows = query_as::<_, NoteCommitmentTreeAnchor>(
+        "SELECT id, height, anchor FROM note_commitment_tree_anchors where id = 3;",
+    )
+    .fetch_one(&mut p)
+    .await?;
+
+    let x = rows;
+    Ok(vec![x])
 }
