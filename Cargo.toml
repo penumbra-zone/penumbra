@@ -7,6 +7,7 @@ members = [
   "decaf377-fmd",
   "decaf377-ka",
   "penumbra",
+  "wallet",
 ]
 
 [patch.crates-io]

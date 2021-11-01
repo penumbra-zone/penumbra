@@ -1,5 +1,9 @@
 use anyhow::Result;
+use rand_core::OsRng;
 use structopt::StructOpt;
+
+use penumbra_crypto::keys;
+use penumbra_wallet::state;
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -27,6 +31,10 @@ enum Command {
 async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
     let opt = Opt::from_args();
+    // xxx If keys exist, load them from disk. If this is first run,
+    // we generate keys and start syncing with the chain.
+    let spend_key = keys::SpendKey::generate(OsRng);
+    let _client = state::ClientState::new(spend_key);
 
     // XXX probably good to move towards using the tendermint-rs RPC functionality
 

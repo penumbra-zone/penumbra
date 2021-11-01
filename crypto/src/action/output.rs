@@ -78,8 +78,7 @@ impl Body {
         // TODO: p. 43 Spec. Decide whether to do leadByte 0x01 method or 0x02 or other.
         let value_commitment = note.value().commit(v_blinding);
         let note_commitment = note.commit();
-        // TODO: Encrypt note here and add to a field in the Body struct (later).
-        // TEMP
+        // TODO: Encrypt note here.
         let encrypted_note = [0u8; NOTE_ENCRYPTION_BYTES];
 
         let esk = ka::Secret::new(rng);

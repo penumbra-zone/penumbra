@@ -1,9 +1,9 @@
 [package]
-name = "penumbra"
+name = "penumbra-wallet"
 version = "0.1.0"
 authors = ["Penumbra Labs <team@penumbra.zone>"]
-edition = "2018"
-description = "The node software for the Penumbra Zone"
+edition = "2021"
+description = "The wallet software for the Penumbra Zone"
 repository = "https://github.com/penumbra-zone/penumbra/"
 homepage = "https://penumbra.zone"
 license = "MIT OR Apache-2.0"
@@ -15,12 +15,7 @@ publish = false
 # Workspace dependencies
 penumbra-proto = { path = "../proto" }
 penumbra-crypto = { path = "../crypto" }
-penumbra-wallet = { path = "../wallet" }
 
-# Penumbra dependencies
-tower-abci = { git = "https://github.com/penumbra-zone/tower-abci/" }
-tendermint-proto = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "abci-domain-types" }
-tendermint = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "abci-domain-types" }
 # External dependencies
 bytes = "1"
 tokio = { version = "1", features = ["full"]}
@@ -35,9 +30,3 @@ reqwest = { version = "0.11", features = ["json"] }
 anyhow = "1"
 hex = "0.4"
 rand_core = { version = "0.6.3", features = ["getrandom"] }
-
-[build-dependencies]
-vergen = "5"
-
-[dev-dependencies]
-ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
