@@ -1,3 +1,4 @@
+use penumbra::db::db_bootstrap;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -20,6 +21,9 @@ struct Opt {
 async fn main() {
     tracing_subscriber::fmt::init();
     let opt = Opt::from_args();
+
+    // bootstrap database
+    let _db_bootstrap_on_load = db_bootstrap().await.unwrap();
 
     let app = penumbra::App::default();
 
