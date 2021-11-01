@@ -15,6 +15,7 @@ publish = false
 # Workspace dependencies
 penumbra-proto = { path = "../proto" }
 penumbra-crypto = { path = "../crypto" }
+penumbra-wallet = { path = "../wallet" }
 
 # Penumbra dependencies
 tower-abci = { git = "https://github.com/penumbra-zone/tower-abci/" }
