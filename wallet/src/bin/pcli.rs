@@ -1,7 +1,9 @@
 use anyhow::Result;
+use std::str::FromStr;
 use structopt::StructOpt;
 
 use penumbra_wallet::state;
+use tendermint_rpc::{Client, HttpClient, Url};
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -23,17 +25,23 @@ enum Command {
     Tx { key: String, value: String },
     /// Queries the Penumbra state.
     Query { key: String },
+    /// Queries the node for application info.
+    Info,
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
     let opt = Opt::from_args();
+
+    // The address of the Tendermint node as a `tendermint-rs` `Url`.
+    let full_url_str = format!(r#"http://{}"#, opt.addr);
+    let url: Url = Url::from_str(&full_url_str[..]).expect("can parse address");
+
     // xxx If keys exist, load them from disk. If this is first run,
     // we generate keys and start syncing with the chain.
-    let _client = state::ClientState::default();
-
-    // XXX probably good to move towards using the tendermint-rs RPC functionality
+    let _state = state::ClientState::default();
+    let client = HttpClient::new(url).unwrap();
 
     match opt.cmd {
         Command::Tx { key, value } => {
@@ -58,6 +66,10 @@ async fn main() -> Result<()> {
             .await?;
 
             tracing::info!(?rsp);
+        }
+        Command::Info => {
+            let net_info = client.net_info().await.unwrap();
+            tracing::info!("{:?}", net_info);
         }
     }
 
