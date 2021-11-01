@@ -1,4 +1,5 @@
 use ark_ff::PrimeField;
+use blake2b_simd;
 use chacha20poly1305::{
     aead::{Aead, NewAead},
     ChaCha20Poly1305, Key, Nonce,
@@ -17,6 +18,9 @@ use crate::{
 pub const NOTE_LEN_BYTES: usize = 116;
 pub const NOTE_CIPHERTEXT_BYTES: usize = 132;
 pub const OVK_WRAPPED_LEN_BYTES: usize = 80;
+
+/// The nonce used for note encryption.
+pub static NOTE_ENCRYPTION_NONCE: Lazy<[u8; 12]> = Lazy::new(|| [0u8; 12]);
 
 // Can add to this/make this an enum when we add additional types of notes.
 pub const NOTE_TYPE: u8 = 0;
@@ -55,8 +59,6 @@ pub enum Error {
     NoteTypeUnsupported,
     #[error("Note deserialization error")]
     NoteDeserializationError,
-    #[error("Encryption error")]
-    EncryptionError,
     #[error("Decryption error")]
     DecryptionError,
 }
@@ -103,34 +105,26 @@ impl Note {
     }
 
     /// Encrypt a note, returning its ciphertext.
-    pub fn encrypt(&self, esk: &ka::Secret) -> Result<[u8; NOTE_CIPHERTEXT_BYTES], Error> {
+    pub fn encrypt(&self, esk: &ka::Secret) -> [u8; NOTE_CIPHERTEXT_BYTES] {
         let epk = esk.diversified_public(&self.diversified_generator());
         let shared_secret = esk
             .key_agreement_with(&self.transmission_key())
-            .map_err(|_| Error::EncryptionError)?;
+            .expect("key agreement succeeded");
 
-        // Use Blake2b-256 to derive encryption key.
-        let mut kdf_params = blake2b_simd::Params::new();
-        kdf_params.hash_length(32);
-        let mut kdf = kdf_params.to_state();
-        kdf.update(&shared_secret.0);
-        kdf.update(&epk.0);
-        let kdf_output = kdf.finalize();
-        let key = Key::from_slice(kdf_output.as_bytes());
-
-        let cipher = ChaCha20Poly1305::new(key);
-        let nonce = Nonce::from_slice(&[0u8; 12]);
+        let key = derive_symmetric_key(&shared_secret, &epk);
+        let cipher = ChaCha20Poly1305::new(Key::from_slice(key.as_bytes()));
+        let nonce = Nonce::from_slice(&*NOTE_ENCRYPTION_NONCE);
 
         let note_plaintext: Vec<u8> = self.into();
         let encryption_result = cipher
             .encrypt(nonce, note_plaintext.as_ref())
-            .map_err(|_| Error::EncryptionError)?;
+            .expect("note encryption succeeded");
 
         let ciphertext: [u8; NOTE_CIPHERTEXT_BYTES] = encryption_result
             .try_into()
-            .map_err(|_| Error::EncryptionError)?;
+            .expect("note encryption result fits in ciphertext len");
 
-        Ok(ciphertext)
+        ciphertext
     }
 
     /// Generate encrypted outgoing cipher key for use with this note.
@@ -139,7 +133,7 @@ impl Note {
         esk: &ka::Secret,
         ovk: &OutgoingViewingKey,
         cv: value::Commitment,
-    ) -> Result<[u8; OVK_WRAPPED_LEN_BYTES], Error> {
+    ) -> [u8; OVK_WRAPPED_LEN_BYTES] {
         let cv_bytes: [u8; 32] = cv.into();
         let cm_bytes: [u8; 32] = self.commit().into();
         let epk = esk.diversified_public(&self.diversified_generator());
@@ -161,17 +155,17 @@ impl Note {
         op.extend_from_slice(&esk.to_bytes());
 
         let cipher = ChaCha20Poly1305::new(ock);
-        let nonce = Nonce::from_slice(&[0u8; 12]);
+        let nonce = Nonce::from_slice(&*NOTE_ENCRYPTION_NONCE);
 
         let encryption_result = cipher
             .encrypt(nonce, op.as_ref())
-            .map_err(|_| Error::EncryptionError)?;
+            .expect("OVK encryption succeeded");
 
         let wrapped_ovk: [u8; OVK_WRAPPED_LEN_BYTES] = encryption_result
             .try_into()
-            .map_err(|_| Error::EncryptionError)?;
+            .expect("OVK encryption result fits in ciphertext len");
 
-        Ok(wrapped_ovk)
+        wrapped_ovk
     }
 
     /// Decrypt a note ciphertext to generate a plaintext `Note`.
@@ -184,16 +178,8 @@ impl Note {
             .key_agreement_with(epk)
             .map_err(|_| Error::DecryptionError)?;
 
-        // Use Blake2b-256 to derive decryption key.
-        let mut kdf_params = blake2b_simd::Params::new();
-        kdf_params.hash_length(32);
-        let mut kdf = kdf_params.to_state();
-        kdf.update(&shared_secret.0);
-        kdf.update(&epk.0);
-        let kdf_output = kdf.finalize();
-        let key = Key::from_slice(kdf_output.as_bytes());
-
-        let cipher = ChaCha20Poly1305::new(key);
+        let key = derive_symmetric_key(&shared_secret, &epk);
+        let cipher = ChaCha20Poly1305::new(Key::from_slice(key.as_bytes()));
         let nonce = Nonce::from_slice(&[0u8; 12]);
         let plaintext = cipher
             .decrypt(nonce, ciphertext.as_ref())
@@ -215,6 +201,17 @@ impl Note {
             self.transmission_key_s,
         )
     }
+}
+
+/// Use Blake2b-256 to derive the symmetric key material for note and memo encryption.
+fn derive_symmetric_key(shared_secret: &ka::SharedSecret, epk: &ka::Public) -> blake2b_simd::Hash {
+    let mut kdf_params = blake2b_simd::Params::new();
+    kdf_params.hash_length(32);
+    let mut kdf = kdf_params.to_state();
+    kdf.update(&shared_secret.0);
+    kdf.update(&epk.0);
+    let kdf_output = kdf.finalize();
+    kdf_output
 }
 
 impl From<Note> for [u8; NOTE_LEN_BYTES] {
@@ -371,11 +368,17 @@ mod tests {
         .expect("can create note");
         let esk = ka::Secret::new(&mut rng);
 
-        let ciphertext = note.encrypt(&esk).expect("can encrypt note");
+        let ciphertext = note.encrypt(&esk);
 
         let epk = esk.diversified_public(&dest.diversified_generator());
         let plaintext = Note::decrypt(ciphertext, ivk, &epk).expect("can decrypt note");
 
         assert_eq!(plaintext, note);
+
+        let sk2 = SpendKey::generate(&mut rng);
+        let fvk2 = sk2.full_viewing_key();
+        let ivk2 = fvk2.incoming();
+
+        assert!(Note::decrypt(ciphertext, ivk2, &epk).is_err());
     }
 }

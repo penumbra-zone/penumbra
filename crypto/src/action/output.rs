@@ -71,7 +71,7 @@ impl Body {
         let note_commitment = note.commit();
 
         let ephemeral_key = esk.diversified_public(&note.diversified_generator());
-        let encrypted_note = note.encrypt(&esk).expect("note encrypted successfully");
+        let encrypted_note = note.encrypt(&esk);
 
         let proof = OutputProof {
             g_d: *dest.diversified_generator(),

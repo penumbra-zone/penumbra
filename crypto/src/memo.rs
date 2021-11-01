@@ -6,14 +6,14 @@ use chacha20poly1305::{
 use once_cell::sync::Lazy;
 use std::convert::TryInto;
 
-use crate::{ka, keys::IncomingViewingKey};
+use crate::{ka, keys::IncomingViewingKey, Address};
 
 pub const MEMO_CIPHERTEXT_LEN_BYTES: usize = 528;
 
 // This is the `MEMO_CIPHERTEXT_LEN_BYTES` - MAC size (16 bytes).
 pub const MEMO_LEN_BYTES: usize = 512;
 
-/// The nonce used for memo nonce encryption.
+/// The nonce used for memo encryption.
 pub static MEMO_ENCRYPTION_NONCE: Lazy<[u8; 12]> = Lazy::new(|| {
     let nonce_bytes = 1u128.to_le_bytes();
     nonce_bytes[0..12].try_into().expect("nonce fits in array")
@@ -31,16 +31,11 @@ impl Default for MemoPlaintext {
 
 impl MemoPlaintext {
     /// Encrypt a memo, returning its ciphertext.
-    pub fn encrypt(
-        &self,
-        esk: &ka::Secret,
-        transmission_key: &ka::Public,
-        diversified_generator: &decaf377::Element,
-    ) -> Result<MemoCiphertext, anyhow::Error> {
-        let epk = esk.diversified_public(diversified_generator);
+    pub fn encrypt(&self, esk: &ka::Secret, address: &Address) -> MemoCiphertext {
+        let epk = esk.diversified_public(address.diversified_generator());
         let shared_secret = esk
-            .key_agreement_with(&transmission_key)
-            .map_err(|_| anyhow!("could not perform key agreement"))?;
+            .key_agreement_with(&address.transmission_key())
+            .expect("key agreement succeeds");
 
         // Use Blake2b-256 to derive encryption key.
         let mut kdf_params = blake2b_simd::Params::new();
@@ -56,13 +51,13 @@ impl MemoPlaintext {
 
         let encryption_result = cipher
             .encrypt(nonce, self.0.as_ref())
-            .map_err(|_| anyhow!("encryption error!"))?;
+            .expect("memo encryption succeeded");
 
         let ciphertext: [u8; MEMO_CIPHERTEXT_LEN_BYTES] = encryption_result
             .try_into()
-            .map_err(|_| anyhow!("memo encryption result does not fit in ciphertext len"))?;
+            .expect("memo encryption result fits in ciphertext len");
 
-        Ok(MemoCiphertext(ciphertext))
+        MemoCiphertext(ciphertext)
     }
 
     /// Decrypt a `MemoCiphertext` to generate a plaintext `Memo`.
@@ -124,9 +119,7 @@ mod tests {
 
         let memo = MemoPlaintext(memo_bytes);
 
-        let ciphertext = memo
-            .encrypt(&esk, dest.transmission_key(), dest.diversified_generator())
-            .expect("can encrypt memo");
+        let ciphertext = memo.encrypt(&esk, &dest);
 
         let epk = esk.diversified_public(&dest.diversified_generator());
         let plaintext = MemoPlaintext::decrypt(ciphertext, ivk, &epk).expect("can decrypt memo");
