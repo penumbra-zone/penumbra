@@ -3,6 +3,7 @@ use chacha20poly1305::{
     aead::{Aead, NewAead},
     ChaCha20Poly1305, Key, Nonce,
 };
+use once_cell::sync::Lazy;
 use std::convert::TryInto;
 
 use crate::{ka, keys::IncomingViewingKey};
@@ -11,6 +12,12 @@ pub const MEMO_CIPHERTEXT_LEN_BYTES: usize = 528;
 
 // This is the `MEMO_CIPHERTEXT_LEN_BYTES` - MAC size (16 bytes).
 pub const MEMO_LEN_BYTES: usize = 512;
+
+/// The nonce used for memo nonce encryption.
+pub static MEMO_ENCRYPTION_NONCE: Lazy<[u8; 12]> = Lazy::new(|| {
+    let nonce_bytes = 1u128.to_le_bytes();
+    nonce_bytes[0..12].try_into().expect("nonce fits in array")
+});
 
 // The memo is stored separately from the `Note`.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -45,7 +52,7 @@ impl MemoPlaintext {
         let key = Key::from_slice(kdf_output.as_bytes());
 
         let cipher = ChaCha20Poly1305::new(key);
-        let nonce = Nonce::from_slice(&[1u8; 12]);
+        let nonce = Nonce::from_slice(&*MEMO_ENCRYPTION_NONCE);
 
         let encryption_result = cipher
             .encrypt(nonce, self.0.as_ref())
@@ -78,7 +85,7 @@ impl MemoPlaintext {
         let key = Key::from_slice(kdf_output.as_bytes());
 
         let cipher = ChaCha20Poly1305::new(key);
-        let nonce = Nonce::from_slice(&[1u8; 12]);
+        let nonce = Nonce::from_slice(&*MEMO_ENCRYPTION_NONCE);
         let plaintext = cipher
             .decrypt(nonce, ciphertext.0.as_ref())
             .map_err(|_| anyhow!("decryption error"))?;
