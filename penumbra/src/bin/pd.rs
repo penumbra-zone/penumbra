@@ -92,8 +92,6 @@ async fn main() {
             chain_id,
             genesis_allocations,
         } => {
-            tracing::info!("generating genesis data for chain: {}", chain_id);
-
             let chain_id_bytes = chain_id.as_bytes();
             let mut hasher = blake2b_simd::Params::new().hash_length(32).to_state();
             let seed = hasher.update(chain_id_bytes).finalize();
