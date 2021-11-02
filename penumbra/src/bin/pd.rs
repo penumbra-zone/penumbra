@@ -4,7 +4,7 @@ use structopt::StructOpt;
 
 use penumbra::dbschema::{NoteCommitmentTreeAnchor, PenumbraNoteCommitmentTreeAnchor};
 use penumbra::dbutils::{db_bootstrap, db_connection, db_insert, db_read};
-use penumbra::genesis::GenesisAddr;
+use penumbra::genesis::{generate_genesis_notes, GenesisAddr};
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -33,7 +33,7 @@ enum Command {
     /// Generate Genesis state.
     CreateGenesis {
         chain_id: String,
-        initial_allocations: Vec<GenesisAddr>,
+        genesis_allocations: Vec<GenesisAddr>,
     },
 }
 
@@ -90,7 +90,7 @@ async fn main() {
         }
         Command::CreateGenesis {
             chain_id,
-            initial_allocations,
+            genesis_allocations,
         } => {
             tracing::info!("generating genesis data for chain: {}", chain_id);
 
@@ -98,11 +98,15 @@ async fn main() {
             let mut hasher = blake2b_simd::Params::new().hash_length(32).to_state();
             let seed = hasher.update(chain_id_bytes).finalize();
 
-            let rng = ChaCha20Rng::from_seed(
+            let mut rng = ChaCha20Rng::from_seed(
                 seed.as_bytes()
                     .try_into()
                     .expect("blake2b output is 32 bytes"),
             );
+
+            let genesis_notes = generate_genesis_notes(&mut rng, genesis_allocations);
+            let serialized = serde_json::to_string_pretty(&genesis_notes).unwrap();
+            println!("\n{}\n", serialized);
         }
     }
 }

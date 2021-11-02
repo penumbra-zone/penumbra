@@ -1,9 +1,32 @@
 use std::str::FromStr;
 
+use ark_ff::UniformRand;
+use rand_chacha::ChaCha20Rng;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
-use penumbra_crypto::{Address, Note};
+use penumbra_crypto::{asset, Address, Fq, Note, Value};
+
+pub fn generate_genesis_notes(
+    rng: &mut ChaCha20Rng,
+    genesis_allocations: Vec<GenesisAddr>,
+) -> GenesisNotes {
+    let mut notes = Vec::<Note>::new();
+    for genesis_addr in genesis_allocations {
+        let note = Note::new(
+            *genesis_addr.address.diversifier(),
+            *genesis_addr.address.transmission_key(),
+            Value {
+                amount: genesis_addr.amount,
+                asset_id: asset::Id::from(genesis_addr.denom.as_bytes()),
+            },
+            Fq::rand(rng),
+        )
+        .expect("note created successfully");
+        notes.push(note);
+    }
+    GenesisNotes { notes }
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(
@@ -127,8 +150,7 @@ mod helpers {
 mod tests {
     use super::*;
 
-    use ark_ff::UniformRand;
-    use penumbra_crypto::{keys::SpendKey, Fq, Note, Value};
+    use penumbra_crypto::keys::SpendKey;
     use rand_core::OsRng;
 
     #[test]
