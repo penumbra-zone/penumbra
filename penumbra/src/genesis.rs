@@ -1,7 +1,9 @@
+use std::str::FromStr;
+
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
-use penumbra_crypto::Note;
+use penumbra_crypto::{Address, Note};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(
@@ -10,6 +12,34 @@ use penumbra_crypto::Note;
 )]
 pub struct GenesisNotes {
     notes: Vec<Note>,
+}
+
+#[derive(Debug)]
+pub struct GenesisAddr {
+    pub amount: u64,
+    pub denom: String,
+    pub address: Address,
+}
+
+impl FromStr for GenesisAddr {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let fields: Vec<&str> = s
+            .trim_matches(|p| p == '(' || p == ')')
+            .split(',')
+            .collect();
+
+        let amount_fromstr = fields[0].parse::<u64>()?;
+        let denom_fromstr = fields[1].to_string();
+        let address_fromstr = Address::from_str(fields[2])?;
+
+        Ok(GenesisAddr {
+            amount: amount_fromstr,
+            denom: denom_fromstr,
+            address: address_fromstr,
+        })
+    }
 }
 
 mod helpers {

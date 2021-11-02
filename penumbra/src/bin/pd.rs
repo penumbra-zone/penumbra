@@ -2,6 +2,7 @@ use structopt::StructOpt;
 
 use penumbra::dbschema::{NoteCommitmentTreeAnchor, PenumbraNoteCommitmentTreeAnchor};
 use penumbra::dbutils::{db_bootstrap, db_connection, db_insert, db_read};
+use penumbra::genesis::GenesisAddr;
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -26,7 +27,10 @@ struct Opt {
 #[derive(Debug, StructOpt)]
 enum Command {
     /// Generate Genesis state.
-    CreateGenesis,
+    CreateGenesis {
+        chain_id: String,
+        initial_allocations: Vec<GenesisAddr>,
+    },
 }
 
 #[tokio::main]
@@ -83,8 +87,12 @@ async fn main() {
             .unwrap();
     } else {
         match opt.cmd.unwrap() {
-            Command::CreateGenesis => {
-                println!("hullo");
+            Command::CreateGenesis {
+                chain_id,
+                initial_allocations,
+            } => {
+                println!("{:?}", chain_id);
+                println!("{:?}", initial_allocations);
             }
         }
     }
