@@ -38,6 +38,11 @@ impl IncomingViewingKey {
         )
     }
 
+    /// Perform key agreement with a given public key.
+    pub fn key_agreement_with(&self, pk: &ka::Public) -> Result<ka::SharedSecret, ka::Error> {
+        self.ivk.key_agreement_with(pk)
+    }
+
     /// Derive a transmission key from the given diversified base.
     pub fn diversified_public(&self, diversified_generator: &decaf377::Element) -> ka::Public {
         self.ivk.diversified_public(diversified_generator)

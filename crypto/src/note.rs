@@ -1,20 +1,32 @@
 use ark_ff::PrimeField;
+use blake2b_simd;
+use chacha20poly1305::{
+    aead::{Aead, NewAead},
+    ChaCha20Poly1305, Key, Nonce,
+};
 use decaf377::FieldExt;
 use once_cell::sync::Lazy;
 use std::convert::{TryFrom, TryInto};
 use thiserror;
 
-use crate::{asset, ka, keys::Diversifier, Fq, Value};
+use crate::{
+    asset, ka,
+    keys::{Diversifier, IncomingViewingKey, OutgoingViewingKey},
+    value, Fq, Value,
+};
 
-// TODO: Should have a `leadByte` as in Sapling and Orchard note plaintexts?
-// Do we need that in addition to the tx version?
+pub const NOTE_LEN_BYTES: usize = 116;
+pub const NOTE_CIPHERTEXT_BYTES: usize = 132;
+pub const OVK_WRAPPED_LEN_BYTES: usize = 80;
 
-const NOTE_LEN_BYTES: usize = 116;
+/// The nonce used for note encryption.
+pub static NOTE_ENCRYPTION_NONCE: Lazy<[u8; 12]> = Lazy::new(|| [0u8; 12]);
 
 // Can add to this/make this an enum when we add additional types of notes.
-const NOTE_TYPE: u8 = 0;
+pub const NOTE_TYPE: u8 = 0;
 
 /// A plaintext Penumbra note.
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Note {
     // Value (32-byte asset ID plus 8-byte amount).
     value: Value,
@@ -47,6 +59,8 @@ pub enum Error {
     NoteTypeUnsupported,
     #[error("Note deserialization error")]
     NoteDeserializationError,
+    #[error("Decryption error")]
+    DecryptionError,
 }
 
 impl Note {
@@ -90,6 +104,95 @@ impl Note {
         self.value
     }
 
+    /// Encrypt a note, returning its ciphertext.
+    pub fn encrypt(&self, esk: &ka::Secret) -> [u8; NOTE_CIPHERTEXT_BYTES] {
+        let epk = esk.diversified_public(&self.diversified_generator());
+        let shared_secret = esk
+            .key_agreement_with(&self.transmission_key())
+            .expect("key agreement succeeded");
+
+        let key = derive_symmetric_key(&shared_secret, &epk);
+        let cipher = ChaCha20Poly1305::new(Key::from_slice(key.as_bytes()));
+        let nonce = Nonce::from_slice(&*NOTE_ENCRYPTION_NONCE);
+
+        let note_plaintext: Vec<u8> = self.into();
+        let encryption_result = cipher
+            .encrypt(nonce, note_plaintext.as_ref())
+            .expect("note encryption succeeded");
+
+        let ciphertext: [u8; NOTE_CIPHERTEXT_BYTES] = encryption_result
+            .try_into()
+            .expect("note encryption result fits in ciphertext len");
+
+        ciphertext
+    }
+
+    /// Generate encrypted outgoing cipher key for use with this note.
+    pub fn encrypt_key(
+        &self,
+        esk: &ka::Secret,
+        ovk: &OutgoingViewingKey,
+        cv: value::Commitment,
+    ) -> [u8; OVK_WRAPPED_LEN_BYTES] {
+        let cv_bytes: [u8; 32] = cv.into();
+        let cm_bytes: [u8; 32] = self.commit().into();
+        let epk = esk.diversified_public(&self.diversified_generator());
+
+        // Use Blake2b-256 to derive an encryption key `ock` from the value commitment,
+        // note commitment, the ephemeral public key, and the outgoing viewing key.
+        let mut kdf_params = blake2b_simd::Params::new();
+        kdf_params.hash_length(32);
+        let mut kdf = kdf_params.to_state();
+        kdf.update(&ovk.0);
+        kdf.update(&cv_bytes);
+        kdf.update(&cm_bytes);
+        kdf.update(&epk.0);
+        let kdf_output = kdf.finalize();
+        let ock = Key::from_slice(kdf_output.as_bytes());
+
+        let mut op = Vec::new();
+        op.extend_from_slice(&self.transmission_key().0);
+        op.extend_from_slice(&esk.to_bytes());
+
+        let cipher = ChaCha20Poly1305::new(ock);
+        let nonce = Nonce::from_slice(&*NOTE_ENCRYPTION_NONCE);
+
+        let encryption_result = cipher
+            .encrypt(nonce, op.as_ref())
+            .expect("OVK encryption succeeded");
+
+        let wrapped_ovk: [u8; OVK_WRAPPED_LEN_BYTES] = encryption_result
+            .try_into()
+            .expect("OVK encryption result fits in ciphertext len");
+
+        wrapped_ovk
+    }
+
+    /// Decrypt a note ciphertext to generate a plaintext `Note`.
+    pub fn decrypt(
+        ciphertext: [u8; NOTE_CIPHERTEXT_BYTES],
+        ivk: &IncomingViewingKey,
+        epk: &ka::Public,
+    ) -> Result<Note, Error> {
+        let shared_secret = ivk
+            .key_agreement_with(epk)
+            .map_err(|_| Error::DecryptionError)?;
+
+        let key = derive_symmetric_key(&shared_secret, &epk);
+        let cipher = ChaCha20Poly1305::new(Key::from_slice(key.as_bytes()));
+        let nonce = Nonce::from_slice(&[0u8; 12]);
+        let plaintext = cipher
+            .decrypt(nonce, ciphertext.as_ref())
+            .map_err(|_| Error::DecryptionError)?;
+
+        let plaintext_bytes: [u8; NOTE_LEN_BYTES] =
+            plaintext.try_into().map_err(|_| Error::DecryptionError)?;
+
+        Ok(plaintext_bytes
+            .try_into()
+            .map_err(|_| Error::DecryptionError)?)
+    }
+
     pub fn commit(&self) -> Commitment {
         Commitment::new(
             self.note_blinding,
@@ -98,6 +201,17 @@ impl Note {
             self.transmission_key_s,
         )
     }
+}
+
+/// Use Blake2b-256 to derive the symmetric key material for note and memo encryption.
+fn derive_symmetric_key(shared_secret: &ka::SharedSecret, epk: &ka::Public) -> blake2b_simd::Hash {
+    let mut kdf_params = blake2b_simd::Params::new();
+    kdf_params.hash_length(32);
+    let mut kdf = kdf_params.to_state();
+    kdf.update(&shared_secret.0);
+    kdf.update(&epk.0);
+    let kdf_output = kdf.finalize();
+    kdf_output
 }
 
 impl From<Note> for [u8; NOTE_LEN_BYTES] {
@@ -109,6 +223,25 @@ impl From<Note> for [u8; NOTE_LEN_BYTES] {
         bytes[20..52].copy_from_slice(&note.value.asset_id.0.to_bytes());
         bytes[52..84].copy_from_slice(&note.note_blinding.to_bytes());
         bytes[84..116].copy_from_slice(&note.transmission_key.0);
+        bytes
+    }
+}
+
+impl From<&Note> for [u8; NOTE_LEN_BYTES] {
+    fn from(note: &Note) -> [u8; NOTE_LEN_BYTES] {
+        note.into()
+    }
+}
+
+impl From<&Note> for Vec<u8> {
+    fn from(note: &Note) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        bytes.push(NOTE_TYPE);
+        bytes.extend_from_slice(&note.diversifier.0);
+        bytes.extend_from_slice(&note.value.amount.to_le_bytes());
+        bytes.extend_from_slice(&note.value.asset_id.0.to_bytes());
+        bytes.extend_from_slice(&note.note_blinding.to_bytes());
+        bytes.extend_from_slice(&note.transmission_key.0);
         bytes
     }
 }
@@ -202,5 +335,50 @@ impl TryFrom<&[u8]> for Commitment {
         let inner = Fq::from_bytes(bytes).map_err(|_| Error::InvalidNoteCommitment)?;
 
         Ok(Commitment(inner))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use crate::keys::SpendKey;
+    use ark_ff::UniformRand;
+    use rand_core::OsRng;
+
+    #[test]
+    fn test_note_encryption_and_decryption() {
+        let mut rng = OsRng;
+
+        let sk = SpendKey::generate(&mut rng);
+        let fvk = sk.full_viewing_key();
+        let ivk = fvk.incoming();
+        let (dest, _dtk_d) = ivk.payment_address(0u64.into());
+
+        let value = Value {
+            amount: 10,
+            asset_id: b"pen".as_ref().into(),
+        };
+        let note = Note::new(
+            *dest.diversifier(),
+            dest.transmission_key(),
+            value,
+            Fq::rand(&mut rng),
+        )
+        .expect("can create note");
+        let esk = ka::Secret::new(&mut rng);
+
+        let ciphertext = note.encrypt(&esk);
+
+        let epk = esk.diversified_public(&dest.diversified_generator());
+        let plaintext = Note::decrypt(ciphertext, ivk, &epk).expect("can decrypt note");
+
+        assert_eq!(plaintext, note);
+
+        let sk2 = SpendKey::generate(&mut rng);
+        let fvk2 = sk2.full_viewing_key();
+        let ivk2 = fvk2.incoming();
+
+        assert!(Note::decrypt(ciphertext, ivk2, &epk).is_err());
     }
 }

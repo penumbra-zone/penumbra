@@ -6,8 +6,8 @@ use thiserror;
 
 use crate::rdsa::{Binding, Signature, SigningKey};
 use crate::{
-    action::constants::OVK_WRAPPED_LEN_BYTES,
     action::{output, spend, Action},
+    ka,
     keys::{OutgoingViewingKey, SpendKey},
     memo::MemoPlaintext,
     merkle,
@@ -95,7 +95,7 @@ impl Builder {
         dest: &Address,
         value_to_send: Value,
         memo: MemoPlaintext,
-        _ovk: &OutgoingViewingKey,
+        ovk: &OutgoingViewingKey,
     ) -> Self {
         let v_blinding = Fr::rand(rng);
         // We subtract from the transaction's value balance.
@@ -104,6 +104,7 @@ impl Builder {
             Fr::from(value_to_send.amount) * value_to_send.asset_id.value_generator();
 
         let note_blinding = Fq::rand(rng);
+        let esk = ka::Secret::new(rng);
 
         let note = Note::new(
             *dest.diversifier(),
@@ -112,14 +113,11 @@ impl Builder {
             note_blinding,
         )
         .expect("transmission key is valid");
-        let body = output::Body::new(rng, note, v_blinding, dest);
+        let body = output::Body::new(note.clone(), v_blinding, dest, &esk);
         self.value_commitments -= body.value_commitment.0;
 
-        // TODO!
-        let encrypted_memo = memo.encrypt(dest);
-
-        // TODO!
-        let ovk_wrapped_key = [0u8; OVK_WRAPPED_LEN_BYTES];
+        let encrypted_memo = memo.encrypt(&esk, &dest);
+        let ovk_wrapped_key = note.encrypt_key(&esk, &ovk, body.value_commitment);
 
         let output = Action::Output(Output {
             body,

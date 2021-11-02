@@ -1,13 +1,9 @@
 use bytes::Bytes;
-use rand_core::{CryptoRng, RngCore};
 use std::convert::{TryFrom, TryInto};
 
 use penumbra_proto::{transaction, Protobuf};
 
-use super::{
-    constants::{NOTE_ENCRYPTION_BYTES, OVK_WRAPPED_LEN_BYTES},
-    error::ProtoError,
-};
+use super::error::ProtoError;
 use crate::{
     ka, memo::MemoCiphertext, note, proofs::transparent::OutputProof, value, Address, Fr, Note,
 };
@@ -16,7 +12,7 @@ use crate::{
 pub struct Output {
     pub body: Body,
     pub encrypted_memo: MemoCiphertext,
-    pub ovk_wrapped_key: [u8; OVK_WRAPPED_LEN_BYTES],
+    pub ovk_wrapped_key: [u8; note::OVK_WRAPPED_LEN_BYTES],
 }
 
 impl Protobuf<transaction::Output> for Output {}
@@ -47,7 +43,7 @@ impl TryFrom<transaction::Output> for Output {
                 .map_err(|_| ProtoError::OutputMalformed)?,
         );
 
-        let ovk_wrapped_key: [u8; OVK_WRAPPED_LEN_BYTES] = proto.ovk_wrapped_key[..]
+        let ovk_wrapped_key: [u8; note::OVK_WRAPPED_LEN_BYTES] = proto.ovk_wrapped_key[..]
             .try_into()
             .map_err(|_| ProtoError::OutputMalformed)?;
 
@@ -64,25 +60,18 @@ pub struct Body {
     pub value_commitment: value::Commitment,
     pub note_commitment: note::Commitment,
     pub ephemeral_key: ka::Public,
-    pub encrypted_note: [u8; NOTE_ENCRYPTION_BYTES],
+    pub encrypted_note: [u8; note::NOTE_CIPHERTEXT_BYTES],
     pub proof: OutputProof,
 }
 
 impl Body {
-    pub fn new<R: RngCore + CryptoRng>(
-        rng: &mut R,
-        note: Note,
-        v_blinding: Fr,
-        dest: &Address,
-    ) -> Body {
+    pub fn new(note: Note, v_blinding: Fr, dest: &Address, esk: &ka::Secret) -> Body {
         // TODO: p. 43 Spec. Decide whether to do leadByte 0x01 method or 0x02 or other.
         let value_commitment = note.value().commit(v_blinding);
         let note_commitment = note.commit();
-        // TODO: Encrypt note here.
-        let encrypted_note = [0u8; NOTE_ENCRYPTION_BYTES];
 
-        let esk = ka::Secret::new(rng);
         let ephemeral_key = esk.diversified_public(&note.diversified_generator());
+        let encrypted_note = note.encrypt(&esk);
 
         let proof = OutputProof {
             g_d: *dest.diversified_generator(),
@@ -90,7 +79,7 @@ impl Body {
             value: note.value(),
             v_blinding,
             note_blinding: note.note_blinding(),
-            esk,
+            esk: esk.clone(),
         };
 
         Self {

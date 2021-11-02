@@ -10,7 +10,7 @@ use decaf377::{self, FieldExt};
 /// This is a refinement type around `[u8; 32]` that marks the bytes as being a
 /// public key.  Not all 32-byte arrays are valid public keys; invalid public
 /// keys will error during key agreement.
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Public(pub [u8; 32]);
 
 /// A secret key used to perform key agreement using the counterparty's public key.
@@ -36,8 +36,8 @@ pub enum Error {
 
 impl Secret {
     /// Generate a new secret key using `rng`.
-    pub fn new<R: RngCore + CryptoRng>(mut rng: R) -> Self {
-        Self(decaf377::Fr::rand(&mut rng))
+    pub fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
+        Self(decaf377::Fr::rand(rng))
     }
 
     /// Use the supplied field element as the secret key directly.

@@ -476,7 +476,7 @@ mod tests {
             note_blinding,
         )
         .expect("transmission key is valid");
-        let esk = ka::Secret::new(rng);
+        let esk = ka::Secret::new(&mut rng);
         let epk = esk.diversified_public(&note.diversified_generator());
 
         let proof = OutputProof {
@@ -513,7 +513,7 @@ mod tests {
             note_blinding,
         )
         .expect("transmission key is valid");
-        let esk = ka::Secret::new(rng);
+        let esk = ka::Secret::new(&mut rng);
         let epk = esk.diversified_public(&note.diversified_generator());
 
         let proof = OutputProof {
@@ -561,7 +561,7 @@ mod tests {
             note_blinding,
         )
         .expect("transmission key is valid");
-        let esk = ka::Secret::new(rng);
+        let esk = ka::Secret::new(&mut rng);
         let correct_epk = esk.diversified_public(&note.diversified_generator());
 
         let proof = OutputProof {
@@ -599,7 +599,7 @@ mod tests {
             note_blinding,
         )
         .expect("transmission key is valid");
-        let esk = ka::Secret::new(rng);
+        let esk = ka::Secret::new(&mut rng);
 
         let proof = OutputProof {
             g_d: *dest.diversified_generator(),
@@ -609,7 +609,7 @@ mod tests {
             note_blinding,
             esk,
         };
-        let incorrect_esk = ka::Secret::new(rng);
+        let incorrect_esk = ka::Secret::new(&mut rng);
         let incorrect_epk = incorrect_esk.diversified_public(&note.diversified_generator());
 
         assert!(!proof.verify(
@@ -641,7 +641,7 @@ mod tests {
             note_blinding,
         )
         .expect("transmission key is valid");
-        let esk = ka::Secret::new(rng);
+        let esk = ka::Secret::new(&mut rng);
         let epk = esk.diversified_public(&note.diversified_generator());
 
         let proof = OutputProof {
