@@ -20,6 +20,7 @@ incrementalmerkletree = { git = "https://github.com/penumbra-zone/incrementalmer
 poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377" }
 
 # Crates.io deps
+bech32 = "0.8.1"
 fpe = "0.5"
 aes = "0.7"
 anyhow = "1"
