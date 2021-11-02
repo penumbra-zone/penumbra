@@ -17,6 +17,7 @@ penumbra-proto = { path = "../proto" }
 penumbra-crypto = { path = "../crypto" }
 
 # Penumbra dependencies
+decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 tower-abci = { git = "https://github.com/penumbra-zone/tower-abci/" }
 tendermint-proto = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "abci-domain-types" }
 tendermint = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "abci-domain-types" }

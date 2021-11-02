@@ -1,14 +1,11 @@
+use std::env;
+
 use sqlx::postgres::{PgPoolOptions, PgQueryResult};
 use sqlx::{query, query_as, Error};
 use sqlx::{Pool, Postgres};
-use std::env;
 
-#[derive(Debug, sqlx::FromRow)]
-pub struct NoteCommitmentTreeAnchor {
-    pub id: i32,
-    pub height: i64,
-    pub anchor: Vec<u8>,
-}
+use crate::dbschema::NoteCommitmentTreeAnchor;
+use crate::dbschema::PenumbraNoteCommitmentTreeAnchor;
 
 fn db_get_connection_string() -> String {
     let mut db_connection_string = "".to_string();
@@ -45,10 +42,12 @@ CREATE TABLE IF NOT EXISTS note_commitment_tree_anchors (
     bootstrap_sql
 }
 
+/// Hardcoded query for inserting one row
 pub async fn db_insert(
-    record: NoteCommitmentTreeAnchor,
+    records: PenumbraNoteCommitmentTreeAnchor,
     pool: Pool<Postgres>,
 ) -> Result<u64, Error> {
+    let record: NoteCommitmentTreeAnchor = records.into();
     let mut p = pool.acquire().await?;
     let id = query("INSERT INTO note_commitment_tree_anchors (height, anchor) VALUES ($1, $2)")
         .bind(record.height)
@@ -60,14 +59,15 @@ pub async fn db_insert(
     Ok(id)
 }
 
-pub async fn db_read(pool: Pool<Postgres>) -> Result<Vec<NoteCommitmentTreeAnchor>, Error> {
+/// Hardcoded query for reading the first record
+pub async fn db_read(pool: Pool<Postgres>) -> Result<Vec<PenumbraNoteCommitmentTreeAnchor>, Error> {
     let mut p = pool.acquire().await?;
     let rows = query_as::<_, NoteCommitmentTreeAnchor>(
-        "SELECT id, height, anchor FROM note_commitment_tree_anchors where id = 3;",
+        "SELECT id, height, anchor FROM note_commitment_tree_anchors where id = 1;",
     )
     .fetch_one(&mut p)
     .await?;
 
-    let x = rows;
-    Ok(vec![x])
+    let res = rows.into();
+    Ok(vec![res])
 }
