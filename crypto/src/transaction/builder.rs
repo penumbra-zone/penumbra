@@ -108,7 +108,7 @@ impl Builder {
 
         let note = Note::new(
             *dest.diversifier(),
-            dest.transmission_key(),
+            *dest.transmission_key(),
             value_to_send,
             note_blinding,
         )

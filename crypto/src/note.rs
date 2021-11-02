@@ -66,7 +66,7 @@ pub enum Error {
 impl Note {
     pub fn new(
         diversifier: Diversifier,
-        transmission_key: &ka::Public,
+        transmission_key: ka::Public,
         value: Value,
         note_blinding: Fq,
     ) -> Result<Self, Error> {
@@ -74,7 +74,7 @@ impl Note {
             value: value,
             note_blinding,
             diversifier,
-            transmission_key: *transmission_key,
+            transmission_key,
             transmission_key_s: Fq::from_bytes(transmission_key.0)
                 .map_err(|_| Error::InvalidTransmissionKey)?,
         })
@@ -268,7 +268,7 @@ impl TryFrom<[u8; NOTE_LEN_BYTES]> for Note {
             bytes[1..12]
                 .try_into()
                 .map_err(|_| Error::NoteDeserializationError)?,
-            &bytes[84..116]
+            bytes[84..116]
                 .try_into()
                 .map_err(|_| Error::NoteDeserializationError)?,
             Value {
@@ -361,7 +361,7 @@ mod tests {
         };
         let note = Note::new(
             *dest.diversifier(),
-            dest.transmission_key(),
+            *dest.transmission_key(),
             value,
             Fq::rand(&mut rng),
         )

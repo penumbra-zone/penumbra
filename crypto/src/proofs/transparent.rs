@@ -471,7 +471,7 @@ mod tests {
         let v_blinding = Fr::rand(&mut rng);
         let note = Note::new(
             *dest.diversifier(),
-            dest.transmission_key(),
+            *dest.transmission_key(),
             value_to_send,
             note_blinding,
         )
@@ -508,7 +508,7 @@ mod tests {
         let v_blinding = Fr::rand(&mut rng);
         let note = Note::new(
             *dest.diversifier(),
-            dest.transmission_key(),
+            *dest.transmission_key(),
             value_to_send,
             note_blinding,
         )
@@ -556,7 +556,7 @@ mod tests {
         let v_blinding = Fr::rand(&mut rng);
         let note = Note::new(
             *dest.diversifier(),
-            dest.transmission_key(),
+            *dest.transmission_key(),
             value_to_send,
             note_blinding,
         )
@@ -594,7 +594,7 @@ mod tests {
         let v_blinding = Fr::rand(&mut rng);
         let note = Note::new(
             *dest.diversifier(),
-            dest.transmission_key(),
+            *dest.transmission_key(),
             value_to_send,
             note_blinding,
         )
@@ -636,7 +636,7 @@ mod tests {
         let v_blinding = Fr::rand(&mut rng);
         let note = Note::new(
             *dest.diversifier(),
-            dest.transmission_key(),
+            *dest.transmission_key(),
             value_to_send,
             note_blinding,
         )
@@ -672,7 +672,7 @@ mod tests {
         let v_blinding = Fr::rand(&mut rng);
         let note = Note::new(
             *sender.diversifier(),
-            sender.transmission_key(),
+            *sender.transmission_key(),
             value_to_send,
             note_blinding,
         )
@@ -724,7 +724,7 @@ mod tests {
         let v_blinding = Fr::rand(&mut rng);
         let note = Note::new(
             *sender.diversifier(),
-            sender.transmission_key(),
+            *sender.transmission_key(),
             value_to_send,
             note_blinding,
         )
@@ -776,7 +776,7 @@ mod tests {
         let v_blinding = Fr::rand(&mut rng);
         let note = Note::new(
             *sender.diversifier(),
-            sender.transmission_key(),
+            *sender.transmission_key(),
             value_to_send,
             note_blinding,
         )
@@ -828,7 +828,7 @@ mod tests {
         let v_blinding = Fr::rand(&mut rng);
         let note = Note::new(
             *sender.diversifier(),
-            sender.transmission_key(),
+            *sender.transmission_key(),
             value_to_send,
             note_blinding,
         )

@@ -242,7 +242,7 @@ mod tests {
         };
         let dummy_note = Note::new(
             *dest.diversifier(),
-            dest.transmission_key(),
+            *dest.transmission_key(),
             value_to_send,
             Fq::zero(),
         )
