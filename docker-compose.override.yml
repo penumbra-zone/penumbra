@@ -10,6 +10,11 @@ services:
     environment:
       - RUST_LOG=${RUST_LOG:-info,pd=debug,penumbra=debug}
 
+  # expose database on a port so it is easy to play with
+#  db:
+#    ports:
+#      - "5432:5432"
+
   # add prometheus and grafana
   #
   # in production, users will want to bring their own monitoring stack, rather

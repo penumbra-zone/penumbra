@@ -3,14 +3,36 @@ services:
   # The Penumbra daemon
   pd:
     container_name: penumbra
-    build: "."
+    build:
+      context: .
+      args:
+        DATABASE_URL: postgres://postgres:postgres@db/penumbra
     environment:
       - RUST_LOG=${RUST_LOG:-warn,pd=info,penumbra=info}
     command:
       pd --host 0.0.0.0
+    restart: on-failure
+    depends_on:
+      - db
+    links:
+      - db:db
     networks:
       localnet:
         ipv4_address: 192.167.10.6
+
+  # database - postgres
+  db:
+    image: postgres:14.0
+    container_name: db
+    volumes:
+      - "db_data:/var/lib/postgresql/data"
+    environment:
+      - POSTGRES_DB=penumbra
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    networks:
+      localnet:
+        ipv4_address: 192.167.10.12
 
   # The Tendermint node
   tendermint:
@@ -40,3 +62,4 @@ networks:
 
 volumes:
   tendermint_data: {}
+  db_data: {}
