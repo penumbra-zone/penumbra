@@ -1,4 +1,5 @@
-# Overview
+
+<img style="width: 25%; max-width: 11em; float: left; margin: 1em;" src="https://protocol.penumbra.zone/penumbra-glow-alpha-mask.png">
 
 Penumbra is a fully private proof-of-stake network providing privacy to the
 Cosmos ecosystem.
@@ -14,6 +15,14 @@ prevent frontrunning, provide better execution, and reveal only the net flow
 across a pair of assets in each block, and liquidity positions are created
 anonymously, allowing traders to approximate their desired trading function
 without revealing their individual beliefs about prices.
+
+This website renders the work-in-progress protocol specification for Penumbra.
+If you're interested in technical discussion about the project, why not
+
+- join [the discord](https://discord.gg/hKvkrqa3zC), 
+- check out [the repo and issue tracker](https://github.com/penumbra-zone/penumbra),
+- view the [roadmap goals](https://github.com/orgs/penumbra-zone/projects),
+- or [follow the project on Twitter](https://twitter.com/penumbrazone) for updates.
 
 ## Private Transactions
 

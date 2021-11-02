@@ -1,36 +1,104 @@
+<img style="width: 25%; max-width: 11em; float: left; margin: 1em;" src="https://protocol.penumbra.zone/penumbra-glow-alpha-mask.png">
 
-<img style="width: 25%; max-width: 11em; float: left; margin: 1em;" src="https://penumbra.zone/penumbra-glow-alpha-mask.png">
+[Penumbra] is a fully shielded zone for the Cosmos ecosystem, providing private
+trading in any cryptoasset.
+
+## Getting involved
+
+The primary communication hub is our [Discord]; click the link to join the
+discussion there.
+
+The (evolving) protocol spec is rendered at [protocol.penumbra.zone][protocol].
+
+The (evolving) API documentation is rendered at [rustdoc.penumbra.zone][rustdoc].
+
+## Building the protocol spec
+
+The [protocol spec][protocol] is built using [mdBook] and auto-deployed on
+pushes to `main`.  To build it locally:
+
+1. Install the requirements: `cargo install mdbook mdbook-katex mdbook-mermaid`
+2. To continuously build and serve the documentation: `mdbook serve`
+
+## Running Penumbra
+
+Penumbra has two binaries, the daemon `pd` and the command-line wallet interface `pcli`.
+
+### Running `pd` with Docker
+
+This is the preferred way to run Penumbra:
+```
+docker-compose up -d
+```
+
+### Running `pcli`
+
+Now you can interact with Penumbra using `pcli`:
+```
+cargo run --bin pcli -- --help
+```
+
+### Running `pd` manually
+
+You'll need to [install Tendermint][tm-install].  Be sure to install `v0.35.0`,
+rather than `master`.
+
+Initialize Tendermint:
+```bash
+tendermint init validator
+```
+
+You probably want to set a log level:
+```bash
+export RUST_LOG=debug  # bash
+```
+```fish
+set -x RUST_LOG debug  # fish
+```
+
+Start the Penumbra instance (you probably want to set `RUST_LOG` to `debug`):
+```
+cargo run --bin pd
+```
+Start the Tendermint node:
+```
+tendermint start
+```
+
+You should be running!  To reset the Tendermint state, use `tendermint unsafe-reset-all`.
+
+### Genesis data
+
+To create Genesis data, you need to know the amounts, denominations, and addresses of the genesis notes. You can then pass to `pd`'s` `create-genesis` command a list of "(amount, denomination, address)" tuples, where the tuple fields are comma-delimited and each genesis note is contained in double quotes:
+```
+$ cargo run --bin pd -- create-genesis penumbra-tn001 \
+"(100, pen, penumbra_tn001_1kpgdhlzws6kyk2cf580wtt76t9nn2vf7em3pn05y3h8ym5a6aevdxshjgsnxecv94rzsxdhng6cjp8kgchqxud06p9xka0yxv99rty3njetqqnx2hrzz4tc03956e0)" \
+"(1, tungsten_cube, penumbra_tn001_1kpgdhlzws6kyk2cf580wtt76t9nn2vf7em3pn05y3h8ym5a6aevdxshjgsnxecv94rzsxdhng6cjp8kgchqxud06p9xka0yxv99rty3njetqqnx2hrzz4tc03956e0)"
+
+{
+  "notes": [
+    {
+      "diversifier": "b050dbfc4e86ac4b2b09a1",
+      "amount": 100,
+      "note_blinding": "fb5b430096940592704c911b0fdef6ae324f054ddc6ea8cb13555373af81a00b",
+      "asset_id": "3213674d74c0f0a10b786838225460288830940147ed6f66bbae7af1ed759101",
+      "transmission_key": "dee5afda596735313ecee219be848dce4dd3baee58d342f244266ce185a8c503"
+    },
+    {
+      "diversifier": "b050dbfc4e86ac4b2b09a1",
+      "amount": 1,
+      "note_blinding": "2ca0a10d8f76a24f11e72ca1d21e18a16b112d98acdaeb62f6dde519297d080f",
+      "asset_id": "7bcfef24592b30affe8f1970d719ad4a2c5930570477e5e29be80d97816edf0f",
+      "transmission_key": "dee5afda596735313ecee219be848dce4dd3baee58d342f244266ce185a8c503"
+    }
+  ]
+}
+```
 
 
-Penumbra is a fully private proof-of-stake network providing privacy to the
-Cosmos ecosystem.
 
-Penumbra integrates privacy with proof-of-stake through a novel private
-delegation mechanism that provides staking derivatives, tax-efficient staking,
-and on-chain governance with private voting. Penumbra connects to the Cosmos
-ecosystem via IBC, acting as an ecosystem-wide shielded pool and allowing
-private transactions in any IBC-compatible asset.  Users can also swap these
-assets using ZSwap, a private decentralized exchange supporting sealed-bid batch
-auctions and Uniswap-v3-style concentrated liquidity.  Sealed-bid batch auctions
-prevent frontrunning, provide better execution, and reveal only the net flow
-across a pair of assets in each block, and liquidity positions are created
-anonymously, allowing traders to approximate their desired trading function
-without revealing their individual beliefs about prices.
-
-This website is a living document containing unfinished public research, and
-is subject to revision.  The [updates section](./updates.md) has a list of
-design updates.
-
-**Penumbra is hiring!! Check out [the job board](https://boards.greenhouse.io/penumbralabs/) for details.**
-
-If you're interested in technical discussion about
-these ideas, why not
-
-- join [the discord](https://discord.gg/hKvkrqa3zC), 
-- check out [the repo and issue tracker](https://github.com/hdevalence/penumbra-notes),
-- or [follow the project on Twitter](https://twitter.com/penumbrazone) for updates.
-
-Slides from a presentation at the ZKValidator Cosmos Privacy Showcase can be
-found [here](./penumbra-zkv-showcase.pdf).
-
-<a class="twitter-timeline" data-dnt="true" data-theme="dark" href="https://twitter.com/penumbrazone?ref_src=twsrc%5Etfw">Tweets by @penumbrazone</a> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+[Discord]: https://discord.gg/hKvkrqa3zC
+[Penumbra]: https://penumbra.zone
+[protocol]: https://protocol.penumbra.zone
+[mdBook]: https://github.com/rust-lang/mdBook
+[tm-install]: https://github.com/tendermint/tendermint/blob/master/docs/introduction/install.md#from-source
