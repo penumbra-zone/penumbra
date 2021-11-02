@@ -204,7 +204,10 @@ impl Note {
 }
 
 /// Use Blake2b-256 to derive the symmetric key material for note and memo encryption.
-fn derive_symmetric_key(shared_secret: &ka::SharedSecret, epk: &ka::Public) -> blake2b_simd::Hash {
+pub(crate) fn derive_symmetric_key(
+    shared_secret: &ka::SharedSecret,
+    epk: &ka::Public,
+) -> blake2b_simd::Hash {
     let mut kdf_params = blake2b_simd::Params::new();
     kdf_params.hash_length(32);
     let mut kdf = kdf_params.to_state();

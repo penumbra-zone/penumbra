@@ -6,7 +6,7 @@ use chacha20poly1305::{
 use once_cell::sync::Lazy;
 use std::convert::TryInto;
 
-use crate::{ka, keys::IncomingViewingKey, Address};
+use crate::{ka, keys::IncomingViewingKey, note::derive_symmetric_key, Address};
 
 pub const MEMO_CIPHERTEXT_LEN_BYTES: usize = 528;
 
@@ -37,16 +37,8 @@ impl MemoPlaintext {
             .key_agreement_with(&address.transmission_key())
             .expect("key agreement succeeds");
 
-        // Use Blake2b-256 to derive encryption key.
-        let mut kdf_params = blake2b_simd::Params::new();
-        kdf_params.hash_length(32);
-        let mut kdf = kdf_params.to_state();
-        kdf.update(&shared_secret.0);
-        kdf.update(&epk.0);
-        let kdf_output = kdf.finalize();
-        let key = Key::from_slice(kdf_output.as_bytes());
-
-        let cipher = ChaCha20Poly1305::new(key);
+        let key = derive_symmetric_key(&shared_secret, &epk);
+        let cipher = ChaCha20Poly1305::new(Key::from_slice(key.as_bytes()));
         let nonce = Nonce::from_slice(&*MEMO_ENCRYPTION_NONCE);
 
         let encryption_result = cipher
@@ -70,16 +62,8 @@ impl MemoPlaintext {
             .key_agreement_with(epk)
             .map_err(|_| anyhow!("could not perform key agreement"))?;
 
-        // Use Blake2b-256 to derive decryption key.
-        let mut kdf_params = blake2b_simd::Params::new();
-        kdf_params.hash_length(32);
-        let mut kdf = kdf_params.to_state();
-        kdf.update(&shared_secret.0);
-        kdf.update(&epk.0);
-        let kdf_output = kdf.finalize();
-        let key = Key::from_slice(kdf_output.as_bytes());
-
-        let cipher = ChaCha20Poly1305::new(key);
+        let key = derive_symmetric_key(&shared_secret, &epk);
+        let cipher = ChaCha20Poly1305::new(Key::from_slice(key.as_bytes()));
         let nonce = Nonce::from_slice(&*MEMO_ENCRYPTION_NONCE);
         let plaintext = cipher
             .decrypt(nonce, ciphertext.0.as_ref())
