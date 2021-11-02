@@ -18,6 +18,7 @@ penumbra-crypto = { path = "../crypto" }
 penumbra-wallet = { path = "../wallet" }
 
 # Penumbra dependencies
+ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 tower-abci = { git = "https://github.com/penumbra-zone/tower-abci/" }
 tendermint-proto = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "abci-domain-types" }
@@ -46,5 +47,3 @@ sqlx = { version = "0.5", features = [ "runtime-tokio-rustls", "postgres" ] }
 [build-dependencies]
 vergen = "5"
 
-[dev-dependencies]
-ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
