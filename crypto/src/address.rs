@@ -1,13 +1,16 @@
-use std::io::Write;
+use std::io::{Cursor, Read, Write};
 
+use anyhow::anyhow;
 use ark_serialize::CanonicalDeserialize;
-use bech32::{ToBase32, Variant};
+use bech32::{FromBase32, ToBase32, Variant};
 use decaf377;
 
 use crate::{fmd, ka, keys::Diversifier, Fq};
 
+pub const CURRENT_NETWORK_ID: &str = "penumbra_tn001_";
+
 /// A valid payment address.
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Address {
     d: Diversifier,
     /// cached copy of the diversified base
@@ -81,11 +84,9 @@ impl std::fmt::Display for Address {
             .write_all(&self.clue_key().0)
             .expect("can write clue key into vec");
 
-        // Mainnet "pm" prefix, testnet "pt" prefix
-        let human_part = "pt";
         bech32::encode_to_fmt(
             f,
-            human_part,
+            CURRENT_NETWORK_ID,
             addr_content.get_ref().to_base32(),
             Variant::Bech32m,
         )
@@ -93,10 +94,51 @@ impl std::fmt::Display for Address {
     }
 }
 
+impl std::str::FromStr for Address {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (hrp, data, variant) = bech32::decode(&s).unwrap();
+
+        let mut decoded_bytes = Cursor::new(Vec::<u8>::from_base32(&data).unwrap());
+
+        let mut diversifier_bytes = [0u8; 11];
+        decoded_bytes.read_exact(&mut diversifier_bytes)?;
+
+        let mut pk_d_bytes = [0u8; 32];
+        decoded_bytes.read_exact(&mut pk_d_bytes)?;
+
+        let mut clue_key_bytes = [0; 32];
+        decoded_bytes.read_exact(&mut clue_key_bytes)?;
+
+        if variant != Variant::Bech32m {
+            return Err(anyhow!(
+                "incorrectly formatted address, only Bech32m supported"
+            ));
+        }
+
+        if hrp != CURRENT_NETWORK_ID {
+            return Err(anyhow!("network ID no longer supported: {}", hrp));
+        }
+
+        let diversifier = Diversifier(diversifier_bytes);
+        Ok(Address::from_components(
+            diversifier,
+            diversifier.diversified_generator(),
+            ka::Public(pk_d_bytes),
+            fmd::ClueKey(clue_key_bytes),
+        )
+        .expect("transmission key is valid"))
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     use crate::keys::SpendKey;
     use rand_core::OsRng;
+    use std::str::FromStr;
 
     #[test]
     fn test_address_encoding() {
@@ -105,6 +147,10 @@ mod tests {
         let ivk = fvk.incoming();
         let (dest, _dtk_d) = ivk.payment_address(0u64.into());
 
-        let _encoded_addr = format!("{}", dest);
+        let encoded_addr = format!("{}", dest);
+
+        let addr = Address::from_str(&encoded_addr).expect("can decode valid address");
+
+        assert_eq!(addr, dest);
     }
 }
