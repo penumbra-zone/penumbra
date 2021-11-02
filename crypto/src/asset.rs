@@ -1,6 +1,7 @@
 //! Asset types and identifiers.
 
 use ark_ff::fields::PrimeField;
+use decaf377::FieldExt;
 use once_cell::sync::Lazy;
 
 use crate::Fq;
@@ -61,6 +62,11 @@ impl Id {
             &VALUE_GENERATOR_DOMAIN_SEP,
             self.0,
         ))
+    }
+
+    /// Convert the asset ID to bytes.
+    pub fn to_bytes(&self) -> [u8; 32] {
+        self.0.to_bytes()
     }
 }
 
