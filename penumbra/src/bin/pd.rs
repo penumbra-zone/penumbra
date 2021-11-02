@@ -17,6 +17,16 @@ struct Opt {
     /// Bind the ABCI server to this port.
     #[structopt(short, long, default_value = "26658")]
     port: u16,
+
+    /// Command to run.
+    #[structopt(subcommand)]
+    cmd: Option<Command>,
+}
+
+#[derive(Debug, StructOpt)]
+enum Command {
+    /// Generate Genesis state.
+    CreateGenesis,
 }
 
 #[tokio::main]
@@ -50,24 +60,32 @@ async fn main() {
         _db_read_dummy_row[0].height, _db_read_dummy_row[0].anchor
     );
 
-    // app
-    let app = penumbra::App::default();
+    if opt.cmd.is_none() {
+        // app
+        let app = penumbra::App::default();
 
-    use tower_abci::{split, Server};
+        use tower_abci::{split, Server};
 
-    let (consensus, mempool, snapshot, info) = split::service(app, 1);
+        let (consensus, mempool, snapshot, info) = split::service(app, 1);
 
-    let server = Server::builder()
-        .consensus(consensus)
-        .snapshot(snapshot)
-        .mempool(mempool)
-        .info(info)
-        .finish()
-        .unwrap();
+        let server = Server::builder()
+            .consensus(consensus)
+            .snapshot(snapshot)
+            .mempool(mempool)
+            .info(info)
+            .finish()
+            .unwrap();
 
-    // Run the ABCI server.
-    server
-        .listen(format!("{}:{}", opt.host, opt.port))
-        .await
-        .unwrap();
+        // Run the ABCI server.
+        server
+            .listen(format!("{}:{}", opt.host, opt.port))
+            .await
+            .unwrap();
+    } else {
+        match opt.cmd.unwrap() {
+            Command::CreateGenesis => {
+                println!("hullo");
+            }
+        }
+    }
 }
