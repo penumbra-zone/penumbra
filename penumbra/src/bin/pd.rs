@@ -1,3 +1,5 @@
+use rand::SeedableRng;
+use rand_chacha::ChaCha20Rng;
 use structopt::StructOpt;
 
 use penumbra::dbschema::{NoteCommitmentTreeAnchor, PenumbraNoteCommitmentTreeAnchor};
@@ -90,8 +92,17 @@ async fn main() {
             chain_id,
             initial_allocations,
         } => {
-            println!("{:?}", chain_id);
-            println!("{:?}", initial_allocations);
+            tracing::info!("generating genesis data for chain: {}", chain_id);
+
+            let chain_id_bytes = chain_id.as_bytes();
+            let mut hasher = blake2b_simd::Params::new().hash_length(32).to_state();
+            let seed = hasher.update(chain_id_bytes).finalize();
+
+            let rng = ChaCha20Rng::from_seed(
+                seed.as_bytes()
+                    .try_into()
+                    .expect("blake2b output is 32 bytes"),
+            );
         }
     }
 }

@@ -23,7 +23,7 @@ tower-abci = { git = "https://github.com/penumbra-zone/tower-abci/" }
 tendermint-proto = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "abci-domain-types" }
 tendermint = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "abci-domain-types" }
 # External dependencies
-
+blake2b_simd = "0.5"
 bytes = "1"
 tokio = { version = "1", features = ["full"]}
 tower = { version = "0.4", features = ["full"]}
@@ -38,6 +38,8 @@ serde_with = { version = "1.11", features = ["hex"] }
 reqwest = { version = "0.11", features = ["json"] }
 anyhow = "1"
 hex = "0.4"
+rand = "0.8"
+rand_chacha = "0.3.1"
 rand_core = { version = "0.6.3", features = ["getrandom"] }
 sqlx = { version = "0.5", features = [ "runtime-tokio-rustls", "postgres" ] }
 
