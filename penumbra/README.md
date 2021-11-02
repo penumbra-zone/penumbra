@@ -19,7 +19,7 @@ set -x RUST_LOG debug  # fish
 
 Start the Penumbra instance (you probably want to set `RUST_LOG` to `debug`):
 ```
-cargo run --bin pd
+cargo run --bin pd -- start
 ```
 Start the Tendermint node:
 ```
