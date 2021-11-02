@@ -54,8 +54,8 @@ impl FromStr for GenesisAddr {
             .collect();
 
         let amount_fromstr = fields[0].parse::<u64>()?;
-        let denom_fromstr = fields[1].to_string();
-        let address_fromstr = Address::from_str(fields[2])?;
+        let denom_fromstr = fields[1].trim().to_string();
+        let address_fromstr = Address::from_str(fields[2].trim())?;
 
         Ok(GenesisAddr {
             amount: amount_fromstr,
