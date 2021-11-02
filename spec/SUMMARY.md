@@ -3,6 +3,7 @@
   - [Validators]()
   - [Epochs and Threshold Decryption](./concepts/epochs_threshold.md)
   - [Addresses and Keys](./concepts/addresses_keys.md)
+  - [Assets and Amounts](./concepts/assets_amounts.md)
   - [Notes, Nullifiers, and Trees](./concepts/notes_nullifiers_trees.md)
   - [Transactions](./concepts/transactions.md)
   - [Staking and Delegation](./concepts/stake.md)
