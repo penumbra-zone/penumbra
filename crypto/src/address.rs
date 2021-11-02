@@ -1,4 +1,7 @@
+use std::io::Write;
+
 use ark_serialize::CanonicalDeserialize;
+use bech32::{ToBase32, Variant};
 use decaf377;
 
 use crate::{fmd, ka, keys::Diversifier, Fq};
@@ -62,5 +65,46 @@ impl Address {
 
     pub fn clue_key(&self) -> &fmd::ClueKey {
         &self.ck_d
+    }
+}
+
+impl std::fmt::Display for Address {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let mut addr_content = std::io::Cursor::new(Vec::new());
+        addr_content
+            .write_all(&self.diversifier().0)
+            .expect("can write diversifier into vec");
+        addr_content
+            .write_all(&self.transmission_key().0)
+            .expect("can write transmission key into vec");
+        addr_content
+            .write_all(&self.clue_key().0)
+            .expect("can write clue key into vec");
+
+        // Mainnet "pm" prefix, testnet "pt" prefix
+        let human_part = "pt";
+        bech32::encode_to_fmt(
+            f,
+            human_part,
+            addr_content.get_ref().to_base32(),
+            Variant::Bech32m,
+        )
+        .map_err(|_| std::fmt::Error)?
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::keys::SpendKey;
+    use rand_core::OsRng;
+
+    #[test]
+    fn test_address_encoding() {
+        let sk = SpendKey::generate(OsRng);
+        let fvk = sk.full_viewing_key();
+        let ivk = fvk.incoming();
+        let (dest, _dtk_d) = ivk.payment_address(0u64.into());
+
+        let _encoded_addr = format!("{}", dest);
     }
 }
