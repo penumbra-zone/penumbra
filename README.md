@@ -44,6 +44,8 @@ Generate keys using:
 cargo run --bin pcli -- generate
 ```
 
+Keys will be stored in `wallet.dat` in the current working directory. To customize the location, use the `--key-location <file>` option.
+
 ### Running `pd` manually
 
 You'll need to [install Tendermint][tm-install].  Be sure to install `v0.35.0`,

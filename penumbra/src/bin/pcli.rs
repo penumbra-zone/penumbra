@@ -81,10 +81,8 @@ async fn main() -> Result<()> {
 
 /// Load existing keys from wallet file, printing an error if the file doesn't exist.
 fn load_existing_keys(wallet_path: &Path) -> keys::SpendKey {
-    let key_data = match fs::read(wallet_path) {
-        Ok(data) => keys::SpendSeed {
-            inner: data.try_into().expect("key is correct length"),
-        },
+    let key_data: keys::SpendSeed = match fs::read(wallet_path) {
+        Ok(data) => bincode::deserialize(&data).expect("can deserialize wallet file"),
         Err(err) => match err.kind() {
             io::ErrorKind::NotFound => {
                 eprintln!(
@@ -124,9 +122,8 @@ fn create_wallet(wallet_path: &Path) {
             }
         },
     };
-    let seed_json = serde_json::to_string_pretty(spend_key.seed()).expect("can serialize");
-    file.write_all(seed_json.as_bytes())
-        .expect("Unable to write file");
+    let seed_data = bincode::serialize(spend_key.seed()).expect("can serialize");
+    file.write_all(&seed_data).expect("Unable to write file");
     println!(
         "Spending key generated, seed stored in {}",
         wallet_path.display()
