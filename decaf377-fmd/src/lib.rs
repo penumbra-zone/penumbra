@@ -1,3 +1,7 @@
+//! An implementation of [Fuzzy Message Detection][fmd].
+//!
+//! [fmd]: https://protocol.penumbra.zone/main/crypto/fmd.html
+
 mod clue_key;
 mod detection;
 mod error;
