@@ -3,7 +3,8 @@ use anyhow::anyhow;
 use ark_ff::PrimeField;
 use fpe::ff1;
 use once_cell::sync::Lazy;
-use std::convert::TryFrom;
+use serde::{Deserialize, Serialize};
+use std::convert::{TryFrom, TryInto};
 
 use crate::Fq;
 
@@ -66,7 +67,7 @@ impl DiversifierKey {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
 pub struct DiversifierIndex(pub [u8; 11]);
 
 impl From<u8> for DiversifierIndex {
@@ -98,5 +99,15 @@ impl From<u64> for DiversifierIndex {
         let mut bytes = [0; 11];
         bytes[0..8].copy_from_slice(&x.to_le_bytes());
         Self(bytes)
+    }
+}
+
+impl From<DiversifierIndex> for u64 {
+    fn from(diversifier_index: DiversifierIndex) -> Self {
+        u64::from_le_bytes(
+            diversifier_index.0[0..8]
+                .try_into()
+                .expect("can take first 8 bytes of diversifier index"),
+        )
     }
 }
