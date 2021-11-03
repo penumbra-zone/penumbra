@@ -38,6 +38,12 @@ Now you can interact with Penumbra using `pcli`:
 cargo run --bin pcli -- --help
 ```
 
+Generate keys using:
+
+```
+cargo run --bin pcli -- generate
+```
+
 ### Running `pd` manually
 
 You'll need to [install Tendermint][tm-install].  Be sure to install `v0.35.0`,
