@@ -26,6 +26,7 @@ tracing-subscriber = "0.2"
 pin-project = "1"
 futures = "0.3"
 serde_json = "1"
+serde = { version = "1", features = ["derive"] }
 reqwest = { version = "0.11", features = ["json"] }
 anyhow = "1"
 hex = "0.4"
