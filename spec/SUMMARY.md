@@ -26,7 +26,6 @@
     - [Opening Positions]()
     - [Liquidity Mining]()
     - [Closing Positions]()
-  - [Terminology](./concepts/terminology.md)
 - [Cryptographic Primitives](./crypto.md)
   - [Proof System](./crypto/proofs.md)
   - [The `decaf377` group](./crypto/decaf377.md)
