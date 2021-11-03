@@ -6,7 +6,7 @@ use std::{fs, io, process};
 use structopt::StructOpt;
 
 use penumbra_crypto::keys;
-use penumbra_wallet::state;
+use penumbra_wallet::{state, storage};
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -72,7 +72,10 @@ async fn main() -> Result<()> {
             tracing::info!(?rsp);
         }
         Command::Generate => {
-            create_wallet(wallet_path);
+            let wallet = create_wallet(wallet_path);
+            let client = state::ClientState::new(wallet);
+            let addr = client.address_by_index(0u64.into());
+            println!("Your first address is {}", addr);
         }
     }
 
@@ -80,8 +83,8 @@ async fn main() -> Result<()> {
 }
 
 /// Load existing keys from wallet file, printing an error if the file doesn't exist.
-fn load_existing_keys(wallet_path: &Path) -> keys::SpendKey {
-    let key_data: keys::SpendSeed = match fs::read(wallet_path) {
+fn load_existing_keys(wallet_path: &Path) -> storage::Wallet {
+    let wallet: storage::Wallet = match fs::read(wallet_path) {
         Ok(data) => bincode::deserialize(&data).expect("can deserialize wallet file"),
         Err(err) => match err.kind() {
             io::ErrorKind::NotFound => {
@@ -96,12 +99,17 @@ fn load_existing_keys(wallet_path: &Path) -> keys::SpendKey {
             }
         },
     };
-    keys::SpendKey::from_seed(key_data.into())
+    wallet
 }
 
 /// Create wallet file, ensuring existing wallets are not overwritten.
-fn create_wallet(wallet_path: &Path) {
+fn create_wallet(wallet_path: &Path) -> storage::Wallet {
     let spend_key = keys::SpendKey::generate(OsRng);
+    let wallet = storage::Wallet {
+        spend_seed: spend_key.seed().clone(),
+        last_used_diversifier_index: 0u64.into(),
+    };
+
     let mut file = match fs::OpenOptions::new()
         .write(true)
         .create_new(true)
@@ -122,10 +130,11 @@ fn create_wallet(wallet_path: &Path) {
             }
         },
     };
-    let seed_data = bincode::serialize(spend_key.seed()).expect("can serialize");
+    let seed_data = bincode::serialize(&wallet).expect("can serialize");
     file.write_all(&seed_data).expect("Unable to write file");
     println!(
-        "Spending key generated, seed stored in {}",
+        "Wallet generated, stored in {}. WARNING: This file contains your private keys. BACK UP THIS FILE!",
         wallet_path.display()
     );
+    wallet
 }
