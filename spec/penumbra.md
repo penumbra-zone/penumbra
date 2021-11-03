@@ -59,28 +59,28 @@ private, issuing staking rewards becomes very difficult, because the chain no
 longer knows the amount and duration of each address' delegations.
 
 Penumbra sidesteps this problem using a new mechanism that eliminates staking
-rewards entirely, treating unbonded and bonded stake as separate assets, with
-an epoch-varying exchange rate that prices in what would be a staking reward
-in other systems.  This mechanism ensures that all delegations to a
-particular validator are fungible, and can be represented by a single token
+rewards entirely, treating unbonded and bonded stake as separate assets, with an
+epoch-varying exchange rate that prices in what would be a staking reward in
+other systems.  This mechanism ensures that all delegations to a particular
+validator are fungible, and can be represented by a single *delegation token*
 representing a share of that validator's delegation pool, in effect a
 first-class staking derivative.  Although delegation fungibility is key to
-enabling privacy, as a side effect, delegators do not realize any income
-while their stake is bonded, only a capital gain (or loss) on unbonding.
+enabling privacy, as a side effect, delegators do not realize any income while
+their stake is bonded, only a capital gain (or loss) on unbonding.
 
-The total amount of stake bonded to each validator is part of the public
-chain state and determines consensus weight, but the bonded stake itself is
-just another token to be recorded in a multi-asset shielded pool.  This
+The total amount of stake bonded to each validator is part of the public chain
+state and determines consensus weight, but the delegation tokens themselves are
+each just another token to be recorded in a multi-asset shielded pool.  This
 provides accountability for validators and privacy and flexibility for
-delegators, who can trade and transact with their bonded stake just like they
-can with any other token.
+delegators, who can trade and transact with their delegation tokens just like
+they can with any other token.
 
-It also provides an alternate perspective on the debate between fixed-supply
-and inflation-based rewards.  Choosing the unbonded token as the numéraire,
+It also provides an alternate perspective on the debate between fixed-supply and
+inflation-based rewards.  Choosing the unbonded token as the numéraire,
 delegators are rewarded by inflation for taking on the risk of validator
-misbehavior, and the token supply grows over time.  Choosing the bonded token
-as the numéraire, non-delegators are punished by depreciation for not taking
-on any risk of misbehavior, and the token supply is fixed.
+misbehavior, and the token supply grows over time.  Choosing (a basket of)
+delegation tokens as the numéraire, non-delegators are punished by depreciation
+for not taking on any risk of misbehavior, and the token supply is fixed.
 
 ## Private Governance
 

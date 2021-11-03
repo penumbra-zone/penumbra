@@ -8,8 +8,7 @@ batching procedure, leaving the mechanics of the trading function for later.
 
 A key challenge in the design of any private swap mechanism is that
 zero-knowledge proofs only allow privacy for user-specific state, not for global
-state, because [they don't let you prove statements about things that you don't
-know][barrywhitehat-private-uniswap].  While users can prove that their
+state, because [they don't let you prove statements about things that you don't know][barrywhitehat-private-uniswap].  While users can prove that their
 user-specific state was updated correctly without revealing it, they cannot
 do so for other users' state.
 
@@ -18,7 +17,7 @@ Rather than have users transact with each other, the chain permits them to
 transmute one asset type to another, provably updating their private state
 without interacting with any other users' private state.  This works as follows.
 
-1. Users create transactions with `SwapDescription`s that privately burn their
+1. Users create transactions with `Swap` descriptions that privately burn their
 input assets and encrypt the amounts to the validators.  This description
 identifies the trading pair $(t_1, t_2)$, consumes $\Delta = (\Delta_1,
 \Delta_2)$ of types $(t_1, t_2)$ from the transaction balance, and contains an
@@ -37,15 +36,15 @@ transaction's input $\Delta^{(i)}$.  Then they execute $\Delta$ against the
 trading pool, updating the pool state and obtaining the effective (inclusive of
 fees) clearing prices $p_{t_1,t_2}$ and $p_{t_2, t_1}$.
 
-3. In a future block, users who created `SwapDescription`s obtain assets of the
-new types by creating a `SweepDescription`. This description reveals the block
-height $h$ containing the swap description, the trading pair $(t_1, t_2)$, and
+3. In a future block, users who created `Swap` descriptions obtain assets of the
+new types by creating a `Sweep` descriptions. This description reveals the block
+height $h$ containing the `Swap` description, the trading pair $(t_1, t_2)$, and
 the nullifier $n$ of a swap commitment. Then, it proves inclusion of a swap
 commitment with nullifier $n$ and trade inputs $\Delta$ in the note commitment
 tree for that block, and proves that $\Lambda_1 = \Delta_2 p_{t_1,t_2}$ and
 $\Lambda_2 = \Delta_1 p_{t_2, t_1}$.  Finally, it adds $(\Lambda_1, \Lambda_2)$
 of types $(t_1, t_2)$ to the transaction's balance (e.g., to be consumed by an
-`OutputDescription` that creates a new note).
+`Output` description that creates a new note).
 
 Although sweep descriptions do not reveal the amounts, or which swap's
 outputs they claim, they do reveal the block and trading pair, so their

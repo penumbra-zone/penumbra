@@ -11,6 +11,6 @@ vote acts as a default vote for the rest of the delegation pool. Finally,
 these per-validator subtotals are multiplied by the voting power adjustment
 function $\theta_v(e)$ to obtain the final vote totals.
 
-If the vote was not vetoed, the escrowed note from the `ProposalDescription`
+If the vote was not vetoed, the escrowed note from the `Proposal` description
 is included in the note commitment tree, so that it can be spent by the
 proposer.  Otherwise, it is not, and the funds are burned.
