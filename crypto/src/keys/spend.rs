@@ -1,5 +1,7 @@
 use ark_ff::PrimeField;
 use rand_core::{CryptoRng, RngCore};
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
 
 use crate::{
     rdsa::{SigningKey, SpendAuth},
@@ -11,8 +13,12 @@ use super::{FullViewingKey, IncomingViewingKey, NullifierKey, OutgoingViewingKey
 pub const SPENDSEED_LEN_BYTES: usize = 32;
 
 /// The root key material for a [`SpendKey`].
-#[derive(Clone, Debug)]
-pub struct SpendSeed(pub [u8; SPENDSEED_LEN_BYTES]);
+#[serde_as]
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct SpendSeed {
+    #[serde_as(as = "serde_with::hex::Hex")]
+    pub inner: [u8; SPENDSEED_LEN_BYTES],
+}
 
 /// A key representing a single spending authority.
 pub struct SpendKey {
@@ -26,7 +32,7 @@ impl SpendKey {
     pub fn generate<R: RngCore + CryptoRng>(mut rng: R) -> Self {
         let mut seed_bytes = [0u8; SPENDSEED_LEN_BYTES];
         rng.fill_bytes(&mut seed_bytes);
-        Self::from_seed(SpendSeed(seed_bytes))
+        Self::from_seed(SpendSeed { inner: seed_bytes })
     }
 
     /// Loads a [`SpendKey`] from the provided [`SpendSeed`].
@@ -34,7 +40,7 @@ impl SpendKey {
         let ask = {
             let mut hasher = blake2b_simd::State::new();
             hasher.update(b"Penumbra_ExpndSd");
-            hasher.update(&seed.0);
+            hasher.update(&seed.inner);
             hasher.update(&[0; 1]);
             let hash_result = hasher.finalize();
 
@@ -44,7 +50,7 @@ impl SpendKey {
         let nk = {
             let mut hasher = blake2b_simd::State::new();
             hasher.update(b"Penumbra_ExpndSd");
-            hasher.update(&seed.0);
+            hasher.update(&seed.inner);
             hasher.update(&[1; 1]);
             let hash_result = hasher.finalize();
 
