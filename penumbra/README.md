@@ -35,7 +35,7 @@ cargo run --bin pcli -- --help
 
 ## Genesis
 
-To create Genesis data, you need to know the amounts, denominations, and addresses. You can then pass to `pd`'s` `create-genesis` command a `|`-delimited list of (amount, denomination, address) tuples, where the fields are comma-delimited:
+To create Genesis data, you need to know the amounts, denominations, and addresses. You can then pass to `pd`'s` `create-genesis` command a list of "(amount, denomination, address)" tuples, where the tuple fields are comma-delimited and each genesis note is contained in double quotes:
 
 ```
 $ cargo run --bin pd -- create-genesis penumbra \
