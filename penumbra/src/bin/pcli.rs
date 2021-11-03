@@ -72,35 +72,7 @@ async fn main() -> Result<()> {
             tracing::info!(?rsp);
         }
         Command::Generate => {
-            // Attempt to create a wallet file, ensuring existing wallets are not overwritten.
-            let spend_key = keys::SpendKey::generate(OsRng);
-            let mut file = match fs::OpenOptions::new()
-                .write(true)
-                .create_new(true)
-                .open(wallet_path)
-            {
-                Ok(file) => file,
-                Err(err) => match err.kind() {
-                    io::ErrorKind::AlreadyExists => {
-                        eprintln!(
-                            "error: wallet file already exists at {}",
-                            wallet_path.display()
-                        );
-                        process::exit(3);
-                    }
-                    _ => {
-                        eprintln!("unknown error: {}", err);
-                        process::exit(2);
-                    }
-                },
-            };
-            let seed_json = serde_json::to_string_pretty(spend_key.seed()).expect("can serialize");
-            file.write_all(seed_json.as_bytes())
-                .expect("Unable to write file");
-            println!(
-                "Spending key generated, seed stored in {}",
-                wallet_path.display()
-            );
+            create_wallet(wallet_path);
         }
     }
 
@@ -108,8 +80,8 @@ async fn main() -> Result<()> {
 }
 
 /// Load existing keys from wallet file, printing an error if the file doesn't exist.
-fn load_existing_keys(key_location: &Path) -> keys::SpendKey {
-    let key_data = match fs::read(key_location) {
+fn load_existing_keys(wallet_path: &Path) -> keys::SpendKey {
+    let key_data = match fs::read(wallet_path) {
         Ok(data) => keys::SpendSeed {
             inner: data.try_into().expect("key is correct length"),
         },
@@ -127,4 +99,36 @@ fn load_existing_keys(key_location: &Path) -> keys::SpendKey {
         },
     };
     keys::SpendKey::from_seed(key_data.into())
+}
+
+/// Create wallet file, ensuring existing wallets are not overwritten.
+fn create_wallet(wallet_path: &Path) {
+    let spend_key = keys::SpendKey::generate(OsRng);
+    let mut file = match fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(wallet_path)
+    {
+        Ok(file) => file,
+        Err(err) => match err.kind() {
+            io::ErrorKind::AlreadyExists => {
+                eprintln!(
+                    "error: wallet file already exists at {}",
+                    wallet_path.display()
+                );
+                process::exit(3);
+            }
+            _ => {
+                eprintln!("unknown error: {}", err);
+                process::exit(2);
+            }
+        },
+    };
+    let seed_json = serde_json::to_string_pretty(spend_key.seed()).expect("can serialize");
+    file.write_all(seed_json.as_bytes())
+        .expect("Unable to write file");
+    println!(
+        "Spending key generated, seed stored in {}",
+        wallet_path.display()
+    );
 }
