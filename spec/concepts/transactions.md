@@ -1,63 +1,77 @@
 # Transactions
 
-Transactions describe an atomic collection of changes to the ledger state.
-Each transaction consist of a sequence of *descriptions* for various actions.
+Transactions describe an atomic collection of changes to the ledger state.  Each
+transaction consist of a sequence of *descriptions* for various actions[^1].
 Each description adds or subtracts (typed) value from the transaction's value
-balance, which must net to zero.  Penumbra uses Sapling's *spend description*,
-which spends a note and adds to the transaction's value balance, and
-*output description*, which creates a new note and subtracts from the
+balance, which must net to zero.  Penumbra adapts the *Spend* and *Output* actions from Sapling, and adds many new descriptions to support additional functionality:
+
+Penumbra adapts Sapling's *Spend*, which
+spends a note and adds to the transaction's value balance, and
+*Output*, which creates a new note and subtracts from the
 transaction's value balance, and adds many new descriptions to support
 additional functionality:
 
-- [`FeeDescription`s](./concepts/stake/validator-rewards.md) declare and burn
-transaction fees;
 
-- `TransferDescription`s transfer value out of Penumbra by IBC, consuming
-value from the transaction's value balance, and producing an [ICS20]
-[`FungibleTokenPacketData`][ftpd];
+- **Spend** descriptions spend an existing note, adding its value to the
+transaction's value balance;
 
-- [`DelegateDescription`s](./concepts/stake/delegation.md) convert unbonded stake to
-bonded stake, consuming unbonded stake from the transaction's value balance
-and producing new notes recording bonded stake;
+- **Output** descriptions create a new note, subtracting its value from the
+transaction's value balance;
 
-- [`UndelegateDescription`s](./concepts/stake/undelegation.md) convert bonded stake to
-unbonded stake, consuming bonded stake from the transaction's value balance
-and producing new notes recording unbonded stake;
+- **Transfer** descriptions transfer value out of Penumbra by IBC, consuming value
+from the transaction's value balance, and producing an [ICS20]
+[`FungibleTokenPacketData`][ftpd] for the counterparty chain;
 
-- [`CommissionDescription`s](./concepts/stake/validator-rewards.md) are used by
-validators to sweep commission on staking rewards into shielded notes, adding
-unbonded stake to the transaction's value balance;
+- **Delegate** descriptions [deposit unbonded stake into a validator's delegation
+pool](./concepts/stake/delegation.md), consuming unbonded stake from the
+transaction's value balance and producing new notes recording delegation
+tokens representing the appropriate share of the validator's delegation pool;
 
-- [`ProposalDescription`s](./concepts/governance/proposal.md) are used to propose
-measures for on-chain governance and supply a deposit, consuming bonded stake
-from the transaction's value balance and producing a new note that holds the
-deposit in escrow;
+- **Undelegate** descriptions [withdraw from a validator's delegation
+pool](./concepts/stake/undelegation.md), consuming delegation tokens from the
+transaction's value balance and producing new notes recording the appropriate
+amount of unbonded stake;
 
-- [`VoteDescription`s](./concepts/governance/voting.md) perform private voting for
-on-chain governance and declare a vote, consuming bonded stake from the
-transaction's value balance and producing a new note with the same amount of
-bonded stake;
+- **Commission** descriptions are used by validators to [sweep commission on
+staking rewards](./concepts/stake/validator-rewards.md) into shielded notes,
+adding unbonded stake to the transaction's value balance;
 
-- [`SwapDescription`s](./concepts/dex/swaps.md) consume and burn tokens of one type
-from a transaction's value balance and produce a swap commitment that permits
-the user to later mint tokens of a different type;
+- **Proposal** descriptions  are used to [propose measures for on-chain
+governance](./concepts/governance/proposal.md) and supply a deposit, consuming
+bonded stake from the transaction's value balance and producing a new note that
+holds the deposit in escrow;
 
-- [`SweepDescription`s](./concepts/dex/swaps.md) allow a user who burned tokens of one
-type to mint tokens of a different type at a chain-specified clearing price,
-and adds the new tokens to a transaction's value balance.
+- **Vote** descriptions perform [private voting for on-chain
+governance](./concepts/governance/voting.md) and declare a vote, consuming
+bonded stake from the transaction's value balance and producing a new note with
+the same amount of bonded stake;
 
-- `DepositDescription`s deposit funds into the liquidity pool for a trading
-pair, and produce liquidity pool shares, consuming value of the traded types
-and producing value of the shares' type;
+- **Swap** descriptions perform the first phase of
+[ZSwap](./concepts/zswap/auction.md), consuming tokens of one type from a
+transaction's value balance, burning them, and producing a swap commitment for
+use in the second stage;
 
-- `WithdrawDescription`s redeem liquidity pool shares and withdraw funds from
-a liquidity pool, consuming the shares' type and producing value of the
-traded types;
+- **Sweep** descriptions perform the second phase of
+[ZSwap](./concepts/zswap/auction.md), allowing a user who burned tokens of one
+type to mint tokens of the other type at the chain-specified clearing price, and
+adding the new tokens to a transaction's value balance;
 
-## TODO
+- **OpenPosition** descriptions open [concentrated liquidity
+positions](./concepts/zswap.md), consuming value of the traded types from the
+transaction's value balance and adding the specified position to the AMM state;
 
-- [ ] add links to specifications in the Cryptography section
+- **ClosePosition** descriptions close [concentrated liquidity
+positions](./concepts/zswap.md), removing the specified position to the AMM
+state and adding the value of the position, plus any accumulated fees or
+liquidity rewards, to the transaction's value balance.
 
+Each transaction also contains a fee specification, which is always
+transparently encoded. The value balance of all of a transactions actions,
+together with the fees, must net to zero.
+
+[^1]: Note that like Zcash Orchard, we use the term "action" to refer to one of
+a number of possible state updates; unlike Orchard, we do not attempt to conceal
+which types of state updates are performed, so our Action is an enum.
 
 [multi_asset]: https://github.com/zcash/zips/blob/626ea6ed78863290371a4e8bc74ccf8e92292099/drafts/zip-user-defined-assets.rst
 [ADR001]: https://docs.cosmos.network/master/architecture/adr-001-coin-source-tracing.html

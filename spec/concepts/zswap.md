@@ -77,8 +77,7 @@ would impair other trading and impose a worse user experience.
 
 A key challenge in the design of any private swap mechanism is that
 zero-knowledge proofs only allow privacy for user-specific state, not for global
-state, because [they don't let you prove statements about things that you don't
-know][barrywhitehat-private-uniswap].  While users can prove that their
+state, because [they don't let you prove statements about things that you don't know][bwh].  While users can prove that their
 user-specific state was updated correctly without revealing it, they cannot
 do so for other users' state.
 
@@ -143,8 +142,7 @@ Positions](./zswap/closing_positions.md) section.
 
 
 
-
-[barrywhitehat-private-uniswap]: https://ethresear.ch/t/why-you-cant-build-a-private-uniswap-with-zkps/7754
+[bwh]: https://ethresear.ch/t/why-you-cant-build-a-private-uniswap-with-zkps/7754
 [hom-thresh]: ./epochs_thresholds.md
 [budish-cramton-shim]: https://faculty.chicagobooth.edu/eric.budish/research/HFT-FrequentBatchAuctions.pdf
 

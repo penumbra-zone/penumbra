@@ -1,10 +1,19 @@
 # Validator Rewards and Fees
 
-Validators declare a commission percentage $c_{v,e} \in [0, 1]$, which determines the spread between the base reward rate $r_e$ and the reward rate for their delegators $r_{v,e} = (1 - c_{v,e})r_e$, or equivalently $r_e = r_{v,e} + c_{v,e}r_e$.
+Validators declare a commission percentage $c_{v,e} \in [0, 1]$, which
+determines the spread between the base reward rate $r_e$ and the reward rate for
+their delegators $r_{v,e} = (1 - c_{v,e})r_e$, or equivalently $r_e = r_{v,e} +
+c_{v,e}r_e$.
 
-Validator rewards are distributed in the first block of each epoch.  In epoch $e$, a validator $v$ whose delegation pool has size $y_v$ `PENb` receives a commission of size $$y_v c_{v,e} r_e \psi(e-1)$$ `PEN`, issued to the validator's address.
+Validator rewards are distributed in the first block of each epoch.  In epoch
+$e$, a validator $v$ whose delegation pool has size $y_v$ `dPEN` receives a
+commission of size $$y_v c_{v,e} r_e \psi(e-1)$$ `PEN`, issued to the
+validator's address.
 
-To see why this is the reward amount, suppose validator $v$ has a delegation pool of size $y_v$ `PENb`. In epoch $e-1$, the value of the pool is $y_v \psi_v(e-1)$ `PEN`.  In epoch $e$, the base reward rate $r_{e}$ causes the value of the pool to increase to
+To see why this is the reward amount, suppose validator $v$ has a delegation
+pool of size $y_v$ `dPEN`. In epoch $e-1$, the value of the pool is $y_v
+\psi_v(e-1)$ `PEN`.  In epoch $e$, the base reward rate $r_{e}$ causes the value
+of the pool to increase to
 $$
 (1 + r_e)y_v \psi_v(e-1).
 $$
@@ -20,4 +29,4 @@ Transaction fees are denominated in `PEN` and are burned, so that the value of t
 
 ## TODO
 
-- [ ] allow transaction fees in `PENb` with appropriate discounting, but only in transactions (e.g., undelegations, voting) that otherwise reveal the flavor of `PENb`.
+- [ ] allow transaction fees in `dPEN` with appropriate price adjustment, but only in transactions (e.g., undelegations, voting) that otherwise reveal the flavor of `dPEN`, so that there is no additional distinguisher?

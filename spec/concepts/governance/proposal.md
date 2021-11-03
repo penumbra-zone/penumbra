@@ -1,8 +1,8 @@
 # Proposal Creation
 
 Penumbra users can propose votes by escrowing a minimum amount of any flavor
-of `PENb`. They do this by creating a transaction with a
-`ProposalDescription`, which consumes some amount of `PENb` from the
+of `dPEN`. They do this by creating a transaction with a
+`Proposal` description, which consumes some amount of `dPEN` from the
 transaction's balance, and creates a new escrow note with the same amount.
 The escrow note is not included in the note commitment tree until voting
 completes. The voting period begins in the next epoch and lasts for a fixed

@@ -1,13 +1,14 @@
 # Staking and Delegation
 
-As described in the [overview](../overview.md), integrating privacy with
+As described in the [overview](../penumbra.md), integrating privacy with
 proof-of-stake poses significant challenges.  Penumbra sidesteps these
 challenges using a novel mechanism that eliminates staking rewards entirely,
 treating unbonded and bonded stake as separate assets, with an epoch-varying
 exchange rate that prices in what would be a staking reward in other systems.
 This mechanism ensures that all delegations to a particular validator are
-fungible, and can be represented by a single token representing a share of
-that validator's delegation pool, in effect a first-class staking derivative.
+fungible, and can be represented by a single *delegation token* representing a
+share of that validator's delegation pool, in effect a first-class staking
+derivative.
 
 This section describes the staking and delegation mechanism in detail:
 
