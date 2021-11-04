@@ -80,4 +80,4 @@ jobs:
           args: deploy
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-          PROJECT_ID: penumbra-e3789
+          PROJECT_ID: penumbra-protocol
