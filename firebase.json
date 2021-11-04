@@ -11,7 +11,7 @@
         "source": "/",
         "destination": "/main/index.html",
         "type": 301
-      },
+      }
     ]
   }
 }
