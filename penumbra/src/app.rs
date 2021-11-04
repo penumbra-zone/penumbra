@@ -7,12 +7,17 @@ use std::{
 
 use bytes::Bytes;
 use futures::future::FutureExt;
-use tower::Service;
-
 use tendermint::abci::{response, Event, EventAttributeIndexExt, Request, Response};
+use tokio_stream::Stream;
+use tonic::Status;
+use tower::Service;
 
 use penumbra_crypto::{
     merkle, merkle::Frontier, merkle::TreeExt, note, Action, Nullifier, Transaction,
+};
+use penumbra_proto::transaction;
+use penumbra_proto::wallet::{
+    wallet_server::Wallet, CompactBlock, CompactBlockRangeRequest, TransactionByNoteRequest,
 };
 use tower_abci::BoxError;
 
@@ -203,6 +208,26 @@ impl App {
         }
 
         true
+    }
+}
+
+#[tonic::async_trait]
+impl Wallet for App {
+    type CompactBlockRangeStream =
+        Pin<Box<dyn Stream<Item = Result<CompactBlock, Status>> + Send + Sync + 'static>>;
+
+    async fn compact_block_range(
+        &self,
+        request: tonic::Request<CompactBlockRangeRequest>,
+    ) -> Result<tonic::Response<Self::CompactBlockRangeStream>, Status> {
+        todo!()
+    }
+
+    async fn transaction_by_note(
+        &self,
+        request: tonic::Request<TransactionByNoteRequest>,
+    ) -> Result<tonic::Response<transaction::Transaction>, Status> {
+        todo!()
     }
 }
 
