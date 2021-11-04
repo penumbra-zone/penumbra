@@ -1,7 +1,8 @@
 use anyhow::Result;
+use directories::ProjectDirs;
 use rand_core::OsRng;
 use std::io::Write;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::{fs, io, process};
 use structopt::StructOpt;
 
@@ -20,9 +21,9 @@ struct Opt {
     addr: std::net::SocketAddr,
     #[structopt(subcommand)]
     cmd: Command,
-    /// The location of the keys.
-    #[structopt(short, long, default_value = "./wallet.dat")]
-    key_location: String,
+    /// The location of the wallet file.
+    #[structopt(short, long)]
+    wallet_location: Option<String>,
 }
 
 #[derive(Debug, StructOpt)]
@@ -39,11 +40,27 @@ enum Command {
 async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
     let opt = Opt::from_args();
-    let wallet_path = Path::new(&opt.key_location);
+
+    let project_dir =
+        ProjectDirs::from("zone", "penumbra", "pcli").expect("can access penumbra project dir");
+    // Currently we use just the data directory. Create it if it is missing.
+    fs::create_dir_all(project_dir.data_dir()).expect("can create penumbra data directory");
+
+    // We store wallet data in `wallet.dat` in the state directory, unless
+    // the user provides another location.
+    let wallet_path: PathBuf;
+    match opt.wallet_location {
+        Some(path) => {
+            wallet_path = Path::new(&path).to_path_buf();
+        }
+        None => {
+            wallet_path = project_dir.data_dir().join("wallet.dat");
+        }
+    }
 
     match opt.cmd {
         Command::Tx { key, value } => {
-            let spend_key = load_existing_keys(wallet_path);
+            let spend_key = load_existing_keys(&wallet_path);
             let _client = state::ClientState::new(spend_key);
 
             let rsp = reqwest::get(format!(
@@ -57,7 +74,7 @@ async fn main() -> Result<()> {
             tracing::info!("{}", rsp);
         }
         Command::Query { key } => {
-            let spend_key = load_existing_keys(wallet_path);
+            let spend_key = load_existing_keys(&wallet_path);
             let _client = state::ClientState::new(spend_key);
 
             let rsp: serde_json::Value = reqwest::get(format!(
@@ -72,7 +89,7 @@ async fn main() -> Result<()> {
             tracing::info!(?rsp);
         }
         Command::Generate => {
-            let wallet = create_wallet(wallet_path);
+            let wallet = create_wallet(&wallet_path);
             let client = state::ClientState::new(wallet);
             let addr = client.address_by_index(0u64.into());
             println!("Your first address is {}", addr);
