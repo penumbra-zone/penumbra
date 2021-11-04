@@ -1,10 +1,13 @@
 use rand::SeedableRng;
 use rand_chacha::ChaCha20Rng;
+use std::net::SocketAddr;
 use structopt::StructOpt;
+use tonic::transport::Server;
 
 use penumbra::dbschema::{NoteCommitmentTreeAnchor, PenumbraNoteCommitmentTreeAnchor};
 use penumbra::dbutils::{db_bootstrap, db_connection, db_insert, db_read};
 use penumbra::genesis::{generate_genesis_notes, GenesisAddr};
+use penumbra_proto::wallet::{wallet_server, wallet_server::Wallet};
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -45,48 +48,55 @@ async fn main() {
     match opt.cmd {
         Command::Start { host, port } => {
             // get the pool, cool
-            let pool = db_connection().await.expect("");
+            // let pool = db_connection().await.expect("");
 
-            // bootstrap database, malaise
-            let _db_bootstrap_on_load = db_bootstrap(pool.clone()).await.unwrap();
+            // // bootstrap database, malaise
+            // let _db_bootstrap_on_load = db_bootstrap(pool.clone()).await.unwrap();
 
-            // insert dummy, chummy
-            let v: Vec<u8> = vec![6; 32];
-            let _db_insert_dummy_row = db_insert(
-                PenumbraNoteCommitmentTreeAnchor::from(NoteCommitmentTreeAnchor {
-                    id: 0,
-                    height: 1337_i64,
-                    anchor: v,
-                }),
-                pool.clone(),
-            )
-            .await
-            .unwrap();
+            // // insert dummy, chummy
+            // let v: Vec<u8> = vec![6; 32];
+            // let _db_insert_dummy_row = db_insert(
+            //     PenumbraNoteCommitmentTreeAnchor::from(NoteCommitmentTreeAnchor {
+            //         id: 0,
+            //         height: 1337 as i64,
+            //         anchor: v,
+            //     }),
+            //     pool.clone(),
+            // )
+            // .await
+            // .unwrap();
 
-            // read stuff, rough
-            let _db_read_dummy_row = db_read(pool.clone()).await.unwrap();
-            println!(
-                "raw height {} raw anchor {:?}",
-                _db_read_dummy_row[0].height, _db_read_dummy_row[0].anchor
-            );
+            // // read stuff, rough
+            // let _db_read_dummy_row = db_read(pool.clone()).await.unwrap();
+            // println!(
+            //     "raw height {} raw anchor {:?}",
+            //     _db_read_dummy_row[0].height, _db_read_dummy_row[0].anchor
+            // );
 
             // app
             let app = penumbra::App::default();
 
-            use tower_abci::{split, Server};
+            use tower_abci::split;
 
-            let (consensus, mempool, snapshot, info) = split::service(app, 1);
+            // let (consensus, mempool, snapshot, info) = split::service(app, 1);
 
-            let server = Server::builder()
-                .consensus(consensus)
-                .snapshot(snapshot)
-                .mempool(mempool)
-                .info(info)
-                .finish()
-                .unwrap();
+            // let server = tower_abci::Server::builder()
+            //     .consensus(consensus)
+            //     .snapshot(snapshot)
+            //     .mempool(mempool)
+            //     .info(info)
+            //     .finish()
+            //     .unwrap();
 
             // Run the ABCI server.
-            server.listen(format!("{}:{}", host, port)).await.unwrap();
+            //server.listen(format!("{}:{}", host, port)).await.unwrap();
+
+            let wallet_service_addr = "127.0.0.1:2323".parse().expect("this is a valid address");
+            let wallet_server = Server::builder()
+                .add_service(wallet_server::WalletServer::new(app))
+                .serve(wallet_service_addr)
+                .await
+                .unwrap();
         }
         Command::CreateGenesis {
             chain_id,
