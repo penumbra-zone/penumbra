@@ -1,8 +1,5 @@
-
-<img style="width: 25%; max-width: 11em; float: left; margin: 1em;" src="https://protocol.penumbra.zone/penumbra-glow-alpha-mask.png">
-
-Penumbra is a fully private proof-of-stake network providing privacy to the
-Cosmos ecosystem.
+Penumbra is a fully private proof-of-stake network and decentralized exchange
+for the Cosmos ecosystem.
 
 Penumbra integrates privacy with proof-of-stake through a novel private
 delegation mechanism that provides staking derivatives, tax-efficient staking,
