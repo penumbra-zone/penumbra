@@ -40,6 +40,8 @@ enum Command {
     Wallet(Wallet),
     /// Manages addresses.
     Addr(Addr),
+    /// Fetch transaction by note commitment - TEMP (not gonna be exposed to user)
+    FetchByNoteCommitment,
 }
 
 #[derive(Debug, StructOpt)]
@@ -95,7 +97,7 @@ async fn main() -> Result<()> {
 
     match opt.cmd {
         Command::Tx { key, value } => {
-            let spend_key = load_existing_keys(&wallet_path);
+            let spend_key = load_wallet(&wallet_path);
             let local_storage = state::ClientState::new(spend_key);
 
             let rsp = reqwest::get(format!(
@@ -109,7 +111,7 @@ async fn main() -> Result<()> {
             tracing::info!("{}", rsp);
         }
         Command::Query { key } => {
-            let spend_key = load_existing_keys(&wallet_path);
+            let spend_key = load_wallet(&wallet_path);
             let local_storage = state::ClientState::new(spend_key);
 
             let rsp: serde_json::Value = reqwest::get(format!(
@@ -175,9 +177,9 @@ async fn main() -> Result<()> {
             println!("{}", table);
         }
         Command::FetchByNoteCommitment => {
-            let spend_key = load_existing_keys(&wallet_path);
+            let spend_key = load_wallet(&wallet_path);
             let local_storage = state::ClientState::new(spend_key);
-            let mut client = WalletClient::connect("http://127.0.0.1:2323").await?;
+            let mut client = WalletClient::connect("http://127.0.0.1:3232").await?;
 
             let cm = vec![0, 0, 0u8];
             let request = tonic::Request::new(TransactionByNoteRequest { cm: cm.clone() });
