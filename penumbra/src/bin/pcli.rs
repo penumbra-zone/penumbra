@@ -46,7 +46,7 @@ async fn main() -> Result<()> {
     // Currently we use just the data directory. Create it if it is missing.
     fs::create_dir_all(project_dir.data_dir()).expect("can create penumbra data directory");
 
-    // We store wallet data in `wallet.dat` in the state directory, unless
+    // We store wallet data in `penumbra_wallet.dat` in the state directory, unless
     // the user provides another location.
     let wallet_path: PathBuf;
     match opt.wallet_location {
@@ -54,7 +54,7 @@ async fn main() -> Result<()> {
             wallet_path = Path::new(&path).to_path_buf();
         }
         None => {
-            wallet_path = project_dir.data_dir().join("wallet.dat");
+            wallet_path = project_dir.data_dir().join("penumbra_wallet.dat");
         }
     }
 
