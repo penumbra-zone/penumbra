@@ -10,7 +10,7 @@ services:
     environment:
       - RUST_LOG=${RUST_LOG:-warn,pd=info,penumbra=info}
     command:
-      pd --host 0.0.0.0
+      pd start --host 0.0.0.0
     restart: on-failure
     depends_on:
       - db
