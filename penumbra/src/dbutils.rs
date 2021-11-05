@@ -27,19 +27,34 @@ pub async fn db_connection() -> Result<Pool<Postgres>, sqlx::Error> {
     pool
 }
 
+/// Bootstrap the database, creating tables if they do not exist.
 pub async fn db_bootstrap(pool: Pool<Postgres>) -> Result<PgQueryResult, Error> {
-    let bootstrap_sql = query(
+    let bootstrap_sql_blocks = query(
         r#"
-CREATE TABLE IF NOT EXISTS note_commitment_tree_anchors (
+CREATE TABLE IF NOT EXISTS blocks (
     id SERIAL PRIMARY KEY, 
     height bigint NOT NULL, 
     anchor bytea NOT NULL
-)"#,
+)
+"#,
+    )
+    .execute(&pool)
+    .await;
+    let bootstrap_sql_transactions = query(
+        r#"
+CREATE TABLE IF NOT EXISTS transactions (
+    id SERIAL PRIMARY KEY,
+    transaction_id bytea NOT NULL,
+    note_commitment bytea NOT NULL,
+    block_id bigint REFERENCES blocks (id)
+)
+"#,
     )
     .execute(&pool)
     .await;
 
-    bootstrap_sql
+    // xx combine with bootstrap_sql_blocks
+    bootstrap_sql_transactions
 }
 
 /// Hardcoded query for inserting one row
@@ -49,7 +64,7 @@ pub async fn db_insert(
 ) -> Result<u64, Error> {
     let record: NoteCommitmentTreeAnchor = records.into();
     let mut p = pool.acquire().await?;
-    let id = query("INSERT INTO note_commitment_tree_anchors (height, anchor) VALUES ($1, $2)")
+    let id = query("INSERT INTO blocks (height, anchor) VALUES ($1, $2)")
         .bind(record.height)
         .bind(record.anchor)
         .execute(&mut p)
@@ -63,7 +78,7 @@ pub async fn db_insert(
 pub async fn db_read(pool: Pool<Postgres>) -> Result<Vec<PenumbraNoteCommitmentTreeAnchor>, Error> {
     let mut p = pool.acquire().await?;
     let rows = query_as::<_, NoteCommitmentTreeAnchor>(
-        "SELECT id, height, anchor FROM note_commitment_tree_anchors where id = 1;",
+        "SELECT id, height, anchor FROM blocks where id = 1;",
     )
     .fetch_one(&mut p)
     .await?;

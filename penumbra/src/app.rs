@@ -34,6 +34,9 @@ pub struct App {
     nullifier_set: BTreeSet<Nullifier>,
 }
 
+/// The Penumbra wallet service.
+pub struct WalletApp {}
+
 impl Service<Request> for App {
     type Response = Response;
     type Error = BoxError;
@@ -211,8 +214,14 @@ impl App {
     }
 }
 
+impl WalletApp {
+    pub fn new() -> WalletApp {
+        WalletApp {}
+    }
+}
+
 #[tonic::async_trait]
-impl Wallet for App {
+impl Wallet for WalletApp {
     type CompactBlockRangeStream =
         Pin<Box<dyn Stream<Item = Result<CompactBlock, Status>> + Send + Sync + 'static>>;
 

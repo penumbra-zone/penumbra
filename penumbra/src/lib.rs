@@ -6,3 +6,4 @@ pub mod dbutils;
 pub mod genesis;
 
 pub use app::App;
+pub use app::WalletApp;
