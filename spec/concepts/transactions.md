@@ -23,17 +23,17 @@ from the transaction's value balance, and producing an [ICS20]
 [`FungibleTokenPacketData`][ftpd] for the counterparty chain;
 
 - **Delegate** descriptions [deposit unbonded stake into a validator's delegation
-pool](./concepts/stake/delegation.md), consuming unbonded stake from the
+pool](./stake/delegation.md), consuming unbonded stake from the
 transaction's value balance and producing new notes recording delegation
 tokens representing the appropriate share of the validator's delegation pool;
 
 - **Undelegate** descriptions [withdraw from a validator's delegation
-pool](./concepts/stake/undelegation.md), consuming delegation tokens from the
+pool](./stake/undelegation.md), consuming delegation tokens from the
 transaction's value balance and producing new notes recording the appropriate
 amount of unbonded stake;
 
 - **Commission** descriptions are used by validators to [sweep commission on
-staking rewards](./concepts/stake/validator-rewards.md) into shielded notes,
+staking rewards](./stake/validator-rewards.md) into shielded notes,
 adding unbonded stake to the transaction's value balance;
 
 - **Proposal** descriptions  are used to [propose measures for on-chain
@@ -47,21 +47,21 @@ bonded stake from the transaction's value balance and producing a new note with
 the same amount of bonded stake;
 
 - **Swap** descriptions perform the first phase of
-[ZSwap](./concepts/zswap/auction.md), consuming tokens of one type from a
+[ZSwap](./zswap/auction.md), consuming tokens of one type from a
 transaction's value balance, burning them, and producing a swap commitment for
 use in the second stage;
 
 - **Sweep** descriptions perform the second phase of
-[ZSwap](./concepts/zswap/auction.md), allowing a user who burned tokens of one
+[ZSwap](./zswap/auction.md), allowing a user who burned tokens of one
 type to mint tokens of the other type at the chain-specified clearing price, and
 adding the new tokens to a transaction's value balance;
 
 - **OpenPosition** descriptions open [concentrated liquidity
-positions](./concepts/zswap.md), consuming value of the traded types from the
+positions](./zswap.md), consuming value of the traded types from the
 transaction's value balance and adding the specified position to the AMM state;
 
 - **ClosePosition** descriptions close [concentrated liquidity
-positions](./concepts/zswap.md), removing the specified position to the AMM
+positions](./zswap.md), removing the specified position to the AMM
 state and adding the value of the position, plus any accumulated fees or
 liquidity rewards, to the transaction's value balance.
 
