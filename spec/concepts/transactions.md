@@ -11,6 +11,7 @@ spends a note and adds to the transaction's value balance, and
 transaction's value balance, and adds many new descriptions to support
 additional functionality:
 
+#### Transfers
 
 - **Spend** descriptions spend an existing note, adding its value to the
 transaction's value balance;
@@ -21,6 +22,8 @@ transaction's value balance;
 - **Transfer** descriptions transfer value out of Penumbra by IBC, consuming value
 from the transaction's value balance, and producing an [ICS20]
 [`FungibleTokenPacketData`][ftpd] for the counterparty chain;
+
+#### Staking
 
 - **Delegate** descriptions [deposit unbonded stake into a validator's delegation
 pool](./stake/delegation.md), consuming unbonded stake from the
@@ -36,15 +39,22 @@ amount of unbonded stake;
 staking rewards](./stake/validator-rewards.md) into shielded notes,
 adding unbonded stake to the transaction's value balance;
 
-- **Proposal** descriptions  are used to [propose measures for on-chain
-governance](./concepts/governance/proposal.md) and supply a deposit, consuming
+#### Governance
+
+- **CreateProposal** descriptions are used to [propose measures for on-chain
+governance](./concepts/governance.md) and supply a deposit, consuming
 bonded stake from the transaction's value balance and producing a new note that
 holds the deposit in escrow;
 
+- **WithdrawProposal** descriptions redeem an escrowed [proposal
+deposit](./concepts/governance.md), returning it to the transaction's value
+balance and immediately withdrawing the proposal.
+
 - **Vote** descriptions perform [private voting for on-chain
-governance](./concepts/governance/voting.md) and declare a vote, consuming
-bonded stake from the transaction's value balance and producing a new note with
-the same amount of bonded stake;
+governance](./concepts/governance/voting.md) and declare a vote.  This
+description leaves the value balance unchanged.
+
+#### Trading
 
 - **Swap** descriptions perform the first phase of
 [ZSwap](./zswap/auction.md), consuming tokens of one type from a
@@ -55,6 +65,8 @@ use in the second stage;
 [ZSwap](./zswap/auction.md), allowing a user who burned tokens of one
 type to mint tokens of the other type at the chain-specified clearing price, and
 adding the new tokens to a transaction's value balance;
+
+#### Market-making
 
 - **OpenPosition** descriptions open [concentrated liquidity
 positions](./zswap.md), consuming value of the traded types from the
