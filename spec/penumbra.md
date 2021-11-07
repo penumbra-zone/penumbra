@@ -14,6 +14,9 @@ anonymously, allowing traders to approximate their desired trading function
 without revealing their individual beliefs about prices.
 
 This website renders the work-in-progress protocol specification for Penumbra.
+
+Press `s` or use the magnifying glass icon for full-text search.
+
 If you're interested in technical discussion about the project, why not
 
 - join [the discord](https://discord.gg/hKvkrqa3zC), 
