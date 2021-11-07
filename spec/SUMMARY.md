@@ -1,7 +1,7 @@
 [Penumbra](./penumbra.md)
 - [Concepts and Mechanisms](./concepts.md)
   - [Validators]()
-  - [Epochs and Threshold Decryption](./concepts/epochs_threshold.md)
+  - [Batching Flows](./concepts/batching_flows.md)
   - [Addresses and Keys](./concepts/addresses_keys.md)
   - [Assets and Amounts](./concepts/assets_amounts.md)
   - [Notes, Nullifiers, and Trees](./concepts/notes_nullifiers_trees.md)
