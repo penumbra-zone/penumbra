@@ -95,8 +95,8 @@ At the end of the voting period, the per-epoch tallies are summed.  For each
 validator $v$, the votes for each option are summed to determine the portion of
 the delegation pool that voted; the validator's vote acts as the default vote
 for the rest of the delegation pool.  Finally, these per-validator subtotals are
-multiplied by the voting power adjustment function $\theta_v(e)$ to obtain the
-final vote totals.
+multiplied by the [voting power adjustment function](../stake/voting-power.md)
+$\theta_v(e)$ to obtain the final vote totals.
 
 If the vote was not vetoed, the escrowed note from the `Proposal` description
 is included in the note commitment tree, so that it can be spent by the
