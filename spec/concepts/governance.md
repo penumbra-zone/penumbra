@@ -102,6 +102,9 @@ If the vote was not vetoed, the escrowed note from the `Proposal` description
 is included in the note commitment tree, so that it can be spent by the
 proposer.  Otherwise, it is not, and the funds are burned.
 
-[^1]: If withdrawn proposals could be withdrawn immediately, the escrow
+[^1]: If withdrawing a proposal halted on-chain voting immediately, the escrow
 mechanism would not be effective at deterring spam, since the proposer could
-yank their proposal at the last minute prior to losing their deposit.
+yank their proposal at the last minute prior to losing their deposit.  However,
+at the UX level, withdrawn proposals can be presented as though voting were
+closed, since validators' default votes are probably sufficient for spam
+deterrence.
