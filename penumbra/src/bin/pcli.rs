@@ -6,7 +6,6 @@ use std::path::{Path, PathBuf};
 use std::{fs, io, process};
 use structopt::StructOpt;
 
-use penumbra_crypto::keys;
 use penumbra_wallet::{state, storage};
 
 #[derive(Debug, StructOpt)]
@@ -91,8 +90,7 @@ async fn main() -> Result<()> {
         Command::Generate => {
             let wallet = create_wallet(&wallet_path);
             let client = state::ClientState::new(wallet);
-            let addr = client.address_by_index(0u64.into());
-            println!("Your first address is {}", addr);
+            println!("Your first address is {}", client.wallet.addresses[0]);
         }
     }
 
@@ -121,12 +119,7 @@ fn load_existing_keys(wallet_path: &Path) -> storage::Wallet {
 
 /// Create wallet file, ensuring existing wallets are not overwritten.
 fn create_wallet(wallet_path: &Path) -> storage::Wallet {
-    let spend_key = keys::SpendKey::generate(OsRng);
-    let wallet = storage::Wallet {
-        spend_seed: spend_key.seed().clone(),
-        last_used_diversifier_index: 0u64.into(),
-    };
-
+    let wallet = storage::Wallet::generate(&mut OsRng);
     let mut file = match fs::OpenOptions::new()
         .write(true)
         .create_new(true)
