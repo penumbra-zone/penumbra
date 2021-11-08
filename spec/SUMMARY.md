@@ -24,7 +24,7 @@
   - [Liquidity Mining]()
   - [Closing Positions]()
 - [Cryptographic Primitives](./crypto.md)
-  - [Proof System](./crypto/proofs.md)
+  - [Proving Considerations](./crypto/proofs.md)
   - [The `decaf377` group](./crypto/decaf377.md)
     - [Costs and Alternatives](./crypto/decaf377/costs.md)
     - [Inverse Square Roots](./crypto/decaf377/invsqrt.md)
