@@ -29,7 +29,7 @@ struct Opt {
 enum Command {
     /// Start running the ABCI and wallet services.
     Start {
-        /// Bind the server to this host.
+        /// Bind the services to this host.
         #[structopt(short, long, default_value = "127.0.0.1")]
         host: String,
         /// Bind the ABCI server to this port.

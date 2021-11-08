@@ -7,7 +7,7 @@ use std::{
 
 use bytes::Bytes;
 use futures::future::FutureExt;
-use tendermint::abci::{response, Event, EventAttributeIndexExt, Request, Response};
+use tendermint::abci::{request, response, Event, EventAttributeIndexExt, Request, Response};
 use tokio_stream::Stream;
 use tonic::Status;
 use tower::Service;
@@ -55,10 +55,11 @@ impl Service<Request> for App {
             Request::Query(query) => Response::Query(self.query(query.data)),
             Request::DeliverTx(deliver_tx) => Response::DeliverTx(self.deliver_tx(deliver_tx.tx)),
             Request::Commit => Response::Commit(self.commit()),
+            Request::InitChain(init_chain) => Response::InitChain(self.from_genesis(init_chain)),
+
             // unhandled messages
             Request::Flush => Response::Flush,
             Request::Echo(_) => Response::Echo(Default::default()),
-            Request::InitChain(_) => Response::InitChain(Default::default()),
             Request::BeginBlock(_) => Response::BeginBlock(Default::default()),
             Request::CheckTx(_) => Response::CheckTx(Default::default()),
             Request::EndBlock(_) => Response::EndBlock(Default::default()),
@@ -88,6 +89,18 @@ impl Default for App {
 }
 
 impl App {
+    fn from_genesis(&self, init_chain: request::InitChain) -> response::InitChain {
+        // TK: Process app_state field (containing shielded notes), on app_state_bytes in request::InitChain
+
+        let initial_application_hash = self.app_hash.to_vec().into();
+
+        response::InitChain {
+            consensus_params: Some(init_chain.consensus_params),
+            validators: init_chain.validators,
+            app_hash: initial_application_hash,
+        }
+    }
+
     fn info(&self) -> response::Info {
         response::Info {
             data: "penumbra".to_string(),
