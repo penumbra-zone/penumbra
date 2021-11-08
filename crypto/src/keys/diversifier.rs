@@ -102,6 +102,12 @@ impl From<u64> for DiversifierIndex {
     }
 }
 
+impl From<usize> for DiversifierIndex {
+    fn from(x: usize) -> Self {
+        (x as u64).into()
+    }
+}
+
 impl From<DiversifierIndex> for u64 {
     fn from(diversifier_index: DiversifierIndex) -> Self {
         u64::from_le_bytes(

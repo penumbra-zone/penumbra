@@ -30,9 +30,37 @@ enum Command {
     /// Creates a transaction.
     Tx { key: String, value: String },
     /// Queries the Penumbra state.
+    #[structopt()]
     Query { key: String },
-    /// Generate keys.
+    /// Manages the wallet state.
+    Wallet(Wallet),
+    /// Manages addresses.
+    Addr(Addr),
+}
+
+#[derive(Debug, StructOpt)]
+enum Wallet {
+    /// Import an existing spend seed.
+    Import,
+    /// Generate a new spend seed.
     Generate,
+}
+
+#[derive(Debug, StructOpt)]
+enum Addr {
+    /// List addresses.
+    List,
+    /// Show the address with the given index.
+    Show {
+        /// The index of the address to show.
+        #[structopt(short, long)]
+        index: u32,
+    },
+    /// Create a new address.
+    New {
+        /// A freeform label for the address, stored only locally.
+        label: String,
+    },
 }
 
 #[tokio::main]
@@ -59,7 +87,7 @@ async fn main() -> Result<()> {
 
     match opt.cmd {
         Command::Tx { key, value } => {
-            let spend_key = load_existing_keys(&wallet_path);
+            let spend_key = load_wallet(&wallet_path);
             let _client = state::ClientState::new(spend_key);
 
             let rsp = reqwest::get(format!(
@@ -73,7 +101,7 @@ async fn main() -> Result<()> {
             tracing::info!("{}", rsp);
         }
         Command::Query { key } => {
-            let spend_key = load_existing_keys(&wallet_path);
+            let spend_key = load_wallet(&wallet_path);
             let _client = state::ClientState::new(spend_key);
 
             let rsp: serde_json::Value = reqwest::get(format!(
@@ -87,18 +115,49 @@ async fn main() -> Result<()> {
 
             tracing::info!(?rsp);
         }
-        Command::Generate => {
-            let wallet = create_wallet(&wallet_path);
-            let client = state::ClientState::new(wallet);
-            println!("Your first address is {}", client.wallet.addresses[0]);
+        Command::Wallet(Wallet::Generate) => {
+            if wallet_path.exists() {
+                Err(anyhow::anyhow!(
+                    "Wallet path {} already exists, refusing to overwrite it.",
+                    wallet_path.display()
+                ))?;
+            }
+            let wallet = storage::Wallet::generate(&mut OsRng);
+            save_wallet(&wallet, &wallet_path)?;
+            println!("Wallet saved to {}", wallet_path.display());
         }
+        Command::Addr(Addr::List) => {
+            let wallet = load_wallet(&wallet_path);
+
+            use comfy_table::{presets, Table};
+            let mut table = Table::new();
+            table.load_preset(presets::NOTHING);
+            table.set_header(vec!["Index", "Label", "Address"]);
+            for (index, label, address) in wallet.addresses() {
+                table.add_row(vec![index.to_string(), label, address.to_string()]);
+            }
+            println!("{}", table);
+        }
+        Command::Addr(Addr::New { label }) => {
+            let mut wallet = load_wallet(&wallet_path);
+            let (index, address, _dtk) = wallet.new_address(label.clone());
+            save_wallet(&wallet, &wallet_path)?;
+
+            use comfy_table::{presets, Table};
+            let mut table = Table::new();
+            table.load_preset(presets::NOTHING);
+            table.set_header(vec!["Index", "Label", "Address"]);
+            table.add_row(vec![index.to_string(), label, address.to_string()]);
+            println!("{}", table);
+        }
+        _ => todo!(),
     }
 
     Ok(())
 }
 
 /// Load existing keys from wallet file, printing an error if the file doesn't exist.
-fn load_existing_keys(wallet_path: &Path) -> storage::Wallet {
+fn load_wallet(wallet_path: &Path) -> storage::Wallet {
     let wallet: storage::Wallet = match fs::read(wallet_path) {
         Ok(data) => bincode::deserialize(&data).expect("can deserialize wallet file"),
         Err(err) => match err.kind() {
@@ -117,34 +176,11 @@ fn load_existing_keys(wallet_path: &Path) -> storage::Wallet {
     wallet
 }
 
-/// Create wallet file, ensuring existing wallets are not overwritten.
-fn create_wallet(wallet_path: &Path) -> storage::Wallet {
-    let wallet = storage::Wallet::generate(&mut OsRng);
-    let mut file = match fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(wallet_path)
-    {
-        Ok(file) => file,
-        Err(err) => match err.kind() {
-            io::ErrorKind::AlreadyExists => {
-                eprintln!(
-                    "error: wallet file already exists at {}",
-                    wallet_path.display()
-                );
-                process::exit(3);
-            }
-            _ => {
-                eprintln!("unknown error: {}", err);
-                process::exit(2);
-            }
-        },
-    };
-    let seed_data = bincode::serialize(&wallet).expect("can serialize");
-    file.write_all(&seed_data).expect("Unable to write file");
-    println!(
-        "Wallet generated, stored in {}. WARNING: This file contains your private keys. BACK UP THIS FILE!",
-        wallet_path.display()
-    );
-    wallet
+fn save_wallet(wallet: &storage::Wallet, wallet_path: &Path) -> Result<(), anyhow::Error> {
+    let mut file = fs::OpenOptions::new().write(true).open(wallet_path)?;
+
+    let seed_data = bincode::serialize(&wallet)?;
+    file.write_all(&seed_data)?;
+
+    Ok(())
 }

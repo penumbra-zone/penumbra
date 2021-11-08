@@ -33,17 +33,34 @@ docker-compose up -d
 
 ### Running `pcli`
 
-Now you can interact with Penumbra using `pcli`:
-```
+Now you can interact with Penumbra using `pcli`, for instance
+```bash
+# Run this first in case the interface changed
+# from the sample commands below
 cargo run --bin pcli -- --help
 ```
-
-Generate keys using:
-
+to get
 ```
-$ cargo run --bin pcli -- generate
-Wallet generated, stored in /Users/Alice/Library/Application Support/zone.penumbra.pcli/penumbra_wallet.dat. WARNING: This file contains your private keys. BACK UP THIS FILE!
-Your first address is penumbra_tn001_10ftlcft6c8n95cc5lpwdupt2d86n0td2t55xjwkgnte9jgzlqfp7xlqfnssljygq6fxspvnj5xuc5j0qtd6j398elyhrqugs07r7s8v5n0dpkgweytjqm2gv6hmdef
+pcli 0.1.0
+The Penumbra command-line interface.
+
+USAGE:
+    pcli [OPTIONS] <SUBCOMMAND>
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+OPTIONS:
+    -a, --addr <addr>                          The address of the Tendermint node [default: 127.0.0.1:26657]
+    -w, --wallet-location <wallet-location>    The location of the wallet file [default: platform appdata directory]
+
+SUBCOMMANDS:
+    addr      Manages addresses
+    help      Prints this message or the help of the given subcommand(s)
+    query     Queries the Penumbra state
+    tx        Creates a transaction
+    wallet    Manages the wallet state
 ```
 
 Keys will be stored in `pcli`'s data directory:
