@@ -20,7 +20,7 @@ struct Opt {
     addr: std::net::SocketAddr,
     #[structopt(subcommand)]
     cmd: Command,
-    /// The location of the wallet file.
+    /// The location of the wallet file [default: platform appdata directory]
     #[structopt(short, long)]
     wallet_location: Option<String>,
 }
