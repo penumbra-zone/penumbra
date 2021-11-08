@@ -41,12 +41,12 @@ cargo run --bin pcli -- --help
 Generate keys using:
 
 ```
-$ cargo run --bin pcli -- --wallet-location penumbra_wallet.dat generate
-Wallet generated, stored in penumbra_wallet.dat. WARNING: This file contains your private keys. BACK UP THIS FILE!
+$ cargo run --bin pcli -- generate
+Wallet generated, stored in /Users/Alice/Library/Application Support/zone.penumbra.pcli/penumbra_wallet.dat. WARNING: This file contains your private keys. BACK UP THIS FILE!
 Your first address is penumbra_tn001_10ftlcft6c8n95cc5lpwdupt2d86n0td2t55xjwkgnte9jgzlqfp7xlqfnssljygq6fxspvnj5xuc5j0qtd6j398elyhrqugs07r7s8v5n0dpkgweytjqm2gv6hmdef
 ```
 
-Keys will be stored in the location you provide via `--wallet-location <path>` or if you specify no location, in `pcli`'s data directory:
+Keys will be stored in `pcli`'s data directory:
 
 * Linux: `/home/alice/.config/pcli/penumbra_wallet.dat`
 * macOS: `/Users/Alice/Library/Application Support/zone.penumbra.pcli/penumbra_wallet.dat`
