@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, HashSet};
 
-use penumbra_crypto::{fmd, keys, memo::MemoPlaintext, merkle, note, Address, Note, Nullifier};
+use penumbra_crypto::{fmd, memo::MemoPlaintext, merkle, note, Address, Note, Nullifier};
 
 use crate::storage::Wallet;
 
@@ -37,25 +37,9 @@ impl ClientState {
         }
     }
 
-    /// Get an address by its diversifier index.
-    pub fn address_by_index(&self, diversifier_index: keys::DiversifierIndex) -> Address {
-        let spend_key = keys::SpendKey::from_seed(self.wallet.spend_seed.clone());
-        let fvk = spend_key.full_viewing_key();
-        let ivk = fvk.incoming();
-        ivk.payment_address(diversifier_index).0
-    }
-
     /// Generate a new diversified `Address` and its corresponding `DetectionKey`.
     pub fn new_address(&mut self) -> (Address, fmd::DetectionKey) {
-        self.wallet.last_used_diversifier_index =
-            (u64::from(self.wallet.last_used_diversifier_index) + 1).into();
-
-        // xx Store ivk on `ClientState` to prevent recomputing it? We don't want it on `Wallet` as wallet should
-        // be minimal.
-        let spend_key = keys::SpendKey::from_seed(self.wallet.spend_seed.clone());
-        let fvk = spend_key.full_viewing_key();
-        let ivk = fvk.incoming();
-        ivk.payment_address(self.wallet.last_used_diversifier_index)
+        self.wallet.new_address()
     }
 
     // TODO: For each output in scanned transactions, try to decrypt the note ciphertext.
