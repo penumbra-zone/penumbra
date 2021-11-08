@@ -7,19 +7,18 @@ use penumbra_crypto::{fmd, keys, Address};
 #[derive(Serialize, Deserialize)]
 pub struct Wallet {
     pub spend_seed: keys::SpendSeed,
-    // Store addresses in use, indexed by their `DiversifierIndex`
-    pub addresses: Vec<String>,
+    /// A list of human-readable labels for addresses.
+    ///
+    /// The label at index `i` is used for the address with `DiversifierIndex(i)`.
+    pub address_labels: Vec<String>,
 }
 
 impl Wallet {
     pub fn generate<R: CryptoRng + RngCore>(rng: &mut R) -> Self {
         let spend_key = keys::SpendKey::generate(rng);
-        let fvk = spend_key.full_viewing_key();
-        let ivk = fvk.incoming();
-        let (address, _dtdk) = ivk.payment_address(0u64.into());
         Self {
             spend_seed: spend_key.seed().clone(),
-            addresses: vec![address.to_string()],
+            address_labels: vec!["Default".to_string()],
         }
     }
 
@@ -31,14 +30,24 @@ impl Wallet {
     }
 
     /// Generate a new diversified `Address` and its corresponding `DetectionKey`.
-    pub fn new_address(&mut self) -> (Address, fmd::DetectionKey) {
-        // The index of the `self.addresses` vector is the diversifier index.
-        let new_diversifier_index: keys::DiversifierIndex =
-            (self.addresses.len() as u64 + 1u64).into();
+    pub fn new_address(&mut self, label: String) -> (usize, Address, fmd::DetectionKey) {
+        let next_index = self.address_labels.len();
+        self.address_labels.push(label);
+        let (address, dtk) = self.incoming().payment_address(next_index.into());
+        (next_index, address, dtk)
+    }
 
-        let (new_addr, new_dtdk) = self.incoming().payment_address(new_diversifier_index);
-        self.addresses.push(new_addr.to_string());
+    /// Iterate through the addresses in this wallet.
+    pub fn addresses(&self) -> impl Iterator<Item = (usize, String, Address)> {
+        let incoming = self.incoming();
+        self.address_labels
+            .clone()
+            .into_iter()
+            .enumerate()
+            .map(move |(index, label)| {
+                let (address, _dtk) = incoming.payment_address(index.into());
 
-        (new_addr, new_dtdk)
+                (index, label, address)
+            })
     }
 }

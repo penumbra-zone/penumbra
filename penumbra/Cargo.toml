@@ -27,6 +27,7 @@ tendermint = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branc
 bincode = "1.3.3"
 blake2b_simd = "0.5"
 bytes = "1"
+comfy-table = "5"
 directories = "4.0.1"
 tokio = { version = "1", features = ["full"]}
 tower = { version = "0.4", features = ["full"]}
@@ -48,4 +49,3 @@ sqlx = { version = "0.5", features = [ "runtime-tokio-rustls", "postgres" ] }
 
 [build-dependencies]
 vergen = "5"
-

@@ -38,8 +38,8 @@ impl ClientState {
     }
 
     /// Generate a new diversified `Address` and its corresponding `DetectionKey`.
-    pub fn new_address(&mut self) -> (Address, fmd::DetectionKey) {
-        self.wallet.new_address()
+    pub fn new_address(&mut self, label: String) -> (usize, Address, fmd::DetectionKey) {
+        self.wallet.new_address(label)
     }
 
     // TODO: For each output in scanned transactions, try to decrypt the note ciphertext.
