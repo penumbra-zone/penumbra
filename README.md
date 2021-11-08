@@ -1,5 +1,3 @@
-<img style="width: 25%; max-width: 11em; float: left; margin: 1em;" src="https://protocol.penumbra.zone/penumbra-glow-alpha-mask.png">
-
 [Penumbra] is a fully shielded zone for the Cosmos ecosystem, providing private
 trading in any cryptoasset.
 
