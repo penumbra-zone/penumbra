@@ -7,6 +7,7 @@ use std::{
 
 use bytes::Bytes;
 use futures::future::FutureExt;
+use serde::Deserialize;
 use tendermint::abci::{request, response, Event, EventAttributeIndexExt, Request, Response};
 use tokio_stream::Stream;
 use tonic::Status;
@@ -31,7 +32,8 @@ const MAX_MERKLE_CHECKPOINTS: usize = 100;
 pub struct App {
     store: HashMap<String, String>,
     height: u64,
-    app_hash: [u8; 8],
+    /// The `app_hash` is the hash of the note commitmen tree.
+    app_hash: [u8; 32],
     note_commitment_tree: merkle::BridgeTree<note::Commitment, { merkle::DEPTH as u8 }>,
     nullifier_set: BTreeSet<Nullifier>,
 }
@@ -82,7 +84,7 @@ impl Default for App {
         Self {
             store: HashMap::default(),
             height: 0,
-            app_hash: [0; 8],
+            app_hash: [0; 32],
             note_commitment_tree: merkle::BridgeTree::new(MAX_MERKLE_CHECKPOINTS),
             // TODO: Store cached merkle root to prevent recomputing it - currently
             // this is happening for each spend (since we pass in the merkle_root when
@@ -93,12 +95,28 @@ impl Default for App {
 }
 
 impl App {
-    fn init_genesis(&self, init_chain: request::InitChain) -> response::InitChain {
-        // TK: Process app_state field (containing shielded notes), on app_state_bytes in request::InitChain
-        //let genesis_notes: GenesisNotes = init_chain.app_state_bytes.into();
+    fn init_genesis(&mut self, init_chain: request::InitChain) -> response::InitChain {
         tracing::info!("performing genesis for chain_id: {}", init_chain.chain_id);
 
+        // Note that errors cannot be handled in InitChain, the application must crash.
+        let genesis: GenesisNotes = serde_json::from_slice(&init_chain.app_state_bytes)
+            .expect("can parse app_state in genesis file");
+
+        // xx later: Consider making & storing dummy genesis transactions for each note
+        // (one option for syncing the genesis notes to the client)
+        for note in genesis.notes() {
+            let note_commitment = note.commit();
+            self.note_commitment_tree.append(&note_commitment);
+        }
+        tracing::info!("successfully loaded all genesis notes");
+
+        // xx Correct/Necessary to commit here or will tendermint after InitGenesis?
+        self.commit();
         let initial_application_hash = self.app_hash.to_vec().into();
+        tracing::info!(
+            "initial app_hash at genesis: {:?}",
+            initial_application_hash
+        );
 
         response::InitChain {
             consensus_params: Some(init_chain.consensus_params),
@@ -154,10 +172,10 @@ impl App {
         }
     }
 
+    /// Commit the queued state transitions.
     fn commit(&mut self) -> response::Commit {
         let retain_height = self.height as i64;
-        // As in the other kvstore examples, just use store.len() as the "hash"
-        self.app_hash = (self.store.len() as u64).to_be_bytes();
+        self.app_hash = self.note_commitment_tree.root2().to_bytes();
         self.height += 1;
 
         response::Commit {
