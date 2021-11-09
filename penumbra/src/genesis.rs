@@ -37,6 +37,12 @@ pub struct GenesisNotes {
     notes: Vec<Note>,
 }
 
+impl GenesisNotes {
+    pub fn notes(&self) -> Vec<Note> {
+        self.notes.clone()
+    }
+}
+
 #[derive(Debug)]
 pub struct GenesisAddr {
     pub amount: u64,

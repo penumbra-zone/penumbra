@@ -37,6 +37,12 @@ impl TryFrom<&[u8]> for Root {
     }
 }
 
+impl Root {
+    pub fn to_bytes(&self) -> [u8; 32] {
+        self.0.to_bytes()
+    }
+}
+
 pub trait TreeExt {
     fn root2(&self) -> Root;
 }
