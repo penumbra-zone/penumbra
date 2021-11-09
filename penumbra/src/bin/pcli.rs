@@ -177,7 +177,10 @@ fn load_wallet(wallet_path: &Path) -> storage::Wallet {
 }
 
 fn save_wallet(wallet: &storage::Wallet, wallet_path: &Path) -> Result<(), anyhow::Error> {
-    let mut file = fs::OpenOptions::new().write(true).open(wallet_path)?;
+    let mut file = fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .open(wallet_path)?;
 
     let seed_data = bincode::serialize(&wallet)?;
     file.write_all(&seed_data)?;
