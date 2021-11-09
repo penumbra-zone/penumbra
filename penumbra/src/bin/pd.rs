@@ -1,7 +1,11 @@
+use std::time::Duration;
+
+use futures::join;
 use rand::SeedableRng;
 use rand_chacha::ChaCha20Rng;
 use std::net::SocketAddr;
 use structopt::StructOpt;
+use tokio::{net::TcpListener, runtime::Runtime};
 use tonic::transport::Server;
 
 use penumbra::dbschema::{NoteCommitmentTreeAnchor, PenumbraNoteCommitmentTreeAnchor};
@@ -23,14 +27,17 @@ struct Opt {
 
 #[derive(Debug, StructOpt)]
 enum Command {
-    /// Start running the ABCI server.
+    /// Start running the ABCI and wallet services.
     Start {
-        /// Bind the ABCI server to this host.
+        /// Bind the server to this host.
         #[structopt(short, long, default_value = "127.0.0.1")]
         host: String,
         /// Bind the ABCI server to this port.
         #[structopt(short, long, default_value = "26658")]
-        port: u16,
+        abci_port: u16,
+        /// Bind the wallet service to this port.
+        #[structopt(short, long, default_value = "26666")]
+        wallet_port: u16,
     },
 
     /// Generate Genesis state.
@@ -46,7 +53,11 @@ async fn main() {
     let opt = Opt::from_args();
 
     match opt.cmd {
-        Command::Start { host, port } => {
+        Command::Start {
+            host,
+            abci_port,
+            wallet_port,
+        } => {
             // get the pool, cool
             let pool = db_connection().await.expect("");
 
@@ -73,15 +84,17 @@ async fn main() {
                 _db_read_dummy_row[0].height, _db_read_dummy_row[0].anchor
             );
 
-            // app
-            let app = penumbra::App::default();
+            let abci_app = penumbra::App::default();
             let wallet_app = penumbra::WalletApp::new();
+            let wallet_service_addr = format!("{}:{}", host, wallet_port)
+                .parse()
+                .expect("this is a valid address");
 
             use tower_abci::split;
 
-            let (consensus, mempool, snapshot, info) = split::service(app, 1);
+            let (consensus, mempool, snapshot, info) = split::service(abci_app, 1);
 
-            let server = tower_abci::Server::builder()
+            let abci_server = tower_abci::Server::builder()
                 .consensus(consensus)
                 .snapshot(snapshot)
                 .mempool(mempool)
@@ -89,16 +102,15 @@ async fn main() {
                 .finish()
                 .unwrap();
 
-            // Run the ABCI server.
-            server.listen(format!("{}:{}", host, port)).await.unwrap();
-
-            // xx Move the below
-            let wallet_service_addr = "127.0.0.1:3232".parse().expect("this is a valid address");
             let wallet_server = Server::builder()
                 .add_service(wallet_server::WalletServer::new(wallet_app))
-                .serve(wallet_service_addr)
-                .await
-                .unwrap();
+                .serve(wallet_service_addr);
+
+            // xx better way to serve both?
+            join!(
+                wallet_server,
+                abci_server.listen(format!("{}:{}", host, abci_port))
+            );
         }
         Command::CreateGenesis {
             chain_id,
