@@ -1,11 +1,7 @@
-use std::time::Duration;
-
 use futures::join;
 use rand::SeedableRng;
 use rand_chacha::ChaCha20Rng;
-use std::net::SocketAddr;
 use structopt::StructOpt;
-use tokio::{net::TcpListener, runtime::Runtime};
 use tonic::transport::Server;
 
 use penumbra::dbschema::{NoteCommitmentTreeAnchor, PenumbraNoteCommitmentTreeAnchor};

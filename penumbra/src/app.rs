@@ -6,8 +6,8 @@ use std::{
 };
 
 use bytes::Bytes;
-use futures::future::FutureExt;
-use serde::Deserialize;
+use futures::{executor::block_on, future::FutureExt};
+use sqlx::{Pool, Postgres};
 use tendermint::abci::{request, response, Event, EventAttributeIndexExt, Request, Response};
 use tokio_stream::Stream;
 use tonic::Status;
@@ -22,7 +22,7 @@ use penumbra_proto::wallet::{
 };
 use tower_abci::BoxError;
 
-use crate::genesis::GenesisNotes;
+use crate::{dbutils::db_connection, genesis::GenesisNotes};
 
 const ABCI_INFO_VERSION: &str = env!("VERGEN_GIT_SEMVER");
 const MAX_MERKLE_CHECKPOINTS: usize = 100;
@@ -36,10 +36,12 @@ pub struct App {
     app_hash: [u8; 32],
     note_commitment_tree: merkle::BridgeTree<note::Commitment, { merkle::DEPTH as u8 }>,
     nullifier_set: BTreeSet<Nullifier>,
+    db_pool: Pool<Postgres>,
 }
 
-/// The Penumbra wallet service.
-pub struct WalletApp {}
+async fn get_database_connection() -> Pool<Postgres> {
+    db_connection().await.expect("")
+}
 
 impl Service<Request> for App {
     type Response = Response;
@@ -59,6 +61,7 @@ impl Service<Request> for App {
             Request::Query(query) => Response::Query(self.query(query.data)),
             Request::DeliverTx(deliver_tx) => Response::DeliverTx(self.deliver_tx(deliver_tx.tx)),
             Request::Commit => Response::Commit(self.commit()),
+            Request::BeginBlock(_) => Response::BeginBlock(self.begin_block()),
 
             // Called only once for network genesis, i.e. when the application block height is 0
             Request::InitChain(init_chain) => Response::InitChain(self.init_genesis(init_chain)),
@@ -66,7 +69,6 @@ impl Service<Request> for App {
             // unhandled messages
             Request::Flush => Response::Flush,
             Request::Echo(_) => Response::Echo(Default::default()),
-            Request::BeginBlock(_) => Response::BeginBlock(Default::default()), // xx open db tx here
             Request::CheckTx(_) => Response::CheckTx(Default::default()),
             Request::EndBlock(_) => Response::EndBlock(Default::default()),
             Request::ListSnapshots => Response::ListSnapshots(Default::default()),
@@ -90,6 +92,7 @@ impl Default for App {
             // this is happening for each spend (since we pass in the merkle_root when
             // verifying the spend proof).
             nullifier_set: BTreeSet::new(),
+            db_pool: block_on(get_database_connection()),
         }
     }
 }
@@ -186,6 +189,10 @@ impl App {
         }
     }
 
+    fn begin_block(&self) -> response::BeginBlock {
+        todo!()
+    }
+
     /// Verifies a transaction and if it verifies, updates the node state.
     pub fn verify_transaction(&mut self, transaction: Transaction) -> bool {
         // 1. Check binding signature.
@@ -255,9 +262,16 @@ impl App {
     }
 }
 
+/// The Penumbra wallet service.
+pub struct WalletApp {
+    db_pool: Pool<Postgres>,
+}
+
 impl WalletApp {
     pub fn new() -> WalletApp {
-        WalletApp {}
+        WalletApp {
+            db_pool: block_on(get_database_connection()),
+        }
     }
 }
 

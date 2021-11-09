@@ -6,7 +6,6 @@ use std::path::{Path, PathBuf};
 use std::{fs, io, process};
 use structopt::StructOpt;
 
-use penumbra_crypto::keys;
 use penumbra_proto::wallet::{
     wallet_client::WalletClient, CompactBlock, CompactBlockRangeRequest, TransactionByNoteRequest,
 };
@@ -40,8 +39,10 @@ enum Command {
     Wallet(Wallet),
     /// Manages addresses.
     Addr(Addr),
-    /// Fetch transaction by note commitment - TEMP (not gonna be exposed to user)
+    /// Fetch transaction by note commitment - TEMP (ultimately not gonna be exposed to user)
     FetchByNoteCommitment,
+    /// Block request - TEMP (ultimately not gonna be exposed to user)
+    BlockRequest { end_block_height: u64 },
 }
 
 #[derive(Debug, StructOpt)]
@@ -98,7 +99,7 @@ async fn main() -> Result<()> {
     match opt.cmd {
         Command::Tx { key, value } => {
             let spend_key = load_wallet(&wallet_path);
-            let local_storage = state::ClientState::new(spend_key);
+            let _local_storage = state::ClientState::new(spend_key);
 
             let rsp = reqwest::get(format!(
                 r#"http://{}/broadcast_tx_async?tx="{}={}""#,
@@ -112,7 +113,7 @@ async fn main() -> Result<()> {
         }
         Command::Query { key } => {
             let spend_key = load_wallet(&wallet_path);
-            let local_storage = state::ClientState::new(spend_key);
+            let _local_storage = state::ClientState::new(spend_key);
 
             let rsp: serde_json::Value = reqwest::get(format!(
                 r#"http://{}/abci_query?data=0x{}"#,
@@ -178,7 +179,7 @@ async fn main() -> Result<()> {
         }
         Command::FetchByNoteCommitment => {
             let spend_key = load_wallet(&wallet_path);
-            let local_storage = state::ClientState::new(spend_key);
+            let _local_storage = state::ClientState::new(spend_key);
             let mut client = WalletClient::connect("http://127.0.0.1:26666").await?;
 
             let cm = vec![0, 0, 0u8];
@@ -186,7 +187,7 @@ async fn main() -> Result<()> {
 
             tracing::info!("requesting tx by note commitment: {:?}", cm);
 
-            let response = client.transaction_by_note(request).await?;
+            let _response = client.transaction_by_note(request).await?;
 
             tracing::info!("got tx");
             // TODO: Add to local store
