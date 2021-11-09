@@ -46,6 +46,9 @@ CREATE TABLE IF NOT EXISTS transactions (
     id SERIAL PRIMARY KEY,
     transaction_id bytea NOT NULL,
     note_commitment bytea NOT NULL,
+    note_ciphertext bytea NOT NULL,
+    ephemeral_key bytea NOT NULL,
+    transaction bytea NOT NULL,
     block_id bigint REFERENCES blocks (id)
 )
 "#,

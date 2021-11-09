@@ -32,7 +32,7 @@ const MAX_MERKLE_CHECKPOINTS: usize = 100;
 pub struct App {
     store: HashMap<String, String>,
     height: u64,
-    /// The `app_hash` is the hash of the note commitmen tree.
+    /// The `app_hash` is the hash of the note commitment tree.
     app_hash: [u8; 32],
     note_commitment_tree: merkle::BridgeTree<note::Commitment, { merkle::DEPTH as u8 }>,
     nullifier_set: BTreeSet<Nullifier>,
@@ -66,7 +66,7 @@ impl Service<Request> for App {
             // unhandled messages
             Request::Flush => Response::Flush,
             Request::Echo(_) => Response::Echo(Default::default()),
-            Request::BeginBlock(_) => Response::BeginBlock(Default::default()),
+            Request::BeginBlock(_) => Response::BeginBlock(Default::default()), // xx open db tx here
             Request::CheckTx(_) => Response::CheckTx(Default::default()),
             Request::EndBlock(_) => Response::EndBlock(Default::default()),
             Request::ListSnapshots => Response::ListSnapshots(Default::default()),
@@ -107,6 +107,7 @@ impl App {
         for note in genesis.notes() {
             let note_commitment = note.commit();
             self.note_commitment_tree.append(&note_commitment);
+            // xx db add row in `transactions` table
         }
         tracing::info!("successfully loaded all genesis notes");
 
@@ -174,6 +175,7 @@ impl App {
 
     /// Commit the queued state transitions.
     fn commit(&mut self) -> response::Commit {
+        // xx db commit
         let retain_height = self.height as i64;
         self.app_hash = self.note_commitment_tree.root2().to_bytes();
         self.height += 1;
@@ -242,9 +244,11 @@ impl App {
         // 3. Update node state.
         for nf in nullifiers_to_add {
             self.nullifier_set.insert(nf);
+            // xx add nullifier set storage in db?
         }
         for commitment in note_commitments_to_add {
             self.note_commitment_tree.append(&commitment);
+            // xx add row in transactions table
         }
 
         true
