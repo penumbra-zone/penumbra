@@ -1,4 +1,4 @@
-version: "3.9"
+version: "3.7"
 # docker-compose oerrides for local development.
 #
 # this modifies the docker-compose configuration for locally testing and
