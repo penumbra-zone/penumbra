@@ -21,6 +21,8 @@ use penumbra_proto::wallet::{
 };
 use tower_abci::BoxError;
 
+use crate::genesis::GenesisNotes;
+
 const ABCI_INFO_VERSION: &str = env!("VERGEN_GIT_SEMVER");
 const MAX_MERKLE_CHECKPOINTS: usize = 100;
 
@@ -55,7 +57,9 @@ impl Service<Request> for App {
             Request::Query(query) => Response::Query(self.query(query.data)),
             Request::DeliverTx(deliver_tx) => Response::DeliverTx(self.deliver_tx(deliver_tx.tx)),
             Request::Commit => Response::Commit(self.commit()),
-            Request::InitChain(init_chain) => Response::InitChain(self.from_genesis(init_chain)),
+
+            // Called only once for network genesis, i.e. when the application block height is 0
+            Request::InitChain(init_chain) => Response::InitChain(self.init_genesis(init_chain)),
 
             // unhandled messages
             Request::Flush => Response::Flush,
@@ -89,8 +93,10 @@ impl Default for App {
 }
 
 impl App {
-    fn from_genesis(&self, init_chain: request::InitChain) -> response::InitChain {
+    fn init_genesis(&self, init_chain: request::InitChain) -> response::InitChain {
         // TK: Process app_state field (containing shielded notes), on app_state_bytes in request::InitChain
+        //let genesis_notes: GenesisNotes = init_chain.app_state_bytes.into();
+        tracing::info!("performing genesis for chain_id: {}", init_chain.chain_id);
 
         let initial_application_hash = self.app_hash.to_vec().into();
 

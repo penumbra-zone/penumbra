@@ -77,6 +77,8 @@ Initialize Tendermint:
 tendermint init validator
 ```
 
+This will create a default genesis file stored in `$TMHOME` (if set, else `~/.tendermint`) named `genesis.json`.
+
 You probably want to set a log level:
 ```bash
 export RUST_LOG=debug  # bash
@@ -124,7 +126,12 @@ $ cargo run --bin pd -- create-genesis penumbra-tn001 \
 }
 ```
 
+To perform genesis for a testnet, edit the `genesis.json` file stored in `$TMHOME` or `~/.tendermint` (see an example in `testnets/genesis_tn001.json`). You should edit the following fields:
+* `validators` key: add the other validators and their voting power,
+* `app_state` key: add the generated genesis notes,
+* `chain_id` update the `chain_id` for the testnet.
 
+Now when you start `pd` and tendermint as described above, you will see a message at the `INFO` level indicating genesis has been performed: `consensus: penumbra::app: performing genesis for chain_id: penumbra_tn001`.
 
 [Discord]: https://discord.gg/hKvkrqa3zC
 [Penumbra]: https://penumbra.zone
