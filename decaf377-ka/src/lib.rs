@@ -72,7 +72,7 @@ impl Secret {
     pub fn key_agreement_with(&self, other: &Public) -> Result<SharedSecret, Error> {
         let pk = decaf377::Encoding(other.0)
             .decompress()
-            .map_err(|_| Error::InvalidPublic(other.clone()))?;
+            .map_err(|_| Error::InvalidPublic(*other))?;
 
         Ok(SharedSecret((self.0 * pk).compress().into()))
     }

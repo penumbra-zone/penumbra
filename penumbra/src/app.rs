@@ -16,7 +16,7 @@ use penumbra_crypto::{
 };
 use tower_abci::BoxError;
 
-const ABCI_INFO_VERSION: &'static str = env!("VERGEN_GIT_SEMVER");
+const ABCI_INFO_VERSION: &str = env!("VERGEN_GIT_SEMVER");
 const MAX_MERKLE_CHECKPOINTS: usize = 100;
 
 /// The Penumbra ABCI application.
@@ -202,7 +202,7 @@ impl App {
             self.note_commitment_tree.append(&commitment);
         }
 
-        return true;
+        true
     }
 }
 

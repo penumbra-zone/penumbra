@@ -34,7 +34,7 @@ impl MemoPlaintext {
     pub fn encrypt(&self, esk: &ka::Secret, address: &Address) -> MemoCiphertext {
         let epk = esk.diversified_public(address.diversified_generator());
         let shared_secret = esk
-            .key_agreement_with(&address.transmission_key())
+            .key_agreement_with(address.transmission_key())
             .expect("key agreement succeeds");
 
         let key = derive_symmetric_key(&shared_secret, &epk);
@@ -62,7 +62,7 @@ impl MemoPlaintext {
             .key_agreement_with(epk)
             .map_err(|_| anyhow!("could not perform key agreement"))?;
 
-        let key = derive_symmetric_key(&shared_secret, &epk);
+        let key = derive_symmetric_key(&shared_secret, epk);
         let cipher = ChaCha20Poly1305::new(Key::from_slice(key.as_bytes()));
         let nonce = Nonce::from_slice(&*MEMO_ENCRYPTION_NONCE);
         let plaintext = cipher
@@ -105,7 +105,7 @@ mod tests {
 
         let ciphertext = memo.encrypt(&esk, &dest);
 
-        let epk = esk.diversified_public(&dest.diversified_generator());
+        let epk = esk.diversified_public(dest.diversified_generator());
         let plaintext = MemoPlaintext::decrypt(ciphertext, ivk, &epk).expect("can decrypt memo");
 
         assert_eq!(plaintext, memo);
