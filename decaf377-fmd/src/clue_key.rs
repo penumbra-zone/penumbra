@@ -2,6 +2,7 @@ use ark_ff::{Field, UniformRand};
 use bitvec::{array::BitArray, order};
 use decaf377::{FieldExt, Fr};
 use rand_core::{CryptoRng, RngCore};
+use std::convert::TryInto;
 
 use crate::{hash, hkd, Clue, Error, MAX_PRECISION};
 
@@ -36,12 +37,14 @@ impl ClueKey {
             .decompress()
             .map_err(|_| Error::InvalidAddress)?;
 
-        // would be nice to avoid this initialization,
-        // does collecting into arrays work yet?
-        let mut Xs = [Default::default(); MAX_PRECISION];
-        for (i, element) in Xs.iter_mut().enumerate() {
-            *element = hkd::derive_public(&root_pub, &root_pub_enc, i as u8);
-        }
+        let Xs: [_; MAX_PRECISION] = (0..MAX_PRECISION)
+            .into_iter()
+            .map(|i| hkd::derive_public(&root_pub, &root_pub_enc, i as u8))
+            .collect::<Vec<_>>()
+            // this conversion into an array will always succeed because we started with an iterator
+            // of length `MAX_PRECISION` and we're converting to an array of the same length
+            .try_into()
+            .expect("iterator of length `MAX_PRECISION`");
 
         Ok(ExpandedClueKey { Xs })
     }
