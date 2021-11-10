@@ -8,7 +8,7 @@ use std::{
 use bytes::Bytes;
 use futures::{executor::block_on, future::FutureExt};
 use rand_core::OsRng;
-use sqlx::{Pool, Postgres};
+use sqlx::{query_as, Pool, Postgres};
 use tendermint::abci::{request, response, Event, EventAttributeIndexExt, Request, Response};
 use tokio_stream::Stream;
 use tonic::Status;
@@ -24,6 +24,7 @@ use penumbra_proto::wallet::{
 use tower_abci::BoxError;
 
 use crate::{
+    dbschema::PenumbraTransaction,
     dbutils::{db_connection, db_insert_note, db_insert_transaction},
     genesis::GenesisNotes,
 };
@@ -145,13 +146,13 @@ impl App {
             .finalize(&mut OsRng)
             .expect("can form genesis transaction");
 
-        let transaction_id = block_on(db_insert_transaction(
+        let transaction_pk = block_on(db_insert_transaction(
             &mut db_tx,
             genesis_tx
                 .try_into()
                 .expect("can serialize genesis transaction"),
         ))
-        .expect("can get ID of new transaction");
+        .expect("can get pk of new transaction");
 
         // Now update NCT and database table `notes`.
         for note in genesis.notes() {
@@ -160,7 +161,7 @@ impl App {
             block_on(db_insert_note(
                 &mut db_tx,
                 note_commitment.into(),
-                transaction_id,
+                transaction_pk,
             ))
             .expect("can insert note into database");
         }
@@ -355,7 +356,24 @@ impl Wallet for WalletApp {
         &self,
         request: tonic::Request<TransactionByNoteRequest>,
     ) -> Result<tonic::Response<transaction::Transaction>, Status> {
-        todo!()
+        // xx improve error handling here
+        let mut p = self.db_pool.acquire().await.expect("can get db connection");
+
+        // Check the database to see if we have a matching note commitment.
+        let note_commitment = request.into_inner().cm;
+        let rows = query_as::<_,PenumbraTransaction>(
+            "SELECT transactions.transaction FROM transactions JOIN notes ON transactions.id = (SELECT transaction_id FROM notes WHERE note_commitment=$1);"
+        )
+        .bind(note_commitment)
+        .fetch_one(&mut p)
+        .await.expect("can get the transaction");
+        // xx Return Status error if the row is not found
+
+        let transaction = penumbra_crypto::Transaction::try_from(&rows.transaction[..])
+            .expect("transaction is well formed");
+        let protobuf_transaction: transaction::Transaction = transaction.into();
+
+        Ok(tonic::Response::new(protobuf_transaction))
     }
 }
 

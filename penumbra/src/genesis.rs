@@ -5,7 +5,7 @@ use rand_chacha::ChaCha20Rng;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
-use penumbra_crypto::{asset, keys, Address, Fq, Note, Value};
+use penumbra_crypto::{asset, Address, Fq, Note, Value};
 
 pub fn generate_genesis_notes(
     rng: &mut ChaCha20Rng,

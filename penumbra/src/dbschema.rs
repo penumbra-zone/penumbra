@@ -26,6 +26,12 @@ pub struct PenumbraNoteCommitmentTreeAnchor {
     pub anchor: Root,
 }
 
+/// Bridge type between Postgres and Penumbra for transactions
+#[derive(Debug, sqlx::FromRow)]
+pub struct PenumbraTransaction {
+    pub transaction: Vec<u8>,
+}
+
 /// Convert between Penumbra and bridge type for DB
 impl From<PenumbraNoteCommitmentTreeAnchor> for NoteCommitmentTreeAnchor {
     fn from(p: PenumbraNoteCommitmentTreeAnchor) -> Self {
