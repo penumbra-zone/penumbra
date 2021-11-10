@@ -56,5 +56,5 @@ addresses, allowing fine-grained control of delegation.
 
 This diagram shows only the user-visible parts of the key hierarchy.
 Internally, each of these keys has different components, described in detail in
-the [Addresses and Keys](../crypto/addresses_keys.md) section of the
-[Cryptographic Protocol](../crypto.md) chapter.
+the [Addresses and Keys](../protocol/addresses_keys.md) section of the
+[Cryptographic Protocol](../protocol.md) chapter.
