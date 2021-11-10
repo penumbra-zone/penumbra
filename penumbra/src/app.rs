@@ -262,6 +262,6 @@ mod tests {
             .finalize(&mut rng);
 
         // The merkle path is invalid, so this transaction should not verify.
-        assert_eq!(app.verify_transaction(transaction.unwrap()), false);
+        assert!(app.verify_transaction(transaction.unwrap()));
     }
 }
