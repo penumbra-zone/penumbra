@@ -42,7 +42,8 @@ pub struct App<'a> {
     // When `BeginBlock` is called, we set `current_db_tx` to hold the current transaction.
     // We finally commit and set it back to `None` when we `Commit`.
     // Note that tendermint ensures that the sequence of messages will always be:
-    // `BeginBlock, DeliverTx, DeliverTx, DeliverTx, ..., EndBlock, Commit`.
+    // `BeginBlock, DeliverTx, DeliverTx, DeliverTx, ..., EndBlock, Commit`
+    // (except at genesis).
     current_db_tx: Option<sqlx::Transaction<'a, Postgres>>,
 }
 
@@ -119,6 +120,9 @@ impl Default for App<'_> {
 
 impl App<'_> {
     fn init_genesis(&mut self, init_chain: request::InitChain) -> response::InitChain {
+        tracing::info!("creating new db tx");
+        self.current_db_tx = Some(block_on(start_transaction(&self.db_pool)));
+
         tracing::info!("performing genesis for chain_id: {}", init_chain.chain_id);
 
         // Note that errors cannot be handled in InitChain, the application must crash.
