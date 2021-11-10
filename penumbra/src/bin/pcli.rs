@@ -129,12 +129,24 @@ async fn main() -> Result<()> {
             println!("Wallet saved to {}", wallet_path.display());
         }
         Command::Wallet(Wallet::Delete) => {
-            let prompt = format!(
-                "Are you sure you want to delete the Penumbra wallet file at `{}`? This cannot be undone.",
+            if wallet_path.is_file() {
+                let prompt = format!(
+                "Are you sure you want to delete the Penumbra wallet file at {}? This cannot be undone.",
                 wallet_path.display()
             );
-            if dialoguer::Confirm::new().with_prompt(prompt).interact()? {
-                fs::remove_file(&wallet_path)?;
+                if dialoguer::Confirm::new().with_prompt(prompt).interact()? {
+                    fs::remove_file(&wallet_path)?;
+                }
+            } else if wallet_path.exists() {
+                println!(
+                    "Wallet path {} exists, but is not a file; refusing to delete it.",
+                    wallet_path.display()
+                );
+            } else {
+                println!(
+                    "Wallet path {} does not exist, so cannot be deleted.",
+                    wallet_path.display()
+                );
             }
         }
         Command::Addr(Addr::List) => {
