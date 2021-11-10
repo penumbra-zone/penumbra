@@ -25,8 +25,9 @@ use tower_abci::BoxError;
 
 use crate::{
     dbschema::PenumbraTransaction,
-    dbutils::{db_connection, db_insert_note, db_insert_transaction},
+    dbutils::{db_commit_block, db_connection},
     genesis::GenesisNotes,
+    state::PendingBlock,
 };
 
 const ABCI_INFO_VERSION: &str = env!("VERGEN_GIT_SEMVER");
@@ -37,35 +38,20 @@ const MAX_MERKLE_CHECKPOINTS: usize = 100;
 pub struct App {
     store: HashMap<String, String>,
     height: u64,
+
     /// The `app_hash` is the hash of the note commitment tree.
     app_hash: [u8; 32],
     note_commitment_tree: merkle::BridgeTree<note::Commitment, { merkle::DEPTH as u8 }>,
     nullifier_set: BTreeSet<Nullifier>,
-    db_pool: Pool<Postgres>,
 
-    // xx this is a hack, what's a better way to share db transaction within the block context?
-    // When `BeginBlock` is called, we set `current_db_tx` to hold the current transaction.
-    // We finally commit and set it back to `None` when we `Commit`.
-    // Note that tendermint ensures that the sequence of messages will always be:
-    // `BeginBlock, DeliverTx, DeliverTx, DeliverTx, ..., EndBlock, Commit`
-    // (except at genesis).
-    current_db_tx: Option<sqlx::Transaction<'static, Postgres>>,
+    // When `BeginBlock` (or `InitChain` for block 0) is called, we set `current_block`
+    // to hold a struct which holds all the queued-up state changes for the duration of the block.
+    // We commit these changes to the database and set it back to `None` when we `Commit`.
+    current_block: Option<PendingBlock>,
 }
 
 async fn get_database_connection() -> Pool<Postgres> {
     db_connection().await.expect("")
-}
-
-// xx lifetimes wrong
-async fn start_transaction(pool: &Pool<Postgres>) -> sqlx::Transaction<'static, Postgres> {
-    pool.begin().await.expect("can start transaction")
-}
-
-async fn commit_transaction(transaction: sqlx::Transaction<'_, Postgres>) {
-    transaction
-        .commit()
-        .await
-        .expect("we can commit the state changes to the database")
 }
 
 impl Service<Request> for App {
@@ -117,17 +103,14 @@ impl Default for App {
             // this is happening for each spend (since we pass in the merkle_root when
             // verifying the spend proof).
             nullifier_set: BTreeSet::new(),
-            db_pool: block_on(get_database_connection()),
-            current_db_tx: None,
+            current_block: None,
         }
     }
 }
 
 impl App {
     fn init_genesis(&mut self, init_chain: request::InitChain) -> response::InitChain {
-        tracing::info!("creating new db tx");
-        let mut db_tx = block_on(start_transaction(&self.db_pool));
-
+        let mut current_block = PendingBlock::default();
         tracing::info!("performing genesis for chain_id: {}", init_chain.chain_id);
 
         // Note that errors cannot be handled in InitChain, the application must crash.
@@ -146,29 +129,12 @@ impl App {
             .finalize(&mut OsRng)
             .expect("can form genesis transaction");
 
-        let transaction_pk = block_on(db_insert_transaction(
-            &mut db_tx,
-            genesis_tx
-                .try_into()
-                .expect("can serialize genesis transaction"),
-        ))
-        .expect("can get pk of new transaction");
-
-        // Now update NCT and database table `notes`.
-        for note in genesis.notes() {
-            let note_commitment = note.commit();
-            self.note_commitment_tree.append(&note_commitment);
-            block_on(db_insert_note(
-                &mut db_tx,
-                note_commitment.into(),
-                transaction_pk,
-            ))
-            .expect("can insert note into database");
-        }
+        // Now add the transaction and its note fragments to the pending state changes.
+        current_block.add_transaction(genesis_tx);
         tracing::info!("successfully loaded all genesis notes");
 
         // xx Correct/Necessary to commit here or will tendermint after InitGenesis?
-        self.current_db_tx = Some(db_tx);
+        self.current_block = Some(current_block);
         self.commit();
         let initial_application_hash = self.app_hash.to_vec().into();
         tracing::info!(
@@ -233,17 +199,26 @@ impl App {
     /// Commit the queued state transitions.
     fn commit(&mut self) -> response::Commit {
         tracing::info!("committing pending changes to database");
+        let current_block =
+            std::mem::replace(&mut self.current_block, None).expect("we must have pending changes");
 
-        // Errors cannot be handled in `Commit` and must crash the application.
-        // xx pretty nasty here
-        let db_tx = std::mem::replace(&mut self.current_db_tx, None);
-        block_on(commit_transaction(
-            db_tx.expect("we have an active database transaction"),
-        ));
-        assert!(self.current_db_tx.is_none());
+        // Update local NCT.
+        for note_commitment in &current_block.note_commitments {
+            self.note_commitment_tree.append(&note_commitment);
+        }
+
+        // TODO: Update local nullifier set.
 
         let retain_height = self.height as i64;
         self.app_hash = self.note_commitment_tree.root2().to_bytes();
+        let db_connection = block_on(get_database_connection());
+        block_on(db_commit_block(
+            db_connection,
+            current_block,
+            retain_height,
+            self.app_hash,
+        ));
+
         self.height += 1;
 
         response::Commit {
@@ -253,8 +228,7 @@ impl App {
     }
 
     fn begin_block(&mut self) -> response::BeginBlock {
-        tracing::info!("creating new db tx");
-        self.current_db_tx = Some(block_on(start_transaction(&self.db_pool)));
+        self.current_block = Some(PendingBlock::default());
         response::BeginBlock::default()
     }
 
@@ -349,6 +323,15 @@ impl Wallet for WalletApp {
         &self,
         request: tonic::Request<CompactBlockRangeRequest>,
     ) -> Result<tonic::Response<Self::CompactBlockRangeStream>, Status> {
+        let mut p = self
+            .db_pool
+            .acquire()
+            .await
+            .map_err(|_| tonic::Status::unavailable("server error"))?;
+
+        // select * from blocks where height between start_block and end_block;
+        // note_commitment, ephemeral_key, encrypted_note
+
         todo!()
     }
 

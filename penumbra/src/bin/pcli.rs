@@ -6,9 +6,8 @@ use std::path::{Path, PathBuf};
 use std::{fs, io, process};
 use structopt::StructOpt;
 
-use penumbra_crypto::note;
 use penumbra_proto::wallet::{
-    wallet_client::WalletClient, CompactBlock, CompactBlockRangeRequest, TransactionByNoteRequest,
+    wallet_client::WalletClient, CompactBlockRangeRequest, TransactionByNoteRequest,
 };
 use penumbra_wallet::{state, storage};
 
@@ -43,7 +42,7 @@ enum Command {
     /// Fetch transaction by note commitment - TEMP (ultimately not gonna be exposed to user)
     FetchByNoteCommitment { note_commitment: String },
     /// Block request - TEMP (ultimately not gonna be exposed to user)
-    BlockRequest { end_block_height: u64 },
+    BlockRequest { start_height: u32, end_height: u32 },
 }
 
 #[derive(Debug, StructOpt)]
@@ -189,8 +188,26 @@ async fn main() -> Result<()> {
             tracing::info!("requesting tx by note commitment: {:?}", cm);
             let response = client.transaction_by_note(request).await?;
             tracing::info!("got response: {:?}", response);
-
-            // TODO: Add to local store
+        }
+        Command::BlockRequest {
+            start_height,
+            end_height,
+        } => {
+            let spend_key = load_wallet(&wallet_path);
+            let _local_storage = state::ClientState::new(spend_key);
+            // xx don't hardcode, need to pass multiple ports on the command line
+            let mut client = WalletClient::connect("http://127.0.0.1:26666").await?;
+            let request = tonic::Request::new(CompactBlockRangeRequest {
+                start_height,
+                end_height,
+            });
+            tracing::info!(
+                "requesting state fragments from: {:?} to {:?}",
+                start_height,
+                end_height
+            );
+            let response = client.compact_block_range(request).await?;
+            tracing::info!("got response: {:?}", response);
         }
         _ => todo!(),
     }

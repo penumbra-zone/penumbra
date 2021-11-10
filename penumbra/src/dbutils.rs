@@ -7,6 +7,8 @@ use sqlx::{Pool, Postgres};
 use crate::dbschema::NoteCommitmentTreeAnchor;
 use crate::dbschema::PenumbraNoteCommitmentTreeAnchor;
 
+use crate::state::PendingBlock;
+
 fn db_get_connection_string() -> String {
     let mut db_connection_string = "".to_string();
 
@@ -45,81 +47,84 @@ CREATE TABLE IF NOT EXISTS blocks (
         r#"
 CREATE TABLE IF NOT EXISTS transactions (
     id SERIAL PRIMARY KEY,
-    transaction bytea NOT NULL
+    transaction bytea NOT NULL,
+    block_id bigint REFERENCES blocks (id)
 )
 "#,
     )
     .execute(&pool)
     .await;
-    // xx Add:
-    // transaction_id bytea NOT NULL,
-    // block_id bigint REFERENCES blocks (id)
-    // to this table?
 
     let bootstrap_sql_notes = query(
         r#"
 CREATE TABLE IF NOT EXISTS notes (
     id SERIAL PRIMARY KEY,
     note_commitment bytea NOT NULL,
+    ephemeral_key bytea NOT NULL,
+    note_ciphertext bytea NOT NULL,
     transaction_id bigint REFERENCES transactions (id)
 )
 "#,
     )
     .execute(&pool)
     .await;
-    // xx Add:
-    //     ephemeral_key bytea NOT NULL,
-    //     note_ciphertext bytea NOT NULL,
 
     // xx combine with bootstrap_sql_blocks, bootstrap_sql_notes
     bootstrap_sql_transactions
 }
 
-/// Hardcoded query for inserting one row
-pub async fn db_insert(
+/// Hardcoded query for inserting one row into `blocks` given an active database transaction.
+pub async fn db_insert_block(
     records: PenumbraNoteCommitmentTreeAnchor,
-    pool: Pool<Postgres>,
+    dbtx: &mut sqlx::Transaction<'_, Postgres>,
 ) -> Result<u64, Error> {
     let record: NoteCommitmentTreeAnchor = records.into();
-    let mut p = pool.acquire().await?;
     let id = query("INSERT INTO blocks (height, anchor) VALUES ($1, $2)")
         .bind(record.height)
         .bind(record.anchor)
-        .execute(&mut p)
+        .execute(dbtx)
         .await?
         .rows_affected();
 
     Ok(id)
 }
 
-/// Hardcoded query for inserting one row into `transactions` table given an active transaction.
+/// Hardcoded query for inserting one row into `transactions` table given an active database transaction.
 pub async fn db_insert_transaction(
-    db_tx: &mut sqlx::Transaction<'static, Postgres>,
+    dbtx: &mut sqlx::Transaction<'_, Postgres>,
     transaction: Vec<u8>,
+    block_id: u64,
 ) -> Result<u64, Error> {
-    let id = query("INSERT INTO transactions (transaction) VALUES ($1)")
+    let id = query("INSERT INTO transactions (transaction, block_id) VALUES ($1, $2)")
         .bind(transaction)
-        .execute(db_tx)
+        .bind(block_id as i64)
+        .execute(dbtx)
         .await?
         .rows_affected();
 
     Ok(id)
 }
 
-/// Hardcoded query for inserting one row into `notes` table given an active transaction.
+/// Hardcoded query for inserting one row into `notes` table given an active database transaction.
 pub async fn db_insert_note(
-    db_tx: &mut sqlx::Transaction<'static, Postgres>,
+    dbtx: &mut sqlx::Transaction<'_, Postgres>,
     note_commitment: Vec<u8>,
+    ephemeral_key: Vec<u8>,
+    note_ciphertext: Vec<u8>,
     transaction_id: u64,
 ) -> Result<u64, Error> {
     // xx sqlx does not impl<'_> Encode<'_, Postgres> for u64
     // Weird because that is the type we're getting for the ID when we insert rows
-    let id = query("INSERT INTO notes (note_commitment, transaction_id) VALUES ($1, $2)")
-        .bind(note_commitment)
-        .bind(transaction_id as u32)
-        .execute(db_tx)
-        .await?
-        .rows_affected();
+    let id = query(
+        "INSERT INTO notes (note_commitment, ephemeral_key, note_ciphertext, transaction_id) VALUES ($1, $2, $3, $4)",
+    )
+    .bind(note_commitment)
+    .bind(ephemeral_key)
+    .bind(note_ciphertext)
+    .bind(transaction_id as i64)
+    .execute(dbtx)
+    .await?
+    .rows_affected();
 
     Ok(id)
 }
@@ -135,4 +140,51 @@ pub async fn db_read(pool: Pool<Postgres>) -> Result<Vec<PenumbraNoteCommitmentT
 
     let res = rows.into();
     Ok(vec![res])
+}
+
+/// Saves all pending state changes from a new block.
+pub async fn db_commit_block(
+    pool: Pool<Postgres>,
+    block_state: PendingBlock,
+    height: i64,
+    anchor: [u8; 32],
+) {
+    let mut dbtx = pool.begin().await.expect("can start transaction");
+
+    // Store the block in database table `blocks`.
+    let block_pk = db_insert_block(
+        PenumbraNoteCommitmentTreeAnchor::from(NoteCommitmentTreeAnchor {
+            id: height as i32,
+            height,
+            anchor: anchor.to_vec(),
+        }),
+        &mut dbtx,
+    )
+    .await
+    .unwrap();
+
+    // Store each serialized transaction in database table `transactions` linked to the block primary key.
+    for (transaction, note_fragments) in block_state.transactions {
+        let transaction_pk = db_insert_transaction(&mut dbtx, transaction, block_pk)
+            .await
+            .expect("can get pk of new transaction");
+
+        // Store each note fragment in database table `notes` linked to the transaction primary key.
+        for fragment in note_fragments {
+            println!("saving notes");
+            db_insert_note(
+                &mut dbtx,
+                fragment.note_commitment.into(),
+                fragment.ephemeral_key.0.to_vec(),
+                fragment.note_ciphertext.to_vec(),
+                transaction_pk,
+            )
+            .await
+            .expect("can insert note into database");
+        }
+    }
+
+    dbtx.commit()
+        .await
+        .expect("we can commit the state changes to the database")
 }
