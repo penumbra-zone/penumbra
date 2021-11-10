@@ -403,9 +403,9 @@ impl TryFrom<transparent_proofs::OutputProof> for OutputProof {
     }
 }
 
-impl Into<Vec<u8>> for SpendProof {
-    fn into(self) -> Vec<u8> {
-        let protobuf_serialized_proof: transparent_proofs::SpendProof = self.into();
+impl From<SpendProof> for Vec<u8> {
+    fn from(spend_proof: SpendProof) -> Vec<u8> {
+        let protobuf_serialized_proof: transparent_proofs::SpendProof = spend_proof.into();
         protobuf_serialized_proof.encode_to_vec()
     }
 }
@@ -422,9 +422,9 @@ impl TryFrom<&[u8]> for SpendProof {
     }
 }
 
-impl Into<Vec<u8>> for OutputProof {
-    fn into(self) -> Vec<u8> {
-        let protobuf_serialized_proof: transparent_proofs::OutputProof = self.into();
+impl From<OutputProof> for Vec<u8> {
+    fn from(output_proof: OutputProof) -> Vec<u8> {
+        let protobuf_serialized_proof: transparent_proofs::OutputProof = output_proof.into();
         protobuf_serialized_proof.encode_to_vec()
     }
 }

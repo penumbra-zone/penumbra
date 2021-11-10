@@ -74,6 +74,7 @@ pub struct Body {
 }
 
 impl Body {
+    #[allow(clippy::too_many_arguments)]
     pub fn new<R: RngCore + CryptoRng>(
         rng: &mut R,
         value_commitment: value::Commitment,
@@ -110,9 +111,9 @@ impl Body {
     }
 }
 
-impl Into<Vec<u8>> for Body {
-    fn into(self) -> Vec<u8> {
-        let protobuf_serialized: transaction::SpendBody = self.into();
+impl From<Body> for Vec<u8> {
+    fn from(body: Body) -> Vec<u8> {
+        let protobuf_serialized: transaction::SpendBody = body.into();
         protobuf_serialized.encode_to_vec()
     }
 }

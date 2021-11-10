@@ -26,9 +26,9 @@ pub struct TransactionBody {
     pub fee: Fee,
 }
 
-impl Into<Vec<u8>> for TransactionBody {
-    fn into(self) -> Vec<u8> {
-        let protobuf_serialized: transaction::TransactionBody = self.into();
+impl From<TransactionBody> for Vec<u8> {
+    fn from(transaction_body: TransactionBody) -> Vec<u8> {
+        let protobuf_serialized: transaction::TransactionBody = transaction_body.into();
         protobuf_serialized.encode_to_vec()
     }
 }
@@ -64,15 +64,9 @@ impl TryFrom<transaction::TransactionBody> for TransactionBody {
             .try_into()
             .map_err(|_| ProtoError::TransactionBodyMalformed)?;
 
-        let expiry_height = proto
-            .expiry_height
-            .try_into()
-            .map_err(|_| ProtoError::TransactionBodyMalformed)?;
+        let expiry_height = proto.expiry_height;
 
-        let chain_id = proto
-            .chain_id
-            .try_into()
-            .map_err(|_| ProtoError::TransactionBodyMalformed)?;
+        let chain_id = proto.chain_id;
 
         let fee: Fee = proto
             .fee
