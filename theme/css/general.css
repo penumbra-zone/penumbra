@@ -8,7 +8,9 @@
 }
 
 html {
-    font-family: "Open Sans", sans-serif;
+    /* Instead of licensing Avenir Next, just set it as the preferred option --
+     * macOS users already have it, and Linux users are used to bad fonts already */
+    font-family: "Avenir Next", "Open Sans", sans-serif;
     color: var(--fg);
     background-color: var(--bg);
     text-size-adjust: none;
@@ -21,9 +23,15 @@ body {
 }
 
 code {
-    font-family: "Source Code Pro", Consolas, "Ubuntu Mono", Menlo, "DejaVu Sans Mono", monospace, monospace !important;
+    /* Iosevka could be worth hosting but it's 800kb */
+    font-family: "Iosevka", "Source Code Pro", Consolas, "Ubuntu Mono", Menlo, "DejaVu Sans Mono", monospace, monospace !important;
     /* this seems too small ? */
-    /* font-size: 0.875em; /* please adjust the ace font size accordingly in editor.js */
+    font-size: 0.875em; /* please adjust the ace font size accordingly in editor.js */
+}
+
+.katex {
+    /* Align KaTeX size to Avenir Next */
+    font-size: 1.1em !important;
 }
 
 /* Don't change font size in headers. */
