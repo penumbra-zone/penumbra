@@ -1,22 +1,28 @@
 use ark_ff::UniformRand;
-use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
 use std::ops::Deref;
 
 use super::Error;
 use crate::rdsa::{Binding, Signature, SigningKey};
 use crate::{
-    action::{output, spend, Action},
+    action::{output, Action},
     ka,
-    keys::{OutgoingViewingKey, SpendKey},
+    keys::OutgoingViewingKey,
     memo::MemoPlaintext,
     merkle,
     transaction::{Fee, Transaction, TransactionBody},
-    value, Address, Fq, Fr, Note, Output, Spend, Value,
+    value, Address, Fq, Fr, Note, Output, Value,
 };
 
-/// Used to construct a Penumbra transaction.
-pub struct Builder {
+/// Used to construct a Penumbra transaction from genesis notes.
+///
+/// When genesis notes are created, we construct a single genesis transaction
+/// for them such that all transactions (genesis and non-genesis) can be
+/// treated equally by clients.
+///
+/// The `GenesisBuilder` has no way to create spends, only outputs, and
+/// allows for a non-zero value balance.
+pub struct GenesisBuilder {
     // Actions we'll perform in this transaction.
     pub actions: Vec<Action>,
     // Transaction fee. None if unset.
@@ -35,49 +41,7 @@ pub struct Builder {
     pub chain_id: Option<String>,
 }
 
-impl Builder {
-    /// Create a new `Spend` to spend an existing note.
-    pub fn add_spend<R: RngCore + CryptoRng>(
-        mut self,
-        rng: &mut R,
-        spend_key: SpendKey,
-        merkle_path: merkle::Path,
-        note: Note,
-        position: merkle::Position,
-    ) -> Self {
-        let v_blinding = Fr::rand(rng);
-        let value_commitment = note.value().commit(v_blinding);
-        // We add to the transaction's value balance.
-        self.synthetic_blinding_factor += v_blinding;
-        self.value_balance +=
-            Fr::from(note.value().amount) * note.value().asset_id.value_generator();
-
-        let spend_auth_randomizer = Fr::rand(rng);
-        let rsk = spend_key.spend_auth_key().randomize(&spend_auth_randomizer);
-
-        let body = spend::Body::new(
-            rng,
-            value_commitment,
-            *spend_key.spend_auth_key(),
-            spend_auth_randomizer,
-            merkle_path,
-            position,
-            note,
-            v_blinding,
-            *spend_key.nullifier_key(),
-        );
-        self.value_commitments += value_commitment.0;
-
-        let body_serialized: Vec<u8> = body.clone().into();
-        let auth_sig = rsk.sign(rng, &body_serialized);
-
-        let spend = Action::Spend(Spend { body, auth_sig });
-
-        self.actions.push(spend);
-
-        self
-    }
-
+impl GenesisBuilder {
     /// Create a new `Output` to create a new note.
     pub fn add_output<R: RngCore + CryptoRng>(
         mut self,
@@ -106,8 +70,8 @@ impl Builder {
         let body = output::Body::new(note.clone(), v_blinding, dest, &esk);
         self.value_commitments -= body.value_commitment.0;
 
-        let encrypted_memo = memo.encrypt(&esk, dest);
-        let ovk_wrapped_key = note.encrypt_key(&esk, ovk, body.value_commitment);
+        let encrypted_memo = memo.encrypt(&esk, &dest);
+        let ovk_wrapped_key = note.encrypt_key(&esk, &ovk, body.value_commitment);
 
         let output = Action::Output(Output {
             body,
@@ -116,12 +80,6 @@ impl Builder {
         });
         self.actions.push(output);
 
-        self
-    }
-
-    /// Set the transaction fee in PEN.
-    pub fn set_fee(mut self, fee: u64) -> Self {
-        self.fee = Some(Fee(fee));
         self
     }
 
@@ -150,29 +108,17 @@ impl Builder {
         let H = value::VALUE_BLINDING_GENERATOR.deref();
         let binding_verification_key_raw = (self.synthetic_blinding_factor * H).compress().0;
 
-        // If value balance is non-zero, the verification key would be value_commitments - value_balance,
-        // but value_balance should always be zero.
-        let computed_verification_key = self.value_commitments.compress().0;
+        // For the genesis transaction there will be a non-zero value balance since we are creating value.
+        let computed_verification_key = (self.value_commitments - self.value_balance).compress().0;
         assert_eq!(binding_verification_key_raw, computed_verification_key);
 
         let transaction_body_serialized: Vec<u8> = transaction_body.into();
         binding_signing_key.sign(rng, &transaction_body_serialized)
     }
 
-    pub fn finalize<R: CryptoRng + RngCore>(mut self, rng: &mut R) -> Result<Transaction, Error> {
-        // Randomize all actions (including outputs) to minimize info leakage.
-        self.actions.shuffle(rng);
-
+    pub fn finalize<R: CryptoRng + RngCore>(self, rng: &mut R) -> Result<Transaction, Error> {
         if self.chain_id.is_none() {
             return Err(Error::NoChainID);
-        }
-
-        if self.fee.is_none() {
-            return Err(Error::FeeNotSet);
-        }
-
-        if self.value_balance != decaf377::Element::default() {
-            return Err(Error::NonZeroValueBalance);
         }
 
         let transaction_body = TransactionBody {
@@ -180,7 +126,7 @@ impl Builder {
             actions: self.actions.clone(),
             expiry_height: self.expiry_height.unwrap_or(0),
             chain_id: self.chain_id.clone().unwrap(),
-            fee: self.fee.clone().unwrap(),
+            fee: Fee(0),
         };
 
         let binding_sig = self.compute_binding_sig(rng, transaction_body.clone());
