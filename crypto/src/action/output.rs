@@ -4,9 +4,7 @@ use std::convert::{TryFrom, TryInto};
 use penumbra_proto::{transaction, Protobuf};
 
 use super::error::ProtoError;
-use crate::{
-    ka, memo::MemoCiphertext, note, proofs::transparent::OutputProof, value, Address, Fr, Note,
-};
+use crate::{ka, memo::MemoCiphertext, note, proofs::transparent::OutputProof, value, Fr, Note};
 
 #[derive(Clone)]
 pub struct Output {
