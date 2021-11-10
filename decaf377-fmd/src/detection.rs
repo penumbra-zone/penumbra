@@ -39,8 +39,8 @@ impl DetectionKey {
         // would be nice to avoid this initialization,
         // does collecting into arrays work yet?
         let mut xs = [Fr::default(); MAX_PRECISION];
-        for i in 0..MAX_PRECISION {
-            xs[i] = hkd::derive_private(
+        for (i, element) in xs.iter_mut().enumerate() {
+            *element = hkd::derive_private(
                 &dtk,
                 &root_pub_enc,
                 u8::try_from(i).expect("i < MAX_PRECISION < 256"),
