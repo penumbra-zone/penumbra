@@ -103,7 +103,13 @@ impl Builder {
             note_blinding,
         )
         .expect("transmission key is valid");
-        let body = output::Body::new(note.clone(), v_blinding, dest, &esk);
+        let body = output::Body::new(
+            note.clone(),
+            v_blinding,
+            *dest.diversified_generator(),
+            *dest.transmission_key(),
+            &esk,
+        );
         self.value_commitments -= body.value_commitment.0;
 
         let encrypted_memo = memo.encrypt(&esk, dest);

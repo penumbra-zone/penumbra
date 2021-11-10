@@ -7,6 +7,7 @@ use std::{
 
 use bytes::Bytes;
 use futures::{executor::block_on, future::FutureExt};
+use rand_core::OsRng;
 use sqlx::{Pool, Postgres};
 use tendermint::abci::{request, response, Event, EventAttributeIndexExt, Request, Response};
 use tokio_stream::Stream;
@@ -14,7 +15,8 @@ use tonic::Status;
 use tower::Service;
 
 use penumbra_crypto::{
-    merkle, merkle::Frontier, merkle::TreeExt, note, Action, Nullifier, Transaction,
+    memo::MemoPlaintext, merkle, merkle::Frontier, merkle::TreeExt, note, Action, Nullifier,
+    Transaction,
 };
 use penumbra_proto::transaction;
 use penumbra_proto::wallet::{
@@ -129,13 +131,19 @@ impl App<'_> {
         let genesis: GenesisNotes = serde_json::from_slice(&init_chain.app_state_bytes)
             .expect("can parse app_state in genesis file");
 
-        // xx later: Consider making & storing dummy genesis transactions for each note
-        // (one option for syncing the genesis notes to the client)
+        let mut genesis_tx_builder =
+            Transaction::genesis_build_with_root(self.note_commitment_tree.root2());
+
         for note in genesis.notes() {
             let note_commitment = note.commit();
             self.note_commitment_tree.append(&note_commitment);
-            // xx db add row in `transactions` table
+            genesis_tx_builder.add_output(&mut OsRng, note);
         }
+        let genesis_tx = genesis_tx_builder
+            .set_chain_id(init_chain.chain_id)
+            .finalize(&mut OsRng);
+        // xx db add genesis_tx
+
         tracing::info!("successfully loaded all genesis notes");
 
         // xx Correct/Necessary to commit here or will tendermint after InitGenesis?

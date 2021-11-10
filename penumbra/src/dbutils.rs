@@ -40,14 +40,26 @@ CREATE TABLE IF NOT EXISTS blocks (
     )
     .execute(&pool)
     .await;
+
+    let bootstrap_sql_notes = query(
+        r#"
+CREATE TABLE IF NOT EXISTS notes (
+    id SERIAL PRIMARY KEY,
+    note_commitment bytea NOT NULL,
+    note_ciphertext bytea NOT NULL,
+    ephemeral_key bytea NOT NULL,
+    transaction_id bigint REFERENCES transactions (id),
+)
+"#,
+    )
+    .execute(&pool)
+    .await;
+
     let bootstrap_sql_transactions = query(
         r#"
 CREATE TABLE IF NOT EXISTS transactions (
     id SERIAL PRIMARY KEY,
     transaction_id bytea NOT NULL,
-    note_commitment bytea NOT NULL,
-    note_ciphertext bytea NOT NULL,
-    ephemeral_key bytea NOT NULL,
     transaction bytea NOT NULL,
     block_id bigint REFERENCES blocks (id)
 )
@@ -56,7 +68,7 @@ CREATE TABLE IF NOT EXISTS transactions (
     .execute(&pool)
     .await;
 
-    // xx combine with bootstrap_sql_blocks
+    // xx combine with bootstrap_sql_blocks, bootstrap_sql_notes
     bootstrap_sql_transactions
 }
 
