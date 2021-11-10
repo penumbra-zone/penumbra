@@ -4,7 +4,6 @@ use anyhow::anyhow;
 use ark_serialize::CanonicalDeserialize;
 use bech32::{FromBase32, ToBase32, Variant};
 
-
 use crate::{fmd, ka, keys::Diversifier, Fq};
 
 pub const CURRENT_NETWORK_ID: &str = "penumbra_tn001_";
