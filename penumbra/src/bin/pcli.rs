@@ -11,13 +11,13 @@ use penumbra_wallet::{state, storage};
 #[derive(Debug, StructOpt)]
 #[structopt(
     name = "pcli",
-    about = "The Penumbra command-line interface.", 
+    about = "The Penumbra command-line interface.",
     version = env!("VERGEN_GIT_SEMVER"),
 )]
 struct Opt {
     /// The address of the Tendermint node.
     #[structopt(short, long, default_value = "127.0.0.1:26657")]
-    addr: std::net::SocketAddr,
+    node: std::net::SocketAddr,
     #[structopt(subcommand)]
     cmd: Command,
     /// The location of the wallet file [default: platform appdata directory]
