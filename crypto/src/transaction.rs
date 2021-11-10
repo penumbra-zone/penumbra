@@ -14,8 +14,14 @@ use crate::{
     Fr,
 };
 
+mod error;
+pub use error::Error;
+
 mod builder;
 pub use builder::Builder;
+
+mod genesis;
+pub use genesis::GenesisBuilder;
 
 #[derive(Clone)]
 pub struct TransactionBody {
@@ -198,7 +204,7 @@ mod tests {
 
     use crate::keys::SpendKey;
     use crate::memo::MemoPlaintext;
-    use crate::transaction::builder::Error;
+    use crate::transaction::Error;
     use crate::{note, Fq, Note, Value};
 
     #[test]
