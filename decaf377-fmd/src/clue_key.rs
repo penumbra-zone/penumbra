@@ -39,8 +39,8 @@ impl ClueKey {
         // would be nice to avoid this initialization,
         // does collecting into arrays work yet?
         let mut Xs = [Default::default(); MAX_PRECISION];
-        for i in 0..(MAX_PRECISION) {
-            Xs[i] = hkd::derive_public(&root_pub, &root_pub_enc, i as u8);
+        for (i, element) in Xs.iter_mut().enumerate() {
+            *element = hkd::derive_public(&root_pub, &root_pub_enc, i as u8);
         }
 
         Ok(ExpandedClueKey { Xs })
