@@ -136,6 +136,7 @@ async fn main() -> Result<()> {
             );
                 if dialoguer::Confirm::new().with_prompt(prompt).interact()? {
                     fs::remove_file(&wallet_path)?;
+                    println!("Wallet file deleted.");
                 }
             } else if wallet_path.exists() {
                 println!(
