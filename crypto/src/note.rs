@@ -324,6 +324,12 @@ impl From<Commitment> for [u8; 32] {
     }
 }
 
+impl Into<Vec<u8>> for Commitment {
+    fn into(self) -> Vec<u8> {
+        self.0.to_bytes().to_vec()
+    }
+}
+
 impl TryFrom<[u8; 32]> for Commitment {
     type Error = Error;
 

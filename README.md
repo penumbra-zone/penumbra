@@ -126,7 +126,7 @@ $ cargo run --bin pd -- create-genesis penumbra-tn001 \
 }
 ```
 
-To perform genesis for a testnet, edit the `genesis.json` file stored in `$TMHOME` or `~/.tendermint` (see an example in `testnets/genesis_tn001.json`). You should edit the following fields:
+To perform genesis for a testnet, edit the `genesis.json` file stored in `$TMHOME/config/` or `~/.tendermint/config/` (see an example in `testnets/genesis_tn001.json`). You should edit the following fields:
 * `validators` key: add the other validators and their voting power,
 * `app_state` key: add the generated genesis notes,
 * `chain_id` update the `chain_id` for the testnet.

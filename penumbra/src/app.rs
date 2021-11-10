@@ -15,8 +15,7 @@ use tonic::Status;
 use tower::Service;
 
 use penumbra_crypto::{
-    memo::MemoPlaintext, merkle, merkle::Frontier, merkle::TreeExt, note, Action, Nullifier,
-    Transaction,
+    merkle, merkle::Frontier, merkle::TreeExt, note, Action, Nullifier, Transaction,
 };
 use penumbra_proto::transaction;
 use penumbra_proto::wallet::{
@@ -24,14 +23,17 @@ use penumbra_proto::wallet::{
 };
 use tower_abci::BoxError;
 
-use crate::{dbutils::db_connection, genesis::GenesisNotes};
+use crate::{
+    dbutils::{db_connection, db_insert_note, db_insert_transaction},
+    genesis::GenesisNotes,
+};
 
 const ABCI_INFO_VERSION: &str = env!("VERGEN_GIT_SEMVER");
 const MAX_MERKLE_CHECKPOINTS: usize = 100;
 
 /// The Penumbra ABCI application.
 #[derive(Debug)]
-pub struct App<'a> {
+pub struct App {
     store: HashMap<String, String>,
     height: u64,
     /// The `app_hash` is the hash of the note commitment tree.
@@ -46,7 +48,7 @@ pub struct App<'a> {
     // Note that tendermint ensures that the sequence of messages will always be:
     // `BeginBlock, DeliverTx, DeliverTx, DeliverTx, ..., EndBlock, Commit`
     // (except at genesis).
-    current_db_tx: Option<sqlx::Transaction<'a, Postgres>>,
+    current_db_tx: Option<sqlx::Transaction<'static, Postgres>>,
 }
 
 async fn get_database_connection() -> Pool<Postgres> {
@@ -65,7 +67,7 @@ async fn commit_transaction(transaction: sqlx::Transaction<'_, Postgres>) {
         .expect("we can commit the state changes to the database")
 }
 
-impl Service<Request> for App<'_> {
+impl Service<Request> for App {
     type Response = Response;
     type Error = BoxError;
     type Future = Pin<Box<dyn Future<Output = Result<Response, BoxError>> + Send + 'static>>;
@@ -103,7 +105,7 @@ impl Service<Request> for App<'_> {
     }
 }
 
-impl Default for App<'_> {
+impl Default for App {
     fn default() -> Self {
         Self {
             store: HashMap::default(),
@@ -120,10 +122,10 @@ impl Default for App<'_> {
     }
 }
 
-impl App<'_> {
+impl App {
     fn init_genesis(&mut self, init_chain: request::InitChain) -> response::InitChain {
         tracing::info!("creating new db tx");
-        self.current_db_tx = Some(block_on(start_transaction(&self.db_pool)));
+        let mut db_tx = block_on(start_transaction(&self.db_pool));
 
         tracing::info!("performing genesis for chain_id: {}", init_chain.chain_id);
 
@@ -131,22 +133,41 @@ impl App<'_> {
         let genesis: GenesisNotes = serde_json::from_slice(&init_chain.app_state_bytes)
             .expect("can parse app_state in genesis file");
 
+        // Create genesis transaction and update database table `transactions`.
         let mut genesis_tx_builder =
             Transaction::genesis_build_with_root(self.note_commitment_tree.root2());
 
         for note in genesis.notes() {
-            let note_commitment = note.commit();
-            self.note_commitment_tree.append(&note_commitment);
             genesis_tx_builder.add_output(&mut OsRng, note);
         }
         let genesis_tx = genesis_tx_builder
             .set_chain_id(init_chain.chain_id)
-            .finalize(&mut OsRng);
-        // xx db add genesis_tx
+            .finalize(&mut OsRng)
+            .expect("can form genesis transaction");
 
+        let transaction_id = block_on(db_insert_transaction(
+            &mut db_tx,
+            genesis_tx
+                .try_into()
+                .expect("can serialize genesis transaction"),
+        ))
+        .expect("can get ID of new transaction");
+
+        // Now update NCT and database table `notes`.
+        for note in genesis.notes() {
+            let note_commitment = note.commit();
+            self.note_commitment_tree.append(&note_commitment);
+            block_on(db_insert_note(
+                &mut db_tx,
+                note_commitment.into(),
+                transaction_id,
+            ))
+            .expect("can insert note into database");
+        }
         tracing::info!("successfully loaded all genesis notes");
 
         // xx Correct/Necessary to commit here or will tendermint after InitGenesis?
+        self.current_db_tx = Some(db_tx);
         self.commit();
         let initial_application_hash = self.app_hash.to_vec().into();
         tracing::info!(
