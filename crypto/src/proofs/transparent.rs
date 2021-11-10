@@ -416,9 +416,9 @@ impl TryFrom<&[u8]> for SpendProof {
     fn try_from(bytes: &[u8]) -> Result<SpendProof, Self::Error> {
         let protobuf_serialized_proof = transparent_proofs::SpendProof::decode(bytes)
             .map_err(|_| ProtoError::ProofMalformed)?;
-        Ok(protobuf_serialized_proof
+        protobuf_serialized_proof
             .try_into()
-            .map_err(|_| ProtoError::ProofMalformed)?)
+            .map_err(|_| ProtoError::ProofMalformed)
     }
 }
 
@@ -435,9 +435,9 @@ impl TryFrom<&[u8]> for OutputProof {
     fn try_from(bytes: &[u8]) -> Result<OutputProof, Self::Error> {
         let protobuf_serialized_proof = transparent_proofs::OutputProof::decode(bytes)
             .map_err(|_| ProtoError::ProofMalformed)?;
-        Ok(protobuf_serialized_proof
+        protobuf_serialized_proof
             .try_into()
-            .map_err(|_| ProtoError::ProofMalformed)?)
+            .map_err(|_| ProtoError::ProofMalformed)
     }
 }
 

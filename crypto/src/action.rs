@@ -37,11 +37,11 @@ impl TryFrom<transaction::Action> for Action {
 
         match proto.action.unwrap() {
             transaction::action::Action::Output(inner) => {
-                return Ok(Action::Output(inner.try_into()?));
+                Ok(Action::Output(inner.try_into()?))
             }
 
             transaction::action::Action::Spend(inner) => {
-                return Ok(Action::Spend(inner.try_into()?));
+                Ok(Action::Spend(inner.try_into()?))
             }
         }
     }

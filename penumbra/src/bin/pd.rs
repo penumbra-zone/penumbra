@@ -55,7 +55,7 @@ async fn main() {
             let _db_insert_dummy_row = db_insert(
                 PenumbraNoteCommitmentTreeAnchor::from(NoteCommitmentTreeAnchor {
                     id: 0,
-                    height: 1337 as i64,
+                    height: 1337_i64,
                     anchor: v,
                 }),
                 pool.clone(),
