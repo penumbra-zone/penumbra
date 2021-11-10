@@ -104,6 +104,14 @@ impl Note {
         self.value
     }
 
+    pub fn asset_id(&self) -> asset::Id {
+        self.value.asset_id
+    }
+
+    pub fn amount(&self) -> u64 {
+        self.value.amount
+    }
+
     /// Encrypt a note, returning its ciphertext.
     pub fn encrypt(&self, esk: &ka::Secret) -> [u8; NOTE_CIPHERTEXT_BYTES] {
         let epk = esk.diversified_public(&self.diversified_generator());

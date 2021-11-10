@@ -92,8 +92,6 @@ impl TryFrom<transaction::TransactionBody> for TransactionBody {
 #[derive(Clone, Debug)]
 pub struct Fee(pub u64);
 
-// temp: remove dead code when Transaction fields are read
-#[allow(dead_code)]
 pub struct Transaction {
     transaction_body: TransactionBody,
     binding_sig: Signature<Binding>,
@@ -103,6 +101,20 @@ impl Transaction {
     /// Start building a transaction relative to a given [`merkle::Root`].
     pub fn build_with_root(merkle_root: merkle::Root) -> Builder {
         Builder {
+            actions: Vec::new(),
+            fee: None,
+            synthetic_blinding_factor: Fr::zero(),
+            value_balance: decaf377::Element::default(),
+            value_commitments: decaf377::Element::default(),
+            merkle_root,
+            expiry_height: None,
+            chain_id: None,
+        }
+    }
+
+    /// Build the genesis transactions.
+    pub fn genesis_build_with_root(merkle_root: merkle::Root) -> GenesisBuilder {
+        GenesisBuilder {
             actions: Vec::new(),
             fee: None,
             synthetic_blinding_factor: Fr::zero(),

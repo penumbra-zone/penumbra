@@ -3,15 +3,15 @@ use rand_core::{CryptoRng, RngCore};
 use std::ops::Deref;
 
 use super::Error;
+use crate::note::OVK_WRAPPED_LEN_BYTES;
 use crate::rdsa::{Binding, Signature, SigningKey};
 use crate::{
     action::{output, Action},
     ka,
-    keys::OutgoingViewingKey,
-    memo::MemoPlaintext,
+    memo::{MemoCiphertext, MEMO_CIPHERTEXT_LEN_BYTES},
     merkle,
     transaction::{Fee, Transaction, TransactionBody},
-    value, Address, Fq, Fr, Note, Output, Value,
+    value, Fr, Note, Output,
 };
 
 /// Used to construct a Penumbra transaction from genesis notes.
@@ -42,36 +42,30 @@ pub struct GenesisBuilder {
 }
 
 impl GenesisBuilder {
-    /// Create a new `Output` to create a new note.
-    pub fn add_output<R: RngCore + CryptoRng>(
-        mut self,
-        rng: &mut R,
-        dest: &Address,
-        value_to_send: Value,
-        memo: MemoPlaintext,
-        ovk: &OutgoingViewingKey,
-    ) -> Self {
+    /// Create a new `Output` for the genesis note.
+    pub fn add_output<R: RngCore + CryptoRng>(&mut self, rng: &mut R, note: Note) {
         let v_blinding = Fr::rand(rng);
         // We subtract from the transaction's value balance.
         self.synthetic_blinding_factor -= v_blinding;
-        self.value_balance -=
-            Fr::from(value_to_send.amount) * value_to_send.asset_id.value_generator();
+        self.value_balance -= Fr::from(note.amount()) * note.asset_id().value_generator();
 
-        let note_blinding = Fq::rand(rng);
         let esk = ka::Secret::new(rng);
-
-        let note = Note::new(
-            *dest.diversifier(),
-            *dest.transmission_key(),
-            value_to_send,
-            note_blinding,
-        )
-        .expect("transmission key is valid");
-        let body = output::Body::new(note.clone(), v_blinding, dest, &esk);
+        let body = output::Body::new(
+            note.clone(),
+            v_blinding,
+            note.diversified_generator(),
+            note.transmission_key(),
+            &esk,
+        );
         self.value_commitments -= body.value_commitment.0;
 
-        let encrypted_memo = memo.encrypt(&esk, &dest);
-        let ovk_wrapped_key = note.encrypt_key(&esk, &ovk, body.value_commitment);
+        // xx Hardcore something in the memo for genesis?
+        // let encrypted_memo = memo.encrypt(&esk, &dest);
+        let encrypted_memo = MemoCiphertext([0u8; MEMO_CIPHERTEXT_LEN_BYTES]);
+
+        // In the case of genesis notes, the notes are transparent, so we fill
+        // the `ovk_wrapped_key` field with 0s.
+        let ovk_wrapped_key = [0u8; OVK_WRAPPED_LEN_BYTES];
 
         let output = Action::Output(Output {
             body,
@@ -79,14 +73,6 @@ impl GenesisBuilder {
             ovk_wrapped_key,
         });
         self.actions.push(output);
-
-        self
-    }
-
-    /// Set the expiry height.
-    pub fn set_expiry_height(mut self, expiry_height: u32) -> Self {
-        self.expiry_height = Some(expiry_height);
-        self
     }
 
     /// Set the chain ID.
@@ -124,7 +110,7 @@ impl GenesisBuilder {
         let transaction_body = TransactionBody {
             merkle_root: self.merkle_root.clone(),
             actions: self.actions.clone(),
-            expiry_height: self.expiry_height.unwrap_or(0),
+            expiry_height: 0,
             chain_id: self.chain_id.clone().unwrap(),
             fee: Fee(0),
         };

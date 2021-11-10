@@ -65,7 +65,13 @@ pub struct Body {
 }
 
 impl Body {
-    pub fn new(note: Note, v_blinding: Fr, dest: &Address, esk: &ka::Secret) -> Body {
+    pub fn new(
+        note: Note,
+        v_blinding: Fr,
+        diversified_generator: decaf377::Element,
+        transmission_key: ka::Public,
+        esk: &ka::Secret,
+    ) -> Body {
         // TODO: p. 43 Spec. Decide whether to do leadByte 0x01 method or 0x02 or other.
         let value_commitment = note.value().commit(v_blinding);
         let note_commitment = note.commit();
@@ -74,8 +80,8 @@ impl Body {
         let encrypted_note = note.encrypt(esk);
 
         let proof = OutputProof {
-            g_d: *dest.diversified_generator(),
-            pk_d: *dest.transmission_key(),
+            g_d: diversified_generator,
+            pk_d: transmission_key,
             value: note.value(),
             v_blinding,
             note_blinding: note.note_blinding(),
