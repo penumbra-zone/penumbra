@@ -1,4 +1,4 @@
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 
 use ark_ff::{UniformRand, Zero};
 use ark_serialize::CanonicalDeserialize;
@@ -36,16 +36,20 @@ impl DetectionKey {
         let root_pub = dtk * decaf377::basepoint();
         let root_pub_enc = root_pub.compress();
 
-        // would be nice to avoid this initialization,
-        // does collecting into arrays work yet?
-        let mut xs = [Fr::default(); MAX_PRECISION];
-        for (i, element) in xs.iter_mut().enumerate() {
-            *element = hkd::derive_private(
-                &dtk,
-                &root_pub_enc,
-                u8::try_from(i).expect("i < MAX_PRECISION < 256"),
-            );
-        }
+        let xs: [_; MAX_PRECISION] = (0..MAX_PRECISION)
+            .into_iter()
+            .map(|i| {
+                hkd::derive_private(
+                    &dtk,
+                    &root_pub_enc,
+                    u8::try_from(i).expect("i < MAX_PRECISION < 256"),
+                )
+            })
+            .collect::<Vec<_>>()
+            // this conversion into an array will always succeed because we started with an iterator
+            // of length `MAX_PRECISION` and we're converting to an array of the same length
+            .try_into()
+            .expect("iterator of length `MAX_PRECISION`");
 
         Self { dtk, xs }
     }
