@@ -356,8 +356,11 @@ impl Wallet for WalletApp {
         &self,
         request: tonic::Request<TransactionByNoteRequest>,
     ) -> Result<tonic::Response<transaction::Transaction>, Status> {
-        // xx improve error handling here
-        let mut p = self.db_pool.acquire().await.expect("can get db connection");
+        let mut p = self
+            .db_pool
+            .acquire()
+            .await
+            .map_err(|_| tonic::Status::unavailable("server error"))?;
 
         // Check the database to see if we have a matching note commitment.
         let note_commitment = request.into_inner().cm;
@@ -366,11 +369,10 @@ impl Wallet for WalletApp {
         )
         .bind(note_commitment)
         .fetch_one(&mut p)
-        .await.expect("can get the transaction");
-        // xx Return Status error if the row is not found
+        .await.map_err(|_| tonic::Status::not_found("transaction not found"))?;
 
         let transaction = penumbra_crypto::Transaction::try_from(&rows.transaction[..])
-            .expect("transaction is well formed");
+            .map_err(|_| tonic::Status::data_loss("transaction not well formed"))?;
         let protobuf_transaction: transaction::Transaction = transaction.into();
 
         Ok(tonic::Response::new(protobuf_transaction))
