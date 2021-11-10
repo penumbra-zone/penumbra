@@ -7,7 +7,7 @@ use tonic::transport::Server;
 use penumbra::dbschema::{NoteCommitmentTreeAnchor, PenumbraNoteCommitmentTreeAnchor};
 use penumbra::dbutils::{db_bootstrap, db_connection, db_insert, db_read};
 use penumbra::genesis::{generate_genesis_notes, GenesisAddr};
-use penumbra_proto::wallet::{wallet_server, wallet_server::Wallet};
+use penumbra_proto::wallet::wallet_server;
 
 #[derive(Debug, StructOpt)]
 #[structopt(

@@ -28,8 +28,8 @@ const ABCI_INFO_VERSION: &str = env!("VERGEN_GIT_SEMVER");
 const MAX_MERKLE_CHECKPOINTS: usize = 100;
 
 /// The Penumbra ABCI application.
-#[derive(Clone, Debug)]
-pub struct App {
+#[derive(Debug)]
+pub struct App<'a> {
     store: HashMap<String, String>,
     height: u64,
     /// The `app_hash` is the hash of the note commitment tree.
@@ -37,13 +37,32 @@ pub struct App {
     note_commitment_tree: merkle::BridgeTree<note::Commitment, { merkle::DEPTH as u8 }>,
     nullifier_set: BTreeSet<Nullifier>,
     db_pool: Pool<Postgres>,
+
+    // xx this is a hack, what's a better way to share db transaction within the block context?
+    // When `BeginBlock` is called, we set `current_db_tx` to hold the current transaction.
+    // We finally commit and set it back to `None` when we `Commit`.
+    // Note that tendermint ensures that the sequence of messages will always be:
+    // `BeginBlock, DeliverTx, DeliverTx, DeliverTx, ..., EndBlock, Commit`.
+    current_db_tx: Option<sqlx::Transaction<'a, Postgres>>,
 }
 
 async fn get_database_connection() -> Pool<Postgres> {
     db_connection().await.expect("")
 }
 
-impl Service<Request> for App {
+// xx lifetimes wrong
+async fn start_transaction(pool: &Pool<Postgres>) -> sqlx::Transaction<'static, Postgres> {
+    pool.begin().await.expect("can start transaction")
+}
+
+async fn commit_transaction(transaction: sqlx::Transaction<'_, Postgres>) {
+    transaction
+        .commit()
+        .await
+        .expect("we can commit the state changes to the database")
+}
+
+impl Service<Request> for App<'_> {
     type Response = Response;
     type Error = BoxError;
     type Future = Pin<Box<dyn Future<Output = Result<Response, BoxError>> + Send + 'static>>;
@@ -63,7 +82,7 @@ impl Service<Request> for App {
             Request::Commit => Response::Commit(self.commit()),
             Request::BeginBlock(_) => Response::BeginBlock(self.begin_block()),
 
-            // Called only once for network genesis, i.e. when the application block height is 0
+            // Called only once for network genesis, i.e. when the application block height is 0.
             Request::InitChain(init_chain) => Response::InitChain(self.init_genesis(init_chain)),
 
             // unhandled messages
@@ -81,7 +100,7 @@ impl Service<Request> for App {
     }
 }
 
-impl Default for App {
+impl Default for App<'_> {
     fn default() -> Self {
         Self {
             store: HashMap::default(),
@@ -93,11 +112,12 @@ impl Default for App {
             // verifying the spend proof).
             nullifier_set: BTreeSet::new(),
             db_pool: block_on(get_database_connection()),
+            current_db_tx: None,
         }
     }
 }
 
-impl App {
+impl App<'_> {
     fn init_genesis(&mut self, init_chain: request::InitChain) -> response::InitChain {
         tracing::info!("performing genesis for chain_id: {}", init_chain.chain_id);
 
@@ -178,7 +198,16 @@ impl App {
 
     /// Commit the queued state transitions.
     fn commit(&mut self) -> response::Commit {
-        // xx db commit
+        tracing::info!("committing pending changes to database");
+
+        // Errors cannot be handled in `Commit` and must crash the application.
+        // xx pretty nasty here
+        let db_tx = std::mem::replace(&mut self.current_db_tx, None);
+        block_on(commit_transaction(
+            db_tx.expect("we have an active database transaction"),
+        ));
+        assert!(self.current_db_tx.is_none());
+
         let retain_height = self.height as i64;
         self.app_hash = self.note_commitment_tree.root2().to_bytes();
         self.height += 1;
@@ -189,8 +218,10 @@ impl App {
         }
     }
 
-    fn begin_block(&self) -> response::BeginBlock {
-        todo!()
+    fn begin_block(&mut self) -> response::BeginBlock {
+        tracing::info!("creating new db tx");
+        self.current_db_tx = Some(block_on(start_transaction(&self.db_pool)));
+        response::BeginBlock::default()
     }
 
     /// Verifies a transaction and if it verifies, updates the node state.
