@@ -92,7 +92,7 @@ async fn main() -> Result<()> {
 
             let rsp = reqwest::get(format!(
                 r#"http://{}/broadcast_tx_async?tx="{}={}""#,
-                opt.addr, key, value
+                opt.node, key, value
             ))
             .await?
             .text()
@@ -106,7 +106,7 @@ async fn main() -> Result<()> {
 
             let rsp: serde_json::Value = reqwest::get(format!(
                 r#"http://{}/abci_query?data=0x{}"#,
-                opt.addr,
+                opt.node,
                 hex::encode(key),
             ))
             .await?
