@@ -11,7 +11,7 @@ use penumbra_wallet::{state, storage};
 #[derive(Debug, StructOpt)]
 #[structopt(
     name = "pcli",
-    about = "The Penumbra command-line interface.", 
+    about = "The Penumbra command-line interface.",
     version = env!("VERGEN_GIT_SEMVER"),
 )]
 struct Opt {
@@ -44,6 +44,8 @@ enum Wallet {
     Import,
     /// Generate a new spend seed.
     Generate,
+    /// Delete the wallet permanently.
+    Delete,
 }
 
 #[derive(Debug, StructOpt)]
@@ -125,6 +127,15 @@ async fn main() -> Result<()> {
             let wallet = storage::Wallet::generate(&mut OsRng);
             save_wallet(&wallet, &wallet_path)?;
             println!("Wallet saved to {}", wallet_path.display());
+        }
+        Command::Wallet(Wallet::Delete) => {
+            let prompt = format!(
+                "Are you sure you want to delete the Penumbra wallet file at `{}`? This cannot be undone.",
+                wallet_path.display()
+            );
+            if dialoguer::Confirm::new().with_prompt(prompt).interact()? {
+                fs::remove_file(&wallet_path)?;
+            }
         }
         Command::Addr(Addr::List) => {
             let wallet = load_wallet(&wallet_path);
