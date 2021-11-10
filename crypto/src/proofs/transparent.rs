@@ -66,19 +66,15 @@ impl SpendProof {
 
         // Note commitment integrity.
         let s_component_transmission_key = Fq::from_bytes(self.pk_d.0);
-        if s_component_transmission_key.is_err() {
-            proof_verifies = false;
-        } else {
-            let note_commitment_test = note::Commitment::new(
-                self.note_blinding,
-                self.value,
-                self.g_d,
-                s_component_transmission_key.unwrap(),
-            );
+        if let Ok(transmission_key_s) = s_component_transmission_key {
+            let note_commitment_test =
+                note::Commitment::new(self.note_blinding, self.value, self.g_d, transmission_key_s);
 
             if self.note_commitment != note_commitment_test {
                 proof_verifies = false;
             }
+        } else {
+            proof_verifies = false;
         }
 
         // Merkle path integrity.
@@ -182,19 +178,15 @@ impl OutputProof {
 
         // Note commitment integrity.
         let s_component_transmission_key = Fq::from_bytes(self.pk_d.0);
-        if s_component_transmission_key.is_err() {
-            proof_verifies = false;
-        } else {
-            let note_commitment_test = note::Commitment::new(
-                self.note_blinding,
-                self.value,
-                self.g_d,
-                s_component_transmission_key.unwrap(),
-            );
+        if let Ok(transmission_key_s) = s_component_transmission_key {
+            let note_commitment_test =
+                note::Commitment::new(self.note_blinding, self.value, self.g_d, transmission_key_s);
 
             if note_commitment != note_commitment_test {
                 proof_verifies = false;
             }
+        } else {
+            proof_verifies = false;
         }
 
         // Value commitment integrity.
