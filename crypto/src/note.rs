@@ -213,7 +213,7 @@ pub(crate) fn derive_symmetric_key(
     let mut kdf = kdf_params.to_state();
     kdf.update(&shared_secret.0);
     kdf.update(&epk.0);
-    
+
     kdf.finalize()
 }
 
@@ -238,8 +238,7 @@ impl From<&Note> for [u8; NOTE_LEN_BYTES] {
 
 impl From<&Note> for Vec<u8> {
     fn from(note: &Note) -> Vec<u8> {
-        let mut bytes = Vec::new();
-        bytes.push(NOTE_TYPE);
+        let mut bytes = vec![NOTE_TYPE];
         bytes.extend_from_slice(&note.diversifier.0);
         bytes.extend_from_slice(&note.value.amount.to_le_bytes());
         bytes.extend_from_slice(&note.value.asset_id.0.to_bytes());
@@ -311,9 +310,9 @@ impl Commitment {
     }
 }
 
-impl Into<[u8; 32]> for Commitment {
-    fn into(self) -> [u8; 32] {
-        self.0.to_bytes()
+impl From<Commitment> for [u8; 32] {
+    fn from(commitment: Commitment) -> [u8; 32] {
+        commitment.0.to_bytes()
     }
 }
 
