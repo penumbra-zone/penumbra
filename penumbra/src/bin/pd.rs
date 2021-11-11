@@ -80,7 +80,7 @@ async fn main() {
                 .serve(wallet_service_addr);
 
             // xx better way to serve both?
-            join!(
+            let _result = join!(
                 wallet_server,
                 abci_server.listen(format!("{}:{}", host, abci_port))
             );
