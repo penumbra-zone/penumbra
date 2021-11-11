@@ -4,7 +4,6 @@ use rand_chacha::ChaCha20Rng;
 use structopt::StructOpt;
 use tonic::transport::Server;
 
-use penumbra::dbschema::{NoteCommitmentTreeAnchor, PenumbraNoteCommitmentTreeAnchor};
 use penumbra::dbutils::{db_bootstrap, db_connection};
 use penumbra::genesis::{generate_genesis_notes, GenesisAddr};
 use penumbra_proto::wallet::wallet_server;

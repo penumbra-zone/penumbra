@@ -6,6 +6,7 @@ use tendermint::block::Height;
 
 use penumbra_crypto::merkle::Root;
 use penumbra_crypto::Fq;
+use penumbra_proto::wallet::StateFragment;
 
 /// Bridge type between Postgres and Penumbra
 #[derive(Debug, sqlx::FromRow)]
@@ -30,6 +31,14 @@ pub struct PenumbraNoteCommitmentTreeAnchor {
 #[derive(Debug, sqlx::FromRow)]
 pub struct PenumbraTransaction {
     pub transaction: Vec<u8>,
+}
+
+/// Bridge type between Postgres and Penumbra for state fragments
+#[derive(Debug, sqlx::FromRow)]
+pub struct PenumbraStateFragment {
+    pub note_commitment: Vec<u8>,
+    pub ephemeral_key: Vec<u8>,
+    pub note_ciphertext: Vec<u8>,
 }
 
 /// Convert between Penumbra and bridge type for DB
@@ -62,4 +71,15 @@ impl From<NoteCommitmentTreeAnchor> for PenumbraNoteCommitmentTreeAnchor {
 fn vec_to_array<T, const N: usize>(v: Vec<T>) -> [T; N] {
     v.try_into()
         .unwrap_or_else(|v: Vec<T>| panic!("Expected a Vec of length {} but it was {}", N, v.len()))
+}
+
+/// Convert between db and proto for state fragments
+impl From<PenumbraStateFragment> for StateFragment {
+    fn from(p: PenumbraStateFragment) -> Self {
+        StateFragment {
+            cm: p.note_commitment.into(),
+            ephemeral_key: p.ephemeral_key.into(),
+            encrypted_note: p.note_ciphertext.into(),
+        }
+    }
 }
