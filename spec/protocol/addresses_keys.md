@@ -1,12 +1,26 @@
 # Addresses and Keys
 
-The key hierarchy is based on a modified [Zcash Sapling](https://zips.z.cash/protocol/protocol.pdf) design,
-which we summarize here.  In contrast to Sapling, Penumbra's transaction system
-includes support for [fuzzy message detection](./primitives/fmd.md), uses
-Poseidon for hashing, and uses `decaf377` instead of Jubjub, so that it can be
-used with the BLS12-377 curve instead of the BLS12-381 curve.
+The key hierarchy is a modification of the design in Zcash [Sapling].  The main
+differences are that it is designed for use with BLS12-377 rather than
+BLS12-381, that it uses Poseidon as a hash and PRF, `decaf377` as the embedded
+group, and that it includes support for [fuzzy message
+detection](./primitives/fmd.md).
 
-WARNING/TODO: this is a work-in-progress; only the diagram is currently roughly accurate.
+All key material within a particular spend authority is ultimately derived from
+a single root secret.  The internal key components and their derivations are
+described in the following sections:
+
+* [Spending Keys](./addresses_keys/spend_key.md) describes derivation of the
+  spending key from the root key material;
+* [Viewing Keys](./addresses_keys/viewing_keys.md) describes derivation of the full, incoming, and outgoing viewing keys;
+* [Addresses and Detection Keys](./addresses_keys/addresses.md) describes derivation of multiple, publicly unlinkable addresses for a single spending authority, each with their own detection key.
+
+The diagram in the [Overview](./concepts/addresses_keys.md) section describes
+the key hierarchy from an external, functional point of view.  Here, we zoom in
+to the internal key components, whose relations are depicted in the following
+diagram.  Each internal key component is represented with a box; arrows depict
+key derivation steps, and diamond boxes represent key derivation steps that
+combine multiple components.
 
 ```mermaid
 flowchart BT
@@ -19,11 +33,11 @@ flowchart BT
     subgraph DTK[Detection Key]
         dtk_d;
     end;
-    subgraph IVK[Incoming Viewing Key]
+    subgraph IVK[Incoming\nViewing Key]
         ivk;
         dk;
     end;
-    subgraph OVK[Outgoing Viewing Key]
+    subgraph OVK[Outgoing\nViewing Key]
         ovk;
     end;
     subgraph FVK[Full Viewing Key]
@@ -33,11 +47,11 @@ flowchart BT
     subgraph SK[Spending Key]
         direction LR;
         ask;
-        sk;
+        seed;
     end;
 
-    sk --> ask;
-    sk --> nk;
+    seed --> ask;
+    seed --> nk;
 
     ask --> ak;
 
@@ -63,9 +77,5 @@ flowchart BT
     dtk_d --> ck_d;
 ```
 
-All addresses and keys are ultimately derived from a secret *spending key* $sk$.
-This is a random 32-byte string which acts as the root key material for a
-particular spending authority. From this *spend key* $sk$, we derive several
-other keys, each described in more detail in its own section:
 
-* [*addresses*](./addresses_keys/addresses.md), which can be shared in order to receive payments.
+[Sapling]: https://zips.z.cash/protocol/protocol.pdf

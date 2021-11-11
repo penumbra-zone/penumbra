@@ -1,26 +1,89 @@
-# Addresses
+# Addresses and Detection Keys
 
-Addresses in Penumbra are diversified payment addresses as in Zcash Sapling but with an additional key for [FMD](../../crypto/fmd.md) support. For each *spend key*, there are many possible diversified payment addresses, all of which share viewing keys. Each address consists of three components:
+Rather than having a single address for each spending authority, Penumbra allows
+the creation of many different publicly unlinkable *diversified addresses*.  An
+incoming viewing key can scan transactions to every diversified address
+simultaneously, so there is no per-address scanning cost.  In addition, Penumbra
+attaches a *detection key* to each address, allowing a user to outsource
+probabilistic transaction detection to a relatively untrusted third-party
+scanning service.
 
-* a *diversifier* $d$, an 11 byte random number
-* a *transmission key* $pk_d$, a point on the `decaf377` curve
-* a *compact flag key* $cfk_d$, a point on the `decaf377` curve
+## Diversifiers
 
-The diversifier $d$ is an 11 byte random number. From $d$ we compute a *diversified basepoint* $B_d$:
+Addresses are parameterized by *diversifiers*, 11-byte tags used to derive up to
+$2^{88}$ distinct addresses for each spending authority.  The diversifier is
+included in the address, so it should be uniformly random.  To ensure this,
+diversifiers are indexed by a *diversifier index* $i \in \{0, \ldots, 2^{88} -
+1\}$; the $i$-th diversifier $d_i$ is the encryption of $i$ using [AES-FF1] with
+the diversifier key $\mathsf{dk}$.[^1]
 
-$B_d = GH(d)$
+Each diversifier $d$ is used to generate a *diversified basepoint* $B_d$ as
+$$B_d = H_{\mathbb G}^{\mathsf d}(d),$$
+where 
+$$H_{\mathbb G}^{\mathsf d} : \{0, 1\}^{88} \rightarrow \mathbb G$$
+performs [hash-to-group] for `decaf377` as follows: first, apply BLAKE2b-512
+with personalization `b"Penumbra_Divrsfy"` to the input, then, interpret the
+64-byte output as an integer in little-endian byte order and reduce it modulo
+$q$, and finally, use the resulting $\mathbb F_q$ element as input to the
+`decaf377` CDH map-to-group method.
 
-The $GH$ function is [Group Hash](../../crypto/decaf377/group_hash.md) which produces a point on the `decaf377` curve that we use as a generator. Every diversifier will produce a valid generator.
+## Detection Keys
 
-Next we derive the *transmission key* $pk_d$ by multiplying the diversified basepoint by the incoming viewing key $ivk$:
+Each address has an associated *detection key*, allowing the creator of the
+address to delegate a [probabilistic detection capability][fmd] to a third-party
+scanning service.
 
-$pk_d = [ivk]B_d$
+The detection key consists of one component,
 
-The *compact flag key* is derived from a (diversified) *compact detection key* $cdtk_d$ using a non-diversified `decaf377` basepoint [$B$](../primitives/decaf377/test_vectors.md):
+* $\mathsf{dtk_d}$, the detection key (component)[^2],
 
-$cfk_d = [cdtk_d]B$
+derived as follows.  Define `prf_expand(label, key, input)` as BLAKE2b-512 with
+personalization `label`, key `key`, and input `input`.  Define
+`from_le_bytes(bytes)` as the function that interprets its input bytes as an
+integer in little-endian order, and `to_le_bytes` as the function that encodes
+an integer to little-endian bytes.  Then
+```
+dtk_d = from_le_bytes(prf_expand(b"PenumbraExpndFMD", to_le_bytes(ivk), d))
+```
 
-The diversifier, transmission key, and compact flag key are [Bech32m](https://github.com/bitcoin/bips/blob/master/bip-0350.mediawiki) encoded with a human readable prefix that is:
+## Addresses
+
+Each payment address has three components:
+
+* the *diversifier* $d$;
+* the *transmission key* $\mathsf{pk_d}$, a `decaf377` element;
+* the *clue key* $\mathsf{ck_d}$, a `decaf377` element.
+
+The diversifier is derived from a diversifier index as described above.  The
+diversifier $d_0$ with index $0$ is the *default diversifier*, and corresponds
+to the *default payment address*.
+
+The transmission key $\mathsf{pk_d}$ is derived as $\mathsf{pk_d} =
+[\mathsf{ivk}]B_d$, where $B_d = H_{\mathbb G}^{\mathsf d}(d)$ is the
+diversified basepoint.
+
+The clue key is $\mathsf{ck_d}$ is derived as $\mathsf{ck_d} =
+[\mathsf{dtk_d}]B$, where $B$ is the conventional `decaf377` basepoint.
+
+### Address Encodings
+
+The raw binary encoding of a payment address is the 75-byte string `d || pk_d ||
+ck_d`.  This string is encoded with [Bech32m] with the following human-readable
+prefixes:
 
 * `penumbra` for mainnet, and
-* `penumbra_tn00X_` for testnets, where X is the current testnet number.
+* `penumbra_tnXYZ_` for testnets, where XYZ is the current testnet number padded
+  to three decimal places.
+
+[^1]: This convention is not enforced by the protocol; client software could in
+principle construct diversifiers in another way, although deviating from this
+mechanism risks compromising privacy.
+
+[^2]: As in the previous section, we use the modifier "component" to distinguish
+between the internal key component and the external, opaque key.
+
+[AES-FF1]: https://github.com/str4d/fpe
+[hash-to-group]: ../../crypto/decaf377/group_hash.md
+[fmd]: ../../crypto/fmd.md
+
+[Bech32m]: https://github.com/bitcoin/bips/blob/master/bip-0350.mediawiki
