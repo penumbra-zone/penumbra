@@ -130,14 +130,8 @@ async fn main() -> Result<()> {
         }
         Command::Wallet(Wallet::Delete) => {
             if wallet_path.is_file() {
-                let prompt = format!(
-                    "Are you sure you want to delete the wallet file at {}? This cannot be undone.",
-                    wallet_path.display()
-                );
-                if dialoguer::Confirm::new().with_prompt(prompt).interact()? {
-                    fs::remove_file(&wallet_path)?;
-                    println!("Wallet file deleted.");
-                }
+                fs::remove_file(&wallet_path)?;
+                println!("Wallet file deleted.");
             } else if wallet_path.exists() {
                 println!(
                     "Expected a wallet file at {} but found a directory; refusing to delete it.",
