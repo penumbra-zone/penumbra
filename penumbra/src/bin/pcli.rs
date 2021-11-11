@@ -206,8 +206,11 @@ async fn main() -> Result<()> {
                 start_height,
                 end_height
             );
-            let response = client.compact_block_range(request).await?;
-            tracing::info!("got response: {:?}", response);
+            let mut stream = client.compact_block_range(request).await?.into_inner();
+
+            while let Some(block) = stream.message().await? {
+                tracing::info!("got fragment: {:?}", block);
+            }
         }
         _ => todo!(),
     }
