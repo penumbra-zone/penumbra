@@ -134,7 +134,7 @@ async fn main() -> Result<()> {
                 println!("Deleted wallet file at {}.", wallet_path.display());
             } else if wallet_path.exists() {
                 println!(
-                    "Expected a wallet file at {} but found a directory; refusing to delete it.",
+                    "Expected wallet file at {} but found something that is not a file; refusing to delete it.",
                     wallet_path.display()
                 );
             } else {
