@@ -120,7 +120,7 @@ async fn main() -> Result<()> {
         Command::Wallet(Wallet::Generate) => {
             if wallet_path.exists() {
                 Err(anyhow::anyhow!(
-                    "Wallet path {} already exists, refusing to overwrite it.",
+                    "Wallet path {} already exists, refusing to overwrite it",
                     wallet_path.display()
                 ))?;
             }
@@ -134,12 +134,12 @@ async fn main() -> Result<()> {
                 println!("Deleted wallet file at {}.", wallet_path.display());
             } else if wallet_path.exists() {
                 println!(
-                    "Expected wallet file at {} but found something that is not a file; refusing to delete it.",
+                    "Expected wallet file at {} but found something that is not a file; refusing to delete it",
                     wallet_path.display()
                 );
             } else {
                 println!(
-                    "No wallet exists at {}, so it cannot be deleted.",
+                    "No wallet exists at {}, so it cannot be deleted",
                     wallet_path.display()
                 );
             }
