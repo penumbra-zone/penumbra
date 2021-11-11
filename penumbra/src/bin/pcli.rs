@@ -119,7 +119,7 @@ async fn main() -> Result<()> {
         }
         Command::Wallet(Wallet::Generate) => {
             if wallet_path.exists() {
-                Err(anyhow::anyhow!(
+                return Err(anyhow::anyhow!(
                     "Wallet path {} already exists, refusing to overwrite it",
                     wallet_path.display()
                 ));
