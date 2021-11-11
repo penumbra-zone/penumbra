@@ -44,6 +44,8 @@ enum Wallet {
     Import,
     /// Generate a new spend seed.
     Generate,
+    /// Delete the wallet permanently.
+    Delete,
 }
 
 #[derive(Debug, StructOpt)]
@@ -118,13 +120,29 @@ async fn main() -> Result<()> {
         Command::Wallet(Wallet::Generate) => {
             if wallet_path.exists() {
                 return Err(anyhow::anyhow!(
-                    "Wallet path {} already exists, refusing to overwrite it.",
+                    "Wallet path {} already exists, refusing to overwrite it",
                     wallet_path.display()
                 ));
             }
             let wallet = storage::Wallet::generate(&mut OsRng);
             save_wallet(&wallet, &wallet_path)?;
             println!("Wallet saved to {}", wallet_path.display());
+        }
+        Command::Wallet(Wallet::Delete) => {
+            if wallet_path.is_file() {
+                fs::remove_file(&wallet_path)?;
+                println!("Deleted wallet file at {}", wallet_path.display());
+            } else if wallet_path.exists() {
+                println!(
+                    "Expected wallet file at {} but found something that is not a file; refusing to delete it",
+                    wallet_path.display()
+                );
+            } else {
+                println!(
+                    "No wallet exists at {}, so it cannot be deleted",
+                    wallet_path.display()
+                );
+            }
         }
         Command::Addr(Addr::List) => {
             let wallet = load_wallet(&wallet_path);
