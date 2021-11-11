@@ -1,10 +1,9 @@
-use ark_ff::PrimeField;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    prf,
     rdsa::{SigningKey, SpendAuth},
-    Fq, Fr,
 };
 
 use super::{FullViewingKey, IncomingViewingKey, NullifierKey, OutgoingViewingKey};
@@ -32,26 +31,8 @@ impl SpendKey {
 
     /// Loads a [`SpendKey`] from the provided [`SpendSeed`].
     pub fn from_seed(seed: SpendSeed) -> Self {
-        let ask = {
-            let mut hasher = blake2b_simd::State::new();
-            hasher.update(b"Penumbra_ExpndSd");
-            hasher.update(&seed.0);
-            hasher.update(&[0; 1]);
-            let hash_result = hasher.finalize();
-
-            SigningKey::new_from_field(Fr::from_le_bytes_mod_order(hash_result.as_bytes()))
-        };
-
-        let nk = {
-            let mut hasher = blake2b_simd::State::new();
-            hasher.update(b"Penumbra_ExpndSd");
-            hasher.update(&seed.0);
-            hasher.update(&[1; 1]);
-            let hash_result = hasher.finalize();
-
-            NullifierKey(Fq::from_le_bytes_mod_order(hash_result.as_bytes()))
-        };
-
+        let ask = SigningKey::new_from_field(prf::expand_ff(b"Penumbra_ExpndSd", &seed.0, &[0; 1]));
+        let nk = NullifierKey(prf::expand_ff(b"Penumbra_ExpndSd", &seed.0, &[1; 1]));
         let fvk = FullViewingKey::from_components(ask.into(), nk);
 
         Self { seed, ask, fvk }

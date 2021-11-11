@@ -1,27 +1,28 @@
-# Spend Keys
+# Spending Keys
 
-The *spend key* has three components derived from the spend seed $ss$:
+The root key material for a particular spend authority is a 32-byte random
+`seed`.  The `seed` value is used to derive
 
-* $ask$, the *spend authorization key*, a scalar value
-* $nsk$, the *nullifier private key*, a scalar value
-* $ovk$, the *outgoing viewing key*, a 32 byte number
+* $\mathsf{ask} \in \mathbb F_r$, the *spend authorization key*, and
+* $\mathsf{nk} \in \mathbb F_q$, the *nullifier key*,
 
-The scalars are derived by using the spend seed as the key for a PRF,
-expanding different labels, and converting the output to a `decaf377` scalar.
-In pseudocode this becomes:
-
+as follows.  Define `prf_expand(label, key, input)` as BLAKE2b-512 with
+personalization `label`, key `key`, and input `input`.  Define
+`from_le_bytes(bytes)` as the function that interprets its input bytes as an
+integer in little-endian order.  Then
 ```
-prf_expand(x) = BLAKE2b_512("Penumbra_ExpandSeed", ss || x )
-ask = to_scalar(prf_expand(0))
-ask = to_scalar(prf_expand(1))
+ask = from_le_bytes(prf_expand("Penumbra_ExpndSd", seed, 0)) mod r
+nk  = from_le_bytes(prf_expand("Penumbra_ExpndSd", seed, 0)) mod q
 ```
-where the function `to_scalar` interprets the input byte sequence as an integer
-in little-endian order and reduces it modulo the order of the `decaf377` group[^1].
 
-The outgoing viewing key is derived by truncating the PRF output:
-```
-ovk = truncate_32_bytes(prf_expand(2))
-```
+The *spending key* consists of `seed` and `ask`.  When using a hardware wallet
+or similar custody mechanism, the spending key remains on the device.
+
+The spend authorization key $\mathsf{ask}$ is used as a `decaf377-rdsa` signing
+key.[^1] The corresponding verification key is the *spend verification key*
+$\mathsf{ak} = [\mathsf{ask}]B$.  The spend verification key $\mathsf{ak}$ and
+the nullifier key $\mathsf{nk}$ are used to create the *full viewing key*
+described in the next section.
 
 [^1]: Note that it is technically possible for the derived $ask$ or $nsk$ to be
 $0$, but this happens with probability approximately $2^{-252}$, so we ignore

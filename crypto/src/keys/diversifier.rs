@@ -2,7 +2,6 @@ use aes::Aes256;
 use anyhow::anyhow;
 use ark_ff::PrimeField;
 use fpe::ff1;
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 
@@ -13,18 +12,14 @@ pub const DIVERSIFIER_LEN_BYTES: usize = 11;
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Diversifier(pub [u8; DIVERSIFIER_LEN_BYTES]);
 
-/// The domain separator used to generate diversified generators.
-static DIVERSIFY_GENERATOR_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
-    Fq::from_le_bytes_mod_order(blake2b_simd::blake2b(b"penumbra.diversifier.generator").as_bytes())
-});
-
 impl Diversifier {
     /// Generate the diversified basepoint associated to this diversifier.
     pub fn diversified_generator(&self) -> decaf377::Element {
-        decaf377::Element::map_to_group_cdh(&poseidon377::hash_1(
-            &DIVERSIFY_GENERATOR_DOMAIN_SEP,
-            Fq::from_le_bytes_mod_order(&self.0[..]),
-        ))
+        let hash = blake2b_simd::Params::new()
+            .personal(b"Penumbra_Divrsfy")
+            .hash(&self.0);
+
+        decaf377::Element::map_to_group_cdh(&Fq::from_le_bytes_mod_order(hash.as_bytes()))
     }
 }
 

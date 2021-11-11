@@ -1,6 +1,6 @@
 use ark_ff::PrimeField;
 
-use crate::{fmd, ka, Address, Fr};
+use crate::{fmd, ka, prf, Address, Fr};
 
 use super::{DiversifierIndex, DiversifierKey};
 
@@ -21,15 +21,9 @@ impl IncomingViewingKey {
         let g_d = d.diversified_generator();
         let pk_d = self.ivk.diversified_public(&g_d);
 
-        let dtk_d = {
-            let mut hasher = blake2b_simd::State::new();
-            hasher.update(b"PenumbraExpndFMD");
-            hasher.update(&self.ivk.to_bytes());
-            hasher.update(d.as_ref());
-            let hash_result = hasher.finalize();
-
-            fmd::DetectionKey::from_field(Fr::from_le_bytes_mod_order(hash_result.as_bytes()))
-        };
+        let dtk_d = fmd::DetectionKey::from_field(Fr::from_le_bytes_mod_order(
+            prf::expand(b"PenumbraExpndFMD", &self.ivk.to_bytes(), d.as_ref()).as_bytes(),
+        ));
         let ck_d = dtk_d.clue_key();
 
         (

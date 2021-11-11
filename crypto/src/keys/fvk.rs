@@ -3,7 +3,7 @@ use decaf377::FieldExt;
 use once_cell::sync::Lazy;
 
 use crate::{
-    ka,
+    ka, prf,
     rdsa::{SpendAuth, VerificationKey},
     Fq, Fr,
 };
@@ -24,11 +24,7 @@ impl FullViewingKey {
     /// Construct a full viewing key from its components.
     pub fn from_components(ak: VerificationKey<SpendAuth>, nk: NullifierKey) -> Self {
         let (ovk, dk) = {
-            let mut hasher = blake2b_simd::State::new();
-            hasher.update(b"Penumbra_ExpndVK");
-            hasher.update(&nk.0.to_bytes());
-            hasher.update(ak.as_ref());
-            let hash_result = hasher.finalize();
+            let hash_result = prf::expand(b"Penumbra_ExpndVK", &nk.0.to_bytes(), ak.as_ref());
 
             let mut ovk = [0; 32];
             let mut dk = [0; 32];
