@@ -131,7 +131,7 @@ async fn main() -> Result<()> {
         Command::Wallet(Wallet::Delete) => {
             if wallet_path.is_file() {
                 fs::remove_file(&wallet_path)?;
-                println!("Deleted wallet file at {}.", wallet_path.display());
+                println!("Deleted wallet file at {}", wallet_path.display());
             } else if wallet_path.exists() {
                 println!(
                     "Expected wallet file at {} but found something that is not a file; refusing to delete it",
