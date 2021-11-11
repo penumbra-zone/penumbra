@@ -1,6 +1,6 @@
 use std::env;
 
-use sqlx::postgres::{PgPoolOptions, PgQueryResult};
+use sqlx::postgres::PgPoolOptions;
 use sqlx::{query, query_as, Error};
 use sqlx::{Pool, Postgres};
 
@@ -30,8 +30,8 @@ pub async fn db_connection() -> Result<Pool<Postgres>, sqlx::Error> {
 }
 
 /// Bootstrap the database, creating tables if they do not exist.
-pub async fn db_bootstrap(pool: Pool<Postgres>) -> Result<PgQueryResult, Error> {
-    let bootstrap_sql_blocks = query(
+pub async fn db_bootstrap(pool: Pool<Postgres>) -> Result<(), Error> {
+    query(
         r#"
 CREATE TABLE IF NOT EXISTS blocks (
     id SERIAL PRIMARY KEY, 
@@ -41,9 +41,9 @@ CREATE TABLE IF NOT EXISTS blocks (
 "#,
     )
     .execute(&pool)
-    .await;
+    .await?;
 
-    let bootstrap_sql_transactions = query(
+    query(
         r#"
 CREATE TABLE IF NOT EXISTS transactions (
     id SERIAL PRIMARY KEY,
@@ -53,9 +53,9 @@ CREATE TABLE IF NOT EXISTS transactions (
 "#,
     )
     .execute(&pool)
-    .await;
+    .await?;
 
-    let bootstrap_sql_notes = query(
+    query(
         r#"
 CREATE TABLE IF NOT EXISTS notes (
     id SERIAL PRIMARY KEY,
@@ -67,10 +67,9 @@ CREATE TABLE IF NOT EXISTS notes (
 "#,
     )
     .execute(&pool)
-    .await;
+    .await?;
 
-    // xx combine with bootstrap_sql_blocks, bootstrap_sql_notes
-    bootstrap_sql_transactions
+    Ok(())
 }
 
 /// Hardcoded query for inserting one row into `blocks` given an active database transaction.

@@ -77,7 +77,7 @@ Initialize Tendermint:
 tendermint init validator
 ```
 
-This will create a default genesis file stored in `$TMHOME` (if set, else `~/.tendermint`) named `genesis.json`.
+This will create a default genesis file stored in `$TMHOME/config` (if set, else `~/.tendermint/config`) named `genesis.json`.
 
 You probably want to set a log level:
 ```bash

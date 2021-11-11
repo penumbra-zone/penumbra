@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::convert::TryInto;
 
-use penumbra_crypto::{ka, note, Action, Note, Transaction};
+use penumbra_crypto::{ka, note, Action, Transaction};
 
 /// Stores pending state changes from transactions.
 #[derive(Debug)]
