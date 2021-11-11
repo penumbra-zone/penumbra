@@ -3,7 +3,6 @@ use std::io::{Cursor, Read, Write};
 use anyhow::anyhow;
 use ark_serialize::CanonicalDeserialize;
 use bech32::{FromBase32, ToBase32, Variant};
-use decaf377;
 
 use crate::{fmd, ka, keys::Diversifier, Fq};
 
@@ -98,7 +97,7 @@ impl std::str::FromStr for Address {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (hrp, data, variant) = bech32::decode(&s).unwrap();
+        let (hrp, data, variant) = bech32::decode(s).unwrap();
 
         let mut decoded_bytes = Cursor::new(Vec::<u8>::from_base32(&data).unwrap());
 

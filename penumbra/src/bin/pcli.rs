@@ -17,7 +17,7 @@ use penumbra_wallet::{state, storage};
 struct Opt {
     /// The address of the Tendermint node.
     #[structopt(short, long, default_value = "127.0.0.1:26657")]
-    addr: std::net::SocketAddr,
+    node: std::net::SocketAddr,
     #[structopt(subcommand)]
     cmd: Command,
     /// The location of the wallet file [default: platform appdata directory]
@@ -94,7 +94,7 @@ async fn main() -> Result<()> {
 
             let rsp = reqwest::get(format!(
                 r#"http://{}/broadcast_tx_async?tx="{}={}""#,
-                opt.addr, key, value
+                opt.node, key, value
             ))
             .await?
             .text()
@@ -108,7 +108,7 @@ async fn main() -> Result<()> {
 
             let rsp: serde_json::Value = reqwest::get(format!(
                 r#"http://{}/abci_query?data=0x{}"#,
-                opt.addr,
+                opt.node,
                 hex::encode(key),
             ))
             .await?
@@ -122,7 +122,7 @@ async fn main() -> Result<()> {
                 Err(anyhow::anyhow!(
                     "Wallet path {} already exists, refusing to overwrite it",
                     wallet_path.display()
-                ))?;
+                ));
             }
             let wallet = storage::Wallet::generate(&mut OsRng);
             save_wallet(&wallet, &wallet_path)?;

@@ -57,9 +57,9 @@ impl std::ops::Sub<Commitment> for Commitment {
     }
 }
 
-impl Into<[u8; 32]> for Commitment {
-    fn into(self) -> [u8; 32] {
-        self.0.compress().0
+impl From<Commitment> for [u8; 32] {
+    fn from(commitment: Commitment) -> [u8; 32] {
+        commitment.0.compress().0
     }
 }
 

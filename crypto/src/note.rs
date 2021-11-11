@@ -71,7 +71,7 @@ impl Note {
         note_blinding: Fq,
     ) -> Result<Self, Error> {
         Ok(Note {
-            value: value,
+            value,
             note_blinding,
             diversifier,
             transmission_key,
@@ -178,7 +178,7 @@ impl Note {
             .key_agreement_with(epk)
             .map_err(|_| Error::DecryptionError)?;
 
-        let key = derive_symmetric_key(&shared_secret, &epk);
+        let key = derive_symmetric_key(&shared_secret, epk);
         let cipher = ChaCha20Poly1305::new(Key::from_slice(key.as_bytes()));
         let nonce = Nonce::from_slice(&[0u8; 12]);
         let plaintext = cipher
@@ -188,9 +188,9 @@ impl Note {
         let plaintext_bytes: [u8; NOTE_LEN_BYTES] =
             plaintext.try_into().map_err(|_| Error::DecryptionError)?;
 
-        Ok(plaintext_bytes
+        plaintext_bytes
             .try_into()
-            .map_err(|_| Error::DecryptionError)?)
+            .map_err(|_| Error::DecryptionError)
     }
 
     pub fn commit(&self) -> Commitment {
@@ -213,8 +213,8 @@ pub(crate) fn derive_symmetric_key(
     let mut kdf = kdf_params.to_state();
     kdf.update(&shared_secret.0);
     kdf.update(&epk.0);
-    let kdf_output = kdf.finalize();
-    kdf_output
+
+    kdf.finalize()
 }
 
 impl From<Note> for [u8; NOTE_LEN_BYTES] {
@@ -238,8 +238,7 @@ impl From<&Note> for [u8; NOTE_LEN_BYTES] {
 
 impl From<&Note> for Vec<u8> {
     fn from(note: &Note) -> Vec<u8> {
-        let mut bytes = Vec::new();
-        bytes.push(NOTE_TYPE);
+        let mut bytes = vec![NOTE_TYPE];
         bytes.extend_from_slice(&note.diversifier.0);
         bytes.extend_from_slice(&note.value.amount.to_le_bytes());
         bytes.extend_from_slice(&note.value.asset_id.0.to_bytes());
@@ -311,9 +310,9 @@ impl Commitment {
     }
 }
 
-impl Into<[u8; 32]> for Commitment {
-    fn into(self) -> [u8; 32] {
-        self.0.to_bytes()
+impl From<Commitment> for [u8; 32] {
+    fn from(commitment: Commitment) -> [u8; 32] {
+        commitment.0.to_bytes()
     }
 }
 
@@ -373,7 +372,7 @@ mod tests {
 
         let ciphertext = note.encrypt(&esk);
 
-        let epk = esk.diversified_public(&dest.diversified_generator());
+        let epk = esk.diversified_public(dest.diversified_generator());
         let plaintext = Note::decrypt(ciphertext, ivk, &epk).expect("can decrypt note");
 
         assert_eq!(plaintext, note);

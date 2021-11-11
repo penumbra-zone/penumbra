@@ -14,9 +14,9 @@ pub static NULLIFIER_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
     Fq::from_le_bytes_mod_order(blake2b_simd::blake2b(b"penumbra.nullifier").as_bytes())
 });
 
-impl Into<[u8; 32]> for Nullifier {
-    fn into(self) -> [u8; 32] {
-        self.0.to_bytes()
+impl From<Nullifier> for [u8; 32] {
+    fn from(nullifier: Nullifier) -> [u8; 32] {
+        nullifier.0.to_bytes()
     }
 }
 

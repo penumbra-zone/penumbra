@@ -66,19 +66,15 @@ impl SpendProof {
 
         // Note commitment integrity.
         let s_component_transmission_key = Fq::from_bytes(self.pk_d.0);
-        if s_component_transmission_key.is_err() {
-            proof_verifies = false;
-        } else {
-            let note_commitment_test = note::Commitment::new(
-                self.note_blinding,
-                self.value,
-                self.g_d,
-                s_component_transmission_key.unwrap(),
-            );
+        if let Ok(transmission_key_s) = s_component_transmission_key {
+            let note_commitment_test =
+                note::Commitment::new(self.note_blinding, self.value, self.g_d, transmission_key_s);
 
             if self.note_commitment != note_commitment_test {
                 proof_verifies = false;
             }
+        } else {
+            proof_verifies = false;
         }
 
         // Merkle path integrity.
@@ -182,19 +178,15 @@ impl OutputProof {
 
         // Note commitment integrity.
         let s_component_transmission_key = Fq::from_bytes(self.pk_d.0);
-        if s_component_transmission_key.is_err() {
-            proof_verifies = false;
-        } else {
-            let note_commitment_test = note::Commitment::new(
-                self.note_blinding,
-                self.value,
-                self.g_d,
-                s_component_transmission_key.unwrap(),
-            );
+        if let Ok(transmission_key_s) = s_component_transmission_key {
+            let note_commitment_test =
+                note::Commitment::new(self.note_blinding, self.value, self.g_d, transmission_key_s);
 
             if note_commitment != note_commitment_test {
                 proof_verifies = false;
             }
+        } else {
+            proof_verifies = false;
         }
 
         // Value commitment integrity.
@@ -403,9 +395,9 @@ impl TryFrom<transparent_proofs::OutputProof> for OutputProof {
     }
 }
 
-impl Into<Vec<u8>> for SpendProof {
-    fn into(self) -> Vec<u8> {
-        let protobuf_serialized_proof: transparent_proofs::SpendProof = self.into();
+impl From<SpendProof> for Vec<u8> {
+    fn from(spend_proof: SpendProof) -> Vec<u8> {
+        let protobuf_serialized_proof: transparent_proofs::SpendProof = spend_proof.into();
         protobuf_serialized_proof.encode_to_vec()
     }
 }
@@ -416,15 +408,15 @@ impl TryFrom<&[u8]> for SpendProof {
     fn try_from(bytes: &[u8]) -> Result<SpendProof, Self::Error> {
         let protobuf_serialized_proof = transparent_proofs::SpendProof::decode(bytes)
             .map_err(|_| ProtoError::ProofMalformed)?;
-        Ok(protobuf_serialized_proof
+        protobuf_serialized_proof
             .try_into()
-            .map_err(|_| ProtoError::ProofMalformed)?)
+            .map_err(|_| ProtoError::ProofMalformed)
     }
 }
 
-impl Into<Vec<u8>> for OutputProof {
-    fn into(self) -> Vec<u8> {
-        let protobuf_serialized_proof: transparent_proofs::OutputProof = self.into();
+impl From<OutputProof> for Vec<u8> {
+    fn from(output_proof: OutputProof) -> Vec<u8> {
+        let protobuf_serialized_proof: transparent_proofs::OutputProof = output_proof.into();
         protobuf_serialized_proof.encode_to_vec()
     }
 }
@@ -435,9 +427,9 @@ impl TryFrom<&[u8]> for OutputProof {
     fn try_from(bytes: &[u8]) -> Result<OutputProof, Self::Error> {
         let protobuf_serialized_proof = transparent_proofs::OutputProof::decode(bytes)
             .map_err(|_| ProtoError::ProofMalformed)?;
-        Ok(protobuf_serialized_proof
+        protobuf_serialized_proof
             .try_into()
-            .map_err(|_| ProtoError::ProofMalformed)?)
+            .map_err(|_| ProtoError::ProofMalformed)
     }
 }
 
