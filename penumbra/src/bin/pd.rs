@@ -37,7 +37,9 @@ enum Command {
 
     /// Generate Genesis state.
     CreateGenesis {
+        /// The chain ID for the new chain
         chain_id: String,
+        /// The initial set of notes, encoded as a list of tuples "(amount, denom, address)"
         genesis_allocations: Vec<GenesisAddr>,
     },
 }
