@@ -6,6 +6,7 @@ use chacha20poly1305::{
 };
 use decaf377::FieldExt;
 use once_cell::sync::Lazy;
+use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use thiserror;
 
@@ -293,7 +294,8 @@ impl TryFrom<[u8; NOTE_LEN_BYTES]> for Note {
 }
 
 // Note commitment.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(into = "[u8; 32]", try_from = "[u8; 32]")]
 pub struct Commitment(pub Fq);
 
 impl Commitment {
