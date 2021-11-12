@@ -43,7 +43,7 @@ impl From<&[u8]> for Id {
         Id(Fq::from_le_bytes_mod_order(
             // XXX choice of hash function?
             blake2b_simd::Params::default()
-                .personal(b"penumbra.asset")
+                .personal(b"Penumbra_AssetID")
                 .hash(slice)
                 .as_bytes(),
         ))

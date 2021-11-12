@@ -15,10 +15,4 @@ ADR001 defines the IBC asset ID as the SHA-256 hash of the denomination trace,
 Penumbra hashes to a field element, so that asset IDs can be more easily used
 inside of a zk-SNARK circuit.
 
-Asset IDs are used internally, but users should be presented with asset names.
-To avoid having to reverse the hash function, the chain can maintain a table of
-known asset IDs and the corresponding asset types.  This table can be
-exhaustive, since new assets either moved into the chain via IBC transfers from
-a transparent zone (), or were created at genesis.
-
 [ADR001]: https://github.com/cosmos/ibc-go/blob/main/docs/architecture/adr-001-coin-source-tracing.md
