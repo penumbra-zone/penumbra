@@ -69,6 +69,17 @@ CREATE TABLE IF NOT EXISTS notes (
     .execute(&pool)
     .await?;
 
+    query(
+        r#"
+CREATE TABLE IF NOT EXISTS blobs (
+    id varchar(64) PRIMARY KEY,
+    data bytea NOT NULL
+)
+"#,
+    )
+    .execute(&pool)
+    .await?;
+
     Ok(())
 }
 
@@ -143,7 +154,7 @@ pub async fn db_read(pool: Pool<Postgres>) -> Result<Vec<PenumbraNoteCommitmentT
 
 /// Saves all pending state changes from a new block.
 pub async fn db_commit_block(
-    pool: Pool<Postgres>,
+    pool: &Pool<Postgres>,
     block_state: PendingBlock,
     height: i64,
     anchor: [u8; 32],
@@ -182,6 +193,8 @@ pub async fn db_commit_block(
             .expect("can insert note into database");
         }
     }
+
+    // TODO: write nullifiers
 
     dbtx.commit()
         .await

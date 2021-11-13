@@ -1,58 +1,68 @@
 use std::{
-    collections::{BTreeSet, HashMap},
+    collections::BTreeSet,
     future::Future,
     pin::Pin,
     task::{Context, Poll},
 };
 
+use anyhow::Context as _;
 use bytes::Bytes;
 use futures::{executor::block_on, future::FutureExt};
 use rand_core::OsRng;
 use sqlx::{query_as, Pool, Postgres};
-use tendermint::abci::{request, response, Event, EventAttributeIndexExt, Request, Response};
-use tokio::sync::mpsc;
-use tokio_stream::wrappers::ReceiverStream;
-use tonic::Status;
+use tendermint::abci::{
+    request::{self, BeginBlock, EndBlock},
+    response, Request, Response,
+};
 use tower::Service;
 
 use penumbra_crypto::{
     merkle, merkle::Frontier, merkle::TreeExt, note, Action, Nullifier, Transaction,
 };
-use penumbra_proto::transaction;
-use penumbra_proto::wallet::{
-    wallet_server::Wallet, CompactBlock, CompactBlockRangeRequest, TransactionByNoteRequest,
-};
 use tower_abci::BoxError;
+use tracing::instrument;
 
 use crate::{
-    dbschema::{PenumbraStateFragment, PenumbraTransaction},
+    dbschema::{self, PenumbraStateFragment, PenumbraTransaction},
     dbutils::{db_commit_block, db_connection},
     genesis::GenesisNotes,
     state::PendingBlock,
 };
 
 const ABCI_INFO_VERSION: &str = env!("VERGEN_GIT_SEMVER");
-const MAX_MERKLE_CHECKPOINTS: usize = 100;
 
 /// The Penumbra ABCI application.
 #[derive(Debug)]
 pub struct App {
-    store: HashMap<String, String>,
+    db: Pool<Postgres>,
+
     height: u64,
-
-    /// The `app_hash` is the hash of the note commitment tree.
     app_hash: [u8; 32],
+
+    /// Should be written to the database after every block commit.
     note_commitment_tree: merkle::BridgeTree<note::Commitment, { merkle::DEPTH as u8 }>,
-    nullifier_set: BTreeSet<Nullifier>,
 
-    // When `BeginBlock` (or `InitChain` for block 0) is called, we set `current_block`
-    // to hold a struct which holds all the queued-up state changes for the duration of the block.
-    // We commit these changes to the database and set it back to `None` when we `Commit`.
-    current_block: Option<PendingBlock>,
-}
+    /// We want to prevent two transactions from spending the same note in the
+    /// same block.  Our only control over whether transactions will appear in a
+    /// block is in `CheckTx`, which gates access to the entire mempool, so we
+    /// want to enforce that no two transactions in the mempool spend the same
+    /// note.
+    ///
+    /// To do this, we add a mempool transaction's nullifiers to this set in
+    /// `CheckTx` and remove them when we see they've been committed to a block
+    /// (in `Commit`).  This means that if Tendermint pulls transactions from
+    /// the mempool as part of default block proposer logic, no conflicting
+    /// transactions can appear.
+    ///
+    /// However, it doesn't prevent a malicious validator from proposing
+    /// conflicting transactions, so we need to ensure (in `DeliverTx`) that we
+    /// ignore invalid transactions.
+    mempool_nullifiers: BTreeSet<Nullifier>,
 
-async fn get_database_connection() -> Pool<Postgres> {
-    db_connection().await.expect("")
+    /// Contains all queued state changes for the duration of a block.  This is
+    /// set to Some at the beginning of BeginBlock and consumed (and reset to
+    /// None) in Commit.
+    pending_block: Option<PendingBlock>,
 }
 
 impl Service<Request> for App {
@@ -71,9 +81,14 @@ impl Service<Request> for App {
             // handled messages
             Request::Info(_) => Response::Info(self.info()),
             Request::Query(query) => Response::Query(self.query(query.data)),
-            Request::DeliverTx(deliver_tx) => Response::DeliverTx(self.deliver_tx(deliver_tx.tx)),
+
+            // TODO
+            Request::CheckTx(_) => Response::CheckTx(Default::default()),
+
             Request::Commit => Response::Commit(self.commit()),
-            Request::BeginBlock(_) => Response::BeginBlock(self.begin_block()),
+            Request::BeginBlock(begin) => Response::BeginBlock(self.begin_block(begin)),
+            Request::DeliverTx(deliver_tx) => Response::DeliverTx(self.deliver_tx(deliver_tx.tx)),
+            Request::EndBlock(end) => Response::EndBlock(self.end_block(end)),
 
             // Called only once for network genesis, i.e. when the application block height is 0.
             Request::InitChain(init_chain) => Response::InitChain(self.init_genesis(init_chain)),
@@ -81,8 +96,6 @@ impl Service<Request> for App {
             // unhandled messages
             Request::Flush => Response::Flush,
             Request::Echo(_) => Response::Echo(Default::default()),
-            Request::CheckTx(_) => Response::CheckTx(Default::default()),
-            Request::EndBlock(_) => Response::EndBlock(Default::default()),
             Request::ListSnapshots => Response::ListSnapshots(Default::default()),
             Request::OfferSnapshot(_) => Response::OfferSnapshot(Default::default()),
             Request::LoadSnapshotChunk(_) => Response::LoadSnapshotChunk(Default::default()),
@@ -93,23 +106,35 @@ impl Service<Request> for App {
     }
 }
 
-impl Default for App {
-    fn default() -> Self {
-        Self {
-            store: HashMap::default(),
-            height: 0,
-            app_hash: [0; 32],
-            note_commitment_tree: merkle::BridgeTree::new(MAX_MERKLE_CHECKPOINTS),
-            // TODO: Store cached merkle root to prevent recomputing it - currently
-            // this is happening for each spend (since we pass in the merkle_root when
-            // verifying the spend proof).
-            nullifier_set: BTreeSet::new(),
-            current_block: None,
-        }
-    }
-}
-
 impl App {
+    /// Load the application state from the database.
+    #[instrument]
+    pub async fn load() -> Result<Self, anyhow::Error> {
+        let db = db_connection().await.context("Could not open database")?;
+
+        let note_commitment_tree = if let Some(dbschema::KeyedBlob { data, .. }) =
+            query_as::<_, dbschema::KeyedBlob>("SELECT id, data FROM blobs WHERE id = 'nct';")
+                .fetch_optional(&mut db.acquire().await?)
+                .await?
+        {
+            bincode::deserialize(&data).context("Could not parse saved note commitment tree")?
+        } else {
+            merkle::BridgeTree::new(0)
+        };
+
+        // TODO load app_hash and height
+
+        Ok(Self {
+            db,
+            app_hash: [0; 32],
+            height: 0,
+            note_commitment_tree,
+            mempool_nullifiers: Default::default(),
+            pending_block: None,
+        })
+    }
+
+    #[instrument]
     fn init_genesis(&mut self, init_chain: request::InitChain) -> response::InitChain {
         let mut current_block = PendingBlock::default();
         tracing::info!("performing genesis for chain_id: {}", init_chain.chain_id);
@@ -135,7 +160,7 @@ impl App {
         tracing::info!("successfully loaded all genesis notes");
 
         // xx Correct/Necessary to commit here or will tendermint after InitGenesis?
-        self.current_block = Some(current_block);
+        self.pending_block = Some(current_block);
         self.commit();
         let initial_application_hash = self.app_hash.to_vec().into();
         tracing::info!(
@@ -150,6 +175,7 @@ impl App {
         }
     }
 
+    #[instrument]
     fn info(&self) -> response::Info {
         response::Info {
             data: "penumbra".to_string(),
@@ -160,62 +186,54 @@ impl App {
         }
     }
 
+    #[instrument]
     fn query(&self, query: Bytes) -> response::Query {
-        let key = String::from_utf8(query.to_vec()).unwrap();
-        let (value, log) = match self.store.get(&key) {
-            Some(value) => (value.clone(), "exists".to_string()),
-            None => ("".to_string(), "does not exist".to_string()),
-        };
-
-        response::Query {
-            log,
-            key: key.into_bytes().into(),
-            value: value.into_bytes().into(),
-            ..Default::default()
-        }
+        // TODO: implement (#23)
+        Default::default()
     }
 
-    fn deliver_tx(&mut self, tx: Bytes) -> response::DeliverTx {
-        let tx = String::from_utf8(tx.to_vec()).unwrap();
-        let tx_parts = tx.split('=').collect::<Vec<_>>();
-        let (key, value) = match (tx_parts.get(0), tx_parts.get(1)) {
-            (Some(key), Some(value)) => (*key, *value),
-            _ => (tx.as_ref(), tx.as_ref()),
-        };
-        self.store.insert(key.to_string(), value.to_string());
+    #[instrument]
+    fn begin_block(&mut self, begin: BeginBlock) -> response::BeginBlock {
+        self.pending_block = Some(PendingBlock::default());
+        response::BeginBlock::default()
+    }
 
-        response::DeliverTx {
-            events: vec![Event::new(
-                "app",
-                vec![
-                    ("key", key).index(),
-                    ("index_key", "index is working").index(),
-                    ("noindex_key", "index is working").no_index(),
-                ],
-            )],
-            ..Default::default()
-        }
+    #[instrument]
+    fn deliver_tx(&mut self, tx: Bytes) -> response::DeliverTx {
+        // TODO: implement (#135)
+
+        // This should accumulate data from `tx` into `self.pending_block`
+
+        Default::default()
+    }
+
+    #[instrument]
+    fn end_block(&mut self, end: EndBlock) -> response::EndBlock {
+        // TODO: here's where we process validator changes
+        response::EndBlock::default()
     }
 
     /// Commit the queued state transitions.
+    #[instrument]
     fn commit(&mut self) -> response::Commit {
         tracing::info!("committing pending changes to database");
-        let current_block =
-            std::mem::replace(&mut self.current_block, None).expect("we must have pending changes");
+        let pending_block =
+            std::mem::replace(&mut self.pending_block, None).expect("we must have pending changes");
 
         // Update local NCT.
-        for note_commitment in &current_block.note_commitments {
+        for note_commitment in &pending_block.note_commitments {
             self.note_commitment_tree.append(&note_commitment);
         }
 
-        // TODO: Update local nullifier set.
+        // TODO: remove nullifiers from mempool_nullifiers ?
+
+        // TODO: pass note_commitment_tree to db_commit_block ?
 
         let retain_height = self.height as i64;
         self.app_hash = self.note_commitment_tree.root2().to_bytes();
-        let db_connection = block_on(get_database_connection());
         block_on(db_commit_block(
-            db_connection,
-            current_block,
+            &self.db,
+            pending_block,
             retain_height,
             self.app_hash,
         ));
@@ -228,12 +246,9 @@ impl App {
         }
     }
 
-    fn begin_block(&mut self) -> response::BeginBlock {
-        self.current_block = Some(PendingBlock::default());
-        response::BeginBlock::default()
-    }
-
     /// Verifies a transaction and if it verifies, updates the node state.
+    ///
+    /// TODO: split into stateless and stateful parts.
     pub fn verify_transaction(&mut self, transaction: Transaction) -> bool {
         // 1. Check binding signature.
         if !transaction.verify_binding_sig() {
@@ -276,11 +291,13 @@ impl App {
 
                     // Check nullifier is not already in the nullifier set OR
                     // has been revealed already in this transaction.
+                    /*
                     if self.nullifier_set.contains(&inner.body.nullifier.clone())
                         || nullifiers_to_add.contains(&inner.body.nullifier.clone())
                     {
                         return false;
                     }
+                    */
 
                     // Queue up the state changes.
                     nullifiers_to_add.insert(inner.body.nullifier.clone());
@@ -288,9 +305,9 @@ impl App {
             }
         }
 
-        // 3. Update node state.
+        // 3. Update node state. (TODO: remove and put in commit ?)
         for nf in nullifiers_to_add {
-            self.nullifier_set.insert(nf);
+            //self.nullifier_set.insert(nf);
             // xx add nullifier set storage in db?
         }
         for commitment in note_commitments_to_add {
@@ -299,102 +316,6 @@ impl App {
         }
 
         true
-    }
-}
-
-/// The Penumbra wallet service.
-pub struct WalletApp {
-    db_pool: Pool<Postgres>,
-}
-
-impl WalletApp {
-    pub fn new() -> WalletApp {
-        WalletApp {
-            db_pool: block_on(get_database_connection()),
-        }
-    }
-}
-
-#[tonic::async_trait]
-impl Wallet for WalletApp {
-    type CompactBlockRangeStream = ReceiverStream<Result<CompactBlock, Status>>;
-
-    async fn compact_block_range(
-        &self,
-        request: tonic::Request<CompactBlockRangeRequest>,
-    ) -> Result<tonic::Response<Self::CompactBlockRangeStream>, Status> {
-        let mut p = self
-            .db_pool
-            .acquire()
-            .await
-            .map_err(|_| tonic::Status::unavailable("server error"))?;
-        let request = request.into_inner();
-        let start_height = request.start_height;
-        let end_height = request.end_height;
-
-        if end_height < start_height {
-            return Err(tonic::Status::failed_precondition(
-                "end height must be greater than start height",
-            ));
-        }
-
-        let (tx, rx) = mpsc::channel(100);
-
-        tokio::spawn(async move {
-            for block_height in start_height..=end_height {
-                let rows = query_as::<_, PenumbraStateFragment>(
-                    r#"
-SELECT note_commitment, ephemeral_key, note_ciphertext FROM notes
-WHERE transaction_id IN (select id from transactions where block_id IN
-(SELECT id FROM blocks WHERE height = $1)
-)
-"#,
-                )
-                .bind(block_height)
-                .fetch_all(&mut p)
-                .await
-                .expect("if no results will return empty state fragments");
-
-                let block = CompactBlock {
-                    height: block_height,
-                    fragment: rows.into_iter().map(|x| x.into()).collect::<Vec<_>>(),
-                };
-                tracing::info!("sending block response: {:?}", block);
-                tx.send(Ok(block.clone())).await.unwrap();
-            }
-        });
-
-        Ok(tonic::Response::new(Self::CompactBlockRangeStream::new(rx)))
-    }
-
-    async fn transaction_by_note(
-        &self,
-        request: tonic::Request<TransactionByNoteRequest>,
-    ) -> Result<tonic::Response<transaction::Transaction>, Status> {
-        let mut p = self
-            .db_pool
-            .acquire()
-            .await
-            .map_err(|_| tonic::Status::unavailable("server error"))?;
-
-        let note_commitment = request.into_inner().cm;
-        let rows = query_as::<_, PenumbraTransaction>(
-            r#"
-SELECT transactions.transaction FROM transactions
-JOIN notes ON transactions.id = (SELECT transaction_id FROM notes WHERE note_commitment=$1
-)
-"#,
-        )
-        .bind(note_commitment)
-        .fetch_one(&mut p)
-        .await
-        .map_err(|_| tonic::Status::not_found("transaction not found"))?;
-
-        let transaction = penumbra_crypto::Transaction::try_from(&rows.transaction[..])
-            .map_err(|_| tonic::Status::data_loss("transaction not well formed"))?;
-        let protobuf_transaction: transaction::Transaction = transaction.into();
-
-        Ok(tonic::Response::new(protobuf_transaction))
     }
 }
 
@@ -409,6 +330,9 @@ mod tests {
 
     #[test]
     fn test_transaction_verification_fails_for_dummy_merkle_tree() {
+        /*
+        // TODO: restore this test after writing a state facade (?)
+
         let mut app = App::default();
 
         let mut rng = OsRng;
@@ -455,5 +379,6 @@ mod tests {
 
         // The merkle path is invalid, so this transaction should not verify.
         assert!(!app.verify_transaction(transaction.unwrap()));
+        */
     }
 }

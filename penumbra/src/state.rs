@@ -1,7 +1,7 @@
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 use std::convert::TryInto;
 
-use penumbra_crypto::{ka, note, Action, Transaction};
+use penumbra_crypto::{ka, note, Action, Nullifier, Transaction};
 
 /// Stores pending state changes from transactions.
 #[derive(Debug)]
@@ -10,6 +10,8 @@ pub struct PendingBlock {
     pub note_commitments: Vec<note::Commitment>,
     // A map of serialized transactions (what we store) to its notes.
     pub transactions: HashMap<Vec<u8>, Vec<NoteFragment>>,
+    /// Nullifiers that were spent in this block.
+    pub spent_nullifiers: BTreeSet<Nullifier>,
 }
 
 impl Default for PendingBlock {
@@ -17,6 +19,7 @@ impl Default for PendingBlock {
         PendingBlock {
             note_commitments: Vec::new(),
             transactions: HashMap::new(),
+            spent_nullifiers: BTreeSet::new(),
         }
     }
 }

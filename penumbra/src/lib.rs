@@ -5,6 +5,7 @@ pub mod dbschema;
 pub mod dbutils;
 pub mod genesis;
 pub mod state;
+pub mod wallet;
 
 pub use app::App;
-pub use app::WalletApp;
+pub use wallet::WalletApp;

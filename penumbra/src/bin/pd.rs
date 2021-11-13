@@ -1,4 +1,4 @@
-use futures::join;
+use futures::{join, stream::FuturesUnordered};
 use rand::SeedableRng;
 use rand_chacha::ChaCha20Rng;
 use structopt::StructOpt;
@@ -59,8 +59,8 @@ async fn main() {
             let pool = db_connection().await.expect("");
             let _db_bootstrap_on_load = db_bootstrap(pool.clone()).await.unwrap();
 
-            let abci_app = penumbra::App::default();
-            let wallet_app = penumbra::WalletApp::new();
+            let abci_app = penumbra::App::load().await.unwrap();
+            let wallet_app = penumbra::WalletApp::new().await.unwrap();
             let wallet_service_addr = format!("{}:{}", host, wallet_port)
                 .parse()
                 .expect("this is a valid address");
@@ -69,23 +69,32 @@ async fn main() {
 
             let (consensus, mempool, snapshot, info) = split::service(abci_app, 1);
 
-            let abci_server = tower_abci::Server::builder()
-                .consensus(consensus)
-                .snapshot(snapshot)
-                .mempool(mempool)
-                .info(info)
-                .finish()
-                .unwrap();
-
-            let wallet_server = Server::builder()
-                .add_service(wallet_server::WalletServer::new(wallet_app))
-                .serve(wallet_service_addr);
-
-            // xx better way to serve both?
-            let _result = join!(
-                wallet_server,
-                abci_server.listen(format!("{}:{}", host, abci_port))
+            let abci_server = tokio::spawn(
+                tower_abci::Server::builder()
+                    .consensus(consensus)
+                    .snapshot(snapshot)
+                    .mempool(mempool)
+                    .info(info)
+                    .finish()
+                    .unwrap()
+                    .listen(format!("{}:{}", host, abci_port)),
             );
+
+            let wallet_server = tokio::spawn(
+                Server::builder()
+                    .add_service(wallet_server::WalletServer::new(wallet_app))
+                    .serve(wallet_service_addr),
+            );
+
+            // TODO: better error reporting
+            tokio::select! {
+                x = abci_server => {
+                    let _ = dbg!(x);
+                }
+                x = wallet_server => {
+                    let _ = dbg!(x);
+                }
+            };
         }
         Command::CreateGenesis {
             chain_id,
