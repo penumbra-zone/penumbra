@@ -8,6 +8,12 @@ use penumbra_crypto::merkle::Root;
 use penumbra_crypto::Fq;
 use penumbra_proto::wallet::StateFragment;
 
+#[derive(Debug, sqlx::FromRow)]
+pub struct KeyedBlob {
+    pub id: String,
+    pub data: Vec<u8>,
+}
+
 /// Bridge type between Postgres and Penumbra
 #[derive(Debug, sqlx::FromRow)]
 pub struct NoteCommitmentTreeAnchor {
