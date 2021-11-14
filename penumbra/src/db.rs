@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS blobs (
 CREATE TABLE IF NOT EXISTS blocks (
     height bigint PRIMARY KEY, 
     nct_anchor bytea NOT NULL,
-    app_hash bytea NOT NULL,
+    app_hash bytea NOT NULL
 )
 "#,
     )
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS notes (
     ephemeral_key bytea NOT NULL,
     encrypted_note bytea NOT NULL,
     transaction_id bytea NOT NULL,
-    height bigint REFERENCES blocks (height),
+    height bigint REFERENCES blocks (height)
 )
 "#,
     )
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS notes (
     query(
         r#"
 CREATE TABLE IF NOT EXISTS nullifiers (
-    nullifier bytea PRIMARY KEY,
+    nullifier bytea PRIMARY KEY
 )
 "#,
     )

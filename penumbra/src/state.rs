@@ -21,7 +21,9 @@ impl State {
     /// Connect to the database with the given `uri`.
     #[instrument]
     pub async fn connect(uri: &str) -> Result<Self> {
+        tracing::info!("connecting to postgres");
         let pool = PgPoolOptions::new().max_connections(4).connect(uri).await?;
+        tracing::info!("building tables");
         db::init_tables(&pool).await?;
         Ok(State { pool })
     }
@@ -65,7 +67,7 @@ INSERT INTO notes (
     ephemeral_key, 
     encrypted_note, 
     transaction_id,
-    height,
+    height
 ) VALUES ($1, $2, $3, $4, $5)
 "#,
             )
@@ -146,7 +148,7 @@ INSERT INTO notes (
 SELECT (
     note_commitment, 
     ephemeral_key, 
-    encrypted_note,
+    encrypted_note
 ) FROM notes WHERE height = $1
 "#,
             )

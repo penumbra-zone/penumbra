@@ -60,6 +60,7 @@ async fn main() {
             abci_port,
             wallet_port,
         } => {
+            tracing::info!(?host, ?database_uri, ?abci_port, ?wallet_port, "starting pd");
             // Initialize state
             let state = State::connect(&database_uri).await.unwrap();
 

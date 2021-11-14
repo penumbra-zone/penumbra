@@ -63,7 +63,7 @@ pub struct App {
 
 impl App {
     /// Create the application with the given DB state.
-    #[instrument]
+    #[instrument(skip(state))]
     pub async fn new(state: State) -> Result<Self, anyhow::Error> {
         let note_commitment_tree = state.note_commitment_tree().await?;
 
@@ -75,7 +75,7 @@ impl App {
         })
     }
 
-    #[instrument(skip(init_chain))]
+    #[instrument(skip(self, init_chain))]
     fn init_genesis(&mut self, init_chain: request::InitChain) -> response::InitChain {
         tracing::info!(?init_chain);
         let mut genesis_block = PendingBlock::new(NoteCommitmentTree::new(0));
@@ -115,7 +115,7 @@ impl App {
         }
     }
 
-    #[instrument]
+    #[instrument(skip(self))]
     fn info(&self) -> response::Info {
         let info = block_on(self.state.latest_block_info())
             .expect("must be able to get latest block info");
@@ -136,19 +136,19 @@ impl App {
         }
     }
 
-    #[instrument]
+    #[instrument(skip(self))]
     fn query(&self, query: Bytes) -> response::Query {
         // TODO: implement (#23)
         Default::default()
     }
 
-    #[instrument]
+    #[instrument(skip(self))]
     fn begin_block(&mut self, begin: BeginBlock) -> response::BeginBlock {
         self.pending_block = Some(PendingBlock::new(self.note_commitment_tree.clone()));
         response::BeginBlock::default()
     }
 
-    #[instrument]
+    #[instrument(skip(self))]
     fn deliver_tx(&mut self, tx: Bytes) -> response::DeliverTx {
         // TODO: implement (#135)
 
@@ -157,7 +157,7 @@ impl App {
         Default::default()
     }
 
-    #[instrument]
+    #[instrument(skip(self))]
     fn end_block(&mut self, end: EndBlock) -> response::EndBlock {
         self.pending_block
             .as_mut()
@@ -169,7 +169,7 @@ impl App {
     }
 
     /// Commit the queued state transitions.
-    #[instrument]
+    #[instrument(skip(self))]
     fn commit(&mut self) -> response::Commit {
         tracing::info!("committing pending changes to database");
         let pending_block = self
