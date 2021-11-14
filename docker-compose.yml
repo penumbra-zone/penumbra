@@ -5,12 +5,10 @@ services:
     container_name: penumbra
     build:
       context: .
-      args:
-        DATABASE_URL: postgres://postgres:postgres@db/penumbra
     environment:
       - RUST_LOG=${RUST_LOG:-warn,pd=info,penumbra=info}
     command:
-      pd start --host 0.0.0.0
+      pd start --host 0.0.0.0 --database-uri postgres://postgres:postgres@db/penumbra
     restart: on-failure
     depends_on:
       - db

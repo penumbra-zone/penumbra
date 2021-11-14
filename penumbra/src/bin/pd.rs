@@ -1,11 +1,12 @@
-use futures::{join, stream::FuturesUnordered};
 use rand::SeedableRng;
 use rand_chacha::ChaCha20Rng;
 use structopt::StructOpt;
 use tonic::transport::Server;
 
-use penumbra::dbutils::{db_bootstrap, db_connection};
-use penumbra::genesis::{generate_genesis_notes, GenesisAddr};
+use penumbra::{
+    genesis::{generate_genesis_notes, GenesisAddr},
+    App, State, WalletApp,
+};
 use penumbra_proto::wallet::wallet_server;
 
 #[derive(Debug, StructOpt)]
@@ -24,6 +25,9 @@ struct Opt {
 enum Command {
     /// Start running the ABCI and wallet services.
     Start {
+        /// The URI used to connect to the Postgres database.
+        #[structopt(short, long)]
+        database_uri: String,
         /// Bind the services to this host.
         #[structopt(short, long, default_value = "127.0.0.1")]
         host: String,
@@ -52,22 +56,27 @@ async fn main() {
     match opt.cmd {
         Command::Start {
             host,
+            database_uri,
             abci_port,
             wallet_port,
         } => {
-            // Create database tables
-            let pool = db_connection().await.expect("");
-            let _db_bootstrap_on_load = db_bootstrap(pool.clone()).await.unwrap();
+            tracing::info!(
+                ?host,
+                ?database_uri,
+                ?abci_port,
+                ?wallet_port,
+                "starting pd"
+            );
+            // Initialize state
+            let state = State::connect(&database_uri).await.unwrap();
 
-            let abci_app = penumbra::App::load().await.unwrap();
-            let wallet_app = penumbra::WalletApp::new().await.unwrap();
+            let abci_app = App::new(state.clone()).await.unwrap();
+            let wallet_app = WalletApp::new(state);
             let wallet_service_addr = format!("{}:{}", host, wallet_port)
                 .parse()
                 .expect("this is a valid address");
 
-            use tower_abci::split;
-
-            let (consensus, mempool, snapshot, info) = split::service(abci_app, 1);
+            let (consensus, mempool, snapshot, info) = tower_abci::split::service(abci_app, 1);
 
             let abci_server = tokio::spawn(
                 tower_abci::Server::builder()
@@ -90,9 +99,11 @@ async fn main() {
             tokio::select! {
                 x = abci_server => {
                     let _ = dbg!(x);
+                    return;
                 }
                 x = wallet_server => {
                     let _ = dbg!(x);
+                    return;
                 }
             };
         }

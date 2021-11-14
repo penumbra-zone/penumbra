@@ -19,13 +19,13 @@ message CompactBlockRangeRequest {
 
 message CompactBlock {
   uint32 height = 1;
-  repeated StateFragment fragment = 2;
+  repeated StateFragment fragments = 2;
 }
 
 // Contains the minimum data needed to update client state.
 message StateFragment {
   // The note commitment for the output note. 32 bytes.
-  bytes cm = 2;
+  bytes note_commitment = 2;
   // The encoding of an ephemeral public key. 32 bytes.
   bytes ephemeral_key = 3;
   // An encryption of the newly created note.
