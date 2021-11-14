@@ -294,7 +294,7 @@ impl TryFrom<[u8; NOTE_LEN_BYTES]> for Note {
 }
 
 // Note commitment.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(into = "[u8; 32]", try_from = "[u8; 32]")]
 pub struct Commitment(pub Fq);
 
@@ -353,6 +353,38 @@ impl TryFrom<&[u8]> for Commitment {
         let inner = Fq::from_bytes(bytes).map_err(|_| Error::InvalidNoteCommitment)?;
 
         Ok(Commitment(inner))
+    }
+}
+
+#[cfg(feature = "sqlx")]
+mod sqlx_impls {
+    use super::*;
+
+    use sqlx::{Database, Decode, Encode, Postgres, Type};
+
+    impl<'r> Decode<'r, Postgres> for Commitment {
+        fn decode(
+            value: <Postgres as sqlx::database::HasValueRef<'r>>::ValueRef,
+        ) -> Result<Self, sqlx::error::BoxDynError> {
+            let bytes = Vec::<u8>::decode(value)?;
+            Commitment::try_from(&bytes[..]).map_err(Into::into)
+        }
+    }
+
+    impl<'q> Encode<'q, Postgres> for Commitment {
+        fn encode_by_ref(
+            &self,
+            buf: &mut <Postgres as sqlx::database::HasArguments<'q>>::ArgumentBuffer,
+        ) -> sqlx::encode::IsNull {
+            let bytes = self.0.to_bytes();
+            (&bytes[..]).encode(buf)
+        }
+    }
+
+    impl Type<Postgres> for Commitment {
+        fn type_info() -> <Postgres as Database>::TypeInfo {
+            <[u8] as Type<Postgres>>::type_info()
+        }
     }
 }
 

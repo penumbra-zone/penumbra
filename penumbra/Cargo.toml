@@ -14,7 +14,7 @@ publish = false
 [dependencies]
 # Workspace dependencies
 penumbra-proto = { path = "../proto" }
-penumbra-crypto = { path = "../crypto" }
+penumbra-crypto = { path = "../crypto" , features = ["sqlx"]}
 penumbra-wallet = { path = "../wallet" }
 
 # Penumbra dependencies
@@ -43,6 +43,7 @@ serde_json = "1"
 serde = { version = "1", features = ["derive"] }
 serde_with = { version = "1.11", features = ["hex"] }
 reqwest = { version = "0.11", features = ["json"] }
+sha2 = "0.9"
 anyhow = "1"
 hex = "0.4"
 rand = "0.8"

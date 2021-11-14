@@ -1,11 +1,15 @@
 //! Source code for the Penumbra node software.
 
 mod app;
-pub mod dbschema;
-pub mod dbutils;
+mod db;
+mod pending_block;
+mod state;
+mod wallet;
+
 pub mod genesis;
-pub mod state;
-pub mod wallet;
+
+pub use pending_block::PendingBlock;
+pub use state::State;
 
 pub use app::App;
 pub use wallet::WalletApp;

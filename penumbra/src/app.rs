@@ -5,11 +5,9 @@ use std::{
     task::{Context, Poll},
 };
 
-use anyhow::Context as _;
 use bytes::Bytes;
 use futures::{executor::block_on, future::FutureExt};
 use rand_core::OsRng;
-use sqlx::{query_as, Pool, Postgres};
 use tendermint::abci::{
     request::{self, BeginBlock, EndBlock},
     response, Request, Response,
@@ -17,16 +15,17 @@ use tendermint::abci::{
 use tower::Service;
 
 use penumbra_crypto::{
-    merkle, merkle::Frontier, merkle::TreeExt, note, Action, Nullifier, Transaction,
+    merkle::TreeExt,
+    merkle::{self, NoteCommitmentTree},
+    note, Action, Nullifier, Transaction,
 };
 use tower_abci::BoxError;
 use tracing::instrument;
 
 use crate::{
-    dbschema::{self, PenumbraStateFragment, PenumbraTransaction},
-    dbutils::{db_commit_block, db_connection},
+    db::schema,
     genesis::GenesisNotes,
-    state::PendingBlock,
+    PendingBlock, State,
 };
 
 const ABCI_INFO_VERSION: &str = env!("VERGEN_GIT_SEMVER");
@@ -34,12 +33,9 @@ const ABCI_INFO_VERSION: &str = env!("VERGEN_GIT_SEMVER");
 /// The Penumbra ABCI application.
 #[derive(Debug)]
 pub struct App {
-    db: Pool<Postgres>,
+    state: State,
 
-    height: u64,
-    app_hash: [u8; 32],
-
-    /// Should be written to the database after every block commit.
+    /// Written to the database after every block commit.
     note_commitment_tree: merkle::BridgeTree<note::Commitment, { merkle::DEPTH as u8 }>,
 
     /// We want to prevent two transactions from spending the same note in the
@@ -65,79 +61,25 @@ pub struct App {
     pending_block: Option<PendingBlock>,
 }
 
-impl Service<Request> for App {
-    type Response = Response;
-    type Error = BoxError;
-    type Future = Pin<Box<dyn Future<Output = Result<Response, BoxError>> + Send + 'static>>;
-
-    fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        Poll::Ready(Ok(()))
-    }
-
-    fn call(&mut self, req: Request) -> Self::Future {
-        tracing::info!(?req);
-
-        let rsp = match req {
-            // handled messages
-            Request::Info(_) => Response::Info(self.info()),
-            Request::Query(query) => Response::Query(self.query(query.data)),
-
-            // TODO
-            Request::CheckTx(_) => Response::CheckTx(Default::default()),
-
-            Request::Commit => Response::Commit(self.commit()),
-            Request::BeginBlock(begin) => Response::BeginBlock(self.begin_block(begin)),
-            Request::DeliverTx(deliver_tx) => Response::DeliverTx(self.deliver_tx(deliver_tx.tx)),
-            Request::EndBlock(end) => Response::EndBlock(self.end_block(end)),
-
-            // Called only once for network genesis, i.e. when the application block height is 0.
-            Request::InitChain(init_chain) => Response::InitChain(self.init_genesis(init_chain)),
-
-            // unhandled messages
-            Request::Flush => Response::Flush,
-            Request::Echo(_) => Response::Echo(Default::default()),
-            Request::ListSnapshots => Response::ListSnapshots(Default::default()),
-            Request::OfferSnapshot(_) => Response::OfferSnapshot(Default::default()),
-            Request::LoadSnapshotChunk(_) => Response::LoadSnapshotChunk(Default::default()),
-            Request::ApplySnapshotChunk(_) => Response::ApplySnapshotChunk(Default::default()),
-        };
-        tracing::info!(?rsp);
-        async move { Ok(rsp) }.boxed()
-    }
-}
-
 impl App {
-    /// Load the application state from the database.
+    /// Create the application with the given DB state.
     #[instrument]
-    pub async fn load() -> Result<Self, anyhow::Error> {
-        let db = db_connection().await.context("Could not open database")?;
-
-        let note_commitment_tree = if let Some(dbschema::KeyedBlob { data, .. }) =
-            query_as::<_, dbschema::KeyedBlob>("SELECT id, data FROM blobs WHERE id = 'nct';")
-                .fetch_optional(&mut db.acquire().await?)
-                .await?
-        {
-            bincode::deserialize(&data).context("Could not parse saved note commitment tree")?
-        } else {
-            merkle::BridgeTree::new(0)
-        };
-
-        // TODO load app_hash and height
+    pub async fn new(state: State) -> Result<Self, anyhow::Error> {
+        let note_commitment_tree = state.note_commitment_tree().await?;
 
         Ok(Self {
-            db,
-            app_hash: [0; 32],
-            height: 0,
+            state,
             note_commitment_tree,
             mempool_nullifiers: Default::default(),
             pending_block: None,
         })
     }
 
-    #[instrument]
+    #[instrument(skip(init_chain))]
     fn init_genesis(&mut self, init_chain: request::InitChain) -> response::InitChain {
-        let mut current_block = PendingBlock::default();
-        tracing::info!("performing genesis for chain_id: {}", init_chain.chain_id);
+        tracing::info!(?init_chain);
+        let mut genesis_block = PendingBlock::new(NoteCommitmentTree::new(0));
+        genesis_block.set_height(0);
 
         // Note that errors cannot be handled in InitChain, the application must crash.
         let genesis: GenesisNotes = serde_json::from_slice(&init_chain.app_state_bytes)
@@ -148,6 +90,7 @@ impl App {
             Transaction::genesis_build_with_root(self.note_commitment_tree.root2());
 
         for note in genesis.notes() {
+            tracing::info!(?note);
             genesis_tx_builder.add_output(&mut OsRng, note);
         }
         let genesis_tx = genesis_tx_builder
@@ -156,33 +99,40 @@ impl App {
             .expect("can form genesis transaction");
 
         // Now add the transaction and its note fragments to the pending state changes.
-        current_block.add_transaction(genesis_tx);
-        tracing::info!("successfully loaded all genesis notes");
+        genesis_block.add_transaction(genesis_tx);
+        tracing::info!("loaded all genesis notes");
 
         // xx Correct/Necessary to commit here or will tendermint after InitGenesis?
-        self.pending_block = Some(current_block);
+        self.pending_block = Some(genesis_block);
         self.commit();
-        let initial_application_hash = self.app_hash.to_vec().into();
-        tracing::info!(
-            "initial app_hash at genesis: {:?}",
-            initial_application_hash
-        );
+        let app_hash = block_on(self.state.app_hash()).unwrap();
+        tracing::info!(?app_hash);
 
         response::InitChain {
             consensus_params: Some(init_chain.consensus_params),
             validators: init_chain.validators,
-            app_hash: initial_application_hash,
+            app_hash: app_hash.into(),
         }
     }
 
     #[instrument]
     fn info(&self) -> response::Info {
+        let info = block_on(self.state.latest_block_info())
+            .expect("must be able to get latest block info");
+
+        let (last_block_height, last_block_app_hash) = match info {
+            Some(schema::BlocksRow {
+                height, app_hash, ..
+            }) => (height, app_hash.into()),
+            None => (0, vec![0; 32].into()),
+        };
+
         response::Info {
             data: "penumbra".to_string(),
             version: ABCI_INFO_VERSION.to_string(),
             app_version: 1,
-            last_block_height: self.height as i64,
-            last_block_app_hash: self.app_hash.to_vec().into(),
+            last_block_height,
+            last_block_app_hash,
         }
     }
 
@@ -194,7 +144,7 @@ impl App {
 
     #[instrument]
     fn begin_block(&mut self, begin: BeginBlock) -> response::BeginBlock {
-        self.pending_block = Some(PendingBlock::default());
+        self.pending_block = Some(PendingBlock::new(self.note_commitment_tree.clone()));
         response::BeginBlock::default()
     }
 
@@ -209,6 +159,11 @@ impl App {
 
     #[instrument]
     fn end_block(&mut self, end: EndBlock) -> response::EndBlock {
+        self.pending_block
+            .as_mut()
+            .expect("pending_block must be Some in EndBlock processing")
+            .set_height(end.height);
+
         // TODO: here's where we process validator changes
         response::EndBlock::default()
     }
@@ -217,32 +172,27 @@ impl App {
     #[instrument]
     fn commit(&mut self) -> response::Commit {
         tracing::info!("committing pending changes to database");
-        let pending_block =
-            std::mem::replace(&mut self.pending_block, None).expect("we must have pending changes");
+        let pending_block = self
+            .pending_block
+            .take()
+            .expect("pending_block must be Some when commit is called");
 
-        // Update local NCT.
-        for note_commitment in &pending_block.note_commitments {
-            self.note_commitment_tree.append(&note_commitment);
+        // These nullifiers are about to be committed, so we don't need
+        // to keep them in the mempool nullifier set any longer.
+        for nullifier in pending_block.spent_nullifiers.iter() {
+            self.mempool_nullifiers.remove(nullifier);
         }
 
-        // TODO: remove nullifiers from mempool_nullifiers ?
+        // Pull the updated note commitment tree.
+        self.note_commitment_tree = pending_block.note_commitment_tree.clone();
 
-        // TODO: pass note_commitment_tree to db_commit_block ?
+        // Commit the block to the database.
+        block_on(self.state.commit_block(pending_block)).expect("block commit should succeed");
 
-        let retain_height = self.height as i64;
-        self.app_hash = self.note_commitment_tree.root2().to_bytes();
-        block_on(db_commit_block(
-            &self.db,
-            pending_block,
-            retain_height,
-            self.app_hash,
-        ));
-
-        self.height += 1;
-
+        let app_hash = block_on(self.state.app_hash()).expect("must be able to fetch apphash");
         response::Commit {
-            data: self.app_hash.to_vec().into(),
-            retain_height,
+            data: app_hash.into(),
+            retain_height: 0,
         }
     }
 
@@ -305,20 +255,54 @@ impl App {
             }
         }
 
-        // 3. Update node state. (TODO: remove and put in commit ?)
-        for nf in nullifiers_to_add {
-            //self.nullifier_set.insert(nf);
-            // xx add nullifier set storage in db?
-        }
-        for commitment in note_commitments_to_add {
-            self.note_commitment_tree.append(&commitment);
-            // xx add row in transactions table
-        }
-
         true
     }
 }
 
+impl Service<Request> for App {
+    type Response = Response;
+    type Error = BoxError;
+    type Future = Pin<Box<dyn Future<Output = Result<Response, BoxError>> + Send + 'static>>;
+
+    fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        Poll::Ready(Ok(()))
+    }
+
+    fn call(&mut self, req: Request) -> Self::Future {
+        tracing::info!(?req);
+
+        let rsp = match req {
+            // handled messages
+            Request::Info(_) => Response::Info(self.info()),
+            Request::Query(query) => Response::Query(self.query(query.data)),
+
+            // TODO
+            Request::CheckTx(_) => Response::CheckTx(Default::default()),
+
+            Request::Commit => Response::Commit(self.commit()),
+            Request::BeginBlock(begin) => Response::BeginBlock(self.begin_block(begin)),
+            Request::DeliverTx(deliver_tx) => Response::DeliverTx(self.deliver_tx(deliver_tx.tx)),
+            Request::EndBlock(end) => Response::EndBlock(self.end_block(end)),
+
+            // Called only once for network genesis, i.e. when the application block height is 0.
+            Request::InitChain(init_chain) => Response::InitChain(self.init_genesis(init_chain)),
+
+            // unhandled messages
+            Request::Flush => Response::Flush,
+            Request::Echo(_) => Response::Echo(Default::default()),
+            Request::ListSnapshots => Response::ListSnapshots(Default::default()),
+            Request::OfferSnapshot(_) => Response::OfferSnapshot(Default::default()),
+            Request::LoadSnapshotChunk(_) => Response::LoadSnapshotChunk(Default::default()),
+            Request::ApplySnapshotChunk(_) => Response::ApplySnapshotChunk(Default::default()),
+        };
+        tracing::info!(?rsp);
+        async move { Ok(rsp) }.boxed()
+    }
+}
+
+/*
+// TODO: restore this test after writing a state facade (?)
+//   OR: don't write a state facade, and test the actual code using test pg states
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -330,8 +314,6 @@ mod tests {
 
     #[test]
     fn test_transaction_verification_fails_for_dummy_merkle_tree() {
-        /*
-        // TODO: restore this test after writing a state facade (?)
 
         let mut app = App::default();
 
@@ -379,6 +361,6 @@ mod tests {
 
         // The merkle path is invalid, so this transaction should not verify.
         assert!(!app.verify_transaction(transaction.unwrap()));
-        */
     }
 }
+    */

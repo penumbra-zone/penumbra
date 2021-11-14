@@ -1,5 +1,3 @@
-use anyhow::Context as _;
-use sqlx::{query_as, Pool, Postgres};
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::Status;
@@ -11,21 +9,16 @@ use penumbra_proto::{
     },
 };
 
-use crate::{
-    dbschema::{PenumbraStateFragment, PenumbraTransaction},
-    dbutils::db_connection,
-};
+use crate::State;
 
 /// The Penumbra wallet service.
 pub struct WalletApp {
-    db_pool: Pool<Postgres>,
+    state: State,
 }
 
 impl WalletApp {
-    pub async fn new() -> Result<WalletApp, anyhow::Error> {
-        Ok(WalletApp {
-            db_pool: db_connection().await.context("Could not open database")?,
-        })
+    pub fn new(state: State) -> WalletApp {
+        WalletApp { state }
     }
 }
 
@@ -37,14 +30,10 @@ impl Wallet for WalletApp {
         &self,
         request: tonic::Request<CompactBlockRangeRequest>,
     ) -> Result<tonic::Response<Self::CompactBlockRangeStream>, Status> {
-        let mut p = self
-            .db_pool
-            .acquire()
-            .await
-            .map_err(|_| tonic::Status::unavailable("server error"))?;
-        let request = request.into_inner();
-        let start_height = request.start_height;
-        let end_height = request.end_height;
+        let CompactBlockRangeRequest {
+            start_height,
+            end_height,
+        } = request.into_inner();
 
         if end_height < start_height {
             return Err(tonic::Status::failed_precondition(
@@ -54,27 +43,14 @@ impl Wallet for WalletApp {
 
         let (tx, rx) = mpsc::channel(100);
 
+        let state = self.state.clone();
         tokio::spawn(async move {
-            for block_height in start_height..=end_height {
-                let rows = query_as::<_, PenumbraStateFragment>(
-                    r#"
-SELECT note_commitment, ephemeral_key, note_ciphertext FROM notes
-WHERE transaction_id IN (select id from transactions where block_id IN
-(SELECT id FROM blocks WHERE height = $1)
-)
-"#,
-                )
-                .bind(block_height)
-                .fetch_all(&mut p)
-                .await
-                .expect("if no results will return empty state fragments");
-
-                let block = CompactBlock {
-                    height: block_height,
-                    fragment: rows.into_iter().map(|x| x.into()).collect::<Vec<_>>(),
-                };
+            for height in start_height..=end_height {
+                let block = state.compact_block(height.into()).await;
                 tracing::info!("sending block response: {:?}", block);
-                tx.send(Ok(block.clone())).await.unwrap();
+                tx.send(block.map_err(|_| tonic::Status::unavailable("database error")))
+                    .await
+                    .unwrap();
             }
         });
 
@@ -83,31 +59,10 @@ WHERE transaction_id IN (select id from transactions where block_id IN
 
     async fn transaction_by_note(
         &self,
-        request: tonic::Request<TransactionByNoteRequest>,
+        _request: tonic::Request<TransactionByNoteRequest>,
     ) -> Result<tonic::Response<transaction::Transaction>, Status> {
-        let mut p = self
-            .db_pool
-            .acquire()
-            .await
-            .map_err(|_| tonic::Status::unavailable("server error"))?;
-
-        let note_commitment = request.into_inner().cm;
-        let rows = query_as::<_, PenumbraTransaction>(
-            r#"
-SELECT transactions.transaction FROM transactions
-JOIN notes ON transactions.id = (SELECT transaction_id FROM notes WHERE note_commitment=$1
-)
-"#,
-        )
-        .bind(note_commitment)
-        .fetch_one(&mut p)
-        .await
-        .map_err(|_| tonic::Status::not_found("transaction not found"))?;
-
-        let transaction = penumbra_crypto::Transaction::try_from(&rows.transaction[..])
-            .map_err(|_| tonic::Status::data_loss("transaction not well formed"))?;
-        let protobuf_transaction: transaction::Transaction = transaction.into();
-
-        Ok(tonic::Response::new(protobuf_transaction))
+        Err(tonic::Status::unimplemented(
+            "how should this relate to tendermint rpc?",
+        ))
     }
 }
