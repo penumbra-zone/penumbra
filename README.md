@@ -26,7 +26,7 @@ Penumbra has two binaries, the daemon `pd` and the command-line wallet interface
 
 This is the preferred way to run Penumbra:
 ```
-docker-compose up -d
+docker-compose up --build -d
 ```
 
 ### Running `pcli`
@@ -87,9 +87,15 @@ export RUST_LOG=debug  # bash
 set -x RUST_LOG debug  # fish
 ```
 
+You'll need to set up a Postgres instance.  Here is one way:
+```bash
+# create a volume for pg data
+docker volume create tmp_db_data
+docker run --name tmp-postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_USER=postgres -e POSTGRES_DB=penumbra -p 5432:5432 -v tmp_db_data:/var/lib/postgresql/data -d postgres
+
 Start the Penumbra instance (you probably want to set `RUST_LOG` to `debug`):
 ```
-cargo run --bin pd
+cargo run --bin pd start -d postgres_uri
 ```
 Start the Tendermint node:
 ```
