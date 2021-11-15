@@ -4,7 +4,7 @@ use sqlx::{query, query_as, Pool, Postgres};
 use tracing::instrument;
 
 use penumbra_crypto::merkle::{NoteCommitmentTree, TreeExt};
-use penumbra_proto::wallet::{CompactBlock, StateFragment};
+use penumbra_proto::wallet::{CompactBlock, StateFragment, TransactionDetail};
 
 use crate::{
     db::{self, schema},
@@ -164,5 +164,18 @@ INSERT INTO notes (
             )
             .collect(),
         })
+    }
+
+    /// Retrieve the [`TransactionDetail`] for a given note commitment.
+    pub async fn transaction_by_note(&self, note_commitment: Vec<u8>) -> Result<TransactionDetail> {
+        let mut conn = self.pool.acquire().await?;
+
+        let id = query_as::<_, (Vec<u8>,)>(
+            "SELECT transaction_id FROM notes WHERE note_commitment = $1",
+        )
+        .bind(note_commitment)
+        .fetch_one(&mut conn)
+        .await?;
+        Ok(TransactionDetail { id: id.0 })
     }
 }
