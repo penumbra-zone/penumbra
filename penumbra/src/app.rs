@@ -6,21 +6,22 @@ use std::{
 };
 
 use bytes::Bytes;
-use futures::{executor::block_on, future::FutureExt};
+use futures::future::FutureExt;
 use rand_core::OsRng;
 use tendermint::abci::{
     request::{self, BeginBlock, EndBlock},
     response, Request, Response,
 };
+use tokio::sync::oneshot;
 use tower::Service;
+use tower_abci::BoxError;
+use tracing::instrument;
 
 use penumbra_crypto::{
     merkle::TreeExt,
     merkle::{self, NoteCommitmentTree},
     note, Action, Nullifier, Transaction,
 };
-use tower_abci::BoxError;
-use tracing::instrument;
 
 use crate::{db::schema, genesis::GenesisNotes, PendingBlock, State};
 
@@ -55,6 +56,9 @@ pub struct App {
     /// set to Some at the beginning of BeginBlock and consumed (and reset to
     /// None) in Commit.
     pending_block: Option<PendingBlock>,
+
+    /// Used to allow asynchronous requests to be processed sequentially.
+    completion_tracker: CompletionTracker,
 }
 
 impl App {
@@ -68,11 +72,15 @@ impl App {
             note_commitment_tree,
             mempool_nullifiers: Default::default(),
             pending_block: None,
+            completion_tracker: Default::default(),
         })
     }
 
     #[instrument(skip(self, init_chain))]
-    fn init_genesis(&mut self, init_chain: request::InitChain) -> response::InitChain {
+    fn init_genesis(
+        &mut self,
+        init_chain: request::InitChain,
+    ) -> impl Future<Output = Result<Response, BoxError>> {
         tracing::info!(?init_chain);
         let mut genesis_block = PendingBlock::new(NoteCommitmentTree::new(0));
         genesis_block.set_height(0);
@@ -100,35 +108,37 @@ impl App {
 
         // xx Correct/Necessary to commit here or will tendermint after InitGenesis?
         self.pending_block = Some(genesis_block);
-        self.commit();
-        let app_hash = block_on(self.state.app_hash()).unwrap();
-        tracing::info!(?app_hash);
-
-        response::InitChain {
-            consensus_params: Some(init_chain.consensus_params),
-            validators: init_chain.validators,
-            app_hash: app_hash.into(),
+        let commit = self.commit();
+        let state = self.state.clone();
+        async move {
+            commit.await?;
+            let app_hash = state.app_hash().await.unwrap();
+            Ok(Response::InitChain(response::InitChain {
+                consensus_params: Some(init_chain.consensus_params),
+                validators: init_chain.validators,
+                app_hash: app_hash.into(),
+            }))
         }
     }
 
     #[instrument(skip(self))]
-    fn info(&self) -> response::Info {
-        let info = block_on(self.state.latest_block_info())
-            .expect("must be able to get latest block info");
+    fn info(&self) -> impl Future<Output = Result<Response, BoxError>> {
+        let state = self.state.clone();
+        async move {
+            let (last_block_height, last_block_app_hash) = match state.latest_block_info().await? {
+                Some(schema::BlocksRow {
+                    height, app_hash, ..
+                }) => (height, app_hash.into()),
+                None => (0, vec![0; 32].into()),
+            };
 
-        let (last_block_height, last_block_app_hash) = match info {
-            Some(schema::BlocksRow {
-                height, app_hash, ..
-            }) => (height, app_hash.into()),
-            None => (0, vec![0; 32].into()),
-        };
-
-        response::Info {
-            data: "penumbra".to_string(),
-            version: ABCI_INFO_VERSION.to_string(),
-            app_version: 1,
-            last_block_height,
-            last_block_app_hash,
+            Ok(Response::Info(response::Info {
+                data: "penumbra".to_string(),
+                version: ABCI_INFO_VERSION.to_string(),
+                app_version: 1,
+                last_block_height,
+                last_block_app_hash,
+            }))
         }
     }
 
@@ -166,8 +176,7 @@ impl App {
 
     /// Commit the queued state transitions.
     #[instrument(skip(self))]
-    fn commit(&mut self) -> response::Commit {
-        tracing::info!("committing pending changes to database");
+    fn commit(&mut self) -> impl Future<Output = Result<Response, BoxError>> {
         let pending_block = self
             .pending_block
             .take()
@@ -182,13 +191,26 @@ impl App {
         // Pull the updated note commitment tree.
         self.note_commitment_tree = pending_block.note_commitment_tree.clone();
 
-        // Commit the block to the database.
-        block_on(self.state.commit_block(pending_block)).expect("block commit should succeed");
+        let finished_signal = self.completion_tracker.start();
+        let state = self.state.clone();
+        async move {
+            state
+                .commit_block(pending_block)
+                .await
+                .expect("block commit should succeed");
 
-        let app_hash = block_on(self.state.app_hash()).expect("must be able to fetch apphash");
-        response::Commit {
-            data: app_hash.into(),
-            retain_height: 0,
+            let app_hash = state
+                .app_hash()
+                .await
+                .expect("must be able to fetch apphash");
+
+            // Signal that we're ready to resume processing further requests.
+            let _ = finished_signal.send(());
+
+            Ok(Response::Commit(response::Commit {
+                data: app_hash.into(),
+                retain_height: 0,
+            }))
         }
     }
 
@@ -255,13 +277,64 @@ impl App {
     }
 }
 
+// Wrapper that allows the service to ensure that the current request's response
+// future will complete before processing any further requests.
+#[derive(Debug)]
+struct CompletionTracker {
+    // it would be cleaner to use an Option, but we have to box the oneshot
+    // future because it won't be Unpin and Service::poll_ready doesn't require
+    // a pinned receiver, so tracking the waiting state in a separate bool allows
+    // reallocating a new boxed future every time.
+    waiting: bool,
+    future: tokio_util::sync::ReusableBoxFuture<Result<(), oneshot::error::RecvError>>,
+}
+
+impl CompletionTracker {
+    /// Returns a oneshot::Sender used to signal completion of the tracked request.
+    pub fn start(&mut self) -> oneshot::Sender<()> {
+        assert!(!self.waiting);
+        let (tx, rx) = oneshot::channel();
+        self.waiting = true;
+        self.future.set(rx);
+        tx
+    }
+
+    pub fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<()> {
+        if !self.waiting {
+            return Poll::Ready(());
+        }
+
+        match self.future.poll(cx) {
+            Poll::Pending => Poll::Pending,
+            Poll::Ready(Ok(())) => {
+                self.waiting = false;
+                Poll::Ready(())
+            }
+            Poll::Ready(Err(_)) => {
+                tracing::error!("response future of sequentially-processed request was dropped before completion, likely a bug");
+                self.waiting = false;
+                Poll::Ready(())
+            }
+        }
+    }
+}
+
+impl Default for CompletionTracker {
+    fn default() -> Self {
+        Self {
+            future: tokio_util::sync::ReusableBoxFuture::new(async { Ok(()) }),
+            waiting: false,
+        }
+    }
+}
+
 impl Service<Request> for App {
     type Response = Response;
     type Error = BoxError;
     type Future = Pin<Box<dyn Future<Output = Result<Response, BoxError>> + Send + 'static>>;
 
-    fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        Poll::Ready(Ok(()))
+    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.completion_tracker.poll_ready(cx).map(|_| Ok(()))
     }
 
     fn call(&mut self, req: Request) -> Self::Future {
@@ -269,19 +342,19 @@ impl Service<Request> for App {
 
         let rsp = match req {
             // handled messages
-            Request::Info(_) => Response::Info(self.info()),
+            Request::Info(_) => return self.info().boxed(),
             Request::Query(query) => Response::Query(self.query(query.data)),
 
             // TODO
             Request::CheckTx(_) => Response::CheckTx(Default::default()),
 
-            Request::Commit => Response::Commit(self.commit()),
             Request::BeginBlock(begin) => Response::BeginBlock(self.begin_block(begin)),
             Request::DeliverTx(deliver_tx) => Response::DeliverTx(self.deliver_tx(deliver_tx.tx)),
             Request::EndBlock(end) => Response::EndBlock(self.end_block(end)),
+            Request::Commit => return self.commit().boxed(),
 
             // Called only once for network genesis, i.e. when the application block height is 0.
-            Request::InitChain(init_chain) => Response::InitChain(self.init_genesis(init_chain)),
+            Request::InitChain(init_chain) => return self.init_genesis(init_chain).boxed(),
 
             // unhandled messages
             Request::Flush => Response::Flush,
