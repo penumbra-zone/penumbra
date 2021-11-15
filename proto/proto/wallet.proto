@@ -6,7 +6,7 @@ import "transaction.proto";
 // A wallet service.
 service Wallet {
   rpc CompactBlockRange(CompactBlockRangeRequest) returns (stream CompactBlock);
-  rpc TransactionByNote(TransactionByNoteRequest) returns (penumbra.transaction.Transaction);
+  rpc TransactionByNote(TransactionByNoteRequest) returns (TransactionDetail);
 }
 
 // Requests a range of compact block data.
@@ -38,4 +38,8 @@ message StateFragment {
 message TransactionByNoteRequest {
   // The note commitment we're interested in.
   bytes cm = 1;
+}
+
+message TransactionDetail {
+  bytes id = 1;
 }
