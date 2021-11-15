@@ -149,13 +149,7 @@ INSERT INTO notes (
         Ok(CompactBlock {
             height: height as u32,
             fragments: query_as::<_, (Vec<u8>, Vec<u8>, Vec<u8>)>(
-                r#"
-SELECT (
-    note_commitment, 
-    ephemeral_key, 
-    encrypted_note
-) FROM notes WHERE height = $1
-"#,
+                "SELECT note_commitment, ephemeral_key, encrypted_note FROM notes WHERE height = $1",
             )
             .bind(height)
             .fetch_all(&mut conn)
