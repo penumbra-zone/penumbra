@@ -52,7 +52,9 @@ jobs:
             -p decaf377-fmd \
             -p penumbra-crypto \
             -p penumbra-proto \
-            -p penumbra
+            -p penumbra-wallet \
+            -p pd \
+            -p pcli \
       - name: Move API docs to subdirectory
         run: |
           if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
