@@ -2,12 +2,13 @@
 
 # Also remember to add to .github/workflows/notes.yml
 members = [
-  "proto",
-  "crypto",
   "decaf377-fmd",
   "decaf377-ka",
-  "penumbra",
+  "proto",
+  "crypto",
   "wallet",
+  "pd",
+  "pcli",
 ]
 
 [patch.crates-io]

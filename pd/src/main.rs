@@ -3,11 +3,12 @@ use rand_chacha::ChaCha20Rng;
 use structopt::StructOpt;
 use tonic::transport::Server;
 
-use penumbra::{
+use penumbra_proto::wallet::wallet_server;
+
+use pd::{
     genesis::{generate_genesis_notes, GenesisAddr},
     App, State, WalletApp,
 };
-use penumbra_proto::wallet::wallet_server;
 
 #[derive(Debug, StructOpt)]
 #[structopt(
