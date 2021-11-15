@@ -57,10 +57,13 @@ impl Wallet for WalletApp {
 
     async fn transaction_by_note(
         &self,
-        _request: tonic::Request<TransactionByNoteRequest>,
+        request: tonic::Request<TransactionByNoteRequest>,
     ) -> Result<tonic::Response<TransactionDetail>, Status> {
-        Err(tonic::Status::unimplemented(
-            "how should this relate to tendermint rpc?",
-        ))
+        let state = self.state.clone();
+        let transaction = state
+            .transaction_by_note(request.into_inner().cm)
+            .await
+            .map_err(|_| tonic::Status::not_found("transaction not found"))?;
+        Ok(tonic::Response::new(transaction))
     }
 }
