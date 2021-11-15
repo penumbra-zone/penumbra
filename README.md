@@ -102,7 +102,17 @@ Start the Tendermint node:
 tendermint start
 ```
 
-You should be running!  To reset the Tendermint state, use `tendermint unsafe-reset-all`.
+You should be running!  
+
+To inspect the Postgres state, use
+```
+psql -h localhost -U postgres penumbra
+```
+allowing you to run queries.
+
+To reset the Tendermint state, use `tendermint unsafe-reset-all`.  To reset the
+Postgres state, either delete the docker volume, or run `DROP DATABASE`, or run
+`DROP TABLE` for each table.
 
 ### Genesis data
 
