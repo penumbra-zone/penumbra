@@ -32,6 +32,7 @@ comfy-table = "5"
 directories = "4.0.1"
 tokio = { version = "1", features = ["full"]}
 tokio-stream = "0.1"
+tokio-util = "0.6"
 tower = { version = "0.4", features = ["full"]}
 tracing = "0.1"
 structopt = "0.3"
