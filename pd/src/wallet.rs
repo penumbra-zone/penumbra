@@ -2,11 +2,9 @@ use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::Status;
 
-use penumbra_proto::{
-    transaction,
-    wallet::{
-        wallet_server::Wallet, CompactBlock, CompactBlockRangeRequest, TransactionByNoteRequest,
-    },
+use penumbra_proto::wallet::{
+    wallet_server::Wallet, CompactBlock, CompactBlockRangeRequest, TransactionByNoteRequest,
+    TransactionDetail,
 };
 
 use crate::State;
@@ -60,7 +58,7 @@ impl Wallet for WalletApp {
     async fn transaction_by_note(
         &self,
         _request: tonic::Request<TransactionByNoteRequest>,
-    ) -> Result<tonic::Response<transaction::Transaction>, Status> {
+    ) -> Result<tonic::Response<TransactionDetail>, Status> {
         Err(tonic::Status::unimplemented(
             "how should this relate to tendermint rpc?",
         ))
