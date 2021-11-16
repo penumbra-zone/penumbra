@@ -21,8 +21,8 @@ penumbra-wallet = { path = "../wallet" }
 ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 tower-abci = { git = "https://github.com/penumbra-zone/tower-abci/" }
-tendermint-proto = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "abci-domain-types" }
-tendermint = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "abci-domain-types" }
+tendermint-proto = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "abci-domain-types_r14" }
+tendermint = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "abci-domain-types_r14" }
 # External dependencies
 async-stream = "0.2"
 bincode = "1.3.3"
