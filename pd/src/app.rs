@@ -128,7 +128,7 @@ impl App {
             let (last_block_height, last_block_app_hash) = match state.latest_block_info().await? {
                 Some(schema::BlocksRow {
                     height, app_hash, ..
-                }) => (height.into(), app_hash.into()),
+                }) => (height.try_into().unwrap(), app_hash.into()),
                 None => (0u32.into(), vec![0; 32].into()),
             };
 

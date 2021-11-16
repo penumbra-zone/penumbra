@@ -8,7 +8,7 @@ pub struct BlobsRow {
 
 #[derive(Debug, sqlx::FromRow)]
 pub struct BlocksRow {
-    pub height: u32,
+    pub height: i64,
     pub nct_anchor: merkle::Root,
     pub app_hash: Vec<u8>,
 }
@@ -19,7 +19,7 @@ pub struct NotesRow {
     pub ephemeral_key: Vec<u8>,
     pub encrypted_note: Vec<u8>,
     pub transaction_id: Vec<u8>,
-    pub height: u32,
+    pub height: i64,
 }
 
 #[derive(Debug, sqlx::FromRow)]
