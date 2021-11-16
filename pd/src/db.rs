@@ -54,5 +54,16 @@ CREATE TABLE IF NOT EXISTS nullifiers (
     .execute(db)
     .await?;
 
+    query(
+        r#"
+CREATE TABLE IF NOT EXISTS assets (
+    asset_id bytea PRIMARY KEY,
+    denom varchar
+)
+"#,
+    )
+    .execute(db)
+    .await?;
+
     Ok(())
 }

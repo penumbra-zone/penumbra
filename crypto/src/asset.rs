@@ -24,7 +24,7 @@ use crate::Fq;
 ///
 /// [ADR001]:
 /// https://github.com/cosmos/ibc-go/blob/main/docs/architecture/adr-001-coin-source-tracing.md
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Id(pub Fq);
 
 impl std::fmt::Debug for Id {

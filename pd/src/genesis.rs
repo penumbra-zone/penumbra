@@ -1,46 +1,39 @@
 use std::str::FromStr;
 
 use ark_ff::UniformRand;
+use decaf377::FieldExt;
 use rand_chacha::ChaCha20Rng;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
-use penumbra_crypto::{asset, Address, Fq, Note, Value};
+use penumbra_crypto::{Address, Fq, Note, Value, asset, keys::Diversifier, ka, note};
 
 pub fn generate_genesis_notes(
     rng: &mut ChaCha20Rng,
     genesis_allocations: Vec<GenesisAddr>,
-) -> GenesisNotes {
-    let mut notes = Vec::<Note>::new();
+) -> Vec<helpers::GenesisNote> {
+    let mut notes = Vec::<helpers::GenesisNote>::new();
     for genesis_addr in genesis_allocations {
-        let note = Note::new(
+        let note = helpers::GenesisNote::new(
             *genesis_addr.address.diversifier(),
             *genesis_addr.address.transmission_key(),
-            Value {
+            GenesisNoteValue {
                 amount: genesis_addr.amount,
-                asset_id: asset::Id::from(genesis_addr.denom.as_bytes()),
+                asset_denom: genesis_addr.denom,
             },
             Fq::rand(rng),
         )
         .expect("note created successfully");
         notes.push(note);
     }
-    GenesisNotes { notes }
+    notes
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-#[serde(
-    try_from = "helpers::GenesisNotesHelper",
-    into = "helpers::GenesisNotesHelper"
-)]
-pub struct GenesisNotes {
-    notes: Vec<Note>,
-}
-
-impl GenesisNotes {
-    pub fn notes(&self) -> Vec<Note> {
-        self.notes.clone()
-    }
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct GenesisNoteValue {
+    pub amount: u64,
+    // The asset denom. String.
+    pub asset_denom: String,
 }
 
 #[derive(Debug)]
@@ -71,79 +64,71 @@ impl FromStr for GenesisAddr {
     }
 }
 
-mod helpers {
+pub mod helpers {
     use decaf377::{FieldExt, Fq};
     use penumbra_crypto::{asset, ka, keys::Diversifier, Value};
 
     use super::*;
 
-    #[derive(Serialize, Deserialize)]
-    pub struct GenesisNotesHelper {
-        notes: Vec<NoteHelper>,
+    #[serde_as]
+    #[derive(Deserialize, Serialize, Debug, PartialEq, Eq)]
+    pub struct GenesisNote {
+        #[serde_as(as = "serde_with::hex::Hex")]
+        pub diversifier: [u8; 11],
+        pub amount: u64,
+        #[serde_as(as = "serde_with::hex::Hex")]
+        pub note_blinding: [u8; 32],
+        pub asset_denom: String,
+        #[serde_as(as = "serde_with::hex::Hex")]
+        pub transmission_key: [u8; 32],
     }
 
-    impl From<GenesisNotes> for GenesisNotesHelper {
-        fn from(notes: GenesisNotes) -> Self {
-            Self {
-                notes: notes.notes.into_iter().map(From::from).collect(),
-            }
-        }
-    }
-
-    impl TryFrom<GenesisNotesHelper> for GenesisNotes {
-        type Error = anyhow::Error;
-
-        fn try_from(helper: GenesisNotesHelper) -> Result<Self, Self::Error> {
-            Ok(Self {
-                notes: helper
-                    .notes
-                    .into_iter()
-                    .map(TryFrom::try_from)
-                    .collect::<Result<Vec<_>, _>>()?,
+    impl GenesisNote {
+        pub fn new(
+            diversifier: Diversifier,
+            transmission_key: ka::Public,
+            value: GenesisNoteValue,
+            note_blinding: Fq,
+        ) -> Result<Self, note::Error> {
+            Ok(GenesisNote {
+                diversifier: diversifier.0,
+                amount: value.amount,
+                note_blinding: note_blinding.to_bytes(),
+                asset_denom: value.asset_denom,
+                transmission_key: transmission_key.0,
+                // transmission_key_s: Fq::from_bytes(transmission_key.0)
+                //     .map_err(|_| note::Error::InvalidTransmissionKey)?,
             })
         }
     }
 
-    #[serde_as]
-    #[derive(Deserialize, Serialize)]
-    pub struct NoteHelper {
-        #[serde_as(as = "serde_with::hex::Hex")]
-        diversifier: [u8; 11],
-        amount: u64,
-        #[serde_as(as = "serde_with::hex::Hex")]
-        note_blinding: [u8; 32],
-        #[serde_as(as = "serde_with::hex::Hex")]
-        asset_id: [u8; 32],
-        #[serde_as(as = "serde_with::hex::Hex")]
-        transmission_key: [u8; 32],
-    }
+    // impl From<Note> for GenesisNote {
+    //     fn from(note: Note) -> Self {
+    //         Self {
+    //             diversifier: note.diversifier().0,
+    //             amount: note.value().amount,
+    //             note_blinding: note.note_blinding().to_bytes(),
+    //             // XXX no way to convert asset ID to denom w/o asset registry
+    //             asset_denom: note.asset_denom,
+    //             transmission_key: note.transmission_key().0,
+    //         }
+    //     }
+    // }
 
-    impl From<Note> for NoteHelper {
-        fn from(note: Note) -> Self {
-            Self {
-                diversifier: note.diversifier().0,
-                amount: note.value().amount,
-                note_blinding: note.note_blinding().to_bytes(),
-                asset_id: note.value().asset_id.to_bytes(),
-                transmission_key: note.transmission_key().0,
-            }
-        }
-    }
-
-    impl TryFrom<NoteHelper> for Note {
+    impl TryFrom<GenesisNote> for Note {
         type Error = anyhow::Error;
 
-        fn try_from(helper: NoteHelper) -> Result<Self, Self::Error> {
-            let amount = helper.amount;
-            let asset_id = asset::Id(Fq::from_bytes(helper.asset_id)?);
-            let note_blinding = Fq::from_bytes(helper.note_blinding)?;
-            let transmission_key = ka::Public(helper.transmission_key);
-            let diversifier = Diversifier(helper.diversifier);
+        fn try_from(genesis_note: GenesisNote) -> Result<Self, Self::Error> {
+            let amount = genesis_note.amount;
+            let asset_denom= genesis_note.asset_denom;
+            let note_blinding = Fq::from_bytes(genesis_note.note_blinding)?;
+            let transmission_key = ka::Public(genesis_note.transmission_key);
+            let diversifier = Diversifier(genesis_note.diversifier);
 
             let note = Note::new(
                 diversifier,
                 transmission_key,
-                Value { asset_id, amount },
+                Value { amount, asset_id: asset::Id::from(asset_denom.as_bytes()), },
                 note_blinding,
             )?;
 
@@ -175,34 +160,34 @@ mod tests {
             .incoming()
             .payment_address(2u64.into());
 
-        let value0 = Value {
+        let value0 = GenesisNoteValue {
             amount: 100,
-            asset_id: b"pen".as_ref().into(),
+            asset_denom: "pen".to_string(),
         };
-        let value1 = Value {
+        let value1 = GenesisNoteValue {
             amount: 1,
-            asset_id: b"tungsten_cube".as_ref().into(),
+            asset_denom: "tungsten_cube".to_string(),
         };
-        let value2 = Value {
+        let value2 = GenesisNoteValue {
             amount: 1000,
-            asset_id: b"pen".as_ref().into(),
+            asset_denom: "pen".to_string(),
         };
 
-        let note0 = Note::new(
+        let note0 = helpers::GenesisNote::new(
             *dest0.diversifier(),
             *dest0.transmission_key(),
             value0,
             Fq::rand(&mut OsRng),
         )
         .unwrap();
-        let note1 = Note::new(
+        let note1 = helpers::GenesisNote::new(
             *dest1.diversifier(),
             *dest1.transmission_key(),
             value1,
             Fq::rand(&mut OsRng),
         )
         .unwrap();
-        let note2 = Note::new(
+        let note2 = helpers::GenesisNote::new(
             *dest2.diversifier(),
             *dest2.transmission_key(),
             value2,
@@ -210,15 +195,13 @@ mod tests {
         )
         .unwrap();
 
-        let genesis_notes = GenesisNotes {
-            notes: vec![note0, note1, note2],
-        };
+        let genesis_notes = vec![note0, note1, note2];
 
         let serialized = serde_json::to_string_pretty(&genesis_notes).unwrap();
 
         println!("\n{}\n", serialized);
 
-        let genesis_notes2: GenesisNotes = serde_json::from_str(&serialized).unwrap();
+        let genesis_notes2: Vec<helpers::GenesisNote> = serde_json::from_str(&serialized).unwrap();
 
         assert_eq!(genesis_notes, genesis_notes2);
     }
