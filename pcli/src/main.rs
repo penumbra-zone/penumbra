@@ -35,7 +35,7 @@ struct Opt {
 #[derive(Debug, StructOpt)]
 enum Command {
     /// Creates a transaction.
-    Tx { key: String, value: String },
+    Tx(Tx),
     /// Queries the Penumbra state.
     #[structopt()]
     Query { key: String },
@@ -78,6 +78,12 @@ enum Addr {
     },
 }
 
+#[derive(Debug, StructOpt)]
+enum Tx {
+    /// Send transaction to the node.
+    Send,
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
@@ -101,13 +107,20 @@ async fn main() -> Result<()> {
     }
 
     match opt.cmd {
-        Command::Tx { key, value } => {
+        Command::Tx(Tx::Send) => {
             let spend_key = load_wallet(&wallet_path);
-            let _local_storage = state::ClientState::new(spend_key);
+            let mut local_storage = state::ClientState::new(spend_key);
+
+            // TODO: Set fee on CLI (part of issue #138)
+            let fee = 0;
+            let dummy_tx = local_storage.new_transaction(&mut OsRng, fee)?;
+            let serialized_tx: Vec<u8> = dummy_tx.into();
 
             let rsp = reqwest::get(format!(
-                r#"http://{}:{}/broadcast_tx_async?tx="{}={}""#,
-                opt.node, opt.abci_port, key, value
+                r#"http://{}:{}/broadcast_tx_async?tx="{}""#,
+                opt.node,
+                opt.abci_port,
+                hex::encode(serialized_tx)
             ))
             .await?
             .text()
@@ -119,6 +132,7 @@ async fn main() -> Result<()> {
             let spend_key = load_wallet(&wallet_path);
             let _local_storage = state::ClientState::new(spend_key);
 
+            // TODO: get working as part of issue 22
             let rsp: serde_json::Value = reqwest::get(format!(
                 r#"http://{}:{}/abci_query?data=0x{}"#,
                 opt.node,
@@ -185,7 +199,6 @@ async fn main() -> Result<()> {
         Command::FetchByNoteCommitment { note_commitment } => {
             let spend_key = load_wallet(&wallet_path);
             let _local_storage = state::ClientState::new(spend_key);
-            // xx don't hardcode, need to pass multiple ports on the command line
             let mut client =
                 WalletClient::connect(format!("http://{}:{}", opt.node, opt.wallet_port)).await?;
 
@@ -201,7 +214,6 @@ async fn main() -> Result<()> {
         } => {
             let spend_key = load_wallet(&wallet_path);
             let _local_storage = state::ClientState::new(spend_key);
-            // xx don't hardcode, need to pass multiple ports on the command line
             let mut client =
                 WalletClient::connect(format!("http://{}:{}", opt.node, opt.wallet_port)).await?;
             let request = tonic::Request::new(CompactBlockRangeRequest {
