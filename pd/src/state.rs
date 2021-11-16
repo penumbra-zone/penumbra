@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{query, query_as, Pool, Postgres};
+use tendermint::block;
 use tracing::instrument;
 
 use penumbra_crypto::merkle::{NoteCommitmentTree, TreeExt};
@@ -123,12 +124,13 @@ INSERT INTO notes (
     }
 
     /// Retrieve the latest block height.
-    pub async fn height(&self) -> Result<i64> {
+    pub async fn height(&self) -> Result<block::Height> {
         Ok(self
             .latest_block_info()
             .await?
             .map(|row| row.height)
-            .unwrap_or(0))
+            .unwrap_or(0)
+            .into())
     }
 
     /// Retrieve the latest apphash.

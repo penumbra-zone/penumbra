@@ -128,8 +128,8 @@ impl App {
             let (last_block_height, last_block_app_hash) = match state.latest_block_info().await? {
                 Some(schema::BlocksRow {
                     height, app_hash, ..
-                }) => (height, app_hash.into()),
-                None => (0, vec![0; 32].into()),
+                }) => (height.into(), app_hash.into()),
+                None => (0u32.into(), vec![0; 32].into()),
             };
 
             Ok(Response::Info(response::Info {
@@ -209,7 +209,7 @@ impl App {
 
             Ok(Response::Commit(response::Commit {
                 data: app_hash.into(),
-                retain_height: 0,
+                retain_height: 0u32.into(),
             }))
         }
     }
