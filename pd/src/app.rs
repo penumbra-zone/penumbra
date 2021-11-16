@@ -144,7 +144,7 @@ impl App {
 
     #[instrument(skip(self))]
     fn query(&self, query: Bytes) -> response::Query {
-        // TODO: implement (#23)
+        // TODO: implement (#22)
         Default::default()
     }
 
@@ -155,10 +155,30 @@ impl App {
     }
 
     #[instrument(skip(self))]
-    fn deliver_tx(&mut self, tx: Bytes) -> response::DeliverTx {
+    fn deliver_tx(&mut self, hex_encoded_bytes: Bytes) -> response::DeliverTx {
         // TODO: implement (#135)
 
-        // This should accumulate data from `tx` into `self.pending_block`
+        // Transactions that cannot be deserialized should return a non-zero `DeliverTx` code.
+        let txbytes = match hex::decode(hex_encoded_bytes.as_ref()) {
+            Ok(transaction) => transaction,
+            Err(_) => {
+                return response::DeliverTx {
+                    code: 1,
+                    ..Default::default()
+                }
+            }
+        };
+        let _transaction = match Transaction::try_from(txbytes) {
+            Ok(transaction) => transaction,
+            Err(_) => {
+                return response::DeliverTx {
+                    code: 1,
+                    ..Default::default()
+                }
+            }
+        };
+
+        // This should accumulate data from `_transaction` into `self.pending_block`
 
         Default::default()
     }

@@ -17,6 +17,8 @@ pub mod proofs;
 pub mod transaction;
 pub mod value;
 
+pub use address::CURRENT_CHAIN_ID;
+
 pub use action::output::Output;
 pub use action::spend::Spend;
 pub use action::Action;

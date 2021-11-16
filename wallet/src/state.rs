@@ -1,6 +1,10 @@
+use rand_core::{CryptoRng, RngCore};
 use std::collections::{BTreeMap, HashSet};
 
-use penumbra_crypto::{fmd, memo::MemoPlaintext, merkle, note, Address, Note, Nullifier};
+use penumbra_crypto::{
+    fmd, memo::MemoPlaintext, merkle, merkle::TreeExt, note, Address, Note, Nullifier, Transaction,
+    CURRENT_CHAIN_ID,
+};
 
 use crate::storage::Wallet;
 
@@ -40,6 +44,21 @@ impl ClientState {
     /// Generate a new diversified `Address` and its corresponding `DetectionKey`.
     pub fn new_address(&mut self, label: String) -> (usize, Address, fmd::DetectionKey) {
         self.wallet.new_address(label)
+    }
+
+    /// Generate a new transaction.
+    pub fn new_transaction<R: RngCore + CryptoRng>(
+        &mut self,
+        rng: &mut R,
+        fee: u64,
+    ) -> Result<Transaction, penumbra_crypto::transaction::Error> {
+        // xx Could populate chain_id from the info endpoint on the node, or at least
+        // error if there is an inconsistency
+
+        Transaction::build_with_root(self.note_commitment_tree.root2())
+            .set_fee(fee)
+            .set_chain_id(CURRENT_CHAIN_ID.to_string())
+            .finalize(rng)
     }
 
     // TODO: For each output in scanned transactions, try to decrypt the note ciphertext.

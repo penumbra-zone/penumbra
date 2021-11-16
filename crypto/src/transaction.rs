@@ -184,6 +184,12 @@ impl From<Transaction> for transaction::Transaction {
     }
 }
 
+impl From<&Transaction> for transaction::Transaction {
+    fn from(msg: &Transaction) -> Self {
+        msg.into()
+    }
+}
+
 impl TryFrom<transaction::Transaction> for Transaction {
     type Error = ProtoError;
 
@@ -217,7 +223,22 @@ impl TryFrom<&[u8]> for Transaction {
     }
 }
 
+impl TryFrom<Vec<u8>> for Transaction {
+    type Error = ProtoError;
+
+    fn try_from(bytes: Vec<u8>) -> Result<Transaction, Self::Error> {
+        Ok(Self::try_from(&bytes[..])?)
+    }
+}
+
 impl Into<Vec<u8>> for Transaction {
+    fn into(self) -> Vec<u8> {
+        let protobuf_serialized: transaction::Transaction = self.into();
+        protobuf_serialized.encode_to_vec()
+    }
+}
+
+impl Into<Vec<u8>> for &Transaction {
     fn into(self) -> Vec<u8> {
         let protobuf_serialized: transaction::Transaction = self.into();
         protobuf_serialized.encode_to_vec()
