@@ -130,7 +130,8 @@ INSERT INTO notes (
             .await?
             .map(|row| row.height)
             .unwrap_or(0)
-            .into())
+            .try_into()
+            .unwrap())
     }
 
     /// Retrieve the latest apphash.
