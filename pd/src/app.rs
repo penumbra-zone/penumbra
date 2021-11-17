@@ -155,20 +155,11 @@ impl App {
     }
 
     #[instrument(skip(self))]
-    fn deliver_tx(&mut self, hex_encoded_bytes: Bytes) -> response::DeliverTx {
+    fn deliver_tx(&mut self, txbytes: Bytes) -> response::DeliverTx {
         // TODO: implement (#135)
 
         // Transactions that cannot be deserialized should return a non-zero `DeliverTx` code.
-        let txbytes = match hex::decode(hex_encoded_bytes.as_ref()) {
-            Ok(transaction) => transaction,
-            Err(_) => {
-                return response::DeliverTx {
-                    code: 1,
-                    ..Default::default()
-                }
-            }
-        };
-        let _transaction = match Transaction::try_from(txbytes) {
+        let _transaction = match Transaction::try_from(txbytes.as_ref()) {
             Ok(transaction) => transaction,
             Err(_) => {
                 return response::DeliverTx {
