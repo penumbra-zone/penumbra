@@ -5,7 +5,10 @@ use bytes::Bytes;
 
 use decaf377::FieldExt;
 
-use penumbra_proto::{transaction, Message, Protobuf};
+use penumbra_proto::{
+    transaction::Fee as ProtoFee, transaction::Transaction as ProtoTransaction,
+    transaction::TransactionBody as ProtoTransactionBody, Message, Protobuf,
+};
 
 use crate::{
     action::{error::ProtoError, Action},
@@ -34,16 +37,16 @@ pub struct TransactionBody {
 
 impl From<TransactionBody> for Vec<u8> {
     fn from(transaction_body: TransactionBody) -> Vec<u8> {
-        let protobuf_serialized: transaction::TransactionBody = transaction_body.into();
+        let protobuf_serialized: ProtoTransactionBody = transaction_body.into();
         protobuf_serialized.encode_to_vec()
     }
 }
 
-impl Protobuf<transaction::TransactionBody> for TransactionBody {}
+impl Protobuf<ProtoTransactionBody> for TransactionBody {}
 
-impl From<TransactionBody> for transaction::TransactionBody {
+impl From<TransactionBody> for ProtoTransactionBody {
     fn from(msg: TransactionBody) -> Self {
-        transaction::TransactionBody {
+        ProtoTransactionBody {
             actions: msg.actions.into_iter().map(|x| x.into()).collect(),
             anchor: Bytes::copy_from_slice(&msg.merkle_root.0.to_bytes()),
             expiry_height: msg.expiry_height,
@@ -53,10 +56,10 @@ impl From<TransactionBody> for transaction::TransactionBody {
     }
 }
 
-impl TryFrom<transaction::TransactionBody> for TransactionBody {
+impl TryFrom<ProtoTransactionBody> for TransactionBody {
     type Error = ProtoError;
 
-    fn try_from(proto: transaction::TransactionBody) -> anyhow::Result<Self, Self::Error> {
+    fn try_from(proto: ProtoTransactionBody) -> anyhow::Result<Self, Self::Error> {
         let mut actions = Vec::<Action>::new();
         for action in proto.actions {
             actions.push(
@@ -172,28 +175,28 @@ impl Transaction {
     }
 }
 
-impl Protobuf<transaction::Transaction> for Transaction {}
+impl Protobuf<ProtoTransaction> for Transaction {}
 
-impl From<Transaction> for transaction::Transaction {
+impl From<Transaction> for ProtoTransaction {
     fn from(msg: Transaction) -> Self {
         let sig_bytes: [u8; 64] = msg.binding_sig.into();
-        transaction::Transaction {
+        ProtoTransaction {
             body: Some(msg.transaction_body.into()),
             binding_sig: Bytes::copy_from_slice(&sig_bytes),
         }
     }
 }
 
-impl From<&Transaction> for transaction::Transaction {
+impl From<&Transaction> for ProtoTransaction {
     fn from(msg: &Transaction) -> Self {
         msg.into()
     }
 }
 
-impl TryFrom<transaction::Transaction> for Transaction {
+impl TryFrom<ProtoTransaction> for Transaction {
     type Error = ProtoError;
 
-    fn try_from(proto: transaction::Transaction) -> anyhow::Result<Self, Self::Error> {
+    fn try_from(proto: ProtoTransaction) -> anyhow::Result<Self, Self::Error> {
         let transaction_body = proto
             .body
             .ok_or(ProtoError::TransactionMalformed)?
@@ -215,8 +218,8 @@ impl TryFrom<&[u8]> for Transaction {
     type Error = ProtoError;
 
     fn try_from(bytes: &[u8]) -> Result<Transaction, Self::Error> {
-        let protobuf_serialized_proof = transaction::Transaction::decode(bytes)
-            .map_err(|_| ProtoError::TransactionMalformed)?;
+        let protobuf_serialized_proof =
+            ProtoTransaction::decode(bytes).map_err(|_| ProtoError::TransactionMalformed)?;
         Ok(protobuf_serialized_proof
             .try_into()
             .map_err(|_| ProtoError::TransactionMalformed)?)
@@ -233,28 +236,28 @@ impl TryFrom<Vec<u8>> for Transaction {
 
 impl Into<Vec<u8>> for Transaction {
     fn into(self) -> Vec<u8> {
-        let protobuf_serialized: transaction::Transaction = self.into();
+        let protobuf_serialized: ProtoTransaction = self.into();
         protobuf_serialized.encode_to_vec()
     }
 }
 
 impl Into<Vec<u8>> for &Transaction {
     fn into(self) -> Vec<u8> {
-        let protobuf_serialized: transaction::Transaction = self.into();
+        let protobuf_serialized: ProtoTransaction = self.into();
         protobuf_serialized.encode_to_vec()
     }
 }
 
-impl Protobuf<transaction::Fee> for Fee {}
+impl Protobuf<ProtoFee> for Fee {}
 
-impl From<Fee> for transaction::Fee {
+impl From<Fee> for ProtoFee {
     fn from(fee: Fee) -> Self {
-        transaction::Fee { amount: fee.0 }
+        ProtoFee { amount: fee.0 }
     }
 }
 
-impl From<transaction::Fee> for Fee {
-    fn from(proto: transaction::Fee) -> Self {
+impl From<ProtoFee> for Fee {
+    fn from(proto: ProtoFee) -> Self {
         Fee(proto.amount)
     }
 }
