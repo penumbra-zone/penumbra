@@ -85,28 +85,31 @@ impl App {
         let mut genesis_block = PendingBlock::new(NoteCommitmentTree::new(0));
         genesis_block.set_height(0);
 
-        // Note that errors cannot be handled in InitChain, the application must crash.
-        let genesis: GenesisNotes = serde_json::from_slice(&init_chain.app_state_bytes)
-            .expect("can parse app_state in genesis file");
+        if init_chain.app_state_bytes.is_empty() {
+            tracing::warn!("we have no Penumbra-specific state");
+        } else {
+            // Note that errors cannot be handled in InitChain, the application must crash.
+            let genesis: GenesisNotes = serde_json::from_slice(&init_chain.app_state_bytes)
+                .expect("can parse app_state in genesis file");
 
-        // Create genesis transaction and update database table `transactions`.
-        let mut genesis_tx_builder =
-            Transaction::genesis_build_with_root(self.note_commitment_tree.root2());
+            // Create genesis transaction and update database table `transactions`.
+            let mut genesis_tx_builder =
+                Transaction::genesis_build_with_root(self.note_commitment_tree.root2());
 
-        for note in genesis.notes() {
-            tracing::info!(?note);
-            genesis_tx_builder.add_output(&mut OsRng, note);
+            for note in genesis.notes() {
+                tracing::info!(?note);
+                genesis_tx_builder.add_output(&mut OsRng, note);
+            }
+            let genesis_tx = genesis_tx_builder
+                .set_chain_id(init_chain.chain_id)
+                .finalize(&mut OsRng)
+                .expect("can form genesis transaction");
+
+            // Now add the transaction and its note fragments to the pending state changes.
+            genesis_block.add_transaction(genesis_tx);
+            tracing::info!("loaded all genesis notes");
         }
-        let genesis_tx = genesis_tx_builder
-            .set_chain_id(init_chain.chain_id)
-            .finalize(&mut OsRng)
-            .expect("can form genesis transaction");
 
-        // Now add the transaction and its note fragments to the pending state changes.
-        genesis_block.add_transaction(genesis_tx);
-        tracing::info!("loaded all genesis notes");
-
-        // xx Correct/Necessary to commit here or will tendermint after InitGenesis?
         self.pending_block = Some(genesis_block);
         let commit = self.commit();
         let state = self.state.clone();
