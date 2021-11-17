@@ -81,7 +81,16 @@ enum Addr {
 #[derive(Debug, StructOpt)]
 enum Tx {
     /// Send transaction to the node.
-    Send,
+    Send {
+        /// Amount to send.
+        amount: u64,
+        /// Denomination.
+        denomination: String,
+        /// Destination address.
+        address: String,
+        /// Fee.
+        fee: u64,
+    },
 }
 
 #[tokio::main]
@@ -107,12 +116,15 @@ async fn main() -> Result<()> {
     }
 
     match opt.cmd {
-        Command::Tx(Tx::Send) => {
+        Command::Tx(Tx::Send {
+            amount: _,
+            denomination: _,
+            address: _,
+            fee,
+        }) => {
             let spend_key = load_wallet(&wallet_path);
             let mut local_storage = state::ClientState::new(spend_key);
 
-            // TODO: Set fee on CLI (part of issue #138)
-            let fee = 0;
             let dummy_tx = local_storage.new_transaction(&mut OsRng, fee)?;
             let serialized_tx: Vec<u8> = dummy_tx.into();
 
