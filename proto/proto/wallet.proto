@@ -8,6 +8,7 @@ service Wallet {
   rpc CompactBlockRange(CompactBlockRangeRequest) returns (stream CompactBlock);
   rpc TransactionByNote(TransactionByNoteRequest) returns (TransactionDetail);
   rpc AssetLookup(AssetLookupRequest) returns (Asset);
+  rpc AssetList(AssetListRequest) returns (stream Asset);
 }
 
 // Requests a range of compact block data.
@@ -29,8 +30,13 @@ message AssetLookupRequest {
   bytes asset_id = 1;
 }
 
+// Lists all assets in Asset Registry
+message AssetListRequest {
+}
+
 message Asset {
-  string asset_denom = 1;
+  bytes asset_id = 1;
+  string asset_denom = 2;
 }
 
 // Contains the minimum data needed to update client state.

@@ -189,15 +189,38 @@ INSERT INTO notes (
     pub async fn asset_lookup(&self, asset_id: Vec<u8>) -> Result<Asset> {
         let mut conn = self.pool.acquire().await?;
 
-        let asset = query_as::<_, (String,)>("SELECT denom FROM assets WHERE asset_id = $1")
-            .bind(asset_id)
-            .fetch_one(&mut conn)
-            .await?;
+        let asset = query_as::<_, (String, Vec<u8>)>(
+            "SELECT denom, asset_id FROM assets WHERE asset_id = $1",
+        )
+        .bind(asset_id)
+        .fetch_one(&mut conn)
+        .await?;
         Ok(Asset {
             asset_denom: asset.0,
+            asset_id: asset.1,
         })
     }
 
+    /// Retrieves the entire Asset Registry.
+    pub async fn asset_list(&self) -> Result<Vec<Asset>> {
+        let mut conn = self.pool.acquire().await?;
+
+        let _assets = query_as::<_, (String, Vec<u8>)>("SELECT denom, asset_id FROM assets")
+            .fetch_all(&mut conn)
+            .await?;
+
+        let mut assets = vec![];
+        for a in _assets {
+            assets.push(Asset {
+                asset_denom: a.0,
+                asset_id: a.1,
+            });
+        }
+
+        Ok(assets)
+    }
+
+    /// Given a list of assets, saves them to the Asset Registry database table.
     pub async fn save_assets_to_registry(
         &self,
         assets: &BTreeMap<asset::Id, String>,

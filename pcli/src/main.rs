@@ -7,7 +7,7 @@ use std::{fs, io, process};
 use structopt::StructOpt;
 
 use penumbra_proto::wallet::{
-    wallet_client::WalletClient, AssetLookupRequest, CompactBlockRangeRequest,
+    wallet_client::WalletClient, AssetListRequest, AssetLookupRequest, CompactBlockRangeRequest,
     TransactionByNoteRequest,
 };
 use penumbra_wallet::{state, storage};
@@ -63,6 +63,8 @@ enum Command {
         #[structopt(parse(try_from_str = parse_bytestring))]
         asset_id: Bytes,
     },
+    /// List every asset in the Asset Registry
+    AssetList {},
 }
 
 #[derive(Debug, StructOpt)]
@@ -236,8 +238,6 @@ async fn main() -> Result<()> {
             }
         }
         Command::AssetLookup { asset_id } => {
-            // let spend_key = load_wallet(&wallet_path);
-            // let _local_storage = state::ClientState::new(spend_key);
             // xx don't hardcode, need to pass multiple ports on the command line
             let mut client =
                 WalletClient::connect(format!("http://{}:{}", opt.node, opt.wallet_port)).await?;
@@ -246,6 +246,19 @@ async fn main() -> Result<()> {
             let asset = client.asset_lookup(request).await?.into_inner();
 
             tracing::info!("got asset: {:?}", asset);
+        }
+        Command::AssetList {} => {
+            // xx don't hardcode, need to pass multiple ports on the command line
+            let mut client =
+                WalletClient::connect(format!("http://{}:{}", opt.node, opt.wallet_port)).await?;
+            tracing::info!("requesting asset list");
+            let request = tonic::Request::new(AssetListRequest {});
+
+            let mut stream = client.asset_list(request).await?.into_inner();
+
+            while let Some(asset) = stream.message().await? {
+                tracing::info!("got asset: {:?}", asset);
+            }
         }
         _ => todo!(),
     }
