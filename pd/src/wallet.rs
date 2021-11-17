@@ -3,8 +3,8 @@ use tokio_stream::wrappers::ReceiverStream;
 use tonic::Status;
 
 use penumbra_proto::wallet::{
-    wallet_server::Wallet, CompactBlock, CompactBlockRangeRequest, TransactionByNoteRequest,
-    TransactionDetail,
+    wallet_server::Wallet, Asset, AssetLookupRequest, CompactBlock, CompactBlockRangeRequest,
+    TransactionByNoteRequest, TransactionDetail,
 };
 
 use crate::State;
@@ -65,5 +65,17 @@ impl Wallet for WalletApp {
             .await
             .map_err(|_| tonic::Status::not_found("transaction not found"))?;
         Ok(tonic::Response::new(transaction))
+    }
+
+    async fn asset_lookup(
+        &self,
+        request: tonic::Request<AssetLookupRequest>,
+    ) -> Result<tonic::Response<Asset>, Status> {
+        let state = self.state.clone();
+        let asset = state
+            .asset_lookup(request.into_inner().asset_id)
+            .await
+            .map_err(|_| tonic::Status::not_found("asset not found"))?;
+        Ok(tonic::Response::new(asset))
     }
 }

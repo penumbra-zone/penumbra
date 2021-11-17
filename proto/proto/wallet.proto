@@ -7,6 +7,7 @@ import "transaction.proto";
 service Wallet {
   rpc CompactBlockRange(CompactBlockRangeRequest) returns (stream CompactBlock);
   rpc TransactionByNote(TransactionByNoteRequest) returns (TransactionDetail);
+  rpc AssetLookup(AssetLookupRequest) returns (Asset);
 }
 
 // Requests a range of compact block data.
@@ -20,6 +21,16 @@ message CompactBlockRangeRequest {
 message CompactBlock {
   uint32 height = 1;
   repeated StateFragment fragments = 2;
+}
+
+// Requests an asset denom given an asset ID
+message AssetLookupRequest {
+  // The asset ID
+  bytes asset_id = 1;
+}
+
+message Asset {
+  string asset_denom = 1;
 }
 
 // Contains the minimum data needed to update client state.

@@ -7,7 +7,8 @@ use std::{fs, io, process};
 use structopt::StructOpt;
 
 use penumbra_proto::wallet::{
-    wallet_client::WalletClient, CompactBlockRangeRequest, TransactionByNoteRequest,
+    wallet_client::WalletClient, AssetLookupRequest, CompactBlockRangeRequest,
+    TransactionByNoteRequest,
 };
 use penumbra_wallet::{state, storage};
 
@@ -32,6 +33,16 @@ struct Opt {
     wallet_location: Option<String>,
 }
 
+// Note: can't use `Vec<u8>` directly, as structopt would instead look for
+// conversion function from `&str` to `u8`.
+type Bytes = Vec<u8>;
+
+fn parse_bytestring(s: &str) -> Result<Vec<u8>, String> {
+    let decoded = hex::decode(s).expect("Invalid bytestring");
+
+    Ok(decoded)
+}
+
 #[derive(Debug, StructOpt)]
 enum Command {
     /// Creates a transaction.
@@ -47,6 +58,11 @@ enum Command {
     FetchByNoteCommitment { note_commitment: String },
     /// Block request - TEMP (developer only, remove when sync implemented)
     BlockRequest { start_height: u32, end_height: u32 },
+    /// Asset Registry Lookup based on asset ID
+    AssetLookup {
+        #[structopt(parse(try_from_str = parse_bytestring))]
+        asset_id: Bytes,
+    },
 }
 
 #[derive(Debug, StructOpt)]
@@ -218,6 +234,18 @@ async fn main() -> Result<()> {
             while let Some(block) = stream.message().await? {
                 tracing::info!("got fragment: {:?}", block);
             }
+        }
+        Command::AssetLookup { asset_id } => {
+            // let spend_key = load_wallet(&wallet_path);
+            // let _local_storage = state::ClientState::new(spend_key);
+            // xx don't hardcode, need to pass multiple ports on the command line
+            let mut client =
+                WalletClient::connect(format!("http://{}:{}", opt.node, opt.wallet_port)).await?;
+            tracing::info!("requesting asset denom for asset id: {:?}", &asset_id,);
+            let request = tonic::Request::new(AssetLookupRequest { asset_id });
+            let asset = client.asset_lookup(request).await?.into_inner();
+
+            tracing::info!("got asset: {:?}", asset);
         }
         _ => todo!(),
     }

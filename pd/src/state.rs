@@ -8,7 +8,7 @@ use tracing::instrument;
 
 use penumbra_crypto::asset;
 use penumbra_crypto::merkle::{NoteCommitmentTree, TreeExt};
-use penumbra_proto::wallet::{CompactBlock, StateFragment, TransactionDetail};
+use penumbra_proto::wallet::{Asset, CompactBlock, StateFragment, TransactionDetail};
 
 use crate::{
     db::{self, schema},
@@ -183,6 +183,19 @@ INSERT INTO notes (
         .fetch_one(&mut conn)
         .await?;
         Ok(TransactionDetail { id: id.0 })
+    }
+
+    /// Retrieve the [`Asset`] for a given asset ID.
+    pub async fn asset_lookup(&self, asset_id: Vec<u8>) -> Result<Asset> {
+        let mut conn = self.pool.acquire().await?;
+
+        let asset = query_as::<_, (String,)>("SELECT denom FROM assets WHERE asset_id = $1")
+            .bind(asset_id)
+            .fetch_one(&mut conn)
+            .await?;
+        Ok(Asset {
+            asset_denom: asset.0,
+        })
     }
 
     pub async fn save_assets_to_registry(
