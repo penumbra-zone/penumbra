@@ -92,6 +92,7 @@ You'll need to set up a Postgres instance.  Here is one way:
 # create a volume for pg data
 docker volume create tmp_db_data
 docker run --name tmp-postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_USER=postgres -e POSTGRES_DB=penumbra -p 5432:5432 -v tmp_db_data:/var/lib/postgresql/data -d postgres
+```
 
 Start the Penumbra instance (you probably want to set `RUST_LOG` to `debug`):
 ```
@@ -117,7 +118,7 @@ Postgres state, either delete the docker volume, or run `DROP DATABASE`, or run
 ### Genesis data
 
 To create Genesis data, you need to know the amounts, denominations, and addresses of the genesis notes. You can then pass to `pd`'s` `create-genesis` command a list of "(amount, denomination, address)" tuples, where the tuple fields are comma-delimited and each genesis note is contained in double quotes:
-```
+```console
 $ cargo run --bin pd -- create-genesis penumbra-tn001 \
 "(100, pen, penumbra_tn001_1kpgdhlzws6kyk2cf580wtt76t9nn2vf7em3pn05y3h8ym5a6aevdxshjgsnxecv94rzsxdhng6cjp8kgchqxud06p9xka0yxv99rty3njetqqnx2hrzz4tc03956e0)" \
 "(1, tungsten_cube, penumbra_tn001_1kpgdhlzws6kyk2cf580wtt76t9nn2vf7em3pn05y3h8ym5a6aevdxshjgsnxecv94rzsxdhng6cjp8kgchqxud06p9xka0yxv99rty3njetqqnx2hrzz4tc03956e0)"
