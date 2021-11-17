@@ -148,7 +148,7 @@ To perform genesis for a testnet, edit the `genesis.json` file stored in `$TMHOM
 * `app_state` key: add the generated genesis notes,
 * `chain_id` update the `chain_id` for the testnet.
 
-Now when you start `pd` and tendermint as described above, you will see a message at the `INFO` level indicating genesis has been performed: `consensus: penumbra::app: performing genesis for chain_id: penumbra_tn001`.
+Now when you start `pd` and tendermint as described above, you will see a message at the `INFO` level indicating genesis has been performed: `consensus: penumbra::app: performing genesis for chain_id: penumbra-tn001`.
 
 [Discord]: https://discord.gg/hKvkrqa3zC
 [Penumbra]: https://penumbra.zone
