@@ -232,7 +232,7 @@ fn load_wallet(wallet_path: &Path) -> storage::Wallet {
         Err(err) => match err.kind() {
             io::ErrorKind::NotFound => {
                 eprintln!(
-                    "error: key data not found, run `pcli generate` to generate Penumbra keys"
+                    "error: key data not found, run `pcli wallet generate` to generate Penumbra keys"
                 );
                 process::exit(1);
             }
