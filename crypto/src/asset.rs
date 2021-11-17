@@ -1,5 +1,4 @@
 //! Asset types and identifiers.
-
 use ark_ff::fields::PrimeField;
 use decaf377::FieldExt;
 use once_cell::sync::Lazy;

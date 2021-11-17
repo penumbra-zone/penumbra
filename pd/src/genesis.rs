@@ -1,12 +1,11 @@
 use std::str::FromStr;
 
 use ark_ff::UniformRand;
-use decaf377::FieldExt;
 use rand_chacha::ChaCha20Rng;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
-use penumbra_crypto::{Address, Fq, Note, Value, asset, keys::Diversifier, ka, note};
+use penumbra_crypto::{note, Address, Fq, Note};
 
 pub fn generate_genesis_notes(
     rng: &mut ChaCha20Rng,
@@ -102,25 +101,12 @@ pub mod helpers {
         }
     }
 
-    // impl From<Note> for GenesisNote {
-    //     fn from(note: Note) -> Self {
-    //         Self {
-    //             diversifier: note.diversifier().0,
-    //             amount: note.value().amount,
-    //             note_blinding: note.note_blinding().to_bytes(),
-    //             // XXX no way to convert asset ID to denom w/o asset registry
-    //             asset_denom: note.asset_denom,
-    //             transmission_key: note.transmission_key().0,
-    //         }
-    //     }
-    // }
-
     impl TryFrom<GenesisNote> for Note {
         type Error = anyhow::Error;
 
         fn try_from(genesis_note: GenesisNote) -> Result<Self, Self::Error> {
             let amount = genesis_note.amount;
-            let asset_denom= genesis_note.asset_denom;
+            let asset_denom = genesis_note.asset_denom;
             let note_blinding = Fq::from_bytes(genesis_note.note_blinding)?;
             let transmission_key = ka::Public(genesis_note.transmission_key);
             let diversifier = Diversifier(genesis_note.diversifier);
@@ -128,7 +114,10 @@ pub mod helpers {
             let note = Note::new(
                 diversifier,
                 transmission_key,
-                Value { amount, asset_id: asset::Id::from(asset_denom.as_bytes()), },
+                Value {
+                    amount,
+                    asset_id: asset::Id::from(asset_denom.as_bytes()),
+                },
                 note_blinding,
             )?;
 

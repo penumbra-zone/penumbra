@@ -97,9 +97,15 @@ impl App {
         for note in genesis {
             tracing::info!(?note);
             // Add all assets found in the genesis transaction to the asset registry
-            genesis_block.new_assets.insert(asset::Id::from(note.asset_denom.as_bytes()), note.asset_denom.clone());
+            genesis_block.new_assets.insert(
+                asset::Id::from(note.asset_denom.as_bytes()),
+                note.asset_denom.clone(),
+            );
 
-            genesis_tx_builder.add_output(&mut OsRng, note::Note::try_from(note).expect("GenesisNote can be converted into regular Note"));
+            genesis_tx_builder.add_output(
+                &mut OsRng,
+                note::Note::try_from(note).expect("GenesisNote can be converted into regular Note"),
+            );
         }
         let genesis_tx = genesis_tx_builder
             .set_chain_id(init_chain.chain_id)
@@ -198,6 +204,12 @@ impl App {
         let finished_signal = self.completion_tracker.start();
         let state = self.state.clone();
         async move {
+            // Store the asset registry based on new assets in the pending block.
+            state
+                .save_assets_to_registry(&pending_block.new_assets)
+                .await
+                .expect("Must be able to save genesis assets to registry");
+
             state
                 .commit_block(pending_block)
                 .await

@@ -1,9 +1,12 @@
+use std::collections::BTreeMap;
+
 use anyhow::{Context, Result};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{query, query_as, Pool, Postgres};
 use tendermint::block;
 use tracing::instrument;
 
+use penumbra_crypto::asset;
 use penumbra_crypto::merkle::{NoteCommitmentTree, TreeExt};
 use penumbra_proto::wallet::{CompactBlock, StateFragment, TransactionDetail};
 
@@ -180,5 +183,28 @@ INSERT INTO notes (
         .fetch_one(&mut conn)
         .await?;
         Ok(TransactionDetail { id: id.0 })
+    }
+
+    pub async fn save_assets_to_registry(
+        &self,
+        assets: &BTreeMap<asset::Id, String>,
+    ) -> Result<()> {
+        let mut dbtx = self.pool.begin().await?;
+
+        for asset in assets {
+            query(
+                r#"
+    INSERT INTO assets (
+        asset_id, denom
+    ) VALUES ($1, $2)
+    "#,
+            )
+            .bind(&asset.0.to_bytes()[..])
+            .bind(asset.1)
+            .execute(&mut dbtx)
+            .await?;
+        }
+
+        dbtx.commit().await.map_err(Into::into)
     }
 }
