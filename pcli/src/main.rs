@@ -129,7 +129,7 @@ async fn main() -> Result<()> {
             let serialized_tx: Vec<u8> = dummy_tx.into();
 
             let rsp = reqwest::get(format!(
-                r#"http://{}:{}/broadcast_tx_async?tx="{}""#,
+                r#"http://{}:{}/broadcast_tx_async?tx=0x{}"#,
                 opt.node,
                 opt.abci_port,
                 hex::encode(serialized_tx)
