@@ -3,10 +3,9 @@ use std::collections::{BTreeMap, BTreeSet};
 use penumbra_crypto::{
     action::output::{self, Output},
     action::spend::{self, Spend},
-    ka,
+    asset, ka,
     merkle::{Frontier, NoteCommitmentTree},
     note, Action, Nullifier, Transaction,
-    asset
 };
 
 /// Stores pending state changes from transactions.
