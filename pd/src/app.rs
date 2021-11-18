@@ -9,7 +9,7 @@ use bytes::Bytes;
 use futures::future::FutureExt;
 use rand_core::OsRng;
 use tendermint::abci::{
-    request::{self, BeginBlock, EndBlock},
+    request::{self, BeginBlock, CheckTxKind, EndBlock},
     response, Request, Response,
 };
 use tokio::sync::oneshot;
@@ -190,8 +190,8 @@ impl App {
     /// The full transaction verification is performed in `DeliverTx`, where stateful checks
     /// are performed.
     #[instrument(skip(self))]
-    fn check_tx(&mut self, txbytes: Bytes) -> response::CheckTx {
-        let transaction = match Transaction::try_from(txbytes.as_ref()) {
+    fn check_tx(&mut self, request: request::CheckTx) -> response::CheckTx {
+        let transaction = match Transaction::try_from(request.tx.as_ref()) {
             Ok(transaction) => transaction,
             Err(_) => {
                 return response::CheckTx {
@@ -212,18 +212,22 @@ impl App {
         };
 
         // Ensure we do not add any transactions with duplicate nullifiers into the mempool.
-        for nullifier in pending_transaction.spent_nullifiers {
-            if self.mempool_nullifiers.contains(&nullifier) {
-                // xx Problem? `mempool.recheck` is by default true, meaning that `CheckTx`
-                // will be called on transactions in the mempool again after each block
-                // is committed. The logic here as is will result in the mempool being
-                // emptied of transactions after each block.
-                return response::CheckTx {
-                    code: 1,
-                    ..Default::default()
-                };
-            } else {
-                self.mempool_nullifiers.insert(nullifier);
+        //
+        // Note that we only run this logic if this `CheckTx` request is from a new transaction
+        // (i.e. `CheckTxKind::New`). If this is a recheck of an existing entry in the mempool,
+        // then we don't need to add the nullifier again, as it's already in `self.mempool_nullifiers`.
+        // Rechecks occur whenever a block is committed if the Tendermint `mempool.recheck` option is
+        // true, which is the default option.
+        if request.kind == CheckTxKind::New {
+            for nullifier in pending_transaction.spent_nullifiers {
+                if self.mempool_nullifiers.contains(&nullifier) {
+                    return response::CheckTx {
+                        code: 1,
+                        ..Default::default()
+                    };
+                } else {
+                    self.mempool_nullifiers.insert(nullifier);
+                }
             }
         }
 
@@ -410,7 +414,7 @@ impl Service<Request> for App {
             // handled messages
             Request::Info(_) => return self.info().boxed(),
             Request::Query(query) => Response::Query(self.query(query.data)),
-            Request::CheckTx(check_tx) => Response::CheckTx(self.check_tx(check_tx.tx)),
+            Request::CheckTx(check_tx) => Response::CheckTx(self.check_tx(check_tx)),
             Request::BeginBlock(begin) => Response::BeginBlock(self.begin_block(begin)),
             Request::DeliverTx(deliver_tx) => Response::DeliverTx(self.deliver_tx(deliver_tx.tx)),
             Request::EndBlock(end) => Response::EndBlock(self.end_block(end)),
