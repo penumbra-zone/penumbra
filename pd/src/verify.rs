@@ -1,15 +1,17 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::Error;
 
-use penumbra_crypto::{merkle, note, proofs, rdsa, value, Action, Nullifier, Transaction};
+use penumbra_crypto::{ka, merkle, note, proofs, rdsa, value, Action, Nullifier, Transaction};
 
 /// `PendingTransaction` holds data after stateless checks have been applied.
 pub struct PendingTransaction {
+    /// Transaction ID.
+    pub id: [u8; 32],
     /// Root of the note commitment tree.
     pub root: merkle::Root,
-    /// List of note commitments to add to the NCT from outputs in this transaction.
-    pub new_notes: Vec<note::Commitment>,
+    /// Note data to add from outputs in this transaction.
+    pub new_notes: BTreeMap<note::Commitment, NoteData>,
     /// List of spent nullifiers from spends in this transaction.
     pub spent_nullifiers: BTreeSet<Nullifier>,
     /// List of spend proofs and their public inputs to verify in this transaction.
@@ -18,10 +20,19 @@ pub struct PendingTransaction {
 
 /// `VerifiedTransaction` represents a transaction after all checks have passed.
 pub struct VerifiedTransaction {
-    /// List of note commitments to add to the NCT from outputs in this transaction.
-    pub new_notes: Vec<note::Commitment>,
+    /// Transaction ID.
+    pub id: [u8; 32],
+    /// Note data to add from outputs in this transaction.
+    pub new_notes: BTreeMap<note::Commitment, NoteData>,
     /// List of spent nullifiers from spends in this transaction.
     pub spent_nullifiers: BTreeSet<Nullifier>,
+}
+
+#[derive(Debug, Clone)]
+pub struct NoteData {
+    pub ephemeral_key: ka::Public,
+    pub encrypted_note: [u8; note::NOTE_CIPHERTEXT_BYTES],
+    pub transaction_id: [u8; 32],
 }
 
 pub struct SpendProofDetail {
@@ -41,6 +52,8 @@ pub trait StatefulTransactionExt {
 
 impl StatelessTransactionExt for Transaction {
     fn verify_stateless(&self) -> Result<PendingTransaction, Error> {
+        let id = self.id();
+
         // 1. Check binding signature.
         if !self.verify_binding_sig() {
             return Err(anyhow::anyhow!("Binding signature did not verify"));
@@ -50,8 +63,7 @@ impl StatelessTransactionExt for Transaction {
         // and check output proofs verify. If any action does not verify, the entire
         // transaction has failed.
         let mut spent_nullifiers = BTreeSet::<Nullifier>::new();
-        // xx more stuff will go on here for Commit
-        let mut new_notes = Vec::<note::Commitment>::new();
+        let mut new_notes = BTreeMap::<note::Commitment, NoteData>::new();
         let mut spend_proof_details = Vec::<SpendProofDetail>::new();
 
         for action in self.transaction_body().actions {
@@ -65,7 +77,14 @@ impl StatelessTransactionExt for Transaction {
                         return Err(anyhow::anyhow!("An output proof did not verify"));
                     }
 
-                    new_notes.push(inner.body.note_commitment);
+                    new_notes.insert(
+                        inner.body.note_commitment,
+                        NoteData {
+                            ephemeral_key: inner.body.ephemeral_key,
+                            encrypted_note: inner.body.encrypted_note,
+                            transaction_id: id,
+                        },
+                    );
                 }
                 Action::Spend(inner) => {
                     if !inner.verify_auth_sig() {
@@ -91,6 +110,7 @@ impl StatelessTransactionExt for Transaction {
         }
 
         Ok(PendingTransaction {
+            id,
             root: self.transaction_body().merkle_root,
             new_notes,
             spent_nullifiers,
@@ -113,6 +133,7 @@ impl StatefulTransactionExt for PendingTransaction {
         }
 
         Ok(VerifiedTransaction {
+            id: self.id,
             new_notes: self.new_notes.clone(),
             spent_nullifiers: self.spent_nullifiers.clone(),
         })

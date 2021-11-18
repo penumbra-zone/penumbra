@@ -1,12 +1,12 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use penumbra_crypto::{
-    action::output::{self, Output},
-    action::spend::{self, Spend},
-    asset, ka,
+    asset,
     merkle::{Frontier, NoteCommitmentTree},
-    note, Action, Nullifier, Transaction,
+    note, Nullifier,
 };
+
+use crate::verify::{NoteData, VerifiedTransaction};
 
 /// Stores pending state changes from transactions.
 #[derive(Debug)]
@@ -37,46 +37,15 @@ impl PendingBlock {
         self.height = Some(height)
     }
 
-    /// Adds the changes from a transaction.
-    pub fn add_transaction(&mut self, transaction: Transaction) {
-        let transaction_id = transaction.id();
+    /// Adds the state changes from a verified transaction.
+    pub fn add_transaction(&mut self, transaction: VerifiedTransaction) {
+        for (note_commitment, note_data) in transaction.new_notes {
+            self.notes.insert(note_commitment, note_data);
+            self.note_commitment_tree.append(&note_commitment);
+        }
 
-        for action in transaction.transaction_body().actions {
-            match action {
-                Action::Output(Output {
-                    body:
-                        output::Body {
-                            note_commitment,
-                            ephemeral_key,
-                            encrypted_note,
-                            ..
-                        },
-                    ..
-                }) => {
-                    self.notes.insert(
-                        note_commitment,
-                        NoteData {
-                            ephemeral_key,
-                            encrypted_note,
-                            transaction_id,
-                        },
-                    );
-                    self.note_commitment_tree.append(&note_commitment);
-                }
-                Action::Spend(Spend {
-                    body: spend::Body { nullifier, .. },
-                    ..
-                }) => {
-                    self.spent_nullifiers.insert(nullifier);
-                }
-            }
+        for nullifier in transaction.spent_nullifiers {
+            self.spent_nullifiers.insert(nullifier);
         }
     }
-}
-
-#[derive(Debug)]
-pub struct NoteData {
-    pub ephemeral_key: ka::Public,
-    pub encrypted_note: [u8; note::NOTE_CIPHERTEXT_BYTES],
-    pub transaction_id: [u8; 32],
 }

@@ -116,9 +116,15 @@ impl App {
             .set_chain_id(init_chain.chain_id)
             .finalize(&mut OsRng)
             .expect("can form genesis transaction");
+        let pending_transaction = genesis_tx
+            .verify_stateless()
+            .expect("genesis tx must be valid");
+        let verified_transaction = pending_transaction
+            .verify_stateful(self.note_commitment_tree.root2())
+            .expect("genesis tx must be valid");
 
         // Now add the transaction and its note fragments to the pending state changes.
-        genesis_block.add_transaction(genesis_tx);
+        genesis_block.add_transaction(verified_transaction);
         tracing::info!("loaded all genesis notes");
 
         self.pending_block = Some(genesis_block);
@@ -208,8 +214,10 @@ impl App {
         // Ensure we do not add any transactions with duplicate nullifiers into the mempool.
         for nullifier in pending_transaction.spent_nullifiers {
             if self.mempool_nullifiers.contains(&nullifier) {
-                // xx can CheckTx be called during a recheck of an existing transaction in
-                // the mempool? If yes then this recheck will always fail due to this branch.
+                // xx Problem? `mempool.recheck` is by default true, meaning that `CheckTx`
+                // will be called on transactions in the mempool again after each block
+                // is committed. The logic here as is will result in the mempool being
+                // emptied of transactions after each block.
                 return response::CheckTx {
                     code: 1,
                     ..Default::default()
@@ -260,8 +268,7 @@ impl App {
             }
         }
 
-        // Stateful checks
-        let _verified_transaction =
+        let verified_transaction =
             match pending_transaction.verify_stateful(self.note_commitment_tree.root2()) {
                 Ok(pending_transaction) => pending_transaction,
                 Err(_) => {
@@ -272,7 +279,14 @@ impl App {
                 }
             };
 
-        // TODO: We accumulate data only for `VerifiedTransaction`s into `PendingBlock`.
+        // We accumulate data only for `VerifiedTransaction`s into `PendingBlock`.
+        // xx lock during this section?
+        let mut pending_block = self
+            .pending_block
+            .take()
+            .expect("pending_block must be Some during DeliverTx");
+        pending_block.add_transaction(verified_transaction);
+        self.pending_block = Some(pending_block);
 
         Default::default()
     }
