@@ -205,22 +205,20 @@ INSERT INTO notes (
     pub async fn asset_list(&self) -> Result<Vec<Asset>> {
         let mut conn = self.pool.acquire().await?;
 
-        let _assets = query_as::<_, (String, Vec<u8>)>("SELECT denom, asset_id FROM assets")
-            .fetch_all(&mut conn)
-            .await?;
-
-        let mut assets = vec![];
-        for a in _assets {
-            assets.push(Asset {
-                asset_denom: a.0,
-                asset_id: a.1,
-            });
-        }
-
-        Ok(assets)
+        Ok(
+            query_as::<_, (String, Vec<u8>)>("SELECT denom, asset_id FROM assets")
+                .fetch_all(&mut conn)
+                .await?
+                .into_iter()
+                .map(|(asset_denom, id)| Asset {
+                    asset_denom,
+                    asset_id: id,
+                })
+                .collect(),
+        )
     }
 
-    /// Given a list of assets, saves them to the Asset Registry database table.
+    /// Given a set of assets, saves them to the Asset Registry database table.
     pub async fn save_assets_to_registry(
         &self,
         assets: &BTreeMap<asset::Id, String>,

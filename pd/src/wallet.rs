@@ -82,13 +82,11 @@ impl Wallet for WalletApp {
 
     async fn asset_list(
         &self,
-        request: tonic::Request<AssetListRequest>,
+        _request: tonic::Request<AssetListRequest>,
     ) -> Result<tonic::Response<Self::AssetListStream>, Status> {
         let state = self.state.clone();
 
         let (tx, rx) = mpsc::channel(100);
-
-        let state = self.state.clone();
         tokio::spawn(async move {
             let assets = state
                 .asset_list()

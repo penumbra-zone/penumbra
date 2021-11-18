@@ -95,8 +95,6 @@ pub mod helpers {
                 note_blinding: note_blinding.to_bytes(),
                 asset_denom: value.asset_denom,
                 transmission_key: transmission_key.0,
-                // transmission_key_s: Fq::from_bytes(transmission_key.0)
-                //     .map_err(|_| note::Error::InvalidTransmissionKey)?,
             })
         }
     }

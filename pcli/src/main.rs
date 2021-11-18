@@ -203,7 +203,6 @@ async fn main() -> Result<()> {
         Command::FetchByNoteCommitment { note_commitment } => {
             let spend_key = load_wallet(&wallet_path);
             let _local_storage = state::ClientState::new(spend_key);
-            // xx don't hardcode, need to pass multiple ports on the command line
             let mut client =
                 WalletClient::connect(format!("http://{}:{}", opt.node, opt.wallet_port)).await?;
 
@@ -219,7 +218,6 @@ async fn main() -> Result<()> {
         } => {
             let spend_key = load_wallet(&wallet_path);
             let _local_storage = state::ClientState::new(spend_key);
-            // xx don't hardcode, need to pass multiple ports on the command line
             let mut client =
                 WalletClient::connect(format!("http://{}:{}", opt.node, opt.wallet_port)).await?;
             let request = tonic::Request::new(CompactBlockRangeRequest {
@@ -238,7 +236,6 @@ async fn main() -> Result<()> {
             }
         }
         Command::AssetLookup { asset_id } => {
-            // xx don't hardcode, need to pass multiple ports on the command line
             let mut client =
                 WalletClient::connect(format!("http://{}:{}", opt.node, opt.wallet_port)).await?;
             tracing::info!("requesting asset denom for asset id: {:?}", &asset_id,);
@@ -248,7 +245,6 @@ async fn main() -> Result<()> {
             tracing::info!("got asset: {:?}", asset);
         }
         Command::AssetList {} => {
-            // xx don't hardcode, need to pass multiple ports on the command line
             let mut client =
                 WalletClient::connect(format!("http://{}:{}", opt.node, opt.wallet_port)).await?;
             tracing::info!("requesting asset list");
