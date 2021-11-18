@@ -4,7 +4,10 @@ use sqlx::{query, query_as, Pool, Postgres};
 use tendermint::block;
 use tracing::instrument;
 
-use penumbra_crypto::merkle::{NoteCommitmentTree, TreeExt};
+use penumbra_crypto::{
+    merkle::{NoteCommitmentTree, TreeExt},
+    Nullifier,
+};
 use penumbra_proto::wallet::{Asset, CompactBlock, StateFragment, TransactionDetail};
 
 use crate::{
@@ -109,6 +112,18 @@ INSERT INTO notes (
         }
 
         dbtx.commit().await.map_err(Into::into)
+    }
+
+    /// Retrieve a nullifier if it exists.
+    pub async fn nullifier(&self, nullifier: Nullifier) -> Result<Option<(Vec<u8>,)>> {
+        let mut conn = self.pool.acquire().await?;
+        let nullifier_row =
+            query_as::<_, (Vec<u8>,)>("SELECT * FROM nullifiers WHERE nullifier = $1 LIMIT 1")
+                .bind(&<[u8; 32]>::from(nullifier)[..])
+                .fetch_optional(&mut conn)
+                .await?;
+
+        Ok(nullifier_row)
     }
 
     /// Retrieve the current note commitment tree.
