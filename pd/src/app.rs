@@ -24,7 +24,12 @@ use penumbra_crypto::{
     note, Nullifier, Transaction,
 };
 
-use crate::{db::schema, GenesisNote, PendingBlock, State};
+use crate::{
+    db::schema,
+    genesis::GenesisNote,
+    verify::{StatefulTransactionExt, StatelessTransactionExt},
+    PendingBlock, State,
+};
 
 const ABCI_INFO_VERSION: &str = env!("VERGEN_GIT_SEMVER");
 
@@ -116,7 +121,6 @@ impl App {
         genesis_block.add_transaction(genesis_tx);
         tracing::info!("loaded all genesis notes");
 
-        // xx Correct/Necessary to commit here or will tendermint after InitGenesis?
         self.pending_block = Some(genesis_block);
         let commit = self.commit();
         let state = self.state.clone();
@@ -164,12 +168,67 @@ impl App {
         response::BeginBlock::default()
     }
 
+    /// Perform checks before adding a transaction into the mempool via `CheckTx`.
+    ///
+    /// In the transaction validation performed before adding a transaction into the
+    /// mempool, we check that:
+    ///
+    /// * All signatures verify (binding and spend auth signatures),
+    /// * Output proofs verify (stateless),
+    /// * The transaction does not reveal nullifiers already revealed in another transaction
+    /// in the mempool,
+    ///
+    /// If a transaction does not pass these checks, we return a non-zero `CheckTx` response
+    /// code, and the transaction will not be added into the mempool.
+    ///
+    /// The full transaction verification is performed in `DeliverTx`, where stateful checks
+    /// are performed.
+    #[instrument(skip(self))]
+    fn check_tx(&mut self, txbytes: Bytes) -> response::CheckTx {
+        let transaction = match Transaction::try_from(txbytes.as_ref()) {
+            Ok(transaction) => transaction,
+            Err(_) => {
+                return response::CheckTx {
+                    code: 1,
+                    ..Default::default()
+                }
+            }
+        };
+
+        let pending_transaction = match transaction.verify_stateless() {
+            Ok(pending_transaction) => pending_transaction,
+            Err(_) => {
+                return response::CheckTx {
+                    code: 1,
+                    ..Default::default()
+                }
+            }
+        };
+
+        // Ensure we do not add any transactions with duplicate nullifiers into the mempool.
+        for nullifier in pending_transaction.spent_nullifiers {
+            if self.mempool_nullifiers.contains(&nullifier) {
+                // xx can CheckTx be called during a recheck of an existing transaction in
+                // the mempool? If yes then this recheck will always fail due to this branch.
+                return response::CheckTx {
+                    code: 1,
+                    ..Default::default()
+                };
+            } else {
+                self.mempool_nullifiers.insert(nullifier);
+            }
+        }
+
+        Default::default()
+    }
+
+    /// Perform full transaction validation via `DeliverTx`.
+    ///
+    /// State changes are only applied for valid transactions. Invalid transaction are ignored.
     #[instrument(skip(self))]
     fn deliver_tx(&mut self, txbytes: Bytes) -> response::DeliverTx {
-        // TODO: implement (#135)
-
         // Transactions that cannot be deserialized should return a non-zero `DeliverTx` code.
-        let _transaction = match Transaction::try_from(txbytes.as_ref()) {
+        let transaction = match Transaction::try_from(txbytes.as_ref()) {
             Ok(transaction) => transaction,
             Err(_) => {
                 return response::DeliverTx {
@@ -179,7 +238,41 @@ impl App {
             }
         };
 
-        // This should accumulate data from `_transaction` into `self.pending_block`
+        let pending_transaction = match transaction.verify_stateless() {
+            Ok(pending_transaction) => pending_transaction,
+            Err(_) => {
+                return response::DeliverTx {
+                    code: 1,
+                    ..Default::default()
+                }
+            }
+        };
+
+        // We must recheck nullifiers here because a Byzantine node may propose
+        // a block containing double spends, i.e. in `DeliverTx` it is not safe to
+        // assume that all checks performed in `CheckTx` were done.
+        for nullifier in pending_transaction.spent_nullifiers.clone() {
+            if self.mempool_nullifiers.contains(&nullifier) {
+                return response::DeliverTx {
+                    code: 1,
+                    ..Default::default()
+                };
+            }
+        }
+
+        // Stateful checks
+        let _verified_transaction =
+            match pending_transaction.verify_stateful(self.note_commitment_tree.root2()) {
+                Ok(pending_transaction) => pending_transaction,
+                Err(_) => {
+                    return response::DeliverTx {
+                        code: 1,
+                        ..Default::default()
+                    }
+                }
+            };
+
+        // TODO: We accumulate data only for `VerifiedTransaction`s into `PendingBlock`.
 
         Default::default()
     }
@@ -303,10 +396,7 @@ impl Service<Request> for App {
             // handled messages
             Request::Info(_) => return self.info().boxed(),
             Request::Query(query) => Response::Query(self.query(query.data)),
-
-            // TODO
-            Request::CheckTx(_) => Response::CheckTx(Default::default()),
-
+            Request::CheckTx(check_tx) => Response::CheckTx(self.check_tx(check_tx.tx)),
             Request::BeginBlock(begin) => Response::BeginBlock(self.begin_block(begin)),
             Request::DeliverTx(deliver_tx) => Response::DeliverTx(self.deliver_tx(deliver_tx.tx)),
             Request::EndBlock(end) => Response::EndBlock(self.end_block(end)),
