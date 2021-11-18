@@ -4,6 +4,7 @@ mod app;
 mod db;
 mod pending_block;
 mod state;
+mod verify;
 mod wallet;
 
 pub mod genesis;

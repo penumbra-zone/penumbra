@@ -21,7 +21,7 @@ use penumbra_crypto::{
     asset,
     merkle::TreeExt,
     merkle::{self, NoteCommitmentTree},
-    note, Action, Nullifier, Transaction,
+    note, Nullifier, Transaction,
 };
 
 use crate::{db::schema, GenesisNote, PendingBlock, State};
@@ -233,68 +233,6 @@ impl App {
                 retain_height: 0u32.into(),
             }))
         }
-    }
-
-    /// Verifies a transaction and if it verifies, updates the node state.
-    ///
-    /// TODO: split into stateless and stateful parts.
-    pub fn verify_transaction(&mut self, transaction: Transaction) -> bool {
-        // 1. Check binding signature.
-        if !transaction.verify_binding_sig() {
-            return false;
-        }
-
-        // 2. Check all spend auth signatures using provided spend auth keys
-        // and check all proofs verify. If any action does not verify, the entire
-        // transaction has failed.
-        let mut nullifiers_to_add = BTreeSet::<Nullifier>::new();
-        let mut note_commitments_to_add = Vec::<note::Commitment>::new();
-
-        for action in transaction.transaction_body().actions {
-            match action {
-                Action::Output(inner) => {
-                    if !inner.body.proof.verify(
-                        inner.body.value_commitment,
-                        inner.body.note_commitment,
-                        inner.body.ephemeral_key,
-                    ) {
-                        return false;
-                    }
-
-                    // Queue up the state changes.
-                    note_commitments_to_add.push(inner.body.note_commitment);
-                }
-                Action::Spend(inner) => {
-                    if !inner.verify_auth_sig() {
-                        return false;
-                    }
-
-                    if !inner.body.proof.verify(
-                        self.note_commitment_tree.root2(),
-                        inner.body.value_commitment,
-                        inner.body.nullifier.clone(),
-                        inner.body.rk,
-                    ) {
-                        return false;
-                    }
-
-                    // Check nullifier is not already in the nullifier set OR
-                    // has been revealed already in this transaction.
-                    /*
-                    if self.nullifier_set.contains(&inner.body.nullifier.clone())
-                        || nullifiers_to_add.contains(&inner.body.nullifier.clone())
-                    {
-                        return false;
-                    }
-                    */
-
-                    // Queue up the state changes.
-                    nullifiers_to_add.insert(inner.body.nullifier.clone());
-                }
-            }
-        }
-
-        true
     }
 }
 
