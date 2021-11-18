@@ -9,7 +9,7 @@ use penumbra_proto::wallet::{Asset, CompactBlock, StateFragment, TransactionDeta
 
 use crate::{
     db::{self, schema},
-    pending_block::NoteData,
+    verify::NoteData,
     PendingBlock,
 };
 
