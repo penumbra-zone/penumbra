@@ -9,7 +9,7 @@ use penumbra_crypto::{
 use crate::verify::{NoteData, VerifiedTransaction};
 
 /// Stores pending state changes from transactions.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PendingBlock {
     pub height: Option<i64>,
     pub note_commitment_tree: NoteCommitmentTree,

@@ -2,6 +2,7 @@ use std::{
     collections::BTreeSet,
     future::Future,
     pin::Pin,
+    sync::{Arc, Mutex},
     task::{Context, Poll},
 };
 
@@ -61,7 +62,7 @@ pub struct App {
     /// Contains all queued state changes for the duration of a block.  This is
     /// set to Some at the beginning of BeginBlock and consumed (and reset to
     /// None) in Commit.
-    pending_block: Option<PendingBlock>,
+    pending_block: Arc<Mutex<Option<PendingBlock>>>,
 
     /// Used to allow asynchronous requests to be processed sequentially.
     completion_tracker: CompletionTracker,
@@ -77,7 +78,7 @@ impl App {
             state,
             note_commitment_tree,
             mempool_nullifiers: Default::default(),
-            pending_block: None,
+            pending_block: Arc::new(Mutex::new(None)),
             completion_tracker: Default::default(),
         })
     }
@@ -127,7 +128,7 @@ impl App {
         genesis_block.add_transaction(verified_transaction);
         tracing::info!("loaded all genesis notes");
 
-        self.pending_block = Some(genesis_block);
+        self.pending_block = Arc::new(Mutex::new(Some(genesis_block)));
         let commit = self.commit();
         let state = self.state.clone();
         async move {
@@ -170,7 +171,9 @@ impl App {
 
     #[instrument(skip(self))]
     fn begin_block(&mut self, begin: BeginBlock) -> response::BeginBlock {
-        self.pending_block = Some(PendingBlock::new(self.note_commitment_tree.clone()));
+        self.pending_block = Arc::new(Mutex::new(Some(PendingBlock::new(
+            self.note_commitment_tree.clone(),
+        ))));
         response::BeginBlock::default()
     }
 
@@ -229,6 +232,8 @@ impl App {
                     self.mempool_nullifiers.insert(nullifier);
                 }
             }
+
+            //xx add db check here too
         }
 
         Default::default()
@@ -238,66 +243,82 @@ impl App {
     ///
     /// State changes are only applied for valid transactions. Invalid transaction are ignored.
     #[instrument(skip(self))]
-    fn deliver_tx(&mut self, txbytes: Bytes) -> response::DeliverTx {
-        // Transactions that cannot be deserialized should return a non-zero `DeliverTx` code.
-        let transaction = match Transaction::try_from(txbytes.as_ref()) {
-            Ok(transaction) => transaction,
-            Err(_) => {
-                return response::DeliverTx {
-                    code: 1,
-                    ..Default::default()
-                }
-            }
-        };
+    fn deliver_tx(&mut self, txbytes: Bytes) -> impl Future<Output = Result<Response, BoxError>> {
+        let finished_signal = self.completion_tracker.start();
+        let state = self.state.clone();
+        let nct_root = self.note_commitment_tree.root2();
+        let pending_block_ref = self.pending_block.clone();
 
-        let pending_transaction = match transaction.verify_stateless() {
-            Ok(pending_transaction) => pending_transaction,
-            Err(_) => {
-                return response::DeliverTx {
-                    code: 1,
-                    ..Default::default()
-                }
-            }
-        };
-
-        // We must recheck nullifiers here because a Byzantine node may propose
-        // a block containing double spends, i.e. in `DeliverTx` it is not safe to
-        // assume that all checks performed in `CheckTx` were done.
-        for nullifier in pending_transaction.spent_nullifiers.clone() {
-            if self.mempool_nullifiers.contains(&nullifier) {
-                return response::DeliverTx {
-                    code: 1,
-                    ..Default::default()
-                };
-            }
-        }
-
-        let verified_transaction =
-            match pending_transaction.verify_stateful(self.note_commitment_tree.root2()) {
-                Ok(pending_transaction) => pending_transaction,
+        async move {
+            // Transactions that cannot be deserialized should return a non-zero `DeliverTx` code.
+            let transaction = match Transaction::try_from(txbytes.as_ref()) {
+                Ok(transaction) => transaction,
                 Err(_) => {
-                    return response::DeliverTx {
+                    return Ok(Response::DeliverTx(response::DeliverTx {
                         code: 1,
                         ..Default::default()
-                    }
+                    }))
                 }
             };
 
-        // We accumulate data only for `VerifiedTransaction`s into `PendingBlock`.
-        // xx lock during this section?
-        let mut pending_block = self
-            .pending_block
-            .take()
-            .expect("pending_block must be Some during DeliverTx");
-        pending_block.add_transaction(verified_transaction);
-        self.pending_block = Some(pending_block);
+            let pending_transaction = match transaction.verify_stateless() {
+                Ok(pending_transaction) => pending_transaction,
+                Err(_) => {
+                    return Ok(Response::DeliverTx(response::DeliverTx {
+                        code: 1,
+                        ..Default::default()
+                    }))
+                }
+            };
 
-        Default::default()
+            // We must also check nullifiers here because a Byzantine node may propose
+            // a block containing double spends, i.e. in `DeliverTx` it is not safe to
+            // assume that all checks performed in `CheckTx` were done.
+            for nullifier in pending_transaction.spent_nullifiers.clone() {
+                if state
+                    .clone()
+                    .nullifier(nullifier)
+                    .await
+                    .expect("must be able to fetch nullifier")
+                    .is_some()
+                {
+                    return Ok(Response::DeliverTx(response::DeliverTx {
+                        code: 1,
+                        ..Default::default()
+                    }));
+                };
+            }
+
+            let verified_transaction = match pending_transaction.verify_stateful(nct_root) {
+                Ok(pending_transaction) => pending_transaction,
+                Err(_) => {
+                    return Ok(Response::DeliverTx(response::DeliverTx {
+                        code: 1,
+                        ..Default::default()
+                    }))
+                }
+            };
+
+            // We accumulate data only for `VerifiedTransaction`s into `PendingBlock`.
+            pending_block_ref
+                .lock()
+                .unwrap()
+                .as_mut()
+                .expect("pending_block must be Some in DeliverTx")
+                .add_transaction(verified_transaction);
+
+            // Signal that we're ready to resume processing further requests.
+            let _ = finished_signal.send(());
+
+            Ok(Response::DeliverTx(response::DeliverTx::default()))
+        }
     }
 
     #[instrument(skip(self))]
     fn end_block(&mut self, end: EndBlock) -> response::EndBlock {
         self.pending_block
+            .lock()
+            .unwrap()
             .as_mut()
             .expect("pending_block must be Some in EndBlock processing")
             .set_height(end.height);
@@ -311,8 +332,10 @@ impl App {
     fn commit(&mut self) -> impl Future<Output = Result<Response, BoxError>> {
         let pending_block = self
             .pending_block
+            .lock()
+            .unwrap()
             .take()
-            .expect("pending_block must be Some when commit is called");
+            .expect("pending block must be Some when commit is called");
 
         // These nullifiers are about to be committed, so we don't need
         // to keep them in the mempool nullifier set any longer.
@@ -416,7 +439,7 @@ impl Service<Request> for App {
             Request::Query(query) => Response::Query(self.query(query.data)),
             Request::CheckTx(check_tx) => Response::CheckTx(self.check_tx(check_tx)),
             Request::BeginBlock(begin) => Response::BeginBlock(self.begin_block(begin)),
-            Request::DeliverTx(deliver_tx) => Response::DeliverTx(self.deliver_tx(deliver_tx.tx)),
+            Request::DeliverTx(deliver_tx) => return self.deliver_tx(deliver_tx.tx).boxed(),
             Request::EndBlock(end) => Response::EndBlock(self.end_block(end)),
             Request::Commit => return self.commit().boxed(),
 
