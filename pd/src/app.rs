@@ -204,12 +204,6 @@ impl App {
         let finished_signal = self.completion_tracker.start();
         let state = self.state.clone();
         async move {
-            // Store the asset registry based on new assets in the pending block.
-            state
-                .save_assets_to_registry(&pending_block.new_assets)
-                .await
-                .expect("Must be able to save genesis assets to registry");
-
             state
                 .commit_block(pending_block)
                 .await

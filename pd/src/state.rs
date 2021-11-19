@@ -1,12 +1,9 @@
-use std::collections::BTreeMap;
-
 use anyhow::{Context, Result};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{query, query_as, Pool, Postgres};
 use tendermint::block;
 use tracing::instrument;
 
-use penumbra_crypto::asset;
 use penumbra_crypto::merkle::{NoteCommitmentTree, TreeExt};
 use penumbra_proto::wallet::{Asset, CompactBlock, StateFragment, TransactionDetail};
 
@@ -94,6 +91,21 @@ INSERT INTO notes (
                 .bind(&<[u8; 32]>::from(nullifier)[..])
                 .execute(&mut dbtx)
                 .await?;
+        }
+
+        // Save any new assets found in the block to the asset registry.
+        for asset in block.new_assets {
+            query(
+                r#"
+    INSERT INTO assets (
+        asset_id, denom
+    ) VALUES ($1, $2)
+    "#,
+            )
+            .bind(&asset.0.to_bytes()[..])
+            .bind(asset.1)
+            .execute(&mut dbtx)
+            .await?;
         }
 
         dbtx.commit().await.map_err(Into::into)
@@ -216,29 +228,5 @@ INSERT INTO notes (
                 })
                 .collect(),
         )
-    }
-
-    /// Given a set of assets, saves them to the Asset Registry database table.
-    pub async fn save_assets_to_registry(
-        &self,
-        assets: &BTreeMap<asset::Id, String>,
-    ) -> Result<()> {
-        let mut dbtx = self.pool.begin().await?;
-
-        for asset in assets {
-            query(
-                r#"
-    INSERT INTO assets (
-        asset_id, denom
-    ) VALUES ($1, $2)
-    "#,
-            )
-            .bind(&asset.0.to_bytes()[..])
-            .bind(asset.1)
-            .execute(&mut dbtx)
-            .await?;
-        }
-
-        dbtx.commit().await.map_err(Into::into)
     }
 }

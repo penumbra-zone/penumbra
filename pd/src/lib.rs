@@ -12,5 +12,5 @@ pub use pending_block::PendingBlock;
 pub use state::State;
 
 pub use app::App;
-pub use genesis::helpers::GenesisNote;
+pub use genesis::GenesisNote;
 pub use wallet::WalletApp;

@@ -1,22 +1,23 @@
 use std::str::FromStr;
 
 use ark_ff::UniformRand;
+use decaf377::{FieldExt, Fq};
 use rand_chacha::ChaCha20Rng;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
-use penumbra_crypto::{note, Address, Fq, Note};
+use penumbra_crypto::{asset, ka, keys::Diversifier, note, Address, Note, Value};
 
 pub fn generate_genesis_notes(
     rng: &mut ChaCha20Rng,
     genesis_allocations: Vec<GenesisAddr>,
-) -> Vec<helpers::GenesisNote> {
-    let mut notes = Vec::<helpers::GenesisNote>::new();
+) -> Vec<GenesisNote> {
+    let mut notes = Vec::<GenesisNote>::new();
     for genesis_addr in genesis_allocations {
-        let note = helpers::GenesisNote::new(
+        let note = GenesisNote::new(
             *genesis_addr.address.diversifier(),
             *genesis_addr.address.transmission_key(),
-            GenesisNoteValue {
+            GenesisValue {
                 amount: genesis_addr.amount,
                 asset_denom: genesis_addr.denom,
             },
@@ -28,10 +29,13 @@ pub fn generate_genesis_notes(
     notes
 }
 
+/// Value used only during genesis. The difference from [`Value`] is that
+/// the human-readable asset denomination is stored rather than the hashed
+/// asset ID.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct GenesisNoteValue {
+pub struct GenesisValue {
     pub amount: u64,
-    // The asset denom. String.
+    /// The asset's human-readable denomination.
     pub asset_denom: String,
 }
 
@@ -63,64 +67,57 @@ impl FromStr for GenesisAddr {
     }
 }
 
-pub mod helpers {
-    use decaf377::{FieldExt, Fq};
-    use penumbra_crypto::{asset, ka, keys::Diversifier, Value};
+#[serde_as]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Eq)]
+pub struct GenesisNote {
+    #[serde_as(as = "serde_with::hex::Hex")]
+    pub diversifier: [u8; 11],
+    pub amount: u64,
+    #[serde_as(as = "serde_with::hex::Hex")]
+    pub note_blinding: [u8; 32],
+    pub asset_denom: String,
+    #[serde_as(as = "serde_with::hex::Hex")]
+    pub transmission_key: [u8; 32],
+}
 
-    use super::*;
-
-    #[serde_as]
-    #[derive(Deserialize, Serialize, Debug, PartialEq, Eq)]
-    pub struct GenesisNote {
-        #[serde_as(as = "serde_with::hex::Hex")]
-        pub diversifier: [u8; 11],
-        pub amount: u64,
-        #[serde_as(as = "serde_with::hex::Hex")]
-        pub note_blinding: [u8; 32],
-        pub asset_denom: String,
-        #[serde_as(as = "serde_with::hex::Hex")]
-        pub transmission_key: [u8; 32],
+impl GenesisNote {
+    pub fn new(
+        diversifier: Diversifier,
+        transmission_key: ka::Public,
+        value: GenesisValue,
+        note_blinding: Fq,
+    ) -> Result<Self, note::Error> {
+        Ok(GenesisNote {
+            diversifier: diversifier.0,
+            amount: value.amount,
+            note_blinding: note_blinding.to_bytes(),
+            asset_denom: value.asset_denom,
+            transmission_key: transmission_key.0,
+        })
     }
+}
 
-    impl GenesisNote {
-        pub fn new(
-            diversifier: Diversifier,
-            transmission_key: ka::Public,
-            value: GenesisNoteValue,
-            note_blinding: Fq,
-        ) -> Result<Self, note::Error> {
-            Ok(GenesisNote {
-                diversifier: diversifier.0,
-                amount: value.amount,
-                note_blinding: note_blinding.to_bytes(),
-                asset_denom: value.asset_denom,
-                transmission_key: transmission_key.0,
-            })
-        }
-    }
+impl TryFrom<GenesisNote> for Note {
+    type Error = anyhow::Error;
 
-    impl TryFrom<GenesisNote> for Note {
-        type Error = anyhow::Error;
+    fn try_from(genesis_note: GenesisNote) -> Result<Self, Self::Error> {
+        let amount = genesis_note.amount;
+        let asset_denom = genesis_note.asset_denom;
+        let note_blinding = Fq::from_bytes(genesis_note.note_blinding)?;
+        let transmission_key = ka::Public(genesis_note.transmission_key);
+        let diversifier = Diversifier(genesis_note.diversifier);
 
-        fn try_from(genesis_note: GenesisNote) -> Result<Self, Self::Error> {
-            let amount = genesis_note.amount;
-            let asset_denom = genesis_note.asset_denom;
-            let note_blinding = Fq::from_bytes(genesis_note.note_blinding)?;
-            let transmission_key = ka::Public(genesis_note.transmission_key);
-            let diversifier = Diversifier(genesis_note.diversifier);
+        let note = Note::new(
+            diversifier,
+            transmission_key,
+            Value {
+                amount,
+                asset_id: asset::Id::from(asset_denom.as_bytes()),
+            },
+            note_blinding,
+        )?;
 
-            let note = Note::new(
-                diversifier,
-                transmission_key,
-                Value {
-                    amount,
-                    asset_id: asset::Id::from(asset_denom.as_bytes()),
-                },
-                note_blinding,
-            )?;
-
-            Ok(note)
-        }
+        Ok(note)
     }
 }
 
@@ -147,34 +144,34 @@ mod tests {
             .incoming()
             .payment_address(2u64.into());
 
-        let value0 = GenesisNoteValue {
+        let value0 = GenesisValue {
             amount: 100,
             asset_denom: "pen".to_string(),
         };
-        let value1 = GenesisNoteValue {
+        let value1 = GenesisValue {
             amount: 1,
             asset_denom: "tungsten_cube".to_string(),
         };
-        let value2 = GenesisNoteValue {
+        let value2 = GenesisValue {
             amount: 1000,
             asset_denom: "pen".to_string(),
         };
 
-        let note0 = helpers::GenesisNote::new(
+        let note0 = GenesisNote::new(
             *dest0.diversifier(),
             *dest0.transmission_key(),
             value0,
             Fq::rand(&mut OsRng),
         )
         .unwrap();
-        let note1 = helpers::GenesisNote::new(
+        let note1 = GenesisNote::new(
             *dest1.diversifier(),
             *dest1.transmission_key(),
             value1,
             Fq::rand(&mut OsRng),
         )
         .unwrap();
-        let note2 = helpers::GenesisNote::new(
+        let note2 = GenesisNote::new(
             *dest2.diversifier(),
             *dest2.transmission_key(),
             value2,
@@ -188,7 +185,7 @@ mod tests {
 
         println!("\n{}\n", serialized);
 
-        let genesis_notes2: Vec<helpers::GenesisNote> = serde_json::from_str(&serialized).unwrap();
+        let genesis_notes2: Vec<GenesisNote> = serde_json::from_str(&serialized).unwrap();
 
         assert_eq!(genesis_notes, genesis_notes2);
     }
