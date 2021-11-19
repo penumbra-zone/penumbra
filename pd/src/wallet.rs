@@ -3,8 +3,8 @@ use tokio_stream::wrappers::ReceiverStream;
 use tonic::Status;
 
 use penumbra_proto::wallet::{
-    wallet_server::Wallet, CompactBlock, CompactBlockRangeRequest, TransactionByNoteRequest,
-    TransactionDetail,
+    wallet_server::Wallet, Asset, AssetListRequest, AssetLookupRequest, CompactBlock,
+    CompactBlockRangeRequest, TransactionByNoteRequest, TransactionDetail,
 };
 
 use crate::State;
@@ -23,6 +23,7 @@ impl WalletApp {
 #[tonic::async_trait]
 impl Wallet for WalletApp {
     type CompactBlockRangeStream = ReceiverStream<Result<CompactBlock, Status>>;
+    type AssetListStream = ReceiverStream<Result<Asset, Status>>;
 
     async fn compact_block_range(
         &self,
@@ -65,5 +66,39 @@ impl Wallet for WalletApp {
             .await
             .map_err(|_| tonic::Status::not_found("transaction not found"))?;
         Ok(tonic::Response::new(transaction))
+    }
+
+    async fn asset_lookup(
+        &self,
+        request: tonic::Request<AssetLookupRequest>,
+    ) -> Result<tonic::Response<Asset>, Status> {
+        let state = self.state.clone();
+        let asset = state
+            .asset_lookup(request.into_inner().asset_id)
+            .await
+            .map_err(|_| tonic::Status::not_found("asset not found"))?;
+        Ok(tonic::Response::new(asset))
+    }
+
+    async fn asset_list(
+        &self,
+        _request: tonic::Request<AssetListRequest>,
+    ) -> Result<tonic::Response<Self::AssetListStream>, Status> {
+        let state = self.state.clone();
+
+        let (tx, rx) = mpsc::channel(100);
+        tokio::spawn(async move {
+            let assets = state
+                .asset_list()
+                .await
+                .map_err(|_| tonic::Status::unavailable("database error"))
+                .unwrap();
+            for asset in &assets[..] {
+                tracing::info!("sending asset list response: {:?}", asset);
+                tx.send(Ok(asset.clone())).await.unwrap();
+            }
+        });
+
+        Ok(tonic::Response::new(Self::AssetListStream::new(rx)))
     }
 }

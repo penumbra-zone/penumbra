@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use penumbra_crypto::{
     action::output::{self, Output},
     action::spend::{self, Spend},
-    ka,
+    asset, ka,
     merkle::{Frontier, NoteCommitmentTree},
     note, Action, Nullifier, Transaction,
 };
@@ -17,6 +17,8 @@ pub struct PendingBlock {
     pub notes: BTreeMap<note::Commitment, NoteData>,
     /// Nullifiers that were spent in this block.
     pub spent_nullifiers: BTreeSet<Nullifier>,
+    /// Stores new asset types found in this block that need to be added to the asset registry.
+    pub new_assets: BTreeMap<asset::Id, String>,
 }
 
 impl PendingBlock {
@@ -26,6 +28,7 @@ impl PendingBlock {
             note_commitment_tree,
             notes: BTreeMap::new(),
             spent_nullifiers: BTreeSet::new(),
+            new_assets: BTreeMap::new(),
         }
     }
 

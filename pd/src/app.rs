@@ -18,12 +18,13 @@ use tower_abci::BoxError;
 use tracing::instrument;
 
 use penumbra_crypto::{
+    asset,
     merkle::TreeExt,
     merkle::{self, NoteCommitmentTree},
     note, Action, Nullifier, Transaction,
 };
 
-use crate::{db::schema, genesis::GenesisNotes, PendingBlock, State};
+use crate::{db::schema, GenesisNote, PendingBlock, State};
 
 const ABCI_INFO_VERSION: &str = env!("VERGEN_GIT_SEMVER");
 
@@ -86,16 +87,25 @@ impl App {
         genesis_block.set_height(0);
 
         // Note that errors cannot be handled in InitChain, the application must crash.
-        let genesis: GenesisNotes = serde_json::from_slice(&init_chain.app_state_bytes)
+        let genesis: Vec<GenesisNote> = serde_json::from_slice(&init_chain.app_state_bytes)
             .expect("can parse app_state in genesis file");
 
         // Create genesis transaction and update database table `transactions`.
         let mut genesis_tx_builder =
             Transaction::genesis_build_with_root(self.note_commitment_tree.root2());
 
-        for note in genesis.notes() {
+        for note in genesis {
             tracing::info!(?note);
-            genesis_tx_builder.add_output(&mut OsRng, note);
+            // Add all assets found in the genesis transaction to the asset registry
+            genesis_block.new_assets.insert(
+                asset::Id::from(note.asset_denom.as_bytes()),
+                note.asset_denom.clone(),
+            );
+
+            genesis_tx_builder.add_output(
+                &mut OsRng,
+                note::Note::try_from(note).expect("GenesisNote can be converted into regular Note"),
+            );
         }
         let genesis_tx = genesis_tx_builder
             .set_chain_id(init_chain.chain_id)
