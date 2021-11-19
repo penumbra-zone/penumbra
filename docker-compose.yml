@@ -7,8 +7,8 @@ services:
       context: .
     environment:
       - RUST_LOG=${RUST_LOG:-warn,pd=info,penumbra=info}
-    command:
-      pd start --host 0.0.0.0 --database-uri postgres://postgres:postgres@db/penumbra
+    command: pd start --host 0.0.0.0 --database-uri
+      postgres://postgres:postgres@db/penumbra
     restart: on-failure
     depends_on:
       - db
@@ -48,6 +48,8 @@ services:
     networks:
       localnet:
         ipv4_address: 192.167.10.2
+    build:
+      context: ./tendermint/
 
 networks:
   localnet:
@@ -55,8 +57,7 @@ networks:
     ipam:
       driver: default
       config:
-      -
-        subnet: 192.167.10.0/16
+        - subnet: 192.167.10.0/16
 
 volumes:
   tendermint_data: {}
