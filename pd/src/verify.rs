@@ -43,7 +43,10 @@ pub struct SpendProofDetail {
 }
 
 pub trait StatelessTransactionExt {
-    fn verify_stateless(&self) -> Result<PendingTransaction, Error>;
+    fn verify_stateless(
+        &self,
+        value_balance: Option<decaf377::Element>,
+    ) -> Result<PendingTransaction, Error>;
 }
 
 pub trait StatefulTransactionExt {
@@ -51,12 +54,24 @@ pub trait StatefulTransactionExt {
 }
 
 impl StatelessTransactionExt for Transaction {
-    fn verify_stateless(&self) -> Result<PendingTransaction, Error> {
+    fn verify_stateless(
+        &self,
+        value_balance: Option<decaf377::Element>,
+    ) -> Result<PendingTransaction, Error> {
         let id = self.id();
 
-        // 1. Check binding signature.
-        if !self.verify_binding_sig() {
-            return Err(anyhow::anyhow!("Binding signature did not verify"));
+        // 1. Check binding signature, using the value_balance if provided.
+        match value_balance {
+            Some(value_balance) => {
+                if !self.verify_binding_sig_with_value_balance(value_balance) {
+                    return Err(anyhow::anyhow!("Binding signature did not verify"));
+                }
+            }
+            None => {
+                if !self.verify_binding_sig() {
+                    return Err(anyhow::anyhow!("Binding signature did not verify"));
+                }
+            }
         }
 
         // 2. Check all spend auth signatures using provided spend auth keys

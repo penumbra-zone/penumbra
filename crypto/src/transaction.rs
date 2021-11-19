@@ -162,6 +162,9 @@ impl Transaction {
             }
         }
 
+        // This works for all non-genesis transactions. For transactions with
+        // non-zero value balance, the binding verification key must be computed
+        // as `(value_commitments - value_balance).compress().0.into()`.
         let binding_verification_key_bytes: VerificationKeyBytes<Binding> =
             value_commitments.compress().0.into();
         let binding_verification_key: VerificationKey<Binding> = binding_verification_key_bytes
