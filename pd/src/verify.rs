@@ -43,10 +43,7 @@ pub struct SpendProofDetail {
 }
 
 pub trait StatelessTransactionExt {
-    fn verify_stateless(
-        &self,
-        value_balance: Option<decaf377::Element>,
-    ) -> Result<PendingTransaction, Error>;
+    fn verify_stateless(&self) -> Result<PendingTransaction, Error>;
 }
 
 pub trait StatefulTransactionExt {
@@ -54,24 +51,12 @@ pub trait StatefulTransactionExt {
 }
 
 impl StatelessTransactionExt for Transaction {
-    fn verify_stateless(
-        &self,
-        value_balance: Option<decaf377::Element>,
-    ) -> Result<PendingTransaction, Error> {
+    fn verify_stateless(&self) -> Result<PendingTransaction, Error> {
         let id = self.id();
 
-        // 1. Check binding signature, using the value_balance if provided.
-        match value_balance {
-            Some(value_balance) => {
-                if !self.verify_binding_sig_with_value_balance(value_balance) {
-                    return Err(anyhow::anyhow!("Binding signature did not verify"));
-                }
-            }
-            None => {
-                if !self.verify_binding_sig() {
-                    return Err(anyhow::anyhow!("Binding signature did not verify"));
-                }
-            }
+        // 1. Check binding signature.
+        if !self.verify_binding_sig() {
+            return Err(anyhow::anyhow!("Binding signature did not verify"));
         }
 
         // 2. Check all spend auth signatures using provided spend auth keys
@@ -152,5 +137,33 @@ impl StatefulTransactionExt for PendingTransaction {
             new_notes: self.new_notes.clone(),
             spent_nullifiers: self.spent_nullifiers.clone(),
         })
+    }
+}
+
+/// One-off function used to mark a genesis transaction as verified.
+pub fn mark_genesis_as_verified(transaction: Transaction) -> VerifiedTransaction {
+    let mut new_notes = BTreeMap::<note::Commitment, NoteData>::new();
+    for action in transaction.transaction_body().actions {
+        match action {
+            Action::Output(inner) => {
+                new_notes.insert(
+                    inner.body.note_commitment,
+                    NoteData {
+                        ephemeral_key: inner.body.ephemeral_key,
+                        encrypted_note: inner.body.encrypted_note,
+                        transaction_id: transaction.id(),
+                    },
+                );
+            }
+            Action::Spend(_) => {
+                panic!("genesis transaction has no spends")
+            }
+        }
+    }
+
+    VerifiedTransaction {
+        id: transaction.id(),
+        new_notes,
+        spent_nullifiers: BTreeSet::<Nullifier>::new(),
     }
 }

@@ -28,7 +28,7 @@ use penumbra_crypto::{
 use crate::{
     db::schema,
     genesis::GenesisNote,
-    verify::{StatefulTransactionExt, StatelessTransactionExt},
+    verify::{mark_genesis_as_verified, StatefulTransactionExt, StatelessTransactionExt},
     PendingBlock, State,
 };
 
@@ -114,19 +114,11 @@ impl App {
             );
         }
 
-        // Save `value_balance` so we can compute the binding verification key.
-        let value_balance = genesis_tx_builder.value_balance;
-
         let genesis_tx = genesis_tx_builder
             .set_chain_id(init_chain.chain_id)
             .finalize(&mut OsRng)
             .expect("can form genesis transaction");
-        let pending_transaction = genesis_tx
-            .verify_stateless(Some(value_balance))
-            .expect("genesis tx must be valid");
-        let verified_transaction = pending_transaction
-            .verify_stateful(self.note_commitment_tree.root2())
-            .expect("genesis tx must be valid");
+        let verified_transaction = mark_genesis_as_verified(genesis_tx);
 
         // Now add the transaction and its note fragments to the pending state changes.
         genesis_block.add_transaction(verified_transaction);
@@ -217,7 +209,7 @@ impl App {
                 }
             };
 
-            let pending_transaction = match transaction.verify_stateless(None) {
+            let pending_transaction = match transaction.verify_stateless() {
                 Ok(pending_transaction) => pending_transaction,
                 Err(_) => {
                     return Ok(Response::CheckTx(response::CheckTx {
@@ -306,7 +298,7 @@ impl App {
                 }
             };
 
-            let pending_transaction = match transaction.verify_stateless(None) {
+            let pending_transaction = match transaction.verify_stateless() {
                 Ok(pending_transaction) => pending_transaction,
                 Err(_) => {
                     return Ok(Response::DeliverTx(response::DeliverTx {
