@@ -16,9 +16,9 @@ services:
       dockerfile: Dockerfile.dev
 
   # expose database on a port so it is easy to play with
-  #  db:
-  #    ports:
-  #      - "5432:5432"
+  db:
+    ports:
+      - "5432:5432"
 
   # add prometheus and grafana
   #
