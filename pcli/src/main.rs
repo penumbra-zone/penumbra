@@ -12,129 +12,16 @@ use penumbra_proto::wallet::{
 };
 use penumbra_wallet::{state, storage};
 
-#[derive(Debug, StructOpt)]
-#[structopt(
-    name = "pcli",
-    about = "The Penumbra command-line interface.",
-    version = env!("VERGEN_GIT_SEMVER"),
-)]
-struct Opt {
-    /// The address of the Tendermint node.
-    #[structopt(short, long, default_value = "127.0.0.1")]
-    node: String,
-    #[structopt(short, long, default_value = "26657")]
-    abci_port: u16,
-    #[structopt(long, default_value = "26666")]
-    wallet_port: u16,
-    #[structopt(subcommand)]
-    cmd: Command,
-    /// The location of the wallet file [default: platform appdata directory]
-    #[structopt(short, long)]
-    wallet_location: Option<String>,
-}
+pub mod opt;
+pub mod warning;
 
-// Note: can't use `Vec<u8>` directly, as structopt would instead look for
-// conversion function from `&str` to `u8`.
-type Bytes = Vec<u8>;
-
-fn parse_bytestring(s: &str) -> Result<Vec<u8>, String> {
-    let decoded = hex::decode(s).expect("Invalid bytestring");
-
-    Ok(decoded)
-}
-
-#[derive(Debug, StructOpt)]
-enum Command {
-    /// Creates a transaction.
-    Tx(Tx),
-    /// Queries the Penumbra state.
-    #[structopt()]
-    Query { key: String },
-    /// Manages the wallet state.
-    Wallet(Wallet),
-    /// Manages addresses.
-    Addr(Addr),
-    /// Synchronizes the chain state to the client.
-    Sync,
-    /// Fetch transaction by note commitment - TEMP (developer only, remove when sync implemented)
-    FetchByNoteCommitment { note_commitment: String },
-    /// Block request - TEMP (developer only, remove when sync implemented)
-    BlockRequest { start_height: u32, end_height: u32 },
-    /// Asset Registry Lookup based on asset ID
-    AssetLookup {
-        #[structopt(parse(try_from_str = parse_bytestring))]
-        asset_id: Bytes,
-    },
-    /// List every asset in the Asset Registry
-    AssetList {},
-}
-
-#[derive(Debug, StructOpt)]
-enum Wallet {
-    /// Import an existing spend seed.
-    Import,
-    /// Generate a new spend seed.
-    Generate,
-    /// Delete the wallet permanently.
-    Delete,
-    /// Fetch transaction by note commitment - TEMP (not gonna be exposed to user)
-    FetchByNoteCommitment,
-}
-
-#[derive(Debug, StructOpt)]
-enum Addr {
-    /// List addresses.
-    List,
-    /// Show the address with the given index.
-    Show {
-        /// The index of the address to show.
-        #[structopt(short, long)]
-        index: u32,
-    },
-    /// Create a new address.
-    New {
-        /// A freeform label for the address, stored only locally.
-        label: String,
-    },
-}
-
-#[derive(Debug, StructOpt)]
-enum Tx {
-    /// Send transaction to the node.
-    Send {
-        /// Amount to send.
-        amount: u64,
-        /// Denomination.
-        denomination: String,
-        /// Destination address.
-        address: String,
-        /// Fee.
-        fee: u64,
-    },
-}
-
-fn display_usage_warning() {
-    println!(
-        "
-                               \x1b[1;31m⛔️WARNING️️⛔️:
-        
-                        you are about to lose money!\x1b[0m
-
-🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
-This message ... is part of a system of messages...
-... we considered ourselves to be a fault-tolerant distributed system...
-This message is a warning about danger.
-The danger is in a particular location... the center of danger is the \x1b[1;92mpcli\x1b[0m binary...
-The danger is to your \x1b[1;92mfunds\x1b[0m, and it can \x1b[1;31mdestroy\x1b[0m them.
-The danger is unleashed only if you execute this software.
-🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
-
-                           \x1b[1;31mUSE AT YOUR OWN RISK\x1b[0m"
-    )
-}
+use opt::*;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // Display a warning message to the user so they don't get upset when all their tokens are lost.
+    warning::display();
+
     tracing_subscriber::fmt::init();
     let opt = Opt::from_args();
 
@@ -154,9 +41,6 @@ async fn main() -> Result<()> {
             wallet_path = project_dir.data_dir().join("penumbra_wallet.dat");
         }
     }
-
-    // Display a warning message to the user so they don't get upset when all their money is stolen.
-    display_usage_warning();
 
     match opt.cmd {
         Command::Tx(Tx::Send {
