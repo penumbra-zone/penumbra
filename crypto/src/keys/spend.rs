@@ -15,10 +15,21 @@ pub const SPENDSEED_LEN_BYTES: usize = 32;
 pub struct SpendSeed(pub [u8; SPENDSEED_LEN_BYTES]);
 
 /// A key representing a single spending authority.
+#[derive(Debug, Clone)]
 pub struct SpendKey {
     seed: SpendSeed,
     ask: SigningKey<SpendAuth>,
     fvk: FullViewingKey,
+}
+
+impl From<SpendSeed> for SpendKey {
+    fn from(seed: SpendSeed) -> Self {
+        let ask = SigningKey::new_from_field(prf::expand_ff(b"Penumbra_ExpndSd", &seed.0, &[0; 1]));
+        let nk = NullifierKey(prf::expand_ff(b"Penumbra_ExpndSd", &seed.0, &[1; 1]));
+        let fvk = FullViewingKey::from_components(ask.into(), nk);
+
+        Self { seed, ask, fvk }
+    }
 }
 
 impl SpendKey {
@@ -26,16 +37,7 @@ impl SpendKey {
     pub fn generate<R: RngCore + CryptoRng>(mut rng: R) -> Self {
         let mut seed_bytes = [0u8; SPENDSEED_LEN_BYTES];
         rng.fill_bytes(&mut seed_bytes);
-        Self::from_seed(SpendSeed(seed_bytes))
-    }
-
-    /// Loads a [`SpendKey`] from the provided [`SpendSeed`].
-    pub fn from_seed(seed: SpendSeed) -> Self {
-        let ask = SigningKey::new_from_field(prf::expand_ff(b"Penumbra_ExpndSd", &seed.0, &[0; 1]));
-        let nk = NullifierKey(prf::expand_ff(b"Penumbra_ExpndSd", &seed.0, &[1; 1]));
-        let fvk = FullViewingKey::from_components(ask.into(), nk);
-
-        Self { seed, ask, fvk }
+        Self::from(SpendSeed(seed_bytes))
     }
 
     /// Get the [`SpendSeed`] this [`SpendKey`] was derived from.

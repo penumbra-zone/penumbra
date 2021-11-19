@@ -1,12 +1,10 @@
 use anyhow::Context;
 use penumbra_proto::wallet::{CompactBlock, StateFragment};
 use rand_core::{CryptoRng, RngCore};
-use std::collections::{BTreeMap, HashSet};
+use std::collections::BTreeMap;
 
 use penumbra_crypto::{
-    fmd,
-    memo::MemoPlaintext,
-    merkle,
+    fmd, merkle,
     merkle::{Frontier, Tree, TreeExt},
     note, Address, Note, Nullifier, Transaction, CURRENT_CHAIN_ID,
 };
@@ -19,19 +17,19 @@ const MAX_MERKLE_CHECKPOINTS_CLIENT: usize = 10;
 #[derive(Clone, Debug)]
 pub struct ClientState {
     /// The last block height we've scanned to.
-    pub last_block_height: u32,
+    last_block_height: u32,
     /// Note commitment tree.
-    pub note_commitment_tree: merkle::BridgeTree<note::Commitment, { merkle::DEPTH as u8 }>,
+    note_commitment_tree: merkle::BridgeTree<note::Commitment, { merkle::DEPTH as u8 }>,
     /// Our nullifiers and the notes they correspond to.
-    pub nullifier_map: BTreeMap<Nullifier, note::Commitment>,
+    nullifier_map: BTreeMap<Nullifier, note::Commitment>,
     /// Notes that we have received.
-    pub unspent_set: BTreeMap<note::Commitment, Note>,
+    unspent_set: BTreeMap<note::Commitment, Note>,
     /// Notes that we have spent.
-    pub spent_set: BTreeMap<note::Commitment, Note>,
+    spent_set: BTreeMap<note::Commitment, Note>,
     /// Map of note commitment to full transaction data for transactions we have visibility into.
-    pub transactions: BTreeMap<note::Commitment, Option<Vec<u8>>>,
+    transactions: BTreeMap<note::Commitment, Option<Vec<u8>>>,
     /// Key material.
-    pub wallet: Wallet,
+    wallet: Wallet,
 }
 
 impl ClientState {
@@ -67,6 +65,14 @@ impl ClientState {
             .finalize(rng)
     }
 
+    /// Returns the last block height the client state has synced up to.
+    pub fn last_block_height(&self) -> u32 {
+        self.last_block_height
+    }
+
+    /// Scan the provided block and update the client state.
+    ///
+    /// The provided block must be the one immediately following [`Self::last_block_height`].
     pub fn scan_block(
         &mut self,
         CompactBlock { height, fragments }: CompactBlock,
@@ -96,7 +102,7 @@ impl ClientState {
             // viewing key
             if let Ok(note) = Note::decrypt(
                 encrypted_note.as_ref(),
-                &self.wallet.incoming(),
+                &self.wallet.incoming_viewing_key(),
                 &ephemeral_key
                     .as_ref()
                     .try_into()
@@ -107,9 +113,14 @@ impl ClientState {
                 self.note_commitment_tree.witness();
 
                 // Insert the note associated with its computed nullifier into the nullifier map
-                let pos = merkle::Position::zero(); // FIXME: this is wrong and to be replaced
+                let (pos, _auth_path) = self
+                    .note_commitment_tree
+                    .authentication_path(&note_commitment)
+                    .expect("we just witnessed this commitment");
                 self.nullifier_map.insert(
-                    self.wallet.full().derive_nullifier(pos, &note_commitment),
+                    self.wallet
+                        .full_viewing_key()
+                        .derive_nullifier(pos, &note_commitment),
                     note_commitment,
                 );
 
@@ -118,16 +129,9 @@ impl ClientState {
             }
         }
 
+        // Remember that we've scanned this block & we're ready for the next one.
+        self.last_block_height += 1;
+
         Ok(())
     }
-
-    // TODO: For each output in scanned transactions, try to decrypt the note ciphertext.
-    // If the note decrypts, we:
-    // * add the (note plaintext, memo) to the received_set.
-    // * compute and add the nullifier to the nullifier map.
-    // * add the note commitment to the note commitment tree.
-    // * witness the note commitment value.
-    //
-    // For each spend, if the revealed nf is in our nullifier_map, then
-    // we add nullifier_map[nf] to spent_set.
 }
