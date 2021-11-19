@@ -8,7 +8,7 @@ pub const IVK_LEN_BYTES: usize = 64;
 
 /// Allows viewing incoming notes, i.e., notes sent to the spending key this
 /// key is derived from.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct IncomingViewingKey {
     pub(super) ivk: ka::Secret,
     pub(super) dk: DiversifierKey,

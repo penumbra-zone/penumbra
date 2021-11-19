@@ -179,10 +179,14 @@ impl Note {
 
     /// Decrypt a note ciphertext to generate a plaintext `Note`.
     pub fn decrypt(
-        ciphertext: [u8; NOTE_CIPHERTEXT_BYTES],
+        ciphertext: &[u8],
         ivk: &IncomingViewingKey,
         epk: &ka::Public,
     ) -> Result<Note, Error> {
+        if ciphertext.len() != NOTE_CIPHERTEXT_BYTES {
+            return Err(Error::DecryptionError);
+        }
+
         let shared_secret = ivk
             .key_agreement_with(epk)
             .map_err(|_| Error::DecryptionError)?;
@@ -421,7 +425,7 @@ mod tests {
         let ciphertext = note.encrypt(&esk);
 
         let epk = esk.diversified_public(dest.diversified_generator());
-        let plaintext = Note::decrypt(ciphertext, ivk, &epk).expect("can decrypt note");
+        let plaintext = Note::decrypt(&ciphertext, ivk, &epk).expect("can decrypt note");
 
         assert_eq!(plaintext, note);
 
@@ -429,6 +433,6 @@ mod tests {
         let fvk2 = sk2.full_viewing_key();
         let ivk2 = fvk2.incoming();
 
-        assert!(Note::decrypt(ciphertext, ivk2, &epk).is_err());
+        assert!(Note::decrypt(&ciphertext, ivk2, &epk).is_err());
     }
 }

@@ -120,7 +120,11 @@ impl SpendProof {
         }
 
         // Nullifier integrity.
-        if nullifier != self.nk.nf(self.position, &self.note_commitment) {
+        if nullifier
+            != self
+                .nk
+                .derive_nullifier(self.position, &self.note_commitment)
+        {
             proof_verifies = false;
         }
 
@@ -696,7 +700,7 @@ mod tests {
         };
 
         let rk: VerificationKey<SpendAuth> = rsk.into();
-        let nf = nk.nf(0.into(), &note_commitment);
+        let nf = nk.derive_nullifier(0.into(), &note_commitment);
         assert!(proof.verify(anchor, value_to_send.commit(v_blinding), nf, rk));
     }
 
@@ -748,7 +752,7 @@ mod tests {
         };
 
         let rk: VerificationKey<SpendAuth> = rsk.into();
-        let nf = nk.nf(0.into(), &note_commitment);
+        let nf = nk.derive_nullifier(0.into(), &note_commitment);
         assert!(!proof.verify(incorrect_anchor, value_to_send.commit(v_blinding), nf, rk));
     }
 
@@ -800,7 +804,7 @@ mod tests {
         };
 
         let rk: VerificationKey<SpendAuth> = rsk.into();
-        let nf = nk.nf(0.into(), &note_commitment);
+        let nf = nk.derive_nullifier(0.into(), &note_commitment);
         assert!(!proof.verify(anchor, value_to_send.commit(Fr::rand(&mut rng)), nf, rk));
     }
 
@@ -852,7 +856,7 @@ mod tests {
         };
 
         let rk: VerificationKey<SpendAuth> = rsk.into();
-        let incorrect_nf = nk.nf(5.into(), &note_commitment);
+        let incorrect_nf = nk.derive_nullifier(5.into(), &note_commitment);
         assert!(!proof.verify(anchor, value_to_send.commit(v_blinding), incorrect_nf, rk));
     }
 }

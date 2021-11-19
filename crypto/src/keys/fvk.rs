@@ -3,9 +3,9 @@ use decaf377::FieldExt;
 use once_cell::sync::Lazy;
 
 use crate::{
-    ka, prf,
+    ka, merkle, note, prf,
     rdsa::{SpendAuth, VerificationKey},
-    Fq, Fr,
+    Fq, Fr, Nullifier,
 };
 
 use super::{DiversifierKey, IncomingViewingKey, NullifierKey, OutgoingViewingKey};
@@ -13,6 +13,7 @@ use super::{DiversifierKey, IncomingViewingKey, NullifierKey, OutgoingViewingKey
 static IVK_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| Fq::from_le_bytes_mod_order(b"penumbra.derive.ivk"));
 
 /// The `FullViewingKey` allows one to identify incoming and outgoing notes only.
+#[derive(Clone, Debug)]
 pub struct FullViewingKey {
     ak: VerificationKey<SpendAuth>,
     nk: NullifierKey,
@@ -58,9 +59,18 @@ impl FullViewingKey {
         &self.ovk
     }
 
-    /// Returns the nullifier key contained in this full viewing key.
     pub fn nullifier_key(&self) -> &NullifierKey {
         &self.nk
+    }
+
+    /// Derive the [`Nullifier`] for a positioned note given its [`merkle::Position`] and
+    /// [`note::Commitment`].
+    pub fn derive_nullifier(
+        &self,
+        pos: merkle::Position,
+        note_commitment: &note::Commitment,
+    ) -> Nullifier {
+        self.nk.derive_nullifier(pos, note_commitment)
     }
 
     /// Returns the spend verification key contained in this full viewing key.
