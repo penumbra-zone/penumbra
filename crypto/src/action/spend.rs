@@ -104,7 +104,7 @@ impl Body {
         };
         Body {
             value_commitment,
-            nullifier: nk.nf(position, &note_commitment),
+            nullifier: nk.derive_nullifier(position, &note_commitment),
             rk,
             proof,
         }

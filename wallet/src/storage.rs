@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use penumbra_crypto::{fmd, keys, Address};
 
 /// The contents of the wallet file that share a spend authority.
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Wallet {
     pub spend_seed: keys::SpendSeed,
     /// A list of human-readable labels for addresses.
@@ -14,6 +14,7 @@ pub struct Wallet {
 }
 
 impl Wallet {
+    /// Create a new wallet.
     pub fn generate<R: CryptoRng + RngCore>(rng: &mut R) -> Self {
         let spend_key = keys::SpendKey::generate(rng);
         Self {
@@ -24,9 +25,18 @@ impl Wallet {
 
     /// Incoming viewing key from this spend seed.
     pub fn incoming(&self) -> keys::IncomingViewingKey {
+        // TODO: don't re-derive this every time
         let spend_key = keys::SpendKey::from_seed(self.spend_seed.clone());
         let fvk = spend_key.full_viewing_key();
         fvk.incoming().clone()
+    }
+
+    /// Get the full viewing key for this wallet.
+    pub fn full(&self) -> keys::FullViewingKey {
+        // TODO: don't re-derive this every time
+        let spend_key = keys::SpendKey::from_seed(self.spend_seed.clone());
+        let fvk = spend_key.full_viewing_key();
+        fvk.clone()
     }
 
     /// Generate a new diversified `Address` and its corresponding `DetectionKey`.

@@ -46,7 +46,7 @@ impl TryFrom<&[u8]> for Diversifier {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DiversifierKey(pub(super) [u8; 32]);
 
 impl DiversifierKey {

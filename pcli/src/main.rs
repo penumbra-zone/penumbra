@@ -54,6 +54,8 @@ enum Command {
     Wallet(Wallet),
     /// Manages addresses.
     Addr(Addr),
+    /// Synchronizes the chain state to the client.
+    Sync,
     /// Fetch transaction by note commitment - TEMP (developer only, remove when sync implemented)
     FetchByNoteCommitment { note_commitment: String },
     /// Block request - TEMP (developer only, remove when sync implemented)
@@ -304,6 +306,10 @@ async fn main() -> Result<()> {
             while let Some(asset) = stream.message().await? {
                 tracing::info!("got asset: {:?}", asset);
             }
+        }
+        Command::Sync => {
+            let spend_key = load_wallet(&wallet_path);
+            //sync(&spend_key)?;
         }
         _ => todo!(),
     }
