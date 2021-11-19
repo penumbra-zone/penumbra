@@ -35,14 +35,13 @@ services:
   # The Tendermint node
   tendermint:
     container_name: tendermint
-    image: "tendermint/tendermint"
     ports:
       - "26656-26657:26656-26657"
       - "6060:6060"
       - "27000:26660"
     volumes:
       - "tendermint_data:/tendermint"
-    command: node --proxy-app=tcp://pd:26658
+    command: start --proxy-app=tcp://pd:26658
     depends_on:
       - pd
     networks:
