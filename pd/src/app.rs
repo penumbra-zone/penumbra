@@ -57,7 +57,7 @@ pub struct App {
     /// However, it doesn't prevent a malicious validator from proposing
     /// conflicting transactions, so we need to ensure (in `DeliverTx`) that we
     /// ignore invalid transactions.
-    mempool_nullifiers: BTreeSet<Nullifier>,
+    mempool_nullifiers: Arc<Mutex<BTreeSet<Nullifier>>>,
 
     /// Contains all queued state changes for the duration of a block.  This is
     /// set to Some at the beginning of BeginBlock and consumed (and reset to
@@ -77,7 +77,7 @@ impl App {
         Ok(Self {
             state,
             note_commitment_tree,
-            mempool_nullifiers: Default::default(),
+            mempool_nullifiers: Arc::new(Default::default()),
             pending_block: Arc::new(Mutex::new(None)),
             completion_tracker: Default::default(),
         })
@@ -182,66 +182,107 @@ impl App {
     /// In the transaction validation performed before adding a transaction into the
     /// mempool, we check that:
     ///
-    /// * All signatures verify (binding and spend auth signatures),
-    /// * Output proofs verify (stateless),
+    /// * All binding and auth sigs signatures verify (stateless),
+    /// * All proofs verify (stateless and stateful),
     /// * The transaction does not reveal nullifiers already revealed in another transaction
-    /// in the mempool,
+    /// in the mempool or in the database,
     ///
     /// If a transaction does not pass these checks, we return a non-zero `CheckTx` response
     /// code, and the transaction will not be added into the mempool.
     ///
-    /// The full transaction verification is performed in `DeliverTx`, where stateful checks
-    /// are performed.
+    /// We do not queue up any state changes into `PendingBlock` until `DeliverTx` where these
+    /// checks are repeated.
     #[instrument(skip(self))]
-    fn check_tx(&mut self, request: request::CheckTx) -> response::CheckTx {
-        let transaction = match Transaction::try_from(request.tx.as_ref()) {
-            Ok(transaction) => transaction,
-            Err(_) => {
-                return response::CheckTx {
-                    code: 1,
-                    ..Default::default()
-                }
-            }
-        };
+    fn check_tx(
+        &mut self,
+        request: request::CheckTx,
+    ) -> impl Future<Output = Result<Response, BoxError>> {
+        let state = self.state.clone();
+        let mempool_nullifiers = self.mempool_nullifiers.clone();
+        let nct_root = self.note_commitment_tree.root2();
+        let finished_signal = self.completion_tracker.start();
 
-        let pending_transaction = match transaction.verify_stateless() {
-            Ok(pending_transaction) => pending_transaction,
-            Err(_) => {
-                return response::CheckTx {
-                    code: 1,
-                    ..Default::default()
-                }
-            }
-        };
-
-        // Ensure we do not add any transactions with duplicate nullifiers into the mempool.
-        //
-        // Note that we only run this logic if this `CheckTx` request is from a new transaction
-        // (i.e. `CheckTxKind::New`). If this is a recheck of an existing entry in the mempool,
-        // then we don't need to add the nullifier again, as it's already in `self.mempool_nullifiers`.
-        // Rechecks occur whenever a block is committed if the Tendermint `mempool.recheck` option is
-        // true, which is the default option.
-        if request.kind == CheckTxKind::New {
-            for nullifier in pending_transaction.spent_nullifiers {
-                if self.mempool_nullifiers.contains(&nullifier) {
-                    return response::CheckTx {
+        async move {
+            let transaction = match Transaction::try_from(request.tx.as_ref()) {
+                Ok(transaction) => transaction,
+                Err(_) => {
+                    return Ok(Response::CheckTx(response::CheckTx {
                         code: 1,
                         ..Default::default()
-                    };
-                } else {
-                    self.mempool_nullifiers.insert(nullifier);
+                    }))
+                }
+            };
+
+            let pending_transaction = match transaction.verify_stateless() {
+                Ok(pending_transaction) => pending_transaction,
+                Err(_) => {
+                    return Ok(Response::CheckTx(response::CheckTx {
+                        code: 1,
+                        ..Default::default()
+                    }))
+                }
+            };
+
+            // Ensure we do not add any transactions with duplicate nullifiers into the mempool.
+            //
+            // Note that we only run this logic if this `CheckTx` request is from a new transaction
+            // (i.e. `CheckTxKind::New`). If this is a recheck of an existing entry in the mempool,
+            // then we don't need to add the nullifier again, as it's already in `self.mempool_nullifiers`.
+            // Rechecks occur whenever a block is committed if the Tendermint `mempool.recheck` option is
+            // true, which is the default option.
+            if request.kind == CheckTxKind::New {
+                for nullifier in pending_transaction.spent_nullifiers.clone() {
+                    if mempool_nullifiers.lock().unwrap().contains(&nullifier) {
+                        return Ok(Response::CheckTx(response::CheckTx {
+                            code: 1,
+                            ..Default::default()
+                        }));
+                    } else {
+                        mempool_nullifiers.lock().unwrap().insert(nullifier);
+                    }
                 }
             }
 
-            //xx add db check here too
-        }
+            // Ensure that we do not add any transactions that have spent nullifiers in the database.
+            for nullifier in pending_transaction.spent_nullifiers.clone() {
+                if state
+                    .clone()
+                    .nullifier(nullifier)
+                    .await
+                    .expect("must be able to fetch nullifier")
+                    .is_some()
+                {
+                    return Ok(Response::CheckTx(response::CheckTx {
+                        code: 1,
+                        ..Default::default()
+                    }));
+                };
+            }
 
-        Default::default()
+            // Signal that we're ready to resume processing further requests.
+            let _ = finished_signal.send(());
+
+            let _verified_transaction = match pending_transaction.verify_stateful(nct_root) {
+                Ok(pending_transaction) => pending_transaction,
+                Err(_) => {
+                    return Ok(Response::CheckTx(response::CheckTx {
+                        code: 1,
+                        ..Default::default()
+                    }))
+                }
+            };
+
+            Ok(Response::CheckTx(response::CheckTx::default()))
+        }
     }
 
     /// Perform full transaction validation via `DeliverTx`.
     ///
     /// State changes are only applied for valid transactions. Invalid transaction are ignored.
+    ///
+    /// We must perform all checks again here even though they are performed in `CheckTx`, as a
+    /// Byzantine node may propose a block containing double spends or other disallowed behavior,
+    /// so it is not safe to assume all checks performed in `CheckTx` were done.
     #[instrument(skip(self))]
     fn deliver_tx(&mut self, txbytes: Bytes) -> impl Future<Output = Result<Response, BoxError>> {
         let finished_signal = self.completion_tracker.start();
@@ -271,9 +312,6 @@ impl App {
                 }
             };
 
-            // We must also check nullifiers here because a Byzantine node may propose
-            // a block containing double spends, i.e. in `DeliverTx` it is not safe to
-            // assume that all checks performed in `CheckTx` were done.
             for nullifier in pending_transaction.spent_nullifiers.clone() {
                 if state
                     .clone()
@@ -340,7 +378,7 @@ impl App {
         // These nullifiers are about to be committed, so we don't need
         // to keep them in the mempool nullifier set any longer.
         for nullifier in pending_block.spent_nullifiers.iter() {
-            self.mempool_nullifiers.remove(nullifier);
+            self.mempool_nullifiers.lock().unwrap().remove(nullifier);
         }
 
         // Pull the updated note commitment tree.
@@ -437,7 +475,7 @@ impl Service<Request> for App {
             // handled messages
             Request::Info(_) => return self.info().boxed(),
             Request::Query(query) => Response::Query(self.query(query.data)),
-            Request::CheckTx(check_tx) => Response::CheckTx(self.check_tx(check_tx)),
+            Request::CheckTx(check_tx) => return self.check_tx(check_tx).boxed(),
             Request::BeginBlock(begin) => Response::BeginBlock(self.begin_block(begin)),
             Request::DeliverTx(deliver_tx) => return self.deliver_tx(deliver_tx.tx).boxed(),
             Request::EndBlock(end) => Response::EndBlock(self.end_block(end)),
