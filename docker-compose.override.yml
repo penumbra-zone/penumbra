@@ -10,11 +10,15 @@ services:
   pd:
     environment:
       - RUST_LOG=${RUST_LOG:-info,pd=debug,penumbra=debug}
+    build:
+      # Use the dev Dockerfile which has better cacheing and doesn't use the release
+      # target
+      dockerfile: Dockerfile.dev
 
   # expose database on a port so it is easy to play with
-#  db:
-#    ports:
-#      - "5432:5432"
+  #  db:
+  #    ports:
+  #      - "5432:5432"
 
   # add prometheus and grafana
   #
