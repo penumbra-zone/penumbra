@@ -48,6 +48,8 @@ services:
     networks:
       localnet:
         ipv4_address: 192.167.10.2
+    build:
+      context: ./tendermint/
 
 networks:
   localnet:
