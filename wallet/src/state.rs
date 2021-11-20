@@ -22,8 +22,8 @@ const MAX_MERKLE_CHECKPOINTS_CLIENT: usize = 10;
     into = "serde_helpers::ClientStateHelper"
 )]
 pub struct ClientState {
-    /// The last block height we've scanned to.
-    last_block_height: u32,
+    /// The last block height we've scanned to, if any.
+    last_block_height: Option<u32>,
     /// Note commitment tree.
     note_commitment_tree: NoteCommitmentTree,
     /// Our nullifiers and the notes they correspond to.
@@ -41,7 +41,7 @@ pub struct ClientState {
 impl ClientState {
     pub fn new(wallet: Wallet) -> Self {
         Self {
-            last_block_height: 0,
+            last_block_height: None,
             note_commitment_tree: NoteCommitmentTree::new(MAX_MERKLE_CHECKPOINTS_CLIENT),
             nullifier_map: BTreeMap::new(),
             unspent_set: BTreeMap::new(),
@@ -76,8 +76,8 @@ impl ClientState {
             .finalize(rng)
     }
 
-    /// Returns the last block height the client state has synced up to.
-    pub fn last_block_height(&self) -> u32 {
+    /// Returns the last block height the client state has synced up to, if any.
+    pub fn last_block_height(&self) -> Option<u32> {
         self.last_block_height
     }
 
@@ -89,12 +89,11 @@ impl ClientState {
         &mut self,
         CompactBlock { height, fragments }: CompactBlock,
     ) -> Result<(), anyhow::Error> {
-        if height != self.last_block_height + 1 {
-            return Err(anyhow::anyhow!(
-                "incorrect block height in `scan_block`; expected {} but got {}",
-                self.last_block_height + 1,
-                height
-            ));
+        // We have to do a bit of a dance to use None as "-1" and handle genesis notes.
+        match (height, self.last_block_height()) {
+            (0, None) => {}
+            (height, Some(last_height)) if height == last_height + 1 => {}
+            _ => return Err(anyhow::anyhow!("unexpected block height")),
         }
         tracing::debug!(fragments_len = fragments.len(), "starting block scan");
 
@@ -145,7 +144,7 @@ impl ClientState {
         }
 
         // Remember that we've scanned this block & we're ready for the next one.
-        self.last_block_height += 1;
+        self.last_block_height = Some(height);
         tracing::debug!(self.last_block_height, "finished scanning block");
 
         Ok(())
@@ -157,7 +156,7 @@ mod serde_helpers {
 
     #[derive(Serialize, Deserialize)]
     pub struct ClientStateHelper {
-        last_block_height: u32,
+        last_block_height: Option<u32>,
         note_commitment_tree: NoteCommitmentTree,
         nullifier_map: Vec<(String, String)>,
         unspent_set: Vec<(String, String)>,

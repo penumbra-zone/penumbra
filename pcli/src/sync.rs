@@ -4,13 +4,14 @@ use tracing::instrument;
 
 use crate::ClientStateFile;
 
-#[instrument(skip(state), fields(start_height = state.last_block_height() + 1))]
+#[instrument(skip(state), fields(start_height = state.last_block_height()))]
 pub async fn sync(state: &mut ClientStateFile, wallet_uri: String) -> Result<()> {
     let mut client = WalletClient::connect(wallet_uri).await?;
 
+    let start_height = state.last_block_height().map(|h| h + 1).unwrap_or(0);
     let mut stream = client
         .compact_block_range(tonic::Request::new(CompactBlockRangeRequest {
-            start_height: state.last_block_height() + 1,
+            start_height,
             end_height: 0,
         }))
         .await?
@@ -26,6 +27,7 @@ pub async fn sync(state: &mut ClientStateFile, wallet_uri: String) -> Result<()>
         }
     }
 
+    tracing::info!("finished sync");
     state.commit()?;
     Ok(())
 }
