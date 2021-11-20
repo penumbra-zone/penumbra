@@ -10,7 +10,7 @@ use penumbra_proto::wallet::{
     wallet_client::WalletClient, AssetListRequest, AssetLookupRequest, CompactBlockRangeRequest,
     TransactionByNoteRequest,
 };
-use penumbra_wallet::{state, storage};
+use penumbra_wallet::{ClientState, Wallet};
 
 pub mod opt;
 pub mod warning;
@@ -43,14 +43,14 @@ async fn main() -> Result<()> {
     }
 
     match opt.cmd {
-        Command::Tx(Tx::Send {
+        Command::Tx(TxCmd::Send {
             amount: _,
             denomination: _,
             address: _,
             fee,
         }) => {
             let spend_key = load_wallet(&wallet_path);
-            let mut local_storage = state::ClientState::new(spend_key);
+            let mut local_storage = ClientState::new(spend_key);
 
             let dummy_tx = local_storage.new_transaction(&mut OsRng, fee)?;
             let serialized_tx: Vec<u8> = dummy_tx.into();
@@ -69,7 +69,7 @@ async fn main() -> Result<()> {
         }
         Command::Query { key } => {
             let spend_key = load_wallet(&wallet_path);
-            let _local_storage = state::ClientState::new(spend_key);
+            let _local_storage = ClientState::new(spend_key);
 
             // TODO: get working as part of issue 22
             let rsp: serde_json::Value = reqwest::get(format!(
@@ -84,18 +84,18 @@ async fn main() -> Result<()> {
 
             tracing::info!(?rsp);
         }
-        Command::Wallet(Wallet::Generate) => {
+        Command::Wallet(WalletCmd::Generate) => {
             if wallet_path.exists() {
                 return Err(anyhow::anyhow!(
                     "Wallet path {} already exists, refusing to overwrite it",
                     wallet_path.display()
                 ));
             }
-            let wallet = storage::Wallet::generate(&mut OsRng);
+            let wallet = Wallet::generate(&mut OsRng);
             save_wallet(&wallet, &wallet_path)?;
             println!("Wallet saved to {}", wallet_path.display());
         }
-        Command::Wallet(Wallet::Delete) => {
+        Command::Wallet(WalletCmd::Delete) => {
             if wallet_path.is_file() {
                 fs::remove_file(&wallet_path)?;
                 println!("Deleted wallet file at {}", wallet_path.display());
@@ -111,7 +111,7 @@ async fn main() -> Result<()> {
                 );
             }
         }
-        Command::Addr(Addr::List) => {
+        Command::Addr(AddrCmd::List) => {
             let wallet = load_wallet(&wallet_path);
 
             use comfy_table::{presets, Table};
@@ -123,7 +123,7 @@ async fn main() -> Result<()> {
             }
             println!("{}", table);
         }
-        Command::Addr(Addr::New { label }) => {
+        Command::Addr(AddrCmd::New { label }) => {
             let mut wallet = load_wallet(&wallet_path);
             let (index, address, _dtk) = wallet.new_address(label.clone());
             save_wallet(&wallet, &wallet_path)?;
@@ -137,7 +137,7 @@ async fn main() -> Result<()> {
         }
         Command::FetchByNoteCommitment { note_commitment } => {
             let spend_key = load_wallet(&wallet_path);
-            let _local_storage = state::ClientState::new(spend_key);
+            let _local_storage = ClientState::new(spend_key);
             let mut client =
                 WalletClient::connect(format!("http://{}:{}", opt.node, opt.wallet_port)).await?;
 
@@ -152,7 +152,7 @@ async fn main() -> Result<()> {
             end_height,
         } => {
             let spend_key = load_wallet(&wallet_path);
-            let _local_storage = state::ClientState::new(spend_key);
+            let _local_storage = ClientState::new(spend_key);
             let mut client =
                 WalletClient::connect(format!("http://{}:{}", opt.node, opt.wallet_port)).await?;
             let request = tonic::Request::new(CompactBlockRangeRequest {
@@ -202,8 +202,8 @@ async fn main() -> Result<()> {
 }
 
 /// Load existing keys from wallet file, printing an error if the file doesn't exist.
-fn load_wallet(wallet_path: &Path) -> storage::Wallet {
-    let wallet: storage::Wallet = match fs::read(wallet_path) {
+fn load_wallet(wallet_path: &Path) -> Wallet {
+    let wallet: Wallet = match fs::read(wallet_path) {
         Ok(data) => bincode::deserialize(&data).expect("can deserialize wallet file"),
         Err(err) => match err.kind() {
             io::ErrorKind::NotFound => {
@@ -221,7 +221,7 @@ fn load_wallet(wallet_path: &Path) -> storage::Wallet {
     wallet
 }
 
-fn save_wallet(wallet: &storage::Wallet, wallet_path: &Path) -> Result<(), anyhow::Error> {
+fn save_wallet(wallet: &Wallet, wallet_path: &Path) -> Result<(), anyhow::Error> {
     let mut file = fs::OpenOptions::new()
         .create(true)
         .write(true)

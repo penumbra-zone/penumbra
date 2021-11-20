@@ -9,7 +9,7 @@ use penumbra_crypto::{
     note, Address, Note, Nullifier, Transaction, CURRENT_CHAIN_ID,
 };
 
-use crate::storage::Wallet;
+use crate::Wallet;
 
 const MAX_MERKLE_CHECKPOINTS_CLIENT: usize = 10;
 
