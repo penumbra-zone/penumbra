@@ -234,8 +234,8 @@ pub(crate) fn derive_symmetric_key(
     kdf.finalize()
 }
 
-impl From<Note> for [u8; NOTE_LEN_BYTES] {
-    fn from(note: Note) -> [u8; NOTE_LEN_BYTES] {
+impl From<&Note> for [u8; NOTE_LEN_BYTES] {
+    fn from(note: &Note) -> [u8; NOTE_LEN_BYTES] {
         let mut bytes = [0u8; NOTE_LEN_BYTES];
         bytes[0] = NOTE_TYPE;
         bytes[1..12].copy_from_slice(&note.diversifier.0);
@@ -247,9 +247,9 @@ impl From<Note> for [u8; NOTE_LEN_BYTES] {
     }
 }
 
-impl From<&Note> for [u8; NOTE_LEN_BYTES] {
-    fn from(note: &Note) -> [u8; NOTE_LEN_BYTES] {
-        note.into()
+impl From<Note> for [u8; NOTE_LEN_BYTES] {
+    fn from(note: Note) -> [u8; NOTE_LEN_BYTES] {
+        (&note).into()
     }
 }
 
