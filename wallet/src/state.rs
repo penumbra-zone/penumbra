@@ -1,12 +1,13 @@
 use anyhow::Context;
+use hex;
 use penumbra_proto::wallet::{CompactBlock, StateFragment};
 use rand_core::{CryptoRng, RngCore};
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 use penumbra_crypto::{
-    fmd, merkle,
-    merkle::{Frontier, Tree, TreeExt},
-    note, Address, Note, Nullifier, Transaction, CURRENT_CHAIN_ID,
+    merkle::{Frontier, NoteCommitmentTree, Tree, TreeExt},
+    note, FieldExt, Note, Nullifier, Transaction, CURRENT_CHAIN_ID,
 };
 
 use crate::Wallet;
@@ -14,12 +15,16 @@ use crate::Wallet;
 const MAX_MERKLE_CHECKPOINTS_CLIENT: usize = 10;
 
 /// State about the chain and our transactions.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(
+    try_from = "serde_helpers::ClientStateHelper",
+    into = "serde_helpers::ClientStateHelper"
+)]
 pub struct ClientState {
     /// The last block height we've scanned to.
     last_block_height: u32,
     /// Note commitment tree.
-    note_commitment_tree: merkle::BridgeTree<note::Commitment, { merkle::DEPTH as u8 }>,
+    note_commitment_tree: NoteCommitmentTree,
     /// Our nullifiers and the notes they correspond to.
     nullifier_map: BTreeMap<Nullifier, note::Commitment>,
     /// Notes that we have received.
@@ -36,7 +41,7 @@ impl ClientState {
     pub fn new(wallet: Wallet) -> Self {
         Self {
             last_block_height: 0,
-            note_commitment_tree: merkle::BridgeTree::new(MAX_MERKLE_CHECKPOINTS_CLIENT),
+            note_commitment_tree: NoteCommitmentTree::new(MAX_MERKLE_CHECKPOINTS_CLIENT),
             nullifier_map: BTreeMap::new(),
             unspent_set: BTreeMap::new(),
             spent_set: BTreeMap::new(),
@@ -45,9 +50,14 @@ impl ClientState {
         }
     }
 
-    /// Generate a new diversified `Address` and its corresponding `DetectionKey`.
-    pub fn new_address(&mut self, label: String) -> (usize, Address, fmd::DetectionKey) {
-        self.wallet.new_address(label)
+    /// Returns the wallet the state is tracking.
+    pub fn wallet(&self) -> &Wallet {
+        &self.wallet
+    }
+
+    /// Returns a mutable reference to the wallet the state is tracking.
+    pub fn wallet_mut(&mut self) -> &mut Wallet {
+        &mut self.wallet
     }
 
     /// Generate a new transaction.
@@ -133,5 +143,103 @@ impl ClientState {
         self.last_block_height += 1;
 
         Ok(())
+    }
+}
+
+mod serde_helpers {
+    use super::*;
+
+    #[derive(Serialize, Deserialize)]
+    pub struct ClientStateHelper {
+        last_block_height: u32,
+        note_commitment_tree: NoteCommitmentTree,
+        nullifier_map: Vec<(String, String)>,
+        unspent_set: Vec<(String, String)>,
+        spent_set: Vec<(String, String)>,
+        transactions: Vec<(String, String)>,
+        wallet: Wallet,
+    }
+
+    impl From<ClientState> for ClientStateHelper {
+        fn from(state: ClientState) -> Self {
+            Self {
+                wallet: state.wallet,
+                last_block_height: state.last_block_height,
+                note_commitment_tree: state.note_commitment_tree,
+                nullifier_map: state
+                    .nullifier_map
+                    .iter()
+                    .map(|(nullifier, commitment)| {
+                        (
+                            hex::encode(nullifier.0.to_bytes()),
+                            hex::encode(commitment.0.to_bytes()),
+                        )
+                    })
+                    .collect(),
+                unspent_set: state
+                    .unspent_set
+                    .iter()
+                    .map(|(commitment, note)| {
+                        (
+                            hex::encode(commitment.0.to_bytes()),
+                            hex::encode(note.to_bytes()),
+                        )
+                    })
+                    .collect(),
+                spent_set: state
+                    .spent_set
+                    .iter()
+                    .map(|(commitment, note)| {
+                        (
+                            hex::encode(commitment.0.to_bytes()),
+                            hex::encode(note.to_bytes()),
+                        )
+                    })
+                    .collect(),
+                // TODO: serialize full transactions
+                transactions: vec![],
+            }
+        }
+    }
+
+    impl TryFrom<ClientStateHelper> for ClientState {
+        type Error = anyhow::Error;
+        fn try_from(state: ClientStateHelper) -> Result<Self, Self::Error> {
+            let mut nullifier_map = BTreeMap::new();
+
+            for (nullifier, commitment) in state.nullifier_map.into_iter() {
+                nullifier_map.insert(
+                    hex::decode(nullifier)?.as_slice().try_into()?,
+                    hex::decode(commitment)?.as_slice().try_into()?,
+                );
+            }
+
+            let mut unspent_set = BTreeMap::new();
+            for (commitment, note) in state.unspent_set.into_iter() {
+                unspent_set.insert(
+                    hex::decode(commitment)?.as_slice().try_into()?,
+                    hex::decode(note)?.as_slice().try_into()?,
+                );
+            }
+
+            let mut spent_set = BTreeMap::new();
+            for (commitment, note) in state.spent_set.into_iter() {
+                spent_set.insert(
+                    hex::decode(commitment)?.as_slice().try_into()?,
+                    hex::decode(note)?.as_slice().try_into()?,
+                );
+            }
+
+            Ok(Self {
+                wallet: state.wallet,
+                last_block_height: state.last_block_height,
+                note_commitment_tree: state.note_commitment_tree,
+                nullifier_map,
+                unspent_set,
+                spent_set,
+                // TODO: serialize full transactions
+                transactions: Default::default(),
+            })
+        }
     }
 }

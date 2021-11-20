@@ -1,9 +1,8 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
+use comfy_table::{presets, Table};
 use directories::ProjectDirs;
 use rand_core::OsRng;
-use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::{fs, io, process};
 use structopt::StructOpt;
 
 use penumbra_proto::wallet::{
@@ -13,9 +12,11 @@ use penumbra_proto::wallet::{
 use penumbra_wallet::{ClientState, Wallet};
 
 pub mod opt;
+mod state;
 pub mod warning;
 
 use opt::*;
+pub use state::ClientStateFile;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -28,7 +29,7 @@ async fn main() -> Result<()> {
     let project_dir =
         ProjectDirs::from("zone", "penumbra", "pcli").expect("can access penumbra project dir");
     // Currently we use just the data directory. Create it if it is missing.
-    fs::create_dir_all(project_dir.data_dir()).expect("can create penumbra data directory");
+    std::fs::create_dir_all(project_dir.data_dir()).expect("can create penumbra data directory");
 
     // We store wallet data in `penumbra_wallet.dat` in the state directory, unless
     // the user provides another location.
@@ -38,7 +39,7 @@ async fn main() -> Result<()> {
             wallet_path = Path::new(&path).to_path_buf();
         }
         None => {
-            wallet_path = project_dir.data_dir().join("penumbra_wallet.dat");
+            wallet_path = project_dir.data_dir().join("penumbra_wallet.json");
         }
     }
 
@@ -49,10 +50,8 @@ async fn main() -> Result<()> {
             address: _,
             fee,
         }) => {
-            let spend_key = load_wallet(&wallet_path);
-            let mut local_storage = ClientState::new(spend_key);
-
-            let dummy_tx = local_storage.new_transaction(&mut OsRng, fee)?;
+            let mut state = ClientStateFile::load(wallet_path)?;
+            let dummy_tx = state.new_transaction(&mut OsRng, fee)?;
             let serialized_tx: Vec<u8> = dummy_tx.into();
 
             let rsp = reqwest::get(format!(
@@ -68,9 +67,6 @@ async fn main() -> Result<()> {
             tracing::info!("{}", rsp);
         }
         Command::Query { key } => {
-            let spend_key = load_wallet(&wallet_path);
-            let _local_storage = ClientState::new(spend_key);
-
             // TODO: get working as part of issue 22
             let rsp: serde_json::Value = reqwest::get(format!(
                 r#"http://{}:{}/abci_query?data=0x{}"#,
@@ -91,44 +87,42 @@ async fn main() -> Result<()> {
                     wallet_path.display()
                 ));
             }
-            let wallet = Wallet::generate(&mut OsRng);
-            save_wallet(&wallet, &wallet_path)?;
-            println!("Wallet saved to {}", wallet_path.display());
+            let state = ClientState::new(Wallet::generate(&mut OsRng));
+            println!("Saving wallet to {}", wallet_path.display());
+            ClientStateFile::save(state, wallet_path)?;
         }
         Command::Wallet(WalletCmd::Delete) => {
             if wallet_path.is_file() {
-                fs::remove_file(&wallet_path)?;
+                std::fs::remove_file(&wallet_path)?;
                 println!("Deleted wallet file at {}", wallet_path.display());
             } else if wallet_path.exists() {
-                println!(
+                return Err(anyhow!(
                     "Expected wallet file at {} but found something that is not a file; refusing to delete it",
                     wallet_path.display()
-                );
+                ));
             } else {
-                println!(
+                return Err(anyhow!(
                     "No wallet exists at {}, so it cannot be deleted",
                     wallet_path.display()
-                );
+                ));
             }
         }
         Command::Addr(AddrCmd::List) => {
-            let wallet = load_wallet(&wallet_path);
+            let state = ClientStateFile::load(wallet_path)?;
 
-            use comfy_table::{presets, Table};
             let mut table = Table::new();
             table.load_preset(presets::NOTHING);
             table.set_header(vec!["Index", "Label", "Address"]);
-            for (index, label, address) in wallet.addresses() {
+            for (index, label, address) in state.wallet().addresses() {
                 table.add_row(vec![index.to_string(), label, address.to_string()]);
             }
             println!("{}", table);
         }
         Command::Addr(AddrCmd::New { label }) => {
-            let mut wallet = load_wallet(&wallet_path);
-            let (index, address, _dtk) = wallet.new_address(label.clone());
-            save_wallet(&wallet, &wallet_path)?;
+            let mut state = ClientStateFile::load(wallet_path)?;
+            let (index, address, _dtk) = state.wallet_mut().new_address(label.clone());
+            state.commit()?;
 
-            use comfy_table::{presets, Table};
             let mut table = Table::new();
             table.load_preset(presets::NOTHING);
             table.set_header(vec!["Index", "Label", "Address"]);
@@ -136,8 +130,6 @@ async fn main() -> Result<()> {
             println!("{}", table);
         }
         Command::FetchByNoteCommitment { note_commitment } => {
-            let spend_key = load_wallet(&wallet_path);
-            let _local_storage = ClientState::new(spend_key);
             let mut client =
                 WalletClient::connect(format!("http://{}:{}", opt.node, opt.wallet_port)).await?;
 
@@ -151,8 +143,6 @@ async fn main() -> Result<()> {
             start_height,
             end_height,
         } => {
-            let spend_key = load_wallet(&wallet_path);
-            let _local_storage = ClientState::new(spend_key);
             let mut client =
                 WalletClient::connect(format!("http://{}:{}", opt.node, opt.wallet_port)).await?;
             let request = tonic::Request::new(CompactBlockRangeRequest {
@@ -192,43 +182,10 @@ async fn main() -> Result<()> {
             }
         }
         Command::Sync => {
-            let spend_key = load_wallet(&wallet_path);
-            //sync(&spend_key)?;
+            todo!("sync not implemented");
         }
         _ => todo!(),
     }
-
-    Ok(())
-}
-
-/// Load existing keys from wallet file, printing an error if the file doesn't exist.
-fn load_wallet(wallet_path: &Path) -> Wallet {
-    let wallet: Wallet = match fs::read(wallet_path) {
-        Ok(data) => bincode::deserialize(&data).expect("can deserialize wallet file"),
-        Err(err) => match err.kind() {
-            io::ErrorKind::NotFound => {
-                eprintln!(
-                    "error: key data not found, run `pcli wallet generate` to generate Penumbra keys"
-                );
-                process::exit(1);
-            }
-            _ => {
-                eprintln!("unknown error: {}", err);
-                process::exit(2);
-            }
-        },
-    };
-    wallet
-}
-
-fn save_wallet(wallet: &Wallet, wallet_path: &Path) -> Result<(), anyhow::Error> {
-    let mut file = fs::OpenOptions::new()
-        .create(true)
-        .write(true)
-        .open(wallet_path)?;
-
-    let seed_data = bincode::serialize(&wallet)?;
-    file.write_all(&seed_data)?;
 
     Ok(())
 }
