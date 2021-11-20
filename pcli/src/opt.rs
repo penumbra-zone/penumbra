@@ -35,14 +35,14 @@ fn parse_bytestring(s: &str) -> Result<Vec<u8>, String> {
 #[derive(Debug, StructOpt)]
 pub enum Command {
     /// Creates a transaction.
-    Tx(Tx),
+    Tx(TxCmd),
     /// Queries the Penumbra state.
     #[structopt()]
     Query { key: String },
     /// Manages the wallet state.
-    Wallet(Wallet),
+    Wallet(WalletCmd),
     /// Manages addresses.
-    Addr(Addr),
+    Addr(AddrCmd),
     /// Synchronizes the chain state to the client.
     Sync,
     /// Fetch transaction by note commitment - TEMP (developer only, remove when sync implemented)
@@ -59,7 +59,7 @@ pub enum Command {
 }
 
 #[derive(Debug, StructOpt)]
-pub enum Wallet {
+pub enum WalletCmd {
     /// Import an existing spend seed.
     Import,
     /// Generate a new spend seed.
@@ -71,7 +71,7 @@ pub enum Wallet {
 }
 
 #[derive(Debug, StructOpt)]
-pub enum Addr {
+pub enum AddrCmd {
     /// List addresses.
     List,
     /// Show the address with the given index.
@@ -88,7 +88,7 @@ pub enum Addr {
 }
 
 #[derive(Debug, StructOpt)]
-pub enum Tx {
+pub enum TxCmd {
     /// Send transaction to the node.
     Send {
         /// Amount to send.

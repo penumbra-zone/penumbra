@@ -1,2 +1,5 @@
-pub mod state;
-pub mod storage;
+mod state;
+mod wallet;
+
+pub use state::ClientState;
+pub use wallet::Wallet;
