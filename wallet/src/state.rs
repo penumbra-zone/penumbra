@@ -154,10 +154,14 @@ impl ClientState {
 mod serde_helpers {
     use super::*;
 
+    use serde_with::serde_as;
+
+    #[serde_as]
     #[derive(Serialize, Deserialize)]
     pub struct ClientStateHelper {
         last_block_height: Option<u32>,
-        note_commitment_tree: NoteCommitmentTree,
+        #[serde_as(as = "serde_with::hex::Hex")]
+        note_commitment_tree: Vec<u8>,
         nullifier_map: Vec<(String, String)>,
         unspent_set: Vec<(String, String)>,
         spent_set: Vec<(String, String)>,
@@ -170,7 +174,7 @@ mod serde_helpers {
             Self {
                 wallet: state.wallet,
                 last_block_height: state.last_block_height,
-                note_commitment_tree: state.note_commitment_tree,
+                note_commitment_tree: bincode::serialize(&state.note_commitment_tree).unwrap(),
                 nullifier_map: state
                     .nullifier_map
                     .iter()
@@ -238,7 +242,7 @@ mod serde_helpers {
             Ok(Self {
                 wallet: state.wallet,
                 last_block_height: state.last_block_height,
-                note_commitment_tree: state.note_commitment_tree,
+                note_commitment_tree: bincode::deserialize(&state.note_commitment_tree)?,
                 nullifier_map,
                 unspent_set,
                 spent_set,
