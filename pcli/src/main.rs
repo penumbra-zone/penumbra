@@ -6,16 +6,18 @@ use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 
 use penumbra_proto::wallet::{
-    wallet_client::WalletClient, AssetListRequest, AssetLookupRequest, CompactBlockRangeRequest,
-    TransactionByNoteRequest,
+    wallet_client::WalletClient, AssetListRequest, AssetLookupRequest, TransactionByNoteRequest,
 };
 use penumbra_wallet::{ClientState, Wallet};
 
 pub mod opt;
-mod state;
 pub mod warning;
-
 use opt::*;
+
+mod sync;
+pub use sync::sync;
+
+mod state;
 pub use state::ClientStateFile;
 
 #[tokio::main]
@@ -44,6 +46,14 @@ async fn main() -> Result<()> {
     }
 
     match opt.cmd {
+        Command::Sync => {
+            let mut state = ClientStateFile::load(wallet_path)?;
+            sync(
+                &mut state,
+                format!("http://{}:{}", opt.node, opt.wallet_port),
+            )
+            .await?;
+        }
         Command::Tx(TxCmd::Send {
             amount: _,
             denomination: _,
@@ -51,6 +61,11 @@ async fn main() -> Result<()> {
             fee,
         }) => {
             let mut state = ClientStateFile::load(wallet_path)?;
+            sync(
+                &mut state,
+                format!("http://{}:{}", opt.node, opt.wallet_port),
+            )
+            .await?;
             let dummy_tx = state.new_transaction(&mut OsRng, fee)?;
             let serialized_tx: Vec<u8> = dummy_tx.into();
 
@@ -139,27 +154,6 @@ async fn main() -> Result<()> {
             let response = client.transaction_by_note(request).await?;
             tracing::info!("got response: {:?}", response);
         }
-        Command::BlockRequest {
-            start_height,
-            end_height,
-        } => {
-            let mut client =
-                WalletClient::connect(format!("http://{}:{}", opt.node, opt.wallet_port)).await?;
-            let request = tonic::Request::new(CompactBlockRangeRequest {
-                start_height,
-                end_height,
-            });
-            tracing::info!(
-                "requesting state fragments from: {:?} to {:?}",
-                start_height,
-                end_height
-            );
-            let mut stream = client.compact_block_range(request).await?.into_inner();
-
-            while let Some(block) = stream.message().await? {
-                tracing::info!("got fragment: {:?}", block);
-            }
-        }
         Command::AssetLookup { asset_id } => {
             let mut client =
                 WalletClient::connect(format!("http://{}:{}", opt.node, opt.wallet_port)).await?;
@@ -180,9 +174,6 @@ async fn main() -> Result<()> {
             while let Some(asset) = stream.message().await? {
                 tracing::info!("got asset: {:?}", asset);
             }
-        }
-        Command::Sync => {
-            todo!("sync not implemented");
         }
         _ => todo!(),
     }

@@ -4,6 +4,7 @@ use penumbra_proto::wallet::{CompactBlock, StateFragment};
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use tracing::instrument;
 
 use penumbra_crypto::{
     merkle::{Frontier, NoteCommitmentTree, Tree, TreeExt},
@@ -83,6 +84,7 @@ impl ClientState {
     /// Scan the provided block and update the client state.
     ///
     /// The provided block must be the one immediately following [`Self::last_block_height`].
+    #[instrument(skip(self, fragments))]
     pub fn scan_block(
         &mut self,
         CompactBlock { height, fragments }: CompactBlock,
@@ -94,6 +96,7 @@ impl ClientState {
                 height
             ));
         }
+        tracing::debug!(fragments_len = fragments.len(), "starting block scan");
 
         for StateFragment {
             note_commitment,
@@ -106,6 +109,7 @@ impl ClientState {
                 .as_ref()
                 .try_into()
                 .context("invalid note commitment")?;
+            tracing::debug!(?note_commitment, "appending to note commitment tree");
             self.note_commitment_tree.append(&note_commitment);
 
             // Try to decrypt the encrypted note using the ephemeral key and persistent incoming
@@ -118,6 +122,7 @@ impl ClientState {
                     .try_into()
                     .context("invalid ephemeral key")?,
             ) {
+                tracing::debug!(?note_commitment, ?note, "found note while scanning");
                 // Mark the most-recently-inserted note commitment (the one corresponding to this
                 // note) as worth keeping track of, because it's ours
                 self.note_commitment_tree.witness();
@@ -141,6 +146,7 @@ impl ClientState {
 
         // Remember that we've scanned this block & we're ready for the next one.
         self.last_block_height += 1;
+        tracing::debug!(self.last_block_height, "finished scanning block");
 
         Ok(())
     }

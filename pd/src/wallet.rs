@@ -34,11 +34,21 @@ impl Wallet for WalletApp {
             end_height,
         } = request.into_inner();
 
-        if end_height < start_height {
-            return Err(tonic::Status::failed_precondition(
-                "end height must be greater than start height",
-            ));
-        }
+        let current_height = self
+            .state
+            .height()
+            .await
+            .map_err(|_| tonic::Status::unavailable("database error"))?
+            .value() as u32;
+
+        // Treat end_height = 0 as end_height = current_height so that if the
+        // end_height is unspecified in the proto, it will be treated as a
+        // request to sync up to the current height.
+        let end_height = if end_height == 0 {
+            current_height
+        } else {
+            std::cmp::min(end_height, current_height)
+        };
 
         let (tx, rx) = mpsc::channel(100);
 
