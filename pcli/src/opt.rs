@@ -44,11 +44,12 @@ pub enum Command {
     /// Manages addresses.
     Addr(AddrCmd),
     /// Synchronizes the chain state to the client.
+    ///
+    /// `pcli` syncs automatically prior to any action requiring chain state,
+    /// but this command can be used to "pre-sync" before interactive use.
     Sync,
     /// Fetch transaction by note commitment - TEMP (developer only, remove when sync implemented)
     FetchByNoteCommitment { note_commitment: String },
-    /// Block request - TEMP (developer only, remove when sync implemented)
-    BlockRequest { start_height: u32, end_height: u32 },
     /// Asset Registry Lookup based on asset ID
     AssetLookup {
         #[structopt(parse(try_from_str = parse_bytestring))]
@@ -66,8 +67,6 @@ pub enum WalletCmd {
     Generate,
     /// Delete the wallet permanently.
     Delete,
-    /// Fetch transaction by note commitment - TEMP (not gonna be exposed to user)
-    FetchByNoteCommitment,
 }
 
 #[derive(Debug, StructOpt)]
