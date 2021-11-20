@@ -66,18 +66,21 @@ impl Wallet {
 mod serde_helpers {
     use super::*;
     use penumbra_crypto::keys::SpendSeed;
+    use serde_with::serde_as;
 
+    #[serde_as]
     #[derive(Deserialize, Serialize)]
     pub struct WalletHelper {
         address_labels: Vec<String>,
-        spend_seed: SpendSeed,
+        #[serde_as(as = "serde_with::hex::Hex")]
+        spend_seed: [u8; 32],
     }
 
     impl From<WalletHelper> for Wallet {
         fn from(w: WalletHelper) -> Self {
             Self {
                 address_labels: w.address_labels,
-                spend_key: SpendKey::from(w.spend_seed),
+                spend_key: SpendKey::from(SpendSeed(w.spend_seed)),
             }
         }
     }
@@ -86,7 +89,7 @@ mod serde_helpers {
         fn from(w: Wallet) -> Self {
             Self {
                 address_labels: w.address_labels,
-                spend_seed: w.spend_key.seed().clone(),
+                spend_seed: w.spend_key.seed().clone().0,
             }
         }
     }

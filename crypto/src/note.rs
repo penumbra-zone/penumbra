@@ -214,6 +214,10 @@ impl Note {
             self.transmission_key_s,
         )
     }
+
+    pub fn to_bytes(&self) -> [u8; NOTE_LEN_BYTES] {
+        self.into()
+    }
 }
 
 /// Use Blake2b-256 to derive the symmetric key material for note and memo encryption.
@@ -261,10 +265,14 @@ impl From<&Note> for Vec<u8> {
     }
 }
 
-impl TryFrom<[u8; NOTE_LEN_BYTES]> for Note {
+impl TryFrom<&[u8]> for Note {
     type Error = Error;
 
-    fn try_from(bytes: [u8; NOTE_LEN_BYTES]) -> Result<Note, Self::Error> {
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+        if bytes.len() != NOTE_LEN_BYTES {
+            return Err(Error::NoteDeserializationError);
+        }
+
         if bytes[0] != NOTE_TYPE {
             return Err(Error::NoteTypeUnsupported);
         }
@@ -294,6 +302,14 @@ impl TryFrom<[u8; NOTE_LEN_BYTES]> for Note {
             },
             Fq::from_bytes(note_blinding_bytes).map_err(|_| Error::NoteDeserializationError)?,
         )
+    }
+}
+
+impl TryFrom<[u8; NOTE_LEN_BYTES]> for Note {
+    type Error = Error;
+
+    fn try_from(bytes: [u8; NOTE_LEN_BYTES]) -> Result<Note, Self::Error> {
+        (&bytes[..]).try_into()
     }
 }
 

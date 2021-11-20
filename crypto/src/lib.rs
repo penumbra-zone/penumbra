@@ -1,4 +1,4 @@
-pub use decaf377::{Fq, Fr};
+pub use decaf377::{FieldExt, Fq, Fr};
 
 pub use decaf377_fmd as fmd;
 pub use decaf377_ka as ka;
