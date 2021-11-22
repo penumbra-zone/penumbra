@@ -1,4 +1,6 @@
 //! Asset types and identifiers.
+use std::convert::{TryFrom, TryInto};
+
 use ark_ff::fields::PrimeField;
 use decaf377::FieldExt;
 use once_cell::sync::Lazy;
@@ -36,6 +38,7 @@ impl std::fmt::Debug for Id {
 
 // XXX define a DenomTrace structure ?
 
+// xx rename this derive?
 impl From<&[u8]> for Id {
     fn from(slice: &[u8]) -> Id {
         // Convert an asset name to an asset ID by hashing to a scalar
@@ -46,6 +49,18 @@ impl From<&[u8]> for Id {
                 .hash(slice)
                 .as_bytes(),
         ))
+    }
+}
+
+impl TryFrom<Vec<u8>> for Id {
+    type Error = anyhow::Error;
+
+    fn try_from(vec: Vec<u8>) -> Result<Id, Self::Error> {
+        let bytes: [u8; 32] = vec
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("vec not long enough to construct Asset ID"))?;
+        let inner = Fq::from_bytes(bytes)?;
+        Ok(Id(inner))
     }
 }
 
