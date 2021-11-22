@@ -57,6 +57,8 @@ pub enum Command {
     },
     /// List every asset in the Asset Registry
     AssetList {},
+    /// Displays current balance by asset.
+    Balance,
 }
 
 #[derive(Debug, StructOpt)]

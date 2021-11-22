@@ -3,10 +3,11 @@ use hex;
 use penumbra_proto::wallet::{CompactBlock, StateFragment};
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use tracing::instrument;
 
 use penumbra_crypto::{
+    asset,
     merkle::{Frontier, NoteCommitmentTree, Tree, TreeExt},
     note, FieldExt, Note, Nullifier, Transaction, CURRENT_CHAIN_ID,
 };
@@ -34,6 +35,8 @@ pub struct ClientState {
     spent_set: BTreeMap<note::Commitment, Note>,
     /// Map of note commitment to full transaction data for transactions we have visibility into.
     transactions: BTreeMap<note::Commitment, Option<Vec<u8>>>,
+    /// Map of asset IDs to asset denominations.
+    asset_registry: BTreeMap<asset::Id, String>,
     /// Key material.
     wallet: Wallet,
 }
@@ -47,6 +50,7 @@ impl ClientState {
             unspent_set: BTreeMap::new(),
             spent_set: BTreeMap::new(),
             transactions: BTreeMap::new(),
+            asset_registry: BTreeMap::new(),
             wallet,
         }
     }
@@ -74,6 +78,46 @@ impl ClientState {
             .set_fee(&mut rng, fee)
             .set_chain_id(CURRENT_CHAIN_ID.to_string())
             .finalize(rng)
+    }
+
+    /// Get a mapping of asset denominations to unspent notes.
+    pub fn notes_by_asset_denomination(&self) -> HashMap<String, Vec<Note>> {
+        let mut notemap = HashMap::<String, Vec<Note>>::new();
+
+        for (_commitment, note) in self.unspent_set.iter() {
+            // Any notes we have in the unspent set we will have the corresponding denominations
+            // for since the notes and asset registry are both part of the sync.
+            let asset_denom = self
+                .asset_registry
+                .get(&note.asset_id())
+                .expect("all asset IDs should have denominations stored locally");
+
+            let new_notes = match notemap.get(asset_denom) {
+                Some(current_notes) => {
+                    let mut new_notes: Vec<Note> =
+                        current_notes.iter().map(|note| note.clone()).collect();
+                    new_notes.push(note.clone());
+                    new_notes.to_vec()
+                }
+                None => {
+                    vec![note.clone()]
+                }
+            };
+            notemap.insert(asset_denom.clone(), new_notes);
+        }
+
+        notemap
+    }
+
+    /// Add asset to local asset registry if it doesn't exist.
+    pub fn add_asset_to_registry(&mut self, asset_id: asset::Id, asset_denom: String) {
+        if self
+            .asset_registry
+            .insert(asset_id, asset_denom.clone())
+            .is_none()
+        {
+            tracing::debug!("found new asset: {}", asset_denom);
+        }
     }
 
     /// Returns the last block height the client state has synced up to, if any.
@@ -166,6 +210,7 @@ mod serde_helpers {
         unspent_set: Vec<(String, String)>,
         spent_set: Vec<(String, String)>,
         transactions: Vec<(String, String)>,
+        asset_registry: Vec<(String, String)>,
         wallet: Wallet,
     }
 
@@ -205,6 +250,11 @@ mod serde_helpers {
                         )
                     })
                     .collect(),
+                asset_registry: state
+                    .asset_registry
+                    .iter()
+                    .map(|(id, denom)| (hex::encode(id.to_bytes()), denom.clone()))
+                    .collect(),
                 // TODO: serialize full transactions
                 transactions: vec![],
             }
@@ -239,6 +289,11 @@ mod serde_helpers {
                 );
             }
 
+            let mut asset_registry = BTreeMap::new();
+            for (id, denom) in state.asset_registry.into_iter() {
+                asset_registry.insert(hex::decode(id)?.try_into()?, denom);
+            }
+
             Ok(Self {
                 wallet: state.wallet,
                 last_block_height: state.last_block_height,
@@ -246,6 +301,7 @@ mod serde_helpers {
                 nullifier_map,
                 unspent_set,
                 spent_set,
+                asset_registry,
                 // TODO: serialize full transactions
                 transactions: Default::default(),
             })

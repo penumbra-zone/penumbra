@@ -175,6 +175,20 @@ async fn main() -> Result<()> {
                 tracing::info!("got asset: {:?}", asset);
             }
         }
+        Command::Balance => {
+            let state = ClientStateFile::load(wallet_path)?;
+            let notes_by_asset = state.notes_by_asset_denomination();
+
+            let mut table = Table::new();
+            table.load_preset(presets::NOTHING);
+            table.set_header(vec!["Asset denomination", "Balance"]);
+            for (denom, notes) in notes_by_asset {
+                let note_amounts: Vec<u64> = notes.iter().map(|note| note.amount()).collect();
+                let balance: u64 = note_amounts.iter().sum();
+                table.add_row(vec![denom, balance.to_string()]);
+            }
+            println!("{}", table);
+        }
         _ => todo!(),
     }
 
