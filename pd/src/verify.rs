@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::Error;
 
-use penumbra_crypto::{ka, merkle, note, proofs, rdsa, value, Action, Nullifier, Transaction};
+use penumbra_crypto::{ka, merkle, note, Action, Nullifier, Transaction};
 
 /// `PendingTransaction` holds data after stateless checks have been applied.
 pub struct PendingTransaction {
@@ -14,8 +14,6 @@ pub struct PendingTransaction {
     pub new_notes: BTreeMap<note::Commitment, NoteData>,
     /// List of spent nullifiers from spends in this transaction.
     pub spent_nullifiers: BTreeSet<Nullifier>,
-    /// List of spend proofs and their public inputs to verify in this transaction.
-    pub spend_proof_details: Vec<SpendProofDetail>,
 }
 
 /// `VerifiedTransaction` represents a transaction after all checks have passed.
@@ -33,13 +31,6 @@ pub struct NoteData {
     pub ephemeral_key: ka::Public,
     pub encrypted_note: [u8; note::NOTE_CIPHERTEXT_BYTES],
     pub transaction_id: [u8; 32],
-}
-
-pub struct SpendProofDetail {
-    pub proof: proofs::transparent::SpendProof,
-    pub value_commitment: value::Commitment,
-    pub nullifier: Nullifier,
-    pub rk: rdsa::VerificationKey<rdsa::SpendAuth>,
 }
 
 pub trait StatelessTransactionExt {
@@ -60,11 +51,10 @@ impl StatelessTransactionExt for Transaction {
         }
 
         // 2. Check all spend auth signatures using provided spend auth keys
-        // and check output proofs verify. If any action does not verify, the entire
+        // and check all proofs verify. If any action does not verify, the entire
         // transaction has failed.
         let mut spent_nullifiers = BTreeSet::<Nullifier>::new();
         let mut new_notes = BTreeMap::<note::Commitment, NoteData>::new();
-        let mut spend_proof_details = Vec::<SpendProofDetail>::new();
 
         for action in self.transaction_body().actions {
             match action {
@@ -91,13 +81,14 @@ impl StatelessTransactionExt for Transaction {
                         return Err(anyhow::anyhow!("A spend auth sig did not verify"));
                     }
 
-                    // We save this data and verify later as it requires the `App` NCT state.
-                    spend_proof_details.push(SpendProofDetail {
-                        proof: inner.body.proof,
-                        value_commitment: inner.body.value_commitment,
-                        nullifier: inner.body.nullifier.clone(),
-                        rk: inner.body.rk,
-                    });
+                    if !inner.body.proof.verify(
+                        self.transaction_body().merkle_root,
+                        inner.body.value_commitment,
+                        inner.body.nullifier.clone(),
+                        inner.body.rk,
+                    ) {
+                        return Err(anyhow::anyhow!("A spend proof did not verify"));
+                    }
 
                     // Check nullifier has not been revealed already in this transaction.
                     if spent_nullifiers.contains(&inner.body.nullifier.clone()) {
@@ -114,22 +105,14 @@ impl StatelessTransactionExt for Transaction {
             root: self.transaction_body().merkle_root,
             new_notes,
             spent_nullifiers,
-            spend_proof_details,
         })
     }
 }
 
 impl StatefulTransactionExt for PendingTransaction {
     fn verify_stateful(&self, nct_root: merkle::Root) -> Result<VerifiedTransaction, Error> {
-        for spend in &self.spend_proof_details {
-            if !spend.proof.verify(
-                nct_root.clone(),
-                spend.value_commitment,
-                spend.nullifier.clone(),
-                spend.rk,
-            ) {
-                return Err(anyhow::anyhow!("Spend proof does not verify"));
-            }
+        if nct_root != self.root {
+            return Err(anyhow::anyhow!("invalid note commitment tree root"));
         }
 
         Ok(VerifiedTransaction {
