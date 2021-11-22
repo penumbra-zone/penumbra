@@ -1,5 +1,8 @@
 use anyhow::Result;
-use penumbra_proto::wallet::{wallet_client::WalletClient, CompactBlockRangeRequest};
+
+use penumbra_proto::wallet::{
+    wallet_client::WalletClient, AssetListRequest, CompactBlockRangeRequest,
+};
 use tracing::instrument;
 
 use crate::ClientStateFile;
@@ -25,6 +28,18 @@ pub async fn sync(state: &mut ClientStateFile, wallet_uri: String) -> Result<()>
         if count % 1000 == 0 {
             state.commit()?;
         }
+    }
+
+    // Update asset registry.
+    let request = tonic::Request::new(AssetListRequest {});
+    let mut stream = client.asset_list(request).await?.into_inner();
+    while let Some(asset) = stream.message().await? {
+        state.add_asset_to_registry(
+            asset.asset_id.try_into().map_err(|_| {
+                anyhow::anyhow!("could not parse asset ID for denom {}", asset.asset_denom)
+            })?,
+            asset.asset_denom.clone(),
+        );
     }
 
     tracing::info!("finished sync");
