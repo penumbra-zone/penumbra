@@ -62,7 +62,7 @@ pub struct App {
     /// Contains all queued state changes for the duration of a block.  This is
     /// set to Some at the beginning of BeginBlock and consumed (and reset to
     /// None) in Commit.
-    pending_block: Arc<Mutex<Option<PendingBlock>>>,
+    pending_block: Option<Arc<Mutex<PendingBlock>>>,
 
     /// Used to allow asynchronous requests to be processed sequentially.
     completion_tracker: CompletionTracker,
@@ -78,7 +78,7 @@ impl App {
             state,
             note_commitment_tree,
             mempool_nullifiers: Arc::new(Default::default()),
-            pending_block: Arc::new(Mutex::new(None)),
+            pending_block: None,
             completion_tracker: Default::default(),
         })
     }
@@ -124,7 +124,7 @@ impl App {
         genesis_block.add_transaction(verified_transaction);
         tracing::info!("loaded all genesis notes");
 
-        self.pending_block = Arc::new(Mutex::new(Some(genesis_block)));
+        self.pending_block = Some(Arc::new(Mutex::new(genesis_block)));
         let commit = self.commit();
         let state = self.state.clone();
         async move {
@@ -167,7 +167,7 @@ impl App {
 
     #[instrument(skip(self))]
     fn begin_block(&mut self, begin: BeginBlock) -> response::BeginBlock {
-        self.pending_block = Arc::new(Mutex::new(Some(PendingBlock::new(
+        self.pending_block = Some(Arc::new(Mutex::new(PendingBlock::new(
             self.note_commitment_tree.clone(),
         ))));
         response::BeginBlock::default()
@@ -335,10 +335,9 @@ impl App {
 
             // We accumulate data only for `VerifiedTransaction`s into `PendingBlock`.
             pending_block_ref
+                .expect("pending_block must be Some in DeliverTx")
                 .lock()
                 .unwrap()
-                .as_mut()
-                .expect("pending_block must be Some in DeliverTx")
                 .add_transaction(verified_transaction);
 
             // Signal that we're ready to resume processing further requests.
@@ -351,10 +350,10 @@ impl App {
     #[instrument(skip(self))]
     fn end_block(&mut self, end: EndBlock) -> response::EndBlock {
         self.pending_block
+            .as_mut()
+            .expect("pending_block must be Some in EndBlock")
             .lock()
             .unwrap()
-            .as_mut()
-            .expect("pending_block must be Some in EndBlock processing")
             .set_height(end.height);
 
         // TODO: here's where we process validator changes
@@ -364,12 +363,15 @@ impl App {
     /// Commit the queued state transitions.
     #[instrument(skip(self))]
     fn commit(&mut self) -> impl Future<Output = Result<Response, BoxError>> {
-        let pending_block = self
+        let pending_block_ref = self
             .pending_block
-            .lock()
-            .unwrap()
             .take()
-            .expect("pending block must be Some when commit is called");
+            .expect("pending_block must be Some in Commit");
+
+        let pending_block = Arc::try_unwrap(pending_block_ref)
+            .expect("can't try_unwrap on Arc<Mutex<PendingBlock>>>")
+            .into_inner()
+            .expect("cannot access inner PendingBlock");
 
         // These nullifiers are about to be committed, so we don't need
         // to keep them in the mempool nullifier set any longer.
