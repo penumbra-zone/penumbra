@@ -287,7 +287,7 @@ mod tests {
 
         let merkle_root = merkle::Root(Fq::zero());
         let transaction = Transaction::build_with_root(merkle_root)
-            .set_fee(20)
+            .set_fee(&mut rng, 20)
             .set_chain_id("Pen".to_string())
             .add_output(
                 &mut rng,
@@ -324,25 +324,29 @@ mod tests {
         }
         let dummy_merkle_path: merkle::Path = (merkle::DEPTH, merkle_siblings);
 
-        let value_to_send = Value {
+        let output_value = Value {
+            amount: 20,
+            asset_id: b"pen".as_ref().into(),
+        };
+        let spend_value = Value {
             amount: 10,
             asset_id: b"pen".as_ref().into(),
         };
         let dummy_note = Note::new(
             *dest.diversifier(),
             *dest.transmission_key(),
-            value_to_send,
+            spend_value,
             Fq::zero(),
         )
         .expect("transmission key is valid");
 
         let transaction = Transaction::build_with_root(merkle_root)
-            .set_fee(20)
+            .set_fee(&mut rng, 10)
             .set_chain_id("Pen".to_string())
             .add_output(
                 &mut rng,
                 &dest,
-                value_to_send,
+                output_value,
                 MemoPlaintext::default(),
                 ovk_sender,
             )

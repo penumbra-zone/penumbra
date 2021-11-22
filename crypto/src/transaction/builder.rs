@@ -7,7 +7,7 @@ use super::Error;
 use crate::rdsa::{Binding, Signature, SigningKey};
 use crate::{
     action::{output, spend, Action},
-    ka,
+    asset, ka,
     keys::{OutgoingViewingKey, SpendKey},
     memo::MemoPlaintext,
     merkle,
@@ -126,7 +126,26 @@ impl Builder {
     }
 
     /// Set the transaction fee in PEN.
-    pub fn set_fee(mut self, fee: u64) -> Self {
+    ///
+    /// Note that we're using the lower case `pen` in the code.
+    pub fn set_fee<R: RngCore + CryptoRng>(mut self, mut rng: R, fee: u64) -> Self {
+        let pen_trace = b"pen";
+        let pen_id = asset::Id::from(&pen_trace[..]);
+
+        let fee_value = Value {
+            amount: fee,
+            asset_id: pen_id,
+        };
+
+        let v_blinding = Fr::rand(&mut rng);
+        let value_commitment = fee_value.commit(v_blinding);
+
+        // The fee is effectively an additional spend, so we
+        // add to the transaction's value balance.
+        self.synthetic_blinding_factor += v_blinding;
+        self.value_balance += Fr::from(fee) * pen_id.value_generator();
+        self.value_commitments += value_commitment.0;
+
         self.fee = Some(Fee(fee));
         self
     }

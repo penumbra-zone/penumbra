@@ -49,14 +49,14 @@ impl ClientState {
     /// Generate a new transaction.
     pub fn new_transaction<R: RngCore + CryptoRng>(
         &mut self,
-        rng: &mut R,
+        mut rng: &mut R,
         fee: u64,
     ) -> Result<Transaction, penumbra_crypto::transaction::Error> {
         // xx Could populate chain_id from the info endpoint on the node, or at least
         // error if there is an inconsistency
 
         Transaction::build_with_root(self.note_commitment_tree.root2())
-            .set_fee(fee)
+            .set_fee(&mut rng, fee)
             .set_chain_id(CURRENT_CHAIN_ID.to_string())
             .finalize(rng)
     }
