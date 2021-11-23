@@ -280,12 +280,13 @@ impl From<ProtoFee> for Fee {
 mod tests {
     use super::*;
 
-    use rand_core::OsRng;
-
     use crate::keys::SpendKey;
     use crate::memo::MemoPlaintext;
+    use crate::merkle::{Tree, TreeExt};
     use crate::transaction::Error;
     use crate::{note, Fq, Note, Value};
+    use incrementalmerkletree::Frontier;
+    use rand_core::OsRng;
 
     #[test]
     fn test_transaction_single_output_fails_due_to_nonzero_value_balance() {
@@ -331,13 +332,6 @@ mod tests {
         let ivk_recipient = fvk_recipient.incoming();
         let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
 
-        let merkle_root = merkle::Root(Fq::zero());
-        let mut merkle_siblings = Vec::new();
-        for _i in 0..merkle::DEPTH {
-            merkle_siblings.push(note::Commitment(Fq::zero()))
-        }
-        let dummy_merkle_path: merkle::Path = (merkle::DEPTH, merkle_siblings);
-
         let output_value = Value {
             amount: 10,
             asset_id: b"pen".as_ref().into(),
@@ -346,15 +340,23 @@ mod tests {
             amount: 20,
             asset_id: b"pen".as_ref().into(),
         };
-        let dummy_note = Note::new(
+        let note = Note::new(
             *dest.diversifier(),
             *dest.transmission_key(),
             spend_value,
             Fq::zero(),
         )
         .expect("transmission key is valid");
+        let note_commitment = note.commit();
 
-        let transaction = Transaction::build_with_root(merkle_root)
+        let mut nct = merkle::BridgeTree::<note::Commitment, 32>::new(1);
+        nct.append(&note_commitment);
+        let anchor = nct.root2();
+        nct.witness();
+        let auth_path = nct.authentication_path(&note_commitment).unwrap();
+        let merkle_path = (u64::from(auth_path.0) as usize, auth_path.1);
+
+        let transaction = Transaction::build_with_root(anchor)
             .set_fee(10)
             .set_chain_id("Pen".to_string())
             .add_output(
@@ -364,10 +366,31 @@ mod tests {
                 MemoPlaintext::default(),
                 ovk_sender,
             )
-            .add_spend(&mut rng, sk_sender, dummy_merkle_path, dummy_note, 0.into())
-            .finalize(&mut rng);
+            .add_spend(&mut rng, sk_sender, merkle_path, note, auth_path.0)
+            .finalize(&mut rng)
+            .expect("transaction created ok");
 
-        assert!(transaction.is_ok());
-        assert_eq!(transaction.unwrap().transaction_body.expiry_height, 0);
+        let merkle_root = transaction.clone().transaction_body().merkle_root;
+        for action in transaction.clone().transaction_body().actions {
+            match action {
+                Action::Output(inner) => {
+                    assert!(inner.body.proof.verify(
+                        inner.body.value_commitment,
+                        inner.body.note_commitment,
+                        inner.body.ephemeral_key
+                    ));
+                }
+                Action::Spend(inner) => {
+                    assert!(inner.verify_auth_sig());
+
+                    assert!(inner.body.proof.verify(
+                        merkle_root.clone(),
+                        inner.body.value_commitment,
+                        inner.body.nullifier.clone(),
+                        inner.body.rk,
+                    ));
+                }
+            }
+        }
     }
 }
