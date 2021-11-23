@@ -92,18 +92,10 @@ impl ClientState {
                 .get(&note.asset_id())
                 .expect("all asset IDs should have denominations stored locally");
 
-            let new_notes = match notemap.get(asset_denom) {
-                Some(current_notes) => {
-                    let mut new_notes: Vec<Note> =
-                        current_notes.iter().map(|note| note.clone()).collect();
-                    new_notes.push(note.clone());
-                    new_notes.to_vec()
-                }
-                None => {
-                    vec![note.clone()]
-                }
-            };
-            notemap.insert(asset_denom.clone(), new_notes);
+            notemap
+                .entry(asset_denom.clone())
+                .or_insert(Vec::new())
+                .push(note.clone());
         }
 
         notemap
