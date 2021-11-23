@@ -22,6 +22,7 @@ message CompactBlockRangeRequest {
 message CompactBlock {
   uint32 height = 1;
   repeated StateFragment fragments = 2;
+  repeated bytes nullifiers = 3;
 }
 
 // Requests an asset denom given an asset ID
