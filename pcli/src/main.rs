@@ -55,9 +55,9 @@ async fn main() -> Result<()> {
             .await?;
         }
         Command::Tx(TxCmd::Send {
-            amount: _,
-            denomination: _,
-            address: _,
+            amount,
+            denomination,
+            address,
             fee,
         }) => {
             let mut state = ClientStateFile::load(wallet_path)?;
@@ -66,8 +66,8 @@ async fn main() -> Result<()> {
                 format!("http://{}:{}", opt.node, opt.wallet_port),
             )
             .await?;
-            let dummy_tx = state.new_transaction(&mut OsRng, fee)?;
-            let serialized_tx: Vec<u8> = dummy_tx.into();
+            let tx = state.new_transaction(&mut OsRng, amount, denomination, address, fee)?;
+            let serialized_tx: Vec<u8> = tx.into();
 
             let rsp = reqwest::get(format!(
                 r#"http://{}:{}/broadcast_tx_async?tx=0x{}"#,

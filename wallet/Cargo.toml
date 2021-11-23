@@ -33,3 +33,4 @@ reqwest = { version = "0.11", features = ["json"] }
 anyhow = "1"
 hex = "0.4"
 rand_core = { version = "0.6.3", features = ["getrandom"] }
+rand = "0.8"
