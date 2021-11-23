@@ -194,6 +194,7 @@ impl App {
         request: request::CheckTx,
     ) -> impl Future<Output = Result<Response, BoxError>> {
         let state = self.state.clone();
+
         let mempool_nullifiers = self.mempool_nullifiers.clone();
         let nct_root = self.note_commitment_tree.root2();
         let finished_signal = self.completion_tracker.start();
@@ -202,20 +203,23 @@ impl App {
             let transaction = match Transaction::try_from(request.tx.as_ref()) {
                 Ok(transaction) => transaction,
                 Err(_) => {
+                    let _ = finished_signal.send(());
                     return Ok(Response::CheckTx(response::CheckTx {
                         code: 1,
                         ..Default::default()
-                    }))
+                    }));
                 }
             };
 
             let pending_transaction = match transaction.verify_stateless() {
                 Ok(pending_transaction) => pending_transaction,
-                Err(_) => {
+                Err(err) => {
+                    tracing::debug!("error: {}", err);
+                    let _ = finished_signal.send(());
                     return Ok(Response::CheckTx(response::CheckTx {
                         code: 1,
                         ..Default::default()
-                    }))
+                    }));
                 }
             };
 
@@ -229,6 +233,7 @@ impl App {
             if request.kind == CheckTxKind::New {
                 for nullifier in pending_transaction.spent_nullifiers.clone() {
                     if mempool_nullifiers.lock().unwrap().contains(&nullifier) {
+                        let _ = finished_signal.send(());
                         return Ok(Response::CheckTx(response::CheckTx {
                             code: 1,
                             ..Default::default()
@@ -248,6 +253,7 @@ impl App {
                     .expect("must be able to fetch nullifier")
                     .is_some()
                 {
+                    let _ = finished_signal.send(());
                     return Ok(Response::CheckTx(response::CheckTx {
                         code: 1,
                         ..Default::default()
@@ -264,7 +270,7 @@ impl App {
                     return Ok(Response::CheckTx(response::CheckTx {
                         code: 1,
                         ..Default::default()
-                    }))
+                    }));
                 }
             };
 
@@ -281,9 +287,9 @@ impl App {
     /// so it is not safe to assume all checks performed in `CheckTx` were done.
     #[instrument(skip(self))]
     fn deliver_tx(&mut self, txbytes: Bytes) -> impl Future<Output = Result<Response, BoxError>> {
-        let finished_signal = self.completion_tracker.start();
         let state = self.state.clone();
         let nct_root = self.note_commitment_tree.root2();
+        let finished_signal = self.completion_tracker.start();
         let pending_block_ref = self.pending_block.clone();
 
         async move {
@@ -291,20 +297,22 @@ impl App {
             let transaction = match Transaction::try_from(txbytes.as_ref()) {
                 Ok(transaction) => transaction,
                 Err(_) => {
+                    let _ = finished_signal.send(());
                     return Ok(Response::DeliverTx(response::DeliverTx {
                         code: 1,
                         ..Default::default()
-                    }))
+                    }));
                 }
             };
 
             let pending_transaction = match transaction.verify_stateless() {
                 Ok(pending_transaction) => pending_transaction,
                 Err(_) => {
+                    let _ = finished_signal.send(());
                     return Ok(Response::DeliverTx(response::DeliverTx {
                         code: 1,
                         ..Default::default()
-                    }))
+                    }));
                 }
             };
 
@@ -316,6 +324,7 @@ impl App {
                     .expect("must be able to fetch nullifier")
                     .is_some()
                 {
+                    let _ = finished_signal.send(());
                     return Ok(Response::DeliverTx(response::DeliverTx {
                         code: 1,
                         ..Default::default()
@@ -326,10 +335,11 @@ impl App {
             let verified_transaction = match pending_transaction.verify_stateful(nct_root) {
                 Ok(pending_transaction) => pending_transaction,
                 Err(_) => {
+                    let _ = finished_signal.send(());
                     return Ok(Response::DeliverTx(response::DeliverTx {
                         code: 1,
                         ..Default::default()
-                    }))
+                    }));
                 }
             };
 
