@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use penumbra_crypto::{
     fmd,
-    keys::{FullViewingKey, IncomingViewingKey, SpendKey},
+    keys::{FullViewingKey, IncomingViewingKey, OutgoingViewingKey, SpendKey},
     Address,
 };
 
@@ -33,6 +33,16 @@ impl Wallet {
         self.spend_key.full_viewing_key().incoming()
     }
 
+    /// Outgoing viewing key from this spend seed.
+    pub fn outgoing_viewing_key(&self) -> &OutgoingViewingKey {
+        self.spend_key.full_viewing_key().outgoing()
+    }
+
+    /// Spend key from this spend seed.
+    pub fn spend_key(&self) -> SpendKey {
+        self.spend_key.clone()
+    }
+
     /// Get the full viewing key for this wallet.
     pub fn full_viewing_key(&self) -> &FullViewingKey {
         self.spend_key.full_viewing_key()
@@ -46,6 +56,15 @@ impl Wallet {
             .incoming_viewing_key()
             .payment_address(next_index.into());
         (next_index, address, dtk)
+    }
+
+    /// Get address by index.
+    pub fn address_by_index(&self, index: usize) -> Result<Address, anyhow::Error> {
+        if self.address_labels.get(index).is_none() {
+            return Err(anyhow::anyhow!("no address with this index!"));
+        }
+        let (address, _dtk) = self.incoming_viewing_key().payment_address(index.into());
+        Ok(address)
     }
 
     /// Iterate through the addresses in this wallet.
