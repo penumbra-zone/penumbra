@@ -70,7 +70,7 @@ impl ClientState {
     /// Generate a new transaction.
     pub fn new_transaction<R: RngCore + CryptoRng>(
         &mut self,
-        mut rng: &mut R,
+        rng: &mut R,
         amount: u64,
         denomination: String,
         address: String,
@@ -83,7 +83,7 @@ impl ClientState {
             Address::from_str(&address).map_err(|_| anyhow::anyhow!("address is invalid"))?;
 
         let mut tx_builder = Transaction::build_with_root(self.note_commitment_tree.root2())
-            .set_fee(&mut rng, fee)
+            .set_fee(fee)
             .set_chain_id(CURRENT_CHAIN_ID.to_string());
 
         let mut notes_by_asset_denom = self.notes_by_asset_denomination();

@@ -12,9 +12,9 @@ use penumbra_proto::{
 
 use crate::{
     action::{error::ProtoError, Action},
-    merkle,
+    asset, merkle,
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
-    Fr,
+    Fr, Value,
 };
 
 mod error;
@@ -162,6 +162,17 @@ impl Transaction {
             }
         }
 
+        // Add fee into binding signature computation.
+        let pen_trace = b"pen";
+        let pen_id = asset::Id::from(&pen_trace[..]);
+        let fee_value = Value {
+            amount: self.transaction_body.fee.0,
+            asset_id: pen_id,
+        };
+        let fee_v_blinding = Fr::zero();
+        let fee_value_commitment = fee_value.commit(fee_v_blinding);
+        value_commitments -= fee_value_commitment.0;
+
         // This works for all non-genesis transactions. For transactions with
         // non-zero value balance, the binding verification key must be computed
         // as `(value_commitments - value_balance).compress().0.into()`.
@@ -290,7 +301,7 @@ mod tests {
 
         let merkle_root = merkle::Root(Fq::zero());
         let transaction = Transaction::build_with_root(merkle_root)
-            .set_fee(&mut rng, 20)
+            .set_fee(20)
             .set_chain_id("Pen".to_string())
             .add_output(
                 &mut rng,
@@ -344,7 +355,7 @@ mod tests {
         .expect("transmission key is valid");
 
         let transaction = Transaction::build_with_root(merkle_root)
-            .set_fee(&mut rng, 10)
+            .set_fee(10)
             .set_chain_id("Pen".to_string())
             .add_output(
                 &mut rng,
