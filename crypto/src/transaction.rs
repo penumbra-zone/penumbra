@@ -328,11 +328,11 @@ mod tests {
         let dummy_merkle_path: merkle::Path = (merkle::DEPTH, merkle_siblings);
 
         let output_value = Value {
-            amount: 20,
+            amount: 10,
             asset_id: b"pen".as_ref().into(),
         };
         let spend_value = Value {
-            amount: 10,
+            amount: 20,
             asset_id: b"pen".as_ref().into(),
         };
         let dummy_note = Note::new(
