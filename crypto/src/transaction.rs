@@ -162,7 +162,7 @@ impl Transaction {
             }
         }
 
-        // Add fee into binding signature computation.
+        // Add fee into binding verification key computation.
         let pen_trace = b"pen";
         let pen_id = asset::Id::from(&pen_trace[..]);
         let fee_value = Value {
