@@ -111,6 +111,7 @@ impl StatelessTransactionExt for Transaction {
 
 impl StatefulTransactionExt for PendingTransaction {
     fn verify_stateful(&self, nct_root: merkle::Root) -> Result<VerifiedTransaction, Error> {
+        // xx the nct from the client could be behind the node
         if nct_root != self.root {
             return Err(anyhow::anyhow!("invalid note commitment tree root"));
         }

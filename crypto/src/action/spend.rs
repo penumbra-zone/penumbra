@@ -87,7 +87,8 @@ impl Body {
         nk: keys::NullifierKey,
     ) -> Body {
         let a = Fr::rand(rng);
-        let rk = ask.randomize(&a).into();
+        let rsk: SigningKey<SpendAuth> = ask.randomize(&a);
+        let rk: VerificationKey<SpendAuth> = rsk.into();
         let note_commitment = note.commit();
         let proof = SpendProof {
             merkle_path,
