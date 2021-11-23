@@ -7,7 +7,7 @@ use tracing::instrument;
 /// Create database tables if they do not already exist.
 #[instrument]
 pub async fn init_tables(db: &Pool<Postgres>) -> Result<()> {
-    query(
+    query!(
         r#"
 CREATE TABLE IF NOT EXISTS blobs (
     id varchar(64) PRIMARY KEY,
@@ -18,10 +18,10 @@ CREATE TABLE IF NOT EXISTS blobs (
     .execute(db)
     .await?;
 
-    query(
+    query!(
         r#"
 CREATE TABLE IF NOT EXISTS blocks (
-    height bigint PRIMARY KEY, 
+    height bigint PRIMARY KEY,
     nct_anchor bytea NOT NULL,
     app_hash bytea NOT NULL
 )
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS blocks (
     .execute(db)
     .await?;
 
-    query(
+    query!(
         r#"
 CREATE TABLE IF NOT EXISTS notes (
     note_commitment bytea PRIMARY KEY,
@@ -44,21 +44,22 @@ CREATE TABLE IF NOT EXISTS notes (
     .execute(db)
     .await?;
 
-    query(
+    query!(
         r#"
 CREATE TABLE IF NOT EXISTS nullifiers (
-    nullifier bytea PRIMARY KEY
+    nullifier bytea PRIMARY KEY,
+    height bigint NOT NULL REFERENCES blocks (height)
 )
 "#,
     )
     .execute(db)
     .await?;
 
-    query(
+    query!(
         r#"
 CREATE TABLE IF NOT EXISTS assets (
-    asset_id bytea PRIMARY KEY,
-    denom varchar
+    asset_id bytea PRIMARY KEY NOT NULL,
+    denom varchar NOT NULL
 )
 "#,
     )

@@ -131,7 +131,11 @@ impl ClientState {
     #[instrument(skip(self, fragments))]
     pub fn scan_block(
         &mut self,
-        CompactBlock { height, fragments }: CompactBlock,
+        CompactBlock {
+            height,
+            fragments,
+            nullifiers,
+        }: CompactBlock,
     ) -> Result<(), anyhow::Error> {
         // We have to do a bit of a dance to use None as "-1" and handle genesis notes.
         match (height, self.last_block_height()) {

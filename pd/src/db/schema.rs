@@ -25,4 +25,5 @@ pub struct NotesRow {
 #[derive(Debug, sqlx::FromRow)]
 pub struct NullifiersRow {
     pub nullifier: Nullifier,
+    pub height: i64,
 }
