@@ -140,11 +140,11 @@ impl Builder {
         let v_blinding = Fr::rand(&mut rng);
         let value_commitment = fee_value.commit(v_blinding);
 
-        // The fee is effectively an additional spend, so we
+        // The fee is effectively an additional output, so we
         // add to the transaction's value balance.
-        self.synthetic_blinding_factor += v_blinding;
-        self.value_balance += Fr::from(fee) * pen_id.value_generator();
-        self.value_commitments += value_commitment.0;
+        self.synthetic_blinding_factor -= v_blinding;
+        self.value_balance -= Fr::from(fee) * pen_id.value_generator();
+        self.value_commitments -= value_commitment.0;
 
         self.fee = Some(Fee(fee));
         self
