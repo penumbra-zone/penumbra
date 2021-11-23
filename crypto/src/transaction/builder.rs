@@ -70,10 +70,7 @@ impl Builder {
 
         let body_serialized: Vec<u8> = body.clone().into();
         let auth_sig = rsk.sign(rng, &body_serialized);
-
-        let spend = Action::Spend(Spend { body, auth_sig });
-
-        self.actions.push(spend);
+        self.actions.push(Action::Spend(Spend { body, auth_sig }));
 
         self
     }
