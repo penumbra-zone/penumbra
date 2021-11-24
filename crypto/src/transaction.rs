@@ -223,9 +223,9 @@ impl TryFrom<&[u8]> for Transaction {
     fn try_from(bytes: &[u8]) -> Result<Transaction, Self::Error> {
         let protobuf_serialized_proof =
             ProtoTransaction::decode(bytes).map_err(|_| ProtoError::TransactionMalformed)?;
-        Ok(protobuf_serialized_proof
+        protobuf_serialized_proof
             .try_into()
-            .map_err(|_| ProtoError::TransactionMalformed)?)
+            .map_err(|_| ProtoError::TransactionMalformed)
     }
 }
 
@@ -233,7 +233,7 @@ impl TryFrom<Vec<u8>> for Transaction {
     type Error = ProtoError;
 
     fn try_from(bytes: Vec<u8>) -> Result<Transaction, Self::Error> {
-        Ok(Self::try_from(&bytes[..])?)
+        Self::try_from(&bytes[..])
     }
 }
 
