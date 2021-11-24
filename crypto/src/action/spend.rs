@@ -86,9 +86,8 @@ impl Body {
         v_blinding: Fr,
         nk: keys::NullifierKey,
     ) -> Body {
-        let a = Fr::rand(rng);
-        let rsk: SigningKey<SpendAuth> = ask.randomize(&a);
-        let rk: VerificationKey<SpendAuth> = rsk.into();
+        let rsk = ask.randomize(&spend_auth_randomizer);
+        let rk = rsk.into();
         let note_commitment = note.commit();
         let proof = SpendProof {
             merkle_path,
