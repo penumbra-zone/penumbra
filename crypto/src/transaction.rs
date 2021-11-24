@@ -372,8 +372,8 @@ mod tests {
             .finalize(&mut rng)
             .expect("transaction created ok");
 
-        let merkle_root = transaction.clone().transaction_body().merkle_root;
-        for action in transaction.clone().transaction_body().actions {
+        let merkle_root = transaction.transaction_body().merkle_root;
+        for action in transaction.transaction_body().actions {
             match action {
                 Action::Output(inner) => {
                     assert!(inner.body.proof.verify(
