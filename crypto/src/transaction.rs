@@ -237,16 +237,16 @@ impl TryFrom<Vec<u8>> for Transaction {
     }
 }
 
-impl Into<Vec<u8>> for Transaction {
-    fn into(self) -> Vec<u8> {
-        let protobuf_serialized: ProtoTransaction = self.into();
+impl From<Transaction> for Vec<u8> {
+    fn from(transaction: Transaction) -> Vec<u8> {
+        let protobuf_serialized: ProtoTransaction = transaction.into();
         protobuf_serialized.encode_to_vec()
     }
 }
 
-impl Into<Vec<u8>> for &Transaction {
-    fn into(self) -> Vec<u8> {
-        let protobuf_serialized: ProtoTransaction = self.into();
+impl From<&Transaction> for Vec<u8> {
+    fn from(transaction: &Transaction) -> Vec<u8> {
+        let protobuf_serialized: ProtoTransaction = transaction.into();
         protobuf_serialized.encode_to_vec()
     }
 }
