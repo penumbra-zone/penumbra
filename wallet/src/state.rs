@@ -1,5 +1,4 @@
 use anyhow::Context;
-use hex;
 use penumbra_proto::wallet::{CompactBlock, StateFragment};
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
@@ -94,10 +93,9 @@ impl ClientState {
 
             let new_notes = match notemap.get(asset_denom) {
                 Some(current_notes) => {
-                    let mut new_notes: Vec<Note> =
-                        current_notes.iter().map(|note| note.clone()).collect();
+                    let mut new_notes: Vec<Note> = current_notes.to_vec();
                     new_notes.push(note.clone());
-                    new_notes.to_vec()
+                    new_notes
                 }
                 None => {
                     vec![note.clone()]
@@ -163,7 +161,7 @@ impl ClientState {
             // viewing key
             if let Ok(note) = Note::decrypt(
                 encrypted_note.as_ref(),
-                &self.wallet.incoming_viewing_key(),
+                self.wallet.incoming_viewing_key(),
                 &ephemeral_key
                     .as_ref()
                     .try_into()
