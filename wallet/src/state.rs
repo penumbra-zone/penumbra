@@ -1,5 +1,4 @@
 use anyhow::Context;
-use hex;
 use penumbra_proto::wallet::{CompactBlock, StateFragment};
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
@@ -183,7 +182,7 @@ impl ClientState {
 
             notemap
                 .entry(asset_denom.clone())
-                .or_insert(Vec::new())
+                .or_insert_with(Vec::new)
                 .push(note.clone());
         }
 
@@ -212,7 +211,11 @@ impl ClientState {
     #[instrument(skip(self, fragments))]
     pub fn scan_block(
         &mut self,
-        CompactBlock { height, fragments }: CompactBlock,
+        CompactBlock {
+            height,
+            fragments,
+            nullifiers,
+        }: CompactBlock,
     ) -> Result<(), anyhow::Error> {
         // We have to do a bit of a dance to use None as "-1" and handle genesis notes.
         match (height, self.last_block_height()) {
@@ -240,7 +243,7 @@ impl ClientState {
             // viewing key
             if let Ok(note) = Note::decrypt(
                 encrypted_note.as_ref(),
-                &self.wallet.incoming_viewing_key(),
+                self.wallet.incoming_viewing_key(),
                 &ephemeral_key
                     .as_ref()
                     .try_into()
@@ -265,6 +268,45 @@ impl ClientState {
 
                 // Insert the note into the received set
                 self.unspent_set.insert(note_commitment, note.clone());
+            }
+        }
+
+        // Scan through the list of nullifiers to find those which refer to notes in our unspent set
+        // and move them into the spent set
+        for nullifier in nullifiers {
+            // Try to decode the nullifier
+            if let Ok(nullifier) = nullifier.try_into() {
+                // Try to find the corresponding note commitment in the nullifier map
+                if let Some(&note_commitment) = self.nullifier_map.get(&nullifier) {
+                    // Try to remove the nullifier from the unspent set
+                    if let Some(note) = self.unspent_set.remove(&note_commitment) {
+                        // Insert the note into the spent set
+                        self.spent_set.insert(note_commitment, note);
+                        tracing::debug!(
+                            ?nullifier,
+                            "found nullifier for unspent note: marking it as spent"
+                        )
+                    } else if self.spent_set.contains_key(&note_commitment) {
+                        // If the nullifier is already in the spent set, it means we've already
+                        // processed this note and it's spent
+                        tracing::debug!(?nullifier, "found nullifier for already-spent note")
+                    } else {
+                        // This should never happen, because it would indicate that we either failed
+                        // to update the spent set after removing a note from the unspent set, or we
+                        // never inserted a note into the unspent set after tracking its nullifier
+                        tracing::error!(
+                            ?nullifier,
+                            "found known nullifier but note is not in unspent set or spent set"
+                        )
+                    }
+                } else {
+                    // This happens all the time, but if you really want to see every nullifier,
+                    // look at trace output
+                    tracing::trace!(?nullifier, "found unknown nullifier while scanning");
+                }
+            } else {
+                // This should never happen with a correct server
+                tracing::warn!("invalid nullifier in received compact block");
             }
         }
 

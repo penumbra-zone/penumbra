@@ -1,5 +1,5 @@
 use vergen::{vergen, Config};
 
 fn main() {
-    vergen(Config::default()).unwrap()
+    vergen(Config::default()).unwrap();
 }

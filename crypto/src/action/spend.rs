@@ -1,6 +1,5 @@
 use std::convert::{TryFrom, TryInto};
 
-use ark_ff::UniformRand;
 use bytes::Bytes;
 use rand_core::{CryptoRng, RngCore};
 
@@ -76,7 +75,7 @@ pub struct Body {
 impl Body {
     #[allow(clippy::too_many_arguments)]
     pub fn new<R: RngCore + CryptoRng>(
-        rng: &mut R,
+        _rng: &mut R,
         value_commitment: value::Commitment,
         ask: SigningKey<SpendAuth>,
         spend_auth_randomizer: Fr,

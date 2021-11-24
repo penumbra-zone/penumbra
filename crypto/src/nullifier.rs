@@ -29,3 +29,11 @@ impl TryFrom<&[u8]> for Nullifier {
         Ok(Nullifier(inner))
     }
 }
+
+impl TryFrom<Vec<u8>> for Nullifier {
+    type Error = anyhow::Error;
+
+    fn try_from(vec: Vec<u8>) -> Result<Nullifier, Self::Error> {
+        Self::try_from(&vec[..])
+    }
+}

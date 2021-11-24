@@ -5,7 +5,7 @@ use tendermint::block;
 use tracing::instrument;
 
 use penumbra_crypto::{
-    merkle::{NoteCommitmentTree, TreeExt},
+    merkle::{self, NoteCommitmentTree, TreeExt},
     Nullifier,
 };
 use penumbra_proto::wallet::{Asset, CompactBlock, StateFragment, TransactionDetail};
@@ -42,22 +42,24 @@ impl State {
 
         let nct_bytes = bincode::serialize(&block.note_commitment_tree)?;
 
-        query(
+        query!(
             r#"
 INSERT INTO blobs (id, data) VALUES ('nct', $1)
 ON CONFLICT (id) DO UPDATE SET data = $1
 "#,
+            &nct_bytes[..]
         )
-        .bind(&nct_bytes[..])
         .execute(&mut dbtx)
         .await?;
 
-        query("INSERT INTO blocks (height, nct_anchor, app_hash) VALUES ($1, $2, $3)")
-            .bind(height)
-            .bind(&nct_anchor.to_bytes()[..])
-            .bind(&app_hash[..])
-            .execute(&mut dbtx)
-            .await?;
+        query!(
+            "INSERT INTO blocks (height, nct_anchor, app_hash) VALUES ($1, $2, $3)",
+            height,
+            &nct_anchor.to_bytes()[..],
+            &app_hash[..]
+        )
+        .execute(&mut dbtx)
+        .await?;
 
         // TODO: this could be batched / use prepared statements
         for (
@@ -69,44 +71,43 @@ ON CONFLICT (id) DO UPDATE SET data = $1
             },
         ) in block.notes.into_iter()
         {
-            query(
+            query!(
                 r#"
 INSERT INTO notes (
-    note_commitment, 
-    ephemeral_key, 
-    encrypted_note, 
+    note_commitment,
+    ephemeral_key,
+    encrypted_note,
     transaction_id,
     height
 ) VALUES ($1, $2, $3, $4, $5)
 "#,
+                &<[u8; 32]>::from(note_commitment)[..],
+                &ephemeral_key.0[..],
+                &encrypted_note[..],
+                &transaction_id[..],
+                height,
             )
-            .bind(&<[u8; 32]>::from(note_commitment)[..])
-            .bind(&ephemeral_key.0[..])
-            .bind(&encrypted_note[..])
-            .bind(&transaction_id[..])
-            .bind(height)
             .execute(&mut dbtx)
             .await?;
         }
 
         for nullifier in block.spent_nullifiers.into_iter() {
-            query("INSERT INTO nullifiers VALUES ($1)")
-                .bind(&<[u8; 32]>::from(nullifier)[..])
-                .execute(&mut dbtx)
-                .await?;
+            query!(
+                "INSERT INTO nullifiers VALUES ($1, $2)",
+                &<[u8; 32]>::from(nullifier)[..],
+                height
+            )
+            .execute(&mut dbtx)
+            .await?;
         }
 
         // Save any new assets found in the block to the asset registry.
-        for asset in block.new_assets {
-            query(
-                r#"
-    INSERT INTO assets (
-        asset_id, denom
-    ) VALUES ($1, $2)
-    "#,
+        for (id, denom) in block.new_assets {
+            query!(
+                r#" INSERT INTO assets ( asset_id, denom) VALUES ($1, $2)"#,
+                &id.to_bytes()[..],
+                denom
             )
-            .bind(&asset.0.to_bytes()[..])
-            .bind(asset.1)
             .execute(&mut dbtx)
             .await?;
         }
@@ -115,13 +116,18 @@ INSERT INTO notes (
     }
 
     /// Retrieve a nullifier if it exists.
-    pub async fn nullifier(&self, nullifier: Nullifier) -> Result<Option<(Vec<u8>,)>> {
+    pub async fn nullifier(&self, nullifier: Nullifier) -> Result<Option<schema::NullifiersRow>> {
         let mut conn = self.pool.acquire().await?;
-        let nullifier_row =
-            query_as::<_, (Vec<u8>,)>("SELECT * FROM nullifiers WHERE nullifier = $1 LIMIT 1")
-                .bind(&<[u8; 32]>::from(nullifier)[..])
-                .fetch_optional(&mut conn)
-                .await?;
+        let nullifier_row = query!(
+            r#"SELECT height FROM nullifiers WHERE nullifier = $1 LIMIT 1"#,
+            &<[u8; 32]>::from(nullifier.clone())[..]
+        )
+        .fetch_optional(&mut conn)
+        .await?
+        .map(|row| schema::NullifiersRow {
+            nullifier,
+            height: row.height,
+        });
 
         Ok(nullifier_row)
     }
@@ -129,10 +135,12 @@ INSERT INTO notes (
     /// Retrieve the current note commitment tree.
     pub async fn note_commitment_tree(&self) -> Result<NoteCommitmentTree> {
         let mut conn = self.pool.acquire().await?;
-        let note_commitment_tree = if let Some(schema::BlobsRow { data, .. }) =
-            query_as::<_, schema::BlobsRow>("SELECT id, data FROM blobs WHERE id = 'nct';")
-                .fetch_optional(&mut conn)
-                .await?
+        let note_commitment_tree = if let Some(schema::BlobsRow { data, .. }) = query_as!(
+            schema::BlobsRow,
+            "SELECT id, data FROM blobs WHERE id = 'nct';"
+        )
+        .fetch_optional(&mut conn)
+        .await?
         {
             bincode::deserialize(&data).context("Could not parse saved note commitment tree")?
         } else {
@@ -145,10 +153,12 @@ INSERT INTO notes (
     /// Retrieve the latest block info, if any.
     pub async fn latest_block_info(&self) -> Result<Option<schema::BlocksRow>> {
         let mut conn = self.pool.acquire().await?;
-        let latest =
-            query_as::<_, schema::BlocksRow>("SELECT * FROM blocks ORDER BY height DESC LIMIT 1")
-                .fetch_optional(&mut conn)
-                .await?;
+        let latest = query_as!(
+            schema::BlocksRow,
+            r#"SELECT height, nct_anchor AS "nct_anchor: merkle::Root", app_hash FROM blocks ORDER BY height DESC LIMIT 1"#
+        )
+        .fetch_optional(&mut conn)
+        .await?;
 
         Ok(latest)
     }
@@ -170,7 +180,7 @@ INSERT INTO notes (
             .latest_block_info()
             .await?
             .map(|row| row.app_hash)
-            .unwrap_or(vec![0; 32]))
+            .unwrap_or_else(|| vec![0; 32]))
     }
 
     /// Retrieve the [`CompactBlock`] for the given height.
@@ -181,18 +191,22 @@ INSERT INTO notes (
 
         Ok(CompactBlock {
             height: height as u32,
-            fragments: query_as::<_, (Vec<u8>, Vec<u8>, Vec<u8>)>(
+            nullifiers: query!(
+                "SELECT nullifier FROM nullifiers WHERE height = $1",
+                height
+            ).fetch_all(&mut conn).await?.into_iter().map(|row| row.nullifier).collect(),
+            fragments: query!(
                 "SELECT note_commitment, ephemeral_key, encrypted_note FROM notes WHERE height = $1",
+                height
             )
-            .bind(height)
             .fetch_all(&mut conn)
             .await?
             .into_iter()
             .map(
-                |(note_commitment, ephemeral_key, encrypted_note)| StateFragment {
-                    note_commitment: note_commitment.into(),
-                    ephemeral_key: ephemeral_key.into(),
-                    encrypted_note: encrypted_note.into(),
+                |row| StateFragment {
+                    note_commitment: row.note_commitment.into(),
+                    ephemeral_key: row.ephemeral_key.into(),
+                    encrypted_note: row.encrypted_note.into(),
                 },
             )
             .collect(),
@@ -203,28 +217,30 @@ INSERT INTO notes (
     pub async fn transaction_by_note(&self, note_commitment: Vec<u8>) -> Result<TransactionDetail> {
         let mut conn = self.pool.acquire().await?;
 
-        let id = query_as::<_, (Vec<u8>,)>(
+        let row = query!(
             "SELECT transaction_id FROM notes WHERE note_commitment = $1",
+            note_commitment
         )
-        .bind(note_commitment)
         .fetch_one(&mut conn)
         .await?;
-        Ok(TransactionDetail { id: id.0 })
+        Ok(TransactionDetail {
+            id: row.transaction_id,
+        })
     }
 
     /// Retrieve the [`Asset`] for a given asset ID.
     pub async fn asset_lookup(&self, asset_id: Vec<u8>) -> Result<Asset> {
         let mut conn = self.pool.acquire().await?;
 
-        let asset = query_as::<_, (String, Vec<u8>)>(
+        let asset = query!(
             "SELECT denom, asset_id FROM assets WHERE asset_id = $1",
+            asset_id
         )
-        .bind(asset_id)
         .fetch_one(&mut conn)
         .await?;
         Ok(Asset {
-            asset_denom: asset.0,
-            asset_id: asset.1,
+            asset_denom: asset.denom,
+            asset_id: asset.asset_id,
         })
     }
 
@@ -232,16 +248,14 @@ INSERT INTO notes (
     pub async fn asset_list(&self) -> Result<Vec<Asset>> {
         let mut conn = self.pool.acquire().await?;
 
-        Ok(
-            query_as::<_, (String, Vec<u8>)>("SELECT denom, asset_id FROM assets")
-                .fetch_all(&mut conn)
-                .await?
-                .into_iter()
-                .map(|(asset_denom, id)| Asset {
-                    asset_denom,
-                    asset_id: id,
-                })
-                .collect(),
-        )
+        Ok(query!("SELECT denom, asset_id FROM assets")
+            .fetch_all(&mut conn)
+            .await?
+            .into_iter()
+            .map(|row| Asset {
+                asset_denom: row.denom,
+                asset_id: row.asset_id,
+            })
+            .collect())
     }
 }
