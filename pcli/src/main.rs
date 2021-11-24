@@ -176,7 +176,12 @@ async fn main() -> Result<()> {
             }
         }
         Command::Balance => {
-            let state = ClientStateFile::load(wallet_path)?;
+            let mut state = ClientStateFile::load(wallet_path)?;
+            sync(
+                &mut state,
+                format!("http://{}:{}", opt.node, opt.wallet_port),
+            )
+            .await?;
             let notes_by_asset = state.notes_by_asset_denomination();
 
             let mut table = Table::new();
