@@ -234,9 +234,9 @@ impl TryFrom<&[u8]> for Transaction {
     fn try_from(bytes: &[u8]) -> Result<Transaction, Self::Error> {
         let protobuf_serialized_proof =
             ProtoTransaction::decode(bytes).map_err(|_| ProtoError::TransactionMalformed)?;
-        Ok(protobuf_serialized_proof
+        protobuf_serialized_proof
             .try_into()
-            .map_err(|_| ProtoError::TransactionMalformed)?)
+            .map_err(|_| ProtoError::TransactionMalformed)
     }
 }
 
@@ -244,20 +244,20 @@ impl TryFrom<Vec<u8>> for Transaction {
     type Error = ProtoError;
 
     fn try_from(bytes: Vec<u8>) -> Result<Transaction, Self::Error> {
-        Ok(Self::try_from(&bytes[..])?)
+        Self::try_from(&bytes[..])
     }
 }
 
-impl Into<Vec<u8>> for Transaction {
-    fn into(self) -> Vec<u8> {
-        let protobuf_serialized: ProtoTransaction = self.into();
+impl From<Transaction> for Vec<u8> {
+    fn from(transaction: Transaction) -> Vec<u8> {
+        let protobuf_serialized: ProtoTransaction = transaction.into();
         protobuf_serialized.encode_to_vec()
     }
 }
 
-impl Into<Vec<u8>> for &Transaction {
-    fn into(self) -> Vec<u8> {
-        let protobuf_serialized: ProtoTransaction = self.into();
+impl From<&Transaction> for Vec<u8> {
+    fn from(transaction: &Transaction) -> Vec<u8> {
+        let protobuf_serialized: ProtoTransaction = transaction.into();
         protobuf_serialized.encode_to_vec()
     }
 }
@@ -372,8 +372,8 @@ mod tests {
             .finalize(&mut rng)
             .expect("transaction created ok");
 
-        let merkle_root = transaction.clone().transaction_body().merkle_root;
-        for action in transaction.clone().transaction_body().actions {
+        let merkle_root = transaction.transaction_body().merkle_root;
+        for action in transaction.transaction_body().actions {
             match action {
                 Action::Output(inner) => {
                     assert!(inner.body.proof.verify(

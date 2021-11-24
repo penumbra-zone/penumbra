@@ -346,9 +346,9 @@ impl From<Commitment> for [u8; 32] {
     }
 }
 
-impl Into<Vec<u8>> for Commitment {
-    fn into(self) -> Vec<u8> {
-        self.0.to_bytes().to_vec()
+impl From<Commitment> for Vec<u8> {
+    fn from(commitment: Commitment) -> Vec<u8> {
+        commitment.0.to_bytes().to_vec()
     }
 }
 

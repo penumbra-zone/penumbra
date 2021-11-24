@@ -1,0 +1,317 @@
+{
+  "db": "PostgreSQL",
+  "0c6a89db4de3642914e3cddf6e08a042eac9b140a03118943170433527ef5cc3": {
+    "query": "INSERT INTO nullifiers VALUES ($1, $2)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "1abc3c48b127eee2761f3385541e195f9aca35269e6db0c41e3f67a0e04f280b": {
+    "query": "SELECT denom, asset_id FROM assets WHERE asset_id = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "denom",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 1,
+          "name": "asset_id",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Bytea"
+        ]
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
+  "3cbb441b10f4a068c16dd3a40accd689be26f2a6619b363fd966ee10e740f07b": {
+    "query": " INSERT INTO assets ( asset_id, denom) VALUES ($1, $2)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Varchar"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "51f515cc43458854df653c298142e6c77b2905b453f85c31ae1a0f56fbce1c2a": {
+    "query": "\nINSERT INTO blobs (id, data) VALUES ('nct', $1)\nON CONFLICT (id) DO UPDATE SET data = $1\n",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "56ac73fb90a557deadc0ced8c798a1a39ea01fafe58f940528e53836cfdaf986": {
+    "query": "CREATE TABLE IF NOT EXISTS assets (\n    asset_id bytea PRIMARY KEY NOT NULL,\n    denom varchar NOT NULL\n)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": []
+    }
+  },
+  "6608d5e9a28ac8f0864c4e9c08937e3a49dff68ef3202f4dcc2e0c2443d68968": {
+    "query": "CREATE TABLE IF NOT EXISTS blocks (\n    height bigint PRIMARY KEY,\n    nct_anchor bytea NOT NULL,\n    app_hash bytea NOT NULL\n)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": []
+    }
+  },
+  "673a8ddb83336e82fe43107119f7768381063102e0aff3a24dcc9fa7195ebadb": {
+    "query": "CREATE TABLE IF NOT EXISTS nullifiers (\n    nullifier bytea PRIMARY KEY,\n    height bigint NOT NULL REFERENCES blocks (height)\n)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": []
+    }
+  },
+  "68ecee6442fbca8293efe210d7b798e0a070f2be083b074583048ac513c3dc96": {
+    "query": "INSERT INTO blocks (height, nct_anchor, app_hash) VALUES ($1, $2, $3)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Bytea",
+          "Bytea"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "73e0b933842ff451654acd14f7a681c505aed832f9158fd800bf32b21916625e": {
+    "query": "SELECT transaction_id FROM notes WHERE note_commitment = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "transaction_id",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Bytea"
+        ]
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "7542a4b3510cb47b2eec584ef77e8dc1d86ca90ba4143eff091fa35e90277007": {
+    "query": "\nINSERT INTO notes (\n    note_commitment,\n    ephemeral_key,\n    encrypted_note,\n    transaction_id,\n    height\n) VALUES ($1, $2, $3, $4, $5)\n",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Bytea",
+          "Bytea",
+          "Bytea",
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "8195450f9f1cedf05eebd974adbdc42dc70a8e2abb7753d7b02cba03786bee0d": {
+    "query": "SELECT denom, asset_id FROM assets",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "denom",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 1,
+          "name": "asset_id",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
+  "9024aaa179b92038a276abd92a8f20b3a28133ea8435c1d4d9ae4bc3ec31158a": {
+    "query": "SELECT height, nct_anchor AS \"nct_anchor: merkle::Root\", app_hash FROM blocks ORDER BY height DESC LIMIT 1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "height",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "nct_anchor: merkle::Root",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 2,
+          "name": "app_hash",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": [
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "a0a83fb42dc6ec8a9af35a29a492ad1651c13e047af85a25ebc41fdbd1909da7": {
+    "query": "CREATE TABLE IF NOT EXISTS notes (\n    note_commitment bytea PRIMARY KEY,\n    ephemeral_key bytea NOT NULL,\n    encrypted_note bytea NOT NULL,\n    transaction_id bytea NOT NULL,\n    height bigint REFERENCES blocks (height)\n)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": []
+    }
+  },
+  "aed57af72fe55a40c7fe24c06ff908821372686522783850b2db72fbed2aa9e4": {
+    "query": "SELECT id, data FROM blobs WHERE id = 'nct';",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 1,
+          "name": "data",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
+  "c084268c7bb93cb72a3fa5a45330ba54225e53d5adf2ea30016ff4b901ba9036": {
+    "query": "SELECT nullifier FROM nullifiers WHERE height = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "nullifier",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "cd248ce18bd666c96bcf98dab23b66cfd807dcda482411d67be301a914b68b59": {
+    "query": "CREATE TABLE IF NOT EXISTS blobs (\n    id varchar(64) PRIMARY KEY,\n    data bytea NOT NULL\n)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": []
+    }
+  },
+  "f2a471a0953f4bd441bfba26e56e5558eca1f72e5fc8250124157975654a2c73": {
+    "query": "SELECT note_commitment, ephemeral_key, encrypted_note FROM notes WHERE height = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "note_commitment",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 1,
+          "name": "ephemeral_key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 2,
+          "name": "encrypted_note",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "feb219cf82779306d199c5f733359b2cafd5ab51fca03922a9e73c3a4ff44bf7": {
+    "query": "SELECT height FROM nullifiers WHERE nullifier = $1 LIMIT 1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "height",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Bytea"
+        ]
+      },
+      "nullable": [
+        false
+      ]
+    }
+  }
+}
