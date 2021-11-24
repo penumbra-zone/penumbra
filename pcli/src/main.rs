@@ -23,7 +23,9 @@ pub use state::ClientStateFile;
 #[tokio::main]
 async fn main() -> Result<()> {
     // Display a warning message to the user so they don't get upset when all their tokens are lost.
-    warning::display();
+    if std::env::var("PCLI_UNLEASH_DANGER").is_err() {
+        warning::display();
+    }
 
     tracing_subscriber::fmt::init();
     let opt = Opt::from_args();
