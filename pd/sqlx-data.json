@@ -1,15 +1,5 @@
 {
   "db": "PostgreSQL",
-  "05347961996a6bff00aaf099676e07fb19c13d7de456cd5395852883608cb330": {
-    "query": "\nCREATE TABLE IF NOT EXISTS notes (\n    note_commitment bytea PRIMARY KEY,\n    ephemeral_key bytea NOT NULL,\n    encrypted_note bytea NOT NULL,\n    transaction_id bytea NOT NULL,\n    height bigint REFERENCES blocks (height)\n)\n",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": []
-      },
-      "nullable": []
-    }
-  },
   "0c6a89db4de3642914e3cddf6e08a042eac9b140a03118943170433527ef5cc3": {
     "query": "INSERT INTO nullifiers VALUES ($1, $2)",
     "describe": {
@@ -70,6 +60,36 @@
         "Left": [
           "Bytea"
         ]
+      },
+      "nullable": []
+    }
+  },
+  "56ac73fb90a557deadc0ced8c798a1a39ea01fafe58f940528e53836cfdaf986": {
+    "query": "CREATE TABLE IF NOT EXISTS assets (\n    asset_id bytea PRIMARY KEY NOT NULL,\n    denom varchar NOT NULL\n)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": []
+    }
+  },
+  "6608d5e9a28ac8f0864c4e9c08937e3a49dff68ef3202f4dcc2e0c2443d68968": {
+    "query": "CREATE TABLE IF NOT EXISTS blocks (\n    height bigint PRIMARY KEY,\n    nct_anchor bytea NOT NULL,\n    app_hash bytea NOT NULL\n)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": []
+    }
+  },
+  "673a8ddb83336e82fe43107119f7768381063102e0aff3a24dcc9fa7195ebadb": {
+    "query": "CREATE TABLE IF NOT EXISTS nullifiers (\n    nullifier bytea PRIMARY KEY,\n    height bigint NOT NULL REFERENCES blocks (height)\n)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": []
       },
       "nullable": []
     }
@@ -178,6 +198,16 @@
       ]
     }
   },
+  "a0a83fb42dc6ec8a9af35a29a492ad1651c13e047af85a25ebc41fdbd1909da7": {
+    "query": "CREATE TABLE IF NOT EXISTS notes (\n    note_commitment bytea PRIMARY KEY,\n    ephemeral_key bytea NOT NULL,\n    encrypted_note bytea NOT NULL,\n    transaction_id bytea NOT NULL,\n    height bigint REFERENCES blocks (height)\n)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": []
+    }
+  },
   "aed57af72fe55a40c7fe24c06ff908821372686522783850b2db72fbed2aa9e4": {
     "query": "SELECT id, data FROM blobs WHERE id = 'nct';",
     "describe": {
@@ -222,28 +252,8 @@
       ]
     }
   },
-  "d722736210a88c571e5aef441591d017bef03e21f663ca7a6df8f54b3b1c27ea": {
-    "query": "\nCREATE TABLE IF NOT EXISTS assets (\n    asset_id bytea PRIMARY KEY NOT NULL,\n    denom varchar NOT NULL\n)\n",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": []
-      },
-      "nullable": []
-    }
-  },
-  "ddf4fcde7ed7cdeb7ed5c9ec15de33489df033e943fd4caa90d828a58c521b00": {
-    "query": "\nCREATE TABLE IF NOT EXISTS blobs (\n    id varchar(64) PRIMARY KEY,\n    data bytea NOT NULL\n)\n",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": []
-      },
-      "nullable": []
-    }
-  },
-  "eabcbfa47724faa05cbd3445cc0e20f17177281eefb6b58ced9760fd1cd9fc4f": {
-    "query": "\nCREATE TABLE IF NOT EXISTS blocks (\n    height bigint PRIMARY KEY,\n    nct_anchor bytea NOT NULL,\n    app_hash bytea NOT NULL\n)\n",
+  "cd248ce18bd666c96bcf98dab23b66cfd807dcda482411d67be301a914b68b59": {
+    "query": "CREATE TABLE IF NOT EXISTS blobs (\n    id varchar(64) PRIMARY KEY,\n    data bytea NOT NULL\n)",
     "describe": {
       "columns": [],
       "parameters": {
@@ -282,16 +292,6 @@
         false,
         false
       ]
-    }
-  },
-  "fa3bb4acdebf33999d5428378b544df3655e44bc57056abac2babb5bf9ec3e6d": {
-    "query": "\nCREATE TABLE IF NOT EXISTS nullifiers (\n    nullifier bytea PRIMARY KEY,\n    height bigint NOT NULL REFERENCES blocks (height)\n)\n",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": []
-      },
-      "nullable": []
     }
   },
   "feb219cf82779306d199c5f733359b2cafd5ab51fca03922a9e73c3a4ff44bf7": {
