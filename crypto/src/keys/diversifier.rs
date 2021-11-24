@@ -1,6 +1,7 @@
 use aes::Aes256;
 use anyhow::anyhow;
 use ark_ff::PrimeField;
+use derivative::Derivative;
 use fpe::ff1;
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
@@ -9,8 +10,11 @@ use crate::Fq;
 
 pub const DIVERSIFIER_LEN_BYTES: usize = 11;
 
-#[derive(Copy, Clone, PartialEq, Eq)]
-pub struct Diversifier(pub [u8; DIVERSIFIER_LEN_BYTES]);
+#[derive(Copy, Clone, PartialEq, Eq, Derivative)]
+#[derivative(Debug)]
+pub struct Diversifier(
+    #[derivative(Debug(bound = "", format_with = "crate::fmt_hex"))] pub [u8; DIVERSIFIER_LEN_BYTES],
+);
 
 impl Diversifier {
     /// Generate the diversified basepoint associated to this diversifier.
@@ -20,14 +24,6 @@ impl Diversifier {
             .hash(&self.0);
 
         decaf377::Element::map_to_group_cdh(&Fq::from_le_bytes_mod_order(hash.as_bytes()))
-    }
-}
-
-impl std::fmt::Debug for Diversifier {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("Diversifier")
-            .field(&hex::encode(&self.0))
-            .finish()
     }
 }
 
@@ -54,8 +50,11 @@ impl TryFrom<&[u8]> for Diversifier {
     }
 }
 
-#[derive(Clone)]
-pub struct DiversifierKey(pub(super) [u8; 32]);
+#[derive(Clone, Derivative)]
+#[derivative(Debug)]
+pub struct DiversifierKey(
+    #[derivative(Debug(bound = "", format_with = "crate::fmt_hex"))] pub(super) [u8; 32],
+);
 
 impl DiversifierKey {
     pub fn diversifier_for_index(&self, index: &DiversifierIndex) -> Diversifier {
@@ -70,24 +69,11 @@ impl DiversifierKey {
     }
 }
 
-impl std::fmt::Debug for DiversifierKey {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("DiversifierKey")
-            .field(&hex::encode(&self.0))
-            .finish()
-    }
-}
-
-#[derive(Copy, Clone, Deserialize, Serialize)]
-pub struct DiversifierIndex(pub [u8; 11]);
-
-impl std::fmt::Debug for DiversifierIndex {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("DiversifierIndex")
-            .field(&hex::encode(&self.0))
-            .finish()
-    }
-}
+#[derive(Copy, Clone, Deserialize, Serialize, Derivative)]
+#[derivative(Debug)]
+pub struct DiversifierIndex(
+    #[derivative(Debug(bound = "", format_with = "crate::fmt_hex"))] pub [u8; 11],
+);
 
 impl From<u8> for DiversifierIndex {
     fn from(x: u8) -> Self {
