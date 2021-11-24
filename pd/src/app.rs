@@ -1,5 +1,5 @@
 use std::{
-    collections::BTreeSet,
+    collections::{BTreeSet, VecDeque},
     future::Future,
     pin::Pin,
     sync::{Arc, Mutex},
@@ -34,6 +34,8 @@ use crate::{
 
 const ABCI_INFO_VERSION: &str = env!("VERGEN_GIT_SEMVER");
 
+const NUM_RECENT_ANCHORS: usize = 64;
+
 /// The Penumbra ABCI application.
 #[derive(Debug)]
 pub struct App {
@@ -41,6 +43,11 @@ pub struct App {
 
     /// Written to the database after every block commit.
     note_commitment_tree: merkle::BridgeTree<note::Commitment, { merkle::DEPTH as u8 }>,
+
+    /// Recent anchors of the note commitment tree.
+    ///
+    /// TODO: load from database?
+    recent_anchors: VecDeque<merkle::Root>,
 
     /// We want to prevent two transactions from spending the same note in the
     /// same block.  Our only control over whether transactions will appear in a
@@ -77,6 +84,8 @@ impl App {
         Ok(Self {
             state,
             note_commitment_tree,
+            // TODO: load from DB
+            recent_anchors: Default::default(),
             mempool_nullifiers: Arc::new(Default::default()),
             pending_block: None,
             completion_tracker: Default::default(),
@@ -194,11 +203,10 @@ impl App {
         request: request::CheckTx,
     ) -> impl Future<Output = Result<Response, BoxError>> {
         let state = self.state.clone();
-
         let mempool_nullifiers = self.mempool_nullifiers.clone();
-        let nct_root = self.note_commitment_tree.root2();
-        let finished_signal = self.completion_tracker.start();
+        let recent_anchors = self.recent_anchors.clone();
 
+        let finished_signal = self.completion_tracker.start();
         async move {
             let transaction = match Transaction::try_from(request.tx.as_ref()) {
                 Ok(transaction) => transaction,
@@ -264,7 +272,7 @@ impl App {
             // Signal that we're ready to resume processing further requests.
             let _ = finished_signal.send(());
 
-            let _verified_transaction = match pending_transaction.verify_stateful(nct_root) {
+            let _verified_transaction = match pending_transaction.verify_stateful(&recent_anchors) {
                 Ok(pending_transaction) => pending_transaction,
                 Err(_) => {
                     return Ok(Response::CheckTx(response::CheckTx {
@@ -288,10 +296,10 @@ impl App {
     #[instrument(skip(self))]
     fn deliver_tx(&mut self, txbytes: Bytes) -> impl Future<Output = Result<Response, BoxError>> {
         let state = self.state.clone();
-        let nct_root = self.note_commitment_tree.root2();
-        let finished_signal = self.completion_tracker.start();
+        let recent_anchors = self.recent_anchors.clone();
         let pending_block_ref = self.pending_block.clone();
 
+        let finished_signal = self.completion_tracker.start();
         async move {
             // Transactions that cannot be deserialized should return a non-zero `DeliverTx` code.
             let transaction = match Transaction::try_from(txbytes.as_ref()) {
@@ -332,7 +340,7 @@ impl App {
                 };
             }
 
-            let verified_transaction = match pending_transaction.verify_stateful(nct_root) {
+            let verified_transaction = match pending_transaction.verify_stateful(&recent_anchors) {
                 Ok(pending_transaction) => pending_transaction,
                 Err(_) => {
                     let _ = finished_signal.send(());
@@ -391,6 +399,11 @@ impl App {
 
         // Pull the updated note commitment tree.
         self.note_commitment_tree = pending_block.note_commitment_tree.clone();
+        let anchor = self.note_commitment_tree.root2();
+        self.recent_anchors.push_front(anchor);
+        if self.recent_anchors.len() > NUM_RECENT_ANCHORS {
+            self.recent_anchors.pop_back();
+        }
 
         let finished_signal = self.completion_tracker.start();
         let state = self.state.clone();
