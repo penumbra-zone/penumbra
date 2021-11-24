@@ -1,6 +1,6 @@
 # Staking and Delegation
 
-As described in the [overview](../penumbra.md), integrating privacy with
+As described in the [overview](./penumbra.md), integrating privacy with
 proof-of-stake poses significant challenges.  Penumbra sidesteps these
 challenges using a novel mechanism that eliminates staking rewards entirely,
 treating unbonded and bonded stake as separate assets, with an epoch-varying
