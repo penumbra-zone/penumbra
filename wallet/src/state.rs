@@ -208,7 +208,7 @@ impl ClientState {
     /// Scan the provided block and update the client state.
     ///
     /// The provided block must be the one immediately following [`Self::last_block_height`].
-    #[instrument(skip(self, fragments))]
+    #[instrument(skip(self, fragments, nullifiers))]
     pub fn scan_block(
         &mut self,
         CompactBlock {
