@@ -27,6 +27,7 @@ aes = "0.7"
 anyhow = "1"
 thiserror = "1"
 bytes = "1"
+derivative = "2.2"
 hex = "0.4"
 blake2b_simd = "0.5"
 serde = { version = "1", features = ["derive"] }

@@ -27,3 +27,11 @@ pub use note::Note;
 pub use nullifier::Nullifier;
 pub use transaction::Transaction;
 pub use value::Value;
+
+fn fmt_hex<T: AsRef<[u8]>>(data: T, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    write!(f, "{}", hex::encode(data))
+}
+
+fn fmt_fq(data: &Fq, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fmt_hex(&data.to_bytes(), f)
+}

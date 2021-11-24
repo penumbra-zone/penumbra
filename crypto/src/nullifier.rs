@@ -2,12 +2,14 @@ use std::convert::{TryFrom, TryInto};
 
 use ark_ff::PrimeField;
 use decaf377::FieldExt;
+use derivative::Derivative;
 use once_cell::sync::Lazy;
 
 use crate::Fq;
 
-#[derive(PartialEq, Eq, Debug, Clone, Hash, PartialOrd, Ord)]
-pub struct Nullifier(pub Fq);
+#[derive(PartialEq, Eq, Derivative, Clone, Hash, PartialOrd, Ord)]
+#[derivative(Debug)]
+pub struct Nullifier(#[derivative(Debug(format_with = "crate::fmt_fq"))] pub Fq);
 
 /// The domain separator used to derive nullifiers.
 pub static NULLIFIER_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
