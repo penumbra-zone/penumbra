@@ -13,7 +13,7 @@ use pd::{
 #[derive(Debug, StructOpt)]
 #[structopt(
     name = "pd",
-    about = "The Penumbra daemon.", 
+    about = "The Penumbra daemon.",
     version = env!("VERGEN_GIT_SEMVER"),
 )]
 struct Opt {
@@ -100,11 +100,9 @@ async fn main() {
             tokio::select! {
                 x = abci_server => {
                     let _ = dbg!(x);
-                    return;
                 }
                 x = wallet_server => {
                     let _ = dbg!(x);
-                    return;
                 }
             };
         }
