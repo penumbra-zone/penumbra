@@ -1,6 +1,6 @@
 pub mod schema;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use sqlx::{query_file, Pool, Postgres};
 use tracing::instrument;
 
@@ -17,7 +17,10 @@ pub async fn init_tables(db: &Pool<Postgres>) -> Result<()> {
 
     let mut tx = db.begin().await?;
     for query in tables.into_iter() {
-        query.execute(&mut tx).await?;
+        query
+            .execute(&mut tx)
+            .await
+            .context("could not initialize database")?;
     }
     tx.commit().await?;
 
