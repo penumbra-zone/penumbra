@@ -1,4 +1,4 @@
-use ark_ff::UniformRand;
+use ark_ff::{UniformRand, Zero};
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
 use std::ops::Deref;
@@ -70,10 +70,7 @@ impl Builder {
 
         let body_serialized: Vec<u8> = body.clone().into();
         let auth_sig = rsk.sign(rng, &body_serialized);
-
-        let spend = Action::Spend(Spend { body, auth_sig });
-
-        self.actions.push(spend);
+        self.actions.push(Action::Spend(Spend { body, auth_sig }));
 
         self
     }
@@ -128,7 +125,7 @@ impl Builder {
     /// Set the transaction fee in PEN.
     ///
     /// Note that we're using the lower case `pen` in the code.
-    pub fn set_fee<R: RngCore + CryptoRng>(mut self, mut rng: R, fee: u64) -> Self {
+    pub fn set_fee(mut self, fee: u64) -> Self {
         let pen_trace = b"pen";
         let pen_id = asset::Id::from(&pen_trace[..]);
 
@@ -137,14 +134,14 @@ impl Builder {
             asset_id: pen_id,
         };
 
-        let v_blinding = Fr::rand(&mut rng);
-        let value_commitment = fee_value.commit(v_blinding);
+        let fee_v_blinding = Fr::zero();
+        let value_commitment = fee_value.commit(fee_v_blinding);
 
-        // The fee is effectively an additional spend, so we
+        // The fee is effectively an additional output, so we
         // add to the transaction's value balance.
-        self.synthetic_blinding_factor += v_blinding;
-        self.value_balance += Fr::from(fee) * pen_id.value_generator();
-        self.value_commitments += value_commitment.0;
+        self.synthetic_blinding_factor -= fee_v_blinding;
+        self.value_balance -= Fr::from(fee) * pen_id.value_generator();
+        self.value_commitments -= value_commitment.0;
 
         self.fee = Some(Fee(fee));
         self

@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use anyhow::Error;
 
@@ -38,7 +38,10 @@ pub trait StatelessTransactionExt {
 }
 
 pub trait StatefulTransactionExt {
-    fn verify_stateful(&self, nct_root: merkle::Root) -> Result<VerifiedTransaction, Error>;
+    fn verify_stateful(
+        &self,
+        valid_anchors: &VecDeque<merkle::Root>,
+    ) -> Result<VerifiedTransaction, Error>;
 }
 
 impl StatelessTransactionExt for Transaction {
@@ -110,8 +113,11 @@ impl StatelessTransactionExt for Transaction {
 }
 
 impl StatefulTransactionExt for PendingTransaction {
-    fn verify_stateful(&self, nct_root: merkle::Root) -> Result<VerifiedTransaction, Error> {
-        if nct_root != self.root {
+    fn verify_stateful(
+        &self,
+        valid_anchors: &VecDeque<merkle::Root>,
+    ) -> Result<VerifiedTransaction, Error> {
+        if !valid_anchors.contains(&self.root) {
             return Err(anyhow::anyhow!("invalid note commitment tree root"));
         }
 

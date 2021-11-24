@@ -21,7 +21,7 @@ pub enum Error {
 /// Transparent proof for spending existing notes.
 ///
 /// This structure keeps track of the auxiliary (private) inputs.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct SpendProof {
     // Path to the note being spent in the note commitment merkle tree.
     pub merkle_path: merkle::Path,
@@ -130,7 +130,8 @@ impl SpendProof {
 
         // Spend authority.
         let rk_bytes: [u8; 32] = rk.into();
-        let rk_test_bytes: [u8; 32] = self.ak.randomize(&self.spend_auth_randomizer).into();
+        let rk_test = self.ak.randomize(&self.spend_auth_randomizer);
+        let rk_test_bytes: [u8; 32] = rk_test.into();
         if rk_bytes != rk_test_bytes {
             proof_verifies = false;
         }

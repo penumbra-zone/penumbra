@@ -14,7 +14,7 @@ use crate::{
     value, Fr, Note, Nullifier,
 };
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Spend {
     pub body: Body,
     pub auth_sig: Signature<SpendAuth>,
@@ -64,7 +64,7 @@ impl TryFrom<transaction::Spend> for Spend {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Body {
     pub value_commitment: value::Commitment,
     pub nullifier: Nullifier,
@@ -86,8 +86,8 @@ impl Body {
         v_blinding: Fr,
         nk: keys::NullifierKey,
     ) -> Body {
-        let a = Fr::rand(rng);
-        let rk = ask.randomize(&a).into();
+        let rsk = ask.randomize(&spend_auth_randomizer);
+        let rk = rsk.into();
         let note_commitment = note.commit();
         let proof = SpendProof {
             merkle_path,

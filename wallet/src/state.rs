@@ -1,14 +1,16 @@
 use anyhow::Context;
 use penumbra_proto::wallet::{CompactBlock, StateFragment};
+use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
+use std::str::FromStr;
 use tracing::instrument;
 
 use penumbra_crypto::{
-    asset,
+    asset, memo,
     merkle::{Frontier, NoteCommitmentTree, Tree, TreeExt},
-    note, FieldExt, Note, Nullifier, Transaction, CURRENT_CHAIN_ID,
+    note, Address, FieldExt, Note, Nullifier, Transaction, Value, CURRENT_CHAIN_ID,
 };
 
 use crate::Wallet;
@@ -67,16 +69,103 @@ impl ClientState {
     /// Generate a new transaction.
     pub fn new_transaction<R: RngCore + CryptoRng>(
         &mut self,
-        mut rng: &mut R,
+        rng: &mut R,
+        amount: u64,
+        denomination: String,
+        address: String,
         fee: u64,
-    ) -> Result<Transaction, penumbra_crypto::transaction::Error> {
+    ) -> Result<Transaction, anyhow::Error> {
         // xx Could populate chain_id from the info endpoint on the node, or at least
         // error if there is an inconsistency
 
-        Transaction::build_with_root(self.note_commitment_tree.root2())
-            .set_fee(&mut rng, fee)
-            .set_chain_id(CURRENT_CHAIN_ID.to_string())
+        let dest_address: Address =
+            Address::from_str(&address).map_err(|_| anyhow::anyhow!("address is invalid"))?;
+
+        let mut tx_builder = Transaction::build_with_root(self.note_commitment_tree.root2())
+            .set_fee(fee)
+            .set_chain_id(CURRENT_CHAIN_ID.to_string());
+
+        let mut notes_by_asset_denom = self.notes_by_asset_denomination();
+        let notes_of_denom = match notes_by_asset_denom.get_mut(&denomination) {
+            Some(notes) => notes,
+            None => {
+                return Err(anyhow::anyhow!(
+                    "no notes of denomination found: {}",
+                    denomination
+                ))
+            }
+        };
+        notes_of_denom.shuffle(rng);
+
+        let mut notes_to_spend: Vec<Note> = Vec::new();
+        let mut total_spend_value = 0u64;
+        for note in notes_of_denom {
+            notes_to_spend.push(note.clone());
+            total_spend_value += note.amount();
+
+            if total_spend_value >= amount + fee {
+                break;
+            }
+        }
+
+        if total_spend_value < amount + fee {
+            return Err(anyhow::anyhow!(
+                "insufficient balance: you need {}, you have {}",
+                amount + fee,
+                total_spend_value
+            ));
+        }
+
+        let value_to_send = Value {
+            amount,
+            asset_id: notes_to_spend[0].asset_id(),
+        };
+
+        for note in notes_to_spend {
+            let auth_path = self
+                .note_commitment_tree
+                .authentication_path(&note.commit())
+                .unwrap();
+            let merkle_path = (u64::from(auth_path.0) as usize, auth_path.1);
+            let merkle_position = auth_path.0;
+            tx_builder = tx_builder.add_spend(
+                rng,
+                self.wallet.spend_key(),
+                merkle_path,
+                note,
+                merkle_position,
+            );
+        }
+
+        // xx: add memo handling
+        let memo = memo::MemoPlaintext([0u8; 512]);
+        tx_builder = tx_builder.add_output(
+            rng,
+            &dest_address,
+            value_to_send,
+            memo,
+            self.wallet.outgoing_viewing_key(),
+        );
+
+        // xx let user specify change address
+        let return_address = self.wallet.address_by_index(0)?;
+        let change = Value {
+            amount: total_spend_value - amount - fee,
+            asset_id: value_to_send.asset_id,
+        };
+        // xx Builder::add_output could take Option<MemoPlaintext>
+        let change_memo = memo::MemoPlaintext([0u8; 512]);
+        tx_builder = tx_builder.add_output(
+            rng,
+            &return_address,
+            change,
+            change_memo,
+            self.wallet.outgoing_viewing_key(),
+        );
+
+        tx_builder
             .finalize(rng)
+            .map_err(|err| anyhow::anyhow!("error during transaction finalization: {}", err))
     }
 
     /// Get a mapping of asset denominations to unspent notes.
@@ -91,17 +180,10 @@ impl ClientState {
                 .get(&note.asset_id())
                 .expect("all asset IDs should have denominations stored locally");
 
-            let new_notes = match notemap.get(asset_denom) {
-                Some(current_notes) => {
-                    let mut new_notes: Vec<Note> = current_notes.to_vec();
-                    new_notes.push(note.clone());
-                    new_notes
-                }
-                None => {
-                    vec![note.clone()]
-                }
-            };
-            notemap.insert(asset_denom.clone(), new_notes);
+            notemap
+                .entry(asset_denom.clone())
+                .or_insert_with(Vec::new)
+                .push(note.clone());
         }
 
         notemap

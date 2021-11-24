@@ -9,7 +9,7 @@ use crate::Fq;
 
 pub const DIVERSIFIER_LEN_BYTES: usize = 11;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub struct Diversifier(pub [u8; DIVERSIFIER_LEN_BYTES]);
 
 impl Diversifier {
@@ -20,6 +20,14 @@ impl Diversifier {
             .hash(&self.0);
 
         decaf377::Element::map_to_group_cdh(&Fq::from_le_bytes_mod_order(hash.as_bytes()))
+    }
+}
+
+impl std::fmt::Debug for Diversifier {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("Diversifier")
+            .field(&hex::encode(&self.0))
+            .finish()
     }
 }
 
@@ -46,7 +54,7 @@ impl TryFrom<&[u8]> for Diversifier {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct DiversifierKey(pub(super) [u8; 32]);
 
 impl DiversifierKey {
@@ -62,8 +70,24 @@ impl DiversifierKey {
     }
 }
 
-#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
+impl std::fmt::Debug for DiversifierKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("DiversifierKey")
+            .field(&hex::encode(&self.0))
+            .finish()
+    }
+}
+
+#[derive(Copy, Clone, Deserialize, Serialize)]
 pub struct DiversifierIndex(pub [u8; 11]);
+
+impl std::fmt::Debug for DiversifierIndex {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("DiversifierIndex")
+            .field(&hex::encode(&self.0))
+            .finish()
+    }
+}
 
 impl From<u8> for DiversifierIndex {
     fn from(x: u8) -> Self {
