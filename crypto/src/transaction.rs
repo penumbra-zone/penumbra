@@ -326,6 +326,7 @@ mod tests {
         let sk_sender = SpendKey::generate(&mut rng);
         let fvk_sender = sk_sender.full_viewing_key();
         let ovk_sender = fvk_sender.outgoing();
+        let (send_addr, _) = fvk_sender.incoming().payment_address(0u64.into());
 
         let sk_recipient = SpendKey::generate(&mut rng);
         let fvk_recipient = sk_recipient.full_viewing_key();
@@ -340,9 +341,10 @@ mod tests {
             amount: 20,
             asset_id: b"pen".as_ref().into(),
         };
+        // The note was previously sent to the sender.
         let note = Note::new(
-            *dest.diversifier(),
-            *dest.transmission_key(),
+            *send_addr.diversifier(),
+            *send_addr.transmission_key(),
             spend_value,
             Fq::zero(),
         )
