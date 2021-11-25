@@ -92,6 +92,7 @@ pub enum TxCmd {
         /// Destination address.
         address: String,
         /// Fee.
+        #[structopt(default_value = "0")]
         fee: u64,
         /// If set, spend funds originally sent to the specified address.
         #[structopt(short, long)]
