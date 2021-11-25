@@ -72,7 +72,7 @@ impl Wallet {
         let label = self
             .address_labels
             .get(index)
-            .ok_or_else(|| anyhow::anyhow!("no address with this index!"))?;
+            .ok_or_else(|| anyhow::anyhow!("no address with index {}", index))?;
         let (address, _dtk) = self.incoming_viewing_key().payment_address(index.into());
         Ok((label.clone(), address))
     }

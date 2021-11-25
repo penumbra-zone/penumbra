@@ -67,6 +67,9 @@ impl ClientState {
     }
 
     /// Generate a new transaction.
+    ///
+    /// TODO: this function is too complicated, merge with
+    /// builder API ?
     pub fn new_transaction<R: RngCore + CryptoRng>(
         &mut self,
         rng: &mut R,
@@ -74,6 +77,8 @@ impl ClientState {
         denomination: String,
         address: String,
         fee: u64,
+        change_address: u64,
+        source_address: Option<u64>,
     ) -> Result<Transaction, anyhow::Error> {
         // xx Could populate chain_id from the info endpoint on the node, or at least
         // error if there is an inconsistency
@@ -85,21 +90,28 @@ impl ClientState {
             .set_fee(fee)
             .set_chain_id(CURRENT_CHAIN_ID.to_string());
 
-        let mut notes_by_asset_denom = self.notes_by_asset_denomination();
-        let notes_of_denom = match notes_by_asset_denom.get_mut(&denomination) {
-            Some(notes) => notes,
-            None => {
-                return Err(anyhow::anyhow!(
-                    "no notes of denomination found: {}",
-                    denomination
-                ))
-            }
+        let mut notes_by_address = self
+            .unspent_notes_by_denom_and_address()
+            .remove(&denomination)
+            .ok_or_else(|| anyhow::anyhow!("no notes of denomination {} found", denomination))?;
+
+        let mut notes = if let Some(source) = source_address {
+            notes_by_address.remove(&source).ok_or_else(|| {
+                anyhow::anyhow!(
+                    "no notes of denomination {} found in address {}",
+                    denomination,
+                    source
+                )
+            })?
+        } else {
+            notes_by_address.values().flatten().cloned().collect()
         };
-        notes_of_denom.shuffle(rng);
+
+        notes.shuffle(rng);
 
         let mut notes_to_spend: Vec<Note> = Vec::new();
         let mut total_spend_value = 0u64;
-        for note in notes_of_denom {
+        for note in notes {
             notes_to_spend.push(note.clone());
             total_spend_value += note.amount();
 
@@ -147,8 +159,7 @@ impl ClientState {
             self.wallet.outgoing_viewing_key(),
         );
 
-        // xx let user specify change address
-        let (_label, return_address) = self.wallet.address_by_index(0)?;
+        let (_label, change_address) = self.wallet.address_by_index(change_address as usize)?;
         let change = Value {
             amount: total_spend_value - amount - fee,
             asset_id: value_to_send.asset_id,
@@ -157,7 +168,7 @@ impl ClientState {
         let change_memo = memo::MemoPlaintext([0u8; 512]);
         tx_builder = tx_builder.add_output(
             rng,
-            &return_address,
+            &change_address,
             change,
             change_memo,
             self.wallet.outgoing_viewing_key(),
@@ -168,21 +179,54 @@ impl ClientState {
             .map_err(|err| anyhow::anyhow!("error during transaction finalization: {}", err))
     }
 
-    /// Get a mapping of asset denominations to unspent notes.
-    pub fn notes_by_asset_denomination(&self) -> HashMap<String, Vec<Note>> {
-        let mut notemap = HashMap::<String, Vec<Note>>::new();
-
-        for (_commitment, note) in self.unspent_set.iter() {
+    /// Returns an iterator over unspent `(address_id, denom, note)` triples.
+    pub fn unspent_notes(&self) -> impl Iterator<Item = (u64, String, Note)> + '_ {
+        self.unspent_set.values().cloned().map(|note| {
             // Any notes we have in the unspent set we will have the corresponding denominations
             // for since the notes and asset registry are both part of the sync.
-            let asset_denom = self
+            let denom = self
                 .asset_registry
                 .get(&note.asset_id())
-                .expect("all asset IDs should have denominations stored locally");
+                .expect("all asset IDs should have denominations stored locally")
+                .clone();
 
+            let index: u64 = self
+                .wallet()
+                .incoming_viewing_key()
+                .index_for_diversifier(&note.diversifier())
+                .try_into()
+                .expect("diversifiers created by `pcli` are well-formed");
+
+            (index, denom, note)
+        })
+    }
+
+    /// Returns unspent notes, grouped by address and then by denomination.
+    pub fn unspent_notes_by_address_and_denom(&self) -> BTreeMap<u64, HashMap<String, Vec<Note>>> {
+        let mut notemap = BTreeMap::default();
+
+        for (index, denom, note) in self.unspent_notes() {
             notemap
-                .entry(asset_denom.clone())
-                .or_insert_with(Vec::new)
+                .entry(index)
+                .or_insert_with(HashMap::default)
+                .entry(denom)
+                .or_insert_with(Vec::default)
+                .push(note.clone());
+        }
+
+        notemap
+    }
+
+    /// Returns unspent notes, grouped by denomination and then by address.
+    pub fn unspent_notes_by_denom_and_address(&self) -> HashMap<String, BTreeMap<u64, Vec<Note>>> {
+        let mut notemap = HashMap::default();
+
+        for (index, denom, note) in self.unspent_notes() {
+            notemap
+                .entry(denom)
+                .or_insert_with(BTreeMap::default)
+                .entry(index)
+                .or_insert_with(Vec::default)
                 .push(note.clone());
         }
 

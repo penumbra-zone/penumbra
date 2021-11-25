@@ -37,7 +37,11 @@ pub enum Command {
     /// but this command can be used to "pre-sync" before interactive use.
     Sync,
     /// Displays the current wallet balance.
-    Balance,
+    Balance {
+        /// If set, breaks down balances by address.
+        #[structopt(short, long)]
+        by_address: bool,
+    },
 }
 
 #[derive(Debug, StructOpt)]
@@ -89,5 +93,11 @@ pub enum TxCmd {
         address: String,
         /// Fee.
         fee: u64,
+        /// If set, spend funds originally sent to the specified address.
+        #[structopt(short, long)]
+        source_address_id: Option<u64>,
+        /// Send change funds to the specified address.
+        #[structopt(short, long, default_value = "0")]
+        change_address_id: u64,
     },
 }

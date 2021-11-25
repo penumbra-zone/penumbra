@@ -59,6 +59,8 @@ async fn main() -> Result<()> {
             denomination,
             address,
             fee,
+            source_address_id,
+            change_address_id,
         }) => {
             let mut state = ClientStateFile::load(wallet_path)?;
             sync(
@@ -66,7 +68,15 @@ async fn main() -> Result<()> {
                 format!("http://{}:{}", opt.node, opt.lightwallet_port),
             )
             .await?;
-            let tx = state.new_transaction(&mut OsRng, amount, denomination, address, fee)?;
+            let tx = state.new_transaction(
+                &mut OsRng,
+                amount,
+                denomination,
+                address,
+                fee,
+                change_address_id,
+                source_address_id,
+            )?;
             let serialized_tx: Vec<u8> = tx.into();
 
             let rsp = reqwest::get(format!(
@@ -169,24 +179,43 @@ async fn main() -> Result<()> {
             table.add_row(vec![index.to_string(), label, address.to_string()]);
             println!("{}", table);
         }
-        Command::Balance => {
+        Command::Balance { by_address } => {
             let mut state = ClientStateFile::load(wallet_path)?;
             sync(
                 &mut state,
                 format!("http://{}:{}", opt.node, opt.lightwallet_port),
             )
             .await?;
-            let notes_by_asset = state.notes_by_asset_denomination();
 
-            let mut table = Table::new();
-            table.load_preset(presets::NOTHING);
-            table.set_header(vec!["Asset denomination", "Balance"]);
-            for (denom, notes) in notes_by_asset {
-                let note_amounts: Vec<u64> = notes.iter().map(|note| note.amount()).collect();
-                let balance: u64 = note_amounts.iter().sum();
-                table.add_row(vec![denom, balance.to_string()]);
+            if by_address {
+                let mut table = Table::new();
+                table.load_preset(presets::NOTHING);
+                table.set_header(vec!["Address", "Asset", "Balance"]);
+                for (address_id, by_denom) in state.unspent_notes_by_address_and_denom().into_iter()
+                {
+                    let (mut label, _) = state.wallet().address_by_index(address_id as usize)?;
+                    for (denom, notes) in by_denom.into_iter() {
+                        let balance: u64 = notes.iter().map(|note| note.amount()).sum();
+                        table.add_row(vec![label.clone(), denom, balance.to_string()]);
+                        // Only display the label on the first row
+                        label = String::default();
+                    }
+                }
+                println!("{}", table);
+            } else {
+                let mut table = Table::new();
+                table.load_preset(presets::NOTHING);
+                table.set_header(vec!["Asset", "Balance"]);
+                for (denom, by_address) in state.unspent_notes_by_denom_and_address().into_iter() {
+                    let balance: u64 = by_address
+                        .values()
+                        .flatten()
+                        .map(|note| note.amount())
+                        .sum();
+                    table.add_row(vec![denom, balance.to_string()]);
+                }
+                println!("{}", table);
             }
-            println!("{}", table);
         }
     }
 
