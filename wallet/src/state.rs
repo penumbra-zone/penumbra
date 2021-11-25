@@ -77,7 +77,7 @@ impl ClientState {
         denomination: String,
         address: String,
         fee: u64,
-        change_address: u64,
+        change_address: Option<u64>,
         source_address: Option<u64>,
     ) -> Result<Transaction, anyhow::Error> {
         // xx Could populate chain_id from the info endpoint on the node, or at least
@@ -119,6 +119,21 @@ impl ClientState {
                 break;
             }
         }
+
+        // If it wasn't provided, set the change address to the address that
+        // provided the change note.
+        let change_address = change_address.unwrap_or_else(|| {
+            self.wallet()
+                .incoming_viewing_key()
+                .index_for_diversifier(
+                    &notes_to_spend
+                        .last()
+                        .expect("spent at least one note")
+                        .diversifier(),
+                )
+                .try_into()
+                .expect("can convert DiversifierIndex to u64")
+        });
 
         if total_spend_value < amount + fee {
             return Err(anyhow::anyhow!(
