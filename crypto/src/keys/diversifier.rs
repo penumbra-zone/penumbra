@@ -67,9 +67,23 @@ impl DiversifierKey {
         diversifier_bytes.copy_from_slice(&enc_index.to_bytes_le());
         Diversifier(diversifier_bytes)
     }
+
+    pub fn index_for_diversifier(&self, diversifier: &Diversifier) -> DiversifierIndex {
+        let index = ff1::FF1::<Aes256>::new(&self.0, 2)
+            .expect("radix 2 is in range")
+            .decrypt(
+                b"",
+                &ff1::BinaryNumeralString::from_bytes_le(&diversifier.0),
+            )
+            .expect("binary string is in the configured radix (2)");
+
+        let mut index_bytes = [0; 11];
+        index_bytes.copy_from_slice(&index.to_bytes_le());
+        DiversifierIndex(index_bytes)
+    }
 }
 
-#[derive(Copy, Clone, Deserialize, Serialize, Derivative)]
+#[derive(Copy, Clone, Deserialize, Serialize, PartialEq, Eq, Derivative)]
 #[derivative(Debug)]
 pub struct DiversifierIndex(
     #[derivative(Debug(bound = "", format_with = "crate::fmt_hex"))] pub [u8; 11],
@@ -113,12 +127,49 @@ impl From<usize> for DiversifierIndex {
     }
 }
 
-impl From<DiversifierIndex> for u64 {
-    fn from(diversifier_index: DiversifierIndex) -> Self {
-        u64::from_le_bytes(
-            diversifier_index.0[0..8]
-                .try_into()
-                .expect("can take first 8 bytes of diversifier index"),
-        )
+impl TryFrom<DiversifierIndex> for u64 {
+    type Error = anyhow::Error;
+    fn try_from(diversifier_index: DiversifierIndex) -> Result<Self, Self::Error> {
+        let bytes = &diversifier_index.0;
+        if bytes[8] == 0 && bytes[9] == 0 && bytes[10] == 0 {
+            Ok(u64::from_le_bytes(
+                bytes[0..8]
+                    .try_into()
+                    .expect("can take first 8 bytes of 11-byte array"),
+            ))
+        } else {
+            Err(anyhow::anyhow!("diversifier index out of range"))
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use proptest::prelude::*;
+
+    fn diversifier_index_strategy() -> BoxedStrategy<DiversifierIndex> {
+        any::<[u8; 11]>()
+            .prop_map(|bytes| DiversifierIndex(bytes))
+            .boxed()
+    }
+
+    fn diversifier_key_strategy() -> BoxedStrategy<DiversifierKey> {
+        any::<[u8; 32]>()
+            .prop_map(|bytes| DiversifierKey(bytes))
+            .boxed()
+    }
+
+    proptest! {
+        #[test]
+        fn diversifier_encryption_roundtrip(
+            key in diversifier_key_strategy(),
+            index in diversifier_index_strategy(),
+        ) {
+            let diversifier = key.diversifier_for_index(&index);
+            let index2 = key.index_for_diversifier(&diversifier);
+            assert_eq!(index2, index );
+        }
     }
 }
