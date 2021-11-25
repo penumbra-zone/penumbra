@@ -55,6 +55,7 @@ impl ClientStateFile {
         let mut file = std::fs::OpenOptions::new()
             .create(true)
             .write(true)
+            .truncate(true)
             .open(&self.path)?;
 
         serde_json::to_writer_pretty(&mut file, &self.state)?;

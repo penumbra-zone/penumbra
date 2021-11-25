@@ -148,7 +148,7 @@ impl ClientState {
         );
 
         // xx let user specify change address
-        let return_address = self.wallet.address_by_index(0)?;
+        let (_label, return_address) = self.wallet.address_by_index(0)?;
         let change = Value {
             amount: total_spend_value - amount - fee,
             asset_id: value_to_send.asset_id,
