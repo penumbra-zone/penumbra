@@ -9,6 +9,7 @@ use crate::ClientStateFile;
 
 #[instrument(skip(state), fields(start_height = state.last_block_height()))]
 pub async fn sync(state: &mut ClientStateFile, wallet_uri: String) -> Result<()> {
+    tracing::info!("starting client sync");
     let mut client = WalletClient::connect(wallet_uri).await?;
 
     let start_height = state.last_block_height().map(|h| h + 1).unwrap_or(0);
@@ -27,6 +28,7 @@ pub async fn sync(state: &mut ClientStateFile, wallet_uri: String) -> Result<()>
         count += 1;
         if count % 1000 == 0 {
             state.commit()?;
+            tracing::info!(height = ?state.last_block_height().unwrap(), "syncing...");
         }
     }
 
@@ -42,7 +44,7 @@ pub async fn sync(state: &mut ClientStateFile, wallet_uri: String) -> Result<()>
         );
     }
 
-    tracing::info!("finished sync");
     state.commit()?;
+    tracing::info!(end_height = ?state.last_block_height().unwrap(), "finished sync");
     Ok(())
 }
