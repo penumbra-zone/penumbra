@@ -179,15 +179,18 @@ impl ClientState {
             amount: total_spend_value - amount - fee,
             asset_id: value_to_send.asset_id,
         };
-        // xx Builder::add_output could take Option<MemoPlaintext>
-        let change_memo = memo::MemoPlaintext([0u8; 512]);
-        tx_builder = tx_builder.add_output(
-            rng,
-            &change_address,
-            change,
-            change_memo,
-            self.wallet.outgoing_viewing_key(),
-        );
+        // Only create a change output if there is change to record.
+        if change.amount > 0 {
+            // xx Builder::add_output could take Option<MemoPlaintext>
+            let change_memo = memo::MemoPlaintext([0u8; 512]);
+            tx_builder = tx_builder.add_output(
+                rng,
+                &change_address,
+                change,
+                change_memo,
+                self.wallet.outgoing_viewing_key(),
+            );
+        }
 
         tx_builder
             .finalize(rng)
