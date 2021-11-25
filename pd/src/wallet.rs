@@ -1,3 +1,7 @@
+use futures::{
+    future::TryFutureExt,
+    stream::{FuturesOrdered, StreamExt},
+};
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::Status;
@@ -50,19 +54,25 @@ impl Wallet for WalletApp {
             std::cmp::min(end_height, current_height)
         };
 
-        let (tx, rx) = mpsc::channel(100);
+        let mut blocks = FuturesOrdered::new();
+        for height in start_height..=end_height {
+            let state = self.state.clone();
+            let block = tokio::spawn(async move { state.compact_block(height.into()).await });
+            blocks.push(block);
+        }
 
-        let state = self.state.clone();
+        let (tx, rx) = mpsc::channel(100);
         tokio::spawn(async move {
-            for height in start_height..=end_height {
-                let block = state.compact_block(height.into()).await;
-                tracing::info!("sending block response: {:?}", block);
-                tx.send(block.map_err(|_| tonic::Status::unavailable("database error")))
-                    .await
-                    .unwrap();
+            while let Some(block_result) = blocks.next().await {
+                tx.send(
+                    block_result
+                        .unwrap()
+                        .map_err(|_| tonic::Status::unavailable("internal server error")),
+                )
+                .await
+                .unwrap();
             }
         });
-
         Ok(tonic::Response::new(Self::CompactBlockRangeStream::new(rx)))
     }
 
