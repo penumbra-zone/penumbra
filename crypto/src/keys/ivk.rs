@@ -2,7 +2,7 @@ use ark_ff::PrimeField;
 
 use crate::{fmd, ka, prf, Address, Fr};
 
-use super::{DiversifierIndex, DiversifierKey};
+use super::{Diversifier, DiversifierIndex, DiversifierKey};
 
 pub const IVK_LEN_BYTES: usize = 64;
 
@@ -40,5 +40,11 @@ impl IncomingViewingKey {
     /// Derive a transmission key from the given diversified base.
     pub fn diversified_public(&self, diversified_generator: &decaf377::Element) -> ka::Public {
         self.ivk.diversified_public(diversified_generator)
+    }
+
+    /// Returns the index used to create the given diversifier (if it was
+    /// created using this incoming viewing key)
+    pub fn index_for_diversifier(&self, diversifier: &Diversifier) -> DiversifierIndex {
+        self.dk.index_for_diversifier(diversifier)
     }
 }
