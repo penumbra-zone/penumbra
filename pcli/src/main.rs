@@ -60,7 +60,6 @@ async fn main() -> Result<()> {
             address,
             fee,
             source_address_id,
-            change_address_id,
         }) => {
             let mut state = ClientStateFile::load(wallet_path)?;
             sync(
@@ -74,7 +73,6 @@ async fn main() -> Result<()> {
                 denomination,
                 address,
                 fee,
-                change_address_id,
                 source_address_id,
             )?;
             let serialized_tx: Vec<u8> = tx.into();

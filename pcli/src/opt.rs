@@ -97,8 +97,5 @@ pub enum TxCmd {
         /// If set, spend funds originally sent to the specified address.
         #[structopt(short, long)]
         source_address_id: Option<u64>,
-        /// Send change funds to the specified address, instead of their original address.
-        #[structopt(short, long)]
-        change_address_id: Option<u64>,
     },
 }

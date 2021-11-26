@@ -1,10 +1,11 @@
+use anyhow::Context;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
 use penumbra_crypto::{
     fmd,
     keys::{FullViewingKey, IncomingViewingKey, OutgoingViewingKey, SpendKey, SpendSeed},
-    Address,
+    Address, Note,
 };
 
 /// The contents of the wallet file that share a spend authority.
@@ -89,6 +90,18 @@ impl Wallet {
 
                 (index, label, address)
             })
+    }
+
+    /// Computes the change address for the given note.
+    pub fn change_address(&self, note: &Note) -> Result<Address, anyhow::Error> {
+        let index: u64 = self
+            .incoming_viewing_key()
+            .index_for_diversifier(&note.diversifier())
+            .try_into()
+            .context("cannot convert DiversifierIndex to u64")?;
+
+        let (_label, address) = self.address_by_index(index as usize)?;
+        Ok(address)
     }
 }
 

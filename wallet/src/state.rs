@@ -66,6 +66,56 @@ impl ClientState {
         &mut self.wallet
     }
 
+    /// Returns a list of notes to spend to release (at least) the provided value.
+    ///
+    /// If `source_address` is `Some`, restrict to only the notes sent to that address.
+    pub fn notes_to_spend<R: CryptoRng + RngCore>(
+        &self,
+        rng: &mut R,
+        amount: u64,
+        denom: String,
+        source_address: Option<u64>,
+    ) -> Result<Vec<Note>, anyhow::Error> {
+        let mut notes_by_address = self
+            .unspent_notes_by_denom_and_address()
+            .remove(&denom)
+            .ok_or_else(|| anyhow::anyhow!("no notes of denomination {} found", denom))?;
+
+        let mut notes = if let Some(source) = source_address {
+            notes_by_address.remove(&source).ok_or_else(|| {
+                anyhow::anyhow!(
+                    "no notes of denomination {} found in address {}",
+                    denom,
+                    source
+                )
+            })?
+        } else {
+            notes_by_address.values().flatten().cloned().collect()
+        };
+
+        // Draw notes in a random order, to avoid leaking information via arity.
+        notes.shuffle(rng);
+
+        let mut notes_to_spend = Vec::new();
+        let mut total_spend_value = 0u64;
+        for note in notes.into_iter() {
+            notes_to_spend.push(note.clone());
+            total_spend_value += note.amount();
+
+            if total_spend_value >= amount {
+                break;
+            }
+        }
+
+        if total_spend_value >= amount {
+            Ok(notes_to_spend)
+        } else {
+            Err(anyhow::anyhow!(
+                "not enough available notes for requested spend"
+            ))
+        }
+    }
+
     /// Generate a new transaction.
     ///
     /// TODO: this function is too complicated, merge with
@@ -77,7 +127,6 @@ impl ClientState {
         denomination: String,
         address: String,
         fee: u64,
-        change_address: Option<u64>,
         source_address: Option<u64>,
     ) -> Result<Transaction, anyhow::Error> {
         // xx Could populate chain_id from the info endpoint on the node, or at least
@@ -90,106 +139,69 @@ impl ClientState {
             .set_fee(fee)
             .set_chain_id(CURRENT_CHAIN_ID.to_string());
 
-        let mut notes_by_address = self
-            .unspent_notes_by_denom_and_address()
-            .remove(&denomination)
-            .ok_or_else(|| anyhow::anyhow!("no notes of denomination {} found", denomination))?;
+        let mut output_value = HashMap::<String, u64>::new();
+        output_value.insert(denomination, amount);
 
-        let mut notes = if let Some(source) = source_address {
-            notes_by_address.remove(&source).ok_or_else(|| {
-                anyhow::anyhow!(
-                    "no notes of denomination {} found in address {}",
-                    denomination,
-                    source
-                )
-            })?
-        } else {
-            notes_by_address.values().flatten().cloned().collect()
-        };
-
-        notes.shuffle(rng);
-
-        let mut notes_to_spend: Vec<Note> = Vec::new();
-        let mut total_spend_value = 0u64;
-        for note in notes {
-            notes_to_spend.push(note.clone());
-            total_spend_value += note.amount();
-
-            if total_spend_value >= amount + fee {
-                break;
-            }
-        }
-
-        // If it wasn't provided, set the change address to the address that
-        // provided the change note.
-        let change_address = change_address.unwrap_or_else(|| {
-            self.wallet()
-                .incoming_viewing_key()
-                .index_for_diversifier(
-                    &notes_to_spend
-                        .last()
-                        .expect("spent at least one note")
-                        .diversifier(),
-                )
-                .try_into()
-                .expect("can convert DiversifierIndex to u64")
-        });
-
-        if total_spend_value < amount + fee {
-            return Err(anyhow::anyhow!(
-                "insufficient balance: you need {}, you have {}",
-                amount + fee,
-                total_spend_value
-            ));
-        }
-
-        let value_to_send = Value {
-            amount,
-            asset_id: notes_to_spend[0].asset_id(),
-        };
-
-        for note in notes_to_spend {
-            let auth_path = self
-                .note_commitment_tree
-                .authentication_path(&note.commit())
-                .unwrap();
-            let merkle_path = (u64::from(auth_path.0) as usize, auth_path.1);
-            let merkle_position = auth_path.0;
-            tx_builder = tx_builder.add_spend(
-                rng,
-                self.wallet.spend_key(),
-                merkle_path,
-                note,
-                merkle_position,
-            );
-        }
-
-        // xx: add memo handling
-        let memo = memo::MemoPlaintext([0u8; 512]);
-        tx_builder = tx_builder.add_output(
-            rng,
-            &dest_address,
-            value_to_send,
-            memo,
-            self.wallet.outgoing_viewing_key(),
-        );
-
-        let (_label, change_address) = self.wallet.address_by_index(change_address as usize)?;
-        let change = Value {
-            amount: total_spend_value - amount - fee,
-            asset_id: value_to_send.asset_id,
-        };
-        // Only create a change output if there is change to record.
-        if change.amount > 0 {
-            // xx Builder::add_output could take Option<MemoPlaintext>
-            let change_memo = memo::MemoPlaintext([0u8; 512]);
+        for (denom, amount) in &output_value {
+            // xx: add memo handling
+            let memo = memo::MemoPlaintext([0u8; 512]);
             tx_builder = tx_builder.add_output(
                 rng,
-                &change_address,
-                change,
-                change_memo,
+                &dest_address,
+                Value {
+                    amount: *amount,
+                    asset_id: denom.as_bytes().into(),
+                },
+                memo,
                 self.wallet.outgoing_viewing_key(),
             );
+        }
+
+        // The value we need to spend is the output value, plus fees.
+        let mut value_to_spend = output_value;
+        *value_to_spend.entry("pen".into()).or_default() += fee;
+
+        for (denom, amount) in value_to_spend {
+            // Select a list of notes that provides at least the required amount.
+            let notes = self.notes_to_spend(rng, amount, denom.clone(), source_address)?;
+            let change_address = self
+                .wallet
+                .change_address(notes.last().expect("spent at least one note"))?;
+            let spent: u64 = notes.iter().map(|note| note.amount()).sum();
+
+            // Spend each of the notes we selected.
+            for note in notes {
+                let auth_path = self
+                    .note_commitment_tree
+                    .authentication_path(&note.commit())
+                    .unwrap();
+                let merkle_path = (u64::from(auth_path.0) as usize, auth_path.1);
+                let merkle_position = auth_path.0;
+                tx_builder = tx_builder.add_spend(
+                    rng,
+                    self.wallet.spend_key(),
+                    merkle_path,
+                    note,
+                    merkle_position,
+                );
+            }
+
+            // Find out how much change we have and whether to add a change output.
+            let change = spent - amount;
+            if change > 0 {
+                // xx: add memo handling
+                let memo = memo::MemoPlaintext([0u8; 512]);
+                tx_builder = tx_builder.add_output(
+                    rng,
+                    &change_address,
+                    Value {
+                        amount: change,
+                        asset_id: denom.as_bytes().into(),
+                    },
+                    memo,
+                    self.wallet.outgoing_viewing_key(),
+                );
+            }
         }
 
         tx_builder
