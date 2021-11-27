@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
-use anyhow::Error;
+use anyhow::{Context, Error};
 
 use penumbra_crypto::{ka, merkle, note, Action, Nullifier, Transaction};
 
@@ -48,10 +48,12 @@ impl StatelessTransactionExt for Transaction {
     fn verify_stateless(&self) -> Result<PendingTransaction, Error> {
         let id = self.id();
 
+        let sighash = self.transaction_body().sighash();
+
         // 1. Check binding signature.
-        if !self.verify_binding_sig() {
-            return Err(anyhow::anyhow!("Binding signature did not verify"));
-        }
+        self.binding_verification_key()
+            .verify(&sighash, self.binding_sig())
+            .context("binding signature failed to verify")?;
 
         // 2. Check all spend auth signatures using provided spend auth keys
         // and check all proofs verify. If any action does not verify, the entire
@@ -61,44 +63,46 @@ impl StatelessTransactionExt for Transaction {
 
         for action in self.transaction_body().actions {
             match action {
-                Action::Output(inner) => {
-                    if !inner.body.proof.verify(
-                        inner.body.value_commitment,
-                        inner.body.note_commitment,
-                        inner.body.ephemeral_key,
+                Action::Output(output) => {
+                    if !output.body.proof.verify(
+                        output.body.value_commitment,
+                        output.body.note_commitment,
+                        output.body.ephemeral_key,
                     ) {
                         return Err(anyhow::anyhow!("An output proof did not verify"));
                     }
 
                     new_notes.insert(
-                        inner.body.note_commitment,
+                        output.body.note_commitment,
                         NoteData {
-                            ephemeral_key: inner.body.ephemeral_key,
-                            encrypted_note: inner.body.encrypted_note,
+                            ephemeral_key: output.body.ephemeral_key,
+                            encrypted_note: output.body.encrypted_note,
                             transaction_id: id,
                         },
                     );
                 }
-                Action::Spend(inner) => {
-                    if !inner.verify_auth_sig() {
-                        return Err(anyhow::anyhow!("A spend auth sig did not verify"));
-                    }
+                Action::Spend(spend) => {
+                    spend
+                        .body
+                        .rk
+                        .verify(&sighash, &spend.auth_sig)
+                        .context("spend auth signature failed to verify")?;
 
-                    if !inner.body.proof.verify(
+                    if !spend.body.proof.verify(
                         self.transaction_body().merkle_root,
-                        inner.body.value_commitment,
-                        inner.body.nullifier.clone(),
-                        inner.body.rk,
+                        spend.body.value_commitment,
+                        spend.body.nullifier.clone(),
+                        spend.body.rk,
                     ) {
                         return Err(anyhow::anyhow!("A spend proof did not verify"));
                     }
 
                     // Check nullifier has not been revealed already in this transaction.
-                    if spent_nullifiers.contains(&inner.body.nullifier.clone()) {
+                    if spent_nullifiers.contains(&spend.body.nullifier.clone()) {
                         return Err(anyhow::anyhow!("Double spend"));
                     }
 
-                    spent_nullifiers.insert(inner.body.nullifier.clone());
+                    spent_nullifiers.insert(spend.body.nullifier.clone());
                 }
             }
         }

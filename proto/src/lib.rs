@@ -20,6 +20,43 @@ pub mod transaction {
     include!(concat!(env!("OUT_DIR"), "/penumbra.transaction.rs"));
 }
 
+pub mod sighash {
+    include!(concat!(env!("OUT_DIR"), "/penumbra.sighash.rs"));
+
+    use super::transaction::action::Action as TxAction;
+    use super::transaction::Spend;
+    use sig_hash_action::Action as SHAction;
+
+    impl From<super::transaction::Action> for SigHashAction {
+        fn from(action: super::transaction::Action) -> Self {
+            let action = match action.action {
+                // Pass through outputs
+                Some(TxAction::Output(o)) => Some(SHAction::Output(o)),
+                Some(TxAction::Spend(Spend { body: None, .. })) => None,
+                // Collapse spends to spend bodies
+                Some(TxAction::Spend(Spend {
+                    body: Some(spend_body),
+                    ..
+                })) => Some(SHAction::Spend(spend_body)),
+                None => None,
+            };
+            Self { action }
+        }
+    }
+
+    impl From<super::transaction::TransactionBody> for SigHashTransaction {
+        fn from(body: super::transaction::TransactionBody) -> Self {
+            Self {
+                actions: body.actions.into_iter().map(Into::into).collect(),
+                anchor: body.anchor.to_vec(),
+                expiry_height: body.expiry_height,
+                chain_id: body.chain_id,
+                fee: body.fee,
+            }
+        }
+    }
+}
+
 /// Transparent proofs.
 ///
 /// Note that these are protos for the "MVP" transparent version of Penumbra,
