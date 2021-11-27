@@ -19,17 +19,6 @@ pub struct Spend {
     pub auth_sig: Signature<SpendAuth>,
 }
 
-impl Spend {
-    /// Verify an auth sig using the provided randomized verification key.
-    pub fn verify_auth_sig(&self) -> bool {
-        let body_serialized: Vec<u8> = self.body.clone().into();
-        self.body
-            .rk
-            .verify(&body_serialized, &self.auth_sig)
-            .is_ok()
-    }
-}
-
 impl Protobuf<transaction::Spend> for Spend {}
 
 impl From<Spend> for transaction::Spend {

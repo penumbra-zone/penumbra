@@ -28,6 +28,7 @@ fn main() -> Result<()> {
 
     config.compile_protos(&["proto/transaction.proto"], &["proto/"])?;
     config.compile_protos(&["proto/transparent_proofs.proto"], &["proto/"])?;
+    config.compile_protos(&["proto/sighash.proto"], &["proto/"])?;
 
     // For the client code, we also want to generate RPC instances, so compile via tonic:
     tonic_build::configure().compile_with_config(config, &["proto/wallet.proto"], &["proto/"])?;

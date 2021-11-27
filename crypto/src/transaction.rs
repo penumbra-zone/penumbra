@@ -92,6 +92,20 @@ impl TryFrom<ProtoTransactionBody> for TransactionBody {
     }
 }
 
+impl TransactionBody {
+    pub fn sighash(&self) -> [u8; 64] {
+        use penumbra_proto::sighash::SigHashTransaction;
+
+        let sighash_tx = SigHashTransaction::from(ProtoTransactionBody::from(self.clone()));
+        let sighash_tx_bytes: Vec<u8> = sighash_tx.encode_to_vec();
+
+        *blake2b_simd::Params::default()
+            .personal(b"Penumbra_SigHash")
+            .hash(&sighash_tx_bytes)
+            .as_array()
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Fee(pub u64);
 
@@ -105,7 +119,8 @@ impl Transaction {
     /// Start building a transaction relative to a given [`merkle::Root`].
     pub fn build_with_root(merkle_root: merkle::Root) -> Builder {
         Builder {
-            actions: Vec::new(),
+            spends: Vec::new(),
+            outputs: Vec::new(),
             fee: None,
             synthetic_blinding_factor: Fr::zero(),
             value_balance: decaf377::Element::default(),
@@ -134,8 +149,8 @@ impl Transaction {
         self.transaction_body.clone()
     }
 
-    pub fn binding_sig(&self) -> Signature<Binding> {
-        self.binding_sig
+    pub fn binding_sig(&self) -> &Signature<Binding> {
+        &self.binding_sig
     }
 
     pub fn id(&self) -> [u8; 32] {
@@ -149,7 +164,7 @@ impl Transaction {
     }
 
     /// Verify the binding signature.
-    pub fn verify_binding_sig(&self) -> bool {
+    pub fn binding_verification_key(&self) -> VerificationKey<Binding> {
         let mut value_commitments = decaf377::Element::default();
         for action in self.transaction_body.actions.clone() {
             match action {
@@ -178,14 +193,10 @@ impl Transaction {
         // as `(value_commitments - value_balance).compress().0.into()`.
         let binding_verification_key_bytes: VerificationKeyBytes<Binding> =
             value_commitments.compress().0.into();
-        let binding_verification_key: VerificationKey<Binding> = binding_verification_key_bytes
-            .try_into()
-            .expect("verification key is valid");
 
-        let transaction_body_serialized: Vec<u8> = self.transaction_body.clone().into();
-        binding_verification_key
-            .verify(&transaction_body_serialized, &self.binding_sig)
-            .is_ok()
+        binding_verification_key_bytes
+            .try_into()
+            .expect("verification key is valid")
     }
 }
 
@@ -372,24 +383,26 @@ mod tests {
             .finalize(&mut rng)
             .expect("transaction created ok");
 
+        let sighash = transaction.transaction_body().sighash();
+
         let merkle_root = transaction.transaction_body().merkle_root;
         for action in transaction.transaction_body().actions {
             match action {
-                Action::Output(inner) => {
-                    assert!(inner.body.proof.verify(
-                        inner.body.value_commitment,
-                        inner.body.note_commitment,
-                        inner.body.ephemeral_key
+                Action::Output(output) => {
+                    assert!(output.body.proof.verify(
+                        output.body.value_commitment,
+                        output.body.note_commitment,
+                        output.body.ephemeral_key
                     ));
                 }
-                Action::Spend(inner) => {
-                    assert!(inner.verify_auth_sig());
+                Action::Spend(spend) => {
+                    assert!(spend.body.rk.verify(&sighash, &spend.auth_sig).is_ok());
 
-                    assert!(inner.body.proof.verify(
+                    assert!(spend.body.proof.verify(
                         merkle_root.clone(),
-                        inner.body.value_commitment,
-                        inner.body.nullifier.clone(),
-                        inner.body.rk,
+                        spend.body.value_commitment,
+                        spend.body.nullifier.clone(),
+                        spend.body.rk,
                     ));
                 }
             }

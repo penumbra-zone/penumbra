@@ -4,7 +4,7 @@ use rand_core::{CryptoRng, RngCore};
 use std::ops::Deref;
 
 use super::Error;
-use crate::rdsa::{Binding, Signature, SigningKey};
+use crate::rdsa::{Binding, Signature, SigningKey, SpendAuth};
 use crate::{
     action::{output, spend, Action},
     asset, ka,
@@ -17,21 +17,24 @@ use crate::{
 
 /// Used to construct a Penumbra transaction.
 pub struct Builder {
-    // Actions we'll perform in this transaction.
-    pub actions: Vec<Action>,
-    // Transaction fee. None if unset.
+    /// List of spends. We store the spend key and body rather than a Spend
+    /// so we can defer signing until the complete transaction is ready.
+    pub spends: Vec<(SigningKey<SpendAuth>, spend::Body)>,
+    /// List of outputs in the transaction.
+    pub outputs: Vec<Output>,
+    /// Transaction fee. None if unset.
     pub fee: Option<Fee>,
-    // Sum of blinding factors for each value commitment.
+    /// Sum of blinding factors for each value commitment.
     pub synthetic_blinding_factor: Fr,
-    // Sum of value commitments.
+    /// Sum of value commitments.
     pub value_commitments: decaf377::Element,
-    // Value balance.
+    /// Value balance.
     pub value_balance: decaf377::Element,
-    // The root of the note commitment merkle tree.
+    /// The root of the note commitment merkle tree.
     pub merkle_root: merkle::Root,
-    // Expiry height. None if unset.
+    /// Expiry height. None if unset.
     pub expiry_height: Option<u32>,
-    // Chain ID. None if unset.
+    /// Chain ID. None if unset.
     pub chain_id: Option<String>,
 }
 
@@ -68,9 +71,7 @@ impl Builder {
         );
         self.value_commitments += value_commitment.0;
 
-        let body_serialized: Vec<u8> = body.clone().into();
-        let auth_sig = rsk.sign(rng, &body_serialized);
-        self.actions.push(Action::Spend(Spend { body, auth_sig }));
+        self.spends.push((rsk, body));
 
         self
     }
@@ -112,12 +113,11 @@ impl Builder {
         let encrypted_memo = memo.encrypt(&esk, dest);
         let ovk_wrapped_key = note.encrypt_key(&esk, ovk, body.value_commitment);
 
-        let output = Action::Output(Output {
+        self.outputs.push(Output {
             body,
             encrypted_memo,
             ovk_wrapped_key,
         });
-        self.actions.push(output);
 
         self
     }
@@ -164,7 +164,7 @@ impl Builder {
     pub fn compute_binding_sig<R: CryptoRng + RngCore>(
         &self,
         rng: &mut R,
-        transaction_body: TransactionBody,
+        sighash: &[u8; 64],
     ) -> Signature<Binding> {
         let binding_signing_key: SigningKey<Binding> = self.synthetic_blinding_factor.into();
 
@@ -177,14 +177,13 @@ impl Builder {
         let computed_verification_key = self.value_commitments.compress().0;
         assert_eq!(binding_verification_key_raw, computed_verification_key);
 
-        let transaction_body_serialized: Vec<u8> = transaction_body.into();
-        binding_signing_key.sign(rng, &transaction_body_serialized)
+        binding_signing_key.sign(rng, sighash)
     }
 
-    pub fn finalize<R: CryptoRng + RngCore>(mut self, rng: &mut R) -> Result<Transaction, Error> {
-        // Randomize all actions (including outputs) to minimize info leakage.
-        self.actions.shuffle(rng);
-
+    pub fn finalize<R: CryptoRng + RngCore>(
+        mut self,
+        mut rng: &mut R,
+    ) -> Result<Transaction, Error> {
         if self.chain_id.is_none() {
             return Err(Error::NoChainID);
         }
@@ -197,15 +196,50 @@ impl Builder {
             return Err(Error::NonZeroValueBalance);
         }
 
-        let transaction_body = TransactionBody {
+        let mut actions = Vec::<Action>::new();
+
+        // Randomize all actions to minimize info leakage.
+        self.spends.shuffle(rng);
+        self.outputs.shuffle(rng);
+
+        // Fill in the spends using blank signatures, so we can build the sighash tx
+        for (_, body) in &self.spends {
+            actions.push(Action::Spend(Spend {
+                body: body.clone(),
+                auth_sig: Signature::from([0; 64]),
+            }));
+        }
+        for output in self.outputs.drain(..) {
+            actions.push(Action::Output(output));
+        }
+
+        let mut transaction_body = TransactionBody {
+            actions,
             merkle_root: self.merkle_root.clone(),
-            actions: self.actions.clone(),
             expiry_height: self.expiry_height.unwrap_or(0),
-            chain_id: self.chain_id.clone().unwrap(),
-            fee: self.fee.clone().unwrap(),
+            chain_id: self.chain_id.take().unwrap(),
+            fee: self.fee.take().unwrap(),
         };
 
-        let binding_sig = self.compute_binding_sig(rng, transaction_body.clone());
+        // The transaction body is filled except for the signatures,
+        // so we can compute the sighash value....
+        let sighash = transaction_body.sighash();
+
+        // and use it to fill in the spendauth sigs...
+        for i in 0..self.spends.len() {
+            let (rsk, _) = self.spends[i];
+            if let Action::Spend(Spend {
+                ref mut auth_sig, ..
+            }) = transaction_body.actions[i]
+            {
+                *auth_sig = rsk.sign(&mut rng, &sighash);
+            } else {
+                unreachable!("spends come first in actions list")
+            }
+        }
+
+        // ... and the binding sig
+        let binding_sig = self.compute_binding_sig(rng, &sighash);
 
         Ok(Transaction {
             transaction_body,
