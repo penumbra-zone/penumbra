@@ -1,3 +1,4 @@
+use metrics::register_counter;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use rand::SeedableRng;
 use rand_chacha::ChaCha20Rng;
@@ -110,6 +111,9 @@ async fn main() -> anyhow::Result<()> {
                 .listen_address(metrics_service_addr)
                 .install()
                 .expect("metrics service set up");
+
+            // New metrics to track should be added below.
+            register_counter!("node_spent_nullifiers_total");
 
             // TODO: better error reporting
             // We should error out if either service errors, rather than keep running

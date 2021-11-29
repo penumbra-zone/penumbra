@@ -8,6 +8,7 @@ use std::{
 
 use bytes::Bytes;
 use futures::future::FutureExt;
+use metrics::increment_counter;
 use rand_core::OsRng;
 use tendermint::abci::{
     request::{self, BeginBlock, CheckTxKind, EndBlock},
@@ -395,6 +396,7 @@ impl App {
         // to keep them in the mempool nullifier set any longer.
         for nullifier in pending_block.spent_nullifiers.iter() {
             self.mempool_nullifiers.lock().unwrap().remove(nullifier);
+            increment_counter!("node_spent_nullifiers_total");
         }
 
         // Pull the updated note commitment tree.
