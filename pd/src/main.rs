@@ -1,5 +1,7 @@
+use metrics_exporter_prometheus::PrometheusBuilder;
 use rand::SeedableRng;
 use rand_chacha::ChaCha20Rng;
+use std::net::SocketAddr;
 use structopt::StructOpt;
 use tonic::transport::Server;
 
@@ -38,6 +40,9 @@ enum Command {
         /// Bind the wallet service to this port.
         #[structopt(short, long, default_value = "26666")]
         wallet_port: u16,
+        /// Bind the metrics endpoint to this port.
+        #[structopt(short, long, default_value = "9000")]
+        metrics_port: u16,
     },
 
     /// Generate Genesis state.
@@ -60,6 +65,7 @@ async fn main() {
             database_uri,
             abci_port,
             wallet_port,
+            metrics_port,
         } => {
             tracing::info!(
                 ?host,
@@ -95,6 +101,15 @@ async fn main() {
                     .add_service(wallet_server::WalletServer::new(wallet_app))
                     .serve(wallet_service_addr),
             );
+
+            // This service lets Prometheus pull metrics from `pd`
+            let metrics_service_addr: SocketAddr = format!("{}:{}", host, metrics_port)
+                .parse()
+                .expect("this is a valid address");
+            let _metrics_exporter = PrometheusBuilder::new()
+                .listen_address(metrics_service_addr)
+                .install()
+                .expect("metrics service set up");
 
             // TODO: better error reporting
             tokio::select! {
