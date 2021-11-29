@@ -3,9 +3,11 @@ use comfy_table::{presets, Table};
 use directories::ProjectDirs;
 use penumbra_crypto::keys::SpendSeed;
 use rand_core::OsRng;
+use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 
+use penumbra_crypto::CURRENT_CHAIN_ID;
 use penumbra_wallet::{ClientState, Wallet};
 
 pub mod opt;
@@ -28,10 +30,14 @@ async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
     let opt = Opt::from_args();
 
+    let archive_dir = ProjectDirs::from("zone", "penumbra", "testnet-archive")
+        .expect("can access penumbra testnet-archive dir");
     let project_dir =
         ProjectDirs::from("zone", "penumbra", "pcli").expect("can access penumbra project dir");
     // Currently we use just the data directory. Create it if it is missing.
     std::fs::create_dir_all(project_dir.data_dir()).expect("can create penumbra data directory");
+    std::fs::create_dir_all(archive_dir.data_dir())
+        .expect("can create penumbra testnet-archive directory");
 
     // We store wallet data in `penumbra_wallet.dat` in the state directory, unless
     // the user provides another location.
@@ -98,7 +104,24 @@ async fn main() -> Result<()> {
             }
             let state = ClientState::new(Wallet::generate(&mut OsRng));
             println!("Saving wallet to {}", wallet_path.display());
-            ClientStateFile::save(state, wallet_path)?;
+            ClientStateFile::save(state.clone(), wallet_path)?;
+            // Also save the archived version for testnet backup purposes
+
+            // The archived wallet is stored in a path determined by the testnet ID and hash of the key material.
+            let archive_path: PathBuf;
+            let mut hasher = Sha256::new();
+            hasher.update(&state.wallet().spend_key().seed().0);
+            let result = hasher.finalize();
+
+            let wallet_archive_dir = archive_dir
+                .data_dir()
+                .join(CURRENT_CHAIN_ID)
+                .join(format!("{:X}", result));
+            std::fs::create_dir_all(&wallet_archive_dir)
+                .expect("can create penumbra wallet archive directory");
+            archive_path = wallet_archive_dir.join("penumbra_wallet.json");
+            println!("Saving backup wallet to {}", archive_path.display());
+            ClientStateFile::save(state, archive_path)?;
         }
         Command::Wallet(WalletCmd::Import { spend_seed }) => {
             if wallet_path.exists() {
