@@ -1,3 +1,4 @@
 {
     "rust-analyzer.server.extraEnv": {"DATABASE_URL": "postgres://postgres:postgres@localhost/penumbra" },
+    "python.formatting.provider": "black",
 }

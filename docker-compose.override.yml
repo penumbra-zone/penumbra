@@ -14,6 +14,8 @@ services:
       # Use the dev Dockerfile which has better cacheing and doesn't use the release
       # target
       dockerfile: Dockerfile.dev
+    ports:
+      - "26658:26658"
 
   # expose database on a port so it is easy to play with
   db:
