@@ -152,7 +152,11 @@ Now when you start `pd` and tendermint as described above, you will see a messag
 
 ### Metrics
 
-When adding new metrics, please following the [Prometheus metrics naming guidelines](https://prometheus.io/docs/practices/naming/).
+When adding new metrics, please following the [Prometheus metrics naming guidelines](https://prometheus.io/docs/practices/naming/). 
+
+For the application prefix part of the name, please use:
+
+* `node` for the Penumbra node
 
 [Discord]: https://discord.gg/hKvkrqa3zC
 [Penumbra]: https://penumbra.zone
