@@ -112,7 +112,7 @@ impl TryFrom<GenesisNote> for Note {
             transmission_key,
             Value {
                 amount,
-                asset_id: asset::Id::from(asset_denom.as_bytes()),
+                asset_id: asset::Denom(asset_denom.clone()).into(),
             },
             note_blinding,
         )?;

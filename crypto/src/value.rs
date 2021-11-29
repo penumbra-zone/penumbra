@@ -99,11 +99,11 @@ mod tests {
     fn sum_value_commitments() {
         use ark_ff::Field;
 
-        let pen_trace = b"pen";
-        let atom_trace = b"HubPort/HubChannel/atom";
+        let pen_trace = asset::Denom::from("pen");
+        let atom_trace = asset::Denom::from("HubPort/HubChannel/atom");
 
-        let pen_id = asset::Id::from(&pen_trace[..]);
-        let atom_id = asset::Id::from(&atom_trace[..]);
+        let pen_id = asset::Id::from(pen_trace);
+        let atom_id = asset::Id::from(atom_trace);
 
         // some values of different types
         let v1 = Value {
