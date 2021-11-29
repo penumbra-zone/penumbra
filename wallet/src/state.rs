@@ -150,7 +150,7 @@ impl ClientState {
                 &dest_address,
                 Value {
                     amount: *amount,
-                    asset_id: denom.as_bytes().into(),
+                    asset_id: asset::Denom(denom.to_string()).into(),
                 },
                 memo,
                 self.wallet.outgoing_viewing_key(),
@@ -196,7 +196,7 @@ impl ClientState {
                     &change_address,
                     Value {
                         amount: change,
-                        asset_id: denom.as_bytes().into(),
+                        asset_id: asset::Denom(denom.to_string()).into(),
                     },
                     memo,
                     self.wallet.outgoing_viewing_key(),

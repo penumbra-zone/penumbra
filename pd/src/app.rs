@@ -113,7 +113,7 @@ impl App {
             tracing::info!(?note);
             // Add all assets found in the genesis transaction to the asset registry
             genesis_block.new_assets.insert(
-                asset::Id::from(note.asset_denom.as_bytes()),
+                asset::Denom(note.asset_denom.clone()).into(),
                 note.asset_denom.clone(),
             );
 

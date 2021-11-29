@@ -178,8 +178,8 @@ impl Transaction {
         }
 
         // Add fee into binding verification key computation.
-        let pen_trace = b"pen";
-        let pen_id = asset::Id::from(&pen_trace[..]);
+        let pen_trace = asset::Denom::from("pen");
+        let pen_id = asset::Id::from(pen_trace);
         let fee_value = Value {
             amount: self.transaction_body.fee.0,
             asset_id: pen_id,
@@ -320,7 +320,7 @@ mod tests {
                 &dest,
                 Value {
                     amount: 10,
-                    asset_id: b"pen".as_ref().into(),
+                    asset_id: asset::Denom::from("pen").into(),
                 },
                 MemoPlaintext::default(),
                 ovk_sender,
@@ -346,11 +346,11 @@ mod tests {
 
         let output_value = Value {
             amount: 10,
-            asset_id: b"pen".as_ref().into(),
+            asset_id: asset::Denom::from("pen").into(),
         };
         let spend_value = Value {
             amount: 20,
-            asset_id: b"pen".as_ref().into(),
+            asset_id: asset::Denom::from("pen").into(),
         };
         // The note was previously sent to the sender.
         let note = Note::new(
