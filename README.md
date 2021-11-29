@@ -150,6 +150,10 @@ To perform genesis for a testnet, edit the `genesis.json` file stored in `$TMHOM
 
 Now when you start `pd` and tendermint as described above, you will see a message at the `INFO` level indicating genesis has been performed: `consensus: penumbra::app: performing genesis for chain_id: penumbra-tn001`.
 
+### Metrics
+
+When adding new metrics, please following the [Prometheus metrics naming guidelines](https://prometheus.io/docs/practices/naming/).
+
 [Discord]: https://discord.gg/hKvkrqa3zC
 [Penumbra]: https://penumbra.zone
 [protocol]: https://protocol.penumbra.zone
