@@ -114,6 +114,7 @@ async fn main() {
 
             // New metrics to track should be added below.
             register_counter!("node_spent_nullifiers_total");
+            register_counter!("node_transactions_total");
 
             // TODO: better error reporting
             tokio::select! {
