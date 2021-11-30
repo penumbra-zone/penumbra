@@ -6,9 +6,9 @@ use bech32::{FromBase32, ToBase32, Variant};
 
 use crate::{fmd, ka, keys::Diversifier, Fq};
 
-pub const CURRENT_CHAIN_ID: &str = "penumbra-tn001";
+pub const CURRENT_CHAIN_ID: &str = "penumbra-valetudo";
 /// Human-readable prefix in the address.
-pub const CURRENT_NETWORK_ID: &str = "penumbratv0";
+pub const CURRENT_NETWORK_ID: &str = "penumbra_valetudo_";
 
 /// A valid payment address.
 #[derive(Clone, Debug, PartialEq, Eq)]

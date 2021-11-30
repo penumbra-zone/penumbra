@@ -24,9 +24,32 @@ Penumbra has two binaries, the daemon `pd` and the command-line wallet interface
 
 ### Running `pd` with Docker
 
-This is the preferred way to run Penumbra:
+You might think that this is the preferred way to run Penumbra, **but it will only work if you have loaded genesis state**:
 ```
 docker-compose up --build -d
+```
+
+To load genesis state for a fresh Docker configuration:
+
+**NOTE:** this will **destroy** any existing data you have stored in the Docker volumes
+for pd/postgres/tendermint!
+
+```bash
+./scripts/docker_compose_freshstart.sh
+```
+
+The script will handle generating genesis JSON data and copying it to the container volumes
+and restarting the containers. You should have a working setup with all containers running
+after running the script:
+
+```console
+$ docker ps
+CONTAINER ID   IMAGE                          COMMAND                  CREATED         STATUS         PORTS                                                                                    NAMES
+b7fce1d0ffd9   tendermint/tendermint:latest   "docker-entrypoint.s…"   4 minutes ago   Up 4 minutes   0.0.0.0:6060->6060/tcp, 0.0.0.0:26656-26657->26656-26657/tcp, 0.0.0.0:27000->26660/tcp   tendermint
+5a6bd39bb6f7   grafana/grafana:latest         "/run.sh"                4 minutes ago   Up 4 minutes   0.0.0.0:3000->3000/tcp                                                                   penumbra-grafana-1
+b8f599963ebc   penumbra_pd                    "pd start --host 0.0…"   4 minutes ago   Up 4 minutes   0.0.0.0:26658->26658/tcp                                                                 penumbra
+b4f694a238cb   postgres:13.0                  "docker-entrypoint.s…"   4 minutes ago   Up 4 minutes   0.0.0.0:5432->5432/tcp                                                                   db
+9e82aa33b4ff   prom/prometheus:latest         "/bin/prometheus --c…"   4 minutes ago   Up 4 minutes   0.0.0.0:9090->9090/tcp                                                                   penumbra-prometheus-1
 ```
 
 ### Running `pcli`

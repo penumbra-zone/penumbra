@@ -14,11 +14,30 @@ services:
       # Use the dev Dockerfile which has better cacheing and doesn't use the release
       # target
       dockerfile: Dockerfile.dev
+    secrets: []
+    command: pd start --host 0.0.0.0 --database-uri
+      postgres://postgres:postgres@db/penumbra
+    depends_on:
+      - db
+    links:
+      - db:db
 
-  # expose database on a port so it is easy to play with
-  #  db:
-  #    ports:
-  #      - "5432:5432"
+  # database - postgres - on prod we are using managed DB instances
+  db:
+    image: postgres:13.0
+    container_name: db
+    volumes:
+      - "db_data:/var/lib/postgresql/data"
+    environment:
+      - POSTGRES_DB=penumbra
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    networks:
+      localnet:
+        ipv4_address: 192.167.10.12
+    # expose database on a port so it is easy to play with
+    ports:
+      - "5432:5432"
 
   # add prometheus and grafana
   #
@@ -40,7 +59,7 @@ services:
   grafana:
     image: "grafana/grafana:latest"
     ports:
-      - '3000:3000'
+      - '3000'
     volumes:
       # this grafana config is intended for local development and disables auth
       # etc. in production, users will generally want to configure a centralized
@@ -56,9 +75,29 @@ services:
       # don't start grafana until prometheus is up
       - prometheus
 
+  # Caddy provides TLS termination for the Grafana web service
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /root/caddy/Caddyfile:/etc/caddy/Caddyfile
+      - /root/caddy/data:/data
+      - /root/caddy/config:/config
+    networks:
+      - monitoring
+
 volumes:
   prometheus_data: {}
+  db_data: {}
 
 networks:
   # add a separate network for grafana and prometheus to talk to each other.
   monitoring: {}
+
+secrets:
+  db_connection_string:
+    # this isn't used in dev but needs to be set because it was defined in the parent
+    file: Dockerfile
