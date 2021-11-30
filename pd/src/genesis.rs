@@ -146,7 +146,7 @@ mod tests {
 
         let value0 = GenesisValue {
             amount: 100,
-            asset_denom: "pen".to_string(),
+            asset_denom: "penumbra".to_string(),
         };
         let value1 = GenesisValue {
             amount: 1,
@@ -154,7 +154,7 @@ mod tests {
         };
         let value2 = GenesisValue {
             amount: 1000,
-            asset_denom: "pen".to_string(),
+            asset_denom: "penumbra".to_string(),
         };
 
         let note0 = GenesisNote::new(

@@ -8,9 +8,9 @@ WORKDIR /usr/src
 COPY . .
 
 # Fetch dependencies in a separate layer, so that they can be cached.
-RUN cargo fetch --locked
+RUN cargo fetch
 
-RUN cargo build --bin pd --release --frozen && \
+RUN cargo build --bin pd --release && \
     mkdir -p /out && \
     mv target/release/pd /out/pd
 

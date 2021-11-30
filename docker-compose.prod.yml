@@ -6,37 +6,20 @@ version: "3.7"
 # running in production, so the main `docker-compose.yml` defines a canonical
 # configuration for prod deployments.
 services:
-  # for local development, configure the penumbra daemon with more logging.
   pd:
-    environment:
-      - RUST_LOG=${RUST_LOG:-info,pd=debug,penumbra=debug}
     build:
-      # Use the dev Dockerfile which has better cacheing and doesn't use the release
-      # target
+      # XXX TODO right now we're using the dev dockerfile because
+      # it is faster and caches layers correctly
       dockerfile: Dockerfile.dev
-    command: pd start --host 0.0.0.0 --database-uri
-      postgres://postgres:postgres@db/penumbra
-    depends_on:
-      - db
-    links:
-      - db:db
-
-  # database - postgres - on prod we are using managed DB instances
-  db:
-    image: postgres:13.0
-    container_name: db
-    volumes:
-      - "db_data:/var/lib/postgresql/data"
-    environment:
-      - POSTGRES_DB=penumbra
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-    networks:
-      localnet:
-        ipv4_address: 192.167.10.12
-    # expose database on a port so it is easy to play with
-    ports:
-      - "5432:5432"
+    secrets:
+      - db_connection_string
+    command:
+      [
+        "bash",
+        "-c",
+        "pd start --host 0.0.0.0 --database-uri $$(cat
+          /run/secrets/db_connection_string)"
+      ]
 
   # add prometheus and grafana
   #
@@ -90,7 +73,6 @@ services:
 
 volumes:
   prometheus_data: {}
-  db_data: {}
 
 networks:
   # add a separate network for grafana and prometheus to talk to each other.
@@ -98,5 +80,4 @@ networks:
 
 secrets:
   db_connection_string:
-    # this isn't used in dev but needs to be set because it was defined in the parent
-    file: Dockerfile
+    file: /root/secretz/db_connection_string

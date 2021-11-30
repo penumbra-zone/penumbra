@@ -25,3 +25,6 @@ Cargo.lock
 # editor
 .swp
 .idea
+
+# Python3
+.venv

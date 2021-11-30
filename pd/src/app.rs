@@ -554,7 +554,7 @@ mod tests {
 
         let value_to_send = Value {
             amount: 10,
-            asset_id: b"pen".as_ref().into(),
+            asset_id: b"penumbra".as_ref().into(),
         };
         let dummy_note = Note::new(
             *dest.diversifier(),
@@ -566,7 +566,7 @@ mod tests {
 
         let transaction = Transaction::build_with_root(merkle_root)
             .set_fee(20)
-            .set_chain_id("Pen".to_string())
+            .set_chain_id("penumbra".to_string())
             .add_output(
                 &mut rng,
                 &dest,
