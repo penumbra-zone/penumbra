@@ -126,8 +126,8 @@ impl Builder {
     ///
     /// Note that we're using the lower case `pen` in the code.
     pub fn set_fee(mut self, fee: u64) -> Self {
-        let pen_trace = b"pen";
-        let pen_id = asset::Id::from(&pen_trace[..]);
+        let pen_trace = asset::Denom::from("penumbra");
+        let pen_id = asset::Id::from(pen_trace);
 
         let fee_value = Value {
             amount: fee,

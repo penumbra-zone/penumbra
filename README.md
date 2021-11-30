@@ -140,30 +140,29 @@ Postgres state, either delete the docker volume, or run `DROP DATABASE`, or run
 
 ### Genesis data
 
-To create Genesis data, you need to know the amounts, denominations, and addresses of the genesis notes. You can then pass to `pd`'s` `create-genesis` command a list of "(amount, denomination, address)" tuples, where the tuple fields are comma-delimited and each genesis note is contained in double quotes:
-```console
-$ cargo run --bin pd -- create-genesis penumbra-tn001 \
-"(100, pen, penumbra_tn001_1kpgdhlzws6kyk2cf580wtt76t9nn2vf7em3pn05y3h8ym5a6aevdxshjgsnxecv94rzsxdhng6cjp8kgchqxud06p9xka0yxv99rty3njetqqnx2hrzz4tc03956e0)" \
-"(1, tungsten_cube, penumbra_tn001_1kpgdhlzws6kyk2cf580wtt76t9nn2vf7em3pn05y3h8ym5a6aevdxshjgsnxecv94rzsxdhng6cjp8kgchqxud06p9xka0yxv99rty3njetqqnx2hrzz4tc03956e0)"
+To create Genesis data, you need to know the amounts, denominations, and addresses of the genesis notes. You can then pass to `pd`'s` `create-genesis` command a list of "(amount, denomination, address)" tuples, where the tuple fields are comma-delimited and each genesis note is contained in double quotes.  You'll want to change the addresses from this example to addresses you control:
 
-{
-  [
-    {
-      "diversifier": "b050dbfc4e86ac4b2b09a1",
-      "amount": 100,
-      "note_blinding": "93f7245c0e0265338ed54db574462d16a366187d3f2ff361aa94ecddadfbb103",
-      "asset_denom": "pen",
-      "transmission_key": "dee5afda596735313ecee219be848dce4dd3baee58d342f244266ce185a8c503"
-    },
-    {
-      "diversifier": "b050dbfc4e86ac4b2b09a1",
-      "amount": 1,
-      "note_blinding": "7793daf7ac4ef421d6ad138675180b37b866cc5ca0297a846fb9301d9deb2c0d",
-      "asset_denom": "tungsten_cube",
-      "transmission_key": "dee5afda596735313ecee219be848dce4dd3baee58d342f244266ce185a8c503"
-    }
-  ]
-}
+```console
+$ cargo run --bin pd -- create-genesis chain-id-goes-here \
+"(100, penumbra, penumbratv01p5zmsg23f86azrraspzy8qy9kdm3rnvgfhly0mlzwjqqh9audv59wwjv27nteuplxezqx4x2j99t2rugst00tp0gz30nugxtuttknrk2ma7sa93d26q2w7gse842z3)" \
+"(1, tungsten_cube, penumbratv01p5zmsg23f86azrraspzy8qy9kdm3rnvgfhly0mlzwjqqh9audv59wwjv27nteuplxezqx4x2j99t2rugst00tp0gz30nugxtuttknrk2ma7sa93d26q2w7gse842z3)"
+
+[
+  {
+    "diversifier": "0d05b8215149f5d10c7d80",
+    "amount": 100,
+    "note_blinding": "4ea7348e26d320ca1740acb775bdfe035da6198f4b86df2c9004fae83193f309",
+    "asset_denom": "penumbra",
+    "transmission_key": "44438085b37711cd884dfe47efe274800b97bc6b28573a4c57a6bcf03f364403"
+  },
+  {
+    "diversifier": "0d05b8215149f5d10c7d80",
+    "amount": 1,
+    "note_blinding": "72e4f60cff63ec6ae72cc842b630daaf3f063b4d3a9bc78c4422a772b7fdc409",
+    "asset_denom": "tungsten_cube",
+    "transmission_key": "44438085b37711cd884dfe47efe274800b97bc6b28573a4c57a6bcf03f364403"
+  }
+]
 ```
 
 To perform genesis for a testnet, edit the `genesis.json` file stored in `$TMHOME/config/` or `~/.tendermint/config/` (see an example in `testnets/genesis_tn001.json`). You should edit the following fields:

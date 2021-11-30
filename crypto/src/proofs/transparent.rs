@@ -462,7 +462,7 @@ mod tests {
 
         let value_to_send = Value {
             amount: 10,
-            asset_id: b"pen".as_ref().into(),
+            asset_id: asset::Denom::from("penumbra").into(),
         };
         let note_blinding = Fq::rand(&mut rng);
         let v_blinding = Fr::rand(&mut rng);
@@ -499,7 +499,7 @@ mod tests {
 
         let value_to_send = Value {
             amount: 10,
-            asset_id: b"pen".as_ref().into(),
+            asset_id: asset::Denom::from("penumbra").into(),
         };
         let note_blinding = Fq::rand(&mut rng);
         let v_blinding = Fr::rand(&mut rng);
@@ -547,7 +547,7 @@ mod tests {
 
         let value_to_send = Value {
             amount: 10,
-            asset_id: b"pen".as_ref().into(),
+            asset_id: asset::Denom::from("penumbra").into(),
         };
         let note_blinding = Fq::rand(&mut rng);
         let v_blinding = Fr::rand(&mut rng);
@@ -585,7 +585,7 @@ mod tests {
 
         let value_to_send = Value {
             amount: 10,
-            asset_id: b"pen".as_ref().into(),
+            asset_id: asset::Denom::from("penumbra").into(),
         };
         let note_blinding = Fq::rand(&mut rng);
         let v_blinding = Fr::rand(&mut rng);
@@ -627,7 +627,7 @@ mod tests {
 
         let value_to_send = Value {
             amount: 10,
-            asset_id: b"pen".as_ref().into(),
+            asset_id: asset::Denom::from("penumbra").into(),
         };
         let note_blinding = Fq::rand(&mut rng);
         let v_blinding = Fr::rand(&mut rng);
@@ -663,7 +663,7 @@ mod tests {
 
         let value_to_send = Value {
             amount: 10,
-            asset_id: b"pen".as_ref().into(),
+            asset_id: asset::Denom::from("penumbra").into(),
         };
         let note_blinding = Fq::rand(&mut rng);
         let v_blinding = Fr::rand(&mut rng);
@@ -715,7 +715,7 @@ mod tests {
 
         let value_to_send = Value {
             amount: 10,
-            asset_id: b"pen".as_ref().into(),
+            asset_id: asset::Denom::from("penumbra").into(),
         };
         let note_blinding = Fq::rand(&mut rng);
         let v_blinding = Fr::rand(&mut rng);
@@ -767,7 +767,7 @@ mod tests {
 
         let value_to_send = Value {
             amount: 10,
-            asset_id: b"pen".as_ref().into(),
+            asset_id: asset::Denom::from("penumbra").into(),
         };
         let note_blinding = Fq::rand(&mut rng);
         let v_blinding = Fr::rand(&mut rng);
@@ -819,7 +819,7 @@ mod tests {
 
         let value_to_send = Value {
             amount: 10,
-            asset_id: b"pen".as_ref().into(),
+            asset_id: asset::Denom::from("penumbra").into(),
         };
         let note_blinding = Fq::rand(&mut rng);
         let v_blinding = Fr::rand(&mut rng);

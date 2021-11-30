@@ -28,6 +28,8 @@ use crate::Fq;
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Id(pub Fq);
 
+pub struct Denom(pub String);
+
 impl std::fmt::Debug for Id {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use ark_ff::BigInteger;
@@ -36,17 +38,20 @@ impl std::fmt::Debug for Id {
     }
 }
 
-// XXX define a DenomTrace structure ?
+impl From<&str> for Denom {
+    fn from(strin: &str) -> Denom {
+        Denom(strin.to_string())
+    }
+}
 
-// xx rename this derive?
-impl From<&[u8]> for Id {
-    fn from(slice: &[u8]) -> Id {
+impl From<Denom> for Id {
+    fn from(denom: Denom) -> Id {
         // Convert an asset name to an asset ID by hashing to a scalar
         Id(Fq::from_le_bytes_mod_order(
             // XXX choice of hash function?
             blake2b_simd::Params::default()
                 .personal(b"Penumbra_AssetID")
-                .hash(slice)
+                .hash(denom.0.as_ref())
                 .as_bytes(),
         ))
     }
@@ -56,9 +61,9 @@ impl TryFrom<Vec<u8>> for Id {
     type Error = anyhow::Error;
 
     fn try_from(vec: Vec<u8>) -> Result<Id, Self::Error> {
-        let bytes: [u8; 32] = vec
-            .try_into()
-            .map_err(|_| anyhow::anyhow!("vec not long enough to construct Asset ID"))?;
+        let bytes: [u8; 32] = vec.try_into().map_err(|_| {
+            anyhow::anyhow!("could not deserialize Asset ID: input vec is not 32 bytes")
+        })?;
         let inner = Fq::from_bytes(bytes)?;
         Ok(Id(inner))
     }
@@ -93,11 +98,11 @@ mod tests {
         // marked for future deletion
         // not really a test, just a way to exercise the code
 
-        let pen_trace = b"pen";
-        let atom_trace = b"HubPort/HubChannel/atom";
+        let pen_trace = Denom("penumbra".to_string());
+        let atom_trace = Denom("HubPort/HubChannel/atom".to_string());
 
-        let pen_id = Id::from(&pen_trace[..]);
-        let atom_id = Id::from(&atom_trace[..]);
+        let pen_id = Id::from(pen_trace);
+        let atom_id = Id::from(atom_trace);
 
         dbg!(pen_id);
         dbg!(atom_id);
