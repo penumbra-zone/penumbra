@@ -80,12 +80,11 @@ impl App {
     #[instrument(skip(state))]
     pub async fn new(state: State) -> Result<Self, anyhow::Error> {
         let note_commitment_tree = state.note_commitment_tree().await?;
-
+        let recent_anchors = state.recent_anchors(NUM_RECENT_ANCHORS).await?;
         Ok(Self {
             state,
             note_commitment_tree,
-            // TODO: load from DB
-            recent_anchors: Default::default(),
+            recent_anchors: recent_anchors,
             mempool_nullifiers: Arc::new(Default::default()),
             pending_block: None,
             completion_tracker: Default::default(),
