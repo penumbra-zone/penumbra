@@ -84,3 +84,8 @@ volumes:
 networks:
   # add a separate network for grafana and prometheus to talk to each other.
   monitoring: {}
+
+secrets:
+  db_connection_string:
+    # this isn't used in dev but needs to be set because it was defined in the parent
+    file: Dockerfile

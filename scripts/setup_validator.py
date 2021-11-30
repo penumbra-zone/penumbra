@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import json
+import subprocess
+import tempfile
 
 import docker
 
@@ -11,38 +13,28 @@ import docker
 def main():
     client = docker.from_env()
 
-    # First initialize the validator (no change if already exists)
-    init_validator(client)
-
     patch_genesis(client)
 
-
-# This method will run the Tendermint validator initialization,
-# creating keys and configuration files.
-def init_validator(client: docker.DockerClient):
-    print(
-        client.containers.run(
-            "penumbra_tendermint", "init validator", stderr=True
-        ).decode("utf-8")
-    )
+    # restart the containers to pick up changes
+    subprocess.run(["docker-compose", "restart"])
 
 
 # This method will patch an existing genesis.json file
 # with hardcoded genesis notes for ease of spinning up nodes.
 def patch_genesis(client: docker.DockerClient):
-    # Copy the genesis file to the local machine...
-    print(
+    temp_dir = tempfile.TemporaryDirectory()
+
+    # Load the Genesis file as JSON
+    existing_genesis = json.loads(
         client.containers.run(
-            "penumbra_tendermint",
-            "/tendermint/config/genesis.json",
-            entrypoint="cat",
+            "alpine",
+            "/source/config/genesis.json",
             stderr=True,
+            remove=True,
+            entrypoint="cat",
+            volumes=[f"{temp_dir.name}:/dest", "penumbra_tendermint_data:/source"],
         ).decode("utf-8")
     )
-    return
-
-    with open("/tendermint/config/genesis.json") as f:
-        existing_genesis = json.load(f)
 
     # patch the existing genesis data with our hardcoded notes
     existing_genesis["app_state"] = [
@@ -63,8 +55,20 @@ def patch_genesis(client: docker.DockerClient):
     ]
 
     # write the modified genesis data back
-    with open("/tendermint/config/genesis.json", "w") as f:
+    with open(f"{temp_dir.name}/genesis.json", "w") as f:
         f.write(json.dumps(existing_genesis))
+
+    # store the modified genesis file within the volume
+    client.containers.run(
+        "alpine",
+        "/source/genesis.json /dest/config/genesis.json",
+        stderr=True,
+        remove=True,
+        entrypoint="cp",
+        volumes=[f"{temp_dir.name}:/source", "penumbra_tendermint_data:/dest"],
+    ).decode("utf-8")
+
+    temp_dir.cleanup()
 
 
 if __name__ == "__main__":
