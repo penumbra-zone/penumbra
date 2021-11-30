@@ -427,7 +427,7 @@ mod tests {
 
         let value = Value {
             amount: 10,
-            asset_id: asset::Denom::from("pen").into(),
+            asset_id: asset::Denom::from("penumbra").into(),
         };
         let note = Note::new(
             *dest.diversifier(),

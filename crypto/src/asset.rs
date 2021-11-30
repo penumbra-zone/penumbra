@@ -98,7 +98,7 @@ mod tests {
         // marked for future deletion
         // not really a test, just a way to exercise the code
 
-        let pen_trace = Denom("pen".to_string());
+        let pen_trace = Denom("penumbra".to_string());
         let atom_trace = Denom("HubPort/HubChannel/atom".to_string());
 
         let pen_id = Id::from(pen_trace);
