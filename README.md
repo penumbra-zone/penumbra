@@ -52,6 +52,14 @@ b4f694a238cb   postgres:13.0                  "docker-entrypoint.s…"   4 minut
 9e82aa33b4ff   prom/prometheus:latest         "/bin/prometheus --c…"   4 minutes ago   Up 4 minutes   0.0.0.0:9090->9090/tcp                                                                   penumbra-prometheus-1
 ```
 
+On production, you should use the production Docker Compose configuration,
+which will use the managed database as well as disable various debug build
+configs used in dev:
+
+```console
+$ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+
 ### Running `pcli`
 
 Now you can interact with Penumbra using `pcli`, for instance
