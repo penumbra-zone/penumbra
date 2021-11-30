@@ -50,7 +50,7 @@ enum Command {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
     let opt = Opt::from_args();
 
@@ -97,13 +97,10 @@ async fn main() {
             );
 
             // TODO: better error reporting
+            // We should error out if either service errors, rather than keep running
             tokio::select! {
-                x = abci_server => {
-                    let _ = dbg!(x);
-                }
-                x = wallet_server => {
-                    let _ = dbg!(x);
-                }
+                x = abci_server => x?.map_err(|e| anyhow::anyhow!(e))?,
+                x = wallet_server => x?.map_err(|e| anyhow::anyhow!(e))?,
             };
         }
         Command::CreateGenesis {
@@ -125,4 +122,6 @@ async fn main() {
             println!("\n{}\n", serialized);
         }
     }
+
+    Ok(())
 }

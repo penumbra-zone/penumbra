@@ -74,6 +74,20 @@ services:
       # don't start grafana until prometheus is up
       - prometheus
 
+  # Caddy provides TLS termination for the Grafana web service
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /root/caddy/Caddyfile:/etc/caddy/Caddyfile
+      - /root/caddy/data:/data
+      - /root/caddy/config:/config
+    networks:
+      - monitoring
+
 volumes:
   prometheus_data: {}
   db_data: {}
@@ -81,3 +95,8 @@ volumes:
 networks:
   # add a separate network for grafana and prometheus to talk to each other.
   monitoring: {}
+
+secrets:
+  db_connection_string:
+    # this isn't used in dev but needs to be set because it was defined in the parent
+    file: Dockerfile
