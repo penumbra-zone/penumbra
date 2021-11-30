@@ -116,7 +116,7 @@ async fn main() -> Result<()> {
             let wallet_archive_dir = archive_dir
                 .data_dir()
                 .join(CURRENT_CHAIN_ID)
-                .join(format!("{:X}", result));
+                .join(hex::encode(&result[0..8]));
             std::fs::create_dir_all(&wallet_archive_dir)
                 .expect("can create penumbra wallet archive directory");
             archive_path = wallet_archive_dir.join("penumbra_wallet.json");
