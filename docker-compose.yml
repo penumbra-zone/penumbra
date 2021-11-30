@@ -7,33 +7,23 @@ services:
       context: .
     environment:
       - RUST_LOG=${RUST_LOG:-warn,pd=info,penumbra=info}
-    command: pd start --host 0.0.0.0 --database-uri
-      postgres://postgres:postgres@db/penumbra
+    secrets:
+      - db_connection_string
+    command:
+      [
+        "bash",
+        "-c",
+        "pd start --host 0.0.0.0 --database-uri $$(cat
+          /run/secrets/db_connection_string)"
+      ]
     restart: on-failure
-    depends_on:
-      - db
-    links:
-      - db:db
     networks:
       localnet:
         ipv4_address: 192.167.10.6
 
-  # database - postgres
-  db:
-    image: postgres:13.0
-    container_name: db
-    volumes:
-      - "db_data:/var/lib/postgresql/data"
-    environment:
-      - POSTGRES_DB=penumbra
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-    networks:
-      localnet:
-        ipv4_address: 192.167.10.12
-
   # The Tendermint node
   tendermint:
+    image: "tendermint/tendermint:latest"
     container_name: tendermint
     ports:
       - "26656-26657:26656-26657"
@@ -47,8 +37,6 @@ services:
     networks:
       localnet:
         ipv4_address: 192.167.10.2
-    build:
-      context: ./tendermint/
 
 networks:
   localnet:
@@ -60,4 +48,7 @@ networks:
 
 volumes:
   tendermint_data: {}
-  db_data: {}
+
+secrets:
+  db_connection_string:
+    file: /root/secretz/db_connection_string

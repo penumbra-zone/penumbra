@@ -14,11 +14,30 @@ services:
       # Use the dev Dockerfile which has better cacheing and doesn't use the release
       # target
       dockerfile: Dockerfile.dev
+    secrets: []
+    command: pd start --host 0.0.0.0 --database-uri
+      postgres://postgres:postgres@db/penumbra
+    depends_on:
+      - db
+    links:
+      - db:db
     ports:
       - "26658:26658"
 
-  # expose database on a port so it is easy to play with
+  # database - postgres - on prod we are using managed DB instances
   db:
+    image: postgres:13.0
+    container_name: db
+    volumes:
+      - "db_data:/var/lib/postgresql/data"
+    environment:
+      - POSTGRES_DB=penumbra
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    networks:
+      localnet:
+        ipv4_address: 192.167.10.12
+    # expose database on a port so it is easy to play with
     ports:
       - "5432:5432"
 
@@ -60,6 +79,7 @@ services:
 
 volumes:
   prometheus_data: {}
+  db_data: {}
 
 networks:
   # add a separate network for grafana and prometheus to talk to each other.
