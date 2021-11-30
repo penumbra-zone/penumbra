@@ -74,20 +74,6 @@ services:
       # don't start grafana until prometheus is up
       - prometheus
 
-  # Caddy provides TLS termination for the Grafana web service
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - /root/caddy/Caddyfile:/etc/caddy/Caddyfile
-      - /root/caddy/data:/data
-      - /root/caddy/config:/config
-    networks:
-      - monitoring
-
 volumes:
   prometheus_data: {}
   db_data: {}
