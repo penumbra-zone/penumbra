@@ -159,7 +159,7 @@ impl ClientState {
 
         // The value we need to spend is the output value, plus fees.
         let mut value_to_spend = output_value;
-        *value_to_spend.entry("pen".into()).or_default() += fee;
+        *value_to_spend.entry("penumbra".into()).or_default() += fee;
 
         for (denom, amount) in value_to_spend {
             // Select a list of notes that provides at least the required amount.
