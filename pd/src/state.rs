@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{query, query_as, Pool, Postgres};
+use std::collections::VecDeque;
 use tendermint::block;
 use tracing::instrument;
 
@@ -161,6 +162,25 @@ INSERT INTO notes (
         .await?;
 
         Ok(latest)
+    }
+
+    // retrieve the `last` latest node commitment tree anchors from the database
+    pub async fn recent_anchors(&self, last: usize) -> Result<VecDeque<merkle::Root>> {
+        let mut conn = self.pool.acquire().await?;
+        let anchor_rows = query_as!(
+            schema::BlocksRow,
+            r#"SELECT height, nct_anchor AS "nct_anchor: merkle::Root", app_hash FROM blocks ORDER BY height DESC LIMIT $1"#,
+             last as i64,
+        )
+        .fetch_all(&mut conn)
+        .await?;
+
+        let mut nct_vec: VecDeque<merkle::Root> = VecDeque::new();
+        for block in anchor_rows {
+            nct_vec.push_back(block.nct_anchor)
+        }
+
+        Ok(nct_vec)
     }
 
     /// Retrieve the latest block height.
