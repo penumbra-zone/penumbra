@@ -29,7 +29,6 @@ COPY .git ./.git
 # Sorry about all that mess ^, but it's worth it during development.
 
 # Fetch dependencies in a separate layer, so that they can be cached.
-COPY Cargo.lock .
 RUN cargo fetch
 
 RUN cargo build --bin pd
