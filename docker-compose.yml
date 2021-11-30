@@ -20,7 +20,7 @@ services:
 
   # database - postgres
   db:
-    image: postgres:14.0
+    image: postgres:13.0
     container_name: db
     volumes:
       - "db_data:/var/lib/postgresql/data"
