@@ -108,6 +108,26 @@
       "nullable": []
     }
   },
+  "6ad227b21367ed03f7a27a5ec65a3499e5edecd8f94ed786751ee5a16321acaa": {
+    "query": "SELECT nct_anchor AS \"nct_anchor: merkle::Root\" FROM blocks ORDER BY height DESC LIMIT $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "nct_anchor: merkle::Root",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
   "73e0b933842ff451654acd14f7a681c505aed832f9158fd800bf32b21916625e": {
     "query": "SELECT transaction_id FROM notes WHERE note_commitment = $1",
     "describe": {

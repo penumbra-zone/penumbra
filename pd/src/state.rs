@@ -167,10 +167,9 @@ INSERT INTO notes (
     // retrieve the `last` latest node commitment tree anchors from the database
     pub async fn recent_anchors(&self, last: usize) -> Result<VecDeque<merkle::Root>> {
         let mut conn = self.pool.acquire().await?;
-        let anchor_rows = query_as!(
-            schema::BlocksRow,
-            r#"SELECT height, nct_anchor AS "nct_anchor: merkle::Root", app_hash FROM blocks ORDER BY height DESC LIMIT $1"#,
-             last as i64,
+        let anchor_rows = query!(
+            r#"SELECT nct_anchor AS "nct_anchor: merkle::Root" FROM blocks ORDER BY height DESC LIMIT $1"#,
+            last as i64,
         )
         .fetch_all(&mut conn)
         .await?;
