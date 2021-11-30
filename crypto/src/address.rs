@@ -8,7 +8,7 @@ use crate::{fmd, ka, keys::Diversifier, Fq};
 
 pub const CURRENT_CHAIN_ID: &str = "penumbra-tn001";
 /// Human-readable prefix in the address.
-pub const CURRENT_NETWORK_ID: &str = "penumbra_tn001_";
+pub const CURRENT_NETWORK_ID: &str = "penumbratv0";
 
 /// A valid payment address.
 #[derive(Clone, Debug, PartialEq, Eq)]
