@@ -7,15 +7,8 @@ services:
       context: .
     environment:
       - RUST_LOG=${RUST_LOG:-warn,pd=info,penumbra=info}
-    secrets:
-      - db_connection_string
-    command:
-      [
-        "bash",
-        "-c",
-        "pd start --host 0.0.0.0 --database-uri $$(cat
-          /run/secrets/db_connection_string)"
-      ]
+    command: pd start --host 0.0.0.0 --database-uri
+      postgres://postgres:postgres@db/penumbra
     restart: on-failure
     networks:
       localnet:
@@ -51,7 +44,3 @@ networks:
 
 volumes:
   tendermint_data: {}
-
-secrets:
-  db_connection_string:
-    file: /root/secretz/db_connection_string

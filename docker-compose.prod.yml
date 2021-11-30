@@ -6,37 +6,20 @@ version: "3.7"
 # running in production, so the main `docker-compose.yml` defines a canonical
 # configuration for prod deployments.
 services:
-  # for local development, configure the penumbra daemon with more logging.
   pd:
-    environment:
-      - RUST_LOG=${RUST_LOG:-info,pd=debug,penumbra=debug}
     build:
-      # Use the dev Dockerfile which has better cacheing and doesn't use the release
-      # target
+      # XXX TODO right now we're using the dev dockerfile because
+      # it is faster and caches layers correctly
       dockerfile: Dockerfile.dev
-    command: pd start --host 0.0.0.0 --database-uri
-      postgres://postgres:postgres@db/penumbra
-    depends_on:
-      - db
-    links:
-      - db:db
-
-  # database - postgres - on prod we are using managed DB instances
-  db:
-    image: postgres:13.0
-    container_name: db
-    volumes:
-      - "db_data:/var/lib/postgresql/data"
-    environment:
-      - POSTGRES_DB=penumbra
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-    networks:
-      localnet:
-        ipv4_address: 192.167.10.12
-    # expose database on a port so it is easy to play with
-    ports:
-      - "5432:5432"
+    secrets:
+      - db_connection_string
+    command:
+      [
+        "bash",
+        "-c",
+        "pd start --host 0.0.0.0 --database-uri $$(cat
+          /run/secrets/db_connection_string)"
+      ]
 
   # add prometheus and grafana
   #
@@ -74,10 +57,27 @@ services:
       # don't start grafana until prometheus is up
       - prometheus
 
+  # Caddy provides TLS termination for the Grafana web service
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /root/caddy/Caddyfile:/etc/caddy/Caddyfile
+      - /root/caddy/data:/data
+      - /root/caddy/config:/config
+    networks:
+      - monitoring
+
 volumes:
   prometheus_data: {}
-  db_data: {}
 
 networks:
   # add a separate network for grafana and prometheus to talk to each other.
   monitoring: {}
+
+secrets:
+  db_connection_string:
+    file: /root/secretz/db_connection_string
