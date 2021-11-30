@@ -6,9 +6,9 @@ use bech32::{FromBase32, ToBase32, Variant};
 
 use crate::{fmd, ka, keys::Diversifier, Fq};
 
-pub const CURRENT_CHAIN_ID: &str = "penumbra-tn001";
-/// Human-readable prefix in the address.
-pub const CURRENT_NETWORK_ID: &str = "penumbratv0";
+pub const CURRENT_CHAIN_ID: &str = "penumbra-valetudo";
+/// Incrementing prefix for the address.
+pub const CURRENT_ADDRESS_VERSION: u32 = 0;
 
 /// A valid payment address.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -87,7 +87,7 @@ impl std::fmt::Display for Address {
 
         bech32::encode_to_fmt(
             f,
-            CURRENT_NETWORK_ID,
+            &format!("penumbrav{}t", CURRENT_ADDRESS_VERSION),
             addr_content.get_ref().to_base32(),
             Variant::Bech32m,
         )
@@ -118,7 +118,7 @@ impl std::str::FromStr for Address {
             ));
         }
 
-        if hrp != CURRENT_NETWORK_ID {
+        if hrp != format!("penumbrav{}t", CURRENT_ADDRESS_VERSION) {
             return Err(anyhow!("network ID no longer supported: {}", hrp));
         }
 
