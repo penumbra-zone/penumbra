@@ -21,7 +21,7 @@ services:
       localnet:
         ipv4_address: 192.167.10.6
     ports:
-      - "26658"
+      - "26658:26658"
       - "26666:26666"
 
   # The Tendermint node
