@@ -39,18 +39,18 @@ def patch_genesis(client: docker.DockerClient):
     # patch the existing genesis data with our hardcoded notes
     existing_genesis["app_state"] = [
         {
-            "diversifier": "b050dbfc4e86ac4b2b09a1",
+            "diversifier": "b261d7629fcf8910ac5b1a",
             "amount": 100,
-            "note_blinding": "93f7245c0e0265338ed54db574462d16a366187d3f2ff361aa94ecddadfbb103",
+            "note_blinding": "eb5537f7ea3f0769f0d97e0bbeafc79ecfc4f56b21d45f80cade50d59562f811",
             "asset_denom": "pen",
-            "transmission_key": "dee5afda596735313ecee219be848dce4dd3baee58d342f244266ce185a8c503",
+            "transmission_key": "98d1a1b19ffed22c59242140a46e042713770b2930a95ea9f080c612409fef02",
         },
         {
-            "diversifier": "b050dbfc4e86ac4b2b09a1",
+            "diversifier": "b261d7629fcf8910ac5b1a",
             "amount": 1,
-            "note_blinding": "7793daf7ac4ef421d6ad138675180b37b866cc5ca0297a846fb9301d9deb2c0d",
+            "note_blinding": "19cb10699b7aa33fcbc1dd4438c3fb6b02af4f880d39ce98075aa241ee5a2b04",
             "asset_denom": "tungsten_cube",
-            "transmission_key": "dee5afda596735313ecee219be848dce4dd3baee58d342f244266ce185a8c503",
+            "transmission_key": "98d1a1b19ffed22c59242140a46e042713770b2930a95ea9f080c612409fef02",
         },
     ]
 
