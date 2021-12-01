@@ -21,6 +21,8 @@ we would be delighted for you to try it out! Keep in mind that especially in the
 development, we expect many things to break. If you encounter bugs or wish for features to exist,
 we'd love for you to reach out to us on our [Discord server][Discord].
 
+### Building `pcli`
+
 To get started with the Penumbra test network, you will first need to download and build the
 Penumbra command line light wallet, `pcli`. This requires that you install a recent stable version
 of the Rust compiler, installation instructions for which you can find
@@ -33,6 +35,8 @@ newly cloned project:
 ```bash
 cargo build --release --bin pcli
 ```
+
+### Generating your wallet
 
 When working with `pcli`, the level of diagnostic information printed is dependent on the `RUST_LOG`
 environment variable. To see progress updates and other logged information while running `pcli`, we
@@ -57,15 +61,21 @@ $ cargo run --quiet --release --bin pcli addr list
  0      Default  penumbrav0t...
 ```
 
+### Getting testnet tokens on the [Discord] in the `#tokens-please` channel
+
 In order to use the testnet, it's first necessary for you to get some testnet tokens. The current
 way to do this is to join our [Discord] and post your address in the `#tokens-please` channel. We'll
-send your address some tokens on the testnet for you to send to your friends! :) Just keep in mind:
-**testnet tokens do not have monetary value**, and in order to keep the signal-to-noise ratio high
-on the server, requests for tokens in other channels will be deleted without response. Please do not
-DM Penumbra Labs employees asking for testnet tokens; the correct venue is the dedicated channel.
+send your address some tokens on the testnet for you to send to your friends! :)
+
+Just keep in mind: **testnet tokens do not have monetary value**, and in order to keep the
+signal-to-noise ratio high on the server, requests for tokens in other channels will be deleted
+without response. Please do not DM Penumbra Labs employees asking for testnet tokens; the correct
+venue is the dedicated channel.
+
+### Synchronizing your wallet
 
 Once you've received your first tokens, you can scan the chain to import them into your local
-wallet:
+wallet (this may take a few minutes the first time you run it):
 
 ```bash
 cargo run --quiet --release --bin pcli sync
@@ -78,6 +88,20 @@ cargo run --quiet --release --bin pcli balance
 ```
 
 This will print a table of assets by balance in each.
+
+### Sending transactions
+
+Now, for the fun part: sending transactions. If you have someone else's testnet address, you can
+send them any amount of any asset you have. For example, if I wanted to send 1 tungsten cube token
+to my friend, I could do that like this (filling in their full address at the end):
+
+```bash
+cargo run --quiet --release --bin pcli tx send 1 tungsten_cube penumbrav0t...
+```
+
+If you have the asset in your wallet to send, then so it shall be done!
+
+### Please submit any feedback and bug reports
 
 Thank you for helping us test the Penumbra network! If you have any feedback, please let us know in
 the `#testnet-feedback` channel on our [Discord]. We would love to know about bugs, crashes,
@@ -92,9 +116,9 @@ pushes to `main`.  To build it locally:
 1. Install the requirements: `cargo install mdbook mdbook-katex mdbook-mermaid`
 2. To continuously build and serve the documentation: `mdbook serve`
 
-## Running Penumbra
+## Running a Penumbra node
 
-Penumbra has two binaries, the daemon `pd` and the command-line wallet interface `pcli`.
+Penumbra has two binaries, the daemon `pd` and the command-line light wallet interface `pcli`.
 
 ### Running `pd` with Docker
 
