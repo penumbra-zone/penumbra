@@ -97,5 +97,8 @@ pub enum TxCmd {
         /// If set, spend funds originally sent to the specified address.
         #[structopt(short, long)]
         source_address_id: Option<u64>,
+        /// If set, set the transaction's memo field to the provided text.
+        #[structopt(short, long)]
+        memo: Option<String>,
     },
 }

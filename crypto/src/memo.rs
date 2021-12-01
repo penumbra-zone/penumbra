@@ -4,7 +4,7 @@ use chacha20poly1305::{
     ChaCha20Poly1305, Key, Nonce,
 };
 use once_cell::sync::Lazy;
-use std::convert::TryInto;
+use std::convert::{TryFrom, TryInto};
 
 use crate::{ka, keys::IncomingViewingKey, note::derive_symmetric_key, Address};
 
@@ -26,6 +26,20 @@ pub struct MemoPlaintext(pub [u8; MEMO_LEN_BYTES]);
 impl Default for MemoPlaintext {
     fn default() -> MemoPlaintext {
         MemoPlaintext([0u8; MEMO_LEN_BYTES])
+    }
+}
+
+impl TryFrom<String> for MemoPlaintext {
+    type Error = anyhow::Error;
+
+    fn try_from(input: String) -> Result<MemoPlaintext, Self::Error> {
+        if input.len() > MEMO_LEN_BYTES {
+            return Err(anyhow::anyhow!("provided memo exceeds maximum memo size"));
+        }
+        let mut mp = [0u8; MEMO_LEN_BYTES];
+        mp.copy_from_slice(input.as_bytes());
+
+        Ok(MemoPlaintext(mp))
     }
 }
 
