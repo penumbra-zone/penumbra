@@ -23,6 +23,7 @@ services:
     container_name: tendermint
     ports:
       - "26656:26656"
+      - "26657:26657"
     volumes:
       - "tendermint_data:/tendermint"
     command: start --proxy-app=tcp://pd:26658

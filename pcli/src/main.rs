@@ -86,7 +86,7 @@ async fn main() -> Result<()> {
             let rsp = reqwest::get(format!(
                 r#"http://{}:{}/broadcast_tx_async?tx=0x{}"#,
                 opt.node,
-                opt.abci_port,
+                opt.rpc_port,
                 hex::encode(serialized_tx)
             ))
             .await?
