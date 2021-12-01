@@ -213,7 +213,7 @@ mod tests {
         let auth_path = nct.authentication_path(&note_commitment).unwrap();
         let merkle_path = (u64::from(auth_path.0) as usize, auth_path.1);
 
-        let transaction = Transaction::build_with_root(anchor)
+        let transaction = Transaction::build_with_root(anchor.clone())
             .set_fee(10)
             .set_chain_id("penumbra".to_string())
             .add_output(
@@ -227,29 +227,15 @@ mod tests {
             .finalize(&mut rng)
             .expect("transaction created ok");
 
-        let sighash = transaction.transaction_body().sighash();
+        let pending_tx = transaction
+            .verify_stateless()
+            .expect("stateless verification should pass");
 
-        let merkle_root = transaction.transaction_body().merkle_root;
-        for action in transaction.transaction_body().actions {
-            match action {
-                Action::Output(output) => {
-                    assert!(output.body.proof.verify(
-                        output.body.value_commitment,
-                        output.body.note_commitment,
-                        output.body.ephemeral_key
-                    ));
-                }
-                Action::Spend(spend) => {
-                    assert!(spend.body.rk.verify(&sighash, &spend.auth_sig).is_ok());
+        let mut valid_anchors: VecDeque<merkle::Root> = VecDeque::new();
+        valid_anchors.push_back(anchor);
 
-                    assert!(spend.body.proof.verify(
-                        merkle_root.clone(),
-                        spend.body.value_commitment,
-                        spend.body.nullifier.clone(),
-                        spend.body.rk,
-                    ));
-                }
-            }
-        }
+        let _verified_tx = pending_tx
+            .verify_stateful(&valid_anchors)
+            .expect("stateful verification should pass");
     }
 }
