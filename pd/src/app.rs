@@ -362,7 +362,6 @@ impl App {
             // Signal that we're ready to resume processing further requests.
             let _ = finished_signal.send(());
 
-            increment_counter!("node_transactions_total");
             Ok(Response::DeliverTx(response::DeliverTx::default()))
         }
     }

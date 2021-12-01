@@ -114,7 +114,6 @@ async fn main() -> anyhow::Result<()> {
 
             // New metrics to track should be added below.
             register_counter!("node_spent_nullifiers_total");
-            register_counter!("node_transactions_total");
 
             // TODO: better error reporting
             // We should error out if either service errors, rather than keep running
