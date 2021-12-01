@@ -20,7 +20,7 @@ RUN cargo build --bin pd --release && \
 # `scratch` image rather than Debian or Alpine. However, then we'd have to build
 # with a statically linked libc (read: musl), and musl's malloc exhibits
 # pathologically poor performance for Tokio applications...
-FROM debian:buster-slim as runtime
+FROM debian:bullseye-slim as runtime
 ARG DATABASE_URL
 ENV DATABASE_URL=$DATABASE_URL
 WORKDIR /penumbra
