@@ -15,8 +15,14 @@ fn detection_distribution_matches_expectation() {
         .map(|_| alice_clue_key.create_clue(PRECISION_BITS, OsRng).unwrap())
         .collect::<Vec<_>>();
 
-    let alice_detections = clues.iter().filter(|clue| alice_dk.examine(clue)).count();
-    let bobce_detections = clues.iter().filter(|clue| bobce_dk.examine(clue)).count();
+    let alice_detections = clues
+        .iter()
+        .filter(|clue| alice_dk.examine(clue).is_ok())
+        .count();
+    let bobce_detections = clues
+        .iter()
+        .filter(|clue| bobce_dk.examine(clue).is_ok())
+        .count();
 
     let bobce_detection_rate = (bobce_detections as f64) / (NUM_CLUES as f64);
     let expected_rate = 0.5f64.powi(PRECISION_BITS as i32);
