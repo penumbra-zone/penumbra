@@ -51,8 +51,6 @@ rand = "0.8"
 rand_chacha = "0.3.1"
 rand_core = { version = "0.6.3", features = ["getrandom"] }
 sqlx = { version = "0.5", features = [ "runtime-tokio-rustls", "postgres", "offline" ] }
-metrics = "0.17.0"
-metrics-exporter-prometheus = "0.6.1"
 
 [build-dependencies]
 vergen = "5"
