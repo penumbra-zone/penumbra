@@ -64,11 +64,11 @@ $ cargo run --quiet --release --bin pcli addr list
  0      Default  penumbrav0t...
 ```
 
-### Getting testnet tokens on the [Discord] in the `#tokens-please` channel
+### Getting testnet tokens on the [Discord] in the `#testnet-faucet` channel
 
 In order to use the testnet, it's first necessary for you to get some testnet tokens. The current
-way to do this is to join our [Discord] and post your address in the `#tokens-please` channel. We'll
-send your address some tokens on the testnet for you to send to your friends! :)
+way to do this is to join our [Discord] and post your address in the `#testnet-faucet` channel.
+We'll send your address some tokens on the testnet for you to send to your friends! :)
 
 Just keep in mind: **testnet tokens do not have monetary value**, and in order to keep the
 signal-to-noise ratio high on the server, requests for tokens in other channels will be deleted
