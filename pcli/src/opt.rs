@@ -8,7 +8,7 @@ use structopt::StructOpt;
 )]
 pub struct Opt {
     /// The address of the pd+tendermint node.
-    #[structopt(short, long, default_value = "127.0.0.1")]
+    #[structopt(short, long, default_value = "valetudo.penumbra.zone")]
     pub node: String,
     /// The port to use to speak to tendermint.
     #[structopt(short, long, default_value = "26657")]
