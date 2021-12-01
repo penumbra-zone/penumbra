@@ -12,7 +12,9 @@ The (evolving) protocol spec is rendered at [protocol.penumbra.zone][protocol].
 
 The (evolving) API documentation is rendered at [rustdoc.penumbra.zone][rustdoc].
 
-To participate in our (rapidly evolving) test network, keep reading...
+To participate in our test network, [keep reading below](getting-started-on-the-test-network).
+
+For instructions on how to set up a node, [jump down and read on](running-a-penumbra-node).
 
 ## Getting started on the test network
 
@@ -122,8 +124,10 @@ Penumbra has two binaries, the daemon `pd` and the command-line light wallet int
 
 ### Running `pd` with Docker
 
-You might think that this is the preferred way to run Penumbra, **but it will only work if you have loaded genesis state**:
-```
+You might think that this is the preferred way to run Penumbra, **but it will only work if you have
+loaded genesis state**:
+
+```bash
 docker-compose up --build -d
 ```
 
@@ -150,24 +154,21 @@ b4f694a238cb   postgres:13.0                  "docker-entrypoint.s…"   4 minut
 9e82aa33b4ff   prom/prometheus:latest         "/bin/prometheus --c…"   4 minutes ago   Up 4 minutes   0.0.0.0:9090->9090/tcp                                                                   penumbra-prometheus-1
 ```
 
-On production, you should use the production Docker Compose configuration,
-which will use the managed database as well as disable various debug build
-configs used in dev:
+On production, you should use the production Docker Compose configuration, which will use the
+managed database as well as disable various debug build configs used in dev:
 
 ```console
-$ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
 
-### Running `pcli`
+### Details about `pcli`
 
 Now you can interact with Penumbra using `pcli`, for instance
+
 ```bash
 # Run this first in case the interface changed
 # from the sample commands below
-cargo run --bin pcli -- --help
-```
-to get
-```
+$ cargo run --bin pcli -- --help
 pcli 0.1.0
 The Penumbra command-line interface.
 
@@ -196,12 +197,13 @@ Keys will be stored in `pcli`'s data directory:
 * macOS: `/Users/Alice/Library/Application Support/zone.penumbra.pcli/penumbra_wallet.dat`
 * Windows: `C:\Users\Alice\AppData\Roaming\penumbra\pcli\penumbra_wallet.dat`
 
-### Running `pd` manually
+### Running `pd` without using Docker
 
 You'll need to [install Tendermint][tm-install].  Be sure to install `v0.35.0`,
 rather than `master`.
 
 Initialize Tendermint:
+
 ```bash
 tendermint init validator
 ```
@@ -209,14 +211,17 @@ tendermint init validator
 This will create a default genesis file stored in `$TMHOME/config` (if set, else `~/.tendermint/config`) named `genesis.json`.
 
 You probably want to set a log level:
+
 ```bash
 export RUST_LOG=debug  # bash
 ```
+
 ```fish
 set -x RUST_LOG debug  # fish
 ```
 
-You'll need to set up a Postgres instance.  Here is one way:
+You'll need to set up a Postgres instance. Here is one way:
+
 ```bash
 # create a volume for pg data
 docker volume create tmp_db_data
@@ -224,29 +229,38 @@ docker run --name tmp-postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_USER=po
 ```
 
 Start the Penumbra instance (you probably want to set `RUST_LOG` to `debug`):
-```
+
+```bash
 cargo run --bin pd start -d postgres_uri
 ```
+
 Start the Tendermint node:
-```
+
+```bash
 tendermint start
 ```
 
 You should be running!
 
-To inspect the Postgres state, use
-```
+To inspect the Postgres state, use:
+
+```bash
 psql -h localhost -U postgres penumbra
 ```
-allowing you to run queries.
 
-To reset the Tendermint state, use `tendermint unsafe-reset-all`.  To reset the
-Postgres state, either delete the docker volume, or run `DROP DATABASE`, or run
-`DROP TABLE` for each table.
+In this database terminal, you can run queries to inspect `pd`'s state.
 
-### Genesis data
+To reset the Tendermint state, use `tendermint unsafe-reset-all`.  To reset the Postgres state,
+either delete the docker volume, or run `DROP DATABASE`, or run `DROP TABLE` for each table. You
+need to do **both of these** to fully reset the node, and doing only one will result in mysterious
+errors.
 
-To create Genesis data, you need to know the amounts, denominations, and addresses of the genesis notes. You can then pass to `pd`'s` `create-genesis` command a list of "(amount, denomination, address)" tuples, where the tuple fields are comma-delimited and each genesis note is contained in double quotes.  You'll want to change the addresses from this example to addresses you control:
+### Creating Genesis data
+
+To create Genesis data, you need to know the amounts, denominations, and addresses of the genesis
+notes. You can then pass to `pd`'s `create-genesis` command a list of "(amount, denomination,
+address)" tuples, where the tuple fields are comma-delimited and each genesis note is contained in
+double quotes.  You'll want to change the addresses from this example to addresses you control:
 
 ```console
 $ cargo run --bin pd -- create-genesis chain-id-goes-here \
@@ -271,16 +285,23 @@ $ cargo run --bin pd -- create-genesis chain-id-goes-here \
 ]
 ```
 
-To perform genesis for a testnet, edit the `genesis.json` file stored in `$TMHOME/config/` or `~/.tendermint/config/` (see an example in `testnets/genesis_tn001.json`). You should edit the following fields:
+To perform genesis for a testnet, edit the `genesis.json` file stored in `$TMHOME/config/` or
+`~/.tendermint/config/` (see an example in `testnets/genesis_tn001.json`). You should edit the
+following fields:
+
 * `validators` key: add the other validators and their voting power,
 * `app_state` key: add the generated genesis notes,
 * `chain_id` update the `chain_id` for the testnet.
 
-Now when you start `pd` and tendermint as described above, you will see a message at the `INFO` level indicating genesis has been performed: `consensus: penumbra::app: performing genesis for chain_id: penumbra-tn001`.
+Now when you start `pd` and tendermint as described above, you will see a message at the `INFO`
+level indicating genesis has been performed: `consensus: penumbra::app: performing genesis for
+chain_id: penumbra-tn001`.
 
 ### Metrics
 
-When adding new metrics, please following the [Prometheus metrics naming guidelines](https://prometheus.io/docs/practices/naming/). Use plurals for consistency. For the application prefix part of the name, use `node` for the Penumbra node.
+When adding new metrics, please following the [Prometheus metrics naming
+guidelines](https://prometheus.io/docs/practices/naming/). Use plurals for consistency. For the
+application prefix part of the name, use `node` for the Penumbra node.
 
 [Discord]: https://discord.gg/hKvkrqa3zC
 [Penumbra]: https://penumbra.zone
