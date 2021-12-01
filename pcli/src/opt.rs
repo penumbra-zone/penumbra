@@ -12,7 +12,7 @@ pub struct Opt {
     pub node: String,
     /// The port to use to speak to tendermint.
     #[structopt(short, long, default_value = "26657")]
-    pub abci_port: u16,
+    pub rpc_port: u16,
     /// The port to use to speak to pd's light wallet server.
     #[structopt(short, long, default_value = "26666")]
     pub lightwallet_port: u16,
