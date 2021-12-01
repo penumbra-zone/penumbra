@@ -13,9 +13,9 @@ The (evolving) protocol spec is rendered at [protocol.penumbra.zone][protocol].
 
 The (evolving) API documentation is rendered at [rustdoc.penumbra.zone][rustdoc].
 
-To participate in our test network, [keep reading below](getting-started-on-the-test-network).
+To participate in our test network, [keep reading below](#getting-started-on-the-test-network).
 
-For instructions on how to set up a node, [jump down and read on](running-a-penumbra-node).
+For instructions on how to set up a node, [jump down and read on](#running-a-penumbra-node).
 
 ## Getting started on the test network
 
