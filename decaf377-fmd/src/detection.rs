@@ -78,21 +78,21 @@ impl DetectionKey {
     /// This function executes in constant time with respect to the detection
     /// key material, but short-circuits to return early on a false detection.
     #[allow(non_snake_case)]
-    pub fn examine(&self, clue: &Clue) -> Result<(), Error> {
+    pub fn examine(&self, clue: &Clue) -> bool {
         let P_encoding = decaf377::Encoding::try_from(&clue.0[0..32]).expect("slice is right len");
 
         let P = if let Ok(P) = P_encoding.decompress() {
             P
         } else {
             // Invalid P encoding => not a match
-            return Err(Error::InvalidPEncoding);
+            return false;
         };
 
         let y = if let Ok(y) = Fr::deserialize(&clue.0[32..64]) {
             y
         } else {
             // Invalid y encoding => not a match
-            return Err(Error::InvalidYEncoding);
+            return false;
         };
 
         // Reject P = 0 or y = 0, as these never occur in well-formed clues; as
@@ -100,7 +100,7 @@ impl DetectionKey {
         // match any detection key.
         // https://docs.rs/fuzzytags/0.6.0/src/fuzzytags/lib.rs.html#348-351
         if P.is_identity() || y.is_zero() {
-            return Err(Error::InvalidPorY);
+            return false;
         }
 
         let precision_bits = clue.0[64];
@@ -123,11 +123,11 @@ impl DetectionKey {
             // rejecting after 2 iterations, ..., so (in expectation) we do <= 2
             // iterations instead of n iterations.
             if msg_i == 0 {
-                return Err(Error::ZeroMessageBit);
+                return false;
             }
         }
 
         // Otherwise, all message bits were 1 and we return true.
-        Ok(())
+        true
     }
 }
