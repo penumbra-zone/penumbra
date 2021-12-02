@@ -9,4 +9,4 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 python3 -m venv scripts/.venv
 source scripts/.venv/bin/activate
 pip install -r scripts/requirements.txt
-python3 scripts/setup_validator.py testnets/001_valetudo.csv
+python3 scripts/setup_validator.py testnets/001_valetudo.csv penumbra-valetudo

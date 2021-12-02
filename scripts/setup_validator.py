@@ -11,7 +11,7 @@ import docker
 # This script will handle configuring a Penumbra docker-compose validator deployment
 # by initializing the Tendermint node and patching the genesis.json (stored in the
 # Docker volume).
-def main(genesis_csv_file):
+def main(genesis_csv_file, chain_id):
     client = docker.from_env()
 
     # generate the JSON
@@ -32,7 +32,7 @@ def main(genesis_csv_file):
     )
 
     genesis_data = json.loads(result.stdout)
-    patch_genesis(client, genesis_data)
+    patch_genesis(client, chain_id, genesis_data)
 
     # restart the containers to pick up changes
     subprocess.run(["docker-compose", "restart"])
@@ -40,7 +40,7 @@ def main(genesis_csv_file):
 
 # This method will patch an existing genesis.json file
 # with hardcoded genesis notes for ease of spinning up nodes.
-def patch_genesis(client: docker.DockerClient, genesis_data):
+def patch_genesis(client: docker.DockerClient, chain_id, genesis_data):
     temp_dir = tempfile.TemporaryDirectory()
 
     # Load the Genesis file as JSON
@@ -54,6 +54,8 @@ def patch_genesis(client: docker.DockerClient, genesis_data):
             volumes=[f"{temp_dir.name}:/dest", "penumbra_tendermint_data:/source"],
         ).decode("utf-8")
     )
+
+    existing_genesis["chain_id"] = chain_id
 
     # patch the existing genesis data with our hardcoded notes
     existing_genesis["app_state"] = genesis_data
@@ -85,7 +87,13 @@ if __name__ == "__main__":
         nargs=1,
         help="which file contains the CSV genesis data",
     )
+    parser.add_argument(
+        "chain_id",
+        metavar="c",
+        nargs=1,
+        help="chain ID",
+    )
 
     args = parser.parse_args()
 
-    main(args.genesis_file[0])
+    main(args.genesis_file[0], args.chain_id[0])
