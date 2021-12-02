@@ -148,7 +148,13 @@ Postgres state, either delete the docker volume, or run `DROP DATABASE`, or run
 
 ### Genesis data
 
-To create Genesis data, you need to know the amounts, denominations, and addresses of the genesis notes. You can then pass to `pd`'s` `create-genesis` command a list of "(amount, denomination, address)" tuples, where the tuple fields are comma-delimited and each genesis note is contained in double quotes.  You'll want to change the addresses from this example to addresses you control:
+To create Genesis data, you need to know the amounts, denominations, and addresses of the genesis notes. You can then pass to `pd`'s` `create-genesis` command a CSV file containing "(amount, denomination, address)" tuples. You'll want to change the addresses from this example to addresses you control:
+
+```console
+$ cargo run --bin pd -- create-genesis penumbra-valetudo --file-name testnets/001_valetudo.csv
+```
+
+You may also create Genesis data by passing input on STDIN. You can pass to `pd`'s` `create-genesis` command a list of "(amount, denomination, address)" tuples, where the tuple fields are comma-delimited and each genesis note is contained in double quotes. You'll want to change the addresses from this example to addresses you control:
 
 ```console
 $ cargo run --bin pd -- create-genesis chain-id-goes-here \

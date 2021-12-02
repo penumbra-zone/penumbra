@@ -2,7 +2,10 @@ use metrics::register_counter;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use rand::SeedableRng;
 use rand_chacha::ChaCha20Rng;
+use std::fs::File;
+use std::io::{self, BufRead};
 use std::net::SocketAddr;
+use std::str::FromStr;
 use structopt::StructOpt;
 use tonic::transport::Server;
 
@@ -50,7 +53,15 @@ enum Command {
     CreateGenesis {
         /// The chain ID for the new chain
         chain_id: String,
+        /// The filename to read genesis data from, either this or `genesis_allocations` must be provided
+        #[structopt(
+            short = "f",
+            long = "file-name",
+            required_unless = "genesis-allocations"
+        )]
+        file_name: Option<String>,
         /// The initial set of notes, encoded as a list of tuples "(amount, denom, address)"
+        #[structopt(required_unless = "file-name")]
         genesis_allocations: Vec<GenesisAddr>,
     },
 }
@@ -125,6 +136,7 @@ async fn main() -> anyhow::Result<()> {
         }
         Command::CreateGenesis {
             chain_id,
+            file_name,
             genesis_allocations,
         } => {
             let chain_id_bytes = chain_id.as_bytes();
@@ -137,9 +149,25 @@ async fn main() -> anyhow::Result<()> {
                     .expect("blake2b output is 32 bytes"),
             );
 
-            let genesis_notes = generate_genesis_notes(&mut rng, genesis_allocations);
-            let serialized = serde_json::to_string_pretty(&genesis_notes).unwrap();
-            println!("\n{}\n", serialized);
+            if !genesis_allocations.is_empty() {
+                let genesis_notes = generate_genesis_notes(&mut rng, genesis_allocations);
+                let serialized = serde_json::to_string_pretty(&genesis_notes).unwrap();
+                println!("\n{}\n", serialized);
+                return Ok(());
+            }
+
+            if file_name.is_some() {
+                let f = File::open(file_name.unwrap()).expect("unable to open file");
+
+                let records = io::BufReader::new(f)
+                    .lines()
+                    .map(|x| GenesisAddr::from_str(x?.as_str()))
+                    .collect::<Result<Vec<GenesisAddr>, anyhow::Error>>()?;
+                let genesis_notes = generate_genesis_notes(&mut rng, records);
+                let serialized = serde_json::to_string_pretty(&genesis_notes).unwrap();
+                println!("\n{}\n", serialized);
+                return Ok(());
+            }
         }
     }
 

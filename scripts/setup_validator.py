@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import json
 import subprocess
 import tempfile
@@ -10,10 +11,28 @@ import docker
 # This script will handle configuring a Penumbra docker-compose validator deployment
 # by initializing the Tendermint node and patching the genesis.json (stored in the
 # Docker volume).
-def main():
+def main(genesis_csv_file):
     client = docker.from_env()
 
-    patch_genesis(client)
+    # generate the JSON
+    result = subprocess.run(
+        [
+            "cargo",
+            "run",
+            "--bin",
+            "pd",
+            "--",
+            "create-genesis",
+            "penumbra-valetudo",
+            "--file-name",
+            genesis_csv_file,
+        ],
+        capture_output=True,
+        text=True,
+    )
+
+    genesis_data = json.loads(result.stdout)
+    patch_genesis(client, genesis_data)
 
     # restart the containers to pick up changes
     subprocess.run(["docker-compose", "restart"])
@@ -21,7 +40,7 @@ def main():
 
 # This method will patch an existing genesis.json file
 # with hardcoded genesis notes for ease of spinning up nodes.
-def patch_genesis(client: docker.DockerClient):
+def patch_genesis(client: docker.DockerClient, genesis_data):
     temp_dir = tempfile.TemporaryDirectory()
 
     # Load the Genesis file as JSON
@@ -37,22 +56,7 @@ def patch_genesis(client: docker.DockerClient):
     )
 
     # patch the existing genesis data with our hardcoded notes
-    existing_genesis["app_state"] = [
-        {
-            "diversifier": "b261d7629fcf8910ac5b1a",
-            "amount": 100,
-            "note_blinding": "eb5537f7ea3f0769f0d97e0bbeafc79ecfc4f56b21d45f80cade50d59562f811",
-            "asset_denom": "pen",
-            "transmission_key": "98d1a1b19ffed22c59242140a46e042713770b2930a95ea9f080c612409fef02",
-        },
-        {
-            "diversifier": "b261d7629fcf8910ac5b1a",
-            "amount": 1,
-            "note_blinding": "19cb10699b7aa33fcbc1dd4438c3fb6b02af4f880d39ce98075aa241ee5a2b04",
-            "asset_denom": "tungsten_cube",
-            "transmission_key": "98d1a1b19ffed22c59242140a46e042713770b2930a95ea9f080c612409fef02",
-        },
-    ]
+    existing_genesis["app_state"] = genesis_data
 
     # write the modified genesis data back
     with open(f"{temp_dir.name}/genesis.json", "w") as f:
@@ -72,4 +76,16 @@ def patch_genesis(client: docker.DockerClient):
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(
+        description="Generate genesis JSON and load into a validator container."
+    )
+    parser.add_argument(
+        "genesis_file",
+        metavar="f",
+        nargs=1,
+        help="which file contains the CSV genesis data",
+    )
+
+    args = parser.parse_args()
+
+    main(args.genesis_file[0])
