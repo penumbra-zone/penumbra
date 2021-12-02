@@ -37,7 +37,7 @@ impl TryFrom<String> for MemoPlaintext {
             return Err(anyhow::anyhow!("provided memo exceeds maximum memo size"));
         }
         let mut mp = [0u8; MEMO_LEN_BYTES];
-        mp.copy_from_slice(input.as_bytes());
+        mp[..input.len()].copy_from_slice(input.as_bytes());
 
         Ok(MemoPlaintext(mp))
     }
