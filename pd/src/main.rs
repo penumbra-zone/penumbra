@@ -9,6 +9,7 @@ use std::str::FromStr;
 use structopt::StructOpt;
 use tonic::transport::Server;
 
+use penumbra_crypto::Address;
 use penumbra_proto::wallet::wallet_server;
 
 use pd::{
@@ -57,7 +58,7 @@ enum Command {
         #[structopt(short = "f", long = "file", required_unless = "genesis-allocations")]
         file: Option<String>,
         /// The initial set of notes, encoded as a list of tuples "(amount, denom, address)"
-        #[structopt(required_unless = "file-name")]
+        #[structopt(required_unless = "file")]
         genesis_allocations: Vec<GenesisAddr>,
     },
 }
@@ -155,10 +156,31 @@ async fn main() -> anyhow::Result<()> {
             if file.is_some() {
                 let f = File::open(file.unwrap()).expect("unable to open file");
 
-                let records = io::BufReader::new(f)
-                    .lines()
-                    .map(|x| GenesisAddr::from_str(x?.as_str()))
-                    .collect::<Result<Vec<GenesisAddr>, anyhow::Error>>()?;
+                // This could be done with Serde but requires adding it to dependencies
+                // so this was easier.
+                let mut rdr = csv::Reader::from_reader(f);
+                let mut records = vec![];
+                for result in rdr.records() {
+                    // The iterator yields Result<StringRecord, Error>, so we check the
+                    // error here.
+                    let mut record = result?;
+                    record.trim();
+                    if record.len() != 3 {
+                        return Err(anyhow::anyhow!("expected 3-part CSV records"));
+                    }
+
+                    let g = GenesisAddr {
+                        amount: record[0].parse::<u64>()?,
+                        denom: record[1].to_string(),
+                        address: Address::from_str(&record[2])?,
+                    };
+                    records.push(g);
+                }
+
+                // let records = io::BufReader::new(f)
+                //     .lines()
+                //     .map(|x| GenesisAddr::from_str(x?.as_str()))
+                //     .collect::<Result<Vec<GenesisAddr>, anyhow::Error>>()?;
                 let genesis_notes = generate_genesis_notes(&mut rng, records);
                 let serialized = serde_json::to_string_pretty(&genesis_notes).unwrap();
                 println!("\n{}\n", serialized);

@@ -24,7 +24,7 @@ def main(genesis_csv_file):
             "--",
             "create-genesis",
             "penumbra-valetudo",
-            "--file-name",
+            "--file",
             genesis_csv_file,
         ],
         capture_output=True,
