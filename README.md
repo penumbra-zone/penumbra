@@ -61,7 +61,7 @@ address, labeled `Default`. When you list your addresses, you should see somethi
 ```bash
 $ cargo run --quiet --release --bin pcli addr list
  Index  Label    Address
- 0      Default  penumbrav0t...
+ 0      Default  penumbrav0t1...
 ```
 
 ### Getting testnet tokens on the [Discord] in the `#testnet-faucet` channel
