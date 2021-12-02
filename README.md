@@ -23,8 +23,13 @@ For instructions on how to set up a node, [jump down and read on](#running-a-pen
 we would be delighted for you to try it out! [Per our development plan, we'll be launching (and
 crashing) lots of testnets](https://penumbra.zone/blog/how-were-building-penumbra), and users should
 expect data loss at this early stage. Keep in mind that the tokens on the test network have no
-monetary value whatsoever. If (which is to say, _when_) you encounter bugs or wish for features to
-exist, we'd love for you to reach out to us on our [Discord server][Discord].
+monetary value whatsoever, and we'll be shutting down the testnet when we reach our next milestone
+(or before). If (which is to say, _when_) you encounter bugs or wish for features to exist, we'd
+love for you to reach out to us on our [Discord server][Discord].
+
+At the moment the testnet is a single node, and running testnet nodes won't be possible until our
+next milestone (MVP2), implementing [staking and
+delegation](https://penumbra.zone/technology/stake).
 
 ### Building `pcli`
 
