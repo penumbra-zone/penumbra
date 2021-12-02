@@ -46,8 +46,6 @@ pub struct App {
     note_commitment_tree: merkle::BridgeTree<note::Commitment, { merkle::DEPTH as u8 }>,
 
     /// Recent anchors of the note commitment tree.
-    ///
-    /// TODO: load from database?
     recent_anchors: VecDeque<merkle::Root>,
 
     /// We want to prevent two transactions from spending the same note in the
