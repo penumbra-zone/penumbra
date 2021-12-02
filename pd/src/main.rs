@@ -54,12 +54,8 @@ enum Command {
         /// The chain ID for the new chain
         chain_id: String,
         /// The filename to read genesis data from, either this or `genesis_allocations` must be provided
-        #[structopt(
-            short = "f",
-            long = "file-name",
-            required_unless = "genesis-allocations"
-        )]
-        file_name: Option<String>,
+        #[structopt(short = "f", long = "file", required_unless = "genesis-allocations")]
+        file: Option<String>,
         /// The initial set of notes, encoded as a list of tuples "(amount, denom, address)"
         #[structopt(required_unless = "file-name")]
         genesis_allocations: Vec<GenesisAddr>,
@@ -136,7 +132,7 @@ async fn main() -> anyhow::Result<()> {
         }
         Command::CreateGenesis {
             chain_id,
-            file_name,
+            file,
             genesis_allocations,
         } => {
             let chain_id_bytes = chain_id.as_bytes();
@@ -156,8 +152,8 @@ async fn main() -> anyhow::Result<()> {
                 return Ok(());
             }
 
-            if file_name.is_some() {
-                let f = File::open(file_name.unwrap()).expect("unable to open file");
+            if file.is_some() {
+                let f = File::open(file.unwrap()).expect("unable to open file");
 
                 let records = io::BufReader::new(f)
                     .lines()
