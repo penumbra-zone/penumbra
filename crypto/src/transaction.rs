@@ -293,10 +293,8 @@ mod tests {
 
     use crate::keys::SpendKey;
     use crate::memo::MemoPlaintext;
-    use crate::merkle::{Tree, TreeExt};
     use crate::transaction::Error;
-    use crate::{note, Fq, Note, Value};
-    use incrementalmerkletree::Frontier;
+    use crate::{Fq, Value};
     use rand_core::OsRng;
 
     #[test]
@@ -329,83 +327,5 @@ mod tests {
 
         assert!(transaction.is_err());
         assert_eq!(transaction.err(), Some(Error::NonZeroValueBalance));
-    }
-
-    #[test]
-    fn test_transaction_succeeds_if_values_balance() {
-        let mut rng = OsRng;
-        let sk_sender = SpendKey::generate(&mut rng);
-        let fvk_sender = sk_sender.full_viewing_key();
-        let ovk_sender = fvk_sender.outgoing();
-        let (send_addr, _) = fvk_sender.incoming().payment_address(0u64.into());
-
-        let sk_recipient = SpendKey::generate(&mut rng);
-        let fvk_recipient = sk_recipient.full_viewing_key();
-        let ivk_recipient = fvk_recipient.incoming();
-        let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
-
-        let output_value = Value {
-            amount: 10,
-            asset_id: asset::Denom::from("penumbra").into(),
-        };
-        let spend_value = Value {
-            amount: 20,
-            asset_id: asset::Denom::from("penumbra").into(),
-        };
-        // The note was previously sent to the sender.
-        let note = Note::new(
-            *send_addr.diversifier(),
-            *send_addr.transmission_key(),
-            spend_value,
-            Fq::zero(),
-        )
-        .expect("transmission key is valid");
-        let note_commitment = note.commit();
-
-        let mut nct = merkle::BridgeTree::<note::Commitment, 32>::new(1);
-        nct.append(&note_commitment);
-        let anchor = nct.root2();
-        nct.witness();
-        let auth_path = nct.authentication_path(&note_commitment).unwrap();
-        let merkle_path = (u64::from(auth_path.0) as usize, auth_path.1);
-
-        let transaction = Transaction::build_with_root(anchor)
-            .set_fee(10)
-            .set_chain_id("penumbra".to_string())
-            .add_output(
-                &mut rng,
-                &dest,
-                output_value,
-                MemoPlaintext::default(),
-                ovk_sender,
-            )
-            .add_spend(&mut rng, sk_sender, merkle_path, note, auth_path.0)
-            .finalize(&mut rng)
-            .expect("transaction created ok");
-
-        let sighash = transaction.transaction_body().sighash();
-
-        let merkle_root = transaction.transaction_body().merkle_root;
-        for action in transaction.transaction_body().actions {
-            match action {
-                Action::Output(output) => {
-                    assert!(output.body.proof.verify(
-                        output.body.value_commitment,
-                        output.body.note_commitment,
-                        output.body.ephemeral_key
-                    ));
-                }
-                Action::Spend(spend) => {
-                    assert!(spend.body.rk.verify(&sighash, &spend.auth_sig).is_ok());
-
-                    assert!(spend.body.proof.verify(
-                        merkle_root.clone(),
-                        spend.body.value_commitment,
-                        spend.body.nullifier.clone(),
-                        spend.body.rk,
-                    ));
-                }
-            }
-        }
     }
 }

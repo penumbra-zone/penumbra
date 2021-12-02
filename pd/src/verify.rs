@@ -160,3 +160,82 @@ pub fn mark_genesis_as_verified(transaction: Transaction) -> VerifiedTransaction
         spent_nullifiers: BTreeSet::<Nullifier>::new(),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use ark_ff::Zero;
+    use penumbra_crypto::{
+        asset,
+        keys::SpendKey,
+        memo::MemoPlaintext,
+        merkle::{Frontier, Tree, TreeExt},
+        Fq, Note, Value,
+    };
+    use rand_core::OsRng;
+
+    #[test]
+    fn test_transaction_succeeds_if_values_balance() {
+        let mut rng = OsRng;
+        let sk_sender = SpendKey::generate(&mut rng);
+        let fvk_sender = sk_sender.full_viewing_key();
+        let ovk_sender = fvk_sender.outgoing();
+        let (send_addr, _) = fvk_sender.incoming().payment_address(0u64.into());
+
+        let sk_recipient = SpendKey::generate(&mut rng);
+        let fvk_recipient = sk_recipient.full_viewing_key();
+        let ivk_recipient = fvk_recipient.incoming();
+        let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
+
+        let output_value = Value {
+            amount: 10,
+            asset_id: asset::Denom::from("penumbra").into(),
+        };
+        let spend_value = Value {
+            amount: 20,
+            asset_id: asset::Denom::from("penumbra").into(),
+        };
+        // The note was previously sent to the sender.
+        let note = Note::new(
+            *send_addr.diversifier(),
+            *send_addr.transmission_key(),
+            spend_value,
+            Fq::zero(),
+        )
+        .expect("transmission key is valid");
+        let note_commitment = note.commit();
+
+        let mut nct = merkle::BridgeTree::<note::Commitment, 32>::new(1);
+        nct.append(&note_commitment);
+        let anchor = nct.root2();
+        nct.witness();
+        let auth_path = nct.authentication_path(&note_commitment).unwrap();
+        let merkle_path = (u64::from(auth_path.0) as usize, auth_path.1);
+
+        let transaction = Transaction::build_with_root(anchor.clone())
+            .set_fee(10)
+            .set_chain_id("penumbra".to_string())
+            .add_output(
+                &mut rng,
+                &dest,
+                output_value,
+                MemoPlaintext::default(),
+                ovk_sender,
+            )
+            .add_spend(&mut rng, sk_sender, merkle_path, note, auth_path.0)
+            .finalize(&mut rng)
+            .expect("transaction created ok");
+
+        let pending_tx = transaction
+            .verify_stateless()
+            .expect("stateless verification should pass");
+
+        let mut valid_anchors: VecDeque<merkle::Root> = VecDeque::new();
+        valid_anchors.push_back(anchor);
+
+        let _verified_tx = pending_tx
+            .verify_stateful(&valid_anchors)
+            .expect("stateful verification should pass");
+    }
+}

@@ -66,6 +66,7 @@ async fn main() -> Result<()> {
             address,
             fee,
             source_address_id,
+            memo,
         }) => {
             let mut state = ClientStateFile::load(wallet_path)?;
             sync(
@@ -80,13 +81,14 @@ async fn main() -> Result<()> {
                 address,
                 fee,
                 source_address_id,
+                memo,
             )?;
             let serialized_tx: Vec<u8> = tx.into();
 
             let rsp = reqwest::get(format!(
                 r#"http://{}:{}/broadcast_tx_async?tx=0x{}"#,
                 opt.node,
-                opt.abci_port,
+                opt.rpc_port,
                 hex::encode(serialized_tx)
             ))
             .await?

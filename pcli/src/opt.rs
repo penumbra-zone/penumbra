@@ -12,7 +12,7 @@ pub struct Opt {
     pub node: String,
     /// The port to use to speak to tendermint.
     #[structopt(short, long, default_value = "26657")]
-    pub abci_port: u16,
+    pub rpc_port: u16,
     /// The port to use to speak to pd's light wallet server.
     #[structopt(short, long, default_value = "26666")]
     pub lightwallet_port: u16,
@@ -97,5 +97,8 @@ pub enum TxCmd {
         /// If set, spend funds originally sent to the specified address.
         #[structopt(short, long)]
         source_address_id: Option<u64>,
+        /// If set, set the transaction's memo field to the provided text.
+        #[structopt(short, long)]
+        memo: Option<String>,
     },
 }

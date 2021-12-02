@@ -128,6 +128,7 @@ impl ClientState {
         address: String,
         fee: u64,
         source_address: Option<u64>,
+        tx_memo: Option<String>,
     ) -> Result<Transaction, anyhow::Error> {
         // xx Could populate chain_id from the info endpoint on the node, or at least
         // error if there is an inconsistency
@@ -143,8 +144,10 @@ impl ClientState {
         output_value.insert(denomination, amount);
 
         for (denom, amount) in &output_value {
-            // xx: add memo handling
-            let memo = memo::MemoPlaintext([0u8; 512]);
+            let memo: memo::MemoPlaintext = match tx_memo {
+                Some(ref input_memo) => input_memo.clone().try_into()?,
+                None => memo::MemoPlaintext([0u8; memo::MEMO_LEN_BYTES]),
+            };
             tx_builder = tx_builder.add_output(
                 rng,
                 &dest_address,
