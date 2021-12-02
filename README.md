@@ -20,9 +20,11 @@ For instructions on how to set up a node, [jump down and read on](#running-a-pen
 ## Getting started on the test network
 
 [Penumbra Labs][Penumbra] runs a test network for the latest version of the Penumbra protocol, and
-we would be delighted for you to try it out! Keep in mind that especially in the early stages of
-development, we expect many things to break. If you encounter bugs or wish for features to exist,
-we'd love for you to reach out to us on our [Discord server][Discord].
+we would be delighted for you to try it out! [Per our development plan, we'll be launching (and
+crashing) lots of testnets](https://penumbra.zone/blog/how-were-building-penumbra), and users should
+expect data loss at this early stage. Keep in mind that the tokens on the test network have no
+monetary value whatsoever. If (which is to say, _when_) you encounter bugs or wish for features to
+exist, we'd love for you to reach out to us on our [Discord server][Discord].
 
 ### Building `pcli`
 
@@ -31,9 +33,13 @@ Penumbra command line light wallet, `pcli`. This requires that you install a rec
 of the Rust compiler, installation instructions for which you can find
 [here](https://www.rust-lang.org/learn/get-started).
 
-Once you have installed Rust and its build tool `cargo`, you can build the `pcli` light wallet by
-cloning this repository (`git clone https://github.com/penumbra-zone/penumbra`) and running from the
-newly cloned project:
+Once you have installed Rust and its build tool `cargo`, you can clone the repository:
+
+```bash
+git clone https://github.com/penumbra-zone/penumbra
+```
+
+Then, build the `pcli` tool using `cargo`:
 
 ```bash
 cargo build --release --bin pcli
@@ -51,7 +57,7 @@ should see something like this:
 ```bash
 $ cargo run --quiet --release --bin pcli wallet generate
 Saving wallet to /home/$USER/.local/share/pcli/penumbra_wallet.json
-Saving backup wallet to /home/$USER/.local/share/testnet-archive/penumbra-valetudo/.../penumbra_wallet.json
+Saving backup wallet to /home/$USER/.local/share/penumbra-testnet-archive/penumbra-valetudo/.../penumbra_wallet.json
 ```
 
 Penumbra's design allows you to create arbitrarily many publicly unlinkable addresses which all
@@ -119,7 +125,11 @@ pushes to `main`.  To build it locally:
 1. Install the requirements: `cargo install mdbook mdbook-katex mdbook-mermaid`
 2. To continuously build and serve the documentation: `mdbook serve`
 
-## Running a Penumbra node
+## Development: Running a Penumbra node
+
+This section is for developers, not for running nodes that are part of the public testnet. We won't
+be ready for multiple testnet nodes until we reach our MVP2 milestone implementing staking and
+delegation, at which point this will change.
 
 Penumbra has two binaries, the daemon `pd` and the command-line light wallet interface `pcli`.
 
