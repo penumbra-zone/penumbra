@@ -3,7 +3,6 @@ use metrics_exporter_prometheus::PrometheusBuilder;
 use rand::SeedableRng;
 use rand_chacha::ChaCha20Rng;
 use std::fs::File;
-use std::io::{self, BufRead};
 use std::net::SocketAddr;
 use std::str::FromStr;
 use structopt::StructOpt;
@@ -158,7 +157,7 @@ async fn main() -> anyhow::Result<()> {
 
                 // This could be done with Serde but requires adding it to dependencies
                 // so this was easier.
-                let mut rdr = csv::Reader::from_reader(f);
+                let mut rdr = csv::ReaderBuilder::new().has_headers(false).from_reader(f);
                 let mut records = vec![];
                 for result in rdr.records() {
                     // The iterator yields Result<StringRecord, Error>, so we check the
