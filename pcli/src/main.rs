@@ -30,8 +30,8 @@ async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
     let opt = Opt::from_args();
 
-    let archive_dir = ProjectDirs::from("zone", "penumbra", "testnet-archive")
-        .expect("can access penumbra testnet-archive dir");
+    let archive_dir = ProjectDirs::from("zone", "penumbra", "penumbra-testnet-archive")
+        .expect("can access penumbra-testnet-archive dir");
     let project_dir =
         ProjectDirs::from("zone", "penumbra", "pcli").expect("can access penumbra project dir");
     // Currently we use just the data directory. Create it if it is missing.
