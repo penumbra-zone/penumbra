@@ -6,10 +6,12 @@ use std::{
     task::{Context, Poll},
 };
 
+use anyhow::anyhow;
 use bytes::Bytes;
 use futures::future::FutureExt;
 use metrics::increment_counter;
 use rand_core::OsRng;
+use sha2::{Digest, Sha256};
 use tendermint::abci::{
     request::{self, BeginBlock, CheckTxKind, EndBlock},
     response, Request, Response,
@@ -17,7 +19,7 @@ use tendermint::abci::{
 use tokio::sync::oneshot;
 use tower::Service;
 use tower_abci::BoxError;
-use tracing::instrument;
+use tracing::{instrument, Instrument, Span};
 
 use penumbra_crypto::{
     asset,
@@ -143,6 +145,7 @@ impl App {
                 app_hash: app_hash.into(),
             }))
         }
+        .instrument(Span::current())
     }
 
     #[instrument(skip(self))]
@@ -164,6 +167,7 @@ impl App {
                 last_block_app_hash,
             }))
         }
+        .instrument(Span::current())
     }
 
     #[instrument(skip(self))]
@@ -195,39 +199,18 @@ impl App {
     ///
     /// We do not queue up any state changes into `PendingBlock` until `DeliverTx` where these
     /// checks are repeated.
-    #[instrument(skip(self))]
+    #[instrument(skip(self, request), fields(kind = ?request.kind, txhash = ?hex::encode(&Sha256::digest(request.tx.as_ref()))))]
     fn check_tx(
         &mut self,
         request: request::CheckTx,
-    ) -> impl Future<Output = Result<Response, BoxError>> {
+    ) -> impl Future<Output = Result<(), anyhow::Error>> {
         let state = self.state.clone();
         let mempool_nullifiers = self.mempool_nullifiers.clone();
         let recent_anchors = self.recent_anchors.clone();
 
-        let finished_signal = self.completion_tracker.start();
         async move {
-            let transaction = match Transaction::try_from(request.tx.as_ref()) {
-                Ok(transaction) => transaction,
-                Err(_) => {
-                    let _ = finished_signal.send(());
-                    return Ok(Response::CheckTx(response::CheckTx {
-                        code: 1,
-                        ..Default::default()
-                    }));
-                }
-            };
-
-            let pending_transaction = match transaction.verify_stateless() {
-                Ok(pending_transaction) => pending_transaction,
-                Err(err) => {
-                    tracing::debug!("error: {}", err);
-                    let _ = finished_signal.send(());
-                    return Ok(Response::CheckTx(response::CheckTx {
-                        code: 1,
-                        ..Default::default()
-                    }));
-                }
-            };
+            let pending_transaction =
+                Transaction::try_from(request.tx.as_ref())?.verify_stateless()?;
 
             // Ensure we do not add any transactions with duplicate nullifiers into the mempool.
             //
@@ -239,11 +222,10 @@ impl App {
             if request.kind == CheckTxKind::New {
                 for nullifier in pending_transaction.spent_nullifiers.clone() {
                     if mempool_nullifiers.lock().unwrap().contains(&nullifier) {
-                        let _ = finished_signal.send(());
-                        return Ok(Response::CheckTx(response::CheckTx {
-                            code: 1,
-                            ..Default::default()
-                        }));
+                        return Err(anyhow!(
+                            "nullifer {:?} already present in mempool_nullifiers",
+                            nullifier
+                        ));
                     } else {
                         mempool_nullifiers.lock().unwrap().insert(nullifier);
                     }
@@ -253,35 +235,23 @@ impl App {
             // Ensure that we do not add any transactions that have spent nullifiers in the database.
             for nullifier in pending_transaction.spent_nullifiers.clone() {
                 if state
-                    .clone()
-                    .nullifier(nullifier)
+                    .nullifier(nullifier.clone())
                     .await
                     .expect("must be able to fetch nullifier")
                     .is_some()
                 {
-                    let _ = finished_signal.send(());
-                    return Ok(Response::CheckTx(response::CheckTx {
-                        code: 1,
-                        ..Default::default()
-                    }));
+                    return Err(anyhow!(
+                        "nullifer {:?} already present in database",
+                        nullifier
+                    ));
                 };
             }
 
-            // Signal that we're ready to resume processing further requests.
-            let _ = finished_signal.send(());
+            pending_transaction.verify_stateful(&recent_anchors)?;
 
-            let _verified_transaction = match pending_transaction.verify_stateful(&recent_anchors) {
-                Ok(pending_transaction) => pending_transaction,
-                Err(_) => {
-                    return Ok(Response::CheckTx(response::CheckTx {
-                        code: 1,
-                        ..Default::default()
-                    }));
-                }
-            };
-
-            Ok(Response::CheckTx(response::CheckTx::default()))
+            Ok(())
         }
+        .instrument(Span::current())
     }
 
     /// Perform full transaction validation via `DeliverTx`.
@@ -291,63 +261,30 @@ impl App {
     /// We must perform all checks again here even though they are performed in `CheckTx`, as a
     /// Byzantine node may propose a block containing double spends or other disallowed behavior,
     /// so it is not safe to assume all checks performed in `CheckTx` were done.
-    #[instrument(skip(self))]
-    fn deliver_tx(&mut self, txbytes: Bytes) -> impl Future<Output = Result<Response, BoxError>> {
+    fn deliver_tx(&mut self, txbytes: Bytes) -> impl Future<Output = Result<(), anyhow::Error>> {
         let state = self.state.clone();
         let recent_anchors = self.recent_anchors.clone();
         let pending_block_ref = self.pending_block.clone();
 
-        let finished_signal = self.completion_tracker.start();
         async move {
-            // Transactions that cannot be deserialized should return a non-zero `DeliverTx` code.
-            let transaction = match Transaction::try_from(txbytes.as_ref()) {
-                Ok(transaction) => transaction,
-                Err(_) => {
-                    let _ = finished_signal.send(());
-                    return Ok(Response::DeliverTx(response::DeliverTx {
-                        code: 1,
-                        ..Default::default()
-                    }));
-                }
-            };
-
-            let pending_transaction = match transaction.verify_stateless() {
-                Ok(pending_transaction) => pending_transaction,
-                Err(_) => {
-                    let _ = finished_signal.send(());
-                    return Ok(Response::DeliverTx(response::DeliverTx {
-                        code: 1,
-                        ..Default::default()
-                    }));
-                }
-            };
+            let pending_transaction =
+                Transaction::try_from(txbytes.as_ref())?.verify_stateless()?;
 
             for nullifier in pending_transaction.spent_nullifiers.clone() {
                 if state
-                    .clone()
-                    .nullifier(nullifier)
+                    .nullifier(nullifier.clone())
                     .await
                     .expect("must be able to fetch nullifier")
                     .is_some()
                 {
-                    let _ = finished_signal.send(());
-                    return Ok(Response::DeliverTx(response::DeliverTx {
-                        code: 1,
-                        ..Default::default()
-                    }));
+                    return Err(anyhow!(
+                        "nullifer {:?} already present in database",
+                        nullifier
+                    ));
                 };
             }
 
-            let verified_transaction = match pending_transaction.verify_stateful(&recent_anchors) {
-                Ok(pending_transaction) => pending_transaction,
-                Err(_) => {
-                    let _ = finished_signal.send(());
-                    return Ok(Response::DeliverTx(response::DeliverTx {
-                        code: 1,
-                        ..Default::default()
-                    }));
-                }
-            };
+            let verified_transaction = pending_transaction.verify_stateful(&recent_anchors)?;
 
             // We accumulate data only for `VerifiedTransaction`s into `PendingBlock`.
             pending_block_ref
@@ -356,11 +293,8 @@ impl App {
                 .unwrap()
                 .add_transaction(verified_transaction);
 
-            // Signal that we're ready to resume processing further requests.
-            let _ = finished_signal.send(());
-
             increment_counter!("node_transactions_total");
-            Ok(Response::DeliverTx(response::DeliverTx::default()))
+            Ok(())
         }
     }
 
@@ -490,15 +424,66 @@ impl Service<Request> for App {
     }
 
     fn call(&mut self, req: Request) -> Self::Future {
-        tracing::info!(?req);
-
         let rsp = match req {
             // handled messages
             Request::Info(_) => return self.info().boxed(),
             Request::Query(query) => Response::Query(self.query(query.data)),
-            Request::CheckTx(check_tx) => return self.check_tx(check_tx).boxed(),
+            Request::CheckTx(check_tx) => {
+                // Mark that we want to process CheckTx messages sequentially.
+                // TODO: this requirement is only because we need to avoid
+                // having multiple transactions in the mempool with the same
+                // nullifiers, until we can use ABCI++ and control block
+                // proposals, at which point check_tx can run concurrently.
+                let finished_signal = self.completion_tracker.start();
+                let span = tracing::info_span!(
+                    "check_tx",
+                    kind = ?check_tx.kind,
+                    txid = ?hex::encode(&Sha256::digest(check_tx.tx.as_ref())),
+                );
+                let rsp = self.check_tx(check_tx);
+                return async move {
+                    tracing::debug!("starting check_tx");
+                    let rsp = rsp.await;
+                    tracing::debug!(?rsp);
+                    let _ = finished_signal.send(());
+                    match rsp {
+                        Ok(()) => Ok(Response::CheckTx(response::CheckTx::default())),
+                        Err(e) => Ok(Response::CheckTx(response::CheckTx {
+                            code: 1,
+                            log: e.to_string(),
+                            ..Default::default()
+                        })),
+                    }
+                }
+                .instrument(span)
+                .boxed();
+            }
             Request::BeginBlock(begin) => Response::BeginBlock(self.begin_block(begin)),
-            Request::DeliverTx(deliver_tx) => return self.deliver_tx(deliver_tx.tx).boxed(),
+            Request::DeliverTx(deliver_tx) => {
+                // Mark that we want to process DeliverTx messages sequentially.
+                let finished_signal = self.completion_tracker.start();
+                let span = tracing::info_span!(
+                    "deliver_tx",
+                    txid = ?hex::encode(&Sha256::digest(deliver_tx.tx.as_ref())),
+                );
+                let rsp = self.deliver_tx(deliver_tx.tx);
+                return async move {
+                    tracing::debug!("starting deliver_tx");
+                    let rsp = rsp.await;
+                    tracing::debug!(?rsp);
+                    let _ = finished_signal.send(());
+                    match rsp {
+                        Ok(()) => Ok(Response::DeliverTx(response::DeliverTx::default())),
+                        Err(e) => Ok(Response::DeliverTx(response::DeliverTx {
+                            code: 1,
+                            log: e.to_string(),
+                            ..Default::default()
+                        })),
+                    }
+                }
+                .instrument(span)
+                .boxed();
+            }
             Request::EndBlock(end) => Response::EndBlock(self.end_block(end)),
             Request::Commit => return self.commit().boxed(),
 
