@@ -444,7 +444,7 @@ impl Service<Request> for App {
                 return async move {
                     tracing::debug!("starting check_tx");
                     let rsp = rsp.await;
-                    tracing::debug!(?rsp);
+                    tracing::info!(?rsp);
                     let _ = finished_signal.send(());
                     match rsp {
                         Ok(()) => Ok(Response::CheckTx(response::CheckTx::default())),
@@ -470,7 +470,7 @@ impl Service<Request> for App {
                 return async move {
                     tracing::debug!("starting deliver_tx");
                     let rsp = rsp.await;
-                    tracing::debug!(?rsp);
+                    tracing::info!(?rsp);
                     let _ = finished_signal.send(());
                     match rsp {
                         Ok(()) => Ok(Response::DeliverTx(response::DeliverTx::default())),
