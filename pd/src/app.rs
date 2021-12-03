@@ -271,6 +271,7 @@ impl App {
                 Transaction::try_from(txbytes.as_ref())?.verify_stateless()?;
 
             for nullifier in pending_transaction.spent_nullifiers.clone() {
+                // verify that we're not spending a nullifier that was already spent in a previous block
                 if state
                     .nullifier(nullifier.clone())
                     .await
@@ -282,6 +283,20 @@ impl App {
                         nullifier
                     ));
                 };
+                // verify that we're not spending a nullifier that was already spent in this block
+                if pending_block_ref
+                    .as_ref()
+                    .expect("pending_block must be Some in DeliverTx")
+                    .lock()
+                    .unwrap()
+                    .spent_nullifiers
+                    .contains(&nullifier)
+                {
+                    return Err(anyhow!(
+                        "nullifier {:?} was already spent in this block",
+                        nullifier
+                    ));
+                }
             }
 
             let verified_transaction = pending_transaction.verify_stateful(&recent_anchors)?;
