@@ -64,11 +64,17 @@ impl StatelessTransactionExt for Transaction {
         for action in self.transaction_body().actions {
             match action {
                 Action::Output(output) => {
-                    if !output.body.proof.verify(
-                        output.body.value_commitment,
-                        output.body.note_commitment,
-                        output.body.ephemeral_key,
-                    ) {
+                    if output
+                        .body
+                        .proof
+                        .verify(
+                            output.body.value_commitment,
+                            output.body.note_commitment,
+                            output.body.ephemeral_key,
+                        )
+                        .is_err()
+                    {
+                        // TODO should the verification error be bubbled up here?
                         return Err(anyhow::anyhow!("An output proof did not verify"));
                     }
 
@@ -88,12 +94,18 @@ impl StatelessTransactionExt for Transaction {
                         .verify(&sighash, &spend.auth_sig)
                         .context("spend auth signature failed to verify")?;
 
-                    if !spend.body.proof.verify(
-                        self.transaction_body().merkle_root,
-                        spend.body.value_commitment,
-                        spend.body.nullifier.clone(),
-                        spend.body.rk,
-                    ) {
+                    if spend
+                        .body
+                        .proof
+                        .verify(
+                            self.transaction_body().merkle_root,
+                            spend.body.value_commitment,
+                            spend.body.nullifier.clone(),
+                            spend.body.rk,
+                        )
+                        .is_err()
+                    {
+                        // TODO should the verification error be bubbled up here?
                         return Err(anyhow::anyhow!("A spend proof did not verify"));
                     }
 

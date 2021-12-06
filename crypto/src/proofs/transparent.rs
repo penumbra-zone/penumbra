@@ -16,6 +16,24 @@ use crate::{
 pub enum Error {
     #[error("Invalid spend auth randomizer")]
     InvalidSpendAuthRandomizer,
+    #[error("Note commitment mismatch")]
+    NoteCommitmentMismatch,
+    #[error("Transmission key mismatch")]
+    TransmissionKeyMismatch,
+    #[error("Value commitment mismatch")]
+    ValueCommitmentMismatch,
+    #[error("Ephemeral public key mismatch")]
+    EphemeralPublicKeyMismatch,
+    #[error("Must not be an identity")]
+    IdentityUnexpected,
+    #[error("Unexpected depth for merkle path")]
+    MerklePathMismatch,
+    #[error("Merkle root mismatch")]
+    MerkleRootMismatch,
+    #[error("Invalid diversified address")]
+    InvalidDiversifiedAddress,
+    #[error("Bad nullifier")]
+    BadNullifier,
 }
 
 /// Transparent proof for spending existing notes.
@@ -61,9 +79,7 @@ impl SpendProof {
         value_commitment: value::Commitment,
         nullifier: Nullifier,
         rk: VerificationKey<SpendAuth>,
-    ) -> bool {
-        let mut proof_verifies = true;
-
+    ) -> anyhow::Result<(), Error> {
         // Note commitment integrity.
         let s_component_transmission_key = Fq::from_bytes(self.pk_d.0);
         if let Ok(transmission_key_s) = s_component_transmission_key {
@@ -71,16 +87,16 @@ impl SpendProof {
                 note::Commitment::new(self.note_blinding, self.value, self.g_d, transmission_key_s);
 
             if self.note_commitment != note_commitment_test {
-                proof_verifies = false;
+                return Err(Error::NoteCommitmentMismatch);
             }
         } else {
-            proof_verifies = false;
+            return Err(Error::TransmissionKeyMismatch);
         }
 
         // Merkle path integrity.
         // 1. Check the Merkle path is a depth of `merkle::DEPTH`.
         if self.merkle_path.1.len() != merkle::DEPTH {
-            proof_verifies = false;
+            return Err(Error::MerklePathMismatch);
         }
 
         // 2. Check the Merkle path leads to the expected anchor (`merkle::Root`).
@@ -104,19 +120,19 @@ impl SpendProof {
         }
         let expected_root = merkle::Root(cur.0);
         if expected_root != anchor {
-            proof_verifies = false;
+            return Err(Error::MerkleRootMismatch);
         }
 
         // Value commitment integrity.
         if self.value.commit(self.v_blinding) != value_commitment {
-            proof_verifies = false;
+            return Err(Error::ValueCommitmentMismatch);
         }
 
         // The use of decaf means that we do not need to check that the
         // diversified basepoint is of small order. However we instead
         // check it is not identity.
         if self.g_d.is_identity() || self.ak.is_identity() {
-            proof_verifies = false;
+            return Err(Error::IdentityUnexpected);
         }
 
         // Nullifier integrity.
@@ -125,7 +141,7 @@ impl SpendProof {
                 .nk
                 .derive_nullifier(self.position, &self.note_commitment)
         {
-            proof_verifies = false;
+            return Err(Error::BadNullifier);
         }
 
         // Spend authority.
@@ -133,17 +149,17 @@ impl SpendProof {
         let rk_test = self.ak.randomize(&self.spend_auth_randomizer);
         let rk_test_bytes: [u8; 32] = rk_test.into();
         if rk_bytes != rk_test_bytes {
-            proof_verifies = false;
+            return Err(Error::InvalidSpendAuthRandomizer);
         }
 
         // Diversified address integrity.
         let fvk = keys::FullViewingKey::from_components(self.ak, self.nk);
         let ivk = fvk.incoming();
         if self.pk_d != ivk.diversified_public(&self.g_d) {
-            proof_verifies = false;
+            return Err(Error::InvalidDiversifiedAddress);
         }
 
-        proof_verifies
+        Ok(())
     }
 }
 
@@ -178,9 +194,7 @@ impl OutputProof {
         value_commitment: value::Commitment,
         note_commitment: note::Commitment,
         epk: ka::Public,
-    ) -> bool {
-        let mut proof_verifies = true;
-
+    ) -> anyhow::Result<(), Error> {
         // Note commitment integrity.
         let s_component_transmission_key = Fq::from_bytes(self.pk_d.0);
         if let Ok(transmission_key_s) = s_component_transmission_key {
@@ -188,30 +202,30 @@ impl OutputProof {
                 note::Commitment::new(self.note_blinding, self.value, self.g_d, transmission_key_s);
 
             if note_commitment != note_commitment_test {
-                proof_verifies = false;
+                return Err(Error::NoteCommitmentMismatch);
             }
         } else {
-            proof_verifies = false;
+            return Err(Error::TransmissionKeyMismatch);
         }
 
         // Value commitment integrity.
         if self.value.commit(self.v_blinding) != value_commitment {
-            proof_verifies = false;
+            return Err(Error::ValueCommitmentMismatch);
         }
 
         // Ephemeral public key integrity.
         if self.esk.diversified_public(&self.g_d) != epk {
-            proof_verifies = false;
+            return Err(Error::EphemeralPublicKeyMismatch);
         }
 
         // The use of decaf means that we do not need to check that the
         // diversified basepoint is of small order. However we instead
         // check it is not identity.
         if self.g_d.is_identity() {
-            proof_verifies = false;
+            return Err(Error::IdentityUnexpected);
         }
 
-        proof_verifies
+        Ok(())
     }
 }
 
@@ -485,7 +499,9 @@ mod tests {
             esk,
         };
 
-        assert!(proof.verify(value_to_send.commit(v_blinding), note.commit(), epk));
+        assert!(proof
+            .verify(value_to_send.commit(v_blinding), note.commit(), epk)
+            .is_ok());
     }
 
     #[test]
@@ -529,11 +545,13 @@ mod tests {
             note.transmission_key_s(),
         );
 
-        assert!(!proof.verify(
-            value_to_send.commit(v_blinding),
-            incorrect_note_commitment,
-            epk
-        ));
+        assert!(proof
+            .verify(
+                value_to_send.commit(v_blinding),
+                incorrect_note_commitment,
+                epk
+            )
+            .is_err());
     }
 
     #[test]
@@ -571,7 +589,9 @@ mod tests {
         };
         let incorrect_value_commitment = value_to_send.commit(Fr::rand(&mut rng));
 
-        assert!(!proof.verify(incorrect_value_commitment, note.commit(), correct_epk));
+        assert!(proof
+            .verify(incorrect_value_commitment, note.commit(), correct_epk)
+            .is_err());
     }
 
     #[test]
@@ -609,11 +629,13 @@ mod tests {
         let incorrect_esk = ka::Secret::new(&mut rng);
         let incorrect_epk = incorrect_esk.diversified_public(&note.diversified_generator());
 
-        assert!(!proof.verify(
-            value_to_send.commit(v_blinding),
-            note.commit(),
-            incorrect_epk
-        ));
+        assert!(proof
+            .verify(
+                value_to_send.commit(v_blinding),
+                note.commit(),
+                incorrect_epk
+            )
+            .is_err());
     }
 
     #[test]
@@ -650,7 +672,9 @@ mod tests {
             esk,
         };
 
-        assert!(!proof.verify(value_to_send.commit(v_blinding), note.commit(), epk));
+        assert!(proof
+            .verify(value_to_send.commit(v_blinding), note.commit(), epk)
+            .is_err());
     }
 
     #[test]
@@ -702,7 +726,9 @@ mod tests {
 
         let rk: VerificationKey<SpendAuth> = rsk.into();
         let nf = nk.derive_nullifier(0.into(), &note_commitment);
-        assert!(proof.verify(anchor, value_to_send.commit(v_blinding), nf, rk));
+        assert!(proof
+            .verify(anchor, value_to_send.commit(v_blinding), nf, rk)
+            .is_ok());
     }
 
     #[test]
@@ -754,7 +780,9 @@ mod tests {
 
         let rk: VerificationKey<SpendAuth> = rsk.into();
         let nf = nk.derive_nullifier(0.into(), &note_commitment);
-        assert!(!proof.verify(incorrect_anchor, value_to_send.commit(v_blinding), nf, rk));
+        assert!(proof
+            .verify(incorrect_anchor, value_to_send.commit(v_blinding), nf, rk)
+            .is_err());
     }
 
     #[test]
@@ -806,7 +834,9 @@ mod tests {
 
         let rk: VerificationKey<SpendAuth> = rsk.into();
         let nf = nk.derive_nullifier(0.into(), &note_commitment);
-        assert!(!proof.verify(anchor, value_to_send.commit(Fr::rand(&mut rng)), nf, rk));
+        assert!(proof
+            .verify(anchor, value_to_send.commit(Fr::rand(&mut rng)), nf, rk)
+            .is_err());
     }
 
     #[test]
@@ -858,6 +888,8 @@ mod tests {
 
         let rk: VerificationKey<SpendAuth> = rsk.into();
         let incorrect_nf = nk.derive_nullifier(5.into(), &note_commitment);
-        assert!(!proof.verify(anchor, value_to_send.commit(v_blinding), incorrect_nf, rk));
+        assert!(proof
+            .verify(anchor, value_to_send.commit(v_blinding), incorrect_nf, rk)
+            .is_err());
     }
 }
