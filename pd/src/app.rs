@@ -122,6 +122,8 @@ impl App {
         for note in &genesis.notes {
             tracing::info!(?note);
             // Add all assets found in the genesis transaction to the asset registry
+            // xx Instead of per-note, here we'll inspect each entry in the `assets` genesis key
+            // and add their assetlist to the registry.
             genesis_block.new_assets.insert(
                 asset::Denom(note.asset_denom.clone()).into(),
                 note.asset_denom.clone(),
