@@ -121,11 +121,12 @@ impl App {
             tracing::info!(?allocation, "processing allocation");
             tx_builder.add_output(allocation.note().expect("genesis allocations are valid"));
             // Add all assets found in the genesis transaction to the asset registry
-            let id = asset::Denom(allocation.denom.clone()).id();
-            tracing::debug!(?id, "registering asset id");
-            genesis_block
-                .new_assets
-                .insert(id, allocation.denom.clone());
+            // xx Instead of per-note, here we'll inspect each entry in the `assets` genesis key
+            // and add their assetlist to the registry.
+            genesis_block.new_assets.insert(
+                asset::Denom(allocation.denom.clone()).into(),
+                allocation.denom.clone(),
+            );
         }
 
         let genesis_tx = tx_builder

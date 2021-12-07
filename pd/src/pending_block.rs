@@ -18,6 +18,7 @@ pub struct PendingBlock {
     /// Nullifiers that were spent in this block.
     pub spent_nullifiers: BTreeSet<Nullifier>,
     /// Stores new asset types found in this block that need to be added to the asset registry.
+    /// xxx Needs to map to AssetList
     pub new_assets: BTreeMap<asset::Id, String>,
 }
 
