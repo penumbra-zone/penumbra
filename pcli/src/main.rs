@@ -4,7 +4,7 @@ use directories::ProjectDirs;
 use penumbra_crypto::keys::SpendSeed;
 use rand_core::OsRng;
 use sha2::{Digest, Sha256};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use structopt::StructOpt;
 
 use penumbra_crypto::CURRENT_CHAIN_ID;
