@@ -17,6 +17,8 @@ use opt::*;
 mod sync;
 pub use sync::sync;
 
+pub mod fetch;
+
 mod state;
 pub use state::ClientStateFile;
 
@@ -45,11 +47,10 @@ async fn main() -> Result<()> {
     // Synchronize the wallet if the command requires it to be synchronized before it is run.
     let state = if opt.cmd.needs_sync() {
         let mut state = ClientStateFile::load(wallet_path.clone())?;
-        sync(
-            &mut state,
-            format!("http://{}:{}", opt.node, opt.lightwallet_port),
-        )
-        .await?;
+        let light_wallet_server_uri = format!("http://{}:{}", opt.node, opt.light_wallet_port);
+        let thin_wallet_server_uri = format!("http://{}:{}", opt.node, opt.thin_wallet_port);
+        sync(&mut state, light_wallet_server_uri).await?;
+        fetch::assets(&mut state, thin_wallet_server_uri).await?;
         Some(state)
     } else {
         None

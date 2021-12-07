@@ -9,7 +9,10 @@ use penumbra_crypto::{
     merkle::{self, NoteCommitmentTree, TreeExt},
     Nullifier,
 };
-use penumbra_proto::wallet::{Asset, CompactBlock, StateFragment, TransactionDetail};
+use penumbra_proto::{
+    light_wallet::{CompactBlock, StateFragment},
+    thin_wallet::{Asset, TransactionDetail},
+};
 
 use crate::{
     db::{self, schema},
@@ -213,7 +216,7 @@ INSERT INTO notes (
             nullifiers: query!(
                 "SELECT nullifier FROM nullifiers WHERE height = $1",
                 height
-            ).fetch_all(&mut conn).await?.into_iter().map(|row| row.nullifier).collect(),
+            ).fetch_all(&mut conn).await?.into_iter().map(|row| row.nullifier.into()).collect(),
             fragments: query!(
                 "SELECT note_commitment, ephemeral_key, encrypted_note FROM notes WHERE height = $1",
                 height

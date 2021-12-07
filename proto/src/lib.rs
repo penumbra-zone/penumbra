@@ -65,9 +65,14 @@ pub mod transparent_proofs {
     include!(concat!(env!("OUT_DIR"), "/penumbra.transparent_proofs.rs"));
 }
 
-/// Wallet protocol structures.
-pub mod wallet {
-    tonic::include_proto!("penumbra.wallet");
+/// Light wallet protocol structures.
+pub mod light_wallet {
+    tonic::include_proto!("penumbra.light_wallet");
+}
+
+/// Thin wallet protocol structures.
+pub mod thin_wallet {
+    tonic::include_proto!("penumbra.thin_wallet");
 }
 
 mod protobuf;
