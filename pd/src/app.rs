@@ -1,5 +1,5 @@
 use std::{
-    collections::{BTreeSet, VecDeque},
+    collections::{BTreeMap, BTreeSet, VecDeque},
     future::Future,
     pin::Pin,
     sync::{Arc, Mutex},
@@ -30,6 +30,7 @@ use penumbra_crypto::{
 use crate::{
     db::schema,
     genesis::GenesisAppState,
+    staking::Validator,
     verify::{mark_genesis_as_verified, StatefulTransactionExt, StatelessTransactionExt},
     PendingBlock, RequestExt, State,
 };
@@ -76,6 +77,10 @@ pub struct App {
 
     /// Epoch duration in blocks
     epoch_duration: u64,
+
+    /// Contains the validator set, with each validator uniquely identified by their tendermint
+    /// public key.
+    validators: Arc<Mutex<BTreeMap<tendermint::PublicKey, Validator>>>,
 }
 
 impl App {
@@ -90,6 +95,7 @@ impl App {
             note_commitment_tree,
             recent_anchors: recent_anchors,
             mempool_nullifiers: Arc::new(Default::default()),
+            validators: Arc::new(Default::default()),
             pending_block: None,
             completion_tracker: Default::default(),
             epoch_duration: genesis_config.epoch_duration,
@@ -136,7 +142,16 @@ impl App {
         genesis_block.add_transaction(verified_transaction);
         tracing::info!("loaded all genesis notes");
 
+        // load the validators from the initial Tendermint genesis state
+        for validator_update in init_chain.validators.iter() {
+            self.validators.lock().unwrap().insert(
+                validator_update.pub_key,
+                Validator::new(validator_update.pub_key, validator_update.power),
+            );
+        }
+
         self.epoch_duration = genesis.epoch_duration;
+
         self.pending_block = Some(Arc::new(Mutex::new(genesis_block)));
         let commit = self.commit();
         let state = self.state.clone();
@@ -189,6 +204,8 @@ impl App {
         self.pending_block = Some(Arc::new(Mutex::new(PendingBlock::new(
             self.note_commitment_tree.clone(),
         ))));
+        // TODO: process begin.last_commit_info to handle validator rewards, and
+        // begin.byzantine_validators to handle evidence + slashing
         response::BeginBlock::default()
     }
 
