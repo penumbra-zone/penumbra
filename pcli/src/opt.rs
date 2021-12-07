@@ -44,6 +44,19 @@ pub enum Command {
     },
 }
 
+impl Command {
+    /// Determine if this command requires a network sync before it executes.
+    pub fn needs_sync(&self) -> bool {
+        match self {
+            Command::Tx(cmd) => cmd.needs_sync(),
+            Command::Wallet(cmd) => cmd.needs_sync(),
+            Command::Addr(cmd) => cmd.needs_sync(),
+            Command::Sync => true,
+            Command::Balance { .. } => true,
+        }
+    }
+}
+
 #[derive(Debug, StructOpt)]
 pub enum WalletCmd {
     /// Import an existing spend seed.
@@ -59,6 +72,19 @@ pub enum WalletCmd {
     Reset,
     /// Delete the entire wallet permanently.
     Delete,
+}
+
+impl WalletCmd {
+    /// Determine if this command requires a network sync before it executes.
+    pub fn needs_sync(&self) -> bool {
+        match self {
+            WalletCmd::Import { .. } => false,
+            WalletCmd::Export => false,
+            WalletCmd::Generate => false,
+            WalletCmd::Reset => false,
+            WalletCmd::Delete => false,
+        }
+    }
 }
 
 #[derive(Debug, StructOpt)]
@@ -81,6 +107,17 @@ pub enum AddrCmd {
     },
 }
 
+impl AddrCmd {
+    /// Determine if this command requires a network sync before it executes.
+    pub fn needs_sync(&self) -> bool {
+        match self {
+            AddrCmd::List => false,
+            AddrCmd::Show { .. } => false,
+            AddrCmd::New { .. } => false,
+        }
+    }
+}
+
 #[derive(Debug, StructOpt)]
 pub enum TxCmd {
     /// Send transaction to the node.
@@ -101,4 +138,13 @@ pub enum TxCmd {
         #[structopt(short, long)]
         memo: Option<String>,
     },
+}
+
+impl TxCmd {
+    /// Determine if this command requires a network sync before it executes.
+    pub fn needs_sync(&self) -> bool {
+        match self {
+            TxCmd::Send { .. } => true,
+        }
+    }
 }
