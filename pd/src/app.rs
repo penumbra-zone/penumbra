@@ -1,5 +1,5 @@
 use std::{
-    collections::{BTreeSet, VecDeque},
+    collections::{BTreeSet, VecDeque, BTreeMap},
     future::Future,
     pin::Pin,
     sync::{Arc, Mutex},
@@ -31,6 +31,7 @@ use penumbra_crypto::{
 use crate::{
     db::schema,
     genesis::GenesisNote,
+    staking::Validator,
     verify::{mark_genesis_as_verified, StatefulTransactionExt, StatelessTransactionExt},
     PendingBlock, State,
 };
@@ -74,6 +75,10 @@ pub struct App {
 
     /// Used to allow asynchronous requests to be processed sequentially.
     completion_tracker: CompletionTracker,
+
+    /// Contains the validator set, with each validator uniquely identified by their tendermint
+    /// public key.
+    validators: Arc<Mutex<BTreeMap<tendermint::PublicKey, Validator>>>,
 }
 
 impl App {
@@ -87,6 +92,7 @@ impl App {
             note_commitment_tree,
             recent_anchors: recent_anchors,
             mempool_nullifiers: Arc::new(Default::default()),
+            validators: Arc::new(Default::default()),
             pending_block: None,
             completion_tracker: Default::default(),
         })
@@ -132,6 +138,14 @@ impl App {
         // Now add the transaction and its note fragments to the pending state changes.
         genesis_block.add_transaction(verified_transaction);
         tracing::info!("loaded all genesis notes");
+
+        // load the validators from the initial Tendermint genesis state
+        for validator_update in init_chain.validators.iter() {
+            self.validators.lock().unwrap().insert(validator_update.pub_key, Validator::new(
+                validator_update.pub_key,
+                validator_update.power,
+            ));
+        }
 
         self.pending_block = Some(Arc::new(Mutex::new(genesis_block)));
         let commit = self.commit();
@@ -181,6 +195,8 @@ impl App {
         self.pending_block = Some(Arc::new(Mutex::new(PendingBlock::new(
             self.note_commitment_tree.clone(),
         ))));
+        // TODO: process begin.last_commit_info to handle validator rewards, and
+        // begin.byzantine_validators to handle evidence + slashing
         response::BeginBlock::default()
     }
 

@@ -6,6 +6,7 @@ mod pending_block;
 mod state;
 mod verify;
 mod wallet;
+mod staking;
 
 pub mod genesis;
 
