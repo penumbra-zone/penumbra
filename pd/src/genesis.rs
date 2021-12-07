@@ -69,6 +69,15 @@ impl FromStr for GenesisAddr {
 
 #[serde_as]
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq)]
+pub struct GenesisAppState {
+    /// Initial notes
+    pub notes: Vec<GenesisNote>,
+    /// Epoch duration in terms of blocks
+    pub epoch_duration: i64,
+}
+
+#[serde_as]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Eq)]
 pub struct GenesisNote {
     #[serde_as(as = "serde_with::hex::Hex")]
     pub diversifier: [u8; 11],

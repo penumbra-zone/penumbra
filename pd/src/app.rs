@@ -30,7 +30,7 @@ use penumbra_crypto::{
 
 use crate::{
     db::schema,
-    genesis::GenesisNote,
+    genesis::GenesisAppState,
     verify::{mark_genesis_as_verified, StatefulTransactionExt, StatelessTransactionExt},
     PendingBlock, State,
 };
@@ -74,6 +74,9 @@ pub struct App {
 
     /// Used to allow asynchronous requests to be processed sequentially.
     completion_tracker: CompletionTracker,
+
+    /// Epoch duration in blocks
+    epoch_duration: Option<i64>,
 }
 
 impl App {
@@ -89,6 +92,7 @@ impl App {
             mempool_nullifiers: Arc::new(Default::default()),
             pending_block: None,
             completion_tracker: Default::default(),
+            epoch_duration: None,
         })
     }
 
@@ -102,14 +106,14 @@ impl App {
         genesis_block.set_height(0);
 
         // Note that errors cannot be handled in InitChain, the application must crash.
-        let genesis: Vec<GenesisNote> = serde_json::from_slice(&init_chain.app_state_bytes)
+        let genesis: GenesisAppState = serde_json::from_slice(&init_chain.app_state_bytes)
             .expect("can parse app_state in genesis file");
 
         // Create genesis transaction and update database table `transactions`.
         let mut genesis_tx_builder =
             Transaction::genesis_build_with_root(self.note_commitment_tree.root2());
 
-        for note in genesis {
+        for note in genesis.notes {
             tracing::info!(?note);
             // Add all assets found in the genesis transaction to the asset registry
             genesis_block.new_assets.insert(
@@ -133,6 +137,8 @@ impl App {
         genesis_block.add_transaction(verified_transaction);
         tracing::info!("loaded all genesis notes");
 
+        // XXX Does the epoch duration need a Mutex around it?
+        self.epoch_duration = Some(genesis.epoch_duration);
         self.pending_block = Some(Arc::new(Mutex::new(genesis_block)));
         let commit = self.commit();
         let state = self.state.clone();
@@ -322,6 +328,12 @@ impl App {
             .unwrap()
             .set_height(end.height);
 
+        // TODO: if necessary, set the EndBlock response to add validators
+        // at the epoch boundary
+        if end.height % self.epoch_duration.expect("Epoch duration must be set") == 0 {
+            // Epoch boundary -- add/remove validators if necessary
+            println!("New epoch")
+        }
         // TODO: here's where we process validator changes
         response::EndBlock::default()
     }
