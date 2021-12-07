@@ -53,14 +53,17 @@ impl Wallet for WalletApp {
         let (tx, rx) = mpsc::channel(100);
 
         let state = self.state.clone();
+        
         tokio::spawn(async move {
-            for height in start_height..=end_height {
-                let block = state.compact_block(height.into()).await;
-                tracing::info!("sending block response: {:?}", block);
-                tx.send(block.map_err(|_| tonic::Status::unavailable("database error")))
-                    .await
-                    .unwrap();
-            }
+
+            let block = state.compact_block_range(start_height.into(), end_height.into()).await;
+            
+            tracing::info!("sending block response: {:?}", block);
+
+            tx.send(block.map_err(|_| tonic::Status::unavailable("database error")))
+                .await
+                .unwrap();
+
         });
 
         Ok(tonic::Response::new(Self::CompactBlockRangeStream::new(rx)))

@@ -232,6 +232,46 @@ INSERT INTO notes (
         })
     }
 
+    /// Retrieve the [`CompactBlock`] for the given range of heights.
+    ///
+    /// If the block does not exist, the resulting `CompactBlock` will be empty.
+    pub async fn compact_block_range(&self, start_height: i64, end_height: i64) -> Result<CompactBlock> {
+
+        let mut conn = self.pool.acquire().await?;
+
+        Ok(CompactBlock {
+
+            height: start_height as u32,
+
+            nullifiers: query!(
+                "SELECT nullifier FROM nullifiers WHERE height BETWEEN $1 AND $2",
+                start_height,
+                end_height
+            ).fetch_all(&mut conn)
+            .await?
+            .into_iter()
+            .map(|row| row.nullifier)
+            .collect(),
+
+            fragments: query!(
+                "SELECT note_commitment, ephemeral_key, encrypted_note FROM notes WHERE height BETWEEN $1 AND $2",
+                start_height,
+                end_height
+            )
+            .fetch_all(&mut conn)
+            .await?
+            .into_iter()
+            .map(
+                |row| StateFragment {
+                    note_commitment: row.note_commitment.into(),
+                    ephemeral_key: row.ephemeral_key.into(),
+                    encrypted_note: row.encrypted_note.into(),
+                },
+            )
+            .collect(),
+        })
+    }
+
     /// Retrieve the [`TransactionDetail`] for a given note commitment.
     pub async fn transaction_by_note(&self, note_commitment: Vec<u8>) -> Result<TransactionDetail> {
         let mut conn = self.pool.acquire().await?;
