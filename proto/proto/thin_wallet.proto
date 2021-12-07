@@ -1,0 +1,40 @@
+syntax = "proto3";
+package penumbra.thin_wallet;
+
+import "transaction.proto";
+
+// A thin wallet service.
+// 
+// Unlike the "light wallet" service, this protocol does not attempt to be
+// trust-minimized, either in terms of integrity or privacy.
+service ThinWallet {
+  rpc TransactionByNote(TransactionByNoteRequest) returns (TransactionDetail);
+  rpc AssetLookup(AssetLookupRequest) returns (Asset);
+  rpc AssetList(AssetListRequest) returns (stream Asset);
+}
+
+// Requests an asset denom given an asset ID
+message AssetLookupRequest {
+  // The asset ID
+  bytes asset_id = 1;
+}
+
+// Lists all assets in Asset Registry
+message AssetListRequest {
+}
+
+message Asset {
+  bytes asset_id = 1;
+  string asset_denom = 2;
+}
+
+// Requests the transaction containing a given output note commitment.
+// Note: this is bad for privacy, address private fetching later.
+message TransactionByNoteRequest {
+  // The note commitment we're interested in.
+  bytes cm = 1;
+}
+
+message TransactionDetail {
+  bytes id = 1;
+}
