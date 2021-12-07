@@ -37,15 +37,10 @@ async fn main() -> Result<()> {
 
     // We store wallet data in `penumbra_wallet.dat` in the state directory, unless
     // the user provides another location.
-    let wallet_path: PathBuf;
-    match opt.wallet_location {
-        Some(path) => {
-            wallet_path = Path::new(&path).to_path_buf();
-        }
-        None => {
-            wallet_path = project_dir.data_dir().join("penumbra_wallet.json");
-        }
-    }
+    let wallet_path = opt.wallet_location.map_or_else(
+        || project_dir.data_dir().join("penumbra_wallet.json"),
+        PathBuf::from,
+    );
 
     // Synchronize the wallet if the command requires it to be synchronized before it is run.
     let state = if opt.cmd.needs_sync() {
@@ -133,9 +128,7 @@ async fn main() -> Result<()> {
                 WalletCmd::Reset => {
                     tracing::info!("resetting client state");
                     let mut state = ClientStateFile::load(wallet_path.clone())?;
-                    let wallet = state.wallet().clone();
-                    let new_state = ClientState::new(wallet);
-                    *state = new_state;
+                    *state = ClientState::new(state.wallet().clone());
                     state.commit()?;
                     None
                 }
@@ -173,40 +166,38 @@ async fn main() -> Result<()> {
                 ClientStateFile::save(state, archive_path)?;
             }
         }
-        Command::Addr(AddrCmd::List) => {
-            let state = ClientStateFile::load(wallet_path)?;
-
-            let mut table = Table::new();
-            table.load_preset(presets::NOTHING);
-            table.set_header(vec!["Index", "Label", "Address"]);
-            for (index, label, address) in state.wallet().addresses() {
-                table.add_row(vec![index.to_string(), label, address.to_string()]);
-            }
-            println!("{}", table);
-        }
-        Command::Addr(AddrCmd::Show { index, addr_only }) => {
-            let state = ClientStateFile::load(wallet_path)?;
-            let (label, address) = state.wallet().address_by_index(index as usize)?;
-
-            if addr_only {
-                println!("{}", address.to_string());
-            } else {
-                let mut table = Table::new();
-                table.load_preset(presets::NOTHING);
-                table.set_header(vec!["Index", "Label", "Address"]);
-                table.add_row(vec![index.to_string(), label, address.to_string()]);
-                println!("{}", table);
-            }
-        }
-        Command::Addr(AddrCmd::New { label }) => {
+        Command::Addr(addr_cmd) => {
             let mut state = ClientStateFile::load(wallet_path)?;
-            let (index, address, _dtk) = state.wallet_mut().new_address(label.clone());
-            state.commit()?;
 
+            // Set up table (this won't be used with `show --addr-only`)
             let mut table = Table::new();
             table.load_preset(presets::NOTHING);
             table.set_header(vec!["Index", "Label", "Address"]);
-            table.add_row(vec![index.to_string(), label, address.to_string()]);
+
+            match addr_cmd {
+                AddrCmd::List => {
+                    for (index, label, address) in state.wallet().addresses() {
+                        table.add_row(vec![index.to_string(), label, address.to_string()]);
+                    }
+                }
+                AddrCmd::Show { index, addr_only } => {
+                    let (label, address) = state.wallet().address_by_index(index as usize)?;
+
+                    if addr_only {
+                        println!("{}", address.to_string());
+                        return Ok(()); // don't print the label
+                    } else {
+                        table.add_row(vec![index.to_string(), label, address.to_string()]);
+                    }
+                }
+                AddrCmd::New { label } => {
+                    let (index, address, _dtk) = state.wallet_mut().new_address(label.clone());
+                    state.commit()?;
+                    table.add_row(vec![index.to_string(), label, address.to_string()]);
+                }
+            }
+
+            // Print the table (we don't get here if `show --addr-only`)
             println!("{}", table);
         }
         Command::Balance { by_address } => {
@@ -217,6 +208,7 @@ async fn main() -> Result<()> {
 
             if by_address {
                 table.set_header(vec!["Address", "Asset", "Balance"]);
+
                 for (address_id, by_denom) in state.unspent_notes_by_address_and_denom().into_iter()
                 {
                     let (mut label, _) = state.wallet().address_by_index(address_id as usize)?;
@@ -227,11 +219,9 @@ async fn main() -> Result<()> {
                         label = String::default();
                     }
                 }
-                println!("{}", table);
             } else {
-                let mut table = Table::new();
-                table.load_preset(presets::NOTHING);
                 table.set_header(vec!["Asset", "Balance"]);
+
                 for (denom, by_address) in state.unspent_notes_by_denom_and_address().into_iter() {
                     let balance: u64 = by_address
                         .values()
@@ -240,8 +230,9 @@ async fn main() -> Result<()> {
                         .sum();
                     table.add_row(vec![denom, balance.to_string()]);
                 }
-                println!("{}", table);
             }
+
+            println!("{}", table);
         }
     }
 
