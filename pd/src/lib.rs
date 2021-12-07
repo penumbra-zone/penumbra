@@ -5,6 +5,7 @@ mod db;
 mod pd_metrics;
 mod pending_block;
 mod request_ext;
+mod staking;
 mod state;
 mod verify;
 mod wallet;
