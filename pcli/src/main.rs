@@ -30,14 +30,10 @@ async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
     let opt = Opt::from_args();
 
-    let archive_dir = ProjectDirs::from("zone", "penumbra", "penumbra-testnet-archive")
-        .expect("can access penumbra-testnet-archive dir");
     let project_dir =
         ProjectDirs::from("zone", "penumbra", "pcli").expect("can access penumbra project dir");
     // Currently we use just the data directory. Create it if it is missing.
     std::fs::create_dir_all(project_dir.data_dir()).expect("can create penumbra data directory");
-    std::fs::create_dir_all(archive_dir.data_dir())
-        .expect("can create penumbra testnet-archive directory");
 
     // We store wallet data in `penumbra_wallet.dat` in the state directory, unless
     // the user provides another location.
@@ -99,74 +95,83 @@ async fn main() -> Result<()> {
 
             tracing::info!("{}", rsp);
         }
-        Command::Wallet(WalletCmd::Generate) => {
-            if wallet_path.exists() {
-                return Err(anyhow::anyhow!(
-                    "Wallet path {} already exists, refusing to overwrite it",
-                    wallet_path.display()
-                ));
-            }
-            let state = ClientState::new(Wallet::generate(&mut OsRng));
-            println!("Saving wallet to {}", wallet_path.display());
-            ClientStateFile::save(state.clone(), wallet_path)?;
+        Command::Wallet(wallet_cmd) => {
+            // Dispatch on the wallet command and return a new state if the command required a
+            // wallet state to be saved to disk
+            let state = match wallet_cmd {
+                // These two commands return new wallets to be saved to disk:
+                WalletCmd::Generate => Some(ClientState::new(Wallet::generate(&mut OsRng))),
+                WalletCmd::Import { spend_seed } => {
+                    let seed = hex::decode(spend_seed)?;
+                    let seed = SpendSeed::try_from(seed.as_slice())?;
+                    Some(ClientState::new(Wallet::import(seed)))
+                }
+                // The rest of these commands don't require a wallet state to be saved to disk:
+                WalletCmd::Export => {
+                    let state = ClientStateFile::load(wallet_path.clone())?;
+                    let seed = state.wallet().spend_key().seed().clone();
+                    println!("{}", hex::encode(&seed.0));
+                    None
+                }
+                WalletCmd::Delete => {
+                    if wallet_path.is_file() {
+                        std::fs::remove_file(&wallet_path)?;
+                        println!("Deleted wallet file at {}", wallet_path.display());
+                    } else if wallet_path.exists() {
+                        return Err(anyhow!(
+                            "Expected wallet file at {} but found something that is not a file; refusing to delete it",
+                            wallet_path.display()
+                        ));
+                    } else {
+                        return Err(anyhow!(
+                            "No wallet exists at {}, so it cannot be deleted",
+                            wallet_path.display()
+                        ));
+                    }
+                    None
+                }
+                WalletCmd::Reset => {
+                    tracing::info!("resetting client state");
+                    let mut state = ClientStateFile::load(wallet_path.clone())?;
+                    let wallet = state.wallet().clone();
+                    let new_state = ClientState::new(wallet);
+                    *state = new_state;
+                    state.commit()?;
+                    None
+                }
+            };
 
-            // Also save the archived version for testnet backup purposes.
-            // The archived wallet is stored in a path determined by the testnet ID and hash of the key material.
-            let archive_path: PathBuf;
-            let mut hasher = Sha256::new();
-            hasher.update(&state.wallet().spend_key().seed().0);
-            let result = hasher.finalize();
+            // If a new wallet should be saved to disk, save it and also archive it in the archive directory
+            if let Some(state) = state {
+                // Never overwrite a wallet that already exists
+                if wallet_path.exists() {
+                    return Err(anyhow::anyhow!(
+                        "Wallet path {} already exists, refusing to overwrite it",
+                        wallet_path.display()
+                    ));
+                }
 
-            let wallet_archive_dir = archive_dir
-                .data_dir()
-                .join(CURRENT_CHAIN_ID)
-                .join(hex::encode(&result[0..8]));
-            std::fs::create_dir_all(&wallet_archive_dir)
-                .expect("can create penumbra wallet archive directory");
-            archive_path = wallet_archive_dir.join("penumbra_wallet.json");
-            println!("Saving backup wallet to {}", archive_path.display());
-            ClientStateFile::save(state, archive_path)?;
-        }
-        Command::Wallet(WalletCmd::Import { spend_seed }) => {
-            if wallet_path.exists() {
-                return Err(anyhow::anyhow!(
-                    "Wallet path {} already exists, refusing to overwrite it",
-                    wallet_path.display()
-                ));
+                println!("Saving wallet to {}", wallet_path.display());
+                ClientStateFile::save(state.clone(), wallet_path)?;
+
+                // Archive the newly generated state
+                let archive_dir = ProjectDirs::from("zone", "penumbra", "penumbra-testnet-archive")
+                    .expect("can access penumbra-testnet-archive dir");
+
+                // Create the directory <data dir>/penumbra-testnet-archive/<chain id>/<spend key hash prefix>/
+                let spend_key_hash = Sha256::digest(&state.wallet().spend_key().seed().0);
+                let wallet_archive_dir = archive_dir
+                    .data_dir()
+                    .join(CURRENT_CHAIN_ID)
+                    .join(hex::encode(&spend_key_hash[0..8]));
+                std::fs::create_dir_all(&wallet_archive_dir)
+                    .expect("can create penumbra wallet archive directory");
+
+                // Save the wallet file in the archive directory
+                let archive_path = wallet_archive_dir.join("penumbra_wallet.json");
+                println!("Saving backup wallet to {}", archive_path.display());
+                ClientStateFile::save(state, archive_path)?;
             }
-            let spend_seed = SpendSeed::try_from(hex::decode(&spend_seed)?.as_slice())?;
-            let state = ClientState::new(Wallet::import(spend_seed));
-            println!("Saving wallet to {}", wallet_path.display());
-            ClientStateFile::save(state, wallet_path)?;
-        }
-        Command::Wallet(WalletCmd::Export) => {
-            let state = ClientStateFile::load(wallet_path)?;
-            let seed = state.wallet().spend_key().seed().clone();
-            println!("{}", hex::encode(&seed.0));
-        }
-        Command::Wallet(WalletCmd::Delete) => {
-            if wallet_path.is_file() {
-                std::fs::remove_file(&wallet_path)?;
-                println!("Deleted wallet file at {}", wallet_path.display());
-            } else if wallet_path.exists() {
-                return Err(anyhow!(
-                    "Expected wallet file at {} but found something that is not a file; refusing to delete it",
-                    wallet_path.display()
-                ));
-            } else {
-                return Err(anyhow!(
-                    "No wallet exists at {}, so it cannot be deleted",
-                    wallet_path.display()
-                ));
-            }
-        }
-        Command::Wallet(WalletCmd::Reset) => {
-            tracing::info!("resetting client state");
-            let mut state = ClientStateFile::load(wallet_path)?;
-            let wallet = state.wallet().clone();
-            let new_state = ClientState::new(wallet);
-            *state = new_state;
-            state.commit()?;
         }
         Command::Addr(AddrCmd::List) => {
             let state = ClientStateFile::load(wallet_path)?;
