@@ -7,6 +7,11 @@ import tempfile
 
 import docker
 
+# Number of blocks per epoch
+# We want each epoch around 1 day, so at
+# 86400 seconds/day / 10 seconds/block = 8640
+EPOCH_DURATION_BLOCKS = 8640
+
 
 # This script will handle configuring a Penumbra docker-compose validator deployment
 # by initializing the Tendermint node and patching the genesis.json (stored in the
@@ -57,8 +62,13 @@ def patch_genesis(client: docker.DockerClient, chain_id, genesis_data):
 
     existing_genesis["chain_id"] = chain_id
 
+    existing_genesis["app_state"] = {}
+
     # patch the existing genesis data with our hardcoded notes
-    existing_genesis["app_state"] = genesis_data
+    existing_genesis["app_state"]["notes"] = genesis_data
+
+    # add the epoch duration in blocks
+    existing_genesis["app_state"]["epoch_duration"] = EPOCH_DURATION_BLOCKS
 
     # write the modified genesis data back
     with open(f"{temp_dir.name}/genesis.json", "w") as f:
