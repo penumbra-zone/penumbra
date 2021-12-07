@@ -1,5 +1,5 @@
 use std::{
-    collections::{BTreeSet, VecDeque, BTreeMap},
+    collections::{BTreeMap, BTreeSet, VecDeque},
     future::Future,
     pin::Pin,
     sync::{Arc, Mutex},
@@ -141,10 +141,10 @@ impl App {
 
         // load the validators from the initial Tendermint genesis state
         for validator_update in init_chain.validators.iter() {
-            self.validators.lock().unwrap().insert(validator_update.pub_key, Validator::new(
+            self.validators.lock().unwrap().insert(
                 validator_update.pub_key,
-                validator_update.power,
-            ));
+                Validator::new(validator_update.pub_key, validator_update.power),
+            );
         }
 
         self.pending_block = Some(Arc::new(Mutex::new(genesis_block)));

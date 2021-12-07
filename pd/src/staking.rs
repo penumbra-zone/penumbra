@@ -16,7 +16,7 @@ impl PartialEq for Validator {
 
 impl Validator {
     pub fn new(pubkey: PublicKey, voting_power: vote::Power) -> Validator {
-        Validator{
+        Validator {
             tm_pubkey: pubkey,
             voting_power,
         }

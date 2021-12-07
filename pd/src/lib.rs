@@ -3,10 +3,10 @@
 mod app;
 mod db;
 mod pending_block;
+mod staking;
 mod state;
 mod verify;
 mod wallet;
-mod staking;
 
 pub mod genesis;
 
