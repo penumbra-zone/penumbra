@@ -4,6 +4,7 @@ use std::convert::{TryFrom, TryInto};
 use ark_ff::fields::PrimeField;
 use decaf377::FieldExt;
 use once_cell::sync::Lazy;
+use serde::{Deserialize, Serialize};
 
 use crate::Fq;
 
@@ -116,6 +117,31 @@ impl Id {
     pub fn to_bytes(&self) -> [u8; 32] {
         self.0.to_bytes()
     }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct DenomUnit {
+    /// The name of this denomination, e.g. `upenumbra`.
+    pub denom: String,
+    /// The exponent of this denomination, if the minimum denomination, `0`.
+    pub exponent: u8,
+    /// A list of alternative aliases for the denomination.
+    pub aliases: Vec<String>,
+}
+
+/// Metadata about each asset including the minimum denomination.
+///
+/// Based on [ADR-024](https://docs.cosmos.network/master/architecture/adr-024-coin-metadata.html).
+#[derive(Serialize, Deserialize)]
+pub struct AssetList {
+    /// The description of this asset, e.g. `The native token for the Penumbra zone.`
+    pub description: String,
+    /// A list of alternative denominations that can be used, e.g. `upenumbra`, `penumbra`.
+    pub denom_unit: Vec<DenomUnit>,
+    /// The base unit of the asset, e.g. `upenumbra`. Calculations should be done with the base.
+    pub base: String,
+    /// The unit that should be used in displaying e.g. balances, e.g. `penumbra`.
+    pub display: String,
 }
 
 #[cfg(test)]
