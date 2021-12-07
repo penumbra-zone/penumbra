@@ -51,14 +51,22 @@ async fn main() -> Result<()> {
         }
     }
 
+    // Synchronize the wallet if the command requires it to be synchronized before it is run.
+    let state = if opt.cmd.needs_sync() {
+        let mut state = ClientStateFile::load(wallet_path.clone())?;
+        sync(
+            &mut state,
+            format!("http://{}:{}", opt.node, opt.lightwallet_port),
+        )
+        .await?;
+        Some(state)
+    } else {
+        None
+    };
+
     match opt.cmd {
         Command::Sync => {
-            let mut state = ClientStateFile::load(wallet_path)?;
-            sync(
-                &mut state,
-                format!("http://{}:{}", opt.node, opt.lightwallet_port),
-            )
-            .await?;
+            // We have already synchronized the wallet above, so we can just return.
         }
         Command::Tx(TxCmd::Send {
             amount,
@@ -68,13 +76,7 @@ async fn main() -> Result<()> {
             source_address_id,
             memo,
         }) => {
-            let mut state = ClientStateFile::load(wallet_path)?;
-            sync(
-                &mut state,
-                format!("http://{}:{}", opt.node, opt.lightwallet_port),
-            )
-            .await?;
-            let tx = state.new_transaction(
+            let tx = state.expect("state must be synchronized").new_transaction(
                 &mut OsRng,
                 amount,
                 denomination,
@@ -107,8 +109,8 @@ async fn main() -> Result<()> {
             let state = ClientState::new(Wallet::generate(&mut OsRng));
             println!("Saving wallet to {}", wallet_path.display());
             ClientStateFile::save(state.clone(), wallet_path)?;
-            // Also save the archived version for testnet backup purposes
 
+            // Also save the archived version for testnet backup purposes.
             // The archived wallet is stored in a path determined by the testnet ID and hash of the key material.
             let archive_path: PathBuf;
             let mut hasher = Sha256::new();
@@ -203,16 +205,12 @@ async fn main() -> Result<()> {
             println!("{}", table);
         }
         Command::Balance { by_address } => {
-            let mut state = ClientStateFile::load(wallet_path)?;
-            sync(
-                &mut state,
-                format!("http://{}:{}", opt.node, opt.lightwallet_port),
-            )
-            .await?;
+            let state = state.expect("state must be synchronized");
+
+            let mut table = Table::new();
+            table.load_preset(presets::NOTHING);
 
             if by_address {
-                let mut table = Table::new();
-                table.load_preset(presets::NOTHING);
                 table.set_header(vec!["Address", "Asset", "Balance"]);
                 for (address_id, by_denom) in state.unspent_notes_by_address_and_denom().into_iter()
                 {
