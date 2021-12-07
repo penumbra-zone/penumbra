@@ -26,7 +26,7 @@ pub async fn sync(state: &mut ClientStateFile, wallet_uri: String) -> Result<()>
         state.scan_block(block)?;
         // very basic form of intermediate checkpointing
         count += 1;
-        if count % 1000 == 0 {
+        if count % 1000 == 1 {
             state.commit()?;
             tracing::info!(height = ?state.last_block_height().unwrap(), "syncing...");
         }
