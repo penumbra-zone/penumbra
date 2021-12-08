@@ -77,7 +77,7 @@ impl Builder {
     }
 
     /// Add a new note to the output
-    pub fn add_output_getting_note<R: RngCore + CryptoRng>(
+    pub fn add_output_producing_note<R: RngCore + CryptoRng>(
         mut self,
         rng: &mut R,
         dest: &Address,
@@ -130,7 +130,7 @@ impl Builder {
         memo: MemoPlaintext,
         ovk: &OutgoingViewingKey,
     ) -> Self {
-        self.add_output_getting_note(rng, dest, value_to_send, memo, ovk)
+        self.add_output_producing_note(rng, dest, value_to_send, memo, ovk)
             .1
     }
 

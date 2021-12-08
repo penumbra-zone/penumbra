@@ -189,9 +189,14 @@ impl ClientState {
 
             // Spend each of the notes we selected.
             for note in notes {
+                let note_commitment = note.commit();
+
+                // Add the note to the pending set
+                self.pending_set.insert(note_commitment, note.clone());
+
                 let auth_path = self
                     .note_commitment_tree
-                    .authentication_path(&note.commit())
+                    .authentication_path(&note_commitment)
                     .unwrap();
                 let merkle_path = (u64::from(auth_path.0) as usize, auth_path.1);
                 let merkle_position = auth_path.0;
@@ -209,7 +214,7 @@ impl ClientState {
             if change > 0 {
                 // xx: add memo handling
                 let memo = memo::MemoPlaintext([0u8; 512]);
-                tx_builder = tx_builder.add_output(
+                let (note, new_tx_builder) = tx_builder.add_output_producing_note(
                     rng,
                     &change_address,
                     Value {
@@ -219,29 +224,14 @@ impl ClientState {
                     memo,
                     self.wallet.outgoing_viewing_key(),
                 );
+                tx_builder = new_tx_builder;
+                self.pending_change_set.insert(note.commit(), note);
             }
         }
 
         let transaction = tx_builder
             .finalize(rng)
             .map_err(|err| anyhow::anyhow!("error during transaction finalization: {}", err))?;
-
-        // Collect all change outputs and insert them into the pending change set
-        for action in transaction.transaction_body().actions.iter() {
-            if let Action::Output(output::Output { body, .. }) = action {
-                // Determine by trial decryption which outputs are change outputs
-                // TODO: should we do this, or is there a more efficient way?
-                if let Ok(note) = Note::decrypt(
-                    &body.encrypted_note,
-                    self.wallet().incoming_viewing_key(),
-                    &body.ephemeral_key,
-                ) {
-                    self.pending_change_set.insert(body.note_commitment, note);
-                }
-            } else if let Action::Spend(spend::Spend { body, .. }) = action {
-                // FIXME: track this spent output somehow
-            }
-        }
 
         Ok(transaction)
     }
@@ -268,7 +258,7 @@ impl ClientState {
         })
     }
 
-    /// Returns unspent notes, grouped by address and then by denomination.
+    /// Returns unspent notes, grouped by address index and then by denomination.
     pub fn unspent_notes_by_address_and_denom(&self) -> BTreeMap<u64, HashMap<String, Vec<Note>>> {
         let mut notemap = BTreeMap::default();
 
@@ -284,7 +274,7 @@ impl ClientState {
         notemap
     }
 
-    /// Returns unspent notes, grouped by denomination and then by address.
+    /// Returns unspent notes, grouped by denomination and then by address index.
     pub fn unspent_notes_by_denom_and_address(&self) -> HashMap<String, BTreeMap<u64, Vec<Note>>> {
         let mut notemap = HashMap::default();
 
