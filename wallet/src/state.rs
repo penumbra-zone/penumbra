@@ -689,40 +689,21 @@ mod serde_helpers {
                 asset_registry.insert(hex::decode(id)?.try_into()?, denom);
             }
 
-            let now = SystemTime::now();
             let mut pending_timeouts = BTreeMap::new();
             for (timeout, commitments) in state.pending_timeouts.into_iter() {
                 pending_timeouts.insert(timeout, {
-                    // Build up a vector of *unexpired* pending commitments, deleting those which
-                    // expire from their corresponding sets (just allocated above) as we go
+                    // Build up a vector of pending commitments (this is fallible so it can't be
+                    // done inside of a call to `map`)
                     let mut result = Vec::with_capacity(commitments.len());
                     for commitment in commitments {
                         match commitment {
                             PendingCommitmentHelper::Change(commitment) => {
                                 let commitment = hex::decode(commitment)?.as_slice().try_into()?;
-                                if now > timeout {
-                                    // If timeout expired, drop this pending change note -- this is
-                                    // permissible, because dropping a pending change note just
-                                    // means we forget about an output, not an input
-                                    pending_change_set.remove(&commitment);
-                                } else {
-                                    // If not, keep track of this timeout still
-                                    result.push(PendingCommitment::Change(commitment));
-                                }
+                                result.push(PendingCommitment::Change(commitment));
                             }
                             PendingCommitmentHelper::Spend(commitment) => {
                                 let commitment = hex::decode(commitment)?.as_slice().try_into()?;
-                                if now > timeout {
-                                    // IMPORTANT: If timeout expired, move this pending spend note
-                                    // back to the unspent note set -- if we forget to do this,
-                                    // we'll permanently lose track of this note until we reset the wallet
-                                    if let Some(note) = pending_set.remove(&commitment) {
-                                        unspent_set.insert(commitment, note);
-                                    }
-                                } else {
-                                    // If not, keep track of this timeout still
-                                    result.push(PendingCommitment::Spend(commitment));
-                                }
+                                result.push(PendingCommitment::Spend(commitment));
                             }
                         }
                     }
