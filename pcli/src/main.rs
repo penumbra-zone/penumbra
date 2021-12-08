@@ -224,9 +224,9 @@ async fn main() -> Result<()> {
                 // Format a string describing the pending balance updates
                 let pending_string = if pending > 0 && pending_change > 0 {
                     format!("+{} (change), -{} (spent)", pending, pending_change)
-                } else if pending == 0 {
+                } else if pending == 0 && pending_change > 0 {
                     format!("+{} (change)", pending_change)
-                } else if pending_change == 0 {
+                } else if pending > 0 && pending_change == 0 {
                     format!("-{} (spent)", pending)
                 } else {
                     String::new()
