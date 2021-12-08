@@ -579,24 +579,22 @@ mod serde_helpers {
                     .pending_timeouts
                     .into_iter()
                     .map(|(timeout, commitments)| {
-                        (
-                            timeout,
-                            commitments
-                                .into_iter()
-                                .map(|commitment| match commitment {
-                                    PendingCommitment::Change(commitment) => {
-                                        PendingCommitmentHelper::Change(hex::encode(
-                                            commitment.0.to_bytes(),
-                                        ))
-                                    }
-                                    PendingCommitment::Spend(commitment) => {
-                                        PendingCommitmentHelper::Spend(hex::encode(
-                                            commitment.0.to_bytes(),
-                                        ))
-                                    }
-                                })
-                                .collect(),
-                        )
+                        let commitments = commitments
+                            .into_iter()
+                            .map(|commitment| match commitment {
+                                PendingCommitment::Change(commitment) => {
+                                    PendingCommitmentHelper::Change(hex::encode(
+                                        commitment.0.to_bytes(),
+                                    ))
+                                }
+                                PendingCommitment::Spend(commitment) => {
+                                    PendingCommitmentHelper::Spend(hex::encode(
+                                        commitment.0.to_bytes(),
+                                    ))
+                                }
+                            })
+                            .collect();
+                        (timeout, commitments)
                     })
                     .collect(),
                 pending_set: state
