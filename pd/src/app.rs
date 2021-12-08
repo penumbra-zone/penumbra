@@ -84,6 +84,7 @@ impl App {
     #[instrument(skip(state))]
     pub async fn new(state: State) -> Result<Self, anyhow::Error> {
         let note_commitment_tree = state.note_commitment_tree().await?;
+        let genesis_config = state.genesis_configuration().await?;
         let recent_anchors = state.recent_anchors(NUM_RECENT_ANCHORS).await?;
         Ok(Self {
             state,
@@ -92,8 +93,7 @@ impl App {
             mempool_nullifiers: Arc::new(Default::default()),
             pending_block: None,
             completion_tracker: Default::default(),
-            // 8640 blocks is 1 day at 10 second block intervals
-            epoch_duration: 8640,
+            epoch_duration: genesis_config.epoch_duration,
         })
     }
 
