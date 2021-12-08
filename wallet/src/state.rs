@@ -1,4 +1,6 @@
 use anyhow::Context;
+use penumbra_crypto::action::output;
+use penumbra_crypto::Action;
 use penumbra_proto::light_wallet::{CompactBlock, StateFragment};
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
@@ -32,6 +34,10 @@ pub struct ClientState {
     nullifier_map: BTreeMap<Nullifier, note::Commitment>,
     /// Notes that we have received.
     unspent_set: BTreeMap<note::Commitment, Note>,
+    /// Notes that we have spent but which have not yet been confirmed on-chain.
+    pending_set: BTreeMap<note::Commitment, Note>,
+    /// Notes that we anticipate receiving on-chain as change but which have not yet been confirmed.
+    pending_change_set: BTreeMap<note::Commitment, Note>,
     /// Notes that we have spent.
     spent_set: BTreeMap<note::Commitment, Note>,
     /// Map of note commitment to full transaction data for transactions we have visibility into.
@@ -49,6 +55,8 @@ impl ClientState {
             note_commitment_tree: NoteCommitmentTree::new(MAX_MERKLE_CHECKPOINTS_CLIENT),
             nullifier_map: BTreeMap::new(),
             unspent_set: BTreeMap::new(),
+            pending_set: BTreeMap::new(),
+            pending_change_set: BTreeMap::new(),
             spent_set: BTreeMap::new(),
             transactions: BTreeMap::new(),
             asset_registry: BTreeMap::new(),
@@ -214,9 +222,26 @@ impl ClientState {
             }
         }
 
-        tx_builder
+        let transaction = tx_builder
             .finalize(rng)
-            .map_err(|err| anyhow::anyhow!("error during transaction finalization: {}", err))
+            .map_err(|err| anyhow::anyhow!("error during transaction finalization: {}", err))?;
+
+        // Collect all change outputs and insert them into the pending change set
+        for action in transaction.transaction_body().actions.iter() {
+            if let Action::Output(output::Output { body, .. }) = action {
+                // Determine by trial decryption which outputs are change outputs
+                // TODO: should we do this, or is there a more efficient way?
+                if let Ok(note) = Note::decrypt(
+                    &body.encrypted_note,
+                    self.wallet().incoming_viewing_key(),
+                    &body.ephemeral_key,
+                ) {
+                    self.pending_change_set.insert(body.note_commitment, note);
+                }
+            }
+        }
+
+        Ok(transaction)
     }
 
     /// Returns an iterator over unspent `(address_id, denom, note)` triples.
@@ -356,7 +381,7 @@ impl ClientState {
         }
 
         // Scan through the list of nullifiers to find those which refer to notes in our unspent set
-        // and move them into the spent set
+        // or pending set and move them into the spent set.
         for nullifier in nullifiers {
             // Try to decode the nullifier
             if let Ok(nullifier) = nullifier.as_ref().try_into() {
@@ -369,6 +394,13 @@ impl ClientState {
                         tracing::debug!(
                             ?nullifier,
                             "found nullifier for unspent note: marking it as spent"
+                        )
+                    } else if let Some(note) = self.pending_set.remove(&note_commitment) {
+                        // Insert the note into the spent set
+                        self.spent_set.insert(note_commitment, note);
+                        tracing::debug!(
+                            ?nullifier,
+                            "found nullifier for pending note: marking it as spent"
                         )
                     } else if self.spent_set.contains_key(&note_commitment) {
                         // If the nullifier is already in the spent set, it means we've already
@@ -415,6 +447,8 @@ mod serde_helpers {
         note_commitment_tree: Vec<u8>,
         nullifier_map: Vec<(String, String)>,
         unspent_set: Vec<(String, String)>,
+        pending_set: Vec<(String, String)>,
+        pending_change_set: Vec<(String, String)>,
         spent_set: Vec<(String, String)>,
         transactions: Vec<(String, String)>,
         asset_registry: Vec<(String, String)>,
@@ -439,6 +473,26 @@ mod serde_helpers {
                     .collect(),
                 unspent_set: state
                     .unspent_set
+                    .iter()
+                    .map(|(commitment, note)| {
+                        (
+                            hex::encode(commitment.0.to_bytes()),
+                            hex::encode(note.to_bytes()),
+                        )
+                    })
+                    .collect(),
+                pending_set: state
+                    .pending_set
+                    .iter()
+                    .map(|(commitment, note)| {
+                        (
+                            hex::encode(commitment.0.to_bytes()),
+                            hex::encode(note.to_bytes()),
+                        )
+                    })
+                    .collect(),
+                pending_change_set: state
+                    .pending_change_set
                     .iter()
                     .map(|(commitment, note)| {
                         (
@@ -488,6 +542,22 @@ mod serde_helpers {
                 );
             }
 
+            let mut pending_set = BTreeMap::new();
+            for (commitment, note) in state.pending_set.into_iter() {
+                pending_set.insert(
+                    hex::decode(commitment)?.as_slice().try_into()?,
+                    hex::decode(note)?.as_slice().try_into()?,
+                );
+            }
+
+            let mut pending_change_set = BTreeMap::new();
+            for (commitment, note) in state.pending_change_set.into_iter() {
+                pending_change_set.insert(
+                    hex::decode(commitment)?.as_slice().try_into()?,
+                    hex::decode(note)?.as_slice().try_into()?,
+                );
+            }
+
             let mut spent_set = BTreeMap::new();
             for (commitment, note) in state.spent_set.into_iter() {
                 spent_set.insert(
@@ -507,6 +577,8 @@ mod serde_helpers {
                 note_commitment_tree: bincode::deserialize(&state.note_commitment_tree)?,
                 nullifier_map,
                 unspent_set,
+                pending_set,
+                pending_change_set,
                 spent_set,
                 asset_registry,
                 // TODO: serialize full transactions
