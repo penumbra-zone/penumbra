@@ -18,6 +18,7 @@ decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 decaf377-rdsa = { git = "https://github.com/penumbra-zone/decaf377-rdsa" }
 incrementalmerkletree = { git = "https://github.com/penumbra-zone/incrementalmerkletree" }
 poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377" }
+tendermint = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "abci-domain-types_r14" }
 
 # Crates.io deps
 sha2 = "0.9"

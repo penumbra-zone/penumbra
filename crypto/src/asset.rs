@@ -1,12 +1,16 @@
 //! Asset types and identifiers.
+use once_cell::sync::Lazy;
 use std::convert::{TryFrom, TryInto};
+
+use tendermint::PublicKey;
 
 use ark_ff::fields::PrimeField;
 use decaf377::FieldExt;
-use once_cell::sync::Lazy;
 
 use crate::Fq;
 
+pub const NATIVE_ASSET_DENOM: &str = "penumbra";
+pub const PENUMBRA_BECH32_VALIDATOR_PREFIX: &str = "penumbravalpub";
 /// An identifier for an IBC asset type.
 ///
 /// This is similar to, but different from, the design in [ADR001].  As in
@@ -27,6 +31,21 @@ use crate::Fq;
 /// https://github.com/cosmos/ibc-go/blob/main/docs/architecture/adr-001-coin-source-tracing.md
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Id(pub Fq);
+
+/// Validator-specific unique asset identifier, used for identifying staking tokens
+/// associated with a particular validator.
+pub struct ValidatorAssetId(pub Fq);
+
+impl From<&PublicKey> for ValidatorAssetId {
+    fn from(pk: &PublicKey) -> ValidatorAssetId {
+        let validator_asset_denom = format!(
+            "d{}-{}",
+            NATIVE_ASSET_DENOM,
+            pk.to_bech32(PENUMBRA_BECH32_VALIDATOR_PREFIX)
+        );
+        ValidatorAssetId::from(Denom(validator_asset_denom))
+    }
+}
 
 pub struct Denom(pub String);
 
@@ -61,6 +80,19 @@ impl std::str::FromStr for Id {
 impl From<&str> for Denom {
     fn from(strin: &str) -> Denom {
         Denom(strin.to_string())
+    }
+}
+
+impl From<Denom> for ValidatorAssetId {
+    fn from(denom: Denom) -> ValidatorAssetId {
+        // Convert an asset name to an asset ID by hashing to a scalar
+        ValidatorAssetId(Fq::from_le_bytes_mod_order(
+            // XXX choice of hash function?
+            blake2b_simd::Params::default()
+                .personal(b"Penumbra_AssetID")
+                .hash(denom.0.as_ref())
+                .as_bytes(),
+        ))
     }
 }
 
