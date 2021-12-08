@@ -340,6 +340,54 @@ impl ClientState {
         self.last_block_height
     }
 
+    /// Remove all pending spends and change whose timeouts have expired, dropping pending change
+    /// and returning pending spends to the unspent set.
+    #[instrument]
+    pub fn prune_timeouts(&mut self) {
+        // Split off the expired timeouts from the pending timeouts in 3 steps (necessary because of
+        // the API provided by `split_off`):
+        // 1. Split out the unexpired timeouts, leaving only the expired timeouts inside `self`
+        let mut unexpired = self.pending_timeouts.split_off(&SystemTime::now());
+        // 2. Swap the unexpired timeouts for the expired timeouts inside `self`
+        std::mem::swap(&mut self.pending_timeouts, &mut unexpired);
+        // 3. Rename `unexpired` to `expired` because its meaning has changed per the swap above
+        let expired = unexpired;
+
+        // For every expired timeout, remove its note from the corresponding set, taking care to
+        // move pending notes back to the unspent set
+        for (timeout, commitments) in expired {
+            for commitment in commitments {
+                match commitment {
+                    PendingCommitment::Change(commitment) => {
+                        // Drop this pending change note -- this is permissible, because dropping a
+                        // pending change note just means we forget about an output, not an input
+                        if self.pending_change_set.remove(&commitment).is_none() {
+                            tracing::warn!(
+                                ?timeout,
+                                ?commitment,
+                                "attempted to drop a pending change note, but found that it did not exist",
+                            );
+                        }
+                    }
+                    PendingCommitment::Spend(commitment) => {
+                        // IMPORTANT: Move this pending spend note back to the unspent note set --
+                        // if we forget to do this, we'll permanently lose track of this note until
+                        // we reset the wallet
+                        if let Some(note) = self.pending_set.remove(&commitment) {
+                            self.unspent_set.insert(commitment, note);
+                        } else {
+                            tracing::warn!(
+                                ?timeout,
+                                ?commitment,
+                                "attempted to move a pending spend back to the unspent set, but found that it did not exist",
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     /// Scan the provided block and update the client state.
     ///
     /// The provided block must be the one immediately following [`Self::last_block_height`].
@@ -495,58 +543,7 @@ mod serde_helpers {
     }
 
     impl From<ClientState> for ClientStateHelper {
-        fn from(mut state: ClientState) -> Self {
-            // Remove expired timeouts from the client state
-            let now = SystemTime::now();
-            let pending_timeouts = state
-                .pending_timeouts
-                .into_iter()
-                .filter_map(|(timeout, commitments)| {
-                    if now > timeout {
-                        // Timeout expired, so remove corresponding pending spends and change
-                        for commitment in commitments {
-                            match commitment {
-                                PendingCommitment::Change(commitment) => {
-                                    // Drop the pending change note -- this is permissible because
-                                    // we're forgetting an output, not an input, so nothing becomes
-                                    // unspendable
-                                    state.pending_change_set.remove(&commitment);
-                                }
-                                PendingCommitment::Spend(commitment) => {
-                                    // IMPORTANT: Move the pending spend note back into the unspent
-                                    // set -- this must be done, or else we lose the ability to ever
-                                    // spend this note again
-                                    if let Some(note) = state.pending_set.remove(&commitment) {
-                                        state.unspent_set.insert(commitment, note);
-                                    }
-                                }
-                            }
-                        }
-                        None
-                    } else {
-                        // Timeout not yet expired, so keep it around
-                        Some((
-                            timeout,
-                            commitments
-                                .into_iter()
-                                .map(|commitment| match commitment {
-                                    PendingCommitment::Change(commitment) => {
-                                        PendingCommitmentHelper::Change(hex::encode(
-                                            commitment.0.to_bytes(),
-                                        ))
-                                    }
-                                    PendingCommitment::Spend(commitment) => {
-                                        PendingCommitmentHelper::Spend(hex::encode(
-                                            commitment.0.to_bytes(),
-                                        ))
-                                    }
-                                })
-                                .collect(),
-                        ))
-                    }
-                })
-                .collect();
-
+        fn from(state: ClientState) -> Self {
             Self {
                 wallet: state.wallet,
                 last_block_height: state.last_block_height,
@@ -571,7 +568,30 @@ mod serde_helpers {
                         )
                     })
                     .collect(),
-                pending_timeouts,
+                pending_timeouts: state
+                    .pending_timeouts
+                    .into_iter()
+                    .map(|(timeout, commitments)| {
+                        (
+                            timeout,
+                            commitments
+                                .into_iter()
+                                .map(|commitment| match commitment {
+                                    PendingCommitment::Change(commitment) => {
+                                        PendingCommitmentHelper::Change(hex::encode(
+                                            commitment.0.to_bytes(),
+                                        ))
+                                    }
+                                    PendingCommitment::Spend(commitment) => {
+                                        PendingCommitmentHelper::Spend(hex::encode(
+                                            commitment.0.to_bytes(),
+                                        ))
+                                    }
+                                })
+                                .collect(),
+                        )
+                    })
+                    .collect(),
                 pending_set: state
                     .pending_set
                     .iter()
