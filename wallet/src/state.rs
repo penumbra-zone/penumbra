@@ -144,8 +144,9 @@ impl ClientState {
         let mut notes_to_spend = Vec::new();
         let mut total_spend_value = 0u64;
         for note in notes.into_iter() {
-            // A note is spendable if it is unspent, or anticipated to be received as change
-            if let UnspentNote::Unspent(note) | UnspentNote::PendingChange(note) = note {
+            // A note is only spendable if it has been confirmed on chain to us (change outputs
+            // cannot be spent yet because they do not have a position):
+            if let UnspentNote::Unspent(note) = note {
                 notes_to_spend.push(note);
                 total_spend_value += note.amount();
 
