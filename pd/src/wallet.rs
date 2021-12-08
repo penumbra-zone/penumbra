@@ -17,23 +17,21 @@ use crate::State;
 impl LightWallet for State {
     type CompactBlockRangeStream = ReceiverStream<Result<CompactBlock, Status>>;
 
+    #[instrument(
+        skip(self, request),
+        fields(
+            start_height = request.get_ref().start_height,
+            end_height = request.get_ref().end_height,
+        ),
+    )]
     async fn compact_block_range(
         &self,
         request: tonic::Request<CompactBlockRangeRequest>,
     ) -> Result<tonic::Response<Self::CompactBlockRangeStream>, Status> {
-        let remote_addr = request.remote_addr().expect("transport is a network");
-
         let CompactBlockRangeRequest {
             start_height,
             end_height,
         } = request.into_inner();
-
-        let span = tracing::info_span!(
-            "compact_block_range",
-            ?remote_addr,
-            ?start_height,
-            ?end_height
-        );
 
         let current_height = self
             .height()
@@ -50,15 +48,13 @@ impl LightWallet for State {
             std::cmp::min(end_height, current_height)
         };
 
-        span.in_scope(|| {
-            // It's useful to record the end height since we adjusted it,
-            // but the start height is already recorded in the span.
-            tracing::info!(
-                end_height,
-                num_blocks = (end_height - start_height),
-                "starting compact_block_range response"
-            )
-        });
+        // It's useful to record the end height since we adjusted it,
+        // but the start height is already recorded in the span.
+        tracing::info!(
+            end_height,
+            num_blocks = (end_height - start_height),
+            "starting compact_block_range response"
+        );
 
         let state = self.clone();
         let (tx, rx) = mpsc::channel(100);
@@ -72,7 +68,7 @@ impl LightWallet for State {
                         .unwrap();
                 }
             }
-            .instrument(span),
+            .instrument(Span::current()),
         );
 
         Ok(tonic::Response::new(Self::CompactBlockRangeStream::new(rx)))
@@ -83,10 +79,7 @@ impl LightWallet for State {
 impl ThinWallet for State {
     type AssetListStream = ReceiverStream<Result<Asset, Status>>;
 
-    #[instrument(
-        skip(self, request),
-        fields(remote_addr = ?request.remote_addr().expect("network transport"))
-    )]
+    #[instrument(skip(self, request))]
     async fn transaction_by_note(
         &self,
         request: tonic::Request<TransactionByNoteRequest>,
@@ -100,10 +93,7 @@ impl ThinWallet for State {
         Ok(tonic::Response::new(transaction))
     }
 
-    #[instrument(
-        skip(self, request),
-        fields(remote_addr = ?request.remote_addr().expect("network transport"))
-    )]
+    #[instrument(skip(self, request))]
     async fn asset_lookup(
         &self,
         request: tonic::Request<AssetLookupRequest>,
@@ -117,10 +107,7 @@ impl ThinWallet for State {
         Ok(tonic::Response::new(asset))
     }
 
-    #[instrument(
-        skip(self, _request),
-        fields(remote_addr = ?_request.remote_addr().expect("network transport"))
-    )]
+    #[instrument(skip(self, _request))]
     async fn asset_list(
         &self,
         _request: tonic::Request<AssetListRequest>,

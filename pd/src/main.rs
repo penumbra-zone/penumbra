@@ -67,6 +67,19 @@ enum Command {
     },
 }
 
+// Extracted from tonic's remote_addr implementation; we'd like to instrument
+// spans with the remote addr at the server level rather than at the individual
+// request level, but the hook available to do that gives us an http::Request
+// rather than a tonic::Request, so the tonic::Request::remote_addr method isn't
+// available.
+fn remote_addr(req: &http::Request<()>) -> Option<SocketAddr> {
+    use tonic::transport::server::TcpConnectInfo;
+    // NOTE: needs to also check TlsConnectInfo if we use TLS
+    req.extensions()
+        .get::<TcpConnectInfo>()
+        .and_then(|i| i.remote_addr())
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
@@ -109,6 +122,10 @@ async fn main() -> anyhow::Result<()> {
 
             let light_wallet_server = tokio::spawn(
                 Server::builder()
+                    .trace_fn(|req| match remote_addr(req) {
+                        Some(remote_addr) => tracing::error_span!("light_wallet", ?remote_addr),
+                        None => tracing::error_span!("light_wallet"),
+                    })
                     .add_service(LightWalletServer::new(state.clone()))
                     .serve(
                         format!("{}:{}", host, light_wallet_port)
@@ -118,6 +135,10 @@ async fn main() -> anyhow::Result<()> {
             );
             let thin_wallet_server = tokio::spawn(
                 Server::builder()
+                    .trace_fn(|req| match remote_addr(req) {
+                        Some(remote_addr) => tracing::error_span!("thin_wallet", ?remote_addr),
+                        None => tracing::error_span!("thin_wallet"),
+                    })
                     .add_service(ThinWalletServer::new(state.clone()))
                     .serve(
                         format!("{}:{}", host, thin_wallet_port)
