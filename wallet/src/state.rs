@@ -60,6 +60,30 @@ pub enum PendingCommitment {
     Spend(note::Commitment),
 }
 
+#[derive(Clone, Debug)]
+/// A note which has not yet been confirmed on the chain as spent.
+pub enum UnspentNote<'a> {
+    /// A note which is ours to spend immediately: neither pending a spend, nor pending our
+    /// confirming it as received change from a transaction.
+    Unspent(&'a Note),
+    /// A note which we have submitted in a spend transaction but which has not yet been
+    /// confirmed on the chain (so if the transaction is rejected, we may get it back again).
+    PendingSpend(&'a Note),
+    /// A note which resulted as predicted change from a spend transaction, but which has not
+    /// yet been confirmed on the chain (so we cannot spend it yet).
+    PendingChange(&'a Note),
+}
+
+impl AsRef<Note> for UnspentNote<'_> {
+    fn as_ref(&self) -> &Note {
+        match self {
+            UnspentNote::Unspent(note) => note,
+            UnspentNote::PendingSpend(note) => note,
+            UnspentNote::PendingChange(note) => note,
+        }
+    }
+}
+
 impl ClientState {
     pub fn new(wallet: Wallet) -> Self {
         Self {
@@ -96,7 +120,7 @@ impl ClientState {
         amount: u64,
         denom: String,
         source_address: Option<u64>,
-    ) -> Result<Vec<Note>, anyhow::Error> {
+    ) -> Result<Vec<&Note>, anyhow::Error> {
         let mut notes_by_address = self
             .unspent_notes_by_denom_and_address()
             .remove(&denom)
@@ -120,11 +144,14 @@ impl ClientState {
         let mut notes_to_spend = Vec::new();
         let mut total_spend_value = 0u64;
         for note in notes.into_iter() {
-            notes_to_spend.push(note.clone());
-            total_spend_value += note.amount();
+            // A note is spendable if it is unspent, or anticipated to be received as change
+            if let UnspentNote::Unspent(note) | UnspentNote::PendingChange(note) = note {
+                notes_to_spend.push(note);
+                total_spend_value += note.amount();
 
-            if total_spend_value >= amount {
-                break;
+                if total_spend_value >= amount {
+                    break;
+                }
             }
         }
 
@@ -196,7 +223,11 @@ impl ClientState {
             }
 
             // Select a list of notes that provides at least the required amount.
-            let notes = self.notes_to_spend(rng, amount, denom.clone(), source_address)?;
+            let notes: Vec<Note> = self
+                .notes_to_spend(rng, amount, denom.clone(), source_address)?
+                .into_iter()
+                .map(Note::clone)
+                .collect();
             let change_address = self
                 .wallet
                 .change_address(notes.last().expect("spent at least one note"))?;
@@ -271,8 +302,8 @@ impl ClientState {
     }
 
     /// Returns an iterator over unspent `(address_id, denom, note)` triples.
-    pub fn unspent_notes(&self) -> impl Iterator<Item = (u64, String, Note)> + '_ {
-        self.unspent_set.values().cloned().map(|note| {
+    pub fn unspent_notes(&self) -> impl Iterator<Item = (u64, String, UnspentNote)> + '_ {
+        self.unspent_set.values().map(|note| {
             // Any notes we have in the unspent set we will have the corresponding denominations
             // for since the notes and asset registry are both part of the sync.
             let denom = self
@@ -288,12 +319,14 @@ impl ClientState {
                 .try_into()
                 .expect("diversifiers created by `pcli` are well-formed");
 
-            (index, denom, note)
+            (index, denom, UnspentNote::Unspent(note))
         })
     }
 
     /// Returns unspent notes, grouped by address index and then by denomination.
-    pub fn unspent_notes_by_address_and_denom(&self) -> BTreeMap<u64, HashMap<String, Vec<Note>>> {
+    pub fn unspent_notes_by_address_and_denom(
+        &self,
+    ) -> BTreeMap<u64, HashMap<String, Vec<UnspentNote>>> {
         let mut notemap = BTreeMap::default();
 
         for (index, denom, note) in self.unspent_notes() {
@@ -309,7 +342,9 @@ impl ClientState {
     }
 
     /// Returns unspent notes, grouped by denomination and then by address index.
-    pub fn unspent_notes_by_denom_and_address(&self) -> HashMap<String, BTreeMap<u64, Vec<Note>>> {
+    pub fn unspent_notes_by_denom_and_address(
+        &self,
+    ) -> HashMap<String, BTreeMap<u64, Vec<UnspentNote>>> {
         let mut notemap = HashMap::default();
 
         for (index, denom, note) in self.unspent_notes() {
