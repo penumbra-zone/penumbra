@@ -1,4 +1,4 @@
-use ark_ff::PrimeField;
+use ark_ff::{PrimeField, UniformRand};
 use blake2b_simd;
 use chacha20poly1305::{
     aead::{Aead, NewAead},
@@ -6,6 +6,7 @@ use chacha20poly1305::{
 };
 use decaf377::FieldExt;
 use once_cell::sync::Lazy;
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use thiserror;
@@ -79,6 +80,15 @@ impl Note {
             transmission_key_s: Fq::from_bytes(transmission_key.0)
                 .map_err(|_| Error::InvalidTransmissionKey)?,
         })
+    }
+
+    /// Generate a fresh note representing the given value for the given destination address, with a
+    /// random blinding factor.
+    pub fn fresh(rng: &mut impl Rng, address: crate::Address, value: Value) -> Result<Self, Error> {
+        let diversifier = *address.diversifier();
+        let transmission_key = *address.transmission_key();
+        let note_blinding = Fq::rand(rng);
+        Note::new(diversifier, transmission_key, value, note_blinding)
     }
 
     pub fn diversified_generator(&self) -> decaf377::Element {
