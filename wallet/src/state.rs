@@ -162,9 +162,16 @@ impl ClientState {
 
         // The value we need to spend is the output value, plus fees.
         let mut value_to_spend = output_value;
-        *value_to_spend.entry("penumbra".into()).or_default() += fee;
+        if fee > 0 {
+            *value_to_spend.entry("penumbra".into()).or_default() += fee;
+        }
 
         for (denom, amount) in value_to_spend {
+            // Only produce an output if the amount is greater than zero
+            if amount == 0 {
+                continue;
+            }
+
             // Select a list of notes that provides at least the required amount.
             let notes = self.notes_to_spend(rng, amount, denom.clone(), source_address)?;
             let change_address = self
