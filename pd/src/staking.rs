@@ -2,7 +2,8 @@ use penumbra_crypto::Address;
 use serde::{Deserialize, Serialize};
 use tendermint::{vote, PublicKey};
 
-const PENUMBRA_BECH32_VALIDATOR_PREFIX: &str = "penumbravalpub";
+use penumbra_crypto::asset::PENUMBRA_BECH32_VALIDATOR_PREFIX;
+
 /// Validator tracks the Penumbra validator's long-term consensus key (tm_pubkey), as well as their
 /// voting power.
 #[derive(Deserialize, Serialize, Debug, Eq, Clone)]
