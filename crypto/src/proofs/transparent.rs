@@ -478,15 +478,8 @@ mod tests {
             amount: 10,
             asset_id: asset::Denom::from("penumbra").into(),
         };
-        let note_blinding = Fq::rand(&mut rng);
         let v_blinding = Fr::rand(&mut rng);
-        let note = Note::new(
-            *dest.diversifier(),
-            *dest.transmission_key(),
-            value_to_send,
-            note_blinding,
-        )
-        .expect("transmission key is valid");
+        let note = Note::fresh(&mut rng, &dest, value_to_send).expect("transmission key is valid");
         let esk = ka::Secret::new(&mut rng);
         let epk = esk.diversified_public(&note.diversified_generator());
 
@@ -495,7 +488,7 @@ mod tests {
             pk_d: *dest.transmission_key(),
             value: value_to_send,
             v_blinding,
-            note_blinding,
+            note_blinding: note.note_blinding(),
             esk,
         };
 
@@ -517,15 +510,8 @@ mod tests {
             amount: 10,
             asset_id: asset::Denom::from("penumbra").into(),
         };
-        let note_blinding = Fq::rand(&mut rng);
         let v_blinding = Fr::rand(&mut rng);
-        let note = Note::new(
-            *dest.diversifier(),
-            *dest.transmission_key(),
-            value_to_send,
-            note_blinding,
-        )
-        .expect("transmission key is valid");
+        let note = Note::fresh(&mut rng, &dest, value_to_send).expect("transmission key is valid");
         let esk = ka::Secret::new(&mut rng);
         let epk = esk.diversified_public(&note.diversified_generator());
 
@@ -534,7 +520,7 @@ mod tests {
             pk_d: *dest.transmission_key(),
             value: value_to_send,
             v_blinding,
-            note_blinding,
+            note_blinding: note.note_blinding(),
             esk,
         };
 
@@ -567,15 +553,8 @@ mod tests {
             amount: 10,
             asset_id: asset::Denom::from("penumbra").into(),
         };
-        let note_blinding = Fq::rand(&mut rng);
         let v_blinding = Fr::rand(&mut rng);
-        let note = Note::new(
-            *dest.diversifier(),
-            *dest.transmission_key(),
-            value_to_send,
-            note_blinding,
-        )
-        .expect("transmission key is valid");
+        let note = Note::fresh(&mut rng, &dest, value_to_send).expect("transmission key is valid");
         let esk = ka::Secret::new(&mut rng);
         let correct_epk = esk.diversified_public(&note.diversified_generator());
 
@@ -584,7 +563,7 @@ mod tests {
             pk_d: *dest.transmission_key(),
             value: value_to_send,
             v_blinding,
-            note_blinding,
+            note_blinding: note.note_blinding(),
             esk,
         };
         let incorrect_value_commitment = value_to_send.commit(Fr::rand(&mut rng));
@@ -607,15 +586,8 @@ mod tests {
             amount: 10,
             asset_id: asset::Denom::from("penumbra").into(),
         };
-        let note_blinding = Fq::rand(&mut rng);
         let v_blinding = Fr::rand(&mut rng);
-        let note = Note::new(
-            *dest.diversifier(),
-            *dest.transmission_key(),
-            value_to_send,
-            note_blinding,
-        )
-        .expect("transmission key is valid");
+        let note = Note::fresh(&mut rng, &dest, value_to_send).expect("transmission key is valid");
         let esk = ka::Secret::new(&mut rng);
 
         let proof = OutputProof {
@@ -623,7 +595,7 @@ mod tests {
             pk_d: *dest.transmission_key(),
             value: value_to_send,
             v_blinding,
-            note_blinding,
+            note_blinding: note.note_blinding(),
             esk,
         };
         let incorrect_esk = ka::Secret::new(&mut rng);
@@ -651,15 +623,8 @@ mod tests {
             amount: 10,
             asset_id: asset::Denom::from("penumbra").into(),
         };
-        let note_blinding = Fq::rand(&mut rng);
         let v_blinding = Fr::rand(&mut rng);
-        let note = Note::new(
-            *dest.diversifier(),
-            *dest.transmission_key(),
-            value_to_send,
-            note_blinding,
-        )
-        .expect("transmission key is valid");
+        let note = Note::fresh(&mut rng, &dest, value_to_send).expect("transmission key is valid");
         let esk = ka::Secret::new(&mut rng);
         let epk = esk.diversified_public(&note.diversified_generator());
 
@@ -668,7 +633,7 @@ mod tests {
             pk_d: *dest.transmission_key(),
             value: value_to_send,
             v_blinding,
-            note_blinding,
+            note_blinding: note.note_blinding(),
             esk,
         };
 
@@ -689,15 +654,10 @@ mod tests {
             amount: 10,
             asset_id: asset::Denom::from("penumbra").into(),
         };
-        let note_blinding = Fq::rand(&mut rng);
         let v_blinding = Fr::rand(&mut rng);
-        let note = Note::new(
-            *sender.diversifier(),
-            *sender.transmission_key(),
-            value_to_send,
-            note_blinding,
-        )
-        .expect("transmission key is valid");
+
+        let note =
+            Note::fresh(&mut rng, &sender, value_to_send).expect("transmission key is valid");
         let note_commitment = note.commit();
         let spend_auth_randomizer = Fr::rand(&mut rng);
         let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
@@ -718,7 +678,7 @@ mod tests {
             value: value_to_send,
             v_blinding,
             note_commitment,
-            note_blinding,
+            note_blinding: note.note_blinding(),
             spend_auth_randomizer,
             ak,
             nk,
@@ -743,15 +703,10 @@ mod tests {
             amount: 10,
             asset_id: asset::Denom::from("penumbra").into(),
         };
-        let note_blinding = Fq::rand(&mut rng);
         let v_blinding = Fr::rand(&mut rng);
-        let note = Note::new(
-            *sender.diversifier(),
-            *sender.transmission_key(),
-            value_to_send,
-            note_blinding,
-        )
-        .expect("transmission key is valid");
+
+        let note =
+            Note::fresh(&mut rng, &sender, value_to_send).expect("transmission key is valid");
         let note_commitment = note.commit();
         let spend_auth_randomizer = Fr::rand(&mut rng);
         let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
@@ -772,7 +727,7 @@ mod tests {
             value: value_to_send,
             v_blinding,
             note_commitment,
-            note_blinding,
+            note_blinding: note.note_blinding(),
             spend_auth_randomizer,
             ak,
             nk,
@@ -797,15 +752,9 @@ mod tests {
             amount: 10,
             asset_id: asset::Denom::from("penumbra").into(),
         };
-        let note_blinding = Fq::rand(&mut rng);
         let v_blinding = Fr::rand(&mut rng);
-        let note = Note::new(
-            *sender.diversifier(),
-            *sender.transmission_key(),
-            value_to_send,
-            note_blinding,
-        )
-        .expect("transmission key is valid");
+        let note =
+            Note::fresh(&mut rng, &sender, value_to_send).expect("transmission key is valid");
         let note_commitment = note.commit();
         let spend_auth_randomizer = Fr::rand(&mut rng);
         let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
@@ -826,7 +775,7 @@ mod tests {
             value: value_to_send,
             v_blinding,
             note_commitment,
-            note_blinding,
+            note_blinding: note.note_blinding(),
             spend_auth_randomizer,
             ak,
             nk,
@@ -851,15 +800,9 @@ mod tests {
             amount: 10,
             asset_id: asset::Denom::from("penumbra").into(),
         };
-        let note_blinding = Fq::rand(&mut rng);
         let v_blinding = Fr::rand(&mut rng);
-        let note = Note::new(
-            *sender.diversifier(),
-            *sender.transmission_key(),
-            value_to_send,
-            note_blinding,
-        )
-        .expect("transmission key is valid");
+        let note =
+            Note::fresh(&mut rng, &sender, value_to_send).expect("transmission key is valid");
         let note_commitment = note.commit();
         let spend_auth_randomizer = Fr::rand(&mut rng);
         let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
@@ -880,7 +823,7 @@ mod tests {
             value: value_to_send,
             v_blinding,
             note_commitment,
-            note_blinding,
+            note_blinding: note.note_blinding(),
             spend_auth_randomizer,
             ak,
             nk,

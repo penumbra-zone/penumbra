@@ -66,7 +66,7 @@ pub enum Error {
 }
 
 impl Note {
-    pub fn new(
+    pub fn from_parts(
         diversifier: Diversifier,
         transmission_key: ka::Public,
         value: Value,
@@ -84,11 +84,15 @@ impl Note {
 
     /// Generate a fresh note representing the given value for the given destination address, with a
     /// random blinding factor.
-    pub fn fresh(rng: &mut impl Rng, address: crate::Address, value: Value) -> Result<Self, Error> {
+    pub fn fresh(
+        rng: &mut impl Rng,
+        address: &crate::Address,
+        value: Value,
+    ) -> Result<Self, Error> {
         let diversifier = *address.diversifier();
         let transmission_key = *address.transmission_key();
         let note_blinding = Fq::rand(rng);
-        Note::new(diversifier, transmission_key, value, note_blinding)
+        Note::from_parts(diversifier, transmission_key, value, note_blinding)
     }
 
     pub fn diversified_generator(&self) -> decaf377::Element {
@@ -297,7 +301,7 @@ impl TryFrom<&[u8]> for Note {
             .try_into()
             .map_err(|_| Error::NoteDeserializationError)?;
 
-        Note::new(
+        Note::from_parts(
             bytes[1..12]
                 .try_into()
                 .map_err(|_| Error::NoteDeserializationError)?,
@@ -423,7 +427,6 @@ mod tests {
     use super::*;
 
     use crate::keys::SpendKey;
-    use ark_ff::UniformRand;
     use rand_core::OsRng;
 
     #[test]
@@ -439,13 +442,7 @@ mod tests {
             amount: 10,
             asset_id: asset::Denom::from("penumbra").into(),
         };
-        let note = Note::new(
-            *dest.diversifier(),
-            *dest.transmission_key(),
-            value,
-            Fq::rand(&mut rng),
-        )
-        .expect("can create note");
+        let note = Note::fresh(&mut rng, &dest, value).expect("can create note");
         let esk = ka::Secret::new(&mut rng);
 
         let ciphertext = note.encrypt(&esk);
