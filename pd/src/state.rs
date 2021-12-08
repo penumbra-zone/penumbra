@@ -16,6 +16,7 @@ use penumbra_proto::{
 
 use crate::{
     db::{self, schema},
+    genesis::GenesisAppState,
     verify::NoteData,
     PendingBlock,
 };
@@ -152,6 +153,47 @@ INSERT INTO notes (
         };
 
         Ok(note_commitment_tree)
+    }
+
+    /// Retrieve the node genesis configuration.
+    pub async fn genesis_configuration(&self) -> Result<GenesisAppState> {
+        let mut conn = self.pool.acquire().await?;
+        let genesis_config = if let Some(schema::BlobsRow { data, .. }) = query_as!(
+            schema::BlobsRow,
+            "SELECT id, data FROM blobs WHERE id = 'gc';"
+        )
+        .fetch_optional(&mut conn)
+        .await?
+        {
+            bincode::deserialize(&data).context("Could not parse saved genesis config")?
+        } else {
+            // XXX is this unreachable and only used to pass type check?
+            GenesisAppState {
+                notes: vec![],
+                epoch_duration: 0,
+            }
+        };
+
+        Ok(genesis_config)
+    }
+
+    pub async fn set_genesis_configuration(&self, genesis_config: &GenesisAppState) -> Result<()> {
+        let mut dbtx = self.pool.begin().await?;
+
+        let gc_bytes = bincode::serialize(&genesis_config)?;
+
+        // ON CONFLICT is excluded here so that an error is raised
+        // if genesis config is attempted to be set more than once
+        query!(
+            r#"
+INSERT INTO blobs (id, data) VALUES ('gc', $1)
+"#,
+            &gc_bytes[..]
+        )
+        .execute(&mut dbtx)
+        .await?;
+
+        dbtx.commit().await.map_err(Into::into)
     }
 
     /// Retrieve the latest block info, if any.

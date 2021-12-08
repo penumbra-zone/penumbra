@@ -112,7 +112,7 @@ impl App {
         let mut genesis_tx_builder =
             Transaction::genesis_build_with_root(self.note_commitment_tree.root2());
 
-        for note in genesis.notes {
+        for note in &genesis.notes {
             tracing::info!(?note);
             // Add all assets found in the genesis transaction to the asset registry
             genesis_block.new_assets.insert(
@@ -136,13 +136,20 @@ impl App {
         genesis_block.add_transaction(verified_transaction);
         tracing::info!("loaded all genesis notes");
 
-        // XXX Does the epoch duration need a Mutex around it?
         self.epoch_duration = genesis.epoch_duration;
         self.pending_block = Some(Arc::new(Mutex::new(genesis_block)));
         let commit = self.commit();
         let state = self.state.clone();
+        let gc = genesis.clone();
         async move {
             commit.await?;
+
+            // Save the genesis config to the blobs table for future reference.
+            state
+                .set_genesis_configuration(&gc)
+                .await
+                .expect("able to save genesis config to blobs table");
+
             let app_hash = state.app_hash().await.unwrap();
             Ok(Response::InitChain(response::InitChain {
                 consensus_params: Some(init_chain.consensus_params),

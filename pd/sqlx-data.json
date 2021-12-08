@@ -272,6 +272,18 @@
       ]
     }
   },
+  "cb7bac3962a9b0db3759bb2dc21f8bf7aeb58e208107aeb6b0f0f6a1e6c29d45": {
+    "query": "\nINSERT INTO blobs (id, data) VALUES ('gc', $1)\n",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "cd248ce18bd666c96bcf98dab23b66cfd807dcda482411d67be301a914b68b59": {
     "query": "CREATE TABLE IF NOT EXISTS blobs (\n    id varchar(64) PRIMARY KEY,\n    data bytea NOT NULL\n)",
     "describe": {
@@ -280,6 +292,30 @@
         "Left": []
       },
       "nullable": []
+    }
+  },
+  "db8426f28750016ab6ed802dcfcf3cb216e04ccad385f23f867698e56529fedb": {
+    "query": "SELECT id, data FROM blobs WHERE id = 'gc';",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 1,
+          "name": "data",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": [
+        false,
+        false
+      ]
     }
   },
   "f2a471a0953f4bd441bfba26e56e5558eca1f72e5fc8250124157975654a2c73": {
