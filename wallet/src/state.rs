@@ -362,7 +362,7 @@ impl ClientState {
                         // Drop this pending change note -- this is permissible, because dropping a
                         // pending change note just means we forget about an output, not an input
                         if self.pending_change_set.remove(&commitment).is_none() {
-                            tracing::warn!(
+                            tracing::debug!(
                                 ?timeout,
                                 ?commitment,
                                 "attempted to drop a pending change note, but found that it did not exist",
@@ -376,7 +376,7 @@ impl ClientState {
                         if let Some(note) = self.pending_set.remove(&commitment) {
                             self.unspent_set.insert(commitment, note);
                         } else {
-                            tracing::warn!(
+                            tracing::debug!(
                                 ?timeout,
                                 ?commitment,
                                 "attempted to move a pending spend back to the unspent set, but found that it did not exist",
@@ -478,6 +478,13 @@ impl ClientState {
                         tracing::debug!(
                             ?nullifier,
                             "found nullifier for pending note: marking it as spent"
+                        )
+                    } else if let Some(note) = self.pending_change_set.remove(&note_commitment) {
+                        // Insert the note into the spent set
+                        self.spent_set.insert(note_commitment, note);
+                        tracing::debug!(
+                            ?nullifier,
+                            "found nullifier for pending change note: marking it as spent"
                         )
                     } else if self.spent_set.contains_key(&note_commitment) {
                         // If the nullifier is already in the spent set, it means we've already
