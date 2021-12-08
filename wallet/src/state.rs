@@ -168,47 +168,49 @@ impl ClientState {
 
         for (denom, amount) in value_to_spend {
             // Only produce an output if the amount is greater than zero
-            if amount > 0 {
-                // Select a list of notes that provides at least the required amount.
-                let notes = self.notes_to_spend(rng, amount, denom.clone(), source_address)?;
-                let change_address = self
-                    .wallet
-                    .change_address(notes.last().expect("spent at least one note"))?;
-                let spent: u64 = notes.iter().map(|note| note.amount()).sum();
+            if amount == 0 {
+                continue;
+            }
 
-                // Spend each of the notes we selected.
-                for note in notes {
-                    let auth_path = self
-                        .note_commitment_tree
-                        .authentication_path(&note.commit())
-                        .unwrap();
-                    let merkle_path = (u64::from(auth_path.0) as usize, auth_path.1);
-                    let merkle_position = auth_path.0;
-                    tx_builder = tx_builder.add_spend(
-                        rng,
-                        self.wallet.spend_key(),
-                        merkle_path,
-                        note,
-                        merkle_position,
-                    );
-                }
+            // Select a list of notes that provides at least the required amount.
+            let notes = self.notes_to_spend(rng, amount, denom.clone(), source_address)?;
+            let change_address = self
+                .wallet
+                .change_address(notes.last().expect("spent at least one note"))?;
+            let spent: u64 = notes.iter().map(|note| note.amount()).sum();
 
-                // Find out how much change we have and whether to add a change output.
-                let change = spent - amount;
-                if change > 0 {
-                    // xx: add memo handling
-                    let memo = memo::MemoPlaintext([0u8; 512]);
-                    tx_builder = tx_builder.add_output(
-                        rng,
-                        &change_address,
-                        Value {
-                            amount: change,
-                            asset_id: asset::Denom(denom.to_string()).into(),
-                        },
-                        memo,
-                        self.wallet.outgoing_viewing_key(),
-                    );
-                }
+            // Spend each of the notes we selected.
+            for note in notes {
+                let auth_path = self
+                    .note_commitment_tree
+                    .authentication_path(&note.commit())
+                    .unwrap();
+                let merkle_path = (u64::from(auth_path.0) as usize, auth_path.1);
+                let merkle_position = auth_path.0;
+                tx_builder = tx_builder.add_spend(
+                    rng,
+                    self.wallet.spend_key(),
+                    merkle_path,
+                    note,
+                    merkle_position,
+                );
+            }
+
+            // Find out how much change we have and whether to add a change output.
+            let change = spent - amount;
+            if change > 0 {
+                // xx: add memo handling
+                let memo = memo::MemoPlaintext([0u8; 512]);
+                tx_builder = tx_builder.add_output(
+                    rng,
+                    &change_address,
+                    Value {
+                        amount: change,
+                        asset_id: asset::Denom(denom.to_string()).into(),
+                    },
+                    memo,
+                    self.wallet.outgoing_viewing_key(),
+                );
             }
         }
 
