@@ -74,6 +74,8 @@ pub struct GenesisAppState {
     pub notes: Vec<GenesisNote>,
     /// Epoch duration in terms of blocks
     pub epoch_duration: u64,
+    /// Initial assets.
+    pub assets: Vec<asset::Metadata>,
 }
 
 #[serde_as]

@@ -36,8 +36,8 @@ pub struct ClientState {
     spent_set: BTreeMap<note::Commitment, Note>,
     /// Map of note commitment to full transaction data for transactions we have visibility into.
     transactions: BTreeMap<note::Commitment, Option<Vec<u8>>>,
-    /// Map of asset IDs to asset denominations.
-    asset_registry: BTreeMap<asset::Id, String>,
+    /// Map of asset IDs to asset metadata.
+    asset_registry: BTreeMap<asset::Id, asset::Metadata>,
     /// Key material.
     wallet: Wallet,
 }
@@ -228,7 +228,10 @@ impl ClientState {
                 .asset_registry
                 .get(&note.asset_id())
                 .expect("all asset IDs should have denominations stored locally")
+                .display
                 .clone();
+            // TODO: Currently we're using the display field, but we should in pcli be using
+            // the base denomination for computations and the display denomination only for the UI.
 
             let index: u64 = self
                 .wallet()
@@ -274,13 +277,13 @@ impl ClientState {
     }
 
     /// Add asset to local asset registry if it doesn't exist.
-    pub fn add_asset_to_registry(&mut self, asset_id: asset::Id, asset_denom: String) {
+    pub fn add_asset_to_registry(&mut self, asset_id: asset::Id, asset_metadata: asset::Metadata) {
         if self
             .asset_registry
-            .insert(asset_id, asset_denom.clone())
+            .insert(asset_id, asset_metadata.clone())
             .is_none()
         {
-            tracing::debug!("found new asset: {}", asset_denom);
+            tracing::debug!("found new asset: {:?}", asset_metadata);
         }
     }
 
@@ -460,7 +463,13 @@ mod serde_helpers {
                 asset_registry: state
                     .asset_registry
                     .iter()
-                    .map(|(id, denom)| (hex::encode(id.to_bytes()), denom.clone()))
+                    .map(|(id, metadata)| {
+                        (
+                            hex::encode(id.to_bytes()),
+                            serde_json::to_string_pretty(&metadata)
+                                .expect("can serialize asset metadata"),
+                        )
+                    })
                     .collect(),
                 // TODO: serialize full transactions
                 transactions: vec![],
@@ -497,8 +506,11 @@ mod serde_helpers {
             }
 
             let mut asset_registry = BTreeMap::new();
-            for (id, denom) in state.asset_registry.into_iter() {
-                asset_registry.insert(hex::decode(id)?.try_into()?, denom);
+            for (id, metadata) in state.asset_registry.into_iter() {
+                asset_registry.insert(
+                    hex::decode(id)?.try_into()?,
+                    serde_json::from_str(&metadata).unwrap(),
+                );
             }
 
             Ok(Self {

@@ -121,18 +121,20 @@ impl App {
 
         for note in &genesis.notes {
             tracing::info!(?note);
-            // Add all assets found in the genesis transaction to the asset registry
-            // xx Instead of per-note, here we'll inspect each entry in the `assets` genesis key
-            // and add their assetlist to the registry.
-            genesis_block.new_assets.insert(
-                asset::Denom(note.asset_denom.clone()).into(),
-                note.asset_denom.clone(),
-            );
-
             genesis_tx_builder.add_output(
                 &mut OsRng,
                 note::Note::try_from(note).expect("GenesisNote can be converted into regular Note"),
             );
+        }
+
+        // xx todo: Warn on genesis notes that do not correspond to any known asset.
+
+        for asset in &genesis.assets {
+            // The base is used to derive the asset_id
+            tracing::info!(?asset);
+            genesis_block
+                .new_assets
+                .insert(asset::Denom(asset.base.clone()).into(), asset.clone());
         }
 
         let genesis_tx = genesis_tx_builder

@@ -37,13 +37,26 @@
       "nullable": []
     }
   },
-  "1abc3c48b127eee2761f3385541e195f9aca35269e6db0c41e3f67a0e04f280b": {
-    "query": "SELECT denom, asset_id FROM assets WHERE asset_id = $1",
+  "3d56b7352d39010ff9e047b71268c26d00e9629870f21a98971ffd1b4f81a231": {
+    "query": "INSERT INTO validators (tm_pubkey, voting_power) VALUES ($1, $2)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "3e53068704ac0d77a57c8600d4f767a6d5f240e835dfd54b98b241840c4bbc4d": {
+    "query": "SELECT metadata, asset_id FROM assets WHERE asset_id = $1",
     "describe": {
       "columns": [
         {
           "ordinal": 0,
-          "name": "denom",
+          "name": "metadata",
           "type_info": "Varchar"
         },
         {
@@ -61,32 +74,6 @@
         false,
         false
       ]
-    }
-  },
-  "3cbb441b10f4a068c16dd3a40accd689be26f2a6619b363fd966ee10e740f07b": {
-    "query": " INSERT INTO assets ( asset_id, denom) VALUES ($1, $2)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea",
-          "Varchar"
-        ]
-      },
-      "nullable": []
-    }
-  },
-  "3d56b7352d39010ff9e047b71268c26d00e9629870f21a98971ffd1b4f81a231": {
-    "query": "INSERT INTO validators (tm_pubkey, voting_power) VALUES ($1, $2)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea",
-          "Int8"
-        ]
-      },
-      "nullable": []
     }
   },
   "51084a18f15226a89dfdfb35e5de7172b4053d495d728934a20528ab4dcf713b": {
@@ -107,16 +94,6 @@
         "Left": [
           "Bytea"
         ]
-      },
-      "nullable": []
-    }
-  },
-  "56ac73fb90a557deadc0ced8c798a1a39ea01fafe58f940528e53836cfdaf986": {
-    "query": "CREATE TABLE IF NOT EXISTS assets (\n    asset_id bytea PRIMARY KEY NOT NULL,\n    denom varchar NOT NULL\n)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": []
       },
       "nullable": []
     }
@@ -175,6 +152,30 @@
       ]
     }
   },
+  "6b5a2ec3264138bfc685b064584743e34afb1c8cfad23e3510c6734da2137d5f": {
+    "query": "SELECT metadata, asset_id FROM assets",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "metadata",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 1,
+          "name": "asset_id",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
   "73e0b933842ff451654acd14f7a681c505aed832f9158fd800bf32b21916625e": {
     "query": "SELECT transaction_id FROM notes WHERE note_commitment = $1",
     "describe": {
@@ -211,28 +212,17 @@
       "nullable": []
     }
   },
-  "8195450f9f1cedf05eebd974adbdc42dc70a8e2abb7753d7b02cba03786bee0d": {
-    "query": "SELECT denom, asset_id FROM assets",
+  "79b631e733000749a11c7ba7132f3da59cd0dba88228accf8ac1b678e26d0f8c": {
+    "query": "INSERT INTO assets VALUES ($1, $2)",
     "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "denom",
-          "type_info": "Varchar"
-        },
-        {
-          "ordinal": 1,
-          "name": "asset_id",
-          "type_info": "Bytea"
-        }
-      ],
+      "columns": [],
       "parameters": {
-        "Left": []
+        "Left": [
+          "Bytea",
+          "Varchar"
+        ]
       },
-      "nullable": [
-        false,
-        false
-      ]
+      "nullable": []
     }
   },
   "9024aaa179b92038a276abd92a8f20b3a28133ea8435c1d4d9ae4bc3ec31158a": {
@@ -267,6 +257,16 @@
   },
   "a0a83fb42dc6ec8a9af35a29a492ad1651c13e047af85a25ebc41fdbd1909da7": {
     "query": "CREATE TABLE IF NOT EXISTS notes (\n    note_commitment bytea PRIMARY KEY,\n    ephemeral_key bytea NOT NULL,\n    encrypted_note bytea NOT NULL,\n    transaction_id bytea NOT NULL,\n    height bigint REFERENCES blocks (height)\n)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": []
+    }
+  },
+  "a5c1499f47cea6a6afa633bbb890de31c75e5a3e99327ae1982a3cd98c79d219": {
+    "query": "CREATE TABLE IF NOT EXISTS assets (\n    asset_id bytea PRIMARY KEY NOT NULL,\n    metadata varchar NOT NULL\n)",
     "describe": {
       "columns": [],
       "parameters": {
