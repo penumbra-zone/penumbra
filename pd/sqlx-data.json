@@ -76,6 +76,19 @@
       "nullable": []
     }
   },
+  "3d56b7352d39010ff9e047b71268c26d00e9629870f21a98971ffd1b4f81a231": {
+    "query": "INSERT INTO validators (tm_pubkey, voting_power) VALUES ($1, $2)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "51084a18f15226a89dfdfb35e5de7172b4053d495d728934a20528ab4dcf713b": {
     "query": "CREATE TABLE IF NOT EXISTS validators (\n    tm_pubkey bytea NOT NULL PRIMARY KEY,\n    voting_power bigint NOT NULL\n)",
     "describe": {

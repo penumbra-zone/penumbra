@@ -144,15 +144,18 @@ impl App {
         tracing::info!("loaded all genesis notes");
 
         // load the validators from the initial Tendermint genesis state
+        let mut validators = BTreeMap::new();
         for validator_update in init_chain.validators.iter() {
-            self.validators.lock().unwrap().insert(
+            validators.insert(
                 validator_update.pub_key,
                 Validator::new(validator_update.pub_key, validator_update.power),
             );
         }
+        self.validators = Arc::new(Mutex::new(validators.clone()));
 
         self.epoch_duration = genesis.epoch_duration;
 
+        // construct the pending block and commit the initial state
         self.pending_block = Some(Arc::new(Mutex::new(genesis_block)));
         let commit = self.commit();
         let state = self.state.clone();
@@ -166,6 +169,7 @@ impl App {
                 .await
                 .expect("able to save genesis config to blobs table");
 
+            state.set_initial_validators(&validators).await?;
             let app_hash = state.app_hash().await.unwrap();
             Ok(Response::InitChain(response::InitChain {
                 consensus_params: Some(init_chain.consensus_params),
