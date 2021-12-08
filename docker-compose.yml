@@ -16,6 +16,7 @@ services:
     ports:
       - "26658:26658"
       - "26666:26666"
+      - "26667:26667"
 
   # The Tendermint node
   tendermint:
