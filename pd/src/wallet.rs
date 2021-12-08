@@ -124,7 +124,7 @@ impl ThinWallet for State {
                     .map_err(|_| tonic::Status::unavailable("database error"))
                     .unwrap();
                 for asset in &assets[..] {
-                    tracing::debug!(asset_id = ?hex::encode(&asset.asset_id), asset_denom = ?asset.asset_denom, "sending asset");
+                    tracing::debug!(asset_id = ?hex::encode(&asset.asset_id), metadata = ?asset.metadata, "sending asset");
                     tx.send(Ok(asset.clone())).await.unwrap();
                 }
             }

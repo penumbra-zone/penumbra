@@ -13,32 +13,6 @@
       "nullable": []
     }
   },
-  "1abc3c48b127eee2761f3385541e195f9aca35269e6db0c41e3f67a0e04f280b": {
-    "query": "SELECT denom, asset_id FROM assets WHERE asset_id = $1",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "denom",
-          "type_info": "Varchar"
-        },
-        {
-          "ordinal": 1,
-          "name": "asset_id",
-          "type_info": "Bytea"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Bytea"
-        ]
-      },
-      "nullable": [
-        false,
-        false
-      ]
-    }
-  },
   "1b342fe294468358875e2ed0b3108462f3434b8412817505c2d42b5bb4423c90": {
     "query": "SELECT tm_pubkey, voting_power, commission_address, commission_rate FROM validators",
     "describe": {
@@ -85,17 +59,30 @@
       "nullable": []
     }
   },
-  "3cbb441b10f4a068c16dd3a40accd689be26f2a6619b363fd966ee10e740f07b": {
-    "query": " INSERT INTO assets ( asset_id, denom) VALUES ($1, $2)",
+  "3e53068704ac0d77a57c8600d4f767a6d5f240e835dfd54b98b241840c4bbc4d": {
+    "query": "SELECT metadata, asset_id FROM assets WHERE asset_id = $1",
     "describe": {
-      "columns": [],
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "metadata",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 1,
+          "name": "asset_id",
+          "type_info": "Bytea"
+        }
+      ],
       "parameters": {
         "Left": [
-          "Bytea",
-          "Varchar"
+          "Bytea"
         ]
       },
-      "nullable": []
+      "nullable": [
+        false,
+        false
+      ]
     }
   },
   "4309a17090f31028a5b7e70144fde46a3212a41745a9222e98a68e8f92585395": {
@@ -146,16 +133,6 @@
         "Left": [
           "Bytea"
         ]
-      },
-      "nullable": []
-    }
-  },
-  "56ac73fb90a557deadc0ced8c798a1a39ea01fafe58f940528e53836cfdaf986": {
-    "query": "CREATE TABLE IF NOT EXISTS assets (\n    asset_id bytea PRIMARY KEY NOT NULL,\n    denom varchar NOT NULL\n)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": []
       },
       "nullable": []
     }
@@ -224,6 +201,30 @@
       ]
     }
   },
+  "6b5a2ec3264138bfc685b064584743e34afb1c8cfad23e3510c6734da2137d5f": {
+    "query": "SELECT metadata, asset_id FROM assets",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "metadata",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 1,
+          "name": "asset_id",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
   "6c1203738db6f9a244389dc721f40c628bff216460ad769ba971d96c1f51b3f2": {
     "query": "INSERT INTO validators (tm_pubkey, voting_power, commission_address, commission_rate) VALUES ($1, $2, $3, $4)",
     "describe": {
@@ -259,28 +260,17 @@
       ]
     }
   },
-  "8195450f9f1cedf05eebd974adbdc42dc70a8e2abb7753d7b02cba03786bee0d": {
-    "query": "SELECT denom, asset_id FROM assets",
+  "79b631e733000749a11c7ba7132f3da59cd0dba88228accf8ac1b678e26d0f8c": {
+    "query": "INSERT INTO assets VALUES ($1, $2)",
     "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "denom",
-          "type_info": "Varchar"
-        },
-        {
-          "ordinal": 1,
-          "name": "asset_id",
-          "type_info": "Bytea"
-        }
-      ],
+      "columns": [],
       "parameters": {
-        "Left": []
+        "Left": [
+          "Bytea",
+          "Varchar"
+        ]
       },
-      "nullable": [
-        false,
-        false
-      ]
+      "nullable": []
     }
   },
   "8b1f2bf26e3e69d1e85dcf641e9829d2a4d00bbf434cc5879d596246043ef666": {
@@ -353,6 +343,16 @@
         false,
         false
       ]
+    }
+  },
+  "a5c1499f47cea6a6afa633bbb890de31c75e5a3e99327ae1982a3cd98c79d219": {
+    "query": "CREATE TABLE IF NOT EXISTS assets (\n    asset_id bytea PRIMARY KEY NOT NULL,\n    metadata varchar NOT NULL\n)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": []
     }
   },
   "aed57af72fe55a40c7fe24c06ff908821372686522783850b2db72fbed2aa9e4": {

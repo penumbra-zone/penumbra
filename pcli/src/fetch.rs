@@ -15,10 +15,16 @@ pub async fn assets(state: &mut ClientStateFile, wallet_uri: String) -> Result<(
     let mut stream = client.asset_list(request).await?.into_inner();
     while let Some(asset) = stream.message().await? {
         state.add_asset_to_registry(
-            asset.asset_id.try_into().map_err(|_| {
-                anyhow::anyhow!("could not parse asset ID for denom {}", asset.asset_denom)
+            asset
+                .asset_id
+                .try_into()
+                .map_err(|_| anyhow::anyhow!("could not parse asset ID for assetlist"))?,
+            serde_json::from_str(&asset.metadata).map_err(|_| {
+                anyhow::anyhow!(
+                    "could not parse asset metadata for assetlist {}",
+                    asset.metadata
+                )
             })?,
-            asset.asset_denom.clone(),
         );
     }
 

@@ -100,12 +100,11 @@ ON CONFLICT (id) DO UPDATE SET data = $1
             .await?;
         }
 
-        // Save any new assets found in the block to the asset registry.
-        for (id, denom) in block.new_assets {
+        for (asset_id, metadata) in block.new_assets.into_iter() {
             query!(
-                r#" INSERT INTO assets ( asset_id, denom) VALUES ($1, $2)"#,
-                &id.to_bytes()[..],
-                denom
+                "INSERT INTO assets VALUES ($1, $2)",
+                &<[u8; 32]>::from(asset_id)[..],
+                serde_json::to_string_pretty(&metadata).expect("can serialize metadata to json")
             )
             .execute(&mut dbtx)
             .await?;
@@ -363,13 +362,13 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
         let mut conn = self.pool.acquire().await?;
 
         let asset = query!(
-            "SELECT denom, asset_id FROM assets WHERE asset_id = $1",
+            "SELECT metadata, asset_id FROM assets WHERE asset_id = $1",
             asset_id
         )
         .fetch_one(&mut conn)
         .await?;
         Ok(Asset {
-            asset_denom: asset.denom,
+            metadata: asset.metadata,
             asset_id: asset.asset_id,
         })
     }
@@ -378,12 +377,12 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
     pub async fn asset_list(&self) -> Result<Vec<Asset>> {
         let mut conn = self.pool.acquire().await?;
 
-        Ok(query!("SELECT denom, asset_id FROM assets")
+        Ok(query!("SELECT metadata, asset_id FROM assets")
             .fetch_all(&mut conn)
             .await?
             .into_iter()
             .map(|row| Asset {
-                asset_denom: row.denom,
+                metadata: row.metadata,
                 asset_id: row.asset_id,
             })
             .collect())

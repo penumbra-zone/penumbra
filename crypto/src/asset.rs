@@ -99,6 +99,12 @@ impl TryFrom<Vec<u8>> for Id {
     }
 }
 
+impl From<Id> for [u8; 32] {
+    fn from(asset_id: Id) -> [u8; 32] {
+        asset_id.0.to_bytes()
+    }
+}
+
 /// The domain separator used to hash asset ids to value generators.
 static VALUE_GENERATOR_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
     Fq::from_le_bytes_mod_order(blake2b_simd::blake2b(b"penumbra.value.generator").as_bytes())
@@ -119,7 +125,7 @@ impl Id {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct DenomUnit {
     /// The name of this denomination, e.g. `upenumbra`.
     pub denom: String,
@@ -132,12 +138,12 @@ pub struct DenomUnit {
 /// Metadata about each asset including the minimum denomination.
 ///
 /// Based on [ADR-024](https://docs.cosmos.network/master/architecture/adr-024-coin-metadata.html).
-#[derive(Serialize, Deserialize)]
-pub struct AssetList {
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
+pub struct Metadata {
     /// The description of this asset, e.g. `The native token for the Penumbra zone.`
     pub description: String,
     /// A list of alternative denominations that can be used, e.g. `upenumbra`, `penumbra`.
-    pub denom_unit: Vec<DenomUnit>,
+    pub denom_units: Vec<DenomUnit>,
     /// The base unit of the asset, e.g. `upenumbra`. Calculations should be done with the base.
     pub base: String,
     /// The unit that should be used in displaying e.g. balances, e.g. `penumbra`.

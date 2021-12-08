@@ -153,7 +153,7 @@ async fn main() -> anyhow::Result<()> {
             };
         }
         Command::CreateGenesisTemplate => {
-            use penumbra_crypto::keys::SpendKey;
+            use penumbra_crypto::{asset, keys::SpendKey};
 
             // Use this to make up some addresses
             let sk = SpendKey::generate(OsRng);
@@ -190,6 +190,28 @@ async fn main() -> anyhow::Result<()> {
                     ivk.payment_address(0u8.into()).0,
                     200,
                 )],
+                assets: vec![asset::Metadata {
+                    description: "The native staking token of the Penumbra zone.".to_string(),
+                    denom_units: vec![
+                        asset::DenomUnit {
+                            denom: "upenumbra".to_string(),
+                            exponent: 0,
+                            aliases: vec!["micropenumbra".to_string()],
+                        },
+                        asset::DenomUnit {
+                            denom: "mpenumbra".to_string(),
+                            exponent: 3,
+                            aliases: vec!["millipenumbra".to_string()],
+                        },
+                        asset::DenomUnit {
+                            denom: "penumbra".to_string(),
+                            exponent: 6,
+                            aliases: vec![],
+                        },
+                    ],
+                    base: "upenumbra".to_string(),
+                    display: "penumbra".to_string(),
+                }],
             };
 
             println!("// Edit the following template according to your needs");

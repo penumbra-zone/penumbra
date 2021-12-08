@@ -2,7 +2,10 @@ use ark_ff::Zero;
 use decaf377::Fq;
 use serde::{Deserialize, Serialize};
 
-use penumbra_crypto::{asset::Denom, Address, Note, Value};
+use penumbra_crypto::{
+    asset::{self, Denom},
+    Address, Note, Value,
+};
 
 use crate::staking::Validator;
 
@@ -55,6 +58,8 @@ pub struct AppState {
     pub epoch_duration: u64,
     /// The initial validator set.
     pub validators: Vec<Validator>,
+    /// Initial assets.
+    pub assets: Vec<asset::Metadata>,
 }
 
 impl Default for AppState {
@@ -63,6 +68,7 @@ impl Default for AppState {
             epoch_duration: 8640,
             allocations: Vec::default(),
             validators: Vec::default(),
+            assets: Vec::default(),
         }
     }
 }

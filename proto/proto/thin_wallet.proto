@@ -13,7 +13,7 @@ service ThinWallet {
   rpc AssetList(AssetListRequest) returns (stream Asset);
 }
 
-// Requests an assetlist given an asset ID
+// Requests full asset metadata given an asset ID
 message AssetLookupRequest {
   // The asset ID
   bytes asset_id = 1;
@@ -25,7 +25,7 @@ message AssetListRequest {
 
 message Asset {
   bytes asset_id = 1;
-  string assetlist = 2;
+  string metadata = 2;
 }
 
 // Requests the transaction containing a given output note commitment.
