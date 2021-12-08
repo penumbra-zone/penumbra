@@ -12,7 +12,7 @@ use crate::{
     memo::MemoPlaintext,
     merkle,
     transaction::{Fee, Transaction, TransactionBody},
-    value, Address, Fq, Fr, Note, Output, Spend, Value,
+    value, Address, Fr, Note, Output, Spend, Value,
 };
 
 /// Used to construct a Penumbra transaction.
@@ -76,41 +76,39 @@ impl Builder {
         self
     }
 
-    /// Create a new `Output` to create a new note.
-    pub fn add_output<R: RngCore + CryptoRng>(
+    /// Add a new note to the output
+    pub fn add_output_getting_note<R: RngCore + CryptoRng>(
         mut self,
         rng: &mut R,
         dest: &Address,
         value_to_send: Value,
         memo: MemoPlaintext,
         ovk: &OutgoingViewingKey,
-    ) -> Self {
+    ) -> (Note, Self) {
+        let note = Note::fresh(rng, dest, value_to_send).expect("transmission key is valid");
+        let diversified_generator = note.diversified_generator();
+        let transmission_key = note.transmission_key();
+        let value_to_send = note.value();
+
         let v_blinding = Fr::rand(rng);
+
+        let esk = ka::Secret::new(rng);
+        let encrypted_memo = memo.encrypt(&esk, dest);
+
         // We subtract from the transaction's value balance.
         self.synthetic_blinding_factor -= v_blinding;
         self.value_balance -=
             Fr::from(value_to_send.amount) * value_to_send.asset_id.value_generator();
 
-        let note_blinding = Fq::rand(rng);
-        let esk = ka::Secret::new(rng);
-
-        let note = Note::new(
-            *dest.diversifier(),
-            *dest.transmission_key(),
-            value_to_send,
-            note_blinding,
-        )
-        .expect("transmission key is valid");
         let body = output::Body::new(
             note.clone(),
             v_blinding,
-            *dest.diversified_generator(),
-            *dest.transmission_key(),
+            diversified_generator,
+            transmission_key,
             &esk,
         );
         self.value_commitments -= body.value_commitment.0;
 
-        let encrypted_memo = memo.encrypt(&esk, dest);
         let ovk_wrapped_key = note.encrypt_key(&esk, ovk, body.value_commitment);
 
         self.outputs.push(Output {
@@ -119,7 +117,21 @@ impl Builder {
             ovk_wrapped_key,
         });
 
-        self
+        (note, self)
+    }
+
+    /// Create a new `Output`, implicitly creating a new note for it and encrypting the provided
+    /// [`MemoPlaintext`] with a fresh ephemeral secret key.
+    pub fn add_output<R: RngCore + CryptoRng>(
+        self,
+        rng: &mut R,
+        dest: &Address,
+        value_to_send: Value,
+        memo: MemoPlaintext,
+        ovk: &OutgoingViewingKey,
+    ) -> Self {
+        self.add_output_getting_note(rng, dest, value_to_send, memo, ovk)
+            .1
     }
 
     /// Set the transaction fee in PEN.
