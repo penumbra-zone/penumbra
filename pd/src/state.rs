@@ -164,10 +164,11 @@ INSERT INTO notes (
         {
             bincode::deserialize(&data).context("Could not parse saved genesis config")?
         } else {
-            // XXX is this unreachable and only used to pass type check?
+            // This is only reached on the initial startup.
+            // The default value here will be overridden by `InitChain`.
             GenesisAppState {
                 notes: vec![],
-                epoch_duration: 0,
+                epoch_duration: 8640,
             }
         };
 
