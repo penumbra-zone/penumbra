@@ -52,6 +52,39 @@
       "nullable": []
     }
   },
+  "4884a9a5c71b41388c2c0841fd0af1fc65ec04ec357160c27615cec21aa0eb2b": {
+    "query": "SELECT note_commitment, ephemeral_key, encrypted_note FROM notes WHERE height BETWEEN $1 AND $2",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "note_commitment",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 1,
+          "name": "ephemeral_key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 2,
+          "name": "encrypted_note",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "51f515cc43458854df653c298142e6c77b2905b453f85c31ae1a0f56fbce1c2a": {
     "query": "\nINSERT INTO blobs (id, data) VALUES ('nct', $1)\nON CONFLICT (id) DO UPDATE SET data = $1\n",
     "describe": {
@@ -248,6 +281,27 @@
       },
       "nullable": [
         false,
+        false
+      ]
+    }
+  },
+  "b0072d74024c1d80ef0b060123307b745b0013f4ef62394444683d4817c2a609": {
+    "query": "SELECT nullifier FROM nullifiers WHERE height BETWEEN $1 AND $2",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "nullifier",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": [
         false
       ]
     }
