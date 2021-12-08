@@ -11,7 +11,6 @@ use bytes::Bytes;
 use futures::future::FutureExt;
 use metrics::increment_counter;
 use rand_core::OsRng;
-use sha2::{Digest, Sha256};
 use tendermint::abci::{
     request::{self, BeginBlock, CheckTxKind, EndBlock},
     response, Request, Response,
@@ -32,7 +31,7 @@ use crate::{
     db::schema,
     genesis::GenesisNote,
     verify::{mark_genesis_as_verified, StatefulTransactionExt, StatelessTransactionExt},
-    PendingBlock, State,
+    PendingBlock, RequestExt, State,
 };
 
 const ABCI_INFO_VERSION: &str = env!("VERGEN_GIT_SEMVER");
@@ -92,7 +91,6 @@ impl App {
         })
     }
 
-    #[instrument(skip(self, init_chain))]
     fn init_genesis(
         &mut self,
         init_chain: request::InitChain,
@@ -145,10 +143,8 @@ impl App {
                 app_hash: app_hash.into(),
             }))
         }
-        .instrument(Span::current())
     }
 
-    #[instrument(skip(self))]
     fn info(&self) -> impl Future<Output = Result<Response, BoxError>> {
         let state = self.state.clone();
         async move {
@@ -170,14 +166,12 @@ impl App {
         .instrument(Span::current())
     }
 
-    #[instrument(skip(self))]
-    fn query(&self, query: Bytes) -> response::Query {
+    fn query(&self, _query: Bytes) -> response::Query {
         // TODO: implement (#22)
         Default::default()
     }
 
-    #[instrument(skip(self))]
-    fn begin_block(&mut self, begin: BeginBlock) -> response::BeginBlock {
+    fn begin_block(&mut self, _begin: BeginBlock) -> response::BeginBlock {
         self.pending_block = Some(Arc::new(Mutex::new(PendingBlock::new(
             self.note_commitment_tree.clone(),
         ))));
@@ -199,7 +193,6 @@ impl App {
     ///
     /// We do not queue up any state changes into `PendingBlock` until `DeliverTx` where these
     /// checks are repeated.
-    #[instrument(skip(self, request), fields(kind = ?request.kind, txhash = ?hex::encode(&Sha256::digest(request.tx.as_ref()))))]
     fn check_tx(
         &mut self,
         request: request::CheckTx,
@@ -251,7 +244,6 @@ impl App {
 
             Ok(())
         }
-        .instrument(Span::current())
     }
 
     /// Perform full transaction validation via `DeliverTx`.
@@ -313,7 +305,6 @@ impl App {
         }
     }
 
-    #[instrument(skip(self))]
     fn end_block(&mut self, end: EndBlock) -> response::EndBlock {
         self.pending_block
             .as_mut()
@@ -327,7 +318,6 @@ impl App {
     }
 
     /// Commit the queued state transitions.
-    #[instrument(skip(self))]
     fn commit(&mut self) -> impl Future<Output = Result<Response, BoxError>> {
         let pending_block_ref = self
             .pending_block
@@ -439,82 +429,84 @@ impl Service<Request> for App {
     }
 
     fn call(&mut self, req: Request) -> Self::Future {
-        let rsp = match req {
-            // handled messages
-            Request::Info(_) => return self.info().boxed(),
-            Request::Query(query) => Response::Query(self.query(query.data)),
-            Request::CheckTx(check_tx) => {
-                // Mark that we want to process CheckTx messages sequentially.
-                // TODO: this requirement is only because we need to avoid
-                // having multiple transactions in the mempool with the same
-                // nullifiers, until we can use ABCI++ and control block
-                // proposals, at which point check_tx can run concurrently.
-                let finished_signal = self.completion_tracker.start();
-                let span = tracing::info_span!(
-                    "check_tx",
-                    kind = ?check_tx.kind,
-                    txid = ?hex::encode(&Sha256::digest(check_tx.tx.as_ref())),
-                );
-                let rsp = self.check_tx(check_tx);
-                return async move {
-                    tracing::debug!("starting check_tx");
-                    let rsp = rsp.await;
-                    tracing::info!(?rsp);
-                    let _ = finished_signal.send(());
-                    match rsp {
-                        Ok(()) => Ok(Response::CheckTx(response::CheckTx::default())),
-                        Err(e) => Ok(Response::CheckTx(response::CheckTx {
-                            code: 1,
-                            log: e.to_string(),
-                            ..Default::default()
-                        })),
+        // Create a span for the request, then ensure that the (synchronous)
+        // part of the processing is done in that span using `in_scope`.  For
+        // requests that are processed asynchronously, we *also* need to use
+        // `.instrument(Span::current())` to propagate the span to the future,
+        // so that it will be entered every time the future is polled.
+        let span = req.create_span();
+        span.in_scope(|| {
+            let rsp = match req {
+                // handled messages
+                Request::Info(_) => return self.info().instrument(Span::current()).boxed(),
+                Request::Query(query) => Response::Query(self.query(query.data)),
+                Request::CheckTx(check_tx) => {
+                    // Mark that we want to process CheckTx messages sequentially.
+                    // TODO: this requirement is only because we need to avoid
+                    // having multiple transactions in the mempool with the same
+                    // nullifiers, until we can use ABCI++ and control block
+                    // proposals, at which point check_tx can run concurrently.
+                    let finished_signal = self.completion_tracker.start();
+                    let rsp = self.check_tx(check_tx);
+                    return async move {
+                        let rsp = rsp.await;
+                        tracing::info!(?rsp);
+                        let _ = finished_signal.send(());
+                        match rsp {
+                            Ok(()) => Ok(Response::CheckTx(response::CheckTx::default())),
+                            Err(e) => Ok(Response::CheckTx(response::CheckTx {
+                                code: 1,
+                                log: e.to_string(),
+                                ..Default::default()
+                            })),
+                        }
                     }
+                    .instrument(Span::current())
+                    .boxed();
                 }
-                .instrument(span)
-                .boxed();
-            }
-            Request::BeginBlock(begin) => Response::BeginBlock(self.begin_block(begin)),
-            Request::DeliverTx(deliver_tx) => {
-                // Mark that we want to process DeliverTx messages sequentially.
-                let finished_signal = self.completion_tracker.start();
-                let span = tracing::info_span!(
-                    "deliver_tx",
-                    txid = ?hex::encode(&Sha256::digest(deliver_tx.tx.as_ref())),
-                );
-                let rsp = self.deliver_tx(deliver_tx.tx);
-                return async move {
-                    tracing::debug!("starting deliver_tx");
-                    let rsp = rsp.await;
-                    tracing::info!(?rsp);
-                    let _ = finished_signal.send(());
-                    match rsp {
-                        Ok(()) => Ok(Response::DeliverTx(response::DeliverTx::default())),
-                        Err(e) => Ok(Response::DeliverTx(response::DeliverTx {
-                            code: 1,
-                            log: e.to_string(),
-                            ..Default::default()
-                        })),
+                Request::BeginBlock(begin) => Response::BeginBlock(self.begin_block(begin)),
+                Request::DeliverTx(deliver_tx) => {
+                    // Mark that we want to process DeliverTx messages sequentially.
+                    let finished_signal = self.completion_tracker.start();
+                    let rsp = self.deliver_tx(deliver_tx.tx);
+                    return async move {
+                        let rsp = rsp.await;
+                        tracing::info!(?rsp);
+                        let _ = finished_signal.send(());
+                        match rsp {
+                            Ok(()) => Ok(Response::DeliverTx(response::DeliverTx::default())),
+                            Err(e) => Ok(Response::DeliverTx(response::DeliverTx {
+                                code: 1,
+                                log: e.to_string(),
+                                ..Default::default()
+                            })),
+                        }
                     }
+                    .instrument(Span::current())
+                    .boxed();
                 }
-                .instrument(span)
-                .boxed();
-            }
-            Request::EndBlock(end) => Response::EndBlock(self.end_block(end)),
-            Request::Commit => return self.commit().boxed(),
+                Request::EndBlock(end) => Response::EndBlock(self.end_block(end)),
+                Request::Commit => return self.commit().instrument(Span::current()).boxed(),
 
-            // Called only once for network genesis, i.e. when the application block height is 0.
-            Request::InitChain(init_chain) => return self.init_genesis(init_chain).boxed(),
+                // Called only once for network genesis, i.e. when the application block height is 0.
+                Request::InitChain(init_chain) => {
+                    return self
+                        .init_genesis(init_chain)
+                        .instrument(Span::current())
+                        .boxed()
+                }
 
-            // unhandled messages
-            Request::Flush => Response::Flush,
-            Request::Echo(_) => Response::Echo(Default::default()),
-            Request::ListSnapshots => Response::ListSnapshots(Default::default()),
-            Request::OfferSnapshot(_) => Response::OfferSnapshot(Default::default()),
-            Request::LoadSnapshotChunk(_) => Response::LoadSnapshotChunk(Default::default()),
-            Request::ApplySnapshotChunk(_) => Response::ApplySnapshotChunk(Default::default()),
-        };
-        tracing::info!(?rsp);
-        async move { Ok(rsp) }.boxed()
+                // unhandled messages
+                Request::Flush => Response::Flush,
+                Request::Echo(_) => Response::Echo(Default::default()),
+                Request::ListSnapshots => Response::ListSnapshots(Default::default()),
+                Request::OfferSnapshot(_) => Response::OfferSnapshot(Default::default()),
+                Request::LoadSnapshotChunk(_) => Response::LoadSnapshotChunk(Default::default()),
+                Request::ApplySnapshotChunk(_) => Response::ApplySnapshotChunk(Default::default()),
+            };
+            tracing::info!(?rsp);
+            async move { Ok(rsp) }.boxed()
+        })
     }
 }
 
