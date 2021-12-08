@@ -308,6 +308,29 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
         Ok(validators)
     }
 
+    /// set the initial validator set, inserting each validator in `validators` into the state.
+    pub async fn set_initial_validators(
+        &self,
+        validators: &BTreeMap<tendermint::PublicKey, Validator>,
+    ) -> Result<()> {
+        let mut conn = self.pool.begin().await?;
+
+        // TODO: batching optimization
+        for (tm_pubkey, val) in validators.iter() {
+            let pubkey_str = serde_json::to_string(tm_pubkey)?;
+
+            query!(
+                "INSERT INTO validators (tm_pubkey, voting_power) VALUES ($1, $2)",
+                pubkey_str.as_bytes(),
+                i64::try_from(val.voting_power)?,
+            )
+            .execute(&mut conn)
+            .await?;
+        }
+
+        Ok(())
+    }
+
     /// Retrieve the [`TransactionDetail`] for a given note commitment.
     pub async fn transaction_by_note(&self, note_commitment: Vec<u8>) -> Result<TransactionDetail> {
         let mut conn = self.pool.acquire().await?;

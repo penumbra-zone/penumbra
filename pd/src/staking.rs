@@ -3,10 +3,10 @@ use tendermint::{vote, PublicKey};
 const PENUMBRA_BECH32_VALIDATOR_PREFIX: &str = "penumbravalpub";
 /// Validator tracks the Penumbra validator's long-term consensus key (tm_pubkey), as well as their
 /// voting power.
-#[derive(Debug, Eq, PartialOrd, Ord)]
+#[derive(Debug, Eq, PartialOrd, Ord, Clone, Copy)]
 pub struct Validator {
     tm_pubkey: PublicKey,
-    voting_power: vote::Power,
+    pub voting_power: vote::Power,
 }
 
 impl PartialEq for Validator {
@@ -17,7 +17,6 @@ impl PartialEq for Validator {
 
 impl Validator {
     pub fn new(pubkey: PublicKey, voting_power: vote::Power) -> Validator {
-        pubkey.to_bech32(PENUMBRA_BECH32_VALIDATOR_PREFIX);
         Validator {
             tm_pubkey: pubkey,
             voting_power,
