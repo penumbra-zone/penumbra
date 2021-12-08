@@ -37,7 +37,7 @@ impl ClientStateFile {
 
     /// Create a new wrapper by loading from the provided `path`.
     pub fn load(path: PathBuf) -> Result<Self> {
-        let state = match std::fs::read(&path) {
+        let mut state: ClientState = match std::fs::read(&path) {
             Ok(data) => serde_json::from_slice(&data).context("Could not parse wallet data")?,
             Err(err) => match err.kind() {
                 std::io::ErrorKind::NotFound => return Err(err).context(
@@ -46,6 +46,10 @@ impl ClientStateFile {
                 _ => return Err(err.into()),
             },
         };
+
+        // Pruning timeouts on load means every freshly loaded wallet will be up to date on timeouts
+        // as of when it is taken off disk
+        state.prune_timeouts();
 
         Ok(Self { state, path })
     }
