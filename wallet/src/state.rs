@@ -1,6 +1,4 @@
 use anyhow::Context;
-use penumbra_crypto::action::{output, spend};
-use penumbra_crypto::Action;
 use penumbra_proto::light_wallet::{CompactBlock, StateFragment};
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
