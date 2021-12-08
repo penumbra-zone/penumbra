@@ -13,6 +13,7 @@ pub async fn init_tables(db: &Pool<Postgres>) -> Result<()> {
         query_file!("src/db/blocks.sql"),
         query_file!("src/db/notes.sql"),
         query_file!("src/db/nullifiers.sql"),
+        query_file!("src/db/validators.sql"),
     ];
 
     let mut tx = db.begin().await?;

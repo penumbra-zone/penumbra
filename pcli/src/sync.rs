@@ -1,8 +1,9 @@
 use anyhow::Result;
 
-use penumbra_proto::wallet::{
-    wallet_client::WalletClient, AssetListRequest, CompactBlockRangeRequest,
+use penumbra_proto::light_wallet::{
+    light_wallet_client::LightWalletClient, CompactBlockRangeRequest,
 };
+
 use tracing::instrument;
 
 use crate::ClientStateFile;
@@ -10,7 +11,7 @@ use crate::ClientStateFile;
 #[instrument(skip(state), fields(start_height = state.last_block_height()))]
 pub async fn sync(state: &mut ClientStateFile, wallet_uri: String) -> Result<()> {
     tracing::info!("starting client sync");
-    let mut client = WalletClient::connect(wallet_uri).await?;
+    let mut client = LightWalletClient::connect(wallet_uri).await?;
 
     let start_height = state.last_block_height().map(|h| h + 1).unwrap_or(0);
     let mut stream = client
@@ -30,18 +31,6 @@ pub async fn sync(state: &mut ClientStateFile, wallet_uri: String) -> Result<()>
             state.commit()?;
             tracing::info!(height = ?state.last_block_height().unwrap(), "syncing...");
         }
-    }
-
-    // Update asset registry.
-    let request = tonic::Request::new(AssetListRequest {});
-    let mut stream = client.asset_list(request).await?.into_inner();
-    while let Some(asset) = stream.message().await? {
-        state.add_asset_to_registry(
-            asset.asset_id.try_into().map_err(|_| {
-                anyhow::anyhow!("could not parse asset ID for denom {}", asset.asset_denom)
-            })?,
-            asset.asset_denom.clone(),
-        );
     }
 
     state.commit()?;

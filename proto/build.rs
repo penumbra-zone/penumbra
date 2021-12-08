@@ -21,9 +21,10 @@ fn main() -> Result<()> {
         // into fixed-size byte arrays anyways, so there's no point allocating
         // into a temporary vector.
         ".penumbra.transaction",
-        // The byte fields in a state fragment will also be converted to fixed-size
+        // The byte fields in a compact block will also be converted to fixed-size
         // byte arrays and then discarded.
-        ".penumbra.wallet.StateFragment",
+        ".penumbra.light_wallet.StateFragment",
+        ".penumbra.light_wallet.CompactBlock",
     ]);
 
     config.compile_protos(&["proto/transaction.proto"], &["proto/"])?;
@@ -31,7 +32,11 @@ fn main() -> Result<()> {
     config.compile_protos(&["proto/sighash.proto"], &["proto/"])?;
 
     // For the client code, we also want to generate RPC instances, so compile via tonic:
-    tonic_build::configure().compile_with_config(config, &["proto/wallet.proto"], &["proto/"])?;
+    tonic_build::configure().compile_with_config(
+        config,
+        &["proto/light_wallet.proto", "proto/thin_wallet.proto"],
+        &["proto/"],
+    )?;
 
     Ok(())
 }

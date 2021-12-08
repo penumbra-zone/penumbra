@@ -1,30 +1,29 @@
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::Status;
+use tracing::{instrument, Instrument, Span};
 
-use penumbra_proto::wallet::{
-    wallet_server::Wallet, Asset, AssetListRequest, AssetLookupRequest, CompactBlock,
-    CompactBlockRangeRequest, TransactionByNoteRequest, TransactionDetail,
+use penumbra_proto::{
+    light_wallet::{light_wallet_server::LightWallet, CompactBlock, CompactBlockRangeRequest},
+    thin_wallet::{
+        thin_wallet_server::ThinWallet, Asset, AssetListRequest, AssetLookupRequest,
+        TransactionByNoteRequest, TransactionDetail,
+    },
 };
 
 use crate::State;
 
-/// The Penumbra wallet service.
-pub struct WalletApp {
-    state: State,
-}
-
-impl WalletApp {
-    pub fn new(state: State) -> WalletApp {
-        WalletApp { state }
-    }
-}
-
 #[tonic::async_trait]
-impl Wallet for WalletApp {
+impl LightWallet for State {
     type CompactBlockRangeStream = ReceiverStream<Result<CompactBlock, Status>>;
-    type AssetListStream = ReceiverStream<Result<Asset, Status>>;
 
+    #[instrument(
+        skip(self, request),
+        fields(
+            start_height = request.get_ref().start_height,
+            end_height = request.get_ref().end_height,
+        ),
+    )]
     async fn compact_block_range(
         &self,
         request: tonic::Request<CompactBlockRangeRequest>,
@@ -35,7 +34,6 @@ impl Wallet for WalletApp {
         } = request.into_inner();
 
         let current_height = self
-            .state
             .height()
             .await
             .map_err(|_| tonic::Status::unavailable("database error"))?
@@ -50,30 +48,44 @@ impl Wallet for WalletApp {
             std::cmp::min(end_height, current_height)
         };
 
+        // It's useful to record the end height since we adjusted it,
+        // but the start height is already recorded in the span.
+        tracing::info!(
+            end_height,
+            num_blocks = (end_height - start_height),
+            "starting compact_block_range response"
+        );
+
+        let state = self.clone();
         let (tx, rx) = mpsc::channel(100);
-
-        let state = self.state.clone();
-        
-        tokio::spawn(async move {
-
-            let block = state.compact_block_range(start_height.into(), end_height.into()).await;
-            
-            tracing::info!("sending block response: {:?}", block);
-
-            tx.send(block.map_err(|_| tonic::Status::unavailable("database error")))
-                .await
-                .unwrap();
-
-        });
+        tokio::spawn(
+            async move {
+                for height in start_height..=end_height {
+                    let block = state.compact_block(height.into()).await;
+                    tracing::debug!("sending block response: {:?}", block);
+                    tx.send(block.map_err(|_| tonic::Status::unavailable("database error")))
+                        .await
+                        .unwrap();
+                }
+            }
+            .instrument(Span::current()),
+        );
 
         Ok(tonic::Response::new(Self::CompactBlockRangeStream::new(rx)))
     }
+}
 
+#[tonic::async_trait]
+impl ThinWallet for State {
+    type AssetListStream = ReceiverStream<Result<Asset, Status>>;
+
+    #[instrument(skip(self, request))]
     async fn transaction_by_note(
         &self,
         request: tonic::Request<TransactionByNoteRequest>,
     ) -> Result<tonic::Response<TransactionDetail>, Status> {
-        let state = self.state.clone();
+        tracing::debug!(cm = ?hex::encode(&request.get_ref().cm));
+        let state = self.clone();
         let transaction = state
             .transaction_by_note(request.into_inner().cm)
             .await
@@ -81,11 +93,13 @@ impl Wallet for WalletApp {
         Ok(tonic::Response::new(transaction))
     }
 
+    #[instrument(skip(self, request))]
     async fn asset_lookup(
         &self,
         request: tonic::Request<AssetLookupRequest>,
     ) -> Result<tonic::Response<Asset>, Status> {
-        let state = self.state.clone();
+        tracing::debug!(asset_id = ?hex::encode(&request.get_ref().asset_id));
+        let state = self.clone();
         let asset = state
             .asset_lookup(request.into_inner().asset_id)
             .await
@@ -93,24 +107,29 @@ impl Wallet for WalletApp {
         Ok(tonic::Response::new(asset))
     }
 
+    #[instrument(skip(self, _request))]
     async fn asset_list(
         &self,
         _request: tonic::Request<AssetListRequest>,
     ) -> Result<tonic::Response<Self::AssetListStream>, Status> {
-        let state = self.state.clone();
+        tracing::debug!("processing request");
+        let state = self.clone();
 
         let (tx, rx) = mpsc::channel(100);
-        tokio::spawn(async move {
-            let assets = state
-                .asset_list()
-                .await
-                .map_err(|_| tonic::Status::unavailable("database error"))
-                .unwrap();
-            for asset in &assets[..] {
-                tracing::info!("sending asset list response: {:?}", asset);
-                tx.send(Ok(asset.clone())).await.unwrap();
+        tokio::spawn(
+            async move {
+                let assets = state
+                    .asset_list()
+                    .await
+                    .map_err(|_| tonic::Status::unavailable("database error"))
+                    .unwrap();
+                for asset in &assets[..] {
+                    tracing::debug!(asset_id = ?hex::encode(&asset.asset_id), asset_denom = ?asset.asset_denom, "sending asset");
+                    tx.send(Ok(asset.clone())).await.unwrap();
+                }
             }
-        });
+            .instrument(Span::current()),
+        );
 
         Ok(tonic::Response::new(Self::AssetListStream::new(rx)))
     }

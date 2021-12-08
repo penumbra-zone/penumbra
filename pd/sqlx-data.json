@@ -1,5 +1,29 @@
 {
   "db": "PostgreSQL",
+  "04f479f64381a7ea02bd9ae155d4ef6bf31e44f64705c7b36f6ad74aca2f115b": {
+    "query": "SELECT tm_pubkey, voting_power FROM validators",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "tm_pubkey",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 1,
+          "name": "voting_power",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
   "0c6a89db4de3642914e3cddf6e08a042eac9b140a03118943170433527ef5cc3": {
     "query": "INSERT INTO nullifiers VALUES ($1, $2)",
     "describe": {
@@ -83,6 +107,28 @@
         false,
         false
       ]
+    },
+  "3d56b7352d39010ff9e047b71268c26d00e9629870f21a98971ffd1b4f81a231": {
+    "query": "INSERT INTO validators (tm_pubkey, voting_power) VALUES ($1, $2)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "51084a18f15226a89dfdfb35e5de7172b4053d495d728934a20528ab4dcf713b": {
+    "query": "CREATE TABLE IF NOT EXISTS validators (\n    tm_pubkey bytea NOT NULL PRIMARY KEY,\n    voting_power bigint NOT NULL\n)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": []
     }
   },
   "51f515cc43458854df653c298142e6c77b2905b453f85c31ae1a0f56fbce1c2a": {
@@ -326,6 +372,18 @@
       ]
     }
   },
+  "cb7bac3962a9b0db3759bb2dc21f8bf7aeb58e208107aeb6b0f0f6a1e6c29d45": {
+    "query": "\nINSERT INTO blobs (id, data) VALUES ('gc', $1)\n",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "cd248ce18bd666c96bcf98dab23b66cfd807dcda482411d67be301a914b68b59": {
     "query": "CREATE TABLE IF NOT EXISTS blobs (\n    id varchar(64) PRIMARY KEY,\n    data bytea NOT NULL\n)",
     "describe": {
@@ -334,6 +392,30 @@
         "Left": []
       },
       "nullable": []
+    }
+  },
+  "db8426f28750016ab6ed802dcfcf3cb216e04ccad385f23f867698e56529fedb": {
+    "query": "SELECT id, data FROM blobs WHERE id = 'gc';",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 1,
+          "name": "data",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": [
+        false,
+        false
+      ]
     }
   },
   "f2a471a0953f4bd441bfba26e56e5558eca1f72e5fc8250124157975654a2c73": {
@@ -388,4 +470,4 @@
       ]
     }
   }
-}
+}}

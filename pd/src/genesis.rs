@@ -68,7 +68,16 @@ impl FromStr for GenesisAddr {
 }
 
 #[serde_as]
-#[derive(Deserialize, Serialize, Debug, PartialEq, Eq)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone)]
+pub struct GenesisAppState {
+    /// Initial notes
+    pub notes: Vec<GenesisNote>,
+    /// Epoch duration in terms of blocks
+    pub epoch_duration: u64,
+}
+
+#[serde_as]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone)]
 pub struct GenesisNote {
     #[serde_as(as = "serde_with::hex::Hex")]
     pub diversifier: [u8; 11],
@@ -97,12 +106,12 @@ impl GenesisNote {
     }
 }
 
-impl TryFrom<GenesisNote> for Note {
+impl TryFrom<&GenesisNote> for Note {
     type Error = anyhow::Error;
 
-    fn try_from(genesis_note: GenesisNote) -> Result<Self, Self::Error> {
+    fn try_from(genesis_note: &GenesisNote) -> Result<Self, Self::Error> {
         let amount = genesis_note.amount;
-        let asset_denom = genesis_note.asset_denom;
+        let asset_denom = &genesis_note.asset_denom;
         let note_blinding = Fq::from_bytes(genesis_note.note_blinding)?;
         let transmission_key = ka::Public(genesis_note.transmission_key);
         let diversifier = Diversifier(genesis_note.diversifier);

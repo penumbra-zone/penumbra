@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{query, query_as, Pool, Postgres};
-use std::collections::VecDeque;
+use std::collections::{BTreeMap, VecDeque};
 use tendermint::block;
 use tracing::instrument;
 
@@ -9,10 +9,15 @@ use penumbra_crypto::{
     merkle::{self, NoteCommitmentTree, TreeExt},
     Nullifier,
 };
-use penumbra_proto::wallet::{Asset, CompactBlock, StateFragment, TransactionDetail};
+use penumbra_proto::{
+    light_wallet::{CompactBlock, StateFragment},
+    thin_wallet::{Asset, TransactionDetail},
+};
 
+use crate::staking::Validator;
 use crate::{
     db::{self, schema},
+    genesis::GenesisAppState,
     verify::NoteData,
     PendingBlock,
 };
@@ -151,6 +156,48 @@ INSERT INTO notes (
         Ok(note_commitment_tree)
     }
 
+    /// Retrieve the node genesis configuration.
+    pub async fn genesis_configuration(&self) -> Result<GenesisAppState> {
+        let mut conn = self.pool.acquire().await?;
+        let genesis_config = if let Some(schema::BlobsRow { data, .. }) = query_as!(
+            schema::BlobsRow,
+            "SELECT id, data FROM blobs WHERE id = 'gc';"
+        )
+        .fetch_optional(&mut conn)
+        .await?
+        {
+            bincode::deserialize(&data).context("Could not parse saved genesis config")?
+        } else {
+            // This is only reached on the initial startup.
+            // The default value here will be overridden by `InitChain`.
+            GenesisAppState {
+                notes: vec![],
+                epoch_duration: 8640,
+            }
+        };
+
+        Ok(genesis_config)
+    }
+
+    pub async fn set_genesis_configuration(&self, genesis_config: &GenesisAppState) -> Result<()> {
+        let mut dbtx = self.pool.begin().await?;
+
+        let gc_bytes = bincode::serialize(&genesis_config)?;
+
+        // ON CONFLICT is excluded here so that an error is raised
+        // if genesis config is attempted to be set more than once
+        query!(
+            r#"
+INSERT INTO blobs (id, data) VALUES ('gc', $1)
+"#,
+            &gc_bytes[..]
+        )
+        .execute(&mut dbtx)
+        .await?;
+
+        dbtx.commit().await.map_err(Into::into)
+    }
+
     /// Retrieve the latest block info, if any.
     pub async fn latest_block_info(&self) -> Result<Option<schema::BlocksRow>> {
         let mut conn = self.pool.acquire().await?;
@@ -213,7 +260,7 @@ INSERT INTO notes (
             nullifiers: query!(
                 "SELECT nullifier FROM nullifiers WHERE height = $1",
                 height
-            ).fetch_all(&mut conn).await?.into_iter().map(|row| row.nullifier).collect(),
+            ).fetch_all(&mut conn).await?.into_iter().map(|row| row.nullifier.into()).collect(),
             fragments: query!(
                 "SELECT note_commitment, ephemeral_key, encrypted_note FROM notes WHERE height = $1",
                 height
@@ -250,7 +297,7 @@ INSERT INTO notes (
             ).fetch_all(&mut conn)
             .await?
             .into_iter()
-            .map(|row| row.nullifier)
+            .map(|row| row.nullifier.into())
             .collect(),
 
             fragments: query!(
@@ -270,6 +317,58 @@ INSERT INTO notes (
             )
             .collect(),
         })
+    }
+
+    /// Retreive the current validator set.
+    ///
+    pub async fn validators(&self) -> Result<BTreeMap<tendermint::PublicKey, Validator>> {
+        let mut conn = self.pool.acquire().await?;
+
+        let mut validators: BTreeMap<tendermint::PublicKey, Validator> = BTreeMap::new();
+
+        let stored_validators = query!(r#"SELECT tm_pubkey, voting_power FROM validators"#)
+            .fetch_all(&mut conn)
+            .await?;
+        for row in stored_validators.iter() {
+            // NOTE: we store the validator's public key in the database as a json-encoded string,
+            // because Tendermint pubkeys can be either ed25519 or secp256k1, and we want a
+            // non-ambiguous encoding for the public key.
+            let decoded_pubkey: tendermint::PublicKey = serde_json::from_slice(&row.tm_pubkey)?;
+
+            // NOTE: voting_power is stored in the psql database as a `bigint`, which maps to an
+            // `i64` in sqlx. try_into uses the `TryFrom<i64>` implementation for voting power from
+            // Tendermint, so will return an error if voting power is negative (and not silently
+            // overflow).
+            validators.insert(
+                decoded_pubkey,
+                Validator::new(decoded_pubkey, row.voting_power.try_into()?),
+            );
+        }
+
+        Ok(validators)
+    }
+
+    /// set the initial validator set, inserting each validator in `validators` into the state.
+    pub async fn set_initial_validators(
+        &self,
+        validators: &BTreeMap<tendermint::PublicKey, Validator>,
+    ) -> Result<()> {
+        let mut conn = self.pool.begin().await?;
+
+        // TODO: batching optimization
+        for (tm_pubkey, val) in validators.iter() {
+            let pubkey_str = serde_json::to_string(tm_pubkey)?;
+
+            query!(
+                "INSERT INTO validators (tm_pubkey, voting_power) VALUES ($1, $2)",
+                pubkey_str.as_bytes(),
+                i64::try_from(val.voting_power)?,
+            )
+            .execute(&mut conn)
+            .await?;
+        }
+
+        Ok(())
     }
 
     /// Retrieve the [`TransactionDetail`] for a given note commitment.

@@ -1,4 +1,3 @@
-use metrics::register_counter;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use rand::SeedableRng;
 use rand_chacha::ChaCha20Rng;
@@ -9,11 +8,14 @@ use structopt::StructOpt;
 use tonic::transport::Server;
 
 use penumbra_crypto::Address;
-use penumbra_proto::wallet::wallet_server;
+use penumbra_proto::{
+    light_wallet::light_wallet_server::LightWalletServer,
+    thin_wallet::thin_wallet_server::ThinWalletServer,
+};
 
 use pd::{
     genesis::{generate_genesis_notes, GenesisAddr},
-    App, State, WalletApp,
+    App, State,
 };
 
 #[derive(Debug, StructOpt)]
@@ -41,9 +43,12 @@ enum Command {
         /// Bind the ABCI server to this port.
         #[structopt(short, long, default_value = "26658")]
         abci_port: u16,
-        /// Bind the wallet service to this port.
+        /// Bind the light wallet service to this port.
         #[structopt(short, long, default_value = "26666")]
-        wallet_port: u16,
+        light_wallet_port: u16,
+        /// Bind the thin wallet service to this port.
+        #[structopt(short, long, default_value = "26667")]
+        thin_wallet_port: u16,
         /// Bind the metrics endpoint to this port.
         #[structopt(short, long, default_value = "9000")]
         metrics_port: u16,
@@ -62,6 +67,19 @@ enum Command {
     },
 }
 
+// Extracted from tonic's remote_addr implementation; we'd like to instrument
+// spans with the remote addr at the server level rather than at the individual
+// request level, but the hook available to do that gives us an http::Request
+// rather than a tonic::Request, so the tonic::Request::remote_addr method isn't
+// available.
+fn remote_addr(req: &http::Request<()>) -> Option<SocketAddr> {
+    use tonic::transport::server::TcpConnectInfo;
+    // NOTE: needs to also check TlsConnectInfo if we use TLS
+    req.extensions()
+        .get::<TcpConnectInfo>()
+        .and_then(|i| i.remote_addr())
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
@@ -72,24 +90,22 @@ async fn main() -> anyhow::Result<()> {
             host,
             database_uri,
             abci_port,
-            wallet_port,
+            light_wallet_port,
+            thin_wallet_port,
             metrics_port,
         } => {
             tracing::info!(
                 ?host,
                 ?database_uri,
                 ?abci_port,
-                ?wallet_port,
+                ?light_wallet_port,
+                ?thin_wallet_port,
                 "starting pd"
             );
             // Initialize state
             let state = State::connect(&database_uri).await.unwrap();
 
             let abci_app = App::new(state.clone()).await.unwrap();
-            let wallet_app = WalletApp::new(state);
-            let wallet_service_addr = format!("{}:{}", host, wallet_port)
-                .parse()
-                .expect("this is a valid address");
 
             let (consensus, mempool, snapshot, info) = tower_abci::split::service(abci_app, 1);
 
@@ -104,30 +120,51 @@ async fn main() -> anyhow::Result<()> {
                     .listen(format!("{}:{}", host, abci_port)),
             );
 
-            let wallet_server = tokio::spawn(
+            let light_wallet_server = tokio::spawn(
                 Server::builder()
-                    .add_service(wallet_server::WalletServer::new(wallet_app))
-                    .serve(wallet_service_addr),
+                    .trace_fn(|req| match remote_addr(req) {
+                        Some(remote_addr) => tracing::error_span!("light_wallet", ?remote_addr),
+                        None => tracing::error_span!("light_wallet"),
+                    })
+                    .add_service(LightWalletServer::new(state.clone()))
+                    .serve(
+                        format!("{}:{}", host, light_wallet_port)
+                            .parse()
+                            .expect("this is a valid address"),
+                    ),
+            );
+            let thin_wallet_server = tokio::spawn(
+                Server::builder()
+                    .trace_fn(|req| match remote_addr(req) {
+                        Some(remote_addr) => tracing::error_span!("thin_wallet", ?remote_addr),
+                        None => tracing::error_span!("thin_wallet"),
+                    })
+                    .add_service(ThinWalletServer::new(state.clone()))
+                    .serve(
+                        format!("{}:{}", host, thin_wallet_port)
+                            .parse()
+                            .expect("this is a valid address"),
+                    ),
             );
 
             // This service lets Prometheus pull metrics from `pd`
-            let metrics_service_addr: SocketAddr = format!("{}:{}", host, metrics_port)
-                .parse()
-                .expect("this is a valid address");
-            let _metrics_exporter = PrometheusBuilder::new()
-                .listen_address(metrics_service_addr)
+            PrometheusBuilder::new()
+                .listen_address(
+                    format!("{}:{}", host, metrics_port)
+                        .parse::<SocketAddr>()
+                        .expect("this is a valid address"),
+                )
                 .install()
                 .expect("metrics service set up");
 
-            // New metrics to track should be added below.
-            register_counter!("node_spent_nullifiers_total");
-            register_counter!("node_transactions_total");
+            pd::register_all_metrics();
 
             // TODO: better error reporting
-            // We should error out if either service errors, rather than keep running
+            // We error out if either service errors, rather than keep running
             tokio::select! {
                 x = abci_server => x?.map_err(|e| anyhow::anyhow!(e))?,
-                x = wallet_server => x?.map_err(|e| anyhow::anyhow!(e))?,
+                x = light_wallet_server => x?.map_err(|e| anyhow::anyhow!(e))?,
+                x = thin_wallet_server => x?.map_err(|e| anyhow::anyhow!(e))?,
             };
         }
         Command::CreateGenesis {

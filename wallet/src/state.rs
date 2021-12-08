@@ -1,5 +1,5 @@
 use anyhow::Context;
-use penumbra_proto::wallet::{CompactBlock, StateFragment};
+use penumbra_proto::light_wallet::{CompactBlock, StateFragment};
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
@@ -352,7 +352,7 @@ impl ClientState {
         // and move them into the spent set
         for nullifier in nullifiers {
             // Try to decode the nullifier
-            if let Ok(nullifier) = nullifier.try_into() {
+            if let Ok(nullifier) = nullifier.as_ref().try_into() {
                 // Try to find the corresponding note commitment in the nullifier map
                 if let Some(&note_commitment) = self.nullifier_map.get(&nullifier) {
                     // Try to remove the nullifier from the unspent set
