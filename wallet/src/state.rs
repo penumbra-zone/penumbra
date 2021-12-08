@@ -250,7 +250,7 @@ impl ClientState {
                 let auth_path = self
                     .note_commitment_tree
                     .authentication_path(&note_commitment)
-                    .unwrap();
+                    .expect("tried to spend note not present in note commitment tree");
                 let merkle_path = (u64::from(auth_path.0) as usize, auth_path.1);
                 let merkle_position = auth_path.0;
                 tx_builder = tx_builder.add_spend(
@@ -304,24 +304,33 @@ impl ClientState {
 
     /// Returns an iterator over unspent `(address_id, denom, note)` triples.
     pub fn unspent_notes(&self) -> impl Iterator<Item = (u64, String, UnspentNote)> + '_ {
-        self.unspent_set.values().map(|note| {
-            // Any notes we have in the unspent set we will have the corresponding denominations
-            // for since the notes and asset registry are both part of the sync.
-            let denom = self
-                .asset_registry
-                .get(&note.asset_id())
-                .expect("all asset IDs should have denominations stored locally")
-                .clone();
+        self.unspent_set
+            .values()
+            .map(UnspentNote::Unspent)
+            .chain(self.pending_set.values().map(UnspentNote::PendingSpend))
+            .chain(
+                self.pending_change_set
+                    .values()
+                    .map(UnspentNote::PendingChange),
+            )
+            .map(|note| {
+                // Any notes we have in the unspent set we will have the corresponding denominations
+                // for since the notes and asset registry are both part of the sync.
+                let denom = self
+                    .asset_registry
+                    .get(&note.as_ref().asset_id())
+                    .expect("all asset IDs should have denominations stored locally")
+                    .clone();
 
-            let index: u64 = self
-                .wallet()
-                .incoming_viewing_key()
-                .index_for_diversifier(&note.diversifier())
-                .try_into()
-                .expect("diversifiers created by `pcli` are well-formed");
+                let index: u64 = self
+                    .wallet()
+                    .incoming_viewing_key()
+                    .index_for_diversifier(&note.as_ref().diversifier())
+                    .try_into()
+                    .expect("diversifiers created by `pcli` are well-formed");
 
-            (index, denom, UnspentNote::Unspent(note))
-        })
+                (index, denom, note)
+            })
     }
 
     /// Returns unspent notes, grouped by address index and then by denomination.
