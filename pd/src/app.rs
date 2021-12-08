@@ -90,12 +90,13 @@ impl App {
         let note_commitment_tree = state.note_commitment_tree().await?;
         let genesis_config = state.genesis_configuration().await?;
         let recent_anchors = state.recent_anchors(NUM_RECENT_ANCHORS).await?;
+        let validators = state.validators().await?;
         Ok(Self {
             state,
             note_commitment_tree,
             recent_anchors: recent_anchors,
             mempool_nullifiers: Arc::new(Default::default()),
-            validators: Arc::new(Default::default()),
+            validators: Arc::new(Mutex::new(validators)),
             pending_block: None,
             completion_tracker: Default::default(),
             epoch_duration: genesis_config.epoch_duration,
