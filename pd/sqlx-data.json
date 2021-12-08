@@ -1,5 +1,29 @@
 {
   "db": "PostgreSQL",
+  "04f479f64381a7ea02bd9ae155d4ef6bf31e44f64705c7b36f6ad74aca2f115b": {
+    "query": "SELECT tm_pubkey, voting_power FROM validators",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "tm_pubkey",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 1,
+          "name": "voting_power",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
   "0c6a89db4de3642914e3cddf6e08a042eac9b140a03118943170433527ef5cc3": {
     "query": "INSERT INTO nullifiers VALUES ($1, $2)",
     "describe": {
@@ -48,6 +72,16 @@
           "Bytea",
           "Varchar"
         ]
+      },
+      "nullable": []
+    }
+  },
+  "51084a18f15226a89dfdfb35e5de7172b4053d495d728934a20528ab4dcf713b": {
+    "query": "CREATE TABLE IF NOT EXISTS validators (\n    tm_pubkey bytea NOT NULL PRIMARY KEY,\n    voting_power bigint NOT NULL\n)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": []
       },
       "nullable": []
     }
