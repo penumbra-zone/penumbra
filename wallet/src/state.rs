@@ -1,5 +1,5 @@
 use anyhow::Context;
-use penumbra_crypto::action::output;
+use penumbra_crypto::action::{output, spend};
 use penumbra_crypto::Action;
 use penumbra_proto::light_wallet::{CompactBlock, StateFragment};
 use rand::seq::SliceRandom;
@@ -238,6 +238,8 @@ impl ClientState {
                 ) {
                     self.pending_change_set.insert(body.note_commitment, note);
                 }
+            } else if let Action::Spend(spend::Spend { body, .. }) = action {
+                // FIXME: track this spent output somehow
             }
         }
 
