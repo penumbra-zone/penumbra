@@ -335,7 +335,7 @@ impl App {
         // at the epoch boundary
         if end.height.unsigned_abs() % self.epoch_duration == 0 {
             // Epoch boundary -- add/remove validators if necessary
-            println!("New epoch")
+            tracing::info!("new epoch");
         }
         // TODO: here's where we process validator changes
         response::EndBlock::default()
