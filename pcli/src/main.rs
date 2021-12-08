@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use structopt::StructOpt;
 
 use penumbra_crypto::CURRENT_CHAIN_ID;
-use penumbra_wallet::{ClientState, Wallet};
+use penumbra_wallet::{ClientState, UnspentNote, Wallet};
 
 pub mod opt;
 pub mod warning;
@@ -202,34 +202,64 @@ async fn main() -> Result<()> {
             println!("{}", table);
         }
         Command::Balance { by_address } => {
+            // Format a tally of notes as two strings: unspent and pending. This assumes that the
+            // notes are all of the same denomination, and it is called below only in the places
+            // where they are.
+            fn tally_format_notes<'a>(
+                notes: impl IntoIterator<Item = UnspentNote<'a>>,
+            ) -> (String, String) {
+                // Tally each of the kinds of note:
+                let mut unspent = 0;
+                let mut pending = 0;
+                let mut pending_change = 0;
+
+                for note in notes {
+                    *match note {
+                        UnspentNote::Ready(_) => &mut unspent,
+                        UnspentNote::PendingSpend(_) => &mut pending,
+                        UnspentNote::PendingChange(_) => &mut pending_change,
+                    } += note.as_ref().amount();
+                }
+
+                // Format a string describing the pending balance updates
+                let pending_string = if pending > 0 && pending_change > 0 {
+                    format!("+{} change, -{} spent", pending, pending_change)
+                } else if pending == 0 {
+                    format!("+{} change", pending_change)
+                } else if pending_change == 0 {
+                    format!("-{} spent", pending)
+                } else {
+                    "".to_string()
+                };
+
+                (unspent.to_string(), pending_string)
+            }
+
             let state = state.expect("state must be synchronized");
 
             let mut table = Table::new();
             table.load_preset(presets::NOTHING);
 
             if by_address {
-                table.set_header(vec!["Address", "Asset", "Balance"]);
+                table.set_header(vec!["Address", "Asset", "Unspent", "Pending"]);
 
                 for (address_id, by_denom) in state.unspent_notes_by_address_and_denom().into_iter()
                 {
                     let (mut label, _) = state.wallet().address_by_index(address_id as usize)?;
                     for (denom, notes) in by_denom.into_iter() {
-                        let balance: u64 = notes.iter().map(|note| note.amount()).sum();
-                        table.add_row(vec![label.clone(), denom, balance.to_string()]);
+                        let (unspent, pending) = tally_format_notes(notes);
+                        table.add_row(vec![label.clone(), denom, unspent, pending]);
+
                         // Only display the label on the first row
                         label = String::default();
                     }
                 }
             } else {
-                table.set_header(vec!["Asset", "Balance"]);
+                table.set_header(vec!["Asset", "Unspent", "Pending"]);
 
                 for (denom, by_address) in state.unspent_notes_by_denom_and_address().into_iter() {
-                    let balance: u64 = by_address
-                        .values()
-                        .flatten()
-                        .map(|note| note.amount())
-                        .sum();
-                    table.add_row(vec![denom, balance.to_string()]);
+                    let (unspent, pending) = tally_format_notes(by_address.into_values().flatten());
+                    table.add_row(vec![denom, unspent, pending]);
                 }
             }
 

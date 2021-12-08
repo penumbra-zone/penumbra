@@ -65,7 +65,7 @@ pub enum PendingCommitment {
 pub enum UnspentNote<'a> {
     /// A note which is ours to spend immediately: neither pending a spend, nor pending our
     /// confirming it as received change from a transaction.
-    Unspent(&'a Note),
+    Ready(&'a Note),
     /// A note which we have submitted in a spend transaction but which has not yet been
     /// confirmed on the chain (so if the transaction is rejected, we may get it back again).
     PendingSpend(&'a Note),
@@ -77,7 +77,7 @@ pub enum UnspentNote<'a> {
 impl AsRef<Note> for UnspentNote<'_> {
     fn as_ref(&self) -> &Note {
         match self {
-            UnspentNote::Unspent(note) => note,
+            UnspentNote::Ready(note) => note,
             UnspentNote::PendingSpend(note) => note,
             UnspentNote::PendingChange(note) => note,
         }
@@ -146,7 +146,7 @@ impl ClientState {
         for note in notes.into_iter() {
             // A note is only spendable if it has been confirmed on chain to us (change outputs
             // cannot be spent yet because they do not have a position):
-            if let UnspentNote::Unspent(note) = note {
+            if let UnspentNote::Ready(note) = note {
                 notes_to_spend.push(note);
                 total_spend_value += note.amount();
 
@@ -303,10 +303,13 @@ impl ClientState {
     }
 
     /// Returns an iterator over unspent `(address_id, denom, note)` triples.
+    ///
+    /// Notes are [`UnspentNote`]s, which describe whether the note is ready to spend, part of a
+    /// pending output, or part of pending change expected to be received.
     pub fn unspent_notes(&self) -> impl Iterator<Item = (u64, String, UnspentNote)> + '_ {
         self.unspent_set
             .values()
-            .map(UnspentNote::Unspent)
+            .map(UnspentNote::Ready)
             .chain(self.pending_set.values().map(UnspentNote::PendingSpend))
             .chain(
                 self.pending_change_set
