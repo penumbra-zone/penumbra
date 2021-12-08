@@ -73,7 +73,7 @@ pub struct GenesisAppState {
     /// Initial notes
     pub notes: Vec<GenesisNote>,
     /// Epoch duration in terms of blocks
-    pub epoch_duration: i64,
+    pub epoch_duration: u64,
 }
 
 #[serde_as]

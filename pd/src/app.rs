@@ -75,7 +75,7 @@ pub struct App {
     completion_tracker: CompletionTracker,
 
     /// Epoch duration in blocks
-    epoch_duration: Option<i64>,
+    epoch_duration: u64,
 }
 
 impl App {
@@ -91,7 +91,8 @@ impl App {
             mempool_nullifiers: Arc::new(Default::default()),
             pending_block: None,
             completion_tracker: Default::default(),
-            epoch_duration: None,
+            // 8640 blocks is 1 day at 10 second block intervals
+            epoch_duration: 8640,
         })
     }
 
@@ -136,7 +137,7 @@ impl App {
         tracing::info!("loaded all genesis notes");
 
         // XXX Does the epoch duration need a Mutex around it?
-        self.epoch_duration = Some(genesis.epoch_duration);
+        self.epoch_duration = genesis.epoch_duration;
         self.pending_block = Some(Arc::new(Mutex::new(genesis_block)));
         let commit = self.commit();
         let state = self.state.clone();
@@ -319,9 +320,13 @@ impl App {
             .unwrap()
             .set_height(end.height);
 
+        if end.height < 0 {
+            panic!("block height should never be negative");
+        }
+
         // TODO: if necessary, set the EndBlock response to add validators
         // at the epoch boundary
-        if end.height % self.epoch_duration.expect("Epoch duration must be set") == 0 {
+        if end.height.unsigned_abs() % self.epoch_duration == 0 {
             // Epoch boundary -- add/remove validators if necessary
             println!("New epoch")
         }
