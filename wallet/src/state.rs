@@ -367,6 +367,9 @@ impl ClientState {
                     note_commitment,
                 );
 
+                // If the note was a pending change note, remove it from the pending change set
+                self.pending_change_set.remove(&note_commitment);
+
                 // Insert the note into the received set
                 self.unspent_set.insert(note_commitment, note.clone());
             }
