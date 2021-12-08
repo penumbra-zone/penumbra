@@ -579,8 +579,11 @@ mod serde_helpers {
         note_commitment_tree: Vec<u8>,
         nullifier_map: Vec<(String, String)>,
         unspent_set: Vec<(String, String)>,
+        #[serde(default)]
         pending_set: Vec<(String, String)>,
+        #[serde(default)]
         pending_change_set: Vec<(String, String)>,
+        #[serde(default)]
         pending_timeouts: Vec<(SystemTime, Vec<PendingCommitmentHelper>)>,
         spent_set: Vec<(String, String)>,
         transactions: Vec<(String, String)>,
