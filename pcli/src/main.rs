@@ -201,8 +201,15 @@ async fn main() -> Result<()> {
             // Print the table (we don't get here if `show --addr-only`)
             println!("{}", table);
         }
-        Command::Balance { by_address } => {
-            let state = state.expect("state must be synchronized");
+        Command::Balance {
+            by_address,
+            offline,
+        } => {
+            let state = if !offline {
+                state.expect("state must be synchronized")
+            } else {
+                ClientStateFile::load(wallet_path)?
+            };
 
             let mut table = Table::new();
             table.load_preset(presets::NOTHING);
