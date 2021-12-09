@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use penumbra_crypto::{Address, Value};
+use penumbra_crypto::Address;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{query, query_as, Pool, Postgres};
 use std::collections::{BTreeMap, VecDeque};
@@ -290,16 +290,16 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
 
         let mut validators: BTreeMap<tendermint::PublicKey, Validator> = BTreeMap::new();
 
-        let stored_validators = query!(r#"SELECT tm_pubkey, voting_power, commission_address, commission_rate, unclaimed_reward FROM validators"#)
-            .fetch_all(&mut conn)
-            .await?;
+        let stored_validators = query!(
+            r#"SELECT tm_pubkey, voting_power, commission_address, commission_rate FROM validators"#
+        )
+        .fetch_all(&mut conn)
+        .await?;
         for row in stored_validators.iter() {
             // NOTE: we store the validator's public key in the database as a json-encoded string,
             // because Tendermint pubkeys can be either ed25519 or secp256k1, and we want a
             // non-ambiguous encoding for the public key.
             let decoded_pubkey: tendermint::PublicKey = serde_json::from_slice(&row.tm_pubkey)?;
-
-            let decoded_unclaimed_reward: Value = serde_json::from_slice(&row.unclaimed_reward)?;
 
             // NOTE: voting_power is stored in the psql database as a `bigint`, which maps to an
             // `i64` in sqlx. try_into uses the `TryFrom<i64>` implementation for voting power from
@@ -312,7 +312,6 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
                     row.voting_power.try_into()?,
                     Address::from_str(&row.commission_address)?,
                     u16::try_from(row.commission_rate)?,
-                    decoded_unclaimed_reward,
                 ),
             );
         }
@@ -330,16 +329,14 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
         // TODO: batching optimization
         for (tm_pubkey, val) in validators.iter() {
             let pubkey_str = serde_json::to_string(tm_pubkey)?;
-            let unclaimed_reward = serde_json::to_string(&val.unclaimed_reward)?;
 
             // TODO: commission address, rate, unclaimed reward
             query!(
-                "INSERT INTO validators (tm_pubkey, voting_power, commission_address, commission_rate, unclaimed_reward) VALUES ($1, $2, $3, $4, $5)",
+                "INSERT INTO validators (tm_pubkey, voting_power, commission_address, commission_rate) VALUES ($1, $2, $3, $4)",
                 pubkey_str.as_bytes(),
                 i64::try_from(val.voting_power)?,
                 val.commission_address.to_string(),
                 i64::try_from(val.commission_rate_bps)?,
-                unclaimed_reward.as_bytes(),
             )
             .execute(&mut conn)
             .await?;

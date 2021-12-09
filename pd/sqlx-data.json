@@ -39,8 +39,8 @@
       ]
     }
   },
-  "25e3fa1252e6befbef555c506e6e1296df4cb89da7ec99238bc928767adc64ca": {
-    "query": "SELECT tm_pubkey, voting_power, commission_address, commission_rate, unclaimed_reward FROM validators",
+  "1b342fe294468358875e2ed0b3108462f3434b8412817505c2d42b5bb4423c90": {
+    "query": "SELECT tm_pubkey, voting_power, commission_address, commission_rate FROM validators",
     "describe": {
       "columns": [
         {
@@ -62,11 +62,6 @@
           "ordinal": 3,
           "name": "commission_rate",
           "type_info": "Int8"
-        },
-        {
-          "ordinal": 4,
-          "name": "unclaimed_reward",
-          "type_info": "Bytea"
         }
       ],
       "parameters": {
@@ -76,25 +71,8 @@
         false,
         false,
         false,
-        false,
         false
       ]
-    }
-  },
-  "328fa59e7194fccb9894d123e299d0cddadd5f4d3dda1ff6a06d94a1eabd5be9": {
-    "query": "INSERT INTO validators (tm_pubkey, voting_power, commission_address, commission_rate, unclaimed_reward) VALUES ($1, $2, $3, $4, $5)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea",
-          "Int8",
-          "Varchar",
-          "Int8",
-          "Bytea"
-        ]
-      },
-      "nullable": []
     }
   },
   "3cbb441b10f4a068c16dd3a40accd689be26f2a6619b363fd966ee10e740f07b": {
@@ -194,6 +172,21 @@
       "nullable": [
         false
       ]
+    }
+  },
+  "6c1203738db6f9a244389dc721f40c628bff216460ad769ba971d96c1f51b3f2": {
+    "query": "INSERT INTO validators (tm_pubkey, voting_power, commission_address, commission_rate) VALUES ($1, $2, $3, $4)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Int8",
+          "Varchar",
+          "Int8"
+        ]
+      },
+      "nullable": []
     }
   },
   "73e0b933842ff451654acd14f7a681c505aed832f9158fd800bf32b21916625e": {
