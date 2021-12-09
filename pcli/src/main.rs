@@ -237,32 +237,54 @@ async fn main() -> Result<()> {
 
             let state = state.expect("state must be synchronized");
 
+            // Initialize the table
             let mut table = Table::new();
             table.load_preset(presets::NOTHING);
+            let mut print_pending_column = false; // This will become true if there are any pending transactions
+            let mut headers;
 
             if by_address {
-                table.set_header(vec!["Address", "Asset", "Unspent", "Pending"]);
-
                 for (address_id, by_denom) in state.unspent_notes_by_address_and_denom().into_iter()
                 {
                     let (mut label, _) = state.wallet().address_by_index(address_id as usize)?;
                     for (denom, notes) in by_denom.into_iter() {
                         let (unspent, pending) = tally_format_notes(notes);
-                        table.add_row(vec![label.clone(), denom, unspent, pending]);
+                        let mut row = vec![label.clone(), denom, unspent];
+                        if !pending.is_empty() {
+                            print_pending_column = true;
+                            row.push(pending);
+                        }
+                        table.add_row(row);
 
                         // Only display the label on the first row
                         label = String::default();
                     }
                 }
-            } else {
-                table.set_header(vec!["Asset", "Unspent", "Pending"]);
 
+                // Set up headers for the table (a "Pending" column will be added if there are any
+                // pending transactions)
+                headers = vec!["Address", "Asset", "Unspent"];
+            } else {
                 for (denom, by_address) in state.unspent_notes_by_denom_and_address().into_iter() {
                     let (unspent, pending) = tally_format_notes(by_address.into_values().flatten());
-                    table.add_row(vec![denom, unspent, pending]);
+                    let mut row = vec![denom, unspent];
+                    if !pending.is_empty() {
+                        print_pending_column = true;
+                        row.push(pending);
+                    }
+                    table.add_row(row);
                 }
+
+                // Set up headers for the table (a "Pending" column will be added if there are any
+                // pending transactions)
+                headers = vec!["Asset", "Unspent"];
             }
 
+            // Add a "Pending" column if there are any pending transactions
+            if print_pending_column {
+                headers.push("Pending");
+            }
+            table.set_header(headers);
             println!("{}", table);
         }
     }
