@@ -2,6 +2,8 @@
 use once_cell::sync::Lazy;
 use std::convert::{TryFrom, TryInto};
 
+use regex::Regex;
+use subtle_encoding::bech32;
 use tendermint::PublicKey;
 
 use ark_ff::fields::PrimeField;
@@ -32,22 +34,61 @@ pub const PENUMBRA_BECH32_VALIDATOR_PREFIX: &str = "penumbravalpub";
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Id(pub Fq);
 
-/// Validator-specific unique asset identifier, used for identifying staking tokens
+/// Validator-specific unique assets, used for identifying staking tokens
 /// associated with a particular validator.
-pub struct ValidatorAssetId(pub Fq);
+pub struct ValidatorAsset {
+    validator_pubkey: PublicKey,
+}
 
-impl From<&PublicKey> for ValidatorAssetId {
-    fn from(pk: &PublicKey) -> ValidatorAssetId {
-        let validator_asset_denom = format!(
+impl ValidatorAsset {
+    pub fn new(pk: PublicKey) -> Self {
+        ValidatorAsset {
+            validator_pubkey: pk,
+        }
+    }
+
+    pub fn denom(&self) -> Denom {
+        Denom(format!(
             "d{}-{}",
             NATIVE_ASSET_DENOM,
-            pk.to_bech32(PENUMBRA_BECH32_VALIDATOR_PREFIX)
-        );
-        ValidatorAssetId::from(Denom(validator_asset_denom))
+            self.validator_pubkey
+                .to_bech32(PENUMBRA_BECH32_VALIDATOR_PREFIX)
+        ))
+    }
+
+    pub fn id(&self) -> Id {
+        Id::from(self.denom())
     }
 }
 
+pub fn is_validator_denom(d: &Denom) -> bool {
+    let re = Regex::new(&format!(
+        r"^d{}-({}{}\w+)$",
+        NATIVE_ASSET_DENOM,
+        PENUMBRA_BECH32_VALIDATOR_PREFIX,
+        // Note, if tendermint-rs ever changes the bech32 separator from default,
+        // this will break
+        bech32::DEFAULT_SEPARATOR
+    ))
+    .unwrap();
+    let caps = re.captures(&d.0);
+    if caps.is_none() {
+        // There was no bech32 address captured
+        return false;
+    }
+
+    let bech32_address = caps.unwrap().get(1).map_or("", |m| m.as_str());
+
+    re.is_match(&d.0) && bech32::decode(bech32_address.to_lowercase()).is_ok()
+}
+
 pub struct Denom(pub String);
+
+impl std::fmt::Display for Denom {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 
 impl std::fmt::Debug for Id {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -80,19 +121,6 @@ impl std::str::FromStr for Id {
 impl From<&str> for Denom {
     fn from(strin: &str) -> Denom {
         Denom(strin.to_string())
-    }
-}
-
-impl From<Denom> for ValidatorAssetId {
-    fn from(denom: Denom) -> ValidatorAssetId {
-        // Convert an asset name to an asset ID by hashing to a scalar
-        ValidatorAssetId(Fq::from_le_bytes_mod_order(
-            // XXX choice of hash function?
-            blake2b_simd::Params::default()
-                .personal(b"Penumbra_AssetID")
-                .hash(denom.0.as_ref())
-                .as_bytes(),
-        ))
     }
 }
 
@@ -170,5 +198,28 @@ mod tests {
 
         dbg!(pen_id.value_generator());
         dbg!(atom_id.value_generator());
+    }
+
+    #[test]
+    fn denom_type_inference() {
+        // basic test around denomination type inference
+
+        let bc = Denom("bottlecaps".to_string());
+        let atom = Denom("HubPort/HubChannel/atom".to_string());
+        let delegated = Denom(format!(
+            "d{}-{}{}zcjduepq5nvpxvunnsvmcu499qxewr8pzxjuq9x5f868rp7dqnzgd59z9nqqc7hg9k",
+            NATIVE_ASSET_DENOM,
+            PENUMBRA_BECH32_VALIDATOR_PREFIX,
+            bech32::DEFAULT_SEPARATOR
+        ));
+        let not_delegated = Denom(
+            "dIWishIWasADelegatedToken-SomeStuff15zcu95aqk8pd8g93ctf6pvwz6wstrsknmrfr5t"
+                .to_string(),
+        );
+
+        assert!(!is_validator_denom(&bc));
+        assert!(!is_validator_denom(&atom));
+        assert!(is_validator_denom(&delegated));
+        assert!(!is_validator_denom(&not_delegated));
     }
 }
