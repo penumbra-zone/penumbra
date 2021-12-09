@@ -178,8 +178,6 @@ impl ClientState {
         // xx Could populate chain_id from the info endpoint on the node, or at least
         // error if there is an inconsistency
 
-        let now = SystemTime::now();
-
         let dest_address: Address =
             Address::from_str(&address).map_err(|_| anyhow::anyhow!("address is invalid"))?;
 
@@ -213,8 +211,8 @@ impl ClientState {
             *value_to_spend.entry("penumbra".into()).or_default() += fee;
         }
 
-        // The current system time (used to set timeouts for pending transactions)
-        let now = SystemTime::now();
+        // The time in the future when pending transactions created now should expire
+        let timeout = SystemTime::now() + PENDING_TRANSACTION_TIMEOUT;
 
         for (denom, amount) in value_to_spend {
             // Only produce an output if the amount is greater than zero
@@ -239,7 +237,7 @@ impl ClientState {
 
                 // Add the note to the pending set
                 self.pending_set
-                    .insert(note_commitment, (now, note.clone()));
+                    .insert(note_commitment, (timeout, note.clone()));
 
                 let auth_path = self
                     .note_commitment_tree
@@ -279,7 +277,8 @@ impl ClientState {
                 let note_commitment = note.commit();
 
                 // Add the note to the pending change set
-                self.pending_change_set.insert(note_commitment, (now, note));
+                self.pending_change_set
+                    .insert(note_commitment, (timeout, note));
             }
         }
 
