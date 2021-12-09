@@ -67,11 +67,7 @@ ON CONFLICT (id) DO UPDATE SET data = $1
         .await?;
 
         // TODO: this could be batched / use prepared statements
-        for (
-            note_commitment,
-            positioned_note
-        ) in block.notes.into_iter()
-        {
+        for (note_commitment, positioned_note) in block.notes.into_iter() {
             query!(
                 r#"
                 INSERT INTO notes (

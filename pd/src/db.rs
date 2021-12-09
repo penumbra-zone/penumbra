@@ -17,7 +17,7 @@ pub async fn init_tables(db: &Pool<Postgres>) -> Result<()> {
         query_file!("src/db/indexes/notes_height_idx.sql"),
         query_file!("src/db/indexes/notes_position_idx.sql"),
         query_file!("src/db/indexes/nullifiers_height_idx.sql"),
-        ];
+    ];
 
     let mut tx = db.begin().await?;
     for query in tables.into_iter() {

@@ -39,15 +39,21 @@ impl PendingBlock {
 
     /// Adds the state changes from a verified transaction.
     pub fn add_transaction(&mut self, transaction: VerifiedTransaction) {
-
         for (note_commitment, data) in transaction.new_notes {
-
             self.note_commitment_tree.append(&note_commitment);
 
-            let (position, _) = self.note_commitment_tree.authentication_path(&note_commitment)
+            let (position, _) = self
+                .note_commitment_tree
+                .authentication_path(&note_commitment)
                 .expect("we just appended this commitment");
 
-            self.notes.insert(note_commitment, PositionedNoteData { position: u64::from(position), data});
+            self.notes.insert(
+                note_commitment,
+                PositionedNoteData {
+                    position: u64::from(position),
+                    data,
+                },
+            );
         }
 
         for nullifier in transaction.spent_nullifiers {

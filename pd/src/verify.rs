@@ -34,10 +34,10 @@ pub struct NoteData {
 }
 
 #[derive(Debug, Clone)]
- pub struct PositionedNoteData {
-     pub position: u64,
-     pub data: NoteData
- }
+pub struct PositionedNoteData {
+    pub position: u64,
+    pub data: NoteData,
+}
 
 pub trait StatelessTransactionExt {
     fn verify_stateless(&self) -> Result<PendingTransaction, Error>;
