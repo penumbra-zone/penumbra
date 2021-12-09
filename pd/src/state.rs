@@ -18,7 +18,6 @@ use crate::staking::Validator;
 use crate::{
     db::{self, schema},
     genesis::GenesisAppState,
-    verify::NoteData,
     PendingBlock,
 };
 
@@ -68,30 +67,23 @@ ON CONFLICT (id) DO UPDATE SET data = $1
         .await?;
 
         // TODO: this could be batched / use prepared statements
-        for (
-            note_commitment,
-            NoteData {
-                ephemeral_key,
-                encrypted_note,
-                transaction_id,
-            },
-        ) in block.notes.into_iter()
-        {
+        for (note_commitment, positioned_note) in block.notes.into_iter() {
             query!(
                 r#"
-INSERT INTO notes (
-    note_commitment,
-    ephemeral_key,
-    encrypted_note,
-    transaction_id,
-    height
-) VALUES ($1, $2, $3, $4, $5)
-"#,
+                INSERT INTO notes (
+                    note_commitment,
+                    ephemeral_key,
+                    encrypted_note,
+                    transaction_id,
+                    position,
+                    height
+                ) VALUES ($1, $2, $3, $4, $5, $6)"#,
                 &<[u8; 32]>::from(note_commitment)[..],
-                &ephemeral_key.0[..],
-                &encrypted_note[..],
-                &transaction_id[..],
-                height,
+                &positioned_note.data.ephemeral_key.0[..],
+                &positioned_note.data.encrypted_note[..],
+                &positioned_note.data.transaction_id[..],
+                positioned_note.position as i64,
+                height
             )
             .execute(&mut dbtx)
             .await?;
@@ -258,23 +250,32 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
         Ok(CompactBlock {
             height: height as u32,
             nullifiers: query!(
-                "SELECT nullifier FROM nullifiers WHERE height = $1",
-                height
-            ).fetch_all(&mut conn).await?.into_iter().map(|row| row.nullifier.into()).collect(),
-            fragments: query!(
-                "SELECT note_commitment, ephemeral_key, encrypted_note FROM notes WHERE height = $1",
+                "SELECT nullifier 
+                FROM nullifiers 
+                WHERE height = $1",
                 height
             )
             .fetch_all(&mut conn)
             .await?
             .into_iter()
-            .map(
-                |row| StateFragment {
-                    note_commitment: row.note_commitment.into(),
-                    ephemeral_key: row.ephemeral_key.into(),
-                    encrypted_note: row.encrypted_note.into(),
-                },
+            .map(|row| row.nullifier.into())
+            .collect(),
+
+            fragments: query!(
+                "SELECT note_commitment, ephemeral_key, encrypted_note 
+                FROM notes 
+                WHERE height = $1 
+                ORDER BY position ASC",
+                height
             )
+            .fetch_all(&mut conn)
+            .await?
+            .into_iter()
+            .map(|row| StateFragment {
+                note_commitment: row.note_commitment.into(),
+                ephemeral_key: row.ephemeral_key.into(),
+                encrypted_note: row.encrypted_note.into(),
+            })
             .collect(),
         })
     }
