@@ -1,1 +1,1 @@
-CREATE INDEX ON nullifiers (height)
+CREATE INDEX IF NOT EXISTS ON nullifiers (height)
