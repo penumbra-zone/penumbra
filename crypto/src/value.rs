@@ -1,5 +1,6 @@
 //! Values (?)
 
+use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use std::ops::Deref;
 use thiserror;
@@ -9,10 +10,11 @@ use once_cell::sync::Lazy;
 
 use crate::{asset, Fq, Fr};
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Deserialize, Serialize, Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Value {
     pub amount: u64,
     // The asset ID. 256 bits.
+    #[serde(with = "serde_with::rust::display_fromstr")]
     pub asset_id: asset::Id,
 }
 

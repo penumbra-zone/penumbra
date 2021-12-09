@@ -55,7 +55,7 @@ sqlx = { version = "0.5", features = [ "runtime-tokio-rustls", "postgres", "offl
 metrics = "0.17.0"
 metrics-exporter-prometheus = "0.6.1"
 http = "0.2"
-num = "0.4"
+num = { version = "0.4", features = ["serde"] } 
 
 [build-dependencies]
 vergen = "5"
