@@ -91,6 +91,22 @@
       ]
     }
   },
+  "328fa59e7194fccb9894d123e299d0cddadd5f4d3dda1ff6a06d94a1eabd5be9": {
+    "query": "INSERT INTO validators (tm_pubkey, voting_power, commission_address, commission_rate, unclaimed_reward) VALUES ($1, $2, $3, $4, $5)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Int8",
+          "Varchar",
+          "Bytea",
+          "Bytea"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "3cbb441b10f4a068c16dd3a40accd689be26f2a6619b363fd966ee10e740f07b": {
     "query": " INSERT INTO assets ( asset_id, denom) VALUES ($1, $2)",
     "describe": {
@@ -99,19 +115,6 @@
         "Left": [
           "Bytea",
           "Varchar"
-        ]
-      },
-      "nullable": []
-    }
-  },
-  "3d56b7352d39010ff9e047b71268c26d00e9629870f21a98971ffd1b4f81a231": {
-    "query": "INSERT INTO validators (tm_pubkey, voting_power) VALUES ($1, $2)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea",
-          "Int8"
         ]
       },
       "nullable": []

@@ -333,12 +333,17 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
         // TODO: batching optimization
         for (tm_pubkey, val) in validators.iter() {
             let pubkey_str = serde_json::to_string(tm_pubkey)?;
+            let comm_rate = serde_json::to_string(&val.commission_rate)?;
+            let unclaimed_reward = serde_json::to_string(&val.unclaimed_reward)?;
 
             // TODO: commission address, rate, unclaimed reward
             query!(
-                "INSERT INTO validators (tm_pubkey, voting_power) VALUES ($1, $2)",
+                "INSERT INTO validators (tm_pubkey, voting_power, commission_address, commission_rate, unclaimed_reward) VALUES ($1, $2, $3, $4, $5)",
                 pubkey_str.as_bytes(),
                 i64::try_from(val.voting_power)?,
+                val.commission_address.to_string(),
+                comm_rate.as_bytes(),
+                unclaimed_reward.as_bytes(),
             )
             .execute(&mut conn)
             .await?;
