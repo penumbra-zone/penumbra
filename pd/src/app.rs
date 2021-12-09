@@ -143,15 +143,16 @@ impl App {
         genesis_block.add_transaction(verified_transaction);
         tracing::info!("loaded all genesis notes");
 
-        // load the validators from the initial Tendermint genesis state
-        let mut validators = BTreeMap::new();
-        for validator_update in init_chain.validators.iter() {
-            validators.insert(
-                validator_update.pub_key,
-                Validator::new(validator_update.pub_key, validator_update.power),
-            );
+        // load the validators from the genesis app state
+        let genesis_validators = genesis.validators.clone();
+        let mut tm_validators: Vec<tendermint::abci::types::ValidatorUpdate> = Vec::new();
+        for (pubkey, val) in genesis.validators.iter() {
+            tm_validators.push(tendermint::abci::types::ValidatorUpdate {
+                pub_key: pubkey.clone(),
+                power: val.voting_power.clone(),
+            })
         }
-        self.validators = Arc::new(Mutex::new(validators.clone()));
+        self.validators = Arc::new(Mutex::new(genesis_validators.clone()));
 
         self.epoch_duration = genesis.epoch_duration;
 
@@ -169,11 +170,11 @@ impl App {
                 .await
                 .expect("able to save genesis config to blobs table");
 
-            state.set_initial_validators(&validators).await?;
+            state.set_initial_validators(&genesis_validators).await?;
             let app_hash = state.app_hash().await.unwrap();
             Ok(Response::InitChain(response::InitChain {
                 consensus_params: Some(init_chain.consensus_params),
-                validators: init_chain.validators,
+                validators: tm_validators,
                 app_hash: app_hash.into(),
             }))
         }
