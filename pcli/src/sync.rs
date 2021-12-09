@@ -33,6 +33,7 @@ pub async fn sync(state: &mut ClientStateFile, wallet_uri: String) -> Result<()>
         }
     }
 
+    state.prune_timeouts();
     state.commit()?;
     tracing::info!(end_height = ?state.last_block_height().unwrap(), "finished sync");
     Ok(())
