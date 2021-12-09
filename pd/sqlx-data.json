@@ -109,6 +109,26 @@
       "nullable": []
     }
   },
+  "4a4a307127c44e3a2ecd637e405d1be56f8854aa4089704a1d2018ac168ad881": {
+    "query": "SELECT nullifier \n                FROM nullifiers \n                WHERE height = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "nullifier",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
   "51084a18f15226a89dfdfb35e5de7172b4053d495d728934a20528ab4dcf713b": {
     "query": "CREATE TABLE IF NOT EXISTS validators (\n    tm_pubkey bytea NOT NULL PRIMARY KEY,\n    voting_power bigint NOT NULL\n)",
     "describe": {
@@ -289,6 +309,38 @@
       ]
     }
   },
+  "98ec8368e863cff8280b0cda5cbe0026ba3c44b90ee7c2fbbe1609a598088da6": {
+    "query": "SELECT note_commitment, ephemeral_key, encrypted_note \n                FROM notes \n                WHERE height = $1 \n                ORDER BY position ASC",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "note_commitment",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 1,
+          "name": "ephemeral_key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 2,
+          "name": "encrypted_note",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "aed57af72fe55a40c7fe24c06ff908821372686522783850b2db72fbed2aa9e4": {
     "query": "SELECT id, data FROM blobs WHERE id = 'nct';",
     "describe": {
@@ -328,26 +380,6 @@
         ]
       },
       "nullable": []
-    }
-  },
-  "c084268c7bb93cb72a3fa5a45330ba54225e53d5adf2ea30016ff4b901ba9036": {
-    "query": "SELECT nullifier FROM nullifiers WHERE height = $1",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "nullifier",
-          "type_info": "Bytea"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8"
-        ]
-      },
-      "nullable": [
-        false
-      ]
     }
   },
   "cb7bac3962a9b0db3759bb2dc21f8bf7aeb58e208107aeb6b0f0f6a1e6c29d45": {
@@ -391,38 +423,6 @@
         "Left": []
       },
       "nullable": [
-        false,
-        false
-      ]
-    }
-  },
-  "f2a471a0953f4bd441bfba26e56e5558eca1f72e5fc8250124157975654a2c73": {
-    "query": "SELECT note_commitment, ephemeral_key, encrypted_note FROM notes WHERE height = $1",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "note_commitment",
-          "type_info": "Bytea"
-        },
-        {
-          "ordinal": 1,
-          "name": "ephemeral_key",
-          "type_info": "Bytea"
-        },
-        {
-          "ordinal": 2,
-          "name": "encrypted_note",
-          "type_info": "Bytea"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8"
-        ]
-      },
-      "nullable": [
-        false,
         false,
         false
       ]

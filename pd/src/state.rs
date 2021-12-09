@@ -250,23 +250,32 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
         Ok(CompactBlock {
             height: height as u32,
             nullifiers: query!(
-                "SELECT nullifier FROM nullifiers WHERE height = $1",
-                height
-            ).fetch_all(&mut conn).await?.into_iter().map(|row| row.nullifier.into()).collect(),
-            fragments: query!(
-                "SELECT note_commitment, ephemeral_key, encrypted_note FROM notes WHERE height = $1",
+                "SELECT nullifier 
+                FROM nullifiers 
+                WHERE height = $1",
                 height
             )
             .fetch_all(&mut conn)
             .await?
             .into_iter()
-            .map(
-                |row| StateFragment {
-                    note_commitment: row.note_commitment.into(),
-                    ephemeral_key: row.ephemeral_key.into(),
-                    encrypted_note: row.encrypted_note.into(),
-                },
+            .map(|row| row.nullifier.into())
+            .collect(),
+
+            fragments: query!(
+                "SELECT note_commitment, ephemeral_key, encrypted_note 
+                FROM notes 
+                WHERE height = $1 
+                ORDER BY position ASC",
+                height
             )
+            .fetch_all(&mut conn)
+            .await?
+            .into_iter()
+            .map(|row| StateFragment {
+                note_commitment: row.note_commitment.into(),
+                ephemeral_key: row.ephemeral_key.into(),
+                encrypted_note: row.encrypted_note.into(),
+            })
             .collect(),
         })
     }
