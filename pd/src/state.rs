@@ -18,7 +18,6 @@ use crate::staking::Validator;
 use crate::{
     db::{self, schema},
     genesis::GenesisAppState,
-    verify::NoteData,
     PendingBlock,
 };
 
