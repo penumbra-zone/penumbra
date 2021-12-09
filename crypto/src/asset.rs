@@ -118,6 +118,7 @@ pub struct Metadata {
     /// The base unit of the asset, e.g. `upenumbra`. Calculations should be done with the base.
     pub base: String,
     /// The unit that should be used in displaying e.g. balances, e.g. `penumbra`.
+    /// The `Denom` (and thus the `Id`) for the asset is derived from the `display`.
     pub display: String,
 }
 

@@ -230,8 +230,9 @@ impl ClientState {
                 .expect("all asset IDs should have denominations stored locally")
                 .display
                 .clone();
-            // TODO: Currently we're using the display field, but we should in pcli be using
-            // the base denomination for computations and the display denomination only for the UI.
+            // We're using the display field to derive the `Denom`, but we should in pcli be using
+            // the base denomination for computations and the display denomination only for the UI
+            // and deriving the trace. See issue #244.
 
             let index: u64 = self
                 .wallet()

@@ -130,11 +130,11 @@ impl App {
         // xx todo: Warn on genesis notes that do not correspond to any known asset.
 
         for asset in &genesis.assets {
-            // The base is used to derive the asset_id
+            // The display is used to derive the asset_id
             tracing::info!(?asset);
             genesis_block
                 .new_assets
-                .insert(asset::Denom(asset.base.clone()).into(), asset.clone());
+                .insert(asset::Denom(asset.display.clone()).into(), asset.clone());
         }
 
         let genesis_tx = genesis_tx_builder
