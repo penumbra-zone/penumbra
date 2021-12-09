@@ -36,10 +36,19 @@ impl PartialEq for Validator {
 }
 
 impl Validator {
-    pub fn new(pubkey: PublicKey, voting_power: vote::Power) -> Validator {
+    pub fn new(
+        pubkey: PublicKey,
+        voting_power: vote::Power,
+        commission_address: Address,
+        commission_rate: rational::Ratio<bigint::BigInt>,
+        unclaimed_reward: Value,
+    ) -> Validator {
         Validator {
             tm_pubkey: pubkey,
             voting_power,
+            commission_address,
+            commission_rate,
+            unclaimed_reward,
         }
     }
 
