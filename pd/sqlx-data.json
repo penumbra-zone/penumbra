@@ -75,6 +75,16 @@
       ]
     }
   },
+  "25bd791f06a593a77395aa005a9abba0cfc3374be8c392cbf6b744100302b541": {
+    "query": "CREATE INDEX ON notes (position)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": []
+    }
+  },
   "3cbb441b10f4a068c16dd3a40accd689be26f2a6619b363fd966ee10e740f07b": {
     "query": " INSERT INTO assets ( asset_id, denom) VALUES ($1, $2)",
     "describe": {
@@ -86,6 +96,36 @@
         ]
       },
       "nullable": []
+    }
+  },
+  "48100a65ab8914f275b9c9b7fbcb66ce951952813b8a24fe2659169421825eb1": {
+    "query": "CREATE INDEX ON nullifiers (height)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": []
+    }
+  },
+  "4a4a307127c44e3a2ecd637e405d1be56f8854aa4089704a1d2018ac168ad881": {
+    "query": "SELECT nullifier \n                FROM nullifiers \n                WHERE height = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "nullifier",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false
+      ]
     }
   },
   "51f515cc43458854df653c298142e6c77b2905b453f85c31ae1a0f56fbce1c2a": {
@@ -112,6 +152,16 @@
   },
   "59d92c68ee186e0565595bba405f32e2bba39806c4e78c42e87f77dd903d7455": {
     "query": "CREATE TABLE IF NOT EXISTS notes (\n    note_commitment bytea PRIMARY KEY,\n    ephemeral_key bytea NOT NULL,\n    encrypted_note bytea NOT NULL,\n    transaction_id bytea NOT NULL,\n    position bigint NOT NULL,\n    height bigint REFERENCES blocks (height)\n)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": []
+    }
+  },
+  "5c7b1cae63842279e1f2268c7215de7f2251b2f645060b0c6e4bdd406d717ae6": {
+    "query": "CREATE TABLE IF NOT EXISTS validators (\n    tm_pubkey bytea NOT NULL PRIMARY KEY,\n    voting_power bigint NOT NULL,\n    commission_address varchar NOT NULL,\n    commission_rate bigint NOT NULL,\n    unclaimed_reward bytea NOT NULL\n)",
     "describe": {
       "columns": [],
       "parameters": {
