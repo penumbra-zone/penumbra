@@ -13,16 +13,6 @@
       "nullable": []
     }
   },
-  "12c4a79f3395421bf16fe2a02d94bdb78948112e0dac9fcba45de6dce47a5b6a": {
-    "query": "CREATE TABLE IF NOT EXISTS validators (\n    tm_pubkey bytea NOT NULL PRIMARY KEY,\n    voting_power bigint NOT NULL,\n    commission_address varchar NOT NULL,\n    commission_rate bytea NOT NULL,\n    unclaimed_reward bytea NOT NULL\n)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": []
-      },
-      "nullable": []
-    }
-  },
   "1abc3c48b127eee2761f3385541e195f9aca35269e6db0c41e3f67a0e04f280b": {
     "query": "SELECT denom, asset_id FROM assets WHERE asset_id = $1",
     "describe": {
@@ -71,7 +61,7 @@
         {
           "ordinal": 3,
           "name": "commission_rate",
-          "type_info": "Bytea"
+          "type_info": "Int8"
         },
         {
           "ordinal": 4,
@@ -100,7 +90,7 @@
           "Bytea",
           "Int8",
           "Varchar",
-          "Bytea",
+          "Int8",
           "Bytea"
         ]
       },

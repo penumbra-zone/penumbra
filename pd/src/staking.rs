@@ -1,5 +1,3 @@
-use num::bigint;
-use num::rational;
 use penumbra_crypto::{Address, Value};
 use serde::{Deserialize, Serialize};
 use tendermint::{vote, PublicKey};
@@ -23,7 +21,7 @@ pub struct Validator {
 
     /// commission_rate is the portion of staking rewards that go to the validator (as opposed to
     /// the delegators).
-    pub commission_rate: rational::Ratio<bigint::BigInt>,
+    pub commission_rate_bps: u16,
 
     /// unclaimed_reward is the amount of commission that the validator has yet to claim.
     pub unclaimed_reward: Value,
@@ -40,14 +38,14 @@ impl Validator {
         pubkey: PublicKey,
         voting_power: vote::Power,
         commission_address: Address,
-        commission_rate: rational::Ratio<bigint::BigInt>,
+        commission_rate_bps: u16,
         unclaimed_reward: Value,
     ) -> Validator {
         Validator {
             tm_pubkey: pubkey,
             voting_power,
             commission_address,
-            commission_rate,
+            commission_rate_bps,
             unclaimed_reward,
         }
     }
