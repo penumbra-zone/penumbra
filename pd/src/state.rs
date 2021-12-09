@@ -4,11 +4,9 @@ use sqlx::{query, query_as, Pool, Postgres};
 use tracing_subscriber::fmt::format::Compact;
 use std::collections::{BTreeMap, VecDeque};
 use std::pin::Pin;
-use std::string;
 use tendermint::block;
 use tracing::instrument;
-use futures::future;
-use futures::stream::{self, StreamExt, Peekable};
+use futures::stream::{StreamExt};
 
 use penumbra_crypto::{
     merkle::{self, NoteCommitmentTree, TreeExt},
@@ -348,7 +346,7 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
                             .nullifier.into()) 
                         }
                         else { break }
-                    Err(e) => break
+                    _ => break
                 }
             }
 
@@ -366,7 +364,7 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
                             .unwrap())
                         }
                         else { break }
-                    Err(e) => break
+                    _ => break
                 }
             }
 

@@ -1,5 +1,44 @@
 {
   "db": "PostgreSQL",
+  "000320db842ed6e7205087d68f5a925e9556b81cd0bc0887659472988fb6b5f0": {
+    "query": "SELECT height, note_commitment, ephemeral_key, encrypted_note \n            FROM notes \n            WHERE height \n            BETWEEN $1 AND $2\n            ORDER BY height ASC",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "height",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "note_commitment",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 2,
+          "name": "ephemeral_key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 3,
+          "name": "encrypted_note",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": [
+        true,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "04f479f64381a7ea02bd9ae155d4ef6bf31e44f64705c7b36f6ad74aca2f115b": {
     "query": "SELECT tm_pubkey, voting_power FROM validators",
     "describe": {
@@ -153,39 +192,6 @@
       "nullable": []
     }
   },
-  "4884a9a5c71b41388c2c0841fd0af1fc65ec04ec357160c27615cec21aa0eb2b": {
-    "query": "SELECT note_commitment, ephemeral_key, encrypted_note FROM notes WHERE height BETWEEN $1 AND $2",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "note_commitment",
-          "type_info": "Bytea"
-        },
-        {
-          "ordinal": 1,
-          "name": "ephemeral_key",
-          "type_info": "Bytea"
-        },
-        {
-          "ordinal": 2,
-          "name": "encrypted_note",
-          "type_info": "Bytea"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Int8"
-        ]
-      },
-      "nullable": [
-        false,
-        false,
-        false
-      ]
-    }
-  },
   "51084a18f15226a89dfdfb35e5de7172b4053d495d728934a20528ab4dcf713b": {
     "query": "CREATE TABLE IF NOT EXISTS validators (\n    tm_pubkey bytea NOT NULL PRIMARY KEY,\n    voting_power bigint NOT NULL\n)",
     "describe": {
@@ -256,6 +262,33 @@
         ]
       },
       "nullable": [
+        false
+      ]
+    }
+  },
+  "6d47e7639208c02e5b6e89a986d77c1d10bf2f64a526b5222f286c0c193a46f9": {
+    "query": "SELECT height, nullifier\n            FROM nullifiers \n            WHERE height \n            BETWEEN $1 AND $2\n            ORDER BY height ASC",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "height",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "nullifier",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
         false
       ]
     }
@@ -393,27 +426,6 @@
         ]
       },
       "nullable": []
-    }
-  },
-  "b0072d74024c1d80ef0b060123307b745b0013f4ef62394444683d4817c2a609": {
-    "query": "SELECT nullifier FROM nullifiers WHERE height BETWEEN $1 AND $2",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "nullifier",
-          "type_info": "Bytea"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Int8"
-        ]
-      },
-      "nullable": [
-        false
-      ]
     }
   },
   "bd0f1e215db2ed691151edcd4bb5901541ff27e975bd8c4d1430e584474e71dd": {

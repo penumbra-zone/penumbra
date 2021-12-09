@@ -1,1 +1,1 @@
-CREATE INDEX IF NOT EXISTS ON notes (height)
+CREATE INDEX ON notes (height)

@@ -1,1 +1,1 @@
-CREATE INDEX IF NOT EXISTS ON notes (position)
+CREATE INDEX ON notes (position)
