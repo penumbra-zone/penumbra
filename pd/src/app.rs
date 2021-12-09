@@ -144,6 +144,11 @@ impl App {
         tracing::info!("loaded all genesis notes");
 
         // load the validators from the genesis app state
+        //
+        // NOTE: we ignore the validators passed to InitChain.validators, and instead expect them
+        // to be provided inside the initial app genesis state (`GenesisAppState`). Returning those
+        // validators in InitChain::Response tells Tendermint that they are the initial validator
+        // set. See https://docs.tendermint.com/master/spec/abci/abci.html#initchain
         let genesis_validators = genesis.validators.clone();
         let mut tm_validators: Vec<tendermint::abci::types::ValidatorUpdate> = Vec::new();
         for (pubkey, val) in genesis.validators.iter() {
