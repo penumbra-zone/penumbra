@@ -21,7 +21,8 @@ pub struct Validator {
 
     /// The portion of staking rewards that go to the validator (as opposed to the delegators).
     pub commission_rate_bps: u16,
-    // TODO: track unclaimed reward
+    // NOTE: unclaimed rewards are tracked by inserting reward notes for the last epoch into the
+    // NCT at the beginning of each epoch
 }
 
 impl PartialEq for Validator {
