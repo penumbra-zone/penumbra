@@ -41,7 +41,7 @@ pub struct ClientState {
     /// Notes that we anticipate receiving on-chain as change but which have not yet been confirmed.
     pending_change_set: BTreeMap<note::Commitment, Note>,
     /// Commitments for notes that are pending (either spent or change), indexed by timeout.
-    pending_timeouts: BTreeMap<SystemTime, Vec<PendingCommitment>>,
+    pending_timeouts: BTreeMap<SystemTime, Vec<PendingNoteCommitment>>,
     /// Notes that we have spent.
     spent_set: BTreeMap<note::Commitment, Note>,
     /// Map of note commitment to full transaction data for transactions we have visibility into.
@@ -53,7 +53,7 @@ pub struct ClientState {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub enum PendingCommitment {
+pub enum PendingNoteCommitment {
     Change(note::Commitment),
     Spend(note::Commitment),
 }
@@ -243,7 +243,7 @@ impl ClientState {
                 self.pending_timeouts
                     .entry(now + PENDING_TRANSACTION_TIMEOUT)
                     .or_insert_with(|| Vec::with_capacity(1))
-                    .push(PendingCommitment::Spend(note_commitment));
+                    .push(PendingNoteCommitment::Spend(note_commitment));
 
                 let auth_path = self
                     .note_commitment_tree
@@ -289,7 +289,7 @@ impl ClientState {
                 self.pending_timeouts
                     .entry(now + PENDING_TRANSACTION_TIMEOUT)
                     .or_insert_with(|| Vec::with_capacity(1))
-                    .push(PendingCommitment::Change(note_commitment));
+                    .push(PendingNoteCommitment::Change(note_commitment));
             }
         }
 
@@ -404,7 +404,7 @@ impl ClientState {
         for (timeout, commitments) in expired {
             for commitment in commitments {
                 match commitment {
-                    PendingCommitment::Change(commitment) => {
+                    PendingNoteCommitment::Change(commitment) => {
                         // Drop this pending change note -- this is permissible, because dropping a
                         // pending change note just means we forget about an output, not an input
                         if self.pending_change_set.remove(&commitment).is_none() {
@@ -415,7 +415,7 @@ impl ClientState {
                             );
                         }
                     }
-                    PendingCommitment::Spend(commitment) => {
+                    PendingNoteCommitment::Spend(commitment) => {
                         // IMPORTANT: Move this pending spend note back to the unspent note set --
                         // if we forget to do this, we'll permanently lose track of this note until
                         // we reset the wallet
@@ -582,7 +582,7 @@ mod serde_helpers {
         #[serde(default)]
         pending_change_set: Vec<(String, String)>,
         #[serde(default)]
-        pending_timeouts: Vec<(SystemTime, Vec<PendingCommitmentHelper>)>,
+        pending_timeouts: Vec<(SystemTime, Vec<PendingNoteCommitmentHelper>)>,
         spent_set: Vec<(String, String)>,
         transactions: Vec<(String, String)>,
         asset_registry: Vec<(String, String)>,
@@ -591,11 +591,43 @@ mod serde_helpers {
 
     #[serde_as]
     #[derive(Serialize, Deserialize)]
-    pub enum PendingCommitmentHelper {
+    pub enum PendingNoteCommitmentHelper {
         #[serde_as(as = "serde_with::hex::Hex")]
         Change(String),
         #[serde_as(as = "serde_with::hex::Hex")]
         Spend(String),
+    }
+
+    impl From<PendingNoteCommitment> for PendingNoteCommitmentHelper {
+        fn from(pending_note_commitment: PendingNoteCommitment) -> Self {
+            match pending_note_commitment {
+                PendingNoteCommitment::Change(commitment) => {
+                    PendingNoteCommitmentHelper::Change(hex::encode(commitment.0.to_bytes()))
+                }
+                PendingNoteCommitment::Spend(commitment) => {
+                    PendingNoteCommitmentHelper::Spend(hex::encode(commitment.0.to_bytes()))
+                }
+            }
+        }
+    }
+
+    impl TryFrom<PendingNoteCommitmentHelper> for PendingNoteCommitment {
+        type Error = anyhow::Error;
+
+        fn try_from(
+            pending_note_commitment: PendingNoteCommitmentHelper,
+        ) -> Result<Self, anyhow::Error> {
+            Ok(match pending_note_commitment {
+                PendingNoteCommitmentHelper::Change(commitment) => {
+                    let commitment = hex::decode(commitment)?.as_slice().try_into()?;
+                    PendingNoteCommitment::Change(commitment)
+                }
+                PendingNoteCommitmentHelper::Spend(commitment) => {
+                    let commitment = hex::decode(commitment)?.as_slice().try_into()?;
+                    PendingNoteCommitment::Spend(commitment)
+                }
+            })
+        }
     }
 
     impl From<ClientState> for ClientStateHelper {
@@ -630,18 +662,7 @@ mod serde_helpers {
                     .map(|(timeout, commitments)| {
                         let commitments = commitments
                             .into_iter()
-                            .map(|commitment| match commitment {
-                                PendingCommitment::Change(commitment) => {
-                                    PendingCommitmentHelper::Change(hex::encode(
-                                        commitment.0.to_bytes(),
-                                    ))
-                                }
-                                PendingCommitment::Spend(commitment) => {
-                                    PendingCommitmentHelper::Spend(hex::encode(
-                                        commitment.0.to_bytes(),
-                                    ))
-                                }
-                            })
+                            .map(PendingNoteCommitment::into)
                             .collect();
                         (timeout, commitments)
                     })
@@ -689,6 +710,7 @@ mod serde_helpers {
 
     impl TryFrom<ClientStateHelper> for ClientState {
         type Error = anyhow::Error;
+
         fn try_from(state: ClientStateHelper) -> Result<Self, Self::Error> {
             let mut nullifier_map = BTreeMap::new();
 
@@ -743,16 +765,7 @@ mod serde_helpers {
                     // done inside of a call to `map`)
                     let mut result = Vec::with_capacity(commitments.len());
                     for commitment in commitments {
-                        match commitment {
-                            PendingCommitmentHelper::Change(commitment) => {
-                                let commitment = hex::decode(commitment)?.as_slice().try_into()?;
-                                result.push(PendingCommitment::Change(commitment));
-                            }
-                            PendingCommitmentHelper::Spend(commitment) => {
-                                let commitment = hex::decode(commitment)?.as_slice().try_into()?;
-                                result.push(PendingCommitment::Spend(commitment));
-                            }
-                        }
+                        result.push(commitment.try_into()?);
                     }
                     result
                 });
