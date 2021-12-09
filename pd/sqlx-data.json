@@ -24,6 +24,38 @@
       ]
     }
   },
+  "057ecc0c0fa3352966de1017fa5caba9405c7693fa582b169aa85cffdca9888c": {
+    "query": "SELECT note_commitment, ephemeral_key, encrypted_note \n                FROM notes \n                WHERE height = $1 \n                ORDER BY height ASC",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "note_commitment",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 1,
+          "name": "ephemeral_key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 2,
+          "name": "encrypted_note",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "0c6a89db4de3642914e3cddf6e08a042eac9b140a03118943170433527ef5cc3": {
     "query": "INSERT INTO nullifiers VALUES ($1, $2)",
     "describe": {
@@ -63,6 +95,16 @@
       ]
     }
   },
+  "25bd791f06a593a77395aa005a9abba0cfc3374be8c392cbf6b744100302b541": {
+    "query": "CREATE INDEX ON notes (position)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": []
+    }
+  },
   "3cbb441b10f4a068c16dd3a40accd689be26f2a6619b363fd966ee10e740f07b": {
     "query": " INSERT INTO assets ( asset_id, denom) VALUES ($1, $2)",
     "describe": {
@@ -72,6 +114,41 @@
           "Bytea",
           "Varchar"
         ]
+      },
+      "nullable": []
+    }
+  },
+  "3d56b7352d39010ff9e047b71268c26d00e9629870f21a98971ffd1b4f81a231": {
+    "query": "INSERT INTO validators (tm_pubkey, voting_power) VALUES ($1, $2)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "3f13d5f8a2ffc438e79f3297b7dfbcc14ffca7611f5ea3d4a5e8acfba3b9807e": {
+    "query": "\n            INSERT INTO blobs (id, data) VALUES ('nct', $1)\n            ON CONFLICT (id) DO UPDATE SET data = $1\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "48100a65ab8914f275b9c9b7fbcb66ce951952813b8a24fe2659169421825eb1": {
+    "query": "CREATE INDEX ON nullifiers (height)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": []
       },
       "nullable": []
     }
@@ -107,18 +184,6 @@
         false,
         false
       ]
-    },
-  "3d56b7352d39010ff9e047b71268c26d00e9629870f21a98971ffd1b4f81a231": {
-    "query": "INSERT INTO validators (tm_pubkey, voting_power) VALUES ($1, $2)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea",
-          "Int8"
-        ]
-      },
-      "nullable": []
     }
   },
   "51084a18f15226a89dfdfb35e5de7172b4053d495d728934a20528ab4dcf713b": {
@@ -127,18 +192,6 @@
       "columns": [],
       "parameters": {
         "Left": []
-      },
-      "nullable": []
-    }
-  },
-  "51f515cc43458854df653c298142e6c77b2905b453f85c31ae1a0f56fbce1c2a": {
-    "query": "\nINSERT INTO blobs (id, data) VALUES ('nct', $1)\nON CONFLICT (id) DO UPDATE SET data = $1\n",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea"
-        ]
       },
       "nullable": []
     }
@@ -227,18 +280,12 @@
       ]
     }
   },
-  "7542a4b3510cb47b2eec584ef77e8dc1d86ca90ba4143eff091fa35e90277007": {
-    "query": "\nINSERT INTO notes (\n    note_commitment,\n    ephemeral_key,\n    encrypted_note,\n    transaction_id,\n    height\n) VALUES ($1, $2, $3, $4, $5)\n",
+  "80a31b10b504f1a8433bdd17361fd458e90472da502f18ad78dc9d56947b97f8": {
+    "query": "CREATE TABLE IF NOT EXISTS notes (\n    note_commitment bytea PRIMARY KEY,\n    ephemeral_key bytea NOT NULL,\n    encrypted_note bytea NOT NULL,\n    transaction_id bytea NOT NULL,\n    position bigint NOT NULL,\n    height bigint REFERENCES blocks (height)\n)\n",
     "describe": {
       "columns": [],
       "parameters": {
-        "Left": [
-          "Bytea",
-          "Bytea",
-          "Bytea",
-          "Bytea",
-          "Int8"
-        ]
+        "Left": []
       },
       "nullable": []
     }
@@ -265,6 +312,16 @@
         false,
         false
       ]
+    }
+  },
+  "8b1f2bf26e3e69d1e85dcf641e9829d2a4d00bbf434cc5879d596246043ef666": {
+    "query": "CREATE INDEX ON notes (height)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": []
     }
   },
   "9024aaa179b92038a276abd92a8f20b3a28133ea8435c1d4d9ae4bc3ec31158a": {
@@ -297,16 +354,6 @@
       ]
     }
   },
-  "a0a83fb42dc6ec8a9af35a29a492ad1651c13e047af85a25ebc41fdbd1909da7": {
-    "query": "CREATE TABLE IF NOT EXISTS notes (\n    note_commitment bytea PRIMARY KEY,\n    ephemeral_key bytea NOT NULL,\n    encrypted_note bytea NOT NULL,\n    transaction_id bytea NOT NULL,\n    height bigint REFERENCES blocks (height)\n)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": []
-      },
-      "nullable": []
-    }
-  },
   "aed57af72fe55a40c7fe24c06ff908821372686522783850b2db72fbed2aa9e4": {
     "query": "SELECT id, data FROM blobs WHERE id = 'nct';",
     "describe": {
@@ -331,6 +378,23 @@
       ]
     }
   },
+  "af693a061ba9f39800520cd4092b6d17efe6550a8134fa1e7dec49613ca8c17c": {
+    "query": "\n                INSERT INTO notes (\n                    note_commitment,\n                    ephemeral_key,\n                    encrypted_note,\n                    transaction_id,\n                    position,\n                    height\n                ) VALUES ($1, $2, $3, $4, $5, $6)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Bytea",
+          "Bytea",
+          "Bytea",
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "b0072d74024c1d80ef0b060123307b745b0013f4ef62394444683d4817c2a609": {
     "query": "SELECT nullifier FROM nullifiers WHERE height BETWEEN $1 AND $2",
     "describe": {
@@ -352,8 +416,8 @@
       ]
     }
   },
-  "c084268c7bb93cb72a3fa5a45330ba54225e53d5adf2ea30016ff4b901ba9036": {
-    "query": "SELECT nullifier FROM nullifiers WHERE height = $1",
+  "bd0f1e215db2ed691151edcd4bb5901541ff27e975bd8c4d1430e584474e71dd": {
+    "query": "SELECT nullifier \n                FROM nullifiers \n                WHERE height = $1 \n                ORDER BY height ASC",
     "describe": {
       "columns": [
         {
@@ -418,38 +482,6 @@
       ]
     }
   },
-  "f2a471a0953f4bd441bfba26e56e5558eca1f72e5fc8250124157975654a2c73": {
-    "query": "SELECT note_commitment, ephemeral_key, encrypted_note FROM notes WHERE height = $1",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "note_commitment",
-          "type_info": "Bytea"
-        },
-        {
-          "ordinal": 1,
-          "name": "ephemeral_key",
-          "type_info": "Bytea"
-        },
-        {
-          "ordinal": 2,
-          "name": "encrypted_note",
-          "type_info": "Bytea"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8"
-        ]
-      },
-      "nullable": [
-        false,
-        false,
-        false
-      ]
-    }
-  },
   "feb219cf82779306d199c5f733359b2cafd5ab51fca03922a9e73c3a4ff44bf7": {
     "query": "SELECT height FROM nullifiers WHERE nullifier = $1 LIMIT 1",
     "describe": {
@@ -470,4 +502,4 @@
       ]
     }
   }
-}}
+}

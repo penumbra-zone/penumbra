@@ -2,11 +2,11 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use penumbra_crypto::{
     asset,
-    merkle::{Frontier, NoteCommitmentTree},
+    merkle::{Frontier, NoteCommitmentTree, Tree},
     note, Nullifier,
 };
 
-use crate::verify::{NoteData, VerifiedTransaction};
+use crate::verify::{PositionedNoteData, VerifiedTransaction};
 
 /// Stores pending state changes from transactions.
 #[derive(Debug, Clone)]
@@ -14,7 +14,7 @@ pub struct PendingBlock {
     pub height: Option<i64>,
     pub note_commitment_tree: NoteCommitmentTree,
     /// Stores note commitments for convienience when updating the NCT.
-    pub notes: BTreeMap<note::Commitment, NoteData>,
+    pub notes: BTreeMap<note::Commitment, PositionedNoteData>,
     /// Nullifiers that were spent in this block.
     pub spent_nullifiers: BTreeSet<Nullifier>,
     /// Stores new asset types found in this block that need to be added to the asset registry.
@@ -39,9 +39,15 @@ impl PendingBlock {
 
     /// Adds the state changes from a verified transaction.
     pub fn add_transaction(&mut self, transaction: VerifiedTransaction) {
-        for (note_commitment, note_data) in transaction.new_notes {
-            self.notes.insert(note_commitment, note_data);
+
+        for (note_commitment, data) in transaction.new_notes {
+
             self.note_commitment_tree.append(&note_commitment);
+            
+            let (position, _) = self.note_commitment_tree.authentication_path(&note_commitment)
+                .expect("we just appended this commitment");
+
+            self.notes.insert(note_commitment, PositionedNoteData { position: u64::from(position), data});
         }
 
         for nullifier in transaction.spent_nullifiers {
