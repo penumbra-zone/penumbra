@@ -1,9 +1,14 @@
 use anyhow::{Context, Result};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{query, query_as, Pool, Postgres};
+use tracing_subscriber::fmt::format::Compact;
 use std::collections::{BTreeMap, VecDeque};
+use std::pin::Pin;
+use std::string;
 use tendermint::block;
 use tracing::instrument;
+use futures::future;
+use futures::stream::{self, StreamExt, Peekable};
 
 use penumbra_crypto::{
     merkle::{self, NoteCommitmentTree, TreeExt},
@@ -287,34 +292,85 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
         })
     }
 
-    /// Retrieve the [`CompactBlock`] for the given range of heights.
+    /// Retrieve the set of [`CompactBlock`]s for the given range of heights.
     ///
-    /// If the block does not exist, the resulting `CompactBlock` will be empty.
-    pub async fn compact_block_range(&self, start_height: i64, end_height: i64) -> Result<CompactBlock> {
+    /// If the block does not exist, the resulting `CompactBlock`s will be empty.
+    pub async fn compact_block_from_range(&self, start_height: i64, end_height: i64) -> Result<Vec<CompactBlock>> {
 
-        let mut conn = self.pool.acquire().await?;
+        let mut resulting_blocks = Vec::<CompactBlock>::new();
 
-        Ok(CompactBlock {
+        let mut conn1 = self.pool.acquire().await?;
 
-            height: start_height as u32,
+        let mut nullifier_stream = query!(
+            "SELECT height, nullifier
+            FROM nullifiers 
+            WHERE height 
+            BETWEEN $1 AND $2
+            ORDER BY height ASC",
+            start_height,
+            end_height
+        )
+        .fetch(&mut conn1)
+        .peekable();
 
-            nullifiers: query!(
-                "SELECT nullifier FROM nullifiers WHERE height BETWEEN $1 AND $2",
-                start_height,
-                end_height
-            ).fetch_all(&mut conn)
-            .await?
-            .into_iter()
-            .map(|row| row.nullifier.into())
-            .collect(),
+        let mut conn2 = self.pool.acquire().await?;
 
-            fragments: query!(
-                "SELECT note_commitment, ephemeral_key, encrypted_note FROM notes WHERE height BETWEEN $1 AND $2",
-                start_height,
-                end_height
-            )
-            .fetch_all(&mut conn)
-            .await?
+        let mut fragment_stream = query!(
+            "SELECT height, note_commitment, ephemeral_key, encrypted_note 
+            FROM notes 
+            WHERE height 
+            BETWEEN $1 AND $2
+            ORDER BY height ASC",
+            start_height,
+            end_height
+        )
+        .fetch(&mut conn2)
+        .peekable();
+
+        for current_height in start_height..=end_height {
+
+            let mut current_block = CompactBlock {
+                height: current_height as u32, 
+                nullifiers: Vec::new(), 
+                fragments: Vec::new()
+            };
+
+            while let Some(peeked) = Pin::new(&mut nullifier_stream).peek().await {
+
+                match peeked {
+                    Ok(next_record) => 
+                        if next_record.height == current_height { 
+                            current_block.nullifiers.push(
+                            nullifier_stream.next()
+                            .await
+                            .expect("already peeked Some")
+                            .unwrap()
+                            .nullifier.into()) 
+                        }
+                        else { break }
+                    Err(e) => break
+                }
+            }
+
+            let mut fragment_records = Vec::new();
+
+            while let Some(peeked) = Pin::new(&mut fragment_stream).peek().await {
+
+                match peeked {
+                    Ok(next_record) => 
+                        if next_record.height == current_height.into() { 
+                            fragment_records.push(
+                            fragment_stream.next()
+                            .await
+                            .expect("already peeked Some")
+                            .unwrap())
+                        }
+                        else { break }
+                    Err(e) => break
+                }
+            }
+
+            current_block.fragments = fragment_records
             .into_iter()
             .map(
                 |row| StateFragment {
@@ -323,8 +379,14 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
                     encrypted_note: row.encrypted_note.into(),
                 },
             )
-            .collect(),
-        })
+            .collect();
+
+            resulting_blocks.push(current_block);
+
+        };
+
+        Ok(resulting_blocks)
+    
     }
 
     /// Retreive the current validator set.
