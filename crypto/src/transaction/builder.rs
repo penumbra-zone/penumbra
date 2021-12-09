@@ -76,7 +76,9 @@ impl Builder {
         self
     }
 
-    /// Add a new note to the output
+    /// Generate a new note and add it to the output, returning a clone of the generated note.
+    ///
+    /// For chaining output, use [`Builder::add_output`].
     pub fn add_output_producing_note<R: RngCore + CryptoRng>(
         mut self,
         rng: &mut R,
@@ -122,6 +124,8 @@ impl Builder {
 
     /// Create a new `Output`, implicitly creating a new note for it and encrypting the provided
     /// [`MemoPlaintext`] with a fresh ephemeral secret key.
+    ///
+    /// To return the generated note, use [`Builder::add_output_producing_note`].
     pub fn add_output<R: RngCore + CryptoRng>(
         self,
         rng: &mut R,
