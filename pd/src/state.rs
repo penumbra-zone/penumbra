@@ -70,28 +70,25 @@ ON CONFLICT (id) DO UPDATE SET data = $1
         // TODO: this could be batched / use prepared statements
         for (
             note_commitment,
-            NoteData {
-                ephemeral_key,
-                encrypted_note,
-                transaction_id,
-            },
+            positioned_note
         ) in block.notes.into_iter()
         {
             query!(
                 r#"
-INSERT INTO notes (
-    note_commitment,
-    ephemeral_key,
-    encrypted_note,
-    transaction_id,
-    height
-) VALUES ($1, $2, $3, $4, $5)
-"#,
+                INSERT INTO notes (
+                    note_commitment,
+                    ephemeral_key,
+                    encrypted_note,
+                    transaction_id,
+                    position,
+                    height
+                ) VALUES ($1, $2, $3, $4, $5, $6)"#,
                 &<[u8; 32]>::from(note_commitment)[..],
-                &ephemeral_key.0[..],
-                &encrypted_note[..],
-                &transaction_id[..],
-                height,
+                &positioned_note.data.ephemeral_key.0[..],
+                &positioned_note.data.encrypted_note[..],
+                &positioned_note.data.transaction_id[..],
+                positioned_note.position as i64,
+                height
             )
             .execute(&mut dbtx)
             .await?;
