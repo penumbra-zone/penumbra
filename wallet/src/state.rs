@@ -4,6 +4,7 @@ use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
+use std::mem;
 use std::str::FromStr;
 use std::time::{Duration, SystemTime};
 use tracing::instrument;
@@ -37,11 +38,9 @@ pub struct ClientState {
     /// Notes that we have received.
     unspent_set: BTreeMap<note::Commitment, Note>,
     /// Notes that we have spent but which have not yet been confirmed on-chain.
-    pending_set: BTreeMap<note::Commitment, Note>,
+    pending_set: BTreeMap<note::Commitment, (SystemTime, Note)>,
     /// Notes that we anticipate receiving on-chain as change but which have not yet been confirmed.
-    pending_change_set: BTreeMap<note::Commitment, Note>,
-    /// Commitments for notes that are pending (either spent or change), indexed by timeout.
-    pending_timeouts: BTreeMap<SystemTime, Vec<PendingNoteCommitment>>,
+    pending_change_set: BTreeMap<note::Commitment, (SystemTime, Note)>,
     /// Notes that we have spent.
     spent_set: BTreeMap<note::Commitment, Note>,
     /// Map of note commitment to full transaction data for transactions we have visibility into.
@@ -91,7 +90,6 @@ impl ClientState {
             unspent_set: BTreeMap::new(),
             pending_set: BTreeMap::new(),
             pending_change_set: BTreeMap::new(),
-            pending_timeouts: BTreeMap::new(),
             spent_set: BTreeMap::new(),
             transactions: BTreeMap::new(),
             asset_registry: BTreeMap::new(),
@@ -215,6 +213,9 @@ impl ClientState {
             *value_to_spend.entry("penumbra".into()).or_default() += fee;
         }
 
+        // The current system time (used to set timeouts for pending transactions)
+        let now = SystemTime::now();
+
         for (denom, amount) in value_to_spend {
             // Only produce an output if the amount is greater than zero
             if amount == 0 {
@@ -237,13 +238,8 @@ impl ClientState {
                 let note_commitment = note.commit();
 
                 // Add the note to the pending set
-                self.pending_set.insert(note_commitment, note.clone());
-
-                // Add a timeout which removes this note from the pending set sometime later
-                self.pending_timeouts
-                    .entry(now + PENDING_TRANSACTION_TIMEOUT)
-                    .or_insert_with(|| Vec::with_capacity(1))
-                    .push(PendingNoteCommitment::Spend(note_commitment));
+                self.pending_set
+                    .insert(note_commitment, (now, note.clone()));
 
                 let auth_path = self
                     .note_commitment_tree
@@ -283,13 +279,7 @@ impl ClientState {
                 let note_commitment = note.commit();
 
                 // Add the note to the pending change set
-                self.pending_change_set.insert(note_commitment, note);
-
-                // Add a timeout which removes this note from the pending set sometime later
-                self.pending_timeouts
-                    .entry(now + PENDING_TRANSACTION_TIMEOUT)
-                    .or_insert_with(|| Vec::with_capacity(1))
-                    .push(PendingNoteCommitment::Change(note_commitment));
+                self.pending_change_set.insert(note_commitment, (now, note));
             }
         }
 
@@ -308,11 +298,15 @@ impl ClientState {
         self.unspent_set
             .values()
             .map(UnspentNote::Ready)
-            .chain(self.pending_set.values().map(UnspentNote::PendingSpend))
+            .chain(
+                self.pending_set
+                    .values()
+                    .map(|(_, note)| UnspentNote::PendingSpend(note)),
+            )
             .chain(
                 self.pending_change_set
                     .values()
-                    .map(UnspentNote::PendingChange),
+                    .map(|(_, note)| UnspentNote::PendingChange(note)),
             )
             .map(|note| {
                 // Any notes we have in the unspent set we will have the corresponding denominations
@@ -390,46 +384,33 @@ impl ClientState {
     /// and returning pending spends to the unspent set.
     #[instrument]
     pub fn prune_timeouts(&mut self) {
-        // Split off the expired timeouts from the pending timeouts in 3 steps (necessary because of
-        // the API provided by `split_off`):
-        // 1. Split out the unexpired timeouts, leaving only the expired timeouts inside `self`
-        let mut unexpired = self.pending_timeouts.split_off(&SystemTime::now());
-        // 2. Swap the unexpired timeouts for the expired timeouts inside `self`
-        std::mem::swap(&mut self.pending_timeouts, &mut unexpired);
-        // 3. Rename `unexpired` to `expired` because its meaning has changed per the swap above
-        let expired = unexpired;
+        let now = SystemTime::now();
 
-        // For every expired timeout, remove its note from the corresponding set, taking care to
-        // move pending notes back to the unspent set
-        for (timeout, commitments) in expired {
-            for commitment in commitments {
-                match commitment {
-                    PendingNoteCommitment::Change(commitment) => {
-                        // Drop this pending change note -- this is permissible, because dropping a
-                        // pending change note just means we forget about an output, not an input
-                        if self.pending_change_set.remove(&commitment).is_none() {
-                            tracing::debug!(
-                                ?timeout,
-                                ?commitment,
-                                "attempted to drop a pending change note, but found that it did not exist",
-                            );
-                        }
-                    }
-                    PendingNoteCommitment::Spend(commitment) => {
-                        // IMPORTANT: Move this pending spend note back to the unspent note set --
-                        // if we forget to do this, we'll permanently lose track of this note until
-                        // we reset the wallet
-                        if let Some(note) = self.pending_set.remove(&commitment) {
-                            self.unspent_set.insert(commitment, note);
-                        } else {
-                            tracing::debug!(
-                                ?timeout,
-                                ?commitment,
-                                "attempted to move a pending spend back to the unspent set, but found that it did not exist",
-                            );
-                        }
-                    }
-                }
+        // Pull out the pending sets and set them to the empty map
+        let pending_set = mem::take(&mut self.pending_set);
+        let pending_change_set = mem::take(&mut self.pending_change_set);
+
+        // Iterate over pending spends and put back into the unspent set any whose timeouts have
+        // already expired
+        for (note_commitment, (timeout, note)) in pending_set {
+            if now > timeout {
+                // IMPORTANT: we must recover the pending note or else we can't ever spend it
+                // without resetting and resyncing the wallet entirely
+                self.unspent_set.insert(note_commitment, note);
+            } else {
+                self.pending_set.insert(note_commitment, (timeout, note));
+            }
+        }
+
+        // Iterate over pending change and **DROP** any whose timeouts have already expired
+        for (note_commitment, (timeout, note)) in pending_change_set {
+            if now > timeout {
+                // We can drop pending change notes, because they are outputs of the transaction and
+                // therefore we can expect that either the transaction will fail, or we will receive
+                // them again later
+            } else {
+                self.pending_change_set
+                    .insert(note_commitment, (timeout, note));
             }
         }
     }
@@ -518,14 +499,15 @@ impl ClientState {
                             ?nullifier,
                             "found nullifier for unspent note: marking it as spent"
                         )
-                    } else if let Some(note) = self.pending_set.remove(&note_commitment) {
+                    } else if let Some((_, note)) = self.pending_set.remove(&note_commitment) {
                         // Insert the note into the spent set
                         self.spent_set.insert(note_commitment, note);
                         tracing::debug!(
                             ?nullifier,
                             "found nullifier for pending note: marking it as spent"
                         )
-                    } else if let Some(note) = self.pending_change_set.remove(&note_commitment) {
+                    } else if let Some((_, note)) = self.pending_change_set.remove(&note_commitment)
+                    {
                         // Insert the note into the spent set
                         self.spent_set.insert(note_commitment, note);
                         tracing::debug!(
@@ -578,11 +560,9 @@ mod serde_helpers {
         nullifier_map: Vec<(String, String)>,
         unspent_set: Vec<(String, String)>,
         #[serde(default)]
-        pending_set: Vec<(String, String)>,
+        pending_set: Vec<(String, SystemTime, String)>,
         #[serde(default)]
-        pending_change_set: Vec<(String, String)>,
-        #[serde(default)]
-        pending_timeouts: Vec<(SystemTime, Vec<PendingNoteCommitmentHelper>)>,
+        pending_change_set: Vec<(String, SystemTime, String)>,
         spent_set: Vec<(String, String)>,
         transactions: Vec<(String, String)>,
         asset_registry: Vec<(String, String)>,
@@ -656,23 +636,13 @@ mod serde_helpers {
                         )
                     })
                     .collect(),
-                pending_timeouts: state
-                    .pending_timeouts
-                    .into_iter()
-                    .map(|(timeout, commitments)| {
-                        let commitments = commitments
-                            .into_iter()
-                            .map(PendingNoteCommitment::into)
-                            .collect();
-                        (timeout, commitments)
-                    })
-                    .collect(),
                 pending_set: state
                     .pending_set
                     .iter()
-                    .map(|(commitment, note)| {
+                    .map(|(commitment, (timeout, note))| {
                         (
                             hex::encode(commitment.0.to_bytes()),
+                            *timeout,
                             hex::encode(note.to_bytes()),
                         )
                     })
@@ -680,9 +650,10 @@ mod serde_helpers {
                 pending_change_set: state
                     .pending_change_set
                     .iter()
-                    .map(|(commitment, note)| {
+                    .map(|(commitment, (timeout, note))| {
                         (
                             hex::encode(commitment.0.to_bytes()),
+                            *timeout,
                             hex::encode(note.to_bytes()),
                         )
                     })
@@ -730,18 +701,18 @@ mod serde_helpers {
             }
 
             let mut pending_set = BTreeMap::new();
-            for (commitment, note) in state.pending_set.into_iter() {
+            for (commitment, timeout, note) in state.pending_set.into_iter() {
                 pending_set.insert(
                     hex::decode(commitment)?.as_slice().try_into()?,
-                    hex::decode(note)?.as_slice().try_into()?,
+                    (timeout, hex::decode(note)?.as_slice().try_into()?),
                 );
             }
 
             let mut pending_change_set = BTreeMap::new();
-            for (commitment, note) in state.pending_change_set.into_iter() {
+            for (commitment, timeout, note) in state.pending_change_set.into_iter() {
                 pending_change_set.insert(
                     hex::decode(commitment)?.as_slice().try_into()?,
-                    hex::decode(note)?.as_slice().try_into()?,
+                    (timeout, hex::decode(note)?.as_slice().try_into()?),
                 );
             }
 
@@ -758,19 +729,6 @@ mod serde_helpers {
                 asset_registry.insert(hex::decode(id)?.try_into()?, denom);
             }
 
-            let mut pending_timeouts = BTreeMap::new();
-            for (timeout, commitments) in state.pending_timeouts.into_iter() {
-                pending_timeouts.insert(timeout, {
-                    // Build up a vector of pending commitments (this is fallible so it can't be
-                    // done inside of a call to `map`)
-                    let mut result = Vec::with_capacity(commitments.len());
-                    for commitment in commitments {
-                        result.push(commitment.try_into()?);
-                    }
-                    result
-                });
-            }
-
             Ok(Self {
                 wallet: state.wallet,
                 last_block_height: state.last_block_height,
@@ -779,7 +737,6 @@ mod serde_helpers {
                 unspent_set,
                 pending_set,
                 pending_change_set,
-                pending_timeouts,
                 spent_set,
                 asset_registry,
                 // TODO: serialize full transactions
