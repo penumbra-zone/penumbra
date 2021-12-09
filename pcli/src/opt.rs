@@ -44,6 +44,9 @@ pub enum Command {
         /// If set, breaks down balances by address.
         #[structopt(short, long)]
         by_address: bool,
+        #[structopt(long)]
+        /// If set, does not attempt to synchronize the wallet before printing the balance.
+        offline: bool,
     },
 }
 
@@ -55,7 +58,7 @@ impl Command {
             Command::Wallet(cmd) => cmd.needs_sync(),
             Command::Addr(cmd) => cmd.needs_sync(),
             Command::Sync => true,
-            Command::Balance { .. } => true,
+            Command::Balance { offline, .. } => !offline,
         }
     }
 }

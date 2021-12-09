@@ -201,7 +201,10 @@ async fn main() -> Result<()> {
             // Print the table (we don't get here if `show --addr-only`)
             println!("{}", table);
         }
-        Command::Balance { by_address } => {
+        Command::Balance {
+            by_address,
+            offline,
+        } => {
             // Format a tally of notes as two strings: unspent and pending. This assumes that the
             // notes are all of the same denomination, and it is called below only in the places
             // where they are.
@@ -235,7 +238,12 @@ async fn main() -> Result<()> {
                 (unspent.to_string(), pending_string)
             }
 
-            let state = state.expect("state must be synchronized");
+            // Load the synchronized wallet state, or else load from disk if in offline mode
+            let state = if !offline {
+                state.expect("state must be synchronized")
+            } else {
+                ClientStateFile::load(wallet_path)?
+            };
 
             // Initialize the table
             let mut table = Table::new();
