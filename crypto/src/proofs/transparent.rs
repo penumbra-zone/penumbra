@@ -479,7 +479,7 @@ mod tests {
             asset_id: asset::Denom::from("penumbra").into(),
         };
         let v_blinding = Fr::rand(&mut rng);
-        let note = Note::fresh(&mut rng, &dest, value_to_send).expect("transmission key is valid");
+        let note = Note::generate(&mut rng, &dest, value_to_send);
         let esk = ka::Secret::new(&mut rng);
         let epk = esk.diversified_public(&note.diversified_generator());
 
@@ -511,7 +511,7 @@ mod tests {
             asset_id: asset::Denom::from("penumbra").into(),
         };
         let v_blinding = Fr::rand(&mut rng);
-        let note = Note::fresh(&mut rng, &dest, value_to_send).expect("transmission key is valid");
+        let note = Note::generate(&mut rng, &dest, value_to_send);
         let esk = ka::Secret::new(&mut rng);
         let epk = esk.diversified_public(&note.diversified_generator());
 
@@ -554,7 +554,7 @@ mod tests {
             asset_id: asset::Denom::from("penumbra").into(),
         };
         let v_blinding = Fr::rand(&mut rng);
-        let note = Note::fresh(&mut rng, &dest, value_to_send).expect("transmission key is valid");
+        let note = Note::generate(&mut rng, &dest, value_to_send);
         let esk = ka::Secret::new(&mut rng);
         let correct_epk = esk.diversified_public(&note.diversified_generator());
 
@@ -587,7 +587,7 @@ mod tests {
             asset_id: asset::Denom::from("penumbra").into(),
         };
         let v_blinding = Fr::rand(&mut rng);
-        let note = Note::fresh(&mut rng, &dest, value_to_send).expect("transmission key is valid");
+        let note = Note::generate(&mut rng, &dest, value_to_send);
         let esk = ka::Secret::new(&mut rng);
 
         let proof = OutputProof {
@@ -624,7 +624,7 @@ mod tests {
             asset_id: asset::Denom::from("penumbra").into(),
         };
         let v_blinding = Fr::rand(&mut rng);
-        let note = Note::fresh(&mut rng, &dest, value_to_send).expect("transmission key is valid");
+        let note = Note::generate(&mut rng, &dest, value_to_send);
         let esk = ka::Secret::new(&mut rng);
         let epk = esk.diversified_public(&note.diversified_generator());
 
@@ -656,8 +656,7 @@ mod tests {
         };
         let v_blinding = Fr::rand(&mut rng);
 
-        let note =
-            Note::fresh(&mut rng, &sender, value_to_send).expect("transmission key is valid");
+        let note = Note::generate(&mut rng, &sender, value_to_send);
         let note_commitment = note.commit();
         let spend_auth_randomizer = Fr::rand(&mut rng);
         let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
@@ -705,8 +704,7 @@ mod tests {
         };
         let v_blinding = Fr::rand(&mut rng);
 
-        let note =
-            Note::fresh(&mut rng, &sender, value_to_send).expect("transmission key is valid");
+        let note = Note::generate(&mut rng, &sender, value_to_send);
         let note_commitment = note.commit();
         let spend_auth_randomizer = Fr::rand(&mut rng);
         let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
@@ -753,8 +751,7 @@ mod tests {
             asset_id: asset::Denom::from("penumbra").into(),
         };
         let v_blinding = Fr::rand(&mut rng);
-        let note =
-            Note::fresh(&mut rng, &sender, value_to_send).expect("transmission key is valid");
+        let note = Note::generate(&mut rng, &sender, value_to_send);
         let note_commitment = note.commit();
         let spend_auth_randomizer = Fr::rand(&mut rng);
         let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
@@ -801,8 +798,7 @@ mod tests {
             asset_id: asset::Denom::from("penumbra").into(),
         };
         let v_blinding = Fr::rand(&mut rng);
-        let note =
-            Note::fresh(&mut rng, &sender, value_to_send).expect("transmission key is valid");
+        let note = Note::generate(&mut rng, &sender, value_to_send);
         let note_commitment = note.commit();
         let spend_auth_randomizer = Fr::rand(&mut rng);
         let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);

@@ -85,7 +85,7 @@ impl Builder {
         memo: MemoPlaintext,
         ovk: &OutgoingViewingKey,
     ) -> (Note, Self) {
-        let note = Note::fresh(rng, dest, value_to_send).expect("transmission key is valid");
+        let note = Note::generate(rng, dest, value_to_send);
         let diversified_generator = note.diversified_generator();
         let transmission_key = note.transmission_key();
         let value_to_send = note.value();

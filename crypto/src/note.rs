@@ -84,15 +84,12 @@ impl Note {
 
     /// Generate a fresh note representing the given value for the given destination address, with a
     /// random blinding factor.
-    pub fn fresh(
-        rng: &mut impl Rng,
-        address: &crate::Address,
-        value: Value,
-    ) -> Result<Self, Error> {
+    pub fn generate(rng: &mut impl Rng, address: &crate::Address, value: Value) -> Self {
         let diversifier = *address.diversifier();
         let transmission_key = *address.transmission_key();
         let note_blinding = Fq::rand(rng);
         Note::from_parts(diversifier, transmission_key, value, note_blinding)
+            .expect("transmission key in address is always valid")
     }
 
     pub fn diversified_generator(&self) -> decaf377::Element {
@@ -442,7 +439,7 @@ mod tests {
             amount: 10,
             asset_id: asset::Denom::from("penumbra").into(),
         };
-        let note = Note::fresh(&mut rng, &dest, value).expect("can create note");
+        let note = Note::generate(&mut rng, &dest, value);
         let esk = ka::Secret::new(&mut rng);
 
         let ciphertext = note.encrypt(&esk);
