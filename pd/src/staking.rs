@@ -3,6 +3,17 @@ use serde::{Deserialize, Serialize};
 use tendermint::{vote, PublicKey};
 
 const PENUMBRA_BECH32_VALIDATOR_PREFIX: &str = "penumbravalpub";
+
+/// A destination for a portion of a validator's commission of staking rewards.
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone)]
+pub struct FundingStream {
+    /// The destinatination address for the funding stream..
+    pub address: Address,
+
+    /// The portion (in terms of basis points) of the validator's total commission that goes to
+    /// this funding stream.
+    pub rate_bps: u16,
+}
 /// Validator tracks the Penumbra validator's long-term consensus key (tm_pubkey), as well as their
 /// voting power.
 #[derive(Deserialize, Serialize, Debug, Eq, Clone)]
@@ -14,12 +25,8 @@ pub struct Validator {
     /// The validator's current voting power.
     pub voting_power: vote::Power,
 
-    /// The validator's shielded commission address, where they receive their portion of the
-    /// staking rewards.
-    pub commission_address: Address,
-
-    /// The portion of staking rewards that go to the validator (as opposed to the delegators).
-    pub commission_rate_bps: u16,
+    /// The destinations for the validator's commission.
+    pub funding_streams: Vec<FundingStream>,
     // NOTE: unclaimed rewards are tracked by inserting reward notes for the last epoch into the
     // NCT at the beginning of each epoch
 }
@@ -34,14 +41,12 @@ impl Validator {
     pub fn new(
         pubkey: PublicKey,
         voting_power: vote::Power,
-        commission_address: Address,
-        commission_rate_bps: u16,
+        funding_streams: Vec<FundingStream>,
     ) -> Validator {
         Validator {
             tm_pubkey: pubkey,
             voting_power,
-            commission_address,
-            commission_rate_bps,
+            funding_streams,
         }
     }
 
