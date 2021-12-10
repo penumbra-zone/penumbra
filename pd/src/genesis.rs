@@ -7,11 +7,23 @@ use penumbra_crypto::{asset::Denom, Address, Note, Value};
 use crate::staking::Validator;
 
 /// A (transparent) genesis allocation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Allocation {
     pub amount: u64,
     pub denom: String,
     pub address: Address,
+}
+
+// Implement Debug manually so we can use the Display impl for the address,
+// rather than dumping all the internal address components.
+impl std::fmt::Debug for Allocation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Allocation")
+            .field("amount", &self.amount)
+            .field("denom", &self.denom)
+            .field("address", &self.address.to_string())
+            .finish()
+    }
 }
 
 impl Allocation {
