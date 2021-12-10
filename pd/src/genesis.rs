@@ -120,7 +120,7 @@ impl TryFrom<&GenesisNote> for Note {
         let transmission_key = ka::Public(genesis_note.transmission_key);
         let diversifier = Diversifier(genesis_note.diversifier);
 
-        let note = Note::new(
+        let note = Note::from_parts(
             diversifier,
             transmission_key,
             Value {

@@ -215,7 +215,7 @@ mod tests {
             asset_id: asset::Denom::from("penumbra").into(),
         };
         // The note was previously sent to the sender.
-        let note = Note::new(
+        let note = Note::from_parts(
             *send_addr.diversifier(),
             *send_addr.transmission_key(),
             spend_value,

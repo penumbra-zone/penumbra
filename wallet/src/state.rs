@@ -4,7 +4,9 @@ use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
+use std::mem;
 use std::str::FromStr;
+use std::time::{Duration, SystemTime};
 use tracing::instrument;
 
 use penumbra_crypto::{
@@ -16,6 +18,9 @@ use penumbra_crypto::{
 use crate::Wallet;
 
 const MAX_MERKLE_CHECKPOINTS_CLIENT: usize = 10;
+
+/// The time after which a locally cached pending transaction is considered to have failed.
+const PENDING_TRANSACTION_TIMEOUT: Duration = Duration::from_secs(60);
 
 /// State about the chain and our transactions.
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -32,6 +37,10 @@ pub struct ClientState {
     nullifier_map: BTreeMap<Nullifier, note::Commitment>,
     /// Notes that we have received.
     unspent_set: BTreeMap<note::Commitment, Note>,
+    /// Notes that we have spent but which have not yet been confirmed on-chain.
+    pending_set: BTreeMap<note::Commitment, (SystemTime, Note)>,
+    /// Notes that we anticipate receiving on-chain as change but which have not yet been confirmed.
+    pending_change_set: BTreeMap<note::Commitment, (SystemTime, Note)>,
     /// Notes that we have spent.
     spent_set: BTreeMap<note::Commitment, Note>,
     /// Map of note commitment to full transaction data for transactions we have visibility into.
@@ -42,6 +51,36 @@ pub struct ClientState {
     wallet: Wallet,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum PendingNoteCommitment {
+    Change(note::Commitment),
+    Spend(note::Commitment),
+}
+
+#[derive(Clone, Debug)]
+/// A note which has not yet been confirmed on the chain as spent.
+pub enum UnspentNote<'a> {
+    /// A note which is ours to spend immediately: neither pending a spend, nor pending our
+    /// confirming it as received change from a transaction.
+    Ready(&'a Note),
+    /// A note which we have submitted in a spend transaction but which has not yet been
+    /// confirmed on the chain (so if the transaction is rejected, we may get it back again).
+    PendingSpend(&'a Note),
+    /// A note which resulted as predicted change from a spend transaction, but which has not
+    /// yet been confirmed on the chain (so we cannot spend it yet).
+    PendingChange(&'a Note),
+}
+
+impl AsRef<Note> for UnspentNote<'_> {
+    fn as_ref(&self) -> &Note {
+        match self {
+            UnspentNote::Ready(note) => note,
+            UnspentNote::PendingSpend(note) => note,
+            UnspentNote::PendingChange(note) => note,
+        }
+    }
+}
+
 impl ClientState {
     pub fn new(wallet: Wallet) -> Self {
         Self {
@@ -49,6 +88,8 @@ impl ClientState {
             note_commitment_tree: NoteCommitmentTree::new(MAX_MERKLE_CHECKPOINTS_CLIENT),
             nullifier_map: BTreeMap::new(),
             unspent_set: BTreeMap::new(),
+            pending_set: BTreeMap::new(),
+            pending_change_set: BTreeMap::new(),
             spent_set: BTreeMap::new(),
             transactions: BTreeMap::new(),
             asset_registry: BTreeMap::new(),
@@ -75,7 +116,7 @@ impl ClientState {
         amount: u64,
         denom: String,
         source_address: Option<u64>,
-    ) -> Result<Vec<Note>, anyhow::Error> {
+    ) -> Result<Vec<&Note>, anyhow::Error> {
         let mut notes_by_address = self
             .unspent_notes_by_denom_and_address()
             .remove(&denom)
@@ -99,11 +140,15 @@ impl ClientState {
         let mut notes_to_spend = Vec::new();
         let mut total_spend_value = 0u64;
         for note in notes.into_iter() {
-            notes_to_spend.push(note.clone());
-            total_spend_value += note.amount();
+            // A note is only spendable if it has been confirmed on chain to us (change outputs
+            // cannot be spent yet because they do not have a position):
+            if let UnspentNote::Ready(note) = note {
+                notes_to_spend.push(note);
+                total_spend_value += note.amount();
 
-            if total_spend_value >= amount {
-                break;
+                if total_spend_value >= amount {
+                    break;
+                }
             }
         }
 
@@ -166,6 +211,9 @@ impl ClientState {
             *value_to_spend.entry("penumbra".into()).or_default() += fee;
         }
 
+        // The time in the future when pending transactions created now should expire
+        let timeout = SystemTime::now() + PENDING_TRANSACTION_TIMEOUT;
+
         for (denom, amount) in value_to_spend {
             // Only produce an output if the amount is greater than zero
             if amount == 0 {
@@ -173,7 +221,11 @@ impl ClientState {
             }
 
             // Select a list of notes that provides at least the required amount.
-            let notes = self.notes_to_spend(rng, amount, denom.clone(), source_address)?;
+            let notes: Vec<Note> = self
+                .notes_to_spend(rng, amount, denom.clone(), source_address)?
+                .into_iter()
+                .map(Note::clone)
+                .collect();
             let change_address = self
                 .wallet
                 .change_address(notes.last().expect("spent at least one note"))?;
@@ -181,10 +233,16 @@ impl ClientState {
 
             // Spend each of the notes we selected.
             for note in notes {
+                let note_commitment = note.commit();
+
+                // Add the note to the pending set
+                self.pending_set
+                    .insert(note_commitment, (timeout, note.clone()));
+
                 let auth_path = self
                     .note_commitment_tree
-                    .authentication_path(&note.commit())
-                    .unwrap();
+                    .authentication_path(&note_commitment)
+                    .expect("tried to spend note not present in note commitment tree");
                 let merkle_path = (u64::from(auth_path.0) as usize, auth_path.1);
                 let merkle_position = auth_path.0;
                 tx_builder = tx_builder.add_spend(
@@ -201,7 +259,7 @@ impl ClientState {
             if change > 0 {
                 // xx: add memo handling
                 let memo = memo::MemoPlaintext([0u8; 512]);
-                tx_builder = tx_builder.add_output(
+                let (note, new_tx_builder) = tx_builder.add_output_producing_note(
                     rng,
                     &change_address,
                     Value {
@@ -211,38 +269,68 @@ impl ClientState {
                     memo,
                     self.wallet.outgoing_viewing_key(),
                 );
+
+                // Update the tx builder (notice: this must be done explicitly because we broke from
+                // the builder-by-assignment pattern above)
+                tx_builder = new_tx_builder;
+
+                let note_commitment = note.commit();
+
+                // Add the note to the pending change set
+                self.pending_change_set
+                    .insert(note_commitment, (timeout, note));
             }
         }
 
-        tx_builder
+        let transaction = tx_builder
             .finalize(rng)
-            .map_err(|err| anyhow::anyhow!("error during transaction finalization: {}", err))
+            .map_err(|err| anyhow::anyhow!("error during transaction finalization: {}", err))?;
+
+        Ok(transaction)
     }
 
     /// Returns an iterator over unspent `(address_id, denom, note)` triples.
-    pub fn unspent_notes(&self) -> impl Iterator<Item = (u64, String, Note)> + '_ {
-        self.unspent_set.values().cloned().map(|note| {
-            // Any notes we have in the unspent set we will have the corresponding denominations
-            // for since the notes and asset registry are both part of the sync.
-            let denom = self
-                .asset_registry
-                .get(&note.asset_id())
-                .expect("all asset IDs should have denominations stored locally")
-                .clone();
+    ///
+    /// Notes are [`UnspentNote`]s, which describe whether the note is ready to spend, part of a
+    /// pending output, or part of pending change expected to be received.
+    pub fn unspent_notes(&self) -> impl Iterator<Item = (u64, String, UnspentNote)> + '_ {
+        self.unspent_set
+            .values()
+            .map(UnspentNote::Ready)
+            .chain(
+                self.pending_set
+                    .values()
+                    .map(|(_, note)| UnspentNote::PendingSpend(note)),
+            )
+            .chain(
+                self.pending_change_set
+                    .values()
+                    .map(|(_, note)| UnspentNote::PendingChange(note)),
+            )
+            .map(|note| {
+                // Any notes we have in the unspent set we will have the corresponding denominations
+                // for since the notes and asset registry are both part of the sync.
+                let denom = self
+                    .asset_registry
+                    .get(&note.as_ref().asset_id())
+                    .expect("all asset IDs should have denominations stored locally")
+                    .clone();
 
-            let index: u64 = self
-                .wallet()
-                .incoming_viewing_key()
-                .index_for_diversifier(&note.diversifier())
-                .try_into()
-                .expect("diversifiers created by `pcli` are well-formed");
+                let index: u64 = self
+                    .wallet()
+                    .incoming_viewing_key()
+                    .index_for_diversifier(&note.as_ref().diversifier())
+                    .try_into()
+                    .expect("diversifiers created by `pcli` are well-formed");
 
-            (index, denom, note)
-        })
+                (index, denom, note)
+            })
     }
 
-    /// Returns unspent notes, grouped by address and then by denomination.
-    pub fn unspent_notes_by_address_and_denom(&self) -> BTreeMap<u64, HashMap<String, Vec<Note>>> {
+    /// Returns unspent notes, grouped by address index and then by denomination.
+    pub fn unspent_notes_by_address_and_denom(
+        &self,
+    ) -> BTreeMap<u64, HashMap<String, Vec<UnspentNote>>> {
         let mut notemap = BTreeMap::default();
 
         for (index, denom, note) in self.unspent_notes() {
@@ -257,8 +345,10 @@ impl ClientState {
         notemap
     }
 
-    /// Returns unspent notes, grouped by denomination and then by address.
-    pub fn unspent_notes_by_denom_and_address(&self) -> HashMap<String, BTreeMap<u64, Vec<Note>>> {
+    /// Returns unspent notes, grouped by denomination and then by address index.
+    pub fn unspent_notes_by_denom_and_address(
+        &self,
+    ) -> HashMap<String, BTreeMap<u64, Vec<UnspentNote>>> {
         let mut notemap = HashMap::default();
 
         for (index, denom, note) in self.unspent_notes() {
@@ -287,6 +377,41 @@ impl ClientState {
     /// Returns the last block height the client state has synced up to, if any.
     pub fn last_block_height(&self) -> Option<u32> {
         self.last_block_height
+    }
+
+    /// Remove all pending spends and change whose timeouts have expired, dropping pending change
+    /// and returning pending spends to the unspent set.
+    #[instrument]
+    pub fn prune_timeouts(&mut self) {
+        let now = SystemTime::now();
+
+        // Pull out the pending sets and set them to the empty map
+        let pending_set = mem::take(&mut self.pending_set);
+        let pending_change_set = mem::take(&mut self.pending_change_set);
+
+        // Iterate over pending spends and put back into the unspent set any whose timeouts have
+        // already expired
+        for (note_commitment, (timeout, note)) in pending_set {
+            if now > timeout {
+                // IMPORTANT: we must recover the pending note or else we can't ever spend it
+                // without resetting and resyncing the wallet entirely
+                self.unspent_set.insert(note_commitment, note);
+            } else {
+                self.pending_set.insert(note_commitment, (timeout, note));
+            }
+        }
+
+        // Iterate over pending change and **DROP** any whose timeouts have already expired
+        for (note_commitment, (timeout, note)) in pending_change_set {
+            if now > timeout {
+                // We can drop pending change notes, because they are outputs of the transaction and
+                // therefore we can expect that either the transaction will fail, or we will receive
+                // them again later
+            } else {
+                self.pending_change_set
+                    .insert(note_commitment, (timeout, note));
+            }
+        }
     }
 
     /// Scan the provided block and update the client state.
@@ -324,7 +449,7 @@ impl ClientState {
             self.note_commitment_tree.append(&note_commitment);
 
             // Try to decrypt the encrypted note using the ephemeral key and persistent incoming
-            // viewing key
+            // viewing key -- if it doesn't decrypt, it wasn't meant for us.
             if let Ok(note) = Note::decrypt(
                 encrypted_note.as_ref(),
                 self.wallet.incoming_viewing_key(),
@@ -350,13 +475,16 @@ impl ClientState {
                     note_commitment,
                 );
 
+                // If the note was a pending change note, remove it from the pending change set
+                self.pending_change_set.remove(&note_commitment);
+
                 // Insert the note into the received set
                 self.unspent_set.insert(note_commitment, note.clone());
             }
         }
 
         // Scan through the list of nullifiers to find those which refer to notes in our unspent set
-        // and move them into the spent set
+        // or pending set and move them into the spent set.
         for nullifier in nullifiers {
             // Try to decode the nullifier
             if let Ok(nullifier) = nullifier.as_ref().try_into() {
@@ -369,6 +497,21 @@ impl ClientState {
                         tracing::debug!(
                             ?nullifier,
                             "found nullifier for unspent note: marking it as spent"
+                        )
+                    } else if let Some((_, note)) = self.pending_set.remove(&note_commitment) {
+                        // Insert the note into the spent set
+                        self.spent_set.insert(note_commitment, note);
+                        tracing::debug!(
+                            ?nullifier,
+                            "found nullifier for pending note: marking it as spent"
+                        )
+                    } else if let Some((_, note)) = self.pending_change_set.remove(&note_commitment)
+                    {
+                        // Insert the note into the spent set
+                        self.spent_set.insert(note_commitment, note);
+                        tracing::debug!(
+                            ?nullifier,
+                            "found nullifier for pending change note: marking it as spent"
                         )
                     } else if self.spent_set.contains_key(&note_commitment) {
                         // If the nullifier is already in the spent set, it means we've already
@@ -415,10 +558,55 @@ mod serde_helpers {
         note_commitment_tree: Vec<u8>,
         nullifier_map: Vec<(String, String)>,
         unspent_set: Vec<(String, String)>,
+        #[serde(default)]
+        pending_set: Vec<(String, SystemTime, String)>,
+        #[serde(default)]
+        pending_change_set: Vec<(String, SystemTime, String)>,
         spent_set: Vec<(String, String)>,
         transactions: Vec<(String, String)>,
         asset_registry: Vec<(String, String)>,
         wallet: Wallet,
+    }
+
+    #[serde_as]
+    #[derive(Serialize, Deserialize)]
+    pub enum PendingNoteCommitmentHelper {
+        #[serde_as(as = "serde_with::hex::Hex")]
+        Change(String),
+        #[serde_as(as = "serde_with::hex::Hex")]
+        Spend(String),
+    }
+
+    impl From<PendingNoteCommitment> for PendingNoteCommitmentHelper {
+        fn from(pending_note_commitment: PendingNoteCommitment) -> Self {
+            match pending_note_commitment {
+                PendingNoteCommitment::Change(commitment) => {
+                    PendingNoteCommitmentHelper::Change(hex::encode(commitment.0.to_bytes()))
+                }
+                PendingNoteCommitment::Spend(commitment) => {
+                    PendingNoteCommitmentHelper::Spend(hex::encode(commitment.0.to_bytes()))
+                }
+            }
+        }
+    }
+
+    impl TryFrom<PendingNoteCommitmentHelper> for PendingNoteCommitment {
+        type Error = anyhow::Error;
+
+        fn try_from(
+            pending_note_commitment: PendingNoteCommitmentHelper,
+        ) -> Result<Self, anyhow::Error> {
+            Ok(match pending_note_commitment {
+                PendingNoteCommitmentHelper::Change(commitment) => {
+                    let commitment = hex::decode(commitment)?.as_slice().try_into()?;
+                    PendingNoteCommitment::Change(commitment)
+                }
+                PendingNoteCommitmentHelper::Spend(commitment) => {
+                    let commitment = hex::decode(commitment)?.as_slice().try_into()?;
+                    PendingNoteCommitment::Spend(commitment)
+                }
+            })
+        }
     }
 
     impl From<ClientState> for ClientStateHelper {
@@ -447,6 +635,28 @@ mod serde_helpers {
                         )
                     })
                     .collect(),
+                pending_set: state
+                    .pending_set
+                    .iter()
+                    .map(|(commitment, (timeout, note))| {
+                        (
+                            hex::encode(commitment.0.to_bytes()),
+                            *timeout,
+                            hex::encode(note.to_bytes()),
+                        )
+                    })
+                    .collect(),
+                pending_change_set: state
+                    .pending_change_set
+                    .iter()
+                    .map(|(commitment, (timeout, note))| {
+                        (
+                            hex::encode(commitment.0.to_bytes()),
+                            *timeout,
+                            hex::encode(note.to_bytes()),
+                        )
+                    })
+                    .collect(),
                 spent_set: state
                     .spent_set
                     .iter()
@@ -470,6 +680,7 @@ mod serde_helpers {
 
     impl TryFrom<ClientStateHelper> for ClientState {
         type Error = anyhow::Error;
+
         fn try_from(state: ClientStateHelper) -> Result<Self, Self::Error> {
             let mut nullifier_map = BTreeMap::new();
 
@@ -485,6 +696,22 @@ mod serde_helpers {
                 unspent_set.insert(
                     hex::decode(commitment)?.as_slice().try_into()?,
                     hex::decode(note)?.as_slice().try_into()?,
+                );
+            }
+
+            let mut pending_set = BTreeMap::new();
+            for (commitment, timeout, note) in state.pending_set.into_iter() {
+                pending_set.insert(
+                    hex::decode(commitment)?.as_slice().try_into()?,
+                    (timeout, hex::decode(note)?.as_slice().try_into()?),
+                );
+            }
+
+            let mut pending_change_set = BTreeMap::new();
+            for (commitment, timeout, note) in state.pending_change_set.into_iter() {
+                pending_change_set.insert(
+                    hex::decode(commitment)?.as_slice().try_into()?,
+                    (timeout, hex::decode(note)?.as_slice().try_into()?),
                 );
             }
 
@@ -507,6 +734,8 @@ mod serde_helpers {
                 note_commitment_tree: bincode::deserialize(&state.note_commitment_tree)?,
                 nullifier_map,
                 unspent_set,
+                pending_set,
+                pending_change_set,
                 spent_set,
                 asset_registry,
                 // TODO: serialize full transactions
