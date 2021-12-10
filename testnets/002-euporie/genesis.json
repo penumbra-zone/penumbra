@@ -1,0 +1,206 @@
+{
+  "genesis_time": "2021-12-10T21:00:34.996179Z",
+  "chain_id": "penumbra-euporie",
+  "initial_height": "0",
+  "consensus_params": {
+    "block": {
+      "max_bytes": "22020096",
+      "max_gas": "-1"
+    },
+    "evidence": {
+      "max_age_num_blocks": "100000",
+      "max_age_duration": "172800000000000",
+      "max_bytes": "1048576"
+    },
+    "validator": {
+      "pub_key_types": [
+        "ed25519"
+      ]
+    },
+    "version": {
+      "app_version": "0"
+    }
+  },
+  "validators": [
+    {
+      "address": "567604C1B639ED8C3055E0218C9D8674223C25B1",
+      "pub_key": {
+        "type": "tendermint/PubKeyEd25519",
+        "value": "evl4culqYvvDv8WalV74TAstVddlt21VD98EOOW1uKQ="
+      },
+      "power": "10",
+      "name": "Penumbra Labs CI"
+    }
+  ],
+  "app_state": {
+    "epoch_duration": 300,
+    "validators": [
+      {
+        "tm_pubkey": {
+          "type": "tendermint/PubKeyEd25519",
+          "value": "evl4culqYvvDv8WalV74TAstVddlt21VD98EOOW1uKQ="
+        },
+        "voting_power": "100",
+        "commission_address": "penumbrav0t1na5duj20at9k3faq8cvqf3ykk0vkh326q2klp9phz5vp2ndy3mnqx9x28yzrdxyc0p9qv68j4zegs4augceu6nj9g9ylnmxu0eg7st3mshkhsqjy7248x2gszpsfj9",
+        "commission_rate_bps": 200
+      }
+    ],
+    "allocations": [
+      {
+        "amount": 1000000,
+        "denom": "penumbra",
+        "address": "penumbrav0t1na5duj20at9k3faq8cvqf3ykk0vkh326q2klp9phz5vp2ndy3mnqx9x28yzrdxyc0p9qv68j4zegs4augceu6nj9g9ylnmxu0eg7st3mshkhsqjy7248x2gszpsfj9"
+      },
+      {
+        "amount": 20000,
+        "denom": "gm",
+        "address": "penumbrav0t1na5duj20at9k3faq8cvqf3ykk0vkh326q2klp9phz5vp2ndy3mnqx9x28yzrdxyc0p9qv68j4zegs4augceu6nj9g9ylnmxu0eg7st3mshkhsqjy7248x2gszpsfj9"
+      },
+      {
+        "amount": 20000,
+        "denom": "gn",
+        "address": "penumbrav0t1na5duj20at9k3faq8cvqf3ykk0vkh326q2klp9phz5vp2ndy3mnqx9x28yzrdxyc0p9qv68j4zegs4augceu6nj9g9ylnmxu0eg7st3mshkhsqjy7248x2gszpsfj9"
+      },
+      {
+        "amount": 10000,
+        "denom": "pizza",
+        "address": "penumbrav0t1na5duj20at9k3faq8cvqf3ykk0vkh326q2klp9phz5vp2ndy3mnqx9x28yzrdxyc0p9qv68j4zegs4augceu6nj9g9ylnmxu0eg7st3mshkhsqjy7248x2gszpsfj9"
+      },
+      {
+        "amount": 100,
+        "denom": "tungsten_cube",
+        "address": "penumbrav0t1na5duj20at9k3faq8cvqf3ykk0vkh326q2klp9phz5vp2ndy3mnqx9x28yzrdxyc0p9qv68j4zegs4augceu6nj9g9ylnmxu0eg7st3mshkhsqjy7248x2gszpsfj9"
+      },
+      {
+        "amount": 1000000,
+        "denom": "penumbra",
+        "address": "penumbrav0t14k6uhn8pnuvm869h3kgfywk03cn8nxv4fgu2ehdjdrgk2277lgsp7qrzduzyka2v3pfsy8py259ge9eq36nq8czsjgjsm5rv28s9mq54z3yw3veyz52lt0qsfp29w3"
+      },
+      {
+        "amount": 20000,
+        "denom": "gm",
+        "address": "penumbrav0t14k6uhn8pnuvm869h3kgfywk03cn8nxv4fgu2ehdjdrgk2277lgsp7qrzduzyka2v3pfsy8py259ge9eq36nq8czsjgjsm5rv28s9mq54z3yw3veyz52lt0qsfp29w3"
+      },
+      {
+        "amount": 20000,
+        "denom": "gn",
+        "address": "penumbrav0t14k6uhn8pnuvm869h3kgfywk03cn8nxv4fgu2ehdjdrgk2277lgsp7qrzduzyka2v3pfsy8py259ge9eq36nq8czsjgjsm5rv28s9mq54z3yw3veyz52lt0qsfp29w3"
+      },
+      {
+        "amount": 10000,
+        "denom": "pizza",
+        "address": "penumbrav0t14k6uhn8pnuvm869h3kgfywk03cn8nxv4fgu2ehdjdrgk2277lgsp7qrzduzyka2v3pfsy8py259ge9eq36nq8czsjgjsm5rv28s9mq54z3yw3veyz52lt0qsfp29w3"
+      },
+      {
+        "amount": 100,
+        "denom": "tungsten_cube",
+        "address": "penumbrav0t14k6uhn8pnuvm869h3kgfywk03cn8nxv4fgu2ehdjdrgk2277lgsp7qrzduzyka2v3pfsy8py259ge9eq36nq8czsjgjsm5rv28s9mq54z3yw3veyz52lt0qsfp29w3"
+      },
+      {
+        "amount": 1000000,
+        "denom": "penumbra",
+        "address": "penumbrav0t1lvuh7w9judw4wgdjkqmt7jc9crtsssz9phz7e2cxcdeeqeulcz8pzegnkkc2hen8l9nslvqrp2x5vhuvxtd8vyt22lm7g566nveg2y4zzve2vk25jgs29pqtpmguef"
+      },
+      {
+        "amount": 20000,
+        "denom": "gm",
+        "address": "penumbrav0t1lvuh7w9judw4wgdjkqmt7jc9crtsssz9phz7e2cxcdeeqeulcz8pzegnkkc2hen8l9nslvqrp2x5vhuvxtd8vyt22lm7g566nveg2y4zzve2vk25jgs29pqtpmguef"
+      },
+      {
+        "amount": 20000,
+        "denom": "gn",
+        "address": "penumbrav0t1lvuh7w9judw4wgdjkqmt7jc9crtsssz9phz7e2cxcdeeqeulcz8pzegnkkc2hen8l9nslvqrp2x5vhuvxtd8vyt22lm7g566nveg2y4zzve2vk25jgs29pqtpmguef"
+      },
+      {
+        "amount": 10000,
+        "denom": "pizza",
+        "address": "penumbrav0t1lvuh7w9judw4wgdjkqmt7jc9crtsssz9phz7e2cxcdeeqeulcz8pzegnkkc2hen8l9nslvqrp2x5vhuvxtd8vyt22lm7g566nveg2y4zzve2vk25jgs29pqtpmguef"
+      },
+      {
+        "amount": 100,
+        "denom": "tungsten_cube",
+        "address": "penumbrav0t1lvuh7w9judw4wgdjkqmt7jc9crtsssz9phz7e2cxcdeeqeulcz8pzegnkkc2hen8l9nslvqrp2x5vhuvxtd8vyt22lm7g566nveg2y4zzve2vk25jgs29pqtpmguef"
+      },
+      {
+        "amount": 1000000,
+        "denom": "penumbra",
+        "address": "penumbrav0t1hqllugj25ql7efk4pxmglj8ywax9n94p3vlh0kxwanyrepcnsvkurgmc3q3ejnjdtg2qq6xj8txcwdlvyspzwysyu33f9s5qzysc6sv4wyf4fj6drze9ltcfw6cpws"
+      },
+      {
+        "amount": 20000,
+        "denom": "gm",
+        "address": "penumbrav0t1hqllugj25ql7efk4pxmglj8ywax9n94p3vlh0kxwanyrepcnsvkurgmc3q3ejnjdtg2qq6xj8txcwdlvyspzwysyu33f9s5qzysc6sv4wyf4fj6drze9ltcfw6cpws"
+      },
+      {
+        "amount": 20000,
+        "denom": "gn",
+        "address": "penumbrav0t1hqllugj25ql7efk4pxmglj8ywax9n94p3vlh0kxwanyrepcnsvkurgmc3q3ejnjdtg2qq6xj8txcwdlvyspzwysyu33f9s5qzysc6sv4wyf4fj6drze9ltcfw6cpws"
+      },
+      {
+        "amount": 10000,
+        "denom": "pizza",
+        "address": "penumbrav0t1hqllugj25ql7efk4pxmglj8ywax9n94p3vlh0kxwanyrepcnsvkurgmc3q3ejnjdtg2qq6xj8txcwdlvyspzwysyu33f9s5qzysc6sv4wyf4fj6drze9ltcfw6cpws"
+      },
+      {
+        "amount": 100,
+        "denom": "tungsten_cube",
+        "address": "penumbrav0t1hqllugj25ql7efk4pxmglj8ywax9n94p3vlh0kxwanyrepcnsvkurgmc3q3ejnjdtg2qq6xj8txcwdlvyspzwysyu33f9s5qzysc6sv4wyf4fj6drze9ltcfw6cpws"
+      },
+      {
+        "amount": 1000000,
+        "denom": "penumbra",
+        "address": "penumbrav0t1jwjg4yjw7mhcz73mu6yxr3wf6ez6r8pftpfxvr5f5datns4wcqpyl3ls8qw8jzdf4tuqgl46kwqean77lr9f2k599f09fjxv4qgyfczghwgzy05es0zke2cvgkwc45"
+      },
+      {
+        "amount": 20000,
+        "denom": "gm",
+        "address": "penumbrav0t1jwjg4yjw7mhcz73mu6yxr3wf6ez6r8pftpfxvr5f5datns4wcqpyl3ls8qw8jzdf4tuqgl46kwqean77lr9f2k599f09fjxv4qgyfczghwgzy05es0zke2cvgkwc45"
+      },
+      {
+        "amount": 20000,
+        "denom": "gn",
+        "address": "penumbrav0t1jwjg4yjw7mhcz73mu6yxr3wf6ez6r8pftpfxvr5f5datns4wcqpyl3ls8qw8jzdf4tuqgl46kwqean77lr9f2k599f09fjxv4qgyfczghwgzy05es0zke2cvgkwc45"
+      },
+      {
+        "amount": 10000,
+        "denom": "pizza",
+        "address": "penumbrav0t1jwjg4yjw7mhcz73mu6yxr3wf6ez6r8pftpfxvr5f5datns4wcqpyl3ls8qw8jzdf4tuqgl46kwqean77lr9f2k599f09fjxv4qgyfczghwgzy05es0zke2cvgkwc45"
+      },
+      {
+        "amount": 100,
+        "denom": "tungsten_cube",
+        "address": "penumbrav0t1jwjg4yjw7mhcz73mu6yxr3wf6ez6r8pftpfxvr5f5datns4wcqpyl3ls8qw8jzdf4tuqgl46kwqean77lr9f2k599f09fjxv4qgyfczghwgzy05es0zke2cvgkwc45"
+      },
+      {
+        "amount": 1000000,
+        "denom": "penumbra",
+        "address": "penumbrav0t1penemf3ucamcxtuf6wlxg62fxyqgr4axhzzzx9q7rflcvh4q6ltrurun602r6yw4c5ss4cknpu2k7smuujymq4vvwrf9mt2mgrc36zvwvhk9tkvxlrqtc8cf4racc5"
+      },
+      {
+        "amount": 20000,
+        "denom": "gm",
+        "address": "penumbrav0t1penemf3ucamcxtuf6wlxg62fxyqgr4axhzzzx9q7rflcvh4q6ltrurun602r6yw4c5ss4cknpu2k7smuujymq4vvwrf9mt2mgrc36zvwvhk9tkvxlrqtc8cf4racc5"
+      },
+      {
+        "amount": 20000,
+        "denom": "gn",
+        "address": "penumbrav0t1penemf3ucamcxtuf6wlxg62fxyqgr4axhzzzx9q7rflcvh4q6ltrurun602r6yw4c5ss4cknpu2k7smuujymq4vvwrf9mt2mgrc36zvwvhk9tkvxlrqtc8cf4racc5"
+      },
+      {
+        "amount": 10000,
+        "denom": "pizza",
+        "address": "penumbrav0t1penemf3ucamcxtuf6wlxg62fxyqgr4axhzzzx9q7rflcvh4q6ltrurun602r6yw4c5ss4cknpu2k7smuujymq4vvwrf9mt2mgrc36zvwvhk9tkvxlrqtc8cf4racc5"
+      },
+      {
+        "amount": 100,
+        "denom": "tungsten_cube",
+        "address": "penumbrav0t1penemf3ucamcxtuf6wlxg62fxyqgr4axhzzzx9q7rflcvh4q6ltrurun602r6yw4c5ss4cknpu2k7smuujymq4vvwrf9mt2mgrc36zvwvhk9tkvxlrqtc8cf4racc5"
+      },
+      {
+        "amount": 5000,
+        "denom": "nala",
+        "address": "penumbrav0t14k6uhn8pnuvm869h3kgfywk03cn8nxv4fgu2ehdjdrgk2277lgsp7qrzduzyka2v3pfsy8py259ge9eq36nq8czsjgjsm5rv28s9mq54z3yw3veyz52lt0qsfp29w3"
+      }
+    ]
+  }
+}
