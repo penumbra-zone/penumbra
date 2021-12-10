@@ -10,7 +10,6 @@ use anyhow::anyhow;
 use bytes::Bytes;
 use futures::future::FutureExt;
 use metrics::increment_counter;
-use rand_core::OsRng;
 use tendermint::abci::{
     request::{self, BeginBlock, CheckTxKind, EndBlock},
     response, Request, Response,
@@ -29,7 +28,7 @@ use penumbra_crypto::{
 
 use crate::{
     db::schema,
-    genesis::GenesisAppState,
+    genesis,
     staking::Validator,
     verify::{mark_genesis_as_verified, StatefulTransactionExt, StatelessTransactionExt},
     PendingBlock, RequestExt, State,
@@ -112,36 +111,31 @@ impl App {
         genesis_block.set_height(0);
 
         // Note that errors cannot be handled in InitChain, the application must crash.
-        let genesis: GenesisAppState = serde_json::from_slice(&init_chain.app_state_bytes)
+        let app_state: genesis::AppState = serde_json::from_slice(&init_chain.app_state_bytes)
             .expect("can parse app_state in genesis file");
 
-        // Create genesis transaction and update database table `transactions`.
-        let mut genesis_tx_builder =
-            Transaction::genesis_build_with_root(self.note_commitment_tree.root2());
+        // Create a genesis transaction to record genesis notes.
+        let mut tx_builder = Transaction::genesis_builder();
 
-        for note in &genesis.notes {
-            tracing::info!(?note);
+        for allocation in &app_state.allocations {
+            tracing::info!(?allocation, "processing allocation");
+            tx_builder.add_output(allocation.note().expect("genesis allocations are valid"));
             // Add all assets found in the genesis transaction to the asset registry
-            genesis_block.new_assets.insert(
-                asset::Denom(note.asset_denom.clone()).into(),
-                note.asset_denom.clone(),
-            );
-
-            genesis_tx_builder.add_output(
-                &mut OsRng,
-                note::Note::try_from(note).expect("GenesisNote can be converted into regular Note"),
-            );
+            let id = asset::Denom(allocation.denom.clone()).id();
+            tracing::debug!(?id, "registering asset id");
+            genesis_block
+                .new_assets
+                .insert(id, allocation.denom.clone());
         }
 
-        let genesis_tx = genesis_tx_builder
+        let genesis_tx = tx_builder
             .set_chain_id(init_chain.chain_id)
-            .finalize(&mut OsRng)
+            .finalize()
             .expect("can form genesis transaction");
         let verified_transaction = mark_genesis_as_verified(genesis_tx);
 
         // Now add the transaction and its note fragments to the pending state changes.
         genesis_block.add_transaction(verified_transaction);
-        tracing::info!("loaded all genesis notes");
 
         // load the validators from the genesis app state
         //
@@ -149,9 +143,14 @@ impl App {
         // to be provided inside the initial app genesis state (`GenesisAppState`). Returning those
         // validators in InitChain::Response tells Tendermint that they are the initial validator
         // set. See https://docs.tendermint.com/master/spec/abci/abci.html#initchain
-        let genesis_validators = genesis.validators.clone();
-        let mut tm_validators: Vec<tendermint::abci::types::ValidatorUpdate> = Vec::new();
-        for (pubkey, val) in genesis.validators.iter() {
+        let genesis_validators: BTreeMap<_, _> = app_state
+            .validators
+            .iter()
+            .cloned()
+            .map(|v| (v.tm_pubkey().clone(), v))
+            .collect();
+        let mut tm_validators = Vec::new();
+        for (pubkey, val) in genesis_validators.iter() {
             tm_validators.push(tendermint::abci::types::ValidatorUpdate {
                 pub_key: pubkey.clone(),
                 power: val.voting_power.clone(),
@@ -159,13 +158,13 @@ impl App {
         }
         self.validators = Arc::new(Mutex::new(genesis_validators.clone()));
 
-        self.epoch_duration = genesis.epoch_duration;
+        self.epoch_duration = app_state.epoch_duration;
 
         // construct the pending block and commit the initial state
         self.pending_block = Some(Arc::new(Mutex::new(genesis_block)));
         let commit = self.commit();
         let state = self.state.clone();
-        let gc = genesis.clone();
+        let gc = app_state.clone();
         async move {
             commit.await?;
 

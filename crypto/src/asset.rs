@@ -64,16 +64,25 @@ impl From<&str> for Denom {
     }
 }
 
-impl From<Denom> for Id {
-    fn from(denom: Denom) -> Id {
+impl Denom {
+    /// Returns the asset ID corresponding to this denomination.
+    pub fn id(&self) -> Id {
         // Convert an asset name to an asset ID by hashing to a scalar
         Id(Fq::from_le_bytes_mod_order(
             // XXX choice of hash function?
             blake2b_simd::Params::default()
                 .personal(b"Penumbra_AssetID")
-                .hash(denom.0.as_ref())
+                .hash(self.0.as_ref())
                 .as_bytes(),
         ))
+    }
+}
+
+impl From<Denom> for Id {
+    fn from(denom: Denom) -> Id {
+        // Putting the impl in id() rather than here means
+        // id() doesn't need to clone the string
+        denom.id()
     }
 }
 

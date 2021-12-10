@@ -56,6 +56,7 @@ metrics = "0.17.0"
 metrics-exporter-prometheus = "0.6.1"
 http = "0.2"
 num = { version = "0.4", features = ["serde"] } 
+ed25519-consensus = "1.2"
 
 [build-dependencies]
 vergen = "5"

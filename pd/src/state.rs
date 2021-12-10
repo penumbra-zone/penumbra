@@ -19,8 +19,7 @@ use penumbra_proto::{
 use crate::staking::Validator;
 use crate::{
     db::{self, schema},
-    genesis::GenesisAppState,
-    PendingBlock,
+    genesis, PendingBlock,
 };
 
 #[derive(Debug, Clone)]
@@ -151,7 +150,7 @@ ON CONFLICT (id) DO UPDATE SET data = $1
     }
 
     /// Retrieve the node genesis configuration.
-    pub async fn genesis_configuration(&self) -> Result<GenesisAppState> {
+    pub async fn genesis_configuration(&self) -> Result<genesis::AppState> {
         let mut conn = self.pool.acquire().await?;
         let genesis_config = if let Some(schema::BlobsRow { data, .. }) = query_as!(
             schema::BlobsRow,
@@ -164,17 +163,16 @@ ON CONFLICT (id) DO UPDATE SET data = $1
         } else {
             // This is only reached on the initial startup.
             // The default value here will be overridden by `InitChain`.
-            GenesisAppState {
-                notes: vec![],
-                epoch_duration: 8640,
-                validators: BTreeMap::new(),
-            }
+            Default::default()
         };
 
         Ok(genesis_config)
     }
 
-    pub async fn set_genesis_configuration(&self, genesis_config: &GenesisAppState) -> Result<()> {
+    pub async fn set_genesis_configuration(
+        &self,
+        genesis_config: &genesis::AppState,
+    ) -> Result<()> {
         let mut dbtx = self.pool.begin().await?;
 
         let gc_bytes = bincode::serialize(&genesis_config)?;
