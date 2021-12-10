@@ -1,29 +1,5 @@
 {
   "db": "PostgreSQL",
-  "04f479f64381a7ea02bd9ae155d4ef6bf31e44f64705c7b36f6ad74aca2f115b": {
-    "query": "SELECT tm_pubkey, voting_power FROM validators",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "tm_pubkey",
-          "type_info": "Bytea"
-        },
-        {
-          "ordinal": 1,
-          "name": "voting_power",
-          "type_info": "Int8"
-        }
-      ],
-      "parameters": {
-        "Left": []
-      },
-      "nullable": [
-        false,
-        false
-      ]
-    }
-  },
   "0c6a89db4de3642914e3cddf6e08a042eac9b140a03118943170433527ef5cc3": {
     "query": "INSERT INTO nullifiers VALUES ($1, $2)",
     "describe": {
@@ -63,6 +39,42 @@
       ]
     }
   },
+  "1b342fe294468358875e2ed0b3108462f3434b8412817505c2d42b5bb4423c90": {
+    "query": "SELECT tm_pubkey, voting_power, commission_address, commission_rate FROM validators",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "tm_pubkey",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 1,
+          "name": "voting_power",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 2,
+          "name": "commission_address",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 3,
+          "name": "commission_rate",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "25bd791f06a593a77395aa005a9abba0cfc3374be8c392cbf6b744100302b541": {
     "query": "CREATE INDEX ON notes (position)",
     "describe": {
@@ -81,19 +93,6 @@
         "Left": [
           "Bytea",
           "Varchar"
-        ]
-      },
-      "nullable": []
-    }
-  },
-  "3d56b7352d39010ff9e047b71268c26d00e9629870f21a98971ffd1b4f81a231": {
-    "query": "INSERT INTO validators (tm_pubkey, voting_power) VALUES ($1, $2)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea",
-          "Int8"
         ]
       },
       "nullable": []
@@ -129,16 +128,6 @@
       ]
     }
   },
-  "51084a18f15226a89dfdfb35e5de7172b4053d495d728934a20528ab4dcf713b": {
-    "query": "CREATE TABLE IF NOT EXISTS validators (\n    tm_pubkey bytea NOT NULL PRIMARY KEY,\n    voting_power bigint NOT NULL\n)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": []
-      },
-      "nullable": []
-    }
-  },
   "51f515cc43458854df653c298142e6c77b2905b453f85c31ae1a0f56fbce1c2a": {
     "query": "\nINSERT INTO blobs (id, data) VALUES ('nct', $1)\nON CONFLICT (id) DO UPDATE SET data = $1\n",
     "describe": {
@@ -163,6 +152,16 @@
   },
   "59d92c68ee186e0565595bba405f32e2bba39806c4e78c42e87f77dd903d7455": {
     "query": "CREATE TABLE IF NOT EXISTS notes (\n    note_commitment bytea PRIMARY KEY,\n    ephemeral_key bytea NOT NULL,\n    encrypted_note bytea NOT NULL,\n    transaction_id bytea NOT NULL,\n    position bigint NOT NULL,\n    height bigint REFERENCES blocks (height)\n)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": []
+    }
+  },
+  "5c7b1cae63842279e1f2268c7215de7f2251b2f645060b0c6e4bdd406d717ae6": {
+    "query": "CREATE TABLE IF NOT EXISTS validators (\n    tm_pubkey bytea NOT NULL PRIMARY KEY,\n    voting_power bigint NOT NULL,\n    commission_address varchar NOT NULL,\n    commission_rate bigint NOT NULL,\n    unclaimed_reward bytea NOT NULL\n)",
     "describe": {
       "columns": [],
       "parameters": {
@@ -223,6 +222,21 @@
       "nullable": [
         false
       ]
+    }
+  },
+  "6c1203738db6f9a244389dc721f40c628bff216460ad769ba971d96c1f51b3f2": {
+    "query": "INSERT INTO validators (tm_pubkey, voting_power, commission_address, commission_rate) VALUES ($1, $2, $3, $4)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Int8",
+          "Varchar",
+          "Int8"
+        ]
+      },
+      "nullable": []
     }
   },
   "73e0b933842ff451654acd14f7a681c505aed832f9158fd800bf32b21916625e": {

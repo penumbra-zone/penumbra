@@ -1,7 +1,9 @@
 use anyhow::{Context, Result};
+use penumbra_crypto::Address;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{query, query_as, Pool, Postgres};
 use std::collections::{BTreeMap, VecDeque};
+use std::str::FromStr;
 use tendermint::block;
 use tracing::instrument;
 
@@ -165,6 +167,7 @@ ON CONFLICT (id) DO UPDATE SET data = $1
             GenesisAppState {
                 notes: vec![],
                 epoch_duration: 8640,
+                validators: BTreeMap::new(),
             }
         };
 
@@ -287,9 +290,11 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
 
         let mut validators: BTreeMap<tendermint::PublicKey, Validator> = BTreeMap::new();
 
-        let stored_validators = query!(r#"SELECT tm_pubkey, voting_power FROM validators"#)
-            .fetch_all(&mut conn)
-            .await?;
+        let stored_validators = query!(
+            r#"SELECT tm_pubkey, voting_power, commission_address, commission_rate FROM validators"#
+        )
+        .fetch_all(&mut conn)
+        .await?;
         for row in stored_validators.iter() {
             // NOTE: we store the validator's public key in the database as a json-encoded string,
             // because Tendermint pubkeys can be either ed25519 or secp256k1, and we want a
@@ -302,7 +307,12 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
             // overflow).
             validators.insert(
                 decoded_pubkey,
-                Validator::new(decoded_pubkey, row.voting_power.try_into()?),
+                Validator::new(
+                    decoded_pubkey,
+                    row.voting_power.try_into()?,
+                    Address::from_str(&row.commission_address)?,
+                    u16::try_from(row.commission_rate)?,
+                ),
             );
         }
 
@@ -320,10 +330,13 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
         for (tm_pubkey, val) in validators.iter() {
             let pubkey_str = serde_json::to_string(tm_pubkey)?;
 
+            // TODO: commission address, rate, unclaimed reward
             query!(
-                "INSERT INTO validators (tm_pubkey, voting_power) VALUES ($1, $2)",
+                "INSERT INTO validators (tm_pubkey, voting_power, commission_address, commission_rate) VALUES ($1, $2, $3, $4)",
                 pubkey_str.as_bytes(),
                 i64::try_from(val.voting_power)?,
+                val.commission_address.to_string(),
+                i64::try_from(val.commission_rate_bps)?,
             )
             .execute(&mut conn)
             .await?;

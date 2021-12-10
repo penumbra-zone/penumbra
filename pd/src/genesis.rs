@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{collections::BTreeMap, str::FromStr};
 
 use ark_ff::UniformRand;
 use decaf377::{FieldExt, Fq};
@@ -7,6 +7,8 @@ use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
 use penumbra_crypto::{asset, ka, keys::Diversifier, note, Address, Note, Value};
+
+use crate::staking::Validator;
 
 pub fn generate_genesis_notes(
     rng: &mut ChaCha20Rng,
@@ -74,6 +76,8 @@ pub struct GenesisAppState {
     pub notes: Vec<GenesisNote>,
     /// Epoch duration in terms of blocks
     pub epoch_duration: u64,
+    /// Initial validator set
+    pub validators: BTreeMap<tendermint::PublicKey, Validator>,
 }
 
 #[serde_as]

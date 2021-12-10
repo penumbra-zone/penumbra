@@ -38,6 +38,26 @@ impl std::fmt::Debug for Id {
     }
 }
 
+impl std::fmt::Display for Id {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        use ark_ff::BigInteger;
+        let bytes = self.0.into_repr().to_bytes_le();
+        f.write_fmt(format_args!("asset::Id({})", hex::encode(&bytes)))
+    }
+}
+
+impl std::str::FromStr for Id {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let bytes: [u8; 32] = s.as_bytes().try_into().map_err(|_| {
+            anyhow::anyhow!("could not deserialize Asset ID: input vec is not 32 bytes")
+        })?;
+        let inner = Fq::from_bytes(bytes)?;
+        Ok(Id(inner))
+    }
+}
+
 impl From<&str> for Denom {
     fn from(strin: &str) -> Denom {
         Denom(strin.to_string())
