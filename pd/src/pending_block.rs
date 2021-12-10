@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use penumbra_crypto::{
     asset,
-    merkle::{Frontier, NoteCommitmentTree, Tree},
+    merkle::{Frontier, NoteCommitmentTree},
     note, Nullifier,
 };
 
@@ -43,19 +43,18 @@ impl PendingBlock {
             tracing::debug!(?note_commitment, ?data);
             self.note_commitment_tree.append(&note_commitment);
 
-            let (position, _) = self
+            let position = self
                 .note_commitment_tree
-                .authentication_path(&note_commitment)
-                .expect("we just appended this commitment");
+                .bridges()
+                .last()
+                .map(|b| b.frontier().position().into())
+                // If there are no bridges, the tree is empty
+                .unwrap_or(0u64);
+
             tracing::debug!(?position);
 
-            self.notes.insert(
-                note_commitment,
-                PositionedNoteData {
-                    position: u64::from(position),
-                    data,
-                },
-            );
+            self.notes
+                .insert(note_commitment, PositionedNoteData { position, data });
         }
 
         for nullifier in transaction.spent_nullifiers {
