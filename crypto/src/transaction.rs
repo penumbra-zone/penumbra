@@ -27,7 +27,7 @@ pub use builder::Builder;
 mod genesis;
 pub use genesis::GenesisBuilder;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TransactionBody {
     pub actions: Vec<Action>,
     pub merkle_root: merkle::Root,
@@ -110,7 +110,7 @@ impl TransactionBody {
 #[derive(Clone, Debug)]
 pub struct Fee(pub u64);
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Transaction {
     transaction_body: TransactionBody,
     binding_sig: Signature<Binding>,
