@@ -325,9 +325,18 @@ impl TryFrom<[u8; NOTE_LEN_BYTES]> for Note {
 }
 
 // Note commitment.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(into = "[u8; 32]", try_from = "[u8; 32]")]
 pub struct Commitment(pub Fq);
+
+impl std::fmt::Debug for Commitment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "note::Commitment({})",
+            hex::encode(&self.0.to_bytes()[..])
+        ))
+    }
+}
 
 impl Commitment {
     pub fn new(
