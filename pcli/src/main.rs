@@ -68,6 +68,15 @@ async fn main() -> Result<()> {
             source_address_id,
             memo,
         }) => {
+            tracing::info!(
+                ?amount,
+                ?denomination,
+                ?address,
+                ?fee,
+                ?source_address_id,
+                ?memo,
+                "preparing transaction"
+            );
             let tx = state.expect("state must be synchronized").new_transaction(
                 &mut OsRng,
                 amount,
@@ -77,10 +86,11 @@ async fn main() -> Result<()> {
                 source_address_id,
                 memo,
             )?;
-            let serialized_tx: Vec<u8> = tx.into();
 
+            tracing::info!("sending transaction");
+            let serialized_tx: Vec<u8> = tx.into();
             let rsp = reqwest::get(format!(
-                r#"http://{}:{}/broadcast_tx_sync?tx=0x{}"#,
+                r#"http://{}:{}/broadcast_tx_async?tx=0x{}"#,
                 opt.node,
                 opt.rpc_port,
                 hex::encode(serialized_tx)

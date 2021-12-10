@@ -175,19 +175,25 @@ impl ClientState {
         source_address: Option<u64>,
         tx_memo: Option<String>,
     ) -> Result<Transaction, anyhow::Error> {
+        tracing::debug!("starting tx build");
         // xx Could populate chain_id from the info endpoint on the node, or at least
         // error if there is an inconsistency
 
         let dest_address: Address =
             Address::from_str(&address).map_err(|_| anyhow::anyhow!("address is invalid"))?;
 
-        let mut tx_builder = Transaction::build_with_root(self.note_commitment_tree.root2())
+        tracing::debug!("computing nct root");
+        let root = self.note_commitment_tree.root2();
+        tracing::debug!("finished nct root");
+        let mut tx_builder = Transaction::build_with_root(root)
             .set_fee(fee)
             .set_chain_id(CURRENT_CHAIN_ID.to_string());
+        tracing::debug!("got tx builder");
 
         let mut output_value = HashMap::<String, u64>::new();
         output_value.insert(denomination, amount);
 
+        tracing::debug!("adding outputs");
         for (denom, amount) in &output_value {
             let memo: memo::MemoPlaintext = match tx_memo {
                 Some(ref input_memo) => input_memo.clone().try_into()?,
@@ -204,6 +210,7 @@ impl ClientState {
                 self.wallet.outgoing_viewing_key(),
             );
         }
+        tracing::debug!("added outputs");
 
         // The value we need to spend is the output value, plus fees.
         let mut value_to_spend = output_value;
@@ -214,6 +221,7 @@ impl ClientState {
         // The time in the future when pending transactions created now should expire
         let timeout = SystemTime::now() + PENDING_TRANSACTION_TIMEOUT;
 
+        tracing::debug!("adding spends");
         for (denom, amount) in value_to_spend {
             // Only produce an output if the amount is greater than zero
             if amount == 0 {
@@ -281,11 +289,14 @@ impl ClientState {
                     .insert(note_commitment, (timeout, note));
             }
         }
+        tracing::debug!("added spends");
 
+        tracing::debug!("finalizing");
         let transaction = tx_builder
             .finalize(rng)
             .map_err(|err| anyhow::anyhow!("error during transaction finalization: {}", err))?;
 
+        tracing::debug!("done");
         Ok(transaction)
     }
 
