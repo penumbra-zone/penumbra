@@ -159,7 +159,7 @@ ON CONFLICT (id) DO UPDATE SET data = $1
         .fetch_optional(&mut conn)
         .await?
         {
-            bincode::deserialize(&data).context("Could not parse saved genesis config")?
+            serde_json::from_slice(&data).context("Could not parse saved genesis config")?
         } else {
             // This is only reached on the initial startup.
             // The default value here will be overridden by `InitChain`.
@@ -175,7 +175,7 @@ ON CONFLICT (id) DO UPDATE SET data = $1
     ) -> Result<()> {
         let mut dbtx = self.pool.begin().await?;
 
-        let gc_bytes = bincode::serialize(&genesis_config)?;
+        let gc_bytes = serde_json::to_vec(&genesis_config)?;
 
         // ON CONFLICT is excluded here so that an error is raised
         // if genesis config is attempted to be set more than once
