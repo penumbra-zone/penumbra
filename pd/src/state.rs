@@ -340,7 +340,7 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
             .await?;
         }
 
-        Ok(())
+        conn.commit().await.map_err(Into::into)
     }
 
     /// Retrieve the [`TransactionDetail`] for a given note commitment.
