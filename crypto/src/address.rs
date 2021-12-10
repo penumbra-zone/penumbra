@@ -3,6 +3,7 @@ use std::io::{Cursor, Read, Write};
 use anyhow::anyhow;
 use ark_serialize::CanonicalDeserialize;
 use bech32::{FromBase32, ToBase32, Variant};
+use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 use crate::{fmd, ka, keys::Diversifier, Fq};
 
@@ -11,7 +12,7 @@ pub const CURRENT_CHAIN_ID: &str = "penumbra-valetudo";
 pub const CURRENT_ADDRESS_VERSION: u32 = 0;
 
 /// A valid payment address.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, SerializeDisplay, DeserializeFromStr)]
 pub struct Address {
     d: Diversifier,
     /// cached copy of the diversified base

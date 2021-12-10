@@ -12,7 +12,8 @@ use penumbra_proto::{
 
 use crate::{
     action::{error::ProtoError, Action},
-    asset, merkle,
+    asset,
+    merkle::{self, NoteCommitmentTree, TreeExt},
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
     Fr, Value,
 };
@@ -132,7 +133,8 @@ impl Transaction {
     }
 
     /// Build the genesis transactions.
-    pub fn genesis_build_with_root(merkle_root: merkle::Root) -> GenesisBuilder {
+    pub fn genesis_builder() -> GenesisBuilder {
+        let merkle_root = NoteCommitmentTree::new(0).root2();
         GenesisBuilder {
             actions: Vec::new(),
             fee: None,

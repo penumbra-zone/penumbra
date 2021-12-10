@@ -1,22 +1,15 @@
 use metrics_exporter_prometheus::PrometheusBuilder;
-use rand::SeedableRng;
-use rand_chacha::ChaCha20Rng;
-use std::fs::File;
+use rand_core::OsRng;
 use std::net::SocketAddr;
-use std::str::FromStr;
 use structopt::StructOpt;
 use tonic::transport::Server;
 
-use penumbra_crypto::Address;
 use penumbra_proto::{
     light_wallet::light_wallet_server::LightWalletServer,
     thin_wallet::thin_wallet_server::ThinWalletServer,
 };
 
-use pd::{
-    genesis::{generate_genesis_notes, GenesisAddr},
-    App, State,
-};
+use pd::{genesis, staking, App, State};
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -54,17 +47,9 @@ enum Command {
         metrics_port: u16,
     },
 
-    /// Generate Genesis state.
-    CreateGenesis {
-        /// The chain ID for the new chain
-        chain_id: String,
-        /// The filename to read genesis data from, either this or `genesis_allocations` must be provided
-        #[structopt(short = "f", long = "file", required_unless = "genesis-allocations")]
-        file: Option<String>,
-        /// The initial set of notes, encoded as a list of tuples "(amount, denom, address)"
-        #[structopt(required_unless = "file")]
-        genesis_allocations: Vec<GenesisAddr>,
-    },
+    /// Prints a sample `app_data` JSON object that can act as a template for
+    /// editing genesis configuration.
+    CreateGenesisTemplate,
 }
 
 // Extracted from tonic's remote_addr implementation; we'd like to instrument
@@ -167,61 +152,48 @@ async fn main() -> anyhow::Result<()> {
                 x = thin_wallet_server => x?.map_err(|e| anyhow::anyhow!(e))?,
             };
         }
-        Command::CreateGenesis {
-            chain_id,
-            file,
-            genesis_allocations,
-        } => {
-            let chain_id_bytes = chain_id.as_bytes();
-            let mut hasher = blake2b_simd::Params::new().hash_length(32).to_state();
-            let seed = hasher.update(chain_id_bytes).finalize();
+        Command::CreateGenesisTemplate => {
+            use penumbra_crypto::keys::SpendKey;
 
-            let mut rng = ChaCha20Rng::from_seed(
-                seed.as_bytes()
-                    .try_into()
-                    .expect("blake2b output is 32 bytes"),
-            );
+            // Use this to make up some addresses
+            let sk = SpendKey::generate(OsRng);
+            let ivk = sk.incoming_viewing_key();
 
-            if !genesis_allocations.is_empty() {
-                let genesis_notes = generate_genesis_notes(&mut rng, genesis_allocations);
-                let serialized = serde_json::to_string_pretty(&genesis_notes).unwrap();
-                println!("\n{}\n", serialized);
-                return Ok(());
-            }
+            let validator_sk =
+                tendermint::PrivateKey::Ed25519(ed25519_consensus::SigningKey::new(OsRng));
+            let validator_pk = validator_sk.public_key();
 
-            if file.is_some() {
-                let f = File::open(file.unwrap()).expect("unable to open file");
+            let app_state = genesis::AppState {
+                allocations: vec![
+                    genesis::Allocation {
+                        amount: 1_000_000,
+                        denom: "penumbra".to_string(),
+                        address: ivk.payment_address(10u8.into()).0,
+                    },
+                    genesis::Allocation {
+                        amount: 10_000,
+                        denom: "gm".to_string(),
+                        address: ivk.payment_address(11u8.into()).0,
+                    },
+                    genesis::Allocation {
+                        amount: 1_000,
+                        denom: "cubes".to_string(),
+                        address: ivk.payment_address(12u8.into()).0,
+                    },
+                ],
+                // Set a shorter epoch duration here for testing purposes and to
+                // try to avoid baking in assumptions about the epoch length
+                epoch_duration: 300,
+                validators: vec![staking::Validator::new(
+                    validator_pk,
+                    100u32.into(),
+                    ivk.payment_address(0u8.into()).0,
+                    200,
+                )],
+            };
 
-                // This could be done with Serde but requires adding it to dependencies
-                // so this was easier.
-                let mut rdr = csv::ReaderBuilder::new().has_headers(false).from_reader(f);
-                let mut records = vec![];
-                for result in rdr.records() {
-                    // The iterator yields Result<StringRecord, Error>, so we check the
-                    // error here.
-                    let mut record = result?;
-                    record.trim();
-                    if record.len() != 3 {
-                        return Err(anyhow::anyhow!("expected 3-part CSV records"));
-                    }
-
-                    let g = GenesisAddr {
-                        amount: record[0].parse::<u64>()?,
-                        denom: record[1].to_string(),
-                        address: Address::from_str(&record[2])?,
-                    };
-                    records.push(g);
-                }
-
-                // let records = io::BufReader::new(f)
-                //     .lines()
-                //     .map(|x| GenesisAddr::from_str(x?.as_str()))
-                //     .collect::<Result<Vec<GenesisAddr>, anyhow::Error>>()?;
-                let genesis_notes = generate_genesis_notes(&mut rng, records);
-                let serialized = serde_json::to_string_pretty(&genesis_notes).unwrap();
-                println!("\n{}\n", serialized);
-                return Ok(());
-            }
+            println!("// Edit the following template according to your needs");
+            println!("\n{}\n", serde_json::to_string_pretty(&app_state)?);
         }
     }
 

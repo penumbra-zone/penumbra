@@ -16,7 +16,6 @@ pub struct Validator {
 
     /// The validator's shielded commission address, where they receive their portion of the
     /// staking rewards.
-    #[serde(with = "serde_with::rust::display_fromstr")]
     pub commission_address: Address,
 
     /// The portion of staking rewards that go to the validator (as opposed to the delegators).
@@ -52,5 +51,10 @@ impl Validator {
     /// TKTK: should this return an address type?
     pub fn consensus_address(&self) -> String {
         self.tm_pubkey.to_bech32(PENUMBRA_BECH32_VALIDATOR_PREFIX)
+    }
+
+    // why isn't tm_pubkey public?
+    pub fn tm_pubkey(&self) -> &PublicKey {
+        &self.tm_pubkey
     }
 }
