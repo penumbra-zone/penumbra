@@ -2,7 +2,7 @@
 use std::convert::{TryFrom, TryInto};
 
 use ark_ff::fields::PrimeField;
-use bech32::{Variant, ToBase32};
+use bech32::{ToBase32, Variant};
 use decaf377::FieldExt;
 use once_cell::sync::Lazy;
 
