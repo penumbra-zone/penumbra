@@ -91,7 +91,7 @@ impl MemoPlaintext {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct MemoCiphertext(pub [u8; MEMO_CIPHERTEXT_LEN_BYTES]);
 
 #[cfg(test)]
