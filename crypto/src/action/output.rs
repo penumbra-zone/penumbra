@@ -6,7 +6,7 @@ use penumbra_proto::{transaction, Protobuf};
 use super::error::ProtoError;
 use crate::{ka, memo::MemoCiphertext, note, proofs::transparent::OutputProof, value, Fr, Note};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Output {
     pub body: Body,
     pub encrypted_memo: MemoCiphertext,
@@ -53,7 +53,7 @@ impl TryFrom<transaction::Output> for Output {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Body {
     pub value_commitment: value::Commitment,
     pub note_commitment: note::Commitment,

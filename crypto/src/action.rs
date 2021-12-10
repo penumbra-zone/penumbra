@@ -6,7 +6,7 @@ pub mod output;
 pub mod spend;
 
 /// Supported actions in a Penumbra transaction.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Action {
     Output(output::Output),
     Spend(spend::Spend),

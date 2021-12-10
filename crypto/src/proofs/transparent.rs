@@ -166,7 +166,7 @@ impl SpendProof {
 /// Transparent proof for new note creation.
 ///
 /// This structure keeps track of the auxiliary (private) inputs.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct OutputProof {
     // The diversified base for the destination address.
     pub g_d: decaf377::Element,
