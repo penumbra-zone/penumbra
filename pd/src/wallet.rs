@@ -52,7 +52,7 @@ impl LightWallet for State {
         // but the start height is already recorded in the span.
         tracing::info!(
             end_height,
-            num_blocks = (end_height - start_height),
+            num_blocks = end_height.saturating_sub(start_height),
             "starting compact_block_range response"
         );
 
