@@ -132,6 +132,7 @@ impl App {
             .set_chain_id(init_chain.chain_id)
             .finalize()
             .expect("can form genesis transaction");
+        tracing::debug!(?genesis_tx, "created genesis transaction");
         let verified_transaction = mark_genesis_as_verified(genesis_tx);
 
         // Now add the transaction and its note fragments to the pending state changes.
