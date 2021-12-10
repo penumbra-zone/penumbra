@@ -62,7 +62,7 @@ should see something like this:
 ```bash
 $ cargo run --quiet --release --bin pcli wallet generate
 Saving wallet to /home/$USER/.local/share/pcli/penumbra_wallet.json
-Saving backup wallet to /home/$USER/.local/share/penumbra-testnet-archive/penumbra-valetudo/.../penumbra_wallet.json
+Saving backup wallet to /home/$USER/.local/share/penumbra-testnet-archive/penumbra-euporie/.../penumbra_wallet.json
 ```
 
 Penumbra's design allows you to create arbitrarily many publicly unlinkable addresses which all
@@ -271,43 +271,22 @@ either delete the docker volume, or run `DROP DATABASE`, or run `DROP TABLE` for
 need to do **both of these** to fully reset the node, and doing only one will result in mysterious
 errors.
 
-To create Genesis data, you need to know the amounts, denominations, and addresses of the genesis notes. You can then pass to `pd`'s` `create-genesis` command a CSV file containing "(amount, denomination, address)" tuples. You'll want to change the addresses from this example to addresses you control:
+To create Genesis data, you'll need to specify:
 
+* a list of genesis allocations, with amount, denomination, and address;
+* a list of genesis validators, with appropriate metadata.
+
+Running
 ```console
-$ cargo run --bin pd -- create-genesis penumbra-valetudo --file testnets/001_valetudo.csv
+$ cargo run --bin pd -- create-genesis-template
 ```
+will create a template JSON blob that can be used as the `app_state` value in
+the Tendermint `genesis.json` file stored in `$TMHOME/config/` or
+`~/.tendermint/config/` (see examples in the `testnets/` directory). You should
+edit the following fields:
 
-You may also create Genesis data by passing input on STDIN. You can pass to `pd`'s` `create-genesis` command a list of "(amount, denomination, address)" tuples, where the tuple fields are comma-delimited and each genesis note is contained in double quotes. You'll want to change the addresses from this example to addresses you control:
-
-```console
-$ cargo run --bin pd -- create-genesis chain-id-goes-here \
-"(100, penumbra, penumbratv01p5zmsg23f86azrraspzy8qy9kdm3rnvgfhly0mlzwjqqh9audv59wwjv27nteuplxezqx4x2j99t2rugst00tp0gz30nugxtuttknrk2ma7sa93d26q2w7gse842z3)" \
-"(1, tungsten_cube, penumbratv01p5zmsg23f86azrraspzy8qy9kdm3rnvgfhly0mlzwjqqh9audv59wwjv27nteuplxezqx4x2j99t2rugst00tp0gz30nugxtuttknrk2ma7sa93d26q2w7gse842z3)"
-
-[
-  {
-    "diversifier": "0d05b8215149f5d10c7d80",
-    "amount": 100,
-    "note_blinding": "4ea7348e26d320ca1740acb775bdfe035da6198f4b86df2c9004fae83193f309",
-    "asset_denom": "penumbra",
-    "transmission_key": "44438085b37711cd884dfe47efe274800b97bc6b28573a4c57a6bcf03f364403"
-  },
-  {
-    "diversifier": "0d05b8215149f5d10c7d80",
-    "amount": 1,
-    "note_blinding": "72e4f60cff63ec6ae72cc842b630daaf3f063b4d3a9bc78c4422a772b7fdc409",
-    "asset_denom": "tungsten_cube",
-    "transmission_key": "44438085b37711cd884dfe47efe274800b97bc6b28573a4c57a6bcf03f364403"
-  }
-]
-```
-
-To perform genesis for a testnet, edit the `genesis.json` file stored in `$TMHOME/config/` or
-`~/.tendermint/config/` (see an example in `testnets/genesis_tn001.json`). You should edit the
-following fields:
-
-* `validators` key: add the other validators and their voting power,
-* `app_state` key: add the generated genesis notes,
+* `validators` key: add the other validators and their voting power;
+* `app_state` key: add the output from `create-genesis-template` and edit as appropriate;
 * `chain_id` update the `chain_id` for the testnet.
 
 Now when you start `pd` and tendermint as described above, you will see a message at the `INFO`
