@@ -1,9 +1,7 @@
 use anyhow::{Context, Result};
-use penumbra_crypto::Address;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{query, query_as, Pool, Postgres};
 use std::collections::{BTreeMap, VecDeque};
-use std::str::FromStr;
 use tendermint::block;
 use tracing::instrument;
 
@@ -16,7 +14,7 @@ use penumbra_proto::{
     thin_wallet::{Asset, TransactionDetail},
 };
 
-use crate::staking::Validator;
+use crate::staking::{FundingStream, Validator};
 use crate::{
     db::{self, schema},
     genesis, PendingBlock,
@@ -288,16 +286,18 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
 
         let mut validators: BTreeMap<tendermint::PublicKey, Validator> = BTreeMap::new();
 
-        let stored_validators = query!(
-            r#"SELECT tm_pubkey, voting_power, commission_address, commission_rate FROM validators"#
-        )
-        .fetch_all(&mut conn)
-        .await?;
+        let stored_validators =
+            query!(r#"SELECT tm_pubkey, voting_power, funding_streams FROM validators"#)
+                .fetch_all(&mut conn)
+                .await?;
         for row in stored_validators.iter() {
             // NOTE: we store the validator's public key in the database as a json-encoded string,
             // because Tendermint pubkeys can be either ed25519 or secp256k1, and we want a
             // non-ambiguous encoding for the public key.
             let decoded_pubkey: tendermint::PublicKey = serde_json::from_slice(&row.tm_pubkey)?;
+
+            let decoded_funding_streams: Vec<FundingStream> =
+                serde_json::from_slice(&row.funding_streams)?;
 
             // NOTE: voting_power is stored in the psql database as a `bigint`, which maps to an
             // `i64` in sqlx. try_into uses the `TryFrom<i64>` implementation for voting power from
@@ -308,8 +308,7 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
                 Validator::new(
                     decoded_pubkey,
                     row.voting_power.try_into()?,
-                    Address::from_str(&row.commission_address)?,
-                    u16::try_from(row.commission_rate)?,
+                    decoded_funding_streams,
                 ),
             );
         }
@@ -327,14 +326,13 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
         // TODO: batching optimization
         for (tm_pubkey, val) in validators.iter() {
             let pubkey_str = serde_json::to_string(tm_pubkey)?;
+            let funding_streams_str = serde_json::to_string(&val.funding_streams)?;
 
-            // TODO: commission address, rate, unclaimed reward
             query!(
-                "INSERT INTO validators (tm_pubkey, voting_power, commission_address, commission_rate) VALUES ($1, $2, $3, $4)",
+                "INSERT INTO validators (tm_pubkey, voting_power, funding_streams) VALUES ($1, $2, $3)",
                 pubkey_str.as_bytes(),
                 i64::try_from(val.voting_power)?,
-                val.commission_address.to_string(),
-                i64::try_from(val.commission_rate_bps)?,
+                funding_streams_str.as_bytes(),
             )
             .execute(&mut conn)
             .await?;

@@ -9,7 +9,11 @@ use penumbra_proto::{
     thin_wallet::thin_wallet_server::ThinWalletServer,
 };
 
-use pd::{genesis, staking, App, State};
+use pd::{
+    genesis,
+    staking::{self, FundingStream},
+    App, State,
+};
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -187,8 +191,10 @@ async fn main() -> anyhow::Result<()> {
                 validators: vec![staking::Validator::new(
                     validator_pk,
                     100u32.into(),
-                    ivk.payment_address(0u8.into()).0,
-                    200,
+                    vec![FundingStream {
+                        address: ivk.payment_address(0u8.into()).0,
+                        rate_bps: 200,
+                    }],
                 )],
             };
 

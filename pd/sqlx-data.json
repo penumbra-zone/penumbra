@@ -39,48 +39,26 @@
       ]
     }
   },
-  "1b342fe294468358875e2ed0b3108462f3434b8412817505c2d42b5bb4423c90": {
-    "query": "SELECT tm_pubkey, voting_power, commission_address, commission_rate FROM validators",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "tm_pubkey",
-          "type_info": "Bytea"
-        },
-        {
-          "ordinal": 1,
-          "name": "voting_power",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 2,
-          "name": "commission_address",
-          "type_info": "Varchar"
-        },
-        {
-          "ordinal": 3,
-          "name": "commission_rate",
-          "type_info": "Int8"
-        }
-      ],
-      "parameters": {
-        "Left": []
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false
-      ]
-    }
-  },
   "25bd791f06a593a77395aa005a9abba0cfc3374be8c392cbf6b744100302b541": {
     "query": "CREATE INDEX ON notes (position)",
     "describe": {
       "columns": [],
       "parameters": {
         "Left": []
+      },
+      "nullable": []
+    }
+  },
+  "3240fcd1e7641ed7ba3386d15dcf7ac026c85222c33c9b1fb3db15ec135db50c": {
+    "query": "INSERT INTO validators (tm_pubkey, voting_power, funding_streams) VALUES ($1, $2, $3)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Int8",
+          "Bytea"
+        ]
       },
       "nullable": []
     }
@@ -94,16 +72,6 @@
           "Bytea",
           "Varchar"
         ]
-      },
-      "nullable": []
-    }
-  },
-  "4309a17090f31028a5b7e70144fde46a3212a41745a9222e98a68e8f92585395": {
-    "query": "CREATE TABLE IF NOT EXISTS validators (\n    tm_pubkey bytea NOT NULL PRIMARY KEY,\n    voting_power bigint NOT NULL,\n    commission_address varchar NOT NULL,\n    commission_rate bigint NOT NULL\n)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": []
       },
       "nullable": []
     }
@@ -180,6 +148,16 @@
       "nullable": []
     }
   },
+  "6609d46e1ae5674d039dc982b461465e384ee684d290f802bfc85f4033bf293b": {
+    "query": "CREATE TABLE IF NOT EXISTS validators (\n    tm_pubkey bytea NOT NULL PRIMARY KEY,\n    voting_power bigint NOT NULL,\n    funding_streams bytea NOT NULL\n)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": []
+    }
+  },
   "673a8ddb83336e82fe43107119f7768381063102e0aff3a24dcc9fa7195ebadb": {
     "query": "CREATE TABLE IF NOT EXISTS nullifiers (\n    nullifier bytea PRIMARY KEY,\n    height bigint NOT NULL REFERENCES blocks (height)\n)",
     "describe": {
@@ -222,21 +200,6 @@
       "nullable": [
         false
       ]
-    }
-  },
-  "6c1203738db6f9a244389dc721f40c628bff216460ad769ba971d96c1f51b3f2": {
-    "query": "INSERT INTO validators (tm_pubkey, voting_power, commission_address, commission_rate) VALUES ($1, $2, $3, $4)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea",
-          "Int8",
-          "Varchar",
-          "Int8"
-        ]
-      },
-      "nullable": []
     }
   },
   "73e0b933842ff451654acd14f7a681c505aed832f9158fd800bf32b21916625e": {
@@ -437,6 +400,36 @@
         "Left": []
       },
       "nullable": [
+        false,
+        false
+      ]
+    }
+  },
+  "f3dc1d54ac036ed975f77885811c51d6e03bb6827de3f80d4bf6d2a13c9a7f9a": {
+    "query": "SELECT tm_pubkey, voting_power, funding_streams FROM validators",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "tm_pubkey",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 1,
+          "name": "voting_power",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 2,
+          "name": "funding_streams",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": [
+        false,
         false,
         false
       ]
