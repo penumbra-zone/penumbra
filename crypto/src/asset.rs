@@ -2,10 +2,13 @@
 use std::convert::{TryFrom, TryInto};
 
 use ark_ff::fields::PrimeField;
+use bech32::{Variant, ToBase32};
 use decaf377::FieldExt;
 use once_cell::sync::Lazy;
 
 use crate::Fq;
+
+const PENUMBRA_BECH32_ASSET_PREFIX: &str = "passet";
 
 /// An identifier for an IBC asset type.
 ///
@@ -30,19 +33,25 @@ pub struct Id(pub Fq);
 
 pub struct Denom(pub String);
 
+impl Id {
+    pub fn to_bech32(&self) -> Result<String, bech32::Error> {
+        use ark_ff::BigInteger;
+        let bytes = self.0.into_repr().to_bytes_le().to_base32();
+        bech32::encode(PENUMBRA_BECH32_ASSET_PREFIX, bytes, Variant::Bech32m)
+    }
+}
+
 impl std::fmt::Debug for Id {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use ark_ff::BigInteger;
-        let bytes = self.0.into_repr().to_bytes_le();
-        f.write_fmt(format_args!("asset::Id({})", hex::encode(&bytes)))
+        let bech32_str = self.to_bech32().map_err(|_| std::fmt::Error)?;
+        f.write_fmt(format_args!("asset::ID({})", bech32_str))
     }
 }
 
 impl std::fmt::Display for Id {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        use ark_ff::BigInteger;
-        let bytes = self.0.into_repr().to_bytes_le();
-        f.write_fmt(format_args!("asset::Id({})", hex::encode(&bytes)))
+        let bech32_str = self.to_bech32().map_err(|_| std::fmt::Error)?;
+        f.write_str(bech32_str.as_str())
     }
 }
 
