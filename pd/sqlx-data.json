@@ -98,6 +98,16 @@
       "nullable": []
     }
   },
+  "4309a17090f31028a5b7e70144fde46a3212a41745a9222e98a68e8f92585395": {
+    "query": "CREATE TABLE IF NOT EXISTS validators (\n    tm_pubkey bytea NOT NULL PRIMARY KEY,\n    voting_power bigint NOT NULL,\n    commission_address varchar NOT NULL,\n    commission_rate bigint NOT NULL\n)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": []
+    }
+  },
   "48100a65ab8914f275b9c9b7fbcb66ce951952813b8a24fe2659169421825eb1": {
     "query": "CREATE INDEX ON nullifiers (height)",
     "describe": {
@@ -152,16 +162,6 @@
   },
   "59d92c68ee186e0565595bba405f32e2bba39806c4e78c42e87f77dd903d7455": {
     "query": "CREATE TABLE IF NOT EXISTS notes (\n    note_commitment bytea PRIMARY KEY,\n    ephemeral_key bytea NOT NULL,\n    encrypted_note bytea NOT NULL,\n    transaction_id bytea NOT NULL,\n    position bigint NOT NULL,\n    height bigint REFERENCES blocks (height)\n)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": []
-      },
-      "nullable": []
-    }
-  },
-  "5c7b1cae63842279e1f2268c7215de7f2251b2f645060b0c6e4bdd406d717ae6": {
-    "query": "CREATE TABLE IF NOT EXISTS validators (\n    tm_pubkey bytea NOT NULL PRIMARY KEY,\n    voting_power bigint NOT NULL,\n    commission_address varchar NOT NULL,\n    commission_rate bigint NOT NULL,\n    unclaimed_reward bytea NOT NULL\n)",
     "describe": {
       "columns": [],
       "parameters": {
