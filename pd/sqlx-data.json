@@ -77,6 +77,16 @@
       ]
     }
   },
+  "24899c406702e52da1ced1e870412a499ba52a2ed47cd3a23096b753d7ec0b08": {
+    "query": "CREATE TABLE IF NOT EXISTS validator_fundingstreams (\n    tm_pubkey bytea NOT NULL,\n    address varchar NOT NULL,\n    rate_bps bigint NOT NULL\n)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": []
+    }
+  },
   "25bd791f06a593a77395aa005a9abba0cfc3374be8c392cbf6b744100302b541": {
     "query": "CREATE INDEX ON notes (position)",
     "describe": {
