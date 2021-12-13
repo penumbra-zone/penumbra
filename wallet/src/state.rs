@@ -165,6 +165,7 @@ impl ClientState {
     ///
     /// TODO: this function is too complicated, merge with
     /// builder API ?
+    #[instrument(skip(self, rng))]
     pub fn new_transaction<R: RngCore + CryptoRng>(
         &mut self,
         rng: &mut R,
@@ -384,7 +385,7 @@ impl ClientState {
 
     /// Remove all pending spends and change whose timeouts have expired, dropping pending change
     /// and returning pending spends to the unspent set.
-    #[instrument(skip(self))]
+    #[instrument(skip(self), fields(pending_set_size = self.pending_set.len(), pending_change_set_size = self.pending_change_set.len()))]
     pub fn prune_timeouts(&mut self) {
         let now = SystemTime::now();
 
