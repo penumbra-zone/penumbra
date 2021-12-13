@@ -334,13 +334,13 @@ impl ClientState {
     /// Returns unspent notes, grouped by address index and then by denomination.
     pub fn unspent_notes_by_address_and_denom(
         &self,
-    ) -> BTreeMap<u64, HashMap<String, Vec<UnspentNote>>> {
+    ) -> BTreeMap<u64, BTreeMap<String, Vec<UnspentNote>>> {
         let mut notemap = BTreeMap::default();
 
         for (index, denom, note) in self.unspent_notes() {
             notemap
                 .entry(index)
-                .or_insert_with(HashMap::default)
+                .or_insert_with(BTreeMap::default)
                 .entry(denom)
                 .or_insert_with(Vec::default)
                 .push(note.clone());
@@ -352,8 +352,8 @@ impl ClientState {
     /// Returns unspent notes, grouped by denomination and then by address index.
     pub fn unspent_notes_by_denom_and_address(
         &self,
-    ) -> HashMap<String, BTreeMap<u64, Vec<UnspentNote>>> {
-        let mut notemap = HashMap::default();
+    ) -> BTreeMap<String, BTreeMap<u64, Vec<UnspentNote>>> {
+        let mut notemap = BTreeMap::default();
 
         for (index, denom, note) in self.unspent_notes() {
             notemap
