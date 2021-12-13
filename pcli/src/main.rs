@@ -68,7 +68,8 @@ async fn main() -> Result<()> {
             source_address_id,
             memo,
         }) => {
-            let tx = state.expect("state must be synchronized").new_transaction(
+            let mut state = state.expect("state must be synchronized");
+            let tx = state.new_transaction(
                 &mut OsRng,
                 amount,
                 denomination,
@@ -77,6 +78,8 @@ async fn main() -> Result<()> {
                 source_address_id,
                 memo,
             )?;
+            state.commit()?;
+
             let serialized_tx: Vec<u8> = tx.into();
 
             let rsp = reqwest::get(format!(
