@@ -208,12 +208,12 @@ async fn main() -> Result<()> {
             by_address,
             offline,
         } => {
-            // Format a tally of notes as two strings: unspent and pending. This assumes that the
-            // notes are all of the same denomination, and it is called below only in the places
-            // where they are.
+            // Format a tally of notes as three strings: total, unspent, and pending spend. This
+            // assumes that the notes are all of the same denomination, and it is called below only
+            // in the places where they are.
             fn tally_format_notes<'a>(
                 notes: impl IntoIterator<Item = UnspentNote<'a>>,
-            ) -> (String, String) {
+            ) -> (String, String, String) {
                 // Tally each of the kinds of note:
                 let mut unspent = 0;
                 let mut pending = 0;
@@ -230,18 +230,25 @@ async fn main() -> Result<()> {
                 // The amount spent is the difference between pending and pending change:
                 let pending_spend = pending - pending_change;
 
+                // The total amount, disregarding pending transactions:
+                let pending_total = pending_change + unspent;
+
                 // Format a string describing the pending balance updates
                 let pending_string = if pending > 0 && pending_change > 0 {
-                    format!("+{} (change), -{} (spent)", pending_change, pending_spend)
+                    format!("+{} (held), -{} (spent)", pending_change, pending_spend)
                 } else if pending == 0 && pending_change > 0 {
-                    format!("+{} (change)", pending_change)
+                    format!("+{} (held)", pending_change)
                 } else if pending > 0 && pending_change == 0 {
                     format!("-{} (spent)", pending_spend)
                 } else {
                     String::new()
                 };
 
-                (unspent.to_string(), pending_string)
+                (
+                    pending_total.to_string(),
+                    unspent.to_string(),
+                    pending_string,
+                )
             }
 
             // Load the synchronized wallet state, or else load from disk if in offline mode
@@ -262,10 +269,11 @@ async fn main() -> Result<()> {
                 {
                     let (mut label, _) = state.wallet().address_by_index(address_id as usize)?;
                     for (denom, notes) in by_denom.into_iter() {
-                        let (unspent, pending) = tally_format_notes(notes);
-                        let mut row = vec![label.clone(), denom, unspent];
+                        let (total, available, pending) = tally_format_notes(notes);
+                        let mut row = vec![label.clone(), denom, total];
                         if !pending.is_empty() {
                             print_pending_column = true;
+                            row.push(available);
                             row.push(pending);
                         }
                         table.add_row(row);
@@ -277,13 +285,15 @@ async fn main() -> Result<()> {
 
                 // Set up headers for the table (a "Pending" column will be added if there are any
                 // pending transactions)
-                headers = vec!["Address", "Asset", "Unspent"];
+                headers = vec!["Address", "Asset", "Total"];
             } else {
                 for (denom, by_address) in state.unspent_notes_by_denom_and_address().into_iter() {
-                    let (unspent, pending) = tally_format_notes(by_address.into_values().flatten());
-                    let mut row = vec![denom, unspent];
+                    let (total, available, pending) =
+                        tally_format_notes(by_address.into_values().flatten());
+                    let mut row = vec![denom, total];
                     if !pending.is_empty() {
                         print_pending_column = true;
+                        row.push(available);
                         row.push(pending);
                     }
                     table.add_row(row);
@@ -294,8 +304,9 @@ async fn main() -> Result<()> {
                 headers = vec!["Asset", "Unspent"];
             }
 
-            // Add a "Pending" column if there are any pending transactions
+            // Add an "Available" and "Pending" column if there are any pending transactions
             if print_pending_column {
+                headers.push("Available");
                 headers.push("Pending");
             }
             table.set_header(headers);
