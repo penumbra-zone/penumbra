@@ -12,7 +12,7 @@ pub const CURRENT_CHAIN_ID: &str = "penumbra-valetudo";
 pub const CURRENT_ADDRESS_VERSION: u32 = 0;
 
 /// A valid payment address.
-#[derive(Clone, Debug, PartialEq, Eq, SerializeDisplay, DeserializeFromStr)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, SerializeDisplay, DeserializeFromStr)]
 pub struct Address {
     d: Diversifier,
     /// cached copy of the diversified base

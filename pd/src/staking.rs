@@ -5,7 +5,7 @@ use tendermint::{vote, PublicKey};
 const PENUMBRA_BECH32_VALIDATOR_PREFIX: &str = "penumbravalpub";
 
 /// A destination for a portion of a validator's commission of staking rewards.
-#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone, Copy)]
 pub struct FundingStream {
     /// The destinatination address for the funding stream..
     pub address: Address,

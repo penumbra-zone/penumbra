@@ -1,5 +1,43 @@
 {
   "db": "PostgreSQL",
+  "04f479f64381a7ea02bd9ae155d4ef6bf31e44f64705c7b36f6ad74aca2f115b": {
+    "query": "SELECT tm_pubkey, voting_power FROM validators",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "tm_pubkey",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 1,
+          "name": "voting_power",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
+  "0bb9011725723ccf9a5d2aa2967457b72579c90f9aa594d232528596c7cf1bd9": {
+    "query": "INSERT INTO validator_fundingstreams (tm_pubkey, address, rate_bps) VALUES ($1, $2, $3)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Varchar",
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "0c6a89db4de3642914e3cddf6e08a042eac9b140a03118943170433527ef5cc3": {
     "query": "INSERT INTO nullifiers VALUES ($1, $2)",
     "describe": {
@@ -49,20 +87,6 @@
       "nullable": []
     }
   },
-  "3240fcd1e7641ed7ba3386d15dcf7ac026c85222c33c9b1fb3db15ec135db50c": {
-    "query": "INSERT INTO validators (tm_pubkey, voting_power, funding_streams) VALUES ($1, $2, $3)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea",
-          "Int8",
-          "Bytea"
-        ]
-      },
-      "nullable": []
-    }
-  },
   "3cbb441b10f4a068c16dd3a40accd689be26f2a6619b363fd966ee10e740f07b": {
     "query": " INSERT INTO assets ( asset_id, denom) VALUES ($1, $2)",
     "describe": {
@@ -71,6 +95,19 @@
         "Left": [
           "Bytea",
           "Varchar"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "3d56b7352d39010ff9e047b71268c26d00e9629870f21a98971ffd1b4f81a231": {
+    "query": "INSERT INTO validators (tm_pubkey, voting_power) VALUES ($1, $2)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Int8"
         ]
       },
       "nullable": []
@@ -104,6 +141,16 @@
       "nullable": [
         false
       ]
+    }
+  },
+  "51084a18f15226a89dfdfb35e5de7172b4053d495d728934a20528ab4dcf713b": {
+    "query": "CREATE TABLE IF NOT EXISTS validators (\n    tm_pubkey bytea NOT NULL PRIMARY KEY,\n    voting_power bigint NOT NULL\n)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": []
     }
   },
   "51f515cc43458854df653c298142e6c77b2905b453f85c31ae1a0f56fbce1c2a": {
@@ -140,16 +187,6 @@
   },
   "6608d5e9a28ac8f0864c4e9c08937e3a49dff68ef3202f4dcc2e0c2443d68968": {
     "query": "CREATE TABLE IF NOT EXISTS blocks (\n    height bigint PRIMARY KEY,\n    nct_anchor bytea NOT NULL,\n    app_hash bytea NOT NULL\n)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": []
-      },
-      "nullable": []
-    }
-  },
-  "6609d46e1ae5674d039dc982b461465e384ee684d290f802bfc85f4033bf293b": {
-    "query": "CREATE TABLE IF NOT EXISTS validators (\n    tm_pubkey bytea NOT NULL PRIMARY KEY,\n    voting_power bigint NOT NULL,\n    funding_streams bytea NOT NULL\n)",
     "describe": {
       "columns": [],
       "parameters": {
@@ -198,6 +235,38 @@
         ]
       },
       "nullable": [
+        false
+      ]
+    }
+  },
+  "6cf3b0bf9cb07f0e9f7c4ccd37fff8ef360713779a9cc39d01f22891e234c515": {
+    "query": "SELECT tm_pubkey, address, rate_bps FROM validator_fundingstreams WHERE tm_pubkey = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "tm_pubkey",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 1,
+          "name": "address",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 2,
+          "name": "rate_bps",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Bytea"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
         false
       ]
     }
@@ -400,36 +469,6 @@
         "Left": []
       },
       "nullable": [
-        false,
-        false
-      ]
-    }
-  },
-  "f3dc1d54ac036ed975f77885811c51d6e03bb6827de3f80d4bf6d2a13c9a7f9a": {
-    "query": "SELECT tm_pubkey, voting_power, funding_streams FROM validators",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "tm_pubkey",
-          "type_info": "Bytea"
-        },
-        {
-          "ordinal": 1,
-          "name": "voting_power",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 2,
-          "name": "funding_streams",
-          "type_info": "Bytea"
-        }
-      ],
-      "parameters": {
-        "Left": []
-      },
-      "nullable": [
-        false,
         false,
         false
       ]
