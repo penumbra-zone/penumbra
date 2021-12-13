@@ -14,6 +14,7 @@ pub async fn init_tables(db: &Pool<Postgres>) -> Result<()> {
         query_file!("src/db/notes.sql"),
         query_file!("src/db/nullifiers.sql"),
         query_file!("src/db/validators.sql"),
+        query_file!("src/db/validator_fundingstreams.sql"),
         query_file!("src/db/indexes/notes_height_idx.sql"),
         query_file!("src/db/indexes/notes_position_idx.sql"),
         query_file!("src/db/indexes/nullifiers_height_idx.sql"),

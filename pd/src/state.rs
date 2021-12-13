@@ -1,7 +1,9 @@
 use anyhow::{Context, Result};
+use penumbra_crypto::Address;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{query, query_as, Pool, Postgres};
 use std::collections::{BTreeMap, VecDeque};
+use std::str::FromStr;
 use tendermint::block;
 use tracing::instrument;
 
@@ -286,19 +288,23 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
 
         let mut validators: BTreeMap<tendermint::PublicKey, Validator> = BTreeMap::new();
 
-        let stored_validators =
-            query!(r#"SELECT tm_pubkey, voting_power, funding_streams FROM validators"#)
-                .fetch_all(&mut conn)
-                .await?;
+        let stored_validators = query!(r#"SELECT tm_pubkey, voting_power FROM validators"#)
+            .fetch_all(&mut conn)
+            .await?;
         for row in stored_validators.iter() {
             // NOTE: we store the validator's public key in the database as a json-encoded string,
             // because Tendermint pubkeys can be either ed25519 or secp256k1, and we want a
             // non-ambiguous encoding for the public key.
             let decoded_pubkey: tendermint::PublicKey = serde_json::from_slice(&row.tm_pubkey)?;
 
-            let decoded_funding_streams: Vec<FundingStream> =
-                serde_json::from_slice(&row.funding_streams)?;
-
+            let mut funding_streams: Vec<FundingStream> = Vec::new();
+            let stored_funding_streams = query!(r#"SELECT tm_pubkey, address, rate_bps FROM validator_fundingstreams WHERE tm_pubkey = $1"#, row.tm_pubkey).fetch_all(&mut conn).await?;
+            for f_row in stored_funding_streams {
+                funding_streams.push(FundingStream {
+                    address: Address::from_str(&f_row.address)?,
+                    rate_bps: f_row.rate_bps.try_into()?,
+                })
+            }
             // NOTE: voting_power is stored in the psql database as a `bigint`, which maps to an
             // `i64` in sqlx. try_into uses the `TryFrom<i64>` implementation for voting power from
             // Tendermint, so will return an error if voting power is negative (and not silently
@@ -308,7 +314,7 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
                 Validator::new(
                     decoded_pubkey,
                     row.voting_power.try_into()?,
-                    decoded_funding_streams,
+                    funding_streams,
                 ),
             );
         }
@@ -326,16 +332,26 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
         // TODO: batching optimization
         for (tm_pubkey, val) in validators.iter() {
             let pubkey_str = serde_json::to_string(tm_pubkey)?;
-            let funding_streams_str = serde_json::to_string(&val.funding_streams)?;
 
             query!(
-                "INSERT INTO validators (tm_pubkey, voting_power, funding_streams) VALUES ($1, $2, $3)",
+                "INSERT INTO validators (tm_pubkey, voting_power) VALUES ($1, $2)",
                 pubkey_str.as_bytes(),
                 i64::try_from(val.voting_power)?,
-                funding_streams_str.as_bytes(),
             )
             .execute(&mut conn)
             .await?;
+
+            // TODO (optimization): batch insert?
+            for stream in val.funding_streams.iter() {
+                query!(
+                "INSERT INTO validator_fundingstreams (tm_pubkey, address, rate_bps) VALUES ($1, $2, $3)",
+                pubkey_str.as_bytes(),
+                stream.address.to_string(),
+                i64::try_from(stream.rate_bps)?,
+                )
+                .execute(&mut conn)
+                .await?;
+            }
         }
 
         conn.commit().await.map_err(Into::into)
