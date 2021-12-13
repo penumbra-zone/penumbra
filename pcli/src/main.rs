@@ -301,7 +301,7 @@ async fn main() -> Result<()> {
 
                 // Set up headers for the table (a "Pending" column will be added if there are any
                 // pending transactions)
-                headers = vec!["Asset", "Unspent"];
+                headers = vec!["Asset", "Total"];
             }
 
             // Add an "Available" and "Pending" column if there are any pending transactions
