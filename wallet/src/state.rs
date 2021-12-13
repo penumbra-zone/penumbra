@@ -400,12 +400,12 @@ impl ClientState {
                 // IMPORTANT: we must recover the pending note or else we can't ever spend it
                 // without resetting and resyncing the wallet entirely
                 if self.spent_set.contains_key(&note_commitment) {
-                    tracing::info!(
+                    tracing::debug!(
                         value = ?note.value(),
                         "timeout expired for pending note already in spent set"
                     )
                 } else {
-                    tracing::info!(
+                    tracing::debug!(
                         value = ?note.value(),
                         "timeout expired for pending note, putting it back into the unspent set"
                     );
@@ -422,7 +422,7 @@ impl ClientState {
                 // We can drop pending change notes, because they are outputs of the transaction and
                 // therefore we can expect that either the transaction will fail, or we will receive
                 // them again later
-                tracing::info!(
+                tracing::debug!(
                     value = ?note.value(),
                     "timeout expired for pending change, dropping it"
                 );
@@ -496,7 +496,7 @@ impl ClientState {
 
                 // If the note was a pending change note, remove it from the pending change set
                 if self.pending_change_set.remove(&note_commitment).is_some() {
-                    tracing::info!(value = ?note.value(), "found pending change note while scanning, removing it from the pending change set");
+                    tracing::debug!(value = ?note.value(), "found pending change note while scanning, removing it from the pending change set");
                 }
 
                 // Insert the note into the received set
@@ -514,7 +514,7 @@ impl ClientState {
                     // Try to remove the nullifier from the unspent set
                     if let Some(note) = self.unspent_set.remove(&note_commitment) {
                         // Insert the note into the spent set
-                        tracing::info!(
+                        tracing::debug!(
                             value = ?note.value(),
                             ?nullifier,
                             "found nullifier for unspent note, marking it as spent"
@@ -523,7 +523,7 @@ impl ClientState {
                     }
                     if let Some((_, note)) = self.pending_set.remove(&note_commitment) {
                         // Insert the note into the spent set
-                        tracing::info!(
+                        tracing::debug!(
                             value = ?note.value(),
                             ?nullifier,
                             "found nullifier for pending note, marking it as spent"
@@ -532,7 +532,7 @@ impl ClientState {
                     }
                     if let Some((_, note)) = self.pending_change_set.remove(&note_commitment) {
                         // Insert the note into the spent set
-                        tracing::info!(
+                        tracing::debug!(
                             value = ?note.value(),
                             ?nullifier,
                             "found nullifier for pending change note, marking it as spent"
@@ -542,7 +542,7 @@ impl ClientState {
                     if self.spent_set.contains_key(&note_commitment) {
                         // If the nullifier is already in the spent set, it means we've already
                         // processed this note and it's spent
-                        tracing::debug!(?nullifier, "found nullifier for already-spent note")
+                        tracing::info!(?nullifier, "found nullifier for already-spent note")
                     }
                 } else {
                     // This happens all the time, but if you really want to see every nullifier,
