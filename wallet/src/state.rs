@@ -236,7 +236,8 @@ impl ClientState {
                 let note_commitment = note.commit();
 
                 // Add the note to the pending set
-                tracing::info!(value = ?note.value(), "adding note to pending set");
+                tracing::info!(value = ?note.value(), "moving note from unspent set to pending set");
+                self.unspent_set.remove(&note_commitment);
                 self.pending_set
                     .insert(note_commitment, (timeout, note.clone()));
 
