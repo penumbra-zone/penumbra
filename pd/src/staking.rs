@@ -10,8 +10,8 @@ pub struct FundingStream {
     /// The destinatination address for the funding stream..
     pub address: Address,
 
-    /// The portion (in terms of basis points) of the validator's total commission that goes to
-    /// this funding stream.
+    /// The portion (in terms of [basis points](https://en.wikipedia.org/wiki/Basis_point)) of the
+    /// validator's total staking reward that goes to this funding stream.
     pub rate_bps: u16,
 }
 /// Validator tracks the Penumbra validator's long-term consensus key (tm_pubkey), as well as their
@@ -25,7 +25,11 @@ pub struct Validator {
     /// The validator's current voting power.
     pub voting_power: vote::Power,
 
-    /// The destinations for the validator's commission.
+    /// The destinations for the validator's staking reward. The commission is implicitly defined
+    /// by the configuration of funding_streams, the sum of FundingStream.rate_bps.
+    ///
+    /// NOTE: sum(FundingRate.rate_bps) should not exceed 100% (10000bps. For now, we ignore this
+    /// condition, in the future we should probably make it a slashable offense.
     pub funding_streams: Vec<FundingStream>,
     // NOTE: unclaimed rewards are tracked by inserting reward notes for the last epoch into the
     // NCT at the beginning of each epoch
