@@ -1,9 +1,15 @@
 # Validator Rewards and Fees
 
-Validators declare a commission percentage $c_{v,e} \in [0, 1]$, which
-determines the spread between the base reward rate $r_e$ and the reward rate for
-their delegators $r_{v,e} = (1 - c_{v,e})r_e$, or equivalently $r_e = r_{v,e} +
-c_{v,e}r_e$.
+Validators declare a set of funding streams that comprise the destination of
+all of their staking rewards. Each funding stream contains a rate $ri \in
+[0,1]$ and a destination address $ai$.  The validator's total commission rate
+is defined as $c_{v,e} = \sum ri$, the sum of the rate of each funding stream.
+$c_{v,e}$ cannot exceed 1.
+
+The spread between the base reward rate $r_e$ and the reward rate for their
+delegators is determined by the validator's total commission $r_{v,e} = (1 -
+c_{v,e})r_e$, or equivalently $r_e = r_{v,e} + c_{v,e}r_e$.
+
 
 Validator rewards are distributed in the first block of each epoch.  In epoch
 $e$, a validator $v$ whose delegation pool has size $y_v$ `dPEN` receives a
