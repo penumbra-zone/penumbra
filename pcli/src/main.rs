@@ -227,13 +227,16 @@ async fn main() -> Result<()> {
                     } += note.as_ref().amount();
                 }
 
+                // The amount spent is the difference between pending and pending change:
+                let pending_spend = pending - pending_change;
+
                 // Format a string describing the pending balance updates
                 let pending_string = if pending > 0 && pending_change > 0 {
-                    format!("+{} (change), -{} (spent)", pending_change, pending)
+                    format!("+{} (change), -{} (spent)", pending_change, pending_spend)
                 } else if pending == 0 && pending_change > 0 {
                     format!("+{} (change)", pending_change)
                 } else if pending > 0 && pending_change == 0 {
-                    format!("-{} (spent)", pending)
+                    format!("-{} (spent)", pending_spend)
                 } else {
                     String::new()
                 };
