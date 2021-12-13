@@ -44,7 +44,7 @@ impl Id {
 
 impl std::fmt::Debug for Id {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("asset::ID({})", self.to_bech32()))
+        f.write_str(self.to_bech32().as_str())
     }
 }
 
