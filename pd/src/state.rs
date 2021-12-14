@@ -1,5 +1,4 @@
 use anyhow::{Context, Result};
-use penumbra_crypto::Address;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{query, query_as, Pool, Postgres};
 use std::collections::{BTreeMap, VecDeque};
@@ -9,14 +8,14 @@ use tracing::instrument;
 
 use penumbra_crypto::{
     merkle::{self, NoteCommitmentTree, TreeExt},
-    Nullifier,
+    Address, Nullifier,
 };
 use penumbra_proto::{
     light_wallet::{CompactBlock, StateFragment},
     thin_wallet::{Asset, TransactionDetail},
 };
+use penumbra_stake::{FundingStream, Validator};
 
-use crate::staking::{FundingStream, Validator};
 use crate::{
     db::{self, schema},
     genesis, PendingBlock,

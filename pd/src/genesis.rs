@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use penumbra_crypto::{asset::Denom, Address, Note, Value};
 
-use crate::staking::Validator;
+use penumbra_stake::Validator;
 
 /// A (transparent) genesis allocation.
 #[derive(Clone, Serialize, Deserialize)]
