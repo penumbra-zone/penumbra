@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, sync::Arc};
+use std::{collections::BTreeMap, fmt::Display, sync::Arc};
 
 use ark_ff::fields::PrimeField;
 
@@ -10,9 +10,9 @@ pub struct BaseDenom {
 
 pub struct DisplayDenom {
     inner: Arc<Inner>,
-    // todo: specify which display denom?
-    exponent: u8, // problem: duplicates data on Inner
-    denom: String,
+    // Indexes into the `units` field on `Inner`.
+    // The units field is always sorted by priority order.
+    unit_index: u8,
 }
 
 // These are constructed by the asset registry.
@@ -51,26 +51,21 @@ impl BaseDenom {
     ///
     /// There will always be at least one display denomination.
     pub fn units(&self) -> Vec<DisplayDenom> {
-        self.inner
-            .units
-            .iter()
-            .map(|v| DisplayDenom {
-                exponent: v.exponent,
-                denom: v.denom,
+        (0..self.inner.units.len())
+            .map(|unit_index| DisplayDenom {
+                unit_index: unit_index as u8,
                 inner: self.inner.clone(),
             })
             .collect()
     }
 
     pub fn default_unit(&self) -> DisplayDenom {
-        let priority_unit = self
-            .units()
+        self.units()
             .get(0)
             .expect("there must be at least one unit");
 
         DisplayDenom {
-            exponent: priority_unit.exponent,
-            denom: priority_unit.denom,
+            unit_index: 0,
             inner: self.inner.clone(),
         }
     }
@@ -81,6 +76,22 @@ impl DisplayDenom {
         BaseDenom {
             inner: self.inner.clone(),
         }
+    }
+
+    pub fn exponent(&self) -> u8 {
+        self.inner
+            .units
+            .get(self.unit_index as usize)
+            .expect("there must be an entry for unit_index")
+            .exponent
+    }
+
+    pub fn raw_name(&self) -> String {
+        self.inner
+            .units
+            .get(self.unit_index as usize)
+            .expect("there must be an entry for unit_index")
+            .denom
     }
 
     // TODO: API for actually working with displayed denominations?
