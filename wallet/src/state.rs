@@ -7,7 +7,8 @@ use std::{
 
 use anyhow::Context;
 use penumbra_crypto::{
-    asset, memo,
+    asset::{self, BaseDenom},
+    memo,
     merkle::{Frontier, NoteCommitmentTree, Tree, TreeExt},
     note, Address, FieldExt, Note, Nullifier, Transaction, Value, CURRENT_CHAIN_ID,
 };
@@ -47,8 +48,8 @@ pub struct ClientState {
     spent_set: BTreeMap<note::Commitment, Note>,
     /// Map of note commitment to full transaction data for transactions we have visibility into.
     transactions: BTreeMap<note::Commitment, Option<Vec<u8>>>,
-    /// Map of asset IDs to asset denominations.
-    asset_registry: BTreeMap<asset::Id, String>,
+    /// Map of asset IDs to (raw) asset denominations.
+    denom_cache: BTreeMap<asset::Id, String>,
     /// Key material.
     wallet: Wallet,
 }
@@ -94,7 +95,7 @@ impl ClientState {
             pending_change_set: BTreeMap::new(),
             spent_set: BTreeMap::new(),
             transactions: BTreeMap::new(),
-            asset_registry: BTreeMap::new(),
+            denom_cache: BTreeMap::new(),
             wallet,
         }
     }
@@ -116,7 +117,7 @@ impl ClientState {
         &self,
         rng: &mut R,
         amount: u64,
-        denom: String,
+        denom: BaseDenom,
         source_address: Option<u64>,
     ) -> Result<Vec<&Note>, anyhow::Error> {
         let mut notes_by_address = self
@@ -172,7 +173,7 @@ impl ClientState {
         &mut self,
         rng: &mut R,
         amount: u64,
-        denomination: String,
+        denomination: BaseDenom,
         address: String,
         fee: u64,
         source_address: Option<u64>,
@@ -188,7 +189,7 @@ impl ClientState {
             .set_fee(fee)
             .set_chain_id(CURRENT_CHAIN_ID.to_string());
 
-        let mut output_value = HashMap::<String, u64>::new();
+        let mut output_value = HashMap::<BaseDenom, u64>::new();
         output_value.insert(denomination, amount);
 
         for (denom, amount) in &output_value {
@@ -201,7 +202,7 @@ impl ClientState {
                 &dest_address,
                 Value {
                     amount: *amount,
-                    asset_id: asset::Denom(denom.to_string()).into(),
+                    asset_id: denom.id(),
                 },
                 memo,
                 self.wallet.outgoing_viewing_key(),
@@ -211,7 +212,9 @@ impl ClientState {
         // The value we need to spend is the output value, plus fees.
         let mut value_to_spend = output_value;
         if fee > 0 {
-            *value_to_spend.entry("penumbra".into()).or_default() += fee;
+            *value_to_spend
+                .entry(asset::REGISTRY.parse_base("upenumbra").unwrap())
+                .or_default() += fee;
         }
 
         // The time in the future when pending transactions created now should expire
@@ -269,7 +272,7 @@ impl ClientState {
                     &change_address,
                     Value {
                         amount: change,
-                        asset_id: asset::Denom(denom.to_string()).into(),
+                        asset_id: denom.id(),
                     },
                     memo,
                     self.wallet.outgoing_viewing_key(),
@@ -299,7 +302,7 @@ impl ClientState {
     ///
     /// Notes are [`UnspentNote`]s, which describe whether the note is ready to spend, part of a
     /// pending output, or part of pending change expected to be received.
-    pub fn unspent_notes(&self) -> impl Iterator<Item = (u64, String, UnspentNote)> + '_ {
+    pub fn unspent_notes(&self) -> impl Iterator<Item = (u64, BaseDenom, UnspentNote)> + '_ {
         self.unspent_set
             .values()
             .map(UnspentNote::Ready)
@@ -316,11 +319,13 @@ impl ClientState {
             .map(|note| {
                 // Any notes we have in the unspent set we will have the corresponding denominations
                 // for since the notes and asset registry are both part of the sync.
-                let denom = self
-                    .asset_registry
-                    .get(&note.as_ref().asset_id())
-                    .expect("all asset IDs should have denominations stored locally")
-                    .clone();
+                let denom = asset::REGISTRY
+                    .parse_base(
+                        self.denom_cache
+                            .get(&note.as_ref().asset_id())
+                            .expect("all asset IDs should have denominations stored locally"),
+                    )
+                    .expect("saved denominations are valid");
 
                 let index: u64 = self
                     .wallet()
@@ -336,13 +341,13 @@ impl ClientState {
     /// Returns unspent notes, grouped by address index and then by denomination.
     pub fn unspent_notes_by_address_and_denom(
         &self,
-    ) -> BTreeMap<u64, BTreeMap<String, Vec<UnspentNote>>> {
+    ) -> BTreeMap<u64, HashMap<BaseDenom, Vec<UnspentNote>>> {
         let mut notemap = BTreeMap::default();
 
         for (index, denom, note) in self.unspent_notes() {
             notemap
                 .entry(index)
-                .or_insert_with(BTreeMap::default)
+                .or_insert_with(HashMap::default)
                 .entry(denom)
                 .or_insert_with(Vec::default)
                 .push(note.clone());
@@ -354,8 +359,8 @@ impl ClientState {
     /// Returns unspent notes, grouped by denomination and then by address index.
     pub fn unspent_notes_by_denom_and_address(
         &self,
-    ) -> BTreeMap<String, BTreeMap<u64, Vec<UnspentNote>>> {
-        let mut notemap = BTreeMap::default();
+    ) -> HashMap<BaseDenom, BTreeMap<u64, Vec<UnspentNote>>> {
+        let mut notemap = HashMap::default();
 
         for (index, denom, note) in self.unspent_notes() {
             notemap
@@ -370,10 +375,10 @@ impl ClientState {
     }
 
     /// Add asset to local asset registry if it doesn't exist.
-    pub fn add_asset_to_registry(&mut self, asset_id: asset::Id, asset_denom: String) {
+    pub fn add_asset_to_registry(&mut self, asset_id: asset::Id, asset_denom: BaseDenom) {
         if self
-            .asset_registry
-            .insert(asset_id, asset_denom.clone())
+            .denom_cache
+            .insert(asset_id, asset_denom.to_string())
             .is_none()
         {
             tracing::debug!("found new asset: {}", asset_denom);
@@ -685,7 +690,7 @@ mod serde_helpers {
                     })
                     .collect(),
                 asset_registry: state
-                    .asset_registry
+                    .denom_cache
                     .iter()
                     .map(|(id, denom)| (hex::encode(id.to_bytes()), denom.clone()))
                     .collect(),
@@ -754,7 +759,7 @@ mod serde_helpers {
                 pending_set,
                 pending_change_set,
                 spent_set,
-                asset_registry,
+                denom_cache: asset_registry,
                 // TODO: serialize full transactions
                 transactions: Default::default(),
             })

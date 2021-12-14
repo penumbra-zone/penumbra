@@ -180,11 +180,9 @@ impl Transaction {
         }
 
         // Add fee into binding verification key computation.
-        let pen_trace = asset::Denom::from("penumbra");
-        let pen_id = asset::Id::from(pen_trace);
         let fee_value = Value {
             amount: self.transaction_body.fee.0,
-            asset_id: pen_id,
+            asset_id: asset::REGISTRY.parse_base("upenumbra").unwrap().id(),
         };
         let fee_v_blinding = Fr::zero();
         let fee_value_commitment = fee_value.commit(fee_v_blinding);
@@ -317,7 +315,7 @@ mod tests {
                 &dest,
                 Value {
                     amount: 10,
-                    asset_id: asset::Denom::from("penumbra").into(),
+                    asset_id: asset::REGISTRY.parse_base("upenumbra").unwrap().id(),
                 },
                 MemoPlaintext::default(),
                 ovk_sender,

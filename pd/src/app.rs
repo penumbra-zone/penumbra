@@ -119,7 +119,10 @@ impl App {
             tracing::info!(?allocation, "processing allocation");
             tx_builder.add_output(allocation.note().expect("genesis allocations are valid"));
             // Add all assets found in the genesis transaction to the asset registry
-            let id = asset::Denom(allocation.denom.clone()).id();
+            let id = asset::REGISTRY
+                .parse_base(&allocation.denom)
+                .expect("genesis allocations must have valid denominations")
+                .id();
             tracing::debug!(?id, "registering asset id");
             genesis_block
                 .new_assets
@@ -558,68 +561,3 @@ impl Service<Request> for App {
         })
     }
 }
-
-/*
-// TODO: restore this test after writing a state facade (?)
-//   OR: don't write a state facade, and test the actual code using test pg states
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    use ark_ff::Zero;
-    use rand_core::OsRng;
-
-    use penumbra_crypto::{keys::SpendKey, memo::MemoPlaintext, Fq, Note, Value};
-
-    #[test]
-    fn test_transaction_verification_fails_for_dummy_merkle_tree() {
-
-        let mut app = App::default();
-
-        let mut rng = OsRng;
-        let sk_sender = SpendKey::generate(&mut rng);
-        let fvk_sender = sk_sender.full_viewing_key();
-        let ovk_sender = fvk_sender.outgoing();
-
-        let sk_recipient = SpendKey::generate(&mut rng);
-        let fvk_recipient = sk_recipient.full_viewing_key();
-        let ivk_recipient = fvk_recipient.incoming();
-        let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
-
-        let merkle_root = merkle::Root(Fq::zero());
-        let mut merkle_siblings = Vec::new();
-        for _i in 0..merkle::DEPTH {
-            merkle_siblings.push(note::Commitment(Fq::zero()))
-        }
-        let dummy_merkle_path: merkle::Path = (merkle::DEPTH, merkle_siblings);
-
-        let value_to_send = Value {
-            amount: 10,
-            asset_id: b"penumbra".as_ref().into(),
-        };
-        let dummy_note = Note::new(
-            *dest.diversifier(),
-            *dest.transmission_key(),
-            value_to_send,
-            Fq::zero(),
-        )
-        .expect("transmission key is valid");
-
-        let transaction = Transaction::build_with_root(merkle_root)
-            .set_fee(20)
-            .set_chain_id("penumbra".to_string())
-            .add_output(
-                &mut rng,
-                &dest,
-                value_to_send,
-                MemoPlaintext::default(),
-                ovk_sender,
-            )
-            .add_spend(&mut rng, sk_sender, dummy_merkle_path, dummy_note, 0.into())
-            .finalize(&mut rng);
-
-        // The merkle path is invalid, so this transaction should not verify.
-        assert!(!app.verify_transaction(transaction.unwrap()));
-    }
-}
-    */

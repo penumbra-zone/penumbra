@@ -143,12 +143,10 @@ impl Builder {
     ///
     /// Note that we're using the lower case `pen` in the code.
     pub fn set_fee(mut self, fee: u64) -> Self {
-        let pen_trace = asset::Denom::from("penumbra");
-        let pen_id = asset::Id::from(pen_trace);
-
+        let asset_id = asset::REGISTRY.parse_base("upenumbra").unwrap().id();
         let fee_value = Value {
             amount: fee,
-            asset_id: pen_id,
+            asset_id: asset_id.clone(),
         };
 
         let fee_v_blinding = Fr::zero();
@@ -157,7 +155,7 @@ impl Builder {
         // The fee is effectively an additional output, so we
         // add to the transaction's value balance.
         self.synthetic_blinding_factor -= fee_v_blinding;
-        self.value_balance -= Fr::from(fee) * pen_id.value_generator();
+        self.value_balance -= Fr::from(fee) * asset_id.value_generator();
         self.value_commitments -= value_commitment.0;
 
         self.fee = Some(Fee(fee));

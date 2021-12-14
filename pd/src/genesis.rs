@@ -1,6 +1,6 @@
 use ark_ff::Zero;
 use decaf377::Fq;
-use penumbra_crypto::{asset::Denom, Address, Note, Value};
+use penumbra_crypto::{asset, Address, Note, Value};
 use penumbra_stake::Validator;
 use serde::{Deserialize, Serialize};
 
@@ -36,7 +36,10 @@ impl Allocation {
             *self.address.transmission_key(),
             Value {
                 amount: self.amount,
-                asset_id: Denom(self.denom.clone()).id(),
+                asset_id: asset::REGISTRY
+                    .parse_base(&self.denom)
+                    .ok_or_else(|| anyhow::anyhow!("invalid denomination"))?
+                    .id(),
             },
             Fq::zero(),
         )
