@@ -11,6 +11,8 @@ pub struct BaseDenom {
 pub struct DisplayDenom {
     inner: Arc<Inner>,
     // todo: specify which display denom?
+    exponent: u8, // problem: duplicates data on Inner
+    denom: String,
 }
 
 // These are constructed by the asset registry.
@@ -49,11 +51,28 @@ impl BaseDenom {
     ///
     /// There will always be at least one display denomination.
     pub fn units(&self) -> Vec<DisplayDenom> {
-        todo!()
+        self.inner
+            .units
+            .iter()
+            .map(|v| DisplayDenom {
+                exponent: v.exponent,
+                denom: v.denom,
+                inner: self.inner.clone(),
+            })
+            .collect()
     }
 
     pub fn default_unit(&self) -> DisplayDenom {
-        todo!()
+        let priority_unit = self
+            .units()
+            .get(0)
+            .expect("there must be at least one unit");
+
+        DisplayDenom {
+            exponent: priority_unit.exponent,
+            denom: priority_unit.denom,
+            inner: self.inner.clone(),
+        }
     }
 }
 
