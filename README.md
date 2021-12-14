@@ -153,11 +153,14 @@ To load genesis state for a fresh Docker configuration:
 for pd/postgres/tendermint!
 
 ```bash
-./scripts/docker_compose_freshstart.sh
+./scripts/docker_compose_freshstart.sh /PATH/TO/DATA/DIRECTORY
 ```
 
-The script will handle generating genesis JSON data and copying it to the container volumes
-and restarting the containers. You should have a working setup with all containers running
+The script will handle generating genesis JSON data and building and starting the containers.
+
+The data directory provided to the script will contain the state of the tendermint node.
+
+You should have a working setup with all containers running
 after running the script:
 
 ```console
