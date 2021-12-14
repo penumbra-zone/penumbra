@@ -508,48 +508,44 @@ impl ClientState {
         // or pending set and move them into the spent set.
         for nullifier in nullifiers {
             // Try to decode the nullifier
-            if let Ok(nullifier) = nullifier.as_ref().try_into() {
-                // Try to find the corresponding note commitment in the nullifier map
-                if let Some(&note_commitment) = self.nullifier_map.get(&nullifier) {
-                    // Try to remove the nullifier from the unspent set
-                    if let Some(note) = self.unspent_set.remove(&note_commitment) {
-                        // Insert the note into the spent set
-                        tracing::debug!(
-                            value = ?note.value(),
-                            ?nullifier,
-                            "found nullifier for unspent note, marking it as spent"
-                        );
-                        self.spent_set.insert(note_commitment, note);
-                    } else if let Some((_, note)) = self.pending_set.remove(&note_commitment) {
-                        // Insert the note into the spent set
-                        tracing::debug!(
-                            value = ?note.value(),
-                            ?nullifier,
-                            "found nullifier for pending note, marking it as spent"
-                        );
-                        self.spent_set.insert(note_commitment, note);
-                    } else if let Some((_, note)) = self.pending_change_set.remove(&note_commitment)
-                    {
-                        // Insert the note into the spent set
-                        tracing::debug!(
-                            value = ?note.value(),
-                            ?nullifier,
-                            "found nullifier for pending change note, marking it as spent"
-                        );
-                        self.spent_set.insert(note_commitment, note);
-                    } else if self.spent_set.contains_key(&note_commitment) {
-                        // If the nullifier is already in the spent set, it means we've already
-                        // processed this note and it's spent
-                        tracing::info!(?nullifier, "found nullifier for already-spent note")
-                    }
-                } else {
-                    // This happens all the time, but if you really want to see every nullifier,
-                    // look at trace output
-                    tracing::trace!(?nullifier, "found unknown nullifier while scanning");
+            let nullifier = nullifier.as_ref().try_into()?;
+
+            // Try to find the corresponding note commitment in the nullifier map
+            if let Some(&note_commitment) = self.nullifier_map.get(&nullifier) {
+                // Try to remove the nullifier from the unspent set
+                if let Some(note) = self.unspent_set.remove(&note_commitment) {
+                    // Insert the note into the spent set
+                    tracing::debug!(
+                        value = ?note.value(),
+                        ?nullifier,
+                        "found nullifier for unspent note, marking it as spent"
+                    );
+                    self.spent_set.insert(note_commitment, note);
+                } else if let Some((_, note)) = self.pending_set.remove(&note_commitment) {
+                    // Insert the note into the spent set
+                    tracing::debug!(
+                        value = ?note.value(),
+                        ?nullifier,
+                        "found nullifier for pending note, marking it as spent"
+                    );
+                    self.spent_set.insert(note_commitment, note);
+                } else if let Some((_, note)) = self.pending_change_set.remove(&note_commitment) {
+                    // Insert the note into the spent set
+                    tracing::debug!(
+                        value = ?note.value(),
+                        ?nullifier,
+                        "found nullifier for pending change note, marking it as spent"
+                    );
+                    self.spent_set.insert(note_commitment, note);
+                } else if self.spent_set.contains_key(&note_commitment) {
+                    // If the nullifier is already in the spent set, it means we've already
+                    // processed this note and it's spent
+                    tracing::info!(?nullifier, "found nullifier for already-spent note")
                 }
             } else {
-                // This should never happen with a correct server
-                tracing::warn!("invalid nullifier in received compact block");
+                // This happens all the time, but if you really want to see every nullifier,
+                // look at trace output
+                tracing::trace!(?nullifier, "found unknown nullifier while scanning");
             }
         }
 
