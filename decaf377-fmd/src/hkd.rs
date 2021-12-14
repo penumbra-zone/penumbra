@@ -33,9 +33,9 @@ pub fn derive_private(root_priv: &Fr, root_pub_enc: &decaf377::Encoding, index: 
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     use proptest::prelude::*;
+
+    use super::*;
 
     fn fr_strategy() -> BoxedStrategy<decaf377::Fr> {
         any::<[u8; 32]>()

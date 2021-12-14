@@ -136,11 +136,12 @@ impl std::str::FromStr for Address {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
-    use crate::keys::SpendKey;
-    use rand_core::OsRng;
     use std::str::FromStr;
+
+    use rand_core::OsRng;
+
+    use super::*;
+    use crate::keys::SpendKey;
 
     #[test]
     fn test_address_encoding() {

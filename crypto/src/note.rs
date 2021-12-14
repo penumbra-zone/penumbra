@@ -1,3 +1,5 @@
+use std::convert::{TryFrom, TryInto};
+
 use ark_ff::{PrimeField, UniformRand};
 use blake2b_simd;
 use chacha20poly1305::{
@@ -8,7 +10,6 @@ use decaf377::FieldExt;
 use once_cell::sync::Lazy;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
 use thiserror;
 
 use crate::{
@@ -398,9 +399,9 @@ impl TryFrom<&[u8]> for Commitment {
 
 #[cfg(feature = "sqlx")]
 mod sqlx_impls {
-    use super::*;
-
     use sqlx::{Database, Decode, Encode, Postgres, Type};
+
+    use super::*;
 
     impl<'r> Decode<'r, Postgres> for Commitment {
         fn decode(
@@ -430,10 +431,10 @@ mod sqlx_impls {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
-    use crate::keys::SpendKey;
     use rand_core::OsRng;
+
+    use super::*;
+    use crate::keys::SpendKey;
 
     #[test]
     fn test_note_encryption_and_decryption() {

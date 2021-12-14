@@ -1,7 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use anyhow::{Context, Error};
-
 use penumbra_crypto::{ka, merkle, note, Action, Nullifier, Transaction};
 
 /// `PendingTransaction` holds data after stateless checks have been applied.
@@ -181,8 +180,6 @@ pub fn mark_genesis_as_verified(transaction: Transaction) -> VerifiedTransaction
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     use ark_ff::Zero;
     use penumbra_crypto::{
         asset,
@@ -192,6 +189,8 @@ mod tests {
         Fq, Note, Value,
     };
     use rand_core::OsRng;
+
+    use super::*;
 
     #[test]
     fn test_transaction_succeeds_if_values_balance() {

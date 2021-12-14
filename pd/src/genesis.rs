@@ -1,10 +1,8 @@
 use ark_ff::Zero;
 use decaf377::Fq;
-use serde::{Deserialize, Serialize};
-
 use penumbra_crypto::{asset::Denom, Address, Note, Value};
-
 use penumbra_stake::Validator;
+use serde::{Deserialize, Serialize};
 
 /// A (transparent) genesis allocation.
 #[derive(Clone, Serialize, Deserialize)]

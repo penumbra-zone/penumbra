@@ -1,8 +1,7 @@
 use ark_ff::PrimeField;
 
-use crate::{fmd, ka, prf, Address, Fr};
-
 use super::{Diversifier, DiversifierIndex, DiversifierKey};
+use crate::{fmd, ka, prf, Address, Fr};
 
 pub const IVK_LEN_BYTES: usize = 64;
 

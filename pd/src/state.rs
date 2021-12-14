@@ -1,11 +1,9 @@
-use anyhow::{Context, Result};
-use sqlx::postgres::PgPoolOptions;
-use sqlx::{query, query_as, Pool, Postgres};
-use std::collections::{BTreeMap, VecDeque};
-use std::str::FromStr;
-use tendermint::block;
-use tracing::instrument;
+use std::{
+    collections::{BTreeMap, VecDeque},
+    str::FromStr,
+};
 
+use anyhow::{Context, Result};
 use penumbra_crypto::{
     merkle::{self, NoteCommitmentTree, TreeExt},
     Address, Nullifier,
@@ -15,6 +13,9 @@ use penumbra_proto::{
     thin_wallet::{Asset, TransactionDetail},
 };
 use penumbra_stake::{FundingStream, Validator};
+use sqlx::{postgres::PgPoolOptions, query, query_as, Pool, Postgres};
+use tendermint::block;
+use tracing::instrument;
 
 use crate::{
     db::{self, schema},

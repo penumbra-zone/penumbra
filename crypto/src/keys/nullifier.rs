@@ -1,10 +1,11 @@
+use poseidon377::hash_3;
+
 use crate::{
     merkle::Position,
     note,
     nullifier::{Nullifier, NULLIFIER_DOMAIN_SEP},
     Fq,
 };
-use poseidon377::hash_3;
 
 pub const NK_LEN_BYTES: usize = 32;
 

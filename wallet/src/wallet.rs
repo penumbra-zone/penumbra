@@ -1,12 +1,11 @@
 use anyhow::Context;
-use rand_core::{CryptoRng, RngCore};
-use serde::{Deserialize, Serialize};
-
 use penumbra_crypto::{
     fmd,
     keys::{FullViewingKey, IncomingViewingKey, OutgoingViewingKey, SpendKey, SpendSeed},
     Address, Note,
 };
+use rand_core::{CryptoRng, RngCore};
+use serde::{Deserialize, Serialize};
 
 /// The contents of the wallet file that share a spend authority.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -106,9 +105,10 @@ impl Wallet {
 }
 
 mod serde_helpers {
-    use super::*;
     use penumbra_crypto::keys::SpendSeed;
     use serde_with::serde_as;
+
+    use super::*;
 
     #[serde_as]
     #[derive(Deserialize, Serialize)]

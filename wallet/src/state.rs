@@ -1,19 +1,21 @@
-use anyhow::Context;
-use penumbra_proto::light_wallet::{CompactBlock, StateFragment};
-use rand::seq::SliceRandom;
-use rand_core::{CryptoRng, RngCore};
-use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashMap};
-use std::mem;
-use std::str::FromStr;
-use std::time::{Duration, SystemTime};
-use tracing::instrument;
+use std::{
+    collections::{BTreeMap, HashMap},
+    mem,
+    str::FromStr,
+    time::{Duration, SystemTime},
+};
 
+use anyhow::Context;
 use penumbra_crypto::{
     asset, memo,
     merkle::{Frontier, NoteCommitmentTree, Tree, TreeExt},
     note, Address, FieldExt, Note, Nullifier, Transaction, Value, CURRENT_CHAIN_ID,
 };
+use penumbra_proto::light_wallet::{CompactBlock, StateFragment};
+use rand::seq::SliceRandom;
+use rand_core::{CryptoRng, RngCore};
+use serde::{Deserialize, Serialize};
+use tracing::instrument;
 
 use crate::Wallet;
 
@@ -561,9 +563,9 @@ impl ClientState {
 }
 
 mod serde_helpers {
-    use super::*;
-
     use serde_with::serde_as;
+
+    use super::*;
 
     #[serde_as]
     #[derive(Serialize, Deserialize)]

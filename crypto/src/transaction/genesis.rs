@@ -1,12 +1,12 @@
 use ark_ff::{One, Zero};
 
 use super::Error;
-use crate::note::OVK_WRAPPED_LEN_BYTES;
 use crate::{
     action::{output, Action},
     ka,
     memo::{MemoCiphertext, MEMO_CIPHERTEXT_LEN_BYTES},
     merkle,
+    note::OVK_WRAPPED_LEN_BYTES,
     transaction::{Fee, Transaction, TransactionBody},
     Fr, Note, Output,
 };
