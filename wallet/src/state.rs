@@ -540,7 +540,10 @@ impl ClientState {
                 } else if self.spent_set.contains_key(&note_commitment) {
                     // If the nullifier is already in the spent set, it means we've already
                     // processed this note and it's spent. This should never happen
-                    tracing::warn!(?nullifier, "found nullifier for already-spent note, possibly corrupted state?")
+                    tracing::warn!(
+                        ?nullifier,
+                        "found nullifier for already-spent note, possibly corrupted state?"
+                    )
                 }
             } else {
                 // This happens all the time, but if you really want to see every nullifier,
