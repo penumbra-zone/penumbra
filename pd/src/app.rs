@@ -26,10 +26,11 @@ use penumbra_crypto::{
     note, Nullifier, Transaction,
 };
 
+use penumbra_stake::Validator;
+
 use crate::{
     db::schema,
     genesis,
-    staking::Validator,
     verify::{mark_genesis_as_verified, StatefulTransactionExt, StatelessTransactionExt},
     PendingBlock, RequestExt, State,
 };

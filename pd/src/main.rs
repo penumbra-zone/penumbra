@@ -8,12 +8,9 @@ use penumbra_proto::{
     light_wallet::light_wallet_server::LightWalletServer,
     thin_wallet::thin_wallet_server::ThinWalletServer,
 };
+use penumbra_stake::{FundingStream, Validator};
 
-use pd::{
-    genesis,
-    staking::{self, FundingStream},
-    App, State,
-};
+use pd::{genesis, App, State};
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -188,7 +185,7 @@ async fn main() -> anyhow::Result<()> {
                 // Set a shorter epoch duration here for testing purposes and to
                 // try to avoid baking in assumptions about the epoch length
                 epoch_duration: 300,
-                validators: vec![staking::Validator::new(
+                validators: vec![Validator::new(
                     validator_pk,
                     100u32.into(),
                     vec![FundingStream {

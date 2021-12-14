@@ -10,7 +10,6 @@ mod verify;
 mod wallet;
 
 pub mod genesis;
-pub mod staking;
 
 pub use app::App;
 pub use pd_metrics::register_all_metrics;
