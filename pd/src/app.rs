@@ -356,6 +356,9 @@ impl App {
             panic!("block height should never be negative");
         }
 
+        // Clear the mempool nullifier set at the end of each block
+        self.mempool_nullifiers.lock().unwrap().clear();
+
         // TODO: if necessary, set the EndBlock response to add validators
         // at the epoch boundary
         if end.height.unsigned_abs() % self.epoch_duration == 0 {
