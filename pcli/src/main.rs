@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use anyhow::{anyhow, Result};
 use comfy_table::{presets, Table};
 use directories::ProjectDirs;
-use penumbra_crypto::{keys::SpendSeed, CURRENT_CHAIN_ID};
+use penumbra_crypto::{asset, keys::SpendSeed, CURRENT_CHAIN_ID};
 use penumbra_wallet::{ClientState, UnspentNote, Wallet};
 use rand_core::OsRng;
 use sha2::{Digest, Sha256};
@@ -67,6 +67,10 @@ async fn main() -> Result<()> {
             source_address_id,
             memo,
         }) => {
+            let denomination = asset::REGISTRY
+                .parse_base(&denomination)
+                .ok_or_else(|| anyhow::anyhow!("invalid base denomination {}", denomination))?;
+
             let mut state = state.expect("state must be synchronized");
             let tx = state.new_transaction(
                 &mut OsRng,
@@ -270,7 +274,7 @@ async fn main() -> Result<()> {
                     let (mut label, _) = state.wallet().address_by_index(address_id as usize)?;
                     for (denom, notes) in by_denom.into_iter() {
                         let (total, available, pending) = tally_format_notes(notes);
-                        let mut row = vec![label.clone(), denom, total];
+                        let mut row = vec![label.clone(), denom.to_string(), total];
                         if !pending.is_empty() {
                             print_pending_column = true;
                             row.push(available);
@@ -290,7 +294,7 @@ async fn main() -> Result<()> {
                 for (denom, by_address) in state.unspent_notes_by_denom_and_address().into_iter() {
                     let (total, available, pending) =
                         tally_format_notes(by_address.into_values().flatten());
-                    let mut row = vec![denom, total];
+                    let mut row = vec![denom.to_string(), total];
                     if !pending.is_empty() {
                         print_pending_column = true;
                         row.push(available);

@@ -207,11 +207,11 @@ mod tests {
 
         let output_value = Value {
             amount: 10,
-            asset_id: asset::Denom::from("penumbra").into(),
+            asset_id: asset::REGISTRY.parse_base("upenumbra").unwrap().id(),
         };
         let spend_value = Value {
             amount: 20,
-            asset_id: asset::Denom::from("penumbra").into(),
+            asset_id: asset::REGISTRY.parse_base("upenumbra").unwrap().id(),
         };
         // The note was previously sent to the sender.
         let note = Note::from_parts(

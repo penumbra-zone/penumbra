@@ -1,4 +1,5 @@
 use anyhow::Result;
+use penumbra_crypto::asset;
 use penumbra_proto::thin_wallet::{thin_wallet_client::ThinWalletClient, AssetListRequest};
 use tracing::instrument;
 
@@ -16,7 +17,9 @@ pub async fn assets(state: &mut ClientStateFile, wallet_uri: String) -> Result<(
             asset.asset_id.try_into().map_err(|_| {
                 anyhow::anyhow!("could not parse asset ID for denom {}", asset.asset_denom)
             })?,
-            asset.asset_denom.clone(),
+            asset::REGISTRY
+                .parse_base(&asset.asset_denom)
+                .ok_or_else(|| anyhow::anyhow!("invalid asset denomination"))?,
         );
     }
 
