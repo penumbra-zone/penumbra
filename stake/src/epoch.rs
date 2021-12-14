@@ -15,14 +15,16 @@ impl Epoch {
             return Err(anyhow::anyhow!("block height should never be negative"));
         }
 
-        Epoch::from_blockheight_unsigned(block_height.unsigned_abs())
+        Ok(Epoch::from_blockheight_unsigned(
+            block_height.unsigned_abs(),
+        ))
     }
 
     /// from_blockheight_unsigned instantiates a new `Epoch` from a given
     /// unsigned block height. Due to the implementation in tendermint using
     /// signed representation for block height, we provide this
     /// as well as a signed implemention (`from_blockheight`)
-    pub fn from_blockheight_unsigned(block_height: u64, epoch_duration: u64) -> Result<Self> {
+    pub fn from_blockheight_unsigned(block_height: u64, epoch_duration: u64) -> Self {
         Epoch {
             epoch: block_height / epoch_duration,
         }
