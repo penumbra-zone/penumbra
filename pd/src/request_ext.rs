@@ -3,7 +3,6 @@ use tendermint::abci::{
     request::{BeginBlock, CheckTx, DeliverTx, EndBlock, InitChain, Query},
     Request,
 };
-
 use tracing::error_span;
 
 pub trait RequestExt {

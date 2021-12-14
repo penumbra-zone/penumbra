@@ -1,8 +1,6 @@
 use ark_ff::PrimeField;
-
-use proptest::prelude::*;
-
 use decaf377_ka as ka;
+use proptest::prelude::*;
 
 fn fq_strategy() -> BoxedStrategy<decaf377::Fq> {
     any::<[u8; 32]>()

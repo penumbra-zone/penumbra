@@ -1,11 +1,11 @@
 //! Transparent proofs for `MVP1` of the Penumbra system.
 
+use std::convert::{TryFrom, TryInto};
+
 use decaf377::FieldExt;
 use decaf377_rdsa::{SpendAuth, VerificationKey};
-use std::convert::{TryFrom, TryInto};
-use thiserror;
-
 use penumbra_proto::{transparent_proofs, Message, Protobuf};
+use thiserror;
 
 use crate::{
     action::error::ProtoError, asset, ka, keys, merkle, merkle::Hashable, note, value, Fq, Fr,
@@ -454,10 +454,10 @@ impl TryFrom<&[u8]> for OutputProof {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ark_ff::UniformRand;
     use rand_core::OsRng;
 
+    use super::*;
     use crate::{
         keys::SpendKey,
         merkle,

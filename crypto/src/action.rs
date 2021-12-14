@@ -1,5 +1,6 @@
-use penumbra_proto::{transaction, Protobuf};
 use std::convert::{TryFrom, TryInto};
+
+use penumbra_proto::{transaction, Protobuf};
 
 pub mod error;
 pub mod output;

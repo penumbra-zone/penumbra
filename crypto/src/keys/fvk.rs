@@ -2,13 +2,12 @@ use ark_ff::PrimeField;
 use decaf377::FieldExt;
 use once_cell::sync::Lazy;
 
+use super::{DiversifierKey, IncomingViewingKey, NullifierKey, OutgoingViewingKey};
 use crate::{
     ka, merkle, note, prf,
     rdsa::{SpendAuth, VerificationKey},
     Fq, Fr, Nullifier,
 };
-
-use super::{DiversifierKey, IncomingViewingKey, NullifierKey, OutgoingViewingKey};
 
 static IVK_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| Fq::from_le_bytes_mod_order(b"penumbra.derive.ivk"));
 

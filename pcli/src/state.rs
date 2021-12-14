@@ -4,7 +4,6 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-
 use penumbra_wallet::ClientState;
 
 pub struct ClientStateFile {

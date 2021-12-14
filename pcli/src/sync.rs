@@ -1,9 +1,7 @@
 use anyhow::Result;
-
 use penumbra_proto::light_wallet::{
     light_wallet_client::LightWalletClient, CompactBlockRangeRequest,
 };
-
 use tracing::instrument;
 
 use crate::ClientStateFile;

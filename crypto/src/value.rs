@@ -1,12 +1,14 @@
 //! Values (?)
 
-use serde::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
-use std::ops::Deref;
-use thiserror;
+use std::{
+    convert::{TryFrom, TryInto},
+    ops::Deref,
+};
 
 use ark_ff::PrimeField;
 use once_cell::sync::Lazy;
+use serde::{Deserialize, Serialize};
+use thiserror;
 
 use crate::{asset, Fq, Fr};
 

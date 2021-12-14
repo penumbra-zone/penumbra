@@ -1,8 +1,9 @@
+use std::convert::TryInto;
+
 use ark_ff::{Field, UniformRand};
 use bitvec::{array::BitArray, order};
 use decaf377::{FieldExt, Fr};
 use rand_core::{CryptoRng, RngCore};
-use std::convert::TryInto;
 
 use crate::{hash, hkd, Clue, Error, MAX_PRECISION};
 

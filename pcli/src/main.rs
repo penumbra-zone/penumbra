@@ -1,14 +1,13 @@
+use std::path::PathBuf;
+
 use anyhow::{anyhow, Result};
 use comfy_table::{presets, Table};
 use directories::ProjectDirs;
-use penumbra_crypto::keys::SpendSeed;
+use penumbra_crypto::{keys::SpendSeed, CURRENT_CHAIN_ID};
+use penumbra_wallet::{ClientState, UnspentNote, Wallet};
 use rand_core::OsRng;
 use sha2::{Digest, Sha256};
-use std::path::PathBuf;
 use structopt::StructOpt;
-
-use penumbra_crypto::CURRENT_CHAIN_ID;
-use penumbra_wallet::{ClientState, UnspentNote, Wallet};
 
 pub mod opt;
 pub mod warning;

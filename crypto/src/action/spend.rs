@@ -1,9 +1,8 @@
 use std::convert::{TryFrom, TryInto};
 
 use bytes::Bytes;
-use rand_core::{CryptoRng, RngCore};
-
 use penumbra_proto::{transaction, Message, Protobuf};
+use rand_core::{CryptoRng, RngCore};
 
 use crate::{
     action::error::ProtoError,

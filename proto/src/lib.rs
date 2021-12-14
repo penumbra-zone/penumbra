@@ -23,9 +23,9 @@ pub mod transaction {
 pub mod sighash {
     include!(concat!(env!("OUT_DIR"), "/penumbra.sighash.rs"));
 
-    use super::transaction::action::Action as TxAction;
-    use super::transaction::Spend;
     use sig_hash_action::Action as SHAction;
+
+    use super::transaction::{action::Action as TxAction, Spend};
 
     impl From<super::transaction::Action> for SigHashAction {
         fn from(action: super::transaction::Action) -> Self {

@@ -1,9 +1,9 @@
-use ark_ff::UniformRand;
-use rand_core::{CryptoRng, RngCore};
 use std::convert::{TryFrom, TryInto};
-use zeroize::Zeroize;
 
+use ark_ff::UniformRand;
 use decaf377::{self, FieldExt};
+use rand_core::{CryptoRng, RngCore};
+use zeroize::Zeroize;
 
 /// A public key sent to the counterparty in the key agreement protocol.
 ///

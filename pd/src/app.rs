@@ -10,6 +10,12 @@ use anyhow::anyhow;
 use bytes::Bytes;
 use futures::future::FutureExt;
 use metrics::increment_counter;
+use penumbra_crypto::{
+    asset,
+    merkle::{self, NoteCommitmentTree, TreeExt},
+    note, Nullifier, Transaction,
+};
+use penumbra_stake::Validator;
 use tendermint::abci::{
     request::{self, BeginBlock, CheckTxKind, EndBlock},
     response, Request, Response,
@@ -18,15 +24,6 @@ use tokio::sync::oneshot;
 use tower::Service;
 use tower_abci::BoxError;
 use tracing::{instrument, Instrument, Span};
-
-use penumbra_crypto::{
-    asset,
-    merkle::TreeExt,
-    merkle::{self, NoteCommitmentTree},
-    note, Nullifier, Transaction,
-};
-
-use penumbra_stake::Validator;
 
 use crate::{
     db::schema,

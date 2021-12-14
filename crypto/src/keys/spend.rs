@@ -3,12 +3,11 @@ use std::convert::TryFrom;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
+use super::{FullViewingKey, IncomingViewingKey, NullifierKey, OutgoingViewingKey};
 use crate::{
     prf,
     rdsa::{SigningKey, SpendAuth},
 };
-
-use super::{FullViewingKey, IncomingViewingKey, NullifierKey, OutgoingViewingKey};
 
 pub const SPENDSEED_LEN_BYTES: usize = 32;
 

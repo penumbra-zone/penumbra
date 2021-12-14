@@ -1,6 +1,6 @@
-use bytes::Bytes;
 use std::convert::{TryFrom, TryInto};
 
+use bytes::Bytes;
 use penumbra_proto::{transaction, Protobuf};
 
 use super::error::ProtoError;

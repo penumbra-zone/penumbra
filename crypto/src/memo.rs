@@ -1,10 +1,11 @@
+use std::convert::{TryFrom, TryInto};
+
 use anyhow::anyhow;
 use chacha20poly1305::{
     aead::{Aead, NewAead},
     ChaCha20Poly1305, Key, Nonce,
 };
 use once_cell::sync::Lazy;
-use std::convert::{TryFrom, TryInto};
 
 use crate::{ka, keys::IncomingViewingKey, note::derive_symmetric_key, Address};
 
@@ -96,10 +97,10 @@ pub struct MemoCiphertext(pub [u8; MEMO_CIPHERTEXT_LEN_BYTES]);
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
-    use crate::keys::SpendKey;
     use rand_core::OsRng;
+
+    use super::*;
+    use crate::keys::SpendKey;
 
     #[test]
     fn test_memo_encryption_and_decryption() {

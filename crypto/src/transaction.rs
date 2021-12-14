@@ -2,12 +2,12 @@ use std::convert::{TryFrom, TryInto};
 
 use ark_ff::Zero;
 use bytes::Bytes;
-
 use decaf377::FieldExt;
-
 use penumbra_proto::{
-    transaction::Fee as ProtoFee, transaction::Transaction as ProtoTransaction,
-    transaction::TransactionBody as ProtoTransactionBody, Message, Protobuf,
+    transaction::{
+        Fee as ProtoFee, Transaction as ProtoTransaction, TransactionBody as ProtoTransactionBody,
+    },
+    Message, Protobuf,
 };
 
 use crate::{
@@ -291,13 +291,10 @@ impl From<ProtoFee> for Fee {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
-    use crate::keys::SpendKey;
-    use crate::memo::MemoPlaintext;
-    use crate::transaction::Error;
-    use crate::{Fq, Value};
     use rand_core::OsRng;
+
+    use super::*;
+    use crate::{keys::SpendKey, memo::MemoPlaintext, transaction::Error, Fq, Value};
 
     #[test]
     fn test_transaction_single_output_fails_due_to_nonzero_value_balance() {

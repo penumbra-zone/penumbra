@@ -1,16 +1,15 @@
-use metrics_exporter_prometheus::PrometheusBuilder;
-use rand_core::OsRng;
 use std::net::SocketAddr;
-use structopt::StructOpt;
-use tonic::transport::Server;
 
+use metrics_exporter_prometheus::PrometheusBuilder;
+use pd::{genesis, App, State};
 use penumbra_proto::{
     light_wallet::light_wallet_server::LightWalletServer,
     thin_wallet::thin_wallet_server::ThinWalletServer,
 };
 use penumbra_stake::{FundingStream, Validator};
-
-use pd::{genesis, App, State};
+use rand_core::OsRng;
+use structopt::StructOpt;
+use tonic::transport::Server;
 
 #[derive(Debug, StructOpt)]
 #[structopt(

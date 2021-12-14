@@ -1,8 +1,3 @@
-use tokio::sync::mpsc;
-use tokio_stream::wrappers::ReceiverStream;
-use tonic::Status;
-use tracing::{instrument, Instrument, Span};
-
 use penumbra_proto::{
     light_wallet::{light_wallet_server::LightWallet, CompactBlock, CompactBlockRangeRequest},
     thin_wallet::{
@@ -10,6 +5,10 @@ use penumbra_proto::{
         TransactionByNoteRequest, TransactionDetail,
     },
 };
+use tokio::sync::mpsc;
+use tokio_stream::wrappers::ReceiverStream;
+use tonic::Status;
+use tracing::{instrument, Instrument, Span};
 
 use crate::State;
 

@@ -1,5 +1,4 @@
 pub use decaf377::{FieldExt, Fq, Fr};
-
 pub use decaf377_fmd as fmd;
 pub use decaf377_ka as ka;
 pub use decaf377_rdsa as rdsa;
@@ -17,12 +16,8 @@ pub mod proofs;
 pub mod transaction;
 pub mod value;
 
-pub use address::CURRENT_CHAIN_ID;
-
-pub use action::output::Output;
-pub use action::spend::Spend;
-pub use action::Action;
-pub use address::Address;
+pub use action::{output::Output, spend::Spend, Action};
+pub use address::{Address, CURRENT_CHAIN_ID};
 pub use note::Note;
 pub use nullifier::Nullifier;
 pub use transaction::Transaction;

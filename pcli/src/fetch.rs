@@ -1,7 +1,5 @@
 use anyhow::Result;
-
 use penumbra_proto::thin_wallet::{thin_wallet_client::ThinWalletClient, AssetListRequest};
-
 use tracing::instrument;
 
 use crate::ClientStateFile;

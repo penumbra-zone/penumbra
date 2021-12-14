@@ -1,16 +1,15 @@
-use ark_ff::PrimeField;
-use ark_ff::Zero;
-use decaf377::{FieldExt, Fq};
-use incrementalmerkletree;
-use once_cell::sync::Lazy;
 use std::convert::{TryFrom, TryInto};
 
-use crate::note;
-
+use ark_ff::{PrimeField, Zero};
+use decaf377::{FieldExt, Fq};
+use incrementalmerkletree;
 pub use incrementalmerkletree::{
     bridgetree::{self, AuthFragment, BridgeTree},
     Altitude, Frontier, Hashable, Position, Recording, Tree,
 };
+use once_cell::sync::Lazy;
+
+use crate::note;
 
 pub const DEPTH: usize = 32;
 pub type NoteCommitmentTree = BridgeTree<note::Commitment, { DEPTH as u8 }>;
@@ -72,9 +71,9 @@ impl Hashable for note::Commitment {
 
 #[cfg(feature = "sqlx")]
 mod sqlx_impls {
-    use super::*;
-
     use sqlx::{Database, Decode, Encode, Postgres, Type};
+
+    use super::*;
 
     impl<'r> Decode<'r, Postgres> for Root {
         fn decode(

@@ -1,16 +1,17 @@
+use std::ops::Deref;
+
 use ark_ff::{UniformRand, Zero};
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
-use std::ops::Deref;
 
 use super::Error;
-use crate::rdsa::{Binding, Signature, SigningKey, SpendAuth};
 use crate::{
     action::{output, spend, Action},
     asset, ka,
     keys::{OutgoingViewingKey, SpendKey},
     memo::MemoPlaintext,
     merkle,
+    rdsa::{Binding, Signature, SigningKey, SpendAuth},
     transaction::{Fee, Transaction, TransactionBody},
     value, Address, Fr, Note, Output, Spend, Value,
 };

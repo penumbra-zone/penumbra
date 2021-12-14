@@ -1,10 +1,11 @@
+use std::convert::{TryFrom, TryInto};
+
 use aes::Aes256;
 use anyhow::anyhow;
 use ark_ff::PrimeField;
 use derivative::Derivative;
 use fpe::ff1;
 use serde::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
 
 use crate::Fq;
 
@@ -145,9 +146,9 @@ impl TryFrom<DiversifierIndex> for u64 {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     use proptest::prelude::*;
+
+    use super::*;
 
     fn diversifier_index_strategy() -> BoxedStrategy<DiversifierIndex> {
         any::<[u8; 11]>()
