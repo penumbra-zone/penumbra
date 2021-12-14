@@ -82,6 +82,7 @@ async fn main() -> Result<()> {
 
             let serialized_tx: Vec<u8> = tx.into();
 
+            tracing::info!("broadcasting transaction...");
             let rsp = reqwest::get(format!(
                 r#"http://{}:{}/broadcast_tx_sync?tx=0x{}"#,
                 opt.node,

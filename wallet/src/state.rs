@@ -237,7 +237,7 @@ impl ClientState {
                 let note_commitment = note.commit();
 
                 // Add the note to the pending set
-                tracing::info!(value = ?note.value(), "moving note from unspent set to pending set");
+                tracing::debug!(value = ?note.value(), "moving note from unspent set to pending set");
                 self.unspent_set.remove(&note_commitment);
                 self.pending_set
                     .insert(note_commitment, (timeout, note.clone()));
@@ -280,7 +280,7 @@ impl ClientState {
                 let note_commitment = note.commit();
 
                 // Add the note to the pending change set
-                tracing::info!(value = ?note.value(), "adding note to pending change set");
+                tracing::debug!(value = ?note.value(), "adding note to pending change set");
                 self.pending_change_set
                     .insert(note_commitment, (timeout, note));
             }
@@ -539,8 +539,8 @@ impl ClientState {
                     self.spent_set.insert(note_commitment, note);
                 } else if self.spent_set.contains_key(&note_commitment) {
                     // If the nullifier is already in the spent set, it means we've already
-                    // processed this note and it's spent
-                    tracing::info!(?nullifier, "found nullifier for already-spent note")
+                    // processed this note and it's spent. This should never happen
+                    tracing::warn!(?nullifier, "found nullifier for already-spent note, possibly corrupted state?")
                 }
             } else {
                 // This happens all the time, but if you really want to see every nullifier,
