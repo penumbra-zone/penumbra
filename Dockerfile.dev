@@ -22,6 +22,7 @@ COPY pd/build.rs ./pd
 # there will be a complete rebuild. This is maybe possible to avoid.
 COPY proto ./proto
 COPY crypto ./crypto
+COPY stake ./stake
 COPY decaf377-fmd ./decaf377-fmd
 COPY decaf377-ka ./decaf377-ka
 COPY wallet ./wallet
@@ -34,7 +35,7 @@ RUN cargo fetch
 RUN cargo build --bin pd
 
 # Remove the cached builds of internal packages.
-RUN rm -rf pcli pd crypto wallet config
+RUN rm -rf pcli pd crypto wallet config stake
 
 # Copy the repo source now that dependencies have been built and cached.
 COPY . .
