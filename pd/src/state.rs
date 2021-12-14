@@ -1,12 +1,11 @@
 use anyhow::{Context, Result};
+use futures::stream;
+use futures::{Stream, StreamExt};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{query, query_as, Pool, Postgres};
-use tracing_subscriber::fmt::format::Compact;
 use std::collections::{BTreeMap, VecDeque};
-use std::pin::Pin;
 use tendermint::block;
 use tracing::instrument;
-use futures::stream::{StreamExt};
 
 use penumbra_crypto::{
     merkle::{self, NoteCommitmentTree, TreeExt},
@@ -70,11 +69,7 @@ impl State {
         .await?;
 
         // TODO: this could be batched / use prepared statements
-        for (
-            note_commitment,
-            positioned_note
-        ) in block.notes.into_iter()
-        {
+        for (note_commitment, positioned_note) in block.notes.into_iter() {
             query!(
                 r#"
                 INSERT INTO notes (
@@ -279,13 +274,11 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
             .fetch_all(&mut conn)
             .await?
             .into_iter()
-            .map(
-                |row| StateFragment {
-                    note_commitment: row.note_commitment.into(),
-                    ephemeral_key: row.ephemeral_key.into(),
-                    encrypted_note: row.encrypted_note.into(),
-                },
-            )
+            .map(|row| StateFragment {
+                note_commitment: row.note_commitment.into(),
+                ephemeral_key: row.ephemeral_key.into(),
+                encrypted_note: row.encrypted_note.into(),
+            })
             .collect(),
         })
     }
@@ -293,13 +286,14 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
     /// Retrieve the set of [`CompactBlock`]s for the given range of heights.
     ///
     /// If the block does not exist, the resulting `CompactBlock`s will be empty.
-    pub async fn compact_block_from_range(&self, start_height: i64, end_height: i64) -> Result<Vec<CompactBlock>> {
-
-        let mut resulting_blocks = Vec::<CompactBlock>::new();
-
+    pub async fn compact_block_from_range(
+        &self,
+        start_height: i64,
+        end_height: i64,
+    ) -> Result<impl Stream<Item = CompactBlock> + 'static> {
         let mut conn1 = self.pool.acquire().await?;
 
-        let mut nullifier_stream = query!(
+        let nullifier_stream = query!(
             "SELECT height, nullifier
             FROM nullifiers 
             WHERE height 
@@ -309,11 +303,11 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
             end_height
         )
         .fetch(&mut conn1)
-        .peekable();
+        .filter_map(move |x| async move { x.ok() });
 
         let mut conn2 = self.pool.acquire().await?;
 
-        let mut fragment_stream = query!(
+        let fragment_stream = query!(
             "SELECT height, note_commitment, ephemeral_key, encrypted_note 
             FROM notes 
             WHERE height 
@@ -323,68 +317,29 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
             end_height
         )
         .fetch(&mut conn2)
-        .peekable();
+        .filter_map(move |x| async move { x.ok() });
 
-        for current_height in start_height..=end_height {
+        let nullifiers = StreamExt::then(
+            group_ascending_by_height(nullifier_stream.map(|x| (x.height, x))),
+            Some,
+        )
+        .chain(stream::repeat(None));
 
-            let mut current_block = CompactBlock {
-                height: current_height as u32, 
-                nullifiers: Vec::new(), 
-                fragments: Vec::new()
-            };
+        let fragments = group_ascending_by_height(fragment_stream.map(|x| (x.height, x)))
+            .then(move |x| async move { Some(x) })
+            .chain(stream::repeat(None));
 
-            while let Some(peeked) = Pin::new(&mut nullifier_stream).peek().await {
+        // TODO: terminate the combined stream when we encounter a pair `(None, None)`
 
-                match peeked {
-                    Ok(next_record) => 
-                        if next_record.height == current_height { 
-                            current_block.nullifiers.push(
-                            nullifier_stream.next()
-                            .await
-                            .expect("already peeked Some")
-                            .unwrap()
-                            .nullifier.into()) 
-                        }
-                        else { break }
-                    _ => break
-                }
-            }
+        let both = nullifiers.zip(fragments);
 
-            let mut fragment_records = Vec::new();
+        // .map(|x| CompactBlock {
+        //     nullifiers: x.0,
+        //     fragments: x.1,
+        //     height: x.height,
+        // });
 
-            while let Some(peeked) = Pin::new(&mut fragment_stream).peek().await {
-
-                match peeked {
-                    Ok(next_record) => 
-                        if next_record.height == current_height.into() { 
-                            fragment_records.push(
-                            fragment_stream.next()
-                            .await
-                            .expect("already peeked Some")
-                            .unwrap())
-                        }
-                        else { break }
-                    _ => break
-                }
-            }
-
-            current_block.fragments = fragment_records
-            .into_iter()
-            .map(
-                |row| StateFragment {
-                    note_commitment: row.note_commitment.into(),
-                    ephemeral_key: row.ephemeral_key.into(),
-                    encrypted_note: row.encrypted_note.into(),
-                },
-            )
-            .collect();
-
-            resulting_blocks.push(current_block);
-
-        };
-
-        Ok(resulting_blocks)
-    
+        Ok(both)
     }
 
     /// Retreive the current validator set.
@@ -484,4 +439,43 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
             })
             .collect())
     }
+}
+
+async fn group_ascending_by_height<T: 'static>(
+    stream: impl futures::Stream<Item = (i64, T)> + 'static,
+) -> impl futures::Stream<Item = (i64, Vec<T>)> + 'static {
+    use futures::{future::ready, stream::iter};
+    use std::mem::replace;
+
+    stream
+        .scan(None, |state: &mut Option<(i64, Vec<T>)>, (i, x)| {
+            ready(Some(match state {
+                None => {
+                    *state = Some((i, vec![x]));
+                    None
+                }
+                Some(state) => {
+                    if i == state.0 {
+                        state.1.push(x);
+                        None
+                    } else {
+                        Some(replace(state, (i, vec![x])))
+                    }
+                }
+            }))
+        })
+        .filter_map(|x| async move { x })
+        .scan(None, |state: &mut Option<i64>, (i, x)| {
+            let output = iter(
+                match state {
+                    None => 0..0,
+                    Some(i_previous) => *i_previous + 1..i,
+                }
+                .map(|j| (j, vec![])),
+            )
+            .chain(iter([(i, x)]));
+            *state = Some(i);
+            ready(Some(output))
+        })
+        .flatten()
 }

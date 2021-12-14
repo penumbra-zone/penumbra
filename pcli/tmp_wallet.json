@@ -1,0 +1,17 @@
+{
+  "last_block_height": null,
+  "note_commitment_tree": "0000000000000000000000000000000000000000000000000a00000000000000",
+  "nullifier_map": [],
+  "unspent_set": [],
+  "pending_set": [],
+  "pending_change_set": [],
+  "spent_set": [],
+  "transactions": [],
+  "asset_registry": [],
+  "wallet": {
+    "address_labels": [
+      "Default"
+    ],
+    "spend_seed": "6ea68485588b3c145b93d8376b17cd36725b2ad481853b32863ecefee1262230"
+  }
+}
