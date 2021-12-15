@@ -24,6 +24,12 @@ impl DerefMut for ClientStateFile {
     }
 }
 
+impl Drop for ClientStateFile {
+    fn drop(&mut self) {
+        self.commit().unwrap();
+    }
+}
+
 impl ClientStateFile {
     /// Create a new wrapper by saving to the provided `path`.
     ///
