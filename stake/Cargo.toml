@@ -21,6 +21,12 @@ tendermint = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branc
 anyhow = "1"
 serde_json = "1"
 serde = { version = "1", features = ["derive"] }
+bech32 = "0.8"
+regex = "1.5"
+
+[dev-dependencies]
+ed25519-consensus = "1.2"
+rand_core = "0.6"
 
 [build-dependencies]
 vergen = "5"
