@@ -167,7 +167,7 @@ async fn main() -> anyhow::Result<()> {
                 allocations: vec![
                     genesis::Allocation {
                         amount: 1_000_000,
-                        denom: "penumbra".to_string(),
+                        denom: "upenumbra".to_string(),
                         address: ivk.payment_address(10u8.into()).0,
                     },
                     genesis::Allocation {
