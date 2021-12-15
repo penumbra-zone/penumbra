@@ -1,9 +1,7 @@
 use serde::{Deserialize, Serialize};
 use tendermint::{vote, PublicKey};
 
-use crate::FundingStream;
-
-const PENUMBRA_BECH32_VALIDATOR_PREFIX: &str = "penumbravalpub";
+use crate::{FundingStream, VALIDATOR_IDENTITY_BECH32_PREFIX};
 
 /// Validator tracks the Penumbra validator's long-term consensus key (tm_pubkey), as well as their
 /// voting power.
@@ -50,7 +48,7 @@ impl Validator {
     ///
     /// TKTK: should this return an address type?
     pub fn consensus_address(&self) -> String {
-        self.tm_pubkey.to_bech32(PENUMBRA_BECH32_VALIDATOR_PREFIX)
+        self.tm_pubkey.to_bech32(VALIDATOR_IDENTITY_BECH32_PREFIX)
     }
 
     // why isn't tm_pubkey public?
