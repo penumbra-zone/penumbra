@@ -41,4 +41,12 @@ mod tests {
             "upenumbra".to_string()
         );
     }
+
+    #[test]
+    fn test_registry_fallthrough() {
+        // We should be able to use `parse_base` with a base denomination for assets
+        // not included in the hardcoded registry.
+        let base_denom = REGISTRY.parse_base("cube").unwrap();
+        assert_eq!(format!("{}", base_denom), "cube".to_string());
+    }
 }
