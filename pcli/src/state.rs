@@ -27,6 +27,7 @@ impl DerefMut for ClientStateFile {
 
 impl Drop for ClientStateFile {
     fn drop(&mut self) {
+        self.commit().unwrap();
         self.lock.unlock().unwrap();
     }
 }
