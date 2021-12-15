@@ -19,7 +19,9 @@ pub async fn assets(state: &mut ClientStateFile, wallet_uri: String) -> Result<(
             })?,
             asset::REGISTRY
                 .parse_base(&asset.asset_denom)
-                .ok_or_else(|| anyhow::anyhow!("invalid asset denomination"))?,
+                .ok_or_else(|| {
+                    anyhow::anyhow!("invalid asset denomination: {}", asset.asset_denom)
+                })?,
         );
     }
 
