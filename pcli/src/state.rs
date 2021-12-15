@@ -1,5 +1,4 @@
 use std::{
-    fs,
     ops::{Deref, DerefMut},
     path::{Path, PathBuf},
 };
@@ -29,7 +28,6 @@ impl DerefMut for ClientStateFile {
 impl Drop for ClientStateFile {
     fn drop(&mut self) {
         self.lock.unlock().unwrap();
-        fs::remove_file(&self.path.with_extension("lock")).unwrap();
     }
 }
 
