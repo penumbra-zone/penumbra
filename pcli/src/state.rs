@@ -1,6 +1,6 @@
 use std::{
     ops::{Deref, DerefMut},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 use anyhow::{Context, Result};
@@ -9,6 +9,7 @@ use penumbra_wallet::ClientState;
 pub struct ClientStateFile {
     path: PathBuf,
     state: ClientState,
+    lock: fslock::LockFile,
 }
 
 impl Deref for ClientStateFile {
@@ -29,13 +30,17 @@ impl ClientStateFile {
     ///
     /// If you already have a wrapper, use [`Self::commit`].
     pub fn save(state: ClientState, path: PathBuf) -> Result<Self> {
-        let wrapper = Self { state, path };
+        let lock = lock_wallet(&path)?;
+
+        let wrapper = Self { state, path, lock };
         wrapper.commit()?;
         Ok(wrapper)
     }
 
     /// Create a new wrapper by loading from the provided `path`.
     pub fn load(path: PathBuf) -> Result<Self> {
+        let lock = lock_wallet(&path)?;
+
         let mut state: ClientState = match std::fs::read(&path) {
             Ok(data) => serde_json::from_slice(&data).context("Could not parse wallet data")?,
             Err(err) => match err.kind() {
@@ -50,7 +55,7 @@ impl ClientStateFile {
         // as of when it is taken off disk
         state.prune_timeouts();
 
-        Ok(Self { state, path })
+        Ok(Self { state, path, lock })
     }
 
     /// Commit the client state to disk.
@@ -72,4 +77,17 @@ impl ClientStateFile {
 
         Ok(())
     }
+}
+
+fn lock_wallet(path: &Path) -> Result<fslock::LockFile> {
+    let mut lock = fslock::LockFile::open(&path.with_extension("lock"))?;
+
+    // Try to lock the file and note in the log if we are waiting for another process to finish
+    tracing::debug!(?path, "Locking wallet file");
+    if !lock.try_lock()? {
+        tracing::info!(?path, "Waiting to acquire lock for wallet");
+        lock.lock()?;
+    }
+
+    Ok(lock)
 }
