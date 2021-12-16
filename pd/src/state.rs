@@ -37,8 +37,9 @@ impl State {
     pub async fn connect(uri: &str) -> Result<Self> {
         tracing::info!("connecting to postgres");
         let pool = PgPoolOptions::new().max_connections(4).connect(uri).await?;
-        tracing::info!("building tables");
-        db::init_tables(&pool).await?;
+        tracing::info!("running migrations");
+        sqlx::migrate!("./migrations").run(&pool).await?;
+        tracing::info!("finished initializing state");
         Ok(State { pool })
     }
 

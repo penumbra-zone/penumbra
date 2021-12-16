@@ -194,8 +194,10 @@ async fn main() -> anyhow::Result<()> {
                 )],
             };
 
-            println!("// Edit the following template according to your needs");
-            println!("\n{}\n", serde_json::to_string_pretty(&app_state)?);
+            // Print this comment to stderr so stdout can be redirected as
+            // syntactically valid JSON
+            eprintln!("// Edit the following template according to your needs\n");
+            println!("{}", serde_json::to_string_pretty(&app_state)?);
         }
     }
 
