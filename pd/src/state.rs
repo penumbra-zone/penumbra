@@ -1,9 +1,12 @@
 use std::{
     collections::{BTreeMap, VecDeque},
+    pin::Pin,
     str::FromStr,
+    sync::{Arc, Mutex, MutexGuard},
 };
 
 use anyhow::{Context, Result};
+use futures::stream::{self, Stream, StreamExt};
 use penumbra_crypto::{
     merkle::{self, NoteCommitmentTree, TreeExt},
     Address, Nullifier,
@@ -245,40 +248,88 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
     /// Retrieve the [`CompactBlock`] for the given height.
     ///
     /// If the block does not exist, the resulting `CompactBlock` will be empty.
-    pub async fn compact_block(&self, height: i64) -> Result<CompactBlock> {
-        let mut conn = self.pool.acquire().await?;
+    pub async fn compact_blocks<'a>(
+        &self,
+        start_height: i64,
+        end_height: i64,
+        conn_nullifiers: &'a mut sqlx::pool::PoolConnection<Postgres>,
+        conn_fragments: &'a mut sqlx::pool::PoolConnection<Postgres>,
+    ) -> Result<impl Stream<Item = CompactBlock> + 'a> {
+        // let mut conn_nullifiers = self.pool.acquire().await?;
+        // let mut conn_fragments = self.pool.acquire().await?;
 
-        Ok(CompactBlock {
-            height: height as u32,
-            nullifiers: query!(
-                "SELECT nullifier 
+        let nullifiers = query!(
+            "SELECT height, nullifier 
                 FROM nullifiers 
-                WHERE height = $1",
-                height
-            )
-            .fetch_all(&mut conn)
-            .await?
-            .into_iter()
-            .map(|row| row.nullifier.into())
-            .collect(),
+                WHERE height BETWEEN $1 AND $2
+                ORDER BY height ASC",
+            start_height,
+            end_height
+        )
+        .fetch(conn_nullifiers)
+        .peekable();
 
-            fragments: query!(
-                "SELECT note_commitment, ephemeral_key, encrypted_note 
-                FROM notes 
-                WHERE height = $1 
-                ORDER BY position ASC",
-                height
-            )
-            .fetch_all(&mut conn)
-            .await?
-            .into_iter()
-            .map(|row| StateFragment {
-                note_commitment: row.note_commitment.into(),
-                ephemeral_key: row.ephemeral_key.into(),
-                encrypted_note: row.encrypted_note.into(),
-            })
-            .collect(),
-        })
+        let fragments = query!(
+            "SELECT height, note_commitment, ephemeral_key, encrypted_note
+                 FROM notes
+                 WHERE height BETWEEN $1 AND $2
+                 ORDER BY position ASC",
+            start_height,
+            end_height
+        )
+        .fetch(conn_fragments)
+        .peekable();
+
+        let nullifiers = Arc::new(Mutex::new(nullifiers));
+        let fragments = Arc::new(Mutex::new(fragments));
+
+        Ok(stream::iter(start_height..=end_height).then(move |height| {
+            let nullifiers: Arc<Mutex<_>> = nullifiers.clone();
+            let fragments: Arc<Mutex<_>> = fragments.clone();
+
+            let mut block = CompactBlock {
+                height: height as u32,
+                nullifiers: vec![],
+                fragments: vec![],
+            };
+
+            async move {
+                let mut nullifiers: MutexGuard<_> = nullifiers.lock().unwrap();
+                let mut fragments: MutexGuard<_> = fragments.lock().unwrap();
+
+                while let Some(Ok(row)) = Pin::new(&mut *nullifiers).peek().await {
+                    if row.height == height {
+                        let row = Pin::new(&mut *nullifiers)
+                            .next()
+                            .await
+                            .expect("we already peeked, so there is a next row")
+                            .expect("we already peeked and confirmed there is no error");
+                        block.nullifiers.push(row.nullifier.into());
+                    } else {
+                        break;
+                    }
+                }
+
+                while let Some(Ok(row)) = Pin::new(&mut *fragments).peek().await {
+                    if row.height == Some(height) {
+                        let row = Pin::new(&mut *fragments)
+                            .next()
+                            .await
+                            .expect("we already peeked, so there is a next row")
+                            .expect("we already peeked and confirmed there is no error");
+                        block.fragments.push(StateFragment {
+                            note_commitment: row.note_commitment.into(),
+                            ephemeral_key: row.ephemeral_key.into(),
+                            encrypted_note: row.encrypted_note.into(),
+                        });
+                    } else {
+                        break;
+                    }
+                }
+
+                block
+            }
+        }))
     }
 
     /// Retreive the current validator set.
