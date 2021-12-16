@@ -243,9 +243,9 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
             .unwrap_or_else(|| vec![0; 32]))
     }
 
-    /// Retrieve the [`CompactBlock`] for the given height.
+    /// Retrieve a stream of [`CompactBlock`]s for the given (inclusive) range.
     ///
-    /// If the block does not exist, the resulting `CompactBlock` will be empty.
+    /// If the range corresponds to blocks that don't exist, the stream will be empty.
     pub fn compact_blocks(
         &self,
         start_height: i64,
