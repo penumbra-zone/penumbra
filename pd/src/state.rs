@@ -281,95 +281,41 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
                     nullifiers: vec![],
                 };
 
-                while let Some(Ok(row)) = Pin::new(&mut nullifiers).peek().await {
-                    if row.height == height {
-                        let row = Pin::new(&mut nullifiers)
-                            .next()
-                            .await
-                            .expect("we already peeked, so there is a next row")
-                            .expect("we already peeked and confirmed there is no error");
-                        compact_block.nullifiers.push(row.nullifier.into());
-                    } else {
-                        break;
+                while let Some(row) = Pin::new(&mut nullifiers).peek().await {
+                    if let Ok(row) = row {
+                        if row.height != height {
+                            break;
+                        }
                     }
+
+                    let row = Pin::new(&mut nullifiers)
+                        .next()
+                        .await
+                        .expect("we already peeked, so there is a next row")?;
+                    compact_block.nullifiers.push(row.nullifier.into());
                 }
 
-                while let Some(Ok(row)) = Pin::new(&mut fragments).peek().await {
-                    if row.height == Some(height) {
-                        let row = Pin::new(&mut fragments)
-                            .next()
-                            .await
-                            .expect("we already peeked, so there is a next row")
-                            .expect("we already peeked and confirmed there is no error");
-                        compact_block.fragments.push(StateFragment {
-                            note_commitment: row.note_commitment.into(),
-                            ephemeral_key: row.ephemeral_key.into(),
-                            encrypted_note: row.encrypted_note.into(),
-                        });
-                    } else {
-                        todo!("in case of error, return appropriately");
-                        break;
+                while let Some(row) = Pin::new(&mut nullifiers).peek().await {
+                    if let Ok(row) = row {
+                        if row.height != height {
+                            break;
+                        }
                     }
+
+                    let row = Pin::new(&mut fragments)
+                        .next()
+                        .await
+                        .expect("we already peeked, so there is a next row")?;
+                    compact_block.fragments.push(StateFragment {
+                        note_commitment: row.note_commitment.into(),
+                        ephemeral_key: row.ephemeral_key.into(),
+                        encrypted_note: row.encrypted_note.into(),
+                    });
                 }
 
                 yield compact_block;
             }
         })
-
-        // let nullifiers = Rc::new(RefCell::new(nullifiers));
-        // let fragments = Rc::new(RefCell::new(fragments));
-
-        // stream::iter(start_height..=end_height).then(move |height| {
-        //     let nullifiers: Rc<RefCell<_>> = nullifiers.clone();
-        //     let fragments: Rc<RefCell<_>> = fragments.clone();
-
-        //     let mut block = CompactBlock {
-        //         height: height as u32,
-        //         nullifiers: vec![],
-        //         fragments: vec![],
-        //     };
-
-        //     async move {
-        //         let mut nullifiers = nullifiers.borrow_mut();
-        //         let mut fragments = fragments.borrow_mut();
-
-        //         // TODO: work on combining these streams into a single select for efficiency
-
-        //         while let Some(Ok(row)) = Pin::new(&mut *nullifiers).peek().await {
-        //             if row.height == height {
-        //                 let row = Pin::new(&mut *nullifiers)
-        //                     .next()
-        //                     .await
-        //                     .expect("we already peeked, so there is a next row")
-        //                     .expect("we already peeked and confirmed there is no error");
-        //                 block.nullifiers.push(row.nullifier.into());
-        //             } else {
-        //                 todo!("in case of error, return appropriately");
-        //                 break;
-        //             }
-        //         }
-
-        //         while let Some(Ok(row)) = Pin::new(&mut *fragments).peek().await {
-        //             if row.height == Some(height) {
-        //                 let row = Pin::new(&mut *fragments)
-        //                     .next()
-        //                     .await
-        //                     .expect("we already peeked, so there is a next row")
-        //                     .expect("we already peeked and confirmed there is no error");
-        //                 block.fragments.push(StateFragment {
-        //                     note_commitment: row.note_commitment.into(),
-        //                     ephemeral_key: row.ephemeral_key.into(),
-        //                     encrypted_note: row.encrypted_note.into(),
-        //                 });
-        //             } else {
-        //                 todo!("in case of error, return appropriately");
-        //                 break;
-        //             }
-        //         }
-
-        //         Ok(block)
-        //     }
-        // })
     }
 
     /// Retreive the current validator set.
