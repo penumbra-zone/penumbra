@@ -1,5 +1,8 @@
 //! Source code for the Penumbra node software.
 
+// This is for the async_stream macros
+#![recursion_limit = "256"]
+
 mod app;
 mod db;
 mod pd_metrics;
