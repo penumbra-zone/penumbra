@@ -130,18 +130,157 @@ pushes to `main`.  To build it locally:
 1. Install the requirements: `cargo install mdbook mdbook-katex mdbook-mermaid`
 2. To continuously build and serve the documentation: `mdbook serve`
 
-## Development: Running a Penumbra node
+## Development
 
-This section is for developers, not for running nodes that are part of the public testnet. We won't
-be ready for multiple testnet nodes until we reach our MVP2 milestone implementing staking and
-delegation, at which point this will change.
+This section is for developers, not for running nodes that are part of the
+public testnet. We won't be ready for multiple testnet nodes until we reach our
+MVP2 milestone implementing staking and delegation, at which point this will
+change.
 
-Penumbra has two binaries, the daemon `pd` and the command-line light wallet interface `pcli`.
+Penumbra has two binaries, the command-line light wallet interface `pcli` and
+the daemon `pd`.  However, the daemon cannot be run alone; it requires both
+Tendermint (to handle network communication and drive the consensus state) and
+Postgres (to act as a data store).
+
+### Compiling queries in `pd` against a local Postgres instance
+
+We use `sqlx` to interact with the database and do compile-time query checks.
+This means that some kinds of development require a local database instance.
+For clean checkouts, or changes to the workspace that do not affect the database
+queries, running `cargo build` as usual should work.
+
+However, changes to the database queries or schema require regenerating the
+`sqlx-data.json` file that's checked into git, and this requires a local
+Postgres instance and the `sqlx` command-line tooling.
+
+Install the command-line tooling with:
+```
+cargo install sqlx-cli
+```
+
+Running a local postgres instance can be done with:
+```
+docker volume create tmp_postgres_data
+docker run --name tmp_postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_USER=postgres -e POSTGRES_DB=penumbra -p 5432:5432 -v tmp_postgres_data:/var/lib/postgresql/data -d postgres
+# docker stop tmp_postgres
+# docker start tmp_postgres
+```
+
+Managing the database can be done with `cargo sqlx`:
+```
+export DATABASE_URL="postgres://postgres:postgres@localhost:5432/penumbra"
+cargo sqlx database create  # Creates the database
+# cargo sqlx database drop  # Drops the database
+cargo sqlx migrate run      # Updates the database schema
+```
+
+Regenerate the `sqlx-data.json` file by running
+```
+cargo sqlx prepare -- --bin pd
+```
+from inside the `pd` directory.  This command checks the queries in the source
+code against the current database state, so it's important that the database
+exists and has the current schema (which can be accomplished with the commands
+above).
+
+### Creating a genesis file
+
+Running a local testnet requires creating a `genesis.json` describing the initial
+parameters of the network.  This has two parts:
+
+1. Tendermint-related data specifying parameters for the consensus engine;
+2. Penumbra-related data specifying the initial chain state.
+
+First, [install Tendermint][tm-install].  Be sure to install `v0.35.0`, rather
+than `master`.
+
+Next, create the Tendermint config data with
+```bash
+tendermint init validator
+```
+This will create a default genesis file stored in `$TMHOME/config` (if set, else
+`~/.tendermint/config`) named `genesis.json`, as well as a validator private key
+named `priv_validator_key.json`.
+
+The Penumbra-related data specifying the initial chain state depends on your
+local key material, since a testnet with no assets you can control is not
+particularly useful, so it requires some manual editing.
+
+You'll probably want to generate a new testing wallet with
+```
+cargo run --bin pcli -- -w testnet_wallet.json wallet generate
+# Example, create whatever addresses you want for testing
+cargo run --bin pcli -- -w testnet_wallet.json addr new "Test Address 1"
+cargo run --bin pcli -- -w testnet_wallet.json addr new "Test Address 2"
+```
+
+Next, produce a template with
+```
+cargo run --bin pd -- create-genesis-template
+```
+and copy the output into the `genesis.json` as the `app_state` field.
+edit it to match the key material you'll be using, which includes:
+
+* changing the validator public keys to match the one Tendermint generated;
+* editing the genesis allocations to use your testing addresses, or have other asset types, etc.
+
+You may wish to edit other parts of the testnet config.  Example `genesis.json`
+files can be found in the `testnets/` directory if you get stuck.
+
+### Running `pd` without using Docker
+
+You'll need to create a `genesis.json` file as described above.
+
+Next, you'll need to set up a Postgres instance. Here is one way:
+```bash
+docker volume create tmp_postgres_data
+docker run --name tmp_postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_USER=postgres -e POSTGRES_DB=penumbra -p 5432:5432 -v tmp_postgres_data:/var/lib/postgresql/data -d postgres
+# docker stop tmp_postgres
+# docker start tmp_postgres
+```
+
+There are three components to a Penumbra node: the Tendermint instance, the `pd`
+instance, and the Postgres instance.
+
+To create the database, run:
+```
+# Edit as appropriate for your Postgres instance
+export DATABASE_URL="postgres://postgres:postgres@localhost:5432/penumbra"
+cargo sqlx database create
+```
+
+Start the Penumbra instance (you probably want to set `RUST_LOG` to `debug`):
+```bash
+cargo run --bin pd start -d "postgres://postgres:postgres@localhost:5432/penumbra"
+```
+Start the Tendermint node:
+```bash
+tendermint start
+```
+
+You should be running!
+
+To inspect the Postgres state, use:
+```bash
+psql -h localhost -U postgres penumbra
+```
+In this database terminal, you can run queries to inspect `pd`'s state.
+
+To stop the node, shut down either `pd` or `tendermint`.
+
+Resetting the state requires multiple steps:
+
+* To reset the Tendermint state, use `tendermint unsafe-reset-all`.
+* To reset the Postgres state, use `cargo sqlx database drop`.
+* To reset your wallet state (without deleting keys), use `pcli wallet reset`.
+
+You need to do **all of these** to fully reset the node, and doing only one will
+result in mysterious errors.
 
 ### Running `pd` with Docker
 
-You might think that this is the preferred way to run Penumbra, **but it will only work if you have
-loaded genesis state**:
+You'll need to create a `genesis.json` file as described above.  This command
+will only work if you have loaded genesis state:
 
 ```bash
 docker-compose up --build -d
@@ -156,7 +295,7 @@ for pd/postgres/tendermint!
 ./scripts/docker_compose_freshstart.sh /PATH/TO/DATA/DIRECTORY
 ```
 
-The script will handle generating genesis JSON data and building and starting the containers.
+The script will handle generating genesis JSON data (but not editing it) and building and starting the containers.
 
 The data directory provided to the script will contain the state of the tendermint node.
 
@@ -180,121 +319,6 @@ managed database as well as disable various debug build configs used in dev:
 docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
 
-### Details about `pcli`
-
-Now you can interact with Penumbra using `pcli`, for instance
-
-```bash
-# Run this first in case the interface changed
-# from the sample commands below
-$ cargo run --bin pcli -- --help
-pcli 0.1.0
-The Penumbra command-line interface.
-
-USAGE:
-    pcli [OPTIONS] <SUBCOMMAND>
-
-FLAGS:
-    -h, --help       Prints help information
-    -V, --version    Prints version information
-
-OPTIONS:
-    -a, --addr <addr>                          The address of the Tendermint node [default: 127.0.0.1:26657]
-    -w, --wallet-location <wallet-location>    The location of the wallet file [default: platform appdata directory]
-
-SUBCOMMANDS:
-    addr      Manages addresses
-    help      Prints this message or the help of the given subcommand(s)
-    query     Queries the Penumbra state
-    tx        Creates a transaction
-    wallet    Manages the wallet state
-```
-
-Keys will be stored in `pcli`'s data directory:
-
-* Linux: `/home/alice/.config/pcli/penumbra_wallet.dat`
-* macOS: `/Users/Alice/Library/Application Support/zone.penumbra.pcli/penumbra_wallet.dat`
-* Windows: `C:\Users\Alice\AppData\Roaming\penumbra\pcli\penumbra_wallet.dat`
-
-### Running `pd` without using Docker
-
-You'll need to [install Tendermint][tm-install].  Be sure to install `v0.35.0`,
-rather than `master`.
-
-Initialize Tendermint:
-
-```bash
-tendermint init validator
-```
-
-This will create a default genesis file stored in `$TMHOME/config` (if set, else `~/.tendermint/config`) named `genesis.json`.
-
-You probably want to set a log level:
-
-```bash
-export RUST_LOG=debug  # bash
-```
-
-```fish
-set -x RUST_LOG debug  # fish
-```
-
-You'll need to set up a Postgres instance. Here is one way:
-
-```bash
-# create a volume for pg data
-docker volume create tmp_db_data
-docker run --name tmp-postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_USER=postgres -e POSTGRES_DB=penumbra -p 5432:5432 -v tmp_db_data:/var/lib/postgresql/data -d postgres
-```
-
-Start the Penumbra instance (you probably want to set `RUST_LOG` to `debug`):
-
-```bash
-cargo run --bin pd start -d postgres_uri
-```
-
-Start the Tendermint node:
-
-```bash
-tendermint start
-```
-
-You should be running!
-
-To inspect the Postgres state, use:
-
-```bash
-psql -h localhost -U postgres penumbra
-```
-
-In this database terminal, you can run queries to inspect `pd`'s state.
-
-To reset the Tendermint state, use `tendermint unsafe-reset-all`.  To reset the Postgres state,
-either delete the docker volume, or run `DROP DATABASE`, or run `DROP TABLE` for each table. You
-need to do **both of these** to fully reset the node, and doing only one will result in mysterious
-errors.
-
-To create Genesis data, you'll need to specify:
-
-* a list of genesis allocations, with amount, denomination, and address;
-* a list of genesis validators, with appropriate metadata.
-
-Running
-```console
-$ cargo run --bin pd -- create-genesis-template
-```
-will create a template JSON blob that can be used as the `app_state` value in
-the Tendermint `genesis.json` file stored in `$TMHOME/config/` or
-`~/.tendermint/config/` (see examples in the `testnets/` directory). You should
-edit the following fields:
-
-* `validators` key: add the other validators and their voting power;
-* `app_state` key: add the output from `create-genesis-template` and edit as appropriate;
-* `chain_id` update the `chain_id` for the testnet.
-
-Now when you start `pd` and tendermint as described above, you will see a message at the `INFO`
-level indicating genesis has been performed: `consensus: penumbra::app: performing genesis for
-chain_id: penumbra-tn001`.
 
 ### Metrics
 
