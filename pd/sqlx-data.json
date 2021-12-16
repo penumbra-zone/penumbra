@@ -77,6 +77,45 @@
       ]
     }
   },
+  "37c5bfc690624be9ea65440958ce27effaa699185202a2121a444ed6b1571dcf": {
+    "query": "SELECT height, note_commitment, ephemeral_key, encrypted_note\n                 FROM notes\n                 WHERE height BETWEEN $1 AND $2\n                 ORDER BY position ASC",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "height",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "note_commitment",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 2,
+          "name": "ephemeral_key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 3,
+          "name": "encrypted_note",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": [
+        true,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "3cbb441b10f4a068c16dd3a40accd689be26f2a6619b363fd966ee10e740f07b": {
     "query": " INSERT INTO assets ( asset_id, denom) VALUES ($1, $2)",
     "describe": {
@@ -103,22 +142,29 @@
       "nullable": []
     }
   },
-  "4a4a307127c44e3a2ecd637e405d1be56f8854aa4089704a1d2018ac168ad881": {
-    "query": "SELECT nullifier \n                FROM nullifiers \n                WHERE height = $1",
+  "5053090d7a282ffd81b9dc2cfe1c2050ad4ef0813175e929777be0d68e6e12f3": {
+    "query": "SELECT height, nullifier\n                FROM nullifiers\n                WHERE height BETWEEN $1 AND $2\n                ORDER BY height ASC",
     "describe": {
       "columns": [
         {
           "ordinal": 0,
+          "name": "height",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
           "name": "nullifier",
           "type_info": "Bytea"
         }
       ],
       "parameters": {
         "Left": [
+          "Int8",
           "Int8"
         ]
       },
       "nullable": [
+        false,
         false
       ]
     }
@@ -267,38 +313,6 @@
       ],
       "parameters": {
         "Left": []
-      },
-      "nullable": [
-        false,
-        false,
-        false
-      ]
-    }
-  },
-  "98ec8368e863cff8280b0cda5cbe0026ba3c44b90ee7c2fbbe1609a598088da6": {
-    "query": "SELECT note_commitment, ephemeral_key, encrypted_note \n                FROM notes \n                WHERE height = $1 \n                ORDER BY position ASC",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "note_commitment",
-          "type_info": "Bytea"
-        },
-        {
-          "ordinal": 1,
-          "name": "ephemeral_key",
-          "type_info": "Bytea"
-        },
-        {
-          "ordinal": 2,
-          "name": "encrypted_note",
-          "type_info": "Bytea"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8"
-        ]
       },
       "nullable": [
         false,
