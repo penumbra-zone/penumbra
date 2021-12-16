@@ -174,11 +174,11 @@ cargo sqlx database create  # Creates the database
 cargo sqlx migrate run      # Updates the database schema
 ```
 
-Regenerate the `sqlx-data.json` file by running
+Regenerate the `sqlx-data.json` file by running the following from inside the `pd` directory:
 ```
-cargo sqlx prepare -- --bin pd
+cargo sqlx prepare -- --lib
 ```
-from inside the `pd` directory.  This command checks the queries in the source
+This command checks the queries in the source
 code against the current database state, so it's important that the database
 exists and has the current schema (which can be accomplished with the commands
 above).
