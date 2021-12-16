@@ -1,4 +1,6 @@
-use futures::stream::StreamExt;
+use std::pin::Pin;
+
+use futures::stream::{StreamExt, TryStreamExt};
 use penumbra_proto::{
     light_wallet::{light_wallet_server::LightWallet, CompactBlock, CompactBlockRangeRequest},
     thin_wallet::{
@@ -15,7 +17,8 @@ use crate::State;
 
 #[tonic::async_trait]
 impl LightWallet for State {
-    type CompactBlockRangeStream = ReceiverStream<Result<CompactBlock, Status>>;
+    type CompactBlockRangeStream =
+        Pin<Box<dyn futures::Stream<Item = Result<CompactBlock, tonic::Status>> + Send>>;
 
     #[instrument(
         skip(self, request),
@@ -56,23 +59,11 @@ impl LightWallet for State {
             "starting compact_block_range response"
         );
 
-        let state = self.clone();
-        let (tx, rx) = mpsc::channel(100);
-        tokio::spawn(
-            async move {
-                let mut compact_blocks =
-                    state.compact_blocks(start_height.into(), end_height.into());
-                while let Some(block) = compact_blocks.next().await {
-                    tracing::debug!("sending block response: {:?}", block);
-                    tx.send(block.map_err(|_| tonic::Status::unavailable("database error")))
-                        .await
-                        .unwrap();
-                }
-            }
-            .instrument(Span::current()),
-        );
+        let stream = self
+            .compact_blocks(start_height.into(), end_height.into())
+            .map_err(|e| tonic::Status::internal(e.to_string()));
 
-        Ok(tonic::Response::new(Self::CompactBlockRangeStream::new(rx)))
+        Ok(tonic::Response::new(stream.boxed()))
     }
 }
 
