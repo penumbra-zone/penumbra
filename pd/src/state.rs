@@ -253,7 +253,7 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
         &self,
         start_height: i64,
         end_height: i64,
-    ) -> Result<impl Stream<Item = CompactBlock> + '_> {
+    ) -> impl Stream<Item = Result<CompactBlock>> + '_ {
         let nullifiers = query!(
             "SELECT height, nullifier 
                 FROM nullifiers 
@@ -279,7 +279,7 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
         let nullifiers = Arc::new(RefCell::new(nullifiers));
         let fragments = Arc::new(RefCell::new(fragments));
 
-        Ok(stream::iter(start_height..=end_height).then(move |height| {
+        stream::iter(start_height..=end_height).then(move |height| {
             let nullifiers: Arc<RefCell<_>> = nullifiers.clone();
             let fragments: Arc<RefCell<_>> = fragments.clone();
 
@@ -302,6 +302,7 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
                             .expect("we already peeked and confirmed there is no error");
                         block.nullifiers.push(row.nullifier.into());
                     } else {
+                        todo!("in case of error, return appropriately");
                         break;
                     }
                 }
@@ -319,13 +320,14 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
                             encrypted_note: row.encrypted_note.into(),
                         });
                     } else {
+                        todo!("in case of error, return appropriately");
                         break;
                     }
                 }
 
-                block
+                Ok(block)
             }
-        }))
+        })
     }
 
     /// Retreive the current validator set.

@@ -1,3 +1,4 @@
+use futures::stream::StreamExt;
 use penumbra_proto::{
     light_wallet::{light_wallet_server::LightWallet, CompactBlock, CompactBlockRangeRequest},
     thin_wallet::{
@@ -59,8 +60,11 @@ impl LightWallet for State {
         let (tx, rx) = mpsc::channel(100);
         tokio::spawn(
             async move {
-                for height in start_height..=end_height {
-                    let block = state.compact_block(height.into()).await;
+                while let Some(block) = state
+                    .compact_blocks(start_height.into(), end_height.into())
+                    .next()
+                    .await
+                {
                     tracing::debug!("sending block response: {:?}", block);
                     tx.send(block.map_err(|_| tonic::Status::unavailable("database error")))
                         .await
