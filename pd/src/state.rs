@@ -282,6 +282,7 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
                 };
 
                 while let Some(row) = Pin::new(&mut nullifiers).peek().await {
+                    // Bail out of the loop if the next iteration would be a different height
                     if let Ok(row) = row {
                         if row.height != height {
                             break;
@@ -296,6 +297,7 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
                 }
 
                 while let Some(row) = Pin::new(&mut nullifiers).peek().await {
+                    // Bail out of the loop if the next iteration would be a different height
                     if let Ok(row) = row {
                         if row.height != height {
                             break;
