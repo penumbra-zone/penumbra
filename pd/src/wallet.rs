@@ -60,11 +60,9 @@ impl LightWallet for State {
         let (tx, rx) = mpsc::channel(100);
         tokio::spawn(
             async move {
-                while let Some(block) = state
-                    .compact_blocks(start_height.into(), end_height.into())
-                    .next()
-                    .await
-                {
+                let mut compact_blocks =
+                    state.compact_blocks(start_height.into(), end_height.into());
+                while let Some(block) = compact_blocks.next().await {
                     tracing::debug!("sending block response: {:?}", block);
                     tx.send(block.map_err(|_| tonic::Status::unavailable("database error")))
                         .await
