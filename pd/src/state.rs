@@ -1,8 +1,9 @@
 use std::{
+    cell::RefCell,
     collections::{BTreeMap, VecDeque},
     pin::Pin,
     str::FromStr,
-    sync::{Arc, Mutex, MutexGuard},
+    sync::Arc,
 };
 
 use anyhow::{Context, Result};
@@ -281,12 +282,12 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
         .fetch(conn_fragments)
         .peekable();
 
-        let nullifiers = Arc::new(Mutex::new(nullifiers));
-        let fragments = Arc::new(Mutex::new(fragments));
+        let nullifiers = Arc::new(RefCell::new(nullifiers));
+        let fragments = Arc::new(RefCell::new(fragments));
 
         Ok(stream::iter(start_height..=end_height).then(move |height| {
-            let nullifiers: Arc<Mutex<_>> = nullifiers.clone();
-            let fragments: Arc<Mutex<_>> = fragments.clone();
+            let nullifiers: Arc<RefCell<_>> = nullifiers.clone();
+            let fragments: Arc<RefCell<_>> = fragments.clone();
 
             let mut block = CompactBlock {
                 height: height as u32,
@@ -295,8 +296,8 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
             };
 
             async move {
-                let mut nullifiers: MutexGuard<_> = nullifiers.lock().unwrap();
-                let mut fragments: MutexGuard<_> = fragments.lock().unwrap();
+                let mut nullifiers = nullifiers.borrow_mut();
+                let mut fragments = fragments.borrow_mut();
 
                 while let Some(Ok(row)) = Pin::new(&mut *nullifiers).peek().await {
                     if row.height == height {
