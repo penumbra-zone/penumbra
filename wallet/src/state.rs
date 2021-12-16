@@ -456,7 +456,13 @@ impl ClientState {
         match (height, self.last_block_height()) {
             (0, None) => {}
             (height, Some(last_height)) if height == last_height + 1 => {}
-            _ => return Err(anyhow::anyhow!("unexpected block height")),
+            (height, last_height) => {
+                return Err(anyhow::anyhow!(
+                    "unexpected block height {}, expecting {:?}",
+                    height,
+                    last_height.map(|x| x + 1)
+                ))
+            }
         }
         tracing::debug!(fragments_len = fragments.len(), "starting block scan");
 
