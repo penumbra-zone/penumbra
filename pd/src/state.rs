@@ -250,16 +250,11 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
     /// Retrieve the [`CompactBlock`] for the given height.
     ///
     /// If the block does not exist, the resulting `CompactBlock` will be empty.
-    pub async fn compact_blocks<'a>(
+    pub async fn compact_blocks(
         &self,
         start_height: i64,
         end_height: i64,
-        conn_nullifiers: &'a mut sqlx::pool::PoolConnection<Postgres>,
-        conn_fragments: &'a mut sqlx::pool::PoolConnection<Postgres>,
-    ) -> Result<impl Stream<Item = CompactBlock> + 'a> {
-        // let mut conn_nullifiers = self.pool.acquire().await?;
-        // let mut conn_fragments = self.pool.acquire().await?;
-
+    ) -> Result<impl Stream<Item = CompactBlock> + '_> {
         let nullifiers = query!(
             "SELECT height, nullifier 
                 FROM nullifiers 
@@ -268,7 +263,7 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
             start_height,
             end_height
         )
-        .fetch(conn_nullifiers)
+        .fetch(&self.pool)
         .peekable();
 
         let fragments = query!(
@@ -279,7 +274,7 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
             start_height,
             end_height
         )
-        .fetch(conn_fragments)
+        .fetch(&self.pool)
         .peekable();
 
         let nullifiers = Arc::new(RefCell::new(nullifiers));
