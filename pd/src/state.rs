@@ -294,6 +294,8 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
                 let mut nullifiers = nullifiers.borrow_mut();
                 let mut fragments = fragments.borrow_mut();
 
+                todo!("work on combining these streams into a single select for efficiency");
+
                 while let Some(Ok(row)) = Pin::new(&mut *nullifiers).peek().await {
                     if row.height == height {
                         let row = Pin::new(&mut *nullifiers)
