@@ -246,6 +246,7 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
     /// Retrieve a stream of [`CompactBlock`]s for the given (inclusive) range.
     ///
     /// If the range corresponds to blocks that don't exist, the stream will be empty.
+    #[instrument(skip(self))]
     pub fn compact_blocks(
         &self,
         start_height: i64,
@@ -275,6 +276,8 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
 
         Box::pin(try_stream! {
             for height in start_height..=end_height {
+                tracing::debug!(?height, "assembling compact block");
+
                 let mut compact_block = CompactBlock {
                     height: height as u32,
                     fragments: vec![],
@@ -314,6 +317,13 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
                         encrypted_note: row.encrypted_note.into(),
                     });
                 }
+
+                tracing::debug!(
+                    ?height,
+                    nullifiers_size = compact_block.nullifiers.len(),
+                    fragments_size = compact_block.fragments.len(),
+                    "yielding compact block"
+                );
 
                 yield compact_block;
             }
