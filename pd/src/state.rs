@@ -250,7 +250,7 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
         &self,
         start_height: i64,
         end_height: i64,
-    ) -> impl Stream<Item = Result<CompactBlock>> + Unpin + '_ {
+    ) -> impl Stream<Item = Result<CompactBlock>> + Send + Unpin + '_ {
         let mut nullifiers = query!(
             "SELECT height, nullifier
                 FROM nullifiers
