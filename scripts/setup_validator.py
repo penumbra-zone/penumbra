@@ -131,6 +131,13 @@ def main(chain_id, testnet_config_dir):
         text=True,
     )
 
+    if result.returncode != 0:
+        print("Parsing genesis template failed:")
+        print(result.stderr)
+        import sys
+
+        sys.exit(1)
+
     genesis_data = json.loads(result.stdout)
     for node in ["node0", "node1", "node2", "node3"]:
         patch_genesis(client, chain_id, genesis_data, testnet_config_dir, node)
@@ -138,7 +145,11 @@ def main(chain_id, testnet_config_dir):
     print(
         f"""Testnet configs have been generated and genesis app state injected!
     
-    See the magic at: {testnet_config_dir}"""
+    See the magic at: {testnet_config_dir}
+    
+    Edit them to your liking and then start the testnet:
+    
+    docker-compose up --build -d"""
     )
 
 
