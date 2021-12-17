@@ -77,8 +77,8 @@
       ]
     }
   },
-  "37c5bfc690624be9ea65440958ce27effaa699185202a2121a444ed6b1571dcf": {
-    "query": "SELECT height, note_commitment, ephemeral_key, encrypted_note\n                 FROM notes\n                 WHERE height BETWEEN $1 AND $2\n                 ORDER BY position ASC",
+  "302a33ec1eec61c43e6b5507b6e059e3c9f61c6da3c853ec9c6d4c815d04df61": {
+    "query": "SELECT height, note_commitment, ephemeral_key, encrypted_note\n                    FROM notes\n                    WHERE height BETWEEN $1 AND $2\n                    ORDER BY position ASC",
     "describe": {
       "columns": [
         {
@@ -109,7 +109,7 @@
         ]
       },
       "nullable": [
-        true,
+        false,
         false,
         false,
         false
@@ -140,33 +140,6 @@
         ]
       },
       "nullable": []
-    }
-  },
-  "5053090d7a282ffd81b9dc2cfe1c2050ad4ef0813175e929777be0d68e6e12f3": {
-    "query": "SELECT height, nullifier\n                FROM nullifiers\n                WHERE height BETWEEN $1 AND $2\n                ORDER BY height ASC",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "height",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 1,
-          "name": "nullifier",
-          "type_info": "Bytea"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Int8"
-        ]
-      },
-      "nullable": [
-        false,
-        false
-      ]
     }
   },
   "51f515cc43458854df653c298142e6c77b2905b453f85c31ae1a0f56fbce1c2a": {
@@ -242,6 +215,33 @@
       },
       "nullable": [
         false,
+        false,
+        false
+      ]
+    }
+  },
+  "73d0d102af9c9dbf753248c60bd967e744e909208ba53271f1f8238438da52b7": {
+    "query": "SELECT height, nullifier\n                    FROM nullifiers\n                    WHERE height BETWEEN $1 AND $2\n                    ORDER BY height ASC",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "height",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "nullifier",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": [
         false,
         false
       ]

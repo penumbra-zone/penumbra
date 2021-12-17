@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS notes (
     encrypted_note bytea NOT NULL,
     transaction_id bytea NOT NULL,
     position bigint NOT NULL,
-    height bigint REFERENCES blocks (height)
+    height bigint NOT NULL REFERENCES blocks (height)
 );
 CREATE INDEX ON notes (position);
 CREATE INDEX ON notes (height);
