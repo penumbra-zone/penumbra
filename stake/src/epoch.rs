@@ -2,10 +2,8 @@ use anyhow::{anyhow, Error};
 
 /// Epoch represents a given epoch for Penumbra and is used
 /// for calculation of staking exchange rates.
-#[derive(Debug, Eq, PartialEq)]
-pub struct Epoch {
-    epoch: u64,
-}
+#[derive(Debug, Eq, PartialEq, Clone)]
+pub struct Epoch(pub u64);
 
 impl Epoch {
     /// from_blockheight instantiates a new `Epoch` from a given
@@ -28,8 +26,14 @@ impl Epoch {
     /// signed representation for block height, we provide this
     /// as well as a signed implemention (`from_blockheight`)
     pub fn from_blockheight_unsigned(block_height: u64, epoch_duration: u64) -> Self {
-        Epoch {
-            epoch: block_height / epoch_duration,
+        Epoch(block_height / epoch_duration)
+    }
+
+    pub fn is_epoch_boundary(block_height: i64, epoch_duration: u64) -> Result<bool, Error> {
+        if block_height < 0 {
+            return Err(anyhow!("block height should never be negative"));
         }
+
+        Ok(block_height.unsigned_abs() % epoch_duration == 0)
     }
 }

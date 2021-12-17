@@ -112,6 +112,34 @@ ON CONFLICT (id) DO UPDATE SET data = $1
             .await?;
         }
 
+        if block.is_epoch_boundary.is_none() {
+            return Err(anyhow::anyhow!("EndBlock must be called prior to Commit, `is_epoch_boundary` was not set on the pending block"));
+        }
+        if block.is_epoch_boundary.unwrap() {
+            // validator rates need updating on epoch boundaries
+            let validators = self.validators().await?;
+            for validator in validators {
+                tracing::info!("updating validator rates for validator: {:?}", validator.0);
+                // TODO @ava insert calls here
+                let validator_rate = 0;
+                let voting_power = 0;
+
+                let pubkey_str = serde_json::to_string(&validator.0)?;
+
+                if block.epoch.is_none() {
+                    return Err(anyhow::anyhow!("EndBlock must be called prior to Commit, `epoch` was not set on the pending block"));
+                }
+                query!(
+                r#" INSERT INTO validator_rates ( epoch, validator_pubkey, validator_rate, voting_power ) VALUES ($1, $2, $3, $4)"#,
+                block.epoch.as_ref().unwrap().0 as i64,
+                pubkey_str.as_bytes(),
+                validator_rate, voting_power
+            )
+            .execute(&mut dbtx)
+            .await?;
+            }
+        }
+
         dbtx.commit().await.map_err(Into::into)
     }
 
@@ -336,14 +364,15 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
 
         let mut validators: BTreeMap<tendermint::PublicKey, Validator> = BTreeMap::new();
 
-        let stored_validators = query!(r#"SELECT tm_pubkey, voting_power FROM validators"#)
+        let stored_validators = query!(r#"select tm_pubkey, validator_rates.voting_power FROM validators LEFT JOIN validator_rates ON validator_rates.validator_pubkey = validators.tm_pubkey;"#)
             .fetch_all(&mut conn)
             .await?;
         for row in stored_validators.iter() {
             // NOTE: we store the validator's public key in the database as a json-encoded string,
             // because Tendermint pubkeys can be either ed25519 or secp256k1, and we want a
             // non-ambiguous encoding for the public key.
-            let decoded_pubkey: tendermint::PublicKey = serde_json::from_slice(&row.tm_pubkey)?;
+            let decoded_pubkey: tendermint::PublicKey =
+                serde_json::from_slice(&row.tm_pubkey.as_ref().unwrap())?;
 
             let mut funding_streams: Vec<FundingStream> = Vec::new();
             let stored_funding_streams = query!(r#"SELECT tm_pubkey, address, rate_bps FROM validator_fundingstreams WHERE tm_pubkey = $1"#, row.tm_pubkey).fetch_all(&mut conn).await?;
@@ -357,6 +386,8 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
             // `i64` in sqlx. try_into uses the `TryFrom<i64>` implementation for voting power from
             // Tendermint, so will return an error if voting power is negative (and not silently
             // overflow).
+            // TODO the voting power is actually stored on the `validator_rates` table now so
+            // we need to join against that table
             validators.insert(
                 decoded_pubkey,
                 Validator::new(
@@ -382,13 +413,21 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
             let pubkey_str = serde_json::to_string(tm_pubkey)?;
 
             query!(
-                "INSERT INTO validators (tm_pubkey, voting_power) VALUES ($1, $2)",
+                "INSERT INTO validators (tm_pubkey) VALUES ($1)",
                 pubkey_str.as_bytes(),
-                i64::try_from(val.voting_power)?,
             )
             .execute(&mut conn)
             .await?;
 
+            query!(
+                "INSERT INTO validator_rates (epoch, validator_pubkey, validator_rate, voting_power) VALUES ($1, $2, $3, $4)",
+                0,
+                pubkey_str.as_bytes(),
+                0,
+                i64::try_from(val.voting_power)?,
+            )
+            .execute(&mut conn)
+            .await?;
             // TODO (optimization): batch insert?
             for stream in val.funding_streams.iter() {
                 query!(

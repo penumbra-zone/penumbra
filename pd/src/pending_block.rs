@@ -5,6 +5,7 @@ use penumbra_crypto::{
     merkle::{Frontier, NoteCommitmentTree},
     note, Nullifier,
 };
+use penumbra_stake::Epoch;
 
 use crate::verify::{PositionedNoteData, VerifiedTransaction};
 
@@ -19,6 +20,10 @@ pub struct PendingBlock {
     pub spent_nullifiers: BTreeSet<Nullifier>,
     /// Stores new asset types found in this block that need to be added to the asset registry.
     pub new_assets: BTreeMap<asset::Id, String>,
+    /// Indicates whether the Pending Block starts a new epoch.
+    pub is_epoch_boundary: Option<bool>,
+    /// Indicates the epoch the block belongs to.
+    pub epoch: Option<Epoch>,
 }
 
 impl PendingBlock {
@@ -29,12 +34,20 @@ impl PendingBlock {
             notes: BTreeMap::new(),
             spent_nullifiers: BTreeSet::new(),
             new_assets: BTreeMap::new(),
+            is_epoch_boundary: None,
+            epoch: None,
         }
     }
 
     /// We only get the height from ABCI in EndBlock, so this allows setting it in-place.
-    pub fn set_height(&mut self, height: i64) {
-        self.height = Some(height)
+    pub fn set_height_and_epoch(&mut self, height: i64, epoch: Epoch) {
+        self.height = Some(height);
+        self.epoch = Some(epoch)
+    }
+
+    /// Whether a pending block is an epoch boundary or not can only be determined in EndBlock.
+    pub fn set_epoch_boundary(&mut self, is_epoch_boundary: bool) {
+        self.is_epoch_boundary = Some(is_epoch_boundary)
     }
 
     /// Adds the state changes from a verified transaction.
