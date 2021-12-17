@@ -146,6 +146,8 @@ def main(chain_id, testnet_config_dir):
         f"""Testnet configs have been generated and genesis app state injected!
     
     See the magic at: {testnet_config_dir}
+
+    (Note: configs for 4 nodes have been created but only node0 is currently used)
     
     Edit them to your liking and then start the testnet:
     
