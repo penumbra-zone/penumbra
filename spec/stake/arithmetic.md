@@ -23,8 +23,7 @@ derived from the block header. $r_{e}$ is a fixed-precision `u64` integer with
 
 The base exchange rate, $\psi(e)$, can be safely computed as follows:
 
-$$\psi(e) = \prod_{0 \leq i < e} \lfloor \frac{(1e8 + r_i)}{1e8} \rfloor $$
-
+$$\psi(e) = \left\lfloor \frac {\psi(e-1) (10^8 + r_e)} {10^8} \right\rfloor$$
 
 ## Commission Rate from Funding Streams
 
@@ -50,7 +49,7 @@ $$r_{v,e} = \lfloor \frac{(1e8 - (c_{v,e}*1e4))r_e}{1e8} \rfloor$$
 To compute the validator's exchange rate, we adapt the formula from the staking
 specification for our fixed-point arithmetic scheme like so:
 
-$$\psi_v(e) = \prod_{0 \leq i < e} \lfloor \frac{(1e8 + r_{v,i})}{1e8} \rfloor$$
+$$\psi_v(e) = \left\lfloor \frac {\psi_v(e-1) (10^8 + r_{v,i})}{10^8} \right\rfloor$$
 
 ## Validator Voting Power Adjustment
 
