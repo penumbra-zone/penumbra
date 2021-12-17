@@ -17,7 +17,7 @@ impl DelegationToken {
         // This format string needs to be in sync with the asset registry
         let base_denom = asset::REGISTRY
             .parse_base(&format!(
-                "udelegation-{}",
+                "udelegation_{}",
                 pk.to_bech32(VALIDATOR_IDENTITY_BECH32_PREFIX)
             ))
             .expect("base denom format is valid");
@@ -57,7 +57,7 @@ impl TryFrom<asset::BaseDenom> for DelegationToken {
 
         let (hrp, data, variant) = bech32::decode(
             // Note: this regex must be in sync with asset::REGISTRY
-            Regex::new("udelegation-(?P<data>penumbravaloper1[a-zA-HJ-NP-Z0-9]+)")
+            Regex::new("udelegation_(?P<data>penumbravaloper1[a-zA-HJ-NP-Z0-9]+)")
                 .expect("regex is valid")
                 .captures(&value.to_string())
                 .ok_or_else(|| {
