@@ -298,7 +298,7 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
                     compact_block.nullifiers.push(row.nullifier.into());
                 }
 
-                while let Some(row) = Pin::new(&mut nullifiers).peek().await {
+                while let Some(row) = Pin::new(&mut fragments).peek().await {
                     // Bail out of the loop if the next iteration would be a different height
                     if let Ok(row) = row {
                         if row.height != height {
