@@ -200,23 +200,23 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
         )
         .add_asset(
             // TODO: this doesn't restrict the length of the bech32 encoding
-            "^udelegation-(?P<data>penumbravaloper1[a-zA-HJ-NP-Z0-9]+)$",
+            "^udelegation_(?P<data>penumbravaloper1[a-zA-HJ-NP-Z0-9]+)$",
             &[
-                "^delegation-(?P<data>penumbravaloper1[a-zA-HJ-NP-Z0-9]+)$",
-                "^mdelegation-(?P<data>penumbravaloper1[a-zA-HJ-NP-Z0-9]+)$",
+                "^delegation_(?P<data>penumbravaloper1[a-zA-HJ-NP-Z0-9]+)$",
+                "^mdelegation_(?P<data>penumbravaloper1[a-zA-HJ-NP-Z0-9]+)$",
             ],
             (|data: &str| {
                 assert!(!data.is_empty());
                 denom::Inner::new(
-                    format!("udelegation-{}", data),
+                    format!("udelegation_{}", data),
                     vec![
                         denom::Unit {
                             exponent: 6,
-                            denom: format!("delegation-{}", data),
+                            denom: format!("delegation_{}", data),
                         },
                         denom::Unit {
                             exponent: 3,
-                            denom: format!("mdelegation-{}", data),
+                            denom: format!("mdelegation_{}", data),
                         },
                     ],
                 )
