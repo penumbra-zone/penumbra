@@ -10,10 +10,11 @@ die () {
     exit 1
 }
 
-[ "$#" -eq 1 ] || die "build path argument required"
+[ "$#" -eq 2 ] || die "build path and testnet chain ID arguments required"
 
 
 build_path="$1"
+testnet_chain_id="$2"
 if [ -d "${build_path}" ] 
 then
     printf "Directory ${build_path} already exists. Please remove it if you really want to DELETE ALL YOUR VALIDATOR DATA AND START OVER." >&2
@@ -47,4 +48,4 @@ cd ..
 python3 -m venv scripts/.venv
 source scripts/.venv/bin/activate
 pip install -r scripts/requirements.txt
-python3 scripts/setup_validator.py penumbra-euporie ${build_path}
+python3 scripts/setup_validator.py ${testnet_chain_id} ${build_path}
