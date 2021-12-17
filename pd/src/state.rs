@@ -6,7 +6,8 @@ use std::{
 
 use anyhow::{Context, Result};
 use async_stream::try_stream;
-use futures::stream::{Stream, StreamExt};
+use bytes::Bytes;
+use futures::stream::{self, Stream, StreamExt};
 use penumbra_crypto::{
     merkle::{self, NoteCommitmentTree, TreeExt},
     Address, Nullifier,
@@ -243,18 +244,14 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
             .unwrap_or_else(|| vec![0; 32]))
     }
 
-    /// Retrieve a stream of [`CompactBlock`]s for the given (inclusive) range.
-    ///
-    /// If the range corresponds to blocks that don't exist, the stream will be empty.
-    #[instrument(skip(self))]
-    pub fn compact_blocks(
+    fn nullifiers_by_height(
         &self,
         start_height: i64,
         end_height: i64,
-    ) -> impl Stream<Item = Result<CompactBlock>> + Send + Unpin {
+    ) -> impl Stream<Item = Result<Vec<Bytes>>> + Send + Unpin {
         let pool = self.pool.clone();
         Box::pin(try_stream! {
-            let mut nullifiers = query!(
+            let mut nullifier_stream = query!(
                 "SELECT height, nullifier
                     FROM nullifiers
                     WHERE height BETWEEN $1 AND $2
@@ -265,7 +262,37 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
             .fetch(&pool)
             .peekable();
 
-            let mut fragments = query!(
+            for height in start_height..=end_height {
+                let mut nullifiers = vec![];
+
+                while let Some(row) = Pin::new(&mut nullifier_stream).peek().await {
+                    // Bail out of the loop if the next iteration would be a different height
+                    if let Ok(row) = row {
+                        if row.height != height {
+                            break;
+                        }
+                    }
+
+                    let row = Pin::new(&mut nullifier_stream)
+                        .next()
+                        .await
+                        .expect("we already peeked, so there is a next row")?;
+                    nullifiers.push(row.nullifier.into());
+                }
+
+                yield nullifiers;
+            }
+        })
+    }
+
+    fn fragments_by_height(
+        &self,
+        start_height: i64,
+        end_height: i64,
+    ) -> impl Stream<Item = Result<Vec<StateFragment>>> + Send + Unpin {
+        let pool = self.pool.clone();
+        Box::pin(try_stream! {
+            let mut fragment_stream = query!(
                 "SELECT height, note_commitment, ephemeral_key, encrypted_note
                     FROM notes
                     WHERE height BETWEEN $1 AND $2
@@ -277,13 +304,9 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
             .peekable();
 
             for height in start_height..=end_height {
-                let mut compact_block = CompactBlock {
-                    height: height as u32,
-                    fragments: vec![],
-                    nullifiers: vec![],
-                };
+                let mut fragments = vec![];
 
-                while let Some(row) = Pin::new(&mut nullifiers).peek().await {
+                while let Some(row) = Pin::new(&mut fragment_stream).peek().await {
                     // Bail out of the loop if the next iteration would be a different height
                     if let Ok(row) = row {
                         if row.height != height {
@@ -291,42 +314,41 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
                         }
                     }
 
-                    let row = Pin::new(&mut nullifiers)
+                    let row = Pin::new(&mut fragment_stream)
                         .next()
                         .await
                         .expect("we already peeked, so there is a next row")?;
-                    compact_block.nullifiers.push(row.nullifier.into());
-                }
-
-                while let Some(row) = Pin::new(&mut fragments).peek().await {
-                    // Bail out of the loop if the next iteration would be a different height
-                    if let Ok(row) = row {
-                        if row.height != height {
-                            break;
-                        }
-                    }
-
-                    let row = Pin::new(&mut fragments)
-                        .next()
-                        .await
-                        .expect("we already peeked, so there is a next row")?;
-                    compact_block.fragments.push(StateFragment {
+                    fragments.push(StateFragment {
                         note_commitment: row.note_commitment.into(),
                         ephemeral_key: row.ephemeral_key.into(),
                         encrypted_note: row.encrypted_note.into(),
                     });
                 }
 
-                tracing::debug!(
-                    ?height,
-                    nullifiers_size = compact_block.nullifiers.len(),
-                    fragments_size = compact_block.fragments.len(),
-                    "yielding compact block"
-                );
-
-                yield compact_block;
+                yield fragments;
             }
         })
+    }
+
+    /// Retrieve a stream of [`CompactBlock`]s for the given (inclusive) range.
+    ///
+    /// If the range corresponds to blocks that don't exist, the stream will be empty.
+    #[instrument(skip(self))]
+    pub fn compact_blocks(
+        &self,
+        start_height: i64,
+        end_height: i64,
+    ) -> impl Stream<Item = Result<CompactBlock>> + Send + Unpin {
+        stream::iter(start_height..=end_height)
+            .zip(self.nullifiers_by_height(start_height, end_height))
+            .zip(self.fragments_by_height(start_height, end_height))
+            .map(|((height, nullifiers), fragments)| {
+                Ok::<_, anyhow::Error>(CompactBlock {
+                    height: height as u32,
+                    nullifiers: nullifiers?,
+                    fragments: fragments?,
+                })
+            })
     }
 
     /// Retreive the current validator set.
