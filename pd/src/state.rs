@@ -251,33 +251,32 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
         &self,
         start_height: i64,
         end_height: i64,
-    ) -> impl Stream<Item = Result<CompactBlock>> + Send + Unpin + '_ {
-        let mut nullifiers = query!(
-            "SELECT height, nullifier
-                FROM nullifiers
-                WHERE height BETWEEN $1 AND $2
-                ORDER BY height ASC",
-            start_height,
-            end_height
-        )
-        .fetch(&self.pool)
-        .peekable();
-
-        let mut fragments = query!(
-            "SELECT height, note_commitment, ephemeral_key, encrypted_note
-                 FROM notes
-                 WHERE height BETWEEN $1 AND $2
-                 ORDER BY position ASC",
-            start_height,
-            end_height
-        )
-        .fetch(&self.pool)
-        .peekable();
-
+    ) -> impl Stream<Item = Result<CompactBlock>> + Send + Unpin {
+        let pool = self.pool.clone();
         Box::pin(try_stream! {
-            for height in start_height..=end_height {
-                tracing::debug!(?height, "assembling compact block");
+            let mut nullifiers = query!(
+                "SELECT height, nullifier
+                    FROM nullifiers
+                    WHERE height BETWEEN $1 AND $2
+                    ORDER BY height ASC",
+                start_height,
+                end_height
+            )
+            .fetch(&pool)
+            .peekable();
 
+            let mut fragments = query!(
+                "SELECT height, note_commitment, ephemeral_key, encrypted_note
+                    FROM notes
+                    WHERE height BETWEEN $1 AND $2
+                    ORDER BY position ASC",
+                start_height,
+                end_height
+            )
+            .fetch(&pool)
+            .peekable();
+
+            for height in start_height..=end_height {
                 let mut compact_block = CompactBlock {
                     height: height as u32,
                     fragments: vec![],
