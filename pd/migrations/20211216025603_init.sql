@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS validator_fundingstreams (
     address varchar NOT NULL,
     rate_bps bigint NOT NULL
 );
+
 CREATE TABLE IF NOT EXISTS base_rates (
     epoch bigint PRIMARY KEY,
     base_rate bigint NOT NULL
