@@ -18,3 +18,4 @@ This section describes the staking and delegation mechanism in detail:
 - [Delegation](./stake/delegation.md) describes how users bond stake to validators;
 - [Undelegation](./stake/undelegation.md) describes how users unbond stake from validators;
 - [Example Staking Dynamics](./stake/example.md) contains a worked example illustrating the mechanism design.
+- [Arithmetic](./stake/arithmetic.md) contains the specification for computing staking rates with fixed-point arithmetic
