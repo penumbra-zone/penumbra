@@ -244,6 +244,10 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
             .unwrap_or_else(|| vec![0; 32]))
     }
 
+    /// Get a stream of chunks of nullifiers, aggregated by height, in ascending order of height.
+    ///
+    /// If a given height has no nullifiers, returns the empty vector for that height (i.e. does not
+    /// skip heights containing nothing).
     fn nullifiers_by_height(
         &self,
         start_height: i64,
@@ -285,6 +289,11 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
         })
     }
 
+    /// Get a stream of chunks of state fragments, aggregated by height, in ascending order of
+    /// height.
+    ///
+    /// If a given height has no state fragments, returns the empty vector for that height (i.e.
+    /// does not skip heights containing nothing).
     fn fragments_by_height(
         &self,
         start_height: i64,
