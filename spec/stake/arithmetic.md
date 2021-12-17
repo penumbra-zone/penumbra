@@ -4,13 +4,18 @@ To compute base reward rate, base exchange rate, validator-specific exchange
 rates, and total validator voting power, we need to carefully perform
 arithmetic to avoid issues with precision and rounding. We use explicitly
 specified fixed-precision arithmetic for this, with a precision of 8 digits.
-This allows outputs to fit in a u32.
+This allows outputs to fit in a u64, with all products fitting in the output
+and plenty of headroom for additions.
+
+All integer values should be interpreted as unsigned 64-bit integers, with the
+exception of the validator's commission rate, which is a `u16` specified in
+terms of basis points.
 
 ## Base Reward Rate
 
 The base reward is an input to the protocol, and the exact details of how this
 base rate $r_{e}$ is determined is not yet decided. For now, we can assume it is
-derived from the block header. $r_{e}$ is a fixed-precision `u32` integer with
+derived from the block header. $r_{e}$ is a fixed-precision `u64` integer with
 8 digits of precision.
 
 
