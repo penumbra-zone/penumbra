@@ -143,8 +143,6 @@ impl DisplayDenom {
             .expect("there must be an entry for unit_index")
             .exponent;
 
-        dbg!(exponent);
-
         let power_of_ten = 10u64.pow(exponent.into());
         let v1 = value / power_of_ten;
         let v2 = value % power_of_ten;
