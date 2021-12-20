@@ -9,7 +9,8 @@ and plenty of headroom for additions.
 
 All integer values should be interpreted as unsigned 64-bit integers, with the
 exception of the validator's commission rate, which is a `u16` specified in
-terms of basis points. All integer values, with the exception of the
+terms of basis points (one one-hundredth of a percent, or in other words, an
+implicit denominator of $10^{4}$). All integer values, with the exception of the
 validator's commission rate, have an implicit denominator of $10^8$. 
 
 Throughout this spec *representations* are referred to as $\mathtt x$, where
@@ -29,15 +30,15 @@ number or product of fixed point numbers with 8 digits fits well within 64
 bits.
 
 
-## Table of Contents
+### Summary of Notation
 
 * $\mathtt r_{e}$: the fixed-point representation of the base rate at epoch $e$.
-* $\mathtt \psi(e)$: the fixed-point representation of the base exchange rate at epoch $e$.
-* $s_{i, e}$: the $10^4$ denominated fixed-point representation of the funding rate of the validator's funding stream at index $i$ and epoch $e$.
-* $c_{v,e}$: the sum of the validator's commission rates, which are specified as a fixed point integer with an implicit $10^4$ denominator.
+* $\mathtt {psi}(e)$: the fixed-point representation of the base exchange rate at epoch $e$.
+* $s_{i, e}$: the funding rate of the validator's funding stream at index $i$ and epoch $e$, in basis points.
+* $c_{v,e}$: the sum of the validator's commission rates, in basis points.
 * $\mathtt r_{v,e}$: the fixed-point representation of the validator-specific reward rate for validator $v$ at epoch $e$.
-* $\mathtt \psi_v(e)$: the fixed-point representation of the validator-specific exchange rate for validator $v$ at epoch $e$.
-* $\mathtt \theta_v(e)$: the fixed-point representation of the validator's voting power adjustment function for validator $v$ at epoch $e$.
+* $\mathtt {psi}_v(e)$: the fixed-point representation of the validator-specific exchange rate for validator $v$ at epoch $e$.
+* $\mathtt {theta}_v(e)$: the fixed-point representation of the validator's voting power adjustment function for validator $v$ at epoch $e$.
 
 
 ## Base Reward Rate
@@ -51,17 +52,13 @@ derived from the block header.
 
 The base exchange rate, $\psi(e)$, can be safely computed as follows:
 
-$$\mathtt \psi(e) = \left\lfloor \frac {\mathtt \psi(e-1) (10^8 + \mathtt r_e)} {10^8} \right\rfloor$$
+$$\mathtt {psi}(e) = \left\lfloor \frac {\mathtt {psi}(e-1) \cdot (10^8 + \mathtt r_e)} {10^8} \right\rfloor$$
 
 ## Commission Rate from Funding Streams
 
-To compute the validator's commission rate from its set of funding streams, the following calculation can be performed:
-
-$$c_{v,e} = \sum_{0 \leq i < n} (s_{i,e})$$
-
-Where $s$ is the set of rates defined by the funding streams, $s_{i,e}$ being
-the ith rate at epoch $e$.
-
+To compute the validator's commission rate from its set of funding streams, compute
+$$c_{v,e} = \sum_{i} s_{i,e}$$
+where $s_{i, e}$ is the rate of validator $v$'s $i$-th funding stream at epoch $e$.
 
 ## Validator Reward Rate
 
@@ -71,13 +68,14 @@ $$\mathtt r_{v,e} = \left\lfloor \frac{(10^8 - (c_{v,e} \cdot 10^4))\mathtt r_e}
 
 ## Validator Exchange Rate
 
-To compute the validator's exchange rate, we adapt the formula from the staking
-specification for our fixed-point arithmetic scheme like so:
+To compute the validator's exchange rate, we use the same formula as for the
+base exchange rate, but substitute the validator-specific reward rate in place
+of the base reward rate:
 
-$$\mathtt \psi_v(e) = \left\lfloor \frac {\psi_v(e-1) (10^8 + \mathtt r_{v,e})}{10^8} \right\rfloor$$
+$$\mathtt {psi}_v(e) = \left\lfloor \frac {\mathtt {psi}_v(e-1) \cdot (10^8 + \mathtt r_{v,e})}{10^8} \right\rfloor$$
 
 ## Validator Voting Power Adjustment
 
-Finally, to compute the validator's voting power adjustment function, simply take:
+Finally, to compute the validator's voting power adjustment function, compute:
 
-$$\theta_v(e) = \lfloor \frac{\psi_v{e}*10^8}{\psi{e}} \rfloor$$
+$$\mathtt {theta}_v(e) = \left\lfloor \frac{\mathtt {psi}_v(e) 10^8}{\mathtt {psi}(e)} \right\rfloor$$
