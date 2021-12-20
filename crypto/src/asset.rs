@@ -10,6 +10,8 @@ pub use registry::{Registry, REGISTRY};
 
 #[cfg(test)]
 mod tests {
+    use proptest::prelude::*;
+
     use super::*;
 
     #[test]
@@ -88,5 +90,22 @@ mod tests {
         // not included in the hardcoded registry.
         let base_denom = REGISTRY.parse_base("cube").unwrap();
         assert_eq!(format!("{}", base_denom), "cube".to_string());
+    }
+
+    proptest! {
+        #[test]
+        fn displaydenom_parsing_formatting_roundtrip(
+            v: u32
+        ) {
+            let penumbra_display_denom = REGISTRY.parse_display("penumbra").unwrap();
+            let formatted = penumbra_display_denom.format_value(v.into());
+            let parsed = penumbra_display_denom.parse_value(&formatted);
+            assert_eq!(v, parsed.unwrap() as u32);
+
+            let mpenumbra_display_denom = REGISTRY.parse_display("mpenumbra").unwrap();
+            let formatted = mpenumbra_display_denom.format_value(v.into());
+            let parsed = mpenumbra_display_denom.parse_value(&formatted);
+            assert_eq!(v, parsed.unwrap() as u32);
+        }
     }
 }
