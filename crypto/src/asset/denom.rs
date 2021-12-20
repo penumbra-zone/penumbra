@@ -135,27 +135,30 @@ impl DisplayDenom {
         }
     }
 
-    // TODO: API for actually working with displayed denominations?
-    // - format-style printing of amounts of base denom in displaydenom units
-    // - conversion of numbers? (tricky? do you use floats? or what fractions?)
-    //
-    // if we have a good enough api, do we need to have these methods?
-
-    pub fn exponent(&self) -> u8 {
-        self.inner
+    pub fn format_value(&self, value: u64) -> String {
+        let exponent = self
+            .inner
             .units
             .get(self.unit_index as usize)
             .expect("there must be an entry for unit_index")
-            .exponent
-    }
+            .exponent;
 
-    pub fn raw_name(&self) -> String {
-        self.inner
-            .units
-            .get(self.unit_index as usize)
-            .expect("there must be an entry for unit_index")
-            .denom
-            .clone()
+        dbg!(exponent);
+
+        let power_of_ten = 10u64.pow(exponent.into());
+        let v1 = value / power_of_ten;
+        let v2 = value % power_of_ten;
+
+        // For `v2`, there may be trailing zeros that should be stripped
+        // since they are after the decimal point.
+        let v2_str = v2.to_string();
+        let v2_stripped = v2_str.trim_end_matches('0');
+
+        if v2 != 0 {
+            format!("{}.{}", v1, v2_stripped)
+        } else {
+            format!("{}", v1)
+        }
     }
 }
 
