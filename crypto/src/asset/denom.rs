@@ -140,9 +140,10 @@ impl DisplayDenom {
         let v1 = value / power_of_ten;
         let v2 = value % power_of_ten;
 
+        // Pad `v2` to exponent digits.
+        let v2_str = format!("{:0width$}", v2, width = self.exponent() as usize);
         // For `v2`, there may be trailing zeros that should be stripped
         // since they are after the decimal point.
-        let v2_str = v2.to_string();
         let v2_stripped = v2_str.trim_end_matches('0');
 
         if v2 != 0 {
