@@ -43,6 +43,17 @@ mod tests {
     }
 
     #[test]
+    fn test_displaydenom_format_value() {
+        // with exponent 6, 1782000 formats to 1.782
+        let penumbra_display_denom = REGISTRY.parse_display("penumbra").unwrap();
+        assert_eq!(penumbra_display_denom.format_value(1782000), "1.782");
+
+        // with exponent 3, 1782000 formats to 1782
+        let mpenumbra_display_denom = REGISTRY.parse_display("mpenumbra").unwrap();
+        assert_eq!(mpenumbra_display_denom.format_value(1782000), "1782");
+    }
+
+    #[test]
     fn test_registry_fallthrough() {
         // We should be able to use `parse_base` with a base denomination for assets
         // not included in the hardcoded registry.
