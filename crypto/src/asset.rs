@@ -53,6 +53,10 @@ mod tests {
         // with exponent 3, 1782000 formats to 1782
         let mpenumbra_display_denom = REGISTRY.parse_display("mpenumbra").unwrap();
         assert_eq!(mpenumbra_display_denom.format_value(1782000), "1782");
+
+        // with exponent 0, 1782000 formats to 1782000
+        let upenumbra_display_denom = REGISTRY.parse_display("upenumbra").unwrap();
+        assert_eq!(upenumbra_display_denom.format_value(1782000), "1782000");
     }
 
     #[test]

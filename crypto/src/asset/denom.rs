@@ -27,7 +27,7 @@ pub(super) struct Inner {
     id: asset::Id,
     base_denom: String,
     /// Sorted by priority order.
-    units: Vec<Unit>,
+    pub(super) units: Vec<Unit>,
 }
 
 pub(super) struct Unit {
