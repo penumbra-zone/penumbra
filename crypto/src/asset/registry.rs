@@ -169,8 +169,8 @@ impl Builder {
 pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
     Builder::default()
         .add_asset(
-            "upenumbra",
-            &["penumbra", "mpenumbra"],
+            "^upenumbra$",
+            &["^penumbra$", "^mpenumbra$"],
             (|data: &str| {
                 assert!(data.is_empty());
                 denom::Inner::new(
@@ -190,10 +190,10 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
         )
         .add_asset(
             // TODO: this doesn't restrict the length of the bech32 encoding
-            "udelegation-(?P<data>penumbravaloper1[a-zA-HJ-NP-Z0-9]+)",
+            "^udelegation-(?P<data>penumbravaloper1[a-zA-HJ-NP-Z0-9]+)$",
             &[
-                "delegation-(?P<data>penumbravaloper1[a-zA-HJ-NP-Z0-9]+)",
-                "mdelegation-(?P<data>penumbravaloper1[a-zA-HJ-NP-Z0-9]+)",
+                "^delegation-(?P<data>penumbravaloper1[a-zA-HJ-NP-Z0-9]+)$",
+                "^mdelegation-(?P<data>penumbravaloper1[a-zA-HJ-NP-Z0-9]+)$",
             ],
             (|data: &str| {
                 assert!(!data.is_empty());
