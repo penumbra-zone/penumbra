@@ -1,29 +1,5 @@
 {
   "db": "PostgreSQL",
-  "04f479f64381a7ea02bd9ae155d4ef6bf31e44f64705c7b36f6ad74aca2f115b": {
-    "query": "SELECT tm_pubkey, voting_power FROM validators",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "tm_pubkey",
-          "type_info": "Bytea"
-        },
-        {
-          "ordinal": 1,
-          "name": "voting_power",
-          "type_info": "Int8"
-        }
-      ],
-      "parameters": {
-        "Left": []
-      },
-      "nullable": [
-        false,
-        false
-      ]
-    }
-  },
   "0bb9011725723ccf9a5d2aa2967457b72579c90f9aa594d232528596c7cf1bd9": {
     "query": "INSERT INTO validator_fundingstreams (tm_pubkey, address, rate_bps) VALUES ($1, $2, $3)",
     "describe": {
@@ -116,6 +92,21 @@
       ]
     }
   },
+  "367663d8c6b6b179fc02c6a6edd8cf3dcda1a0d39fa231d320e72373e781d9a9": {
+    "query": " INSERT INTO validator_rates ( epoch, validator_pubkey, validator_rate, voting_power ) VALUES ($1, $2, $3, $4)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Bytea",
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "3cbb441b10f4a068c16dd3a40accd689be26f2a6619b363fd966ee10e740f07b": {
     "query": " INSERT INTO assets ( asset_id, denom) VALUES ($1, $2)",
     "describe": {
@@ -124,19 +115,6 @@
         "Left": [
           "Bytea",
           "Varchar"
-        ]
-      },
-      "nullable": []
-    }
-  },
-  "3d56b7352d39010ff9e047b71268c26d00e9629870f21a98971ffd1b4f81a231": {
-    "query": "INSERT INTO validators (tm_pubkey, voting_power) VALUES ($1, $2)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea",
-          "Int8"
         ]
       },
       "nullable": []
@@ -291,6 +269,30 @@
       ]
     }
   },
+  "830e68c832d63748440f231cda5c02988e01b81954829b7de1b6197de8d3ebd2": {
+    "query": "select tm_pubkey, validator_rates.voting_power FROM validators LEFT JOIN validator_rates ON validator_rates.validator_pubkey = validators.tm_pubkey;",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "tm_pubkey",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 1,
+          "name": "voting_power",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": [
+        true,
+        false
+      ]
+    }
+  },
   "9024aaa179b92038a276abd92a8f20b3a28133ea8435c1d4d9ae4bc3ec31158a": {
     "query": "SELECT height, nct_anchor AS \"nct_anchor: merkle::Root\", app_hash FROM blocks ORDER BY height DESC LIMIT 1",
     "describe": {
@@ -396,6 +398,33 @@
         false,
         false
       ]
+    }
+  },
+  "eef7c74c2338d6cfda95c4c8b3556c4ce5e257f90c261bedb8f337f7c7276b09": {
+    "query": "INSERT INTO validator_rates (epoch, validator_pubkey, validator_rate, voting_power) VALUES ($1, $2, $3, $4)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Bytea",
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "fc128bcefa54c9a85bb3595c20fe253348135b4473dab9fee5847c7465a6d8f7": {
+    "query": "INSERT INTO validators (tm_pubkey) VALUES ($1)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea"
+        ]
+      },
+      "nullable": []
     }
   },
   "feb219cf82779306d199c5f733359b2cafd5ab51fca03922a9e73c3a4ff44bf7": {

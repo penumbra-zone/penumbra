@@ -1,10 +1,13 @@
 use anyhow::{anyhow, Error};
 
+use tendermint::block;
+
 /// Epoch represents a given epoch for Penumbra and is used
 /// for calculation of staking exchange rates.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Epoch {
-    epoch: u64,
+    pub index: u64,
+    pub duration: u64,
 }
 
 impl Epoch {
@@ -29,7 +32,27 @@ impl Epoch {
     /// as well as a signed implemention (`from_blockheight`)
     pub fn from_blockheight_unsigned(block_height: u64, epoch_duration: u64) -> Self {
         Epoch {
-            epoch: block_height / epoch_duration,
+            index: block_height / epoch_duration,
+            duration: epoch_duration,
         }
+    }
+
+    /// Indicates the starting block height for this epoch (inclusive)
+    pub fn start_height(&self) -> block::Height {
+        block::Height::try_from(self.index * self.duration).expect("able to parse block height")
+    }
+
+    /// Indicates the ending block height for this epoch (inclusive)
+    pub fn end_height(&self) -> block::Height {
+        block::Height::try_from((self.index + 1) * self.duration - 1)
+            .expect("able to parse block height")
+    }
+
+    pub fn is_epoch_boundary(block_height: i64, epoch_duration: u64) -> Result<bool, Error> {
+        if block_height < 0 {
+            return Err(anyhow!("block height should never be negative"));
+        }
+
+        Ok(block_height.unsigned_abs() % epoch_duration == 0)
     }
 }

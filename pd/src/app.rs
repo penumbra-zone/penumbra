@@ -15,7 +15,6 @@ use penumbra_crypto::{
     merkle::{self, NoteCommitmentTree, TreeExt},
     note, Nullifier, Transaction,
 };
-use penumbra_stake::Validator;
 use tendermint::abci::{
     request::{self, BeginBlock, CheckTxKind, EndBlock},
     response, Request, Response,
@@ -74,10 +73,6 @@ pub struct App {
 
     /// Epoch duration in blocks
     epoch_duration: u64,
-
-    /// Contains the validator set, with each validator uniquely identified by their tendermint
-    /// public key.
-    validators: Arc<Mutex<BTreeMap<tendermint::PublicKey, Validator>>>,
 }
 
 impl App {
@@ -87,13 +82,11 @@ impl App {
         let note_commitment_tree = state.note_commitment_tree().await?;
         let genesis_config = state.genesis_configuration().await?;
         let recent_anchors = state.recent_anchors(NUM_RECENT_ANCHORS).await?;
-        let validators = state.validators().await?;
         Ok(Self {
             state,
             note_commitment_tree,
             recent_anchors: recent_anchors,
             mempool_nullifiers: Arc::new(Default::default()),
-            validators: Arc::new(Mutex::new(validators)),
             pending_block: None,
             completion_tracker: Default::default(),
             epoch_duration: genesis_config.epoch_duration,
@@ -105,7 +98,7 @@ impl App {
         init_chain: request::InitChain,
     ) -> impl Future<Output = Result<Response, BoxError>> {
         tracing::info!(?init_chain);
-        let mut genesis_block = PendingBlock::new(NoteCommitmentTree::new(0));
+        let mut genesis_block = PendingBlock::new(NoteCommitmentTree::new(0), self.epoch_duration);
         genesis_block.set_height(0);
 
         // Note that errors cannot be handled in InitChain, the application must crash.
@@ -157,7 +150,6 @@ impl App {
                 power: val.voting_power.clone(),
             })
         }
-        self.validators = Arc::new(Mutex::new(genesis_validators.clone()));
 
         self.epoch_duration = app_state.epoch_duration;
 
@@ -214,6 +206,7 @@ impl App {
     fn begin_block(&mut self, _begin: BeginBlock) -> response::BeginBlock {
         self.pending_block = Some(Arc::new(Mutex::new(PendingBlock::new(
             self.note_commitment_tree.clone(),
+            self.epoch_duration,
         ))));
         // TODO: process begin.last_commit_info to handle validator rewards, and
         // begin.byzantine_validators to handle evidence + slashing
@@ -348,22 +341,20 @@ impl App {
     }
 
     fn end_block(&mut self, end: EndBlock) -> response::EndBlock {
-        self.pending_block
+        let epoch = self
+            .pending_block
             .as_mut()
             .expect("pending_block must be Some in EndBlock")
             .lock()
             .unwrap()
             .set_height(end.height);
 
-        if end.height < 0 {
-            panic!("block height should never be negative");
-        }
-
         // TODO: if necessary, set the EndBlock response to add validators
         // at the epoch boundary
-        if end.height.unsigned_abs() % self.epoch_duration == 0 {
+        if end.height.unsigned_abs() == epoch.start_height().value() {
             // Epoch boundary -- add/remove validators if necessary
             tracing::info!("new epoch");
+            increment_counter!("epoch");
         }
         // TODO: here's where we process validator changes
         response::EndBlock::default()

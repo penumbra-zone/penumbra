@@ -5,6 +5,7 @@ use penumbra_crypto::{
     merkle::{Frontier, NoteCommitmentTree},
     note, Nullifier,
 };
+use penumbra_stake::Epoch;
 
 use crate::verify::{PositionedNoteData, VerifiedTransaction};
 
@@ -19,22 +20,32 @@ pub struct PendingBlock {
     pub spent_nullifiers: BTreeSet<Nullifier>,
     /// Stores new asset types found in this block that need to be added to the asset registry.
     pub new_assets: BTreeMap<asset::Id, String>,
+    /// Indicates the epoch the block belongs to.
+    pub epoch: Option<Epoch>,
+    /// Indicates the duration in blocks of each epoch.
+    pub epoch_duration: u64,
 }
 
 impl PendingBlock {
-    pub fn new(note_commitment_tree: NoteCommitmentTree) -> Self {
+    pub fn new(note_commitment_tree: NoteCommitmentTree, epoch_duration: u64) -> Self {
         Self {
             height: None,
             note_commitment_tree,
             notes: BTreeMap::new(),
             spent_nullifiers: BTreeSet::new(),
             new_assets: BTreeMap::new(),
+            epoch: None,
+            epoch_duration: epoch_duration,
         }
     }
 
     /// We only get the height from ABCI in EndBlock, so this allows setting it in-place.
-    pub fn set_height(&mut self, height: i64) {
-        self.height = Some(height)
+    pub fn set_height(&mut self, height: i64) -> Epoch {
+        self.height = Some(height);
+        let epoch = Epoch::from_blockheight(height, self.epoch_duration)
+            .expect("able to calculate genesis block epoch");
+        self.epoch = Some(epoch.clone());
+        epoch
     }
 
     /// Adds the state changes from a verified transaction.

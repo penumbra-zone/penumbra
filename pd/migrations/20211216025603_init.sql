@@ -33,12 +33,24 @@ CREATE INDEX ON notes (position);
 CREATE INDEX ON notes (height);
 
 CREATE TABLE IF NOT EXISTS validators (
-    tm_pubkey bytea NOT NULL PRIMARY KEY,
-    voting_power bigint NOT NULL
+    tm_pubkey bytea NOT NULL PRIMARY KEY
 );
 
 CREATE TABLE IF NOT EXISTS validator_fundingstreams (
     tm_pubkey bytea NOT NULL,
     address varchar NOT NULL,
     rate_bps bigint NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS base_rates (
+    epoch bigint PRIMARY KEY,
+    base_rate bigint NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS validator_rates (
+    epoch bigint NOT NULL,
+    validator_pubkey bytea NOT NULL REFERENCES validators (tm_pubkey),
+    validator_rate bigint NOT NULL,
+    voting_power bigint NOT NULL,
+    PRIMARY KEY(epoch, validator_pubkey)
 );
