@@ -136,14 +136,7 @@ impl DisplayDenom {
     }
 
     pub fn format_value(&self, value: u64) -> String {
-        let exponent = self
-            .inner
-            .units
-            .get(self.unit_index as usize)
-            .expect("there must be an entry for unit_index")
-            .exponent;
-
-        let power_of_ten = 10u64.pow(exponent.into());
+        let power_of_ten = 10u64.pow(self.exponent().into());
         let v1 = value / power_of_ten;
         let v2 = value % power_of_ten;
 
@@ -157,6 +150,55 @@ impl DisplayDenom {
         } else {
             format!("{}", v1)
         }
+    }
+
+    pub fn parse_value(&self, value: &str) -> Result<u64, anyhow::Error> {
+        let split: Vec<&str> = value.split(".").collect();
+        if split.len() > 2 {
+            return Err(anyhow::anyhow!("expected only one decimal point"));
+        } else {
+            let left = split[0];
+            let right;
+
+            // The decimal point and right hand side is optional. If it's not present, we use "0"
+            // such that the rest of the logic is the same.
+            if split.len() > 1 {
+                right = split[1];
+            } else {
+                right = "0";
+            }
+
+            let v1 = left.parse::<u64>().map_err(|e| anyhow::anyhow!(e))?;
+            let mut v2 = right.parse::<u64>().map_err(|e| anyhow::anyhow!(e))?;
+            let v1_power_of_ten = 10u64.pow(self.exponent().into());
+
+            if right.len() == (self.exponent() + 1) as usize && v2 == 0 {
+                // This stanza means that the value is the base unit. Simply return v1.
+                return Ok(v1);
+            } else if right.len() > self.exponent().into() {
+                return Err(anyhow::anyhow!("cannot represent this value"));
+            }
+
+            let v2_power_of_ten = 10u64.pow((self.exponent() - right.len() as u8).into());
+            v2 = v2.checked_mul(v2_power_of_ten).unwrap();
+
+            let v = v1
+                .checked_mul(v1_power_of_ten)
+                .and_then(|x| x.checked_add(v2));
+            if v.is_none() {
+                return Err(anyhow::anyhow!("overflow!"));
+            } else {
+                return Ok(v.unwrap());
+            }
+        }
+    }
+
+    fn exponent(&self) -> u8 {
+        self.inner
+            .units
+            .get(self.unit_index as usize)
+            .expect("there must be an entry for unit_index")
+            .exponent
     }
 }
 
