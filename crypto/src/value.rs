@@ -3,10 +3,12 @@
 use std::{
     convert::{TryFrom, TryInto},
     ops::Deref,
+    str::FromStr,
 };
 
 use ark_ff::PrimeField;
 use once_cell::sync::Lazy;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use thiserror;
 
@@ -44,6 +46,46 @@ impl Value {
         let C = v * G_v + blinding * H;
 
         Commitment(C)
+    }
+}
+
+impl FromStr for Value {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let re = Regex::new(r"([0-9.]+)(.*)").unwrap();
+        let caps = re.captures(s);
+
+        if caps.is_none() {
+            return Err(anyhow::anyhow!("could not parse"));
+        }
+        let caps_matches = caps.unwrap();
+        let numeric_str = caps_matches.get(1).map_or("", |m| m.as_str());
+        let denom_str = caps_matches.get(2).map_or("", |m| m.as_str());
+        if denom_str == "" || numeric_str == "" {
+            return Err(anyhow::anyhow!(
+                "provide both a numeric value and denomination, e.g. 1penumbra"
+            ));
+        }
+
+        let amount;
+        let asset_id;
+        if let Some(display_denom) = asset::REGISTRY.parse_display(denom_str) {
+            amount = display_denom
+                .parse_value(numeric_str)
+                .map_err(|e| anyhow::anyhow!(e))?;
+
+            asset_id = display_denom.base().id();
+        } else {
+            amount = numeric_str.parse::<u64>().map_err(|e| anyhow::anyhow!(e))?;
+
+            // It's safe to unwrap here as we just checked there is no display denom for this asset.
+            let base_denom = asset::REGISTRY.parse_base(denom_str).unwrap();
+
+            asset_id = base_denom.id();
+        }
+
+        Ok(Value { amount, asset_id })
     }
 }
 
@@ -160,5 +202,30 @@ mod tests {
 
         // so c0 = 0 * G_v1 + 0 * G_v2 + b0 * H
         assert_eq!(c0.0, b0 * VALUE_BLINDING_GENERATOR.deref());
+    }
+
+    #[test]
+    fn value_parsing_happy() {
+        let upenumbra_base_denom = asset::REGISTRY.parse_base("upenumbra").unwrap();
+
+        let v1: Value = "1823.298penumbra".parse().unwrap();
+        assert_eq!(v1.amount, 1823298000);
+        assert_eq!(v1.asset_id, upenumbra_base_denom.id());
+
+        let v2: Value = "3930upenumbra".parse().unwrap();
+        assert_eq!(v2.amount, 3930);
+        assert_eq!(v2.asset_id, upenumbra_base_denom.id());
+
+        let nala_base_denom = asset::REGISTRY.parse_base("nala").unwrap();
+
+        let v1: Value = "1nala".parse().unwrap();
+        assert_eq!(v1.amount, 1);
+        assert_eq!(v1.asset_id, nala_base_denom.id());
+    }
+
+    #[test]
+    fn value_parsing_errors() {
+        assert!(Value::from_str("1").is_err());
+        assert!(Value::from_str("nala").is_err());
     }
 }
