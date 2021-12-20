@@ -15,7 +15,6 @@ use penumbra_crypto::{
     merkle::{self, NoteCommitmentTree, TreeExt},
     note, Nullifier, Transaction,
 };
-use penumbra_stake::{Epoch, Validator};
 use tendermint::abci::{
     request::{self, BeginBlock, CheckTxKind, EndBlock},
     response, Request, Response,
@@ -74,10 +73,6 @@ pub struct App {
 
     /// Epoch duration in blocks
     epoch_duration: u64,
-
-    /// Contains the validator set, with each validator uniquely identified by their tendermint
-    /// public key.
-    validators: Arc<Mutex<BTreeMap<tendermint::PublicKey, Validator>>>,
 }
 
 impl App {
@@ -87,18 +82,11 @@ impl App {
         let note_commitment_tree = state.note_commitment_tree().await?;
         let genesis_config = state.genesis_configuration().await?;
         let recent_anchors = state.recent_anchors(NUM_RECENT_ANCHORS).await?;
-        // TODO: This is the only place `state.validators()` is called -- updates to
-        // the validator list won't be available! I think it needs to be called again in `commit`
-        // prior to updating validator rates. _Or_ maybe not depending on the database interaction design.
-        // But we need to be careful to ensure the `App.validators` doesn't come out of sync with what's
-        // in the database.
-        let validators = state.validators().await?;
         Ok(Self {
             state,
             note_commitment_tree,
             recent_anchors: recent_anchors,
             mempool_nullifiers: Arc::new(Default::default()),
-            validators: Arc::new(Mutex::new(validators)),
             pending_block: None,
             completion_tracker: Default::default(),
             epoch_duration: genesis_config.epoch_duration,
@@ -110,10 +98,8 @@ impl App {
         init_chain: request::InitChain,
     ) -> impl Future<Output = Result<Response, BoxError>> {
         tracing::info!(?init_chain);
-        let epoch = Epoch::from_blockheight(0, self.epoch_duration)
-            .expect("able to calculate genesis block epoch");
-        let mut genesis_block = PendingBlock::new(NoteCommitmentTree::new(0));
-        genesis_block.set_height_and_epoch(0, epoch);
+        let mut genesis_block = PendingBlock::new(NoteCommitmentTree::new(0), self.epoch_duration);
+        genesis_block.set_height(0);
 
         // Note that errors cannot be handled in InitChain, the application must crash.
         let app_state: genesis::AppState = serde_json::from_slice(&init_chain.app_state_bytes)
@@ -164,7 +150,6 @@ impl App {
                 power: val.voting_power.clone(),
             })
         }
-        self.validators = Arc::new(Mutex::new(genesis_validators.clone()));
 
         self.epoch_duration = app_state.epoch_duration;
 
@@ -221,6 +206,7 @@ impl App {
     fn begin_block(&mut self, _begin: BeginBlock) -> response::BeginBlock {
         self.pending_block = Some(Arc::new(Mutex::new(PendingBlock::new(
             self.note_commitment_tree.clone(),
+            self.epoch_duration,
         ))));
         // TODO: process begin.last_commit_info to handle validator rewards, and
         // begin.byzantine_validators to handle evidence + slashing
@@ -355,28 +341,17 @@ impl App {
     }
 
     fn end_block(&mut self, end: EndBlock) -> response::EndBlock {
-        let epoch = Epoch::from_blockheight(end.height, self.epoch_duration)
-            .expect("must be able to calculate block epoch");
-        self.pending_block
+        let epoch = self
+            .pending_block
             .as_mut()
             .expect("pending_block must be Some in EndBlock")
             .lock()
             .unwrap()
-            .set_height_and_epoch(end.height, epoch);
-
-        let is_epoch_boundary = Epoch::is_epoch_boundary(end.height, self.epoch_duration)
-            .expect("unhandleable error determining epoch boundary");
-        // set the flag on the pending block
-        self.pending_block
-            .as_mut()
-            .expect("pending_block must be Some in EndBlock")
-            .lock()
-            .unwrap()
-            .set_epoch_boundary(is_epoch_boundary);
+            .set_height(end.height);
 
         // TODO: if necessary, set the EndBlock response to add validators
         // at the epoch boundary
-        if is_epoch_boundary {
+        if end.height.unsigned_abs() == epoch.start_height().value() {
             // Epoch boundary -- add/remove validators if necessary
             tracing::info!("new epoch");
             increment_counter!("epoch");

@@ -112,10 +112,12 @@ ON CONFLICT (id) DO UPDATE SET data = $1
             .await?;
         }
 
-        if block.is_epoch_boundary.is_none() {
-            return Err(anyhow::anyhow!("EndBlock must be called prior to Commit, `is_epoch_boundary` was not set on the pending block"));
-        }
-        if block.is_epoch_boundary.unwrap() {
+        let epoch = block.epoch.ok_or_else(|| {
+            anyhow::anyhow!(
+                "EndBlock must be called prior to Commit, `epoch` was not set on the pending block"
+            )
+        })?;
+        if epoch.start_height().value() == block.height.unwrap().unsigned_abs() {
             // validator rates need updating on epoch boundaries
             let validators = self.validators().await?;
             for validator in validators {
@@ -126,12 +128,9 @@ ON CONFLICT (id) DO UPDATE SET data = $1
 
                 let pubkey_str = serde_json::to_string(&validator.0)?;
 
-                if block.epoch.is_none() {
-                    return Err(anyhow::anyhow!("EndBlock must be called prior to Commit, `epoch` was not set on the pending block"));
-                }
                 query!(
                 r#" INSERT INTO validator_rates ( epoch, validator_pubkey, validator_rate, voting_power ) VALUES ($1, $2, $3, $4)"#,
-                block.epoch.as_ref().unwrap().0 as i64,
+                epoch.index as i64,
                 pubkey_str.as_bytes(),
                 validator_rate, voting_power
             )
