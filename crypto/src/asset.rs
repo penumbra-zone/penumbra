@@ -60,6 +60,29 @@ mod tests {
     }
 
     #[test]
+    fn test_displaydenom_parse_value() {
+        let penumbra_display_denom = REGISTRY.parse_display("penumbra").unwrap();
+        assert!(penumbra_display_denom.parse_value("1.2.3").is_err());
+
+        assert_eq!(
+            penumbra_display_denom.parse_value("1.782").unwrap(),
+            1782000
+        );
+
+        let mpenumbra_display_denom = REGISTRY.parse_display("mpenumbra").unwrap();
+        assert_eq!(
+            mpenumbra_display_denom.parse_value("1782").unwrap(),
+            1782000
+        );
+
+        let upenumbra_display_denom = REGISTRY.parse_display("upenumbra").unwrap();
+        assert_eq!(
+            upenumbra_display_denom.parse_value("1782000").unwrap(),
+            1782000
+        );
+    }
+
+    #[test]
     fn test_registry_fallthrough() {
         // We should be able to use `parse_base` with a base denomination for assets
         // not included in the hardcoded registry.
