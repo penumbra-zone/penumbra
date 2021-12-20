@@ -32,6 +32,8 @@ mod tests {
                 format!("{}", parsed_display_denom.base()),
                 "upenumbra".to_string()
             );
+
+            assert_eq!(format!("{}", parsed_display_denom), display_denom)
         }
 
         // The base denomination (upenumbra) can also be used for display purposes.
