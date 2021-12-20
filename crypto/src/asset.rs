@@ -51,6 +51,8 @@ mod tests {
         // with exponent 6, 1782000 formats to 1.782
         let penumbra_display_denom = REGISTRY.parse_display("penumbra").unwrap();
         assert_eq!(penumbra_display_denom.format_value(1782000), "1.782");
+        assert_eq!(penumbra_display_denom.format_value(6700001), "6.700001");
+        assert_eq!(penumbra_display_denom.format_value(1), "0.000001");
 
         // with exponent 3, 1782000 formats to 1782
         let mpenumbra_display_denom = REGISTRY.parse_display("mpenumbra").unwrap();
@@ -70,12 +72,17 @@ mod tests {
             penumbra_display_denom.parse_value("1.782").unwrap(),
             1782000
         );
+        assert_eq!(
+            penumbra_display_denom.parse_value("6.700001").unwrap(),
+            6700001
+        );
 
         let mpenumbra_display_denom = REGISTRY.parse_display("mpenumbra").unwrap();
         assert_eq!(
             mpenumbra_display_denom.parse_value("1782").unwrap(),
             1782000
         );
+        assert!(mpenumbra_display_denom.parse_value("1782.0001").is_err());
 
         let upenumbra_display_denom = REGISTRY.parse_display("upenumbra").unwrap();
         assert_eq!(
