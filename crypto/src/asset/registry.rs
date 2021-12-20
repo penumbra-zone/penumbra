@@ -82,24 +82,34 @@ impl Registry {
     /// the parsed display denomination and associated base denomination.
     /// Otherwise, returns `None`.
     pub fn parse_display(&self, raw_denom: &str) -> Option<DisplayDenom> {
-        self.display_set
-            .matches(raw_denom)
-            .iter()
-            .next()
-            .map(|display_index| {
-                let base_index = self.display_to_base[display_index];
-                // We need to determine which unit we matched
-                for (unit_index, regex) in self.display_regexes[base_index].iter().enumerate() {
-                    if let Some(capture) = regex.captures(raw_denom) {
-                        let data = capture.name("data").map(|m| m.as_str()).unwrap_or("");
-                        return DisplayDenom {
-                            inner: Arc::new(self.constructors[base_index](data)),
-                            unit_index,
-                        };
+        if let Some(base_denom) = self.parse_base(raw_denom) {
+            return Some(
+                base_denom
+                    .units()
+                    .last()
+                    .expect("base denom always has at least one display denom")
+                    .clone(),
+            );
+        } else {
+            self.display_set
+                .matches(raw_denom)
+                .iter()
+                .next()
+                .map(|display_index| {
+                    let base_index = self.display_to_base[display_index];
+                    // We need to determine which unit we matched
+                    for (unit_index, regex) in self.display_regexes[base_index].iter().enumerate() {
+                        if let Some(capture) = regex.captures(raw_denom) {
+                            let data = capture.name("data").map(|m| m.as_str()).unwrap_or("");
+                            return DisplayDenom {
+                                inner: Arc::new(self.constructors[base_index](data)),
+                                unit_index,
+                            };
+                        }
                     }
-                }
-                unreachable!("we matched one of the display regexes");
-            })
+                    unreachable!("we matched one of the display regexes");
+                })
+        }
     }
 }
 
