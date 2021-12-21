@@ -26,7 +26,7 @@ services:
       - "26656:26656"
       - "26657:26657"
     volumes:
-      - ~/scratch/testnet_build/node0:/tendermint:Z
+      - ~/scratch/testnet_build/node0:/tendermint
     command: start --proxy-app=tcp://pd:26658
     environment:
       - ID=0
