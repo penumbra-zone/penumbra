@@ -49,7 +49,7 @@ pub struct ClientState {
     /// Map of note commitment to full transaction data for transactions we have visibility into.
     transactions: BTreeMap<note::Commitment, Option<Vec<u8>>>,
     /// Map of asset IDs to (raw) asset denominations.
-    denom_cache: BTreeMap<asset::Id, String>,
+    asset_cache: asset::Cache,
     /// Key material.
     wallet: Wallet,
 }
@@ -95,9 +95,19 @@ impl ClientState {
             pending_change_set: BTreeMap::new(),
             spent_set: BTreeMap::new(),
             transactions: BTreeMap::new(),
-            denom_cache: BTreeMap::new(),
+            asset_cache: Default::default(),
             wallet,
         }
+    }
+
+    /// Returns a reference to the client state's asset cache.
+    pub fn asset_cache(&self) -> &asset::Cache {
+        &self.asset_cache
+    }
+
+    /// Returns a mutable reference to the client state's asset cache.
+    pub fn asset_cache_mut(&mut self) -> &mut asset::Cache {
+        &mut self.asset_cache
     }
 
     /// Returns the wallet the state is tracking.
@@ -319,13 +329,11 @@ impl ClientState {
             .map(|note| {
                 // Any notes we have in the unspent set we will have the corresponding denominations
                 // for since the notes and asset registry are both part of the sync.
-                let denom = asset::REGISTRY
-                    .parse_base(
-                        self.denom_cache
-                            .get(&note.as_ref().asset_id())
-                            .expect("all asset IDs should have denominations stored locally"),
-                    )
-                    .expect("saved denominations are valid");
+                let denom = self
+                    .asset_cache
+                    .get(&note.as_ref().asset_id())
+                    .expect("all asset IDs should have denominations stored locally")
+                    .clone();
 
                 let index: u64 = self
                     .wallet()
@@ -372,17 +380,6 @@ impl ClientState {
         }
 
         notemap
-    }
-
-    /// Add asset to local asset registry if it doesn't exist.
-    pub fn add_asset_to_registry(&mut self, asset_id: asset::Id, asset_denom: BaseDenom) {
-        if self
-            .denom_cache
-            .insert(asset_id, asset_denom.to_string())
-            .is_none()
-        {
-            tracing::debug!("found new asset: {}", asset_denom);
-        }
     }
 
     /// Returns the last block height the client state has synced up to, if any.
@@ -696,9 +693,9 @@ mod serde_helpers {
                     })
                     .collect(),
                 asset_registry: state
-                    .denom_cache
+                    .asset_cache
                     .iter()
-                    .map(|(id, denom)| (hex::encode(id.to_bytes()), denom.clone()))
+                    .map(|(id, denom)| (hex::encode(id.to_bytes()), denom.to_string()))
                     .collect(),
                 // TODO: serialize full transactions
                 transactions: vec![],
@@ -765,7 +762,7 @@ mod serde_helpers {
                 pending_set,
                 pending_change_set,
                 spent_set,
-                denom_cache: asset_registry,
+                asset_cache: asset_registry.try_into()?,
                 // TODO: serialize full transactions
                 transactions: Default::default(),
             })
