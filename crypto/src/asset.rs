@@ -28,7 +28,7 @@ mod tests {
 
         // We should be able to use the display denominations with `parse_display` however.
         for display_denom in display_denoms {
-            let parsed_display_denom = REGISTRY.parse_display(display_denom).unwrap();
+            let parsed_display_denom = REGISTRY.parse_display(display_denom);
 
             assert_eq!(
                 format!("{}", parsed_display_denom.base()),
@@ -39,7 +39,7 @@ mod tests {
         }
 
         // The base denomination (upenumbra) can also be used for display purposes.
-        let parsed_display_denom = REGISTRY.parse_display("upenumbra").unwrap();
+        let parsed_display_denom = REGISTRY.parse_display("upenumbra");
         assert_eq!(
             format!("{}", parsed_display_denom.base()),
             "upenumbra".to_string()
@@ -49,17 +49,17 @@ mod tests {
     #[test]
     fn test_displaydenom_format_value() {
         // with exponent 6, 1782000 formats to 1.782
-        let penumbra_display_denom = REGISTRY.parse_display("penumbra").unwrap();
+        let penumbra_display_denom = REGISTRY.parse_display("penumbra");
         assert_eq!(penumbra_display_denom.format_value(1782000), "1.782");
         assert_eq!(penumbra_display_denom.format_value(6700001), "6.700001");
         assert_eq!(penumbra_display_denom.format_value(1), "0.000001");
 
         // with exponent 3, 1782000 formats to 1782
-        let mpenumbra_display_denom = REGISTRY.parse_display("mpenumbra").unwrap();
+        let mpenumbra_display_denom = REGISTRY.parse_display("mpenumbra");
         assert_eq!(mpenumbra_display_denom.format_value(1782000), "1782");
 
         // with exponent 0, 1782000 formats to 1782000
-        let upenumbra_display_denom = REGISTRY.parse_display("upenumbra").unwrap();
+        let upenumbra_display_denom = REGISTRY.parse_display("upenumbra");
         assert_eq!(upenumbra_display_denom.format_value(1782000), "1782000");
     }
 
@@ -76,7 +76,7 @@ mod tests {
 
     #[test]
     fn test_displaydenom_parse_value() {
-        let penumbra_display_denom = REGISTRY.parse_display("penumbra").unwrap();
+        let penumbra_display_denom = REGISTRY.parse_display("penumbra");
         assert!(penumbra_display_denom.parse_value("1.2.3").is_err());
 
         assert_eq!(
@@ -88,14 +88,14 @@ mod tests {
             6700001
         );
 
-        let mpenumbra_display_denom = REGISTRY.parse_display("mpenumbra").unwrap();
+        let mpenumbra_display_denom = REGISTRY.parse_display("mpenumbra");
         assert_eq!(
             mpenumbra_display_denom.parse_value("1782").unwrap(),
             1782000
         );
         assert!(mpenumbra_display_denom.parse_value("1782.0001").is_err());
 
-        let upenumbra_display_denom = REGISTRY.parse_display("upenumbra").unwrap();
+        let upenumbra_display_denom = REGISTRY.parse_display("upenumbra");
         assert_eq!(
             upenumbra_display_denom.parse_value("1782000").unwrap(),
             1782000
@@ -115,12 +115,12 @@ mod tests {
         fn displaydenom_parsing_formatting_roundtrip(
             v: u32
         ) {
-            let penumbra_display_denom = REGISTRY.parse_display("penumbra").unwrap();
+            let penumbra_display_denom = REGISTRY.parse_display("penumbra");
             let formatted = penumbra_display_denom.format_value(v.into());
             let parsed = penumbra_display_denom.parse_value(&formatted);
             assert_eq!(v, parsed.unwrap() as u32);
 
-            let mpenumbra_display_denom = REGISTRY.parse_display("mpenumbra").unwrap();
+            let mpenumbra_display_denom = REGISTRY.parse_display("mpenumbra");
             let formatted = mpenumbra_display_denom.format_value(v.into());
             let parsed = mpenumbra_display_denom.parse_value(&formatted);
             assert_eq!(v, parsed.unwrap() as u32);
