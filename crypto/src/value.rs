@@ -68,22 +68,9 @@ impl FromStr for Value {
             ));
         }
 
-        let amount;
-        let asset_id;
-        if let Some(display_denom) = asset::REGISTRY.parse_display(denom_str) {
-            amount = display_denom
-                .parse_value(numeric_str)
-                .map_err(|e| anyhow::anyhow!(e))?;
-
-            asset_id = display_denom.base().id();
-        } else {
-            amount = numeric_str.parse::<u64>().map_err(|e| anyhow::anyhow!(e))?;
-
-            // It's safe to unwrap here as we just checked there is no display denom for this asset.
-            let base_denom = asset::REGISTRY.parse_base(denom_str).unwrap();
-
-            asset_id = base_denom.id();
-        }
+        let display_denom = asset::REGISTRY.parse_display(denom_str);
+        let amount = display_denom.parse_value(numeric_str)?;
+        let asset_id = display_denom.base().id();
 
         Ok(Value { amount, asset_id })
     }
