@@ -155,6 +155,18 @@ impl PartialEq for Denom {
 
 impl Eq for Denom {}
 
+impl PartialOrd for Denom {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.inner.base_denom.partial_cmp(&other.inner.base_denom)
+    }
+}
+
+impl Ord for Denom {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.inner.base_denom.cmp(&other.inner.base_denom)
+    }
+}
+
 impl Debug for Denom {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(self.inner.base_denom.as_str())
