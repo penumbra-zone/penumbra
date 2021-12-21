@@ -47,6 +47,20 @@ impl Value {
 
         Commitment(C)
     }
+
+    /// Use the provided [`asset::Cache`] to format this value.
+    ///
+    /// Returns `None` if the denomination is not known.
+    pub fn try_format(&self, cache: &asset::Cache) -> Option<String> {
+        cache.get(&self.asset_id).map(|base_denom| {
+            let display_denom = base_denom.best_unit_for(self.amount);
+            format!(
+                "{}{}",
+                display_denom.format_value(self.amount),
+                display_denom
+            )
+        })
+    }
 }
 
 impl FromStr for Value {
@@ -191,25 +205,47 @@ mod tests {
     #[test]
     fn value_parsing_happy() {
         let upenumbra_base_denom = asset::REGISTRY.parse_base("upenumbra").unwrap();
+        let nala_base_denom = asset::REGISTRY.parse_base("nala").unwrap();
+        let cache = [upenumbra_base_denom.clone(), nala_base_denom.clone()]
+            .into_iter()
+            .collect::<asset::Cache>();
 
         let v1: Value = "1823.298penumbra".parse().unwrap();
         assert_eq!(v1.amount, 1823298000);
         assert_eq!(v1.asset_id, upenumbra_base_denom.id());
+        // Check that we can also parse the output of try_format
+        assert_eq!(v1, v1.try_format(&cache).unwrap().parse().unwrap());
 
         let v2: Value = "3930upenumbra".parse().unwrap();
         assert_eq!(v2.amount, 3930);
         assert_eq!(v2.asset_id, upenumbra_base_denom.id());
-
-        let nala_base_denom = asset::REGISTRY.parse_base("nala").unwrap();
+        assert_eq!(v2, v2.try_format(&cache).unwrap().parse().unwrap());
 
         let v1: Value = "1nala".parse().unwrap();
         assert_eq!(v1.amount, 1);
         assert_eq!(v1.asset_id, nala_base_denom.id());
+        assert_eq!(v1, v1.try_format(&cache).unwrap().parse().unwrap());
     }
 
     #[test]
     fn value_parsing_errors() {
         assert!(Value::from_str("1").is_err());
         assert!(Value::from_str("nala").is_err());
+    }
+
+    #[test]
+    fn try_format_picks_best_unit() {
+        let upenumbra_base_denom = asset::REGISTRY.parse_base("upenumbra").unwrap();
+        let cache = [upenumbra_base_denom.clone()]
+            .into_iter()
+            .collect::<asset::Cache>();
+
+        let v1: Value = "999upenumbra".parse().unwrap();
+        let v2: Value = "1000upenumbra".parse().unwrap();
+        let v3: Value = "4000000upenumbra".parse().unwrap();
+
+        assert_eq!(v1.try_format(&cache).unwrap(), "999upenumbra");
+        assert_eq!(v2.try_format(&cache).unwrap(), "1mpenumbra");
+        assert_eq!(v3.try_format(&cache).unwrap(), "4penumbra");
     }
 }
