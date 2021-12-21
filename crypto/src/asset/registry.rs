@@ -3,7 +3,7 @@ use std::sync::Arc;
 use once_cell::sync::Lazy;
 use regex::{Regex, RegexSet};
 
-use crate::asset::{denom, BaseDenom, DisplayDenom};
+use crate::asset::{denom, Denom, Unit};
 
 /// A registry of known assets, providing metadata related to a denomination string.
 ///
@@ -41,13 +41,13 @@ impl Registry {
     /// Attempt to parse the provided `raw_denom` as a base denomination.
     ///
     /// If the denomination is a known base denomination, returns `Some` with
-    /// the parsed base denomination and associated display denominations.
+    /// the parsed base denomination and associated display units.
     ///
-    /// If the denomination is a known display denomination, returns `None`.
+    /// If the denomination is a known display unit, returns `None`.
     ///
     /// If the denomination is unknown, returns `Some` with the parsed base
     /// denomination and default display denomination (base = display).
-    pub fn parse_base(&self, raw_denom: &str) -> Option<BaseDenom> {
+    pub fn parse_denom(&self, raw_denom: &str) -> Option<Denom> {
         // We hope that our regexes are disjoint (TODO: add code to test this)
         // so that there will only ever be one match from the RegexSet.
 
@@ -62,7 +62,7 @@ impl Registry {
                 .map(|m| m.as_str())
                 .unwrap_or("");
 
-            Some(BaseDenom {
+            Some(Denom {
                 inner: Arc::new(self.constructors[base_index](data)),
             })
         } else if let Some(_) = self.display_set.matches(raw_denom).iter().next() {
@@ -70,26 +70,27 @@ impl Registry {
             None
         } else {
             // 3. Fallthrough: create default base denom
-            Some(BaseDenom {
+            Some(Denom {
                 inner: Arc::new(denom::Inner::new(raw_denom.to_string(), Vec::new())),
             })
         }
     }
 
-    /// Attempt to parse the provided `raw_denom` as a display denomination.
+    /// Parses the provided `raw_unit`, determining whether it is a display unit
+    /// for another denomination or a base denomination itself.
     ///
     /// If the denomination is a known display denomination, returns a display
     /// denomination associated with that display denomination's base
     /// denomination. Otherwise, returns a display denomination associated with
     /// the input parsed as a base denomination.
-    pub fn parse_display(&self, raw_denom: &str) -> DisplayDenom {
-        if let Some(display_index) = self.display_set.matches(raw_denom).iter().next() {
+    pub fn parse_unit(&self, raw_unit: &str) -> Unit {
+        if let Some(display_index) = self.display_set.matches(raw_unit).iter().next() {
             let base_index = self.display_to_base[display_index];
             // We need to determine which unit we matched
             for (unit_index, regex) in self.display_regexes[base_index].iter().enumerate() {
-                if let Some(capture) = regex.captures(raw_denom) {
+                if let Some(capture) = regex.captures(raw_unit) {
                     let data = capture.name("data").map(|m| m.as_str()).unwrap_or("");
-                    return DisplayDenom {
+                    return Unit {
                         inner: Arc::new(self.constructors[base_index](data)),
                         unit_index,
                     };
@@ -97,7 +98,7 @@ impl Registry {
             }
             unreachable!("we matched one of the display regexes");
         } else {
-            self.parse_base(raw_denom)
+            self.parse_denom(raw_unit)
                 .expect("parse_base only returns None on display denom input")
                 .base_unit()
         }
@@ -108,14 +109,14 @@ impl Registry {
 struct Builder {
     base_regexes: Vec<&'static str>,
     constructors: Vec<fn(&str) -> denom::Inner>,
-    display_regexes: Vec<Vec<&'static str>>,
+    unit_regexes: Vec<Vec<&'static str>>,
 }
 
 impl Builder {
     /// Add an asset to the registry.
     ///
     /// - `base_regex`: matches the base denomination, with optional named capture `data`.
-    /// - `display_regexes`: match display denominations, with optional named capture `data`.
+    /// - `unit_regexes`: match display units, with optional named capture `data`.
     /// - `constructor`: maps `data` captured by a base OR display regex to the asset metadata,
     ///    recorded as a `denom::Inner`.
     ///
@@ -126,12 +127,12 @@ impl Builder {
     fn add_asset(
         mut self,
         base_regex: &'static str,
-        display_regexes: &[&'static str],
+        unit_regexes: &[&'static str],
         constructor: fn(&str) -> denom::Inner,
     ) -> Self {
         self.base_regexes.push(base_regex);
         self.constructors.push(constructor);
-        self.display_regexes.push(display_regexes.to_vec());
+        self.unit_regexes.push(unit_regexes.to_vec());
 
         self
     }
@@ -139,7 +140,7 @@ impl Builder {
     fn build(self) -> Registry {
         let mut display_to_base = Vec::new();
         let mut display_regexes = Vec::new();
-        for (base_index, displays) in self.display_regexes.iter().enumerate() {
+        for (base_index, displays) in self.unit_regexes.iter().enumerate() {
             for _d in displays.iter() {
                 display_to_base.push(base_index);
             }
@@ -155,7 +156,7 @@ impl Builder {
                 .collect(),
             constructors: self.constructors,
             display_set: RegexSet::new(
-                self.display_regexes
+                self.unit_regexes
                     .iter()
                     .flat_map(|displays| displays.iter()),
             )
@@ -177,11 +178,11 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
                 denom::Inner::new(
                     "upenumbra".to_string(),
                     vec![
-                        denom::Unit {
+                        denom::UnitData {
                             exponent: 6,
                             denom: "penumbra".to_string(),
                         },
-                        denom::Unit {
+                        denom::UnitData {
                             exponent: 3,
                             denom: "mpenumbra".to_string(),
                         },
@@ -201,11 +202,11 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
                 denom::Inner::new(
                     format!("udelegation_{}", data),
                     vec![
-                        denom::Unit {
+                        denom::UnitData {
                             exponent: 6,
                             denom: format!("delegation_{}", data),
                         },
-                        denom::Unit {
+                        denom::UnitData {
                             exponent: 3,
                             denom: format!("mdelegation_{}", data),
                         },

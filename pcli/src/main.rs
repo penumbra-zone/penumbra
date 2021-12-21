@@ -4,7 +4,7 @@ use anyhow::{anyhow, Result};
 use comfy_table::{presets, Table};
 use directories::ProjectDirs;
 use penumbra_crypto::{
-    asset::{self, BaseDenom},
+    asset::{self, Denom},
     keys::SpendSeed,
     Value, CURRENT_CHAIN_ID,
 };
@@ -216,7 +216,7 @@ async fn main() -> Result<()> {
             // assumes that the notes are all of the same denomination, and it is called below only
             // in the places where they are.
             fn tally_format_notes<'a>(
-                denom: &BaseDenom,
+                denom: &Denom,
                 cache: &asset::Cache,
                 notes: impl IntoIterator<Item = UnspentNote<'a>>,
             ) -> (String, String, String) {

@@ -1,5 +1,4 @@
 use anyhow::{anyhow, Error};
-
 use tendermint::block;
 
 /// Epoch represents a given epoch for Penumbra and is used

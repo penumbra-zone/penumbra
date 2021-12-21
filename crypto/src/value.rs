@@ -73,7 +73,7 @@ impl FromStr for Value {
             let numeric_str = captures.get(1).expect("matched regex").as_str();
             let denom_str = captures.get(2).expect("matched regex").as_str();
 
-            let display_denom = asset::REGISTRY.parse_display(denom_str);
+            let display_denom = asset::REGISTRY.parse_unit(denom_str);
             let amount = display_denom.parse_value(numeric_str)?;
             let asset_id = display_denom.base().id();
 
@@ -143,9 +143,9 @@ mod tests {
     fn sum_value_commitments() {
         use ark_ff::Field;
 
-        let pen_denom = asset::REGISTRY.parse_base("upenumbra").unwrap();
+        let pen_denom = asset::REGISTRY.parse_denom("upenumbra").unwrap();
         let atom_denom = asset::REGISTRY
-            .parse_base("HubPort/HubChannel/uatom")
+            .parse_denom("HubPort/HubChannel/uatom")
             .unwrap();
 
         let pen_id = asset::Id::from(pen_denom);
@@ -204,8 +204,8 @@ mod tests {
 
     #[test]
     fn value_parsing_happy() {
-        let upenumbra_base_denom = asset::REGISTRY.parse_base("upenumbra").unwrap();
-        let nala_base_denom = asset::REGISTRY.parse_base("nala").unwrap();
+        let upenumbra_base_denom = asset::REGISTRY.parse_denom("upenumbra").unwrap();
+        let nala_base_denom = asset::REGISTRY.parse_denom("nala").unwrap();
         let cache = [upenumbra_base_denom.clone(), nala_base_denom.clone()]
             .into_iter()
             .collect::<asset::Cache>();
@@ -235,7 +235,7 @@ mod tests {
 
     #[test]
     fn try_format_picks_best_unit() {
-        let upenumbra_base_denom = asset::REGISTRY.parse_base("upenumbra").unwrap();
+        let upenumbra_base_denom = asset::REGISTRY.parse_denom("upenumbra").unwrap();
         let cache = [upenumbra_base_denom.clone()]
             .into_iter()
             .collect::<asset::Cache>();

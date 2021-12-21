@@ -9,13 +9,18 @@ use ark_ff::fields::PrimeField;
 
 use crate::{asset, Fq, Value};
 
+/// An asset denomination.
+///
+/// Each denomination has a unique [`asset::Id`] and base unit, and may also
+/// have other display units.
 #[derive(Clone)]
-pub struct BaseDenom {
+pub struct Denom {
     pub(super) inner: Arc<Inner>,
 }
 
+/// A unit of some asset denomination.
 #[derive(Clone)]
-pub struct DisplayDenom {
+pub struct Unit {
     pub(super) inner: Arc<Inner>,
     // Indexes into the `units` field on `Inner`.
     // The units field is always sorted by priority order.
@@ -27,10 +32,10 @@ pub(super) struct Inner {
     id: asset::Id,
     base_denom: String,
     /// Sorted by priority order.
-    pub(super) units: Vec<Unit>,
+    pub(super) units: Vec<UnitData>,
 }
 
-pub(super) struct Unit {
+pub(super) struct UnitData {
     pub exponent: u8,
     pub denom: String,
 }
@@ -40,7 +45,7 @@ impl Inner {
     ///
     /// The base denom is added as a unit, so `units` can be empty and should
     /// not include a unit for the base denomination.
-    pub fn new(base_denom: String, mut units: Vec<Unit>) -> Self {
+    pub fn new(base_denom: String, mut units: Vec<UnitData>) -> Self {
         let id = asset::Id(Fq::from_le_bytes_mod_order(
             // XXX choice of hash function?
             blake2b_simd::Params::default()
@@ -54,7 +59,7 @@ impl Inner {
             assert_ne!(&unit.denom, &base_denom);
         }
 
-        units.push(Unit {
+        units.push(UnitData {
             exponent: 0,
             denom: base_denom.clone(),
         });
@@ -67,7 +72,7 @@ impl Inner {
     }
 }
 
-impl BaseDenom {
+impl Denom {
     /// Return the [`asset::Id`] associated with this denomination.
     pub fn id(&self) -> asset::Id {
         self.inner.id.clone()
@@ -84,9 +89,9 @@ impl BaseDenom {
     /// Return a list of display units for this denomination, in size order.
     ///
     /// There will always be at least one display denomination.
-    pub fn units(&self) -> Vec<DisplayDenom> {
+    pub fn units(&self) -> Vec<Unit> {
         (0..self.inner.units.len())
-            .map(|unit_index| DisplayDenom {
+            .map(|unit_index| Unit {
                 unit_index,
                 inner: self.inner.clone(),
             })
@@ -94,8 +99,8 @@ impl BaseDenom {
     }
 
     /// Returns the default (largest) unit for this denomination.
-    pub fn default_unit(&self) -> DisplayDenom {
-        DisplayDenom {
+    pub fn default_unit(&self) -> Unit {
+        Unit {
             unit_index: 0,
             inner: self.inner.clone(),
         }
@@ -104,8 +109,8 @@ impl BaseDenom {
     /// Returns the base (smallest) unit for this denomination.
     ///
     /// (This treats the base denomination as a display unit).
-    pub fn base_unit(&self) -> DisplayDenom {
-        DisplayDenom {
+    pub fn base_unit(&self) -> Unit {
+        Unit {
             unit_index: self.inner.units.len() - 1,
             inner: self.inner.clone(),
         }
@@ -116,11 +121,11 @@ impl BaseDenom {
     ///
     /// This is defined as the largest unit smaller than the given value (so it
     /// has no leading zeros when formatted).
-    pub fn best_unit_for(&self, amount: u64) -> DisplayDenom {
+    pub fn best_unit_for(&self, amount: u64) -> Unit {
         for (unit_index, unit) in self.inner.units.iter().enumerate() {
             let unit_amount = 10u64.pow(unit.exponent as u32);
             if amount >= unit_amount {
-                return DisplayDenom {
+                return Unit {
                     unit_index,
                     inner: self.inner.clone(),
                 };
@@ -130,41 +135,41 @@ impl BaseDenom {
     }
 }
 
-impl From<BaseDenom> for asset::Id {
-    fn from(base: BaseDenom) -> asset::Id {
+impl From<Denom> for asset::Id {
+    fn from(base: Denom) -> asset::Id {
         base.id()
     }
 }
 
-impl Hash for BaseDenom {
+impl Hash for Denom {
     fn hash<H: hash::Hasher>(&self, state: &mut H) {
         self.inner.base_denom.hash(state);
     }
 }
 
-impl PartialEq for BaseDenom {
+impl PartialEq for Denom {
     fn eq(&self, other: &Self) -> bool {
         self.inner.base_denom.eq(&other.inner.base_denom)
     }
 }
 
-impl Eq for BaseDenom {}
+impl Eq for Denom {}
 
-impl Debug for BaseDenom {
+impl Debug for Denom {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(self.inner.base_denom.as_str())
     }
 }
 
-impl Display for BaseDenom {
+impl Display for Denom {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(self.inner.base_denom.as_str())
     }
 }
 
-impl DisplayDenom {
-    pub fn base(&self) -> BaseDenom {
-        BaseDenom {
+impl Unit {
+    pub fn base(&self) -> Denom {
+        Denom {
             inner: self.inner.clone(),
         }
     }
@@ -237,28 +242,28 @@ impl DisplayDenom {
     }
 }
 
-impl Hash for DisplayDenom {
+impl Hash for Unit {
     fn hash<H: hash::Hasher>(&self, state: &mut H) {
         self.inner.base_denom.hash(state);
         self.unit_index.hash(state);
     }
 }
 
-impl PartialEq for DisplayDenom {
+impl PartialEq for Unit {
     fn eq(&self, other: &Self) -> bool {
         self.inner.base_denom.eq(&other.inner.base_denom) && self.unit_index.eq(&other.unit_index)
     }
 }
 
-impl Eq for DisplayDenom {}
+impl Eq for Unit {}
 
-impl Debug for DisplayDenom {
+impl Debug for Unit {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(self.inner.units[self.unit_index].denom.as_str())
     }
 }
 
-impl Display for DisplayDenom {
+impl Display for Unit {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(self.inner.units[self.unit_index].denom.as_str())
     }
