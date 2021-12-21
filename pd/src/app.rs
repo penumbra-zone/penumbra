@@ -122,6 +122,7 @@ impl App {
                 .insert(id, allocation.denom.clone());
         }
 
+        tracing::info!("finished allocations, building genesis tx");
         let genesis_tx = tx_builder
             .set_chain_id(init_chain.chain_id)
             .finalize()
@@ -129,6 +130,7 @@ impl App {
         let verified_transaction = mark_genesis_as_verified(genesis_tx);
 
         // Now add the transaction and its note fragments to the pending state changes.
+        tracing::info!("adding genesis tx to block");
         genesis_block.add_transaction(verified_transaction);
 
         // load the validators from the genesis app state
@@ -137,6 +139,7 @@ impl App {
         // to be provided inside the initial app genesis state (`GenesisAppState`). Returning those
         // validators in InitChain::Response tells Tendermint that they are the initial validator
         // set. See https://docs.tendermint.com/master/spec/abci/abci.html#initchain
+        tracing::info!("building validators from app state");
         let genesis_validators: BTreeMap<_, _> = app_state
             .validators
             .iter()
@@ -155,9 +158,11 @@ impl App {
 
         // construct the pending block and commit the initial state
         self.pending_block = Some(Arc::new(Mutex::new(genesis_block)));
+        tracing::info!("calling commit");
         let commit = self.commit();
         let state = self.state.clone();
         let gc = app_state.clone();
+        tracing::info!("creating future");
         async move {
             commit.await?;
 
