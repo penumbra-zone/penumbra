@@ -9,14 +9,14 @@ use crate::VALIDATOR_IDENTITY_BECH32_PREFIX;
 /// Delegation tokens represent a share of a particular validator's delegation pool.
 pub struct DelegationToken {
     validator_pubkey: PublicKey,
-    base_denom: asset::BaseDenom,
+    base_denom: asset::Denom,
 }
 
 impl DelegationToken {
     pub fn new(pk: PublicKey) -> Self {
         // This format string needs to be in sync with the asset registry
         let base_denom = asset::REGISTRY
-            .parse_base(&format!(
+            .parse_denom(&format!(
                 "udelegation_{}",
                 pk.to_bech32(VALIDATOR_IDENTITY_BECH32_PREFIX)
             ))
@@ -28,12 +28,12 @@ impl DelegationToken {
     }
 
     /// Get the base denomination for this delegation token.
-    pub fn base_denom(&self) -> asset::BaseDenom {
+    pub fn base_denom(&self) -> asset::Denom {
         self.base_denom.clone()
     }
 
     /// Get the default display denomination for this delegation token.
-    pub fn default_unit(&self) -> asset::DisplayDenom {
+    pub fn default_unit(&self) -> asset::Unit {
         self.base_denom.default_unit()
     }
 
@@ -48,9 +48,9 @@ impl DelegationToken {
     }
 }
 
-impl TryFrom<asset::BaseDenom> for DelegationToken {
+impl TryFrom<asset::Denom> for DelegationToken {
     type Error = anyhow::Error;
-    fn try_from(value: asset::BaseDenom) -> Result<Self, Self::Error> {
+    fn try_from(value: asset::Denom) -> Result<Self, Self::Error> {
         // Almost all of this code is devoted to parsing Bech32 in the
         // tendermint-specific way, perhaps we could upstream a Bech32 decoding
         // function to tendermint-rs
@@ -103,7 +103,7 @@ impl FromStr for DelegationToken {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         asset::REGISTRY
-            .parse_base(s)
+            .parse_denom(s)
             .ok_or_else(|| anyhow::anyhow!("could not parse {} as base denomination", s))?
             .try_into()
     }

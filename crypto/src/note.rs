@@ -447,7 +447,7 @@ mod tests {
 
         let value = Value {
             amount: 10,
-            asset_id: asset::REGISTRY.parse_base("upenumbra").unwrap().id(),
+            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
         };
         let note = Note::generate(&mut rng, &dest, value);
         let esk = ka::Secret::new(&mut rng);

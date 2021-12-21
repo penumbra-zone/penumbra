@@ -143,7 +143,7 @@ impl Builder {
     ///
     /// Note that we're using the lower case `pen` in the code.
     pub fn set_fee(mut self, fee: u64) -> Self {
-        let asset_id = asset::REGISTRY.parse_base("upenumbra").unwrap().id();
+        let asset_id = asset::REGISTRY.parse_denom("upenumbra").unwrap().id();
         let fee_value = Value {
             amount: fee,
             asset_id: asset_id.clone(),

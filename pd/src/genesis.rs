@@ -37,7 +37,7 @@ impl Allocation {
             Value {
                 amount: self.amount,
                 asset_id: asset::REGISTRY
-                    .parse_base(&self.denom)
+                    .parse_denom(&self.denom)
                     .ok_or_else(|| anyhow::anyhow!("invalid denomination"))?
                     .id(),
             },

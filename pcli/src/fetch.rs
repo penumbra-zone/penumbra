@@ -15,7 +15,7 @@ pub async fn assets(state: &mut ClientStateFile, wallet_uri: String) -> Result<(
     while let Some(asset) = stream.message().await? {
         state.asset_cache_mut().extend(std::iter::once(
             asset::REGISTRY
-                .parse_base(&asset.asset_denom)
+                .parse_denom(&asset.asset_denom)
                 .ok_or_else(|| {
                     anyhow::anyhow!("invalid asset denomination: {}", asset.asset_denom)
                 })?,

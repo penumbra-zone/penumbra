@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, ops::Deref};
 
-use super::{BaseDenom, Id, REGISTRY};
+use super::{Denom, Id, REGISTRY};
 
 /// On-chain data structures only record a fixed-size [`Id`], so this type
 /// allows caching known [`BaseDenom`]s.
@@ -10,12 +10,12 @@ use super::{BaseDenom, Id, REGISTRY};
 /// For (de)serialization, [`From`] conversions are provided to a `BTreeMap<Id,
 /// String>` with the string representations of the base denominations.
 #[derive(Clone, Default, Debug)]
-pub struct Cache(BTreeMap<Id, BaseDenom>);
+pub struct Cache(BTreeMap<Id, Denom>);
 
 // Implementing Deref but not DerefMut means people get unlimited read access,
 // but can only write into the cache through approved methods.
 impl Deref for Cache {
-    type Target = BTreeMap<Id, BaseDenom>;
+    type Target = BTreeMap<Id, Denom>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -38,7 +38,7 @@ impl TryFrom<BTreeMap<Id, String>> for Cache {
     fn try_from(map: BTreeMap<Id, String>) -> Result<Self, Self::Error> {
         let mut cache = BTreeMap::default();
         for (provided_id, denom_str) in map.into_iter() {
-            if let Some(denom) = REGISTRY.parse_base(&denom_str) {
+            if let Some(denom) = REGISTRY.parse_denom(&denom_str) {
                 let id = denom.id();
                 if provided_id != id {
                     return Err(anyhow::anyhow!(
@@ -59,18 +59,18 @@ impl TryFrom<BTreeMap<Id, String>> for Cache {
 
 // BaseDenom already has a validated Id, so by implementing Extend<BaseDenom> we
 // can ensure we don't insert any invalid Ids
-impl Extend<BaseDenom> for Cache {
+impl Extend<Denom> for Cache {
     fn extend<T>(&mut self, iter: T)
     where
-        T: IntoIterator<Item = BaseDenom>,
+        T: IntoIterator<Item = Denom>,
     {
         self.0
             .extend(iter.into_iter().map(|denom| (denom.id(), denom)));
     }
 }
 
-impl FromIterator<BaseDenom> for Cache {
-    fn from_iter<T: IntoIterator<Item = BaseDenom>>(iter: T) -> Self {
+impl FromIterator<Denom> for Cache {
+    fn from_iter<T: IntoIterator<Item = Denom>>(iter: T) -> Self {
         let mut cache = Cache::default();
         cache.extend(iter);
         cache
