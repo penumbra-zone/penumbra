@@ -3,7 +3,11 @@ use std::path::PathBuf;
 use anyhow::{anyhow, Result};
 use comfy_table::{presets, Table};
 use directories::ProjectDirs;
-use penumbra_crypto::{asset, keys::SpendSeed, CURRENT_CHAIN_ID};
+use penumbra_crypto::{
+    asset::{self, BaseDenom},
+    keys::SpendSeed,
+    Value, CURRENT_CHAIN_ID,
+};
 use penumbra_wallet::{ClientState, UnspentNote, Wallet};
 use rand_core::OsRng;
 use sha2::{Digest, Sha256};
@@ -60,27 +64,24 @@ async fn main() -> Result<()> {
             // We have already synchronized the wallet above, so we can just return.
         }
         Command::Tx(TxCmd::Send {
-            amount,
-            denomination,
-            address,
+            values,
+            to,
             fee,
             source_address_id,
             memo,
         }) => {
-            let denomination = asset::REGISTRY
-                .parse_base(&denomination)
-                .ok_or_else(|| anyhow::anyhow!("invalid base denomination {}", denomination))?;
+            // Parse all of the values provided.
+            let values = values
+                .iter()
+                .map(|v| v.parse())
+                .collect::<Result<Vec<Value>, _>>()?;
+            let to = to
+                .parse()
+                .map_err(|_| anyhow::anyhow!("address is invalid"))?;
 
             let mut state = state.expect("state must be synchronized");
-            let tx = state.new_transaction(
-                &mut OsRng,
-                amount,
-                denomination,
-                address,
-                fee,
-                source_address_id,
-                memo,
-            )?;
+            let tx =
+                state.new_transaction(&mut OsRng, &values, to, fee, source_address_id, memo)?;
             state.commit()?;
 
             let serialized_tx: Vec<u8> = tx.into();
@@ -216,6 +217,8 @@ async fn main() -> Result<()> {
             // assumes that the notes are all of the same denomination, and it is called below only
             // in the places where they are.
             fn tally_format_notes<'a>(
+                denom: &BaseDenom,
+                cache: &asset::Cache,
                 notes: impl IntoIterator<Item = UnspentNote<'a>>,
             ) -> (String, String, String) {
                 // Tally each of the kinds of note:
@@ -234,23 +237,34 @@ async fn main() -> Result<()> {
                 // The amount spent is the difference between pending and pending change:
                 let pending_spend = pending - pending_change;
 
-                // The total amount, disregarding pending transactions:
-                let pending_total = pending_change + unspent;
+                let pending_change = denom.value(pending_change);
+                let pending_spend = denom.value(pending_spend);
 
-                // Format a string describing the pending balance updates
-                let pending_string = if pending > 0 && pending_change > 0 {
-                    format!("+{} (held), -{} (spent)", pending_change, pending_spend)
-                } else if pending == 0 && pending_change > 0 {
-                    format!("+{} (held)", pending_change)
-                } else if pending > 0 && pending_change == 0 {
-                    format!("-{} (spent)", pending_spend)
-                } else {
-                    String::new()
+                let pending_string = match (pending_change.amount > 0, pending_spend.amount > 0) {
+                    (true, true) => {
+                        format!(
+                            "+{} (change), -{} (spent)",
+                            pending_change.try_format(cache).unwrap(),
+                            pending_spend.try_format(cache).unwrap(),
+                        )
+                    }
+                    (true, false) => {
+                        format!("+{} (change)", pending_change.try_format(cache).unwrap(),)
+                    }
+                    (false, true) => {
+                        format!("-{} (spent)", pending_spend.try_format(cache).unwrap(),)
+                    }
+                    (false, false) => String::new(),
                 };
 
+                // The total amount, disregarding pending transactions:
+                let total = denom.value(pending_change.amount + unspent);
+                // The amount available to spend:
+                let available = denom.value(unspent);
+
                 (
-                    pending_total.to_string(),
-                    unspent.to_string(),
+                    total.try_format(cache).unwrap(),
+                    available.try_format(cache).unwrap(),
                     pending_string,
                 )
             }
@@ -273,8 +287,9 @@ async fn main() -> Result<()> {
                 {
                     let (mut label, _) = state.wallet().address_by_index(address_id as usize)?;
                     for (denom, notes) in by_denom.into_iter() {
-                        let (total, available, pending) = tally_format_notes(notes);
-                        let mut row = vec![label.clone(), denom.to_string(), total];
+                        let (total, available, pending) =
+                            tally_format_notes(&denom, state.asset_cache(), notes);
+                        let mut row = vec![label.clone(), total];
                         if !pending.is_empty() {
                             print_pending_column = true;
                             row.push(available);
@@ -289,12 +304,15 @@ async fn main() -> Result<()> {
 
                 // Set up headers for the table (a "Pending" column will be added if there are any
                 // pending transactions)
-                headers = vec!["Address", "Asset", "Total"];
+                headers = vec!["Address", "Asset"];
             } else {
                 for (denom, by_address) in state.unspent_notes_by_denom_and_address().into_iter() {
-                    let (total, available, pending) =
-                        tally_format_notes(by_address.into_values().flatten());
-                    let mut row = vec![denom.to_string(), total];
+                    let (total, available, pending) = tally_format_notes(
+                        &denom,
+                        state.asset_cache(),
+                        by_address.into_values().flatten(),
+                    );
+                    let mut row = vec![total];
                     if !pending.is_empty() {
                         print_pending_column = true;
                         row.push(available);
@@ -305,7 +323,7 @@ async fn main() -> Result<()> {
 
                 // Set up headers for the table (a "Pending" column will be added if there are any
                 // pending transactions)
-                headers = vec!["Asset", "Total"];
+                headers = vec!["Asset"];
             }
 
             // Add an "Available" and "Pending" column if there are any pending transactions
