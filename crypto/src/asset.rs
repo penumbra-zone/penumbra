@@ -64,6 +64,17 @@ mod tests {
     }
 
     #[test]
+    fn best_unit_for() {
+        let base_denom = REGISTRY.parse_base("upenumbra").unwrap();
+
+        assert_eq!(base_denom.best_unit_for(0).to_string(), "upenumbra");
+        assert_eq!(base_denom.best_unit_for(999).to_string(), "upenumbra");
+        assert_eq!(base_denom.best_unit_for(1_000).to_string(), "mpenumbra");
+        assert_eq!(base_denom.best_unit_for(999_999).to_string(), "mpenumbra");
+        assert_eq!(base_denom.best_unit_for(1_000_000).to_string(), "penumbra");
+    }
+
+    #[test]
     fn test_displaydenom_parse_value() {
         let penumbra_display_denom = REGISTRY.parse_display("penumbra").unwrap();
         assert!(penumbra_display_denom.parse_value("1.2.3").is_err());
