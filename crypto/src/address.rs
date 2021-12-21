@@ -7,7 +7,7 @@ use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 use crate::{fmd, ka, keys::Diversifier, Fq};
 
-pub const CURRENT_CHAIN_ID: &str = "penumbra-euporie";
+pub const CURRENT_CHAIN_ID: &str = "penumbra-eupheme";
 /// Incrementing prefix for the address.
 pub const CURRENT_ADDRESS_VERSION: u32 = 0;
 
