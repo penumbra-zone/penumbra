@@ -25,7 +25,10 @@ def build_tendermint_localnode(testnet_config_dir):
         [
             "git",
             "clone",
-            "git@github.com:tendermint/tendermint.git",
+            "-b",
+            "v0.35.0",
+            "--single-branch",
+            "https://github.com/tendermint/tendermint.git",
             temp_dir.name,
         ],
         capture_output=True,
