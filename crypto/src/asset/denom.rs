@@ -72,7 +72,7 @@ impl BaseDenom {
         self.inner.id.clone()
     }
 
-    /// Return a list of display units for this denomination, in priority order.
+    /// Return a list of display units for this denomination, in size order.
     ///
     /// There will always be at least one display denomination.
     pub fn units(&self) -> Vec<DisplayDenom> {
@@ -84,15 +84,40 @@ impl BaseDenom {
             .collect()
     }
 
+    /// Returns the default (largest) unit for this denomination.
     pub fn default_unit(&self) -> DisplayDenom {
-        self.units()
-            .get(0)
-            .expect("there must be at least one unit");
-
         DisplayDenom {
             unit_index: 0,
             inner: self.inner.clone(),
         }
+    }
+
+    /// Returns the base (smallest) unit for this denomination.
+    ///
+    /// (This treats the base denomination as a display unit).
+    pub fn base_unit(&self) -> DisplayDenom {
+        DisplayDenom {
+            unit_index: self.inner.units.len() - 1,
+            inner: self.inner.clone(),
+        }
+    }
+
+    /// Returns the "best" unit for the given amount (expressed in units of the
+    /// base denomination).
+    ///
+    /// This is defined as the largest unit smaller than the given value (so it
+    /// has no leading zeros when formatted).
+    pub fn best_unit_for(&self, amount: u64) -> DisplayDenom {
+        for (unit_index, unit) in self.inner.units.iter().enumerate() {
+            let unit_amount = 10u64.pow(unit.exponent as u32);
+            if amount >= unit_amount {
+                return DisplayDenom {
+                    unit_index,
+                    inner: self.inner.clone(),
+                };
+            }
+        }
+        self.base_unit()
     }
 }
 
