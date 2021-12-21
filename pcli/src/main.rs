@@ -67,7 +67,7 @@ async fn main() -> Result<()> {
             values,
             to,
             fee,
-            source_address_id,
+            from,
             memo,
         }) => {
             // Parse all of the values provided.
@@ -80,8 +80,7 @@ async fn main() -> Result<()> {
                 .map_err(|_| anyhow::anyhow!("address is invalid"))?;
 
             let mut state = state.expect("state must be synchronized");
-            let tx =
-                state.new_transaction(&mut OsRng, &values, to, fee, source_address_id, memo)?;
+            let tx = state.new_transaction(&mut OsRng, &values, fee, to, from, memo)?;
             state.commit()?;
 
             let serialized_tx: Vec<u8> = tx.into();

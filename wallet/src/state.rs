@@ -182,8 +182,8 @@ impl ClientState {
         &mut self,
         rng: &mut R,
         values: &[Value],
-        dest_address: Address,
         fee: u64,
+        dest_address: Address,
         source_address: Option<u64>,
         tx_memo: Option<String>,
     ) -> Result<Transaction, anyhow::Error> {
