@@ -53,26 +53,23 @@ impl FromStr for Value {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let re = Regex::new(r"([0-9.]+)(.*)").unwrap();
-        let caps = re.captures(s);
+        let re = Regex::new(r"^([0-9.]+)(.+)$").unwrap();
 
-        if caps.is_none() {
-            return Err(anyhow::anyhow!("could not parse"));
+        if let Some(captures) = re.captures(s) {
+            let numeric_str = captures.get(1).expect("matched regex").as_str();
+            let denom_str = captures.get(2).expect("matched regex").as_str();
+
+            let display_denom = asset::REGISTRY.parse_display(denom_str);
+            let amount = display_denom.parse_value(numeric_str)?;
+            let asset_id = display_denom.base().id();
+
+            Ok(Value { amount, asset_id })
+        } else {
+            Err(anyhow::anyhow!(
+                "could not parse {} as a value; provide both a numeric value and denomination, e.g. 1penumbra",
+                s
+            ))
         }
-        let caps_matches = caps.unwrap();
-        let numeric_str = caps_matches.get(1).map_or("", |m| m.as_str());
-        let denom_str = caps_matches.get(2).map_or("", |m| m.as_str());
-        if denom_str == "" || numeric_str == "" {
-            return Err(anyhow::anyhow!(
-                "provide both a numeric value and denomination, e.g. 1penumbra"
-            ));
-        }
-
-        let display_denom = asset::REGISTRY.parse_display(denom_str);
-        let amount = display_denom.parse_value(numeric_str)?;
-        let asset_id = display_denom.base().id();
-
-        Ok(Value { amount, asset_id })
     }
 }
 
