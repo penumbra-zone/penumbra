@@ -7,7 +7,7 @@ use std::{
 
 use ark_ff::fields::PrimeField;
 
-use crate::{asset, Fq};
+use crate::{asset, Fq, Value};
 
 #[derive(Clone)]
 pub struct BaseDenom {
@@ -68,8 +68,17 @@ impl Inner {
 }
 
 impl BaseDenom {
+    /// Return the [`asset::Id`] associated with this denomination.
     pub fn id(&self) -> asset::Id {
         self.inner.id.clone()
+    }
+
+    /// Create a value of this denomination.
+    pub fn value(&self, amount: u64) -> Value {
+        Value {
+            amount,
+            asset_id: self.id(),
+        }
     }
 
     /// Return a list of display units for this denomination, in size order.

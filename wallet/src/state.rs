@@ -1,7 +1,6 @@
 use std::{
     collections::{BTreeMap, HashMap},
     mem,
-    str::FromStr,
     time::{Duration, SystemTime},
 };
 
@@ -182,9 +181,8 @@ impl ClientState {
     pub fn new_transaction<R: RngCore + CryptoRng>(
         &mut self,
         rng: &mut R,
-        amount: u64,
-        denomination: BaseDenom,
-        address: String,
+        values: &[Value],
+        dest_address: Address,
         fee: u64,
         source_address: Option<u64>,
         tx_memo: Option<String>,
@@ -192,15 +190,18 @@ impl ClientState {
         // xx Could populate chain_id from the info endpoint on the node, or at least
         // error if there is an inconsistency
 
-        let dest_address: Address =
-            Address::from_str(&address).map_err(|_| anyhow::anyhow!("address is invalid"))?;
-
         let mut tx_builder = Transaction::build_with_root(self.note_commitment_tree.root2())
             .set_fee(fee)
             .set_chain_id(CURRENT_CHAIN_ID.to_string());
 
         let mut output_value = HashMap::<BaseDenom, u64>::new();
-        output_value.insert(denomination, amount);
+        for Value { amount, asset_id } in values {
+            let denom = self
+                .asset_cache()
+                .get(asset_id)
+                .ok_or_else(|| anyhow::anyhow!("unknown denomination for asset id {}", asset_id))?;
+            output_value.insert(denom.clone(), *amount);
+        }
 
         for (denom, amount) in &output_value {
             let memo: memo::MemoPlaintext = match tx_memo {

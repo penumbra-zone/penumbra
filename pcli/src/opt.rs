@@ -128,19 +128,18 @@ impl AddrCmd {
 pub enum TxCmd {
     /// Send transaction to the node.
     Send {
-        /// Amount to send.
-        amount: u64,
-        /// Denomination.
-        denomination: String,
-        /// Destination address.
-        address: String,
-        /// Fee.
-        #[structopt(default_value = "0")]
+        /// The destination address to send funds to.
+        #[structopt(short, long)]
+        to: String,
+        /// The amounts to send, written as typed values 1.87penumbra, 12cubes, etc.
+        values: Vec<String>,
+        /// The transaction fee (paid in upenumbra).
+        #[structopt(short, long, default_value = "0")]
         fee: u64,
-        /// If set, spend funds originally sent to the specified address.
+        /// Optional. Only spend funds originally received by a specific address.
         #[structopt(short, long)]
         source_address_id: Option<u64>,
-        /// If set, set the transaction's memo field to the provided text.
+        /// Optional. Set the transaction's memo field to the provided text.
         #[structopt(short, long)]
         memo: Option<String>,
     },
