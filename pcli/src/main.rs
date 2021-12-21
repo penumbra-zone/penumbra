@@ -1,6 +1,6 @@
-use std::path::PathBuf;
+use std::{fs::File, io::Write, path::PathBuf};
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context as _, Result};
 use comfy_table::{presets, Table};
 use directories::ProjectDirs;
 use penumbra_crypto::{
@@ -10,8 +10,10 @@ use penumbra_crypto::{
 };
 use penumbra_wallet::{ClientState, UnspentNote, Wallet};
 use rand_core::OsRng;
+use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use structopt::StructOpt;
+use tempfile::NamedTempFile;
 
 pub mod opt;
 pub mod warning;
@@ -135,9 +137,29 @@ async fn main() -> Result<()> {
                 }
                 WalletCmd::Reset => {
                     tracing::info!("resetting client state");
-                    let mut state = ClientStateFile::load(wallet_path.clone())?;
-                    *state = ClientState::new(state.wallet().clone());
-                    state.commit()?;
+
+                    #[derive(Deserialize)]
+                    struct MinimalState {
+                        wallet: Wallet,
+                    }
+
+                    // Read the wallet field out of the state file, without fully deserializing the rest
+                    let wallet =
+                        serde_json::from_reader::<_, MinimalState>(File::open(&wallet_path)?)?
+                            .wallet;
+
+                    // Write the new wallet JSON to disk as a temporary file
+                    let (mut tmp, tmp_path) = NamedTempFile::new()?.into_parts();
+                    tmp.write_all(
+                        serde_json::to_string_pretty(&ClientState::new(wallet))?.as_bytes(),
+                    )?;
+
+                    // Check that we can successfully parse the result from disk
+                    ClientStateFile::load(tmp_path.to_path_buf()).context("can't parse wallet after attempting to reset: refusing to overwrite existing wallet file")?;
+
+                    // Move the temporary file over the original wallet file
+                    tmp_path.persist(&wallet_path)?;
+
                     None
                 }
             };
