@@ -141,7 +141,7 @@ impl App {
             .validators
             .iter()
             .cloned()
-            .map(|v| (v.tm_pubkey().clone(), v))
+            .map(|v| (v.tm_pubkey.clone(), v))
             .collect();
         let mut tm_validators = Vec::new();
         for (pubkey, val) in genesis_validators.iter() {

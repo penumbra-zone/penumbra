@@ -9,7 +9,7 @@ use crate::{FundingStream, VALIDATOR_IDENTITY_BECH32_PREFIX};
 pub struct Validator {
     /// The validator's long-term Tendermint public key, where the private component
     /// is used to sign blocks.
-    tm_pubkey: PublicKey,
+    pub tm_pubkey: PublicKey,
 
     /// The validator's current voting power.
     pub voting_power: vote::Power,
@@ -49,10 +49,5 @@ impl Validator {
     /// TKTK: should this return an address type?
     pub fn consensus_address(&self) -> String {
         self.tm_pubkey.to_bech32(VALIDATOR_IDENTITY_BECH32_PREFIX)
-    }
-
-    // why isn't tm_pubkey public?
-    pub fn tm_pubkey(&self) -> &PublicKey {
-        &self.tm_pubkey
     }
 }
