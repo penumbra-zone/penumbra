@@ -2,6 +2,7 @@ mod epoch;
 mod funding_stream;
 mod token;
 mod validator;
+mod rates;
 
 pub use epoch::Epoch;
 pub use funding_stream::FundingStream;

@@ -50,4 +50,13 @@ impl Validator {
     pub fn consensus_address(&self) -> String {
         self.tm_pubkey.to_bech32(VALIDATOR_IDENTITY_BECH32_PREFIX)
     }
+
+    /// compute the validator's commission rate by summing its funding streams.
+    ///
+    ///
+    pub fn commission_rate(&self) -> u16 {
+        self.funding_streams
+            .iter()
+            .fold(0 as u16, |sum, fs| sum.checked_add(fs.rate_bps).unwrap())
+    }
 }
