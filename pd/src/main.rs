@@ -92,7 +92,7 @@ async fn main() -> anyhow::Result<()> {
 
             let abci_app = App::new(state.clone()).await.unwrap();
 
-            let (consensus, mempool, snapshot, info) = tower_abci::split::service(abci_app, 1);
+            let (consensus, mempool, snapshot, info) = tower_abci::split::service(abci_app, 10);
 
             let abci_server = tokio::spawn(
                 tower_abci::Server::builder()
