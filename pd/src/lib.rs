@@ -8,9 +8,12 @@ mod db;
 mod pd_metrics;
 mod pending_block;
 mod request_ext;
+mod sequential;
 mod state;
 mod verify;
 mod wallet;
+
+use sequential::Sequencer;
 
 pub mod genesis;
 

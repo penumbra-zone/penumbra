@@ -19,7 +19,6 @@ use tendermint::abci::{
     request::{self, BeginBlock, CheckTxKind, EndBlock},
     response, Request, Response,
 };
-use tokio::sync::oneshot;
 use tower::Service;
 use tower_abci::BoxError;
 use tracing::{instrument, Instrument, Span};
@@ -28,7 +27,7 @@ use crate::{
     db::schema,
     genesis,
     verify::{mark_genesis_as_verified, StatefulTransactionExt, StatelessTransactionExt},
-    PendingBlock, RequestExt, State,
+    PendingBlock, RequestExt, Sequencer, State,
 };
 
 const ABCI_INFO_VERSION: &str = env!("VERGEN_GIT_SEMVER");
@@ -69,7 +68,7 @@ pub struct App {
     pending_block: Option<Arc<Mutex<PendingBlock>>>,
 
     /// Used to allow asynchronous requests to be processed sequentially.
-    completion_tracker: CompletionTracker,
+    sequencer: Sequencer,
 
     /// Epoch duration in blocks
     epoch_duration: u64,
@@ -88,7 +87,7 @@ impl App {
             recent_anchors: recent_anchors,
             mempool_nullifiers: Arc::new(Default::default()),
             pending_block: None,
-            completion_tracker: Default::default(),
+            sequencer: Default::default(),
             epoch_duration: genesis_config.epoch_duration,
         })
     }
@@ -387,7 +386,6 @@ impl App {
             self.recent_anchors.pop_back();
         }
 
-        let finished_signal = self.completion_tracker.start();
         let state = self.state.clone();
         async move {
             state
@@ -400,64 +398,10 @@ impl App {
                 .await
                 .expect("must be able to fetch apphash");
 
-            // Signal that we're ready to resume processing further requests.
-            let _ = finished_signal.send(());
-
             Ok(Response::Commit(response::Commit {
                 data: app_hash.into(),
                 retain_height: 0u32.into(),
             }))
-        }
-    }
-}
-
-// Wrapper that allows the service to ensure that the current request's response
-// future will complete before processing any further requests.
-#[derive(Debug)]
-struct CompletionTracker {
-    // it would be cleaner to use an Option, but we have to box the oneshot
-    // future because it won't be Unpin and Service::poll_ready doesn't require
-    // a pinned receiver, so tracking the waiting state in a separate bool allows
-    // reallocating a new boxed future every time.
-    waiting: bool,
-    future: tokio_util::sync::ReusableBoxFuture<Result<(), oneshot::error::RecvError>>,
-}
-
-impl CompletionTracker {
-    /// Returns a oneshot::Sender used to signal completion of the tracked request.
-    pub fn start(&mut self) -> oneshot::Sender<()> {
-        assert!(!self.waiting);
-        let (tx, rx) = oneshot::channel();
-        self.waiting = true;
-        self.future.set(rx);
-        tx
-    }
-
-    pub fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<()> {
-        if !self.waiting {
-            return Poll::Ready(());
-        }
-
-        match self.future.poll(cx) {
-            Poll::Pending => Poll::Pending,
-            Poll::Ready(Ok(())) => {
-                self.waiting = false;
-                Poll::Ready(())
-            }
-            Poll::Ready(Err(_)) => {
-                tracing::error!("response future of sequentially-processed request was dropped before completion, likely a bug");
-                self.waiting = false;
-                Poll::Ready(())
-            }
-        }
-    }
-}
-
-impl Default for CompletionTracker {
-    fn default() -> Self {
-        Self {
-            future: tokio_util::sync::ReusableBoxFuture::new(async { Ok(()) }),
-            waiting: false,
         }
     }
 }
@@ -468,7 +412,7 @@ impl Service<Request> for App {
     type Future = Pin<Box<dyn Future<Output = Result<Response, BoxError>> + Send + 'static>>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        self.completion_tracker.poll_ready(cx).map(|_| Ok(()))
+        self.sequencer.poll_ready(cx).map(|_| Ok(()))
     }
 
     fn call(&mut self, req: Request) -> Self::Future {
@@ -484,17 +428,16 @@ impl Service<Request> for App {
                 Request::Info(_) => return self.info().instrument(Span::current()).boxed(),
                 Request::Query(query) => Response::Query(self.query(query.data)),
                 Request::CheckTx(check_tx) => {
-                    // Mark that we want to process CheckTx messages sequentially.
+                    // Process CheckTx messages sequentially.
                     // TODO: this requirement is only because we need to avoid
                     // having multiple transactions in the mempool with the same
                     // nullifiers, until we can use ABCI++ and control block
                     // proposals, at which point check_tx can run concurrently.
-                    let finished_signal = self.completion_tracker.start();
                     let rsp = self.check_tx(check_tx);
+                    let rsp = self.sequencer.execute(rsp);
                     return async move {
                         let rsp = rsp.await;
                         tracing::info!(?rsp);
-                        let _ = finished_signal.send(());
                         match rsp {
                             Ok(()) => Ok(Response::CheckTx(response::CheckTx::default())),
                             Err(e) => Ok(Response::CheckTx(response::CheckTx {
@@ -509,13 +452,12 @@ impl Service<Request> for App {
                 }
                 Request::BeginBlock(begin) => Response::BeginBlock(self.begin_block(begin)),
                 Request::DeliverTx(deliver_tx) => {
-                    // Mark that we want to process DeliverTx messages sequentially.
-                    let finished_signal = self.completion_tracker.start();
+                    // Process DeliverTx messages sequentially.
                     let rsp = self.deliver_tx(deliver_tx.tx);
+                    let rsp = self.sequencer.execute(rsp);
                     return async move {
                         let rsp = rsp.await;
                         tracing::info!(?rsp);
-                        let _ = finished_signal.send(());
                         match rsp {
                             Ok(()) => Ok(Response::DeliverTx(response::DeliverTx::default())),
                             Err(e) => Ok(Response::DeliverTx(response::DeliverTx {
@@ -529,7 +471,14 @@ impl Service<Request> for App {
                     .boxed();
                 }
                 Request::EndBlock(end) => Response::EndBlock(self.end_block(end)),
-                Request::Commit => return self.commit().instrument(Span::current()).boxed(),
+                Request::Commit => {
+                    let rsp = self.commit();
+                    return self
+                        .sequencer
+                        .execute(rsp)
+                        .instrument(Span::current())
+                        .boxed();
+                }
 
                 // Called only once for network genesis, i.e. when the application block height is 0.
                 Request::InitChain(init_chain) => {
