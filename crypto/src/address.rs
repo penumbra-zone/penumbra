@@ -120,7 +120,7 @@ impl std::str::FromStr for Address {
         }
 
         if hrp != format!("penumbrav{}t", CURRENT_ADDRESS_VERSION) {
-            return Err(anyhow!("network ID no longer supported: {}", hrp));
+            return Err(anyhow!("address format no longer supported: {}", hrp));
         }
 
         let diversifier = Diversifier(diversifier_bytes);
