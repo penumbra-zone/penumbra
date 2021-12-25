@@ -26,7 +26,7 @@ impl ClientState {
     /// implemented for [`FnMut`] closures taking `(&'a ClientState, u64, bool)` and returning
     /// `Future<Output = anyhow::Result<()>> + Send + 'a`.
     #[instrument(skip(self, checkpoint), fields(start_height = self.last_block_height()))]
-    pub async fn sync<F>(&mut self, wallet_uri: String, checkpoint: &mut F) -> anyhow::Result<()>
+    pub async fn sync<F>(&mut self, wallet_uri: String, mut checkpoint: F) -> anyhow::Result<()>
     where
         for<'a> F: SyncCheckpoint<'a>,
     {
@@ -96,7 +96,7 @@ pub trait SyncCheckpoint<'a> {
 /// Implemennt `SyncCheckpoint` for `FnMut` closures of the appropriate type.
 impl<'a, F, U> SyncCheckpoint<'a> for F
 where
-    F: FnMut(bool, u32, &'a ClientState) -> U,
+    F: FnMut(&'a ClientState, u32, bool) -> U,
     U: Future<Output = anyhow::Result<()>> + Send + 'a,
 {
     type Future = U;
@@ -107,6 +107,6 @@ where
         block_height: u32,
         is_final_block: bool,
     ) -> Self::Future {
-        (self)(is_final_block, block_height, state)
+        (self)(state, block_height, is_final_block)
     }
 }
