@@ -9,7 +9,7 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 # Workspace dependencies
 penumbra-proto = { path = "../proto" }
-penumbra-crypto = { path = "../crypto" , features = ["sqlx"]}
+penumbra-crypto = { path = "../crypto", features = ["sqlx"]}
 penumbra-wallet = { path = "../wallet" }
 
 # Penumbra dependencies
@@ -17,8 +17,10 @@ ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 
 # External dependencies
-
-serenity = { version = "0.10", default-features = false, features = ["client", "cache", "gateway", "rustls_backend", "model"] }
-tokio = { version = "1", features = ["full"] }
-regex = "1"
 anyhow = "1"
+directories = "4.0.1"
+regex = "1"
+serenity = { version = "0.10", default-features = false, features = ["client", "cache", "gateway", "rustls_backend", "model"] }
+sqlx = { version = "0.5", features = [ "runtime-tokio-rustls", "postgres", "offline" ] }
+tracing = "0.1"
+tokio = { version = "1", features = ["full"] }
