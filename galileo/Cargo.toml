@@ -1,0 +1,24 @@
+[package]
+name = "galileo"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# Workspace dependencies
+penumbra-proto = { path = "../proto" }
+penumbra-crypto = { path = "../crypto" , features = ["sqlx"]}
+penumbra-wallet = { path = "../wallet" }
+
+# Penumbra dependencies
+ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
+decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
+
+# External dependencies
+
+serenity = { version = "0.10", default-features = false, features = ["client", "cache", "gateway", "rustls_backend", "model"] }
+tokio = { version = "1", features = ["full"] }
+regex = "1"
+anyhow = "1"
