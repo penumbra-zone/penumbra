@@ -74,14 +74,15 @@ impl ClientStateFile {
 
     /// Synchronize the client state with the current state of the chain using the light wallet protocol.
     pub async fn sync(&mut self, wallet_uri: String) -> Result<()> {
-        let checkpoint = SyncEvery {
-            interval: 1000,
-            path: &self.path,
-        };
-
-        self.state.sync(wallet_uri, checkpoint).await?;
-
-        Ok(())
+        self.state
+            .sync(
+                wallet_uri,
+                SyncEvery {
+                    interval: 1000,
+                    path: &self.path,
+                },
+            )
+            .await
     }
 }
 
