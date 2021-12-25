@@ -29,6 +29,7 @@ mod serde_helpers;
 
 /// Implementation of synchronization.
 mod sync;
+pub use sync::SyncCheckpoint;
 
 /// State about the chain and our transactions.
 #[derive(Clone, Debug, Serialize, Deserialize)]
