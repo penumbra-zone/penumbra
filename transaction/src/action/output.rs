@@ -1,10 +1,12 @@
 use std::convert::{TryFrom, TryInto};
 
 use bytes::Bytes;
+use penumbra_crypto::{
+    ka, memo::MemoCiphertext, note, proofs::transparent::OutputProof, value, Fr, Note,
+};
 use penumbra_proto::{transaction, Protobuf};
 
 use super::error::ProtoError;
-use crate::{ka, memo::MemoCiphertext, note, proofs::transparent::OutputProof, value, Fr, Note};
 
 #[derive(Clone, Debug)]
 pub struct Output {

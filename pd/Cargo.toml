@@ -16,6 +16,7 @@ publish = false
 penumbra-proto = { path = "../proto" }
 penumbra-crypto = { path = "../crypto" , features = ["sqlx"]}
 penumbra-stake = { path = "../stake" }
+penumbra-transaction = { path = "../transaction" }
 
 # Penumbra dependencies
 ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }

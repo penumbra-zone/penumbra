@@ -1,19 +1,20 @@
 use std::ops::Deref;
 
 use ark_ff::{UniformRand, Zero};
-use rand::seq::SliceRandom;
-use rand_core::{CryptoRng, RngCore};
-
-use super::Error;
-use crate::{
-    action::{output, spend, Action},
+use penumbra_crypto::{
     asset, ka,
     keys::{OutgoingViewingKey, SpendKey},
     memo::MemoPlaintext,
     merkle,
     rdsa::{Binding, Signature, SigningKey, SpendAuth},
-    transaction::{Fee, Transaction, TransactionBody},
-    value, Address, Fr, Note, Output, Spend, Value,
+    value, Address, Fr, Note, Value,
+};
+use rand::seq::SliceRandom;
+use rand_core::{CryptoRng, RngCore};
+
+use crate::{
+    action::{output, spend, Action, Output, Spend},
+    Error, Fee, Transaction, TransactionBody,
 };
 
 /// Used to construct a Penumbra transaction.

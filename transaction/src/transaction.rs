@@ -3,6 +3,12 @@ use std::convert::{TryFrom, TryInto};
 use ark_ff::Zero;
 use bytes::Bytes;
 use decaf377::FieldExt;
+use penumbra_crypto::{
+    asset,
+    merkle::{self, NoteCommitmentTree, TreeExt},
+    rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
+    Fr, Value,
+};
 use penumbra_proto::{
     transaction::{
         Fee as ProtoFee, Transaction as ProtoTransaction, TransactionBody as ProtoTransactionBody,
@@ -10,22 +16,12 @@ use penumbra_proto::{
     Message, Protobuf,
 };
 
-use crate::{
-    action::{error::ProtoError, Action},
-    asset,
-    merkle::{self, NoteCommitmentTree, TreeExt},
-    rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
-    Fr, Value,
-};
-
-mod error;
-pub use error::Error;
+// TODO: remove & replace with anyhow
+use crate::action::error::ProtoError;
+use crate::{Action, GenesisBuilder};
 
 mod builder;
 pub use builder::Builder;
-
-mod genesis;
-pub use genesis::GenesisBuilder;
 
 #[derive(Clone, Debug)]
 pub struct TransactionBody {
@@ -34,63 +30,6 @@ pub struct TransactionBody {
     pub expiry_height: u32,
     pub chain_id: String,
     pub fee: Fee,
-}
-
-impl From<TransactionBody> for Vec<u8> {
-    fn from(transaction_body: TransactionBody) -> Vec<u8> {
-        let protobuf_serialized: ProtoTransactionBody = transaction_body.into();
-        protobuf_serialized.encode_to_vec()
-    }
-}
-
-impl Protobuf<ProtoTransactionBody> for TransactionBody {}
-
-impl From<TransactionBody> for ProtoTransactionBody {
-    fn from(msg: TransactionBody) -> Self {
-        ProtoTransactionBody {
-            actions: msg.actions.into_iter().map(|x| x.into()).collect(),
-            anchor: Bytes::copy_from_slice(&msg.merkle_root.0.to_bytes()),
-            expiry_height: msg.expiry_height,
-            chain_id: msg.chain_id,
-            fee: Some(msg.fee.into()),
-        }
-    }
-}
-
-impl TryFrom<ProtoTransactionBody> for TransactionBody {
-    type Error = ProtoError;
-
-    fn try_from(proto: ProtoTransactionBody) -> anyhow::Result<Self, Self::Error> {
-        let mut actions = Vec::<Action>::new();
-        for action in proto.actions {
-            actions.push(
-                action
-                    .try_into()
-                    .map_err(|_| ProtoError::TransactionBodyMalformed)?,
-            );
-        }
-
-        let merkle_root = proto.anchor[..]
-            .try_into()
-            .map_err(|_| ProtoError::TransactionBodyMalformed)?;
-
-        let expiry_height = proto.expiry_height;
-
-        let chain_id = proto.chain_id;
-
-        let fee: Fee = proto
-            .fee
-            .ok_or(ProtoError::TransactionBodyMalformed)?
-            .into();
-
-        Ok(TransactionBody {
-            actions,
-            merkle_root,
-            expiry_height,
-            chain_id,
-            fee,
-        })
-    }
 }
 
 impl TransactionBody {
@@ -112,8 +51,8 @@ pub struct Fee(pub u64);
 
 #[derive(Clone, Debug)]
 pub struct Transaction {
-    transaction_body: TransactionBody,
-    binding_sig: Signature<Binding>,
+    pub transaction_body: TransactionBody,
+    pub binding_sig: Signature<Binding>,
 }
 
 impl Transaction {
@@ -200,6 +139,62 @@ impl Transaction {
     }
 }
 
+impl From<TransactionBody> for Vec<u8> {
+    fn from(transaction_body: TransactionBody) -> Vec<u8> {
+        let protobuf_serialized: ProtoTransactionBody = transaction_body.into();
+        protobuf_serialized.encode_to_vec()
+    }
+}
+
+impl Protobuf<ProtoTransactionBody> for TransactionBody {}
+
+impl From<TransactionBody> for ProtoTransactionBody {
+    fn from(msg: TransactionBody) -> Self {
+        ProtoTransactionBody {
+            actions: msg.actions.into_iter().map(|x| x.into()).collect(),
+            anchor: Bytes::copy_from_slice(&msg.merkle_root.0.to_bytes()),
+            expiry_height: msg.expiry_height,
+            chain_id: msg.chain_id,
+            fee: Some(msg.fee.into()),
+        }
+    }
+}
+
+impl TryFrom<ProtoTransactionBody> for TransactionBody {
+    type Error = ProtoError;
+
+    fn try_from(proto: ProtoTransactionBody) -> anyhow::Result<Self, Self::Error> {
+        let mut actions = Vec::<Action>::new();
+        for action in proto.actions {
+            actions.push(
+                action
+                    .try_into()
+                    .map_err(|_| ProtoError::TransactionBodyMalformed)?,
+            );
+        }
+
+        let merkle_root = proto.anchor[..]
+            .try_into()
+            .map_err(|_| ProtoError::TransactionBodyMalformed)?;
+
+        let expiry_height = proto.expiry_height;
+
+        let chain_id = proto.chain_id;
+
+        let fee: Fee = proto
+            .fee
+            .ok_or(ProtoError::TransactionBodyMalformed)?
+            .into();
+
+        Ok(TransactionBody {
+            actions,
+            merkle_root,
+            expiry_height,
+            chain_id,
+            fee,
+        })
+    }
+}
 impl Protobuf<ProtoTransaction> for Transaction {}
 
 impl From<Transaction> for ProtoTransaction {
@@ -289,10 +284,11 @@ impl From<ProtoFee> for Fee {
 
 #[cfg(test)]
 mod tests {
+    use penumbra_crypto::{keys::SpendKey, memo::MemoPlaintext, Fq, Value};
     use rand_core::OsRng;
 
     use super::*;
-    use crate::{keys::SpendKey, memo::MemoPlaintext, transaction::Error, Fq, Value};
+    use crate::Error;
 
     #[test]
     fn test_transaction_single_output_fails_due_to_nonzero_value_balance() {
