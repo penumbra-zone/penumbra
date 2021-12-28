@@ -7,10 +7,7 @@ use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_proto::{transparent_proofs, Message, Protobuf};
 use thiserror;
 
-use crate::{
-    action::error::ProtoError, asset, ka, keys, merkle, merkle::Hashable, note, value, Fq, Fr,
-    Nullifier, Value,
-};
+use crate::{asset, ka, keys, merkle, merkle::Hashable, note, value, Fq, Fr, Nullifier, Value};
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -34,6 +31,8 @@ pub enum Error {
     InvalidDiversifiedAddress,
     #[error("Bad nullifier")]
     BadNullifier,
+    #[error("Transparent proof proto malformed")]
+    ProtoMalformed,
 }
 
 /// Transparent proof for spending existing notes.
@@ -261,32 +260,27 @@ impl From<SpendProof> for transparent_proofs::SpendProof {
 }
 
 impl TryFrom<transparent_proofs::SpendProof> for SpendProof {
-    type Error = ProtoError;
+    type Error = Error;
 
     fn try_from(proto: transparent_proofs::SpendProof) -> anyhow::Result<Self, Self::Error> {
-        let g_d_bytes: [u8; 32] = proto
-            .g_d
-            .try_into()
-            .map_err(|_| ProtoError::ProofMalformed)?;
+        let g_d_bytes: [u8; 32] = proto.g_d.try_into().map_err(|_| Error::ProtoMalformed)?;
         let g_d_encoding = decaf377::Encoding(g_d_bytes);
 
         let v_blinding_bytes: [u8; 32] = proto.v_blinding[..]
             .try_into()
-            .map_err(|_| ProtoError::ProofMalformed)?;
+            .map_err(|_| Error::ProtoMalformed)?;
 
         let ak_bytes: [u8; 32] = (proto.ak[..])
             .try_into()
-            .map_err(|_| ProtoError::ProofMalformed)?;
-        let ak = ak_bytes
-            .try_into()
-            .map_err(|_| ProtoError::ProofMalformed)?;
+            .map_err(|_| Error::ProtoMalformed)?;
+        let ak = ak_bytes.try_into().map_err(|_| Error::ProtoMalformed)?;
 
         let mut merkle_path_vec = Vec::<note::Commitment>::new();
         for merkle_path_segment in proto.merkle_path_field_1 {
             merkle_path_vec.push(
                 merkle_path_segment[..]
                     .try_into()
-                    .map_err(|_| ProtoError::ProofMalformed)?,
+                    .map_err(|_| Error::ProtoMalformed)?,
             );
         }
 
@@ -295,13 +289,8 @@ impl TryFrom<transparent_proofs::SpendProof> for SpendProof {
             position: (proto.position as usize).into(),
             g_d: g_d_encoding
                 .decompress()
-                .map_err(|_| ProtoError::ProofMalformed)?,
-            pk_d: ka::Public(
-                proto
-                    .pk_d
-                    .try_into()
-                    .map_err(|_| ProtoError::ProofMalformed)?,
-            ),
+                .map_err(|_| Error::ProtoMalformed)?,
+            pk_d: ka::Public(proto.pk_d.try_into().map_err(|_| Error::ProtoMalformed)?),
             value: Value {
                 amount: proto.value_amount,
                 asset_id: asset::Id(
@@ -309,35 +298,31 @@ impl TryFrom<transparent_proofs::SpendProof> for SpendProof {
                         proto
                             .value_asset_id
                             .try_into()
-                            .map_err(|_| ProtoError::ProofMalformed)?,
+                            .map_err(|_| Error::ProtoMalformed)?,
                     )
-                    .map_err(|_| ProtoError::ProofMalformed)?,
+                    .map_err(|_| Error::ProtoMalformed)?,
                 ),
             },
-            v_blinding: Fr::from_bytes(v_blinding_bytes).map_err(|_| ProtoError::ProofMalformed)?,
+            v_blinding: Fr::from_bytes(v_blinding_bytes).map_err(|_| Error::ProtoMalformed)?,
             note_commitment: (proto.note_commitment[..])
                 .try_into()
-                .map_err(|_| ProtoError::ProofMalformed)?,
+                .map_err(|_| Error::ProtoMalformed)?,
             note_blinding: Fq::from_bytes(
                 proto.note_blinding[..]
                     .try_into()
-                    .map_err(|_| ProtoError::ProofMalformed)?,
+                    .map_err(|_| Error::ProtoMalformed)?,
             )
-            .map_err(|_| ProtoError::ProofMalformed)?,
+            .map_err(|_| Error::ProtoMalformed)?,
             spend_auth_randomizer: Fr::from_bytes(
                 proto.spend_auth_randomizer[..]
                     .try_into()
-                    .map_err(|_| ProtoError::ProofMalformed)?,
+                    .map_err(|_| Error::ProtoMalformed)?,
             )
-            .map_err(|_| ProtoError::ProofMalformed)?,
+            .map_err(|_| Error::ProtoMalformed)?,
             ak,
             nk: keys::NullifierKey(
-                Fq::from_bytes(
-                    proto.nk[..]
-                        .try_into()
-                        .map_err(|_| ProtoError::ProofMalformed)?,
-                )
-                .map_err(|_| ProtoError::ProofMalformed)?,
+                Fq::from_bytes(proto.nk[..].try_into().map_err(|_| Error::ProtoMalformed)?)
+                    .map_err(|_| Error::ProtoMalformed)?,
             ),
         })
     }
@@ -360,36 +345,28 @@ impl From<OutputProof> for transparent_proofs::OutputProof {
 }
 
 impl TryFrom<transparent_proofs::OutputProof> for OutputProof {
-    type Error = ProtoError;
+    type Error = Error;
 
     fn try_from(proto: transparent_proofs::OutputProof) -> anyhow::Result<Self, Self::Error> {
-        let g_d_bytes: [u8; 32] = proto
-            .g_d
-            .try_into()
-            .map_err(|_| ProtoError::ProofMalformed)?;
+        let g_d_bytes: [u8; 32] = proto.g_d.try_into().map_err(|_| Error::ProtoMalformed)?;
         let g_d_encoding = decaf377::Encoding(g_d_bytes);
 
         let v_blinding_bytes: [u8; 32] = proto.v_blinding[..]
             .try_into()
-            .map_err(|_| ProtoError::ProofMalformed)?;
+            .map_err(|_| Error::ProtoMalformed)?;
 
         let esk_bytes: [u8; 32] = proto.esk[..]
             .try_into()
-            .map_err(|_| ProtoError::ProofMalformed)?;
+            .map_err(|_| Error::ProtoMalformed)?;
         let esk = ka::Secret::new_from_field(
-            Fr::from_bytes(esk_bytes).map_err(|_| ProtoError::ProofMalformed)?,
+            Fr::from_bytes(esk_bytes).map_err(|_| Error::ProtoMalformed)?,
         );
 
         Ok(OutputProof {
             g_d: g_d_encoding
                 .decompress()
-                .map_err(|_| ProtoError::ProofMalformed)?,
-            pk_d: ka::Public(
-                proto
-                    .pk_d
-                    .try_into()
-                    .map_err(|_| ProtoError::ProofMalformed)?,
-            ),
+                .map_err(|_| Error::ProtoMalformed)?,
+            pk_d: ka::Public(proto.pk_d.try_into().map_err(|_| Error::ProtoMalformed)?),
             value: Value {
                 amount: proto.value_amount,
                 asset_id: asset::Id(
@@ -397,18 +374,18 @@ impl TryFrom<transparent_proofs::OutputProof> for OutputProof {
                         proto
                             .value_asset_id
                             .try_into()
-                            .map_err(|_| ProtoError::ProofMalformed)?,
+                            .map_err(|_| Error::ProtoMalformed)?,
                     )
-                    .map_err(|_| ProtoError::ProofMalformed)?,
+                    .map_err(|_| Error::ProtoMalformed)?,
                 ),
             },
-            v_blinding: Fr::from_bytes(v_blinding_bytes).map_err(|_| ProtoError::ProofMalformed)?,
+            v_blinding: Fr::from_bytes(v_blinding_bytes).map_err(|_| Error::ProtoMalformed)?,
             note_blinding: Fq::from_bytes(
                 proto.note_blinding[..]
                     .try_into()
-                    .map_err(|_| ProtoError::ProofMalformed)?,
+                    .map_err(|_| Error::ProtoMalformed)?,
             )
-            .map_err(|_| ProtoError::ProofMalformed)?,
+            .map_err(|_| Error::ProtoMalformed)?,
             esk,
         })
     }
@@ -422,14 +399,14 @@ impl From<SpendProof> for Vec<u8> {
 }
 
 impl TryFrom<&[u8]> for SpendProof {
-    type Error = ProtoError;
+    type Error = Error;
 
     fn try_from(bytes: &[u8]) -> Result<SpendProof, Self::Error> {
-        let protobuf_serialized_proof = transparent_proofs::SpendProof::decode(bytes)
-            .map_err(|_| ProtoError::ProofMalformed)?;
+        let protobuf_serialized_proof =
+            transparent_proofs::SpendProof::decode(bytes).map_err(|_| Error::ProtoMalformed)?;
         protobuf_serialized_proof
             .try_into()
-            .map_err(|_| ProtoError::ProofMalformed)
+            .map_err(|_| Error::ProtoMalformed)
     }
 }
 
@@ -441,14 +418,14 @@ impl From<OutputProof> for Vec<u8> {
 }
 
 impl TryFrom<&[u8]> for OutputProof {
-    type Error = ProtoError;
+    type Error = Error;
 
     fn try_from(bytes: &[u8]) -> Result<OutputProof, Self::Error> {
-        let protobuf_serialized_proof = transparent_proofs::OutputProof::decode(bytes)
-            .map_err(|_| ProtoError::ProofMalformed)?;
+        let protobuf_serialized_proof =
+            transparent_proofs::OutputProof::decode(bytes).map_err(|_| Error::ProtoMalformed)?;
         protobuf_serialized_proof
             .try_into()
-            .map_err(|_| ProtoError::ProofMalformed)
+            .map_err(|_| Error::ProtoMalformed)
     }
 }
 

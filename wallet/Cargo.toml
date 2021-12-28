@@ -15,6 +15,7 @@ publish = false
 # Workspace dependencies
 penumbra-proto = { path = "../proto" }
 penumbra-crypto = { path = "../crypto" }
+penumbra-transaction = { path = "../transaction" }
 
 # External dependencies
 bytes = "1"

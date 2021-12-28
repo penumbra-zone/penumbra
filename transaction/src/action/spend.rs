@@ -1,16 +1,16 @@
 use std::convert::{TryFrom, TryInto};
 
 use bytes::Bytes;
-use penumbra_proto::{transaction, Message, Protobuf};
-use rand_core::{CryptoRng, RngCore};
-
-use crate::{
-    action::error::ProtoError,
+use penumbra_crypto::{
     keys, merkle,
     proofs::transparent::SpendProof,
     rdsa::{Signature, SigningKey, SpendAuth, VerificationKey},
     value, Fr, Note, Nullifier,
 };
+use penumbra_proto::{transaction, Message, Protobuf};
+use rand_core::{CryptoRng, RngCore};
+
+use super::error::ProtoError;
 
 #[derive(Clone, Debug)]
 pub struct Spend {

@@ -13,8 +13,9 @@ use metrics::increment_counter;
 use penumbra_crypto::{
     asset,
     merkle::{self, NoteCommitmentTree, TreeExt},
-    note, Nullifier, Transaction,
+    note, Nullifier,
 };
+use penumbra_transaction::Transaction;
 use tendermint::abci::{
     request::{self, BeginBlock, CheckTxKind, EndBlock},
     response, Request, Response,

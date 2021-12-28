@@ -9,9 +9,10 @@ use penumbra_crypto::{
     asset::{self, Denom},
     memo,
     merkle::{Frontier, NoteCommitmentTree, Tree, TreeExt},
-    note, Address, FieldExt, Note, Nullifier, Transaction, Value, CURRENT_CHAIN_ID,
+    note, Address, FieldExt, Note, Nullifier, Value, CURRENT_CHAIN_ID,
 };
 use penumbra_proto::light_wallet::{CompactBlock, StateFragment};
+use penumbra_transaction::Transaction;
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};

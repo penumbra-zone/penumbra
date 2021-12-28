@@ -1,7 +1,8 @@
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use anyhow::{Context, Error};
-use penumbra_crypto::{ka, merkle, note, Action, Nullifier, Transaction};
+use penumbra_crypto::{ka, merkle, note, Nullifier};
+use penumbra_transaction::{Action, Transaction};
 
 /// `PendingTransaction` holds data after stateless checks have been applied.
 pub struct PendingTransaction {

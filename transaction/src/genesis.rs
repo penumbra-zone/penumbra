@@ -1,14 +1,15 @@
 use ark_ff::{One, Zero};
-
-use super::Error;
-use crate::{
-    action::{output, Action},
+use penumbra_crypto::{
     ka,
     memo::{MemoCiphertext, MEMO_CIPHERTEXT_LEN_BYTES},
     merkle,
     note::OVK_WRAPPED_LEN_BYTES,
-    transaction::{Fee, Transaction, TransactionBody},
-    Fr, Note, Output,
+    Fr, Note,
+};
+
+use crate::{
+    action::{output, Output},
+    Action, Error, Fee, Transaction, TransactionBody,
 };
 
 /// Used to construct a Penumbra transaction from genesis notes.

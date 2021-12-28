@@ -2,9 +2,14 @@ use std::convert::{TryFrom, TryInto};
 
 use penumbra_proto::{transaction, Protobuf};
 
+// TODO: remove & replace w/ anyhow
 pub mod error;
+
 pub mod output;
 pub mod spend;
+
+pub use output::Output;
+pub use spend::Spend;
 
 /// Supported actions in a Penumbra transaction.
 #[derive(Clone, Debug)]

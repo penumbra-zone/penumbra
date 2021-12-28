@@ -50,8 +50,10 @@ jobs:
             -p decaf377-ka \
             -p decaf377-rdsa \
             -p decaf377-fmd \
-            -p penumbra-crypto \
             -p penumbra-proto \
+            -p penumbra-crypto \
+            -p penumbra-stake \
+            -p penumbra-transaction \
             -p penumbra-wallet \
             -p pd \
             -p pcli \
