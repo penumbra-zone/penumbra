@@ -1,5 +1,5 @@
 use std::{
-    collections::{BTreeMap, BTreeSet, VecDeque},
+    collections::{BTreeSet, VecDeque},
     future::Future,
     pin::Pin,
     sync::{Arc, Mutex},
@@ -9,12 +9,12 @@ use std::{
 use anyhow::anyhow;
 use bytes::Bytes;
 use futures::future::FutureExt;
-use metrics::increment_counter;
 use penumbra_crypto::{
     asset,
     merkle::{self, NoteCommitmentTree, TreeExt},
     note, Nullifier,
 };
+use penumbra_stake::{BaseRateData, RateData};
 use penumbra_transaction::Transaction;
 use tendermint::abci::{
     request::{self, BeginBlock, CheckTxKind, EndBlock},
@@ -131,25 +131,22 @@ impl App {
         // Now add the transaction and its note fragments to the pending state changes.
         genesis_block.add_transaction(verified_transaction);
 
-        // load the validators from the genesis app state
+        // Extract the Tendermint validators from the genesis app state
         //
         // NOTE: we ignore the validators passed to InitChain.validators, and instead expect them
         // to be provided inside the initial app genesis state (`GenesisAppState`). Returning those
         // validators in InitChain::Response tells Tendermint that they are the initial validator
         // set. See https://docs.tendermint.com/master/spec/abci/abci.html#initchain
-        let genesis_validators: BTreeMap<_, _> = app_state
+        let validators = app_state
             .validators
             .iter()
-            .cloned()
-            .map(|v| (v.tm_pubkey().clone(), v))
-            .collect();
-        let mut tm_validators = Vec::new();
-        for (pubkey, val) in genesis_validators.iter() {
-            tm_validators.push(tendermint::abci::types::ValidatorUpdate {
-                pub_key: pubkey.clone(),
-                power: val.voting_power.clone(),
+            .map(|genesis::ValidatorPower { validator, power }| {
+                tendermint::abci::types::ValidatorUpdate {
+                    pub_key: validator.consensus_key,
+                    power: *power,
+                }
             })
-        }
+            .collect();
 
         self.epoch_duration = app_state.epoch_duration;
 
@@ -157,21 +154,22 @@ impl App {
         self.pending_block = Some(Arc::new(Mutex::new(genesis_block)));
         let commit = self.commit();
         let state = self.state.clone();
-        let gc = app_state.clone();
         async move {
-            commit.await?;
-
-            // Save the genesis config to the blobs table for future reference.
+            // Write genesis data before committing the genesis block.
             state
-                .set_genesis_configuration(&gc)
+                .commit_genesis(&app_state)
                 .await
                 .expect("able to save genesis config to blobs table");
 
-            state.set_initial_validators(&genesis_validators).await?;
+            // Now process the genesis block (note: this is a bit icky, since
+            // there's some processing that happens prior to creating the commit
+            // future, but its ordering doesn't matter at the moment)
+            commit.await?;
+
             let app_hash = state.app_hash().await.unwrap();
             Ok(Response::InitChain(response::InitChain {
                 consensus_params: Some(init_chain.consensus_params),
-                validators: tm_validators,
+                validators,
                 app_hash: app_hash.into(),
             }))
         }
@@ -335,29 +333,106 @@ impl App {
                 .unwrap()
                 .add_transaction(verified_transaction);
 
-            increment_counter!("node_transactions_total");
+            metrics::increment_counter!("node_transactions_total");
             Ok(())
         }
     }
 
-    fn end_block(&mut self, end: EndBlock) -> response::EndBlock {
-        let epoch = self
+    fn end_block(&mut self, end: EndBlock) -> impl Future<Output = Result<Response, BoxError>> {
+        // Clone a handle to the PendingBlock that we can move into the future
+        // below.  It's important not to retain a guard after aquiring a lock,
+        // since we'll be locking in an async context.
+        let pending_block = self
             .pending_block
-            .as_mut()
+            .as_ref()
             .expect("pending_block must be Some in EndBlock")
-            .lock()
-            .unwrap()
-            .set_height(end.height);
+            .clone();
 
-        // TODO: if necessary, set the EndBlock response to add validators
-        // at the epoch boundary
-        if end.height.unsigned_abs() == epoch.start_height().value() {
-            // Epoch boundary -- add/remove validators if necessary
-            tracing::info!("new epoch");
-            increment_counter!("epoch");
+        let height: u64 = end.height.try_into().expect("height should be nonnegative");
+        let epoch = pending_block.lock().unwrap().set_height(height);
+
+        let state = self.state.clone();
+        async move {
+            if epoch.end_height().value() == height {
+                tracing::info!(
+                    ?height,
+                    ?epoch,
+                    "last block of epoch, processing rate updates"
+                );
+                metrics::increment_counter!("epoch");
+
+                tracing::debug!("fetching rate data from state");
+                let current_base_rate = state.base_rate_data(epoch.index).await?;
+                let current_rates = state.rate_data(epoch.index).await?;
+                tracing::debug!(?current_base_rate);
+                for current_rate in &current_rates {
+                    tracing::debug!(?current_rate);
+                }
+
+                // here's where we should compute updated rates (moved from state code)
+                // TODO @ava insert calls here
+
+                // move below into calls to methods in stake crate?
+
+                // 1 bps = 1e-4, so here we group digits by 4s rather than 3s as is usual
+                let base_reward_rate = 3_0000; // 3bps -> 11% return over 365 epochs, why not
+                let base_exchange_rate = (current_base_rate.base_exchange_rate
+                    * (base_reward_rate + 1_0000_0000))
+                    / 1_0000_0000;
+                let next_base_rate = BaseRateData {
+                    base_exchange_rate,
+                    base_reward_rate,
+                    epoch_index: epoch.index + 1,
+                };
+
+                let next_rates = current_rates
+                    .iter()
+                    .map(|current_rate| {
+                        // TODO (hdevalence) use funding streams here, this ignores funding streams
+                        let validator_reward_rate = base_reward_rate; // (minus fs term)
+                        let validator_exchange_rate = (current_rate.validator_exchange_rate
+                            * (validator_reward_rate + 1_0000_0000))
+                            / 1_0000_0000;
+
+                        // this is supposed to be multiplied by the number of delegation tokens,
+                        // how do we track that?
+                        let _voting_power_adjustment =
+                            (validator_exchange_rate * 1_0000_0000) / base_exchange_rate;
+
+                        RateData {
+                            identity_key: current_rate.identity_key,
+                            epoch_index: epoch.index + 1,
+                            // TODO: update this as we track the delegations
+                            voting_power: current_rate.voting_power,
+                            validator_exchange_rate,
+                            validator_reward_rate,
+                        }
+                    })
+                    .collect();
+
+                tracing::debug!(?next_base_rate);
+                for next_rate in &next_rates {
+                    tracing::debug!(?next_rate);
+                }
+
+                pending_block.lock().unwrap().next_rates = Some(next_rates);
+                pending_block.lock().unwrap().next_base_rate = Some(BaseRateData {
+                    epoch_index: epoch.index + 1,
+                    base_reward_rate,
+                    base_exchange_rate,
+                });
+            }
+
+            // TODO: if necessary, set the EndBlock response to add validators
+            // at the epoch boundary
+            if end.height.unsigned_abs() == epoch.start_height().value() {
+                // TODO: does this go in the first block of the epoch or the last block of the epoch?
+                // Epoch boundary -- add/remove validators if necessary
+                tracing::info!("first block of new epoch");
+            }
+            // TODO: here's where we process validator changes
+            Ok(Response::EndBlock(response::EndBlock::default()))
         }
-        // TODO: here's where we process validator changes
-        response::EndBlock::default()
     }
 
     /// Commit the queued state transitions.
@@ -376,7 +451,7 @@ impl App {
         // to keep them in the mempool nullifier set any longer.
         for nullifier in pending_block.spent_nullifiers.iter() {
             self.mempool_nullifiers.lock().unwrap().remove(nullifier);
-            increment_counter!("node_spent_nullifiers_total");
+            metrics::increment_counter!("node_spent_nullifiers_total");
         }
 
         // Pull the updated note commitment tree.
@@ -471,7 +546,15 @@ impl Service<Request> for App {
                     .instrument(Span::current())
                     .boxed();
                 }
-                Request::EndBlock(end) => Response::EndBlock(self.end_block(end)),
+                Request::EndBlock(end) => {
+                    let rsp = self.end_block(end);
+                    return self
+                        .sequencer
+                        .execute(rsp)
+                        // TODO: (@hdevalence): why doesn't this span attach to the inner future?
+                        .instrument(Span::current())
+                        .boxed();
+                }
                 Request::Commit => {
                     let rsp = self.commit();
                     return self
@@ -483,10 +566,12 @@ impl Service<Request> for App {
 
                 // Called only once for network genesis, i.e. when the application block height is 0.
                 Request::InitChain(init_chain) => {
+                    let rsp = self.init_genesis(init_chain);
                     return self
-                        .init_genesis(init_chain)
+                        .sequencer
+                        .execute(rsp)
                         .instrument(Span::current())
-                        .boxed()
+                        .boxed();
                 }
 
                 // unhandled messages

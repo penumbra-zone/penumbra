@@ -1,0 +1,77 @@
+syntax = "proto3";
+package penumbra.stake;
+
+// Describes a validator's configuration data.
+message Validator {
+  // The validator's identity verification key (decaf377-rdsa spendauth)
+  bytes identity_key = 1;
+  // The validator's consensus verification key (Ed25519)
+  bytes consensus_key = 2;
+  // The validator's (human-readable) name.
+  string name = 3;
+  // The validator's website.
+  string website = 4;
+  // The validator's description.
+  string description = 5;
+  // A list of funding streams describing the validator's commission.
+  repeated FundingStream funding_streams = 6;
+  // The sequence number determines which validator data takes priority, and
+  // prevents replay attacks.  The chain only accepts new validator definitions
+  // with increasing sequence numbers.
+  uint32 sequence_number = 7;
+}
+
+// A portion of a validator's commission.
+message FundingStream {
+  // The destination address for the funding stream.
+  string address = 1;
+  // The portion of the staking reward for the entire delegation pool
+  // allocated to this funding stream, specified in basis points.
+  uint32 rate_bps = 2;
+}
+
+// Describes the reward and exchange rates and voting power for a validator in some epoch.
+message RateData {
+  bytes identity_key = 1;
+  uint64 epoch_index = 2;
+  uint64 voting_power = 3;
+  uint64 validator_reward_rate = 4;
+  uint64 validator_exchange_rate = 5;
+}
+
+// Describes the base reward and exchange rates in some epoch.
+message BaseRateData {
+  uint64 epoch_index = 1;
+  uint64 base_reward_rate = 2;
+  uint64 base_exchange_rate = 3;
+}
+
+// A transaction action (re)defining a validator.
+message ValidatorDefinition {
+  // The configuration data for the validator.
+  Validator validator = 1;
+  // A signature by the validator's identity key over the validator data.
+  bytes auth_sig = 2;
+}
+
+// A transaction action delegating stake to a validator's delegation pool.
+message Delegate {
+  // The identity key of the validator to delegate to.
+  bytes validator_identity = 1;
+  // The index of the epoch in which this delegation was performed.
+  // The delegation takes effect in the next epoch.
+  uint64 epoch_index = 2;
+  // The delegation amount, in units of unbonded stake.
+  // TODO: use flow aggregation to hide this, replacing it with bytes amount_ciphertext;
+  uint64 unbonded_amount = 3;
+}
+
+// A transaction action undelegating stake from a validator's delegation pool.
+message Undelegate {
+  // The identity key of the validator to undelegate from.
+  bytes validator_identity = 1;
+  // The index of the epoch in which this undelegation was performed.
+  uint64 epoch_index = 2;
+  // The amount to undelegate, in units of unbonded stake.
+  uint64 unbonded_amount = 3;
+}

@@ -56,8 +56,9 @@ impl TryFrom<asset::Denom> for DelegationToken {
         // function to tendermint-rs
 
         let (hrp, data, variant) = bech32::decode(
-            // Note: this regex must be in sync with asset::REGISTRY
-            Regex::new("udelegation_(?P<data>penumbravaloper1[a-zA-HJ-NP-Z0-9]+)")
+            // Note: this regex must be in sync with both asset::REGISTRY
+            // and VALIDATOR_IDENTITY_BECH32_PREFIX
+            Regex::new("udelegation_(?P<data>penumbravalid1[a-zA-HJ-NP-Z0-9]+)")
                 .expect("regex is valid")
                 .captures(&value.to_string())
                 .ok_or_else(|| {

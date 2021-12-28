@@ -5,14 +5,14 @@ use penumbra_crypto::{
     merkle::{Frontier, NoteCommitmentTree},
     note, Nullifier,
 };
-use penumbra_stake::Epoch;
+use penumbra_stake::{BaseRateData, Epoch, RateData};
 
 use crate::verify::{PositionedNoteData, VerifiedTransaction};
 
 /// Stores pending state changes from transactions.
 #[derive(Debug, Clone)]
 pub struct PendingBlock {
-    pub height: Option<i64>,
+    pub height: Option<u64>,
     pub note_commitment_tree: NoteCommitmentTree,
     /// Stores note commitments for convienience when updating the NCT.
     pub notes: BTreeMap<note::Commitment, PositionedNoteData>,
@@ -24,6 +24,10 @@ pub struct PendingBlock {
     pub epoch: Option<Epoch>,
     /// Indicates the duration in blocks of each epoch.
     pub epoch_duration: u64,
+    /// If this is the last block of an epoch, base rates for the next epoch go here.
+    pub next_base_rate: Option<BaseRateData>,
+    /// If this is the last block of an epoch, validator rates for the next epoch go here.
+    pub next_rates: Option<Vec<RateData>>,
 }
 
 impl PendingBlock {
@@ -35,15 +39,16 @@ impl PendingBlock {
             spent_nullifiers: BTreeSet::new(),
             new_assets: BTreeMap::new(),
             epoch: None,
-            epoch_duration: epoch_duration,
+            epoch_duration,
+            next_base_rate: None,
+            next_rates: None,
         }
     }
 
     /// We only get the height from ABCI in EndBlock, so this allows setting it in-place.
-    pub fn set_height(&mut self, height: i64) -> Epoch {
+    pub fn set_height(&mut self, height: u64) -> Epoch {
         self.height = Some(height);
-        let epoch = Epoch::from_blockheight(height, self.epoch_duration)
-            .expect("able to calculate genesis block epoch");
+        let epoch = Epoch::from_height(height, self.epoch_duration);
         self.epoch = Some(epoch.clone());
         epoch
     }

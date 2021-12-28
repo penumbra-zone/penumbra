@@ -1,4 +1,3 @@
--- Add migration script here
 CREATE TABLE IF NOT EXISTS blobs (
     id varchar(64) PRIMARY KEY,
     data bytea NOT NULL
@@ -33,24 +32,29 @@ CREATE INDEX ON notes (position);
 CREATE INDEX ON notes (height);
 
 CREATE TABLE IF NOT EXISTS validators (
-    tm_pubkey bytea NOT NULL PRIMARY KEY
+    identity_key bytea NOT NULL PRIMARY KEY,
+    consensus_key bytea NOT NULL,
+    sequence_number bigint NOT NULL,
+    validator_data bytea NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS validator_fundingstreams (
-    tm_pubkey bytea NOT NULL,
+    identity_key bytea NOT NULL REFERENCES validators (identity_key),
     address varchar NOT NULL,
     rate_bps bigint NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS base_rates (
     epoch bigint PRIMARY KEY,
-    base_rate bigint NOT NULL
+    base_reward_rate bigint NOT NULL,
+    base_exchange_rate bigint NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS validator_rates (
+    identity_key bytea NOT NULL REFERENCES validators (identity_key),
     epoch bigint NOT NULL,
-    validator_pubkey bytea NOT NULL REFERENCES validators (tm_pubkey),
-    validator_rate bigint NOT NULL,
     voting_power bigint NOT NULL,
-    PRIMARY KEY(epoch, validator_pubkey)
+    validator_reward_rate bigint NOT NULL,
+    validator_exchange_rate bigint NOT NULL,
+    PRIMARY KEY(epoch, identity_key)
 );

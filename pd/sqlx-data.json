@@ -1,19 +1,5 @@
 {
   "db": "PostgreSQL",
-  "0bb9011725723ccf9a5d2aa2967457b72579c90f9aa594d232528596c7cf1bd9": {
-    "query": "INSERT INTO validator_fundingstreams (tm_pubkey, address, rate_bps) VALUES ($1, $2, $3)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea",
-          "Varchar",
-          "Int8"
-        ]
-      },
-      "nullable": []
-    }
-  },
   "0c6a89db4de3642914e3cddf6e08a042eac9b140a03118943170433527ef5cc3": {
     "query": "INSERT INTO nullifiers VALUES ($1, $2)",
     "describe": {
@@ -92,29 +78,13 @@
       ]
     }
   },
-  "367663d8c6b6b179fc02c6a6edd8cf3dcda1a0d39fa231d320e72373e781d9a9": {
-    "query": " INSERT INTO validator_rates ( epoch, validator_pubkey, validator_rate, voting_power ) VALUES ($1, $2, $3, $4)",
+  "37dc2448272e62b1af649a73ae39b47ca5ec6ab625a9ff26d22c02a36b6be7ac": {
+    "query": "INSERT INTO base_rates (epoch, base_reward_rate, base_exchange_rate) VALUES (0, 0, $1)",
     "describe": {
       "columns": [],
       "parameters": {
         "Left": [
-          "Int8",
-          "Bytea",
-          "Int8",
           "Int8"
-        ]
-      },
-      "nullable": []
-    }
-  },
-  "3cbb441b10f4a068c16dd3a40accd689be26f2a6619b363fd966ee10e740f07b": {
-    "query": " INSERT INTO assets ( asset_id, denom) VALUES ($1, $2)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea",
-          "Varchar"
         ]
       },
       "nullable": []
@@ -127,6 +97,66 @@
       "parameters": {
         "Left": [
           "Bytea"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "5ea1dce201278be84f22c7c6baf15803c1cc44a533cfe21a09b4b625d3e72e99": {
+    "query": "SELECT identity_key, epoch, voting_power, validator_reward_rate, validator_exchange_rate\n            FROM validator_rates\n            WHERE epoch = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "identity_key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 1,
+          "name": "epoch",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 2,
+          "name": "voting_power",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 3,
+          "name": "validator_reward_rate",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 4,
+          "name": "validator_exchange_rate",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "65b35b1ef216fc7b1b4d31d08c582e1160024199d91e56fd2a2aaa462006bba1": {
+    "query": "INSERT INTO validator_rates (\n                    identity_key,\n                    epoch,\n                    voting_power,\n                    validator_reward_rate,\n                    validator_exchange_rate\n                ) VALUES ($1, $2, $3, $4, $5)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Int8",
+          "Int8",
+          "Int8",
+          "Int8"
         ]
       },
       "nullable": []
@@ -162,38 +192,6 @@
         ]
       },
       "nullable": [
-        false
-      ]
-    }
-  },
-  "6cf3b0bf9cb07f0e9f7c4ccd37fff8ef360713779a9cc39d01f22891e234c515": {
-    "query": "SELECT tm_pubkey, address, rate_bps FROM validator_fundingstreams WHERE tm_pubkey = $1",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "tm_pubkey",
-          "type_info": "Bytea"
-        },
-        {
-          "ordinal": 1,
-          "name": "address",
-          "type_info": "Varchar"
-        },
-        {
-          "ordinal": 2,
-          "name": "rate_bps",
-          "type_info": "Int8"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Bytea"
-        ]
-      },
-      "nullable": [
-        false,
-        false,
         false
       ]
     }
@@ -245,6 +243,21 @@
       ]
     }
   },
+  "7c1906126e67c3875f9eec2fc44ad472a9334df45095cf0d6d4c9a317f711840": {
+    "query": "INSERT INTO validators (\n                    identity_key, \n                    consensus_key, \n                    sequence_number, \n                    validator_data\n                ) VALUES ($1, $2, $3, $4)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Bytea",
+          "Int8",
+          "Bytea"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "8195450f9f1cedf05eebd974adbdc42dc70a8e2abb7753d7b02cba03786bee0d": {
     "query": "SELECT denom, asset_id FROM assets",
     "describe": {
@@ -269,26 +282,34 @@
       ]
     }
   },
-  "830e68c832d63748440f231cda5c02988e01b81954829b7de1b6197de8d3ebd2": {
-    "query": "select tm_pubkey, validator_rates.voting_power FROM validators LEFT JOIN validator_rates ON validator_rates.validator_pubkey = validators.tm_pubkey;",
+  "8c67c25c88aef9780fb468fde0efc219247511c20f13c9e1fc0545fddf7d485c": {
+    "query": "SELECT epoch, base_reward_rate, base_exchange_rate\n            FROM base_rates\n            WHERE epoch = $1",
     "describe": {
       "columns": [
         {
           "ordinal": 0,
-          "name": "tm_pubkey",
-          "type_info": "Bytea"
+          "name": "epoch",
+          "type_info": "Int8"
         },
         {
           "ordinal": 1,
-          "name": "voting_power",
+          "name": "base_reward_rate",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 2,
+          "name": "base_exchange_rate",
           "type_info": "Int8"
         }
       ],
       "parameters": {
-        "Left": []
+        "Left": [
+          "Int8"
+        ]
       },
       "nullable": [
-        true,
+        false,
+        false,
         false
       ]
     }
@@ -321,6 +342,36 @@
         false,
         false
       ]
+    }
+  },
+  "9a68a44f549c88ede7f9d70641f62dd537a4826694c2a50875c6ba8c651351e0": {
+    "query": "INSERT INTO validator_rates VALUES ($1, $2, $3, $4, $5)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Int8",
+          "Int8",
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "9ab28d6b1cdbe8fd02e4382ab9cf5a2fa2914aaf460020977aeadfb8818c70af": {
+    "query": "INSERT INTO base_rates VALUES ($1, $2, $3)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": []
     }
   },
   "aed57af72fe55a40c7fe24c06ff908821372686522783850b2db72fbed2aa9e4": {
@@ -400,28 +451,28 @@
       ]
     }
   },
-  "eef7c74c2338d6cfda95c4c8b3556c4ce5e257f90c261bedb8f337f7c7276b09": {
-    "query": "INSERT INTO validator_rates (epoch, validator_pubkey, validator_rate, voting_power) VALUES ($1, $2, $3, $4)",
+  "dd42bddc81dc82581542307fb7f388cf539ae7b9dc506464bb357d1a78b8056a": {
+    "query": "INSERT INTO validator_fundingstreams (\n                        identity_key, \n                        address, \n                        rate_bps\n                    ) VALUES ($1, $2, $3)",
     "describe": {
       "columns": [],
       "parameters": {
         "Left": [
-          "Int8",
           "Bytea",
-          "Int8",
+          "Varchar",
           "Int8"
         ]
       },
       "nullable": []
     }
   },
-  "fc128bcefa54c9a85bb3595c20fe253348135b4473dab9fee5847c7465a6d8f7": {
-    "query": "INSERT INTO validators (tm_pubkey) VALUES ($1)",
+  "f02fb84c77d1d5a7418debac7291c8524d6e4d6559596ff69217d629a1c7b1c2": {
+    "query": "INSERT INTO assets (asset_id, denom) VALUES ($1, $2)",
     "describe": {
       "columns": [],
       "parameters": {
         "Left": [
-          "Bytea"
+          "Bytea",
+          "Varchar"
         ]
       },
       "nullable": []
