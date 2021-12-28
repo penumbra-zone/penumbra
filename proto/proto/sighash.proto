@@ -2,6 +2,7 @@ syntax = "proto3";
 package penumbra.sighash;
 
 import "transaction.proto";
+import "stake.proto";
 
 // The content of a transaction, except for authorization signatures, for use
 // as a sighash input.
@@ -26,5 +27,8 @@ message SigHashAction {
   oneof action {
     transaction.SpendBody spend = 1;
     transaction.Output output = 2;
+    stake.Delegate delegate = 3;
+    stake.Undelegate undelegate = 4;
+    stake.ValidatorDefinition validator_definition = 16;
   }
 }

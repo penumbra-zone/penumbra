@@ -2,6 +2,7 @@ use std::net::SocketAddr;
 
 use metrics_exporter_prometheus::PrometheusBuilder;
 use pd::{genesis, App, State};
+use penumbra_crypto::rdsa::{SigningKey, SpendAuth, VerificationKey};
 use penumbra_proto::{
     light_wallet::light_wallet_server::LightWalletServer,
     thin_wallet::thin_wallet_server::ThinWalletServer,
@@ -159,14 +160,17 @@ async fn main() -> anyhow::Result<()> {
             let sk = SpendKey::generate(OsRng);
             let ivk = sk.incoming_viewing_key();
 
-            let validator_sk =
+            let validator_id_sk = SigningKey::<SpendAuth>::new(OsRng);
+            let validator_id_vk = VerificationKey::from(&validator_id_sk);
+
+            let validator_cons_sk =
                 tendermint::PrivateKey::Ed25519(ed25519_consensus::SigningKey::new(OsRng));
-            let validator_pk = validator_sk.public_key();
+            let validator_cons_pk = validator_cons_sk.public_key();
 
             let app_state = genesis::AppState {
                 allocations: vec![
                     genesis::Allocation {
-                        amount: 1_000_000,
+                        amount: 1_000_000__000_000,
                         denom: "upenumbra".to_string(),
                         address: ivk.payment_address(10u8.into()).0,
                     },
@@ -184,14 +188,24 @@ async fn main() -> anyhow::Result<()> {
                 // Set a shorter epoch duration here for testing purposes and to
                 // try to avoid baking in assumptions about the epoch length
                 epoch_duration: 300,
-                validators: vec![Validator::new(
-                    validator_pk,
-                    100u32.into(),
-                    vec![FundingStream {
-                        address: ivk.payment_address(0u8.into()).0,
-                        rate_bps: 200,
-                    }],
-                )],
+                validators: vec![
+                    genesis::ValidatorPower {
+                        validator: Validator {
+                            identity_key: validator_id_vk,
+                            consensus_key: validator_cons_pk,
+                            name: "Testnet Validator (Change Me!)".to_string(),
+                            website: "https://example.com".to_string(),
+                            description: "This is an illustration of the validator parameters structure; you should use it as an example when creating your testnet parameters.".to_string(),
+                            funding_streams:
+                           vec![FundingStream {
+                               address: ivk.payment_address(0u8.into()).0,
+                               rate_bps: 200,
+                           }],
+                            sequence_number: 0,
+                        },
+                        power: tendermint::vote::Power::from(100u32),
+                    },
+                ],
             };
 
             // Print this comment to stderr so stdout can be redirected as

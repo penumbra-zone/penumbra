@@ -47,15 +47,21 @@ impl Allocation {
     }
 }
 
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct ValidatorPower {
+    pub validator: Validator,
+    pub power: tendermint::vote::Power,
+}
+
 /// The application state at genesis.
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct AppState {
-    /// The initial token allocations.
-    pub allocations: Vec<Allocation>,
     /// The number of blocks in each epoch.
     pub epoch_duration: u64,
     /// The initial validator set.
-    pub validators: Vec<Validator>,
+    pub validators: Vec<ValidatorPower>,
+    /// The initial token allocations.
+    pub allocations: Vec<Allocation>,
 }
 
 impl Default for AppState {

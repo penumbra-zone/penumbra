@@ -1,4 +1,3 @@
-use anyhow::{anyhow, Error};
 use tendermint::block;
 
 /// Epoch represents a given epoch for Penumbra and is used
@@ -10,28 +9,10 @@ pub struct Epoch {
 }
 
 impl Epoch {
-    /// from_blockheight instantiates a new `Epoch` from a given
-    /// block height. Due to the implementation in tendermint using
-    /// signed representation for block height, we provide this
-    /// as well as an unsigned implemention (`from_blockheight_unsigned`)
-    pub fn from_blockheight(block_height: i64, epoch_duration: u64) -> Result<Self, Error> {
-        if block_height < 0 {
-            return Err(anyhow!("block height should never be negative"));
-        }
-
-        Ok(Epoch::from_blockheight_unsigned(
-            block_height.unsigned_abs(),
-            epoch_duration,
-        ))
-    }
-
-    /// from_blockheight_unsigned instantiates a new `Epoch` from a given
-    /// unsigned block height. Due to the implementation in tendermint using
-    /// signed representation for block height, we provide this
-    /// as well as a signed implemention (`from_blockheight`)
-    pub fn from_blockheight_unsigned(block_height: u64, epoch_duration: u64) -> Self {
+    /// Instantiates a new `Epoch` from a given block height and epoch duration.
+    pub fn from_height(height: u64, epoch_duration: u64) -> Epoch {
         Epoch {
-            index: block_height / epoch_duration,
+            index: height / epoch_duration,
             duration: epoch_duration,
         }
     }
@@ -47,11 +28,7 @@ impl Epoch {
             .expect("able to parse block height")
     }
 
-    pub fn is_epoch_boundary(block_height: i64, epoch_duration: u64) -> Result<bool, Error> {
-        if block_height < 0 {
-            return Err(anyhow!("block height should never be negative"));
-        }
-
-        Ok(block_height.unsigned_abs() % epoch_duration == 0)
+    pub fn is_epoch_boundary(height: u64, epoch_duration: u64) -> bool {
+        height % epoch_duration == 0
     }
 }

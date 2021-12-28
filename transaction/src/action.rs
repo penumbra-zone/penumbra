@@ -45,6 +45,7 @@ impl TryFrom<transaction::Action> for Action {
             transaction::action::Action::Output(inner) => Ok(Action::Output(inner.try_into()?)),
 
             transaction::action::Action::Spend(inner) => Ok(Action::Spend(inner.try_into()?)),
+            _ => todo!(),
         }
     }
 }

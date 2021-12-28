@@ -35,6 +35,8 @@ impl Sequencer {
         self.waiting = true;
         self.completion.set(rx);
 
+        // TODO: (@hdevalence) how do we propagate spans here?
+
         async move {
             // Spawn a new task to ensure the future is driven to completion.
             // (depending on the future, it may not ever complete, but not for

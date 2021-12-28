@@ -1,21 +1,18 @@
-use std::{
-    collections::{BTreeMap, VecDeque},
-    pin::Pin,
-    str::FromStr,
-};
+use std::{collections::VecDeque, pin::Pin};
 
 use anyhow::{Context, Result};
 use async_stream::try_stream;
 use futures::stream::{Stream, StreamExt};
 use penumbra_crypto::{
     merkle::{self, NoteCommitmentTree, TreeExt},
-    Address, Nullifier,
+    Nullifier,
 };
 use penumbra_proto::{
     light_wallet::{CompactBlock, StateFragment},
     thin_wallet::{Asset, TransactionDetail},
+    Protobuf,
 };
-use penumbra_stake::{FundingStream, Validator};
+use penumbra_stake::{BaseRateData, FundingStream, RateData};
 use sqlx::{postgres::PgPoolOptions, query, query_as, Pool, Postgres};
 use tendermint::block;
 use tracing::instrument;
@@ -27,6 +24,12 @@ pub struct State {
     pool: Pool<Postgres>,
 }
 
+// NOTE: because the state has a Postgres connection pool and supports shared
+// access, all methods (including write methods!) take &self, not &mut self.
+//
+// Writes to the database should *only* happen in `commit_genesis` (called once
+// on init) and `commit_block`.
+
 impl State {
     /// Connect to the database with the given `uri`.
     #[instrument]
@@ -37,6 +40,83 @@ impl State {
         sqlx::migrate!("./migrations").run(&pool).await?;
         tracing::info!("finished initializing state");
         Ok(State { pool })
+    }
+
+    /// Commits the genesis config to the database, prior to the first block commit.
+    pub async fn commit_genesis(&self, genesis_config: &genesis::AppState) -> Result<()> {
+        let mut dbtx = self.pool.begin().await?;
+
+        // ON CONFLICT is excluded here so that an error is raised
+        // if genesis config is attempted to be set more than once
+        query!(
+            r#"
+INSERT INTO blobs (id, data) VALUES ('gc', $1)
+"#,
+            &serde_json::to_vec(&genesis_config)?[..]
+        )
+        .execute(&mut dbtx)
+        .await?;
+
+        // TODO: move into BaseRateData::at_genesis() ctor?
+        query!(
+            "INSERT INTO base_rates (epoch, base_reward_rate, base_exchange_rate) VALUES (0, 0, $1)",
+            1_0000_0000
+        ).execute(&mut dbtx).await?;
+
+        for genesis::ValidatorPower { validator, power } in &genesis_config.validators {
+            query!(
+                "INSERT INTO validators (
+                    identity_key, 
+                    consensus_key, 
+                    sequence_number, 
+                    validator_data
+                ) VALUES ($1, $2, $3, $4)",
+                validator.identity_key.to_bytes().to_vec(),
+                validator.consensus_key.to_bytes(),
+                validator.sequence_number as i64,
+                validator.encode_to_vec(),
+            )
+            .execute(&mut dbtx)
+            .await?;
+
+            for FundingStream { address, rate_bps } in &validator.funding_streams {
+                query!(
+                    "INSERT INTO validator_fundingstreams (
+                        identity_key, 
+                        address, 
+                        rate_bps
+                    ) VALUES ($1, $2, $3)",
+                    validator.identity_key.to_bytes().to_vec(),
+                    address.to_string(),
+                    *rate_bps as i32,
+                )
+                .execute(&mut dbtx)
+                .await?;
+            }
+
+            // The initial voting power is set from the genesis configuration,
+            // but after the first epoch period, it's recomputed based on the
+            // size of each validator's delegation pool.  In the genesis epoch,
+            // set the initial parameters as 0 reward, exchange rate 1.
+            query!(
+                "INSERT INTO validator_rates (
+                    identity_key,
+                    epoch,
+                    voting_power,
+                    validator_reward_rate,
+                    validator_exchange_rate
+                ) VALUES ($1, $2, $3, $4, $5)",
+                validator.identity_key.to_bytes().to_vec(),
+                0,
+                power.value() as i64,
+                0,
+                1_00000000i64, // 1 represented as 1e8
+            )
+            .execute(&mut dbtx)
+            .await?;
+        }
+
+        dbtx.commit().await.map_err(Into::into)
     }
 
     pub async fn commit_block(&self, block: PendingBlock) -> Result<()> {
@@ -61,14 +141,14 @@ ON CONFLICT (id) DO UPDATE SET data = $1
 
         query!(
             "INSERT INTO blocks (height, nct_anchor, app_hash) VALUES ($1, $2, $3)",
-            height,
+            height as i64,
             &nct_anchor.to_bytes()[..],
             &app_hash[..]
         )
         .execute(&mut dbtx)
         .await?;
 
-        // TODO: this could be batched / use prepared statements
+        // Add newly created notes into the chain state.
         for (note_commitment, positioned_note) in block.notes.into_iter() {
             query!(
                 r#"
@@ -85,17 +165,18 @@ ON CONFLICT (id) DO UPDATE SET data = $1
                 &positioned_note.data.encrypted_note[..],
                 &positioned_note.data.transaction_id[..],
                 positioned_note.position as i64,
-                height
+                height as i64,
             )
             .execute(&mut dbtx)
             .await?;
         }
 
+        // Mark spent notes as spent.
         for nullifier in block.spent_nullifiers.into_iter() {
             query!(
                 "INSERT INTO nullifiers VALUES ($1, $2)",
                 &<[u8; 32]>::from(nullifier)[..],
-                height
+                height as i64,
             )
             .execute(&mut dbtx)
             .await?;
@@ -104,7 +185,7 @@ ON CONFLICT (id) DO UPDATE SET data = $1
         // Save any new assets found in the block to the asset registry.
         for (id, denom) in block.new_assets {
             query!(
-                r#" INSERT INTO assets ( asset_id, denom) VALUES ($1, $2)"#,
+                r#"INSERT INTO assets (asset_id, denom) VALUES ($1, $2)"#,
                 &id.to_bytes()[..],
                 denom
             )
@@ -112,30 +193,27 @@ ON CONFLICT (id) DO UPDATE SET data = $1
             .await?;
         }
 
-        let epoch = block.epoch.ok_or_else(|| {
-            anyhow::anyhow!(
-                "EndBlock must be called prior to Commit, `epoch` was not set on the pending block"
-            )
-        })?;
-        if epoch.start_height().value() == block.height.unwrap().unsigned_abs() {
-            // validator rates need updating on epoch boundaries
-            let validators = self.validators().await?;
-            for validator in validators {
-                tracing::info!("updating validator rates for validator: {:?}", validator.0);
-                // TODO @ava insert calls here
-                let validator_rate = 0;
-                let voting_power = 0;
-
-                let pubkey_str = serde_json::to_string(&validator.0)?;
-
-                query!(
-                r#" INSERT INTO validator_rates ( epoch, validator_pubkey, validator_rate, voting_power ) VALUES ($1, $2, $3, $4)"#,
-                epoch.index as i64,
-                pubkey_str.as_bytes(),
-                validator_rate, voting_power
+        if let (Some(base_rate_data), Some(rate_data)) = (block.next_base_rate, block.next_rates) {
+            query!(
+                "INSERT INTO base_rates VALUES ($1, $2, $3)",
+                base_rate_data.epoch_index as i64,
+                base_rate_data.base_reward_rate as i64,
+                base_rate_data.base_exchange_rate as i64,
             )
             .execute(&mut dbtx)
             .await?;
+
+            for rate in rate_data {
+                query!(
+                    "INSERT INTO validator_rates VALUES ($1, $2, $3, $4, $5)",
+                    rate.identity_key.to_bytes().to_vec(),
+                    rate.epoch_index as i64,
+                    rate.voting_power as i64,
+                    rate.validator_reward_rate as i64,
+                    rate.validator_exchange_rate as i64,
+                )
+                .execute(&mut dbtx)
+                .await?;
             }
         }
 
@@ -197,28 +275,6 @@ ON CONFLICT (id) DO UPDATE SET data = $1
         Ok(genesis_config)
     }
 
-    pub async fn set_genesis_configuration(
-        &self,
-        genesis_config: &genesis::AppState,
-    ) -> Result<()> {
-        let mut dbtx = self.pool.begin().await?;
-
-        let gc_bytes = serde_json::to_vec(&genesis_config)?;
-
-        // ON CONFLICT is excluded here so that an error is raised
-        // if genesis config is attempted to be set more than once
-        query!(
-            r#"
-INSERT INTO blobs (id, data) VALUES ('gc', $1)
-"#,
-            &gc_bytes[..]
-        )
-        .execute(&mut dbtx)
-        .await?;
-
-        dbtx.commit().await.map_err(Into::into)
-    }
-
     /// Retrieve the latest block info, if any.
     pub async fn latest_block_info(&self) -> Result<Option<schema::BlocksRow>> {
         let mut conn = self.pool.acquire().await?;
@@ -268,6 +324,52 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
             .await?
             .map(|row| row.app_hash)
             .unwrap_or_else(|| vec![0; 32]))
+    }
+
+    pub async fn base_rate_data(&self, epoch_index: u64) -> Result<BaseRateData> {
+        let mut conn = self.pool.acquire().await?;
+        let row = query!(
+            "SELECT epoch, base_reward_rate, base_exchange_rate
+            FROM base_rates
+            WHERE epoch = $1",
+            epoch_index as i64,
+        )
+        .fetch_one(&mut conn)
+        .await?;
+
+        Ok(BaseRateData {
+            epoch_index: row.epoch as u64,
+            base_exchange_rate: row.base_exchange_rate as u64,
+            base_reward_rate: row.base_reward_rate as u64,
+        })
+    }
+
+    pub async fn rate_data(&self, epoch_index: u64) -> Result<Vec<RateData>> {
+        let mut conn = self.pool.acquire().await?;
+        let rows = query!(
+            "SELECT identity_key, epoch, voting_power, validator_reward_rate, validator_exchange_rate
+            FROM validator_rates
+            WHERE epoch = $1",
+            epoch_index as i64,
+        )
+        .fetch_all(&mut conn)
+        .await?;
+
+        Ok(rows
+            .into_iter()
+            // this does conversions manually rather than using query_as because of i64/u64 casting
+            .map(|row| RateData {
+                identity_key: row
+                    .identity_key
+                    .as_slice()
+                    .try_into()
+                    .expect("db data is valid"),
+                epoch_index: row.epoch as u64,
+                voting_power: row.voting_power as u64,
+                validator_exchange_rate: row.validator_exchange_rate as u64,
+                validator_reward_rate: row.validator_reward_rate as u64,
+            })
+            .collect())
     }
 
     /// Retrieve a stream of [`CompactBlock`]s for the given (inclusive) range.
@@ -354,93 +456,6 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
                 yield compact_block;
             }
         })
-    }
-
-    /// Retreive the current validator set.
-    ///
-    pub async fn validators(&self) -> Result<BTreeMap<tendermint::PublicKey, Validator>> {
-        let mut conn = self.pool.acquire().await?;
-
-        let mut validators: BTreeMap<tendermint::PublicKey, Validator> = BTreeMap::new();
-
-        let stored_validators = query!(r#"select tm_pubkey, validator_rates.voting_power FROM validators LEFT JOIN validator_rates ON validator_rates.validator_pubkey = validators.tm_pubkey;"#)
-            .fetch_all(&mut conn)
-            .await?;
-        for row in stored_validators.iter() {
-            // NOTE: we store the validator's public key in the database as a json-encoded string,
-            // because Tendermint pubkeys can be either ed25519 or secp256k1, and we want a
-            // non-ambiguous encoding for the public key.
-            let decoded_pubkey: tendermint::PublicKey =
-                serde_json::from_slice(&row.tm_pubkey.as_ref().unwrap())?;
-
-            let mut funding_streams: Vec<FundingStream> = Vec::new();
-            let stored_funding_streams = query!(r#"SELECT tm_pubkey, address, rate_bps FROM validator_fundingstreams WHERE tm_pubkey = $1"#, row.tm_pubkey).fetch_all(&mut conn).await?;
-            for f_row in stored_funding_streams {
-                funding_streams.push(FundingStream {
-                    address: Address::from_str(&f_row.address)?,
-                    rate_bps: f_row.rate_bps.try_into()?,
-                })
-            }
-            // NOTE: voting_power is stored in the psql database as a `bigint`, which maps to an
-            // `i64` in sqlx. try_into uses the `TryFrom<i64>` implementation for voting power from
-            // Tendermint, so will return an error if voting power is negative (and not silently
-            // overflow).
-            // TODO the voting power is actually stored on the `validator_rates` table now so
-            // we need to join against that table
-            validators.insert(
-                decoded_pubkey,
-                Validator::new(
-                    decoded_pubkey,
-                    row.voting_power.try_into()?,
-                    funding_streams,
-                ),
-            );
-        }
-
-        Ok(validators)
-    }
-
-    /// set the initial validator set, inserting each validator in `validators` into the state.
-    pub async fn set_initial_validators(
-        &self,
-        validators: &BTreeMap<tendermint::PublicKey, Validator>,
-    ) -> Result<()> {
-        let mut conn = self.pool.begin().await?;
-
-        // TODO: batching optimization
-        for (tm_pubkey, val) in validators.iter() {
-            let pubkey_str = serde_json::to_string(tm_pubkey)?;
-
-            query!(
-                "INSERT INTO validators (tm_pubkey) VALUES ($1)",
-                pubkey_str.as_bytes(),
-            )
-            .execute(&mut conn)
-            .await?;
-
-            query!(
-                "INSERT INTO validator_rates (epoch, validator_pubkey, validator_rate, voting_power) VALUES ($1, $2, $3, $4)",
-                0,
-                pubkey_str.as_bytes(),
-                0,
-                i64::try_from(val.voting_power)?,
-            )
-            .execute(&mut conn)
-            .await?;
-            // TODO (optimization): batch insert?
-            for stream in val.funding_streams.iter() {
-                query!(
-                "INSERT INTO validator_fundingstreams (tm_pubkey, address, rate_bps) VALUES ($1, $2, $3)",
-                pubkey_str.as_bytes(),
-                stream.address.to_string(),
-                i64::try_from(stream.rate_bps)?,
-                )
-                .execute(&mut conn)
-                .await?;
-            }
-        }
-
-        conn.commit().await.map_err(Into::into)
     }
 
     /// Retrieve the [`TransactionDetail`] for a given note commitment.

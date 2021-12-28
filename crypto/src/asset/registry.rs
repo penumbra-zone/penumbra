@@ -191,11 +191,13 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
             }) as for<'r> fn(&'r str) -> _,
         )
         .add_asset(
+            // Note: this regex must be in sync with DelegationToken::try_from
+            // and VALIDATOR_IDENTITY_BECH32_PREFIX in the penumbra-stake crate
             // TODO: this doesn't restrict the length of the bech32 encoding
-            "^udelegation_(?P<data>penumbravaloper1[a-zA-HJ-NP-Z0-9]+)$",
+            "^udelegation_(?P<data>penumbravalid1[a-zA-HJ-NP-Z0-9]+)$",
             &[
-                "^delegation_(?P<data>penumbravaloper1[a-zA-HJ-NP-Z0-9]+)$",
-                "^mdelegation_(?P<data>penumbravaloper1[a-zA-HJ-NP-Z0-9]+)$",
+                "^delegation_(?P<data>penumbravalid1[a-zA-HJ-NP-Z0-9]+)$",
+                "^mdelegation_(?P<data>penumbravalid1[a-zA-HJ-NP-Z0-9]+)$",
             ],
             (|data: &str| {
                 assert!(!data.is_empty());

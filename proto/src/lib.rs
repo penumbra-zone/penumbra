@@ -15,9 +15,31 @@
 //! The [`Protobuf`] marker trait can be implemented on a domain type to ensure
 //! these conversions exist.
 
+pub use prost::Message;
+
+mod serializers;
+
+mod protobuf;
+pub use protobuf::Protobuf;
+
 /// Transaction structures.
 pub mod transaction {
     include!(concat!(env!("OUT_DIR"), "/penumbra.transaction.rs"));
+}
+
+/// Staking structures.
+pub mod stake {
+    include!(concat!(env!("OUT_DIR"), "/penumbra.stake.rs"));
+}
+
+/// Light wallet protocol structures.
+pub mod light_wallet {
+    tonic::include_proto!("penumbra.light_wallet");
+}
+
+/// Thin wallet protocol structures.
+pub mod thin_wallet {
+    tonic::include_proto!("penumbra.thin_wallet");
 }
 
 pub mod sighash {
@@ -30,10 +52,13 @@ pub mod sighash {
     impl From<super::transaction::Action> for SigHashAction {
         fn from(action: super::transaction::Action) -> Self {
             let action = match action.action {
-                // Pass through outputs
+                // Pass through other actions
                 Some(TxAction::Output(o)) => Some(SHAction::Output(o)),
-                Some(TxAction::Spend(Spend { body: None, .. })) => None,
+                Some(TxAction::Delegate(d)) => Some(SHAction::Delegate(d)),
+                Some(TxAction::Undelegate(d)) => Some(SHAction::Undelegate(d)),
+                Some(TxAction::ValidatorDefinition(d)) => Some(SHAction::ValidatorDefinition(d)),
                 // Collapse spends to spend bodies
+                Some(TxAction::Spend(Spend { body: None, .. })) => None,
                 Some(TxAction::Spend(Spend {
                     body: Some(spend_body),
                     ..
@@ -64,17 +89,3 @@ pub mod sighash {
 pub mod transparent_proofs {
     include!(concat!(env!("OUT_DIR"), "/penumbra.transparent_proofs.rs"));
 }
-
-/// Light wallet protocol structures.
-pub mod light_wallet {
-    tonic::include_proto!("penumbra.light_wallet");
-}
-
-/// Thin wallet protocol structures.
-pub mod thin_wallet {
-    tonic::include_proto!("penumbra.thin_wallet");
-}
-
-mod protobuf;
-pub use prost::Message;
-pub use protobuf::Protobuf;

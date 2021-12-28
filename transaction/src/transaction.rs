@@ -17,8 +17,7 @@ use penumbra_proto::{
 };
 
 // TODO: remove & replace with anyhow
-use crate::action::error::ProtoError;
-use crate::{Action, GenesisBuilder};
+use crate::{action::error::ProtoError, Action, GenesisBuilder};
 
 mod builder;
 pub use builder::Builder;
