@@ -1,4 +1,9 @@
+use anyhow::Result;
+use penumbra_crypto::Value;
+use rand_core::OsRng;
 use structopt::StructOpt;
+
+use crate::{ClientStateFile, Opt};
 
 #[derive(Debug, StructOpt)]
 pub enum TxCmd {
@@ -27,5 +32,46 @@ impl TxCmd {
         match self {
             TxCmd::Send { .. } => true,
         }
+    }
+
+    pub async fn exec(&self, opt: &Opt, state: &mut ClientStateFile) -> Result<()> {
+        match self {
+            TxCmd::Send {
+                values,
+                to,
+                fee,
+                from,
+                memo,
+            } => {
+                // Parse all of the values provided.
+                let values = values
+                    .iter()
+                    .map(|v| v.parse())
+                    .collect::<Result<Vec<Value>, _>>()?;
+                let to = to
+                    .parse()
+                    .map_err(|_| anyhow::anyhow!("address is invalid"))?;
+
+                let tx =
+                    state.new_transaction(&mut OsRng, &values, *fee, to, *from, memo.clone())?;
+                state.commit()?;
+
+                let serialized_tx: Vec<u8> = tx.into();
+
+                tracing::info!("broadcasting transaction...");
+                let rsp = reqwest::get(format!(
+                    r#"http://{}:{}/broadcast_tx_sync?tx=0x{}"#,
+                    opt.node,
+                    opt.rpc_port,
+                    hex::encode(serialized_tx)
+                ))
+                .await?
+                .text()
+                .await?;
+
+                tracing::info!("{}", rsp);
+            }
+        }
+        Ok(())
     }
 }

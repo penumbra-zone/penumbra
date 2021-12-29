@@ -1,4 +1,10 @@
+use std::path::PathBuf;
+
+use anyhow::Result;
+use comfy_table::{presets, Table};
 use structopt::StructOpt;
+
+use crate::ClientStateFile;
 
 #[derive(Debug, StructOpt)]
 pub enum AddrCmd {
@@ -28,5 +34,42 @@ impl AddrCmd {
             AddrCmd::Show { .. } => false,
             AddrCmd::New { .. } => false,
         }
+    }
+
+    pub fn exec(&self, wallet_path: PathBuf) -> Result<()> {
+        let mut state = ClientStateFile::load(wallet_path)?;
+
+        // Set up table (this won't be used with `show --addr-only`)
+        let mut table = Table::new();
+        table.load_preset(presets::NOTHING);
+        table.set_header(vec!["Index", "Label", "Address"]);
+
+        match self {
+            AddrCmd::List => {
+                for (index, label, address) in state.wallet().addresses() {
+                    table.add_row(vec![index.to_string(), label, address.to_string()]);
+                }
+            }
+            AddrCmd::Show { index, addr_only } => {
+                let (label, address) = state.wallet().address_by_index(*index as usize)?;
+
+                if *addr_only {
+                    println!("{}", address.to_string());
+                    return Ok(()); // don't print the label
+                } else {
+                    table.add_row(vec![index.to_string(), label, address.to_string()]);
+                }
+            }
+            AddrCmd::New { label } => {
+                let (index, address, _dtk) = state.wallet_mut().new_address(label.clone());
+                state.commit()?;
+                table.add_row(vec![index.to_string(), label.clone(), address.to_string()]);
+            }
+        }
+
+        // Print the table (we don't get here if `show --addr-only`)
+        println!("{}", table);
+
+        Ok(())
     }
 }
