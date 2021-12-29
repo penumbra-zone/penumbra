@@ -1,0 +1,41 @@
+use structopt::StructOpt;
+
+mod addr;
+mod balance;
+mod tx;
+mod wallet;
+
+pub use addr::AddrCmd;
+pub use balance::BalanceCmd;
+pub use tx::TxCmd;
+pub use wallet::WalletCmd;
+
+#[derive(Debug, StructOpt)]
+pub enum Command {
+    /// Creates a transaction.
+    Tx(TxCmd),
+    /// Manages the wallet state.
+    Wallet(WalletCmd),
+    /// Manages addresses.
+    Addr(AddrCmd),
+    /// Synchronizes the client, privately scanning the chain state.
+    ///
+    /// `pcli` syncs automatically prior to any action requiring chain state,
+    /// but this command can be used to "pre-sync" before interactive use.
+    Sync,
+    /// Displays the current wallet balance.
+    Balance(BalanceCmd),
+}
+
+impl Command {
+    /// Determine if this command requires a network sync before it executes.
+    pub fn needs_sync(&self) -> bool {
+        match self {
+            Command::Tx(cmd) => cmd.needs_sync(),
+            Command::Wallet(cmd) => cmd.needs_sync(),
+            Command::Addr(cmd) => cmd.needs_sync(),
+            Command::Sync => true,
+            Command::Balance(cmd) => cmd.needs_sync(),
+        }
+    }
+}

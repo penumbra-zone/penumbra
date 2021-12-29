@@ -15,17 +15,41 @@ use sha2::{Digest, Sha256};
 use structopt::StructOpt;
 use tempfile::NamedTempFile;
 
-pub mod opt;
-pub mod warning;
-use opt::*;
-
-mod sync;
-pub use sync::sync;
-
-pub mod fetch;
-
+mod command;
+mod fetch;
 mod state;
-pub use state::ClientStateFile;
+mod sync;
+mod warning;
+
+use command::*;
+use state::ClientStateFile;
+use sync::sync;
+
+#[derive(Debug, StructOpt)]
+#[structopt(
+    name = "pcli",
+    about = "The Penumbra command-line interface.",
+    version = env!("VERGEN_GIT_SEMVER"),
+)]
+pub struct Opt {
+    /// The address of the pd+tendermint node.
+    #[structopt(short, long, default_value = "eupheme.penumbra.zone")]
+    pub node: String,
+    /// The port to use to speak to tendermint.
+    #[structopt(short, long, default_value = "26657")]
+    pub rpc_port: u16,
+    /// The port to use to speak to pd's light wallet server.
+    #[structopt(short, long, default_value = "26666")]
+    pub light_wallet_port: u16,
+    /// The port to use to speak to pd's thin wallet server.
+    #[structopt(short, long, default_value = "26667")]
+    pub thin_wallet_port: u16,
+    #[structopt(subcommand)]
+    pub cmd: Command,
+    /// The location of the wallet file [default: platform appdata directory]
+    #[structopt(short, long)]
+    pub wallet_location: Option<String>,
+}
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -230,10 +254,10 @@ async fn main() -> Result<()> {
             // Print the table (we don't get here if `show --addr-only`)
             println!("{}", table);
         }
-        Command::Balance {
+        Command::Balance(BalanceCmd {
             by_address,
             offline,
-        } => {
+        }) => {
             // Format a tally of notes as three strings: total, unspent, and pending spend. This
             // assumes that the notes are all of the same denomination, and it is called below only
             // in the places where they are.
