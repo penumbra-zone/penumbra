@@ -68,7 +68,7 @@ fn tally_format_notes<'a>(
 
 impl BalanceCmd {
     pub fn needs_sync(&self) -> bool {
-        self.offline
+        !self.offline
     }
 
     pub fn exec(&self, state: &ClientState) -> Result<()> {
