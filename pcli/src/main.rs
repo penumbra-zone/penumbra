@@ -62,37 +62,31 @@ async fn main() -> Result<()> {
         PathBuf::from,
     );
 
+    // The wallet command takes the wallet_path directly, since it may need to create the client state,
+    // so handle it specially here so that we can have common code for the other subcommands.
+    if let Command::Wallet(wallet_cmd) = &opt.cmd {
+        wallet_cmd.exec(wallet_path)?;
+        return Ok(());
+    }
+
     // Synchronize the wallet if the command requires it to be synchronized before it is run.
-    let state = if opt.cmd.needs_sync() {
-        let mut state = ClientStateFile::load(wallet_path.clone())?;
+    let mut state = ClientStateFile::load(wallet_path.clone())?;
+
+    if opt.cmd.needs_sync() {
         let light_wallet_server_uri = format!("http://{}:{}", opt.node, opt.light_wallet_port);
         let thin_wallet_server_uri = format!("http://{}:{}", opt.node, opt.thin_wallet_port);
         sync(&mut state, light_wallet_server_uri).await?;
         fetch::assets(&mut state, thin_wallet_server_uri).await?;
-        Some(state)
-    } else {
-        None
     };
 
     match &opt.cmd {
+        Command::Wallet(_) => unreachable!("wallet command already executed"),
         Command::Sync => {
             // We have already synchronized the wallet above, so we can just return.
         }
-        Command::Tx(tx_cmd) => {
-            let mut state = state.expect("state must be synchronized");
-            tx_cmd.exec(&opt, &mut state).await?
-        }
-        Command::Wallet(wallet_cmd) => wallet_cmd.exec(wallet_path)?,
-        Command::Addr(addr_cmd) => addr_cmd.exec(wallet_path)?,
-        Command::Balance(balance_cmd) => {
-            // Load the synchronized wallet state, or else load from disk if in offline mode
-            let state = if !balance_cmd.offline {
-                state.expect("state must be synchronized")
-            } else {
-                ClientStateFile::load(wallet_path)?
-            };
-            balance_cmd.exec(&state)?
-        }
+        Command::Tx(tx_cmd) => tx_cmd.exec(&opt, &mut state).await?,
+        Command::Addr(addr_cmd) => addr_cmd.exec(&mut state)?,
+        Command::Balance(balance_cmd) => balance_cmd.exec(&state)?,
     }
 
     Ok(())

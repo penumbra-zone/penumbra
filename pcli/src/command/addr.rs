@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use anyhow::Result;
 use comfy_table::{presets, Table};
 use structopt::StructOpt;
@@ -36,9 +34,7 @@ impl AddrCmd {
         }
     }
 
-    pub fn exec(&self, wallet_path: PathBuf) -> Result<()> {
-        let mut state = ClientStateFile::load(wallet_path)?;
-
+    pub fn exec(&self, state: &mut ClientStateFile) -> Result<()> {
         // Set up table (this won't be used with `show --addr-only`)
         let mut table = Table::new();
         table.load_preset(presets::NOTHING);
