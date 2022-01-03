@@ -3,11 +3,13 @@ use structopt::StructOpt;
 mod addr;
 mod balance;
 mod tx;
+mod validator;
 mod wallet;
 
 pub use addr::AddrCmd;
 pub use balance::BalanceCmd;
 pub use tx::TxCmd;
+pub use validator::ValidatorCmd;
 pub use wallet::WalletCmd;
 
 #[derive(Debug, StructOpt)]
@@ -25,6 +27,8 @@ pub enum Command {
     Sync,
     /// Displays the current wallet balance.
     Balance(BalanceCmd),
+    /// Manages a validator.
+    Validator(ValidatorCmd),
 }
 
 impl Command {
@@ -36,6 +40,7 @@ impl Command {
             Command::Addr(cmd) => cmd.needs_sync(),
             Command::Sync => true,
             Command::Balance(cmd) => cmd.needs_sync(),
+            Command::Validator(cmd) => cmd.needs_sync(),
         }
     }
 }
