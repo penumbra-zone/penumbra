@@ -83,6 +83,8 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.stake.BaseRateData", SERIALIZE),
     (".penumbra.stake.IdentityKey", SERIALIZE),
     (".penumbra.stake.IdentityKey", SERDE_TRANSPARENT),
+    (".penumbra.stake.Delegate", SERIALIZE),
+    (".penumbra.stake.Undelegate", SERIALIZE),
 ];
 
 static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
