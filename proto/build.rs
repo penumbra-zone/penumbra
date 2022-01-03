@@ -51,22 +51,9 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-// WARNING: any type attributes adding SERDE_AS **MUST** be placed **BEFORE**
-// SERIALIZE. Otherwise, serde_as is applied to the output of the derive macro
-// (unstable), rather than the other way around.
-// This is a moot point for now, since we can't use field attributes for macro reasons
-// static SERDE_AS: &str = r#"#[::serde_with::serde_as]"#;
 static SERIALIZE: &str = r#"#[derive(::serde::Deserialize, ::serde::Serialize)]"#;
-
 /// Serializes newtype structs as if the inner field were serialized on its own.
 static SERDE_TRANSPARENT: &str = r#"#[serde(transparent)]"#;
-
-// Requires SERDE_AS on the container
-// :(
-// error: expected non-macro attribute, found attribute macro `::serde_with::serde_as`
-// use tendermint-rs approach instead?
-// https://github.com/penumbra-zone/tendermint-rs/blob/master/proto/src/serializers/bytes.rs#L4-L30
-// static AS_HEX: &str = r#"#[::serde_with::serde_as(as = "::serde_with::hex::Hex")]"#;
 
 static AS_HEX: &str = r#"#[serde(with = "crate::serializers::hexstr")]"#;
 static AS_BASE64: &str = r#"#[serde(with = "crate::serializers::base64str")]"#;
@@ -74,10 +61,8 @@ static AS_BECH32_IDENTITY_KEY: &str =
     r#"#[serde(with = "crate::serializers::bech32str::validator_identity_key")]"#;
 
 static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
-    //(".penumbra.stake.Validator", SERDE_AS),
     (".penumbra.stake.Validator", SERIALIZE),
     (".penumbra.stake.FundingStream", SERIALIZE),
-    //(".penumbra.stake.ValidatorDefinition", SERDE_AS),
     (".penumbra.stake.ValidatorDefinition", SERIALIZE),
     (".penumbra.stake.RateData", SERIALIZE),
     (".penumbra.stake.BaseRateData", SERIALIZE),

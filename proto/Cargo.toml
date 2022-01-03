@@ -10,7 +10,6 @@ bytes = "1"
 prost = "0.9"
 tonic = "0.6"
 serde = { version = "1", features = ["derive"] }
-serde_with = { version = "1.11", features = ["hex"] }
 hex = "0.4"
 anyhow = "1.0"
 subtle-encoding = "0.5"
