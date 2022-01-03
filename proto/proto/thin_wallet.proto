@@ -2,6 +2,7 @@ syntax = "proto3";
 package penumbra.thin_wallet;
 
 import "transaction.proto";
+import "stake.proto";
 
 // A thin wallet service.
 // 
@@ -11,6 +12,9 @@ service ThinWallet {
   rpc TransactionByNote(TransactionByNoteRequest) returns (TransactionDetail);
   rpc AssetLookup(AssetLookupRequest) returns (Asset);
   rpc AssetList(AssetListRequest) returns (stream Asset);
+  // TODO: return ValidatorStatus?
+  rpc ValidatorInfo(stake.IdentityKey) returns (stake.ValidatorDefinition);
+  rpc ValidatorRate(ValidatorRateRequest) returns (stake.RateData);
 }
 
 // Requests an asset denom given an asset ID
@@ -37,4 +41,9 @@ message TransactionByNoteRequest {
 
 message TransactionDetail {
   bytes id = 1;
+}
+
+message ValidatorRateRequest {
+  stake.IdentityKey identity_key = 1;
+  uint64 epoch_index = 2;
 }
