@@ -1,6 +1,7 @@
 use std::convert::{TryFrom, TryInto};
 
-use penumbra_proto::{transaction, Protobuf};
+use penumbra_proto::{transaction as pb, Protobuf};
+use penumbra_stake as stake;
 
 // TODO: remove & replace w/ anyhow
 pub mod error;
@@ -16,36 +17,52 @@ pub use spend::Spend;
 pub enum Action {
     Output(output::Output),
     Spend(spend::Spend),
+    Delegate(stake::Delegate),
+    Undelegate(stake::Undelegate),
+    ValidatorDefinition(stake::ValidatorDefinition),
 }
 
-impl Protobuf<transaction::Action> for Action {}
+impl Protobuf<pb::Action> for Action {}
 
-impl From<Action> for transaction::Action {
+impl From<Action> for pb::Action {
     fn from(msg: Action) -> Self {
         match msg {
-            Action::Output(inner) => transaction::Action {
-                action: Some(transaction::action::Action::Output(inner.into())),
+            Action::Output(inner) => pb::Action {
+                action: Some(pb::action::Action::Output(inner.into())),
             },
-            Action::Spend(inner) => transaction::Action {
-                action: Some(transaction::action::Action::Spend(inner.into())),
+            Action::Spend(inner) => pb::Action {
+                action: Some(pb::action::Action::Spend(inner.into())),
+            },
+            Action::Delegate(inner) => pb::Action {
+                action: Some(pb::action::Action::Delegate(inner.into())),
+            },
+            Action::Undelegate(inner) => pb::Action {
+                action: Some(pb::action::Action::Undelegate(inner.into())),
+            },
+            Action::ValidatorDefinition(inner) => pb::Action {
+                action: Some(pb::action::Action::ValidatorDefinition(inner.into())),
             },
         }
     }
 }
 
-impl TryFrom<transaction::Action> for Action {
-    type Error = error::ProtoError;
+impl TryFrom<pb::Action> for Action {
+    type Error = anyhow::Error;
 
-    fn try_from(proto: transaction::Action) -> anyhow::Result<Self, Self::Error> {
+    fn try_from(proto: pb::Action) -> anyhow::Result<Self, Self::Error> {
         if proto.action.is_none() {
-            return Err(error::ProtoError::ActionMalformed);
+            return Err(anyhow::anyhow!("missing action content"));
         }
 
         match proto.action.unwrap() {
-            transaction::action::Action::Output(inner) => Ok(Action::Output(inner.try_into()?)),
+            pb::action::Action::Output(inner) => Ok(Action::Output(inner.try_into()?)),
 
-            transaction::action::Action::Spend(inner) => Ok(Action::Spend(inner.try_into()?)),
-            _ => todo!(),
+            pb::action::Action::Spend(inner) => Ok(Action::Spend(inner.try_into()?)),
+            pb::action::Action::Delegate(inner) => Ok(Action::Delegate(inner.try_into()?)),
+            pb::action::Action::Undelegate(inner) => Ok(Action::Undelegate(inner.try_into()?)),
+            pb::action::Action::ValidatorDefinition(inner) => {
+                Ok(Action::ValidatorDefinition(inner.try_into()?))
+            }
         }
     }
 }

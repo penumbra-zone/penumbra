@@ -114,6 +114,7 @@ impl Transaction {
                 Action::Spend(inner) => {
                     value_commitments += inner.body.value_commitment.0;
                 }
+                _ => todo!("delegation binding signature contributions??"),
             }
         }
 

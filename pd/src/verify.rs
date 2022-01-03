@@ -122,6 +122,7 @@ impl StatelessTransactionExt for Transaction {
 
                     spent_nullifiers.insert(spend.body.nullifier.clone());
                 }
+                _ => todo!("delegate transaction verification checks??"),
             }
         }
 
@@ -166,8 +167,8 @@ pub fn mark_genesis_as_verified(transaction: Transaction) -> VerifiedTransaction
                     },
                 );
             }
-            Action::Spend(_) => {
-                panic!("genesis transaction has no spends")
+            _ => {
+                panic!("genesis transaction only has outputs")
             }
         }
     }
