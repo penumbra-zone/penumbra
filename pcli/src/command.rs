@@ -2,12 +2,14 @@ use structopt::StructOpt;
 
 mod addr;
 mod balance;
+mod stake;
 mod tx;
 mod validator;
 mod wallet;
 
 pub use addr::AddrCmd;
 pub use balance::BalanceCmd;
+pub use stake::StakeCmd;
 pub use tx::TxCmd;
 pub use validator::ValidatorCmd;
 pub use wallet::WalletCmd;
@@ -29,6 +31,8 @@ pub enum Command {
     Balance(BalanceCmd),
     /// Manages a validator.
     Validator(ValidatorCmd),
+    /// Manages delegations and undelegations.
+    Stake(StakeCmd),
 }
 
 impl Command {
@@ -41,6 +45,7 @@ impl Command {
             Command::Sync => true,
             Command::Balance(cmd) => cmd.needs_sync(),
             Command::Validator(cmd) => cmd.needs_sync(),
+            Command::Stake(cmd) => cmd.needs_sync(),
         }
     }
 }

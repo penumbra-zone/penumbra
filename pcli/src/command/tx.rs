@@ -19,7 +19,7 @@ pub enum TxCmd {
         fee: u64,
         /// Optional. Only spend funds originally received by the given address index.
         #[structopt(long)]
-        from: Option<u64>,
+        source: Option<u64>,
         /// Optional. Set the transaction's memo field to the provided text.
         #[structopt(long)]
         memo: Option<String>,
@@ -40,7 +40,7 @@ impl TxCmd {
                 values,
                 to,
                 fee,
-                from,
+                source: from,
                 memo,
             } => {
                 // Parse all of the values provided.
