@@ -14,6 +14,12 @@ pub struct Undelegate {
     pub epoch_index: u64,
     /// The amount to undelegate, in units of unbonded stake.
     pub unbonded_amount: u64,
+    /// The amount of delegation tokens produced by this action.
+    ///
+    /// This is implied by the validator's exchange rate in the specified epoch
+    /// (and should be checked in transaction validation!), but including it allows
+    /// stateless verification that the transaction is internally consistent.
+    pub delegation_amount: u64,
 }
 
 impl Protobuf<pb::Undelegate> for Undelegate {}
@@ -24,6 +30,7 @@ impl From<Undelegate> for pb::Undelegate {
             validator_identity: Some(d.validator_identity.into()),
             epoch_index: d.epoch_index,
             unbonded_amount: d.unbonded_amount,
+            delegation_amount: d.delegation_amount,
         }
     }
 }
@@ -38,6 +45,7 @@ impl TryFrom<pb::Undelegate> for Undelegate {
                 .try_into()?,
             epoch_index: d.epoch_index,
             unbonded_amount: d.unbonded_amount,
+            delegation_amount: d.delegation_amount,
         })
     }
 }

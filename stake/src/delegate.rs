@@ -15,6 +15,12 @@ pub struct Delegate {
     /// The delegation amount, in units of unbonded stake.
     /// TODO: use flow aggregation to hide this, replacing it with bytes amount_ciphertext;
     pub unbonded_amount: u64,
+    /// The amount of delegation tokens produced by this action.
+    ///
+    /// This is implied by the validator's exchange rate in the specified epoch
+    /// (and should be checked in transaction validation!), but including it allows
+    /// stateless verification that the transaction is internally consistent.
+    pub delegation_amount: u64,
 }
 
 impl Protobuf<pb::Delegate> for Delegate {}
@@ -25,6 +31,7 @@ impl From<Delegate> for pb::Delegate {
             validator_identity: Some(d.validator_identity.into()),
             epoch_index: d.epoch_index,
             unbonded_amount: d.unbonded_amount,
+            delegation_amount: d.delegation_amount,
         }
     }
 }
@@ -39,6 +46,7 @@ impl TryFrom<pb::Delegate> for Delegate {
                 .try_into()?,
             epoch_index: d.epoch_index,
             unbonded_amount: d.unbonded_amount,
+            delegation_amount: d.delegation_amount,
         })
     }
 }
