@@ -155,6 +155,7 @@ async fn main() -> anyhow::Result<()> {
         }
         Command::CreateGenesisTemplate => {
             use penumbra_crypto::keys::SpendKey;
+            use penumbra_stake::IdentityKey;
 
             // Use this to make up some addresses
             let sk = SpendKey::generate(OsRng);
@@ -191,7 +192,7 @@ async fn main() -> anyhow::Result<()> {
                 validators: vec![
                     genesis::ValidatorPower {
                         validator: Validator {
-                            identity_key: validator_id_vk,
+                            identity_key: IdentityKey(validator_id_vk),
                             consensus_key: validator_cons_pk,
                             name: "Testnet Validator (Change Me!)".to_string(),
                             website: "https://example.com".to_string(),

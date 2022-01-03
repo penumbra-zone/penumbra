@@ -1,11 +1,16 @@
 syntax = "proto3";
 package penumbra.stake;
 
+// A validator's identity key (decaf377-rdsa spendauth verification key).
+message IdentityKey {
+  bytes ik = 1;
+}
+
 // Describes a validator's configuration data.
 message Validator {
-  // The validator's identity verification key (decaf377-rdsa spendauth)
-  bytes identity_key = 1;
-  // The validator's consensus verification key (Ed25519)
+  // The validator's identity verification key.
+  IdentityKey identity_key = 1;
+  // The validator's consensus pubkey for use in Tendermint (Ed25519).
   bytes consensus_key = 2;
   // The validator's (human-readable) name.
   string name = 3;
@@ -32,7 +37,7 @@ message FundingStream {
 
 // Describes the reward and exchange rates and voting power for a validator in some epoch.
 message RateData {
-  bytes identity_key = 1;
+  IdentityKey identity_key = 1;
   uint64 epoch_index = 2;
   uint64 voting_power = 3;
   uint64 validator_reward_rate = 4;
@@ -57,7 +62,7 @@ message ValidatorDefinition {
 // A transaction action delegating stake to a validator's delegation pool.
 message Delegate {
   // The identity key of the validator to delegate to.
-  bytes validator_identity = 1;
+  IdentityKey validator_identity = 1;
   // The index of the epoch in which this delegation was performed.
   // The delegation takes effect in the next epoch.
   uint64 epoch_index = 2;
@@ -69,7 +74,7 @@ message Delegate {
 // A transaction action undelegating stake from a validator's delegation pool.
 message Undelegate {
   // The identity key of the validator to undelegate from.
-  bytes validator_identity = 1;
+  IdentityKey validator_identity = 1;
   // The index of the epoch in which this undelegation was performed.
   uint64 epoch_index = 2;
   // The amount to undelegate, in units of unbonded stake.

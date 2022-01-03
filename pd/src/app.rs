@@ -386,7 +386,7 @@ impl App {
                 };
 
                 let next_rates = current_rates
-                    .iter()
+                    .into_iter()
                     .map(|current_rate| {
                         // TODO (hdevalence) use funding streams here, this ignores funding streams
                         let validator_reward_rate = base_reward_rate; // (minus fs term)

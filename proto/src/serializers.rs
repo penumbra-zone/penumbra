@@ -7,3 +7,5 @@
 pub mod hexstr;
 
 pub mod base64str;
+
+pub mod bech32str;
