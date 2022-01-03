@@ -2,10 +2,18 @@ use penumbra_crypto::rdsa::{SpendAuth, VerificationKey};
 use penumbra_proto::{serializers::bech32str, stake as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
+use crate::DelegationToken;
+
 /// A [`SpendAuth`] [`VerificationKey`] used as a validator's identity key.
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "pb::IdentityKey", into = "pb::IdentityKey")]
 pub struct IdentityKey(pub VerificationKey<SpendAuth>);
+
+impl IdentityKey {
+    pub fn delegation_token(&self) -> DelegationToken {
+        DelegationToken::new(self.clone())
+    }
+}
 
 impl std::str::FromStr for IdentityKey {
     type Err = anyhow::Error;
