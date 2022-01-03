@@ -510,7 +510,7 @@ impl Service<Request> for App {
                     // nullifiers, until we can use ABCI++ and control block
                     // proposals, at which point check_tx can run concurrently.
                     let rsp = self.check_tx(check_tx);
-                    let rsp = self.sequencer.execute(rsp);
+                    let rsp = self.sequencer.execute(rsp.instrument(Span::current()));
                     return async move {
                         let rsp = rsp.await;
                         tracing::info!(?rsp);
@@ -530,7 +530,7 @@ impl Service<Request> for App {
                 Request::DeliverTx(deliver_tx) => {
                     // Process DeliverTx messages sequentially.
                     let rsp = self.deliver_tx(deliver_tx.tx);
-                    let rsp = self.sequencer.execute(rsp);
+                    let rsp = self.sequencer.execute(rsp.instrument(Span::current()));
                     return async move {
                         let rsp = rsp.await;
                         tracing::info!(?rsp);
@@ -550,17 +550,14 @@ impl Service<Request> for App {
                     let rsp = self.end_block(end);
                     return self
                         .sequencer
-                        .execute(rsp)
-                        // TODO: (@hdevalence): why doesn't this span attach to the inner future?
-                        .instrument(Span::current())
+                        .execute(rsp.instrument(Span::current()))
                         .boxed();
                 }
                 Request::Commit => {
                     let rsp = self.commit();
                     return self
                         .sequencer
-                        .execute(rsp)
-                        .instrument(Span::current())
+                        .execute(rsp.instrument(Span::current()))
                         .boxed();
                 }
 
@@ -569,8 +566,7 @@ impl Service<Request> for App {
                     let rsp = self.init_genesis(init_chain);
                     return self
                         .sequencer
-                        .execute(rsp)
-                        .instrument(Span::current())
+                        .execute(rsp.instrument(Span::current()))
                         .boxed();
                 }
 

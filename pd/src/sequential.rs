@@ -21,7 +21,11 @@ pub struct Sequencer {
 }
 
 impl Sequencer {
-    /// Execute the given future.
+    /// Execute the given future on a new task.
+    ///
+    /// Spans attached to the future *returned* by `execute` do not propagate to
+    /// the executed future, so the input `fut` should be `.instrument`ed if
+    /// that's desired.
     ///
     /// This function must only be called after `self.poll_ready()` returns
     /// `Poll::Ready`.  After it is called, `self.poll_ready()` will not return
@@ -34,8 +38,6 @@ impl Sequencer {
         let (tx, rx) = oneshot::channel();
         self.waiting = true;
         self.completion.set(rx);
-
-        // TODO: (@hdevalence) how do we propagate spans here?
 
         async move {
             // Spawn a new task to ensure the future is driven to completion.
