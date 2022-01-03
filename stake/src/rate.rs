@@ -1,13 +1,14 @@
-use penumbra_crypto::rdsa::{SpendAuth, VerificationKey};
 use penumbra_proto::{stake as pb, Protobuf};
 use serde::{Deserialize, Serialize};
+
+use crate::IdentityKey;
 
 /// Describes a validator's reward rate and voting power in some epoch.
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::RateData", into = "pb::RateData")]
 pub struct RateData {
-    /// The validator's identity verification key.
-    pub identity_key: VerificationKey<SpendAuth>,
+    /// The validator's identity key.
+    pub identity_key: IdentityKey,
     /// The index of the epoch for which this rate is valid.
     pub epoch_index: u64,
     /// The validator's voting power.
@@ -35,7 +36,7 @@ impl Protobuf<pb::RateData> for RateData {}
 impl From<RateData> for pb::RateData {
     fn from(v: RateData) -> Self {
         pb::RateData {
-            identity_key: v.identity_key.to_bytes().to_vec(),
+            identity_key: Some(v.identity_key.into()),
             epoch_index: v.epoch_index,
             voting_power: v.voting_power,
             validator_reward_rate: v.validator_reward_rate,
@@ -48,7 +49,10 @@ impl TryFrom<pb::RateData> for RateData {
     type Error = anyhow::Error;
     fn try_from(v: pb::RateData) -> Result<Self, Self::Error> {
         Ok(RateData {
-            identity_key: v.identity_key.as_slice().try_into()?,
+            identity_key: v
+                .identity_key
+                .ok_or_else(|| anyhow::anyhow!("missing identity key"))?
+                .try_into()?,
             epoch_index: v.epoch_index,
             voting_power: v.voting_power,
             validator_reward_rate: v.validator_reward_rate,

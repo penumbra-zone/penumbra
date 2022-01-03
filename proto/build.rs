@@ -58,6 +58,9 @@ fn main() -> Result<()> {
 // static SERDE_AS: &str = r#"#[::serde_with::serde_as]"#;
 static SERIALIZE: &str = r#"#[derive(::serde::Deserialize, ::serde::Serialize)]"#;
 
+/// Serializes newtype structs as if the inner field were serialized on its own.
+static SERDE_TRANSPARENT: &str = r#"#[serde(transparent)]"#;
+
 // Requires SERDE_AS on the container
 // :(
 // error: expected non-macro attribute, found attribute macro `::serde_with::serde_as`
@@ -67,6 +70,8 @@ static SERIALIZE: &str = r#"#[derive(::serde::Deserialize, ::serde::Serialize)]"
 
 static AS_HEX: &str = r#"#[serde(with = "crate::serializers::hexstr")]"#;
 static AS_BASE64: &str = r#"#[serde(with = "crate::serializers::base64str")]"#;
+static AS_BECH32_IDENTITY_KEY: &str =
+    r#"#[serde(with = "crate::serializers::bech32str::validator_identity_key")]"#;
 
 static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     //(".penumbra.stake.Validator", SERDE_AS),
@@ -76,14 +81,14 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.stake.ValidatorDefinition", SERIALIZE),
     (".penumbra.stake.RateData", SERIALIZE),
     (".penumbra.stake.BaseRateData", SERIALIZE),
+    (".penumbra.stake.IdentityKey", SERIALIZE),
+    (".penumbra.stake.IdentityKey", SERDE_TRANSPARENT),
 ];
 
 static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
-    // TODO: use bech32 here?
-    (".penumbra.stake.Validator.identity_key", AS_HEX),
     // Using base64 for the validator's consensus key means that
     // the format is the same as the Tendermint json config files.
     (".penumbra.stake.Validator.consensus_key", AS_BASE64),
     (".penumbra.stake.ValidatorDefinition.auth_sig", AS_HEX),
-    (".penumbra.stake.RateData.identity_key", AS_HEX),
+    (".penumbra.stake.IdentityKey.ik", AS_BECH32_IDENTITY_KEY),
 ];

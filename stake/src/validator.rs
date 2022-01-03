@@ -1,8 +1,8 @@
-use penumbra_crypto::rdsa::{Signature, SpendAuth, VerificationKey};
+use penumbra_crypto::rdsa::{Signature, SpendAuth};
 use penumbra_proto::{stake as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
-use crate::FundingStream;
+use crate::{FundingStream, IdentityKey};
 
 /// Describes a Penumbra validator's configuration data.
 ///
@@ -12,7 +12,7 @@ use crate::FundingStream;
 #[serde(try_from = "pb::Validator", into = "pb::Validator")]
 pub struct Validator {
     /// The validator's identity verification key.
-    pub identity_key: VerificationKey<SpendAuth>,
+    pub identity_key: IdentityKey,
 
     /// The validator's consensus key, used by Tendermint for signing blocks and
     /// other consensus operations.
@@ -57,7 +57,7 @@ impl Protobuf<pb::Validator> for Validator {}
 impl From<Validator> for pb::Validator {
     fn from(v: Validator) -> Self {
         pb::Validator {
-            identity_key: v.identity_key.to_bytes().to_vec(),
+            identity_key: Some(v.identity_key.into()),
             consensus_key: v.consensus_key.to_bytes(),
             name: v.name,
             website: v.website,
@@ -72,7 +72,10 @@ impl TryFrom<pb::Validator> for Validator {
     type Error = anyhow::Error;
     fn try_from(v: pb::Validator) -> Result<Self, Self::Error> {
         Ok(Validator {
-            identity_key: v.identity_key.as_slice().try_into()?,
+            identity_key: v
+                .identity_key
+                .ok_or_else(|| anyhow::anyhow!("missing identity key"))?
+                .try_into()?,
             consensus_key: tendermint::PublicKey::from_raw_ed25519(&v.consensus_key)
                 .ok_or_else(|| anyhow::anyhow!("invalid ed25519 consensus pubkey"))?,
             name: v.name,

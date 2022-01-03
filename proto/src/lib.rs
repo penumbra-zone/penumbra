@@ -17,7 +17,8 @@
 
 pub use prost::Message;
 
-mod serializers;
+/// Helper methods used for shaping the JSON (and other Serde) formats derived from the protos.
+pub mod serializers;
 
 mod protobuf;
 pub use protobuf::Protobuf;

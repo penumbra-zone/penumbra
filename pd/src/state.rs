@@ -12,7 +12,7 @@ use penumbra_proto::{
     thin_wallet::{Asset, TransactionDetail},
     Protobuf,
 };
-use penumbra_stake::{BaseRateData, FundingStream, RateData};
+use penumbra_stake::{BaseRateData, FundingStream, IdentityKey, RateData};
 use sqlx::{postgres::PgPoolOptions, query, query_as, Pool, Postgres};
 use tendermint::block;
 use tracing::instrument;
@@ -71,7 +71,7 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
                     sequence_number, 
                     validator_data
                 ) VALUES ($1, $2, $3, $4)",
-                validator.identity_key.to_bytes().to_vec(),
+                validator.identity_key.encode_to_vec(),
                 validator.consensus_key.to_bytes(),
                 validator.sequence_number as i64,
                 validator.encode_to_vec(),
@@ -86,7 +86,7 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
                         address, 
                         rate_bps
                     ) VALUES ($1, $2, $3)",
-                    validator.identity_key.to_bytes().to_vec(),
+                    validator.identity_key.encode_to_vec(),
                     address.to_string(),
                     *rate_bps as i32,
                 )
@@ -106,7 +106,7 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
                     validator_reward_rate,
                     validator_exchange_rate
                 ) VALUES ($1, $2, $3, $4, $5)",
-                validator.identity_key.to_bytes().to_vec(),
+                validator.identity_key.encode_to_vec(),
                 0,
                 power.value() as i64,
                 0,
@@ -206,7 +206,7 @@ ON CONFLICT (id) DO UPDATE SET data = $1
             for rate in rate_data {
                 query!(
                     "INSERT INTO validator_rates VALUES ($1, $2, $3, $4, $5)",
-                    rate.identity_key.to_bytes().to_vec(),
+                    rate.identity_key.encode_to_vec(),
                     rate.epoch_index as i64,
                     rate.voting_power as i64,
                     rate.validator_reward_rate as i64,
@@ -359,10 +359,7 @@ ON CONFLICT (id) DO UPDATE SET data = $1
             .into_iter()
             // this does conversions manually rather than using query_as because of i64/u64 casting
             .map(|row| RateData {
-                identity_key: row
-                    .identity_key
-                    .as_slice()
-                    .try_into()
+                identity_key: IdentityKey::decode(row.identity_key.as_slice())
                     .expect("db data is valid"),
                 epoch_index: row.epoch as u64,
                 voting_power: row.voting_power as u64,
