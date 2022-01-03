@@ -2,12 +2,14 @@ use std::pin::Pin;
 
 use futures::stream::{StreamExt, TryStreamExt};
 use penumbra_proto::{
+    self as proto,
     light_wallet::{light_wallet_server::LightWallet, CompactBlock, CompactBlockRangeRequest},
     thin_wallet::{
         thin_wallet_server::ThinWallet, Asset, AssetListRequest, AssetLookupRequest,
-        TransactionByNoteRequest, TransactionDetail,
+        TransactionByNoteRequest, TransactionDetail, ValidatorRateRequest,
     },
 };
+use penumbra_stake::IdentityKey;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::Status;
@@ -124,5 +126,39 @@ impl ThinWallet for State {
         );
 
         Ok(tonic::Response::new(Self::AssetListStream::new(rx)))
+    }
+
+    #[instrument(skip(self, request))]
+    async fn validator_info(
+        &self,
+        request: tonic::Request<proto::stake::IdentityKey>,
+    ) -> Result<tonic::Response<proto::stake::ValidatorDefinition>, Status> {
+        todo!()
+    }
+
+    #[instrument(skip(self, request))]
+    async fn validator_rate(
+        &self,
+        request: tonic::Request<ValidatorRateRequest>,
+    ) -> Result<tonic::Response<proto::stake::RateData>, Status> {
+        let request = request.into_inner();
+        let rates = self
+            .rate_data(request.epoch_index)
+            .await
+            .map_err(|e| tonic::Status::internal(e.to_string()))?;
+
+        let identity_key = IdentityKey::try_from(
+            request
+                .identity_key
+                .ok_or_else(|| tonic::Status::invalid_argument("missing identity key"))?,
+        )
+        .map_err(|_| tonic::Status::invalid_argument("invalid identity key"))?;
+
+        let rate = rates
+            .into_iter()
+            .find(|data| data.identity_key == identity_key)
+            .ok_or_else(|| tonic::Status::not_found("validator not found"))?;
+
+        Ok(tonic::Response::new(rate.into()))
     }
 }
