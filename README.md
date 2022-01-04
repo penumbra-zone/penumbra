@@ -34,25 +34,49 @@ delegation](https://penumbra.zone/technology/stake).
 ### Building `pcli`
 
 To get started with the Penumbra test network, you will first need to download and build the
-Penumbra command line light wallet, `pcli`. This requires that you install a recent stable version
-of the Rust compiler, installation instructions for which you can find
-[here](https://www.rust-lang.org/learn/get-started).
+Penumbra command line light wallet, `pcli`.
 
-Once you have installed Rust and its build tool `cargo`, you can clone the repository:
+#### Installing the Rust toolchain
+
+This requires that you install a recent stable version
+of the Rust compiler, installation instructions for which you can find
+[here](https://www.rust-lang.org/learn/get-started). Don't forget to reload your shell so that
+`cargo` is available in your `$PATH`!
+
+#### Installing build prerequisites
+
+**On Linux:** you may need to install some additional packages in order to build `pcli`,
+depending on your distribution. For a bare-bones Ubuntu installation, you can run:
+
+```bash
+sudo apt-get install build-essential pkg-config libssl-dev
+```
+
+**On macOS:** you may need to install the command-line developer tools if you have never done so:
+
+```bash
+xcode-select --install
+```
+
+#### Cloning the repository
+
+Once you have installed the above tools, you can clone the repository:
 
 ```bash
 git clone https://github.com/penumbra-zone/penumbra
 ```
 
+#### Building the `pcli` wallet software
+
 Then, build the `pcli` tool using `cargo`:
 
 ```bash
-cargo build --release --bin pcli
+cd penumbra && cargo build --release --bin pcli
 ```
 
 ### Generating your wallet
 
-When working with `pcli`, the level of diagnostic information printed is dependent on the `RUST_LOG`
+**Hint:** When working with `pcli`, the level of diagnostic information printed is dependent on the `RUST_LOG`
 environment variable. To see progress updates and other logged information while running `pcli`, we
 recommend you set `export RUST_LOG=info` in your terminal.
 
