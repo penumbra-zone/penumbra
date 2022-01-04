@@ -59,6 +59,13 @@ message ValidatorDefinition {
   bytes auth_sig = 2;
 }
 
+// Describes the current state of a validator on-chain
+message ValidatorStatus {
+  Validator validator = 1;
+  uint64 voting_power = 2;
+  // ... ?
+}
+
 // A transaction action adding stake to a validator's delegation pool.
 message Delegate {
   // The identity key of the validator to delegate to.
