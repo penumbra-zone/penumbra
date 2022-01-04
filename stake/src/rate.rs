@@ -4,7 +4,7 @@ use penumbra_proto::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{Epoch, FundingStream, IdentityKey};
+use crate::{FundingStream, IdentityKey};
 
 /// FIXME: set this less arbitrarily, and allow this to be set per-epoch
 /// 3bps -> 11% return over 365 epochs, why not
@@ -94,6 +94,26 @@ impl BaseRateData {
             base_reward_rate: BASE_REWARD_RATE,
             epoch_index: self.epoch_index + 1,
         };
+    }
+}
+
+impl RateData {
+    /// Computes the amount of delegation tokens corresponding to the given amount of unbonded stake.
+    pub fn delegation_amount(&self, unbonded_amount: u64) -> u64 {
+        // validator_exchange_rate fits in 32 bits, but unbonded_amount is 64-bit;
+        // upconvert to u128 intermediates and panic if the result is too large (unlikely)
+        ((unbonded_amount as u128 * 1_0000_0000) / self.validator_exchange_rate as u128)
+            .try_into()
+            .unwrap()
+    }
+
+    /// Computes the amount of unbonded stake corresponding to the given amount of delegation tokens
+    pub fn unbonded_amount(&self, delegation_amount: u64) -> u64 {
+        // validator_exchange_rate fits in 32 bits, but unbonded_amount is 64-bit;
+        // upconvert to u128 intermediates and panic if the result is too large (unlikely)
+        ((delegation_amount as u128 * self.validator_exchange_rate as u128) / 1_0000_0000)
+            .try_into()
+            .unwrap()
     }
 }
 
