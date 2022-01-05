@@ -6,10 +6,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::{FundingStream, IdentityKey};
 
-/// FIXME: set this less arbitrarily, and allow this to be set per-epoch
-/// 3bps -> 11% return over 365 epochs, why not
-const BASE_REWARD_RATE: u64 = 3_0000;
-
 /// Describes a validator's reward rate and voting power in some epoch.
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::RateData", into = "pb::RateData")]
@@ -27,7 +23,8 @@ pub struct RateData {
 }
 
 impl RateData {
-    pub fn next_rates(
+    /// Compute the validator rate data for the epoch following the current one.
+    pub fn next(
         &self,
         base_rate_data: &BaseRateData,
         funding_streams: Vec<FundingStream>,
@@ -46,8 +43,9 @@ impl RateData {
 
         // compute next validator reward rate
         // 1 bps = 1e-4, so here we group digits by 4s rather than 3s as is usual
-        let validator_reward_rate =
-            ((1_0000_0000u64 - (commission_rate_bps * 1_0000)) * BASE_REWARD_RATE) / 1_0000_0000;
+        let validator_reward_rate = ((1_0000_0000u64 - (commission_rate_bps * 1_0000))
+            * base_rate_data.base_reward_rate)
+            / 1_0000_0000;
 
         // compute validator exchange rate
         let validator_exchange_rate = (self.validator_exchange_rate
@@ -84,14 +82,14 @@ pub struct BaseRateData {
 }
 
 impl BaseRateData {
-    /// compute the next base exchange rate, epoch index, and base reward rate based on the current
-    /// rates and the supplied Epoch.
-    pub fn next_base_rate(&self) -> BaseRateData {
+    /// Compute the base rate data for the epoch following the current one,
+    /// given the next epoch's base reward rate.
+    pub fn next(&self, base_reward_rate: u64) -> BaseRateData {
         let base_exchange_rate =
-            (self.base_exchange_rate * (BASE_REWARD_RATE + 1_0000_0000)) / 1_0000_0000;
+            (self.base_exchange_rate * (base_reward_rate + 1_0000_0000)) / 1_0000_0000;
         return BaseRateData {
             base_exchange_rate,
-            base_reward_rate: BASE_REWARD_RATE,
+            base_reward_rate,
             epoch_index: self.epoch_index + 1,
         };
     }
