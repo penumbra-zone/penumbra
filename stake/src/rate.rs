@@ -36,7 +36,7 @@ impl RateData {
         let commission_rate_bps = funding_streams
             .iter()
             .fold(0u64, |total, stream| total + stream.rate_bps as u64);
-        
+
         if commission_rate_bps > 1_0000 {
             // we should never hit this branch: validator funding streams should be verified not to
             // sum past 100% in the state machine's validation of registration of new funding

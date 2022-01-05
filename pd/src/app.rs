@@ -368,8 +368,7 @@ impl App {
                     tracing::debug!(?current_rate);
                 }
 
-                // here's where we should compute updated rates (moved from state code)
-                // TODO @ava insert calls here
+                // compute updated rates
                 let next_base_rate = current_base_rate.next_base_rate();
 
                 let mut next_rates = Vec::new();
