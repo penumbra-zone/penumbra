@@ -4,7 +4,7 @@ use penumbra_proto::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{Epoch, IdentityKey, FundingStream};
+use crate::{Epoch, FundingStream, IdentityKey};
 
 /// FIXME: set this less arbitrarily, and allow this to be set per-epoch
 /// 3bps -> 11% return over 365 epochs, why not
@@ -49,7 +49,7 @@ impl RateData {
 
         // this is supposed to be multiplied by the number of delegation tokens,
         // how do we track that?
-        // 
+        //
         // todo: consider specifying the voting power function as a pure function of current epoch
         // state (delegation tokens, etc) instead of an adjustmenet function
         let voting_power_adjustment =
