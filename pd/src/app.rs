@@ -368,8 +368,11 @@ impl App {
                     tracing::debug!(?current_rate);
                 }
 
-                // compute updated rates
-                let next_base_rate = current_base_rate.next_base_rate();
+                /// FIXME: set this less arbitrarily, and allow this to be set per-epoch
+                /// 3bps -> 11% return over 365 epochs, why not
+                const BASE_REWARD_RATE: u64 = 3_0000;
+
+                let next_base_rate = current_base_rate.next(BASE_REWARD_RATE);
 
                 let mut next_rates = Vec::new();
                 for current_rate in &current_rates {
@@ -377,7 +380,7 @@ impl App {
                         .funding_streams(current_rate.identity_key.clone())
                         .await?;
 
-                    next_rates.push(current_rate.next_rates(&next_base_rate, funding_streams));
+                    next_rates.push(current_rate.next(&next_base_rate, funding_streams));
                 }
 
                 tracing::debug!(?next_base_rate);
