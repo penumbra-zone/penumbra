@@ -14,7 +14,6 @@ use penumbra_crypto::{
     merkle::{self, NoteCommitmentTree, TreeExt},
     note, Nullifier,
 };
-use penumbra_stake::{BaseRateData, RateData};
 use penumbra_transaction::Transaction;
 use tendermint::abci::{
     request::{self, BeginBlock, CheckTxKind, EndBlock},
@@ -370,45 +369,17 @@ impl App {
                 }
 
                 // here's where we should compute updated rates (moved from state code)
-                // TODO @ava insert calls here
+                // TODO @ava insert calls here                let base_reward_rate = 3_0000; // 3bps -> 11% return over 365 epochs, why not
+                let next_base_rate = current_base_rate.next_base_rate();
 
-                // move below into calls to methods in stake crate?
+                let mut next_rates = Vec::new();
+                for current_rate in &current_rates {
+                    let funding_streams = state
+                        .funding_streams(current_rate.identity_key.clone())
+                        .await?;
 
-                // 1 bps = 1e-4, so here we group digits by 4s rather than 3s as is usual
-                let base_reward_rate = 3_0000; // 3bps -> 11% return over 365 epochs, why not
-                let base_exchange_rate = (current_base_rate.base_exchange_rate
-                    * (base_reward_rate + 1_0000_0000))
-                    / 1_0000_0000;
-                let next_base_rate = BaseRateData {
-                    base_exchange_rate,
-                    base_reward_rate,
-                    epoch_index: epoch.index + 1,
-                };
-
-                let next_rates = current_rates
-                    .into_iter()
-                    .map(|current_rate| {
-                        // TODO (hdevalence) use funding streams here, this ignores funding streams
-                        let validator_reward_rate = base_reward_rate; // (minus fs term)
-                        let validator_exchange_rate = (current_rate.validator_exchange_rate
-                            * (validator_reward_rate + 1_0000_0000))
-                            / 1_0000_0000;
-
-                        // this is supposed to be multiplied by the number of delegation tokens,
-                        // how do we track that?
-                        let _voting_power_adjustment =
-                            (validator_exchange_rate * 1_0000_0000) / base_exchange_rate;
-
-                        RateData {
-                            identity_key: current_rate.identity_key,
-                            epoch_index: epoch.index + 1,
-                            // TODO: update this as we track the delegations
-                            voting_power: current_rate.voting_power,
-                            validator_exchange_rate,
-                            validator_reward_rate,
-                        }
-                    })
-                    .collect();
+                    next_rates.push(current_rate.next_rates(&next_base_rate, funding_streams));
+                }
 
                 tracing::debug!(?next_base_rate);
                 for next_rate in &next_rates {
@@ -416,11 +387,7 @@ impl App {
                 }
 
                 pending_block.lock().unwrap().next_rates = Some(next_rates);
-                pending_block.lock().unwrap().next_base_rate = Some(BaseRateData {
-                    epoch_index: epoch.index + 1,
-                    base_reward_rate,
-                    base_exchange_rate,
-                });
+                pending_block.lock().unwrap().next_base_rate = Some(next_base_rate);
             }
 
             // TODO: if necessary, set the EndBlock response to add validators
