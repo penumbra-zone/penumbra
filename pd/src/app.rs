@@ -369,7 +369,7 @@ impl App {
                 }
 
                 // here's where we should compute updated rates (moved from state code)
-                // TODO @ava insert calls here                let base_reward_rate = 3_0000; // 3bps -> 11% return over 365 epochs, why not
+                // TODO @ava insert calls here
                 let next_base_rate = current_base_rate.next_base_rate();
 
                 let mut next_rates = Vec::new();
