@@ -21,10 +21,12 @@ COPY pd/build.rs ./pd
 # TODO If the protobuf definitions, crypto, or wallet implementations change,
 # there will be a complete rebuild. This is maybe possible to avoid.
 COPY proto ./proto
+COPY chain ./chain
 COPY crypto ./crypto
 COPY stake ./stake
 COPY decaf377-fmd ./decaf377-fmd
 COPY decaf377-ka ./decaf377-ka
+COPY transaction ./transaction
 COPY wallet ./wallet
 COPY .git ./.git
 # Sorry about all that mess ^, but it's worth it during development.

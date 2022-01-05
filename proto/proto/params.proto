@@ -1,0 +1,10 @@
+syntax = "proto3";
+package penumbra.params;
+
+// Global chain configuration data, such as chain ID, epoch duration, etc.
+message ChainParams {
+  // The identifier of the chain.
+  string chain_id = 1;
+  // The transaction fee.
+  uint64 epoch_duration = 2;
+}
