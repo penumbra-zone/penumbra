@@ -5,7 +5,7 @@ use async_stream::try_stream;
 use futures::stream::{Stream, StreamExt};
 use penumbra_crypto::{
     merkle::{self, NoteCommitmentTree, TreeExt},
-    Nullifier,
+    Address, Nullifier,
 };
 use penumbra_proto::{
     light_wallet::{CompactBlock, StateFragment},
@@ -367,6 +367,31 @@ ON CONFLICT (id) DO UPDATE SET data = $1
                 validator_reward_rate: row.validator_reward_rate as u64,
             })
             .collect())
+    }
+
+    pub async fn funding_streams(
+        &self,
+        validator_identity_key: IdentityKey,
+    ) -> Result<Vec<FundingStream>> {
+        let mut conn = self.pool.acquire().await?;
+        let rows = query!(
+            "SELECT * from validator_fundingstreams WHERE identity_key = $1",
+            validator_identity_key.encode_to_vec(),
+        )
+        .fetch_all(&mut conn)
+        .await?;
+
+        let mut streams = Vec::new();
+        for row in rows.into_iter() {
+            let addr = row.address.parse::<Address>()?;
+
+            streams.push(FundingStream {
+                address: addr,
+                rate_bps: row.rate_bps.try_into()?,
+            })
+        }
+
+        Ok(streams)
     }
 
     /// Retrieve a stream of [`CompactBlock`]s for the given (inclusive) range.
