@@ -36,6 +36,13 @@ impl RateData {
         let commission_rate_bps = funding_streams
             .iter()
             .fold(0u64, |total, stream| total + stream.rate_bps as u64);
+        
+        if commission_rate_bps > 1_0000 {
+            // we should never hit this branch: validator funding streams should be verified not to
+            // sum past 100% in the state machine's validation of registration of new funding
+            // streams
+            panic!("commission rate sums to > 100%")
+        }
 
         // compute next validator reward rate
         // 1 bps = 1e-4, so here we group digits by 4s rather than 3s as is usual
