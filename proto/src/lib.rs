@@ -43,6 +43,11 @@ pub mod thin_wallet {
     tonic::include_proto!("penumbra.thin_wallet");
 }
 
+/// Chain parameter protocol structures.
+pub mod params {
+    tonic::include_proto!("penumbra.params");
+}
+
 pub mod sighash {
     include!(concat!(env!("OUT_DIR"), "/penumbra.sighash.rs"));
 

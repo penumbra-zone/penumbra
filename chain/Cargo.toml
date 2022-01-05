@@ -1,0 +1,8 @@
+[package]
+name = "penumbra-chain"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Workspace dependencies
+penumbra-proto = { path = "../proto" }
