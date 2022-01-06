@@ -42,6 +42,7 @@ jobs:
           cargo doc --no-deps \
             -p tendermint \
             -p incrementalmerkletree \
+            -p penumbra-jellyfish-merkle \
             -p ark-ff \
             -p ark-serialize \
             -p ark-sponge \
@@ -53,6 +54,7 @@ jobs:
             -p penumbra-proto \
             -p penumbra-crypto \
             -p penumbra-stake \
+            -p penumbra-chain \
             -p penumbra-transaction \
             -p penumbra-wallet \
             -p pd \
