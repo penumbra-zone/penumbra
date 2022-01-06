@@ -8,6 +8,8 @@ pub use incrementalmerkletree::{
     Altitude, Frontier, Hashable, Position, Recording, Tree,
 };
 use once_cell::sync::Lazy;
+use penumbra_proto::crypto as pb;
+use serde::{Deserialize, Serialize};
 
 use crate::note;
 
@@ -22,8 +24,39 @@ pub static MERKLE_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
 // Return value from `Tree::authentication_path(value: &note::Commitment)`
 pub type Path = (Position, Vec<note::Commitment>);
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "pb::MerkleRoot", into = "pb::MerkleRoot")]
 pub struct Root(pub Fq);
+
+impl jmt::Value for Root {}
+
+impl jmt::hash::CryptoHash for Root {
+    type Hasher = jmt::hash::TestOnlyHasher;
+
+    fn hash(&self) -> jmt::hash::HashValue {
+        jmt::hash::HashValue::sha3_256_of(&self.to_bytes())
+    }
+}
+
+impl TryFrom<pb::MerkleRoot> for Root {
+    type Error = anyhow::Error;
+
+    fn try_from(root: pb::MerkleRoot) -> Result<Root, Self::Error> {
+        let bytes: [u8; 32] = (&root.inner[..]).try_into()?;
+
+        let inner = Fq::from_bytes(bytes)?;
+
+        Ok(Root(inner))
+    }
+}
+
+impl From<Root> for pb::MerkleRoot {
+    fn from(root: Root) -> Self {
+        Self {
+            inner: root.to_bytes().to_vec(),
+        }
+    }
+}
 
 impl TryFrom<&[u8]> for Root {
     type Error = anyhow::Error;

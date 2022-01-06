@@ -88,6 +88,8 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.crypto.Value", SERIALIZE),
     (".penumbra.crypto.Denom", SERIALIZE),
     (".penumbra.crypto.Denom", SERDE_TRANSPARENT),
+    (".penumbra.crypto.MerkleRoot", SERIALIZE),
+    (".penumbra.crypto.MerkleRoot", SERDE_TRANSPARENT),
     (".penumbra.chain.ChainParams", SERIALIZE),
     (".penumbra.genesis.GenesisAppState", SERIALIZE),
     (".penumbra.genesis.Allocation", SERIALIZE),
@@ -103,4 +105,5 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.crypto.Address.inner", AS_BECH32_ADDRESS),
     (".penumbra.crypto.AssetId.inner", AS_BECH32_ASSET_ID),
     (".penumbra.crypto.NoteCommitment.inner", AS_HEX),
+    (".penumbra.crypto.MerkleRoot.inner", AS_HEX),
 ];
