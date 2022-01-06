@@ -5,6 +5,7 @@ use std::{
 
 use anyhow::{Context, Result};
 use async_stream::try_stream;
+use futures::future::BoxFuture;
 use futures::stream::{Stream, StreamExt};
 use penumbra_crypto::{
     asset,
@@ -23,6 +24,9 @@ use penumbra_stake::{
 use sqlx::{postgres::PgPoolOptions, query, query_as, Pool, Postgres};
 use tendermint::block;
 use tracing::instrument;
+
+use jmt::node_type::{LeafNode, Node, NodeKey};
+use jmt::{NodeBatch, TreeReaderAsync, TreeWriterAsync, Value};
 
 use crate::{db::schema, genesis, PendingBlock};
 
@@ -662,5 +666,100 @@ ON CONFLICT (id) DO UPDATE SET data = $1
         }
 
         Ok(changes)
+    }
+}
+
+impl<V> TreeWriterAsync<V> for State
+where
+    V: Value,
+{
+    /// Writes a node batch into storage.
+    fn write_node_batch<'future, 'a: 'future, 'n: 'future>(
+        &'a self,
+        node_batch: &'n NodeBatch<V>,
+    ) -> BoxFuture<'future, Result<()>> {
+        Box::pin(async {
+            let mut dbtx = self.pool.begin().await?;
+
+            for (node_key, node) in node_batch.clone() {
+                let key_bytes = &node_key.encode()?;
+                let value_bytes = &node.encode()?;
+
+                query!(
+                    r#"
+                INSERT INTO jmt (key, value) VALUES ($1, $2)
+                "#,
+                    &key_bytes,
+                    &value_bytes
+                )
+                .execute(&mut dbtx)
+                .await?;
+            }
+
+            dbtx.commit().await?;
+
+            Ok(())
+        })
+    }
+}
+
+impl<V: jmt::Value> TreeReaderAsync<V> for State {
+    /// Gets node given a node key. Returns `None` if the node does not exist.
+    fn get_node_option<'future, 'a: 'future, 'n: 'future>(
+        &'a self,
+        node_key: &'n NodeKey,
+    ) -> BoxFuture<'future, Result<Option<Node<V>>>> {
+        Box::pin(async {
+            let mut conn = self.pool.acquire().await?;
+
+            let value = query!(
+                r#"SELECT value FROM jmt WHERE key = $1 LIMIT 1"#,
+                &node_key.encode()?
+            )
+            .fetch_optional(&mut conn)
+            .await?;
+
+            let value = match value {
+                Some(row) => Some(Node::decode(&row.value.unwrap())?),
+                _ => None,
+            };
+
+            Ok(value)
+        })
+    }
+
+    /// Gets the rightmost leaf. Note that this assumes we are in the process of restoring the tree
+    /// and all nodes are at the same version.
+    #[allow(clippy::type_complexity)]
+    fn get_rightmost_leaf<'future, 'a: 'future>(
+        &'a self,
+    ) -> BoxFuture<'future, Result<Option<(NodeKey, LeafNode<V>)>>> {
+        Box::pin(async {
+            let mut conn = self.pool.acquire().await?;
+
+            let value = query!(r#"SELECT key, value FROM jmt ORDER BY key DESC LIMIT 1"#)
+                .fetch_optional(&mut conn)
+                .await?;
+
+            let value = match value {
+                Some(row) => Some((
+                    NodeKey::decode(&row.key)?,
+                    Node::decode(&row.value.unwrap())?,
+                )),
+                _ => None,
+            };
+
+            let mut node_key_and_node: Option<(NodeKey, LeafNode<V>)> = None;
+
+            if let Some((key, Node::Leaf(leaf_node))) = value {
+                if node_key_and_node.is_none()
+                    || leaf_node.account_key() > node_key_and_node.as_ref().unwrap().1.account_key()
+                {
+                    node_key_and_node.replace((key, leaf_node));
+                }
+            }
+
+            Ok(node_key_and_node)
+        })
     }
 }

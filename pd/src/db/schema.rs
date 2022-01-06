@@ -27,3 +27,9 @@ pub struct NullifiersRow {
     pub nullifier: Nullifier,
     pub height: i64,
 }
+
+#[derive(Debug, sqlx::FromRow)]
+pub struct JmtRow {
+    pub key: Vec<u8>,
+    pub value: Vec<u8>,
+}
