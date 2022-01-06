@@ -4,7 +4,6 @@ use penumbra_chain::params::ChainParams;
 use penumbra_crypto::{asset, Address, Note, Value, CURRENT_CHAIN_ID};
 use penumbra_proto::{genesis as pb, Protobuf};
 use penumbra_stake::Validator;
-
 use serde::{Deserialize, Serialize};
 
 /// A (transparent) genesis allocation.

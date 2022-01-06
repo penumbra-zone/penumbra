@@ -5,16 +5,14 @@ use penumbra_proto::{
     self as proto,
     chain::{AssetInfo, ChainParams},
     crypto::AssetId,
-    light_wallet::ValidatorInfoRequest,
     light_wallet::{
         light_wallet_server::LightWallet, ChainParamsRequest, CompactBlock,
-        CompactBlockRangeRequest,
+        CompactBlockRangeRequest, ValidatorInfoRequest,
     },
     stake::ValidatorInfo,
-    thin_wallet::AssetListRequest,
     thin_wallet::{
-        thin_wallet_server::ThinWallet, Asset, TransactionByNoteRequest, TransactionDetail,
-        ValidatorRateRequest,
+        thin_wallet_server::ThinWallet, Asset, AssetListRequest, TransactionByNoteRequest,
+        TransactionDetail, ValidatorRateRequest,
     },
 };
 use penumbra_stake::IdentityKey;
