@@ -6,6 +6,7 @@ use std::{
 use anyhow::{Context, Result};
 use async_stream::try_stream;
 use futures::stream::{Stream, StreamExt};
+use jmt::TreeWriterAsync;
 use penumbra_crypto::{
     asset,
     merkle::{self, NoteCommitmentTree, TreeExt},
@@ -26,6 +27,8 @@ use tracing::instrument;
 
 use crate::{db::schema, genesis, PendingBlock};
 
+mod jellyfish;
+
 #[derive(Debug, Clone)]
 pub struct State {
     pool: Pool<Postgres>,
@@ -43,6 +46,7 @@ impl State {
     pub async fn connect(uri: &str) -> Result<Self> {
         tracing::info!("connecting to postgres");
         let pool = PgPoolOptions::new().max_connections(4).connect(uri).await?;
+
         tracing::info!("running migrations");
         sqlx::migrate!("./migrations").run(&pool).await?;
         tracing::info!("finished initializing state");
@@ -61,13 +65,15 @@ impl State {
     pub async fn commit_genesis(&self, genesis_config: &genesis::AppState) -> Result<()> {
         let mut dbtx = self.pool.begin().await?;
 
+        let genesis_bytes = serde_json::to_vec(&genesis_config)?;
+
         // ON CONFLICT is excluded here so that an error is raised
         // if genesis config is attempted to be set more than once
         query!(
             r#"
-INSERT INTO blobs (id, data) VALUES ('gc', $1)
-"#,
-            &serde_json::to_vec(&genesis_config)?[..]
+            INSERT INTO blobs (id, data) VALUES ('gc', $1)
+            "#,
+            &genesis_bytes[..]
         )
         .execute(&mut dbtx)
         .await?;
@@ -163,13 +169,31 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
 
         query!(
             r#"
-INSERT INTO blobs (id, data) VALUES ('nct', $1)
-ON CONFLICT (id) DO UPDATE SET data = $1
-"#,
+            INSERT INTO blobs (id, data) VALUES ('nct', $1)
+            ON CONFLICT (id) DO UPDATE SET data = $1
+            "#,
             &nct_bytes[..]
         )
         .execute(&mut dbtx)
         .await?;
+
+        // The Jellyfish Merkle tree batches writes to its backing store, so we
+        // first need to write the JMT kv pairs...
+        let (_, tree_update_batch) = jmt::JellyfishMerkleTree::new(self)
+            .put_value_set(
+                // TODO: create a JmtKey enum, where each variant has
+                // a different domain-separated hash
+                vec![(
+                    jmt::hash::HashValue::sha3_256_of(b"nct"),
+                    nct_anchor.clone(),
+                )],
+                height,
+            )
+            .await?;
+        // ... and then write the resulting batch update to the backing store:
+        jellyfish::DbTx(&mut dbtx)
+            .write_node_batch(&tree_update_batch.node_batch)
+            .await?;
 
         query!(
             "INSERT INTO blocks (height, nct_anchor, app_hash) VALUES ($1, $2, $3)",

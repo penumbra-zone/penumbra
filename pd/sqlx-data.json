@@ -118,6 +118,18 @@
       ]
     }
   },
+  "3f13d5f8a2ffc438e79f3297b7dfbcc14ffca7611f5ea3d4a5e8acfba3b9807e": {
+    "query": "\n            INSERT INTO blobs (id, data) VALUES ('nct', $1)\n            ON CONFLICT (id) DO UPDATE SET data = $1\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "40da344f10b8dfccf3ebc3ac7c44f028bdef4b924b900c9f2125320caf04e8d6": {
     "query": "SELECT validator_identity_key, delegation_change FROM delegation_changes WHERE epoch = $1",
     "describe": {
@@ -168,18 +180,6 @@
           "Int8",
           "Int8",
           "Int8"
-        ]
-      },
-      "nullable": []
-    }
-  },
-  "51f515cc43458854df653c298142e6c77b2905b453f85c31ae1a0f56fbce1c2a": {
-    "query": "\nINSERT INTO blobs (id, data) VALUES ('nct', $1)\nON CONFLICT (id) DO UPDATE SET data = $1\n",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea"
         ]
       },
       "nullable": []
@@ -412,6 +412,19 @@
       "nullable": []
     }
   },
+  "9e7ef6d0442bbacb5512b78c47e9bb222cecf14a4e3a3dd4530e2a6ad420b591": {
+    "query": "\n                INSERT INTO jmt (key, value) VALUES ($1, $2)\n                ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Bytea"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "9efba3ba5ace824dfbf620cd5d9cd46ea8e0e99c6fc791723d1490a2b84d07ac": {
     "query": "INSERT INTO base_rates (\n                epoch,\n                base_reward_rate,\n                base_exchange_rate\n            ) VALUES ($1, $2, $3)",
     "describe": {
@@ -467,6 +480,26 @@
       "nullable": []
     }
   },
+  "ba507b5c58a391df95f9bfac4985ab63e799383309e17717fbcb1f5e4f6ca936": {
+    "query": "SELECT value FROM jmt WHERE key = $1 LIMIT 1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "value",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Bytea"
+        ]
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
   "bf52f1b1ec94ff12c0d86fe2021370784dd9de97ad2bea79856aa624444fa142": {
     "query": "SELECT true",
     "describe": {
@@ -517,18 +550,6 @@
       ]
     }
   },
-  "cb7bac3962a9b0db3759bb2dc21f8bf7aeb58e208107aeb6b0f0f6a1e6c29d45": {
-    "query": "\nINSERT INTO blobs (id, data) VALUES ('gc', $1)\n",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea"
-        ]
-      },
-      "nullable": []
-    }
-  },
   "d12d2e8c0c1d522212ea874d422f99e950fbd843afe73bac2b7de7a1ec31af3f": {
     "query": "INSERT INTO delegation_changes VALUES ($1, $2, $3)",
     "describe": {
@@ -567,6 +588,18 @@
       ]
     }
   },
+  "e1f809f1ee3e05b30f5d8139ff79db877defed8a42e1b58d2ae243c0cd974bb7": {
+    "query": "\n            INSERT INTO blobs (id, data) VALUES ('gc', $1)\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "e57d8617299261390fc7448d3bfda816a5b2bbdf7cb03c0f76af7da9f26743ba": {
     "query": "INSERT INTO validator_rates VALUES ($1, $2, $3, $4)",
     "describe": {
@@ -580,6 +613,30 @@
         ]
       },
       "nullable": []
+    }
+  },
+  "ebeb8d290f5ee97174d57b70ea2898a0e259573fa3cad6158779158092e771a0": {
+    "query": "SELECT key, value FROM jmt ORDER BY key DESC LIMIT 1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 1,
+          "name": "value",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": [
+        false,
+        false
+      ]
     }
   },
   "f364b8966b90d430a23cf88f17589aa9120d5dfbb76c52755ad580436f95580a": {

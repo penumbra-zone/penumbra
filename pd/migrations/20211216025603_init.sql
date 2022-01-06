@@ -3,6 +3,11 @@ CREATE TABLE IF NOT EXISTS blobs (
     data bytea NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS jmt (
+    key bytea PRIMARY KEY,
+    value bytea NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS assets (
     asset_id bytea PRIMARY KEY NOT NULL,
     denom varchar NOT NULL,
