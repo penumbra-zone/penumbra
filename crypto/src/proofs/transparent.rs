@@ -208,7 +208,7 @@ impl OutputProof {
         }
 
         // Value commitment integrity.
-        if self.value.commit(self.v_blinding) != value_commitment {
+        if value_commitment != -self.value.commit(self.v_blinding) {
             return Err(Error::ValueCommitmentMismatch);
         }
 
@@ -470,7 +470,7 @@ mod tests {
         };
 
         assert!(proof
-            .verify(value_to_send.commit(v_blinding), note.commit(), epk)
+            .verify(-value_to_send.commit(v_blinding), note.commit(), epk)
             .is_ok());
     }
 
@@ -510,7 +510,7 @@ mod tests {
 
         assert!(proof
             .verify(
-                value_to_send.commit(v_blinding),
+                -value_to_send.commit(v_blinding),
                 incorrect_note_commitment,
                 epk
             )
@@ -580,7 +580,7 @@ mod tests {
 
         assert!(proof
             .verify(
-                value_to_send.commit(v_blinding),
+                -value_to_send.commit(v_blinding),
                 note.commit(),
                 incorrect_epk
             )
@@ -615,7 +615,7 @@ mod tests {
         };
 
         assert!(proof
-            .verify(value_to_send.commit(v_blinding), note.commit(), epk)
+            .verify(-value_to_send.commit(v_blinding), note.commit(), epk)
             .is_err());
     }
 

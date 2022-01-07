@@ -73,7 +73,9 @@ impl Body {
         esk: &ka::Secret,
     ) -> Body {
         // TODO: p. 43 Spec. Decide whether to do leadByte 0x01 method or 0x02 or other.
-        let value_commitment = note.value().commit(v_blinding);
+
+        // Outputs subtract from the transaction value balance, so commit to -value.
+        let value_commitment = -note.value().commit(v_blinding);
         let note_commitment = note.commit();
 
         let ephemeral_key = esk.diversified_public(&note.diversified_generator());

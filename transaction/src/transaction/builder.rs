@@ -111,7 +111,7 @@ impl Builder {
             transmission_key,
             &esk,
         );
-        self.value_commitments -= body.value_commitment.0;
+        self.value_commitments += body.value_commitment.0;
 
         let ovk_wrapped_key = note.encrypt_key(&esk, ovk, body.value_commitment);
 

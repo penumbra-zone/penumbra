@@ -63,7 +63,7 @@ impl GenesisBuilder {
             note.transmission_key(),
             &esk,
         );
-        self.value_commitments -= body.value_commitment.0;
+        self.value_commitments += body.value_commitment.0;
 
         // xx Hardcore something in the memo for genesis?
         // let encrypted_memo = memo.encrypt(&esk, &dest);

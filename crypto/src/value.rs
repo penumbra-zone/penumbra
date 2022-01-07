@@ -101,6 +101,13 @@ impl std::ops::Sub<Commitment> for Commitment {
     }
 }
 
+impl std::ops::Neg for Commitment {
+    type Output = Commitment;
+    fn neg(self) -> Self::Output {
+        Commitment(-self.0)
+    }
+}
+
 impl From<Commitment> for [u8; 32] {
     fn from(commitment: Commitment) -> [u8; 32] {
         commitment.0.compress().0
