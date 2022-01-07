@@ -1,7 +1,8 @@
+use penumbra_crypto::{value, Fr, Value, Zero};
 use penumbra_proto::{stake as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
-use crate::IdentityKey;
+use crate::{DelegationToken, IdentityKey};
 
 /// A transaction action withdrawing stake from a validator's delegation pool.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -20,6 +21,25 @@ pub struct Undelegate {
     /// (and should be checked in transaction validation!), but including it allows
     /// stateless verification that the transaction is internally consistent.
     pub delegation_amount: u64,
+}
+
+impl Undelegate {
+    /// Compute a commitment to the value contributed to a transaction by this undelegation.
+    pub fn value_commitment(&self) -> value::Commitment {
+        let stake = Value {
+            amount: self.unbonded_amount,
+            asset_id: crate::STAKING_TOKEN_ASSET_ID.clone(),
+        }
+        .commit(Fr::zero());
+        let delegation = Value {
+            amount: self.delegation_amount,
+            asset_id: DelegationToken::new(self.validator_identity.clone()).id(),
+        }
+        .commit(Fr::zero());
+
+        // We consume the delegation tokens and produce the staking tokens.
+        stake - delegation
+    }
 }
 
 impl Protobuf<pb::Undelegate> for Undelegate {}

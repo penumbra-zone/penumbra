@@ -1,5 +1,6 @@
 use std::convert::{TryFrom, TryInto};
 
+use penumbra_crypto::value;
 use penumbra_proto::{transaction as pb, Protobuf};
 use penumbra_stake as stake;
 
@@ -20,6 +21,20 @@ pub enum Action {
     Delegate(stake::Delegate),
     Undelegate(stake::Undelegate),
     ValidatorDefinition(stake::ValidatorDefinition),
+}
+
+impl Action {
+    /// Obtains or computes a commitment to the (typed) value added or subtracted from
+    /// the transaction's balance by this action.
+    pub fn value_commitment(&self) -> value::Commitment {
+        match self {
+            Action::Output(output) => output.body.value_commitment,
+            Action::Spend(spend) => spend.body.value_commitment,
+            Action::Delegate(delegate) => delegate.value_commitment(),
+            Action::Undelegate(undelegate) => undelegate.value_commitment(),
+            Action::ValidatorDefinition(_) => value::Commitment::default(),
+        }
+    }
 }
 
 impl Protobuf<pb::Action> for Action {}

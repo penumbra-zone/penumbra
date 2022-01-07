@@ -7,7 +7,7 @@ use penumbra_crypto::{
     asset,
     merkle::{self, NoteCommitmentTree, TreeExt},
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
-    Fr, Value,
+    value, Fr, Value,
 };
 use penumbra_proto::{
     transaction::{
@@ -106,16 +106,8 @@ impl Transaction {
     /// Verify the binding signature.
     pub fn binding_verification_key(&self) -> VerificationKey<Binding> {
         let mut value_commitments = decaf377::Element::default();
-        for action in self.transaction_body.actions.clone() {
-            match action {
-                Action::Output(inner) => {
-                    value_commitments += inner.body.value_commitment.0;
-                }
-                Action::Spend(inner) => {
-                    value_commitments += inner.body.value_commitment.0;
-                }
-                _ => todo!("delegation binding signature contributions??"),
-            }
+        for action in &self.transaction_body.actions {
+            value_commitments += action.value_commitment().0;
         }
 
         // Add fee into binding verification key computation.
