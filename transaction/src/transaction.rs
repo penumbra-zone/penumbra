@@ -109,7 +109,7 @@ impl Transaction {
         for action in self.transaction_body.actions.clone() {
             match action {
                 Action::Output(inner) => {
-                    value_commitments -= inner.body.value_commitment.0;
+                    value_commitments += inner.body.value_commitment.0;
                 }
                 Action::Spend(inner) => {
                     value_commitments += inner.body.value_commitment.0;
