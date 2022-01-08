@@ -33,6 +33,11 @@ pub mod stake {
     include!(concat!(env!("OUT_DIR"), "/penumbra.stake.rs"));
 }
 
+/// Chain-related structures.
+pub mod chain {
+    tonic::include_proto!("penumbra.chain");
+}
+
 /// Light wallet protocol structures.
 pub mod light_wallet {
     tonic::include_proto!("penumbra.light_wallet");
@@ -41,11 +46,6 @@ pub mod light_wallet {
 /// Thin wallet protocol structures.
 pub mod thin_wallet {
     tonic::include_proto!("penumbra.thin_wallet");
-}
-
-/// Chain parameter protocol structures.
-pub mod params {
-    tonic::include_proto!("penumbra.params");
 }
 
 pub mod sighash {
