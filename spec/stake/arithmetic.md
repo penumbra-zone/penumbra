@@ -38,8 +38,8 @@ bits.
 * $c_{v,e}$: the sum of the validator's commission rates, in basis points.
 * $\mathtt r_{v,e}$: the fixed-point representation of the validator-specific reward rate for validator $v$ at epoch $e$.
 * $\mathtt {psi}_v(e)$: the fixed-point representation of the validator-specific exchange rate for validator $v$ at epoch $e$.
-* $\mathtt {theta}_v(e)$: the fixed-point representation of the validator's voting power adjustment function for validator $v$ at epoch $e$.
-
+* $\mathtt y_{v}$: the sum of the tokens in the validator's delegation pool.
+* $\mathtt {iota}_v(e)$: the validator's voting power for validator $v$ at epoch $e$.
 
 ## Base Reward Rate
 
@@ -74,8 +74,8 @@ of the base reward rate:
 
 $$\mathtt {psi}_v(e) = \left\lfloor \frac {\mathtt {psi}_v(e-1) \cdot (10^8 + \mathtt r_{v,e})}{10^8} \right\rfloor$$
 
-## Validator Voting Power Adjustment
+## Validator Voting Power
 
-Finally, to compute the validator's voting power adjustment function, compute:
+Finally, to compute the validator's voting power, take:
 
-$$\mathtt {theta}_v(e) = \left\lfloor \frac{\mathtt {psi}_v(e) 10^8}{\mathtt {psi}(e)} \right\rfloor$$
+$$\mathtt {iota}_v(e) = \left\lfloor \mathtt y_v \cdot \frac{ \mathtt {psi}_v(e)}{\mathtt {psi}(e)} \right\rfloor$$
