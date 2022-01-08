@@ -1,18 +1,17 @@
 use std::io::{Cursor, Read, Write};
 
-use anyhow::anyhow;
 use ark_serialize::CanonicalDeserialize;
-use bech32::{FromBase32, ToBase32, Variant};
-use serde_with::{DeserializeFromStr, SerializeDisplay};
+use penumbra_proto::{crypto as pb, serializers::bech32str};
+use serde::{Deserialize, Serialize};
 
 use crate::{fmd, ka, keys::Diversifier, Fq};
 
 pub const CURRENT_CHAIN_ID: &str = "penumbra-eupheme";
 /// Incrementing prefix for the address.
-pub const CURRENT_ADDRESS_VERSION: u32 = 0;
 
 /// A valid payment address.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, SerializeDisplay, DeserializeFromStr)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "pb::Address", into = "pb::Address")]
 pub struct Address {
     d: Diversifier,
     /// cached copy of the diversified base
@@ -73,26 +72,58 @@ impl Address {
     }
 }
 
-impl std::fmt::Display for Address {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        let mut addr_content = std::io::Cursor::new(Vec::new());
-        addr_content
-            .write_all(&self.diversifier().0)
+impl From<Address> for pb::Address {
+    fn from(a: Address) -> Self {
+        let mut bytes = std::io::Cursor::new(Vec::new());
+        bytes
+            .write_all(&a.diversifier().0)
             .expect("can write diversifier into vec");
-        addr_content
-            .write_all(&self.transmission_key().0)
+        bytes
+            .write_all(&a.transmission_key().0)
             .expect("can write transmission key into vec");
-        addr_content
-            .write_all(&self.clue_key().0)
+        bytes
+            .write_all(&a.clue_key().0)
             .expect("can write clue key into vec");
 
-        bech32::encode_to_fmt(
-            f,
-            &format!("penumbrav{}t", CURRENT_ADDRESS_VERSION),
-            addr_content.get_ref().to_base32(),
-            Variant::Bech32m,
+        pb::Address {
+            inner: bytes.into_inner(),
+        }
+    }
+}
+
+impl TryFrom<pb::Address> for Address {
+    type Error = anyhow::Error;
+    fn try_from(value: pb::Address) -> Result<Self, Self::Error> {
+        let mut bytes = Cursor::new(value.inner);
+
+        let mut diversifier_bytes = [0u8; 11];
+        bytes.read_exact(&mut diversifier_bytes)?;
+
+        let mut pk_d_bytes = [0u8; 32];
+        bytes.read_exact(&mut pk_d_bytes)?;
+
+        let mut clue_key_bytes = [0; 32];
+        bytes.read_exact(&mut clue_key_bytes)?;
+
+        let diversifier = Diversifier(diversifier_bytes);
+        Address::from_components(
+            diversifier,
+            diversifier.diversified_generator(),
+            ka::Public(pk_d_bytes),
+            fmd::ClueKey(clue_key_bytes),
         )
-        .map_err(|_| std::fmt::Error)?
+        .ok_or_else(|| anyhow::anyhow!("invalid address"))
+    }
+}
+
+impl std::fmt::Display for Address {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let proto_address = pb::Address::from(self.clone());
+        f.write_str(&bech32str::encode(
+            &proto_address.inner,
+            bech32str::address::BECH32_PREFIX,
+            bech32str::Bech32m,
+        ))
     }
 }
 
@@ -100,37 +131,10 @@ impl std::str::FromStr for Address {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (hrp, data, variant) = bech32::decode(s).unwrap();
-
-        let mut decoded_bytes = Cursor::new(Vec::<u8>::from_base32(&data).unwrap());
-
-        let mut diversifier_bytes = [0u8; 11];
-        decoded_bytes.read_exact(&mut diversifier_bytes)?;
-
-        let mut pk_d_bytes = [0u8; 32];
-        decoded_bytes.read_exact(&mut pk_d_bytes)?;
-
-        let mut clue_key_bytes = [0; 32];
-        decoded_bytes.read_exact(&mut clue_key_bytes)?;
-
-        if variant != Variant::Bech32m {
-            return Err(anyhow!(
-                "incorrectly formatted address, only Bech32m supported"
-            ));
+        pb::Address {
+            inner: bech32str::decode(s, bech32str::address::BECH32_PREFIX, bech32str::Bech32m)?,
         }
-
-        if hrp != format!("penumbrav{}t", CURRENT_ADDRESS_VERSION) {
-            return Err(anyhow!("address format no longer supported: {}", hrp));
-        }
-
-        let diversifier = Diversifier(diversifier_bytes);
-        Ok(Address::from_components(
-            diversifier,
-            diversifier.diversified_generator(),
-            ka::Public(pk_d_bytes),
-            fmd::ClueKey(clue_key_bytes),
-        )
-        .expect("transmission key is valid"))
+        .try_into()
     }
 }
 

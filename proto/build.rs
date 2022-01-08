@@ -34,6 +34,7 @@ fn main() -> Result<()> {
         config.field_attribute(path, attribute);
     }
 
+    config.compile_protos(&["proto/crypto.proto"], &["proto/"])?;
     config.compile_protos(&["proto/transaction.proto"], &["proto/"])?;
     config.compile_protos(&["proto/stake.proto"], &["proto/"])?;
     config.compile_protos(&["proto/chain.proto"], &["proto/"])?;
@@ -60,6 +61,8 @@ static AS_HEX: &str = r#"#[serde(with = "crate::serializers::hexstr")]"#;
 static AS_BASE64: &str = r#"#[serde(with = "crate::serializers::base64str")]"#;
 static AS_BECH32_IDENTITY_KEY: &str =
     r#"#[serde(with = "crate::serializers::bech32str::validator_identity_key")]"#;
+static AS_BECH32_ADDRESS: &str = r#"#[serde(with = "crate::serializers::bech32str::address")]"#;
+static AS_BECH32_ASSET_ID: &str = r#"#[serde(with = "crate::serializers::bech32str::asset_id")]"#;
 
 static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.stake.Validator", SERIALIZE),
@@ -71,6 +74,13 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.stake.IdentityKey", SERDE_TRANSPARENT),
     (".penumbra.stake.Delegate", SERIALIZE),
     (".penumbra.stake.Undelegate", SERIALIZE),
+    (".penumbra.crypto.Address", SERIALIZE),
+    (".penumbra.crypto.Address", SERDE_TRANSPARENT),
+    (".penumbra.crypto.NoteCommitment", SERIALIZE),
+    (".penumbra.crypto.NoteCommitment", SERDE_TRANSPARENT),
+    (".penumbra.crypto.AssetId", SERIALIZE),
+    (".penumbra.crypto.AssetId", SERDE_TRANSPARENT),
+    (".penumbra.crypto.Value", SERIALIZE),
 ];
 
 static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
@@ -79,4 +89,7 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.stake.Validator.consensus_key", AS_BASE64),
     (".penumbra.stake.ValidatorDefinition.auth_sig", AS_HEX),
     (".penumbra.stake.IdentityKey.ik", AS_BECH32_IDENTITY_KEY),
+    (".penumbra.crypto.Address.inner", AS_BECH32_ADDRESS),
+    (".penumbra.crypto.AssetId.inner", AS_BECH32_ASSET_ID),
+    (".penumbra.crypto.NoteCommitment.inner", AS_HEX),
 ];

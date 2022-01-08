@@ -598,7 +598,7 @@ mod serde_helpers {
         submitted_change_set: Vec<(String, SystemTime, String)>,
         spent_set: Vec<(String, String)>,
         transactions: Vec<(String, String)>,
-        asset_registry: Vec<(String, String)>,
+        asset_registry: Vec<(asset::Id, String)>,
         wallet: Wallet,
     }
 
@@ -704,7 +704,7 @@ mod serde_helpers {
                 asset_registry: state
                     .asset_cache
                     .iter()
-                    .map(|(id, denom)| (hex::encode(id.to_bytes()), denom.to_string()))
+                    .map(|(id, denom)| (*id, denom.to_string()))
                     .collect(),
                 // TODO: serialize full transactions
                 transactions: vec![],
@@ -759,7 +759,7 @@ mod serde_helpers {
 
             let mut asset_registry = BTreeMap::new();
             for (id, denom) in state.asset_registry.into_iter() {
-                asset_registry.insert(hex::decode(id)?.try_into()?, denom);
+                asset_registry.insert(id, denom);
             }
 
             Ok(Self {
