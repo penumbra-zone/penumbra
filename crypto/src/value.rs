@@ -8,6 +8,7 @@ use std::{
 
 use ark_ff::PrimeField;
 use once_cell::sync::Lazy;
+use penumbra_proto::crypto as pb;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use thiserror;
@@ -15,11 +16,33 @@ use thiserror;
 use crate::{asset, Fq, Fr};
 
 #[derive(Deserialize, Serialize, Copy, Clone, Debug, PartialEq, Eq)]
+#[serde(try_from = "pb::Value", into = "pb::Value")]
 pub struct Value {
     pub amount: u64,
     // The asset ID. 256 bits.
-    #[serde(with = "serde_with::rust::display_fromstr")]
     pub asset_id: asset::Id,
+}
+
+impl From<Value> for pb::Value {
+    fn from(v: Value) -> Self {
+        pb::Value {
+            amount: v.amount,
+            asset_id: Some(v.asset_id.into()),
+        }
+    }
+}
+
+impl TryFrom<pb::Value> for Value {
+    type Error = anyhow::Error;
+    fn try_from(value: pb::Value) -> Result<Self, Self::Error> {
+        Ok(Value {
+            amount: value.amount,
+            asset_id: value
+                .asset_id
+                .ok_or_else(|| anyhow::anyhow!("missing value commitment"))?
+                .try_into()?,
+        })
+    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]

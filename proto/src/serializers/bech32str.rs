@@ -94,3 +94,47 @@ pub mod validator_identity_key {
         serialize_bech32(value, serializer, BECH32_PREFIX, Variant::Bech32m)
     }
 }
+
+pub mod address {
+    use super::*;
+
+    /// The Bech32 prefix used for addresses.
+    pub const BECH32_PREFIX: &str = "penumbrav0t";
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserialize_bech32(deserializer, BECH32_PREFIX, Variant::Bech32m)
+    }
+
+    pub fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+        T: AsRef<[u8]>,
+    {
+        serialize_bech32(value, serializer, BECH32_PREFIX, Variant::Bech32m)
+    }
+}
+
+pub mod asset_id {
+    use super::*;
+
+    /// The Bech32 prefix used for asset IDs.
+    pub const BECH32_PREFIX: &str = "passet";
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserialize_bech32(deserializer, BECH32_PREFIX, Variant::Bech32m)
+    }
+
+    pub fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+        T: AsRef<[u8]>,
+    {
+        serialize_bech32(value, serializer, BECH32_PREFIX, Variant::Bech32m)
+    }
+}

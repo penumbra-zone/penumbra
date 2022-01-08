@@ -1,11 +1,10 @@
 use ark_ff::fields::PrimeField;
-use bech32::{ToBase32, Variant};
 use decaf377::FieldExt;
 use once_cell::sync::Lazy;
+use penumbra_proto::{crypto as pb, serializers::bech32str};
+use serde::{Deserialize, Serialize};
 
 use crate::Fq;
-
-const PENUMBRA_BECH32_ASSET_PREFIX: &str = "passet";
 
 /// An identifier for an IBC asset type.
 ///
@@ -25,27 +24,46 @@ const PENUMBRA_BECH32_ASSET_PREFIX: &str = "passet";
 ///
 /// [ADR001]:
 /// https://github.com/cosmos/ibc-go/blob/main/docs/architecture/adr-001-coin-source-tracing.md
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(try_from = "pb::AssetId", into = "pb::AssetId")]
 pub struct Id(pub Fq);
 
-impl Id {
-    pub fn to_bech32(&self) -> String {
-        use ark_ff::BigInteger;
-        let bytes = self.0.into_repr().to_bytes_le().to_base32();
-        bech32::encode(PENUMBRA_BECH32_ASSET_PREFIX, bytes, Variant::Bech32m)
-            .expect("bech32 hrp is valid")
+impl From<Id> for pb::AssetId {
+    fn from(id: Id) -> Self {
+        pb::AssetId {
+            inner: id.0.to_bytes().to_vec(),
+        }
+    }
+}
+
+impl TryFrom<pb::AssetId> for Id {
+    type Error = anyhow::Error;
+    fn try_from(value: pb::AssetId) -> Result<Self, Self::Error> {
+        let bytes: [u8; 32] = value.inner.try_into().map_err(|_| {
+            anyhow::anyhow!("could not deserialize Asset ID: input vec is not 32 bytes")
+        })?;
+        let inner = Fq::from_bytes(bytes)?;
+        Ok(Id(inner))
     }
 }
 
 impl std::fmt::Debug for Id {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.to_bech32().as_str())
+        f.write_str(&bech32str::encode(
+            &self.0.to_bytes(),
+            bech32str::asset_id::BECH32_PREFIX,
+            bech32str::Bech32m,
+        ))
     }
 }
 
 impl std::fmt::Display for Id {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.write_str(self.to_bech32().as_str())
+        f.write_str(&bech32str::encode(
+            &self.0.to_bytes(),
+            bech32str::asset_id::BECH32_PREFIX,
+            bech32str::Bech32m,
+        ))
     }
 }
 
@@ -53,23 +71,8 @@ impl std::str::FromStr for Id {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes: [u8; 32] = s.as_bytes().try_into().map_err(|_| {
-            anyhow::anyhow!("could not deserialize Asset ID: input vec is not 32 bytes")
-        })?;
-        let inner = Fq::from_bytes(bytes)?;
-        Ok(Id(inner))
-    }
-}
-
-impl TryFrom<Vec<u8>> for Id {
-    type Error = anyhow::Error;
-
-    fn try_from(vec: Vec<u8>) -> Result<Id, Self::Error> {
-        let bytes: [u8; 32] = vec.try_into().map_err(|_| {
-            anyhow::anyhow!("could not deserialize Asset ID: input vec is not 32 bytes")
-        })?;
-        let inner = Fq::from_bytes(bytes)?;
-        Ok(Id(inner))
+        let inner = bech32str::decode(s, bech32str::asset_id::BECH32_PREFIX, bech32str::Bech32m)?;
+        pb::AssetId { inner }.try_into()
     }
 }
 

@@ -5,7 +5,6 @@ use anyhow::anyhow;
 use ark_ff::PrimeField;
 use derivative::Derivative;
 use fpe::ff1;
-use serde::{Deserialize, Serialize};
 
 use crate::Fq;
 
@@ -84,7 +83,7 @@ impl DiversifierKey {
     }
 }
 
-#[derive(Copy, Clone, Deserialize, Serialize, PartialEq, Eq, Derivative)]
+#[derive(Copy, Clone, PartialEq, Eq, Derivative)]
 #[derivative(Debug)]
 pub struct DiversifierIndex(
     #[derivative(Debug(bound = "", format_with = "crate::fmt_hex"))] pub [u8; 11],

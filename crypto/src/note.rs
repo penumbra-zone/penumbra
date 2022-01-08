@@ -8,6 +8,7 @@ use chacha20poly1305::{
 };
 use decaf377::FieldExt;
 use once_cell::sync::Lazy;
+use penumbra_proto::crypto as pb;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use thiserror;
@@ -327,8 +328,29 @@ impl TryFrom<[u8; NOTE_LEN_BYTES]> for Note {
 
 // Note commitment.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[serde(into = "[u8; 32]", try_from = "[u8; 32]")]
+#[serde(into = "pb::NoteCommitment", try_from = "pb::NoteCommitment")]
 pub struct Commitment(pub Fq);
+
+impl From<Commitment> for pb::NoteCommitment {
+    fn from(nc: Commitment) -> Self {
+        Self {
+            inner: nc.0.to_bytes().to_vec(),
+        }
+    }
+}
+
+impl TryFrom<pb::NoteCommitment> for Commitment {
+    type Error = anyhow::Error;
+    fn try_from(value: pb::NoteCommitment) -> Result<Self, Self::Error> {
+        let bytes: [u8; 32] = value.inner[..]
+            .try_into()
+            .map_err(|_| Error::InvalidNoteCommitment)?;
+
+        let inner = Fq::from_bytes(bytes).map_err(|_| Error::InvalidNoteCommitment)?;
+
+        Ok(Commitment(inner))
+    }
+}
 
 impl std::fmt::Debug for Commitment {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -367,12 +389,6 @@ impl From<Commitment> for [u8; 32] {
     }
 }
 
-impl From<Commitment> for Vec<u8> {
-    fn from(commitment: Commitment) -> Vec<u8> {
-        commitment.0.to_bytes().to_vec()
-    }
-}
-
 impl TryFrom<[u8; 32]> for Commitment {
     type Error = Error;
 
@@ -383,6 +399,7 @@ impl TryFrom<[u8; 32]> for Commitment {
     }
 }
 
+// TODO: remove? aside from sqlx is there a use case for non-proto conversion from byte slices?
 impl TryFrom<&[u8]> for Commitment {
     type Error = Error;
 

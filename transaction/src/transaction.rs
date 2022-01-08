@@ -7,7 +7,7 @@ use penumbra_crypto::{
     asset,
     merkle::{self, NoteCommitmentTree, TreeExt},
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
-    value, Fr, Value,
+    Fr, Value,
 };
 use penumbra_proto::{
     transaction::{

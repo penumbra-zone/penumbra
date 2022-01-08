@@ -23,14 +23,19 @@ pub mod serializers;
 mod protobuf;
 pub use protobuf::Protobuf;
 
-/// Transaction structures.
-pub mod transaction {
-    include!(concat!(env!("OUT_DIR"), "/penumbra.transaction.rs"));
+/// Crypto structures.
+pub mod crypto {
+    include!(concat!(env!("OUT_DIR"), "/penumbra.crypto.rs"));
 }
 
 /// Staking structures.
 pub mod stake {
     include!(concat!(env!("OUT_DIR"), "/penumbra.stake.rs"));
+}
+
+/// Transaction structures.
+pub mod transaction {
+    include!(concat!(env!("OUT_DIR"), "/penumbra.transaction.rs"));
 }
 
 /// Chain-related structures.
