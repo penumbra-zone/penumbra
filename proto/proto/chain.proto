@@ -1,5 +1,5 @@
 syntax = "proto3";
-package penumbra.params;
+package penumbra.chain;
 
 // Global chain configuration data, such as chain ID, epoch duration, etc.
 message ChainParams {
