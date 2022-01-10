@@ -5,17 +5,40 @@ use std::{
     sync::Arc,
 };
 
+use penumbra_proto::{crypto as pb, Protobuf};
+
 use ark_ff::fields::PrimeField;
 
 use crate::{asset, Fq, Value};
-
+use serde::{Deserialize, Serialize};
 /// An asset denomination.
 ///
 /// Each denomination has a unique [`asset::Id`] and base unit, and may also
 /// have other display units.
-#[derive(Clone)]
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(try_from = "pb::Denom", into = "pb::Denom")]
 pub struct Denom {
     pub(super) inner: Arc<Inner>,
+}
+
+impl Protobuf<pb::Denom> for Denom {}
+
+impl From<Denom> for pb::Denom {
+    fn from(dn: Denom) -> Self {
+        pb::Denom {
+            denom: dn.inner.base_denom.clone(),
+        }
+    }
+}
+
+impl TryFrom<pb::Denom> for Denom {
+    type Error = anyhow::Error;
+
+    fn try_from(value: pb::Denom) -> Result<Self, Self::Error> {
+        Ok(Denom {
+            inner: Arc::new(Inner::new(value.denom, Vec::new())),
+        })
+    }
 }
 
 /// A unit of some asset denomination.

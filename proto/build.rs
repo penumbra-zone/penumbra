@@ -81,6 +81,8 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.crypto.AssetId", SERIALIZE),
     (".penumbra.crypto.AssetId", SERDE_TRANSPARENT),
     (".penumbra.crypto.Value", SERIALIZE),
+    (".penumbra.crypto.Denom", SERIALIZE),
+    (".penumbra.crypto.Denom", SERDE_TRANSPARENT),
 ];
 
 static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
