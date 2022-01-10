@@ -1,10 +1,21 @@
 syntax = "proto3";
 package penumbra.chain;
 
+import "crypto.proto";
+
 // Global chain configuration data, such as chain ID, epoch duration, etc.
 message ChainParams {
   // The identifier of the chain.
   string chain_id = 1;
   // The transaction fee.
   uint64 epoch_duration = 2;
+}
+
+// Information about a given asset at a given time (as specified by block
+// height). Currently this only contains the total supply.
+message AssetInfo {
+  crypto.AssetId asset_id = 1;
+  crypto.Denom denom = 2;
+  uint64 as_of_block_height = 4;
+  uint64 total_supply = 3;
 }
