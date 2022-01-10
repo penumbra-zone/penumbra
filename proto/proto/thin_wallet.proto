@@ -1,7 +1,8 @@
 syntax = "proto3";
 package penumbra.thin_wallet;
 
-import "transaction.proto";
+import "crypto.proto";
+import "chain.proto";
 import "stake.proto";
 
 // A thin wallet service.
@@ -10,7 +11,7 @@ import "stake.proto";
 // trust-minimized, either in terms of integrity or privacy.
 service ThinWallet {
   rpc TransactionByNote(TransactionByNoteRequest) returns (TransactionDetail);
-  rpc AssetLookup(AssetLookupRequest) returns (Asset);
+  rpc AssetLookup(crypto.AssetId) returns (chain.AssetInfo);
   rpc AssetList(AssetListRequest) returns (stream Asset);
   // TODO: return ValidatorStatus?
   rpc ValidatorInfo(stake.IdentityKey) returns (stake.ValidatorDefinition);
