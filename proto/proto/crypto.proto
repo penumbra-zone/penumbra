@@ -13,6 +13,10 @@ message AssetId {
     bytes inner = 1;
 }
 
+message Denom {
+    string denom = 1;
+}
+
 message Value {
     uint64 amount = 1;
     AssetId asset_id = 2;
