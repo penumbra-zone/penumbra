@@ -1,4 +1,39 @@
-use penumbra_proto::{chain as pb, Protobuf};
+use penumbra_crypto::asset;
+use penumbra_proto::{crypto as pbc, chain as pb, Protobuf};
+
+#[derive(Clone, Debug)]
+pub struct AssetInfo {
+    pub asset_id: asset::Id,
+    pub denom: asset::Denom,
+    pub as_of_block_height: u64,
+    pub total_supply: u64,
+}
+
+impl Protobuf<pb::AssetInfo> for AssetInfo {}
+
+impl TryFrom<pb::AssetInfo> for AssetInfo {
+    type Error = anyhow::Error;
+
+    fn try_from(msg: pb::AssetInfo) -> Result<Self, Self::Error> {
+        Ok(AssetInfo {
+            asset_id: asset::Id::try_from(msg.asset_id.unwrap())?,
+            denom: asset::Denom::try_from(msg.denom.unwrap())?,
+            as_of_block_height: msg.as_of_block_height,
+            total_supply: msg.total_supply,
+        })
+    }
+}
+
+impl From<AssetInfo> for pb::AssetInfo {
+    fn from(ai: AssetInfo) -> Self {
+        pb::AssetInfo {
+            asset_id: Some(pbc::AssetId::from(ai.asset_id)),
+            denom: Some(pbc::Denom::from(ai.denom)),
+            as_of_block_height: ai.as_of_block_height,
+            total_supply: ai.total_supply,
+        }
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct ChainParams {
