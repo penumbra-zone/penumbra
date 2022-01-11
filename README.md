@@ -66,12 +66,19 @@ Once you have installed the above tools, you can clone the repository:
 git clone https://github.com/penumbra-zone/penumbra
 ```
 
+To build the version of `pcli` compatible with the current testnet, check out the latest tag for
+the current test net:
+
+```bash
+cd penumbra && git checkout 003-eupheme
+```
+
 #### Building the `pcli` wallet software
 
 Then, build the `pcli` tool using `cargo`:
 
 ```bash
-cd penumbra && cargo build --release --bin pcli
+cargo build --release --bin pcli
 ```
 
 ### Generating your wallet
