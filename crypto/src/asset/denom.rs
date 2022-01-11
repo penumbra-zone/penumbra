@@ -35,9 +35,9 @@ impl TryFrom<pb::Denom> for Denom {
     type Error = anyhow::Error;
 
     fn try_from(value: pb::Denom) -> Result<Self, Self::Error> {
-        Ok(Denom {
-            inner: Arc::new(Inner::new(value.denom, Vec::new())),
-        })
+        asset::REGISTRY
+            .parse_denom(&value.denom)
+            .ok_or_else(|| anyhow::anyhow!("invalid denomination {}", value.denom))
     }
 }
 

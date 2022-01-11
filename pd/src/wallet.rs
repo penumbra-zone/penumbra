@@ -3,9 +3,9 @@ use std::pin::Pin;
 use futures::stream::{StreamExt, TryStreamExt};
 use penumbra_proto::{
     self as proto,
+    chain::AssetInfo,
     crypto::AssetId,
     light_wallet::{light_wallet_server::LightWallet, CompactBlock, CompactBlockRangeRequest},
-    chain::AssetInfo,
     thin_wallet::{
         thin_wallet_server::ThinWallet, Asset, TransactionByNoteRequest, TransactionDetail,
         ValidatorRateRequest,
@@ -95,10 +95,11 @@ impl ThinWallet for State {
         &self,
         request: tonic::Request<AssetId>,
     ) -> Result<tonic::Response<AssetInfo>, Status> {
-        tracing::debug!(asset_id = ?hex::encode(&request.get_ref().asset_id));
+        let aid = request.into_inner().inner;
+        tracing::debug!(asset_id = ?hex::encode(&aid));
         let state = self.clone();
         let mut asset = state
-            .asset_lookup(request.into_inner().asset_id)
+            .asset_lookup(aid)
             .await
             .map_err(|_| tonic::Status::not_found("asset not found"))?;
 

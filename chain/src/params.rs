@@ -1,5 +1,5 @@
 use penumbra_crypto::asset;
-use penumbra_proto::{crypto as pbc, chain as pb, Protobuf};
+use penumbra_proto::{chain as pb, crypto as pbc, Protobuf};
 
 #[derive(Clone, Debug)]
 pub struct AssetInfo {
