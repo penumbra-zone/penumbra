@@ -3,14 +3,15 @@ use std::{collections::VecDeque, pin::Pin};
 use anyhow::{Context, Result};
 use async_stream::try_stream;
 use futures::stream::{Stream, StreamExt};
+use penumbra_crypto::FieldExt;
 use penumbra_crypto::{
     asset,
     merkle::{self, NoteCommitmentTree, TreeExt},
-    Address, Nullifier,
+    Address, Fq, Nullifier,
 };
 use penumbra_proto::{
-    light_wallet::{CompactBlock, StateFragment},
     chain,
+    light_wallet::{CompactBlock, StateFragment},
     thin_wallet::{Asset, TransactionDetail},
     Protobuf,
 };
@@ -508,6 +509,8 @@ ON CONFLICT (id) DO UPDATE SET data = $1
         .fetch_one(&mut conn)
         .await?;
 
+        let inner = Fq::from_bytes(asset.asset_id.try_into().unwrap())?;
+
         // TODO: should we be returning proto types from our state methods, or domain types?
         Ok(chain::AssetInfo {
             denom: Some(
@@ -516,7 +519,7 @@ ON CONFLICT (id) DO UPDATE SET data = $1
                     .unwrap()
                     .into(),
             ),
-            asset_id: Some(asset::Id::try_from(asset.asset_id)?.into()),
+            asset_id: Some(asset::Id(inner).into()),
             total_supply: asset.total_supply.try_into()?, // postgres only has i64....
             as_of_block_height: 0, // TODO: currently having the caller do this, should we instead pull the latest block height here?
         })

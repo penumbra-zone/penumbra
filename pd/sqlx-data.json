@@ -13,32 +13,6 @@
       "nullable": []
     }
   },
-  "1abc3c48b127eee2761f3385541e195f9aca35269e6db0c41e3f67a0e04f280b": {
-    "query": "SELECT denom, asset_id FROM assets WHERE asset_id = $1",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "denom",
-          "type_info": "Varchar"
-        },
-        {
-          "ordinal": 1,
-          "name": "asset_id",
-          "type_info": "Bytea"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Bytea"
-        ]
-      },
-      "nullable": [
-        false,
-        false
-      ]
-    }
-  },
   "302a33ec1eec61c43e6b5507b6e059e3c9f61c6da3c853ec9c6d4c815d04df61": {
     "query": "SELECT height, note_commitment, ephemeral_key, encrypted_note\n                    FROM notes\n                    WHERE height BETWEEN $1 AND $2\n                    ORDER BY position ASC",
     "describe": {
@@ -192,6 +166,38 @@
         ]
       },
       "nullable": [
+        false
+      ]
+    }
+  },
+  "6e3196d9786da554de3d0d93f465ca8207e8bf5a9863a3032dd8518ef39fb372": {
+    "query": "SELECT denom, asset_id, total_supply FROM assets WHERE asset_id = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "denom",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 1,
+          "name": "asset_id",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 2,
+          "name": "total_supply",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Bytea"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
         false
       ]
     }
