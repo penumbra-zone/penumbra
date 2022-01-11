@@ -3,13 +3,16 @@ use std::pin::Pin;
 use futures::stream::{StreamExt, TryStreamExt};
 use penumbra_proto::{
     self as proto,
+    crypto::AssetId,
     light_wallet::{light_wallet_server::LightWallet, CompactBlock, CompactBlockRangeRequest},
+    chain::AssetInfo,
     thin_wallet::{
-        thin_wallet_server::ThinWallet, Asset, AssetListRequest, AssetLookupRequest,
-        TransactionByNoteRequest, TransactionDetail, ValidatorRateRequest,
+        thin_wallet_server::ThinWallet, Asset, TransactionByNoteRequest, TransactionDetail,
+        ValidatorRateRequest,
     },
 };
 use penumbra_stake::IdentityKey;
+use proto::thin_wallet::AssetListRequest;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::Status;
@@ -90,14 +93,24 @@ impl ThinWallet for State {
     #[instrument(skip(self, request))]
     async fn asset_lookup(
         &self,
-        request: tonic::Request<AssetLookupRequest>,
-    ) -> Result<tonic::Response<Asset>, Status> {
+        request: tonic::Request<AssetId>,
+    ) -> Result<tonic::Response<AssetInfo>, Status> {
         tracing::debug!(asset_id = ?hex::encode(&request.get_ref().asset_id));
         let state = self.clone();
-        let asset = state
+        let mut asset = state
             .asset_lookup(request.into_inner().asset_id)
             .await
             .map_err(|_| tonic::Status::not_found("asset not found"))?;
+
+        let current_height = self
+            .height()
+            .await
+            .map_err(|_| tonic::Status::unavailable("database error"))?
+            .value() as u32;
+
+        // TODO should asset_lookup be doing this?
+        asset.as_of_block_height = current_height as u64;
+
         Ok(tonic::Response::new(asset))
     }
 
@@ -118,7 +131,7 @@ impl ThinWallet for State {
                     .map_err(|_| tonic::Status::unavailable("database error"))
                     .unwrap();
                 for asset in &assets[..] {
-                    tracing::debug!(asset_id = ?hex::encode(&asset.asset_id), asset_denom = ?asset.asset_denom, "sending asset");
+tracing::debug!(asset_id = ?hex::encode(&asset.asset_id), asset_denom = ?asset.asset_denom, "sending asset");
                     tx.send(Ok(asset.clone())).await.unwrap();
                 }
             }

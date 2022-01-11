@@ -16,6 +16,6 @@ message ChainParams {
 message AssetInfo {
   crypto.AssetId asset_id = 1;
   crypto.Denom denom = 2;
-  uint64 as_of_block_height = 4;
-  uint64 total_supply = 3;
+  uint64 as_of_block_height = 3;
+  uint64 total_supply = 4;
 }
