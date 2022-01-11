@@ -5,7 +5,8 @@ CREATE TABLE IF NOT EXISTS blobs (
 
 CREATE TABLE IF NOT EXISTS assets (
     asset_id bytea PRIMARY KEY NOT NULL,
-    denom varchar NOT NULL
+    denom varchar NOT NULL,
+    total_supply bigint NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS blocks (

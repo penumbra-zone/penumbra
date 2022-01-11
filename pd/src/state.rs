@@ -4,11 +4,13 @@ use anyhow::{Context, Result};
 use async_stream::try_stream;
 use futures::stream::{Stream, StreamExt};
 use penumbra_crypto::{
+    asset,
     merkle::{self, NoteCommitmentTree, TreeExt},
     Address, Nullifier,
 };
 use penumbra_proto::{
     light_wallet::{CompactBlock, StateFragment},
+    chain,
     thin_wallet::{Asset, TransactionDetail},
     Protobuf,
 };
@@ -496,18 +498,27 @@ ON CONFLICT (id) DO UPDATE SET data = $1
     }
 
     /// Retrieve the [`Asset`] for a given asset ID.
-    pub async fn asset_lookup(&self, asset_id: Vec<u8>) -> Result<Asset> {
+    pub async fn asset_lookup(&self, asset_id: Vec<u8>) -> Result<chain::AssetInfo> {
         let mut conn = self.pool.acquire().await?;
 
         let asset = query!(
-            "SELECT denom, asset_id FROM assets WHERE asset_id = $1",
+            "SELECT denom, asset_id, total_supply FROM assets WHERE asset_id = $1",
             asset_id
         )
         .fetch_one(&mut conn)
         .await?;
-        Ok(Asset {
-            asset_denom: asset.denom,
-            asset_id: asset.asset_id,
+
+        // TODO: should we be returning proto types from our state methods, or domain types?
+        Ok(chain::AssetInfo {
+            denom: Some(
+                asset::REGISTRY
+                    .parse_denom(asset.denom.as_str())
+                    .unwrap()
+                    .into(),
+            ),
+            asset_id: Some(asset::Id::try_from(asset.asset_id)?.into()),
+            total_supply: asset.total_supply.try_into()?, // postgres only has i64....
+            as_of_block_height: 0, // TODO: currently having the caller do this, should we instead pull the latest block height here?
         })
     }
 
