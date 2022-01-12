@@ -103,15 +103,6 @@ impl ThinWallet for State {
             .await
             .map_err(|_| tonic::Status::not_found("asset not found"))?;
 
-        let current_height = self
-            .height()
-            .await
-            .map_err(|_| tonic::Status::unavailable("database error"))?
-            .value() as u32;
-
-        // TODO should asset_lookup be doing this?
-        asset.as_of_block_height = current_height as u64;
-
         Ok(tonic::Response::new(asset))
     }
 

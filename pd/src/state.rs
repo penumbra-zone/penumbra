@@ -509,6 +509,8 @@ ON CONFLICT (id) DO UPDATE SET data = $1
         .fetch_one(&mut conn)
         .await?;
 
+        let height = self.height().await?;
+
         let inner = Fq::from_bytes(asset.asset_id.try_into().unwrap())?;
 
         // TODO: should we be returning proto types from our state methods, or domain types?
@@ -521,7 +523,7 @@ ON CONFLICT (id) DO UPDATE SET data = $1
             ),
             asset_id: Some(asset::Id(inner).into()),
             total_supply: asset.total_supply.try_into()?, // postgres only has i64....
-            as_of_block_height: 0, // TODO: currently having the caller do this, should we instead pull the latest block height here?
+            as_of_block_height: u64::from(height),
         })
     }
 
