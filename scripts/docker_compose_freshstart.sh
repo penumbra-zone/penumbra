@@ -10,11 +10,15 @@ die () {
     exit 1
 }
 
-[ "$#" -eq 2 ] || die "build path and testnet chain ID arguments required"
+[ "$#" -eq 5 ] || die "build path, testnet chain ID, allocations input file, validators input file, and num nodes arguments required"
 
 
 build_path="$1"
 testnet_chain_id="$2"
+allocations_input_file="$3"
+validators_input_file="$4"
+num_nodes="$5"
+
 if [ -d "${build_path}" ] 
 then
     printf "Directory ${build_path} already exists. Please remove it if you really want to DELETE ALL YOUR VALIDATOR DATA AND START OVER." >&2
@@ -45,7 +49,4 @@ cargo sqlx prepare  -- --lib
 printf "Done\n"
 cd ..
 
-python3 -m venv scripts/.venv
-source scripts/.venv/bin/activate
-pip install -r scripts/requirements.txt
-python3 scripts/setup_validator.py ${testnet_chain_id} ${build_path}
+cargo run --bin pd -- generate-testnet --allocations-input-file ${allocations_input_file} --validators-input-file ${validators_input_file} --output-dir ${build_path} --epoch-duration 60 --num-validator-nodes ${num_nodes} --chain-id ${testnet_chain_id}
