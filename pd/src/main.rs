@@ -435,6 +435,17 @@ async fn main() -> anyhow::Result<()> {
                 let mut priv_validator_key_file = File::create(priv_validator_key_file_path)?;
                 priv_validator_key_file
                     .write_all(serde_json::to_string_pretty(&priv_validator_key)?.as_bytes())?;
+
+                // Write the initial validator state:
+                let mut priv_validator_state_file_path = node_data_dir.clone();
+                priv_validator_state_file_path.push("priv_validator_state.json");
+                println!(
+                    "Writing {} priv validator state file to: {}",
+                    &node_name,
+                    priv_validator_state_file_path.display()
+                );
+                let mut priv_validator_state_file = File::create(priv_validator_state_file_path)?;
+                priv_validator_state_file.write_all(get_validator_state().as_bytes())?;
             }
         }
     }

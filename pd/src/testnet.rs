@@ -632,3 +632,14 @@ pub struct TendermintPrivKey {
     pub key_type: String,
     pub value: PrivateKey,
 }
+
+// Easiest to hardcode since we never change these.
+pub fn get_validator_state() -> String {
+    r#"{
+    "height": "0",
+    "round": 0,
+    "step": 0
+}
+"#
+    .to_string()
+}
