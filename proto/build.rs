@@ -93,5 +93,4 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.stake.IdentityKey.ik", AS_BECH32_IDENTITY_KEY),
     (".penumbra.crypto.Address.inner", AS_BECH32_ADDRESS),
     (".penumbra.crypto.AssetId.inner", AS_BECH32_ASSET_ID),
-    (".penumbra.crypto.NoteCommitment.inner", AS_HEX),
 ];

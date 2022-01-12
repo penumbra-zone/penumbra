@@ -45,4 +45,5 @@ sqlx = { version = "0.5.9", features = ["postgres"], optional = true }
 [dev-dependencies]
 proptest = "1"
 bincode = "1"
+serde_json = "1"
 sqlx = { version = "0.5.9", features = ["postgres", "runtime-tokio-rustls"] }

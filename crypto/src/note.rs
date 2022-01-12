@@ -331,6 +331,29 @@ impl TryFrom<[u8; NOTE_LEN_BYTES]> for Note {
 #[serde(into = "pb::NoteCommitment", try_from = "pb::NoteCommitment")]
 pub struct Commitment(pub Fq);
 
+#[cfg(test)]
+mod test_serde {
+    use super::Commitment;
+
+    #[test]
+    fn roundtrip_json_zero() {
+        let commitment = Commitment::try_from([0; 32]).unwrap();
+        let bytes = serde_json::to_vec(&commitment).unwrap();
+        println!("{:?}", bytes);
+        let deserialized: Commitment = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(commitment, deserialized);
+    }
+
+    #[test]
+    fn roundtrip_bincode_zero() {
+        let commitment = Commitment::try_from([0; 32]).unwrap();
+        let bytes = bincode::serialize(&commitment).unwrap();
+        println!("{:?}", bytes);
+        let deserialized: Commitment = bincode::deserialize(&bytes).unwrap();
+        assert_eq!(commitment, deserialized);
+    }
+}
+
 impl From<Commitment> for pb::NoteCommitment {
     fn from(nc: Commitment) -> Self {
         Self {
