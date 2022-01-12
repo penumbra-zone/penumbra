@@ -5,7 +5,7 @@ pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let string = Option::<String>::deserialize(deserializer)?.unwrap_or_default();
+    let string = String::deserialize(deserializer)?;
     hex::decode(&string).map_err(serde::de::Error::custom)
 }
 
