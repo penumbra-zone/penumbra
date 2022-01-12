@@ -18,8 +18,8 @@ pub struct PendingBlock {
     pub notes: BTreeMap<note::Commitment, PositionedNoteData>,
     /// Nullifiers that were spent in this block.
     pub spent_nullifiers: BTreeSet<Nullifier>,
-    /// Stores new asset types found in this block that need to be added to the asset registry.
-    pub new_assets: BTreeMap<asset::Id, (asset::Denom, u64)>,
+    /// Records any updates to the token supply of some asset that happened in this block.
+    pub supply_updates: BTreeMap<asset::Id, (asset::Denom, u64)>,
     /// Indicates the epoch the block belongs to.
     pub epoch: Option<Epoch>,
     /// Indicates the duration in blocks of each epoch.
@@ -37,7 +37,7 @@ impl PendingBlock {
             note_commitment_tree,
             notes: BTreeMap::new(),
             spent_nullifiers: BTreeSet::new(),
-            new_assets: BTreeMap::new(),
+            supply_updates: BTreeMap::new(),
             epoch: None,
             epoch_duration,
             next_base_rate: None,

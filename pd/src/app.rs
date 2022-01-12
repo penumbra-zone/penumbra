@@ -117,7 +117,7 @@ impl App {
             let id = denom.id();
             tracing::debug!(?id, "registering asset id");
             genesis_block
-                .new_assets
+                .supply_updates
                 .insert(id, (denom, allocation.amount));
         }
 
