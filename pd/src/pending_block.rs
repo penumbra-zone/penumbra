@@ -19,7 +19,7 @@ pub struct PendingBlock {
     /// Nullifiers that were spent in this block.
     pub spent_nullifiers: BTreeSet<Nullifier>,
     /// Stores new asset types found in this block that need to be added to the asset registry.
-    pub new_assets: BTreeMap<asset::Id, String>,
+    pub new_assets: BTreeMap<asset::Id, (asset::Denom, u64)>,
     /// Indicates the epoch the block belongs to.
     pub epoch: Option<Epoch>,
     /// Indicates the duration in blocks of each epoch.

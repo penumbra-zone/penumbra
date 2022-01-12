@@ -111,14 +111,14 @@ impl App {
             tracing::info!(?allocation, "processing allocation");
             tx_builder.add_output(allocation.note().expect("genesis allocations are valid"));
             // Add all assets found in the genesis transaction to the asset registry
-            let id = asset::REGISTRY
+            let denom = asset::REGISTRY
                 .parse_denom(&allocation.denom)
-                .expect("genesis allocations must have valid denominations")
-                .id();
+                .expect("genesis allocations must have valid denominations");
+            let id = denom.id();
             tracing::debug!(?id, "registering asset id");
             genesis_block
                 .new_assets
-                .insert(id, allocation.denom.clone());
+                .insert(id, (denom, allocation.amount));
         }
 
         let genesis_tx = tx_builder

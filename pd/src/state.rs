@@ -186,11 +186,12 @@ ON CONFLICT (id) DO UPDATE SET data = $1
         }
 
         // Save any new assets found in the block to the asset registry.
-        for (id, denom) in block.new_assets {
+        for (id, asset) in block.new_assets {
             query!(
-                r#"INSERT INTO assets (asset_id, denom) VALUES ($1, $2)"#,
+                r#"INSERT INTO assets (asset_id, denom, total_supply) VALUES ($1, $2, $3)"#,
                 &id.to_bytes()[..],
-                denom
+                asset.0.to_string(),
+                asset.1 as i64
             )
             .execute(&mut dbtx)
             .await?;

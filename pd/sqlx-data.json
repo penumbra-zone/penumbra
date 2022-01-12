@@ -489,8 +489,8 @@
       ]
     }
   },
-  "dd42bddc81dc82581542307fb7f388cf539ae7b9dc506464bb357d1a78b8056a": {
-    "query": "INSERT INTO validator_fundingstreams (\n                        identity_key, \n                        address, \n                        rate_bps\n                    ) VALUES ($1, $2, $3)",
+  "dd092a6ec34f710ab7138a2e48f8fcbcf21970c19183fa57d615b059029ab90d": {
+    "query": "INSERT INTO assets (asset_id, denom, total_supply) VALUES ($1, $2, $3)",
     "describe": {
       "columns": [],
       "parameters": {
@@ -503,14 +503,15 @@
       "nullable": []
     }
   },
-  "f02fb84c77d1d5a7418debac7291c8524d6e4d6559596ff69217d629a1c7b1c2": {
-    "query": "INSERT INTO assets (asset_id, denom) VALUES ($1, $2)",
+  "dd42bddc81dc82581542307fb7f388cf539ae7b9dc506464bb357d1a78b8056a": {
+    "query": "INSERT INTO validator_fundingstreams (\n                        identity_key, \n                        address, \n                        rate_bps\n                    ) VALUES ($1, $2, $3)",
     "describe": {
       "columns": [],
       "parameters": {
         "Left": [
           "Bytea",
-          "Varchar"
+          "Varchar",
+          "Int8"
         ]
       },
       "nullable": []
