@@ -16,6 +16,7 @@ mod wallet;
 use sequential::Sequencer;
 
 pub mod genesis;
+pub mod testnet;
 
 pub use app::App;
 pub use pd_metrics::register_all_metrics;
