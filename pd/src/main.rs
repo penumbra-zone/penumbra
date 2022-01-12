@@ -62,7 +62,7 @@ enum Command {
         /// Path to CSV file containing initial allocations.
         #[structopt(short, long, parse(from_os_str))]
         allocations_input_file: PathBuf,
-        /// Path to CSV file containing initial validator configs.
+        /// Path to JSON file containing initial validator configs.
         #[structopt(short, long, parse(from_os_str))]
         validators_input_file: PathBuf,
         /// Path to directory to store output in. Must not exist.
