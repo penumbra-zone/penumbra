@@ -1,17 +1,10 @@
-use std::fs;
-use std::fs::File;
-use std::io::Write;
 use std::net::Ipv4Addr;
 use std::net::SocketAddr;
 use std::path::PathBuf;
-use std::str::FromStr;
-use std::time::Duration;
 
 use metrics_exporter_prometheus::PrometheusBuilder;
-use pd::genesis::ValidatorPower;
-use pd::{genesis, testnet::*, App, State};
+use pd::{App, State};
 use penumbra_crypto::rdsa::{SigningKey, SpendAuth, VerificationKey};
-use penumbra_crypto::Address;
 use penumbra_proto::{
     light_wallet::light_wallet_server::LightWalletServer,
     thin_wallet::thin_wallet_server::ThinWalletServer,
@@ -19,12 +12,6 @@ use penumbra_proto::{
 use penumbra_stake::{FundingStream, Validator};
 use rand_core::OsRng;
 use structopt::StructOpt;
-use tendermint::account::Id;
-use tendermint::public_key::Algorithm;
-use tendermint::Genesis;
-use tendermint::Time;
-use tendermint_config::NodeKey;
-use tendermint_config::PrivValidatorKey;
 use tonic::transport::Server;
 
 #[derive(Debug, StructOpt)]
@@ -203,9 +190,25 @@ async fn main() -> anyhow::Result<()> {
             output_dir,
             chain_id,
         } => {
-            use penumbra_stake::IdentityKey;
+            use std::fs;
+            use std::fs::File;
+            use std::io::Write;
             use std::mem;
+            use std::str::FromStr;
+            use std::time::Duration;
             use std::time::{SystemTime, UNIX_EPOCH};
+
+            use tendermint::account::Id;
+            use tendermint::public_key::Algorithm;
+            use tendermint::Genesis;
+            use tendermint::Time;
+            use tendermint_config::NodeKey;
+            use tendermint_config::PrivValidatorKey;
+
+            use pd::genesis::ValidatorPower;
+            use pd::{genesis, testnet::*};
+            use penumbra_crypto::Address;
+            use penumbra_stake::IdentityKey;
 
             assert!(
                 num_validator_nodes > 0,
