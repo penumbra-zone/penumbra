@@ -232,8 +232,6 @@ async fn main() -> anyhow::Result<()> {
 
             struct ValidatorKeys {
                 // Penumbra spending key and viewing key for this node.
-                // TODO this isn't currently stored anywhere! You might want it!
-                #[allow(unused_variables, dead_code)]
                 pub validator_id_sk: SigningKey<SpendAuth>,
                 pub validator_id_vk: VerificationKey<SpendAuth>,
                 // Consensus key for tendermint.
@@ -446,6 +444,18 @@ async fn main() -> anyhow::Result<()> {
                 );
                 let mut priv_validator_state_file = File::create(priv_validator_state_file_path)?;
                 priv_validator_state_file.write_all(get_validator_state().as_bytes())?;
+
+                // Write the validator's signing key:
+                let mut validator_signingkey_file_path = node_config_dir.clone();
+                validator_signingkey_file_path.push("validator_signingkey.json");
+                println!(
+                    "Writing {} validator signing key file to: {}",
+                    &node_name,
+                    validator_signingkey_file_path.display()
+                );
+                let mut validator_signingkey_file = File::create(validator_signingkey_file_path)?;
+                validator_signingkey_file
+                    .write_all(serde_json::to_string_pretty(&vk.validator_id_sk)?.as_bytes())?;
             }
         }
     }
