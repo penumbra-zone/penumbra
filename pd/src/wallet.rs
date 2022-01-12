@@ -98,7 +98,7 @@ impl ThinWallet for State {
         let aid = request.into_inner().inner;
         tracing::debug!(asset_id = ?hex::encode(&aid));
         let state = self.clone();
-        let mut asset = state
+        let asset = state
             .asset_lookup(aid)
             .await
             .map_err(|_| tonic::Status::not_found("asset not found"))?;
