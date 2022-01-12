@@ -322,7 +322,6 @@ async fn main() -> anyhow::Result<()> {
                 fs::create_dir_all(&node_data_dir)?;
 
                 // Write this node's tendermint genesis.json file
-                // TODO finish
                 let validator_genesis = Genesis {
                     genesis_time,
                     chain_id: chain_id
