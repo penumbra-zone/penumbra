@@ -81,6 +81,9 @@ Then, build the `pcli` tool using `cargo`:
 cargo build --release --bin pcli
 ```
 
+Because you are building a work-in-progress version of the client, you may see compilation warnings,
+which you can safely ignore.
+
 ### Generating your wallet
 
 **Hint:** When working with `pcli`, the level of diagnostic information printed is dependent on the `RUST_LOG`
@@ -137,12 +140,15 @@ This will print a table of assets by balance in each.
 ### Sending transactions
 
 Now, for the fun part: sending transactions. If you have someone else's testnet address, you can
-send them any amount of any asset you have. For example, if I wanted to send 1 tungsten cube token
+send them any amount of any asset you have. For example, if I wanted to send 10 penumbra tokens
 to my friend, I could do that like this (filling in their full address at the end):
 
 ```bash
-cargo run --quiet --release --bin pcli tx send 1 tungsten_cube penumbrav0t...
+cargo run --quiet --release --bin pcli tx send 10penumbra --to penumbrav0t...
 ```
+
+Notice that asset amounts are typed amounts, specified without a space between the amount (`10)
+and the asset name (`penumbra`).
 
 If you have the asset in your wallet to send, then so it shall be done!
 
