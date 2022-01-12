@@ -54,22 +54,37 @@ enum Command {
     /// testnet based on input configuration.
     GenerateTestnet {
         /// How many validator nodes to create configuration for.
-        #[structopt(short, long)]
+        #[structopt(short, long, default_value = "4")]
         num_validator_nodes: usize,
         /// Number of blocks per epoch.
-        #[structopt(short, long)]
+        #[structopt(short, long, default_value = "60")]
         epoch_duration: u64,
         /// Path to CSV file containing initial allocations.
-        #[structopt(short, long, parse(from_os_str))]
+        #[structopt(
+            short,
+            long,
+            parse(from_os_str),
+            default_value = "testnets/004-thelxinoe/allocations.csv"
+        )]
         allocations_input_file: PathBuf,
         /// Path to JSON file containing initial validator configs.
-        #[structopt(short, long, parse(from_os_str))]
+        #[structopt(
+            short,
+            long,
+            parse(from_os_str),
+            default_value = "testnets/004-thelxinoe/validators.json"
+        )]
         validators_input_file: PathBuf,
         /// Path to directory to store output in. Must not exist.
-        #[structopt(short, long, parse(from_os_str))]
+        #[structopt(
+            short,
+            long,
+            parse(from_os_str),
+            default_value = "~/scratch/testnet_build"
+        )]
         output_dir: PathBuf,
         /// Testnet name, e.g. `penumbra-euporie`
-        #[structopt(short, long)]
+        #[structopt(short, long, default_value = "penumbra-thelxinoe")]
         chain_id: String,
         /// IP Address to start `tendermint` nodes on. Increments by three to make room for `pd` and `postgres` per node.
         #[structopt(short, long, default_value = "192.167.10.2")]
@@ -455,6 +470,8 @@ async fn main() -> anyhow::Result<()> {
                 let mut validator_signingkey_file = File::create(validator_signingkey_file_path)?;
                 validator_signingkey_file
                     .write_all(serde_json::to_string_pretty(&vk.validator_id_sk)?.as_bytes())?;
+
+                println!("-------------------------------------");
             }
         }
     }

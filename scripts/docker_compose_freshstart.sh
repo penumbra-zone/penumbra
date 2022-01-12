@@ -10,14 +10,10 @@ die () {
     exit 1
 }
 
-[ "$#" -eq 5 ] || die "build path, testnet chain ID, allocations input file, validators input file, and num nodes arguments required"
+[ "$#" -eq 1 ] || die "build path, testnet chain ID, allocations input file, validators input file, and num nodes arguments required"
 
 
 build_path="$1"
-testnet_chain_id="$2"
-allocations_input_file="$3"
-validators_input_file="$4"
-num_nodes="$5"
 
 if [ -d "${build_path}" ] 
 then
@@ -49,4 +45,4 @@ cargo sqlx prepare  -- --lib
 printf "Done\n"
 cd ..
 
-cargo run --bin pd -- generate-testnet --allocations-input-file ${allocations_input_file} --validators-input-file ${validators_input_file} --output-dir ${build_path} --epoch-duration 60 --num-validator-nodes ${num_nodes} --chain-id ${testnet_chain_id}
+cargo run --bin pd -- generate-testnet --output-dir ${build_path}

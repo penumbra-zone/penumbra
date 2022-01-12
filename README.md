@@ -323,7 +323,7 @@ To load genesis state for a fresh Docker configuration:
 for pd/postgres/tendermint!
 
 ```bash
-./scripts/docker_compose_freshstart.sh ~/scratch/testnet_build penumbra-eupheme testnets/003-eupheme/allocations.csv testnets/003-eupheme/validators.json 1
+./scripts/docker_compose_freshstart.sh ~/scratch/testnet_build penumbra-thelxinoe testnets/004-thelxinoe/allocations.csv testnets/004-thelxinoe/validators.json 1
 # the ~/scratch/testnet_build directory should be the root of the volume mounted
 # to the tendermint node containers in docker-compose.yml
 #

@@ -8,9 +8,7 @@ version: "3.7"
 services:
   pd:
     build:
-      # XXX TODO right now we're using the dev dockerfile because
-      # it is faster and caches layers correctly
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     secrets:
       - db_connection_string
     command:
