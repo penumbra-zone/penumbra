@@ -25,7 +25,7 @@ decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 tower-abci = { git = "https://github.com/penumbra-zone/tower-abci/" }
 tendermint-proto = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "master" }
 tendermint = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "master" }
-penumbra-jellyfish-merkle = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "main" }
+jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "main" }
 
 # External dependencies
 async-stream = "0.2"
