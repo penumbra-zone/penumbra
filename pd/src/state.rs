@@ -522,7 +522,7 @@ ON CONFLICT (id) DO UPDATE SET data = $1
                     .into(),
             ),
             asset_id: Some(asset::Id(inner).into()),
-            total_supply: asset.total_supply.try_into()?, // postgres only has i64....
+            total_supply: asset.total_supply as u64, // postgres only has i64....
             as_of_block_height: u64::from(height),
         })
     }
