@@ -15,7 +15,9 @@ pub struct Output {
     pub ovk_wrapped_key: [u8; note::OVK_WRAPPED_LEN_BYTES],
 }
 
-impl Protobuf<transaction::Output> for Output {}
+impl Protobuf for Output {
+    type Protobuf = transaction::Output;
+}
 
 impl From<Output> for transaction::Output {
     fn from(msg: Output) -> Self {
@@ -100,7 +102,9 @@ impl Body {
     }
 }
 
-impl Protobuf<transaction::OutputBody> for Body {}
+impl Protobuf for Body {
+    type Protobuf = transaction::OutputBody;
+}
 
 impl From<Body> for transaction::OutputBody {
     fn from(msg: Body) -> Self {

@@ -14,7 +14,9 @@ pub struct FundingStream {
     pub rate_bps: u16,
 }
 
-impl Protobuf<pb::FundingStream> for FundingStream {}
+impl Protobuf for FundingStream {
+    type Protobuf = pb::FundingStream;
+}
 
 impl From<FundingStream> for pb::FundingStream {
     fn from(fs: FundingStream) -> Self {

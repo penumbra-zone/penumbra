@@ -18,7 +18,9 @@ pub struct Spend {
     pub auth_sig: Signature<SpendAuth>,
 }
 
-impl Protobuf<transaction::Spend> for Spend {}
+impl Protobuf for Spend {
+    type Protobuf = transaction::Spend;
+}
 
 impl From<Spend> for transaction::Spend {
     fn from(msg: Spend) -> Self {
@@ -105,7 +107,9 @@ impl From<Body> for Vec<u8> {
     }
 }
 
-impl Protobuf<transaction::SpendBody> for Body {}
+impl Protobuf for Body {
+    type Protobuf = transaction::SpendBody;
+}
 
 impl From<Body> for transaction::SpendBody {
     fn from(msg: Body) -> Self {

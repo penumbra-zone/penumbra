@@ -52,7 +52,9 @@ pub struct ValidatorDefinition {
     pub auth_sig: Signature<SpendAuth>,
 }
 
-impl Protobuf<pb::Validator> for Validator {}
+impl Protobuf for Validator {
+    type Protobuf = pb::Validator;
+}
 
 impl From<Validator> for pb::Validator {
     fn from(v: Validator) -> Self {
@@ -91,7 +93,9 @@ impl TryFrom<pb::Validator> for Validator {
     }
 }
 
-impl Protobuf<pb::ValidatorDefinition> for ValidatorDefinition {}
+impl Protobuf for ValidatorDefinition {
+    type Protobuf = pb::ValidatorDefinition;
+}
 
 impl From<ValidatorDefinition> for pb::ValidatorDefinition {
     fn from(v: ValidatorDefinition) -> Self {

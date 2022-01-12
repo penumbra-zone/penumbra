@@ -9,7 +9,9 @@ pub struct AssetInfo {
     pub total_supply: u64,
 }
 
-impl Protobuf<pb::AssetInfo> for AssetInfo {}
+impl Protobuf for AssetInfo {
+    type Protobuf = pb::AssetInfo;
+}
 
 impl TryFrom<pb::AssetInfo> for AssetInfo {
     type Error = anyhow::Error;
@@ -41,7 +43,9 @@ pub struct ChainParams {
     pub epoch_duration: u64,
 }
 
-impl Protobuf<pb::ChainParams> for ChainParams {}
+impl Protobuf for ChainParams {
+    type Protobuf = pb::ChainParams;
+}
 
 impl From<pb::ChainParams> for ChainParams {
     fn from(msg: pb::ChainParams) -> Self {

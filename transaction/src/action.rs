@@ -37,7 +37,9 @@ impl Action {
     }
 }
 
-impl Protobuf<pb::Action> for Action {}
+impl Protobuf for Action {
+    type Protobuf = pb::Action;
+}
 
 impl From<Action> for pb::Action {
     fn from(msg: Action) -> Self {

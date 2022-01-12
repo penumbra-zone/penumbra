@@ -138,7 +138,9 @@ impl From<TransactionBody> for Vec<u8> {
     }
 }
 
-impl Protobuf<ProtoTransactionBody> for TransactionBody {}
+impl Protobuf for TransactionBody {
+    type Protobuf = ProtoTransactionBody;
+}
 
 impl From<TransactionBody> for ProtoTransactionBody {
     fn from(msg: TransactionBody) -> Self {
@@ -187,7 +189,9 @@ impl TryFrom<ProtoTransactionBody> for TransactionBody {
         })
     }
 }
-impl Protobuf<ProtoTransaction> for Transaction {}
+impl Protobuf for Transaction {
+    type Protobuf = ProtoTransaction;
+}
 
 impl From<Transaction> for ProtoTransaction {
     fn from(msg: Transaction) -> Self {
@@ -260,7 +264,9 @@ impl From<&Transaction> for Vec<u8> {
     }
 }
 
-impl Protobuf<ProtoFee> for Fee {}
+impl Protobuf for Fee {
+    type Protobuf = ProtoFee;
+}
 
 impl From<Fee> for ProtoFee {
     fn from(fee: Fee) -> Self {

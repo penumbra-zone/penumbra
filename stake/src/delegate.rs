@@ -43,7 +43,9 @@ impl Delegate {
     }
 }
 
-impl Protobuf<pb::Delegate> for Delegate {}
+impl Protobuf for Delegate {
+    type Protobuf = pb::Delegate;
+}
 
 impl From<Delegate> for pb::Delegate {
     fn from(d: Delegate) -> Self {

@@ -230,7 +230,9 @@ impl OutputProof {
 
 // Conversions
 
-impl Protobuf<transparent_proofs::SpendProof> for SpendProof {}
+impl Protobuf for SpendProof {
+    type Protobuf = transparent_proofs::SpendProof;
+}
 
 impl From<SpendProof> for transparent_proofs::SpendProof {
     fn from(msg: SpendProof) -> Self {
@@ -328,7 +330,9 @@ impl TryFrom<transparent_proofs::SpendProof> for SpendProof {
     }
 }
 
-impl Protobuf<transparent_proofs::OutputProof> for OutputProof {}
+impl Protobuf for OutputProof {
+    type Protobuf = transparent_proofs::OutputProof;
+}
 
 impl From<OutputProof> for transparent_proofs::OutputProof {
     fn from(msg: OutputProof) -> Self {
