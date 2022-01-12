@@ -186,7 +186,10 @@ ON CONFLICT (id) DO UPDATE SET data = $1
         }
 
         // Save any new assets found in the block to the asset registry.
-        for (id, asset) in block.new_assets {
+        for (id, asset) in block.supply_updates {
+            // TODO: this needs to use an upsert using ON CONFLICT
+            // and should be fixed whenever we implement (un)delegation and
+            // would actually exercise that code path.
             query!(
                 r#"INSERT INTO assets (asset_id, denom, total_supply) VALUES ($1, $2, $3)"#,
                 &id.to_bytes()[..],
