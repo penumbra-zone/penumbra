@@ -147,7 +147,7 @@ to my friend, I could do that like this (filling in their full address at the en
 cargo run --quiet --release --bin pcli tx send 10penumbra --to penumbrav0t...
 ```
 
-Notice that asset amounts are typed amounts, specified without a space between the amount (`10)
+Notice that asset amounts are typed amounts, specified without a space between the amount (`10`)
 and the asset name (`penumbra`).
 
 If you have the asset in your wallet to send, then so it shall be done!
