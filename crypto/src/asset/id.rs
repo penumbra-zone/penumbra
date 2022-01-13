@@ -1,7 +1,7 @@
 use ark_ff::fields::PrimeField;
 use decaf377::FieldExt;
 use once_cell::sync::Lazy;
-use penumbra_proto::{crypto as pb, serializers::bech32str};
+use penumbra_proto::{crypto as pb, serializers::bech32str, Protobuf};
 use serde::{Deserialize, Serialize};
 
 use crate::Fq;
@@ -46,6 +46,8 @@ impl TryFrom<pb::AssetId> for Id {
         Ok(Id(inner))
     }
 }
+
+impl Protobuf<pb::AssetId> for Id {}
 
 impl std::fmt::Debug for Id {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

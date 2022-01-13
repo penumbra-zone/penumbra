@@ -14,8 +14,6 @@ pub struct RateData {
     pub identity_key: IdentityKey,
     /// The index of the epoch for which this rate is valid.
     pub epoch_index: u64,
-    /// The validator's voting power.
-    pub voting_power: u64,
     /// The validator-specific reward rate.
     pub validator_reward_rate: u64,
     /// The validator-specific exchange rate.
@@ -52,21 +50,38 @@ impl RateData {
             * (self.validator_reward_rate + 1_0000_0000))
             / 1_0000_0000;
 
-        // this is supposed to be multiplied by the number of delegation tokens,
-        // how do we track that?
-        //
-        // todo: consider specifying the voting power function as a pure function of current epoch
-        // state (delegation tokens, etc) instead of an adjustmenet function
-        let voting_power_adjustment =
-            (validator_exchange_rate * 1_0000_0000) / base_rate_data.base_exchange_rate;
-
         RateData {
             identity_key: self.identity_key.clone(),
             epoch_index: self.epoch_index + 1,
-            voting_power: self.voting_power * voting_power_adjustment,
             validator_reward_rate: validator_reward_rate,
             validator_exchange_rate: validator_exchange_rate,
         }
+    }
+    /// Computes the amount of delegation tokens corresponding to the given amount of unbonded stake.
+    pub fn delegation_amount(&self, unbonded_amount: u64) -> u64 {
+        // validator_exchange_rate fits in 32 bits, but unbonded_amount is 64-bit;
+        // upconvert to u128 intermediates and panic if the result is too large (unlikely)
+        ((unbonded_amount as u128 * 1_0000_0000) / self.validator_exchange_rate as u128)
+            .try_into()
+            .unwrap()
+    }
+
+    /// Computes the amount of unbonded stake corresponding to the given amount of delegation tokens
+    pub fn unbonded_amount(&self, delegation_amount: u64) -> u64 {
+        // validator_exchange_rate fits in 32 bits, but unbonded_amount is 64-bit;
+        // upconvert to u128 intermediates and panic if the result is too large (unlikely)
+        ((delegation_amount as u128 * self.validator_exchange_rate as u128) / 1_0000_0000)
+            .try_into()
+            .unwrap()
+    }
+
+    /// Computes the validator's voting power at this epoch given the total supply of the
+    /// validator's delegation tokens.
+    pub fn voting_power(&self, total_delegation_tokens: u64, base_rate_data: &BaseRateData) -> u64 {
+        ((total_delegation_tokens as u128 * self.validator_exchange_rate as u128)
+            / base_rate_data.base_exchange_rate as u128)
+            .try_into()
+            .unwrap()
     }
 }
 /// Describes the base reward and exchange rates in some epoch.
@@ -95,26 +110,6 @@ impl BaseRateData {
     }
 }
 
-impl RateData {
-    /// Computes the amount of delegation tokens corresponding to the given amount of unbonded stake.
-    pub fn delegation_amount(&self, unbonded_amount: u64) -> u64 {
-        // validator_exchange_rate fits in 32 bits, but unbonded_amount is 64-bit;
-        // upconvert to u128 intermediates and panic if the result is too large (unlikely)
-        ((unbonded_amount as u128 * 1_0000_0000) / self.validator_exchange_rate as u128)
-            .try_into()
-            .unwrap()
-    }
-
-    /// Computes the amount of unbonded stake corresponding to the given amount of delegation tokens
-    pub fn unbonded_amount(&self, delegation_amount: u64) -> u64 {
-        // validator_exchange_rate fits in 32 bits, but unbonded_amount is 64-bit;
-        // upconvert to u128 intermediates and panic if the result is too large (unlikely)
-        ((delegation_amount as u128 * self.validator_exchange_rate as u128) / 1_0000_0000)
-            .try_into()
-            .unwrap()
-    }
-}
-
 impl Protobuf<pb::RateData> for RateData {}
 
 impl From<RateData> for pb::RateData {
@@ -122,7 +117,6 @@ impl From<RateData> for pb::RateData {
         pb::RateData {
             identity_key: Some(v.identity_key.into()),
             epoch_index: v.epoch_index,
-            voting_power: v.voting_power,
             validator_reward_rate: v.validator_reward_rate,
             validator_exchange_rate: v.validator_exchange_rate,
         }
@@ -138,7 +132,6 @@ impl TryFrom<pb::RateData> for RateData {
                 .ok_or_else(|| anyhow::anyhow!("missing identity key"))?
                 .try_into()?,
             epoch_index: v.epoch_index,
-            voting_power: v.voting_power,
             validator_reward_rate: v.validator_reward_rate,
             validator_exchange_rate: v.validator_exchange_rate,
         })
