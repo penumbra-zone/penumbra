@@ -5,7 +5,7 @@ use penumbra_crypto::{
     merkle::{Frontier, NoteCommitmentTree},
     note, Nullifier,
 };
-use penumbra_stake::{BaseRateData, Epoch, RateData, ValidatorStatus};
+use penumbra_stake::{BaseRateData, Epoch, IdentityKey, RateData, ValidatorStatus};
 
 use crate::verify::{PositionedNoteData, VerifiedTransaction};
 
@@ -30,6 +30,8 @@ pub struct PendingBlock {
     pub next_rates: Option<Vec<RateData>>,
     /// If this is the last block of an epoch, validator statuses for the next epoch go here.
     pub next_validator_statuses: Option<Vec<ValidatorStatus>>,
+    /// The net delegations performed in this block per validator.
+    pub delegation_changes: BTreeMap<IdentityKey, i64>,
 }
 
 impl PendingBlock {
@@ -45,6 +47,7 @@ impl PendingBlock {
             next_base_rate: None,
             next_rates: None,
             next_validator_statuses: None,
+            delegation_changes: BTreeMap::new(),
         }
     }
 
@@ -73,8 +76,14 @@ impl PendingBlock {
                 .insert(note_commitment, PositionedNoteData { position, data });
         }
 
+        // Collect the nullifiers in this transaction
         for nullifier in transaction.spent_nullifiers {
             self.spent_nullifiers.insert(nullifier);
+        }
+
+        // Tally the delegation changes in this transaction
+        for (identity_key, delegation_change) in transaction.delegation_changes {
+            self.delegation_changes.entry(identity_key).or_insert(0) += delegation_change;
         }
     }
 }

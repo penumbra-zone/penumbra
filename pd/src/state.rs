@@ -73,8 +73,8 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
         for epoch in [0, 1] {
             query!(
                 "INSERT INTO base_rates (
-                epoch, 
-                base_reward_rate, 
+                epoch,
+                base_reward_rate,
                 base_exchange_rate
             ) VALUES ($1, $2, $3)",
                 epoch,
@@ -88,9 +88,9 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
         for genesis::ValidatorPower { validator, power } in &genesis_config.validators {
             query!(
                 "INSERT INTO validators (
-                    identity_key, 
-                    consensus_key, 
-                    sequence_number, 
+                    identity_key,
+                    consensus_key,
+                    sequence_number,
                     validator_data,
                     voting_power
                 ) VALUES ($1, $2, $3, $4, $5)",
@@ -106,8 +106,8 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
             for FundingStream { address, rate_bps } in &validator.funding_streams {
                 query!(
                     "INSERT INTO validator_fundingstreams (
-                        identity_key, 
-                        address, 
+                        identity_key,
+                        address,
                         rate_bps
                     ) VALUES ($1, $2, $3)",
                     validator.identity_key.encode_to_vec(),
@@ -153,6 +153,8 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
         let height = block.height.expect("height must be set");
 
         let nct_bytes = bincode::serialize(&block.note_commitment_tree)?;
+
+        // TODO: batch these queries?
 
         query!(
             r#"
@@ -202,6 +204,18 @@ ON CONFLICT (id) DO UPDATE SET data = $1
                 "INSERT INTO nullifiers VALUES ($1, $2)",
                 &<[u8; 32]>::from(nullifier)[..],
                 height as i64,
+            )
+            .execute(&mut dbtx)
+            .await?;
+        }
+
+        // Track the net change in delegations in this block.
+        for (identity_key, delegation_change) in block.delegation_changes {
+            query!(
+                "INSERT INTO delegation_changes VALUES ($1, $2, $3)",
+                identity_key.encode_to_vec(),
+                block.epoch.unwrap().index,
+                delegation_change
             )
             .execute(&mut dbtx)
             .await?;

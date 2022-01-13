@@ -53,8 +53,8 @@ impl RateData {
         RateData {
             identity_key: self.identity_key.clone(),
             epoch_index: self.epoch_index + 1,
-            validator_reward_rate: validator_reward_rate,
-            validator_exchange_rate: validator_exchange_rate,
+            validator_reward_rate,
+            validator_exchange_rate,
         }
     }
     /// Computes the amount of delegation tokens corresponding to the given amount of unbonded stake.

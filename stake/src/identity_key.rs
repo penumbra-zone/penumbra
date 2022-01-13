@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::DelegationToken;
 
 /// A [`SpendAuth`] [`VerificationKey`] used as a validator's identity key.
-#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(try_from = "pb::IdentityKey", into = "pb::IdentityKey")]
 pub struct IdentityKey(pub VerificationKey<SpendAuth>);
 

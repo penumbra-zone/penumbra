@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use anyhow::{Context, Error};
 use penumbra_crypto::{ka, merkle, note, Nullifier};
+use penumbra_stake::{Delegate, IdentityKey, RateData, Undelegate};
 use penumbra_transaction::{Action, Transaction};
 
 /// `PendingTransaction` holds data after stateless checks have been applied.
@@ -14,6 +15,10 @@ pub struct PendingTransaction {
     pub new_notes: BTreeMap<note::Commitment, NoteData>,
     /// List of spent nullifiers from spends in this transaction.
     pub spent_nullifiers: BTreeSet<Nullifier>,
+    /// Delegations performed in this transaction.
+    pub delegations: Vec<Delegate>,
+    /// Undelegations performed in this transaction.
+    pub undelegations: Vec<Undelegate>,
 }
 
 /// `VerifiedTransaction` represents a transaction after all checks have passed.
@@ -24,6 +29,8 @@ pub struct VerifiedTransaction {
     pub new_notes: BTreeMap<note::Commitment, NoteData>,
     /// List of spent nullifiers from spends in this transaction.
     pub spent_nullifiers: BTreeSet<Nullifier>,
+    /// Net delegations performed in this transaction.
+    pub delegation_changes: BTreeMap<IdentityKey, i64>,
 }
 
 #[derive(Debug, Clone)]
@@ -66,6 +73,8 @@ impl StatelessTransactionExt for Transaction {
         // transaction has failed.
         let mut spent_nullifiers = BTreeSet::<Nullifier>::new();
         let mut new_notes = BTreeMap::<note::Commitment, NoteData>::new();
+        let mut delegations = Vec::<Delegate>::new();
+        let mut undelegations = Vec::<Undelegate>::new();
 
         for action in self.transaction_body().actions {
             match action {
@@ -122,7 +131,17 @@ impl StatelessTransactionExt for Transaction {
 
                     spent_nullifiers.insert(spend.body.nullifier.clone());
                 }
-                _ => todo!("delegate transaction verification checks??"),
+                Action::Delegate(delegate) => {
+                    // There are currently no stateless verification checks than the ones implied by
+                    // the binding signature.
+                    delegations.push(delegate);
+                }
+                Action::Undelegate(undelegate) => {
+                    // There are currently no stateless verification checks than the ones implied by
+                    // the binding signature.
+                    undelegations.push(undelegate);
+                }
+                _ => todo!("unsupported action"),
             }
         }
 
@@ -131,6 +150,8 @@ impl StatelessTransactionExt for Transaction {
             root: self.transaction_body().merkle_root,
             new_notes,
             spent_nullifiers,
+            delegations,
+            undelegations,
         })
     }
 }
@@ -139,15 +160,34 @@ impl StatefulTransactionExt for PendingTransaction {
     fn verify_stateful(
         &self,
         valid_anchors: &VecDeque<merkle::Root>,
+        // TODO: take this argument to verify:
+        // rate_data: &BTreeMap<IdentityKey, RateData>,
     ) -> Result<VerifiedTransaction, Error> {
         if !valid_anchors.contains(&self.root) {
             return Err(anyhow::anyhow!("invalid note commitment tree root"));
+        }
+
+        // Tally the delegations and undelegations
+        let mut delegation_changes = BTreeMap::new();
+        for delegate in self.delegations {
+            // TODO: check that the identity key is in the rate data, and that the rate computation
+            // is correct
+            delegation_changes.entry(delegate.identity_key).or_insert(0) +=
+                delegate.delegation_amount.try_into().unwrap();
+        }
+        for undelegate in self.undelegations {
+            // TODO: check that the identity key is in the rate data, and that the rate computation
+            // is correct
+            delegation_changes
+                .entry(undelegate.identity_key)
+                .or_insert(0) -= undelegate.delegation_amount.try_into().unwrap();
         }
 
         Ok(VerifiedTransaction {
             id: self.id,
             new_notes: self.new_notes.clone(),
             spent_nullifiers: self.spent_nullifiers.clone(),
+            delegation_changes,
         })
     }
 }
@@ -177,6 +217,7 @@ pub fn mark_genesis_as_verified(transaction: Transaction) -> VerifiedTransaction
         id: transaction.id(),
         new_notes,
         spent_nullifiers: BTreeSet::<Nullifier>::new(),
+        delegation_changes: BTreeMap::new(),
     }
 }
 
