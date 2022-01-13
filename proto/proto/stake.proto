@@ -39,7 +39,6 @@ message FundingStream {
 message RateData {
   IdentityKey identity_key = 1;
   uint64 epoch_index = 2;
-  uint64 voting_power = 3;
   uint64 validator_reward_rate = 4;
   uint64 validator_exchange_rate = 5;
 }
@@ -61,7 +60,7 @@ message ValidatorDefinition {
 
 // Describes the current state of a validator on-chain
 message ValidatorStatus {
-  Validator validator = 1;
+  IdentityKey identity_key = 1;
   uint64 voting_power = 2;
   // ... ?
 }

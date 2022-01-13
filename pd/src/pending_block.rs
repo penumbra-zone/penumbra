@@ -5,7 +5,7 @@ use penumbra_crypto::{
     merkle::{Frontier, NoteCommitmentTree},
     note, Nullifier,
 };
-use penumbra_stake::{BaseRateData, Epoch, RateData};
+use penumbra_stake::{BaseRateData, Epoch, RateData, ValidatorStatus};
 
 use crate::verify::{PositionedNoteData, VerifiedTransaction};
 
@@ -28,6 +28,8 @@ pub struct PendingBlock {
     pub next_base_rate: Option<BaseRateData>,
     /// If this is the last block of an epoch, validator rates for the next epoch go here.
     pub next_rates: Option<Vec<RateData>>,
+    /// If this is the last block of an epoch, validator statuses for the next epoch go here.
+    pub next_validator_statuses: Option<Vec<ValidatorStatus>>,
 }
 
 impl PendingBlock {
@@ -42,6 +44,7 @@ impl PendingBlock {
             epoch_duration,
             next_base_rate: None,
             next_rates: None,
+            next_validator_statuses: None,
         }
     }
 

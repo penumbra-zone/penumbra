@@ -72,12 +72,14 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
                     identity_key, 
                     consensus_key, 
                     sequence_number, 
-                    validator_data
-                ) VALUES ($1, $2, $3, $4)",
+                    validator_data,
+                    voting_power
+                ) VALUES ($1, $2, $3, $4, $5)",
                 validator.identity_key.encode_to_vec(),
                 validator.consensus_key.to_bytes(),
                 validator.sequence_number as i64,
                 validator.encode_to_vec(),
+                power.value() as i64,
             )
             .execute(&mut dbtx)
             .await?;
@@ -105,13 +107,11 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
                 "INSERT INTO validator_rates (
                     identity_key,
                     epoch,
-                    voting_power,
                     validator_reward_rate,
                     validator_exchange_rate
-                ) VALUES ($1, $2, $3, $4, $5)",
+                ) VALUES ($1, $2, $3, $4)",
                 validator.identity_key.encode_to_vec(),
                 0,
-                power.value() as i64,
                 0,
                 1_00000000i64, // 1 represented as 1e8
             )
@@ -212,12 +212,23 @@ ON CONFLICT (id) DO UPDATE SET data = $1
 
             for rate in rate_data {
                 query!(
-                    "INSERT INTO validator_rates VALUES ($1, $2, $3, $4, $5)",
+                    "INSERT INTO validator_rates VALUES ($1, $2, $3, $4)",
                     rate.identity_key.encode_to_vec(),
                     rate.epoch_index as i64,
-                    rate.voting_power as i64,
                     rate.validator_reward_rate as i64,
                     rate.validator_exchange_rate as i64,
+                )
+                .execute(&mut dbtx)
+                .await?;
+            }
+        }
+
+        if let Some(validator_statuses) = block.next_validator_statuses {
+            for status in validator_statuses {
+                query!(
+                    "UPDATE validators SET voting_power=$1 WHERE identity_key = $2",
+                    status.voting_power as i64,
+                    status.identity_key.encode_to_vec(),
                 )
                 .execute(&mut dbtx)
                 .await?;
@@ -354,7 +365,7 @@ ON CONFLICT (id) DO UPDATE SET data = $1
     pub async fn rate_data(&self, epoch_index: u64) -> Result<Vec<RateData>> {
         let mut conn = self.pool.acquire().await?;
         let rows = query!(
-            "SELECT identity_key, epoch, voting_power, validator_reward_rate, validator_exchange_rate
+            "SELECT identity_key, epoch, validator_reward_rate, validator_exchange_rate
             FROM validator_rates
             WHERE epoch = $1",
             epoch_index as i64,
@@ -369,7 +380,6 @@ ON CONFLICT (id) DO UPDATE SET data = $1
                 identity_key: IdentityKey::decode(row.identity_key.as_slice())
                     .expect("db data is valid"),
                 epoch_index: row.epoch as u64,
-                voting_power: row.voting_power as u64,
                 validator_exchange_rate: row.validator_exchange_rate as u64,
                 validator_reward_rate: row.validator_reward_rate as u64,
             })
@@ -503,32 +513,35 @@ ON CONFLICT (id) DO UPDATE SET data = $1
     }
 
     /// Retrieve the [`Asset`] for a given asset ID.
-    pub async fn asset_lookup(&self, asset_id: Vec<u8>) -> Result<chain::AssetInfo> {
+    pub async fn asset_lookup(&self, asset_id: Vec<u8>) -> Result<Option<chain::AssetInfo>> {
         let mut conn = self.pool.acquire().await?;
 
         let asset = query!(
             "SELECT denom, asset_id, total_supply FROM assets WHERE asset_id = $1",
             asset_id
         )
-        .fetch_one(&mut conn)
+        .fetch_optional(&mut conn)
         .await?;
 
         let height = self.height().await?;
 
-        let inner = Fq::from_bytes(asset.asset_id.try_into().unwrap())?;
-
         // TODO: should we be returning proto types from our state methods, or domain types?
-        Ok(chain::AssetInfo {
-            denom: Some(
-                asset::REGISTRY
-                    .parse_denom(asset.denom.as_str())
-                    .unwrap()
-                    .into(),
-            ),
-            asset_id: Some(asset::Id(inner).into()),
-            total_supply: asset.total_supply as u64, // postgres only has i64....
-            as_of_block_height: u64::from(height),
-        })
+        Ok(asset.map(|asset| {
+            let inner = Fq::from_bytes(asset.asset_id.try_into().unwrap())
+                .expect("invalid asset id in database");
+
+            chain::AssetInfo {
+                denom: Some(
+                    asset::REGISTRY
+                        .parse_denom(asset.denom.as_str())
+                        .unwrap()
+                        .into(),
+                ),
+                asset_id: Some(asset::Id(inner).into()),
+                total_supply: asset.total_supply as u64, // postgres only has i64....
+                as_of_block_height: u64::from(height),
+            }
+        }))
     }
 
     /// Retrieves the entire Asset Registry.

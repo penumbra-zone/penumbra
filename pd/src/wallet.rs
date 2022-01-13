@@ -101,6 +101,8 @@ impl ThinWallet for State {
         let asset = state
             .asset_lookup(aid)
             .await
+            .map_err(|_| tonic::Status::not_found("asset not found"))?
+            .ok_or(|| anyhow::anyhow!("asset not found"))
             .map_err(|_| tonic::Status::not_found("asset not found"))?;
 
         Ok(tonic::Response::new(asset))

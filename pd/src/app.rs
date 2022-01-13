@@ -14,6 +14,8 @@ use penumbra_crypto::{
     merkle::{self, NoteCommitmentTree, TreeExt},
     note, Nullifier,
 };
+use penumbra_proto::Protobuf;
+use penumbra_stake::ValidatorStatus;
 use penumbra_transaction::Transaction;
 use tendermint::abci::{
     request::{self, BeginBlock, CheckTxKind, EndBlock},
@@ -360,13 +362,15 @@ impl App {
                 );
                 metrics::increment_counter!("epoch");
 
-                tracing::debug!("fetching rate data from state");
+                // TODO (optimization): batch these queries
                 let current_base_rate = state.base_rate_data(epoch.index).await?;
                 let current_rates = state.rate_data(epoch.index).await?;
-                tracing::debug!(?current_base_rate);
-                for current_rate in &current_rates {
-                    tracing::debug!(?current_rate);
-                }
+
+                // steps (foreach validator):
+                // - get the total token supply for the validator's delegation tokens
+                // - process the updates to the token supply
+                // - call next_rates.voting_power()
+                // - persist both the voting power and the updated supply
 
                 /// FIXME: set this less arbitrarily, and allow this to be set per-epoch
                 /// 3bps -> 11% return over 365 epochs, why not
@@ -383,14 +387,40 @@ impl App {
                     next_rates.push(current_rate.next(&next_base_rate, funding_streams));
                 }
 
-                tracing::debug!(?next_base_rate);
+                let mut next_validator_statuses = Vec::new();
                 for next_rate in &next_rates {
-                    tracing::debug!(?next_rate);
+                    let identity_key = next_rate.identity_key.clone();
+                    let delegation_token_supply = state
+                        .asset_lookup(identity_key.delegation_token().id().encode_to_vec())
+                        .await?
+                        .map(|info| info.total_supply)
+                        .unwrap_or(0);
+
+                    // TODO: we should process all of the delegations and undelegations in the
+                    // epoch here
+                    //
+                    // TODO: if a validator isn't part of the consensus set, should we ignore them
+                    // and not update their rates?
+
+                    let voting_power =
+                        next_rate.voting_power(delegation_token_supply, &next_base_rate);
+                    let next_status = ValidatorStatus {
+                        identity_key,
+                        voting_power,
+                    };
+                    next_validator_statuses.push(next_status);
                 }
 
                 pending_block.lock().unwrap().next_rates = Some(next_rates);
                 pending_block.lock().unwrap().next_base_rate = Some(next_base_rate);
+                pending_block.lock().unwrap().next_validator_statuses =
+                    Some(next_validator_statuses);
             }
+
+            // TODO: right now we are not writing the updated voting power from validator statuses
+            // back to tendermint, so that we can see how the statuses are computed without risking
+            // halting the testnet. in the future we want to add code here to send the next voting
+            // powers back to tendermint.
 
             // TODO: if necessary, set the EndBlock response to add validators
             // at the epoch boundary

@@ -36,7 +36,8 @@ CREATE TABLE IF NOT EXISTS validators (
     identity_key bytea NOT NULL PRIMARY KEY,
     consensus_key bytea NOT NULL,
     sequence_number bigint NOT NULL,
-    validator_data bytea NOT NULL
+    validator_data bytea NOT NULL,
+    voting_power bigint NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS validator_fundingstreams (
@@ -54,7 +55,6 @@ CREATE TABLE IF NOT EXISTS base_rates (
 CREATE TABLE IF NOT EXISTS validator_rates (
     identity_key bytea NOT NULL REFERENCES validators (identity_key),
     epoch bigint NOT NULL,
-    voting_power bigint NOT NULL,
     validator_reward_rate bigint NOT NULL,
     validator_exchange_rate bigint NOT NULL,
     PRIMARY KEY(epoch, identity_key)
