@@ -355,22 +355,32 @@ impl App {
         let state = self.state.clone();
         async move {
             if epoch.end_height().value() == height {
+                // We've finished processing the last block of `epoch`, so we've
+                // crossed the epoch boundary, and (prev | current | next) are:
+                let prev_epoch = epoch;
+                let current_epoch = prev_epoch.next();
+                let next_epoch = current_epoch.next();
+
                 tracing::info!(
                     ?height,
-                    ?epoch,
-                    "last block of epoch, processing rate updates"
+                    ?prev_epoch,
+                    ?current_epoch,
+                    ?next_epoch,
+                    "crossed epoch boundary, processing rate updates"
                 );
                 metrics::increment_counter!("epoch");
 
                 // TODO (optimization): batch these queries
-                let current_base_rate = state.base_rate_data(epoch.index).await?;
-                let current_rates = state.rate_data(epoch.index).await?;
+                let current_base_rate = state.base_rate_data(current_epoch.index).await?;
+                let current_rates = state.rate_data(current_epoch.index).await?;
 
                 // steps (foreach validator):
                 // - get the total token supply for the validator's delegation tokens
-                // - process the updates to the token supply
-                // - call next_rates.voting_power()
-                // - persist both the voting power and the updated supply
+                // - process the updates to the token supply:
+                //   - collect all delegations occurring in previous epoch and apply them (adds to supply);
+                //   - collect all undelegations started in previous epoch and apply them (reduces supply);
+                // - feed the updated (current) token supply into current_rates.voting_power()
+                // - persist both the current voting power and the current supply
 
                 /// FIXME: set this less arbitrarily, and allow this to be set per-epoch
                 /// 3bps -> 11% return over 365 epochs, why not
@@ -423,21 +433,15 @@ impl App {
                 pending_block.lock().unwrap().next_base_rate = Some(next_base_rate);
                 pending_block.lock().unwrap().next_validator_statuses =
                     Some(next_validator_statuses);
+
+                // TODO: later, set the EndBlock response to add validators
+                // at the epoch boundary
             }
 
             // TODO: right now we are not writing the updated voting power from validator statuses
             // back to tendermint, so that we can see how the statuses are computed without risking
             // halting the testnet. in the future we want to add code here to send the next voting
             // powers back to tendermint.
-
-            // TODO: if necessary, set the EndBlock response to add validators
-            // at the epoch boundary
-            if end.height.unsigned_abs() == epoch.start_height().value() {
-                // TODO: does this go in the first block of the epoch or the last block of the epoch?
-                // Epoch boundary -- add/remove validators if necessary
-                tracing::info!("first block of new epoch");
-            }
-            // TODO: here's where we process validator changes
             Ok(Response::EndBlock(response::EndBlock::default()))
         }
     }

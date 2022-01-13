@@ -59,11 +59,23 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
         .execute(&mut dbtx)
         .await?;
 
-        // TODO: move into BaseRateData::at_genesis() ctor?
-        query!(
-            "INSERT INTO base_rates (epoch, base_reward_rate, base_exchange_rate) VALUES (0, 0, $1)",
-            1_0000_0000
-        ).execute(&mut dbtx).await?;
+        // Delegations require knowing the rates for the next epoch, so
+        // pre-populate with 0 reward => exchange rate 1 for the current
+        // (index 0) and next (index 1) epochs.
+        for epoch in [0, 1] {
+            query!(
+                "INSERT INTO base_rates (
+                epoch, 
+                base_reward_rate, 
+                base_exchange_rate
+            ) VALUES ($1, $2, $3)",
+                epoch,
+                0,
+                1_0000_0000
+            )
+            .execute(&mut dbtx)
+            .await?;
+        }
 
         for genesis::ValidatorPower { validator, power } in &genesis_config.validators {
             query!(
@@ -99,23 +111,26 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
             }
 
             // The initial voting power is set from the genesis configuration,
-            // but after the first epoch period, it's recomputed based on the
-            // size of each validator's delegation pool.  In the genesis epoch,
-            // set the initial parameters as 0 reward, exchange rate 1.
-            query!(
-                "INSERT INTO validator_rates (
+            // but later, it's recomputed based on the size of each validator's
+            // delegation pool.  Delegations require knowing the rates for the
+            // next epoch, so pre-populate with 0 reward => exchange rate 1 for
+            // the current (index 0) and next (index 1) epochs.
+            for epoch in [0, 1] {
+                query!(
+                    "INSERT INTO validator_rates (
                     identity_key,
                     epoch,
                     validator_reward_rate,
                     validator_exchange_rate
                 ) VALUES ($1, $2, $3, $4)",
-                validator.identity_key.encode_to_vec(),
-                0,
-                0,
-                1_00000000i64, // 1 represented as 1e8
-            )
-            .execute(&mut dbtx)
-            .await?;
+                    validator.identity_key.encode_to_vec(),
+                    epoch,
+                    0,
+                    1_00000000i64, // 1 represented as 1e8
+                )
+                .execute(&mut dbtx)
+                .await?;
+            }
         }
 
         dbtx.commit().await.map_err(Into::into)

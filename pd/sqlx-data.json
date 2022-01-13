@@ -52,18 +52,6 @@
       ]
     }
   },
-  "37dc2448272e62b1af649a73ae39b47ca5ec6ab625a9ff26d22c02a36b6be7ac": {
-    "query": "INSERT INTO base_rates (epoch, base_reward_rate, base_exchange_rate) VALUES (0, 0, $1)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Int8"
-        ]
-      },
-      "nullable": []
-    }
-  },
   "4f9e6ca2890b779cf788f5993de20c8a2b80baa56966dac4c4f1e215171db0c8": {
     "query": "INSERT INTO validator_rates (\n                    identity_key,\n                    epoch,\n                    validator_reward_rate,\n                    validator_exchange_rate\n                ) VALUES ($1, $2, $3, $4)",
     "describe": {
@@ -202,6 +190,20 @@
       "nullable": [
         false
       ]
+    }
+  },
+  "7d0c140b625f2fa931570362ebb17be51ca9426ae009f5965b0716b7fd8a5ec3": {
+    "query": "INSERT INTO base_rates (\n                epoch, \n                base_reward_rate, \n                base_exchange_rate\n            ) VALUES ($1, $2, $3)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": []
     }
   },
   "8195450f9f1cedf05eebd974adbdc42dc70a8e2abb7753d7b02cba03786bee0d": {
