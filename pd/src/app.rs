@@ -378,18 +378,19 @@ impl App {
 
                 let next_base_rate = current_base_rate.next(BASE_REWARD_RATE);
 
+                // rename to curr_rate so it lines up with next_rate (same # chars)
+                tracing::debug!(curr_base_rate = ?current_base_rate);
+                tracing::debug!(?next_base_rate);
+
                 let mut next_rates = Vec::new();
-                for current_rate in &current_rates {
-                    let funding_streams = state
-                        .funding_streams(current_rate.identity_key.clone())
-                        .await?;
-
-                    next_rates.push(current_rate.next(&next_base_rate, funding_streams));
-                }
-
                 let mut next_validator_statuses = Vec::new();
-                for next_rate in &next_rates {
-                    let identity_key = next_rate.identity_key.clone();
+                for current_rate in &current_rates {
+                    let identity_key = current_rate.identity_key.clone();
+
+                    let funding_streams = state.funding_streams(identity_key.clone()).await?;
+
+                    let next_rate = current_rate.next(&next_base_rate, funding_streams);
+
                     let delegation_token_supply = state
                         .asset_lookup(identity_key.delegation_token().id().encode_to_vec())
                         .await?
@@ -408,6 +409,13 @@ impl App {
                         identity_key,
                         voting_power,
                     };
+
+                    // rename to curr_rate so it lines up with next_rate (same # chars)
+                    tracing::debug!(curr_rate = ?current_rate);
+                    tracing::debug!(?next_rate);
+                    tracing::debug!(?next_status);
+
+                    next_rates.push(next_rate);
                     next_validator_statuses.push(next_status);
                 }
 

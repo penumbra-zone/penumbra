@@ -3,11 +3,10 @@ use std::{collections::VecDeque, pin::Pin};
 use anyhow::{Context, Result};
 use async_stream::try_stream;
 use futures::stream::{Stream, StreamExt};
-use penumbra_crypto::FieldExt;
 use penumbra_crypto::{
     asset,
     merkle::{self, NoteCommitmentTree, TreeExt},
-    Address, Fq, Nullifier,
+    Address, FieldExt, Fq, Nullifier,
 };
 use penumbra_proto::{
     chain,
