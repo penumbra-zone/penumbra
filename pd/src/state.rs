@@ -65,16 +65,22 @@ impl State {
     pub async fn commit_genesis(&self, genesis_config: &genesis::AppState) -> Result<()> {
         let mut dbtx = self.pool.begin().await?;
 
+        let genesis_bytes = serde_json::to_vec(&genesis_config)?;
+
         // ON CONFLICT is excluded here so that an error is raised
         // if genesis config is attempted to be set more than once
         query!(
             r#"
-INSERT INTO blobs (id, data) VALUES ('gc', $1)
-"#,
-            &serde_json::to_vec(&genesis_config)?[..]
+            INSERT INTO blobs (id, data) VALUES ('gc', $1)
+            "#,
+            &genesis_bytes[..]
         )
         .execute(&mut dbtx)
         .await?;
+
+        query!("INSERT INTO jmt (value) VALUES ($1)", &genesis_bytes[..])
+            .execute(&mut dbtx)
+            .await?;
 
         // Delegations require knowing the rates for the next epoch, so
         // pre-populate with 0 reward => exchange rate 1 for the current
@@ -167,13 +173,17 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
 
         query!(
             r#"
-INSERT INTO blobs (id, data) VALUES ('nct', $1)
-ON CONFLICT (id) DO UPDATE SET data = $1
-"#,
+            INSERT INTO blobs (id, data) VALUES ('nct', $1)
+            ON CONFLICT (id) DO UPDATE SET data = $1
+            "#,
             &nct_bytes[..]
         )
         .execute(&mut dbtx)
         .await?;
+
+        query!("INSERT INTO jmt (value) VALUES ($1)", &nct_bytes[..])
+            .execute(&mut dbtx)
+            .await?;
 
         query!(
             "INSERT INTO blocks (height, nct_anchor, app_hash) VALUES ($1, $2, $3)",
