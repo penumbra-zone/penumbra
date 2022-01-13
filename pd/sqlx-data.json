@@ -363,6 +363,24 @@
       "nullable": []
     }
   },
+  "bf52f1b1ec94ff12c0d86fe2021370784dd9de97ad2bea79856aa624444fa142": {
+    "query": "SELECT true",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "bool",
+          "type_info": "Bool"
+        }
+      ],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": [
+        null
+      ]
+    }
+  },
   "c0838e2487bc88b229fe4b5ab786b11780d5196f3e88a5281e7a409171fe4734": {
     "query": "SELECT * from validator_fundingstreams WHERE identity_key = $1",
     "describe": {

@@ -41,6 +41,14 @@ impl State {
         tracing::info!("running migrations");
         sqlx::migrate!("./migrations").run(&pool).await?;
         tracing::info!("finished initializing state");
+
+        let start = std::time::Instant::now();
+        let mut conn = pool.acquire().await?;
+        query!("SELECT true").fetch_all(&mut conn).await?;
+        let end = start.elapsed();
+        let ms = (end.as_micros() as f64) / 1000.;
+        tracing::info!("no-op query took {}ms ({:.0} per second)", ms, 1000. / ms);
+
         Ok(State { pool })
     }
 
