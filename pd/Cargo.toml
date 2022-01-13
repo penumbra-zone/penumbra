@@ -35,11 +35,13 @@ blake2b_simd = "0.5"
 bytes = "1"
 chrono = { version = "0.4", default-features = false, features = ["serde"] }
 csv = "1.1"
+directories = "4.0"
 tokio = { version = "1", features = ["full"]}
 tokio-stream = "0.1"
 tokio-util = "0.6"
 tower = { version = "0.4", features = ["full"]}
 tracing = "0.1"
+regex = "1.5"
 structopt = "0.3"
 tonic = "0.6.1"
 tracing-subscriber = "0.2"

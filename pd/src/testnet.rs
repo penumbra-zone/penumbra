@@ -1,10 +1,14 @@
+use std::env::current_dir;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::{fmt, fs::File};
 
 use anyhow::Result;
-use penumbra_crypto::Address;
+use directories::UserDirs;
+use regex::{Captures, Regex};
 use serde::{de, Deserialize};
+
+use penumbra_crypto::Address;
 use tendermint::PrivateKey;
 
 use crate::genesis;
@@ -642,4 +646,26 @@ pub fn get_validator_state() -> String {
 }
 "#
     .to_string()
+}
+
+/// Expand tildes in a path.
+/// Modified from https://stackoverflow.com/a/68233480
+pub fn canonicalize_path(input: &str) -> PathBuf {
+    let tilde = Regex::new(r"^~(/|$)").unwrap();
+    if input.starts_with('/') {
+        // if the input starts with a `/`, we use it as is
+        input.into()
+    } else if tilde.is_match(input) {
+        // if the input starts with `~` as first token, we replace
+        // this `~` with the user home directory
+        PathBuf::from(&*tilde.replace(input, |c: &Captures| {
+            if let Some(user_dirs) = UserDirs::new() {
+                format!("{}{}", user_dirs.home_dir().to_string_lossy(), &c[1],)
+            } else {
+                c[0].to_string()
+            }
+        }))
+    } else {
+        PathBuf::from(format!("{}/{}", current_dir().unwrap().display(), input))
+    }
 }

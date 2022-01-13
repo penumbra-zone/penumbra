@@ -76,13 +76,8 @@ enum Command {
         )]
         validators_input_file: PathBuf,
         /// Path to directory to store output in. Must not exist.
-        #[structopt(
-            short,
-            long,
-            parse(from_os_str),
-            default_value = "~/scratch/testnet_build"
-        )]
-        output_dir: PathBuf,
+        #[structopt(short, long)]
+        output_dir: Option<PathBuf>,
         /// Testnet name, e.g. `penumbra-euporie`
         #[structopt(short, long, default_value = "penumbra-thelxinoe")]
         chain_id: String,
@@ -208,7 +203,6 @@ async fn main() -> anyhow::Result<()> {
             use std::fs;
             use std::fs::File;
             use std::io::Write;
-            use std::mem;
             use std::str::FromStr;
             use std::time::Duration;
             use std::time::{SystemTime, UNIX_EPOCH};
@@ -238,6 +232,12 @@ async fn main() -> anyhow::Result<()> {
                 0,
             )
             .expect("able to convert current time into Time");
+
+            // By default output directory will be in `~/.penumbra/testnet_data/`
+            let output_dir = match output_dir {
+                Some(o) => o,
+                None => canonicalize_path("~/.penumbra/testnet_data"),
+            };
 
             // Parse allocations from input file
             let allocations = parse_allocations_file(allocations_input_file)?;
@@ -429,11 +429,7 @@ async fn main() -> anyhow::Result<()> {
                 let priv_validator_key = PrivValidatorKey {
                     address,
                     pub_key: vk.validator_cons_pk,
-                    priv_key: tendermint::private_key::PrivateKey::Ed25519(
-                        *priv_key
-                            .ed25519_signing_key()
-                            .expect("expected ed25519 signing key"),
-                    ),
+                    priv_key,
                 };
                 let mut priv_validator_key_file_path = node_config_dir.clone();
                 priv_validator_key_file_path.push("priv_validator_key.json");
