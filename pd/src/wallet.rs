@@ -136,10 +136,10 @@ tracing::debug!(asset_id = ?hex::encode(&asset.asset_id), asset_denom = ?asset.a
     }
 
     #[instrument(skip(self, request))]
-    async fn validator_info(
+    async fn validator_status(
         &self,
         request: tonic::Request<proto::stake::IdentityKey>,
-    ) -> Result<tonic::Response<proto::stake::ValidatorDefinition>, Status> {
+    ) -> Result<tonic::Response<proto::stake::ValidatorStatus>, Status> {
         todo!()
     }
 

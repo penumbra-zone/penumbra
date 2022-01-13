@@ -14,7 +14,7 @@ service ThinWallet {
   rpc AssetLookup(crypto.AssetId) returns (chain.AssetInfo);
   rpc AssetList(AssetListRequest) returns (stream Asset);
   // TODO: return ValidatorStatus?
-  rpc ValidatorInfo(stake.IdentityKey) returns (stake.ValidatorDefinition);
+  rpc ValidatorStatus(stake.IdentityKey) returns (stake.ValidatorStatus);
   rpc ValidatorRate(ValidatorRateRequest) returns (stake.RateData);
 }
 
