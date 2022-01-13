@@ -31,4 +31,12 @@ impl Epoch {
     pub fn is_epoch_boundary(height: u64, epoch_duration: u64) -> bool {
         height % epoch_duration == 0
     }
+
+    /// Returns the epoch following this one.
+    pub fn next(&self) -> Self {
+        Epoch {
+            index: self.index + 1,
+            duration: self.duration,
+        }
+    }
 }
