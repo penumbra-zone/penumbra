@@ -1,0 +1,15 @@
+[
+    {
+        "name": "Testnet Validator (Change Me!)",
+        "website": "https://example.com",
+        "description": "This is an illustration of the validator parameters structure; you should use it as an example when creating your testnet parameters.",
+        "funding_streams": [
+            [
+                200,
+                "penumbrav0t14k6uhn8pnuvm869h3kgfywk03cn8nxv4fgu2ehdjdrgk2277lgsp7qrzduzyka2v3pfsy8py259ge9eq36nq8czsjgjsm5rv28s9mq54z3yw3veyz52lt0qsfp29w3"
+            ]
+        ],
+        "sequence_number": 0,
+        "voting_power": 100
+    }
+]
