@@ -41,6 +41,7 @@ impl From<AssetInfo> for pb::AssetInfo {
 pub struct ChainParams {
     pub chain_id: String,
     pub epoch_duration: u64,
+    pub unbonding_epochs: u64,
 }
 
 impl Protobuf<pb::ChainParams> for ChainParams {}
@@ -50,6 +51,7 @@ impl From<pb::ChainParams> for ChainParams {
         ChainParams {
             chain_id: msg.chain_id,
             epoch_duration: msg.epoch_duration,
+            unbonding_epochs: msg.unbonding_epochs,
         }
     }
 }
@@ -59,6 +61,7 @@ impl From<ChainParams> for pb::ChainParams {
         pb::ChainParams {
             chain_id: params.chain_id,
             epoch_duration: params.epoch_duration,
+            unbonding_epochs: params.unbonding_epochs,
         }
     }
 }

@@ -166,7 +166,8 @@ impl Default for AppState {
         AppState {
             chain_params: ChainParams {
                 chain_id: CURRENT_CHAIN_ID.to_string(),
-                epoch_duration: 8640,
+                epoch_duration: 10,
+                unbonding_epochs: 5,
             },
             allocations: Vec::default(),
             validators: Vec::default(),

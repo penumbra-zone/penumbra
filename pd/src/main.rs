@@ -62,6 +62,9 @@ enum Command {
         /// Number of blocks per epoch.
         #[structopt(short, long, default_value = "60")]
         epoch_duration: u64,
+        /// Number of epochs it takes to unbond stake.
+        #[structopt(short, long, default_value = "24")]
+        unbonding_epochs: u64,
         /// Path to CSV file containing initial allocations.
         #[structopt(
             short,
@@ -198,6 +201,7 @@ async fn main() -> anyhow::Result<()> {
             // works.
             starting_ip,
             epoch_duration,
+            unbonding_epochs,
             allocations_input_file,
             validators_input_file,
             output_dir,
@@ -288,11 +292,12 @@ async fn main() -> anyhow::Result<()> {
                 let node_name = format!("node{}", n);
 
                 let app_state = genesis::AppState {
-                    allocations: allocations.iter().map(|a| a.into()).collect(),
                     chain_params: ChainParams {
                         chain_id: chain_id.clone(),
                         epoch_duration,
+                        unbonding_epochs,
                     },
+                    allocations: allocations.iter().map(|a| a.into()).collect(),
                     validators: validators
                         .iter()
                         .map(|v| {
