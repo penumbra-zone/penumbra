@@ -13,6 +13,22 @@
       "nullable": []
     }
   },
+  "2bf593b7f2e93978cb0490ac7f1c64f55d16a2bb5823db241dfc0ed33ae8540f": {
+    "query": "INSERT INTO validators (\n                    identity_key,\n                    consensus_key,\n                    sequence_number,\n                    validator_data,\n                    voting_power\n                ) VALUES ($1, $2, $3, $4, $5)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Bytea",
+          "Int8",
+          "Bytea",
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "302a33ec1eec61c43e6b5507b6e059e3c9f61c6da3c853ec9c6d4c815d04df61": {
     "query": "SELECT height, note_commitment, ephemeral_key, encrypted_note\n                    FROM notes\n                    WHERE height BETWEEN $1 AND $2\n                    ORDER BY position ASC",
     "describe": {
@@ -50,6 +66,20 @@
         false,
         false
       ]
+    }
+  },
+  "4501b3fc1446d51abde3513efb7df1201092a9695f858fc090043d81ad3db490": {
+    "query": "INSERT INTO validator_fundingstreams (\n                        identity_key,\n                        address,\n                        rate_bps\n                    ) VALUES ($1, $2, $3)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Varchar",
+          "Int8"
+        ]
+      },
+      "nullable": []
     }
   },
   "4f9e6ca2890b779cf788f5993de20c8a2b80baa56966dac4c4f1e215171db0c8": {
@@ -192,20 +222,6 @@
       ]
     }
   },
-  "7d0c140b625f2fa931570362ebb17be51ca9426ae009f5965b0716b7fd8a5ec3": {
-    "query": "INSERT INTO base_rates (\n                epoch, \n                base_reward_rate, \n                base_exchange_rate\n            ) VALUES ($1, $2, $3)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Int8",
-          "Int8"
-        ]
-      },
-      "nullable": []
-    }
-  },
   "8195450f9f1cedf05eebd974adbdc42dc70a8e2abb7753d7b02cba03786bee0d": {
     "query": "SELECT denom, asset_id FROM assets",
     "describe": {
@@ -292,24 +308,22 @@
       ]
     }
   },
-  "93b5d6d5374ff58344e0492f1478cc74ac331621c15a188dd951e80aeacf80e3": {
-    "query": "INSERT INTO validators (\n                    identity_key, \n                    consensus_key, \n                    sequence_number, \n                    validator_data,\n                    voting_power\n                ) VALUES ($1, $2, $3, $4, $5)",
+  "9ab28d6b1cdbe8fd02e4382ab9cf5a2fa2914aaf460020977aeadfb8818c70af": {
+    "query": "INSERT INTO base_rates VALUES ($1, $2, $3)",
     "describe": {
       "columns": [],
       "parameters": {
         "Left": [
-          "Bytea",
-          "Bytea",
           "Int8",
-          "Bytea",
+          "Int8",
           "Int8"
         ]
       },
       "nullable": []
     }
   },
-  "9ab28d6b1cdbe8fd02e4382ab9cf5a2fa2914aaf460020977aeadfb8818c70af": {
-    "query": "INSERT INTO base_rates VALUES ($1, $2, $3)",
+  "9efba3ba5ace824dfbf620cd5d9cd46ea8e0e99c6fc791723d1490a2b84d07ac": {
+    "query": "INSERT INTO base_rates (\n                epoch,\n                base_reward_rate,\n                base_exchange_rate\n            ) VALUES ($1, $2, $3)",
     "describe": {
       "columns": [],
       "parameters": {
@@ -425,6 +439,20 @@
       "nullable": []
     }
   },
+  "d12d2e8c0c1d522212ea874d422f99e950fbd843afe73bac2b7de7a1ec31af3f": {
+    "query": "INSERT INTO delegation_changes VALUES ($1, $2, $3)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "db8426f28750016ab6ed802dcfcf3cb216e04ccad385f23f867698e56529fedb": {
     "query": "SELECT id, data FROM blobs WHERE id = 'gc';",
     "describe": {
@@ -451,20 +479,6 @@
   },
   "dd092a6ec34f710ab7138a2e48f8fcbcf21970c19183fa57d615b059029ab90d": {
     "query": "INSERT INTO assets (asset_id, denom, total_supply) VALUES ($1, $2, $3)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea",
-          "Varchar",
-          "Int8"
-        ]
-      },
-      "nullable": []
-    }
-  },
-  "dd42bddc81dc82581542307fb7f388cf539ae7b9dc506464bb357d1a78b8056a": {
-    "query": "INSERT INTO validator_fundingstreams (\n                        identity_key, \n                        address, \n                        rate_bps\n                    ) VALUES ($1, $2, $3)",
     "describe": {
       "columns": [],
       "parameters": {

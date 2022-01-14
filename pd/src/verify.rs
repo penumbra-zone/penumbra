@@ -54,6 +54,7 @@ pub trait StatefulTransactionExt {
     fn verify_stateful(
         &self,
         valid_anchors: &VecDeque<merkle::Root>,
+        next_rate_data: &BTreeMap<IdentityKey, RateData>,
     ) -> Result<VerifiedTransaction, Error>;
 }
 
@@ -160,8 +161,7 @@ impl StatefulTransactionExt for PendingTransaction {
     fn verify_stateful(
         &self,
         valid_anchors: &VecDeque<merkle::Root>,
-        // TODO: take this argument to verify:
-        // rate_data: &BTreeMap<IdentityKey, RateData>,
+        next_rate_data: &BTreeMap<IdentityKey, RateData>,
     ) -> Result<VerifiedTransaction, Error> {
         if !valid_anchors.contains(&self.root) {
             return Err(anyhow::anyhow!("invalid note commitment tree root"));
@@ -169,18 +169,41 @@ impl StatefulTransactionExt for PendingTransaction {
 
         // Tally the delegations and undelegations
         let mut delegation_changes = BTreeMap::new();
-        for delegate in self.delegations {
-            // TODO: check that the identity key is in the rate data, and that the rate computation
-            // is correct
-            delegation_changes.entry(delegate.identity_key).or_insert(0) +=
-                delegate.delegation_amount.try_into().unwrap();
+        for d in &self.delegations {
+            let rate_data = next_rate_data.get(&d.validator_identity).ok_or_else(|| {
+                anyhow::anyhow!("Unknown validator identity {}", d.validator_identity)
+            })?;
+            let expected_delegation_amount = rate_data.delegation_amount(d.unbonded_amount);
+            if expected_delegation_amount == d.delegation_amount {
+                // The delegation amount is added to the delegation token supply.
+                *delegation_changes
+                    .entry(d.validator_identity.clone())
+                    .or_insert(0) += i64::try_from(d.delegation_amount).unwrap();
+            } else {
+                return Err(anyhow::anyhow!(
+                    "Expected {} delegation tokens but description produces {}",
+                    expected_delegation_amount,
+                    d.delegation_amount
+                ));
+            }
         }
-        for undelegate in self.undelegations {
-            // TODO: check that the identity key is in the rate data, and that the rate computation
-            // is correct
-            delegation_changes
-                .entry(undelegate.identity_key)
-                .or_insert(0) -= undelegate.delegation_amount.try_into().unwrap();
+        for u in &self.undelegations {
+            let rate_data = next_rate_data.get(&u.validator_identity).ok_or_else(|| {
+                anyhow::anyhow!("Unknown validator identity {}", u.validator_identity)
+            })?;
+            let expected_delegation_amount = rate_data.delegation_amount(u.unbonded_amount);
+            if expected_delegation_amount == u.delegation_amount {
+                // The undelegation amount is subtracted from the delegation token supply.
+                *delegation_changes
+                    .entry(u.validator_identity.clone())
+                    .or_insert(0) -= i64::try_from(u.delegation_amount).unwrap();
+            } else {
+                return Err(anyhow::anyhow!(
+                    "Expected {} delegation tokens but description consumes {}",
+                    expected_delegation_amount,
+                    u.delegation_amount
+                ));
+            }
         }
 
         Ok(VerifiedTransaction {
@@ -295,7 +318,7 @@ mod tests {
         valid_anchors.push_back(anchor);
 
         let _verified_tx = pending_tx
-            .verify_stateful(&valid_anchors)
+            .verify_stateful(&valid_anchors, &BTreeMap::default())
             .expect("stateful verification should pass");
     }
 }

@@ -83,7 +83,7 @@ impl PendingBlock {
 
         // Tally the delegation changes in this transaction
         for (identity_key, delegation_change) in transaction.delegation_changes {
-            self.delegation_changes.entry(identity_key).or_insert(0) += delegation_change;
+            *self.delegation_changes.entry(identity_key).or_insert(0) += delegation_change;
         }
     }
 }
