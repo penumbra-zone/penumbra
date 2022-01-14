@@ -1,11 +1,15 @@
 use std::pin::Pin;
 
 use futures::stream::{StreamExt, TryStreamExt};
+use penumbra_crypto::CURRENT_CHAIN_ID;
 use penumbra_proto::{
     self as proto,
-    chain::AssetInfo,
+    chain::{AssetInfo, ChainParams},
     crypto::AssetId,
-    light_wallet::{light_wallet_server::LightWallet, CompactBlock, CompactBlockRangeRequest},
+    light_wallet::{
+        light_wallet_server::LightWallet, ChainParamsRequest, CompactBlock,
+        CompactBlockRangeRequest,
+    },
     thin_wallet::{
         thin_wallet_server::ThinWallet, Asset, TransactionByNoteRequest, TransactionDetail,
         ValidatorRateRequest,
@@ -24,6 +28,25 @@ use crate::State;
 impl LightWallet for State {
     type CompactBlockRangeStream =
         Pin<Box<dyn futures::Stream<Item = Result<CompactBlock, tonic::Status>> + Send>>;
+
+    #[instrument(skip(self, _request), fields())]
+    async fn chain_params(
+        &self,
+        _request: tonic::Request<ChainParamsRequest>,
+    ) -> Result<tonic::Response<ChainParams>, Status> {
+        // DB query every time this happens is not ideal.
+        // The epoch duration is stored in the `App`, but
+        // not exposed to `State`
+        let genesis_configuration = self
+            .genesis_configuration()
+            .await
+            .map_err(|_| tonic::Status::unavailable("error retrieving genesis configuration"))?;
+
+        Ok(tonic::Response::new(ChainParams {
+            chain_id: CURRENT_CHAIN_ID.to_string(),
+            epoch_duration: genesis_configuration.epoch_duration,
+        }))
+    }
 
     #[instrument(
         skip(self, request),
