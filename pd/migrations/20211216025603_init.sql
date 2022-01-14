@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS delegation_changes (
 CREATE INDEX ON delegation_changes (epoch);
 CREATE INDEX ON delegation_changes (validator_identity_key);
 
-CREATE TABLE IF NOT EXISTS unbonding_notes (
+CREATE TABLE IF NOT EXISTS quarantined_notes (
     validator_identity_key bytea NOT NULL REFERENCES validators (identity_key),
     unbonding_epoch bigint NOT NULL,
     note_commitment bytea PRIMARY KEY,
@@ -79,13 +79,13 @@ CREATE TABLE IF NOT EXISTS unbonding_notes (
     height bigint NOT NULL REFERENCES blocks (height),
     UNIQUE(pre_position, unbonding_epoch)
 );
-CREATE INDEX ON unbonding_notes (unbonding_epoch);
-CREATE INDEX ON unbonding_notes (validator_identity_key);
+CREATE INDEX ON quarantined_notes (unbonding_epoch);
+CREATE INDEX ON quarantined_notes (validator_identity_key);
 
-CREATE TABLE IF NOT EXISTS unbonding_nullifiers (
+CREATE TABLE IF NOT EXISTS quarantined_nullifiers (
     validator_identity_key bytea NOT NULL REFERENCES validators (identity_key),
     unbonding_epoch bigint NOT NULL,
     nullifier bytea PRIMARY KEY REFERENCES nullifiers (nullifier)
 );
-CREATE INDEX ON unbonding_nullifiers (unbonding_epoch);
-CREATE INDEX ON unbonding_nullifiers (validator_identity_key);
+CREATE INDEX ON quarantined_nullifiers (unbonding_epoch);
+CREATE INDEX ON quarantined_nullifiers (validator_identity_key);

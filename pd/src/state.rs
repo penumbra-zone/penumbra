@@ -163,9 +163,8 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
 
         query!(
             r#"
-INSERT INTO blobs (id, data) VALUES ('nct', $1)
-ON CONFLICT (id) DO UPDATE SET data = $1
-"#,
+            INSERT INTO blobs (id, data) VALUES ('nct', $1)
+            ON CONFLICT (id) DO UPDATE SET data = $1"#,
             &nct_bytes[..]
         )
         .execute(&mut dbtx)
@@ -197,6 +196,31 @@ ON CONFLICT (id) DO UPDATE SET data = $1
                 &positioned_note.data.encrypted_note[..],
                 &positioned_note.data.transaction_id[..],
                 positioned_note.position as i64,
+                height as i64,
+            )
+            .execute(&mut dbtx)
+            .await?;
+        }
+
+        // Add undelegated note outputs into the quarantine queue.
+        for (pre_position, (note_commitment, note)) in
+            block.undelegation_notes.into_iter().enumerate()
+        {
+            query!(
+                r#"
+                INSERT INTO quarantined_notes (
+                    note_commitment,
+                    ephemeral_key,
+                    encrypted_note,
+                    transaction_id,
+                    pre_position,
+                    height
+                ) VALUES ($1, $2, $3, $4, $5, $6)"#,
+                &<[u8; 32]>::from(note_commitment)[..],
+                &note.ephemeral_key.0[..],
+                &note.encrypted_note[..],
+                &note.transaction_id[..],
+                pre_position as i64,
                 height as i64,
             )
             .execute(&mut dbtx)

@@ -20,6 +20,8 @@ pub struct PendingBlock {
     pub note_commitment_tree: NoteCommitmentTree,
     /// Stores note commitments for convienience when updating the NCT.
     pub notes: BTreeMap<note::Commitment, PositionedNoteData>,
+    /// Notes that are undelegation outputs in this block (not to be committed to the NCT yet).
+    pub undelegation_notes: BTreeMap<note::Commitment, NoteData>,
     /// Nullifiers that were spent in this block.
     pub spent_nullifiers: BTreeSet<Nullifier>,
     /// Records any updates to the token supply of some asset that happened in this block.
@@ -47,6 +49,7 @@ impl PendingBlock {
             height: None,
             note_commitment_tree,
             notes: BTreeMap::new(),
+            undelegation_notes: BTreeMap::new(),
             spent_nullifiers: BTreeSet::new(),
             supply_updates: BTreeMap::new(),
             epoch: None,
@@ -122,18 +125,27 @@ impl PendingBlock {
     /// Adds the state changes from a verified transaction.
     pub fn add_transaction(&mut self, transaction: VerifiedTransaction) {
         for (note_commitment, data) in transaction.new_notes {
-            self.note_commitment_tree.append(&note_commitment);
+            if transaction.contains_undelegation {
+                // If a transaction contains an undelegation, we *do not insert any of its outputs*
+                // into the NCT; instead we store them separately, to be inserted into the NCT only
+                // after the unbonding period occurs.
+                self.undelegation_notes.insert(note_commitment, data);
+            } else {
+                // If a transaction does not contain any undelegations, we insert its outputs
+                // immediately into the NCT.
+                self.note_commitment_tree.append(&note_commitment);
 
-            let position = self
-                .note_commitment_tree
-                .bridges()
-                .last()
-                .map(|b| b.frontier().position().into())
-                // If there are no bridges, the tree is empty
-                .unwrap_or(0u64);
+                let position = self
+                    .note_commitment_tree
+                    .bridges()
+                    .last()
+                    .map(|b| b.frontier().position().into())
+                    // If there are no bridges, the tree is empty
+                    .unwrap_or(0u64);
 
-            self.notes
-                .insert(note_commitment, PositionedNoteData { position, data });
+                self.notes
+                    .insert(note_commitment, PositionedNoteData { position, data });
+            }
         }
 
         // Collect the nullifiers in this transaction
