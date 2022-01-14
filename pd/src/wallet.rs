@@ -34,9 +34,6 @@ impl LightWallet for State {
         &self,
         _request: tonic::Request<ChainParamsRequest>,
     ) -> Result<tonic::Response<ChainParams>, Status> {
-        // DB query every time this happens is not ideal.
-        // The epoch duration is stored in the `App`, but
-        // not exposed to `State`
         let genesis_configuration = self
             .genesis_configuration()
             .await
