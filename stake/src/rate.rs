@@ -58,6 +58,18 @@ impl RateData {
         }
     }
     /// Computes the amount of delegation tokens corresponding to the given amount of unbonded stake.
+    ///
+    /// # Warning
+    ///
+    /// Given a pair `(delegation_amount, unbonded_amount)` and `rate_data`, it's possible to have
+    /// ```rust,no_run
+    /// delegation_amount == rate_data.delegation_amount(unbonded_amount)
+    /// ```
+    /// or
+    /// ```rust,no_run
+    /// unbonded_amount == rate_data.unbonded_amount(delegation_amount)
+    /// ```
+    /// but in general *not both*, because the computation involves rounding.
     pub fn delegation_amount(&self, unbonded_amount: u64) -> u64 {
         // validator_exchange_rate fits in 32 bits, but unbonded_amount is 64-bit;
         // upconvert to u128 intermediates and panic if the result is too large (unlikely)
@@ -66,7 +78,19 @@ impl RateData {
             .unwrap()
     }
 
-    /// Computes the amount of unbonded stake corresponding to the given amount of delegation tokens
+    /// Computes the amount of unbonded stake corresponding to the given amount of delegation tokens.
+    ///
+    /// # Warning
+    ///
+    /// Given a pair `(delegation_amount, unbonded_amount)` and `rate_data`, it's possible to have
+    /// ```rust,no_run
+    /// delegation_amount == rate_data.delegation_amount(unbonded_amount)
+    /// ```
+    /// or
+    /// ```rust,no_run
+    /// unbonded_amount == rate_data.unbonded_amount(delegation_amount)
+    /// ```
+    /// but in general *not both*, because the computation involves rounding.
     pub fn unbonded_amount(&self, delegation_amount: u64) -> u64 {
         // validator_exchange_rate fits in 32 bits, but unbonded_amount is 64-bit;
         // upconvert to u128 intermediates and panic if the result is too large (unlikely)
