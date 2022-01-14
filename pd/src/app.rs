@@ -1,8 +1,8 @@
 use std::{
-    collections::{BTreeSet, VecDeque},
+    collections::{BTreeMap, BTreeSet, VecDeque},
     future::Future,
     pin::Pin,
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex, RwLock},
     task::{Context, Poll},
 };
 
@@ -15,7 +15,7 @@ use penumbra_crypto::{
     note, Nullifier,
 };
 use penumbra_proto::Protobuf;
-use penumbra_stake::ValidatorStatus;
+use penumbra_stake::{Epoch, IdentityKey, RateData, ValidatorStatus};
 use penumbra_transaction::Transaction;
 use tendermint::abci::{
     request::{self, BeginBlock, CheckTxKind, EndBlock},
@@ -74,6 +74,9 @@ pub struct App {
 
     /// Epoch duration in blocks
     epoch_duration: u64,
+
+    /// Rate data for the next epoch.
+    next_rate_data: Arc<RwLock<BTreeMap<IdentityKey, RateData>>>,
 }
 
 impl App {
@@ -83,6 +86,22 @@ impl App {
         let note_commitment_tree = state.note_commitment_tree().await?;
         let genesis_config = state.genesis_configuration().await?;
         let recent_anchors = state.recent_anchors(NUM_RECENT_ANCHORS).await?;
+        let epoch_duration = genesis_config.epoch_duration;
+
+        // Fetch the next rate data, if any. If there's none, it's because we're
+        // pre-genesis, and we'll process an empty list, then overwrite it when
+        // we process the genesis block.
+        let next_rate_data = state
+            .rate_data(
+                Epoch::from_height(state.height().await?.value(), epoch_duration)
+                    .next()
+                    .index,
+            )
+            .await?
+            .into_iter()
+            .map(|rate_data| (rate_data.identity_key.clone(), rate_data))
+            .collect();
+
         Ok(Self {
             state,
             note_commitment_tree,
@@ -90,7 +109,8 @@ impl App {
             mempool_nullifiers: Arc::new(Default::default()),
             pending_block: None,
             sequencer: Default::default(),
-            epoch_duration: genesis_config.epoch_duration,
+            epoch_duration,
+            next_rate_data: Arc::new(RwLock::new(next_rate_data)),
         })
     }
 
@@ -155,6 +175,7 @@ impl App {
         self.pending_block = Some(Arc::new(Mutex::new(genesis_block)));
         let commit = self.commit();
         let state = self.state.clone();
+        let next_rate_data = self.next_rate_data.clone();
         async move {
             // Write genesis data before committing the genesis block.
             state
@@ -166,6 +187,16 @@ impl App {
             // there's some processing that happens prior to creating the commit
             // future, but its ordering doesn't matter at the moment)
             commit.await?;
+
+            // Initialize the rate data, which is currently empty.  We hardcode
+            // the epoch index 1, since we know we're in epoch 0.
+            let data = state
+                .rate_data(1)
+                .await?
+                .into_iter()
+                .map(|d| (d.identity_key.clone(), d))
+                .collect();
+            *next_rate_data.write().unwrap() = data;
 
             let app_hash = state.app_hash().await.unwrap();
             Ok(Response::InitChain(response::InitChain {
@@ -234,6 +265,7 @@ impl App {
         let state = self.state.clone();
         let mempool_nullifiers = self.mempool_nullifiers.clone();
         let recent_anchors = self.recent_anchors.clone();
+        let next_rate_data = self.next_rate_data.clone();
 
         async move {
             let pending_transaction =
@@ -274,7 +306,8 @@ impl App {
                 };
             }
 
-            pending_transaction.verify_stateful(&recent_anchors)?;
+            pending_transaction
+                .verify_stateful(&recent_anchors, &next_rate_data.read().unwrap())?;
 
             Ok(())
         }
@@ -290,6 +323,7 @@ impl App {
     fn deliver_tx(&mut self, txbytes: Bytes) -> impl Future<Output = Result<(), anyhow::Error>> {
         let state = self.state.clone();
         let recent_anchors = self.recent_anchors.clone();
+        let next_rate_data = self.next_rate_data.clone();
         let pending_block_ref = self.pending_block.clone();
 
         async move {
@@ -325,7 +359,8 @@ impl App {
                 }
             }
 
-            let verified_transaction = pending_transaction.verify_stateful(&recent_anchors)?;
+            let verified_transaction = pending_transaction
+                .verify_stateful(&recent_anchors, &next_rate_data.read().unwrap())?;
 
             // We accumulate data only for `VerifiedTransaction`s into `PendingBlock`.
             pending_block_ref
@@ -471,6 +506,16 @@ impl App {
         self.recent_anchors.push_front(anchor);
         if self.recent_anchors.len() > NUM_RECENT_ANCHORS {
             self.recent_anchors.pop_back();
+        }
+
+        // If next_rates is set on the block, we're at the end of the epoch,
+        // so update our in-memory copy.
+        if let Some(ref next_rates) = pending_block.next_rates {
+            *self.next_rate_data.write().unwrap() = next_rates
+                .iter()
+                .cloned()
+                .map(|d| (d.identity_key.clone(), d))
+                .collect();
         }
 
         let state = self.state.clone();

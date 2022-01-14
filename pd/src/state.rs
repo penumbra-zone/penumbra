@@ -210,11 +210,12 @@ ON CONFLICT (id) DO UPDATE SET data = $1
         }
 
         // Track the net change in delegations in this block.
+        let epoch_index = block.epoch.unwrap().index;
         for (identity_key, delegation_change) in block.delegation_changes {
             query!(
                 "INSERT INTO delegation_changes VALUES ($1, $2, $3)",
                 identity_key.encode_to_vec(),
-                block.epoch.unwrap().index,
+                epoch_index as i64,
                 delegation_change
             )
             .execute(&mut dbtx)
