@@ -76,6 +76,13 @@ pub struct App {
     epoch_duration: u64,
 
     /// Rate data for the next epoch.
+    ///
+    /// The rate data is updated only at the epoch boundary but read by both
+    /// CheckTx and DeliverTx, so it's kept in an RwLock.  Using the RwLock in
+    /// an async context should be fine, because there should be no contention
+    /// on reads, as the only time we acquire a write lock is when processing an
+    /// epoch boundary (in EndBlock), and we don't process other messages at
+    /// that time.
     next_rate_data: Arc<RwLock<BTreeMap<IdentityKey, RateData>>>,
 }
 
