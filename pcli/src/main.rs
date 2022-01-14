@@ -12,7 +12,7 @@ mod warning;
 
 use command::*;
 use state::ClientStateFile;
-use sync::sync;
+use sync::{set_chain_params, sync};
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -71,6 +71,12 @@ async fn main() -> Result<()> {
 
     // Synchronize the wallet if the command requires it to be synchronized before it is run.
     let mut state = ClientStateFile::load(wallet_path.clone())?;
+
+    // Chain params may not have been fetched yet, do so if necessary.
+    if state.chain_params().is_none() {
+        let light_wallet_server_uri = format!("http://{}:{}", opt.node, opt.light_wallet_port);
+        set_chain_params(&mut state, light_wallet_server_uri).await?;
+    }
 
     if opt.cmd.needs_sync() {
         let light_wallet_server_uri = format!("http://{}:{}", opt.node, opt.light_wallet_port);
