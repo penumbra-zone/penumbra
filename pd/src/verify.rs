@@ -173,7 +173,23 @@ impl StatefulTransactionExt for PendingTransaction {
             let rate_data = next_rate_data.get(&d.validator_identity).ok_or_else(|| {
                 anyhow::anyhow!("Unknown validator identity {}", d.validator_identity)
             })?;
+
+            // For delegations, we enforce correct computation (with rounding)
+            // of the *delegation amount based on the unbonded amount*, because
+            // users (should be) starting with the amount of unbonded stake they
+            // wish to delegate, and computing the amount of delegation tokens
+            // they receive.
+            //
+            // The direction of the computation matters because the computation
+            // involves rounding, so while both
+            //
+            // (unbonded amount, rates) -> delegation amount
+            // (delegation amount, rates) -> unbonded amount
+            //
+            // should give approximately the same results, they may not give
+            // exactly the same results.
             let expected_delegation_amount = rate_data.delegation_amount(d.unbonded_amount);
+
             if expected_delegation_amount == d.delegation_amount {
                 // The delegation amount is added to the delegation token supply.
                 *delegation_changes
@@ -181,7 +197,8 @@ impl StatefulTransactionExt for PendingTransaction {
                     .or_insert(0) += i64::try_from(d.delegation_amount).unwrap();
             } else {
                 return Err(anyhow::anyhow!(
-                    "Expected {} delegation tokens but description produces {}",
+                    "Given {} unbonded stake, expected {} delegation tokens but description produces {}",
+                    d.unbonded_amount,
                     expected_delegation_amount,
                     d.delegation_amount
                 ));
@@ -191,17 +208,38 @@ impl StatefulTransactionExt for PendingTransaction {
             let rate_data = next_rate_data.get(&u.validator_identity).ok_or_else(|| {
                 anyhow::anyhow!("Unknown validator identity {}", u.validator_identity)
             })?;
-            let expected_delegation_amount = rate_data.delegation_amount(u.unbonded_amount);
-            if expected_delegation_amount == u.delegation_amount {
+
+            // For undelegations, we enforce correct computation (with rounding)
+            // of the *unbonded amount based on the delegation amount*, because
+            // users (should be) starting with the amount of delegation tokens they
+            // wish to undelegate, and computing the amount of unbonded stake
+            // they receive.
+            //
+            // The direction of the computation matters because the computation
+            // involves rounding, so while both
+            //
+            // (unbonded amount, rates) -> delegation amount
+            // (delegation amount, rates) -> unbonded amount
+            //
+            // should give approximately the same results, they may not give
+            // exactly the same results.
+            let expected_unbonded_amount = rate_data.unbonded_amount(u.delegation_amount);
+
+            if expected_unbonded_amount == u.unbonded_amount {
+                // TODO: in order to have exact tracking of the token supply, we probably
+                // need to change this to record the changes to the unbonded stake and
+                // the delegation token separately
+
                 // The undelegation amount is subtracted from the delegation token supply.
                 *delegation_changes
                     .entry(u.validator_identity.clone())
                     .or_insert(0) -= i64::try_from(u.delegation_amount).unwrap();
             } else {
                 return Err(anyhow::anyhow!(
-                    "Expected {} delegation tokens but description consumes {}",
-                    expected_delegation_amount,
-                    u.delegation_amount
+                    "Given {} delegation tokens, expected {} unbonded stake but description produces {}",
+                    u.delegation_amount,
+                    expected_unbonded_amount,
+                    u.unbonded_amount,
                 ));
             }
         }
