@@ -46,6 +46,7 @@ impl LightWallet for State {
         Ok(tonic::Response::new(ChainParams {
             chain_id: genesis_configuration.chain_params.chain_id,
             epoch_duration: genesis_configuration.chain_params.epoch_duration,
+            unbonding_epochs: genesis_configuration.chain_params.unbonding_epochs,
         }))
     }
 

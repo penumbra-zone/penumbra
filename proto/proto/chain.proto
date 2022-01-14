@@ -7,8 +7,10 @@ import "crypto.proto";
 message ChainParams {
   // The identifier of the chain.
   string chain_id = 1;
-  // The transaction fee.
+  // The duration of each epoch, in number of blocks.
   uint64 epoch_duration = 2;
+  // The number of epochs an unbonding note for before being released.
+  uint64 unbonding_epochs = 3;
 }
 
 // Information about a given asset at a given time (as specified by block
