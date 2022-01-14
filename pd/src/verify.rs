@@ -35,6 +35,8 @@ pub struct VerifiedTransaction {
     pub spent_nullifiers: BTreeSet<Nullifier>,
     /// Net delegations performed in this transaction.
     pub delegation_changes: BTreeMap<IdentityKey, i64>,
+    /// Whether this transaction contained an undelegation.
+    pub contains_undelegation: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -277,6 +279,7 @@ impl StatefulTransactionExt for PendingTransaction {
             new_notes: self.new_notes.clone(),
             spent_nullifiers: self.spent_nullifiers.clone(),
             delegation_changes,
+            contains_undelegation: !self.undelegations.is_empty(),
         })
     }
 }
@@ -307,6 +310,7 @@ pub fn mark_genesis_as_verified(transaction: Transaction) -> VerifiedTransaction
         new_notes,
         spent_nullifiers: BTreeSet::<Nullifier>::new(),
         delegation_changes: BTreeMap::new(),
+        contains_undelegation: false,
     }
 }
 
