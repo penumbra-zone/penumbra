@@ -411,9 +411,8 @@ async fn main() -> anyhow::Result<()> {
 
                 // Write this node's node_key.json
                 // the underlying type doesn't implement Copy or Clone (for the best)
-                let priv_key = tendermint::PrivateKey::Ed25519(
-                    vk.node_key_sk.ed25519_signing_key().unwrap().clone(),
-                );
+                let priv_key =
+                    tendermint::PrivateKey::Ed25519(*vk.node_key_sk.ed25519_signing_key().unwrap());
                 let node_key = NodeKey { priv_key };
                 let mut node_key_file_path = node_config_dir.clone();
                 node_key_file_path.push("node_key.json");
@@ -430,7 +429,7 @@ async fn main() -> anyhow::Result<()> {
 
                 // the underlying type doesn't implement Copy or Clone (for the best)
                 let priv_key = tendermint::PrivateKey::Ed25519(
-                    vk.validator_cons_sk.ed25519_signing_key().unwrap().clone(),
+                    *vk.validator_cons_sk.ed25519_signing_key().unwrap(),
                 );
                 let priv_validator_key = PrivValidatorKey {
                     address,

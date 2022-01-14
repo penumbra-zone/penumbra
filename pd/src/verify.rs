@@ -134,7 +134,7 @@ impl StatelessTransactionExt for Transaction {
                         .verify(
                             self.transaction_body().merkle_root,
                             spend.body.value_commitment,
-                            spend.body.nullifier.clone(),
+                            spend.body.nullifier,
                             spend.body.rk,
                         )
                         .is_err()
@@ -144,11 +144,11 @@ impl StatelessTransactionExt for Transaction {
                     }
 
                     // Check nullifier has not been revealed already in this transaction.
-                    if spent_nullifiers.contains(&spend.body.nullifier.clone()) {
+                    if spent_nullifiers.contains(&spend.body.nullifier) {
                         return Err(anyhow::anyhow!("Double spend"));
                     }
 
-                    spent_nullifiers.insert(spend.body.nullifier.clone());
+                    spent_nullifiers.insert(spend.body.nullifier);
                 }
                 Action::Delegate(delegate) => {
                     // There are currently no stateless verification checks than the ones implied by

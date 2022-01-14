@@ -316,7 +316,7 @@ impl App {
             // Ensure that we do not add any transactions that have spent nullifiers in the database.
             for nullifier in transaction.spent_nullifiers.clone() {
                 if state
-                    .nullifier(nullifier.clone())
+                    .nullifier(nullifier)
                     .await
                     .expect("must be able to fetch nullifier")
                     .is_some()
@@ -352,7 +352,7 @@ impl App {
             for nullifier in transaction.spent_nullifiers.clone() {
                 // verify that we're not spending a nullifier that was already spent in a previous block
                 if state
-                    .nullifier(nullifier.clone())
+                    .nullifier(nullifier)
                     .await
                     .expect("must be able to fetch nullifier")
                     .is_some()
