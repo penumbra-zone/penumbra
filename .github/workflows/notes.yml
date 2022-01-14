@@ -42,7 +42,7 @@ jobs:
           cargo doc --no-deps \
             -p tendermint \
             -p incrementalmerkletree \
-            -p penumbra-jellyfish-merkle \
+            -p jmt \
             -p ark-ff \
             -p ark-serialize \
             -p ark-sponge \
