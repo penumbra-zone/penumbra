@@ -13,6 +13,35 @@
       "nullable": []
     }
   },
+  "12573f334b13021a54ed94b5099ffc749a2178ccd8ac12498ea7b6748c7b024c": {
+    "query": "\n                INSERT INTO quarantined_notes (\n                    note_commitment,\n                    ephemeral_key,\n                    encrypted_note,\n                    transaction_id,\n                    pre_position,\n                    height\n                ) VALUES ($1, $2, $3, $4, $5, $6)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Bytea",
+          "Bytea",
+          "Bytea",
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "1680d183efbdb30edbf06e5138503ef6ef74e5dffa9e06fe13c0e89d8254cf56": {
+    "query": "\n            INSERT INTO blobs (id, data) VALUES ('nct', $1)\n            ON CONFLICT (id) DO UPDATE SET data = $1",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "17f7371f353e0c856b2893d4d37bfe5be632e178eb71e31e62ef90f96c4a89e0": {
     "query": "SELECT \n                    validators.identity_key, \n                    validators.voting_power, \n                    validator_rates.epoch, \n                    validator_rates.validator_reward_rate, \n                    validator_rates.validator_exchange_rate,\n                    validators.validator_data \n                FROM (\n                    validators INNER JOIN validator_rates ON validators.identity_key = validator_rates.identity_key\n                )\n                WHERE validator_rates.epoch = (SELECT MAX(epoch) FROM base_rates) AND NOT voting_power = $1",
     "describe": {
@@ -168,18 +197,6 @@
           "Int8",
           "Int8",
           "Int8"
-        ]
-      },
-      "nullable": []
-    }
-  },
-  "51f515cc43458854df653c298142e6c77b2905b453f85c31ae1a0f56fbce1c2a": {
-    "query": "\nINSERT INTO blobs (id, data) VALUES ('nct', $1)\nON CONFLICT (id) DO UPDATE SET data = $1\n",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea"
         ]
       },
       "nullable": []
