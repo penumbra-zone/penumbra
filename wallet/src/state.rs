@@ -301,12 +301,11 @@ impl ClientState {
             for note in notes {
                 let note_commitment = note.commit();
 
-                let auth_path = self
+                let merkle_path = self
                     .note_commitment_tree
                     .authentication_path(&note_commitment)
                     .expect("tried to spend note not present in note commitment tree");
-                let merkle_path = (u64::from(auth_path.0) as usize, auth_path.1);
-                let merkle_position = auth_path.0;
+                let merkle_position = merkle_path.0;
                 tx_builder.add_spend(
                     rng,
                     self.wallet.spend_key(),

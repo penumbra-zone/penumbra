@@ -331,8 +331,8 @@ mod tests {
         nct.append(&note_commitment);
         let anchor = nct.root2();
         nct.witness();
-        let auth_path = nct.authentication_path(&note_commitment).unwrap();
-        let merkle_path = (u64::from(auth_path.0) as usize, auth_path.1);
+        let merkle_path = nct.authentication_path(&note_commitment).unwrap();
+        let position = merkle_path.0;
 
         let transaction = Transaction::build_with_root(anchor.clone())
             .set_fee(10)
@@ -344,7 +344,7 @@ mod tests {
                 MemoPlaintext::default(),
                 ovk_sender,
             )
-            .add_spend(&mut rng, sk_sender, merkle_path, note, auth_path.0)
+            .add_spend(&mut rng, sk_sender, merkle_path, note, position)
             .finalize(&mut rng)
             .expect("transaction created ok");
 
