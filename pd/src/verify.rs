@@ -158,6 +158,17 @@ impl StatelessTransactionExt for Transaction {
             }
         }
 
+        // We prohibit actions other than `Spend`, `Delegate`, `Output` and `Undelegate` in
+        // transactions that contain `Undelegate`, to avoid having to quarantine them.
+        if !undelegations.is_empty() {
+            use Action::*;
+            for action in self.transaction_body().actions {
+                if !matches!(action, Undelegate(_) | Delegate(_) | Spend(_) | Output(_)) {
+                    return Err(anyhow::anyhow!("transaction contains an undelegation, but also contains an action other than Spend, Delegate, Output or Undelegate"));
+                }
+            }
+        }
+
         Ok(PendingTransaction {
             id,
             root: self.transaction_body().merkle_root,
