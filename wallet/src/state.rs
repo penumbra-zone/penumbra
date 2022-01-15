@@ -134,16 +134,40 @@ impl ClientState {
         &mut self.wallet
     }
 
-    /// Returns a list of notes to spend to release (at least) the provided value.
+    /// Register a change note.
     ///
-    /// If `source_address` is `Some`, restrict to only the notes sent to that address.
+    /// This is a note we create, sent to ourselves, with the "change" from a
+    /// transaction.  Tracking these notes allows the wallet UI to display
+    /// self-addressed value to users, so they're not surprised that their
+    /// wallet suddenly has much less than they expected (e.g., when they split
+    /// a large note into a small output + change).
+    ///
+    /// This registration is temporary; if the note is not observed on-chain
+    /// before some timeout, it will be forgotten.
+    pub fn register_change(&mut self, note: Note) {
+        let timeout = SystemTime::now() + SUBMITTED_TRANSACTION_TIMEOUT;
+        let commitment = note.commit();
+
+        tracing::debug!(?commitment, value = ?note.value(), "adding note to submitted change set");
+        self.submitted_change_set
+            .insert(commitment, (timeout, note));
+    }
+
+    /// Returns a list of notes to spend to release (at least) the provided
+    /// value.
+    ///
+    /// The returned notes are removed from the unspent set and marked as having
+    /// been spent (pending confirmation) by the chain.
+    ///
+    /// If `source_address` is `Some`, restrict to only the notes sent to that
+    /// address.
     pub fn notes_to_spend<R: CryptoRng + RngCore>(
-        &self,
+        &mut self,
         rng: &mut R,
         amount: u64,
         denom: Denom,
         source_address: Option<u64>,
-    ) -> Result<Vec<&Note>, anyhow::Error> {
+    ) -> Result<Vec<Note>, anyhow::Error> {
         let mut notes_by_address = self
             .unspent_notes_by_denom_and_address()
             .remove(&denom)
@@ -170,7 +194,7 @@ impl ClientState {
             // A note is only spendable if it has been confirmed on chain to us (change outputs
             // cannot be spent yet because they do not have a position):
             if let UnspentNote::Ready(note) = note {
-                notes_to_spend.push(note);
+                notes_to_spend.push(note.clone());
                 total_spend_value += note.amount();
 
                 if total_spend_value >= amount {
@@ -180,6 +204,20 @@ impl ClientState {
         }
 
         if total_spend_value >= amount {
+            // Before returning the notes to the caller, mark them as having been
+            // spent.  (If the caller does not spend them, or the tx fails, etc.,
+            // this state will be erased after the timeout).
+            let timeout = SystemTime::now() + SUBMITTED_TRANSACTION_TIMEOUT;
+
+            for note in &notes_to_spend {
+                let commitment = note.commit();
+
+                // Add the note to the submitted spend set
+                tracing::debug!(?commitment, value = ?note.value(), "moving note from unspent set to submitted spend set");
+                let note = self.unspent_set.remove(&commitment).unwrap();
+                self.submitted_spend_set.insert(commitment, (timeout, note));
+            }
+
             Ok(notes_to_spend)
         } else {
             Err(anyhow::anyhow!(
@@ -245,9 +283,6 @@ impl ClientState {
                 .or_default() += fee;
         }
 
-        // The time in the future when submitted transactions created now should expire
-        let timeout = SystemTime::now() + SUBMITTED_TRANSACTION_TIMEOUT;
-
         for (denom, amount) in value_to_spend {
             // Only produce an output if the amount is greater than zero
             if amount == 0 {
@@ -255,11 +290,8 @@ impl ClientState {
             }
 
             // Select a list of notes that provides at least the required amount.
-            let notes: Vec<Note> = self
-                .notes_to_spend(rng, amount, denom.clone(), source_address)?
-                .into_iter()
-                .map(Note::clone)
-                .collect();
+            let notes: Vec<Note> =
+                self.notes_to_spend(rng, amount, denom.clone(), source_address)?;
             let change_address = self
                 .wallet
                 .change_address(notes.last().expect("spent at least one note"))?;
@@ -268,12 +300,6 @@ impl ClientState {
             // Spend each of the notes we selected.
             for note in notes {
                 let note_commitment = note.commit();
-
-                // Add the note to the submitted spend set
-                tracing::debug!(value = ?note.value(), "moving note from unspent set to submitted spend set");
-                self.unspent_set.remove(&note_commitment);
-                self.submitted_spend_set
-                    .insert(note_commitment, (timeout, note.clone()));
 
                 let auth_path = self
                     .note_commitment_tree
@@ -306,12 +332,7 @@ impl ClientState {
                     self.wallet.outgoing_viewing_key(),
                 );
 
-                let note_commitment = note.commit();
-
-                // Add the note to the submitted change set
-                tracing::debug!(value = ?note.value(), "adding note to submitted change set");
-                self.submitted_change_set
-                    .insert(note_commitment, (timeout, note));
+                self.register_change(note);
             }
         }
 
