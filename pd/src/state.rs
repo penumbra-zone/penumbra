@@ -181,7 +181,9 @@ impl State {
         .execute(&mut dbtx)
         .await?;
 
-        query!("INSERT INTO jmt (value) VALUES ($1)", &nct_bytes[..])
+        let nct_root_bytes = &block.note_commitment_tree.root2().to_bytes();
+
+        query!("INSERT INTO jmt (value) VALUES ($1)", &nct_root_bytes[..])
             .execute(&mut dbtx)
             .await?;
 
@@ -730,7 +732,7 @@ impl<V: jmt::Value> TreeReaderAsync<V> for State {
             .await?;
 
             let value = match value {
-                Some(row) => Some(Node::decode(&row.value.unwrap())?),
+                Some(row) => Some(Node::decode(&row.value)?),
                 _ => None,
             };
 
@@ -752,10 +754,7 @@ impl<V: jmt::Value> TreeReaderAsync<V> for State {
                 .await?;
 
             let value = match value {
-                Some(row) => Some((
-                    NodeKey::decode(&row.key)?,
-                    Node::decode(&row.value.unwrap())?,
-                )),
+                Some(row) => Some((NodeKey::decode(&row.key)?, Node::decode(&row.value)?)),
                 _ => None,
             };
 

@@ -130,30 +130,28 @@
       ]
     }
   },
-  "40da344f10b8dfccf3ebc3ac7c44f028bdef4b924b900c9f2125320caf04e8d6": {
-    "query": "SELECT validator_identity_key, delegation_change FROM delegation_changes WHERE epoch = $1",
+  "37dc2448272e62b1af649a73ae39b47ca5ec6ab625a9ff26d22c02a36b6be7ac": {
+    "query": "INSERT INTO base_rates (epoch, base_reward_rate, base_exchange_rate) VALUES (0, 0, $1)",
     "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "validator_identity_key",
-          "type_info": "Bytea"
-        },
-        {
-          "ordinal": 1,
-          "name": "delegation_change",
-          "type_info": "Int8"
-        }
-      ],
+      "columns": [],
       "parameters": {
         "Left": [
           "Int8"
         ]
       },
-      "nullable": [
-        false,
-        false
-      ]
+      "nullable": []
+    }
+  },
+  "3f13d5f8a2ffc438e79f3297b7dfbcc14ffca7611f5ea3d4a5e8acfba3b9807e": {
+    "query": "\n            INSERT INTO blobs (id, data) VALUES ('nct', $1)\n            ON CONFLICT (id) DO UPDATE SET data = $1\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea"
+        ]
+      },
+      "nullable": []
     }
   },
   "4501b3fc1446d51abde3513efb7df1201092a9695f858fc090043d81ad3db490": {
@@ -180,18 +178,6 @@
           "Int8",
           "Int8",
           "Int8"
-        ]
-      },
-      "nullable": []
-    }
-  },
-  "51f515cc43458854df653c298142e6c77b2905b453f85c31ae1a0f56fbce1c2a": {
-    "query": "\nINSERT INTO blobs (id, data) VALUES ('nct', $1)\nON CONFLICT (id) DO UPDATE SET data = $1\n",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea"
         ]
       },
       "nullable": []
@@ -410,20 +396,6 @@
       "nullable": []
     }
   },
-  "9ab28d6b1cdbe8fd02e4382ab9cf5a2fa2914aaf460020977aeadfb8818c70af": {
-    "query": "INSERT INTO base_rates VALUES ($1, $2, $3)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Int8",
-          "Int8"
-        ]
-      },
-      "nullable": []
-    }
-  },
   "9e7ef6d0442bbacb5512b78c47e9bb222cecf14a4e3a3dd4530e2a6ad420b591": {
     "query": "\n                INSERT INTO jmt (key, value) VALUES ($1, $2)\n                ",
     "describe": {
@@ -432,6 +404,20 @@
         "Left": [
           "Bytea",
           "Bytea"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "9efba3ba5ace824dfbf620cd5d9cd46ea8e0e99c6fc791723d1490a2b84d07ac": {
+    "query": "INSERT INTO base_rates (\n                epoch,\n                base_reward_rate,\n                base_exchange_rate\n            ) VALUES ($1, $2, $3)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8",
+          "Int8"
         ]
       },
       "nullable": []
@@ -494,6 +480,26 @@
         ]
       },
       "nullable": [
+        false
+      ]
+    }
+  },
+  "bf52f1b1ec94ff12c0d86fe2021370784dd9de97ad2bea79856aa624444fa142": {
+    "query": "SELECT true",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "bool",
+          "type_info": "Bool"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Bytea"
+        ]
+      },
+      "nullable": [
         true
       ]
     }
@@ -530,18 +536,6 @@
       ]
     }
   },
-  "da50d9f24e8ecab2a17d2d1452e5f262085d586c64a30c05ffe904dcb9410e8e": {
-    "query": "INSERT INTO jmt (value) VALUES ($1)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea"
-        ]
-      },
-      "nullable": []
-    }
-  },
   "d12d2e8c0c1d522212ea874d422f99e950fbd843afe73bac2b7de7a1ec31af3f": {
     "query": "INSERT INTO delegation_changes VALUES ($1, $2, $3)",
     "describe": {
@@ -551,6 +545,18 @@
           "Bytea",
           "Int8",
           "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "da50d9f24e8ecab2a17d2d1452e5f262085d586c64a30c05ffe904dcb9410e8e": {
+    "query": "INSERT INTO jmt (value) VALUES ($1)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea"
         ]
       },
       "nullable": []
@@ -595,25 +601,25 @@
       "nullable": []
     }
   },
-  "f364b8966b90d430a23cf88f17589aa9120d5dfbb76c52755ad580436f95580a": {
-    "query": "UPDATE validators SET voting_power=$1 WHERE identity_key = $2",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Bytea"
-        ]
-      },
-      "nullable": []
-    }
-  },
   "e1f809f1ee3e05b30f5d8139ff79db877defed8a42e1b58d2ae243c0cd974bb7": {
     "query": "\n            INSERT INTO blobs (id, data) VALUES ('gc', $1)\n            ",
     "describe": {
       "columns": [],
       "parameters": {
         "Left": [
+          "Bytea"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "e57d8617299261390fc7448d3bfda816a5b2bbdf7cb03c0f76af7da9f26743ba": {
+    "query": "INSERT INTO validator_rates VALUES ($1, $2, $3, $4)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8",
           "Bytea"
         ]
       },
@@ -640,7 +646,57 @@
       },
       "nullable": [
         false,
-        true
+        false
+      ]
+    }
+  },
+  "f364b8966b90d430a23cf88f17589aa9120d5dfbb76c52755ad580436f95580a": {
+    "query": "UPDATE validators SET voting_power=$1 WHERE identity_key = $2",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "f9bdaf15db286fffdd144af22f833b3adb6335c3174078e824182d8374a64f88": {
+    "query": "SELECT identity_key, epoch, validator_reward_rate, validator_exchange_rate\n            FROM validator_rates\n            WHERE epoch = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "identity_key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 1,
+          "name": "epoch",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 2,
+          "name": "validator_reward_rate",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 3,
+          "name": "validator_exchange_rate",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false
       ]
     }
   },
