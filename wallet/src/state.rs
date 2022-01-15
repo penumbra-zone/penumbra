@@ -205,7 +205,9 @@ impl ClientState {
         // xx Could populate chain_id from the info endpoint on the node, or at least
         // error if there is an inconsistency
 
-        let mut tx_builder = Transaction::build_with_root(self.note_commitment_tree.root2())
+        let mut tx_builder = Transaction::build_with_root(self.note_commitment_tree.root2());
+
+        tx_builder
             .set_fee(fee)
             .set_chain_id(CURRENT_CHAIN_ID.to_string());
 
@@ -223,7 +225,7 @@ impl ClientState {
                 Some(ref input_memo) => input_memo.clone().try_into()?,
                 None => memo::MemoPlaintext([0u8; memo::MEMO_LEN_BYTES]),
             };
-            tx_builder = tx_builder.add_output(
+            tx_builder.add_output(
                 rng,
                 &dest_address,
                 Value {
@@ -279,7 +281,7 @@ impl ClientState {
                     .expect("tried to spend note not present in note commitment tree");
                 let merkle_path = (u64::from(auth_path.0) as usize, auth_path.1);
                 let merkle_position = auth_path.0;
-                tx_builder = tx_builder.add_spend(
+                tx_builder.add_spend(
                     rng,
                     self.wallet.spend_key(),
                     merkle_path,
@@ -293,7 +295,7 @@ impl ClientState {
             if change > 0 {
                 // xx: add memo handling
                 let memo = memo::MemoPlaintext([0u8; 512]);
-                let (note, new_tx_builder) = tx_builder.add_output_producing_note(
+                let note = tx_builder.add_output_producing_note(
                     rng,
                     &change_address,
                     Value {
@@ -303,10 +305,6 @@ impl ClientState {
                     memo,
                     self.wallet.outgoing_viewing_key(),
                 );
-
-                // Update the tx builder (notice: this must be done explicitly because we broke from
-                // the builder-by-assignment pattern above)
-                tx_builder = new_tx_builder;
 
                 let note_commitment = note.commit();
 

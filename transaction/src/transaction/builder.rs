@@ -43,13 +43,13 @@ pub struct Builder {
 impl Builder {
     /// Create a new `Spend` to spend an existing note.
     pub fn add_spend<R: RngCore + CryptoRng>(
-        mut self,
+        &mut self,
         rng: &mut R,
         spend_key: SpendKey,
         merkle_path: merkle::Path,
         note: Note,
         position: merkle::Position,
-    ) -> Self {
+    ) -> &mut Self {
         let v_blinding = Fr::rand(rng);
         let value_commitment = note.value().commit(v_blinding);
         // We add to the transaction's value balance.
@@ -82,13 +82,13 @@ impl Builder {
     ///
     /// For chaining output, use [`Builder::add_output`].
     pub fn add_output_producing_note<R: RngCore + CryptoRng>(
-        mut self,
+        &mut self,
         rng: &mut R,
         dest: &Address,
         value_to_send: Value,
         memo: MemoPlaintext,
         ovk: &OutgoingViewingKey,
-    ) -> (Note, Self) {
+    ) -> Note {
         let note = Note::generate(rng, dest, value_to_send);
         let diversified_generator = note.diversified_generator();
         let transmission_key = note.transmission_key();
@@ -121,7 +121,7 @@ impl Builder {
             ovk_wrapped_key,
         });
 
-        (note, self)
+        note
     }
 
     /// Create a new `Output`, implicitly creating a new note for it and encrypting the provided
@@ -129,21 +129,21 @@ impl Builder {
     ///
     /// To return the generated note, use [`Builder::add_output_producing_note`].
     pub fn add_output<R: RngCore + CryptoRng>(
-        self,
+        &mut self,
         rng: &mut R,
         dest: &Address,
         value_to_send: Value,
         memo: MemoPlaintext,
         ovk: &OutgoingViewingKey,
-    ) -> Self {
-        self.add_output_producing_note(rng, dest, value_to_send, memo, ovk)
-            .1
+    ) -> &mut Self {
+        self.add_output_producing_note(rng, dest, value_to_send, memo, ovk);
+        self
     }
 
     /// Set the transaction fee in PEN.
     ///
     /// Note that we're using the lower case `pen` in the code.
-    pub fn set_fee(mut self, fee: u64) -> Self {
+    pub fn set_fee(&mut self, fee: u64) -> &mut Self {
         let asset_id = asset::REGISTRY.parse_denom("upenumbra").unwrap().id();
         let fee_value = Value {
             amount: fee,
@@ -164,13 +164,13 @@ impl Builder {
     }
 
     /// Set the expiry height.
-    pub fn set_expiry_height(mut self, expiry_height: u32) -> Self {
+    pub fn set_expiry_height(&mut self, expiry_height: u32) -> &mut Self {
         self.expiry_height = Some(expiry_height);
         self
     }
 
     /// Set the chain ID.
-    pub fn set_chain_id(mut self, chain_id: String) -> Self {
+    pub fn set_chain_id(&mut self, chain_id: String) -> &mut Self {
         self.chain_id = Some(chain_id);
         self
     }
@@ -197,7 +197,7 @@ impl Builder {
     }
 
     pub fn finalize<R: CryptoRng + RngCore>(
-        mut self,
+        &mut self,
         mut rng: &mut R,
     ) -> Result<Transaction, Error> {
         if self.chain_id.is_none() {
@@ -256,6 +256,12 @@ impl Builder {
 
         // ... and the binding sig
         let binding_sig = self.compute_binding_sig(rng, &sighash);
+
+        // Prevent accidental reuse by erasing the chain ID.
+        // It'd be cleaner to take ownership of self and consume it,
+        // but that's not possible to chain with &mut self methods, and those
+        // are useful when building complex transactions.
+        self.chain_id = None;
 
         Ok(Transaction {
             transaction_body,
