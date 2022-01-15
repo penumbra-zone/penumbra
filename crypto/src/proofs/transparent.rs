@@ -237,7 +237,7 @@ impl From<SpendProof> for transparent_proofs::SpendProof {
         let ak_bytes: [u8; 32] = msg.ak.into();
         let nk_bytes: [u8; 32] = msg.nk.0.to_bytes();
         transparent_proofs::SpendProof {
-            merkle_path_field_0: msg.merkle_path.0 as u32,
+            merkle_path_field_0: u64::from(msg.merkle_path.0) as u32,
             merkle_path_field_1: msg
                 .merkle_path
                 .1
@@ -285,7 +285,7 @@ impl TryFrom<transparent_proofs::SpendProof> for SpendProof {
         }
 
         Ok(SpendProof {
-            merkle_path: (proto.merkle_path_field_0 as usize, merkle_path_vec),
+            merkle_path: ((proto.merkle_path_field_0 as usize).into(), merkle_path_vec),
             position: (proto.position as usize).into(),
             g_d: g_d_encoding
                 .decompress()
@@ -643,8 +643,7 @@ mod tests {
         nct.append(&note_commitment);
         let anchor = nct.root2();
         nct.witness();
-        let auth_path = nct.authentication_path(&note_commitment).unwrap();
-        let merkle_path = (u64::from(auth_path.0) as usize, auth_path.1);
+        let merkle_path = nct.authentication_path(&note_commitment).unwrap();
 
         let proof = SpendProof {
             merkle_path,
@@ -691,8 +690,7 @@ mod tests {
         let incorrect_anchor = nct.root2();
         nct.append(&note_commitment);
         nct.witness();
-        let auth_path = nct.authentication_path(&note_commitment).unwrap();
-        let merkle_path = (u64::from(auth_path.0) as usize, auth_path.1);
+        let merkle_path = nct.authentication_path(&note_commitment).unwrap();
 
         let proof = SpendProof {
             merkle_path,
@@ -738,8 +736,7 @@ mod tests {
         nct.append(&note_commitment);
         nct.witness();
         let anchor = nct.root2();
-        let auth_path = nct.authentication_path(&note_commitment).unwrap();
-        let merkle_path = (u64::from(auth_path.0) as usize, auth_path.1);
+        let merkle_path = nct.authentication_path(&note_commitment).unwrap();
 
         let proof = SpendProof {
             merkle_path,
@@ -785,8 +782,7 @@ mod tests {
         nct.append(&note_commitment);
         nct.witness();
         let anchor = nct.root2();
-        let auth_path = nct.authentication_path(&note_commitment).unwrap();
-        let merkle_path = (u64::from(auth_path.0) as usize, auth_path.1);
+        let merkle_path = nct.authentication_path(&note_commitment).unwrap();
 
         let proof = SpendProof {
             merkle_path,
