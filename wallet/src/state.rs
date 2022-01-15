@@ -226,12 +226,12 @@ impl ClientState {
         }
     }
 
-    /// Generate a new transaction.
+    /// Generate a new transaction sending value to `dest_address`.
     ///
     /// TODO: this function is too complicated, merge with
     /// builder API ?
     #[instrument(skip(self, rng))]
-    pub fn new_transaction<R: RngCore + CryptoRng>(
+    pub fn build_send<R: RngCore + CryptoRng>(
         &mut self,
         rng: &mut R,
         values: &[Value],
