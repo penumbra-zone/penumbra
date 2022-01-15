@@ -52,8 +52,7 @@ impl TxCmd {
                     .parse()
                     .map_err(|_| anyhow::anyhow!("address is invalid"))?;
 
-                let tx =
-                    state.new_transaction(&mut OsRng, &values, *fee, to, *from, memo.clone())?;
+                let tx = state.build_send(&mut OsRng, &values, *fee, to, *from, memo.clone())?;
                 state.commit()?;
 
                 let serialized_tx: Vec<u8> = tx.into();
