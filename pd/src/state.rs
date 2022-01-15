@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, pin::Pin};
+use std::{collections::{VecDeque, BTreeMap}, pin::Pin};
 
 use anyhow::{Context, Result};
 use async_stream::try_stream;
@@ -594,5 +594,24 @@ ON CONFLICT (id) DO UPDATE SET data = $1
                 asset_id: row.asset_id,
             })
             .collect())
+    }
+    
+    /// Retrieve the delegation changes for the supplied epoch 
+    /// TODO: should we have a DelegationChanges struct instead of just returning a BTreeMap?
+    pub async fn delegation_changes(&self, epoch: u64) -> Result<BTreeMap<IdentityKey, i64>> {
+        let mut conn = self.pool.acquire().await?;
+        
+        let rows = query!("SELECT validator_identity_key, delegation_change FROM delegation_changes WHERE epoch = $1",
+               epoch as i64
+            ).fetch_all(&mut conn)
+            .await?;
+        
+        let mut changes: BTreeMap<IdentityKey, i64> = BTreeMap::new();
+        for row in rows {
+            let id_key = IdentityKey::decode(row.validator_identity_key.as_slice())?;
+            changes.insert(id_key, row.delegation_change);
+        }
+        
+        Ok(changes)
     }
 }

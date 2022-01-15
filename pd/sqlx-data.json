@@ -68,6 +68,32 @@
       ]
     }
   },
+  "40da344f10b8dfccf3ebc3ac7c44f028bdef4b924b900c9f2125320caf04e8d6": {
+    "query": "SELECT validator_identity_key, delegation_change FROM delegation_changes WHERE epoch = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "validator_identity_key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 1,
+          "name": "delegation_change",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
   "4501b3fc1446d51abde3513efb7df1201092a9695f858fc090043d81ad3db490": {
     "query": "INSERT INTO validator_fundingstreams (\n                        identity_key,\n                        address,\n                        rate_bps\n                    ) VALUES ($1, $2, $3)",
     "describe": {
