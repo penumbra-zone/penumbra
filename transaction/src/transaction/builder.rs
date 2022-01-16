@@ -159,13 +159,12 @@ impl Builder {
             asset_id: asset_id.clone(),
         };
 
-        let fee_v_blinding = Fr::zero();
-        let value_commitment = fee_value.commit(fee_v_blinding);
-
         // The fee is effectively an additional output, so we
         // add to the transaction's value balance.
-        self.synthetic_blinding_factor -= fee_v_blinding;
-        self.value_balance -= Fr::from(fee) * asset_id.value_generator();
+        let value_commitment = fee_value.commit(Fr::zero());
+        // The value commitment has 0 blinding factor, so we skip
+        // accumulating a blinding term into the synthetic blinding factor.
+        self.value_balance -= value_commitment.0;
         self.value_commitments -= value_commitment.0;
 
         self.fee = Some(Fee(fee));
