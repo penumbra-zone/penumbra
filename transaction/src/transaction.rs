@@ -119,9 +119,6 @@ impl Transaction {
         let fee_value_commitment = fee_value.commit(fee_v_blinding);
         value_commitments -= fee_value_commitment.0;
 
-        // This works for all non-genesis transactions. For transactions with
-        // non-zero value balance, the binding verification key must be computed
-        // as `(value_commitments - value_balance).compress().0.into()`.
         let binding_verification_key_bytes: VerificationKeyBytes<Binding> =
             value_commitments.compress().0.into();
 
