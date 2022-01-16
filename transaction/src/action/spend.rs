@@ -8,7 +8,6 @@ use penumbra_crypto::{
     value, Fr, Note, Nullifier,
 };
 use penumbra_proto::{transaction, Message, Protobuf};
-use rand_core::{CryptoRng, RngCore};
 
 use super::error::ProtoError;
 
@@ -61,14 +60,11 @@ pub struct Body {
 }
 
 impl Body {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new<R: RngCore + CryptoRng>(
-        _rng: &mut R,
+    pub fn new(
         value_commitment: value::Commitment,
         ask: SigningKey<SpendAuth>,
         spend_auth_randomizer: Fr,
         merkle_path: merkle::Path,
-        position: merkle::Position,
         note: Note,
         v_blinding: Fr,
         nk: keys::NullifierKey,
@@ -76,9 +72,12 @@ impl Body {
         let rsk = ask.randomize(&spend_auth_randomizer);
         let rk = rsk.into();
         let note_commitment = note.commit();
+        let position = merkle_path.0.clone();
         let proof = SpendProof {
-            merkle_path,
+            // XXX: the position field duplicates data from the merkle path
+            // probably not worth fixing before we just make them snarks...
             position,
+            merkle_path,
             g_d: note.diversified_generator(),
             pk_d: note.transmission_key(),
             value: note.value(),

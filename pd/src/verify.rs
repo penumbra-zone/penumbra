@@ -289,7 +289,7 @@ mod tests {
         asset,
         keys::SpendKey,
         memo::MemoPlaintext,
-        merkle::{Frontier, Tree, TreeExt},
+        merkle::{Frontier, NoteCommitmentTree, Tree, TreeExt},
         Fq, Note, Value,
     };
     use rand_core::OsRng;
@@ -327,12 +327,10 @@ mod tests {
         .expect("transmission key is valid");
         let note_commitment = note.commit();
 
-        let mut nct = merkle::BridgeTree::<note::Commitment, 32>::new(1);
+        let mut nct = NoteCommitmentTree::new(1);
         nct.append(&note_commitment);
-        let anchor = nct.root2();
         nct.witness();
-        let merkle_path = nct.authentication_path(&note_commitment).unwrap();
-        let position = merkle_path.0;
+        let anchor = nct.root2();
 
         let transaction = Transaction::build_with_root(anchor.clone())
             .set_fee(10)
@@ -344,7 +342,8 @@ mod tests {
                 MemoPlaintext::default(),
                 ovk_sender,
             )
-            .add_spend(&mut rng, sk_sender, merkle_path, note, position)
+            .add_spend(&mut rng, &nct, &sk_sender, note)
+            .expect("note is in nct")
             .finalize(&mut rng)
             .expect("transaction created ok");
 
