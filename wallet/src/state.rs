@@ -165,12 +165,12 @@ impl ClientState {
         &mut self,
         rng: &mut R,
         amount: u64,
-        denom: Denom,
+        denom: &Denom,
         source_address: Option<u64>,
     ) -> Result<Vec<Note>, anyhow::Error> {
         let mut notes_by_address = self
             .unspent_notes_by_denom_and_address()
-            .remove(&denom)
+            .remove(denom)
             .ok_or_else(|| anyhow::anyhow!("no notes of denomination {} found", denom))?;
 
         let mut notes = if let Some(source) = source_address {
@@ -287,8 +287,7 @@ impl ClientState {
             }
 
             // Select a list of notes that provides at least the required amount.
-            let notes: Vec<Note> =
-                self.notes_to_spend(rng, amount, denom.clone(), source_address)?;
+            let notes: Vec<Note> = self.notes_to_spend(rng, amount, &denom, source_address)?;
             let change_address = self
                 .wallet
                 .change_address(notes.last().expect("spent at least one note"))?;
