@@ -86,6 +86,22 @@ impl Builder {
         Ok(self)
     }
 
+    /// Create a new `Output`, implicitly creating a new note for it and encrypting the provided
+    /// [`MemoPlaintext`] with a fresh ephemeral secret key.
+    ///
+    /// To return the generated note, use [`Builder::add_output_producing_note`].
+    pub fn add_output<R: RngCore + CryptoRng>(
+        &mut self,
+        rng: &mut R,
+        dest: &Address,
+        value_to_send: Value,
+        memo: MemoPlaintext,
+        ovk: &OutgoingViewingKey,
+    ) -> &mut Self {
+        self.add_output_producing_note(rng, dest, value_to_send, memo, ovk);
+        self
+    }
+
     /// Generate a new note and add it to the output, returning a clone of the generated note.
     ///
     /// For chaining output, use [`Builder::add_output`].
@@ -132,21 +148,6 @@ impl Builder {
         note
     }
 
-    /// Create a new `Output`, implicitly creating a new note for it and encrypting the provided
-    /// [`MemoPlaintext`] with a fresh ephemeral secret key.
-    ///
-    /// To return the generated note, use [`Builder::add_output_producing_note`].
-    pub fn add_output<R: RngCore + CryptoRng>(
-        &mut self,
-        rng: &mut R,
-        dest: &Address,
-        value_to_send: Value,
-        memo: MemoPlaintext,
-        ovk: &OutgoingViewingKey,
-    ) -> &mut Self {
-        self.add_output_producing_note(rng, dest, value_to_send, memo, ovk);
-        self
-    }
 
     /// Set the transaction fee in PEN.
     ///
