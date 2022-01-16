@@ -24,7 +24,7 @@ impl DelegationToken {
     }
 
     /// Get the base denomination for this delegation token.
-    pub fn base_denom(&self) -> asset::Denom {
+    pub fn denom(&self) -> asset::Denom {
         self.base_denom.clone()
     }
 
