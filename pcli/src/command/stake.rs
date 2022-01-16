@@ -1,11 +1,14 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use penumbra_crypto::Value;
-use penumbra_proto::thin_wallet::{thin_wallet_client::ThinWalletClient, ValidatorRateRequest};
-use penumbra_stake::{Epoch, IdentityKey, RateData, STAKING_TOKEN_ASSET_ID};
-use penumbra_wallet::ClientState;
+use penumbra_proto::{
+    thin_wallet::{thin_wallet_client::ThinWalletClient, ValidatorRateRequest},
+    Protobuf,
+};
+use penumbra_stake::{DelegationToken, Epoch, IdentityKey, RateData, STAKING_TOKEN_ASSET_ID};
+use rand_core::OsRng;
 use structopt::StructOpt;
 
-use crate::Opt;
+use crate::{ClientStateFile, Opt};
 
 #[derive(Debug, StructOpt)]
 pub enum StakeCmd {
@@ -25,10 +28,7 @@ pub enum StakeCmd {
     },
     /// Withdraw stake from a validator's delegation pool.
     Undelegate {
-        /// The identity key of the validator to withdraw delegation from.
-        #[structopt(long)]
-        from: String,
-        /// The amount of stake to delegate.
+        /// The amount of delegation tokens to undelegate.
         amount: String,
         /// The transaction fee (paid in upenumbra).
         #[structopt(long, default_value = "0")]
@@ -69,7 +69,7 @@ impl StakeCmd {
         true
     }
 
-    pub async fn exec(&self, opt: &Opt, state: &ClientState) -> Result<()> {
+    pub async fn exec(&self, opt: &Opt, state: &mut ClientStateFile) -> Result<()> {
         match self {
             StakeCmd::Delegate {
                 to,
@@ -87,12 +87,19 @@ impl StakeCmd {
 
                 let to = to.parse::<IdentityKey>()?;
 
+                // If we're the first ever delegator to this validator, the corresponding
+                // asset might not be recorded on-chain already, so add it to the asset cache.
+                state
+                    .asset_cache_mut()
+                    .extend(std::iter::once(to.delegation_token().denom()));
+
                 // FIXME! need some kind of structure for recording chain
                 // parameters - connected with having protos for genesis data
                 // (though not all genesis data is chain parameters)
                 let epoch_duration = 10;
                 let current_epoch =
                     Epoch::from_height(state.last_block_height().unwrap() as u64, epoch_duration);
+                let next_epoch = current_epoch.next();
 
                 let mut client = ThinWalletClient::connect(format!(
                     "http://{}:{}",
@@ -103,31 +110,93 @@ impl StakeCmd {
                 let rate_data: RateData = client
                     .validator_rate(tonic::Request::new(ValidatorRateRequest {
                         identity_key: Some(to.into()),
-                        epoch_index: current_epoch.index,
+                        epoch_index: next_epoch.index,
                     }))
                     .await?
                     .into_inner()
                     .try_into()?;
 
-                let delegation_amount = rate_data.delegation_amount(unbonded_amount);
+                let transaction =
+                    state.build_delegate(&mut OsRng, rate_data, unbonded_amount, *fee, *source)?;
+                state.commit()?;
 
-                // Steps:
-                //
-                // - check that we have at least `amount` of staking token to spend
-                // - construct a spend description that releases unbonded_amount + fee
-                // - construct a delegate description that consumes unbonded_amount staking token, produces delegation_amount of delegation token
-                // - construct an output description that records the new delegation tokens
-                // - construct an output description that records the change
-                // - finalize transaction
-                // - submit a transaction to the rpc endpoint
+                tracing::info!("broadcasting transaction...");
+                let rsp = reqwest::get(format!(
+                    r#"http://{}:{}/broadcast_tx_sync?tx=0x{}"#,
+                    opt.node,
+                    opt.rpc_port,
+                    hex::encode(&transaction.encode_to_vec())
+                ))
+                .await?
+                .text()
+                .await?;
 
-                // outsource computation to staking crate? wallet crate?
-                // overlap with tx command?
-
-                todo!()
+                tracing::info!("{}", rsp);
             }
-            StakeCmd::Undelegate { .. } => {
-                todo!()
+            StakeCmd::Undelegate {
+                amount,
+                fee,
+                source,
+            } => {
+                let Value {
+                    amount: delegation_amount,
+                    asset_id,
+                } = amount.parse::<Value>()?;
+
+                let delegation_token: DelegationToken = state
+                    .asset_cache()
+                    .get(&asset_id)
+                    .ok_or_else(|| anyhow::anyhow!("unknown asset id {}", asset_id))?
+                    .clone()
+                    .try_into()
+                    .context("could not parse supplied denomination as a delegation token")?;
+
+                let from = delegation_token.validator();
+
+                // FIXME! need some kind of structure for recording chain
+                // parameters - connected with having protos for genesis data
+                // (though not all genesis data is chain parameters)
+                let epoch_duration = 10;
+                let current_epoch =
+                    Epoch::from_height(state.last_block_height().unwrap() as u64, epoch_duration);
+                let next_epoch = current_epoch.next();
+
+                let mut client = ThinWalletClient::connect(format!(
+                    "http://{}:{}",
+                    opt.node, opt.thin_wallet_port
+                ))
+                .await?;
+
+                let rate_data: RateData = client
+                    .validator_rate(tonic::Request::new(ValidatorRateRequest {
+                        identity_key: Some(from.into()),
+                        epoch_index: next_epoch.index,
+                    }))
+                    .await?
+                    .into_inner()
+                    .try_into()?;
+
+                let transaction = state.build_undelegate(
+                    &mut OsRng,
+                    rate_data,
+                    delegation_amount,
+                    *fee,
+                    *source,
+                )?;
+                state.commit()?;
+
+                tracing::info!("broadcasting transaction...");
+                let rsp = reqwest::get(format!(
+                    r#"http://{}:{}/broadcast_tx_sync?tx=0x{}"#,
+                    opt.node,
+                    opt.rpc_port,
+                    hex::encode(&transaction.encode_to_vec())
+                ))
+                .await?
+                .text()
+                .await?;
+
+                tracing::info!("{}", rsp);
             }
             StakeCmd::Redelegate { .. } => {
                 todo!()

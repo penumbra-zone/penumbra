@@ -10,6 +10,7 @@ use penumbra_crypto::{
     rdsa::{Binding, Signature, SigningKey, SpendAuth},
     value, Address, Fr, Note, Value,
 };
+use penumbra_stake::{Delegate, RateData, Undelegate};
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
 
@@ -25,6 +26,10 @@ pub struct Builder {
     pub spends: Vec<(SigningKey<SpendAuth>, spend::Body)>,
     /// List of outputs in the transaction.
     pub outputs: Vec<Output>,
+    /// List of delegations in the transaction.
+    pub delegations: Vec<Delegate>,
+    /// List of undelegations in the transaction.
+    pub undelegations: Vec<Undelegate>,
     /// Transaction fee. None if unset.
     pub fee: Option<Fee>,
     /// Sum of blinding factors for each value commitment.
@@ -148,6 +153,45 @@ impl Builder {
         note
     }
 
+    /// Create a new `Delegate` description for the transaction.
+    pub fn add_delegation(&mut self, rate_data: &RateData, unbonded_amount: u64) -> &mut Self {
+        let delegate = Delegate {
+            delegation_amount: rate_data.delegation_amount(unbonded_amount),
+            epoch_index: rate_data.epoch_index,
+            unbonded_amount,
+            validator_identity: rate_data.identity_key.clone(),
+        };
+
+        let value_commitment = delegate.value_commitment();
+        // The value commitment has 0 blinding factor, so we skip
+        // accumulating a blinding term into the synthetic blinding factor.
+        self.value_balance += value_commitment.0;
+        self.value_commitments += value_commitment.0;
+
+        self.delegations.push(delegate);
+
+        self
+    }
+
+    /// Create a new `Undelegate` description for the transaction.
+    pub fn add_undelegation(&mut self, rate_data: &RateData, delegation_amount: u64) -> &mut Self {
+        let undelegate = Undelegate {
+            epoch_index: rate_data.epoch_index,
+            delegation_amount,
+            unbonded_amount: rate_data.unbonded_amount(delegation_amount),
+            validator_identity: rate_data.identity_key.clone(),
+        };
+
+        let value_commitment = undelegate.value_commitment();
+        // The value commitment has 0 blinding factor, so we skip
+        // accumulating a blinding term into the synthetic blinding factor.
+        self.value_balance += value_commitment.0;
+        self.value_commitments += value_commitment.0;
+
+        self.undelegations.push(undelegate);
+
+        self
+    }
 
     /// Set the transaction fee in PEN.
     ///
@@ -225,6 +269,8 @@ impl Builder {
         // Randomize all actions to minimize info leakage.
         self.spends.shuffle(rng);
         self.outputs.shuffle(rng);
+        self.delegations.shuffle(rng);
+        self.undelegations.shuffle(rng);
 
         // Fill in the spends using blank signatures, so we can build the sighash tx
         for (_, body) in &self.spends {
@@ -235,6 +281,12 @@ impl Builder {
         }
         for output in self.outputs.drain(..) {
             actions.push(Action::Output(output));
+        }
+        for delegation in self.delegations.drain(..) {
+            actions.push(Action::Delegate(delegation));
+        }
+        for undelegation in self.undelegations.drain(..) {
+            actions.push(Action::Undelegate(undelegation));
         }
 
         let mut transaction_body = TransactionBody {
