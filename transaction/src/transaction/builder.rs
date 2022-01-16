@@ -1,11 +1,12 @@
 use std::ops::Deref;
 
 use ark_ff::{UniformRand, Zero};
+use incrementalmerkletree::Tree;
 use penumbra_crypto::{
     asset, ka,
     keys::{OutgoingViewingKey, SpendKey},
     memo::MemoPlaintext,
-    merkle,
+    merkle::{self, NoteCommitmentTree},
     rdsa::{Binding, Signature, SigningKey, SpendAuth},
     value, Address, Fr, Note, Value,
 };
@@ -45,37 +46,44 @@ impl Builder {
     pub fn add_spend<R: RngCore + CryptoRng>(
         &mut self,
         rng: &mut R,
-        spend_key: SpendKey,
-        merkle_path: merkle::Path,
+        note_commitment_tree: &NoteCommitmentTree,
+        spend_key: &SpendKey,
         note: Note,
-        position: merkle::Position,
-    ) -> &mut Self {
+    ) -> Result<&mut Self, anyhow::Error> {
+        let merkle_path = note_commitment_tree
+            .authentication_path(&note.commit())
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "Note commitment tree cannot construct an auth path for note commitment {:?}",
+                    note.commit()
+                )
+            })?;
+
         let v_blinding = Fr::rand(rng);
         let value_commitment = note.value().commit(v_blinding);
-        // We add to the transaction's value balance.
+
+        // Spends add to the transaction's value balance.
         self.synthetic_blinding_factor += v_blinding;
         self.value_balance +=
             Fr::from(note.value().amount) * note.value().asset_id.value_generator();
+        self.value_commitments += value_commitment.0;
 
         let spend_auth_randomizer = Fr::rand(rng);
         let rsk = spend_key.spend_auth_key().randomize(&spend_auth_randomizer);
 
         let body = spend::Body::new(
-            rng,
             value_commitment,
             *spend_key.spend_auth_key(),
             spend_auth_randomizer,
             merkle_path,
-            position,
             note,
             v_blinding,
             *spend_key.nullifier_key(),
         );
-        self.value_commitments += value_commitment.0;
 
         self.spends.push((rsk, body));
 
-        self
+        Ok(self)
     }
 
     /// Generate a new note and add it to the output, returning a clone of the generated note.

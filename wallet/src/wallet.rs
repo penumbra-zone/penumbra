@@ -47,9 +47,9 @@ impl Wallet {
         self.spend_key.full_viewing_key().outgoing()
     }
 
-    /// Spend key from this spend seed.
-    pub fn spend_key(&self) -> SpendKey {
-        self.spend_key.clone()
+    /// Returns the wallet's spend seed.
+    pub fn spend_key(&self) -> &SpendKey {
+        &self.spend_key
     }
 
     /// Get the full viewing key for this wallet.

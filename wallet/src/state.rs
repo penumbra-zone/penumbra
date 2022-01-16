@@ -227,9 +227,6 @@ impl ClientState {
     }
 
     /// Generate a new transaction sending value to `dest_address`.
-    ///
-    /// TODO: this function is too complicated, merge with
-    /// builder API ?
     #[instrument(skip(self, rng))]
     pub fn build_send<R: RngCore + CryptoRng>(
         &mut self,
@@ -299,20 +296,12 @@ impl ClientState {
 
             // Spend each of the notes we selected.
             for note in notes {
-                let note_commitment = note.commit();
-
-                let merkle_path = self
-                    .note_commitment_tree
-                    .authentication_path(&note_commitment)
-                    .expect("tried to spend note not present in note commitment tree");
-                let merkle_position = merkle_path.0;
                 tx_builder.add_spend(
                     rng,
+                    &self.note_commitment_tree,
                     self.wallet.spend_key(),
-                    merkle_path,
                     note,
-                    merkle_position,
-                );
+                )?;
             }
 
             // Find out how much change we have and whether to add a change output.
