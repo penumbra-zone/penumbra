@@ -62,11 +62,11 @@ impl RateData {
     /// # Warning
     ///
     /// Given a pair `(delegation_amount, unbonded_amount)` and `rate_data`, it's possible to have
-    /// ```rust,no_run
+    /// ```rust,ignore
     /// delegation_amount == rate_data.delegation_amount(unbonded_amount)
     /// ```
     /// or
-    /// ```rust,no_run
+    /// ```rust,ignore
     /// unbonded_amount == rate_data.unbonded_amount(delegation_amount)
     /// ```
     /// but in general *not both*, because the computation involves rounding.
@@ -83,11 +83,11 @@ impl RateData {
     /// # Warning
     ///
     /// Given a pair `(delegation_amount, unbonded_amount)` and `rate_data`, it's possible to have
-    /// ```rust,no_run
+    /// ```rust,ignore
     /// delegation_amount == rate_data.delegation_amount(unbonded_amount)
     /// ```
     /// or
-    /// ```rust,no_run
+    /// ```rust,ignore
     /// unbonded_amount == rate_data.unbonded_amount(delegation_amount)
     /// ```
     /// but in general *not both*, because the computation involves rounding.
