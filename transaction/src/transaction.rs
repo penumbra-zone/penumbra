@@ -60,6 +60,8 @@ impl Transaction {
         Builder {
             spends: Vec::new(),
             outputs: Vec::new(),
+            delegations: Vec::new(),
+            undelegations: Vec::new(),
             fee: None,
             synthetic_blinding_factor: Fr::zero(),
             value_balance: decaf377::Element::default(),

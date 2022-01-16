@@ -13,6 +13,7 @@ use penumbra_crypto::{
     note, Address, FieldExt, Note, Nullifier, Value, CURRENT_CHAIN_ID,
 };
 use penumbra_proto::light_wallet::{CompactBlock, StateFragment};
+use penumbra_stake::{RateData, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM};
 use penumbra_transaction::Transaction;
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
@@ -224,6 +225,165 @@ impl ClientState {
                 "not enough available notes for requested spend"
             ))
         }
+    }
+
+    /// Generate a new transaction delegating stake
+    #[instrument(skip(self, rng))]
+    pub fn build_delegate<R: RngCore + CryptoRng>(
+        &mut self,
+        rng: &mut R,
+        rate_data: RateData,
+        unbonded_amount: u64,
+        fee: u64,
+        source_address: Option<u64>,
+    ) -> Result<Transaction, anyhow::Error> {
+        // If the source address is set, send the delegation tokens to the same
+        // address; otherwise, send them to the default address.
+        let (_label, self_address) = self
+            .wallet()
+            .address_by_index(source_address.unwrap_or(0) as usize)?;
+
+        let mut tx_builder = Transaction::build_with_root(self.note_commitment_tree.root2());
+
+        tx_builder
+            .set_fee(fee)
+            // XXX populate chain id from params?
+            .set_chain_id(CURRENT_CHAIN_ID.to_string())
+            .add_delegation(&rate_data, unbonded_amount);
+
+        let spend_amount = unbonded_amount + fee;
+        let mut spent_amount = 0;
+
+        for note in self.notes_to_spend(rng, spend_amount, &*STAKING_TOKEN_DENOM, source_address)? {
+            spent_amount += note.amount();
+            tx_builder.add_spend(
+                rng,
+                &self.note_commitment_tree,
+                self.wallet.spend_key(),
+                note,
+            )?;
+        }
+
+        let delegation_note = tx_builder.add_output_producing_note(
+            rng,
+            &self_address,
+            Value {
+                amount: rate_data.delegation_amount(unbonded_amount),
+                asset_id: rate_data.identity_key.delegation_token().id(),
+            },
+            memo::MemoPlaintext([0u8; memo::MEMO_LEN_BYTES]),
+            self.wallet.outgoing_viewing_key(),
+        );
+
+        let change_amount = spent_amount - spend_amount;
+        // TODO: support dummy notes, and produce a change output unconditionally.
+        // let change_note = if change_amount > 0 { ... } else { /* dummy note */}
+        if change_amount > 0 {
+            let change_note = tx_builder.add_output_producing_note(
+                rng,
+                &self_address,
+                Value {
+                    amount: change_amount,
+                    asset_id: *STAKING_TOKEN_ASSET_ID,
+                },
+                memo::MemoPlaintext([0u8; memo::MEMO_LEN_BYTES]),
+                self.wallet.outgoing_viewing_key(),
+            );
+            self.register_change(change_note);
+        }
+
+        self.register_change(delegation_note);
+
+        tx_builder.finalize(rng).map_err(Into::into)
+    }
+
+    /// Generate a new transaction delegating stake
+    #[instrument(skip(self, rng))]
+    pub fn build_undelegate<R: RngCore + CryptoRng>(
+        &mut self,
+        rng: &mut R,
+        rate_data: RateData,
+        delegation_amount: u64,
+        fee: u64,
+        source_address: Option<u64>,
+    ) -> Result<Transaction, anyhow::Error> {
+        // If the source address is set, send the delegation tokens to the same
+        // address; otherwise, send them to the default address.
+        let (_label, self_address) = self
+            .wallet()
+            .address_by_index(source_address.unwrap_or(0) as usize)?;
+
+        let mut tx_builder = Transaction::build_with_root(self.note_commitment_tree.root2());
+
+        tx_builder
+            .set_fee(fee)
+            // XXX populate chain id from params?
+            .set_chain_id(CURRENT_CHAIN_ID.to_string())
+            .add_undelegation(&rate_data, delegation_amount);
+
+        // Because the outputs of an undelegation are quarantined, we want to
+        // avoid any unnecessary change outputs, so we pay fees out of the
+        // unbonded amount.
+        let unbonded_amount = rate_data.unbonded_amount(delegation_amount);
+        let output_amount = unbonded_amount.checked_sub(fee).ok_or_else(|| {
+            anyhow::anyhow!(
+                "unbonded amount {} from delegation amount {} is insufficient to pay fees {}",
+                unbonded_amount,
+                delegation_amount,
+                fee
+            )
+        })?;
+
+        let delegation_denom = rate_data.identity_key.delegation_token().denom();
+
+        // XXX if the undelegation is for less than their total amount of delegation tokens,
+        // all of their remaining delegation tokens will also be quarantined.
+        // this sucks lmao
+        let mut spent_amount = 0;
+
+        for note in
+            self.notes_to_spend(rng, delegation_amount, &delegation_denom, source_address)?
+        {
+            spent_amount += note.amount();
+            tx_builder.add_spend(
+                rng,
+                &self.note_commitment_tree,
+                self.wallet.spend_key(),
+                note,
+            )?;
+        }
+
+        let output_note = tx_builder.add_output_producing_note(
+            rng,
+            &self_address,
+            Value {
+                amount: output_amount,
+                asset_id: *STAKING_TOKEN_ASSET_ID,
+            },
+            memo::MemoPlaintext([0u8; memo::MEMO_LEN_BYTES]),
+            self.wallet.outgoing_viewing_key(),
+        );
+
+        let change_amount = spent_amount - delegation_amount;
+        // TODO: support dummy notes, and produce a change output unconditionally.
+        // let change_note = if change_amount > 0 { ... } else { /* dummy note */}
+        if change_amount > 0 {
+            let change_note = tx_builder.add_output_producing_note(
+                rng,
+                &self_address,
+                Value {
+                    amount: change_amount,
+                    asset_id: delegation_denom.id(),
+                },
+                memo::MemoPlaintext([0u8; memo::MEMO_LEN_BYTES]),
+                self.wallet.outgoing_viewing_key(),
+            );
+            self.register_change(change_note);
+        }
+
+        self.register_change(output_note);
+
+        tx_builder.finalize(rng).map_err(Into::into)
     }
 
     /// Generate a new transaction sending value to `dest_address`.
