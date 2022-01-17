@@ -287,8 +287,9 @@ impl App {
         let next_rate_data = self.next_rate_data.clone();
 
         async move {
-            let pending_transaction =
-                Transaction::try_from(request.tx.as_ref())?.verify_stateless()?;
+            let transaction = Transaction::try_from(request.tx.as_ref())?
+                .verify_stateless()?
+                .verify_stateful(&recent_anchors, &next_rate_data.read().unwrap())?;
 
             // Ensure we do not add any transactions with duplicate nullifiers into the mempool.
             //
@@ -298,7 +299,7 @@ impl App {
             // Rechecks occur whenever a block is committed if the Tendermint `mempool.recheck` option is
             // true, which is the default option.
             if request.kind == CheckTxKind::New {
-                for nullifier in pending_transaction.spent_nullifiers.clone() {
+                for nullifier in transaction.spent_nullifiers.clone() {
                     if mempool_nullifiers.lock().unwrap().contains(&nullifier) {
                         return Err(anyhow!(
                             "nullifer {:?} already present in mempool_nullifiers",
@@ -311,7 +312,7 @@ impl App {
             }
 
             // Ensure that we do not add any transactions that have spent nullifiers in the database.
-            for nullifier in pending_transaction.spent_nullifiers.clone() {
+            for nullifier in transaction.spent_nullifiers.clone() {
                 if state
                     .nullifier(nullifier.clone())
                     .await
@@ -324,10 +325,6 @@ impl App {
                     ));
                 };
             }
-
-            pending_transaction
-                .verify_stateful(&recent_anchors, &next_rate_data.read().unwrap())?;
-
             Ok(())
         }
     }
@@ -346,10 +343,11 @@ impl App {
         let pending_block_ref = self.pending_block.clone();
 
         async move {
-            let pending_transaction =
-                Transaction::try_from(txbytes.as_ref())?.verify_stateless()?;
+            let transaction = Transaction::try_from(txbytes.as_ref())?
+                .verify_stateless()?
+                .verify_stateful(&recent_anchors, &next_rate_data.read().unwrap())?;
 
-            for nullifier in pending_transaction.spent_nullifiers.clone() {
+            for nullifier in transaction.spent_nullifiers.clone() {
                 // verify that we're not spending a nullifier that was already spent in a previous block
                 if state
                     .nullifier(nullifier.clone())
@@ -378,15 +376,12 @@ impl App {
                 }
             }
 
-            let verified_transaction = pending_transaction
-                .verify_stateful(&recent_anchors, &next_rate_data.read().unwrap())?;
-
             // We accumulate data only for `VerifiedTransaction`s into `PendingBlock`.
             pending_block_ref
                 .expect("pending_block must be Some in DeliverTx")
                 .lock()
                 .unwrap()
-                .add_transaction(verified_transaction);
+                .add_transaction(transaction);
 
             metrics::increment_counter!("node_transactions_total");
             Ok(())
