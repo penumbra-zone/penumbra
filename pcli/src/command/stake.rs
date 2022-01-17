@@ -1,9 +1,6 @@
 use anyhow::{anyhow, Context, Result};
 use penumbra_crypto::Value;
-use penumbra_proto::{
-    thin_wallet::{thin_wallet_client::ThinWalletClient, ValidatorRateRequest},
-    Protobuf,
-};
+use penumbra_proto::thin_wallet::ValidatorRateRequest;
 use penumbra_stake::{DelegationToken, Epoch, IdentityKey, RateData, STAKING_TOKEN_ASSET_ID};
 use rand_core::OsRng;
 use structopt::StructOpt;
@@ -101,11 +98,7 @@ impl StakeCmd {
                     Epoch::from_height(state.last_block_height().unwrap() as u64, epoch_duration);
                 let next_epoch = current_epoch.next();
 
-                let mut client = ThinWalletClient::connect(format!(
-                    "http://{}:{}",
-                    opt.node, opt.thin_wallet_port
-                ))
-                .await?;
+                let mut client = opt.thin_wallet_client().await?;
 
                 let rate_data: RateData = client
                     .validator_rate(tonic::Request::new(ValidatorRateRequest {
@@ -120,18 +113,10 @@ impl StakeCmd {
                     state.build_delegate(&mut OsRng, rate_data, unbonded_amount, *fee, *source)?;
                 state.commit()?;
 
-                tracing::info!("broadcasting transaction...");
-                let rsp = reqwest::get(format!(
-                    r#"http://{}:{}/broadcast_tx_sync?tx=0x{}"#,
-                    opt.node,
-                    opt.rpc_port,
-                    hex::encode(&transaction.encode_to_vec())
-                ))
-                .await?
-                .text()
-                .await?;
-
-                tracing::info!("{}", rsp);
+                opt.submit_transaction(&transaction).await?;
+                // Only commit the state if the transaction was submitted successfully,
+                // so that we don't store pending notes that will never appear on-chain.
+                state.commit()?;
             }
             StakeCmd::Undelegate {
                 amount,
@@ -161,11 +146,7 @@ impl StakeCmd {
                     Epoch::from_height(state.last_block_height().unwrap() as u64, epoch_duration);
                 let next_epoch = current_epoch.next();
 
-                let mut client = ThinWalletClient::connect(format!(
-                    "http://{}:{}",
-                    opt.node, opt.thin_wallet_port
-                ))
-                .await?;
+                let mut client = opt.thin_wallet_client().await?;
 
                 let rate_data: RateData = client
                     .validator_rate(tonic::Request::new(ValidatorRateRequest {
@@ -183,20 +164,11 @@ impl StakeCmd {
                     *fee,
                     *source,
                 )?;
+
+                opt.submit_transaction(&transaction).await?;
+                // Only commit the state if the transaction was submitted successfully,
+                // so that we don't store pending notes that will never appear on-chain.
                 state.commit()?;
-
-                tracing::info!("broadcasting transaction...");
-                let rsp = reqwest::get(format!(
-                    r#"http://{}:{}/broadcast_tx_sync?tx=0x{}"#,
-                    opt.node,
-                    opt.rpc_port,
-                    hex::encode(&transaction.encode_to_vec())
-                ))
-                .await?
-                .text()
-                .await?;
-
-                tracing::info!("{}", rsp);
             }
             StakeCmd::Redelegate { .. } => {
                 todo!()

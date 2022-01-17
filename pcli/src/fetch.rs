@@ -1,13 +1,13 @@
 use anyhow::Result;
 use penumbra_crypto::asset;
-use penumbra_proto::thin_wallet::{thin_wallet_client::ThinWalletClient, AssetListRequest};
+use penumbra_proto::{light_wallet::ChainParamsRequest, thin_wallet::AssetListRequest};
 use tracing::instrument;
 
-use crate::ClientStateFile;
+use crate::{ClientStateFile, Opt};
 
-#[instrument(skip(state))]
-pub async fn assets(state: &mut ClientStateFile, wallet_uri: String) -> Result<()> {
-    let mut client = ThinWalletClient::connect(wallet_uri).await?;
+#[instrument(skip(opt, state))]
+pub async fn assets(opt: &Opt, state: &mut ClientStateFile) -> Result<()> {
+    let mut client = opt.thin_wallet_client().await?;
 
     // Update asset registry.
     let request = tonic::Request::new(AssetListRequest {});
@@ -24,5 +24,23 @@ pub async fn assets(state: &mut ClientStateFile, wallet_uri: String) -> Result<(
 
     state.commit()?;
     tracing::info!("updated asset registry");
+    Ok(())
+}
+
+/// Fetches the global chain parameters and stores them on `ClientState`.
+#[instrument(skip(opt, state))]
+pub async fn chain_params(opt: &Opt, state: &mut ClientStateFile) -> Result<()> {
+    let mut client = opt.light_wallet_client().await?;
+
+    let params = client
+        .chain_params(tonic::Request::new(ChainParamsRequest {}))
+        .await?
+        .into_inner()
+        .into();
+
+    tracing::info!(?params, "saving chain params");
+
+    *state.chain_params_mut() = Some(params);
+    state.commit()?;
     Ok(())
 }

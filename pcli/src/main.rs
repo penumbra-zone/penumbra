@@ -6,13 +6,14 @@ use structopt::StructOpt;
 
 mod command;
 mod fetch;
+mod network;
 mod state;
 mod sync;
 mod warning;
 
 use command::*;
 use state::ClientStateFile;
-use sync::{set_chain_params, sync};
+use sync::sync;
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -74,15 +75,13 @@ async fn main() -> Result<()> {
 
     // Chain params may not have been fetched yet, do so if necessary.
     if state.chain_params().is_none() {
-        let light_wallet_server_uri = format!("http://{}:{}", opt.node, opt.light_wallet_port);
-        set_chain_params(&mut state, light_wallet_server_uri).await?;
+        fetch::chain_params(&opt, &mut state).await?;
     }
+    // From now on, we can .expect() on the chain params.
 
     if opt.cmd.needs_sync() {
-        let light_wallet_server_uri = format!("http://{}:{}", opt.node, opt.light_wallet_port);
-        let thin_wallet_server_uri = format!("http://{}:{}", opt.node, opt.thin_wallet_port);
-        sync(&mut state, light_wallet_server_uri).await?;
-        fetch::assets(&mut state, thin_wallet_server_uri).await?;
+        sync(&opt, &mut state).await?;
+        fetch::assets(&opt, &mut state).await?;
     };
 
     match &opt.cmd {
