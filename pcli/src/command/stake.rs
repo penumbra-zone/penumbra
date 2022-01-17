@@ -84,12 +84,6 @@ impl StakeCmd {
 
                 let to = to.parse::<IdentityKey>()?;
 
-                // If we're the first ever delegator to this validator, the corresponding
-                // asset might not be recorded on-chain already, so add it to the asset cache.
-                state
-                    .asset_cache_mut()
-                    .extend(std::iter::once(to.delegation_token().denom()));
-
                 // FIXME! need some kind of structure for recording chain
                 // parameters - connected with having protos for genesis data
                 // (though not all genesis data is chain parameters)

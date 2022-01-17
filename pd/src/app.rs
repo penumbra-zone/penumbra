@@ -138,16 +138,28 @@ impl App {
 
         for allocation in &app_state.allocations {
             tracing::info!(?allocation, "processing allocation");
+
             tx_builder.add_output(allocation.note().expect("genesis allocations are valid"));
-            // Add all assets found in the genesis transaction to the asset registry
+
             let denom = asset::REGISTRY
                 .parse_denom(&allocation.denom)
                 .expect("genesis allocations must have valid denominations");
-            let id = denom.id();
-            tracing::debug!(?id, "registering asset id");
+
+            // Accumulate the allocation amount into the supply updates for this denom.
             genesis_block
                 .supply_updates
-                .insert(id, (denom, allocation.amount));
+                .entry(denom.id())
+                .or_insert((denom, 0))
+                .1 += allocation.amount;
+        }
+
+        // We might not have any allocations of delegation tokens, but we should record the denoms.
+        for genesis::ValidatorPower { validator, .. } in app_state.validators.iter() {
+            let denom = validator.identity_key.delegation_token().denom();
+            genesis_block
+                .supply_updates
+                .entry(denom.id())
+                .or_insert((denom, 0));
         }
 
         let genesis_tx = tx_builder
