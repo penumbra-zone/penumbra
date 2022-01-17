@@ -27,7 +27,6 @@ impl DerefMut for ClientStateFile {
 
 impl Drop for ClientStateFile {
     fn drop(&mut self) {
-        self.commit().unwrap();
         self.lock.unlock().unwrap();
     }
 }
@@ -67,6 +66,7 @@ impl ClientStateFile {
 
     /// Commit the client state to disk.
     pub fn commit(&self) -> Result<()> {
+        tracing::debug!("committing state");
         // Open a new named temp file (this has to be a named temp file because we need to persist
         // it and there's no platform-independent way to do this using an anonymous temp file)
         let tmp = tempfile::NamedTempFile::new()?;

@@ -1,15 +1,13 @@
 use anyhow::Result;
-use penumbra_proto::light_wallet::{
-    light_wallet_client::LightWalletClient, ChainParamsRequest, CompactBlockRangeRequest,
-};
+use penumbra_proto::light_wallet::CompactBlockRangeRequest;
 use tracing::instrument;
 
-use crate::ClientStateFile;
+use crate::{ClientStateFile, Opt};
 
-#[instrument(skip(state), fields(start_height = state.last_block_height()))]
-pub async fn sync(state: &mut ClientStateFile, wallet_uri: String) -> Result<()> {
+#[instrument(skip(opt, state), fields(start_height = state.last_block_height()))]
+pub async fn sync(opt: &Opt, state: &mut ClientStateFile) -> Result<()> {
     tracing::info!("starting client sync");
-    let mut client = LightWalletClient::connect(wallet_uri).await?;
+    let mut client = opt.light_wallet_client().await?;
 
     let start_height = state.last_block_height().map(|h| h + 1).unwrap_or(0);
     let mut stream = client
@@ -32,24 +30,6 @@ pub async fn sync(state: &mut ClientStateFile, wallet_uri: String) -> Result<()>
     }
 
     state.prune_timeouts();
-    state.commit()?;
-    tracing::info!(end_height = ?state.last_block_height().unwrap(), "finished sync");
-    Ok(())
-}
-
-/// Fetches the global chain parameters and stores them on `ClientState`.
-#[instrument(skip(state), fields(start_height = state.last_block_height()))]
-pub async fn set_chain_params(state: &mut ClientStateFile, wallet_uri: String) -> Result<()> {
-    tracing::info!("starting set_chain_params");
-    let mut client = LightWalletClient::connect(wallet_uri).await?;
-
-    let params = client
-        .chain_params(tonic::Request::new(ChainParamsRequest {}))
-        .await?
-        .into_inner();
-
-    let cp_mut = state.chain_params_mut();
-    *cp_mut = Some(params.into());
     state.commit()?;
     tracing::info!(end_height = ?state.last_block_height().unwrap(), "finished sync");
     Ok(())

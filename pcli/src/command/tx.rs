@@ -52,23 +52,13 @@ impl TxCmd {
                     .parse()
                     .map_err(|_| anyhow::anyhow!("address is invalid"))?;
 
-                let tx = state.build_send(&mut OsRng, &values, *fee, to, *from, memo.clone())?;
+                let transaction =
+                    state.build_send(&mut OsRng, &values, *fee, to, *from, memo.clone())?;
+
+                opt.submit_transaction(&transaction).await?;
+                // Only commit the state if the transaction was submitted successfully,
+                // so that we don't store pending notes that will never appear on-chain.
                 state.commit()?;
-
-                let serialized_tx: Vec<u8> = tx.into();
-
-                tracing::info!("broadcasting transaction...");
-                let rsp = reqwest::get(format!(
-                    r#"http://{}:{}/broadcast_tx_sync?tx=0x{}"#,
-                    opt.node,
-                    opt.rpc_port,
-                    hex::encode(serialized_tx)
-                ))
-                .await?
-                .text()
-                .await?;
-
-                tracing::info!("{}", rsp);
             }
         }
         Ok(())
