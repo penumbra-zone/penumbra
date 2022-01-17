@@ -174,6 +174,16 @@ impl StatefulTransactionExt for PendingTransaction {
                 anyhow::anyhow!("Unknown validator identity {}", d.validator_identity)
             })?;
 
+            // Check whether the epoch is correct first, to give a more helpful
+            // error message if it's wrong.
+            if d.epoch_index != rate_data.epoch_index {
+                return Err(anyhow::anyhow!(
+                    "Delegation was prepared for next epoch {} but the next epoch is {}",
+                    d.epoch_index,
+                    rate_data.epoch_index
+                ));
+            }
+
             // For delegations, we enforce correct computation (with rounding)
             // of the *delegation amount based on the unbonded amount*, because
             // users (should be) starting with the amount of unbonded stake they
@@ -208,6 +218,16 @@ impl StatefulTransactionExt for PendingTransaction {
             let rate_data = next_rate_data.get(&u.validator_identity).ok_or_else(|| {
                 anyhow::anyhow!("Unknown validator identity {}", u.validator_identity)
             })?;
+
+            // Check whether the epoch is correct first, to give a more helpful
+            // error message if it's wrong.
+            if u.epoch_index != rate_data.epoch_index {
+                return Err(anyhow::anyhow!(
+                    "Undelegation was prepared for next epoch {} but the next epoch is {}",
+                    u.epoch_index,
+                    rate_data.epoch_index
+                ));
+            }
 
             // For undelegations, we enforce correct computation (with rounding)
             // of the *unbonded amount based on the delegation amount*, because
