@@ -1,14 +1,10 @@
-use std::env::current_dir;
-use std::path::PathBuf;
-use std::str::FromStr;
-use std::{fmt, fs::File};
+use std::{env::current_dir, fmt, fs::File, path::PathBuf, str::FromStr};
 
 use anyhow::{Context, Result};
 use directories::UserDirs;
+use penumbra_crypto::Address;
 use regex::{Captures, Regex};
 use serde::{de, Deserialize};
-
-use penumbra_crypto::Address;
 use tendermint::PrivateKey;
 
 use crate::genesis;

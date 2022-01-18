@@ -1,6 +1,7 @@
-use std::net::Ipv4Addr;
-use std::net::SocketAddr;
-use std::path::PathBuf;
+use std::{
+    net::{Ipv4Addr, SocketAddr},
+    path::PathBuf,
+};
 
 use metrics_exporter_prometheus::PrometheusBuilder;
 use pd::{App, State};
@@ -200,24 +201,19 @@ async fn main() -> anyhow::Result<()> {
             output_dir,
             chain_id,
         } => {
-            use std::fs;
-            use std::fs::File;
-            use std::io::Write;
-            use std::str::FromStr;
-            use std::time::Duration;
-            use std::time::{SystemTime, UNIX_EPOCH};
+            use std::{
+                fs,
+                fs::File,
+                io::Write,
+                str::FromStr,
+                time::{Duration, SystemTime, UNIX_EPOCH},
+            };
 
-            use tendermint::account::Id;
-            use tendermint::public_key::Algorithm;
-            use tendermint::Genesis;
-            use tendermint::Time;
-            use tendermint_config::NodeKey;
-            use tendermint_config::PrivValidatorKey;
-
-            use pd::genesis::ValidatorPower;
-            use pd::{genesis, testnet::*};
+            use pd::{genesis, genesis::ValidatorPower, testnet::*};
             use penumbra_crypto::Address;
             use penumbra_stake::IdentityKey;
+            use tendermint::{account::Id, public_key::Algorithm, Genesis, Time};
+            use tendermint_config::{NodeKey, PrivValidatorKey};
 
             assert!(
                 num_validator_nodes > 0,

@@ -5,12 +5,11 @@ use std::{
     sync::Arc,
 };
 
-use penumbra_proto::{crypto as pb, Protobuf};
-
 use ark_ff::fields::PrimeField;
+use penumbra_proto::{crypto as pb, Protobuf};
+use serde::{Deserialize, Serialize};
 
 use crate::{asset, Fq, Value};
-use serde::{Deserialize, Serialize};
 /// An asset denomination.
 ///
 /// Each denomination has a unique [`asset::Id`] and base unit, and may also

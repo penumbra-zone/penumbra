@@ -1,7 +1,6 @@
-use serde::{Deserialize, Serialize};
-
 use penumbra_crypto::asset;
 use penumbra_proto::{chain as pb, crypto as pbc, Protobuf};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug)]
 pub struct AssetInfo {
