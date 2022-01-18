@@ -203,9 +203,7 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
         }
 
         // Add undelegated note outputs into the quarantine queue.
-        for (pre_position, (note_commitment, quarantined_note)) in
-            block.undelegation_notes.into_iter().enumerate()
-        {
+        for (note_commitment, quarantined_note) in block.undelegation_notes.into_iter() {
             // TODO: quarantine undelegated note outputs
         }
 
