@@ -121,8 +121,8 @@ impl ClientState {
     }
 
     /// Returns the global chain parameters.
-    pub fn chain_params(&self) -> &Option<ChainParams> {
-        &self.chain_params
+    pub fn chain_params(&self) -> Option<&ChainParams> {
+        self.chain_params.as_ref()
     }
 
     /// Returns a mutable reference to the global chain parameters.
