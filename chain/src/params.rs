@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use penumbra_crypto::asset;
 use penumbra_proto::{chain as pb, crypto as pbc, Protobuf};
 
@@ -35,7 +37,7 @@ impl From<AssetInfo> for pb::AssetInfo {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ChainParams {
     pub chain_id: String,
     pub epoch_duration: u64,

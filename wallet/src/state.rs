@@ -5,6 +5,7 @@ use std::{
 };
 
 use anyhow::Context;
+use penumbra_chain::params::ChainParams;
 use penumbra_crypto::{
     asset::{self, Denom},
     memo,
@@ -52,6 +53,8 @@ pub struct ClientState {
     asset_cache: asset::Cache,
     /// Key material.
     wallet: Wallet,
+    /// Global chain parameters. May not have been fetched yet.
+    chain_params: Option<ChainParams>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -85,7 +88,7 @@ impl AsRef<Note> for UnspentNote<'_> {
 }
 
 impl ClientState {
-    pub fn new(wallet: Wallet) -> Self {
+    pub fn new(wallet: Wallet, chain_params: Option<ChainParams>) -> Self {
         Self {
             last_block_height: None,
             note_commitment_tree: NoteCommitmentTree::new(MAX_MERKLE_CHECKPOINTS_CLIENT),
@@ -97,6 +100,7 @@ impl ClientState {
             transactions: BTreeMap::new(),
             asset_cache: Default::default(),
             wallet,
+            chain_params,
         }
     }
 
@@ -113,6 +117,16 @@ impl ClientState {
     /// Returns the wallet the state is tracking.
     pub fn wallet(&self) -> &Wallet {
         &self.wallet
+    }
+
+    /// Returns the global chain parameters.
+    pub fn chain_params(&self) -> &Option<ChainParams> {
+        &self.chain_params
+    }
+
+    /// Returns a mutable reference to the global chain parameters.
+    pub fn chain_params_mut(&mut self) -> &mut Option<ChainParams> {
+        &mut self.chain_params
     }
 
     /// Returns a mutable reference to the wallet the state is tracking.
@@ -600,6 +614,7 @@ mod serde_helpers {
         transactions: Vec<(String, String)>,
         asset_registry: Vec<(asset::Id, String)>,
         wallet: Wallet,
+        chain_params: Option<ChainParams>,
     }
 
     #[serde_as]
@@ -708,6 +723,7 @@ mod serde_helpers {
                     .collect(),
                 // TODO: serialize full transactions
                 transactions: vec![],
+                chain_params: state.chain_params,
             }
         }
     }
@@ -774,6 +790,7 @@ mod serde_helpers {
                 asset_cache: asset_registry.try_into()?,
                 // TODO: serialize full transactions
                 transactions: Default::default(),
+                chain_params: state.chain_params,
             })
         }
     }
