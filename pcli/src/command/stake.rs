@@ -84,12 +84,10 @@ impl StakeCmd {
 
                 let to = to.parse::<IdentityKey>()?;
 
-                // FIXME! need some kind of structure for recording chain
-                // parameters - connected with having protos for genesis data
-                // (though not all genesis data is chain parameters)
-                let epoch_duration = 10;
-                let current_epoch =
-                    Epoch::from_height(state.last_block_height().unwrap() as u64, epoch_duration);
+                let current_epoch = Epoch::from_height(
+                    state.last_block_height().unwrap() as u64,
+                    state.chain_params().unwrap().epoch_duration,
+                );
                 let next_epoch = current_epoch.next();
 
                 let mut client = opt.thin_wallet_client().await?;
@@ -132,12 +130,10 @@ impl StakeCmd {
 
                 let from = delegation_token.validator();
 
-                // FIXME! need some kind of structure for recording chain
-                // parameters - connected with having protos for genesis data
-                // (though not all genesis data is chain parameters)
-                let epoch_duration = 10;
-                let current_epoch =
-                    Epoch::from_height(state.last_block_height().unwrap() as u64, epoch_duration);
+                let current_epoch = Epoch::from_height(
+                    state.last_block_height().unwrap() as u64,
+                    state.chain_params().unwrap().epoch_duration,
+                );
                 let next_epoch = current_epoch.next();
 
                 let mut client = opt.thin_wallet_client().await?;
