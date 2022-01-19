@@ -15,7 +15,9 @@ use penumbra_crypto::{
     note, Nullifier,
 };
 use penumbra_proto::Protobuf;
-use penumbra_stake::{Epoch, IdentityKey, RateData, ValidatorStatus};
+use penumbra_stake::{
+    Epoch, IdentityKey, RateData, ValidatorStatus, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
+};
 use penumbra_transaction::Transaction;
 use tendermint::abci::{
     request::{self, BeginBlock, CheckTxKind, EndBlock},
@@ -423,6 +425,12 @@ impl App {
                 let current_base_rate = state.base_rate_data(current_epoch.index).await?;
                 let current_rates = state.rate_data(current_epoch.index).await?;
 
+                let mut staking_token_supply = state
+                    .asset_lookup(STAKING_TOKEN_ASSET_ID.encode_to_vec())
+                    .await?
+                    .map(|info| info.total_supply)
+                    .unwrap();
+
                 // steps (foreach validator):
                 // - get the total token supply for the validator's delegation tokens
                 // - process the updates to the token supply:
@@ -465,10 +473,6 @@ impl App {
                     // the delegations in pending_block with the ones already committed to the
                     // state. otherwise the delegations committed in the epoch threshold block
                     // would be lost.
-                    //
-                    // TODO: this currently only updates the supply of the validator's delegation
-                    // changes (i.e. the supply of each validator's delegation token). It doesn't
-                    // update the supply of the native staking token
                     let mut committed_delegation_changes =
                         state.delegation_changes(prev_epoch.index).await?;
                     for (id_key, delta) in &pending_block.lock().unwrap().delegation_changes {
@@ -489,6 +493,17 @@ impl App {
                             .get(&asset_id)
                             .unwrap_or(&default_supply_change);
 
+                        // update staking token supply
+                        let unbonded_amount = current_rate.unbonded_amount(delta.abs() as u64);
+                        if *delta > 0 {
+                            // delegation: subtract the unbonded amount from the staking token supply
+                            staking_token_supply -= unbonded_amount;
+                        } else {
+                            // undelegation: add the unbonded amount to the staking token supply
+                            staking_token_supply += unbonded_amount;
+                        }
+
+                        // update the delegation token supply
                         // TODO: should we use a method which panics on integer overflow here?
                         pending_block.lock().unwrap().supply_updates.insert(
                             asset_id,
@@ -516,6 +531,10 @@ impl App {
                 pending_block.lock().unwrap().next_base_rate = Some(next_base_rate);
                 pending_block.lock().unwrap().next_validator_statuses =
                     Some(next_validator_statuses);
+                pending_block.lock().unwrap().supply_updates.insert(
+                    *STAKING_TOKEN_ASSET_ID,
+                    (STAKING_TOKEN_DENOM.clone(), staking_token_supply),
+                );
 
                 // TODO: later, set the EndBlock response to add validators
                 // at the epoch boundary
