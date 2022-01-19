@@ -430,6 +430,7 @@ impl App {
                 //   - collect all undelegations started in previous epoch and apply them (reduces supply);
                 // - feed the updated (current) token supply into current_rates.voting_power()
                 // - persist both the current voting power and the current supply
+                //
 
                 /// FIXME: set this less arbitrarily, and allow this to be set per-epoch
                 /// 3bps -> 11% return over 365 epochs, why not
@@ -456,11 +457,43 @@ impl App {
                         .map(|info| info.total_supply)
                         .unwrap_or(0);
 
-                    // TODO: we should process all of the delegations and undelegations in the
-                    // epoch here
-                    //
                     // TODO: if a validator isn't part of the consensus set, should we ignore them
                     // and not update their rates?
+                    //
+                    //
+                    // this is a bit complicated: because we're in the EndBlock phase, and the
+                    // delegations in this block have not yet been committed, we have to combine
+                    // the delegations in pending_block with the ones already committed to the
+                    // state. otherwise the delegations committed in the epoch threshold block
+                    // would be lost.
+                    //
+
+                    let mut committed_delegation_changes =
+                        state.delegation_changes(prev_epoch.index).await?;
+                    for (id_key, delta) in &pending_block.lock().unwrap().delegation_changes {
+                        *committed_delegation_changes
+                            .entry(id_key.clone())
+                            .or_insert(*delta) += delta;
+                    }
+
+                    for (id_key, delta) in &committed_delegation_changes {
+                        let asset_id = id_key.delegation_token().id();
+                        let denom = id_key.delegation_token().denom();
+
+                        let default_supply_change = (denom.clone(), 0u64);
+
+                        let pb = pending_block.lock().unwrap();
+                        let delegation_supply = pb
+                            .supply_updates
+                            .get(&asset_id)
+                            .unwrap_or(&default_supply_change);
+
+                        // TODO: should we use a method which panics on integer overflow here?
+                        pending_block.lock().unwrap().supply_updates.insert(
+                            asset_id,
+                            (denom, (delegation_supply.1 as i64 + *delta) as u64),
+                        );
+                    }
 
                     let voting_power =
                         next_rate.voting_power(delegation_token_supply, &next_base_rate);
