@@ -89,7 +89,7 @@ impl AsRef<Note> for UnspentNote<'_> {
 }
 
 impl ClientState {
-    pub fn new(wallet: Wallet, chain_params: Option<ChainParams>) -> Self {
+    pub fn new(wallet: Wallet) -> Self {
         Self {
             last_block_height: None,
             note_commitment_tree: NoteCommitmentTree::new(MAX_MERKLE_CHECKPOINTS_CLIENT),
@@ -101,7 +101,7 @@ impl ClientState {
             transactions: BTreeMap::new(),
             asset_cache: Default::default(),
             wallet,
-            chain_params,
+            chain_params: None,
         }
     }
 
