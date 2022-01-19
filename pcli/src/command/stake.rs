@@ -103,7 +103,6 @@ impl StakeCmd {
 
                 let transaction =
                     state.build_delegate(&mut OsRng, rate_data, unbonded_amount, *fee, *source)?;
-                state.commit()?;
 
                 opt.submit_transaction(&transaction).await?;
                 // Only commit the state if the transaction was submitted successfully,
