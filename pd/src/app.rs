@@ -466,8 +466,10 @@ impl App {
                     let identity_key = current_rate.identity_key.clone();
 
                     let funding_streams = state.funding_streams(identity_key.clone()).await?;
-
-                    let next_rate = current_rate.next(&next_base_rate, funding_streams);
+                    let validator_commission_sum = funding_streams
+                        .iter()
+                        .fold(0u64, |total, stream| total + stream.rate_bps as u64);
+                    let next_rate = current_rate.next(&next_base_rate, funding_streams.clone());
 
                     // TODO: if a validator isn't part of the consensus set, should we ignore them
                     // and not update their rates?
@@ -513,6 +515,16 @@ impl App {
                         identity_key,
                         voting_power,
                     };
+
+                    // distribute validator commission
+                    let commission_reward_amount = current_rate.reward_amount(
+                        validator_commission_sum,
+                        delegation_token_supply,
+                        &next_base_rate,
+                        &current_base_rate,
+                    );
+
+                    for stream in funding_streams {}
 
                     // rename to curr_rate so it lines up with next_rate (same # chars)
                     tracing::debug!(curr_rate = ?current_rate);

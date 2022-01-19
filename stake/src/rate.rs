@@ -107,6 +107,28 @@ impl RateData {
             .try_into()
             .unwrap()
     }
+
+    /// Computes the amount of reward at the epoch specified by base_rate_data
+    pub fn reward_amount(
+        &self,
+        commission_rate_bps: u64,
+        total_delegation_tokens: u64,
+        base_rate_data: &BaseRateData,
+        prev_epoch_rate_data: &BaseRateData,
+    ) -> u64 {
+        if base_rate_data.epoch_index != self.epoch_index {
+            panic!("wrong base rate data for epoch")
+        }
+        if prev_epoch_rate_data.epoch_index != base_rate_data.epoch_index - 1 {
+            panic!("wrong base rate data for previous epoch")
+        }
+        // take yv*cve*re*psi(e-1)
+        let mut r = (total_delegation_tokens as u128 * (commission_rate_bps as u128 * 1_0000)) / 1_0000_0000;
+        r = (r * base_rate_data.base_reward_rate as u128) / 1_0000_0000;
+        r = (r * prev_epoch_rate_data.base_exchange_rate as u128) / 1_0000_0000;
+        
+        r as u64
+    }
 }
 /// Describes the base reward and exchange rates in some epoch.
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
