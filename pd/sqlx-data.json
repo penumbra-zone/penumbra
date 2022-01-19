@@ -79,20 +79,8 @@
       "nullable": []
     }
   },
-  "3f13d5f8a2ffc438e79f3297b7dfbcc14ffca7611f5ea3d4a5e8acfba3b9807e": {
-    "query": "\n            INSERT INTO blobs (id, data) VALUES ('nct', $1)\n            ON CONFLICT (id) DO UPDATE SET data = $1\n            ",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea"
-        ]
-      },
-      "nullable": []
-    }
-  },
-  "5ea1dce201278be84f22c7c6baf15803c1cc44a533cfe21a09b4b625d3e72e99": {
-    "query": "SELECT identity_key, epoch, voting_power, validator_reward_rate, validator_exchange_rate\n            FROM validator_rates\n            WHERE epoch = $1",
+  "302a33ec1eec61c43e6b5507b6e059e3c9f61c6da3c853ec9c6d4c815d04df61": {
+    "query": "SELECT height, note_commitment, ephemeral_key, encrypted_note\n                    FROM notes\n                    WHERE height BETWEEN $1 AND $2\n                    ORDER BY position ASC",
     "describe": {
       "columns": [
         {
@@ -130,18 +118,6 @@
       ]
     }
   },
-  "37dc2448272e62b1af649a73ae39b47ca5ec6ab625a9ff26d22c02a36b6be7ac": {
-    "query": "INSERT INTO base_rates (epoch, base_reward_rate, base_exchange_rate) VALUES (0, 0, $1)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Int8"
-        ]
-      },
-      "nullable": []
-    }
-  },
   "3f13d5f8a2ffc438e79f3297b7dfbcc14ffca7611f5ea3d4a5e8acfba3b9807e": {
     "query": "\n            INSERT INTO blobs (id, data) VALUES ('nct', $1)\n            ON CONFLICT (id) DO UPDATE SET data = $1\n            ",
     "describe": {
@@ -152,6 +128,32 @@
         ]
       },
       "nullable": []
+    }
+  },
+  "40da344f10b8dfccf3ebc3ac7c44f028bdef4b924b900c9f2125320caf04e8d6": {
+    "query": "SELECT validator_identity_key, delegation_change FROM delegation_changes WHERE epoch = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "validator_identity_key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 1,
+          "name": "delegation_change",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false
+      ]
     }
   },
   "4501b3fc1446d51abde3513efb7df1201092a9695f858fc090043d81ad3db490": {
@@ -396,6 +398,20 @@
       "nullable": []
     }
   },
+  "9ab28d6b1cdbe8fd02e4382ab9cf5a2fa2914aaf460020977aeadfb8818c70af": {
+    "query": "INSERT INTO base_rates VALUES ($1, $2, $3)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "9e7ef6d0442bbacb5512b78c47e9bb222cecf14a4e3a3dd4530e2a6ad420b591": {
     "query": "\n                INSERT INTO jmt (key, value) VALUES ($1, $2)\n                ",
     "describe": {
@@ -495,12 +511,10 @@
         }
       ],
       "parameters": {
-        "Left": [
-          "Bytea"
-        ]
+        "Left": []
       },
       "nullable": [
-        true
+        null
       ]
     }
   },
@@ -586,21 +600,6 @@
       ]
     }
   },
-  "e57d8617299261390fc7448d3bfda816a5b2bbdf7cb03c0f76af7da9f26743ba": {
-    "query": "INSERT INTO validator_rates VALUES ($1, $2, $3, $4)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea",
-          "Int8",
-          "Int8",
-          "Int8"
-        ]
-      },
-      "nullable": []
-    }
-  },
   "e1f809f1ee3e05b30f5d8139ff79db877defed8a42e1b58d2ae243c0cd974bb7": {
     "query": "\n            INSERT INTO blobs (id, data) VALUES ('gc', $1)\n            ",
     "describe": {
@@ -619,8 +618,10 @@
       "columns": [],
       "parameters": {
         "Left": [
+          "Bytea",
           "Int8",
-          "Bytea"
+          "Int8",
+          "Int8"
         ]
       },
       "nullable": []
@@ -656,6 +657,7 @@
       "columns": [],
       "parameters": {
         "Left": [
+          "Int8",
           "Bytea"
         ]
       },

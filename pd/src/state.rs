@@ -5,8 +5,16 @@ use std::{
 
 use anyhow::{Context, Result};
 use async_stream::try_stream;
-use futures::future::BoxFuture;
-use futures::stream::{Stream, StreamExt};
+use futures::{
+    future::BoxFuture,
+    stream::{Stream, StreamExt},
+};
+use jmt::{
+    hash::{CryptoHash, CryptoHasher, HashValue, TestOnlyHasher},
+    node_type::{LeafNode, Node, NodeKey},
+    restore::JellyfishMerkleRestore,
+    JellyfishMerkleTree, NodeBatch, TreeReaderAsync, TreeWriterAsync, Value,
+};
 use penumbra_crypto::{
     asset,
     merkle::{self, NoteCommitmentTree, TreeExt},
@@ -24,9 +32,6 @@ use penumbra_stake::{
 use sqlx::{postgres::PgPoolOptions, query, query_as, Pool, Postgres};
 use tendermint::block;
 use tracing::instrument;
-
-use jmt::node_type::{LeafNode, Node, NodeKey};
-use jmt::{NodeBatch, TreeReaderAsync, TreeWriterAsync, Value};
 
 use crate::{db::schema, genesis, PendingBlock};
 
@@ -47,6 +52,7 @@ impl State {
     pub async fn connect(uri: &str) -> Result<Self> {
         tracing::info!("connecting to postgres");
         let pool = PgPoolOptions::new().max_connections(4).connect(uri).await?;
+
         tracing::info!("running migrations");
         sqlx::migrate!("./migrations").run(&pool).await?;
         tracing::info!("finished initializing state");
@@ -181,10 +187,19 @@ impl State {
         .execute(&mut dbtx)
         .await?;
 
-        let nct_root_bytes = &block.note_commitment_tree.root2().to_bytes();
+        //insert block state into JMT
 
-        query!("INSERT INTO jmt (value) VALUES ($1)", &nct_root_bytes[..])
-            .execute(&mut dbtx)
+        let (_, tree_update_batch) = jmt::JellyfishMerkleTree::new(self)
+            .put_value_set(
+                vec![(HashValue::sha3_256_of(b"nct"), nct_anchor.clone())],
+                height,
+            )
+            .await?;
+
+        //insert block state into JMT's backing postgres table
+
+        DbTx(&mut dbtx)
+            .write_node_batch(&tree_update_batch.node_batch)
             .await?;
 
         query!(
@@ -681,18 +696,18 @@ impl State {
     }
 }
 
-impl<V> TreeWriterAsync<V> for State
+struct DbTx<'conn, 'tx>(pub &'tx mut sqlx::Transaction<'conn, Postgres>);
+
+impl<'conn, 'tx, V> TreeWriterAsync<V> for DbTx<'conn, 'tx>
 where
     V: Value,
 {
     /// Writes a node batch into storage.
     fn write_node_batch<'future, 'a: 'future, 'n: 'future>(
-        &'a self,
+        &'a mut self,
         node_batch: &'n NodeBatch<V>,
     ) -> BoxFuture<'future, Result<()>> {
-        Box::pin(async {
-            let mut dbtx = self.pool.begin().await?;
-
+        Box::pin(async move {
             for (node_key, node) in node_batch.clone() {
                 let key_bytes = &node_key.encode()?;
                 let value_bytes = &node.encode()?;
@@ -704,11 +719,9 @@ where
                     &key_bytes,
                     &value_bytes
                 )
-                .execute(&mut dbtx)
+                .execute(&mut *self.0)
                 .await?;
             }
-
-            dbtx.commit().await?;
 
             Ok(())
         })
