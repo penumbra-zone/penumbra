@@ -1,4 +1,7 @@
-use std::{collections::{VecDeque, BTreeMap}, pin::Pin};
+use std::{
+    collections::{BTreeMap, VecDeque},
+    pin::Pin,
+};
 
 use anyhow::{Context, Result};
 use async_stream::try_stream;
@@ -224,11 +227,8 @@ ON CONFLICT (id) DO UPDATE SET data = $1
 
         // Save any new assets found in the block to the asset registry.
         for (id, asset) in block.supply_updates {
-            // TODO: this needs to use an upsert using ON CONFLICT
-            // and should be fixed whenever we implement (un)delegation and
-            // would actually exercise that code path.
             query!(
-                r#"INSERT INTO assets (asset_id, denom, total_supply) VALUES ($1, $2, $3)"#,
+                r#"INSERT INTO assets (asset_id, denom, total_supply) VALUES ($1, $2, $3) ON CONFLICT (asset_id) DO UPDATE SET denom=$2, total_supply=$3"#,
                 &id.to_bytes()[..],
                 asset.0.to_string(),
                 asset.1 as i64
@@ -595,23 +595,23 @@ ON CONFLICT (id) DO UPDATE SET data = $1
             })
             .collect())
     }
-    
-    /// Retrieve the delegation changes for the supplied epoch 
+
+    /// Retrieve the delegation changes for the supplied epoch
     /// TODO: should we have a DelegationChanges struct instead of just returning a BTreeMap?
     pub async fn delegation_changes(&self, epoch: u64) -> Result<BTreeMap<IdentityKey, i64>> {
         let mut conn = self.pool.acquire().await?;
-        
+
         let rows = query!("SELECT validator_identity_key, delegation_change FROM delegation_changes WHERE epoch = $1",
                epoch as i64
             ).fetch_all(&mut conn)
             .await?;
-        
+
         let mut changes: BTreeMap<IdentityKey, i64> = BTreeMap::new();
         for row in rows {
             let id_key = IdentityKey::decode(row.validator_identity_key.as_slice())?;
             changes.insert(id_key, row.delegation_change);
         }
-        
+
         Ok(changes)
     }
 }

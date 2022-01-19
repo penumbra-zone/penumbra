@@ -460,14 +460,15 @@ impl App {
                     // TODO: if a validator isn't part of the consensus set, should we ignore them
                     // and not update their rates?
                     //
-                    //
                     // this is a bit complicated: because we're in the EndBlock phase, and the
                     // delegations in this block have not yet been committed, we have to combine
                     // the delegations in pending_block with the ones already committed to the
                     // state. otherwise the delegations committed in the epoch threshold block
                     // would be lost.
                     //
-
+                    // TODO: this currently only updates the supply of the validator's delegation
+                    // changes (i.e. the supply of each validator's delegation token). It doesn't
+                    // update the supply of the native staking token
                     let mut committed_delegation_changes =
                         state.delegation_changes(prev_epoch.index).await?;
                     for (id_key, delta) in &pending_block.lock().unwrap().delegation_changes {
