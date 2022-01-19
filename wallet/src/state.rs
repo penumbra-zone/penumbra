@@ -10,7 +10,7 @@ use penumbra_crypto::{
     asset::{self, Denom},
     memo,
     merkle::{Frontier, NoteCommitmentTree, Tree, TreeExt},
-    note, Address, FieldExt, Note, Nullifier, Value, CURRENT_CHAIN_ID,
+    note, Address, FieldExt, Note, Nullifier, Value,
 };
 use penumbra_proto::light_wallet::{CompactBlock, StateFragment};
 use penumbra_stake::{RateData, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM};
@@ -227,6 +227,15 @@ impl ClientState {
         }
     }
 
+    fn chain_id(&self) -> Result<String, anyhow::Error> {
+        let chain_params = self.chain_params();
+        if chain_params.is_none() {
+            return Err(anyhow::anyhow!("chain_params not set on state"));
+        }
+
+        Ok(chain_params.unwrap().chain_id.clone())
+    }
+
     /// Generate a new transaction delegating stake
     #[instrument(skip(self, rng))]
     pub fn build_delegate<R: RngCore + CryptoRng>(
@@ -247,8 +256,7 @@ impl ClientState {
 
         tx_builder
             .set_fee(fee)
-            // XXX populate chain id from params?
-            .set_chain_id(CURRENT_CHAIN_ID.to_string())
+            .set_chain_id(self.chain_id()?)
             .add_delegation(&rate_data, unbonded_amount);
 
         let spend_amount = unbonded_amount + fee;
@@ -317,8 +325,7 @@ impl ClientState {
 
         tx_builder
             .set_fee(fee)
-            // XXX populate chain id from params?
-            .set_chain_id(CURRENT_CHAIN_ID.to_string())
+            .set_chain_id(self.chain_id()?)
             .add_undelegation(&rate_data, delegation_amount);
 
         // Because the outputs of an undelegation are quarantined, we want to
@@ -397,14 +404,9 @@ impl ClientState {
         source_address: Option<u64>,
         tx_memo: Option<String>,
     ) -> Result<Transaction, anyhow::Error> {
-        // xx Could populate chain_id from the info endpoint on the node, or at least
-        // error if there is an inconsistency
-
         let mut tx_builder = Transaction::build_with_root(self.note_commitment_tree.root2());
 
-        tx_builder
-            .set_fee(fee)
-            .set_chain_id(CURRENT_CHAIN_ID.to_string());
+        tx_builder.set_fee(fee).set_chain_id(self.chain_id()?);
 
         let mut output_value = HashMap::<Denom, u64>::new();
         for Value { amount, asset_id } in values {

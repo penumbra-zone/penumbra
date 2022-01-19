@@ -5,6 +5,7 @@ use std::{
 
 use metrics_exporter_prometheus::PrometheusBuilder;
 use pd::{App, State};
+use penumbra_chain::params::ChainParams;
 use penumbra_crypto::rdsa::{SigningKey, SpendAuth, VerificationKey};
 use penumbra_proto::{
     light_wallet::light_wallet_server::LightWalletServer,
@@ -287,7 +288,10 @@ async fn main() -> anyhow::Result<()> {
 
                 let app_state = genesis::AppState {
                     allocations: allocations.iter().map(|a| a.into()).collect(),
-                    epoch_duration,
+                    chain_params: ChainParams {
+                        chain_id: chain_id.clone(),
+                        epoch_duration,
+                    },
                     validators: validators
                         .iter()
                         .map(|v| {

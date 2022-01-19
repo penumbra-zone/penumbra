@@ -123,6 +123,9 @@ impl WalletCmd {
             let spend_key_hash = Sha256::digest(&state.wallet().spend_key().seed().0);
             let wallet_archive_dir = archive_dir
                 .data_dir()
+                // TODO the chain ID should be synced from the server if
+                // `chain_params` is `None` (meaning a new wallet file),
+                // as it could have changed via consensus.
                 .join(CURRENT_CHAIN_ID)
                 .join(hex::encode(&spend_key_hash[0..8]));
             std::fs::create_dir_all(&wallet_archive_dir)

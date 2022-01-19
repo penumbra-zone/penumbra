@@ -94,7 +94,7 @@ impl App {
         let note_commitment_tree = state.note_commitment_tree().await?;
         let genesis_config = state.genesis_configuration().await?;
         let recent_anchors = state.recent_anchors(NUM_RECENT_ANCHORS).await?;
-        let epoch_duration = genesis_config.epoch_duration;
+        let epoch_duration = genesis_config.chain_params.epoch_duration;
 
         // Fetch the next rate data, if any. If there's none, it's because we're
         // pre-genesis, and we'll process an empty list, then overwrite it when
@@ -189,7 +189,7 @@ impl App {
             })
             .collect();
 
-        self.epoch_duration = app_state.epoch_duration;
+        self.epoch_duration = app_state.chain_params.epoch_duration;
 
         // construct the pending block and commit the initial state
         self.pending_block = Some(Arc::new(Mutex::new(genesis_block)));
