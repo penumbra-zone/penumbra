@@ -46,11 +46,11 @@ impl WalletCmd {
         // wallet state to be saved to disk
         let state = match self {
             // These two commands return new wallets to be saved to disk:
-            WalletCmd::Generate => Some(ClientState::new(Wallet::generate(&mut OsRng), None)),
+            WalletCmd::Generate => Some(ClientState::new(Wallet::generate(&mut OsRng))),
             WalletCmd::Import { spend_seed } => {
                 let seed = hex::decode(spend_seed)?;
                 let seed = SpendSeed::try_from(seed.as_slice())?;
-                Some(ClientState::new(Wallet::import(seed), None))
+                Some(ClientState::new(Wallet::import(seed)))
             }
             // The rest of these commands don't require a wallet state to be saved to disk:
             WalletCmd::Export => {
@@ -90,9 +90,7 @@ impl WalletCmd {
 
                 // Write the new wallet JSON to disk as a temporary file
                 let (mut tmp, tmp_path) = NamedTempFile::new()?.into_parts();
-                tmp.write_all(
-                    serde_json::to_string_pretty(&ClientState::new(wallet, None))?.as_bytes(),
-                )?;
+                tmp.write_all(serde_json::to_string_pretty(&ClientState::new(wallet))?.as_bytes())?;
 
                 // Check that we can successfully parse the result from disk
                 ClientStateFile::load(tmp_path.to_path_buf()).context("can't parse wallet after attempting to reset: refusing to overwrite existing wallet file")?;
