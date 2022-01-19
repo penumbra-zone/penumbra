@@ -15,7 +15,9 @@ use penumbra_crypto::{
     note, Nullifier,
 };
 use penumbra_proto::Protobuf;
-use penumbra_stake::{Epoch, IdentityKey, RateData, ValidatorStatus};
+use penumbra_stake::{
+    Epoch, IdentityKey, RateData, ValidatorStatus, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
+};
 use penumbra_transaction::Transaction;
 use tendermint::abci::{
     request::{self, BeginBlock, CheckTxKind, EndBlock},
@@ -423,6 +425,12 @@ impl App {
                 let current_base_rate = state.base_rate_data(current_epoch.index).await?;
                 let current_rates = state.rate_data(current_epoch.index).await?;
 
+                let mut staking_token_supply = state
+                    .asset_lookup(STAKING_TOKEN_ASSET_ID.encode_to_vec())
+                    .await?
+                    .map(|info| info.total_supply)
+                    .unwrap();
+
                 // steps (foreach validator):
                 // - get the total token supply for the validator's delegation tokens
                 // - process the updates to the token supply:
@@ -430,6 +438,7 @@ impl App {
                 //   - collect all undelegations started in previous epoch and apply them (reduces supply);
                 // - feed the updated (current) token supply into current_rates.voting_power()
                 // - persist both the current voting power and the current supply
+                //
 
                 /// FIXME: set this less arbitrarily, and allow this to be set per-epoch
                 /// 3bps -> 11% return over 365 epochs, why not
@@ -443,6 +452,17 @@ impl App {
 
                 let mut next_rates = Vec::new();
                 let mut next_validator_statuses = Vec::new();
+
+                // this is a bit complicated: because we're in the EndBlock phase, and the
+                // delegations in this block have not yet been committed, we have to combine
+                // the delegations in pending_block with the ones already committed to the
+                // state. otherwise the delegations committed in the epoch threshold block
+                // would be lost.
+                let mut delegation_changes = state.delegation_changes(prev_epoch.index).await?;
+                for (id_key, delta) in &pending_block.lock().unwrap().delegation_changes {
+                    *delegation_changes.entry(id_key.clone()).or_insert(0) += delta;
+                }
+
                 for current_rate in &current_rates {
                     let identity_key = current_rate.identity_key.clone();
 
@@ -450,17 +470,43 @@ impl App {
 
                     let next_rate = current_rate.next(&next_base_rate, funding_streams);
 
-                    let delegation_token_supply = state
+                    // TODO: if a validator isn't part of the consensus set, should we ignore them
+                    // and not update their rates?
+                    let delegation_delta = delegation_changes.get(&identity_key).unwrap_or(&0i64);
+
+                    let delegation_amount = delegation_delta.abs() as u64;
+                    let unbonded_amount = current_rate.unbonded_amount(delegation_amount);
+
+                    let mut delegation_token_supply = state
                         .asset_lookup(identity_key.delegation_token().id().encode_to_vec())
                         .await?
                         .map(|info| info.total_supply)
                         .unwrap_or(0);
 
-                    // TODO: we should process all of the delegations and undelegations in the
-                    // epoch here
-                    //
-                    // TODO: if a validator isn't part of the consensus set, should we ignore them
-                    // and not update their rates?
+                    if *delegation_delta > 0 {
+                        // net delegation: subtract the unbonded amount from the staking token supply
+                        staking_token_supply =
+                            staking_token_supply.checked_sub(unbonded_amount).unwrap();
+                        delegation_token_supply = delegation_token_supply
+                            .checked_add(delegation_amount)
+                            .unwrap();
+                    } else {
+                        // net undelegation: add the unbonded amount to the staking token supply
+                        staking_token_supply =
+                            staking_token_supply.checked_add(unbonded_amount).unwrap();
+                        delegation_token_supply = delegation_token_supply
+                            .checked_sub(delegation_amount)
+                            .unwrap();
+                    }
+
+                    // update the delegation token supply
+                    pending_block.lock().unwrap().supply_updates.insert(
+                        identity_key.delegation_token().id(),
+                        (
+                            identity_key.delegation_token().denom(),
+                            delegation_token_supply,
+                        ),
+                    );
 
                     let voting_power =
                         next_rate.voting_power(delegation_token_supply, &next_base_rate);
@@ -482,6 +528,10 @@ impl App {
                 pending_block.lock().unwrap().next_base_rate = Some(next_base_rate);
                 pending_block.lock().unwrap().next_validator_statuses =
                     Some(next_validator_statuses);
+                pending_block.lock().unwrap().supply_updates.insert(
+                    *STAKING_TOKEN_ASSET_ID,
+                    (STAKING_TOKEN_DENOM.clone(), staking_token_supply),
+                );
 
                 // TODO: later, set the EndBlock response to add validators
                 // at the epoch boundary

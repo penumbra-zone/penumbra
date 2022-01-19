@@ -68,6 +68,32 @@
       ]
     }
   },
+  "40da344f10b8dfccf3ebc3ac7c44f028bdef4b924b900c9f2125320caf04e8d6": {
+    "query": "SELECT validator_identity_key, delegation_change FROM delegation_changes WHERE epoch = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "validator_identity_key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 1,
+          "name": "delegation_change",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
   "4501b3fc1446d51abde3513efb7df1201092a9695f858fc090043d81ad3db490": {
     "query": "INSERT INTO validator_fundingstreams (\n                        identity_key,\n                        address,\n                        rate_bps\n                    ) VALUES ($1, $2, $3)",
     "describe": {
@@ -308,6 +334,20 @@
       ]
     }
   },
+  "93feb93510c2e7af67c6acca10977051fb38adf51f146f1fbc6c145fe41ecd0d": {
+    "query": "INSERT INTO assets (asset_id, denom, total_supply) VALUES ($1, $2, $3) ON CONFLICT (asset_id) DO UPDATE SET denom=$2, total_supply=$3",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Varchar",
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "9ab28d6b1cdbe8fd02e4382ab9cf5a2fa2914aaf460020977aeadfb8818c70af": {
     "query": "INSERT INTO base_rates VALUES ($1, $2, $3)",
     "describe": {
@@ -475,20 +515,6 @@
         false,
         false
       ]
-    }
-  },
-  "dd092a6ec34f710ab7138a2e48f8fcbcf21970c19183fa57d615b059029ab90d": {
-    "query": "INSERT INTO assets (asset_id, denom, total_supply) VALUES ($1, $2, $3)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea",
-          "Varchar",
-          "Int8"
-        ]
-      },
-      "nullable": []
     }
   },
   "e57d8617299261390fc7448d3bfda816a5b2bbdf7cb03c0f76af7da9f26743ba": {
