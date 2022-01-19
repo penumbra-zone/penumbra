@@ -43,6 +43,11 @@ pub mod chain {
     tonic::include_proto!("penumbra.chain");
 }
 
+/// Genesis-related structures.
+pub mod genesis {
+    tonic::include_proto!("penumbra.genesis");
+}
+
 /// Light wallet protocol structures.
 pub mod light_wallet {
     tonic::include_proto!("penumbra.light_wallet");
