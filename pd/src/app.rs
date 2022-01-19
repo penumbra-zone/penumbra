@@ -476,9 +476,10 @@ impl App {
                     let mut committed_delegation_changes =
                         state.delegation_changes(prev_epoch.index).await?;
                     for (id_key, delta) in &pending_block.lock().unwrap().delegation_changes {
-                        *committed_delegation_changes
+                        let _ = *committed_delegation_changes
                             .entry(id_key.clone())
-                            .or_insert(*delta) += delta;
+                            .and_modify(|change| *change += delta)
+                            .or_insert(*delta);
                     }
 
                     for (id_key, delta) in &committed_delegation_changes {
