@@ -204,19 +204,70 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
             .await?;
         }
 
-        // Add undelegated note outputs into the quarantine queue.
+        // Add notes and nullifiers from transactions containing undelegations to a quarantine
+        // queue, to be extracted when their unbonding period expires.
         for QuarantineGroup {
             validator_identity_keys,
             notes,
             nullifiers,
         } in block.quarantine
         {
-            for (note_commitment, data) in notes {
-                // TODO: quarantine note
+            // Quarantine all notes associated with this quarantine group
+            for (&note_commitment, data) in notes.iter() {
+                // Hold the note data in quarantine
+                query!(
+                    r#"
+                    INSERT INTO quarantined_notes (
+                        note_commitment,
+                        ephemeral_key,
+                        encrypted_note,
+                        transaction_id,
+                        height
+                    ) VALUES ($1, $2, $3, $4, $5)"#,
+                    &<[u8; 32]>::from(note_commitment)[..],
+                    &data.ephemeral_key.0[..],
+                    &data.encrypted_note[..],
+                    &data.transaction_id[..],
+                    height as i64,
+                )
+                .execute(&mut dbtx)
+                .await?;
+
+                // Record which validators are associated with this quarantined note
+                for validator_identity_key in validator_identity_keys.iter() {
+                    query!(
+                        r#"
+                        INSERT INTO quarantined_note_validators (note_commitment, validator_identity_key)
+                        VALUES ($1, $2)"#,
+                        &<[u8; 32]>::from(note_commitment)[..],
+                        &validator_identity_key.0.to_bytes()[..],
+                    ).execute(&mut dbtx).await?;
+                }
             }
 
-            for nullifier in nullifiers {
-                // TODO: quarantine nullifier
+            // Quarantine all nullifiers associated with this quarantine group
+            for &nullifier in nullifiers.iter() {
+                let nullifier_bytes = &<[u8; 32]>::from(nullifier)[..];
+
+                // Keep track of the nullifier associated with the block height
+                query!(
+                    "INSERT INTO quarantined_nullifiers (nullifier, height) VALUES ($1, $2)",
+                    nullifier_bytes,
+                    height as i64
+                )
+                .execute(&mut dbtx)
+                .await?;
+
+                // Record which validators are associated with this quarantined nullifier
+                for validator_identity_key in validator_identity_keys.iter() {
+                    query!(
+                        r#"
+                        INSERT INTO quarantined_nullifier_validators (nullifier, validator_identity_key)
+                        VALUES ($1, $2)"#,
+                        nullifier_bytes,
+                        &validator_identity_key.0.to_bytes()[..],
+                    ).execute(&mut dbtx).await?;
+                }
             }
         }
 

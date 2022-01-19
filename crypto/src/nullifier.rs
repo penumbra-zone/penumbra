@@ -7,7 +7,7 @@ use once_cell::sync::Lazy;
 
 use crate::Fq;
 
-#[derive(PartialEq, Eq, Derivative, Clone, Hash, PartialOrd, Ord)]
+#[derive(PartialEq, Eq, Derivative, Clone, Copy, Hash, PartialOrd, Ord)]
 #[derivative(Debug)]
 pub struct Nullifier(#[derivative(Debug(format_with = "crate::fmt_fq"))] pub Fq);
 

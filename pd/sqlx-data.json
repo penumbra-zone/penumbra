@@ -13,6 +13,22 @@
       "nullable": []
     }
   },
+  "11bc3a959390c8143eb6c67cb0fa1a51fe4ec700e53e4e3e661fa344ca2c418b": {
+    "query": "\n                    INSERT INTO quarantined_notes (\n                        note_commitment,\n                        ephemeral_key,\n                        encrypted_note,\n                        transaction_id,\n                        height\n                    ) VALUES ($1, $2, $3, $4, $5)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Bytea",
+          "Bytea",
+          "Bytea",
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "1680d183efbdb30edbf06e5138503ef6ef74e5dffa9e06fe13c0e89d8254cf56": {
     "query": "\n            INSERT INTO blobs (id, data) VALUES ('nct', $1)\n            ON CONFLICT (id) DO UPDATE SET data = $1",
     "describe": {
@@ -424,6 +440,19 @@
       "nullable": []
     }
   },
+  "9af955e216aed2a695cce104c7e6ffa5ac32eb1f70f84ec21183b4ea52cc0f90": {
+    "query": "\n                        INSERT INTO quarantined_nullifier_validators (nullifier, validator_identity_key)\n                        VALUES ($1, $2)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Bytea"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "9efba3ba5ace824dfbf620cd5d9cd46ea8e0e99c6fc791723d1490a2b84d07ac": {
     "query": "INSERT INTO base_rates (\n                epoch,\n                base_reward_rate,\n                base_exchange_rate\n            ) VALUES ($1, $2, $3)",
     "describe": {
@@ -432,6 +461,19 @@
         "Left": [
           "Int8",
           "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "abe967db36ed8d43cdc533da11fe10b06fbf761109b87e525dfb3404d9978822": {
+    "query": "INSERT INTO quarantined_nullifiers (nullifier, height) VALUES ($1, $2)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
           "Int8"
         ]
       },
@@ -527,6 +569,19 @@
         false,
         false
       ]
+    }
+  },
+  "c922a8aa093f014d7e402acae4dfa7047c0b21a573904ad03e45057dec462f15": {
+    "query": "\n                        INSERT INTO quarantined_note_validators (note_commitment, validator_identity_key)\n                        VALUES ($1, $2)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Bytea"
+        ]
+      },
+      "nullable": []
     }
   },
   "cb7bac3962a9b0db3759bb2dc21f8bf7aeb58e208107aeb6b0f0f6a1e6c29d45": {
