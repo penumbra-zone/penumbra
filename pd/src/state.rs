@@ -550,12 +550,12 @@ ON CONFLICT (id) DO UPDATE SET data = $1
     }
 
     /// Retrieve the [`Asset`] for a given asset ID.
-    pub async fn asset_lookup(&self, asset_id: Vec<u8>) -> Result<Option<chain::AssetInfo>> {
+    pub async fn asset_lookup(&self, asset_id: asset::Id) -> Result<Option<chain::AssetInfo>> {
         let mut conn = self.pool.acquire().await?;
 
         let asset = query!(
             "SELECT denom, asset_id, total_supply FROM assets WHERE asset_id = $1",
-            asset_id
+            asset_id.to_bytes().to_vec(),
         )
         .fetch_optional(&mut conn)
         .await?;

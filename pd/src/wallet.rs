@@ -115,11 +115,12 @@ impl ThinWallet for State {
         &self,
         request: tonic::Request<AssetId>,
     ) -> Result<tonic::Response<AssetInfo>, Status> {
-        let aid = request.into_inner().inner;
-        tracing::debug!(asset_id = ?hex::encode(&aid));
+        let asset_id = penumbra_crypto::asset::Id::try_from(request.into_inner())
+            .map_err(|_| tonic::Status::not_found("invalid asset ID"))?;
+        tracing::debug!(?asset_id);
         let state = self.clone();
         let asset = state
-            .asset_lookup(aid)
+            .asset_lookup(asset_id)
             .await
             .map_err(|_| tonic::Status::not_found("asset not found"))?
             .ok_or(|| anyhow::anyhow!("asset not found"))

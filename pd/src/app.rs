@@ -14,7 +14,6 @@ use penumbra_crypto::{
     merkle::{self, NoteCommitmentTree, TreeExt},
     note, Nullifier,
 };
-use penumbra_proto::Protobuf;
 use penumbra_stake::{
     Epoch, IdentityKey, RateData, ValidatorStatus, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
 };
@@ -426,7 +425,7 @@ impl App {
                 let current_rates = state.rate_data(current_epoch.index).await?;
 
                 let mut staking_token_supply = state
-                    .asset_lookup(STAKING_TOKEN_ASSET_ID.encode_to_vec())
+                    .asset_lookup(*STAKING_TOKEN_ASSET_ID)
                     .await?
                     .map(|info| info.total_supply)
                     .unwrap();
@@ -478,7 +477,7 @@ impl App {
                     let unbonded_amount = current_rate.unbonded_amount(delegation_amount);
 
                     let mut delegation_token_supply = state
-                        .asset_lookup(identity_key.delegation_token().id().encode_to_vec())
+                        .asset_lookup(identity_key.delegation_token().id())
                         .await?
                         .map(|info| info.total_supply)
                         .unwrap_or(0);
@@ -518,11 +517,15 @@ impl App {
                     // rename to curr_rate so it lines up with next_rate (same # chars)
                     tracing::debug!(curr_rate = ?current_rate);
                     tracing::debug!(?next_rate);
+                    tracing::debug!(?delegation_delta);
+                    tracing::debug!(?delegation_token_supply);
                     tracing::debug!(?next_status);
 
                     next_rates.push(next_rate);
                     next_validator_statuses.push(next_status);
                 }
+
+                tracing::debug!(?staking_token_supply);
 
                 pending_block.lock().unwrap().next_rates = Some(next_rates);
                 pending_block.lock().unwrap().next_base_rate = Some(next_base_rate);
