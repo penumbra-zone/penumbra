@@ -474,12 +474,6 @@ impl App {
 
                     let next_rate = current_rate.next(&next_base_rate, funding_streams);
 
-                    let delegation_token_supply = state
-                        .asset_lookup(identity_key.delegation_token().id().encode_to_vec())
-                        .await?
-                        .map(|info| info.total_supply)
-                        .unwrap_or(0);
-
                     // TODO: if a validator isn't part of the consensus set, should we ignore them
                     // and not update their rates?
                     let delegation_delta = committed_delegation_changes
@@ -497,13 +491,22 @@ impl App {
                         staking_token_supply += unbonded_amount;
                     }
 
+                    let mut delegation_token_supply = state
+                        .asset_lookup(identity_key.delegation_token().id().encode_to_vec())
+                        .await?
+                        .map(|info| info.total_supply)
+                        .unwrap_or(0);
+
+                    delegation_token_supply =
+                        (delegation_token_supply as i64 + delegation_delta) as u64;
+
                     // update the delegation token supply
                     // TODO: should we use a method which panics on integer overflow here?
                     pending_block.lock().unwrap().supply_updates.insert(
                         identity_key.delegation_token().id(),
                         (
                             identity_key.delegation_token().denom(),
-                            (delegation_token_supply as i64 + *delegation_delta) as u64,
+                            delegation_token_supply,
                         ),
                     );
 
