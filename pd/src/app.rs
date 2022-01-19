@@ -452,6 +452,21 @@ impl App {
 
                 let mut next_rates = Vec::new();
                 let mut next_validator_statuses = Vec::new();
+
+                // this is a bit complicated: because we're in the EndBlock phase, and the
+                // delegations in this block have not yet been committed, we have to combine
+                // the delegations in pending_block with the ones already committed to the
+                // state. otherwise the delegations committed in the epoch threshold block
+                // would be lost.
+                let mut committed_delegation_changes =
+                    state.delegation_changes(prev_epoch.index).await?;
+                for (id_key, delta) in &pending_block.lock().unwrap().delegation_changes {
+                    let _ = *committed_delegation_changes
+                        .entry(id_key.clone())
+                        .and_modify(|change| *change += delta)
+                        .or_insert(*delta);
+                }
+
                 for current_rate in &current_rates {
                     let identity_key = current_rate.identity_key.clone();
 
@@ -467,42 +482,30 @@ impl App {
 
                     // TODO: if a validator isn't part of the consensus set, should we ignore them
                     // and not update their rates?
-                    //
-                    // this is a bit complicated: because we're in the EndBlock phase, and the
-                    // delegations in this block have not yet been committed, we have to combine
-                    // the delegations in pending_block with the ones already committed to the
-                    // state. otherwise the delegations committed in the epoch threshold block
-                    // would be lost.
-                    let mut committed_delegation_changes =
-                        state.delegation_changes(prev_epoch.index).await?;
-                    for (id_key, delta) in &pending_block.lock().unwrap().delegation_changes {
-                        let _ = *committed_delegation_changes
-                            .entry(id_key.clone())
-                            .and_modify(|change| *change += delta)
-                            .or_insert(*delta);
+                    let delegation_delta = committed_delegation_changes
+                        .get(&identity_key)
+                        .unwrap_or(&0i64);
+
+                    // update staking token supply
+                    let unbonded_amount =
+                        current_rate.unbonded_amount(delegation_delta.abs() as u64);
+                    if *delegation_delta > 0 {
+                        // delegation: subtract the unbonded amount from the staking token supply
+                        staking_token_supply -= unbonded_amount;
+                    } else {
+                        // undelegation: add the unbonded amount to the staking token supply
+                        staking_token_supply += unbonded_amount;
                     }
 
-                    for (id_key, delta) in &committed_delegation_changes {
-                        // update staking token supply
-                        let unbonded_amount = current_rate.unbonded_amount(delta.abs() as u64);
-                        if *delta > 0 {
-                            // delegation: subtract the unbonded amount from the staking token supply
-                            staking_token_supply -= unbonded_amount;
-                        } else {
-                            // undelegation: add the unbonded amount to the staking token supply
-                            staking_token_supply += unbonded_amount;
-                        }
-
-                        let asset_id = id_key.delegation_token().id();
-                        let denom = id_key.delegation_token().denom();
-
-                        // update the delegation token supply
-                        // TODO: should we use a method which panics on integer overflow here?
-                        pending_block.lock().unwrap().supply_updates.insert(
-                            asset_id,
-                            (denom, (delegation_token_supply as i64 + *delta) as u64),
-                        );
-                    }
+                    // update the delegation token supply
+                    // TODO: should we use a method which panics on integer overflow here?
+                    pending_block.lock().unwrap().supply_updates.insert(
+                        identity_key.delegation_token().id(),
+                        (
+                            identity_key.delegation_token().denom(),
+                            (delegation_token_supply as i64 + *delegation_delta) as u64,
+                        ),
+                    );
 
                     let voting_power =
                         next_rate.voting_power(delegation_token_supply, &next_base_rate);
