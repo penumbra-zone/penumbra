@@ -483,17 +483,6 @@ impl App {
                     }
 
                     for (id_key, delta) in &committed_delegation_changes {
-                        let asset_id = id_key.delegation_token().id();
-                        let denom = id_key.delegation_token().denom();
-
-                        let default_supply_change = (denom.clone(), 0u64);
-
-                        let pb = pending_block.lock().unwrap();
-                        let delegation_supply = pb
-                            .supply_updates
-                            .get(&asset_id)
-                            .unwrap_or(&default_supply_change);
-
                         // update staking token supply
                         let unbonded_amount = current_rate.unbonded_amount(delta.abs() as u64);
                         if *delta > 0 {
@@ -504,11 +493,14 @@ impl App {
                             staking_token_supply += unbonded_amount;
                         }
 
+                        let asset_id = id_key.delegation_token().id();
+                        let denom = id_key.delegation_token().denom();
+
                         // update the delegation token supply
                         // TODO: should we use a method which panics on integer overflow here?
                         pending_block.lock().unwrap().supply_updates.insert(
                             asset_id,
-                            (denom, (delegation_supply.1 as i64 + *delta) as u64),
+                            (denom, (delegation_token_supply as i64 + *delta) as u64),
                         );
                     }
 
