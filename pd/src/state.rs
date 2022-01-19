@@ -66,9 +66,7 @@ impl State {
         // ON CONFLICT is excluded here so that an error is raised
         // if genesis config is attempted to be set more than once
         query!(
-            r#"
-INSERT INTO blobs (id, data) VALUES ('gc', $1)
-"#,
+            r#"INSERT INTO blobs (id, data) VALUES ('gc', $1)"#,
             &serde_json::to_vec(&genesis_config)?[..]
         )
         .execute(&mut dbtx)
