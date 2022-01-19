@@ -458,12 +458,9 @@ impl App {
                 // the delegations in pending_block with the ones already committed to the
                 // state. otherwise the delegations committed in the epoch threshold block
                 // would be lost.
-                let mut delegation_changes =
-                    state.delegation_changes(prev_epoch.index).await?;
+                let mut delegation_changes = state.delegation_changes(prev_epoch.index).await?;
                 for (id_key, delta) in &pending_block.lock().unwrap().delegation_changes {
-                    *delegation_changes
-                        .entry(id_key.clone())
-                        .or_insert(0) += delta;
+                    *delegation_changes.entry(id_key.clone()).or_insert(0) += delta;
                 }
 
                 for current_rate in &current_rates {
@@ -475,20 +472,10 @@ impl App {
 
                     // TODO: if a validator isn't part of the consensus set, should we ignore them
                     // and not update their rates?
-                    let delegation_delta = delegation_changes
-                        .get(&identity_key)
-                        .unwrap_or(&0i64);
+                    let delegation_delta = delegation_changes.get(&identity_key).unwrap_or(&0i64);
 
-                    // update staking token supply
-                    let unbonded_amount =
-                        current_rate.unbonded_amount(delegation_delta.abs() as u64);
-                    if *delegation_delta > 0 {
-                        // delegation: subtract the unbonded amount from the staking token supply
-                        staking_token_supply -= unbonded_amount;
-                    } else {
-                        // undelegation: add the unbonded amount to the staking token supply
-                        staking_token_supply += unbonded_amount;
-                    }
+                    let delegation_amount = delegation_delta.abs() as u64;
+                    let unbonded_amount = current_rate.unbonded_amount(delegation_amount);
 
                     let mut delegation_token_supply = state
                         .asset_lookup(identity_key.delegation_token().id().encode_to_vec())
@@ -496,11 +483,23 @@ impl App {
                         .map(|info| info.total_supply)
                         .unwrap_or(0);
 
-                    delegation_token_supply =
-                        (delegation_token_supply as i64 + delegation_delta) as u64;
+                    if *delegation_delta > 0 {
+                        // net delegation: subtract the unbonded amount from the staking token supply
+                        staking_token_supply =
+                            staking_token_supply.checked_sub(unbonded_amount).unwrap();
+                        delegation_token_supply = delegation_token_supply
+                            .checked_add(delegation_amount)
+                            .unwrap();
+                    } else {
+                        // net undelegation: add the unbonded amount to the staking token supply
+                        staking_token_supply =
+                            staking_token_supply.checked_add(unbonded_amount).unwrap();
+                        delegation_token_supply = delegation_token_supply
+                            .checked_sub(delegation_amount)
+                            .unwrap();
+                    }
 
                     // update the delegation token supply
-                    // TODO: should we use a method which panics on integer overflow here?
                     pending_block.lock().unwrap().supply_updates.insert(
                         identity_key.delegation_token().id(),
                         (
