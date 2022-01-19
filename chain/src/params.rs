@@ -37,6 +37,7 @@ impl From<AssetInfo> for pb::AssetInfo {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(try_from = "pb::ChainParams", into = "pb::ChainParams")]
 pub struct ChainParams {
     pub chain_id: String,
     pub epoch_duration: u64,
