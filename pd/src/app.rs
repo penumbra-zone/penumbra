@@ -458,13 +458,12 @@ impl App {
                 // the delegations in pending_block with the ones already committed to the
                 // state. otherwise the delegations committed in the epoch threshold block
                 // would be lost.
-                let mut committed_delegation_changes =
+                let mut delegation_changes =
                     state.delegation_changes(prev_epoch.index).await?;
                 for (id_key, delta) in &pending_block.lock().unwrap().delegation_changes {
-                    let _ = *committed_delegation_changes
+                    *delegation_changes
                         .entry(id_key.clone())
-                        .and_modify(|change| *change += delta)
-                        .or_insert(*delta);
+                        .or_insert(0) += delta;
                 }
 
                 for current_rate in &current_rates {
@@ -476,7 +475,7 @@ impl App {
 
                     // TODO: if a validator isn't part of the consensus set, should we ignore them
                     // and not update their rates?
-                    let delegation_delta = committed_delegation_changes
+                    let delegation_delta = delegation_changes
                         .get(&identity_key)
                         .unwrap_or(&0i64);
 
