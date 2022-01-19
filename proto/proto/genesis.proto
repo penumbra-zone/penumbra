@@ -1,6 +1,7 @@
 syntax = "proto3";
 package penumbra.genesis;
 
+import "chain.proto";
 import "crypto.proto";
 import "stake.proto";
 
@@ -17,7 +18,7 @@ message GenesisAppState {
         uint64 power = 2;
     }
 
-    uint64 epoch_duration = 1;
+    chain.ChainParams chain_params = 1;
     repeated ValidatorPower validators = 2;
     repeated Allocation allocations = 3;
 }

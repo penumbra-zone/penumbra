@@ -1,6 +1,7 @@
 use ark_ff::Zero;
 use decaf377::Fq;
-use penumbra_crypto::{asset, Address, Note, Value};
+use penumbra_chain::params::ChainParams;
+use penumbra_crypto::{asset, Address, Note, Value, CURRENT_CHAIN_ID};
 use penumbra_proto::{genesis as pb, Protobuf};
 use penumbra_stake::Validator;
 
@@ -119,8 +120,8 @@ impl Protobuf<pb::genesis_app_state::ValidatorPower> for ValidatorPower {}
 #[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(try_from = "pb::GenesisAppState", into = "pb::GenesisAppState")]
 pub struct AppState {
-    /// The number of blocks in each epoch.
-    pub epoch_duration: u64,
+    /// Global configuration for the chain, such as chain ID and epoch duration.
+    pub chain_params: ChainParams,
     /// The initial validator set.
     pub validators: Vec<ValidatorPower>,
     /// The initial token allocations.
@@ -130,9 +131,9 @@ pub struct AppState {
 impl From<AppState> for pb::GenesisAppState {
     fn from(a: AppState) -> Self {
         pb::GenesisAppState {
-            epoch_duration: a.epoch_duration,
             validators: a.validators.into_iter().map(Into::into).collect(),
             allocations: a.allocations.into_iter().map(Into::into).collect(),
+            chain_params: Some(a.chain_params.into()),
         }
     }
 }
@@ -142,7 +143,7 @@ impl TryFrom<pb::GenesisAppState> for AppState {
 
     fn try_from(msg: pb::GenesisAppState) -> Result<Self, Self::Error> {
         Ok(AppState {
-            epoch_duration: msg.epoch_duration,
+            chain_params: msg.chain_params.unwrap().into(),
             validators: msg
                 .validators
                 .into_iter()
@@ -163,7 +164,10 @@ impl Protobuf<pb::GenesisAppState> for AppState {}
 impl Default for AppState {
     fn default() -> Self {
         AppState {
-            epoch_duration: 8640,
+            chain_params: ChainParams {
+                chain_id: CURRENT_CHAIN_ID.to_string(),
+                epoch_duration: 8640,
+            },
             allocations: Vec::default(),
             validators: Vec::default(),
         }

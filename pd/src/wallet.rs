@@ -1,7 +1,6 @@
 use std::pin::Pin;
 
 use futures::stream::{StreamExt, TryStreamExt};
-use penumbra_crypto::CURRENT_CHAIN_ID;
 use penumbra_proto::{
     self as proto,
     chain::{AssetInfo, ChainParams},
@@ -45,8 +44,8 @@ impl LightWallet for State {
             .map_err(|_| tonic::Status::unavailable("error retrieving genesis configuration"))?;
 
         Ok(tonic::Response::new(ChainParams {
-            chain_id: CURRENT_CHAIN_ID.to_string(),
-            epoch_duration: genesis_configuration.epoch_duration,
+            chain_id: genesis_configuration.chain_params.chain_id,
+            epoch_duration: genesis_configuration.chain_params.epoch_duration,
         }))
     }
 
