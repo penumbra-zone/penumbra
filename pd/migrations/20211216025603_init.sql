@@ -68,24 +68,40 @@ CREATE TABLE IF NOT EXISTS delegation_changes (
 CREATE INDEX ON delegation_changes (epoch);
 CREATE INDEX ON delegation_changes (validator_identity_key);
 
+-- Set of quarantined notes: once the epoch is large enough, all old-enough quarantined notes should
+-- be inserted into the NCT and the notes table (and removed from this table)
 CREATE TABLE IF NOT EXISTS quarantined_notes (
-    validator_identity_key bytea NOT NULL REFERENCES validators (identity_key),
-    unbonding_epoch bigint NOT NULL,
     note_commitment bytea PRIMARY KEY,
     ephemeral_key bytea NOT NULL,
     encrypted_note bytea NOT NULL,
     transaction_id bytea NOT NULL,
-    pre_position bigint NOT NULL,
-    height bigint NOT NULL REFERENCES blocks (height),
-    UNIQUE(pre_position, unbonding_epoch)
+    height bigint NOT NULL REFERENCES blocks (height)
 );
-CREATE INDEX ON quarantined_notes (unbonding_epoch);
-CREATE INDEX ON quarantined_notes (validator_identity_key);
+CREATE INDEX ON quarantined_notes (height);
 
+-- Set of quarantined nullifiers: once the epoch is large enough, all old-enough quarantined
+-- nullifiers should be dropped from this table (they are already in the nullifiers table),
+-- making the spend which revealed them irreversible
 CREATE TABLE IF NOT EXISTS quarantined_nullifiers (
-    validator_identity_key bytea NOT NULL REFERENCES validators (identity_key),
-    unbonding_epoch bigint NOT NULL,
-    nullifier bytea PRIMARY KEY REFERENCES nullifiers (nullifier)
+    nullifier bytea PRIMARY KEY REFERENCES nullifiers (nullifier),
+    height bigint NOT NULL REFERENCES blocks (height)
 );
-CREATE INDEX ON quarantined_nullifiers (unbonding_epoch);
-CREATE INDEX ON quarantined_nullifiers (validator_identity_key);
+CREATE INDEX ON quarantined_nullifiers (height);
+
+-- If any of the validators associated with a note commitment is slashed, then it should be dropped
+-- from the quarantined_notes table
+CREATE TABLE IF NOT EXISTS quarantined_note_validators (
+    note_commitment bytea NOT NULL REFERENCES quarantined_notes (note_commitment),
+    validator_identity_key bytea NOT NULL REFERENCES validators (identity_key)
+);
+CREATE INDEX ON quarantined_note_validators (note_commitment);
+CREATE INDEX ON quarantined_note_validators (validator_identity_key);
+
+-- If any of the validators associated with a nullifiers is slashed, then it should be deleted from
+-- the nullifiers table
+CREATE TABLE IF NOT EXISTS quarantined_nullifier_validators (
+    nullifier bytea NOT NULL REFERENCES quarantined_nullifiers (nullifier),
+    validator_identity_key bytea NOT NULL REFERENCES validators (identity_key)
+);
+CREATE INDEX ON quarantined_nullifier_validators (nullifier);
+CREATE INDEX ON quarantined_nullifier_validators (validator_identity_key);
