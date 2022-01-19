@@ -23,10 +23,7 @@ impl From<Allocation> for pb::genesis_app_state::Allocation {
         pb::genesis_app_state::Allocation {
             amount: a.amount,
             denom: a.denom,
-            address: Some(
-                penumbra_proto::crypto::Address::try_from(a.address)
-                    .expect("able to deserialize address"),
-            ),
+            address: Some(a.address.into()),
         }
     }
 }
@@ -38,7 +35,10 @@ impl TryFrom<pb::genesis_app_state::Allocation> for Allocation {
         Ok(Allocation {
             amount: msg.amount,
             denom: msg.denom,
-            address: Address::try_from(msg.address.unwrap())?,
+            address: msg
+                .address
+                .ok_or_else(|| anyhow::anyhow!("missing address field in proto"))?
+                .try_into()?,
         })
     }
 }
@@ -93,10 +93,7 @@ pub struct ValidatorPower {
 impl From<ValidatorPower> for pb::genesis_app_state::ValidatorPower {
     fn from(vp: ValidatorPower) -> Self {
         pb::genesis_app_state::ValidatorPower {
-            validator: Some(
-                penumbra_proto::stake::Validator::try_from(vp.validator)
-                    .expect("able to deserialize validator power"),
-            ),
+            validator: Some(vp.validator.into()),
             power: vp.power.into(),
         }
     }
@@ -107,8 +104,11 @@ impl TryFrom<pb::genesis_app_state::ValidatorPower> for ValidatorPower {
 
     fn try_from(msg: pb::genesis_app_state::ValidatorPower) -> Result<Self, Self::Error> {
         Ok(ValidatorPower {
-            validator: Validator::try_from(msg.validator.unwrap())?,
-            power: tendermint::vote::Power::try_from(msg.power)?,
+            validator: msg
+                .validator
+                .ok_or_else(|| anyhow::anyhow!("missing validator field in proto"))?
+                .try_into()?,
+            power: msg.power.try_into()?,
         })
     }
 }
@@ -131,19 +131,8 @@ impl From<AppState> for pb::GenesisAppState {
     fn from(a: AppState) -> Self {
         pb::GenesisAppState {
             epoch_duration: a.epoch_duration,
-            // validators: a.validators.iter().map(|v| v.into()).collect(),
-            validators: a
-                .validators
-                .into_iter()
-                .map(TryInto::try_into)
-                .collect::<Result<_, _>>()
-                .expect("able to serialize validators"),
-            allocations: a
-                .allocations
-                .into_iter()
-                .map(TryInto::try_into)
-                .collect::<Result<_, _>>()
-                .expect("able to serialize allocations"),
+            validators: a.validators.into_iter().map(Into::into).collect(),
+            allocations: a.allocations.into_iter().map(Into::into).collect(),
         }
     }
 }
