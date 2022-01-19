@@ -38,6 +38,7 @@ fn main() -> Result<()> {
     config.compile_protos(&["proto/transaction.proto"], &["proto/"])?;
     config.compile_protos(&["proto/stake.proto"], &["proto/"])?;
     config.compile_protos(&["proto/chain.proto"], &["proto/"])?;
+    config.compile_protos(&["proto/genesis.proto"], &["proto/"])?;
 
     // These should disappear, eventually.
     config.compile_protos(&["proto/transparent_proofs.proto"], &["proto/"])?;
@@ -85,6 +86,9 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.crypto.Denom", SERIALIZE),
     (".penumbra.crypto.Denom", SERDE_TRANSPARENT),
     (".penumbra.chain.ChainParams", SERIALIZE),
+    (".penumbra.genesis.GenesisAppState", SERIALIZE),
+    (".penumbra.genesis.Allocation", SERIALIZE),
+    (".penumbra.genesis.ValidatorPower", SERIALIZE),
 ];
 
 static FIELD_ATTRIBUTES: &[(&str, &str)] = &[

@@ -1,0 +1,23 @@
+syntax = "proto3";
+package penumbra.genesis;
+
+import "crypto.proto";
+import "stake.proto";
+
+message GenesisAppState {
+    message Allocation {
+        uint64 amount = 1;
+        string denom = 2;
+        crypto.Address address = 3;
+    }
+
+    // This should maybe be moved to stake.proto
+    message ValidatorPower {
+        stake.Validator validator = 1;
+        uint64 power = 2;
+    }
+
+    uint64 epoch_duration = 1;
+    repeated ValidatorPower validators = 2;
+    repeated Allocation allocations = 3;
+}
