@@ -186,6 +186,18 @@
       "nullable": []
     }
   },
+  "4f7e9463d9f19f4d5313b7c843e50a2cbda38ef7ea09ce1f03560f41b2a18554": {
+    "query": "INSERT INTO blobs (id, data) VALUES ('gc', $1)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "4f9e6ca2890b779cf788f5993de20c8a2b80baa56966dac4c4f1e215171db0c8": {
     "query": "INSERT INTO validator_rates (\n                    identity_key,\n                    epoch,\n                    validator_reward_rate,\n                    validator_exchange_rate\n                ) VALUES ($1, $2, $3, $4)",
     "describe": {
@@ -566,18 +578,6 @@
       "parameters": {
         "Left": [
           "Bytea",
-          "Bytea"
-        ]
-      },
-      "nullable": []
-    }
-  },
-  "cb7bac3962a9b0db3759bb2dc21f8bf7aeb58e208107aeb6b0f0f6a1e6c29d45": {
-    "query": "\nINSERT INTO blobs (id, data) VALUES ('gc', $1)\n",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
           "Bytea"
         ]
       },
