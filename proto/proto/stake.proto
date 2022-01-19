@@ -50,19 +50,26 @@ message BaseRateData {
   uint64 base_exchange_rate = 3;
 }
 
+// Describes the current state of a validator on-chain
+message ValidatorStatus {
+  IdentityKey identity_key = 1;
+  uint64 voting_power = 2;
+  // ... ?
+}
+
+// Combines all validator info into a single packet.
+message ValidatorInfo {
+  Validator validator = 1;
+  ValidatorStatus status = 2;
+  RateData rate_data = 3;
+}
+
 // A transaction action (re)defining a validator.
 message ValidatorDefinition {
   // The configuration data for the validator.
   Validator validator = 1;
   // A signature by the validator's identity key over the validator data.
   bytes auth_sig = 2;
-}
-
-// Describes the current state of a validator on-chain
-message ValidatorStatus {
-  IdentityKey identity_key = 1;
-  uint64 voting_power = 2;
-  // ... ?
 }
 
 // A transaction action adding stake to a validator's delegation pool.

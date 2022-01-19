@@ -6,17 +6,19 @@ use penumbra_proto::{
     self as proto,
     chain::{AssetInfo, ChainParams},
     crypto::AssetId,
+    light_wallet::ValidatorInfoRequest,
     light_wallet::{
         light_wallet_server::LightWallet, ChainParamsRequest, CompactBlock,
         CompactBlockRangeRequest,
     },
+    stake::ValidatorInfo,
+    thin_wallet::AssetListRequest,
     thin_wallet::{
         thin_wallet_server::ThinWallet, Asset, TransactionByNoteRequest, TransactionDetail,
         ValidatorRateRequest,
     },
 };
 use penumbra_stake::IdentityKey;
-use proto::thin_wallet::AssetListRequest;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::Status;
@@ -28,6 +30,9 @@ use crate::State;
 impl LightWallet for State {
     type CompactBlockRangeStream =
         Pin<Box<dyn futures::Stream<Item = Result<CompactBlock, tonic::Status>> + Send>>;
+
+    type ValidatorInfoStream =
+        Pin<Box<dyn futures::Stream<Item = Result<ValidatorInfo, tonic::Status>> + Send>>;
 
     #[instrument(skip(self, _request), fields())]
     async fn chain_params(
@@ -43,6 +48,21 @@ impl LightWallet for State {
             chain_id: CURRENT_CHAIN_ID.to_string(),
             epoch_duration: genesis_configuration.epoch_duration,
         }))
+    }
+
+    #[instrument(skip(self, request), fields(show_inactive = request.get_ref().show_inactive))]
+    async fn validator_info(
+        &self,
+        request: tonic::Request<ValidatorInfoRequest>,
+    ) -> Result<tonic::Response<Self::ValidatorInfoStream>, Status> {
+        let validator_info = self
+            .validator_info(request.into_inner().show_inactive)
+            .await
+            .map_err(|_| tonic::Status::unavailable("database error"))?;
+
+        Ok(tonic::Response::new(
+            futures::stream::iter(validator_info.into_iter().map(|info| Ok(info.into()))).boxed(),
+        ))
     }
 
     #[instrument(

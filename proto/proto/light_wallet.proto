@@ -2,6 +2,7 @@ syntax = "proto3";
 package penumbra.light_wallet;
 
 import "chain.proto";
+import "stake.proto";
 
 // A light wallet service.
 //
@@ -9,6 +10,7 @@ import "chain.proto";
 service LightWallet {
   rpc CompactBlockRange(CompactBlockRangeRequest) returns (stream CompactBlock);
   rpc ChainParams(ChainParamsRequest) returns (chain.ChainParams);
+  rpc ValidatorInfo(ValidatorInfoRequest) returns (stream stake.ValidatorInfo);
 }
 
 // Requests a range of compact block data.
@@ -41,4 +43,9 @@ message StateFragment {
 
 // Requests the global configuration data for the chain.
 message ChainParamsRequest {
+}
+
+// Requests information on the chain's validators.
+message ValidatorInfoRequest {
+  bool show_inactive = 1;
 }

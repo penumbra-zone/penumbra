@@ -17,7 +17,9 @@ use penumbra_proto::{
     thin_wallet::{Asset, TransactionDetail},
     Protobuf,
 };
-use penumbra_stake::{BaseRateData, FundingStream, IdentityKey, RateData};
+use penumbra_stake::{
+    BaseRateData, FundingStream, IdentityKey, RateData, Validator, ValidatorInfo, ValidatorStatus,
+};
 use sqlx::{postgres::PgPoolOptions, query, query_as, Pool, Postgres};
 use tendermint::block;
 use tracing::instrument;
@@ -446,6 +448,53 @@ ON CONFLICT (id) DO UPDATE SET data = $1
         }
 
         Ok(streams)
+    }
+
+    /// Fetches the latest validator info.
+    ///
+    /// If `show_inactive` is set, includes validators with 0 voting power.
+    pub async fn validator_info(&self, show_inactive: bool) -> Result<Vec<ValidatorInfo>> {
+        let mut conn = self.pool.acquire().await?;
+
+        // This would be clearer if we had two queries, but then the generated type of `rows`
+        // will be different, forcing duplication of the entire function.
+        let power_selector = if show_inactive { i64::MIN } else { 0i64 };
+        let rows = query!(
+                "SELECT 
+                    validators.identity_key, 
+                    validators.voting_power, 
+                    validator_rates.epoch, 
+                    validator_rates.validator_reward_rate, 
+                    validator_rates.validator_exchange_rate,
+                    validators.validator_data 
+                FROM (
+                    validators INNER JOIN validator_rates ON validators.identity_key = validator_rates.identity_key
+                )
+                WHERE validator_rates.epoch = (SELECT MAX(epoch) FROM base_rates) AND NOT voting_power = $1",
+                power_selector
+            )
+            .fetch_all(&mut conn)
+            .await?;
+
+        rows.into_iter()
+            .map(|row| {
+                let identity_key =
+                    IdentityKey::decode(row.identity_key.as_slice()).expect("db data is valid");
+                Ok(ValidatorInfo {
+                    validator: Validator::decode(row.validator_data.as_slice())?,
+                    status: ValidatorStatus {
+                        identity_key: identity_key.clone(),
+                        voting_power: row.voting_power as u64,
+                    },
+                    rate_data: RateData {
+                        identity_key,
+                        epoch_index: row.epoch as u64,
+                        validator_exchange_rate: row.validator_exchange_rate as u64,
+                        validator_reward_rate: row.validator_reward_rate as u64,
+                    },
+                })
+            })
+            .collect()
     }
 
     /// Retrieve a stream of [`CompactBlock`]s for the given (inclusive) range.

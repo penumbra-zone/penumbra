@@ -1,7 +1,11 @@
 use anyhow::{anyhow, Context, Result};
+use comfy_table::{presets, Table};
+use futures::stream::TryStreamExt;
 use penumbra_crypto::Value;
-use penumbra_proto::thin_wallet::ValidatorRateRequest;
-use penumbra_stake::{DelegationToken, Epoch, IdentityKey, RateData, STAKING_TOKEN_ASSET_ID};
+use penumbra_proto::{light_wallet::ValidatorInfoRequest, thin_wallet::ValidatorRateRequest};
+use penumbra_stake::{
+    DelegationToken, Epoch, IdentityKey, RateData, ValidatorInfo, STAKING_TOKEN_ASSET_ID,
+};
 use rand_core::OsRng;
 use structopt::StructOpt;
 
@@ -56,8 +60,11 @@ pub enum StakeCmd {
     /// Display all of the validators participating in the chain.
     ListValidators {
         /// Whether to show validators that are not currently part of the consensus set.
-        #[structopt(long)]
+        #[structopt(short = "i", long)]
         show_inactive: bool,
+        /// Whether to show detailed validator info.
+        #[structopt(short, long)]
+        detailed: bool,
     },
 }
 
@@ -165,8 +172,70 @@ impl StakeCmd {
             StakeCmd::Show => {
                 todo!()
             }
-            StakeCmd::ListValidators { .. } => {
-                todo!()
+            StakeCmd::ListValidators {
+                show_inactive,
+                detailed,
+            } => {
+                let mut client = opt.light_wallet_client().await?;
+
+                let mut validators = client
+                    .validator_info(ValidatorInfoRequest {
+                        show_inactive: *show_inactive,
+                    })
+                    .await?
+                    .into_inner()
+                    .try_collect::<Vec<_>>()
+                    .await?
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<Vec<ValidatorInfo>, _>>()?;
+
+                // Sort by voting power (descending)
+                validators.sort_by(|a, b| b.status.voting_power.cmp(&a.status.voting_power));
+
+                let total_voting_power = validators
+                    .iter()
+                    .map(|v| v.status.voting_power)
+                    .sum::<u64>() as f64;
+
+                let mut table = Table::new();
+                table.load_preset(presets::NOTHING);
+                table.set_header(vec!["Voting Power", "Commission", "Validator Info"]);
+
+                for v in validators {
+                    let power_percent = 100.0 * (v.status.voting_power as f64) / total_voting_power;
+                    let commission_bps = v
+                        .validator
+                        .funding_streams
+                        .iter()
+                        .map(|fs| fs.rate_bps)
+                        .sum::<u16>();
+
+                    table.add_row(vec![
+                        format!("{:.2}%", power_percent),
+                        format!("{}bps", commission_bps),
+                        v.validator.name,
+                    ]);
+                    table.add_row(vec![
+                        "".into(),
+                        "".into(),
+                        format!("  {}", v.validator.identity_key),
+                    ]);
+                    if *detailed {
+                        table.add_row(vec![
+                            "".into(),
+                            "".into(),
+                            format!("  {}", v.validator.website),
+                        ]);
+                        table.add_row(vec![
+                            "".into(),
+                            "".into(),
+                            format!("  {}", v.validator.description),
+                        ]);
+                    }
+                }
+
+                println!("{}", table);
             }
         }
 
