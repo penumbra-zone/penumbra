@@ -105,3 +105,16 @@ message Undelegate {
   // stateless verification that the transaction is internally consistent.
   uint64 delegation_amount = 4; 
 }
+
+// Representation of the current state of a validator.
+message ValidatorState {
+  oneof validator_state {
+    // These use a string type, unfortunately.
+    // The protobuf concept of enum doesn't map well to Rust's
+    // (doesn't support enum variant member fields).
+    string inactive = 1;
+    string active = 2;
+    uint64 unbonding = 3;
+    string slashed = 4;
+  }
+}

@@ -70,6 +70,8 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.stake.FundingStream", SERIALIZE),
     (".penumbra.stake.ValidatorDefinition", SERIALIZE),
     (".penumbra.stake.ValidatorStatus", SERIALIZE),
+    (".penumbra.stake.ValidatorState", SERIALIZE),
+    (".penumbra.stake.ValidatorStateVariant", SERIALIZE),
     (".penumbra.stake.ValidatorInfo", SERIALIZE),
     (".penumbra.stake.RateData", SERIALIZE),
     (".penumbra.stake.BaseRateData", SERIALIZE),
