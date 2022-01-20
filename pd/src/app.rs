@@ -113,7 +113,7 @@ impl App {
         Ok(Self {
             state,
             note_commitment_tree,
-            recent_anchors: recent_anchors,
+            recent_anchors,
             mempool_nullifiers: Arc::new(Default::default()),
             pending_block: None,
             sequencer: Default::default(),

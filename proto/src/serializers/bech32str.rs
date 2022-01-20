@@ -16,7 +16,7 @@ pub fn decode(
     expected_hrp: &str,
     expected_variant: Variant,
 ) -> anyhow::Result<Vec<u8>> {
-    let (hrp, data, variant) = bech32::decode(&string)?;
+    let (hrp, data, variant) = bech32::decode(string)?;
 
     if variant != expected_variant {
         return Err(anyhow::anyhow!(

@@ -1,3 +1,4 @@
+#![allow(clippy::clone_on_copy)]
 use once_cell::sync::Lazy;
 use penumbra_crypto::asset;
 
