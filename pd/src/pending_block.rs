@@ -75,7 +75,7 @@ impl PendingBlock {
         };
 
         let blinding_factor_input = blake2b_simd::Params::default()
-            .personal(b"fundingstream_note_output")
+            .personal(b"fundingstrm_note")
             .to_state()
             .update(&self.epoch.as_ref().unwrap().index.to_le_bytes())
             .update(&self.reward_counter.to_le_bytes())
