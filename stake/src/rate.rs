@@ -127,11 +127,11 @@ impl BaseRateData {
     pub fn next(&self, base_reward_rate: u64) -> BaseRateData {
         let base_exchange_rate =
             (self.base_exchange_rate * (base_reward_rate + 1_0000_0000)) / 1_0000_0000;
-        return BaseRateData {
+        BaseRateData {
             base_exchange_rate,
             base_reward_rate,
             epoch_index: self.epoch_index + 1,
-        };
+        }
     }
 }
 

@@ -1,3 +1,4 @@
+#![allow(clippy::clone_on_copy)]
 use std::{
     net::{Ipv4Addr, SocketAddr},
     path::PathBuf,
@@ -368,7 +369,7 @@ async fn main() -> anyhow::Result<()> {
                     },
                     // always empty in genesis json
                     app_hash: vec![],
-                    app_state: app_state,
+                    app_state,
                     // List of initial validators. Note this may be overridden entirely by
                     // the application, and may be left empty to make explicit that the
                     // application will initialize the validator set with ResponseInitChain.

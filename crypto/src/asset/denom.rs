@@ -227,7 +227,7 @@ impl Unit {
     }
 
     pub fn parse_value(&self, value: &str) -> Result<u64, anyhow::Error> {
-        let split: Vec<&str> = value.split(".").collect();
+        let split: Vec<&str> = value.split('.').collect();
         if split.len() > 2 {
             return Err(anyhow::anyhow!("expected only one decimal point"));
         } else {
@@ -259,10 +259,11 @@ impl Unit {
             let v = v1
                 .checked_mul(v1_power_of_ten)
                 .and_then(|x| x.checked_add(v2));
-            if v.is_none() {
-                return Err(anyhow::anyhow!("overflow!"));
+
+            if let Some(value) = v {
+                Ok(value)
             } else {
-                return Ok(v.unwrap());
+                Err(anyhow::anyhow!("overflow!"))
             }
         }
     }

@@ -150,15 +150,11 @@ mod tests {
     use super::*;
 
     fn diversifier_index_strategy() -> BoxedStrategy<DiversifierIndex> {
-        any::<[u8; 11]>()
-            .prop_map(|bytes| DiversifierIndex(bytes))
-            .boxed()
+        any::<[u8; 11]>().prop_map(DiversifierIndex).boxed()
     }
 
     fn diversifier_key_strategy() -> BoxedStrategy<DiversifierKey> {
-        any::<[u8; 32]>()
-            .prop_map(|bytes| DiversifierKey(bytes))
-            .boxed()
+        any::<[u8; 32]>().prop_map(DiversifierKey).boxed()
     }
 
     proptest! {

@@ -65,7 +65,7 @@ impl PendingBlock {
     /// Adds a reward output for a validator's funding stream.
     pub fn add_validator_reward_note(&mut self, amount: u64, destination: Address) {
         let val = Value {
-            amount: amount,
+            amount,
             asset_id: *STAKING_TOKEN_ASSET_ID,
         };
 
@@ -82,7 +82,7 @@ impl PendingBlock {
 
         let note_data = NoteData {
             ephemeral_key: esk.public(),
-            encrypted_note: encrypted_note,
+            encrypted_note,
             transaction_id: [0; 32],
         };
 

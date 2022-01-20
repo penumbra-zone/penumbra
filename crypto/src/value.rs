@@ -272,9 +272,7 @@ mod tests {
     #[test]
     fn try_format_picks_best_unit() {
         let upenumbra_base_denom = asset::REGISTRY.parse_denom("upenumbra").unwrap();
-        let cache = [upenumbra_base_denom.clone()]
-            .into_iter()
-            .collect::<asset::Cache>();
+        let cache = [upenumbra_base_denom].into_iter().collect::<asset::Cache>();
 
         let v1: Value = "999upenumbra".parse().unwrap();
         let v2: Value = "1000upenumbra".parse().unwrap();

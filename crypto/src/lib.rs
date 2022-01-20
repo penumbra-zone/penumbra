@@ -1,3 +1,4 @@
+#![allow(clippy::clone_on_copy)]
 pub use ark_ff::{One, Zero};
 pub use decaf377::{FieldExt, Fq, Fr};
 pub use decaf377_fmd as fmd;

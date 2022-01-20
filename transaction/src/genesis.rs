@@ -96,7 +96,7 @@ impl GenesisBuilder {
             merkle_root: self.merkle_root.clone(),
             actions: self.actions.clone(),
             expiry_height: 0,
-            chain_id: self.chain_id.clone().unwrap(),
+            chain_id: self.chain_id.unwrap(),
             fee: Fee(0),
         };
 

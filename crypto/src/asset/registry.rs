@@ -65,7 +65,7 @@ impl Registry {
             Some(Denom {
                 inner: Arc::new(self.constructors[base_index](data)),
             })
-        } else if let Some(_) = self.display_set.matches(raw_denom).iter().next() {
+        } else if self.display_set.matches(raw_denom).iter().next().is_some() {
             // 2. This denom isn't a base denom, it's a display denom
             None
         } else {

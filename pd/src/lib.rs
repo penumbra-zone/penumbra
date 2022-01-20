@@ -2,6 +2,7 @@
 
 // This is for the async_stream macros
 #![recursion_limit = "512"]
+#![allow(clippy::clone_on_copy)]
 
 mod app;
 mod db;
