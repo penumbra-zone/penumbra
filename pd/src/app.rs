@@ -12,7 +12,7 @@ use futures::future::FutureExt;
 use penumbra_crypto::{
     asset,
     merkle::{self, NoteCommitmentTree, TreeExt},
-    note, Nullifier,
+    note, Nullifier, Value,
 };
 use penumbra_stake::{
     Epoch, IdentityKey, RateData, ValidatorStatus, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
@@ -466,9 +466,6 @@ impl App {
                     let identity_key = current_rate.identity_key.clone();
 
                     let funding_streams = state.funding_streams(identity_key.clone()).await?;
-                    let validator_commission_sum = funding_streams
-                        .iter()
-                        .fold(0u64, |total, stream| total + stream.rate_bps as u64);
                     let next_rate = current_rate.next(&next_base_rate, funding_streams.clone());
 
                     // TODO: if a validator isn't part of the consensus set, should we ignore them
@@ -517,14 +514,20 @@ impl App {
                     };
 
                     // distribute validator commission
-                    let commission_reward_amount = current_rate.reward_amount(
-                        validator_commission_sum,
-                        delegation_token_supply,
-                        &next_base_rate,
-                        &current_base_rate,
-                    );
 
-                    for stream in funding_streams {}
+                    for stream in funding_streams {
+                        let commission_reward_amount = current_rate.reward_amount(
+                            stream.rate_bps as u64,
+                            delegation_token_supply,
+                            &next_base_rate,
+                            &current_base_rate,
+                        );
+
+                        pending_block
+                            .lock()
+                            .unwrap()
+                            .add_validator_reward_note(commission_reward_amount, stream.address);
+                    }
 
                     // rename to curr_rate so it lines up with next_rate (same # chars)
                     tracing::debug!(curr_rate = ?current_rate);
