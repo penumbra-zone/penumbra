@@ -1,14 +1,15 @@
-use std::collections::{BTreeMap, BTreeSet};
-
+use ark_ff::PrimeField;
+use blake2b_simd;
 use decaf377::Fr;
 use penumbra_crypto::{
     asset, ka,
     merkle::{Frontier, NoteCommitmentTree},
-    note, Address, Fq, Note, Nullifier, Value, Zero, One,
+    note, Address, Fq, Note, Nullifier, One, Value,
 };
 use penumbra_stake::{
     BaseRateData, Epoch, IdentityKey, RateData, ValidatorStatus, STAKING_TOKEN_ASSET_ID,
 };
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::verify::{NoteData, PositionedNoteData, VerifiedTransaction};
 
@@ -35,6 +36,9 @@ pub struct PendingBlock {
     pub next_validator_statuses: Option<Vec<ValidatorStatus>>,
     /// The net delegations performed in this block per validator.
     pub delegation_changes: BTreeMap<IdentityKey, i64>,
+    /// The counter containing the number of rewards notes in the epoch. we need this to keep the
+    /// blinding factor of the reward notes unique.
+    reward_counter: u64,
 }
 
 impl PendingBlock {
@@ -51,6 +55,7 @@ impl PendingBlock {
             next_rates: None,
             next_validator_statuses: None,
             delegation_changes: BTreeMap::new(),
+            reward_counter: 0,
         }
     }
 
@@ -69,11 +74,18 @@ impl PendingBlock {
             asset_id: *STAKING_TOKEN_ASSET_ID,
         };
 
+        let blinding_factor_input = blake2b_simd::Params::default()
+            .personal(b"fundingstream_note_output")
+            .to_state()
+            .update(&self.epoch.as_ref().unwrap().index.to_le_bytes())
+            .update(&self.reward_counter.to_le_bytes())
+            .finalize();
+
         let note = Note::from_parts(
             *destination.diversifier(),
             *destination.transmission_key(),
             val,
-            Fq::zero(),
+            Fq::from_le_bytes_mod_order(blinding_factor_input.as_bytes()),
         )
         .unwrap();
         let commitment = note.commit();
@@ -82,7 +94,7 @@ impl PendingBlock {
 
         let note_data = NoteData {
             ephemeral_key: esk.public(),
-            encrypted_note: encrypted_note,
+            encrypted_note,
             transaction_id: [0; 32],
         };
 
@@ -103,6 +115,8 @@ impl PendingBlock {
                 data: note_data,
             },
         );
+
+        self.reward_counter += 1;
     }
 
     /// Adds the state changes from a verified transaction.
