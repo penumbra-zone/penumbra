@@ -12,7 +12,7 @@ use futures::future::FutureExt;
 use penumbra_crypto::{
     asset,
     merkle::{self, NoteCommitmentTree, TreeExt},
-    note, Nullifier, Value,
+    note, Nullifier,
 };
 use penumbra_stake::{
     Epoch, IdentityKey, RateData, ValidatorStatus, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
@@ -514,10 +514,8 @@ impl App {
                     };
 
                     // distribute validator commission
-
                     for stream in funding_streams {
-                        let commission_reward_amount = current_rate.reward_amount(
-                            stream.rate_bps as u64,
+                        let commission_reward_amount = stream.reward_amount(
                             delegation_token_supply,
                             &next_base_rate,
                             &current_base_rate,

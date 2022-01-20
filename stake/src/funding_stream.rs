@@ -14,6 +14,27 @@ pub struct FundingStream {
     pub rate_bps: u16,
 }
 
+impl FundingStream {
+    /// Computes the amount of reward at the epoch specified by base_rate_data
+    pub fn reward_amount(
+        &self,
+        total_delegation_tokens: u64,
+        base_rate_data: &crate::BaseRateData,
+        prev_epoch_rate_data: &crate::BaseRateData,
+    ) -> u64 {
+        if prev_epoch_rate_data.epoch_index != base_rate_data.epoch_index - 1 {
+            panic!("wrong base rate data for previous epoch")
+        }
+        // take yv*cve*re*psi(e-1)
+        let mut r =
+            (total_delegation_tokens as u128 * (self.rate_bps as u128 * 1_0000)) / 1_0000_0000;
+        r = (r * base_rate_data.base_reward_rate as u128) / 1_0000_0000;
+        r = (r * prev_epoch_rate_data.base_exchange_rate as u128) / 1_0000_0000;
+
+        r as u64
+    }
+}
+
 impl Protobuf<pb::FundingStream> for FundingStream {}
 
 impl From<FundingStream> for pb::FundingStream {
