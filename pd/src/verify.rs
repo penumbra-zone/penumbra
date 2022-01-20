@@ -18,7 +18,7 @@ pub struct PendingTransaction {
     /// Delegations performed in this transaction.
     pub delegations: Vec<Delegate>,
     /// Undelegations performed in this transaction.
-    pub undelegations: Vec<Undelegate>,
+    pub undelegation: Option<Undelegate>,
 }
 
 /// `VerifiedTransaction` represents a transaction after all checks have passed.
@@ -36,7 +36,7 @@ pub struct VerifiedTransaction {
     /// experienced some (un)delegations*.
     pub delegation_changes: BTreeMap<IdentityKey, i64>,
     /// The validators from whom an undelegation was performed in this transaction.
-    pub undelegation_validators: BTreeSet<IdentityKey>,
+    pub undelegation_validator: Option<IdentityKey>,
 }
 
 #[derive(Debug, Clone)]
@@ -53,11 +53,11 @@ pub struct PositionedNoteData {
 }
 
 /// A group of notes and nullifiers, all to be quarantined relative to a shared set of validators.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct QuarantineGroup {
-    /// If any of these validators is slashed while the notes and nullifiers in this quarantined
-    /// group, then all of the notes should be dropped and all the nullifiers removed from the NCT.
-    pub validator_identity_keys: BTreeSet<IdentityKey>,
+    /// If this validator is slashed while the notes and nullifiers in this quarantined group, then
+    /// all of the notes should be dropped and all the nullifiers removed from the NCT.
+    pub validator_identity_key: IdentityKey,
     /// The set of notes in this group.
     pub notes: BTreeMap<note::Commitment, NoteData>,
     /// The set of nullifiers in this group.
@@ -93,7 +93,7 @@ impl StatelessTransactionExt for Transaction {
         let mut spent_nullifiers = BTreeSet::<Nullifier>::new();
         let mut new_notes = BTreeMap::<note::Commitment, NoteData>::new();
         let mut delegations = Vec::<Delegate>::new();
-        let mut undelegations = Vec::<Undelegate>::new();
+        let mut undelegation = None::<Undelegate>;
 
         for action in self.transaction_body().actions {
             match action {
@@ -158,7 +158,11 @@ impl StatelessTransactionExt for Transaction {
                 Action::Undelegate(undelegate) => {
                     // There are currently no stateless verification checks than the ones implied by
                     // the binding signature.
-                    undelegations.push(undelegate);
+                    if undelegation.is_none() {
+                        undelegation = Some(undelegate);
+                    } else {
+                        return Err(anyhow::anyhow!("Multiple undelegations in one transaction"));
+                    }
                 }
                 _ => todo!("unsupported action"),
             }
@@ -166,7 +170,7 @@ impl StatelessTransactionExt for Transaction {
 
         // We prohibit actions other than `Spend`, `Delegate`, `Output` and `Undelegate` in
         // transactions that contain `Undelegate`, to avoid having to quarantine them.
-        if !undelegations.is_empty() {
+        if undelegation.is_some() {
             use Action::*;
             for action in self.transaction_body().actions {
                 if !matches!(action, Undelegate(_) | Delegate(_) | Spend(_) | Output(_)) {
@@ -181,7 +185,7 @@ impl StatelessTransactionExt for Transaction {
             new_notes,
             spent_nullifiers,
             delegations,
-            undelegations,
+            undelegation,
         })
     }
 }
@@ -243,7 +247,8 @@ impl StatefulTransactionExt for PendingTransaction {
                 ));
             }
         }
-        for u in &self.undelegations {
+
+        if let Some(u) = self.undelegation.as_ref() {
             let rate_data = next_rate_data.get(&u.validator_identity).ok_or_else(|| {
                 anyhow::anyhow!("Unknown validator identity {}", u.validator_identity)
             })?;
@@ -298,11 +303,10 @@ impl StatefulTransactionExt for PendingTransaction {
             new_notes: self.new_notes.clone(),
             spent_nullifiers: self.spent_nullifiers.clone(),
             delegation_changes,
-            undelegation_validators: self
-                .undelegations
-                .iter()
-                .map(|u| u.validator_identity.clone())
-                .collect(),
+            undelegation_validator: self
+                .undelegation
+                .as_ref()
+                .map(|u| u.validator_identity.clone()),
         })
     }
 }
@@ -333,7 +337,7 @@ pub fn mark_genesis_as_verified(transaction: Transaction) -> VerifiedTransaction
         new_notes,
         spent_nullifiers: BTreeSet::<Nullifier>::new(),
         delegation_changes: BTreeMap::new(),
-        undelegation_validators: BTreeSet::new(),
+        undelegation_validator: None,
     }
 }
 

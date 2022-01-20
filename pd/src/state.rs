@@ -203,7 +203,7 @@ impl State {
         // Add notes and nullifiers from transactions containing undelegations to a quarantine
         // queue, to be extracted when their unbonding period expires.
         for QuarantineGroup {
-            validator_identity_keys,
+            validator_identity_key,
             notes,
             nullifiers,
         } in block.quarantine
@@ -218,27 +218,18 @@ impl State {
                         ephemeral_key,
                         encrypted_note,
                         transaction_id,
-                        height
-                    ) VALUES ($1, $2, $3, $4, $5)"#,
+                        height,
+                        validator_identity_key
+                    ) VALUES ($1, $2, $3, $4, $5, $6)"#,
                     &<[u8; 32]>::from(note_commitment)[..],
                     &data.ephemeral_key.0[..],
                     &data.encrypted_note[..],
                     &data.transaction_id[..],
                     height as i64,
+                    &validator_identity_key.0.to_bytes()[..],
                 )
                 .execute(&mut dbtx)
                 .await?;
-
-                // Record which validators are associated with this quarantined note
-                for validator_identity_key in validator_identity_keys.iter() {
-                    query!(
-                        r#"
-                        INSERT INTO quarantined_note_validators (note_commitment, validator_identity_key)
-                        VALUES ($1, $2)"#,
-                        &<[u8; 32]>::from(note_commitment)[..],
-                        &validator_identity_key.0.to_bytes()[..],
-                    ).execute(&mut dbtx).await?;
-                }
             }
 
             // Quarantine all nullifiers associated with this quarantine group
@@ -247,23 +238,15 @@ impl State {
 
                 // Keep track of the nullifier associated with the block height
                 query!(
-                    "INSERT INTO quarantined_nullifiers (nullifier, height) VALUES ($1, $2)",
+                    r#"
+                    INSERT INTO quarantined_nullifiers (nullifier, height, validator_identity_key)
+                    VALUES ($1, $2, $3)"#,
                     nullifier_bytes,
-                    height as i64
+                    height as i64,
+                    &validator_identity_key.0.to_bytes()[..],
                 )
                 .execute(&mut dbtx)
                 .await?;
-
-                // Record which validators are associated with this quarantined nullifier
-                for validator_identity_key in validator_identity_keys.iter() {
-                    query!(
-                        r#"
-                        INSERT INTO quarantined_nullifier_validators (nullifier, validator_identity_key)
-                        VALUES ($1, $2)"#,
-                        nullifier_bytes,
-                        &validator_identity_key.0.to_bytes()[..],
-                    ).execute(&mut dbtx).await?;
-                }
             }
         }
 
@@ -524,13 +507,13 @@ impl State {
         // will be different, forcing duplication of the entire function.
         let power_selector = if show_inactive { i64::MIN } else { 0i64 };
         let rows = query!(
-                "SELECT 
-                    validators.identity_key, 
-                    validators.voting_power, 
-                    validator_rates.epoch, 
-                    validator_rates.validator_reward_rate, 
+                "SELECT
+                    validators.identity_key,
+                    validators.voting_power,
+                    validator_rates.epoch,
+                    validator_rates.validator_reward_rate,
                     validator_rates.validator_exchange_rate,
-                    validators.validator_data 
+                    validators.validator_data
                 FROM (
                     validators INNER JOIN validator_rates ON validators.identity_key = validator_rates.identity_key
                 )
