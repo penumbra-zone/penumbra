@@ -203,29 +203,13 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
         }
 
         // Add undelegated note outputs into the quarantine queue.
-        for (pre_position, (note_commitment, note)) in
+        for (pre_position, (note_commitment, quarantined_note)) in
             block.undelegation_notes.into_iter().enumerate()
         {
-            query!(
-                r#"
-                INSERT INTO quarantined_notes (
-                    note_commitment,
-                    ephemeral_key,
-                    encrypted_note,
-                    transaction_id,
-                    pre_position,
-                    height
-                ) VALUES ($1, $2, $3, $4, $5, $6)"#,
-                &<[u8; 32]>::from(note_commitment)[..],
-                &note.ephemeral_key.0[..],
-                &note.encrypted_note[..],
-                &note.transaction_id[..],
-                pre_position as i64,
-                height as i64,
-            )
-            .execute(&mut dbtx)
-            .await?;
+            // TODO: quarantine undelegated note outputs
         }
+
+        // TODO: quarantine nullifiers
 
         // Mark spent notes as spent.
         for nullifier in block.spent_nullifiers.into_iter() {

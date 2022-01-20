@@ -13,23 +13,6 @@
       "nullable": []
     }
   },
-  "12573f334b13021a54ed94b5099ffc749a2178ccd8ac12498ea7b6748c7b024c": {
-    "query": "\n                INSERT INTO quarantined_notes (\n                    note_commitment,\n                    ephemeral_key,\n                    encrypted_note,\n                    transaction_id,\n                    pre_position,\n                    height\n                ) VALUES ($1, $2, $3, $4, $5, $6)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea",
-          "Bytea",
-          "Bytea",
-          "Bytea",
-          "Int8",
-          "Int8"
-        ]
-      },
-      "nullable": []
-    }
-  },
   "1680d183efbdb30edbf06e5138503ef6ef74e5dffa9e06fe13c0e89d8254cf56": {
     "query": "\n            INSERT INTO blobs (id, data) VALUES ('nct', $1)\n            ON CONFLICT (id) DO UPDATE SET data = $1",
     "describe": {
