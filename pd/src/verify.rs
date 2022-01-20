@@ -52,10 +52,16 @@ pub struct PositionedNoteData {
     pub data: NoteData,
 }
 
-#[derive(Debug, Clone)]
-pub struct QuarantinedNoteData {
+/// A group of notes and nullifiers, all to be quarantined relative to a shared set of validators.
+#[derive(Debug, Clone, Default)]
+pub struct QuarantineGroup {
+    /// If any of these validators is slashed while the notes and nullifiers in this quarantined
+    /// group, then all of the notes should be dropped and all the nullifiers removed from the NCT.
     pub validator_identity_keys: BTreeSet<IdentityKey>,
-    pub data: NoteData,
+    /// The set of notes in this group.
+    pub notes: BTreeMap<note::Commitment, NoteData>,
+    /// The set of nullifiers in this group.
+    pub nullifiers: BTreeSet<Nullifier>,
 }
 
 pub trait StatelessTransactionExt {
