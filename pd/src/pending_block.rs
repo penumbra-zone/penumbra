@@ -1,13 +1,17 @@
 use std::collections::{BTreeMap, BTreeSet};
 
+use decaf377::Fr;
 use penumbra_crypto::{
-    asset,
+    asset, ka,
     merkle::{Frontier, NoteCommitmentTree},
-    note, Nullifier,
+    note, Address, Fq, Note, Nullifier, Value, Zero,
 };
-use penumbra_stake::{BaseRateData, Epoch, IdentityKey, RateData, ValidatorStatus};
+use penumbra_stake::{
+    BaseRateData, Epoch, FundingStream, IdentityKey, RateData, ValidatorStatus,
+    STAKING_TOKEN_ASSET_ID,
+};
 
-use crate::verify::{PositionedNoteData, VerifiedTransaction};
+use crate::verify::{NoteData, PositionedNoteData, VerifiedTransaction};
 
 /// Stores pending state changes from transactions.
 #[derive(Debug, Clone)]
@@ -57,6 +61,50 @@ impl PendingBlock {
         let epoch = Epoch::from_height(height, self.epoch_duration);
         self.epoch = Some(epoch.clone());
         epoch
+    }
+
+    /// Adds a reward output from a validator's funding stream.
+    /// currently we just construct a note with 0 blinding factor
+    pub fn add_validator_reward_note(&mut self, amount: u64, destination: Address) {
+        let val = Value {
+            amount: amount,
+            asset_id: *STAKING_TOKEN_ASSET_ID,
+        };
+
+        let note = Note::from_parts(
+            *destination.diversifier(),
+            *destination.transmission_key(),
+            val,
+            Fq::zero(),
+        )
+        .unwrap();
+        let commitment = note.commit();
+        let esk = ka::Secret::new_from_field(Fr::zero());
+        let encrypted_note = note.encrypt(&esk);
+
+        let note_data = NoteData {
+            ephemeral_key: esk.public(),
+            encrypted_note: encrypted_note,
+            transaction_id: [0; 32],
+        };
+
+        self.note_commitment_tree.append(&commitment);
+
+        let position = self
+            .note_commitment_tree
+            .bridges()
+            .last()
+            .map(|b| b.frontier().position().into())
+            // If there are no bridges, the tree is empty
+            .unwrap_or(0u64);
+
+        self.notes.insert(
+            commitment,
+            PositionedNoteData {
+                position,
+                data: note_data,
+            },
+        );
     }
 
     /// Adds the state changes from a verified transaction.
