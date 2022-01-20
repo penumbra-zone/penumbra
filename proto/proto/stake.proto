@@ -54,6 +54,7 @@ message BaseRateData {
 message ValidatorStatus {
   IdentityKey identity_key = 1;
   uint64 voting_power = 2;
+  ValidatorState state = 3;
   // ... ?
 }
 

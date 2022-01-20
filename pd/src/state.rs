@@ -18,7 +18,8 @@ use penumbra_proto::{
     Protobuf,
 };
 use penumbra_stake::{
-    BaseRateData, FundingStream, IdentityKey, RateData, Validator, ValidatorInfo, ValidatorStatus,
+    BaseRateData, FundingStream, IdentityKey, RateData, Validator, ValidatorInfo, ValidatorState,
+    ValidatorStatus,
 };
 use sqlx::{postgres::PgPoolOptions, query, query_as, Pool, Postgres};
 use tendermint::block;
@@ -466,7 +467,8 @@ ON CONFLICT (id) DO UPDATE SET data = $1
                     validator_rates.epoch, 
                     validator_rates.validator_reward_rate, 
                     validator_rates.validator_exchange_rate,
-                    validators.validator_data 
+                    validators.validator_data,
+                    validators.validator_state
                 FROM (
                     validators INNER JOIN validator_rates ON validators.identity_key = validator_rates.identity_key
                 )
@@ -485,6 +487,7 @@ ON CONFLICT (id) DO UPDATE SET data = $1
                     status: ValidatorStatus {
                         identity_key: identity_key.clone(),
                         voting_power: row.voting_power as u64,
+                        state: ValidatorState::decode(row.validator_state.as_slice())?,
                     },
                     rate_data: RateData {
                         identity_key,

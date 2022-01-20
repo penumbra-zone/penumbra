@@ -37,7 +37,8 @@ CREATE TABLE IF NOT EXISTS validators (
     consensus_key bytea NOT NULL,
     sequence_number bigint NOT NULL,
     validator_data bytea NOT NULL,
-    voting_power bigint NOT NULL
+    voting_power bigint NOT NULL,
+    validator_state bytea NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS validator_fundingstreams (

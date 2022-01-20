@@ -71,6 +71,7 @@ impl From<ValidatorStatus> for pb::ValidatorStatus {
         pb::ValidatorStatus {
             identity_key: Some(v.identity_key.into()),
             voting_power: v.voting_power,
+            state: Some(v.state.into()),
         }
     }
 }
@@ -78,13 +79,24 @@ impl From<ValidatorStatus> for pb::ValidatorStatus {
 impl TryFrom<pb::ValidatorStatus> for ValidatorStatus {
     type Error = anyhow::Error;
     fn try_from(v: pb::ValidatorStatus) -> Result<Self, Self::Error> {
+        let state = match v.state.unwrap() {
+            pb::ValidatorState { validator_state } => match validator_state.unwrap() {
+                pb::validator_state::ValidatorState::Inactive(_) => ValidatorState::Inactive,
+                pb::validator_state::ValidatorState::Active(_) => ValidatorState::Active,
+                pb::validator_state::ValidatorState::Unbonding(epoch_index) => {
+                    ValidatorState::Unbonding { epoch_index }
+                }
+                pb::validator_state::ValidatorState::Slashed(_) => ValidatorState::Slashed,
+            },
+        };
+
         Ok(ValidatorStatus {
             identity_key: v
                 .identity_key
                 .ok_or_else(|| anyhow::anyhow!("missing identity key field in proto"))?
                 .try_into()?,
             voting_power: v.voting_power,
-            state: v.state,
+            state,
         })
     }
 }
