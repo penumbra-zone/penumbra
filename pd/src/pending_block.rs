@@ -4,7 +4,7 @@ use decaf377::Fr;
 use penumbra_crypto::{
     asset, ka,
     merkle::{Frontier, NoteCommitmentTree},
-    note, Address, Fq, Note, Nullifier, Value, Zero,
+    note, Address, Fq, Note, Nullifier, Value, Zero, One,
 };
 use penumbra_stake::{
     BaseRateData, Epoch, IdentityKey, RateData, ValidatorStatus, STAKING_TOKEN_ASSET_ID,
@@ -77,7 +77,7 @@ impl PendingBlock {
         )
         .unwrap();
         let commitment = note.commit();
-        let esk = ka::Secret::new_from_field(Fr::zero());
+        let esk = ka::Secret::new_from_field(Fr::one());
         let encrypted_note = note.encrypt(&esk);
 
         let note_data = NoteData {
