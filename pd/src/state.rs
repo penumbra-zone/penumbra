@@ -19,7 +19,7 @@ use penumbra_proto::{
 };
 use penumbra_stake::{
     BaseRateData, FundingStream, IdentityKey, RateData, Validator, ValidatorInfo, ValidatorState,
-    ValidatorStatus,
+    ValidatorStateName, ValidatorStatus,
 };
 use sqlx::{postgres::PgPoolOptions, query, query_as, Pool, Postgres};
 use tendermint::block;
@@ -404,6 +404,8 @@ ON CONFLICT (id) DO UPDATE SET data = $1
 
     pub async fn rate_data(&self, epoch_index: u64) -> Result<Vec<RateData>> {
         let mut conn = self.pool.acquire().await?;
+        // TODO: This query needs to be updated to select the *most recent* rate data
+        // to the given epoch
         let rows = query!(
             "SELECT identity_key, epoch, validator_reward_rate, validator_exchange_rate
             FROM validator_rates
@@ -461,11 +463,11 @@ ON CONFLICT (id) DO UPDATE SET data = $1
         // will be different, forcing duplication of the entire function.
         let power_selector = if show_inactive { i64::MIN } else { 0i64 };
         let rows = query!(
-                "SELECT 
-                    validators.identity_key, 
-                    validators.voting_power, 
-                    validator_rates.epoch, 
-                    validator_rates.validator_reward_rate, 
+                "SELECT
+                    validators.identity_key,
+                    validators.voting_power,
+                    validator_rates.epoch,
+                    validator_rates.validator_reward_rate,
                     validator_rates.validator_exchange_rate,
                     validators.validator_data,
                     validators.validator_state,
@@ -488,8 +490,10 @@ ON CONFLICT (id) DO UPDATE SET data = $1
                     status: ValidatorStatus {
                         identity_key: identity_key.clone(),
                         voting_power: row.voting_power as u64,
-                        state: ValidatorState::decode(row.validator_state.as_slice())?,
-                        unbonding_epoch: row.unbonding_epoch as u64,
+                        state: ValidatorState::from((
+                            ValidatorStateName::from(row.validator_state),
+                            row.unbonding_epoch,
+                        )),
                     },
                     rate_data: RateData {
                         identity_key,

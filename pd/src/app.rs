@@ -86,13 +86,6 @@ pub struct App {
     /// epoch boundary (in EndBlock), and we don't process other messages at
     /// that time.
     next_rate_data: Arc<RwLock<BTreeMap<IdentityKey, RateData>>>,
-
-    /// Records pending state changes to validators.
-    ///
-    /// Inactive state changes are communicated only to Tendermint via
-    /// EndBlock. The validator state changes are updated only during BeginBlock,
-    /// therefore use of Arc should not deadlock.
-    validator_state_changes: Arc<RwLock<BTreeMap<IdentityKey, ValidatorState>>>,
 }
 
 impl App {
@@ -118,10 +111,6 @@ impl App {
             .map(|rate_data| (rate_data.identity_key.clone(), rate_data))
             .collect();
 
-        // Validator state changes only occur as a result of BeginBlock so there should be
-        // none pending here.
-        let validator_state_changes = BTreeMap::<_, _>::new();
-
         Ok(Self {
             state,
             note_commitment_tree,
@@ -131,7 +120,6 @@ impl App {
             sequencer: Default::default(),
             epoch_duration,
             next_rate_data: Arc::new(RwLock::new(next_rate_data)),
-            validator_state_changes: Arc::new(RwLock::new(validator_state_changes)),
         })
     }
 
@@ -266,13 +254,17 @@ impl App {
         Default::default()
     }
 
-    fn begin_block(&mut self, _begin: BeginBlock) -> response::BeginBlock {
+    fn begin_block(&mut self, begin: BeginBlock) -> response::BeginBlock {
         self.pending_block = Some(Arc::new(Mutex::new(PendingBlock::new(
             self.note_commitment_tree.clone(),
             self.epoch_duration,
         ))));
         // TODO: process begin.last_commit_info to handle validator rewards, and
         // begin.byzantine_validators to handle evidence + slashing
+        for evidence in begin.byzantine_validators.iter() {
+            // TODO: instantiate Validator from evidence.validator.address
+            // and insert slash state into validator_state_changes of pending_block
+        }
         response::BeginBlock::default()
     }
 
@@ -417,7 +409,6 @@ impl App {
 
         let state = self.state.clone();
         async move {
-            // slash any validators that need a slashin'
             let validators = self.state.validator_info(true).await?;
 
             if epoch.end_height().value() == height {
