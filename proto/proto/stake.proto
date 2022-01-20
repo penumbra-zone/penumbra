@@ -61,7 +61,7 @@ message ValidatorStatus {
   }
   ValidatorState state = 2;
   uint64 voting_power = 3;
-  uint64 unbonding_epoch = 4;
+  optional uint64 unbonding_epoch = 4;
 }
 
 
@@ -91,11 +91,11 @@ message Delegate {
   // TODO: use flow aggregation to hide this, replacing it with bytes amount_ciphertext;
   uint64 unbonded_amount = 3;
   // The amount of delegation tokens produced by this action.
-  // 
+  //
   // This is implied by the validator's exchange rate in the specified epoch
   // (and should be checked in transaction validation!), but including it allows
   // stateless verification that the transaction is internally consistent.
-  uint64 delegation_amount = 4; 
+  uint64 delegation_amount = 4;
 }
 
 // A transaction action withdrawing stake from a validator's delegation pool.
@@ -107,9 +107,9 @@ message Undelegate {
   // The amount to undelegate, in units of unbonded stake.
   uint64 unbonded_amount = 3;
   // The amount of delegation tokens consumed by this action.
-  // 
+  //
   // This is implied by the validator's exchange rate in the specified epoch
   // (and should be checked in transaction validation!), but including it allows
   // stateless verification that the transaction is internally consistent.
-  uint64 delegation_amount = 4; 
+  uint64 delegation_amount = 4;
 }
