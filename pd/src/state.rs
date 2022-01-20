@@ -468,7 +468,8 @@ ON CONFLICT (id) DO UPDATE SET data = $1
                     validator_rates.validator_reward_rate, 
                     validator_rates.validator_exchange_rate,
                     validators.validator_data,
-                    validators.validator_state
+                    validators.validator_state,
+                    validators.unbonding_epoch
                 FROM (
                     validators INNER JOIN validator_rates ON validators.identity_key = validator_rates.identity_key
                 )
@@ -488,6 +489,7 @@ ON CONFLICT (id) DO UPDATE SET data = $1
                         identity_key: identity_key.clone(),
                         voting_power: row.voting_power as u64,
                         state: ValidatorState::decode(row.validator_state.as_slice())?,
+                        unbonding_epoch: row.unbonding_epoch as u64,
                     },
                     rate_data: RateData {
                         identity_key,

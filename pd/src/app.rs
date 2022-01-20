@@ -15,7 +15,8 @@ use penumbra_crypto::{
     note, Nullifier,
 };
 use penumbra_stake::{
-    Epoch, IdentityKey, RateData, ValidatorStatus, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
+    Epoch, IdentityKey, RateData, ValidatorState, ValidatorStatus, STAKING_TOKEN_ASSET_ID,
+    STAKING_TOKEN_DENOM,
 };
 use penumbra_transaction::Transaction;
 use tendermint::abci::{
@@ -85,6 +86,13 @@ pub struct App {
     /// epoch boundary (in EndBlock), and we don't process other messages at
     /// that time.
     next_rate_data: Arc<RwLock<BTreeMap<IdentityKey, RateData>>>,
+
+    /// Records pending state changes to validators.
+    ///
+    /// Inactive state changes are communicated only to Tendermint via
+    /// EndBlock. The validator state changes are updated only during BeginBlock,
+    /// therefore use of Arc should not deadlock.
+    validator_state_changes: Arc<RwLock<BTreeMap<IdentityKey, ValidatorState>>>,
 }
 
 impl App {
@@ -110,6 +118,10 @@ impl App {
             .map(|rate_data| (rate_data.identity_key.clone(), rate_data))
             .collect();
 
+        // Validator state changes only occur as a result of BeginBlock so there should be
+        // none pending here.
+        let validator_state_changes = BTreeMap::<_, _>::new();
+
         Ok(Self {
             state,
             note_commitment_tree,
@@ -119,6 +131,7 @@ impl App {
             sequencer: Default::default(),
             epoch_duration,
             next_rate_data: Arc::new(RwLock::new(next_rate_data)),
+            validator_state_changes: Arc::new(RwLock::new(validator_state_changes)),
         })
     }
 
@@ -404,6 +417,9 @@ impl App {
 
         let state = self.state.clone();
         async move {
+            // slash any validators that need a slashin'
+            let validators = self.state.validator_info(true).await?;
+
             if epoch.end_height().value() == height {
                 // We've finished processing the last block of `epoch`, so we've
                 // crossed the epoch boundary, and (prev | current | next) are:
