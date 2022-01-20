@@ -1,6 +1,7 @@
 use ark_ff::PrimeField;
 use blake2b_simd;
 use decaf377::Fr;
+use penumbra_chain::params::ChainParams;
 use penumbra_crypto::{
     asset, ka,
     merkle::{Frontier, NoteCommitmentTree},
@@ -12,7 +13,7 @@ use penumbra_stake::{
 };
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::verify::{NoteData, PositionedNoteData, VerifiedTransaction};
+use crate::verify::{NoteData, PositionedNoteData, QuarantinedNoteData, VerifiedTransaction};
 
 /// Stores pending state changes from transactions.
 #[derive(Debug, Clone)]
@@ -22,15 +23,20 @@ pub struct PendingBlock {
     /// Stores note commitments for convienience when updating the NCT.
     pub notes: BTreeMap<note::Commitment, PositionedNoteData>,
     /// Notes that are undelegation outputs in this block (not to be committed to the NCT yet).
-    pub undelegation_notes: BTreeMap<note::Commitment, NoteData>,
+    pub undelegation_notes: BTreeMap<note::Commitment, QuarantinedNoteData>,
     /// Nullifiers that were spent in this block.
     pub spent_nullifiers: BTreeSet<Nullifier>,
+    /// Nullifiers that were associated with undelegation transactions in this block, associated
+    /// with their unbonding epoch and validator identity key.
+    pub quarantined_nullifiers: BTreeMap<Nullifier, u64>,
     /// Records any updates to the token supply of some asset that happened in this block.
     pub supply_updates: BTreeMap<asset::Id, (asset::Denom, u64)>,
     /// Indicates the epoch the block belongs to.
     pub epoch: Option<Epoch>,
     /// Indicates the duration in blocks of each epoch.
     pub epoch_duration: u64,
+    /// Indicates the number of epochs before undelegated stake is unbonded.
+    pub unbonding_epochs: u64,
     /// If this is the last block of an epoch, base rates for the next epoch go here.
     pub next_base_rate: Option<BaseRateData>,
     /// If this is the last block of an epoch, validator rates for the next epoch go here.
@@ -47,16 +53,18 @@ pub struct PendingBlock {
 }
 
 impl PendingBlock {
-    pub fn new(note_commitment_tree: NoteCommitmentTree, epoch_duration: u64) -> Self {
+    pub fn new(note_commitment_tree: NoteCommitmentTree, chain_params: &ChainParams) -> Self {
         Self {
             height: None,
             note_commitment_tree,
             notes: BTreeMap::new(),
             undelegation_notes: BTreeMap::new(),
             spent_nullifiers: BTreeSet::new(),
+            quarantined_nullifiers: BTreeMap::new(),
             supply_updates: BTreeMap::new(),
             epoch: None,
-            epoch_duration,
+            epoch_duration: chain_params.epoch_duration,
+            unbonding_epochs: chain_params.unbonding_epochs,
             next_base_rate: None,
             next_rates: None,
             next_validator_statuses: None,
@@ -128,13 +136,10 @@ impl PendingBlock {
 
     /// Adds the state changes from a verified transaction.
     pub fn add_transaction(&mut self, transaction: VerifiedTransaction) {
+        let no_undelegations = transaction.undelegation_validators.is_empty();
+
         for (note_commitment, data) in transaction.new_notes {
-            if transaction.contains_undelegation {
-                // If a transaction contains an undelegation, we *do not insert any of its outputs*
-                // into the NCT; instead we store them separately, to be inserted into the NCT only
-                // after the unbonding period occurs.
-                self.undelegation_notes.insert(note_commitment, data);
-            } else {
+            if no_undelegations {
                 // If a transaction does not contain any undelegations, we insert its outputs
                 // immediately into the NCT.
                 self.note_commitment_tree.append(&note_commitment);
@@ -149,6 +154,18 @@ impl PendingBlock {
 
                 self.notes
                     .insert(note_commitment, PositionedNoteData { position, data });
+            } else {
+                // If a transaction contains an undelegation, we *do not insert any of its outputs*
+                // into the NCT; instead we store them separately, to be inserted into the NCT only
+                // after the unbonding period occurs.
+                self.undelegation_notes.insert(
+                    note_commitment,
+                    QuarantinedNoteData {
+                        data,
+                        // TODO: we can avoid this clone by rearranging the data structure
+                        validator_identity_keys: transaction.undelegation_validators.clone(),
+                    },
+                );
             }
         }
 

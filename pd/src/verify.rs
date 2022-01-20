@@ -34,9 +34,13 @@ pub struct VerifiedTransaction {
     /// List of spent nullifiers from spends in this transaction.
     pub spent_nullifiers: BTreeSet<Nullifier>,
     /// Net delegations performed in this transaction.
+    ///
+    /// An identity key mapped to zero is different from an identity key that is absent; the former
+    /// indicates that a validator's net change in delegation in this transaction was zero *but it
+    /// experienced some (un)delegations*.
     pub delegation_changes: BTreeMap<IdentityKey, i64>,
-    /// Whether this transaction contained an undelegation.
-    pub contains_undelegation: bool,
+    /// The validators from whom an undelegation was performed in this transaction.
+    pub undelegation_validators: BTreeSet<IdentityKey>,
 }
 
 #[derive(Debug, Clone)]
@@ -49,6 +53,12 @@ pub struct NoteData {
 #[derive(Debug, Clone)]
 pub struct PositionedNoteData {
     pub position: u64,
+    pub data: NoteData,
+}
+
+#[derive(Debug, Clone)]
+pub struct QuarantinedNoteData {
+    pub validator_identity_keys: BTreeSet<IdentityKey>,
     pub data: NoteData,
 }
 
@@ -279,7 +289,11 @@ impl StatefulTransactionExt for PendingTransaction {
             new_notes: self.new_notes.clone(),
             spent_nullifiers: self.spent_nullifiers.clone(),
             delegation_changes,
-            contains_undelegation: !self.undelegations.is_empty(),
+            undelegation_validators: self
+                .undelegations
+                .iter()
+                .map(|u| u.validator_identity.clone())
+                .collect(),
         })
     }
 }
@@ -310,7 +324,7 @@ pub fn mark_genesis_as_verified(transaction: Transaction) -> VerifiedTransaction
         new_notes,
         spent_nullifiers: BTreeSet::<Nullifier>::new(),
         delegation_changes: BTreeMap::new(),
-        contains_undelegation: false,
+        undelegation_validators: BTreeSet::new(),
     }
 }
 

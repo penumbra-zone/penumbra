@@ -9,6 +9,7 @@ use std::{
 use anyhow::anyhow;
 use bytes::Bytes;
 use futures::future::FutureExt;
+use penumbra_chain::params::ChainParams;
 use penumbra_crypto::{
     asset,
     merkle::{self, NoteCommitmentTree, TreeExt},
@@ -41,6 +42,9 @@ const NUM_RECENT_ANCHORS: usize = 64;
 /// The Penumbra ABCI application.
 #[derive(Debug)]
 pub struct App {
+    /// Parameters for the chain (determined at genesis and thenceforth by governance).
+    chain_params: ChainParams,
+
     state: State,
 
     /// Written to the database after every block commit.
@@ -74,9 +78,6 @@ pub struct App {
     /// Used to allow asynchronous requests to be processed sequentially.
     sequencer: Sequencer,
 
-    /// Epoch duration in blocks
-    epoch_duration: u64,
-
     /// Rate data for the next epoch.
     ///
     /// The rate data is updated only at the epoch boundary but read by both
@@ -95,14 +96,14 @@ impl App {
         let note_commitment_tree = state.note_commitment_tree().await?;
         let genesis_config = state.genesis_configuration().await?;
         let recent_anchors = state.recent_anchors(NUM_RECENT_ANCHORS).await?;
-        let epoch_duration = genesis_config.chain_params.epoch_duration;
+        let chain_params = genesis_config.chain_params;
 
         // Fetch the next rate data, if any. If there's none, it's because we're
         // pre-genesis, and we'll process an empty list, then overwrite it when
         // we process the genesis block.
         let next_rate_data = state
             .rate_data(
-                Epoch::from_height(state.height().await?.value(), epoch_duration)
+                Epoch::from_height(state.height().await?.value(), chain_params.epoch_duration)
                     .next()
                     .index,
             )
@@ -118,7 +119,7 @@ impl App {
             mempool_nullifiers: Arc::new(Default::default()),
             pending_block: None,
             sequencer: Default::default(),
-            epoch_duration,
+            chain_params,
             next_rate_data: Arc::new(RwLock::new(next_rate_data)),
         })
     }
@@ -128,7 +129,7 @@ impl App {
         init_chain: request::InitChain,
     ) -> impl Future<Output = Result<Response, BoxError>> {
         tracing::info!(?init_chain);
-        let mut genesis_block = PendingBlock::new(NoteCommitmentTree::new(0), self.epoch_duration);
+        let mut genesis_block = PendingBlock::new(NoteCommitmentTree::new(0), &self.chain_params);
         genesis_block.set_height(0);
 
         // Note that errors cannot be handled in InitChain, the application must crash.
@@ -190,7 +191,7 @@ impl App {
             })
             .collect();
 
-        self.epoch_duration = app_state.chain_params.epoch_duration;
+        self.chain_params = app_state.chain_params.clone();
 
         // construct the pending block and commit the initial state
         self.pending_block = Some(Arc::new(Mutex::new(genesis_block)));
@@ -257,7 +258,7 @@ impl App {
     fn begin_block(&mut self, begin: BeginBlock) -> response::BeginBlock {
         self.pending_block = Some(Arc::new(Mutex::new(PendingBlock::new(
             self.note_commitment_tree.clone(),
-            self.epoch_duration,
+            &self.chain_params,
         ))));
         response::BeginBlock::default()
     }
