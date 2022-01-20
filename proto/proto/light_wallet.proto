@@ -16,14 +16,14 @@ service LightWallet {
 // Requests a range of compact block data.
 message CompactBlockRangeRequest {
   // The start height of the range.
-  uint32 start_height = 1;
+  uint64 start_height = 1;
   // The end height of the range.
-  uint32 end_height = 2;
+  uint64 end_height = 2;
 }
 
 // Contains the minimum data needed to update client state.
 message CompactBlock {
-  uint32 height = 1;
+  uint64 height = 1;
   // Fragments of new notes.
   repeated StateFragment fragments = 2;
   // Nullifiers identifying spent notes.
