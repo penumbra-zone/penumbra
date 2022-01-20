@@ -7,8 +7,7 @@ use penumbra_crypto::{
     note, Address, Fq, Note, Nullifier, Value, Zero,
 };
 use penumbra_stake::{
-    BaseRateData, Epoch, FundingStream, IdentityKey, RateData, ValidatorStatus,
-    STAKING_TOKEN_ASSET_ID,
+    BaseRateData, Epoch, IdentityKey, RateData, ValidatorStatus, STAKING_TOKEN_ASSET_ID,
 };
 
 use crate::verify::{NoteData, PositionedNoteData, VerifiedTransaction};
@@ -63,8 +62,7 @@ impl PendingBlock {
         epoch
     }
 
-    /// Adds a reward output from a validator's funding stream.
-    /// currently we just construct a note with 0 blinding factor
+    /// Adds a reward output for a validator's funding stream.
     pub fn add_validator_reward_note(&mut self, amount: u64, destination: Address) {
         let val = Value {
             amount: amount,
