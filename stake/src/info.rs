@@ -6,9 +6,51 @@ use crate::{RateData, Validator, ValidatorStatus};
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::ValidatorInfo", into = "pb::ValidatorInfo")]
 pub struct ValidatorInfo {
-    pub validator: Validator,
-    pub status: ValidatorStatus,
-    pub rate_data: RateData,
+    validator: Validator,
+    status: ValidatorStatus,
+    rate_data: RateData,
+}
+
+impl ValidatorInfo {
+    pub fn new(
+        validator: Validator,
+        status: ValidatorStatus,
+        rate_data: RateData,
+    ) -> anyhow::Result<Self> {
+        if validator.identity_key != status.identity_key
+            || validator.identity_key != rate_data.identity_key
+        {
+            return Err(anyhow::anyhow!(
+                "validator, status, and rate data identity keys must match"
+            ));
+        }
+
+        Ok(Self {
+            validator,
+            status,
+            rate_data,
+        })
+    }
+
+    /// Get the validator.
+    pub fn validator(&self) -> &Validator {
+        &self.validator
+    }
+
+    /// Get the status of this validator.
+    pub fn status(&self) -> &ValidatorStatus {
+        &self.status
+    }
+
+    /// Get the rate data for this validator.
+    pub fn rate_data(&self) -> &RateData {
+        &self.rate_data
+    }
+
+    /// Extract the components of this struct, consuming `self`.
+    pub fn into_parts(self) -> (Validator, ValidatorStatus, RateData) {
+        (self.validator, self.status, self.rate_data)
+    }
 }
 
 impl Protobuf<pb::ValidatorInfo> for ValidatorInfo {}

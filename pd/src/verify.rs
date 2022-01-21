@@ -2,7 +2,9 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use anyhow::{Context, Error};
 use penumbra_crypto::{ka, merkle, note, Nullifier};
-use penumbra_stake::{Delegate, IdentityKey, RateData, Undelegate, Validator, ValidatorDefinition};
+use penumbra_stake::{
+    Delegate, IdentityKey, RateData, Undelegate, Validator, ValidatorDefinition, ValidatorInfo,
+};
 use penumbra_transaction::{Action, Transaction};
 
 /// `PendingTransaction` holds data after stateless checks have been applied.
@@ -184,7 +186,7 @@ impl StatefulTransactionExt for PendingTransaction {
         &self,
         valid_anchors: &VecDeque<merkle::Root>,
         next_rate_data: &BTreeMap<IdentityKey, RateData>,
-        existing_validators: &Vec<Validator>,
+        existing_validators: &Vec<ValidatorInfo>,
     ) -> Result<VerifiedTransaction, Error> {
         if !valid_anchors.contains(&self.root) {
             return Err(anyhow::anyhow!("invalid note commitment tree root"));
@@ -193,9 +195,9 @@ impl StatefulTransactionExt for PendingTransaction {
         // Check that the sequence numbers of newly added validators are correct.
         // TODO: are any other checks necessary here?
         for v in &self.validators {
-            let existing_v: Vec<&Validator> = existing_validators
+            let existing_v: Vec<&ValidatorInfo> = existing_validators
                 .iter()
-                .filter(|z| z.identity_key == v.identity_key)
+                .filter(|z| z.validator().identity_key == v.identity_key)
                 .collect();
 
             if existing_v.len() == 0 {
@@ -204,7 +206,7 @@ impl StatefulTransactionExt for PendingTransaction {
             } else {
                 // This is an existing validator definition. Ensure that the highest
                 // existing sequence number is less than the new sequence number.
-                let current_seq = existing_v.iter().map(|z| z.sequence_number).max().ok_or_else(|| {anyhow::anyhow!("Validator with this ID key existed but had no existing sequence numbers")})?;
+                let current_seq = existing_v.iter().map(|z| z.validator().sequence_number).max().ok_or_else(|| {anyhow::anyhow!("Validator with this ID key existed but had no existing sequence numbers")})?;
                 if v.sequence_number <= current_seq {
                     return Err(anyhow::anyhow!(
                         "Expected sequence numbers to be increasing. Current sequence number is {}",
