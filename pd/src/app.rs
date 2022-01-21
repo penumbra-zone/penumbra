@@ -360,7 +360,7 @@ impl App {
                 .verify_stateful(
                     &recent_anchors,
                     &next_rate_data.read().unwrap(),
-                    existing_validators,
+                    &existing_validators,
                 )?;
 
             for nullifier in transaction.spent_nullifiers.clone() {

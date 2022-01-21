@@ -207,7 +207,7 @@ impl StakeCmd {
 
                     let info = validators
                         .iter()
-                        .find(|v| v.validator.identity_key == dt.validator())
+                        .find(|v| v.validator().identity_key == dt.validator())
                         .unwrap();
 
                     let delegation = Value {
@@ -219,14 +219,14 @@ impl StakeCmd {
                     };
 
                     let unbonded = Value {
-                        amount: info.rate_data.unbonded_amount(delegation.amount),
+                        amount: info.rate_data().unbonded_amount(delegation.amount),
                         asset_id: *STAKING_TOKEN_ASSET_ID,
                     };
 
-                    let rate = info.rate_data.validator_exchange_rate as f64 / 1_0000_0000.0;
+                    let rate = info.rate_data().validator_exchange_rate as f64 / 1_0000_0000.0;
 
                     table.add_row(vec![
-                        info.validator.name.clone(),
+                        info.validator().name.clone(),
                         unbonded.try_format(state.asset_cache()).unwrap(),
                         format!("{:.4}", rate),
                         delegation.try_format(state.asset_cache()).unwrap(),
@@ -286,11 +286,11 @@ impl StakeCmd {
                     .collect::<Result<Vec<ValidatorInfo>, _>>()?;
 
                 // Sort by voting power (descending)
-                validators.sort_by(|a, b| b.status.voting_power.cmp(&a.status.voting_power));
+                validators.sort_by(|a, b| b.status().voting_power.cmp(&a.status().voting_power));
 
                 let total_voting_power = validators
                     .iter()
-                    .map(|v| v.status.voting_power)
+                    .map(|v| v.status().voting_power)
                     .sum::<u64>() as f64;
 
                 let mut table = Table::new();
@@ -298,9 +298,10 @@ impl StakeCmd {
                 table.set_header(vec!["Voting Power", "Commission", "Validator Info"]);
 
                 for v in validators {
-                    let power_percent = 100.0 * (v.status.voting_power as f64) / total_voting_power;
+                    let power_percent =
+                        100.0 * (v.status().voting_power as f64) / total_voting_power;
                     let commission_bps = v
-                        .validator
+                        .validator()
                         .funding_streams
                         .as_ref()
                         .iter()
@@ -310,23 +311,23 @@ impl StakeCmd {
                     table.add_row(vec![
                         format!("{:.2}%", power_percent),
                         format!("{}bps", commission_bps),
-                        v.validator.name,
+                        v.validator().name.clone(),
                     ]);
                     table.add_row(vec![
                         "".into(),
                         "".into(),
-                        format!("  {}", v.validator.identity_key),
+                        format!("  {}", v.validator().identity_key),
                     ]);
                     if *detailed {
                         table.add_row(vec![
                             "".into(),
                             "".into(),
-                            format!("  {}", v.validator.website),
+                            format!("  {}", v.validator().website),
                         ]);
                         table.add_row(vec![
                             "".into(),
                             "".into(),
-                            format!("  {}", v.validator.description),
+                            format!("  {}", v.validator().description),
                         ]);
                     }
                 }
