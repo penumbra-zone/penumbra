@@ -1,6 +1,7 @@
 use std::{
     collections::{BTreeMap, VecDeque},
     pin::Pin,
+    str::FromStr,
 };
 
 use anyhow::{Context, Result};
@@ -97,14 +98,24 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
                     identity_key,
                     consensus_key,
                     sequence_number,
-                    validator_data,
-                    voting_power
-                ) VALUES ($1, $2, $3, $4, $5)",
+                    name,
+                    website,
+                    description,
+                    voting_power,
+                    validator_state,
+                    unbonding_epoch
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
                 validator.identity_key.encode_to_vec(),
                 validator.consensus_key.to_bytes(),
                 validator.sequence_number as i64,
-                validator.encode_to_vec(),
+                validator.name.clone(),
+                validator.website.clone(),
+                validator.description.clone(),
                 power.value() as i64,
+                // TODO: use real ValidatorState here (ok for now because all validators
+                // in genesis start in ACTIVE state)
+                ValidatorStateName::Active.to_str().to_string(),
+                Option::<i64>::None,
             )
             .execute(&mut dbtx)
             .await?;
@@ -469,9 +480,13 @@ ON CONFLICT (id) DO UPDATE SET data = $1
                     validator_rates.epoch,
                     validator_rates.validator_reward_rate,
                     validator_rates.validator_exchange_rate,
-                    validators.validator_data,
                     validators.validator_state,
-                    validators.unbonding_epoch
+                    validators.unbonding_epoch,
+                    validators.name,
+                    validators.website,
+                    validators.description,
+                    validators.consensus_key,
+                    validators.sequence_number
                 FROM (
                     validators INNER JOIN validator_rates ON validators.identity_key = validator_rates.identity_key
                 )
@@ -485,15 +500,27 @@ ON CONFLICT (id) DO UPDATE SET data = $1
             .map(|row| {
                 let identity_key =
                     IdentityKey::decode(row.identity_key.as_slice()).expect("db data is valid");
+                let consensus_key =
+                    tendermint::PublicKey::from_raw_ed25519(row.consensus_key.as_slice())
+                        .ok_or_else(|| anyhow::anyhow!("invalid ed25519 consensus pubkey"))?;
                 Ok(ValidatorInfo {
-                    validator: Validator::decode(row.validator_data.as_slice())?,
+                    validator: Validator {
+                        identity_key: identity_key.clone(),
+                        consensus_key: consensus_key.clone(),
+                        name: row.name.clone(),
+                        website: row.website.clone(),
+                        description: row.description.clone(),
+                        // TODO: Implement
+                        funding_streams: FundingStreams::new(),
+                        sequence_number: row.sequence_number as u32,
+                    },
                     status: ValidatorStatus {
                         identity_key: identity_key.clone(),
                         voting_power: row.voting_power as u64,
-                        state: ValidatorState::from((
-                            ValidatorStateName::from(row.validator_state),
-                            row.unbonding_epoch,
-                        )),
+                        state: ValidatorState::try_from((
+                            ValidatorStateName::from_str(&row.validator_state)?,
+                            row.unbonding_epoch.map(|i| i as u64),
+                        ))?,
                     },
                     rate_data: RateData {
                         identity_key,
