@@ -7,7 +7,7 @@ use penumbra_crypto::{
     note, Address, Fq, Note, Nullifier, One, Value,
 };
 use penumbra_stake::{
-    BaseRateData, Epoch, IdentityKey, RateData, ValidatorState, ValidatorStatus,
+    BaseRateData, Epoch, IdentityKey, RateData, ValidatorInfo, ValidatorState, ValidatorStatus,
     STAKING_TOKEN_ASSET_ID,
 };
 use std::collections::{BTreeMap, BTreeSet};
@@ -42,10 +42,16 @@ pub struct PendingBlock {
     reward_counter: u64,
     /// Records pending state changes to validators.
     pub validator_state_changes: BTreeMap<IdentityKey, ValidatorState>,
+    /// Contains validators valid for the pending block.
+    pub validator_info: Vec<ValidatorInfo>,
 }
 
 impl PendingBlock {
-    pub fn new(note_commitment_tree: NoteCommitmentTree, epoch_duration: u64) -> Self {
+    pub fn new(
+        note_commitment_tree: NoteCommitmentTree,
+        epoch_duration: u64,
+        validator_info: &[ValidatorInfo],
+    ) -> Self {
         Self {
             height: None,
             note_commitment_tree,
@@ -60,6 +66,7 @@ impl PendingBlock {
             delegation_changes: BTreeMap::new(),
             reward_counter: 0,
             validator_state_changes: BTreeMap::new(),
+            validator_info,
         }
     }
 

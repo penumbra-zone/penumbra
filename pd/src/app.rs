@@ -258,6 +258,7 @@ impl App {
         self.pending_block = Some(Arc::new(Mutex::new(PendingBlock::new(
             self.note_commitment_tree.clone(),
             self.epoch_duration,
+            existing_validators,
         ))));
         // TODO: process begin.last_commit_info to handle validator rewards, and
         // begin.byzantine_validators to handle evidence + slashing
@@ -293,7 +294,6 @@ impl App {
         let next_rate_data = self.next_rate_data.clone();
 
         async move {
-            let existing_validators = self.state.validator_info(true).await?;
             let transaction = Transaction::try_from(request.tx.as_ref())?
                 .verify_stateless()?
                 .verify_stateful(
@@ -354,7 +354,6 @@ impl App {
         let pending_block_ref = self.pending_block.clone();
 
         async move {
-            let existing_validators = self.state.validator_info(true).await?;
             let transaction = Transaction::try_from(txbytes.as_ref())?
                 .verify_stateless()?
                 .verify_stateful(

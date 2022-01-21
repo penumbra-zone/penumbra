@@ -59,7 +59,7 @@ pub trait StatefulTransactionExt {
         &self,
         valid_anchors: &VecDeque<merkle::Root>,
         next_rate_data: &BTreeMap<IdentityKey, RateData>,
-        existing_validators: &Vec<ValidatorInfo>,
+        existing_validators: &[ValidatorInfo],
     ) -> Result<VerifiedTransaction, Error>;
 }
 
@@ -186,7 +186,7 @@ impl StatefulTransactionExt for PendingTransaction {
         &self,
         valid_anchors: &VecDeque<merkle::Root>,
         next_rate_data: &BTreeMap<IdentityKey, RateData>,
-        existing_validators: &Vec<ValidatorInfo>,
+        existing_validators: &[ValidatorInfo],
     ) -> Result<VerifiedTransaction, Error> {
         if !valid_anchors.contains(&self.root) {
             return Err(anyhow::anyhow!("invalid note commitment tree root"));
@@ -424,7 +424,7 @@ mod tests {
         valid_anchors.push_back(anchor);
 
         let _verified_tx = pending_tx
-            .verify_stateful(&valid_anchors, &BTreeMap::default())
+            .verify_stateful(&valid_anchors, &BTreeMap::default(), &Vec::new())
             .expect("stateful verification should pass");
     }
 }
