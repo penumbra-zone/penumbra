@@ -564,18 +564,6 @@
       "nullable": []
     }
   },
-  "da50d9f24e8ecab2a17d2d1452e5f262085d586c64a30c05ffe904dcb9410e8e": {
-    "query": "INSERT INTO jmt (value) VALUES ($1)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea"
-        ]
-      },
-      "nullable": []
-    }
-  },
   "db8426f28750016ab6ed802dcfcf3cb216e04ccad385f23f867698e56529fedb": {
     "query": "SELECT id, data FROM blobs WHERE id = 'gc';",
     "describe": {

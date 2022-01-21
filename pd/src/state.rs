@@ -84,9 +84,6 @@ impl State {
         .execute(&mut dbtx)
         .await?;
 
-        query!("INSERT INTO jmt (value) VALUES ($1)", &genesis_bytes[..])
-            .execute(&mut dbtx)
-            .await?;
 
         // Delegations require knowing the rates for the next epoch, so
         // pre-populate with 0 reward => exchange rate 1 for the current
