@@ -19,8 +19,8 @@ use penumbra_proto::{
     Protobuf,
 };
 use penumbra_stake::{
-    BaseRateData, FundingStream, IdentityKey, RateData, Validator, ValidatorInfo, ValidatorState,
-    ValidatorStateName, ValidatorStatus,
+    BaseRateData, FundingStream, FundingStreams, IdentityKey, RateData, Validator, ValidatorInfo,
+    ValidatorState, ValidatorStateName, ValidatorStatus,
 };
 use sqlx::{postgres::PgPoolOptions, query, query_as, Pool, Postgres};
 use tendermint::block;
@@ -457,7 +457,7 @@ impl State {
     pub async fn funding_streams(
         &self,
         validator_identity_key: IdentityKey,
-    ) -> Result<Vec<FundingStream>> {
+    ) -> Result<FundingStreams> {
         let mut conn = self.pool.acquire().await?;
         let rows = query!(
             "SELECT * from validator_fundingstreams WHERE identity_key = $1",
@@ -476,7 +476,7 @@ impl State {
             })
         }
 
-        Ok(streams)
+        Ok(FundingStreams::try_from(streams)?)
     }
 
     /// Fetches the latest validator info.
