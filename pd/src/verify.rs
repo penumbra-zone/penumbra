@@ -19,7 +19,7 @@ pub struct PendingTransaction {
     pub delegations: Vec<Delegate>,
     /// Undelegations performed in this transaction.
     pub undelegations: Vec<Undelegate>,
-    /// Validators contained in the transaction.
+    /// Validators defined in the transaction.
     pub validators: Vec<Validator>,
 }
 
@@ -57,6 +57,7 @@ pub trait StatefulTransactionExt {
         &self,
         valid_anchors: &VecDeque<merkle::Root>,
         next_rate_data: &BTreeMap<IdentityKey, RateData>,
+        existing_validators: &Vec<ValidatorInfo>,
     ) -> Result<VerifiedTransaction, Error>;
 }
 
@@ -150,7 +151,14 @@ impl StatelessTransactionExt for Transaction {
                     auth_sig,
                 }) => {
                     // Perform stateless checks that the validator definition is valid.
-                    // TODO: Perform signature check
+
+                    // Validate that the transaction signature is valid and signed by the
+                    // validator's identity key.
+                    validator
+                        .identity_key
+                        .0
+                        .verify(&sighash, &auth_sig)
+                        .context("validator definition signature failed to verify")?;
                     validators.push(validator);
                 }
                 _ => todo!("unsupported action"),
@@ -174,9 +182,34 @@ impl StatefulTransactionExt for PendingTransaction {
         &self,
         valid_anchors: &VecDeque<merkle::Root>,
         next_rate_data: &BTreeMap<IdentityKey, RateData>,
+        existing_validators: &Vec<Validator>,
     ) -> Result<VerifiedTransaction, Error> {
         if !valid_anchors.contains(&self.root) {
             return Err(anyhow::anyhow!("invalid note commitment tree root"));
+        }
+
+        // Check that the sequence numbers of newly added validators are correct.
+        // TODO: are any other checks necessary here?
+        for v in &self.validators {
+            let existing_v: Vec<&Validator> = existing_validators
+                .iter()
+                .filter(|z| z.identity_key == v.identity_key)
+                .collect();
+
+            if existing_v.len() == 0 {
+                // This is a new validator definition.
+                continue;
+            } else {
+                // This is an existing validator definition. Ensure that the highest
+                // existing sequence number is less than the new sequence number.
+                let current_seq = existing_v.iter().map(|z| z.sequence_number).max().ok_or_else(|| {anyhow::anyhow!("Validator with this ID key existed but had no existing sequence numbers")})?;
+                if v.sequence_number <= current_seq {
+                    return Err(anyhow::anyhow!(
+                        "Expected sequence numbers to be increasing. Current sequence number is {}",
+                        current_seq
+                    ));
+                }
+            }
         }
 
         // Tally the delegations and undelegations

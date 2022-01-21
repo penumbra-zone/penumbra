@@ -293,9 +293,14 @@ impl App {
         let next_rate_data = self.next_rate_data.clone();
 
         async move {
+            let existing_validators = self.state.validator_info(true).await?;
             let transaction = Transaction::try_from(request.tx.as_ref())?
                 .verify_stateless()?
-                .verify_stateful(&recent_anchors, &next_rate_data.read().unwrap())?;
+                .verify_stateful(
+                    &recent_anchors,
+                    &next_rate_data.read().unwrap(),
+                    &existing_validators,
+                )?;
 
             // Ensure we do not add any transactions with duplicate nullifiers into the mempool.
             //
@@ -349,9 +354,14 @@ impl App {
         let pending_block_ref = self.pending_block.clone();
 
         async move {
+            let existing_validators = self.state.validator_info(true).await?;
             let transaction = Transaction::try_from(txbytes.as_ref())?
                 .verify_stateless()?
-                .verify_stateful(&recent_anchors, &next_rate_data.read().unwrap())?;
+                .verify_stateful(
+                    &recent_anchors,
+                    &next_rate_data.read().unwrap(),
+                    existing_validators,
+                )?;
 
             for nullifier in transaction.spent_nullifiers.clone() {
                 // verify that we're not spending a nullifier that was already spent in a previous block
