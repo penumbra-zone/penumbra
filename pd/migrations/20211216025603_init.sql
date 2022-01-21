@@ -49,6 +49,8 @@ CREATE TABLE IF NOT EXISTS validators (
     unbonding_epoch bigint
 );
 
+-- TODO: the sum of funding streams for any validator should never exceed 10,000.
+-- this is enforced in code, but could also be enforced here.
 CREATE TABLE IF NOT EXISTS validator_fundingstreams (
     identity_key bytea NOT NULL REFERENCES validators (identity_key),
     address varchar NOT NULL,
