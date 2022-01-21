@@ -99,15 +99,20 @@ impl From<ValidatorState> for (ValidatorStateName, Option<u64>) {
     }
 }
 
-impl TryFrom<(ValidatorStateName, Option<u64>)> for ValidatorState {
+impl<T: TryInto<u64>> TryFrom<(ValidatorStateName, Option<T>)> for ValidatorState
+where
+    <T as TryInto<u64>>::Error: std::error::Error + Send + Sync + 'static,
+{
     type Error = anyhow::Error;
 
-    fn try_from(state: (ValidatorStateName, Option<u64>)) -> Result<Self, Self::Error> {
+    fn try_from(state: (ValidatorStateName, Option<T>)) -> Result<Self, Self::Error> {
         match state {
             (ValidatorStateName::Inactive, None) => Ok(ValidatorState::Inactive),
             (ValidatorStateName::Active, None) => Ok(ValidatorState::Active),
             (ValidatorStateName::Unbonding, Some(unbonding_epoch)) => {
-                Ok(ValidatorState::Unbonding { unbonding_epoch })
+                Ok(ValidatorState::Unbonding {
+                    unbonding_epoch: unbonding_epoch.try_into()?,
+                })
             }
             (ValidatorStateName::Slashed, None) => Ok(ValidatorState::Slashed),
             (_, Some(_)) => Err(anyhow::anyhow!(

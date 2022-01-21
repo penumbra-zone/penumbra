@@ -1,6 +1,7 @@
 use std::{
     collections::{BTreeMap, VecDeque},
     pin::Pin,
+    str::FromStr,
 };
 
 use anyhow::{Context, Result};
@@ -25,7 +26,7 @@ use sqlx::{postgres::PgPoolOptions, query, query_as, Pool, Postgres};
 use tendermint::block;
 use tracing::instrument;
 
-use crate::{db::schema, genesis, PendingBlock};
+use crate::{db::schema, genesis, verify::QuarantineGroup, PendingBlock};
 
 #[derive(Debug, Clone)]
 pub struct State {
@@ -204,11 +205,20 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
         }
 
         // Add undelegated note outputs into the quarantine queue.
-        for (note_commitment, quarantined_note) in block.undelegation_notes.into_iter() {
-            // TODO: quarantine undelegated note outputs
-        }
+        for QuarantineGroup {
+            validator_identity_keys,
+            notes,
+            nullifiers,
+        } in block.quarantine
+        {
+            for (note_commitment, data) in notes {
+                // TODO: quarantine note
+            }
 
-        // TODO: quarantine nullifiers
+            for nullifier in nullifiers {
+                // TODO: quarantine nullifier
+            }
+        }
 
         // Mark spent notes as spent.
         for nullifier in block.spent_nullifiers.into_iter() {
@@ -496,10 +506,7 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
                     status: ValidatorStatus {
                         identity_key: identity_key.clone(),
                         voting_power: row.voting_power as u64,
-                        state: ValidatorState::from((
-                            ValidatorStateName::from(row.validator_state),
-                            row.unbonding_epoch,
-                        )),
+                        state: (row.validator_state.parse()?, row.unbonding_epoch).try_into()?,
                     },
                     rate_data: RateData {
                         identity_key,

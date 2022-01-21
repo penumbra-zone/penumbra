@@ -25,56 +25,6 @@
       "nullable": []
     }
   },
-  "17f7371f353e0c856b2893d4d37bfe5be632e178eb71e31e62ef90f96c4a89e0": {
-    "query": "SELECT \n                    validators.identity_key, \n                    validators.voting_power, \n                    validator_rates.epoch, \n                    validator_rates.validator_reward_rate, \n                    validator_rates.validator_exchange_rate,\n                    validators.validator_data \n                FROM (\n                    validators INNER JOIN validator_rates ON validators.identity_key = validator_rates.identity_key\n                )\n                WHERE validator_rates.epoch = (SELECT MAX(epoch) FROM base_rates) AND NOT voting_power = $1",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "identity_key",
-          "type_info": "Bytea"
-        },
-        {
-          "ordinal": 1,
-          "name": "voting_power",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 2,
-          "name": "epoch",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 3,
-          "name": "validator_reward_rate",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 4,
-          "name": "validator_exchange_rate",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 5,
-          "name": "validator_data",
-          "type_info": "Bytea"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8"
-        ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
-      ]
-    }
-  },
   "2bf593b7f2e93978cb0490ac7f1c64f55d16a2bb5823db241dfc0ed33ae8540f": {
     "query": "INSERT INTO validators (\n                    identity_key,\n                    consensus_key,\n                    sequence_number,\n                    validator_data,\n                    voting_power\n                ) VALUES ($1, $2, $3, $4, $5)",
     "describe": {
@@ -127,6 +77,68 @@
         false,
         false,
         false
+      ]
+    }
+  },
+  "3038362cc30ae8f41af3741a202c57886684cc33c67a9b2801b11ebd6677d17e": {
+    "query": "SELECT\n                    validators.identity_key,\n                    validators.voting_power,\n                    validator_rates.epoch,\n                    validator_rates.validator_reward_rate,\n                    validator_rates.validator_exchange_rate,\n                    validators.validator_data,\n                    validators.validator_state,\n                    validators.unbonding_epoch\n                FROM (\n                    validators INNER JOIN validator_rates ON validators.identity_key = validator_rates.identity_key\n                )\n                WHERE validator_rates.epoch = (SELECT MAX(epoch) FROM base_rates) AND NOT voting_power = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "identity_key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 1,
+          "name": "voting_power",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 2,
+          "name": "epoch",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 3,
+          "name": "validator_reward_rate",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 4,
+          "name": "validator_exchange_rate",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 5,
+          "name": "validator_data",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 6,
+          "name": "validator_state",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 7,
+          "name": "unbonding_epoch",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
       ]
     }
   },
