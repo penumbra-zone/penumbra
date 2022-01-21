@@ -412,19 +412,6 @@
       "nullable": []
     }
   },
-  "9e7ef6d0442bbacb5512b78c47e9bb222cecf14a4e3a3dd4530e2a6ad420b591": {
-    "query": "\n                INSERT INTO jmt (key, value) VALUES ($1, $2)\n                ",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea",
-          "Bytea"
-        ]
-      },
-      "nullable": []
-    }
-  },
   "9efba3ba5ace824dfbf620cd5d9cd46ea8e0e99c6fc791723d1490a2b84d07ac": {
     "query": "INSERT INTO base_rates (\n                epoch,\n                base_reward_rate,\n                base_exchange_rate\n            ) VALUES ($1, $2, $3)",
     "describe": {
@@ -548,6 +535,19 @@
         false,
         false
       ]
+    }
+  },
+  "c4883ef6ef60bb03503ea9f5f67c96cbc47afedcd6ba9aeb11b3e71173c62915": {
+    "query": "\n                    INSERT INTO jmt (key, value) VALUES ($1, $2)\n                    ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Bytea"
+        ]
+      },
+      "nullable": []
     }
   },
   "d12d2e8c0c1d522212ea874d422f99e950fbd843afe73bac2b7de7a1ec31af3f": {
