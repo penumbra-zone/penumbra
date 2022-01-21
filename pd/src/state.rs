@@ -156,17 +156,11 @@ impl State {
     }
 
     pub async fn commit_block(&self, block: PendingBlock) -> Result<()> {
+        // TODO: batch these queries?
         let mut dbtx = self.pool.begin().await?;
 
         let nct_anchor = block.note_commitment_tree.root2();
-        // TODO: work out what other stuff to put in apphashes
-        let app_hash = nct_anchor.to_bytes();
-        let height = block.height.expect("height must be set");
-
         let nct_bytes = bincode::serialize(&block.note_commitment_tree)?;
-
-        // TODO: batch these queries?
-
         query!(
             r#"
             INSERT INTO blobs (id, data) VALUES ('nct', $1)
@@ -177,9 +171,11 @@ impl State {
         .execute(&mut dbtx)
         .await?;
 
+        let height = block.height.expect("height must be set");
+
         // The Jellyfish Merkle tree batches writes to its backing store, so we
         // first need to write the JMT kv pairs...
-        let (_, tree_update_batch) = jmt::JellyfishMerkleTree::new(self)
+        let (jmt_root, tree_update_batch) = jmt::JellyfishMerkleTree::new(self)
             .put_value_set(
                 // TODO: create a JmtKey enum, where each variant has
                 // a different domain-separated hash
@@ -194,6 +190,12 @@ impl State {
         jellyfish::DbTx(&mut dbtx)
             .write_node_batch(&tree_update_batch.node_batch)
             .await?;
+
+        // The app hash is the root of the Jellyfish Merkle Tree.  We save the
+        // NCT anchor separately for convenience, but it's already included in
+        // the JMT root.
+        // TODO: no way to access the Diem HashValue as array, even though it's stored that way?
+        let app_hash: [u8; 32] = jmt_root.to_vec().try_into().unwrap();
 
         query!(
             "INSERT INTO blocks (height, nct_anchor, app_hash) VALUES ($1, $2, $3)",
