@@ -30,11 +30,9 @@ pub struct Validator {
     /// The destinations for the validator's staking reward. The commission is implicitly defined
     /// by the configuration of funding_streams, the sum of FundingStream.rate_bps.
     ///
-    /// NOTE: sum(FundingRate.rate_bps) should not exceed 100% (10000bps. For now, we ignore this
-    /// condition, in the future we should probably make it a slashable offense.
     // NOTE: unclaimed rewards are tracked by inserting reward notes for the last epoch into the
     // NCT at the beginning of each epoch
-    pub funding_streams: Vec<FundingStream>,
+    pub funding_streams: FundingStreams,
 
     /// The sequence number determines which validator data takes priority, and
     /// prevents replay attacks.  The chain only accepts new
@@ -42,6 +40,60 @@ pub struct Validator {
     /// third party from replaying previously valid but stale configuration data
     /// as an update.
     pub sequence_number: u32,
+}
+
+/// A set of funding streams to which validators send rewards.
+///
+/// The total commission of a validator is the sum of the individual reward rate of the
+/// [`FundingStream`]s, and cannot exceed 10000bps (100%). This property is guaranteed by the
+/// `TryFrom<Vec<FundingStream>` implementation for [`FundingStreams`], which checks the sum, and is
+/// the only way to build a non-empty [`FundingStreams`].
+#[derive(Debug, Clone, Default, Eq, PartialEq)]
+pub struct FundingStreams {
+    funding_streams: Vec<FundingStream>,
+}
+
+impl FundingStreams {
+    pub fn new() -> Self {
+        Self {
+            funding_streams: Vec::new(),
+        }
+    }
+}
+
+impl TryFrom<Vec<FundingStream>> for FundingStreams {
+    type Error = anyhow::Error;
+
+    fn try_from(funding_streams: Vec<FundingStream>) -> Result<Self, Self::Error> {
+        if funding_streams.iter().map(|fs| fs.rate_bps).sum::<u16>() > 10_000 {
+            return Err(anyhow::anyhow!(
+                "sum of funding rates exceeds 100% (10000bps)"
+            ));
+        }
+
+        Ok(Self { funding_streams })
+    }
+}
+
+impl From<FundingStreams> for Vec<FundingStream> {
+    fn from(funding_streams: FundingStreams) -> Self {
+        funding_streams.funding_streams
+    }
+}
+
+impl AsRef<[FundingStream]> for FundingStreams {
+    fn as_ref(&self) -> &[FundingStream] {
+        &self.funding_streams
+    }
+}
+
+impl IntoIterator for FundingStreams {
+    type Item = FundingStream;
+    type IntoIter = std::vec::IntoIter<FundingStream>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.funding_streams.into_iter()
+    }
 }
 
 /// Authenticated configuration data for a validator.
@@ -85,7 +137,8 @@ impl TryFrom<pb::Validator> for Validator {
                 .funding_streams
                 .into_iter()
                 .map(TryInto::try_into)
-                .collect::<Result<_, _>>()?,
+                .collect::<Result<Vec<FundingStream>, _>>()?
+                .try_into()?,
             sequence_number: v.sequence_number,
         })
     }

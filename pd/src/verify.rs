@@ -161,7 +161,9 @@ impl StatelessTransactionExt for Transaction {
                         .context("validator definition signature failed to verify")?;
                     validators.push(validator);
                 }
-                _ => todo!("unsupported action"),
+                _ => {
+                    return Err(anyhow::anyhow!("unsupported action"));
+                }
             }
         }
 

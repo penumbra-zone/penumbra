@@ -302,6 +302,7 @@ impl StakeCmd {
                     let commission_bps = v
                         .validator
                         .funding_streams
+                        .as_ref()
                         .iter()
                         .map(|fs| fs.rate_bps)
                         .sum::<u16>();

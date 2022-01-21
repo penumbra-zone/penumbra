@@ -109,7 +109,7 @@ INSERT INTO blobs (id, data) VALUES ('gc', $1)
             .execute(&mut dbtx)
             .await?;
 
-            for FundingStream { address, rate_bps } in &validator.funding_streams {
+            for FundingStream { address, rate_bps } in validator.funding_streams.as_ref() {
                 query!(
                     "INSERT INTO validator_fundingstreams (
                         identity_key,
