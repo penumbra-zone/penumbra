@@ -7,7 +7,8 @@ use penumbra_crypto::{
     note, Address, Fq, Note, Nullifier, One, Value,
 };
 use penumbra_stake::{
-    BaseRateData, Epoch, IdentityKey, RateData, ValidatorStatus, STAKING_TOKEN_ASSET_ID,
+    BaseRateData, Epoch, IdentityKey, RateData, ValidatorInfo, ValidatorState, ValidatorStatus,
+    STAKING_TOKEN_ASSET_ID,
 };
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -39,6 +40,8 @@ pub struct PendingBlock {
     /// The counter containing the number of rewards notes in the epoch. we need this to keep the
     /// blinding factor of the reward notes unique.
     reward_counter: u64,
+    /// Records pending state changes to validators.
+    pub validator_state_changes: BTreeMap<IdentityKey, ValidatorState>,
 }
 
 impl PendingBlock {
@@ -56,6 +59,7 @@ impl PendingBlock {
             next_validator_statuses: None,
             delegation_changes: BTreeMap::new(),
             reward_counter: 0,
+            validator_state_changes: BTreeMap::new(),
         }
     }
 

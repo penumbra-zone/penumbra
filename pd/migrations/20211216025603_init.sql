@@ -37,7 +37,11 @@ CREATE TABLE IF NOT EXISTS validators (
     consensus_key bytea NOT NULL,
     sequence_number bigint NOT NULL,
     validator_data bytea NOT NULL,
-    voting_power bigint NOT NULL
+    voting_power bigint NOT NULL,
+    -- TODO: validator_state should be limited to valid state strings
+    validator_state varchar NOT NULL,
+    -- TODO: unbonding epoch can only be set when validator_state is unbonding
+    unbonding_epoch bigint
 );
 
 CREATE TABLE IF NOT EXISTS validator_fundingstreams (

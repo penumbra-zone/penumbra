@@ -19,7 +19,7 @@ pub use funding_stream::FundingStream;
 pub use identity_key::IdentityKey;
 pub use info::ValidatorInfo;
 pub use rate::{BaseRateData, RateData};
-pub use status::ValidatorStatus;
+pub use status::{ValidatorState, ValidatorStateName, ValidatorStatus};
 pub use token::DelegationToken;
 pub use undelegate::Undelegate;
 pub use validator::{Validator, ValidatorDefinition};

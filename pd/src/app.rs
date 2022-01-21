@@ -15,7 +15,8 @@ use penumbra_crypto::{
     note, Nullifier,
 };
 use penumbra_stake::{
-    Epoch, IdentityKey, RateData, ValidatorStatus, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
+    Epoch, IdentityKey, RateData, ValidatorState, ValidatorStatus, STAKING_TOKEN_ASSET_ID,
+    STAKING_TOKEN_DENOM,
 };
 use penumbra_transaction::Transaction;
 use tendermint::abci::{
@@ -253,13 +254,11 @@ impl App {
         Default::default()
     }
 
-    fn begin_block(&mut self, _begin: BeginBlock) -> response::BeginBlock {
+    fn begin_block(&mut self, begin: BeginBlock) -> response::BeginBlock {
         self.pending_block = Some(Arc::new(Mutex::new(PendingBlock::new(
             self.note_commitment_tree.clone(),
             self.epoch_duration,
         ))));
-        // TODO: process begin.last_commit_info to handle validator rewards, and
-        // begin.byzantine_validators to handle evidence + slashing
         response::BeginBlock::default()
     }
 
@@ -511,6 +510,9 @@ impl App {
                     let next_status = ValidatorStatus {
                         identity_key,
                         voting_power,
+                        // TODO: this state needs to be set correctly based on current state and any changes
+                        // within the current block. This will be fixed by #375.
+                        state: ValidatorState::Active,
                     };
 
                     // distribute validator commission
