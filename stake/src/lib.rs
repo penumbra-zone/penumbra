@@ -22,7 +22,7 @@ pub use rate::{BaseRateData, RateData};
 pub use status::{ValidatorState, ValidatorStateName, ValidatorStatus};
 pub use token::DelegationToken;
 pub use undelegate::Undelegate;
-pub use validator::{Validator, ValidatorDefinition};
+pub use validator::{FundingStreams, Validator, ValidatorDefinition};
 
 /// The Bech32 prefix used for validator consensus pubkeys.
 pub const VALIDATOR_CONSENSUS_BECH32_PREFIX: &str = "penumbravalconspub";

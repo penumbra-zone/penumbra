@@ -25,7 +25,7 @@ impl RateData {
     pub fn next(
         &self,
         base_rate_data: &BaseRateData,
-        funding_streams: Vec<FundingStream>,
+        funding_streams: &[FundingStream],
     ) -> RateData {
         // compute the validator's total commissio
         let commission_rate_bps = funding_streams

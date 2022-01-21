@@ -465,7 +465,8 @@ impl App {
                     let identity_key = current_rate.identity_key.clone();
 
                     let funding_streams = state.funding_streams(identity_key.clone()).await?;
-                    let next_rate = current_rate.next(&next_base_rate, funding_streams.clone());
+                    let next_rate =
+                        current_rate.next(&next_base_rate, funding_streams.clone().as_ref());
 
                     // TODO: if a validator isn't part of the consensus set, should we ignore them
                     // and not update their rates?
