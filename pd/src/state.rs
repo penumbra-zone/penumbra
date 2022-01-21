@@ -192,7 +192,7 @@ impl State {
                 // TODO: create a JmtKey enum, where each variant has
                 // a different domain-separated hash
                 vec![(
-                    jmt::hash::HashValue::sha3_256_of(b"nct"),
+                    jellyfish::Key::NoteCommitmentAnchor.hash(),
                     nct_anchor.clone(),
                 )],
                 height,
