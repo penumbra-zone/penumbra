@@ -41,7 +41,9 @@ CREATE TABLE IF NOT EXISTS validators (
     identity_key bytea NOT NULL PRIMARY KEY,
     consensus_key bytea NOT NULL,
     sequence_number bigint NOT NULL,
-    validator_data bytea NOT NULL,
+    name varchar NOT NULL,
+    website varchar NOT NULL,
+    description varchar NOT NULL,
     voting_power bigint NOT NULL,
     -- TODO: validator_state should be limited to valid state strings
     validator_state varchar NOT NULL,

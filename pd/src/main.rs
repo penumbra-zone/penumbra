@@ -12,7 +12,7 @@ use penumbra_proto::{
     light_wallet::light_wallet_server::LightWalletServer,
     thin_wallet::thin_wallet_server::ThinWalletServer,
 };
-use penumbra_stake::{FundingStream, Validator};
+use penumbra_stake::{FundingStream, FundingStreams, Validator};
 use rand_core::OsRng;
 use structopt::StructOpt;
 use tonic::transport::Server;
@@ -306,16 +306,22 @@ async fn main() -> anyhow::Result<()> {
                                     name: v.name.clone(),
                                     website: v.website.clone(),
                                     description: v.description.clone(),
-                                    funding_streams: v
-                                        .funding_streams
-                                        .iter()
-                                        .map(|fs| FundingStream {
+                                    funding_streams: FundingStreams::try_from(
+                                        v.funding_streams
+                                            .iter()
+                                            .map(|fs| {
+                                                FundingStream {
                                             address: Address::from_str(&fs.address).expect(
                                                 "invalid funding stream address in validators.json",
                                             ),
                                             rate_bps: fs.rate_bps,
-                                        })
-                                        .collect(),
+                                        }
+                                            })
+                                            .collect::<Vec<FundingStream>>(),
+                                    )
+                                    .expect(
+                                        "unable to construct funding streams from validators.json",
+                                    ),
                                     sequence_number: v.sequence_number,
                                 },
                                 power: v.voting_power.into(),
