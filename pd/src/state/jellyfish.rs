@@ -1,6 +1,7 @@
 use anyhow::Result;
 use futures::future::BoxFuture;
 use jmt::{
+    hash::HashValue,
     node_type::{LeafNode, Node, NodeKey},
     NodeBatch, TreeReaderAsync, TreeWriterAsync, Value,
 };
@@ -8,6 +9,18 @@ use sqlx::{query, Postgres};
 use tracing::instrument;
 
 use crate::State;
+
+pub enum Key {
+    NoteCommitmentAnchor,
+}
+
+impl Key {
+    pub fn hash(self) -> HashValue {
+        match self {
+            Key::NoteCommitmentAnchor => HashValue::sha3_256_of(b"nct"),
+        }
+    }
+}
 
 /// Wrapper struct used to implement [`jmt::TreeWriterAsync`] for a Postgres
 /// transaction, without violating the orphan rules.
@@ -30,8 +43,8 @@ where
 
                 query!(
                     r#"
-                INSERT INTO jmt (key, value) VALUES ($1, $2)
-                "#,
+                    INSERT INTO jmt (key, value) VALUES ($1, $2)
+                    "#,
                     &key_bytes,
                     &value_bytes
                 )
