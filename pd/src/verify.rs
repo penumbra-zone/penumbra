@@ -2,7 +2,9 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use anyhow::{Context, Error};
 use penumbra_crypto::{ka, merkle, note, Nullifier};
-use penumbra_stake::{Delegate, IdentityKey, RateData, Undelegate};
+use penumbra_stake::{
+    Delegate, IdentityKey, RateData, Undelegate, Validator, ValidatorDefinition, ValidatorInfo,
+};
 use penumbra_transaction::{Action, Transaction};
 
 /// `PendingTransaction` holds data after stateless checks have been applied.
@@ -19,6 +21,8 @@ pub struct PendingTransaction {
     pub delegations: Vec<Delegate>,
     /// Undelegations performed in this transaction.
     pub undelegations: Vec<Undelegate>,
+    /// Validators defined in the transaction.
+    pub validators: Vec<Validator>,
 }
 
 /// `VerifiedTransaction` represents a transaction after all checks have passed.
@@ -76,6 +80,7 @@ impl StatelessTransactionExt for Transaction {
         let mut new_notes = BTreeMap::<note::Commitment, NoteData>::new();
         let mut delegations = Vec::<Delegate>::new();
         let mut undelegations = Vec::<Undelegate>::new();
+        let mut validators = Vec::<Validator>::new();
 
         for action in self.transaction_body().actions {
             match action {
@@ -142,7 +147,9 @@ impl StatelessTransactionExt for Transaction {
                     // the binding signature.
                     undelegations.push(undelegate);
                 }
-                _ => todo!("unsupported action"),
+                _ => {
+                    return Err(anyhow::anyhow!("unsupported action"));
+                }
             }
         }
 
@@ -153,6 +160,7 @@ impl StatelessTransactionExt for Transaction {
             spent_nullifiers,
             delegations,
             undelegations,
+            validators,
         })
     }
 }

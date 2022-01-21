@@ -30,8 +30,6 @@ pub struct Validator {
     /// The destinations for the validator's staking reward. The commission is implicitly defined
     /// by the configuration of funding_streams, the sum of FundingStream.rate_bps.
     ///
-    /// NOTE: sum(FundingRate.rate_bps) should not exceed 100% (10000bps. For now, we ignore this
-    /// condition, in the future we should probably make it a slashable offense.
     // NOTE: unclaimed rewards are tracked by inserting reward notes for the last epoch into the
     // NCT at the beginning of each epoch
     pub funding_streams: Vec<FundingStream>,
