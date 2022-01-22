@@ -1,10 +1,12 @@
 use anyhow::Result;
 use futures::future::BoxFuture;
 use jmt::{
-    hash::HashValue,
+    define_hasher,
+    hash::{CryptoHasher, DefaultHasher, HashValue},
     node_type::{LeafNode, Node, NodeKey},
     NodeBatch, TreeReaderAsync, TreeWriterAsync, Value,
 };
+use once_cell::sync::{Lazy, OnceCell};
 use sqlx::{query, Postgres};
 use tracing::instrument;
 
@@ -17,9 +19,22 @@ pub enum Key {
 impl Key {
     pub fn hash(self) -> HashValue {
         match self {
-            Key::NoteCommitmentAnchor => HashValue::sha3_256_of(b"nct"),
+            Key::NoteCommitmentAnchor => {
+                let mut state = NoteCommitmentAnchorHasher::default();
+                state.update(b"");
+                state.finish()
+            }
         }
     }
+}
+
+define_hasher! {
+    (
+        NoteCommitmentAnchorHasher,
+        NOTE_COMMITMENT_ANCHOR_HASHER,
+        NOTE_COMMITMENT_ANCHOR_SEED,
+        b"nct"
+    )
 }
 
 /// Wrapper struct used to implement [`jmt::TreeWriterAsync`] for a Postgres
