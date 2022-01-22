@@ -63,6 +63,7 @@ metrics-exporter-prometheus = "0.6.1"
 http = "0.2"
 ed25519-consensus = "1.2"
 async-trait = "0.1.52"
+once_cell = "1.7.2"
 
 [build-dependencies]
 vergen = "5"
