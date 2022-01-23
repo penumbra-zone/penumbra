@@ -34,6 +34,7 @@ pub struct PendingBlock {
     /// If this is the last block of an epoch, validator rates for the next epoch go here.
     pub next_rates: Option<Vec<RateData>>,
     /// If this is the last block of an epoch, validator statuses for the next epoch go here.
+    // TODO: this should be combined with validator_state_changes
     pub next_validator_statuses: Option<Vec<ValidatorStatus>>,
     /// The net delegations performed in this block per validator.
     pub delegation_changes: BTreeMap<IdentityKey, i64>,
@@ -42,6 +43,8 @@ pub struct PendingBlock {
     reward_counter: u64,
     /// Records pending state changes to validators.
     pub validator_state_changes: BTreeMap<IdentityKey, ValidatorState>,
+    /// Records the validators that existed at the time the block was instantiated.
+    pub existing_validators: Vec<ValidatorInfo>,
 }
 
 impl PendingBlock {
@@ -60,6 +63,7 @@ impl PendingBlock {
             delegation_changes: BTreeMap::new(),
             reward_counter: 0,
             validator_state_changes: BTreeMap::new(),
+            existing_validators: Vec::new(),
         }
     }
 

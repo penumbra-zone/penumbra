@@ -259,6 +259,10 @@ impl App {
             self.note_commitment_tree.clone(),
             self.epoch_duration,
         ))));
+        for evidence in begin.byzantine_validators.iter() {
+            // TODO: instantiate Validator from evidence.validator.address
+            // and insert slash state into validator_state_changes of pending_block
+        }
         response::BeginBlock::default()
     }
 
