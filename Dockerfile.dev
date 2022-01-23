@@ -34,7 +34,7 @@ COPY .git ./.git
 # Fetch dependencies in a separate layer, so that they can be cached.
 RUN cargo fetch
 
-RUN cargo build --bin pd
+RUN cargo build --release --bin pd
 
 # Remove the cached builds of internal packages.
 RUN rm -rf pcli pd crypto wallet config stake
@@ -43,9 +43,9 @@ RUN rm -rf pcli pd crypto wallet config stake
 COPY . .
 
 # For dev leave off the `--release` flag as well for faster builds.
-RUN cargo build --bin pd && \
+RUN cargo build --release --bin pd && \
     mkdir -p /out && \
-    mv target/debug/pd /out/pd
+    mv target/release/pd /out/pd
 
 # Install the penumbra daemon into the runtime image.
 
