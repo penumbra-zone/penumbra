@@ -13,6 +13,8 @@ mod sequential;
 mod state;
 mod verify;
 mod wallet;
+mod consensus;
+mod stake;
 
 use sequential::Sequencer;
 
