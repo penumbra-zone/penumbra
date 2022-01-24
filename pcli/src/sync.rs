@@ -14,6 +14,9 @@ pub async fn sync(opt: &Opt, state: &mut ClientStateFile) -> Result<()> {
         .compact_block_range(tonic::Request::new(CompactBlockRangeRequest {
             start_height,
             end_height: 0,
+            chain_id: state
+                .chain_id()
+                .ok_or_else(|| anyhow::anyhow!("missing chain_id"))?,
         }))
         .await?
         .into_inner();
