@@ -27,6 +27,8 @@ tendermint-config = { git = "https://github.com/penumbra-zone/tendermint-rs.git"
 tendermint-proto = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "master" }
 tendermint = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "master" }
 jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git" }
+# tmp hack - added so it gets pulled into workspace, and thence rendered in rustdoc.penumbra.zone
+ics23 = { git = "https://github.com/penumbra-zone/ics23" }
 
 
 # External dependencies
