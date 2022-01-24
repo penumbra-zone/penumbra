@@ -70,7 +70,7 @@ To build the version of `pcli` compatible with the current testnet, check out th
 the current test net:
 
 ```bash
-cd penumbra && git checkout 003-eupheme
+cd penumbra && git checkout 004-thelxinoe
 ```
 
 #### Building the `pcli` wallet software
