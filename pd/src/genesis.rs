@@ -1,7 +1,7 @@
 use ark_ff::Zero;
 use decaf377::Fq;
 use penumbra_chain::params::ChainParams;
-use penumbra_crypto::{asset, Address, Note, Value, CURRENT_CHAIN_ID};
+use penumbra_crypto::{asset, Address, Note, Value};
 use penumbra_proto::{genesis as pb, Protobuf};
 use penumbra_stake::Validator;
 use serde::{Deserialize, Serialize};
@@ -164,7 +164,7 @@ impl Default for AppState {
     fn default() -> Self {
         AppState {
             chain_params: ChainParams {
-                chain_id: CURRENT_CHAIN_ID.to_string(),
+                chain_id: "".to_string(),
                 epoch_duration: 8640,
             },
             allocations: Vec::default(),

@@ -16,7 +16,7 @@ mod prf;
 pub mod proofs;
 pub mod value;
 
-pub use address::{Address, CURRENT_CHAIN_ID};
+pub use address::Address;
 pub use note::Note;
 pub use nullifier::Nullifier;
 pub use value::Value;
