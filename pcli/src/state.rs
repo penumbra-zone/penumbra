@@ -67,20 +67,19 @@ impl ClientStateFile {
     /// Commit the client state to disk.
     pub fn commit(&self) -> Result<()> {
         tracing::debug!("committing state");
-        // Open a new named temp file (this has to be a named temp file because we need to persist
-        // it and there's no platform-independent way to do this using an anonymous temp file)
-        let tmp = tempfile::NamedTempFile::new()?;
+
+        let tmp_path = self.path.with_extension("tmp");
 
         // Write the state to the temp file
-        let mut file = std::fs::OpenOptions::new()
+        let mut tmp_file = std::fs::OpenOptions::new()
             .create(true)
             .write(true)
             .truncate(true)
-            .open(tmp.path())?;
-        serde_json::to_writer_pretty(&mut file, &self.state)?;
+            .open(&tmp_path)?;
+        serde_json::to_writer_pretty(&mut tmp_file, &self.state)?;
 
         // Overwrite the existing wallet state file, *atomically*
-        tmp.persist(&self.path)?;
+        std::fs::rename(&tmp_path, &self.path)?;
 
         Ok(())
     }
