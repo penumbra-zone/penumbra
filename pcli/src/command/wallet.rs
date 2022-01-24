@@ -8,7 +8,6 @@ use rand_core::OsRng;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use structopt::StructOpt;
-use tempfile::NamedTempFile;
 
 use crate::ClientStateFile;
 
@@ -88,15 +87,20 @@ impl WalletCmd {
                 let wallet =
                     serde_json::from_reader::<_, MinimalState>(File::open(&wallet_path)?)?.wallet;
 
-                // Write the new wallet JSON to disk as a temporary file
-                let (mut tmp, tmp_path) = NamedTempFile::new()?.into_parts();
-                tmp.write_all(serde_json::to_string_pretty(&ClientState::new(wallet))?.as_bytes())?;
+                // Write the new wallet JSON to disk as a temporary file in the wallet directory
+                let tmp_path = wallet_path.with_extension("tmp");
+                let mut tmp_file = std::fs::OpenOptions::new()
+                    .create(true)
+                    .write(true)
+                    .truncate(true)
+                    .open(&tmp_path)?;
+                serde_json::to_writer_pretty(&mut tmp_file, &ClientState::new(wallet))?;
 
                 // Check that we can successfully parse the result from disk
-                ClientStateFile::load(tmp_path.to_path_buf()).context("can't parse wallet after attempting to reset: refusing to overwrite existing wallet file")?;
+                ClientStateFile::load(tmp_path.clone()).context("can't parse wallet after attempting to reset: refusing to overwrite existing wallet file")?;
 
-                // Move the temporary file over the original wallet file
-                tmp_path.persist(&wallet_path)?;
+                // Overwrite the existing wallet state file, *atomically*
+                std::fs::rename(&tmp_path, &wallet_path)?;
 
                 None
             }
