@@ -15,6 +15,8 @@ service LightWallet {
 
 // Requests a range of compact block data.
 message CompactBlockRangeRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 3;
   // The start height of the range.
   uint64 start_height = 1;
   // The end height of the range.
@@ -43,9 +45,14 @@ message StateFragment {
 
 // Requests the global configuration data for the chain.
 message ChainParamsRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
 }
 
 // Requests information on the chain's validators.
 message ValidatorInfoRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 2;
+  // Whether or not to return inactive validators
   bool show_inactive = 1;
 }

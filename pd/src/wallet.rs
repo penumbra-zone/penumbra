@@ -4,15 +4,14 @@ use futures::stream::{StreamExt, TryStreamExt};
 use penumbra_proto::{
     self as proto,
     chain::{AssetInfo, ChainParams},
-    crypto::AssetId,
     light_wallet::{
         light_wallet_server::LightWallet, ChainParamsRequest, CompactBlock,
         CompactBlockRangeRequest, ValidatorInfoRequest,
     },
     stake::ValidatorInfo,
     thin_wallet::{
-        thin_wallet_server::ThinWallet, Asset, AssetListRequest, TransactionByNoteRequest,
-        TransactionDetail, ValidatorRateRequest,
+        thin_wallet_server::ThinWallet, Asset, AssetListRequest, AssetLookupRequest,
+        TransactionByNoteRequest, TransactionDetail, ValidatorRateRequest, ValidatorStatusRequest,
     },
 };
 use penumbra_stake::IdentityKey;
@@ -76,6 +75,7 @@ impl LightWallet for state::Reader {
         let CompactBlockRangeRequest {
             start_height,
             end_height,
+            ..
         } = request.into_inner();
 
         let current_height = self
@@ -133,10 +133,15 @@ impl ThinWallet for state::Reader {
     #[instrument(skip(self, request))]
     async fn asset_lookup(
         &self,
-        request: tonic::Request<AssetId>,
+        request: tonic::Request<AssetLookupRequest>,
     ) -> Result<tonic::Response<AssetInfo>, Status> {
-        let asset_id = penumbra_crypto::asset::Id::try_from(request.into_inner())
-            .map_err(|_| tonic::Status::not_found("invalid asset ID"))?;
+        let asset_id = penumbra_crypto::asset::Id::try_from(
+            request
+                .into_inner()
+                .asset_id
+                .ok_or_else(|| tonic::Status::invalid_argument("missing asset id"))?,
+        )
+        .map_err(|_| tonic::Status::not_found("invalid asset ID"))?;
         tracing::debug!(?asset_id);
         let state = self.clone();
         let asset = state
@@ -179,7 +184,7 @@ tracing::debug!(asset_id = ?hex::encode(&asset.asset_id), asset_denom = ?asset.a
     #[instrument(skip(self, _request))]
     async fn validator_status(
         &self,
-        _request: tonic::Request<proto::stake::IdentityKey>,
+        _request: tonic::Request<ValidatorStatusRequest>,
     ) -> Result<tonic::Response<proto::stake::ValidatorStatus>, Status> {
         todo!()
     }
