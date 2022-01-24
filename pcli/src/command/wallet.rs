@@ -1,8 +1,8 @@
-use std::{fs::File, io::Write, path::PathBuf};
+use std::{fs::File, path::PathBuf};
 
 use anyhow::{anyhow, Context as _, Result};
 use directories::ProjectDirs;
-use penumbra_crypto::{keys::SpendSeed, CURRENT_CHAIN_ID};
+use penumbra_crypto::keys::SpendSeed;
 use penumbra_wallet::{ClientState, Wallet};
 use rand_core::OsRng;
 use serde::Deserialize;
@@ -130,7 +130,10 @@ impl WalletCmd {
                 // TODO the chain ID should be synced from the server if
                 // `chain_params` is `None` (meaning a new wallet file),
                 // as it could have changed via consensus.
-                .join(CURRENT_CHAIN_ID)
+                // TODO: we can't currently get this without already having a
+                // clientstatefile (fetch::chain_params), restore this
+                // functionality by making a request, or drop it?
+                // .join(CURRENT_CHAIN_ID)
                 .join(hex::encode(&spend_key_hash[0..8]));
             std::fs::create_dir_all(&wallet_archive_dir)
                 .expect("can create penumbra wallet archive directory");
