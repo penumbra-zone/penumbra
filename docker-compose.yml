@@ -1,18 +1,18 @@
 version: "3.7"
 services:
   # The Penumbra daemon
-  pd:
+  pd-node0:
     container_name: penumbra
     build:
       context: .
     environment:
       - RUST_LOG=${RUST_LOG:-warn,pd=info,penumbra=info}
     command: pd start --host 0.0.0.0 --database-uri
-      postgres://postgres:postgres@db/penumbra
+      postgres://postgres:postgres@db-node0/penumbra
     restart: on-failure
     networks:
       localnet:
-        ipv4_address: 192.167.10.6
+        ipv4_address: 192.167.10.10
     ports:
       - "26658:26658"
       - "26666:26666"
@@ -32,10 +32,47 @@ services:
       - ID=0
       - LOG=${LOG:-tendermint.log}
     depends_on:
-      - pd
+      - pd-node0
     networks:
       localnet:
-        ipv4_address: 192.167.10.2
+        ipv4_address: 192.167.10.11
+
+  # The Penumbra daemon
+  pd-node1:
+    container_name: penumbra
+    build:
+      context: .
+    environment:
+      - RUST_LOG=${RUST_LOG:-warn,pd=info,penumbra=info}
+    command: pd start --host 0.0.0.0 --database-uri
+      postgres://postgres:postgres@db-node1/penumbra
+    restart: on-failure
+    networks:
+      localnet:
+        ipv4_address: 192.167.10.20
+    ports:
+      - "26658:26658"
+      - "26666:26666"
+      - "26667:26667"
+
+  # The Tendermint node
+  tendermint-node1:
+    image: "tendermint/tendermint:latest"
+    container_name: tendermint-node1
+    ports:
+      - "26656:26656"
+      - "26657:26657"
+    volumes:
+      - ~/scratch/testnet_build/node1:/tendermint
+    command: start --proxy-app=tcp://pd:26658
+    environment:
+      - ID=1
+      - LOG=${LOG:-tendermint.log}
+    depends_on:
+      - pd-node1
+    networks:
+      localnet:
+        ipv4_address: 192.167.10.21
 
   # The Tendermint node
   # tendermint-node1:

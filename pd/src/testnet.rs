@@ -68,10 +68,16 @@ where
 /// https://github.com/tendermint/tendermint/blob/6291d22f46f4c4f9121375af700dbdafa51577e7/cmd/tendermint/commands/init.go#L45
 /// There exists https://github.com/informalsystems/tendermint-rs/blob/a12118978f2ffea4042d6d38ebfb290d12611314/config/src/config.rs#L23 but
 /// this seemed more straightforward as only the moniker is changed right now.
-pub fn generate_tm_config(node_name: &str) -> String {
+pub fn generate_tm_config(node_name: &str, persistent_peers: &[std::net::Ipv4Addr]) -> String {
+    let peers_string = persistent_peers
+        .iter()
+        .map(ToString::to_string)
+        .collect::<Vec<String>>()
+        .join(",");
     format!(
         include_str!("../../testnets/tm_config_template.toml"),
-        node_name
+        node_name,
+        peers_string,
     )
 }
 

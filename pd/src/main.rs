@@ -84,8 +84,8 @@ enum Command {
         /// Testnet name, e.g. `penumbra-euporie`
         #[structopt(short, long, default_value = "penumbra-thelxinoe")]
         chain_id: String,
-        /// IP Address to start `tendermint` nodes on. Increments by three to make room for `pd` and `postgres` per node.
-        #[structopt(short, long, default_value = "192.167.10.2")]
+        /// IP Address to start `tendermint` nodes on. Increments by ten to make room for `pd` and `postgres` per node.
+        #[structopt(short, long, default_value = "192.167.10.10")]
         starting_ip: Ipv4Addr,
     },
 }
@@ -284,6 +284,15 @@ async fn main() -> anyhow::Result<()> {
                 validator_keys.push(vk);
             }
 
+            let ip_addrs = validator_keys
+                .iter()
+                .enumerate()
+                .map(|(i, _vk)| {
+                    let a = starting_ip.octets();
+                    Ipv4Addr::new(a[0], a[1], a[2], a[3] + (10 * i as u8))
+                })
+                .collect::<Vec<_>>();
+
             for (n, vk) in validator_keys.iter().enumerate() {
                 let node_name = format!("node{}", n);
 
@@ -393,7 +402,7 @@ async fn main() -> anyhow::Result<()> {
                 // Note that this isn't a re-implementation of the `Config` type from
                 // Tendermint (https://github.com/tendermint/tendermint/blob/6291d22f46f4c4f9121375af700dbdafa51577e7/config/config.go#L92)
                 // so if they change their defaults or the available fields, that won't be reflected in our template.
-                let tm_config = generate_tm_config(&node_name);
+                let tm_config = generate_tm_config(&node_name, &ip_addrs);
                 let mut config_file_path = node_config_dir.clone();
                 config_file_path.push("config.toml");
                 println!(

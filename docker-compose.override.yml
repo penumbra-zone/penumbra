@@ -7,7 +7,7 @@ version: "3.7"
 # configuration for prod deployments.
 services:
   # for local development, configure the penumbra daemon with more logging.
-  pd:
+  pd-node0:
     environment:
       - RUST_LOG=${RUST_LOG:-warn,pd=debug,penumbra=debug}
     build:
@@ -15,18 +15,18 @@ services:
       # target
       dockerfile: Dockerfile.dev
     command: pd start --host 0.0.0.0 --database-uri
-      postgres://postgres:postgres@db/penumbra
+      postgres://postgres:postgres@db-node0/penumbra
     depends_on:
-      - db
-    links:
-      - db:db
+      - db-node0
+    #links:
+    #  - db:db
 
   # database - postgres - on prod we are using managed DB instances
-  db:
+  db-node0:
     image: postgres:13.0
     container_name: db
     volumes:
-      - "db_data:/var/lib/postgresql/data"
+      - "db_node0_data:/var/lib/postgresql/data"
     environment:
       - POSTGRES_DB=penumbra
       - POSTGRES_USER=postgres
@@ -37,6 +37,38 @@ services:
     # expose database on a port so it is easy to play with
     ports:
       - "5432:5432"
+
+  # for local development, configure the penumbra daemon with more logging.
+  pd-node1:
+    environment:
+      - RUST_LOG=${RUST_LOG:-warn,pd=debug,penumbra=debug}
+    build:
+      # Use the dev Dockerfile which has better cacheing and doesn't use the release
+      # target
+      dockerfile: Dockerfile.dev
+    command: pd start --host 0.0.0.0 --database-uri
+      postgres://postgres:postgres@db-node1/penumbra
+    depends_on:
+      - db-node1
+    #links:
+    #  - db:db
+
+  # database - postgres - on prod we are using managed DB instances
+  db-node1:
+    image: postgres:13.0
+    container_name: db
+    volumes:
+      - "db_node1_data:/var/lib/postgresql/data"
+    environment:
+      - POSTGRES_DB=penumbra
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    networks:
+      localnet:
+        ipv4_address: 192.167.10.22
+    # expose database on a port so it is easy to play with
+    #ports:
+    #  - "5432:5432"
 
   # add prometheus and grafana
   #
@@ -76,7 +108,8 @@ services:
 
 volumes:
   prometheus_data: {}
-  db_data: {}
+  db_node0_data: {}
+  db_node1_data: {}
 
 networks:
   # add a separate network for grafana and prometheus to talk to each other.
