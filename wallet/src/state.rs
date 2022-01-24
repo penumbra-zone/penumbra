@@ -4,7 +4,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use penumbra_chain::params::ChainParams;
 use penumbra_crypto::{
     asset::{self, Denom},
@@ -252,13 +252,9 @@ impl ClientState {
         }
     }
 
-    pub fn chain_id(&self) -> Result<String, anyhow::Error> {
-        let chain_params = self.chain_params();
-        if chain_params.is_none() {
-            return Err(anyhow::anyhow!("chain_params not set on state"));
-        }
-
-        Ok(chain_params.unwrap().chain_id.clone())
+    /// Returns the chain id, if the chain parameters are set.
+    pub fn chain_id(&self) -> Option<String> {
+        self.chain_params().map(|p| p.chain_id.clone())
     }
 
     /// Generate a new transaction delegating stake
@@ -281,7 +277,7 @@ impl ClientState {
 
         tx_builder
             .set_fee(fee)
-            .set_chain_id(self.chain_id()?)
+            .set_chain_id(self.chain_id().ok_or_else(|| anyhow!("missing chain_id"))?)
             .add_delegation(&rate_data, unbonded_amount);
 
         let spend_amount = unbonded_amount + fee;
@@ -350,7 +346,7 @@ impl ClientState {
 
         tx_builder
             .set_fee(fee)
-            .set_chain_id(self.chain_id()?)
+            .set_chain_id(self.chain_id().ok_or_else(|| anyhow!("missing chain_id"))?)
             .add_undelegation(&rate_data, delegation_amount);
 
         // Because the outputs of an undelegation are quarantined, we want to
@@ -431,7 +427,9 @@ impl ClientState {
     ) -> Result<Transaction, anyhow::Error> {
         let mut tx_builder = Transaction::build_with_root(self.note_commitment_tree.root2());
 
-        tx_builder.set_fee(fee).set_chain_id(self.chain_id()?);
+        tx_builder
+            .set_fee(fee)
+            .set_chain_id(self.chain_id().ok_or_else(|| anyhow!("missing chain_id"))?);
 
         let mut output_value = HashMap::<Denom, u64>::new();
         for Value { amount, asset_id } in values {

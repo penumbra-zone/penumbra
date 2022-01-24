@@ -10,7 +10,9 @@ pub async fn assets(opt: &Opt, state: &mut ClientStateFile) -> Result<()> {
     let mut client = opt.thin_wallet_client().await?;
 
     // Update asset registry.
-    let request = tonic::Request::new(AssetListRequest {});
+    let request = tonic::Request::new(AssetListRequest {
+        chain_id: state.chain_id().unwrap_or_default(),
+    });
     let mut stream = client.asset_list(request).await?.into_inner();
     while let Some(asset) = stream.message().await? {
         state.asset_cache_mut().extend(std::iter::once(
@@ -33,7 +35,9 @@ pub async fn chain_params(opt: &Opt, state: &mut ClientStateFile) -> Result<()> 
     let mut client = opt.light_wallet_client().await?;
 
     let params = client
-        .chain_params(tonic::Request::new(ChainParamsRequest {}))
+        .chain_params(tonic::Request::new(ChainParamsRequest {
+            chain_id: state.chain_id().unwrap_or_default(),
+        }))
         .await?
         .into_inner()
         .into();

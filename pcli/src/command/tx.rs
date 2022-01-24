@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use penumbra_crypto::{memo, merkle::TreeExt, Value};
 use penumbra_transaction::Transaction;
 use rand_core::OsRng;
@@ -119,7 +119,11 @@ async fn sweep(opt: &Opt, state: &mut ClientStateFile) -> Result<()> {
                 tracing::info!(?denom, "building sweep transaction");
                 let mut tx_builder =
                     Transaction::build_with_root(state.note_commitment_tree().root2());
-                tx_builder.set_fee(0).set_chain_id(state.chain_id()?);
+                tx_builder.set_fee(0).set_chain_id(
+                    state
+                        .chain_id()
+                        .ok_or_else(|| anyhow!("missing chain_id"))?,
+                );
 
                 for note in group {
                     tx_builder.add_spend(
