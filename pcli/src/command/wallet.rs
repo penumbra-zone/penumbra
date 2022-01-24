@@ -8,7 +8,6 @@ use rand_core::OsRng;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use structopt::StructOpt;
-use tempfile::NamedTempFile;
 
 use crate::ClientStateFile;
 
