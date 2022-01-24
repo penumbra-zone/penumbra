@@ -96,7 +96,7 @@ impl FromStr for Value {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let re = Regex::new(r"^([0-9.]+)(.+)$").unwrap();
+        let re = Regex::new(r"^([0-9.]+)([^0-9.].*)$").unwrap();
 
         if let Some(captures) = re.captures(s) {
             let numeric_str = captures.get(1).expect("matched regex").as_str();
