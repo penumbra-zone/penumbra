@@ -27,9 +27,8 @@ impl Opt {
 
         tracing::info!("{}", rsp);
 
-        let result = rsp
-            .get("result")
-            .ok_or_else(|| anyhow::anyhow!("could not parse JSON response"))?;
+        // Sometimes the result is in a result key, and sometimes it's bare? (??)
+        let result = rsp.get("result").unwrap_or(&rsp);
 
         let code = result
             .get("code")
