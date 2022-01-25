@@ -114,9 +114,9 @@ impl State {
                 validator.identity_key.encode_to_vec(),
                 validator.consensus_key.to_bytes(),
                 validator.sequence_number as i64,
-                validator.name.clone(),
-                validator.website.clone(),
-                validator.description.clone(),
+                validator.name,
+                validator.website,
+                validator.description,
                 power.value() as i64,
                 // TODO: use real ValidatorState here (ok for now because all validators
                 // in genesis start in ACTIVE state)
@@ -533,9 +533,9 @@ impl State {
                     validator: Validator {
                         identity_key: identity_key.clone(),
                         consensus_key: consensus_key.clone(),
-                        name: row.name.clone(),
-                        website: row.website.clone(),
-                        description: row.description.clone(),
+                        name: row.name,
+                        website: row.website,
+                        description: row.description,
                         // TODO: Implement
                         funding_streams: FundingStreams::new(),
                         sequence_number: row.sequence_number as u32,

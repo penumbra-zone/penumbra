@@ -296,7 +296,7 @@ async fn main() -> anyhow::Result<()> {
                     validators: validators
                         .iter()
                         .map(|v| {
-                            ValidatorPower {
+                            Ok(ValidatorPower {
                                 validator: Validator {
                                     // Currently there's no way to set validator keys beyond
                                     // manually editing the genesis.json. Otherwise they
@@ -310,24 +310,24 @@ async fn main() -> anyhow::Result<()> {
                                         v.funding_streams
                                             .iter()
                                             .map(|fs| {
-                                                FundingStream {
-                                            address: Address::from_str(&fs.address).expect(
-                                                "invalid funding stream address in validators.json",
-                                            ),
+                                                Ok(FundingStream {
+                                            address: Address::from_str(&fs.address).map_err(|_|
+                                                anyhow::anyhow!("invalid funding stream address in validators.json"),
+                                            )?,
                                             rate_bps: fs.rate_bps,
-                                        }
+                                        })
                                             })
-                                            .collect::<Vec<FundingStream>>(),
+                                            .collect::<Result<Vec<FundingStream>, anyhow::Error>>()?,
                                     )
-                                    .expect(
-                                        "unable to construct funding streams from validators.json",
-                                    ),
+                                    .map_err(|_|
+                                        anyhow::anyhow!("unable to construct funding streams from validators.json"),
+                                    )?,
                                     sequence_number: v.sequence_number,
                                 },
                                 power: v.voting_power.into(),
-                            }
+                            })
                         })
-                        .collect(),
+                        .collect::<Result<Vec<ValidatorPower>,anyhow::Error>>()?,
                 };
 
                 // Create the directory for this node
