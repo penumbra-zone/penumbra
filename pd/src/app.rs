@@ -15,8 +15,8 @@ use penumbra_crypto::{
     note, Nullifier,
 };
 use penumbra_stake::{
-    Epoch, IdentityKey, RateData, ValidatorState, ValidatorStatus, STAKING_TOKEN_ASSET_ID,
-    STAKING_TOKEN_DENOM,
+    Epoch, IdentityKey, RateData, ValidatorInfo, ValidatorState, ValidatorStatus,
+    STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
 };
 use penumbra_transaction::Transaction;
 use tendermint::abci::{
@@ -128,15 +128,17 @@ impl App {
         init_chain: request::InitChain,
     ) -> impl Future<Output = Result<Response, BoxError>> {
         tracing::info!(?init_chain);
+
+        // Create a genesis transaction to record genesis notes.
+        let mut tx_builder = Transaction::genesis_builder();
+
+        // TODO: Is it important if the PendingBlock created here has the existing_validators set?
         let mut genesis_block = PendingBlock::new(NoteCommitmentTree::new(0), self.epoch_duration);
         genesis_block.set_height(0);
 
         // Note that errors cannot be handled in InitChain, the application must crash.
         let app_state: genesis::AppState = serde_json::from_slice(&init_chain.app_state_bytes)
             .expect("can parse app_state in genesis file");
-
-        // Create a genesis transaction to record genesis notes.
-        let mut tx_builder = Transaction::genesis_builder();
 
         for allocation in &app_state.allocations {
             tracing::info!(?allocation, "processing allocation");
@@ -254,16 +256,39 @@ impl App {
         Default::default()
     }
 
-    fn begin_block(&mut self, begin: BeginBlock) -> response::BeginBlock {
+    fn begin_block(
+        &mut self,
+        begin: BeginBlock,
+    ) -> impl Future<Output = Result<response::BeginBlock, anyhow::Error>> {
         self.pending_block = Some(Arc::new(Mutex::new(PendingBlock::new(
             self.note_commitment_tree.clone(),
             self.epoch_duration,
         ))));
+
         for evidence in begin.byzantine_validators.iter() {
             // TODO: instantiate Validator from evidence.validator.address
             // and insert slash state into validator_state_changes of pending_block
+            let ck = tendermint::PublicKey::from_raw_ed25519(&evidence.validator.address)
+                .ok_or_else(|| anyhow::anyhow!("invalid ed25519 consensus pubkey from tendermint"))
+                .unwrap();
+
+            // This validator is expected to exist in the `existing_validators` for the pending block.
+            // let validator = self.pending_block.exi
         }
-        response::BeginBlock::default()
+
+        let state = self.state.clone();
+        let pending_block_ref = self.pending_block.clone();
+        async move {
+            let existing_validators = state.validator_info(true).await?;
+            pending_block_ref
+                .as_ref()
+                .expect("pending_block must be Some at end of BeginBlock")
+                .lock()
+                .unwrap()
+                .set_existing_validators(existing_validators);
+
+            Ok(response::BeginBlock::default())
+        }
     }
 
     /// Perform checks before adding a transaction into the mempool via `CheckTx`.
@@ -289,11 +314,28 @@ impl App {
         let mempool_nullifiers = self.mempool_nullifiers.clone();
         let recent_anchors = self.recent_anchors.clone();
         let next_rate_data = self.next_rate_data.clone();
+        // Clone a handle to the PendingBlock that we can move into the future
+        // below.  It's important not to retain a guard after aquiring a lock,
+        // since we'll be locking in an async context.
+        let pending_block = self
+            .pending_block
+            .as_ref()
+            .expect("pending_block must be Some in CheckTx")
+            .clone();
 
         async move {
+            let existing_validators = pending_block
+                .lock()
+                .expect("pending_block must be Some in CheckTx")
+                .existing_validators
+                .clone();
             let transaction = Transaction::try_from(request.tx.as_ref())?
                 .verify_stateless()?
-                .verify_stateful(&recent_anchors, &next_rate_data.read().unwrap())?;
+                .verify_stateful(
+                    &recent_anchors,
+                    &next_rate_data.read().unwrap(),
+                    &existing_validators,
+                )?;
 
             // Ensure we do not add any transactions with duplicate nullifiers into the mempool.
             //
@@ -344,12 +386,28 @@ impl App {
         let state = self.state.clone();
         let recent_anchors = self.recent_anchors.clone();
         let next_rate_data = self.next_rate_data.clone();
-        let pending_block_ref = self.pending_block.clone();
+        // Clone a handle to the PendingBlock that we can move into the future
+        // below.  It's important not to retain a guard after aquiring a lock,
+        // since we'll be locking in an async context.
+        let pending_block = self
+            .pending_block
+            .as_ref()
+            .expect("pending_block must be Some in EndBlock")
+            .clone();
 
         async move {
+            let existing_validators = pending_block
+                .lock()
+                .expect("pending_block must be Some in DeliverTx")
+                .existing_validators
+                .clone();
             let transaction = Transaction::try_from(txbytes.as_ref())?
                 .verify_stateless()?
-                .verify_stateful(&recent_anchors, &next_rate_data.read().unwrap())?;
+                .verify_stateful(
+                    &recent_anchors,
+                    &next_rate_data.read().unwrap(),
+                    &existing_validators,
+                )?;
 
             for nullifier in transaction.spent_nullifiers.clone() {
                 // verify that we're not spending a nullifier that was already spent in a previous block
@@ -365,11 +423,9 @@ impl App {
                     ));
                 };
                 // verify that we're not spending a nullifier that was already spent in this block
-                if pending_block_ref
-                    .as_ref()
-                    .expect("pending_block must be Some in DeliverTx")
+                if pending_block
                     .lock()
-                    .unwrap()
+                    .expect("pending_block must be Some in DeliverTx")
                     .spent_nullifiers
                     .contains(&nullifier)
                 {
@@ -381,10 +437,9 @@ impl App {
             }
 
             // We accumulate data only for `VerifiedTransaction`s into `PendingBlock`.
-            pending_block_ref
-                .expect("pending_block must be Some in DeliverTx")
+            pending_block
                 .lock()
-                .unwrap()
+                .expect("pending_block must be Some in DeliverTx")
                 .add_transaction(transaction);
 
             metrics::increment_counter!("node_transactions_total");
@@ -669,7 +724,28 @@ impl Service<Request> for App {
                     .instrument(Span::current())
                     .boxed();
                 }
-                Request::BeginBlock(begin) => Response::BeginBlock(self.begin_block(begin)),
+                Request::BeginBlock(begin) => {
+                    let rsp = self.begin_block(begin);
+                    let rsp = self.sequencer.execute(rsp.instrument(Span::current()));
+                    return async move {
+                        let rsp = rsp.await;
+                        tracing::info!(?rsp);
+                        match rsp {
+                            Ok(bb) => Ok(Response::BeginBlock(bb)),
+                            // Tendermint doesn't have any way of handling error responses from
+                            // BeginBlock.
+                            // https://github.com/tendermint/tendermint/issues/3755
+                            Err(e) => {
+                                tracing::info!("unexpected error in BeginBlock: {}", e);
+                                Ok(Response::BeginBlock(response::BeginBlock {
+                                    ..Default::default()
+                                }))
+                            }
+                        }
+                    }
+                    .instrument(Span::current())
+                    .boxed();
+                }
                 Request::DeliverTx(deliver_tx) => {
                     // Process DeliverTx messages sequentially.
                     let rsp = self.deliver_tx(deliver_tx.tx);

@@ -197,7 +197,7 @@ impl StatefulTransactionExt for PendingTransaction {
         for v in &self.validators {
             let existing_v: Vec<&ValidatorInfo> = existing_validators
                 .iter()
-                .filter(|z| z.validator().identity_key == v.identity_key)
+                .filter(|z| z.validator.identity_key == v.identity_key)
                 .collect();
 
             if existing_v.len() == 0 {
@@ -206,7 +206,7 @@ impl StatefulTransactionExt for PendingTransaction {
             } else {
                 // This is an existing validator definition. Ensure that the highest
                 // existing sequence number is less than the new sequence number.
-                let current_seq = existing_v.iter().map(|z| z.validator().sequence_number).max().ok_or_else(|| {anyhow::anyhow!("Validator with this ID key existed but had no existing sequence numbers")})?;
+                let current_seq = existing_v.iter().map(|z| z.validator.sequence_number).max().ok_or_else(|| {anyhow::anyhow!("Validator with this ID key existed but had no existing sequence numbers")})?;
                 if v.sequence_number <= current_seq {
                     return Err(anyhow::anyhow!(
                         "Expected sequence numbers to be increasing. Current sequence number is {}",

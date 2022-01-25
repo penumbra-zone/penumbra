@@ -75,6 +75,11 @@ impl PendingBlock {
         epoch
     }
 
+    /// The initial validator set is set in the pending block during begin_block.
+    pub fn set_existing_validators(&mut self, existing_validators: Vec<ValidatorInfo>) {
+        self.existing_validators = existing_validators;
+    }
+
     /// Adds a reward output for a validator's funding stream.
     pub fn add_validator_reward_note(&mut self, amount: u64, destination: Address) {
         let val = Value {
