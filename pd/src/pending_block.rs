@@ -11,6 +11,7 @@ use penumbra_stake::{
     STAKING_TOKEN_ASSET_ID,
 };
 use std::collections::{BTreeMap, BTreeSet};
+use tracing::instrument;
 
 use crate::verify::{NoteData, PositionedNoteData, VerifiedTransaction};
 
@@ -81,7 +82,13 @@ impl PendingBlock {
     }
 
     /// Adds a reward output for a validator's funding stream.
+    #[instrument(skip(self, destination), fields(destination = %destination))]
     pub fn add_validator_reward_note(&mut self, amount: u64, destination: Address) {
+        if amount == 0 {
+            // Skip adding an empty note to the chain.
+            return;
+        }
+
         let val = Value {
             amount,
             asset_id: *STAKING_TOKEN_ASSET_ID,
@@ -102,11 +109,14 @@ impl PendingBlock {
         )
         .unwrap();
         let commitment = note.commit();
+
+        tracing::debug!(?note, ?commitment);
+
         let esk = ka::Secret::new_from_field(Fr::one());
         let encrypted_note = note.encrypt(&esk);
 
         let note_data = NoteData {
-            ephemeral_key: esk.public(),
+            ephemeral_key: esk.diversified_public(&note.diversified_generator()),
             encrypted_note,
             transaction_id: [0; 32],
         };
