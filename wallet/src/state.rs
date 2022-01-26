@@ -237,7 +237,7 @@ impl ClientState {
     }
 
     /// Generate a new transaction delegating stake
-    #[instrument(skip(self, rng))]
+    #[instrument(skip(self, rng, rate_data))]
     pub fn build_delegate<R: RngCore + CryptoRng>(
         &mut self,
         rng: &mut R,
