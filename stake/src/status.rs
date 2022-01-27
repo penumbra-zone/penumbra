@@ -1,6 +1,7 @@
+use std::str::FromStr;
+
 use penumbra_proto::{stake as pb, Protobuf};
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
 
 use crate::IdentityKey;
 

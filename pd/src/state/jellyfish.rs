@@ -10,7 +10,7 @@ use once_cell::sync::{Lazy, OnceCell};
 use sqlx::{query, Postgres};
 use tracing::instrument;
 
-use crate::State;
+use crate::state;
 
 pub enum Key {
     NoteCommitmentAnchor,
@@ -72,7 +72,7 @@ where
     }
 }
 
-impl<V: Value> TreeReaderAsync<V> for State {
+impl<V: Value> TreeReaderAsync<V> for state::Reader {
     /// Gets node given a node key. Returns `None` if the node does not exist.
     #[instrument(skip(self))]
     fn get_node_option<'future, 'a: 'future, 'n: 'future>(

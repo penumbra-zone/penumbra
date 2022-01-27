@@ -33,6 +33,42 @@
       "nullable": []
     }
   },
+  "1329be38905d802df374dc416fd0ce36d0b556af2d3d07d6248722b7025bfe3d": {
+    "query": "SELECT identity_key, epoch, validator_reward_rate, validator_exchange_rate\n            FROM validator_rates\n            WHERE epoch = (SELECT MAX(epoch) from base_rates)",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "identity_key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 1,
+          "name": "epoch",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 2,
+          "name": "validator_reward_rate",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 3,
+          "name": "validator_exchange_rate",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "302a33ec1eec61c43e6b5507b6e059e3c9f61c6da3c853ec9c6d4c815d04df61": {
     "query": "SELECT height, note_commitment, ephemeral_key, encrypted_note\n                    FROM notes\n                    WHERE height BETWEEN $1 AND $2\n                    ORDER BY position ASC",
     "describe": {
@@ -137,6 +173,26 @@
         ]
       },
       "nullable": []
+    }
+  },
+  "5f0f6af5d9b30fbea0e33d478e61d311cd065dd0552bfc3988710b6655a3cd1c": {
+    "query": "SELECT nullifier FROM nullifiers WHERE nullifier = ANY($1)",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "nullifier",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "ByteaArray"
+        ]
+      },
+      "nullable": [
+        false
+      ]
     }
   },
   "68ecee6442fbca8293efe210d7b798e0a070f2be083b074583048ac513c3dc96": {
@@ -524,24 +580,6 @@
       },
       "nullable": [
         false
-      ]
-    }
-  },
-  "bf52f1b1ec94ff12c0d86fe2021370784dd9de97ad2bea79856aa624444fa142": {
-    "query": "SELECT true",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "bool",
-          "type_info": "Bool"
-        }
-      ],
-      "parameters": {
-        "Left": []
-      },
-      "nullable": [
-        null
       ]
     }
   },
