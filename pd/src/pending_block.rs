@@ -81,6 +81,20 @@ impl PendingBlock {
         self.existing_validators = existing_validators;
     }
 
+    /// Apply a state transition to a given validator.
+    ///
+    /// TODO: Validation of state machine semantics here?
+    /// Otherwise state machine semantics are split across various functions and may not
+    /// be held invariant.
+    pub fn transition_validator_state(
+        &mut self,
+        validator: &ValidatorInfo,
+        new_state: ValidatorState,
+    ) {
+        self.validator_state_changes
+            .insert(validator.validator.identity_key, new_state);
+    }
+
     /// Adds a reward output for a validator's funding stream.
     #[instrument(skip(self, destination), fields(destination = %destination))]
     pub fn add_validator_reward_note(&mut self, amount: u64, destination: Address) {

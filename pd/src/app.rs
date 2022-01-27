@@ -265,17 +265,6 @@ impl App {
             self.epoch_duration,
         ))));
 
-        for evidence in begin.byzantine_validators.iter() {
-            // TODO: instantiate Validator from evidence.validator.address
-            // and insert slash state into validator_state_changes of pending_block
-            let ck = tendermint::PublicKey::from_raw_ed25519(&evidence.validator.address)
-                .ok_or_else(|| anyhow::anyhow!("invalid ed25519 consensus pubkey from tendermint"))
-                .unwrap();
-
-            // This validator is expected to exist in the `existing_validators` for the pending block.
-            // let validator = self.pending_block.exi
-        }
-
         let state = self.state.clone();
         let pending_block_ref = self.pending_block.clone();
         async move {
@@ -285,7 +274,42 @@ impl App {
                 .expect("pending_block must be Some at end of BeginBlock")
                 .lock()
                 .unwrap()
-                .set_existing_validators(existing_validators);
+                .set_existing_validators(existing_validators.clone());
+
+            for evidence in begin.byzantine_validators.iter() {
+                // TODO: instantiate Validator from evidence.validator.address
+                // and insert slash state into validator_state_changes of pending_block
+                let ck = tendermint::PublicKey::from_raw_ed25519(&evidence.validator.address)
+                    .ok_or_else(|| {
+                        anyhow::anyhow!("invalid ed25519 consensus pubkey from tendermint")
+                    })
+                    .unwrap();
+
+                // This validator is expected to exist in the `existing_validators` for the pending block.
+                // It should be safe to use the same `existing_validators` cloned above rather than fetching
+                // from pending_block, as we are still within BeginBlock.
+                let matched_validators: Vec<&ValidatorInfo> = existing_validators
+                    .iter()
+                    .filter(|v| v.validator.consensus_key == ck)
+                    .collect();
+
+                if matched_validators.len() != 1 {
+                    // the byzantine validator is expected to be found exactly once
+                    // so this indicates data consistency issues
+                    return Err(anyhow::anyhow!(
+                        "byzantine validator expected to appear exactly once in existing_validators"
+                    ));
+                }
+
+                let validator = matched_validators[0];
+
+                pending_block_ref
+                    .as_ref()
+                    .expect("pending_block must be Some at end of BeginBlock")
+                    .lock()
+                    .unwrap()
+                    .transition_validator_state(validator, ValidatorState::Slashed);
+            }
 
             Ok(response::BeginBlock::default())
         }
