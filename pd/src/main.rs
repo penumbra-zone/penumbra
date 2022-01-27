@@ -5,7 +5,6 @@ use std::{
 };
 
 use metrics_exporter_prometheus::PrometheusBuilder;
-use pd::{App, State};
 use penumbra_chain::params::ChainParams;
 use penumbra_crypto::rdsa::{SigningKey, SpendAuth, VerificationKey};
 use penumbra_proto::{
@@ -126,11 +125,12 @@ async fn main() -> anyhow::Result<()> {
                 "starting pd"
             );
             // Initialize state
-            let state = State::connect(&database_uri).await.unwrap();
+            let (state_reader, state_writer) = pd::state::new(&database_uri).await?;
 
-            let abci_app = App::new(state.clone()).await.unwrap();
-
-            let (consensus, mempool, snapshot, info) = tower_abci::split::service(abci_app, 10);
+            let consensus = pd::Consensus::new(state_writer).await?;
+            let mempool = pd::Mempool::new(state_reader.clone());
+            let info = pd::Info::new(state_reader.clone());
+            let snapshot = pd::Snapshot {};
 
             let abci_server = tokio::spawn(
                 tower_abci::Server::builder()
@@ -149,7 +149,7 @@ async fn main() -> anyhow::Result<()> {
                         Some(remote_addr) => tracing::error_span!("light_wallet", ?remote_addr),
                         None => tracing::error_span!("light_wallet"),
                     })
-                    .add_service(LightWalletServer::new(state.clone()))
+                    .add_service(LightWalletServer::new(state_reader.clone()))
                     .serve(
                         format!("{}:{}", host, light_wallet_port)
                             .parse()
@@ -162,7 +162,7 @@ async fn main() -> anyhow::Result<()> {
                         Some(remote_addr) => tracing::error_span!("thin_wallet", ?remote_addr),
                         None => tracing::error_span!("thin_wallet"),
                     })
-                    .add_service(ThinWalletServer::new(state.clone()))
+                    .add_service(ThinWalletServer::new(state_reader.clone()))
                     .serve(
                         format!("{}:{}", host, thin_wallet_port)
                             .parse()
@@ -196,7 +196,7 @@ async fn main() -> anyhow::Result<()> {
             // setting in the Go tendermint binary. Populating the persistent
             // peers will be useful in local setups until peer discovery via a seed
             // works.
-            starting_ip,
+            starting_ip: _,
             epoch_duration,
             allocations_input_file,
             validators_input_file,

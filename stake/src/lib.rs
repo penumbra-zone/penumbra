@@ -18,7 +18,7 @@ pub use epoch::Epoch;
 pub use funding_stream::FundingStream;
 pub use identity_key::IdentityKey;
 pub use info::ValidatorInfo;
-pub use rate::{BaseRateData, RateData};
+pub use rate::{BaseRateData, RateData, RateDataById};
 pub use status::{ValidatorState, ValidatorStateName, ValidatorStatus};
 pub use token::DelegationToken;
 pub use undelegate::Undelegate;

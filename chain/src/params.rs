@@ -62,3 +62,12 @@ impl From<ChainParams> for pb::ChainParams {
         }
     }
 }
+
+impl Default for ChainParams {
+    fn default() -> Self {
+        Self {
+            chain_id: String::new(),
+            epoch_duration: 8640,
+        }
+    }
+}

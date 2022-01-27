@@ -21,10 +21,10 @@ use tokio_stream::wrappers::ReceiverStream;
 use tonic::Status;
 use tracing::{instrument, Instrument, Span};
 
-use crate::State;
+use crate::state;
 
 #[tonic::async_trait]
-impl LightWallet for State {
+impl LightWallet for state::Reader {
     type CompactBlockRangeStream =
         Pin<Box<dyn futures::Stream<Item = Result<CompactBlock, tonic::Status>> + Send>>;
 
@@ -110,7 +110,7 @@ impl LightWallet for State {
 }
 
 #[tonic::async_trait]
-impl ThinWallet for State {
+impl ThinWallet for state::Reader {
     type AssetListStream = ReceiverStream<Result<Asset, Status>>;
 
     #[instrument(skip(self, request))]

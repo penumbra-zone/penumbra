@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use penumbra_proto::{
     stake::{self as pb},
     Protobuf,
@@ -5,6 +7,8 @@ use penumbra_proto::{
 use serde::{Deserialize, Serialize};
 
 use crate::{FundingStream, IdentityKey};
+
+pub type RateDataById = BTreeMap<IdentityKey, RateData>;
 
 /// Describes a validator's reward rate and voting power in some epoch.
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]

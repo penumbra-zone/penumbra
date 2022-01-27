@@ -1,7 +1,7 @@
 use sha2::{Digest, Sha256};
 use tendermint::abci::{
     request::{BeginBlock, CheckTx, DeliverTx, EndBlock, InitChain, Query},
-    Request,
+    ConsensusRequest, InfoRequest, MempoolRequest, Request, SnapshotRequest,
 };
 use tracing::error_span;
 
@@ -9,6 +9,72 @@ pub trait RequestExt {
     /// Create a [`tracing::Span`] for this request, including the request name
     /// and some relevant context (but not including the entire request data).
     fn create_span(&self) -> tracing::Span;
+}
+
+impl RequestExt for ConsensusRequest {
+    fn create_span(&self) -> tracing::Span {
+        // Create a parent "abci" span. All of these spans are at error level, so they're always recorded.
+        let p = error_span!("abci");
+        match self {
+            ConsensusRequest::BeginBlock(BeginBlock { hash, header, .. }) => {
+                error_span!(parent: &p, "BeginBlock", height = ?header.height, hash = ?hex::encode(hash.as_ref()))
+            }
+            ConsensusRequest::DeliverTx(DeliverTx { tx }) => {
+                error_span!(parent: &p, "DeliverTx", txid = ?hex::encode(&Sha256::digest(tx.as_ref())))
+            }
+            ConsensusRequest::EndBlock(EndBlock { height }) => {
+                error_span!(parent: &p, "EndBlock", ?height)
+            }
+            ConsensusRequest::Commit => error_span!(parent: &p, "Commit"),
+            ConsensusRequest::InitChain(InitChain { chain_id, .. }) => {
+                error_span!(parent: &p, "InitChain", ?chain_id)
+            }
+        }
+    }
+}
+
+impl RequestExt for MempoolRequest {
+    fn create_span(&self) -> tracing::Span {
+        // Create a parent "abci" span. All of these spans are at error level, so they're always recorded.
+        let p = error_span!("abci");
+        match self {
+            MempoolRequest::CheckTx(CheckTx { kind, tx }) => {
+                error_span!(parent: &p, "CheckTx", ?kind, txid = ?hex::encode(&Sha256::digest(tx.as_ref())))
+            }
+        }
+    }
+}
+
+impl RequestExt for InfoRequest {
+    fn create_span(&self) -> tracing::Span {
+        // Create a parent "abci" span. All of these spans are at error level, so they're always recorded.
+        let p = error_span!("abci");
+        match self {
+            InfoRequest::Info(_) => error_span!(parent: &p, "Info"),
+            InfoRequest::Query(Query {
+                path,
+                height,
+                prove,
+                ..
+            }) => {
+                error_span!(parent: &p, "Query", ?path, ?height, prove)
+            }
+            InfoRequest::Echo(_) => error_span!(parent: &p, "Echo"),
+        }
+    }
+}
+
+impl RequestExt for SnapshotRequest {
+    fn create_span(&self) -> tracing::Span {
+        // Create a parent "abci" span. All of these spans are at error level, so they're always recorded.
+        let p = error_span!("abci");
+        match self {
+            SnapshotRequest::ListSnapshots => error_span!(parent: &p, "ListSnapshots"),
+            SnapshotRequest::OfferSnapshot(_) => error_span!(parent: &p, "OfferSnapshot"),
+            SnapshotRequest::LoadSnapshotChunk(_) => error_span!(parent: &p, "LoadSnapshotChunk"),
+            SnapshotRequest::ApplySnapshotChunk(_) => error_span!(parent: &p, "ApplySnapshotChunk"),
+        }
+    }
 }
 
 impl RequestExt for Request {

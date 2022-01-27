@@ -1,3 +1,5 @@
+use std::collections::{BTreeMap, BTreeSet};
+
 use ark_ff::PrimeField;
 use decaf377::Fr;
 use penumbra_crypto::{
@@ -9,7 +11,6 @@ use penumbra_stake::{
     BaseRateData, Epoch, IdentityKey, RateData, ValidatorState, ValidatorStatus,
     STAKING_TOKEN_ASSET_ID,
 };
-use std::collections::{BTreeMap, BTreeSet};
 use tracing::instrument;
 
 use crate::verify::{NoteData, PositionedNoteData, VerifiedTransaction};
