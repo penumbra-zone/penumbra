@@ -487,7 +487,7 @@ mod tests {
 
         let value = Value {
             amount: 10,
-            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            asset_id: STAKING_TOKEN_ASSET_ID,
         };
         let note = Note::generate(&mut rng, &dest, value);
         let esk = ka::Secret::new(&mut rng);

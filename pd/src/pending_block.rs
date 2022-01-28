@@ -1,5 +1,4 @@
 use ark_ff::PrimeField;
-use blake2b_simd;
 use decaf377::Fr;
 use penumbra_crypto::{
     asset, ka,
@@ -7,7 +6,7 @@ use penumbra_crypto::{
     note, Address, Fq, Note, Nullifier, One, Value,
 };
 use penumbra_stake::{
-    BaseRateData, Epoch, IdentityKey, RateData, ValidatorInfo, ValidatorState, ValidatorStatus,
+    BaseRateData, Epoch, IdentityKey, RateData, ValidatorState, ValidatorStatus,
     STAKING_TOKEN_ASSET_ID,
 };
 use std::collections::{BTreeMap, BTreeSet};

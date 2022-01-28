@@ -2,9 +2,7 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use anyhow::{Context, Error};
 use penumbra_crypto::{ka, merkle, note, Nullifier};
-use penumbra_stake::{
-    Delegate, IdentityKey, RateData, Undelegate, Validator, ValidatorDefinition, ValidatorInfo,
-};
+use penumbra_stake::{Delegate, IdentityKey, RateData, Undelegate, Validator};
 use penumbra_transaction::{Action, Transaction};
 
 /// `PendingTransaction` holds data after stateless checks have been applied.
@@ -320,6 +318,7 @@ mod tests {
         merkle::{Frontier, NoteCommitmentTree, Tree, TreeExt},
         Fq, Note, Value,
     };
+    use penumbra_stake::STAKING_TOKEN_ASSET_ID;
     use rand_core::OsRng;
 
     use super::*;
@@ -339,11 +338,11 @@ mod tests {
 
         let output_value = Value {
             amount: 10,
-            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            asset_id: *STAKING_TOKEN_ASSET_ID,
         };
         let spend_value = Value {
             amount: 20,
-            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            asset_id: *STAKING_TOKEN_ASSET_ID,
         };
         // The note was previously sent to the sender.
         let note = Note::from_parts(

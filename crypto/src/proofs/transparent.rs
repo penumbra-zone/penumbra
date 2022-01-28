@@ -453,7 +453,7 @@ mod tests {
 
         let value_to_send = Value {
             amount: 10,
-            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            asset_id: STAKING_TOKEN_ASSET_ID,
         };
         let v_blinding = Fr::rand(&mut rng);
         let note = Note::generate(&mut rng, &dest, value_to_send);
@@ -485,7 +485,7 @@ mod tests {
 
         let value_to_send = Value {
             amount: 10,
-            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            asset_id: STAKING_TOKEN_ASSET_ID,
         };
         let v_blinding = Fr::rand(&mut rng);
         let note = Note::generate(&mut rng, &dest, value_to_send);
@@ -528,7 +528,7 @@ mod tests {
 
         let value_to_send = Value {
             amount: 10,
-            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            asset_id: STAKING_TOKEN_ASSET_ID,
         };
         let v_blinding = Fr::rand(&mut rng);
         let note = Note::generate(&mut rng, &dest, value_to_send);
@@ -561,7 +561,7 @@ mod tests {
 
         let value_to_send = Value {
             amount: 10,
-            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            asset_id: STAKING_TOKEN_ASSET_ID,
         };
         let v_blinding = Fr::rand(&mut rng);
         let note = Note::generate(&mut rng, &dest, value_to_send);
@@ -598,7 +598,7 @@ mod tests {
 
         let value_to_send = Value {
             amount: 10,
-            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            asset_id: STAKING_TOKEN_ASSET_ID,
         };
         let v_blinding = Fr::rand(&mut rng);
         let note = Note::generate(&mut rng, &dest, value_to_send);
@@ -629,7 +629,7 @@ mod tests {
 
         let value_to_send = Value {
             amount: 10,
-            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            asset_id: STAKING_TOKEN_ASSET_ID,
         };
         let v_blinding = Fr::rand(&mut rng);
 
@@ -676,7 +676,7 @@ mod tests {
 
         let value_to_send = Value {
             amount: 10,
-            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            asset_id: STAKING_TOKEN_ASSET_ID,
         };
         let v_blinding = Fr::rand(&mut rng);
 
@@ -723,7 +723,7 @@ mod tests {
 
         let value_to_send = Value {
             amount: 10,
-            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            asset_id: STAKING_TOKEN_ASSET_ID,
         };
         let v_blinding = Fr::rand(&mut rng);
         let note = Note::generate(&mut rng, &sender, value_to_send);
@@ -769,7 +769,7 @@ mod tests {
 
         let value_to_send = Value {
             amount: 10,
-            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            asset_id: STAKING_TOKEN_ASSET_ID,
         };
         let v_blinding = Fr::rand(&mut rng);
         let note = Note::generate(&mut rng, &sender, value_to_send);
