@@ -94,7 +94,7 @@ impl BalanceCmd {
 
         if self.by_address {
             for (address_id, by_denom) in state.unspent_notes_by_address_and_denom().into_iter() {
-                let (mut label, _) = state.wallet().address_by_index(address_id as usize)?;
+                let (mut label, _) = state.wallet().address_by_index(address_id as u64)?;
                 for (denom, notes) in by_denom.into_iter() {
                     let tally = tally_format_notes(&denom, state.asset_cache(), notes);
                     let mut row = vec![label.clone(), tally.total];

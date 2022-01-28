@@ -47,7 +47,7 @@ impl AddrCmd {
                 }
             }
             AddrCmd::Show { index, addr_only } => {
-                let (label, address) = state.wallet().address_by_index(*index as usize)?;
+                let (label, address) = state.wallet().address_by_index(*index as u64)?;
 
                 if *addr_only {
                     println!("{}", address.to_string());
