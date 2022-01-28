@@ -399,32 +399,27 @@ impl ClientState {
 
     /// Generate a new transaction sending value to `dest_address`.
     #[instrument(skip(self, rng))]
-    pub fn build_send<R: RngCore + CryptoRng>(
+    pub fn build_send<'a, R: RngCore + CryptoRng>(
         &mut self,
         rng: &mut R,
-        values: &[Value],
+        values: &'a [Value],
         fee: u64,
-        dest_address: &Address,
+        dest_address: &'a Address,
         source_address: Option<u64>,
         memo: Option<String>,
-    ) -> Result<Transaction, anyhow::Error> {
-        let memo = &memo.unwrap_or_else(String::new);
+    ) -> Result<(Transaction, Option<Remainder<'a>>), anyhow::Error> {
+        let memo = memo.unwrap_or_else(String::new);
 
         // Construct an abstract description of the transaction
         let mut actions = Vec::with_capacity(values.len() * 2 + 1);
         for value in values {
-            actions.push(Action::output(dest_address, value, memo));
+            actions.push(Action::output(dest_address, value, memo.clone()));
             actions.push(Action::spend(value));
         }
         actions.push(Action::fee(fee));
 
-        let (transaction, remainder) = self.compile_tx(rng, source_address, actions)?;
-
-        if remainder.is_some() {
-            anyhow::anyhow!("remaining actions after transaction created: this is a bug (actions remaining: {:?})", remainder);
-        }
-
-        Ok(transaction)
+        // Compile the description into a real transaction and potential remainder
+        self.compile_transaction(rng, source_address, actions)
     }
 
     /// Returns an iterator over unspent `(address_id, denom, note)` triples.

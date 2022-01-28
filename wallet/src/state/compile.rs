@@ -1,4 +1,4 @@
-use std::{borrow::Cow, collections::HashMap};
+use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use penumbra_crypto::{asset::Denom, memo::MemoPlaintext, merkle::TreeExt, Address, Note, Value};
 use penumbra_stake::STAKING_TOKEN_DENOM;
@@ -25,7 +25,7 @@ mod action {
         Output {
             dest_address: &'a Address,
             value: Cow<'a, Value>,
-            memo: Cow<'a, str>,
+            memo: String,
         },
     }
 }
@@ -44,11 +44,11 @@ impl<'a> Action<'a> {
     }
 
     /// Create a new output action.
-    pub fn output(dest_address: &'a Address, value: &'a Value, memo: &'a str) -> Action<'a> {
+    pub fn output(dest_address: &'a Address, value: &'a Value, memo: String) -> Action<'a> {
         Self(action::Inner::Output {
             dest_address,
             value: Cow::Borrowed(value),
-            memo: Cow::Borrowed(memo),
+            memo,
         })
     }
 }
@@ -65,15 +65,15 @@ pub struct Remainder<'a> {
 
 impl super::ClientState {
     /// Build a transaction (and possible remainder) from a remainder of a previous transaction.
-    pub fn continue_with_remainder<R: RngCore + CryptoRng>(
+    pub fn continue_with_remainder<'a, R: RngCore + CryptoRng>(
         &mut self,
         rng: &mut R,
         Remainder {
             source_address,
             actions,
-        }: Remainder,
-    ) -> anyhow::Result<(Transaction, Option<Remainder>)> {
-        self.compile_tx(rng, source_address, actions)
+        }: Remainder<'a>,
+    ) -> anyhow::Result<(Transaction, Option<Remainder<'a>>)> {
+        self.compile_transaction(rng, source_address, actions)
     }
 
     /// Compile a list of abstract actions into a concrete transaction and an optional list of
@@ -83,12 +83,12 @@ impl super::ClientState {
     /// amounts that would require sweeping) to be broken up into steps, each of which can be
     /// executed independently (and must be, because each cannot be fully built until the previous
     /// has been confirmed).
-    pub(super) fn compile_tx<R: RngCore + CryptoRng>(
+    pub(super) fn compile_transaction<'a, R: RngCore + CryptoRng>(
         &mut self,
         rng: &mut R,
         source_address: Option<u64>,
-        actions: Vec<Action>,
-    ) -> anyhow::Result<(Transaction, Option<Remainder>)> {
+        actions: Vec<Action<'a>>,
+    ) -> anyhow::Result<(Transaction, Option<Remainder<'a>>)> {
         let mut total_spends = HashMap::<Denom, u64>::new();
         let mut spend_notes = HashMap::<Denom, Vec<Note>>::new();
         let mut total_outputs = HashMap::<Denom, u64>::new();
@@ -130,7 +130,7 @@ impl super::ClientState {
                     *total_outputs.entry(denom).or_insert(0) += amount;
 
                     // Collect the contents of the output
-                    let memo = memo.into_owned().try_into()?;
+                    let memo = memo.try_into()?;
                     let value = Value {
                         amount: *amount,
                         asset_id: *asset_id,
