@@ -1,5 +1,5 @@
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::BTreeMap,
     mem,
     time::{Duration, SystemTime},
 };
@@ -8,7 +8,7 @@ use anyhow::Context;
 use penumbra_chain::params::ChainParams;
 use penumbra_crypto::{
     asset::{self, Denom},
-    memo::{self, MemoPlaintext},
+    memo,
     merkle::{Frontier, NoteCommitmentTree, Tree, TreeExt},
     note, Address, FieldExt, Note, Nullifier, Value,
 };

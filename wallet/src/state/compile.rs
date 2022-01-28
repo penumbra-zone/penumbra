@@ -1,4 +1,4 @@
-use std::{borrow::Cow, collections::HashMap, sync::Arc};
+use std::{borrow::Cow, collections::HashMap};
 
 use penumbra_crypto::{asset::Denom, memo::MemoPlaintext, merkle::TreeExt, Address, Note, Value};
 use penumbra_stake::STAKING_TOKEN_DENOM;
