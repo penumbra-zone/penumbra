@@ -8,7 +8,7 @@ use anyhow::Context;
 use penumbra_chain::params::ChainParams;
 use penumbra_crypto::{
     asset::{self, Denom},
-    memo,
+    memo::{self, MemoPlaintext},
     merkle::{Frontier, NoteCommitmentTree, Tree, TreeExt},
     note, Address, FieldExt, Note, Nullifier, Value,
 };
@@ -58,18 +58,19 @@ pub struct ClientState {
     chain_params: Option<ChainParams>,
 }
 
-pub enum Action {
+#[derive(Debug, Clone)]
+pub enum Action<'a> {
     Spend {
-        source: Address,
-        value: Value,
+        value: &'a Value,
     },
     Fee {
         /// Fee in upenumbra units.
         amount: u64,
     },
     Output {
-        destination: Address,
-        value: Value,
+        dest_address: &'a Address,
+        value: &'a Value,
+        memo: &'a Option<String>,
     },
 }
 
@@ -251,6 +252,139 @@ impl ClientState {
         Ok(chain_params.unwrap().chain_id.clone())
     }
 
+    fn compile_tx<R: RngCore + CryptoRng>(
+        &mut self,
+        rng: &mut R,
+        source_address: Option<u64>,
+        actions: Vec<Action>,
+    ) -> anyhow::Result<(Transaction, Vec<Action>)> {
+        let mut total_spends = HashMap::<Denom, u64>::new();
+        let mut spend_notes = HashMap::<Denom, Vec<Note>>::new();
+        let mut total_outputs = HashMap::<Denom, u64>::new();
+        let mut outputs = Vec::<(&Address, Value, MemoPlaintext)>::new();
+        let mut fee = 0;
+
+        for action in actions {
+            match action {
+                Action::Fee { amount } => fee += amount,
+                Action::Spend {
+                    value: Value { amount, asset_id },
+                } => {
+                    // Keep track of this spend in the total spends
+                    let denom = self
+                        .asset_cache()
+                        .get(asset_id)
+                        .ok_or_else(|| {
+                            anyhow::anyhow!("unknown denomination for asset id {}", asset_id)
+                        })?
+                        .clone();
+                    *total_spends.entry(denom).or_insert(0) += amount;
+                }
+                Action::Output {
+                    dest_address,
+                    value: Value { amount, asset_id },
+                    memo,
+                } => {
+                    // Keep track of this output in the total outputs
+                    let denom = self
+                        .asset_cache()
+                        .get(asset_id)
+                        .ok_or_else(|| {
+                            anyhow::anyhow!("unknown denomination for asset id {}", asset_id)
+                        })?
+                        .clone();
+                    *total_outputs.entry(denom).or_insert(0) += amount;
+
+                    // Collect the contents of the output
+                    let memo = memo.clone().unwrap_or_default().try_into()?;
+                    let value = Value {
+                        amount: *amount,
+                        asset_id: *asset_id,
+                    };
+                    outputs.push((dest_address, value, memo));
+                }
+            }
+        }
+
+        // Add the fee to the total spends
+        *total_spends.entry(STAKING_TOKEN_DENOM.clone()).or_insert(0) += fee;
+
+        // Collect the notes for all the spends
+        for (denom, amount) in total_spends {
+            // Get the notes to spend for this denomination
+            let notes = self.notes_to_spend(rng, amount, &denom, source_address)?;
+            spend_notes.insert(denom, notes);
+        }
+
+        // Check that the total spend value is less than the total output value and compute total change
+        let mut total_change = HashMap::<Denom, u64>::new();
+        for (denom, notes) in spend_notes.iter() {
+            total_change.insert(denom.clone(), notes.iter().map(|n| n.amount()).sum());
+        }
+        // Subtract the output from the spend amount to get the total change
+        for (denom, output) in total_outputs {
+            total_change
+                .entry(denom.clone())
+                .or_insert(0)
+                .checked_sub(output)
+                .ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "not enough spent to cover outputs for denomination {}",
+                        denom
+                    )
+                })?;
+        }
+
+        // Use the transaction builder to build the transaction
+        let mut builder = Transaction::build_with_root(self.note_commitment_tree.root2());
+        builder.set_chain_id(self.chain_id()?);
+
+        // Set the fee
+        builder.set_fee(fee);
+
+        // Add all the spends
+        for notes in spend_notes.into_values() {
+            for note in notes {
+                builder.add_spend(
+                    rng,
+                    &self.note_commitment_tree,
+                    self.wallet.spend_key(),
+                    note,
+                )?;
+            }
+        }
+
+        // Add all the intially specified outputs
+        for (destination, value, memo) in outputs {
+            builder.add_output(
+                rng,
+                destination,
+                value,
+                memo,
+                self.wallet.outgoing_viewing_key(),
+            );
+        }
+
+        // Add the change outputs
+        for (denom, amount) in total_change {
+            if amount > 0 {
+                // We register the change note so the wallet UI can display it nicely
+                self.register_change(builder.add_output_producing_note(
+                    rng,
+                    &self.wallet.address_by_index(source_address.unwrap_or(0))?.1,
+                    Value {
+                        amount,
+                        asset_id: denom.into(),
+                    },
+                    MemoPlaintext::default(),
+                    self.wallet.outgoing_viewing_key(),
+                ));
+            }
+        }
+
+        Ok((builder.finalize(rng)?, vec![]))
+    }
+
     /// Generate a new transaction delegating stake
     #[instrument(skip(self, rng, rate_data))]
     pub fn build_delegate<R: RngCore + CryptoRng>(
@@ -265,7 +399,7 @@ impl ClientState {
         // address; otherwise, send them to the default address.
         let (_label, self_address) = self
             .wallet()
-            .address_by_index(source_address.unwrap_or(0) as usize)?;
+            .address_by_index(source_address.unwrap_or(0))?;
 
         let mut tx_builder = Transaction::build_with_root(self.note_commitment_tree.root2());
 
@@ -334,7 +468,7 @@ impl ClientState {
         // address; otherwise, send them to the default address.
         let (_label, self_address) = self
             .wallet()
-            .address_by_index(source_address.unwrap_or(0) as usize)?;
+            .address_by_index(source_address.unwrap_or(0))?;
 
         let mut tx_builder = Transaction::build_with_root(self.note_commitment_tree.root2());
 
@@ -417,92 +551,25 @@ impl ClientState {
         fee: u64,
         dest_address: Address,
         source_address: Option<u64>,
-        tx_memo: Option<String>,
+        memo: Option<String>,
     ) -> Result<Transaction, anyhow::Error> {
-        let mut tx_builder = Transaction::build_with_root(self.note_commitment_tree.root2());
-
-        tx_builder.set_fee(fee).set_chain_id(self.chain_id()?);
-
-        let mut output_value = HashMap::<Denom, u64>::new();
-        for Value { amount, asset_id } in values {
-            let denom = self
-                .asset_cache()
-                .get(asset_id)
-                .ok_or_else(|| anyhow::anyhow!("unknown denomination for asset id {}", asset_id))?;
-            output_value.insert(denom.clone(), *amount);
+        // Construct an abstract description of the transaction
+        let mut actions = Vec::with_capacity(values.len() * 2 + 1);
+        for value in values {
+            actions.push(Action::Output {
+                dest_address: &dest_address,
+                value,
+                memo: &memo,
+            });
+            actions.push(Action::Spend { value });
         }
+        actions.push(Action::Fee { amount: fee });
 
-        for (denom, amount) in &output_value {
-            let memo: memo::MemoPlaintext = match tx_memo {
-                Some(ref input_memo) => input_memo.clone().try_into()?,
-                None => memo::MemoPlaintext([0u8; memo::MEMO_LEN_BYTES]),
-            };
-            tx_builder.add_output(
-                rng,
-                &dest_address,
-                Value {
-                    amount: *amount,
-                    asset_id: denom.id(),
-                },
-                memo,
-                self.wallet.outgoing_viewing_key(),
-            );
+        let (transaction, remainder) = self.compile_tx(rng, source_address, actions)?;
+
+        if !remainder.is_empty() {
+            anyhow::anyhow!("remaining actions after transaction created: this is a bug (actions remaining: {:?})", remainder);
         }
-
-        // The value we need to spend is the output value, plus fees.
-        let mut value_to_spend = output_value;
-        if fee > 0 {
-            *value_to_spend
-                .entry(asset::REGISTRY.parse_denom("upenumbra").unwrap())
-                .or_default() += fee;
-        }
-
-        for (denom, amount) in value_to_spend {
-            // Only produce an output if the amount is greater than zero
-            if amount == 0 {
-                continue;
-            }
-
-            // Select a list of notes that provides at least the required amount.
-            let notes: Vec<Note> = self.notes_to_spend(rng, amount, &denom, source_address)?;
-            let change_address = self
-                .wallet
-                .change_address(notes.last().expect("spent at least one note"))?;
-            let spent: u64 = notes.iter().map(|note| note.amount()).sum();
-
-            // Spend each of the notes we selected.
-            for note in notes {
-                tx_builder.add_spend(
-                    rng,
-                    &self.note_commitment_tree,
-                    self.wallet.spend_key(),
-                    note,
-                )?;
-            }
-
-            // Find out how much change we have and whether to add a change output.
-            let change = spent - amount;
-            if change > 0 {
-                // xx: add memo handling
-                let memo = memo::MemoPlaintext([0u8; 512]);
-                let note = tx_builder.add_output_producing_note(
-                    rng,
-                    &change_address,
-                    Value {
-                        amount: change,
-                        asset_id: denom.id(),
-                    },
-                    memo,
-                    self.wallet.outgoing_viewing_key(),
-                );
-
-                self.register_change(note);
-            }
-        }
-
-        let transaction = tx_builder
-            .finalize(rng)
-            .map_err(|err| anyhow::anyhow!("error during transaction finalization: {}", err))?;
 
         Ok(transaction)
     }

@@ -68,7 +68,8 @@ impl Wallet {
     }
 
     /// Get address by index.
-    pub fn address_by_index(&self, index: usize) -> Result<(String, Address), anyhow::Error> {
+    pub fn address_by_index(&self, index: u64) -> Result<(String, Address), anyhow::Error> {
+        let index: usize = index.try_into()?;
         let label = self
             .address_labels
             .get(index)
@@ -99,7 +100,7 @@ impl Wallet {
             .try_into()
             .context("cannot convert DiversifierIndex to u64")?;
 
-        let (_label, address) = self.address_by_index(index as usize)?;
+        let (_label, address) = self.address_by_index(index)?;
         Ok(address)
     }
 }
