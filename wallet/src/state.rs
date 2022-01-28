@@ -24,7 +24,7 @@ use crate::Wallet;
 
 mod compile;
 use compile::Action;
-pub use compile::Remainder;
+pub use compile::Continuation;
 
 const MAX_MERKLE_CHECKPOINTS_CLIENT: usize = 10;
 
@@ -411,7 +411,7 @@ impl ClientState {
         dest_address: &'a Address,
         source_address: Option<u64>,
         memo: Option<String>,
-    ) -> Result<(Transaction, Option<Remainder<'a>>), anyhow::Error> {
+    ) -> Result<(Transaction, Vec<Continuation<'a>>), anyhow::Error> {
         let memo = memo.unwrap_or_else(String::new);
 
         // Construct an abstract description of the transaction

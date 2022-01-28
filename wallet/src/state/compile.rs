@@ -61,7 +61,7 @@ impl<'a> Action<'a> {
 /// after the first transaction is confirmed, and iterate until there is no more [`Remainder`].
 #[derive(derivative::Derivative, Clone)]
 #[derivative(Debug = "transparent")]
-pub struct Remainder<'a> {
+pub struct Continuation<'a> {
     actions: Vec<Action<'a>>,
     #[derivative(Debug = "ignore")]
     source_address: Option<u64>,
@@ -69,15 +69,20 @@ pub struct Remainder<'a> {
 
 impl super::ClientState {
     /// Build a transaction (and possible remainder) from a remainder of a previous transaction.
-    pub fn continue_with_remainder<'a, R: RngCore + CryptoRng>(
+    pub fn continue_with<'a, R: RngCore + CryptoRng>(
         &mut self,
         rng: &mut R,
-        Remainder {
+        Continuation {
             source_address,
             actions,
-        }: Remainder<'a>,
-    ) -> anyhow::Result<(Transaction, Option<Remainder<'a>>)> {
-        self.compile_transaction(rng, source_address, actions)
+        }: Continuation<'a>,
+    ) -> anyhow::Result<Transaction> {
+        let (transaction, remainder) = self.compile_transaction(rng, source_address, actions)?;
+        if remainder.is_empty() {
+            Ok(transaction)
+        } else {
+            panic!("internal error: compiling remainder resulted in additional remainder");
+        }
     }
 
     /// Compile a list of abstract actions into a concrete transaction and an optional list of
@@ -93,7 +98,7 @@ impl super::ClientState {
         rng: &mut R,
         source_address: Option<u64>,
         actions: Vec<Action<'a>>,
-    ) -> anyhow::Result<(Transaction, Option<Remainder<'a>>)> {
+    ) -> anyhow::Result<(Transaction, Vec<Continuation<'a>>)> {
         let mut total_spends = HashMap::<Denom, u64>::new();
         let mut spend_notes = HashMap::<Denom, Vec<Note>>::new();
         let mut total_outputs = HashMap::<Denom, u64>::new();
@@ -258,6 +263,6 @@ impl super::ClientState {
         tracing::debug!("finalizing transaction");
         let transaction = builder.finalize(rng, self.note_commitment_tree.root2())?;
 
-        Ok((transaction, None))
+        Ok((transaction, vec![]))
     }
 }
