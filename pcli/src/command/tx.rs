@@ -48,7 +48,7 @@ impl TxCmd {
                     .iter()
                     .map(|v| v.parse())
                     .collect::<Result<Vec<Value>, _>>()?;
-                let to = to
+                let to = &to
                     .parse()
                     .map_err(|_| anyhow::anyhow!("address is invalid"))?;
 

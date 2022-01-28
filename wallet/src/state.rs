@@ -1,5 +1,4 @@
 use std::{
-    borrow::Cow,
     collections::{BTreeMap, HashMap},
     mem,
     time::{Duration, SystemTime},
@@ -22,6 +21,10 @@ use serde::{Deserialize, Serialize};
 use tracing::instrument;
 
 use crate::Wallet;
+
+mod compile;
+use compile::Action;
+pub use compile::Remainder;
 
 const MAX_MERKLE_CHECKPOINTS_CLIENT: usize = 10;
 
@@ -57,28 +60,6 @@ pub struct ClientState {
     wallet: Wallet,
     /// Global chain parameters. May not have been fetched yet.
     chain_params: Option<ChainParams>,
-}
-
-#[derive(Debug, Clone)]
-pub enum Action<'a> {
-    Spend {
-        value: Cow<'a, Value>,
-    },
-    Fee {
-        /// Fee in upenumbra units.
-        amount: u64,
-    },
-    Output {
-        dest_address: &'a Address,
-        value: Cow<'a, Value>,
-        memo: Cow<'a, Option<String>>,
-    },
-}
-
-#[derive(Debug, Clone)]
-pub struct Remainder<'a> {
-    actions: Vec<Action<'a>>,
-    source_address: Option<u64>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -259,160 +240,6 @@ impl ClientState {
         Ok(chain_params.unwrap().chain_id.clone())
     }
 
-    /// Build a transaction (and possible remainder) from a remainder of a previous transaction.
-    pub fn continue_with_remainder<R: RngCore + CryptoRng>(
-        &mut self,
-        rng: &mut R,
-        Remainder {
-            source_address,
-            actions,
-        }: Remainder,
-    ) -> anyhow::Result<(Transaction, Option<Remainder>)> {
-        self.compile_tx(rng, source_address, actions)
-    }
-
-    /// Compile a list of abstract actions into a concrete transaction and an optional list of
-    /// actions yet to perform (the remainder).
-    ///
-    /// This allows certain notionally single actions (such as undelegation, or sending large
-    /// amounts that would require sweeping) to be broken up into steps, each of which can be
-    /// executed independently (and must be, because each cannot be fully built until the previous
-    /// has been confirmed).
-    fn compile_tx<R: RngCore + CryptoRng>(
-        &mut self,
-        rng: &mut R,
-        source_address: Option<u64>,
-        actions: Vec<Action>,
-    ) -> anyhow::Result<(Transaction, Option<Remainder>)> {
-        let mut total_spends = HashMap::<Denom, u64>::new();
-        let mut spend_notes = HashMap::<Denom, Vec<Note>>::new();
-        let mut total_outputs = HashMap::<Denom, u64>::new();
-        let mut outputs = Vec::<(&Address, Value, MemoPlaintext)>::new();
-        let mut fee = 0;
-
-        for action in actions {
-            match action {
-                Action::Fee { amount } => fee += amount,
-                Action::Spend { value } => {
-                    let Value { amount, asset_id } = value.as_ref();
-
-                    // Keep track of this spend in the total spends
-                    let denom = self
-                        .asset_cache()
-                        .get(asset_id)
-                        .ok_or_else(|| {
-                            anyhow::anyhow!("unknown denomination for asset id {}", asset_id)
-                        })?
-                        .clone();
-                    *total_spends.entry(denom).or_insert(0) += amount;
-                }
-                Action::Output {
-                    dest_address,
-                    value,
-                    memo,
-                } => {
-                    let Value { amount, asset_id } = value.as_ref();
-
-                    // Keep track of this output in the total outputs
-                    let denom = self
-                        .asset_cache()
-                        .get(asset_id)
-                        .ok_or_else(|| {
-                            anyhow::anyhow!("unknown denomination for asset id {}", asset_id)
-                        })?
-                        .clone();
-                    *total_outputs.entry(denom).or_insert(0) += amount;
-
-                    // Collect the contents of the output
-                    let memo = memo.into_owned().unwrap_or_default().try_into()?;
-                    let value = Value {
-                        amount: *amount,
-                        asset_id: *asset_id,
-                    };
-                    outputs.push((dest_address, value, memo));
-                }
-            }
-        }
-
-        // Add the fee to the total spends
-        *total_spends.entry(STAKING_TOKEN_DENOM.clone()).or_insert(0) += fee;
-
-        // Collect the notes for all the spends
-        for (denom, amount) in total_spends {
-            // Get the notes to spend for this denomination
-            let notes = self.notes_to_spend(rng, amount, &denom, source_address)?;
-            spend_notes.insert(denom, notes);
-        }
-
-        // Check that the total spend value is less than the total output value and compute total change
-        let mut total_change = HashMap::<Denom, u64>::new();
-        for (denom, notes) in spend_notes.iter() {
-            total_change.insert(denom.clone(), notes.iter().map(|n| n.amount()).sum());
-        }
-        // Subtract the output from the spend amount to get the total change
-        for (denom, output) in total_outputs {
-            total_change
-                .entry(denom.clone())
-                .or_insert(0)
-                .checked_sub(output)
-                .ok_or_else(|| {
-                    anyhow::anyhow!(
-                        "not enough spent to cover outputs for denomination {}",
-                        denom
-                    )
-                })?;
-        }
-
-        // Use the transaction builder to build the transaction
-        let mut builder = Transaction::build_with_root(self.note_commitment_tree.root2());
-        builder.set_chain_id(self.chain_id()?);
-
-        // Set the fee
-        builder.set_fee(fee);
-
-        // Add all the spends
-        for notes in spend_notes.into_values() {
-            for note in notes {
-                builder.add_spend(
-                    rng,
-                    &self.note_commitment_tree,
-                    self.wallet.spend_key(),
-                    note,
-                )?;
-            }
-        }
-
-        // Add all the intially specified outputs
-        for (destination, value, memo) in outputs {
-            builder.add_output(
-                rng,
-                destination,
-                value,
-                memo,
-                self.wallet.outgoing_viewing_key(),
-            );
-        }
-
-        // Add the change outputs
-        for (denom, amount) in total_change {
-            if amount > 0 {
-                // We register the change note so the wallet UI can display it nicely
-                self.register_change(builder.add_output_producing_note(
-                    rng,
-                    &self.wallet.address_by_index(source_address.unwrap_or(0))?.1,
-                    Value {
-                        amount,
-                        asset_id: denom.into(),
-                    },
-                    MemoPlaintext::default(),
-                    self.wallet.outgoing_viewing_key(),
-                ));
-            }
-        }
-
-        Ok((builder.finalize(rng)?, None))
-    }
-
     /// Generate a new transaction delegating stake
     #[instrument(skip(self, rng, rate_data))]
     pub fn build_delegate<R: RngCore + CryptoRng>(
@@ -577,23 +404,19 @@ impl ClientState {
         rng: &mut R,
         values: &[Value],
         fee: u64,
-        dest_address: Address,
+        dest_address: &Address,
         source_address: Option<u64>,
         memo: Option<String>,
     ) -> Result<Transaction, anyhow::Error> {
+        let memo = &memo.unwrap_or_else(String::new);
+
         // Construct an abstract description of the transaction
         let mut actions = Vec::with_capacity(values.len() * 2 + 1);
         for value in values {
-            actions.push(Action::Output {
-                dest_address: &dest_address,
-                value: Cow::Borrowed(value),
-                memo: Cow::Borrowed(&memo),
-            });
-            actions.push(Action::Spend {
-                value: Cow::Borrowed(value),
-            });
+            actions.push(Action::output(dest_address, value, memo));
+            actions.push(Action::spend(value));
         }
-        actions.push(Action::Fee { amount: fee });
+        actions.push(Action::fee(fee));
 
         let (transaction, remainder) = self.compile_tx(rng, source_address, actions)?;
 
