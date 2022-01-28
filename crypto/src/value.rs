@@ -179,7 +179,7 @@ mod tests {
     fn sum_value_commitments() {
         use ark_ff::Field;
 
-        let pen_denom = asset::REGISTRY.parse_denom("upenumbra").unwrap();
+        let pen_denom = STAKING_TOKEN_DENOM;
         let atom_denom = asset::REGISTRY
             .parse_denom("HubPort/HubChannel/uatom")
             .unwrap();
@@ -240,7 +240,7 @@ mod tests {
 
     #[test]
     fn value_parsing_happy() {
-        let upenumbra_base_denom = asset::REGISTRY.parse_denom("upenumbra").unwrap();
+        let upenumbra_base_denom = STAKING_TOKEN_DENOM;
         let nala_base_denom = asset::REGISTRY.parse_denom("nala").unwrap();
         let cache = [upenumbra_base_denom.clone(), nala_base_denom.clone()]
             .into_iter()
@@ -271,7 +271,7 @@ mod tests {
 
     #[test]
     fn try_format_picks_best_unit() {
-        let upenumbra_base_denom = asset::REGISTRY.parse_denom("upenumbra").unwrap();
+        let upenumbra_base_denom = STAKING_TOKEN_DENOM;
         let cache = [upenumbra_base_denom].into_iter().collect::<asset::Cache>();
 
         let v1: Value = "999upenumbra".parse().unwrap();

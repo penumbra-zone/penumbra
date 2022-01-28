@@ -438,7 +438,7 @@ impl ClientState {
         let mut value_to_spend = output_value;
         if fee > 0 {
             *value_to_spend
-                .entry(asset::REGISTRY.parse_denom("upenumbra").unwrap())
+                .entry(STAKING_TOKEN_DENOM.clone())
                 .or_default() += fee;
         }
 
