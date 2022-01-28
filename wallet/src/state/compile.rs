@@ -87,7 +87,7 @@ impl super::ClientState {
     /// amounts that would require sweeping) to be broken up into steps, each of which can be
     /// executed independently (and must be, because each cannot be fully built until the previous
     /// has been confirmed).
-    #[instrument(skip(self, rng))]
+    #[instrument(skip(self, rng, actions))]
     pub(super) fn compile_transaction<'a, R: RngCore + CryptoRng>(
         &mut self,
         rng: &mut R,
@@ -103,7 +103,10 @@ impl super::ClientState {
         for Action(action) in actions {
             use action::Inner::*;
             match action {
-                Fee { amount } => fee += amount,
+                Fee { amount } => {
+                    tracing::trace!(?fee, "adding fee to transaction");
+                    fee += amount;
+                }
                 Spend { value } => {
                     let Value { amount, asset_id } = value.as_ref();
 
@@ -115,6 +118,8 @@ impl super::ClientState {
                             anyhow::anyhow!("unknown denomination for asset id {}", asset_id)
                         })?
                         .clone();
+
+                    tracing::trace!(?denom, ?amount, "adding spend to transaction");
                     *total_spends.entry(denom).or_insert(0) += amount;
                 }
                 Output {
@@ -132,6 +137,8 @@ impl super::ClientState {
                             anyhow::anyhow!("unknown denomination for asset id {}", asset_id)
                         })?
                         .clone();
+
+                    tracing::trace!(?denom, ?amount, "adding output to transaction");
                     *total_outputs.entry(denom).or_insert(0) += amount;
 
                     // Collect the contents of the output
@@ -145,8 +152,12 @@ impl super::ClientState {
             }
         }
 
+        tracing::debug!(?total_outputs, "collected total outputs");
+
         // Add the fee to the total spends
         *total_spends.entry(STAKING_TOKEN_DENOM.clone()).or_insert(0) += fee;
+
+        tracing::debug!(?total_spends, "collected total specified spends");
 
         // Collect the notes for all the spends
         for (denom, amount) in total_spends {
@@ -155,6 +166,19 @@ impl super::ClientState {
             spend_notes.insert(denom, notes);
         }
 
+        tracing::debug!(
+            total_notes = ?{
+                let mut total_notes = HashMap::<Denom, u64>::new();
+                for (denom, notes) in spend_notes.iter() {
+                    for note in notes {
+                        *total_notes.entry(denom.clone()).or_insert(0) += note.amount();
+                    }
+                }
+                total_notes
+            },
+            "collected concrete notes to spend"
+        );
+
         // Check that the total spend value is less than the total output value and compute total change
         let mut total_change = HashMap::<Denom, u64>::new();
         for (denom, notes) in spend_notes.iter() {
@@ -162,17 +186,16 @@ impl super::ClientState {
         }
         // Subtract the output from the spend amount to get the total change
         for (denom, output) in total_outputs {
-            total_change
-                .entry(denom.clone())
-                .or_insert(0)
-                .checked_sub(output)
-                .ok_or_else(|| {
-                    anyhow::anyhow!(
-                        "not enough spent to cover outputs for denomination {}",
-                        denom
-                    )
-                })?;
+            let change = total_change.entry(denom.clone()).or_insert(0);
+            *change = change.checked_sub(output).ok_or_else(|| {
+                anyhow::anyhow!(
+                    "not enough spent to cover outputs for denomination {}",
+                    denom
+                )
+            })?;
         }
+
+        tracing::debug!(?total_change, "collected total change");
 
         // Use the transaction builder to build the transaction
         let mut builder = Transaction::build();
@@ -184,6 +207,7 @@ impl super::ClientState {
         // Add all the spends
         for notes in spend_notes.into_values() {
             for note in notes {
+                tracing::trace!(value = ?note.value(), "adding spend note to builder");
                 builder.add_spend(
                     rng,
                     &self.note_commitment_tree,
@@ -195,6 +219,11 @@ impl super::ClientState {
 
         // Add all the intially specified outputs
         for (destination, value, memo) in outputs {
+            tracing::trace!(
+                value = ?value,
+                memo = ?memo,
+                "adding specified output to builder"
+            );
             builder.add_output(
                 rng,
                 destination,
@@ -207,6 +236,7 @@ impl super::ClientState {
         // Add the change outputs
         for (denom, amount) in total_change {
             if amount > 0 {
+                tracing::trace!(?amount, "adding change output to builder");
                 // We register the change note so the wallet UI can display it nicely
                 self.register_change(builder.add_output_producing_note(
                     rng,
@@ -225,6 +255,7 @@ impl super::ClientState {
         // TODO: handle splitting undelegation into break-change / undelegate
         // TODO: handle dummy notes and spends, unconditional change output
 
+        tracing::debug!("finalizing transaction");
         let transaction = builder.finalize(rng, self.note_commitment_tree.root2())?;
 
         Ok((transaction, None))
