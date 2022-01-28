@@ -1,4 +1,5 @@
 use std::{
+    borrow::Cow,
     collections::{BTreeMap, HashMap},
     mem,
     time::{Duration, SystemTime},
@@ -61,7 +62,7 @@ pub struct ClientState {
 #[derive(Debug, Clone)]
 pub enum Action<'a> {
     Spend {
-        value: &'a Value,
+        value: Cow<'a, Value>,
     },
     Fee {
         /// Fee in upenumbra units.
@@ -69,9 +70,15 @@ pub enum Action<'a> {
     },
     Output {
         dest_address: &'a Address,
-        value: &'a Value,
-        memo: &'a Option<String>,
+        value: Cow<'a, Value>,
+        memo: Cow<'a, Option<String>>,
     },
+}
+
+#[derive(Debug, Clone)]
+pub struct Remainder<'a> {
+    actions: Vec<Action<'a>>,
+    source_address: Option<u64>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -252,12 +259,31 @@ impl ClientState {
         Ok(chain_params.unwrap().chain_id.clone())
     }
 
+    /// Build a transaction (and possible remainder) from a remainder of a previous transaction.
+    pub fn continue_with_remainder<R: RngCore + CryptoRng>(
+        &mut self,
+        rng: &mut R,
+        Remainder {
+            source_address,
+            actions,
+        }: Remainder,
+    ) -> anyhow::Result<(Transaction, Option<Remainder>)> {
+        self.compile_tx(rng, source_address, actions)
+    }
+
+    /// Compile a list of abstract actions into a concrete transaction and an optional list of
+    /// actions yet to perform (the remainder).
+    ///
+    /// This allows certain notionally single actions (such as undelegation, or sending large
+    /// amounts that would require sweeping) to be broken up into steps, each of which can be
+    /// executed independently (and must be, because each cannot be fully built until the previous
+    /// has been confirmed).
     fn compile_tx<R: RngCore + CryptoRng>(
         &mut self,
         rng: &mut R,
         source_address: Option<u64>,
         actions: Vec<Action>,
-    ) -> anyhow::Result<(Transaction, Vec<Action>)> {
+    ) -> anyhow::Result<(Transaction, Option<Remainder>)> {
         let mut total_spends = HashMap::<Denom, u64>::new();
         let mut spend_notes = HashMap::<Denom, Vec<Note>>::new();
         let mut total_outputs = HashMap::<Denom, u64>::new();
@@ -267,9 +293,9 @@ impl ClientState {
         for action in actions {
             match action {
                 Action::Fee { amount } => fee += amount,
-                Action::Spend {
-                    value: Value { amount, asset_id },
-                } => {
+                Action::Spend { value } => {
+                    let Value { amount, asset_id } = value.as_ref();
+
                     // Keep track of this spend in the total spends
                     let denom = self
                         .asset_cache()
@@ -282,9 +308,11 @@ impl ClientState {
                 }
                 Action::Output {
                     dest_address,
-                    value: Value { amount, asset_id },
+                    value,
                     memo,
                 } => {
+                    let Value { amount, asset_id } = value.as_ref();
+
                     // Keep track of this output in the total outputs
                     let denom = self
                         .asset_cache()
@@ -296,7 +324,7 @@ impl ClientState {
                     *total_outputs.entry(denom).or_insert(0) += amount;
 
                     // Collect the contents of the output
-                    let memo = memo.clone().unwrap_or_default().try_into()?;
+                    let memo = memo.into_owned().unwrap_or_default().try_into()?;
                     let value = Value {
                         amount: *amount,
                         asset_id: *asset_id,
@@ -382,7 +410,7 @@ impl ClientState {
             }
         }
 
-        Ok((builder.finalize(rng)?, vec![]))
+        Ok((builder.finalize(rng)?, None))
     }
 
     /// Generate a new transaction delegating stake
@@ -558,16 +586,18 @@ impl ClientState {
         for value in values {
             actions.push(Action::Output {
                 dest_address: &dest_address,
-                value,
-                memo: &memo,
+                value: Cow::Borrowed(value),
+                memo: Cow::Borrowed(&memo),
             });
-            actions.push(Action::Spend { value });
+            actions.push(Action::Spend {
+                value: Cow::Borrowed(value),
+            });
         }
         actions.push(Action::Fee { amount: fee });
 
         let (transaction, remainder) = self.compile_tx(rng, source_address, actions)?;
 
-        if !remainder.is_empty() {
+        if remainder.is_some() {
             anyhow::anyhow!("remaining actions after transaction created: this is a bug (actions remaining: {:?})", remainder);
         }
 
