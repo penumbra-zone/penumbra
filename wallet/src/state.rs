@@ -58,6 +58,21 @@ pub struct ClientState {
     chain_params: Option<ChainParams>,
 }
 
+pub enum Action {
+    Spend {
+        source: Address,
+        value: Value,
+    },
+    Fee {
+        /// Fee in upenumbra units.
+        amount: u64,
+    },
+    Output {
+        destination: Address,
+        value: Value,
+    },
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum SubmittedNoteCommitment {
     Change(note::Commitment),
