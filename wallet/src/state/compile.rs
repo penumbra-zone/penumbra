@@ -4,9 +4,11 @@ use penumbra_crypto::{asset::Denom, memo::MemoPlaintext, merkle::TreeExt, Addres
 use penumbra_stake::STAKING_TOKEN_DENOM;
 use penumbra_transaction::Transaction;
 use rand_core::{CryptoRng, RngCore};
+use tracing::instrument;
 
 /// The abstract description of an action performed by the wallet user.
-#[derive(Debug, Clone)]
+#[derive(derivative::Derivative, Clone)]
+#[derivative(Debug = "transparent")]
 pub(super) struct Action<'a>(action::Inner<'a>);
 
 mod action {
@@ -57,9 +59,11 @@ impl<'a> Action<'a> {
 ///
 /// Use [`super::ClientState::continue_with_remainder`] to process this into another [`Transaction`]
 /// after the first transaction is confirmed, and iterate until there is no more [`Remainder`].
-#[derive(Debug, Clone)]
+#[derive(derivative::Derivative, Clone)]
+#[derivative(Debug = "transparent")]
 pub struct Remainder<'a> {
     actions: Vec<Action<'a>>,
+    #[derivative(Debug = "ignore")]
     source_address: Option<u64>,
 }
 
@@ -83,6 +87,7 @@ impl super::ClientState {
     /// amounts that would require sweeping) to be broken up into steps, each of which can be
     /// executed independently (and must be, because each cannot be fully built until the previous
     /// has been confirmed).
+    #[instrument(skip(self, rng))]
     pub(super) fn compile_transaction<'a, R: RngCore + CryptoRng>(
         &mut self,
         rng: &mut R,
@@ -170,7 +175,7 @@ impl super::ClientState {
         }
 
         // Use the transaction builder to build the transaction
-        let mut builder = Transaction::build_with_root(self.note_commitment_tree.root2());
+        let mut builder = Transaction::build();
         builder.set_chain_id(self.chain_id()?);
 
         // Set the fee
@@ -220,6 +225,8 @@ impl super::ClientState {
         // TODO: handle splitting undelegation into break-change / undelegate
         // TODO: handle dummy notes and spends, unconditional change output
 
-        Ok((builder.finalize(rng)?, None))
+        let transaction = builder.finalize(rng, self.note_commitment_tree.root2())?;
+
+        Ok((transaction, None))
     }
 }

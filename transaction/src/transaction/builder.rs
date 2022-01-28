@@ -38,8 +38,6 @@ pub struct Builder {
     pub value_commitments: decaf377::Element,
     /// Value balance.
     pub value_balance: decaf377::Element,
-    /// The root of the note commitment merkle tree.
-    pub merkle_root: merkle::Root,
     /// Expiry height. None if unset.
     pub expiry_height: Option<u32>,
     /// Chain ID. None if unset.
@@ -251,6 +249,7 @@ impl Builder {
     pub fn finalize<R: CryptoRng + RngCore>(
         &mut self,
         mut rng: &mut R,
+        merkle_root: merkle::Root,
     ) -> Result<Transaction, Error> {
         if self.chain_id.is_none() {
             return Err(Error::NoChainID);
@@ -291,7 +290,7 @@ impl Builder {
 
         let mut transaction_body = TransactionBody {
             actions,
-            merkle_root: self.merkle_root.clone(),
+            merkle_root,
             expiry_height: self.expiry_height.unwrap_or(0),
             chain_id: self.chain_id.take().unwrap(),
             fee: self.fee.take().unwrap(),

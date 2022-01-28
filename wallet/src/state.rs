@@ -256,7 +256,7 @@ impl ClientState {
             .wallet()
             .address_by_index(source_address.unwrap_or(0))?;
 
-        let mut tx_builder = Transaction::build_with_root(self.note_commitment_tree.root2());
+        let mut tx_builder = Transaction::build();
 
         tx_builder
             .set_fee(fee)
@@ -306,7 +306,9 @@ impl ClientState {
 
         self.register_change(delegation_note);
 
-        tx_builder.finalize(rng).map_err(Into::into)
+        tx_builder
+            .finalize(rng, self.note_commitment_tree.root2())
+            .map_err(Into::into)
     }
 
     /// Generate a new transaction delegating stake
@@ -325,7 +327,7 @@ impl ClientState {
             .wallet()
             .address_by_index(source_address.unwrap_or(0))?;
 
-        let mut tx_builder = Transaction::build_with_root(self.note_commitment_tree.root2());
+        let mut tx_builder = Transaction::build();
 
         tx_builder
             .set_fee(fee)
@@ -394,7 +396,9 @@ impl ClientState {
 
         self.register_change(output_note);
 
-        tx_builder.finalize(rng).map_err(Into::into)
+        tx_builder
+            .finalize(rng, self.note_commitment_tree.root2())
+            .map_err(Into::into)
     }
 
     /// Generate a new transaction sending value to `dest_address`.

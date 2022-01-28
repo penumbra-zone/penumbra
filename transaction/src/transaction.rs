@@ -56,7 +56,7 @@ pub struct Transaction {
 
 impl Transaction {
     /// Start building a transaction relative to a given [`merkle::Root`].
-    pub fn build_with_root(merkle_root: merkle::Root) -> Builder {
+    pub fn build() -> Builder {
         Builder {
             spends: Vec::new(),
             outputs: Vec::new(),
@@ -66,7 +66,6 @@ impl Transaction {
             synthetic_blinding_factor: Fr::zero(),
             value_balance: decaf377::Element::default(),
             value_commitments: decaf377::Element::default(),
-            merkle_root,
             expiry_height: None,
             chain_id: None,
         }
@@ -294,7 +293,7 @@ mod tests {
         let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
 
         let merkle_root = merkle::Root(Fq::zero());
-        let transaction = Transaction::build_with_root(merkle_root)
+        let transaction = Transaction::build()
             .set_fee(20)
             .set_chain_id("penumbra".to_string())
             .add_output(
@@ -307,7 +306,7 @@ mod tests {
                 MemoPlaintext::default(),
                 ovk_sender,
             )
-            .finalize(&mut rng);
+            .finalize(&mut rng, merkle_root);
 
         assert!(transaction.is_err());
         assert_eq!(transaction.err(), Some(Error::NonZeroValueBalance));
