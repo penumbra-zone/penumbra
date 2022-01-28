@@ -360,7 +360,7 @@ mod tests {
         nct.witness();
         let anchor = nct.root2();
 
-        let transaction = Transaction::build_with_root(anchor.clone())
+        let transaction = Transaction::build()
             .set_fee(10)
             .set_chain_id("penumbra".to_string())
             .add_output(
@@ -372,7 +372,7 @@ mod tests {
             )
             .add_spend(&mut rng, &nct, &sk_sender, note)
             .expect("note is in nct")
-            .finalize(&mut rng)
+            .finalize(&mut rng, anchor.clone())
             .expect("transaction created ok");
 
         let pending_tx = transaction
