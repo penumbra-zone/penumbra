@@ -403,20 +403,20 @@ impl ClientState {
 
     /// Generate a new transaction sending value to `dest_address`.
     #[instrument(skip(self, rng))]
-    pub fn build_send<'a, R: RngCore + CryptoRng>(
+    pub fn build_send<R: RngCore + CryptoRng>(
         &mut self,
         rng: &mut R,
-        values: &'a [Value],
+        values: &[Value],
         fee: u64,
-        dest_address: &'a Address,
+        dest_address: Address,
         source_address: Option<u64>,
         memo: Option<String>,
-    ) -> Result<(Transaction, Vec<Continuation<'a>>), anyhow::Error> {
+    ) -> Result<(Transaction, Vec<Continuation>), anyhow::Error> {
         let memo = memo.unwrap_or_else(String::new);
 
         // Construct an abstract description of the transaction
         let mut actions = Vec::with_capacity(values.len() * 2 + 1);
-        for value in values {
+        for value in values.iter().copied() {
             actions.push(Action::output(dest_address, value, memo.clone()));
             actions.push(Action::spend(value));
         }

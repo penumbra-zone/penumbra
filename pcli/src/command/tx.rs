@@ -53,7 +53,7 @@ impl TxCmd {
                     .map_err(|_| anyhow::anyhow!("address is invalid"))?;
 
                 let (transaction, rest) =
-                    state.build_send(&mut OsRng, &values, *fee, to, *from, memo.clone())?;
+                    state.build_send(&mut OsRng, &values, *fee, *to, *from, memo.clone())?;
 
                 opt.submit_transaction(&transaction).await?;
                 // Only commit the state if the transaction was submitted successfully,

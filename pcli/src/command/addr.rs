@@ -50,7 +50,7 @@ impl AddrCmd {
                 let (label, address) = state.wallet().address_by_index(*index as u64)?;
 
                 if *addr_only {
-                    println!("{}", address.to_string());
+                    println!("{}", address);
                     return Ok(()); // don't print the label
                 } else {
                     table.add_row(vec![index.to_string(), label, address.to_string()]);
