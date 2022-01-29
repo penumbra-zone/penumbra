@@ -3,14 +3,14 @@ use std::ops::Deref;
 use ark_ff::{UniformRand, Zero};
 use incrementalmerkletree::Tree;
 use penumbra_crypto::{
-    asset, ka,
+    ka,
     keys::{OutgoingViewingKey, SpendKey},
     memo::MemoPlaintext,
     merkle::{self, NoteCommitmentTree},
     rdsa::{Binding, Signature, SigningKey, SpendAuth},
     value, Address, Fr, Note, Value,
 };
-use penumbra_stake::{Delegate, RateData, Undelegate};
+use penumbra_stake::{Delegate, RateData, Undelegate, STAKING_TOKEN_ASSET_ID};
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
 
@@ -197,7 +197,7 @@ impl Builder {
     ///
     /// Note that we're using the lower case `pen` in the code.
     pub fn set_fee(&mut self, fee: u64) -> &mut Self {
-        let asset_id = asset::REGISTRY.parse_denom("upenumbra").unwrap().id();
+        let asset_id = *STAKING_TOKEN_ASSET_ID;
         let fee_value = Value {
             amount: fee,
             asset_id: asset_id.clone(),

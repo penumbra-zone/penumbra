@@ -4,7 +4,6 @@ use ark_ff::Zero;
 use bytes::Bytes;
 use decaf377::FieldExt;
 use penumbra_crypto::{
-    asset,
     merkle::{self, NoteCommitmentTree, TreeExt},
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
     Fr, Value,
@@ -15,6 +14,7 @@ use penumbra_proto::{
     },
     Message, Protobuf,
 };
+use penumbra_stake::STAKING_TOKEN_ASSET_ID;
 
 // TODO: remove & replace with anyhow
 use crate::{action::error::ProtoError, Action, GenesisBuilder};
@@ -115,7 +115,7 @@ impl Transaction {
         // Add fee into binding verification key computation.
         let fee_value = Value {
             amount: self.transaction_body.fee.0,
-            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            asset_id: *STAKING_TOKEN_ASSET_ID,
         };
         let fee_v_blinding = Fr::zero();
         let fee_value_commitment = fee_value.commit(fee_v_blinding);
@@ -302,7 +302,7 @@ mod tests {
                 &dest,
                 Value {
                     amount: 10,
-                    asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+                    asset_id: *STAKING_TOKEN_ASSET_ID,
                 },
                 MemoPlaintext::default(),
                 ovk_sender,

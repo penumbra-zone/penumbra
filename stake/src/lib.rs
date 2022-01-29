@@ -33,5 +33,4 @@ pub use penumbra_proto::serializers::bech32str::validator_identity_key::BECH32_P
 
 pub static STAKING_TOKEN_DENOM: Lazy<asset::Denom> =
     Lazy::new(|| asset::REGISTRY.parse_denom("upenumbra").unwrap());
-pub static STAKING_TOKEN_ASSET_ID: Lazy<asset::Id> =
-    Lazy::new(|| asset::REGISTRY.parse_denom("upenumbra").unwrap().id());
+pub static STAKING_TOKEN_ASSET_ID: Lazy<asset::Id> = Lazy::new(|| STAKING_TOKEN_DENOM.id());
