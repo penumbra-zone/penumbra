@@ -7,13 +7,12 @@ use std::{
 use anyhow::Context;
 use penumbra_chain::params::ChainParams;
 use penumbra_crypto::{
-    asset::{self, Denom},
-    memo,
+    asset, memo,
     merkle::{Frontier, NoteCommitmentTree, Tree, TreeExt},
     note, Address, FieldExt, Note, Nullifier, Value,
 };
 use penumbra_proto::light_wallet::{CompactBlock, StateFragment};
-use penumbra_stake::{RateData, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM};
+use penumbra_stake::{RateData, STAKING_TOKEN_ASSET_ID};
 use penumbra_transaction::Transaction;
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
@@ -170,21 +169,17 @@ impl ClientState {
         &mut self,
         rng: &mut R,
         amount: u64,
-        denom: &Denom,
+        asset_id: asset::Id,
         source_address: Option<u64>,
     ) -> Result<Vec<Note>, anyhow::Error> {
         let mut notes_by_address = self
-            .unspent_notes_by_denom_and_address()
-            .remove(denom)
-            .ok_or_else(|| anyhow::anyhow!("no notes of denomination {} found", denom))?;
+            .unspent_notes_by_asset_id_and_address()
+            .remove(&asset_id)
+            .ok_or_else(|| anyhow::anyhow!("no notes with id {} found", asset_id))?;
 
         let mut notes = if let Some(source) = source_address {
             notes_by_address.remove(&source).ok_or_else(|| {
-                anyhow::anyhow!(
-                    "no notes of denomination {} found in address {}",
-                    denom,
-                    source
-                )
+                anyhow::anyhow!("no notes with id {} found in address {}", asset_id, source)
             })?
         } else {
             notes_by_address.values().flatten().cloned().collect()
@@ -266,7 +261,9 @@ impl ClientState {
         let spend_amount = unbonded_amount + fee;
         let mut spent_amount = 0;
 
-        for note in self.notes_to_spend(rng, spend_amount, &*STAKING_TOKEN_DENOM, source_address)? {
+        for note in
+            self.notes_to_spend(rng, spend_amount, *STAKING_TOKEN_ASSET_ID, source_address)?
+        {
             spent_amount += note.amount();
             tx_builder.add_spend(
                 rng,
@@ -354,9 +351,12 @@ impl ClientState {
         // this sucks lmao
         let mut spent_amount = 0;
 
-        for note in
-            self.notes_to_spend(rng, delegation_amount, &delegation_denom, source_address)?
-        {
+        for note in self.notes_to_spend(
+            rng,
+            delegation_amount,
+            delegation_denom.id(),
+            source_address,
+        )? {
             spent_amount += note.amount();
             tx_builder.add_spend(
                 rng,
@@ -415,10 +415,9 @@ impl ClientState {
         let memo = memo.unwrap_or_else(String::new);
 
         // Construct an abstract description of the transaction
-        let mut actions = Vec::with_capacity(values.len() * 2 + 1);
+        let mut actions = Vec::with_capacity(values.len() + 1);
         for value in values.iter().copied() {
-            actions.push(Action::output(dest_address, value, memo.clone()));
-            actions.push(Action::spend(value));
+            actions.push(Action::send(dest_address, value, memo.clone()));
         }
         actions.push(Action::fee(fee));
 
@@ -430,7 +429,7 @@ impl ClientState {
     ///
     /// Notes are [`UnspentNote`]s, which describe whether the note is ready to spend, part of a
     /// submitted output, or part of submitted change expected to be received.
-    pub fn unspent_notes(&self) -> impl Iterator<Item = (u64, Denom, UnspentNote)> + '_ {
+    pub fn unspent_notes(&self) -> impl Iterator<Item = (u64, asset::Id, UnspentNote)> + '_ {
         self.unspent_set
             .values()
             .map(UnspentNote::Ready)
@@ -445,14 +444,6 @@ impl ClientState {
                     .map(|(_, note)| UnspentNote::SubmittedChange(note)),
             )
             .map(|note| {
-                // Any notes we have in the unspent set we will have the corresponding denominations
-                // for since the notes and asset registry are both part of the sync.
-                let denom = self
-                    .asset_cache
-                    .get(&note.as_ref().asset_id())
-                    .expect("all asset IDs should have denominations stored locally")
-                    .clone();
-
                 let index: u64 = self
                     .wallet()
                     .incoming_viewing_key()
@@ -460,21 +451,21 @@ impl ClientState {
                     .try_into()
                     .expect("diversifiers created by `pcli` are well-formed");
 
-                (index, denom, note)
+                (index, note.as_ref().asset_id(), note)
             })
     }
 
     /// Returns unspent notes, grouped by address index and then by denomination.
-    pub fn unspent_notes_by_address_and_denom(
+    pub fn unspent_notes_by_address_and_asset_id(
         &self,
-    ) -> BTreeMap<u64, BTreeMap<Denom, Vec<UnspentNote>>> {
+    ) -> BTreeMap<u64, BTreeMap<asset::Id, Vec<UnspentNote>>> {
         let mut notemap = BTreeMap::default();
 
-        for (index, denom, note) in self.unspent_notes() {
+        for (index, asset_id, note) in self.unspent_notes() {
             notemap
                 .entry(index)
                 .or_insert_with(BTreeMap::default)
-                .entry(denom)
+                .entry(asset_id)
                 .or_insert_with(Vec::default)
                 .push(note.clone());
         }
@@ -483,14 +474,14 @@ impl ClientState {
     }
 
     /// Returns unspent notes, grouped by denomination and then by address index.
-    pub fn unspent_notes_by_denom_and_address(
+    pub fn unspent_notes_by_asset_id_and_address(
         &self,
-    ) -> BTreeMap<Denom, BTreeMap<u64, Vec<UnspentNote>>> {
+    ) -> BTreeMap<asset::Id, BTreeMap<u64, Vec<UnspentNote>>> {
         let mut notemap = BTreeMap::default();
 
-        for (index, denom, note) in self.unspent_notes() {
+        for (index, asset_id, note) in self.unspent_notes() {
             notemap
-                .entry(denom)
+                .entry(asset_id)
                 .or_insert_with(BTreeMap::default)
                 .entry(index)
                 .or_insert_with(Vec::default)
