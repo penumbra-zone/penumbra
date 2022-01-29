@@ -47,4 +47,5 @@ sqlx = { version = "0.5.9", features = ["postgres"], optional = true }
 proptest = "1"
 bincode = "1"
 serde_json = "1"
+penumbra-stake = { path = "../stake" }
 sqlx = { version = "0.5.9", features = ["postgres", "runtime-tokio-rustls"] }
