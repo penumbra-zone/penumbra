@@ -338,6 +338,7 @@ impl super::ClientState {
                                 },
                             )
                         } else {
+                            // When undelegating:
                             (
                                 // Input an amount of the delegation token
                                 Value {
