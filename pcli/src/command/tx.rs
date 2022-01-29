@@ -55,21 +55,8 @@ impl TxCmd {
                 let descriptions =
                     state.build_send(&mut OsRng, &values, *fee, *to, *from, memo.clone())?;
 
-                // Handle each transaction description by turning it into a new transaction and
-                // submitting it to the chain until none are left.
-                for description in descriptions {
-                    // Construct the next transaction in the sequence of transactions.
-                    let transaction = state.evaluate_description(&mut OsRng, description, *from)?;
-
-                    // Submit the transaction to the chain.
-                    opt.submit_transaction(&transaction).await?;
-
-                    // Only commit the state if the transaction was submitted successfully,
-                    // so that we don't store pending notes that will never appear on-chain.
-                    state.commit()?;
-
-                    // TODO: await the confirmation of the transaction.
-                }
+                opt.submit_transaction_descriptions(state, descriptions)
+                    .await?;
             }
         }
         Ok(())

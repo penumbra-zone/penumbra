@@ -111,13 +111,11 @@ impl StakeCmd {
                     .into_inner()
                     .try_into()?;
 
-                let transaction =
+                let descriptions =
                     state.build_delegate(&mut OsRng, rate_data, unbonded_amount, *fee, *source)?;
 
-                opt.submit_transaction(&transaction).await?;
-                // Only commit the state if the transaction was submitted successfully,
-                // so that we don't store pending notes that will never appear on-chain.
-                state.commit()?;
+                opt.submit_transaction_descriptions(state, descriptions)
+                    .await?;
             }
             StakeCmd::Undelegate {
                 amount,
@@ -156,7 +154,7 @@ impl StakeCmd {
                     .into_inner()
                     .try_into()?;
 
-                let transaction = state.build_undelegate(
+                let descriptions = state.build_undelegate(
                     &mut OsRng,
                     rate_data,
                     delegation_amount,
@@ -164,10 +162,8 @@ impl StakeCmd {
                     *source,
                 )?;
 
-                opt.submit_transaction(&transaction).await?;
-                // Only commit the state if the transaction was submitted successfully,
-                // so that we don't store pending notes that will never appear on-chain.
-                state.commit()?;
+                opt.submit_transaction_descriptions(state, descriptions)
+                    .await?;
             }
             StakeCmd::Redelegate { .. } => {
                 todo!()

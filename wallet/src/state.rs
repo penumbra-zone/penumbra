@@ -1,6 +1,6 @@
 use std::{
     collections::BTreeMap,
-    mem,
+    iter, mem,
     time::{Duration, SystemTime},
 };
 
@@ -245,68 +245,15 @@ impl ClientState {
         unbonded_amount: u64,
         fee: u64,
         source_address: Option<u64>,
-    ) -> Result<Transaction, anyhow::Error> {
-        // If the source address is set, send the delegation tokens to the same
-        // address; otherwise, send them to the default address.
-        let (_label, self_address) = self
-            .wallet()
-            .address_by_index(source_address.unwrap_or(0))?;
-
-        let mut tx_builder = Transaction::build();
-
-        tx_builder
-            .set_fee(fee)
-            .set_chain_id(self.chain_id()?)
-            .add_delegation(&rate_data, unbonded_amount);
-
-        let spend_amount = unbonded_amount + fee;
-        let mut spent_amount = 0;
-
-        for note in
-            self.notes_to_spend(rng, spend_amount, *STAKING_TOKEN_ASSET_ID, source_address)?
-        {
-            spent_amount += note.amount();
-            tx_builder.add_spend(
-                rng,
-                &self.note_commitment_tree,
-                self.wallet.spend_key(),
-                note,
-            )?;
-        }
-
-        let delegation_note = tx_builder.add_output_producing_note(
+    ) -> Result<Vec<TransactionDescription>, anyhow::Error> {
+        self.compile_transaction(
             rng,
-            &self_address,
-            Value {
-                amount: rate_data.delegation_amount(unbonded_amount),
-                asset_id: rate_data.identity_key.delegation_token().id(),
-            },
-            memo::MemoPlaintext([0u8; memo::MEMO_LEN_BYTES]),
-            self.wallet.outgoing_viewing_key(),
-        );
-
-        let change_amount = spent_amount - spend_amount;
-        // TODO: support dummy notes, and produce a change output unconditionally.
-        // let change_note = if change_amount > 0 { ... } else { /* dummy note */}
-        if change_amount > 0 {
-            let change_note = tx_builder.add_output_producing_note(
-                rng,
-                &self_address,
-                Value {
-                    amount: change_amount,
-                    asset_id: *STAKING_TOKEN_ASSET_ID,
-                },
-                memo::MemoPlaintext([0u8; memo::MEMO_LEN_BYTES]),
-                self.wallet.outgoing_viewing_key(),
-            );
-            self.register_change(change_note);
-        }
-
-        self.register_change(delegation_note);
-
-        tx_builder
-            .finalize(rng, self.note_commitment_tree.root2())
-            .map_err(Into::into)
+            source_address,
+            [
+                ActionDescription::delegate(rate_data, unbonded_amount),
+                ActionDescription::fee(fee),
+            ],
+        )
     }
 
     /// Generate a new transaction delegating stake
@@ -318,88 +265,15 @@ impl ClientState {
         delegation_amount: u64,
         fee: u64,
         source_address: Option<u64>,
-    ) -> Result<Transaction, anyhow::Error> {
-        // If the source address is set, send the delegation tokens to the same
-        // address; otherwise, send them to the default address.
-        let (_label, self_address) = self
-            .wallet()
-            .address_by_index(source_address.unwrap_or(0))?;
-
-        let mut tx_builder = Transaction::build();
-
-        tx_builder
-            .set_fee(fee)
-            .set_chain_id(self.chain_id()?)
-            .add_undelegation(&rate_data, delegation_amount);
-
-        // Because the outputs of an undelegation are quarantined, we want to
-        // avoid any unnecessary change outputs, so we pay fees out of the
-        // unbonded amount.
-        let unbonded_amount = rate_data.unbonded_amount(delegation_amount);
-        let output_amount = unbonded_amount.checked_sub(fee).ok_or_else(|| {
-            anyhow::anyhow!(
-                "unbonded amount {} from delegation amount {} is insufficient to pay fees {}",
-                unbonded_amount,
-                delegation_amount,
-                fee
-            )
-        })?;
-
-        let delegation_denom = rate_data.identity_key.delegation_token().denom();
-
-        // XXX if the undelegation is for less than their total amount of delegation tokens,
-        // all of their remaining delegation tokens will also be quarantined.
-        // this sucks lmao
-        let mut spent_amount = 0;
-
-        for note in self.notes_to_spend(
+    ) -> Result<Vec<TransactionDescription>, anyhow::Error> {
+        self.compile_transaction(
             rng,
-            delegation_amount,
-            delegation_denom.id(),
             source_address,
-        )? {
-            spent_amount += note.amount();
-            tx_builder.add_spend(
-                rng,
-                &self.note_commitment_tree,
-                self.wallet.spend_key(),
-                note,
-            )?;
-        }
-
-        let output_note = tx_builder.add_output_producing_note(
-            rng,
-            &self_address,
-            Value {
-                amount: output_amount,
-                asset_id: *STAKING_TOKEN_ASSET_ID,
-            },
-            memo::MemoPlaintext([0u8; memo::MEMO_LEN_BYTES]),
-            self.wallet.outgoing_viewing_key(),
-        );
-
-        let change_amount = spent_amount - delegation_amount;
-        // TODO: support dummy notes, and produce a change output unconditionally.
-        // let change_note = if change_amount > 0 { ... } else { /* dummy note */}
-        if change_amount > 0 {
-            let change_note = tx_builder.add_output_producing_note(
-                rng,
-                &self_address,
-                Value {
-                    amount: change_amount,
-                    asset_id: delegation_denom.id(),
-                },
-                memo::MemoPlaintext([0u8; memo::MEMO_LEN_BYTES]),
-                self.wallet.outgoing_viewing_key(),
-            );
-            self.register_change(change_note);
-        }
-
-        self.register_change(output_note);
-
-        tx_builder
-            .finalize(rng, self.note_commitment_tree.root2())
-            .map_err(Into::into)
+            [
+                ActionDescription::undelegate(rate_data, delegation_amount),
+                ActionDescription::fee(fee),
+            ],
+        )
     }
 
     /// Generate a new transaction sending value to `dest_address`.
@@ -415,15 +289,15 @@ impl ClientState {
     ) -> Result<Vec<TransactionDescription>, anyhow::Error> {
         let memo = memo.unwrap_or_else(String::new);
 
-        // Construct an abstract description of the transaction
-        let mut actions = Vec::with_capacity(values.len() + 1);
-        for value in values.iter().copied() {
-            actions.push(ActionDescription::send(dest_address, value, memo.clone()));
-        }
-        actions.push(ActionDescription::fee(fee));
-
         // Compile the description into a real transaction and potential remainder
-        self.compile_transaction(rng, source_address, actions)
+        self.compile_transaction(
+            rng,
+            source_address,
+            values
+                .iter()
+                .map(|value| ActionDescription::send(dest_address, *value, memo.clone()))
+                .chain(iter::once(ActionDescription::fee(fee))),
+        )
     }
 
     /// Returns an iterator over unspent `(address_id, denom, note)` triples.

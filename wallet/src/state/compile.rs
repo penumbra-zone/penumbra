@@ -16,7 +16,6 @@ impl super::ClientState {
         &mut self,
         rng: &mut R,
         description: TransactionDescription,
-        source_address: Option<u64>,
     ) -> anyhow::Result<Transaction> {
         // Use the transaction builder to build the transaction
         let mut builder = Transaction::build();
@@ -122,7 +121,7 @@ impl super::ClientState {
         &mut self,
         rng: &mut R,
         source_address: Option<u64>,
-        actions: Vec<ActionDescription>,
+        actions: impl IntoIterator<Item = ActionDescription>,
     ) -> anyhow::Result<Vec<TransactionDescription>> {
         let self_address = self.wallet.address_by_index(source_address.unwrap_or(0))?.1;
 
@@ -205,7 +204,7 @@ impl super::ClientState {
     fn tally_transaction(
         &mut self,
         source_address: Option<u64>,
-        actions: Vec<ActionDescription>,
+        actions: impl IntoIterator<Item = ActionDescription>,
     ) -> anyhow::Result<Tally> {
         let self_address = self.wallet.address_by_index(source_address.unwrap_or(0))?.1;
         let mut total = Tally::default();
@@ -294,7 +293,7 @@ impl super::ClientState {
                                 destination: self_address,
                                 amount: output_value.amount,
                                 memo: Default::default(),
-                                is_change: false,
+                                is_change: true, // (un)delegations are registered as change because they are self-sends
                             });
 
                         // Keep track of this (un)delegation in the total (un)delegations...
@@ -324,6 +323,7 @@ impl super::ClientState {
         tracing::debug!(?total.outputs, "collected total outputs");
 
         // Add the fee to the total spends
+        // TODO: don't do this when undelegating
         *total.spends.entry(*STAKING_TOKEN_ASSET_ID).or_insert(0) += total.fee;
 
         tracing::debug!(?total.spends, "collected total specified spends");
