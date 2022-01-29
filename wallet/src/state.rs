@@ -722,6 +722,7 @@ impl ClientState {
                         "found nullifier for unspent note, marking it as spent"
                     );
                     self.spent_set.insert(note_commitment, note);
+                    self.note_commitment_tree.remove_witness(&note_commitment);
                 } else if let Some((_, note)) = self.submitted_spend_set.remove(&note_commitment) {
                     // Insert the note into the spent set
                     tracing::debug!(
@@ -730,6 +731,7 @@ impl ClientState {
                         "found nullifier for submitted spend note, marking it as spent"
                     );
                     self.spent_set.insert(note_commitment, note);
+                    self.note_commitment_tree.remove_witness(&note_commitment);
                 } else if let Some((_, note)) = self.submitted_change_set.remove(&note_commitment) {
                     // Insert the note into the spent set
                     tracing::debug!(
@@ -738,6 +740,7 @@ impl ClientState {
                         "found nullifier for submitted change note, marking it as spent"
                     );
                     self.spent_set.insert(note_commitment, note);
+                    self.note_commitment_tree.remove_witness(&note_commitment);
                 } else if self.spent_set.contains_key(&note_commitment) {
                     // If the nullifier is already in the spent set, it means we've already
                     // processed this note and it's spent. This should never happen
