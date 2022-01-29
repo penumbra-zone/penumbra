@@ -7,7 +7,8 @@ use std::{
 use anyhow::Context;
 use penumbra_chain::params::ChainParams;
 use penumbra_crypto::{
-    asset, memo,
+    asset::{self, Denom},
+    memo,
     merkle::{Frontier, NoteCommitmentTree, Tree, TreeExt},
     note, Address, FieldExt, Note, Nullifier, Value,
 };
@@ -22,8 +23,8 @@ use tracing::instrument;
 use crate::Wallet;
 
 mod compile;
-use compile::Action;
-pub use compile::Continuation;
+use compile::ActionDescription;
+pub use compile::TransactionDescription;
 
 const MAX_MERKLE_CHECKPOINTS_CLIENT: usize = 10;
 
@@ -411,15 +412,15 @@ impl ClientState {
         dest_address: Address,
         source_address: Option<u64>,
         memo: Option<String>,
-    ) -> Result<(Transaction, Vec<Continuation>), anyhow::Error> {
+    ) -> Result<Vec<TransactionDescription>, anyhow::Error> {
         let memo = memo.unwrap_or_else(String::new);
 
         // Construct an abstract description of the transaction
         let mut actions = Vec::with_capacity(values.len() + 1);
         for value in values.iter().copied() {
-            actions.push(Action::send(dest_address, value, memo.clone()));
+            actions.push(ActionDescription::send(dest_address, value, memo.clone()));
         }
-        actions.push(Action::fee(fee));
+        actions.push(ActionDescription::fee(fee));
 
         // Compile the description into a real transaction and potential remainder
         self.compile_transaction(rng, source_address, actions)
@@ -429,7 +430,7 @@ impl ClientState {
     ///
     /// Notes are [`UnspentNote`]s, which describe whether the note is ready to spend, part of a
     /// submitted output, or part of submitted change expected to be received.
-    pub fn unspent_notes(&self) -> impl Iterator<Item = (u64, asset::Id, UnspentNote)> + '_ {
+    pub fn unspent_notes(&self) -> impl Iterator<Item = (u64, UnspentNote)> + '_ {
         self.unspent_set
             .values()
             .map(UnspentNote::Ready)
@@ -451,21 +452,62 @@ impl ClientState {
                     .try_into()
                     .expect("diversifiers created by `pcli` are well-formed");
 
-                (index, note.as_ref().asset_id(), note)
+                (index, note)
             })
     }
 
-    /// Returns unspent notes, grouped by address index and then by denomination.
+    /// Returns unspent notes, grouped by address index and then by asset id.
     pub fn unspent_notes_by_address_and_asset_id(
         &self,
     ) -> BTreeMap<u64, BTreeMap<asset::Id, Vec<UnspentNote>>> {
         let mut notemap = BTreeMap::default();
 
-        for (index, asset_id, note) in self.unspent_notes() {
+        for (index, note) in self.unspent_notes() {
             notemap
                 .entry(index)
                 .or_insert_with(BTreeMap::default)
-                .entry(asset_id)
+                .entry(note.as_ref().asset_id())
+                .or_insert_with(Vec::default)
+                .push(note.clone());
+        }
+
+        notemap
+    }
+
+    /// Returns unspent notes, grouped by asset id and then by address index.
+    pub fn unspent_notes_by_asset_id_and_address(
+        &self,
+    ) -> BTreeMap<asset::Id, BTreeMap<u64, Vec<UnspentNote>>> {
+        let mut notemap = BTreeMap::default();
+
+        for (index, note) in self.unspent_notes() {
+            notemap
+                .entry(note.as_ref().asset_id())
+                .or_insert_with(BTreeMap::default)
+                .entry(index)
+                .or_insert_with(Vec::default)
+                .push(note.clone());
+        }
+
+        notemap
+    }
+
+    /// Returns unspent notes, grouped by address index and then by denomination.
+    pub fn unspent_notes_by_address_and_denom(
+        &self,
+    ) -> BTreeMap<u64, BTreeMap<Denom, Vec<UnspentNote>>> {
+        let mut notemap = BTreeMap::default();
+
+        for (index, note) in self.unspent_notes() {
+            let denom = self
+                .asset_cache
+                .get(&note.as_ref().asset_id())
+                .expect("all asset IDs should have denominations stored locally")
+                .clone();
+            notemap
+                .entry(index)
+                .or_insert_with(BTreeMap::default)
+                .entry(denom)
                 .or_insert_with(Vec::default)
                 .push(note.clone());
         }
@@ -474,14 +516,19 @@ impl ClientState {
     }
 
     /// Returns unspent notes, grouped by denomination and then by address index.
-    pub fn unspent_notes_by_asset_id_and_address(
+    pub fn unspent_notes_by_denom_and_address(
         &self,
-    ) -> BTreeMap<asset::Id, BTreeMap<u64, Vec<UnspentNote>>> {
+    ) -> BTreeMap<Denom, BTreeMap<u64, Vec<UnspentNote>>> {
         let mut notemap = BTreeMap::default();
 
-        for (index, asset_id, note) in self.unspent_notes() {
+        for (index, note) in self.unspent_notes() {
+            let denom = self
+                .asset_cache
+                .get(&note.as_ref().asset_id())
+                .expect("all asset IDs should have denominations stored locally")
+                .clone();
             notemap
-                .entry(asset_id)
+                .entry(denom)
                 .or_insert_with(BTreeMap::default)
                 .entry(index)
                 .or_insert_with(Vec::default)

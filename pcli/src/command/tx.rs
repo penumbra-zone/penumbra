@@ -52,23 +52,23 @@ impl TxCmd {
                     .parse()
                     .map_err(|_| anyhow::anyhow!("address is invalid"))?;
 
-                let (transaction, rest) =
+                let descriptions =
                     state.build_send(&mut OsRng, &values, *fee, *to, *from, memo.clone())?;
 
-                opt.submit_transaction(&transaction).await?;
-                // Only commit the state if the transaction was submitted successfully,
-                // so that we don't store pending notes that will never appear on-chain.
-                state.commit()?;
+                // Handle each transaction description by turning it into a new transaction and
+                // submitting it to the chain until none are left.
+                for description in descriptions {
+                    // Construct the next transaction in the sequence of transactions.
+                    let transaction = state.evaluate_description(&mut OsRng, description, *from)?;
 
-                // Handle the continuations of this transaction iteratively until none are left
-                for continuation in rest {
-                    // Construct the next transaction to perform based on the continuation of the
-                    // previous transaction.
-                    let transaction = state.continue_with(&mut OsRng, continuation)?;
-
-                    // Submit this next transaction
+                    // Submit the transaction to the chain.
                     opt.submit_transaction(&transaction).await?;
+
+                    // Only commit the state if the transaction was submitted successfully,
+                    // so that we don't store pending notes that will never appear on-chain.
                     state.commit()?;
+
+                    // TODO: await the confirmation of the transaction.
                 }
             }
         }
