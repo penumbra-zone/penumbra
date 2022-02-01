@@ -10,7 +10,7 @@ die () {
     exit 1
 }
 
-[ "$#" -eq 1 ] || die "build path, testnet chain ID, allocations input file, validators input file, and num nodes arguments required"
+[ "$#" -eq 1 ] || die "build path argument required"
 
 
 build_path="$1"
