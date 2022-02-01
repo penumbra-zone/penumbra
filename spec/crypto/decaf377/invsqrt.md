@@ -33,77 +33,54 @@ We set $n \gt 1$ (the 2-adicity of the field) and $m$ odd such that $p-1 = 2^n m
 We define $g = \zeta^m$ where $\zeta$ is a non-square root of unity. We fix $\zeta$ as
 2841681278031794617739547238867782961338435681360110683443920362658525667816.
 
-We then define $\ell_0, ..., \ell_{k-1} > 0$ such that $\ell_0 + ... + \ell_{k-1} = n - 1$. Following Section 2.2 of [Sarkar 2020], for decaf377 we choose:
+We then define a $k \ge 1$ and $\ell_0, ..., \ell_{k-1} > 0$ such that $\ell_0 + ... + \ell_{k-1} = n - 1$. We also define a parameter $w$ where $1 \le w \le \max{(\ell_0, \ell_1, ..., \ell_{k-1})}$. For decaf377 we choose:
 - $k=6$
 - $\ell_{0,1} = 7$
 - $\ell_{2, 3, 4, 5} = 8$
+- $w = 8$
 
 ## Precomputation
 
-Lookup tables[^note] are needed which can be precomputed as they depend only on the 2-adicity $n$ and the choice of $\ell_i$ above. This section follows the alternative table lookup method described in Section 3 of [Sarkar 2020].
+Lookup tables are needed which can be precomputed as they depend only on the 2-adicity $n$ and the choice of $\ell_i$ above.
 
-We define $w = \max(\ell_0,...,\ell_{k-1}) = 8$. 
+### $g$ lookup table: $g^{\nu 2 ^ {x}}$
 
-### Table 1: $g^{\nu 2 ^ {n - iw}}$
-
-We compute $g^{\nu 2 ^ {n - iw}}$ for $\nu \isin {1, ..., 2^w - 1}$ and $i \isin {2, 1, 0}$. This can be stored as a matrix where the rows represent distinct $i$ values and the columns represent distinct $\nu$ values:
-
-$
-\begin{pmatrix}
-g^{2^{31}} & g^{2^{32}} & ... & (g^{2^{31}})^{2^8 - 1}\\
-g^{2^{39}} & g^{2^{40}} & ... & (g^{2^{39}})^{2^8 - 1}\\
-g^{2^{47}} & g^{2^{48}} & ... & (g^{2^{47}})^{2^8 - 1}
-\end{pmatrix}
-$
-
-For example, the entry for $\nu=1$ and $i=2$ is the upper left entry $g^{2^{31}}$.
-
-### Table 2: $g^{\nu 2 ^ {iw}}$
-
-We compute $g^{\nu 2 ^ {iw}}$ for $\nu \isin {1, ..., 2^w - 1}$ and $i \isin {0, 1, ..., 5}$. This can be stored as a matrix where the rows represent distinct $i$ values and the columns represent distinct $\nu$ values:
+We compute $g^{\nu 2 ^ {x}}$ for $\nu \isin {1, ..., 2^w - 1}$ and $x \isin {0, 7, 8, 15, 16, 23, 24, 31, 32, 40}$, indexed on $x$ and $\nu$:
 
 $
 \begin{pmatrix}
 g & g^{2} & ... & g^{2^8 - 1}\\
-g^{2^{28}} & g^{2^{29}} & ... & (g^{2^8})^{2^8 - 1}\\
+g^{2^{7}} & g^{2^{8}} & ... & (g^{2^7})^{2^8 - 1}\\
 \vdots & \vdots & \ddots & \vdots  \\
 g^{2^{40}} & g^{2^{41}} & ... & (g^{2^{40}})^{2^8 - 1}
 \end{pmatrix}
 $
 
-### Table 3: $g^{-\nu (2^{n-w})}$
+This table lets us lookup powers of $g$. The required values of $x$ are the powers of 2 that appear in our expressions for $t_i$, i.e. ${0, 7, 8, 15, 16, 23, 24, 31, 32}$, as well as any additional powers of 2 that are needed to compute $g^{t/2}$ in Step 5, which adds $40$.
 
-We compute $g^{-\nu (2^{n-w})}$ for $\nu \isin {1, ..., 2^w - 1}$. This can be stored as a vector:
+### $s$ lookup table: $g^{-\nu (2^{n-w})}$
+
+We compute $g^{-\nu (2^{n-w})}$ for $\nu \isin {0, ..., 2^w - 1}$, indexed on $g^{-\nu (2^{n-w})}$:
 
 $
 \begin{pmatrix}
-g^{2^{-39}} & (g^{2^{-39}})^2 & ... & (g^{2^{-39}})^{2^8 - 1}
+g^0 & g^{2^{-39}} & (g^{2^{-39}})^2 & ... & (g^{2^{-39}})^{2^8 - 1}
 \end{pmatrix}
 $
 
+We use this table in the procedure that follows to find $q_i$ (they are the $\nu$ values) in order to compute $s_i$.
+
 ## Procedure
 
-In the following procedure, let $u=N/D$.
+In the following procedure, let $u=N/D$. We use the following relations from [Sarkar 2020]:
+
+* Equation 1: $\alpha_i = x_i g^{t_i}$ and $t_i = (t_{i - 1} + s_{i - 1})/2^{\ell_i}$ for $i \isin {0, ..., k-1}$ and $t_k = t_{k - 1} + s_{k - 1}$
+* Lemma 3: $\alpha_i g^{s_i} = 1$ for $i \isin {0, ..., k-1}$
+* Equation 2: $s_i = q_i 2^{n - l_i}$
 
 ### Step 1: Compute $v=u^{\frac{m-1}{2}}$
 
-We define $v = u^{\frac{m-1}{2}}$. This corresponds to line 2 of the `findSqRoot` Algorithm 1 in [Sarkar 2020].
-
-Substituting $u=N/D$:
-
-$v = (\frac N D)^{\frac{m-1}{2}} = N^{\frac{m-1}{2}} * D^{- \frac{m-1}{2}} $
-
-Applying Fermat's Little Theorem (i.e. $D^{p-1} = 1 \mod p$):
-
-$v = N^{\frac{m-1}{2}} * D^{p - 1 - \frac{m-1}{2}} $
-
-Substituting $p- 1 = 2^n m$ and rearranging:
-
-$v = N^{\frac{m-1}{2}} * D^{2^n m - \frac{m-1}{2}} $
-$v = N^{\frac{m-1}{2}} * D^{\frac 1 2 (2^{n+1} m - m - 1)} $
-$v = N^{\frac{m-1}{2}} * D^{\frac 1 2 (2^{n+1} m - m - 1 - 2^{n+1} + 2^{n+1})} $
-$v = N^{\frac{m-1}{2}} * D^{\frac 1 2 (2^{n+1} - 1) (m - 1) + 2^{n}} $
-$v = N^{\frac{m-1}{2}} * D^{\frac 1 2 (2^{n+1} - 1) (m - 1)} * D^{2^{n}} $
+We compute $v = u^{\frac{m-1}{2}}$. This corresponds to line 2 of the `findSqRoot` Algorithm 1 in [Sarkar 2020].
 
 ### Step 2: Compute $x$
 
@@ -126,47 +103,88 @@ Next, we loop over $k$. This corresponds to lines 6-9 of the `findSqRoot` Algori
 
 #### For $i=0$
 
-$t_0 = 0$
-$\alpha_0 = x_0$
+Using Lemma 3:
 
-Using $\alpha_0 g^{s_0} = 1$ (Lemma 3 [Sarkar 2020]):
+$\alpha_0 g^{s_0} = 1$
 
-$x_0 g^{s_0} = 1$
-$x_0 = g^{-s_0}$
+Substituting the definition of $\alpha_0$ from equation 1:
 
-We know $x_0$ from step 3 and $g$ is a constant, and we find $s_0$ using a lookup in Table 3. The table lookups give us $\nu$ where $s=\nu * 2^{n-w}$,
+$x_0 g^{t_0} g^{s_0} = 1$
+
+Rearranging and substituting in $t_0 = 0$ (initial condition):
+
+$x_0 = g^{-s_0} $
+
+Substituting in equation 2:
+
+$x_0 = g^{-q_0 2^{n - \ell_0}} = g^{-q_0 2^{40}} $
+
+This is almost in a form where we can look up $q_0$ in our s lookup table to get $q_0$ and thus $s_0$. If we define $q'_0 = 2 q_0$ we get:
+
+$x_0 = g^{-q'_0 2^{39}}$
+
+Which we can use with our s lookup table to get $q'_0$. Expressing $s_0$ in terms of $q'_0$, we get $s_0 = q'_0 2^{39}$.
 
 #### For $i=1$
 
-$t_1 = s_0 2^{-\ell_1} = s_0 2^{-7} $
-$\alpha_1 = x_1 g^{t_1} = x_1 g^{s_0 2^{-7}}$
+First we compute $t_1$ using equation 1:
 
-Similarly to $i=0$, using $\alpha_1 g^{s_1} = 1$ we lookup $\alpha_1 = g^{-s_1}$ in the table.
+$t_1 = (t_0 + s_0) / 2^{\ell_1} = (t_0 + s_0)/2^7 = q'_0 2^{32}$
+
+Next, similar to the first iteration, we use lemma 3 and substitute in $t_1$ and $s_1$ to yield:
+
+$\alpha_1 g^{s_1} = 1$
+
+$x_1 g^{q'_0 2^{32}} = g^{-q'_1 2^{39}}$
+
+In this expression we can compute the quantities on the left hand side, and the right hand side is in the form we expect for the s lookup table, yielding us $q'_1$. Note that here too we define $q'_1 = 2 q_1$ such that the s lookup table can be used. Expressing $s_1$ in terms of $q'_1$, we get $s_1 = q'_1 2^{39}$.
 
 #### For $i=2,...,5$
 
-The remaining iterations yield:
+The remaining iterations proceed similarly, yielding the following expressions:
 
-$\alpha_i = x_i g^{t_i}$ where $t_i = (t_{i-1} + s_{i - 1})2^{-8})$
+$t_2 = q'_0 2^{24} + q'_1 2^{31}$
+$s_2 = q_2 2^{39}$
 
-For each $\alpha_i$ we use the lemma $\alpha_i g^{s_i} = 1$. Once rearranged as $\alpha_i = g^{-s_i}$, we lookup in Table 3 to get $s_i$.
+Note for $q_2$ and the remaining iterations we do not require a trick (i.e. with $q'_0$, $q'_1$) to get $s_2$ in a form where it can be used with the s lookup table.
+
+$t_3 = q'_0 2^{16} + q'_1 2^{23} + q_2 2^{31}$
+$s_3 = q_3 2^{39}$
+
+$t_4 = q'_0 2^{8} + q'_1 2^{15} + q_2 2^{23} + q_3 2^{31}$
+$s_4 = q_4 2^{39}$
+
+$t_5 = q'_0 + q'_1 2^{7} + q_2 2^{15} + q_3 2^{23} + q_4 2^{31} $
+$s_5 = q_5 2^{39}$
 
 At the end of this step, we have found $s_i$ and $t_i$ for $i \isin {0,...,k-1}$.
 
 ### Step 5: Return result $y$
 
-Next, given $t=t_5 + s_5$ from the previous step, $uv$ from step 1, we compute:
+Next, we can use equation 1 to compute $t=t_5 + s_5$ using $t_5$ and $s_5$ from the previous step:
+
+$t = q'_0 + q'_1 2^{7} + q_2 2^{15} + q_3 2^{23} + q_4 2^{31} + q_5 2^{39} $
+
+This matches the expression from Lemma 4 in [Sarkar 2020]. 
+
+Next, to compute $g^{t/2}$, we lookup entries in the g lookup table. To do so, we can decompose $t/2$ into:
+
+$t/2 = v_0 2^0 + v_1 2^8 + v_2 2^{16} + v_3 2^{24} + v_4 2 ^{32} + v_5 2^{40}$ 
+
+then $g^{t/2}$ is computed as:
+
+$g^{t/2} = g^{v_0 2^0} g^{v_1 2^8} g^{v_2 2^{16}} g^{v_3 2^{24}} g^{v_4 2 ^{32}} g^{v_5 2^{40}}$
+
+Multiplying in $uv$ from step 1, we compute:
 
 $y = uv g^{t/2}$
 
-To compute $g^{t/2}$, we lookup entries in Tables 1 and 2. This corresponds to line 10 of the `findSqRoot` Algorithm 1 in [Sarkar 2020].
+This corresponds to line 10 of the `findSqRoot` Algorithm 1 in [Sarkar 2020].
 
 We can use the result of this computation $y$ to determine whether or not the square exists, recalling from Step 1 that $u=N/D$:
 
 * If $u$ is square, then $y=\sqrt{N/D}$, and $y^2 D - N = 0$
 * If $u$ is non-square, then $y=\sqrt{\zeta N/D}$ and $y^2 - \zeta N = 0$.
-
-[^note]: In cases where $w$ divides $n$, table 1 and 2 can be combined. Since $w=8$ and $n=47$, we compute table 1 and 2 separately.
 
 [internet-draft]: https://datatracker.ietf.org/doc/draft-irtf-cfrg-ristretto255-decaf448/01/
 [Sarkar 2020]: https://eprint.iacr.org/2020/1407
