@@ -18,7 +18,13 @@ square.  Note that **unlike** the similar function in the
 `ristretto255`/`decaf448` [internet-draft], this function does not make any
 claims about the sign of its output.
 
-To compute `sqrt_ratio_zeta` we use a method adapted from [Sarkar 2020] and [zcash-pasta], which is described in the remainder of this section.
+Define `isqrt(x)` as a function that internally invokes `sqrt_ratio_zeta` and computes the inverse square root of a field element $x$:
+
+- (True, $0$) if $x$ is zero;
+- (True, $1/\sqrt{x}$) if $x$ is nonzero, and $x$ is square;
+- (False, $1/\sqrt{ \zeta x}$) if $x$ is nonzero, and $x$ is nonsquare.
+
+To compute `sqrt_ratio_zeta` we use a table-based method adapted from [Sarkar 2020] and [zcash-pasta], which is described in the remainder of this section.
 
 ## Constants
 
@@ -27,9 +33,6 @@ We set $n \gt 1$ (the 2-adicity of the field) and $m$ odd such that $p-1 = 2^n m
 We define $g = \zeta^m$ where $\zeta$ is a non-square root of unity. We fix $\zeta$ as
 2841681278031794617739547238867782961338435681360110683443920362658525667816.
 
-- [ ] TODO: possibly change this value to be convenient for implementations,
-rather than something that's convenient for SAGE;
-
 We then define $\ell_0, ..., \ell_{k-1} > 0$ such that $\ell_0 + ... + \ell_{k-1} = n - 1$. Following Section 2.2 of [Sarkar 2020], for decaf377 we choose:
 - $k=6$
 - $\ell_{0,1} = 7$
@@ -37,7 +40,7 @@ We then define $\ell_0, ..., \ell_{k-1} > 0$ such that $\ell_0 + ... + \ell_{k-1
 
 ## Precomputation
 
-Three tables[^note] are needed which can be precomputed as they depend only on the 2-adicity $n$ and the choice of $\ell_i$ above. This section follows the alternative table lookup method described in Section 3 of [Sarkar 2020].
+Lookup tables[^note] are needed which can be precomputed as they depend only on the 2-adicity $n$ and the choice of $\ell_i$ above. This section follows the alternative table lookup method described in Section 3 of [Sarkar 2020].
 
 We define $w = \max(\ell_0,...,\ell_{k-1}) = 8$. 
 
