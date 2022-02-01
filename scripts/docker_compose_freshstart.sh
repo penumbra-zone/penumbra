@@ -29,7 +29,6 @@ printf "Storing configs to ${build_path}/ ...\n\n\n"
 mkdir -p ${build_path}
 docker-compose stop
 docker container prune
-docker volume rm penumbra_tendermint_data || true
 docker volume rm penumbra_prometheus_data || true
 docker volume rm penumbra_db_data || true
 
