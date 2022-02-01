@@ -45,4 +45,4 @@ cargo sqlx prepare  -- --lib
 printf "Done\n"
 cd ..
 
-cargo run --bin pd -- generate-testnet --output-dir ${build_path}
+cargo run --release --bin pd -- generate-testnet --output-dir ${build_path}
