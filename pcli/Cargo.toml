@@ -41,7 +41,7 @@ structopt = "0.3"
 tonic = "0.6.1"
 tracing-subscriber = "0.2"
 pin-project = "1"
-serde_json = { version = "1", features = ["raw_value"] }
+serde_json = "1"
 serde = { version = "1", features = ["derive"] }
 serde_with = { version = "1.11", features = ["hex"] }
 reqwest = { version = "0.11", features = ["json"] }
