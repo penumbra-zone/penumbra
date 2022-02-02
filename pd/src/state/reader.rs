@@ -235,8 +235,8 @@ impl Reader {
 
     pub async fn rate_data(&self, epoch_index: u64) -> Result<Vec<RateData>> {
         let mut conn = self.pool.acquire().await?;
-        // Select rate data for the given epoch, or for the most recent epoch with rate data if none
-        // exists for the given epoch.
+        // Select rate data for the given epoch, or for the most recent epoch with rate data less than or equal
+        // to the given epoch.
         let rows = query!(
             "SELECT vr.identity_key, vr.maxepoch, vr2.validator_reward_rate, vr2.validator_exchange_rate
             FROM 
