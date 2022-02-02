@@ -1,4 +1,4 @@
-use std::{fs::File, path::PathBuf};
+use std::{fs::File, io::BufReader, path::PathBuf};
 
 use anyhow::{anyhow, Context as _, Result};
 use directories::ProjectDirs;
@@ -78,14 +78,20 @@ impl WalletCmd {
             WalletCmd::Reset => {
                 tracing::info!("resetting client state");
 
+                tracing::debug!("reading existing client state from disk");
+
                 #[derive(Deserialize)]
                 struct MinimalState {
                     wallet: Wallet,
                 }
 
                 // Read the wallet field out of the state file, without fully deserializing the rest
-                let wallet =
-                    serde_json::from_reader::<_, MinimalState>(File::open(&wallet_path)?)?.wallet;
+                let wallet = serde_json::from_reader::<_, MinimalState>(BufReader::new(
+                    File::open(&wallet_path)?,
+                ))?
+                .wallet;
+
+                tracing::debug!("writing fresh client state");
 
                 // Write the new wallet JSON to disk as a temporary file in the wallet directory
                 let tmp_path = wallet_path.with_extension("tmp");
@@ -94,10 +100,15 @@ impl WalletCmd {
                     .write(true)
                     .truncate(true)
                     .open(&tmp_path)?;
+
                 serde_json::to_writer_pretty(&mut tmp_file, &ClientState::new(wallet))?;
+
+                tracing::debug!("checking that we can deserialize fresh client state");
 
                 // Check that we can successfully parse the result from disk
                 ClientStateFile::load(tmp_path.clone()).context("can't parse wallet after attempting to reset: refusing to overwrite existing wallet file")?;
+
+                tracing::debug!("overwriting previous client state");
 
                 // Overwrite the existing wallet state file, *atomically*
                 std::fs::rename(&tmp_path, &wallet_path)?;

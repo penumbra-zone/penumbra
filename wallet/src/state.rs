@@ -772,6 +772,7 @@ mod serde_helpers {
     #[serde_as]
     #[derive(Serialize, Deserialize)]
     pub struct ClientStateHelper {
+        wallet: Wallet, // this should be at the top to make `wallet reset` faster
         last_block_height: Option<u32>,
         #[serde_as(as = "serde_with::hex::Hex")]
         note_commitment_tree: Vec<u8>,
@@ -784,7 +785,6 @@ mod serde_helpers {
         spent_set: Vec<(String, String)>,
         transactions: Vec<(String, String)>,
         asset_registry: Vec<(asset::Id, String)>,
-        wallet: Wallet,
         chain_params: Option<ChainParams>,
     }
 
