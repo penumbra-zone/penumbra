@@ -43,20 +43,20 @@ We then define a $k \ge 1$ and $\ell_0, ..., \ell_{k-1} > 0$ such that $\ell_0 +
 
 Lookup tables are needed which can be precomputed as they depend only on the 2-adicity $n$ and the choice of $\ell_i$ above.
 
-### $g$ lookup table: $g^{\nu 2 ^ {x}}$
+### $g$ lookup table: $g^{\nu 2 ^ {iw}}$
 
-We compute $g^{\nu 2 ^ {x}}$ for $\nu \isin {1, ..., 2^w - 1}$ and $x \isin {0, 7, 8, 15, 16, 23, 24, 31, 32, 40}$, indexed on $x$ and $\nu$:
+We compute $g^{\nu 2 ^ {iw}}$ for $\nu \isin {1, ..., 2^w - 1}$ and $i \isin {0, ..., k - 1}$, indexed on $x$ and $\nu$:
 
 $
 \begin{pmatrix}
 g & g^{2} & ... & g^{2^8 - 1}\\
-g^{2^{7}} & g^{2^{8}} & ... & (g^{2^7})^{2^8 - 1}\\
+g^{2^{8}} & g^{2^{9}} & ... & (g^{2^8})^{2^8 - 1}\\
 \vdots & \vdots & \ddots & \vdots  \\
 g^{2^{40}} & g^{2^{41}} & ... & (g^{2^{40}})^{2^8 - 1}
 \end{pmatrix}
 $
 
-This table lets us lookup powers of $g$. The required values of $x$ are the powers of 2 that appear in our expressions for $t_i$, i.e. ${0, 7, 8, 15, 16, 23, 24, 31, 32}$, as well as any additional powers of 2 that are needed to compute $g^{t/2}$ in Step 5, which adds $40$.
+This table lets us lookup powers of $g$.
 
 ### $s$ lookup table: $g^{-\nu (2^{n-w})}$
 
@@ -146,15 +146,15 @@ The remaining iterations proceed similarly, yielding the following expressions:
 $t_2 = q'_0 2^{24} + q'_1 2^{31}$
 $s_2 = q_2 2^{39}$
 
-Note for $q_2$ and the remaining iterations we do not require a trick (i.e. with $q'_0$, $q'_1$) to get $s_2$ in a form where it can be used with the s lookup table.
+Note for $q_2$ and the remaining iterations we do not require a trick (i.e. where $q'_i = 2 q_i$) to get $s_2$ in a form where it can be used with the s lookup table. However, we can reduce the size of the g lookup table, by using the same trick for our $t_i$ expressions:
 
-$t_3 = q'_0 2^{16} + q'_1 2^{23} + q_2 2^{31}$
+$t_3 = q'_0 2^{16} + q'_1 2^{23} + q_2 2^{31} = q'_0 2^{16} + q''_1 2^{24} + q'_2 2^{32}$ where $q''_1 = 2 q'_1 = 4 q_1$
 $s_3 = q_3 2^{39}$
 
-$t_4 = q'_0 2^{8} + q'_1 2^{15} + q_2 2^{23} + q_3 2^{31}$
+$t_4 = q'_0 2^{8} + q'_1 2^{15} + q_2 2^{23} + q_3 2^{31} = q'_0 2^{8} + q''_1 2^{16} + q'_2 2^{24} + q'_3 2^{32}$
 $s_4 = q_4 2^{39}$
 
-$t_5 = q'_0 + q'_1 2^{7} + q_2 2^{15} + q_3 2^{23} + q_4 2^{31} $
+$t_5 = q'_0 + q'_1 2^{7} + q_2 2^{15} + q_3 2^{23} + q_4 2^{31} = q'_0 2^{0} + q''_1 2^{8} + q'_2 2^{16} + q'_3 2^{24} + q'_4 2^{32} $
 $s_5 = q_5 2^{39}$
 
 At the end of this step, we have found $s_i$ and $t_i$ for $i \isin {0,...,k-1}$.
@@ -165,7 +165,11 @@ Next, we can use equation 1 to compute $t=t_5 + s_5$ using $t_5$ and $s_5$ from 
 
 $t = q'_0 + q'_1 2^{7} + q_2 2^{15} + q_3 2^{23} + q_4 2^{31} + q_5 2^{39} $
 
-This matches the expression from Lemma 4 in [Sarkar 2020]. 
+This matches the expression from Lemma 4 in [Sarkar 2020]. We can also express $t$ as:
+
+$t = q'_0 2^0 + q''_1 2^8 + q'_2 2^{16} + q'_3 2^{24} + q'_4 2 ^{32} + q'_5 2^{40}$
+
+to reduce the number of lookups in the g table. Recall $q'_i = 2 q_i$ and $q''_i = 4 q_i$.
 
 Next, to compute $g^{t/2}$, we lookup entries in the g lookup table. To do so, we can decompose $t/2$ into:
 
