@@ -1,4 +1,4 @@
-use std::{fs::File, path::PathBuf};
+use std::{fs::File, io::Read, path::PathBuf};
 
 use anyhow::{anyhow, Context as _, Result};
 use directories::ProjectDirs;
@@ -6,6 +6,7 @@ use penumbra_crypto::keys::SpendSeed;
 use penumbra_wallet::{ClientState, Wallet};
 use rand_core::OsRng;
 use serde::Deserialize;
+use serde_json::{value, Value};
 use sha2::{Digest, Sha256};
 use structopt::StructOpt;
 
@@ -78,16 +79,25 @@ impl WalletCmd {
             WalletCmd::Reset => {
                 tracing::info!("resetting client state");
 
-                #[derive(Deserialize)]
-                struct MinimalState {
-                    wallet: Wallet,
-                }
+                tracing::debug!("reading existing client state from disk");
 
-                tracing::debug!("reading existing client state");
+                let mut contents = String::new();
+                let _filesize = File::open(&wallet_path)?.read_to_string(&mut contents)?;
 
-                // Read the wallet field out of the state file, without fully deserializing the rest
-                let wallet =
-                    serde_json::from_reader::<_, MinimalState>(File::open(&wallet_path)?)?.wallet;
+                tracing::debug!("parsing client state");
+
+                let mut state: Value =
+                    serde_json::from_reader::<_, Value>(std::io::Cursor::new(contents))?;
+
+                tracing::debug!("extracting wallet from client state");
+
+                let wallet = std::mem::take(
+                    state
+                        .as_object_mut()
+                        .ok_or_else(|| anyhow::anyhow!("wallet file is not a json object"))?,
+                )
+                .remove("wallet")
+                .ok_or_else(|| anyhow!("wallet field not found in state file"))?;
 
                 tracing::debug!("writing fresh client state");
 
@@ -98,7 +108,10 @@ impl WalletCmd {
                     .write(true)
                     .truncate(true)
                     .open(&tmp_path)?;
-                serde_json::to_writer_pretty(&mut tmp_file, &ClientState::new(wallet))?;
+
+                let reset_wallet: Wallet =
+                    serde_json::from_value(wallet).expect("wallet portion can be re-parsed");
+                serde_json::to_writer_pretty(&mut tmp_file, &ClientState::new(reset_wallet))?;
 
                 tracing::debug!("checking that we can deserialize fresh client state");
 
