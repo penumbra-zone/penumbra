@@ -4,7 +4,8 @@ use metrics::absolute_counter;
 use penumbra_crypto::{asset, merkle::NoteCommitmentTree};
 use penumbra_proto::Protobuf;
 use penumbra_stake::{
-    ValidatorState, ValidatorStatus, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
+    IdentityKey, ValidatorInfo, ValidatorState, ValidatorStatus, STAKING_TOKEN_ASSET_ID,
+    STAKING_TOKEN_DENOM,
 };
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, ConsensusRequest as Request, ConsensusResponse as Response};
@@ -98,7 +99,10 @@ impl Worker {
 
         // Now start building the genesis block:
         self.note_commitment_tree = NoteCommitmentTree::new(0);
-        let mut genesis_block = PendingBlock::new(self.note_commitment_tree.clone());
+        let reader = self.state.private_reader();
+        let block_validators = reader.validator_info(true).await?;
+        let mut genesis_block =
+            PendingBlock::new(self.note_commitment_tree.clone(), block_validators);
         genesis_block.set_height(0, app_state.chain_params.epoch_duration);
 
         // Create a genesis transaction to record genesis notes.
@@ -181,7 +185,29 @@ impl Worker {
         absolute_counter!("node_notes_total", block_metrics.note_count);
 
         assert!(self.pending_block.is_none());
-        self.pending_block = Some(PendingBlock::new(self.note_commitment_tree.clone()));
+        let reader = self.state.private_reader();
+        let block_validators = reader.validator_info(true).await?;
+        self.pending_block = Some(PendingBlock::new(
+            self.note_commitment_tree.clone(),
+            self.state
+                .private_reader()
+                .chain_params_rx()
+                .borrow()
+                .epoch_duration,
+            block_validators,
+        ));
+
+        for evidence in begin_block.byzantine_validators.iter() {
+            // TODO: instantiate Validator from evidence.validator.address
+            // and insert slash state into validator_state_changes of pending_block
+            let ck = tendermint::PublicKey::from_raw_ed25519(&evidence.validator.address)
+                .ok_or_else(|| anyhow::anyhow!("invalid ed25519 consensus pubkey from tendermint"))
+                .unwrap();
+
+            // This validator is expected to exist in the `block_validators` for the pending block.
+            let pb_mut = &mut self.pending_block.as_mut().unwrap();
+            pb_mut.transition_validator_state(ck, ValidatorState::Slashed);
+        }
 
         Ok(Default::default())
     }
@@ -194,6 +220,7 @@ impl Worker {
     /// Byzantine node may propose a block containing double spends or other disallowed behavior,
     /// so it is not safe to assume all checks performed in `CheckTx` were done.
     async fn deliver_tx(&mut self, deliver_tx: abci::request::DeliverTx) -> Result<()> {
+        let block_validators = self.state.private_reader().validator_info(true).await?;
         // Verify the transaction is well-formed...
         let transaction = Transaction::decode(deliver_tx.tx)?
             // ... and that it is internally consistent ...
@@ -202,7 +229,7 @@ impl Worker {
         let transaction = self
             .state
             .private_reader()
-            .verify_stateful(transaction)
+            .verify_stateful(transaction, &block_validators)
             .await?;
 
         let mut conflicts = self

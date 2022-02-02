@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::Error;
 use penumbra_crypto::{note, Nullifier};
+use penumbra_stake::ValidatorInfo;
 use penumbra_transaction::{Action, Transaction};
 
 use super::{NoteData, PendingTransaction, VerifiedTransaction};
@@ -11,6 +12,7 @@ impl state::Reader {
     pub async fn verify_stateful(
         &self,
         transaction: PendingTransaction,
+        block_validators: &[ValidatorInfo],
     ) -> Result<VerifiedTransaction, Error> {
         let anchor_is_valid = self.valid_anchors_rx().borrow().contains(&transaction.root);
         if !anchor_is_valid {
@@ -131,6 +133,30 @@ impl state::Reader {
                     expected_unbonded_amount,
                     u.unbonded_amount,
                 ));
+            }
+        }
+
+        // Check that the sequence numbers of newly added validators are correct.
+        // TODO: are any other checks necessary here?
+        for v in &transaction.validators {
+            let existing_v: Vec<&ValidatorInfo> = block_validators
+                .iter()
+                .filter(|z| z.validator.identity_key == v.identity_key)
+                .collect();
+
+            if existing_v.len() == 0 {
+                // This is a new validator definition.
+                continue;
+            } else {
+                // This is an existing validator definition. Ensure that the highest
+                // existing sequence number is less than the new sequence number.
+                let current_seq = existing_v.iter().map(|z| z.validator.sequence_number).max().ok_or_else(|| {anyhow::anyhow!("Validator with this ID key existed but had no existing sequence numbers")})?;
+                if v.sequence_number <= current_seq {
+                    return Err(anyhow::anyhow!(
+                        "Expected sequence numbers to be increasing. Current sequence number is {}",
+                        current_seq
+                    ));
+                }
             }
         }
 

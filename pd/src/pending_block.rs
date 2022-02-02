@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
+use anyhow::Result;
 use ark_ff::PrimeField;
 use decaf377::Fr;
 use penumbra_crypto::{
@@ -8,9 +9,10 @@ use penumbra_crypto::{
     note, Address, Fq, Note, Nullifier, One, Value,
 };
 use penumbra_stake::{
-    BaseRateData, Epoch, IdentityKey, RateData, ValidatorState, ValidatorStatus,
+    BaseRateData, Epoch, IdentityKey, RateData, ValidatorInfo, ValidatorState, ValidatorStatus,
     STAKING_TOKEN_ASSET_ID,
 };
+use tendermint::PublicKey;
 use tracing::instrument;
 
 use crate::verify::{NoteData, PositionedNoteData, VerifiedTransaction};
@@ -50,6 +52,11 @@ pub struct PendingBlock {
     pub reverting_notes: BTreeSet<note::Commitment>,
     /// Nullifiers to remove from the nullifier set when this block is committed, reverting their spend.
     pub reverting_nullifiers: BTreeSet<Nullifier>,
+    /// List of validators that exist during the lifespan of the block.
+    ///
+    /// Updated as changes occur during the block, but will not be persisted
+    /// to the database until the block is committed.
+    pub block_validators: Vec<ValidatorInfo>,
 }
 
 /// A group of notes and nullifiers, all to be quarantined relative to a shared set of validators.
@@ -65,7 +72,11 @@ pub struct QuarantineGroup {
 }
 
 impl PendingBlock {
-    pub fn new(note_commitment_tree: NoteCommitmentTree) -> Self {
+    pub fn new(
+        note_commitment_tree: NoteCommitmentTree,
+        epoch_duration: u64,
+        block_validators: Vec<ValidatorInfo>,
+    ) -> Self {
         Self {
             height: None,
             note_commitment_tree,
@@ -83,6 +94,7 @@ impl PendingBlock {
             reverting_notes: BTreeSet::new(),
             unbonding_nullifiers: BTreeSet::new(),
             reverting_nullifiers: BTreeSet::new(),
+            block_validators,
         }
     }
 
@@ -92,6 +104,28 @@ impl PendingBlock {
         let epoch = Epoch::from_height(height, epoch_duration);
         self.epoch = Some(epoch.clone());
         epoch
+    }
+
+    /// Apply a state transition to a given validator based on Tendermint public key.
+    ///
+    /// TODO: Validation of state machine semantics here?
+    /// Otherwise state machine semantics are split across various functions and may not
+    /// be held invariant.
+    pub fn transition_validator_state(
+        &mut self,
+        ck: PublicKey,
+        new_state: ValidatorState,
+    ) -> Result<()> {
+        let validator_info = self
+            .block_validators
+            .iter()
+            .find(|v| v.validator.consensus_key == ck)
+            .ok_or(anyhow::anyhow!("No validator found"))?;
+
+        self.validator_state_changes
+            .insert(validator_info.validator.identity_key.clone(), new_state);
+
+        Ok(())
     }
 
     /// Adds a reward output for a validator's funding stream.
