@@ -198,16 +198,15 @@ impl Worker {
             block_validators,
         ));
 
+        // For each validator identified as byzantine by tendermint, update its
+        // status to be slashed.
         for evidence in begin_block.byzantine_validators.iter() {
-            // TODO: instantiate Validator from evidence.validator.address
-            // and insert slash state into validator_state_changes of pending_block
             let ck = tendermint::PublicKey::from_raw_ed25519(&evidence.validator.address)
                 .ok_or_else(|| anyhow::anyhow!("invalid ed25519 consensus pubkey from tendermint"))
                 .unwrap();
 
-            // This validator is expected to exist in the `block_validators` for the pending block.
             let pb_mut = &mut self.pending_block.as_mut().unwrap();
-            pb_mut.transition_validator_state(ck, ValidatorState::Slashed);
+            pb_mut.transition_validator_state(ck, ValidatorState::Slashed)?;
         }
 
         Ok(Default::default())
@@ -403,6 +402,37 @@ impl Worker {
         // rename to curr_rate so it lines up with next_rate (same # chars)
         tracing::debug!(curr_base_rate = ?current_base_rate);
         tracing::debug!(?next_base_rate);
+        let voting_power = next_rate.voting_power(delegation_token_supply, &next_base_rate);
+        let existing_state = pending_block
+            .block_validators
+            .iter()
+            .find(|v| v.validator.identity_key == identity_key)
+            .ok_or(anyhow::anyhow!(
+                "validator did not exist in pending block's block validators"
+            ))?
+            .status
+            .state
+            .clone();
+        // If there's a pending state change, use that, otherwise use
+        // the existing state.
+        let next_state = pending_block
+            .validator_state_changes
+            .get(&identity_key)
+            .cloned()
+            .unwrap_or(existing_state);
+        let next_status = ValidatorStatus {
+            identity_key: identity_key.clone(),
+            voting_power,
+            state: next_state,
+        };
+
+        // distribute validator commission
+        for stream in funding_streams {
+            let commission_reward_amount =
+                stream.reward_amount(delegation_token_supply, &next_base_rate, &current_base_rate);
+
+            pending_block.add_validator_reward_note(commission_reward_amount, stream.address);
+        }
 
         let mut next_rates = Vec::new();
         let mut next_validator_statuses = BTreeMap::new();
@@ -504,7 +534,9 @@ impl Worker {
             tracing::debug!(?next_status);
 
             next_rates.push(next_rate);
-            next_validator_statuses.insert(identity_key, next_status);
+            pending_block
+                .next_validator_statuses
+                .insert(identity_key, next_status);
         }
 
         tracing::debug!(?staking_token_supply);

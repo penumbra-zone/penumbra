@@ -116,8 +116,6 @@ impl Writer {
                 validator.website,
                 validator.description,
                 power.value() as i64,
-                // TODO: use real ValidatorState here (ok for now because all validators
-                // in genesis start in ACTIVE state)
                 ValidatorStateName::Active.to_str().to_string(),
                 Option::<i64>::None,
             )
@@ -423,10 +421,9 @@ impl Writer {
             }
         }
 
-        if let Some(validator_statuses) = block.next_validator_statuses {
-            for (_, status) in validator_statuses {
-                let (state_name, unbonding_epoch) = status.state.into();
-                query!(
+        for (_, status) in block.next_validator_statuses {
+            let (state_name, unbonding_epoch) = status.state.into();
+            query!(
                     "UPDATE validators SET voting_power=$1, validator_state=$2, unbonding_epoch=$3 WHERE identity_key = $4",
                     status.voting_power as i64,
                     state_name.to_str(),
@@ -436,7 +433,6 @@ impl Writer {
                 )
                 .execute(&mut dbtx)
                 .await?;
-            }
         }
 
         let mut valid_anchors = self.valid_anchors_tx.borrow().clone();

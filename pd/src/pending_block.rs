@@ -35,7 +35,7 @@ pub struct PendingBlock {
     /// If this is the last block of an epoch, validator rates for the next epoch go here.
     pub next_rates: Option<Vec<RateData>>,
     /// If this is the last block of an epoch, validator statuses for the next epoch go here.
-    pub next_validator_statuses: Option<BTreeMap<IdentityKey, ValidatorStatus>>,
+    pub next_validator_statuses: BTreeMap<IdentityKey, ValidatorStatus>,
     /// The net delegations performed in this block per validator.
     pub delegation_changes: BTreeMap<IdentityKey, i64>,
     /// The counter containing the number of rewards notes in the epoch. we need this to keep the
@@ -86,7 +86,7 @@ impl PendingBlock {
             epoch: None,
             next_base_rate: None,
             next_rates: None,
-            next_validator_statuses: None,
+            next_validator_statuses: BTreeMap::new(),
             delegation_changes: BTreeMap::new(),
             reward_counter: 0,
             validator_state_changes: BTreeMap::new(),
