@@ -424,10 +424,14 @@ impl Writer {
         }
 
         if let Some(validator_statuses) = block.next_validator_statuses {
-            for status in validator_statuses {
+            for (_, status) in validator_statuses {
+                let (state_name, unbonding_epoch) = status.state.into();
                 query!(
-                    "UPDATE validators SET voting_power=$1 WHERE identity_key = $2",
+                    "UPDATE validators SET voting_power=$1, validator_state=$2, unbonding_epoch=$3 WHERE identity_key = $4",
                     status.voting_power as i64,
+                    state_name.to_str(),
+                    // unbonding_epoch column will be NULL if unbonding_epoch is None (i.e. the state is not unbonding)
+                    unbonding_epoch.map(|i| i as i64),
                     status.identity_key.encode_to_vec(),
                 )
                 .execute(&mut dbtx)

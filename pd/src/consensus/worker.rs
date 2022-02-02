@@ -1,11 +1,12 @@
+use std::collections::BTreeMap;
+
 use anyhow::{anyhow, Result};
 use futures::StreamExt;
 use metrics::absolute_counter;
 use penumbra_crypto::{asset, merkle::NoteCommitmentTree};
 use penumbra_proto::Protobuf;
 use penumbra_stake::{
-    IdentityKey, ValidatorInfo, ValidatorState, ValidatorStatus, STAKING_TOKEN_ASSET_ID,
-    STAKING_TOKEN_DENOM,
+    ValidatorState, ValidatorStatus, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
 };
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, ConsensusRequest as Request, ConsensusResponse as Response};
@@ -404,6 +405,23 @@ impl Worker {
         tracing::debug!(?next_base_rate);
 
         let mut next_rates = Vec::new();
+        let mut next_validator_statuses = BTreeMap::new();
+
+        // this is a bit complicated: because we're in the EndBlock phase, and the
+        // delegations in this block have not yet been committed, we have to combine
+        // the delegations in pending_block with the ones already committed to the
+        // state. otherwise the delegations committed in the epoch threshold block
+        // would be lost.
+        let mut delegation_changes = reader.delegation_changes(prev_epoch.index).await?;
+        for (id_key, delta) in &pending_block.delegation_changes {
+            *delegation_changes.entry(id_key.clone()).or_insert(0) += delta;
+        }
+
+        // rename to curr_rate so it lines up with next_rate (same # chars)
+        tracing::debug!(curr_base_rate = ?current_base_rate);
+        tracing::debug!(?next_base_rate);
+
+        let mut next_rates = Vec::new();
         let mut next_validator_statuses = Vec::new();
 
         // this is a bit complicated: because we're in the EndBlock phase, and the
@@ -486,7 +504,7 @@ impl Worker {
             tracing::debug!(?next_status);
 
             next_rates.push(next_rate);
-            next_validator_statuses.push(next_status);
+            next_validator_statuses.insert(identity_key, next_status);
         }
 
         tracing::debug!(?staking_token_supply);
