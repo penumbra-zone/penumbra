@@ -238,7 +238,7 @@ impl Reader {
         // Select rate data for the given epoch, or for the most recent epoch with rate data if none
         // exists for the given epoch.
         let rows = query!(
-            "SELECT vr.identity_key, vr2.epoch, vr2.validator_reward_rate, vr2.validator_exchange_rate
+            "SELECT vr.identity_key, vr.maxepoch, vr2.validator_reward_rate, vr2.validator_exchange_rate
             FROM 
             (SELECT identity_key, max(epoch) AS maxepoch
                 FROM
