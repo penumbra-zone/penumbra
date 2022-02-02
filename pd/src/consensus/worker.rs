@@ -313,6 +313,7 @@ impl Worker {
                 let identity_key = current_rate.identity_key.clone();
 
                 let funding_streams = reader.funding_streams(identity_key.clone()).await?;
+                // TODO: if this rate is for an inactive validator, do we need to do anything special here regarding the next rate value?
                 let next_rate = current_rate.next(&next_base_rate, funding_streams.as_ref());
 
                 // TODO: if a validator isn't part of the consensus set, should we ignore them

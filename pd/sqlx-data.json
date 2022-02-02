@@ -730,8 +730,8 @@
       "nullable": []
     }
   },
-  "f9bdaf15db286fffdd144af22f833b3adb6335c3174078e824182d8374a64f88": {
-    "query": "SELECT identity_key, epoch, validator_reward_rate, validator_exchange_rate\n            FROM validator_rates\n            WHERE epoch = $1",
+  "f7daa24d637dd84b5c4da5a2d9e9534fd0023810de9a3022fc0883422fb06b9e": {
+    "query": "SELECT vr.identity_key, vr.epoch, vr.validator_reward_rate, vr.validator_exchange_rate\n            FROM \n            (SELECT identity_key, epoch, validator_reward_rate, validator_exchange_rate\n             FROM\n                validator_rates\n             WHERE epoch <= $1\n             GROUP BY identity_key, epoch\n             ORDER BY epoch DESC\n             LIMIT 1\n            ) as vr\n            LEFT OUTER JOIN validator_rates as vr2\n            ON vr2.epoch = $1",
     "describe": {
       "columns": [
         {
