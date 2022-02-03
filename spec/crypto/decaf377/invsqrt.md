@@ -82,9 +82,49 @@ In the following procedure, let $u=N/D$. We use the following relations from [Sa
 
 We compute $v = u^{\frac{m-1}{2}}$. This corresponds to line 2 of the `findSqRoot` Algorithm 1 in [Sarkar 2020].
 
+Substituting $u=N/D$:
+
+$v = (\frac N D)^{\frac{m-1}{2}} = N^{\frac{m-1}{2}} * D^{- \frac{m-1}{2}} $
+
+Applying Fermat's Little Theorem (i.e. $D^{p-1} = 1 \mod p$):
+
+$v = N^{\frac{m-1}{2}} * D^{p - 1 - \frac{m-1}{2}} $
+
+Substituting $p- 1 = 2^n m$ and rearranging:
+
+$v = N^{\frac{m-1}{2}} * D^{2^n m - \frac{m-1}{2}} $
+
+$v = N^{\frac{m-1}{2}} * D^{\frac 1 2 (2^{n+1} m - m - 1)} $
+
+$v = N^{\frac{m-1}{2}} * D^{\frac 1 2 (2^{n+1} m - m - 1 - 2^{n+1} + 2^{n+1})} $
+
+$v = N^{\frac{m-1}{2}} * D^{\frac 1 2 (2^{n+1} - 1) (m - 1) + 2^{n}} $
+
+$v = N^{\frac{m-1}{2}} * D^{\frac 1 2 (2^{n+1} - 1) (m - 1)} * D^{2^{n}} $
+
+We compute $v$ using a quantity $w$ we define as:
+
+$w =  (N D^{2^{n+1} - 1})^{(m-1)/2} * D^{2^n - 1}$
+
+We also define:
+
+$s = D^{2^n - 1}$
+
+$t = D^{2^{n+1} - 1} = D s^2$
+
+And substitute $s$ and $t$ into $w$ which gives us:
+
+$w = s (N t)^{\frac{m - 1}{2}}$
+
+We now can use $w$ in the computation for $v$ and $uv$:
+
+$v = w D$
+
+$uv = w N$
+
 ### Step 2: Compute $x$
 
-Compute $x = u * v^2$. This corresponds to line 4 of the `findSqRoot` Algorithm 1 in [Sarkar 2020].
+Compute $x = uv * v$ using $v$ and $uv$ as calculated in the prior step. This corresponds to line 4 of the `findSqRoot` Algorithm 1 in [Sarkar 2020].
 
 ### Step 3: Compute $x_i$
 
@@ -173,11 +213,11 @@ to reduce the number of lookups in the g table. Recall $q'_i = 2 q_i$ and $q''_i
 
 Next, to compute $g^{t/2}$, we lookup entries in the g lookup table. To do so, we can decompose $t/2$ into:
 
-$t/2 = v_0 2^0 + v_1 2^8 + v_2 2^{16} + v_3 2^{24} + v_4 2 ^{32} + v_5 2^{40}$ 
+$t/2 = q_0 2^0 + q'_1 2^8 + q_2 2^{16} + q_3 2^{24} + q_4 2 ^{32} + q_5 2^{40}$ 
 
 then $g^{t/2}$ is computed as:
 
-$g^{t/2} = g^{v_0 2^0} g^{v_1 2^8} g^{v_2 2^{16}} g^{v_3 2^{24}} g^{v_4 2 ^{32}} g^{v_5 2^{40}}$
+$g^{t/2} = g^{q_0 2^0} g^{q'_1 2^8} g^{q_2 2^{16}} g^{q_3 2^{24}} g^{q_4 2 ^{32}} g^{q_5 2^{40}}$
 
 Multiplying in $uv$ from step 1, we compute:
 
