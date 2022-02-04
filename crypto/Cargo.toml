@@ -18,7 +18,7 @@ decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 decaf377-rdsa = { version = "0.5", git = "https://github.com/penumbra-zone/decaf377-rdsa" }
 incrementalmerkletree = { git = "https://github.com/penumbra-zone/incrementalmerkletree" }
 poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377" }
-jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git" }
+jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "async-poc" }
 
 # Crates.io deps
 regex = "1.5"
