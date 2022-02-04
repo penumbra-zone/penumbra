@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use metrics::absolute_counter;
 use penumbra_crypto::{asset, merkle::NoteCommitmentTree};
 use penumbra_proto::Protobuf;
 use penumbra_stake::{
@@ -176,6 +177,10 @@ impl Worker {
         begin_block: abci::request::BeginBlock,
     ) -> Result<abci::response::BeginBlock> {
         tracing::debug!(?begin_block);
+
+        // Update metrics.
+        let current_nullifier_count = self.state.private_reader().nullifier_count().await?;
+        absolute_counter!("node_spent_nullifiers_total", current_nullifier_count);
 
         assert!(self.pending_block.is_none());
         self.pending_block = Some(PendingBlock::new(

@@ -768,6 +768,24 @@
       "nullable": []
     }
   },
+  "f67369fd61cb4ff4a7f0dd51fabcd4557ff3e104f50f9fce7601e4787cb60f7c": {
+    "query": "SELECT COUNT(*) as \"count!\" FROM nullifiers",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "count!",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": [
+        null
+      ]
+    }
+  },
   "feb219cf82779306d199c5f733359b2cafd5ab51fca03922a9e73c3a4ff44bf7": {
     "query": "SELECT height FROM nullifiers WHERE nullifier = $1 LIMIT 1",
     "describe": {
