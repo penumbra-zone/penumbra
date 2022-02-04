@@ -238,16 +238,16 @@ impl Reader {
         // Select rate data for the given epoch, or for the most recent epoch with rate data less than or equal
         // to the given epoch.
         let rows = query!(
-            "SELECT vr.identity_key, vr.maxepoch, vr2.validator_reward_rate, vr2.validator_exchange_rate
-            FROM 
-            (SELECT identity_key, max(epoch) AS maxepoch
-                FROM
-                validator_rates
-                WHERE epoch <= $1
-                GROUP BY identity_key
-            ) as vr
-            INNER JOIN validator_rates as vr2
-            ON vr2.epoch = vr.maxepoch",
+            "
+            SELECT DISTINCT ON (identity_key)
+            identity_key, 
+            epoch, 
+            validator_reward_rate, 
+            validator_exchange_rate
+
+            FROM validator_rates 
+            WHERE epoch <= $1
+            ORDER BY identity_key, epoch DESC",
             epoch_index as i64,
         )
         .fetch_all(&mut conn)
