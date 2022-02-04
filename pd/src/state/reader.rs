@@ -112,6 +112,19 @@ impl Reader {
         Ok(note_commitment_tree)
     }
 
+    /// Returns the number of revealed nullifiers (for updating metrics dashboard).
+    pub async fn nullifier_count(&self) -> Result<u64> {
+        let mut conn = self.pool.acquire().await?;
+
+        // Special column name "count!" is used to return i64 instead of
+        // Option<i64> due to https://github.com/launchbadge/sqlx/issues/864
+        let nullifiers = query!(r#"SELECT COUNT(*) as "count!" FROM nullifiers"#)
+            .fetch_one(&mut conn)
+            .await?;
+
+        Ok(nullifiers.count.try_into().unwrap())
+    }
+
     /// Returns the intersection of the provided nullifiers with the nullifiers
     /// in the database.
     pub async fn check_nullifiers(
