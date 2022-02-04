@@ -253,15 +253,15 @@ cargo run --bin pcli -- -w testnet_wallet.json addr new "Test Address 2"
 
 Next, produce a template with
 ```
-cargo run --bin pd -- create-genesis-template
+cargo run --bin pd -- generate-testnet
 ```
-and copy the output into the `genesis.json` as the `app_state` field.
+and copy the `app_state` field of one the genesis files. You'll need to
 edit it to match the key material you'll be using, which includes:
 
 * changing the validator public keys to match the one Tendermint generated;
 * editing the genesis allocations to use your testing addresses, or have other asset types, etc.
 
-You may wish to edit other parts of the testnet config.  Example `genesis.json`
+You may wish to edit other parts of the testnet config. Example `genesis.json`
 files can be found in the `testnets/` directory if you get stuck.
 
 ### Running `pd` without using Docker
