@@ -3,6 +3,7 @@ use penumbra_proto::{
     thin_wallet::thin_wallet_client::ThinWalletClient, Protobuf,
 };
 use penumbra_transaction::Transaction;
+use rand::Rng;
 use tonic::transport::Channel;
 use tracing::instrument;
 
@@ -15,15 +16,21 @@ impl Opt {
     pub async fn submit_transaction(&self, transaction: &Transaction) -> Result<(), anyhow::Error> {
         tracing::info!("broadcasting transaction...");
 
-        let rsp: serde_json::Value = reqwest::get(format!(
-            r#"http://{}:{}/broadcast_tx_sync?tx=0x{}"#,
-            self.node,
-            self.rpc_port,
-            hex::encode(&transaction.encode_to_vec())
-        ))
-        .await?
-        .json()
-        .await?;
+        let client = reqwest::Client::new();
+        let req_id: u8 = rand::thread_rng().gen();
+        let rsp: serde_json::Value = client
+            .post(format!(r#"http://{}:{}"#, self.node, self.rpc_port))
+            .json(&serde_json::json!(
+                {
+                    "method": "broadcast_tx_sync",
+                    "params": [&transaction.encode_to_vec()],
+                    "id": req_id,
+                }
+            ))
+            .send()
+            .await?
+            .json()
+            .await?;
 
         tracing::info!("{}", rsp);
 
