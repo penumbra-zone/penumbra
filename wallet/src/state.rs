@@ -78,6 +78,16 @@ pub enum UnspentNote<'a> {
     SubmittedChange(&'a Note),
 }
 
+impl<'a> UnspentNote<'a> {
+    /// Returns the underlying note if it is [`UnspentNote::Ready`].
+    pub fn as_ready(&self) -> Option<&'a Note> {
+        match self {
+            UnspentNote::Ready(note) => Some(note),
+            _ => None,
+        }
+    }
+}
+
 impl AsRef<Note> for UnspentNote<'_> {
     fn as_ref(&self) -> &Note {
         match self {
@@ -103,6 +113,11 @@ impl ClientState {
             wallet,
             chain_params: None,
         }
+    }
+
+    /// Returns a reference to the note commitment tree.
+    pub fn note_commitment_tree(&self) -> &NoteCommitmentTree {
+        &self.note_commitment_tree
     }
 
     /// Returns a reference to the client state's asset cache.
@@ -152,6 +167,23 @@ impl ClientState {
         tracing::debug!(?commitment, value = ?note.value(), "adding note to submitted change set");
         self.submitted_change_set
             .insert(commitment, (timeout, note));
+    }
+
+    /// Register a note as spent.
+    ///
+    /// This marks the note as having been spent (pending confirmation) by the
+    /// chain.  Tracking these notes allows the wallet to not accidentally
+    /// attempt to double-spend a note, just because the first transaction that
+    /// spent it hasn't been finalized yet.
+    ///
+    /// This registration is temporary; if the spend is not observed on-chain
+    /// before some timeout, it will be forgotten, and the note marked as unspent again.
+    pub fn register_spend(&mut self, note: &Note) {
+        let commitment = note.commit();
+        tracing::debug!(?commitment, value = ?note.value(), "moving note from unspent set to submitted spend set");
+        let note = self.unspent_set.remove(&commitment).unwrap();
+        let timeout = SystemTime::now() + SUBMITTED_TRANSACTION_TIMEOUT;
+        self.submitted_spend_set.insert(commitment, (timeout, note));
     }
 
     /// Returns a list of notes to spend to release (at least) the provided
@@ -208,15 +240,8 @@ impl ClientState {
             // Before returning the notes to the caller, mark them as having been
             // spent.  (If the caller does not spend them, or the tx fails, etc.,
             // this state will be erased after the timeout).
-            let timeout = SystemTime::now() + SUBMITTED_TRANSACTION_TIMEOUT;
-
             for note in &notes_to_spend {
-                let commitment = note.commit();
-
-                // Add the note to the submitted spend set
-                tracing::debug!(?commitment, value = ?note.value(), "moving note from unspent set to submitted spend set");
-                let note = self.unspent_set.remove(&commitment).unwrap();
-                self.submitted_spend_set.insert(commitment, (timeout, note));
+                self.register_spend(note);
             }
 
             Ok(notes_to_spend)
@@ -227,7 +252,7 @@ impl ClientState {
         }
     }
 
-    fn chain_id(&self) -> Result<String, anyhow::Error> {
+    pub fn chain_id(&self) -> Result<String, anyhow::Error> {
         let chain_params = self.chain_params();
         if chain_params.is_none() {
             return Err(anyhow::anyhow!("chain_params not set on state"));
