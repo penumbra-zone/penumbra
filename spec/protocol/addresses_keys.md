@@ -15,7 +15,7 @@ described in the following sections:
 * [Viewing Keys](./addresses_keys/viewing_keys.md) describes derivation of the full, incoming, and outgoing viewing keys;
 * [Addresses and Detection Keys](./addresses_keys/addresses.md) describes derivation of multiple, publicly unlinkable addresses for a single spending authority, each with their own detection key.
 
-The diagram in the [Overview](./concepts/addresses_keys.md) section describes
+The diagram in the [Overview](../concepts/addresses_keys.md) section describes
 the key hierarchy from an external, functional point of view.  Here, we zoom in
 to the internal key components, whose relations are depicted in the following
 diagram.  Each internal key component is represented with a box; arrows depict
