@@ -100,10 +100,11 @@ async fn sweep(opt: &Opt, state: &mut ClientStateFile) -> Result<()> {
     let mut spent_notes = Vec::new();
     let mut change_notes = Vec::new();
     let unspent = state.unspent_notes_by_address_and_denom();
-    for (id, _label, addr) in state.wallet().addresses() {
+    for (id, label, addr) in state.wallet().addresses() {
         if unspent.get(&(id as u64)).is_none() {
             continue;
         }
+        tracing::info!(?id, ?label, "processing address");
         for (denom, notes) in unspent.get(&(id as u64)).unwrap().iter() {
             // Extract only the ready notes of this denomination.
             let mut notes = notes
@@ -115,6 +116,7 @@ async fn sweep(opt: &Opt, state: &mut ClientStateFile) -> Result<()> {
             // ... so that when we use chunks_exact, we get SWEEP_COUNT sized
             // chunks, ignoring the biggest notes in the remainder.
             for group in notes.chunks_exact(SWEEP_COUNT) {
+                tracing::info!(?denom, "building sweep transaction");
                 let mut tx_builder =
                     Transaction::build_with_root(state.note_commitment_tree().root2());
                 tx_builder.set_fee(0).set_chain_id(state.chain_id()?);
