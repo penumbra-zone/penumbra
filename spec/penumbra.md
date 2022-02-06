@@ -95,7 +95,7 @@ encrypted votes and decrypt only the per-epoch totals.
 ## Private DEX
 
 Penumbra provides private, sealed-bid batch swaps using
-[ZSwap](./concepts/zswap.md).  ZSwap allows users to privately swap between any
+[ZSwap](./zswap.md).  ZSwap allows users to privately swap between any
 pair of assets.  Individual swaps do not reveal trade amounts.  Instead, all
 swaps in each block are executed in a single batch.  Only the total amount in
 each batch is revealed, and only after the batch has been finalized. This
