@@ -39,8 +39,8 @@ pub struct PendingTransaction {
     pub spent_nullifiers: BTreeSet<Nullifier>,
     /// Delegations performed in this transaction.
     pub delegations: Vec<Delegate>,
-    /// Undelegations performed in this transaction.
-    pub undelegations: Vec<Undelegate>,
+    /// Undelegation, if any, performed in this transaction (there must be no more than one).
+    pub undelegation: Option<Undelegate>,
     /// Validators defined in the transaction.
     pub validators: Vec<Validator>,
 }
@@ -55,5 +55,11 @@ pub struct VerifiedTransaction {
     /// List of spent nullifiers from spends in this transaction.
     pub spent_nullifiers: BTreeSet<Nullifier>,
     /// Net delegations performed in this transaction.
+    ///
+    /// An identity key mapped to zero is different from an identity key that is absent; the former
+    /// indicates that a validator's net change in delegation in this transaction was zero *but it
+    /// experienced some (un)delegations*.
     pub delegation_changes: BTreeMap<IdentityKey, i64>,
+    /// The validators from whom an undelegation was performed in this transaction.
+    pub undelegation_validator: Option<IdentityKey>,
 }

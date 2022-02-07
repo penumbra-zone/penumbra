@@ -47,7 +47,7 @@ fn test_transaction_succeeds_if_values_balance() {
     nct.witness();
     let anchor = nct.root2();
 
-    let transaction = Transaction::build_with_root(anchor.clone())
+    let transaction = Transaction::build_with_root(anchor)
         .set_fee(10)
         .set_chain_id("penumbra".to_string())
         .add_output(

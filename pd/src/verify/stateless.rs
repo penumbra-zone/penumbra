@@ -35,7 +35,7 @@ impl StatelessTransactionExt for Transaction {
         let mut spent_nullifiers = BTreeSet::<Nullifier>::new();
         let mut new_notes = BTreeMap::<note::Commitment, NoteData>::new();
         let mut delegations = Vec::<Delegate>::new();
-        let mut undelegations = Vec::<Undelegate>::new();
+        let mut undelegation = None::<Undelegate>;
         let validators = Vec::<Validator>::new();
 
         for action in self.transaction_body().actions {
@@ -99,12 +99,25 @@ impl StatelessTransactionExt for Transaction {
                     delegations.push(delegate);
                 }
                 Action::Undelegate(undelegate) => {
-                    // There are currently no stateless verification checks than the ones implied by
-                    // the binding signature.
-                    undelegations.push(undelegate);
+                    if undelegation.is_none() {
+                        undelegation = Some(undelegate);
+                    } else {
+                        return Err(anyhow::anyhow!("Multiple undelegations in one transaction"));
+                    }
                 }
                 _ => {
                     return Err(anyhow::anyhow!("unsupported action"));
+                }
+            }
+        }
+
+        // We prohibit actions other than `Spend`, `Delegate`, `Output` and `Undelegate` in
+        // transactions that contain `Undelegate`, to avoid having to quarantine them.
+        if undelegation.is_some() {
+            use Action::*;
+            for action in self.transaction_body().actions {
+                if !matches!(action, Undelegate(_) | Delegate(_) | Spend(_) | Output(_)) {
+                    return Err(anyhow::anyhow!("transaction contains an undelegation, but also contains an action other than Spend, Delegate, Output or Undelegate"));
                 }
             }
         }
@@ -115,7 +128,7 @@ impl StatelessTransactionExt for Transaction {
             new_notes,
             spent_nullifiers,
             delegations,
-            undelegations,
+            undelegation,
             validators,
         })
     }

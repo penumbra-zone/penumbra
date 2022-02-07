@@ -97,11 +97,8 @@ impl Worker {
 
         // Now start building the genesis block:
         self.note_commitment_tree = NoteCommitmentTree::new(0);
-        let mut genesis_block = PendingBlock::new(
-            self.note_commitment_tree.clone(),
-            app_state.chain_params.epoch_duration,
-        );
-        genesis_block.set_height(0);
+        let mut genesis_block = PendingBlock::new(self.note_commitment_tree.clone());
+        genesis_block.set_height(0, app_state.chain_params.epoch_duration);
 
         // Create a genesis transaction to record genesis notes.
         // TODO: eliminate this (#374)
@@ -183,14 +180,7 @@ impl Worker {
         absolute_counter!("node_spent_nullifiers_total", current_nullifier_count);
 
         assert!(self.pending_block.is_none());
-        self.pending_block = Some(PendingBlock::new(
-            self.note_commitment_tree.clone(),
-            self.state
-                .private_reader()
-                .chain_params_rx()
-                .borrow()
-                .epoch_duration,
-        ));
+        self.pending_block = Some(PendingBlock::new(self.note_commitment_tree.clone()));
 
         Ok(Default::default())
     }
@@ -252,7 +242,14 @@ impl Worker {
             .height
             .try_into()
             .expect("height should be nonnegative");
-        let epoch = pending_block.set_height(height);
+        let epoch = pending_block.set_height(
+            height,
+            self.state
+                .private_reader()
+                .chain_params_rx()
+                .borrow()
+                .epoch_duration,
+        );
 
         tracing::debug!(?height, ?epoch, end_height = ?epoch.end_height());
 
