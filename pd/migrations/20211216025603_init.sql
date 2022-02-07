@@ -81,24 +81,26 @@ CREATE TABLE IF NOT EXISTS delegation_changes (
 CREATE INDEX ON delegation_changes (epoch);
 CREATE INDEX ON delegation_changes (validator_identity_key);
 
-CREATE TABLE IF NOT EXISTS unbonding_notes (
-    validator_identity_key bytea NOT NULL REFERENCES validators (identity_key),
-    unbonding_epoch bigint NOT NULL,
+-- Set of quarantined notes: once the epoch is large enough, all old-enough quarantined notes should
+-- be inserted into the NCT and the notes table (and removed from this table)
+CREATE TABLE IF NOT EXISTS quarantined_notes (
     note_commitment bytea PRIMARY KEY,
     ephemeral_key bytea NOT NULL,
     encrypted_note bytea NOT NULL,
     transaction_id bytea NOT NULL,
-    pre_position bigint NOT NULL,
     height bigint NOT NULL REFERENCES blocks (height),
-    UNIQUE(pre_position, unbonding_epoch)
+    validator_identity_key bytea NOT NULL REFERENCES validators (identity_key)
 );
-CREATE INDEX ON unbonding_notes (unbonding_epoch);
-CREATE INDEX ON unbonding_notes (validator_identity_key);
+CREATE INDEX ON quarantined_notes (height);
+CREATE INDEX ON quarantined_notes (validator_identity_key);
 
-CREATE TABLE IF NOT EXISTS unbonding_nullifiers (
-    validator_identity_key bytea NOT NULL REFERENCES validators (identity_key),
-    unbonding_epoch bigint NOT NULL,
-    nullifier bytea PRIMARY KEY REFERENCES nullifiers (nullifier)
+-- Set of quarantined nullifiers: once the epoch is large enough, all old-enough quarantined
+-- nullifiers should be dropped from this table (they are already in the nullifiers table),
+-- making the spend which revealed them irreversible
+CREATE TABLE IF NOT EXISTS quarantined_nullifiers (
+    nullifier bytea PRIMARY KEY REFERENCES nullifiers (nullifier),
+    height bigint NOT NULL REFERENCES blocks (height),
+    validator_identity_key bytea NOT NULL REFERENCES validators (identity_key)
 );
-CREATE INDEX ON unbonding_nullifiers (unbonding_epoch);
-CREATE INDEX ON unbonding_nullifiers (validator_identity_key);
+CREATE INDEX ON quarantined_nullifiers (height);
+CREATE INDEX ON quarantined_nullifiers (validator_identity_key);

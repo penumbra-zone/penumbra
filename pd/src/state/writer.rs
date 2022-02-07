@@ -11,7 +11,7 @@ use tendermint::block;
 use tokio::sync::watch;
 
 use super::jellyfish;
-use crate::{genesis, PendingBlock, NUM_RECENT_ANCHORS};
+use crate::{genesis, pending_block::QuarantineGroup, PendingBlock, NUM_RECENT_ANCHORS};
 
 #[derive(Debug)]
 pub struct Writer {
@@ -259,6 +259,56 @@ impl Writer {
             )
             .execute(&mut dbtx)
             .await?;
+        }
+
+        // Add notes and nullifiers from transactions containing undelegations to a quarantine
+        // queue, to be extracted when their unbonding period expires.
+        for QuarantineGroup {
+            validator_identity_key,
+            notes,
+            nullifiers,
+        } in block.quarantine
+        {
+            // Quarantine all notes associated with this quarantine group
+            for (&note_commitment, data) in notes.iter() {
+                // Hold the note data in quarantine
+                query!(
+                    r#"
+                    INSERT INTO quarantined_notes (
+                        note_commitment,
+                        ephemeral_key,
+                        encrypted_note,
+                        transaction_id,
+                        height,
+                        validator_identity_key
+                    ) VALUES ($1, $2, $3, $4, $5, $6)"#,
+                    &<[u8; 32]>::from(note_commitment)[..],
+                    &data.ephemeral_key.0[..],
+                    &data.encrypted_note[..],
+                    &data.transaction_id[..],
+                    height as i64,
+                    &validator_identity_key.0.to_bytes()[..],
+                )
+                .execute(&mut dbtx)
+                .await?;
+            }
+
+            // Quarantine all nullifiers associated with this quarantine group
+            for &nullifier in nullifiers.iter() {
+                let nullifier_bytes = &<[u8; 32]>::from(nullifier)[..];
+
+                // Keep track of the nullifier associated with the block height
+                query!(
+                    r#"
+                    INSERT INTO quarantined_nullifiers (nullifier, height, validator_identity_key)
+                    VALUES ($1, $2, $3)"#,
+                    nullifier_bytes,
+                    height as i64,
+                    &validator_identity_key.0.to_bytes()[..],
+                )
+                .execute(&mut dbtx)
+                .await?;
+            }
         }
 
         // Mark spent notes as spent.

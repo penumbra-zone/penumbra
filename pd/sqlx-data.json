@@ -621,6 +621,20 @@
       ]
     }
   },
+  "bf8f833d9d607b4831f95f81c8c7bef8f9ce86f2c855faaa3b09b6220e70c271": {
+    "query": "\n                    INSERT INTO quarantined_nullifiers (nullifier, height, validator_identity_key)\n                    VALUES ($1, $2, $3)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Int8",
+          "Bytea"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "c0838e2487bc88b229fe4b5ab786b11780d5196f3e88a5281e7a409171fe4734": {
     "query": "SELECT * from validator_fundingstreams WHERE identity_key = $1",
     "describe": {
@@ -753,6 +767,23 @@
         false,
         false
       ]
+    }
+  },
+  "ee9d36552e16c2f29b21884bde5bce5814431dde2f60bb9f8a5f525e1951ef40": {
+    "query": "\n                    INSERT INTO quarantined_notes (\n                        note_commitment,\n                        ephemeral_key,\n                        encrypted_note,\n                        transaction_id,\n                        height,\n                        validator_identity_key\n                    ) VALUES ($1, $2, $3, $4, $5, $6)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Bytea",
+          "Bytea",
+          "Bytea",
+          "Int8",
+          "Bytea"
+        ]
+      },
+      "nullable": []
     }
   },
   "f364b8966b90d430a23cf88f17589aa9120d5dfbb76c52755ad580436f95580a": {
