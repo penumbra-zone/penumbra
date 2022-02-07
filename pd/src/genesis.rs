@@ -116,7 +116,7 @@ impl TryFrom<pb::genesis_app_state::ValidatorPower> for ValidatorPower {
 impl Protobuf<pb::genesis_app_state::ValidatorPower> for ValidatorPower {}
 
 /// The application state at genesis.
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
 #[serde(try_from = "pb::GenesisAppState", into = "pb::GenesisAppState")]
 pub struct AppState {
     /// Global configuration for the chain, such as chain ID and epoch duration.
@@ -159,16 +159,3 @@ impl TryFrom<pb::GenesisAppState> for AppState {
 }
 
 impl Protobuf<pb::GenesisAppState> for AppState {}
-
-impl Default for AppState {
-    fn default() -> Self {
-        AppState {
-            chain_params: ChainParams {
-                chain_id: "".to_string(),
-                epoch_duration: 8640,
-            },
-            allocations: Vec::default(),
-            validators: Vec::default(),
-        }
-    }
-}

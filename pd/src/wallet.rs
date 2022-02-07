@@ -60,10 +60,9 @@ impl LightWallet for state::Reader {
             .await
             .map_err(|_| tonic::Status::unavailable("error retrieving genesis configuration"))?;
 
-        Ok(tonic::Response::new(ChainParams {
-            chain_id: genesis_configuration.chain_params.chain_id,
-            epoch_duration: genesis_configuration.chain_params.epoch_duration,
-        }))
+        Ok(tonic::Response::new(
+            genesis_configuration.chain_params.into(),
+        ))
     }
 
     #[instrument(skip(self, request), fields(show_inactive = request.get_ref().show_inactive))]
