@@ -61,6 +61,9 @@ enum Command {
         /// Number of blocks per epoch.
         #[structopt(short, long, default_value = "60")]
         epoch_duration: u64,
+        /// Number of epochs before unbonding stake is released.
+        #[structopt(short, long, default_value = "60")]
+        unbonding_epochs: u64,
         /// Path to CSV file containing initial allocations.
         #[structopt(
             short,
@@ -198,6 +201,7 @@ async fn main() -> anyhow::Result<()> {
             // works.
             starting_ip: _,
             epoch_duration,
+            unbonding_epochs,
             allocations_input_file,
             validators_input_file,
             output_dir,
@@ -292,6 +296,7 @@ async fn main() -> anyhow::Result<()> {
                     chain_params: ChainParams {
                         chain_id: chain_id.clone(),
                         epoch_duration,
+                        unbonding_epochs,
                     },
                     validators: validators
                         .iter()

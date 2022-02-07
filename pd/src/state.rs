@@ -14,6 +14,7 @@ pub use writer::Writer;
 pub async fn new(uri: &str) -> Result<(Reader, Writer)> {
     // Maintain two connection pools, so that reader contention cannot starve
     // the writer.
+    #[allow(clippy::zero_prefixed_literal)]
     let (reader_pool, writer_pool) = (
         PgPoolOptions::new()
             .max_connections(16)
