@@ -173,6 +173,9 @@ async fn sweep(opt: &Opt, state: &mut ClientStateFile) -> Result<()> {
         );
     } else {
         println!("finished sweeping");
+        // Terminate with a non-zero exit code so it's easy to script
+        // sweeping in a loop
+        std::process::exit(9);
     }
 
     Ok(())
