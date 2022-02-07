@@ -79,7 +79,7 @@ impl state::Reader {
                 ));
             }
         }
-        for u in &transaction.undelegations {
+        if let Some(ref u) = transaction.undelegation {
             let rate_data = self
                 .next_rate_data_rx()
                 .borrow()
@@ -139,6 +139,7 @@ impl state::Reader {
             new_notes: transaction.new_notes,
             spent_nullifiers: transaction.spent_nullifiers,
             delegation_changes,
+            undelegation_validator: transaction.undelegation.map(|u| u.validator_identity),
         })
     }
 }
@@ -171,5 +172,6 @@ pub fn mark_genesis_as_verified(transaction: Transaction) -> VerifiedTransaction
         new_notes,
         spent_nullifiers: BTreeSet::<Nullifier>::new(),
         delegation_changes: BTreeMap::new(),
+        undelegation_validator: None,
     }
 }

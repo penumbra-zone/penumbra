@@ -28,8 +28,6 @@ pub struct PendingBlock {
     pub supply_updates: BTreeMap<asset::Id, (asset::Denom, u64)>,
     /// Indicates the epoch the block belongs to.
     pub epoch: Option<Epoch>,
-    /// Indicates the duration in blocks of each epoch.
-    pub epoch_duration: u64,
     /// If this is the last block of an epoch, base rates for the next epoch go here.
     pub next_base_rate: Option<BaseRateData>,
     /// If this is the last block of an epoch, validator rates for the next epoch go here.
@@ -43,10 +41,24 @@ pub struct PendingBlock {
     reward_counter: u64,
     /// Records pending state changes to validators.
     pub validator_state_changes: BTreeMap<IdentityKey, ValidatorState>,
+    /// Records all the quarantined inputs/outputs from this block.
+    pub quarantine: Vec<QuarantineGroup>,
+}
+
+/// A group of notes and nullifiers, all to be quarantined relative to a shared set of validators.
+#[derive(Debug, Clone)]
+pub struct QuarantineGroup {
+    /// If this validator is slashed while the notes and nullifiers in this quarantined group, then
+    /// all of the notes should be dropped and all the nullifiers removed from the NCT.
+    pub validator_identity_key: IdentityKey,
+    /// The set of notes in this group.
+    pub notes: BTreeMap<note::Commitment, NoteData>,
+    /// The set of nullifiers in this group.
+    pub nullifiers: BTreeSet<Nullifier>,
 }
 
 impl PendingBlock {
-    pub fn new(note_commitment_tree: NoteCommitmentTree, epoch_duration: u64) -> Self {
+    pub fn new(note_commitment_tree: NoteCommitmentTree) -> Self {
         Self {
             height: None,
             note_commitment_tree,
@@ -54,20 +66,20 @@ impl PendingBlock {
             spent_nullifiers: BTreeSet::new(),
             supply_updates: BTreeMap::new(),
             epoch: None,
-            epoch_duration,
             next_base_rate: None,
             next_rates: None,
             next_validator_statuses: None,
             delegation_changes: BTreeMap::new(),
             reward_counter: 0,
             validator_state_changes: BTreeMap::new(),
+            quarantine: Vec::new(),
         }
     }
 
     /// We only get the height from ABCI in EndBlock, so this allows setting it in-place.
-    pub fn set_height(&mut self, height: u64) -> Epoch {
+    pub fn set_height(&mut self, height: u64, epoch_duration: u64) -> Epoch {
         self.height = Some(height);
-        let epoch = Epoch::from_height(height, self.epoch_duration);
+        let epoch = Epoch::from_height(height, epoch_duration);
         self.epoch = Some(epoch.clone());
         epoch
     }
@@ -135,22 +147,36 @@ impl PendingBlock {
 
     /// Adds the state changes from a verified transaction.
     pub fn add_transaction(&mut self, transaction: VerifiedTransaction) {
-        for (note_commitment, data) in transaction.new_notes {
-            self.note_commitment_tree.append(&note_commitment);
+        if let Some(validator_identity_key) = transaction.undelegation_validator {
+            // If a transaction contains an undelegation, we *do not insert any of its outputs*
+            // into the NCT; instead we store them separately, to be inserted into the NCT only
+            // after the unbonding period occurs.
+            self.quarantine.push(QuarantineGroup {
+                validator_identity_key,
+                notes: transaction.new_notes.into_iter().collect(),
+                nullifiers: transaction.spent_nullifiers.iter().cloned().collect(),
+            });
+        } else {
+            // If a transaction does not contain any undelegations, we insert its outputs
+            // immediately into the NCT.
+            for (note_commitment, data) in transaction.new_notes {
+                self.note_commitment_tree.append(&note_commitment);
 
-            let position = self
-                .note_commitment_tree
-                .bridges()
-                .last()
-                .map(|b| b.frontier().position().into())
-                // If there are no bridges, the tree is empty
-                .unwrap_or(0u64);
+                let position = self
+                    .note_commitment_tree
+                    .bridges()
+                    .last()
+                    .map(|b| b.frontier().position().into())
+                    // If there are no bridges, the tree is empty
+                    .unwrap_or(0u64);
 
-            self.notes
-                .insert(note_commitment, PositionedNoteData { position, data });
+                self.notes
+                    .insert(note_commitment, PositionedNoteData { position, data });
+            }
         }
 
-        // Collect the nullifiers in this transaction
+        // Unconditionally, insert all nullifiers spent in this transaction into the spent set to
+        // prevent double-spends, regardless of quarantine status.
         for nullifier in transaction.spent_nullifiers {
             self.spent_nullifiers.insert(nullifier);
         }
