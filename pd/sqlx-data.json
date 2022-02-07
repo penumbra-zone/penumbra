@@ -160,6 +160,44 @@
       "nullable": []
     }
   },
+  "4e81d31b835953b15b3afce317f51732374cd7cbbf46f80407403bd1f3fd6248": {
+    "query": "\n            SELECT DISTINCT ON (identity_key)\n            identity_key, \n            epoch, \n            validator_reward_rate, \n            validator_exchange_rate\n\n            FROM validator_rates \n            WHERE epoch <= $1\n            ORDER BY identity_key, epoch DESC",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "identity_key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 1,
+          "name": "epoch",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 2,
+          "name": "validator_reward_rate",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 3,
+          "name": "validator_exchange_rate",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "4f9e6ca2890b779cf788f5993de20c8a2b80baa56966dac4c4f1e215171db0c8": {
     "query": "INSERT INTO validator_rates (\n                    identity_key,\n                    epoch,\n                    validator_reward_rate,\n                    validator_exchange_rate\n                ) VALUES ($1, $2, $3, $4)",
     "describe": {
@@ -728,44 +766,6 @@
         ]
       },
       "nullable": []
-    }
-  },
-  "f9bdaf15db286fffdd144af22f833b3adb6335c3174078e824182d8374a64f88": {
-    "query": "SELECT identity_key, epoch, validator_reward_rate, validator_exchange_rate\n            FROM validator_rates\n            WHERE epoch = $1",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "identity_key",
-          "type_info": "Bytea"
-        },
-        {
-          "ordinal": 1,
-          "name": "epoch",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 2,
-          "name": "validator_reward_rate",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 3,
-          "name": "validator_exchange_rate",
-          "type_info": "Int8"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8"
-        ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false
-      ]
     }
   },
   "feb219cf82779306d199c5f733359b2cafd5ab51fca03922a9e73c3a4ff44bf7": {

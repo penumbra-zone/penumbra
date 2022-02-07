@@ -235,12 +235,19 @@ impl Reader {
 
     pub async fn rate_data(&self, epoch_index: u64) -> Result<Vec<RateData>> {
         let mut conn = self.pool.acquire().await?;
-        // TODO: This query needs to be updated to select the *most recent* rate data
-        // to the given epoch
+        // Select rate data for the given epoch, or for the most recent epoch with rate data less than or equal
+        // to the given epoch.
         let rows = query!(
-            "SELECT identity_key, epoch, validator_reward_rate, validator_exchange_rate
-            FROM validator_rates
-            WHERE epoch = $1",
+            "
+            SELECT DISTINCT ON (identity_key)
+            identity_key, 
+            epoch, 
+            validator_reward_rate, 
+            validator_exchange_rate
+
+            FROM validator_rates 
+            WHERE epoch <= $1
+            ORDER BY identity_key, epoch DESC",
             epoch_index as i64,
         )
         .fetch_all(&mut conn)
