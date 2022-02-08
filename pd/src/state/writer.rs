@@ -238,6 +238,11 @@ impl Writer {
         .execute(&mut dbtx)
         .await?;
 
+        // TODO: roll back quarantined notes and nullifiers for newly slashed validators
+
+        // TODO: on epoch boundary only, unquarantine notes and drop quarantined nullifiers for that
+        // have unbonded
+
         // Add newly created notes into the chain state.
         for (note_commitment, positioned_note) in block.notes.into_iter() {
             query!(
