@@ -266,6 +266,17 @@ impl Writer {
             .await?;
         }
 
+        // Calculate the height at which notes quarantined in this block should unbond. If the
+        // unbonding period or the epoch duration change, notes will unbond at the nearest epoch
+        // boundary following this height.
+        let unbonding_epochs = self
+            .private_reader()
+            .chain_params_rx()
+            .borrow()
+            .unbonding_epochs;
+        let epoch_duration = block.epoch.as_ref().unwrap().duration;
+        let unbonding_height = height + (epoch_duration * unbonding_epochs);
+
         // Add notes and nullifiers from transactions containing undelegations to a quarantine
         // queue, to be extracted when their unbonding period expires.
         for QuarantineGroup {
@@ -284,14 +295,14 @@ impl Writer {
                         ephemeral_key,
                         encrypted_note,
                         transaction_id,
-                        height,
+                        unbonding_height,
                         validator_identity_key
                     ) VALUES ($1, $2, $3, $4, $5, $6)"#,
                     &<[u8; 32]>::from(note_commitment)[..],
                     &data.ephemeral_key.0[..],
                     &data.encrypted_note[..],
                     &data.transaction_id[..],
-                    height as i64,
+                    unbonding_height as i64,
                     &validator_identity_key.0.to_bytes()[..],
                 )
                 .execute(&mut dbtx)
@@ -305,10 +316,10 @@ impl Writer {
                 // Keep track of the nullifier associated with the block height
                 query!(
                     r#"
-                    INSERT INTO quarantined_nullifiers (nullifier, height, validator_identity_key)
+                    INSERT INTO quarantined_nullifiers (nullifier, unbonding_height, validator_identity_key)
                     VALUES ($1, $2, $3)"#,
                     nullifier_bytes,
-                    height as i64,
+                    unbonding_height as i64,
                     &validator_identity_key.0.to_bytes()[..],
                 )
                 .execute(&mut dbtx)
