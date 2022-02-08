@@ -6,12 +6,12 @@ use std::{
 
 use anyhow::{Context, Result};
 use async_stream::try_stream;
-use futures::stream::{Stream, StreamExt};
+use futures::stream::{Stream, StreamExt, TryStreamExt};
 use penumbra_chain::params::ChainParams;
 use penumbra_crypto::{
     asset,
     merkle::{self, NoteCommitmentTree},
-    Address, FieldExt, Fq, Nullifier,
+    note, Address, FieldExt, Fq, Nullifier,
 };
 use penumbra_proto::{
     chain,
@@ -486,6 +486,54 @@ impl Reader {
 
                 yield compact_block;
             }
+        })
+    }
+
+    /// Retrieve a stream of quarantined note commitments in a given block or older, paired with the
+    /// validator identity key with which they are associated.
+    pub fn notes_quarantined_up_to(
+        &self,
+        maximum_block_height: u64,
+    ) -> impl Stream<Item = Result<(IdentityKey, note::Commitment)>> + Send + Unpin + '_ {
+        query!(
+            "SELECT validator_identity_key, note_commitment FROM quarantined_notes WHERE unbonding_height <= $1",
+            maximum_block_height as i64,
+        )
+        .fetch(&self.pool)
+        .map_err(Into::into)
+        .map(|result| {
+            result
+                .and_then(|row| {
+                    Ok::<_, anyhow::Error>((
+                        IdentityKey::decode(&*row.validator_identity_key)?,
+                        note::Commitment::try_from(&row.note_commitment[..])?,
+                    ))
+                })
+                .map_err(Into::into)
+        })
+    }
+
+    /// Retrieve a stream of quarantined nullifiers in a given block or older, paired with the
+    /// validator identity key with which they are associated.
+    pub fn nullifiers_quarantined_up_to(
+        &self,
+        maximum_block_height: u64,
+    ) -> impl Stream<Item = Result<(IdentityKey, Nullifier)>> + Send + Unpin + '_ {
+        query!(
+            "SELECT validator_identity_key, nullifier FROM quarantined_nullifiers WHERE unbonding_height <= $1",
+            maximum_block_height as i64,
+        )
+        .fetch(&self.pool)
+        .map_err(Into::into)
+        .map(|result| {
+            result
+                .and_then(|row| {
+                    Ok::<_, anyhow::Error>((
+                        IdentityKey::decode(&*row.validator_identity_key)?,
+                        Nullifier::try_from(&row.nullifier[..])?,
+                    ))
+                })
+                .map_err(Into::into)
         })
     }
 

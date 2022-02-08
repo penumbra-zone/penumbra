@@ -257,6 +257,9 @@ impl Worker {
             self.end_epoch().await?;
         }
 
+        // TODO: later, set the EndBlock response to add validators
+        // at the epoch boundary
+
         // TODO: revert notes and nullifiers immediately from slashed validators in this block
 
         // TODO: right now we are not writing the updated voting power from validator statuses
@@ -421,9 +424,6 @@ impl Worker {
             *STAKING_TOKEN_ASSET_ID,
             (STAKING_TOKEN_DENOM.clone(), staking_token_supply),
         );
-
-        // TODO: later, set the EndBlock response to add validators
-        // at the epoch boundary
 
         Ok(())
     }

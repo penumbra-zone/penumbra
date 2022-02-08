@@ -120,10 +120,12 @@ CREATE TABLE IF NOT EXISTS quarantined_notes (
     ephemeral_key bytea NOT NULL,
     encrypted_note bytea NOT NULL,
     transaction_id bytea NOT NULL,
-    height bigint NOT NULL REFERENCES blocks (height),
-    validator_identity_key bytea NOT NULL REFERENCES validators (identity_key)
+    unbonding_height bigint NOT NULL, -- height at which to make the note available
+    validator_identity_key bytea NOT NULL REFERENCES validators (identity_key),
+    -- unbonding_height can't be negative
+    CONSTRAINT positive_unbonding_height CHECK (unbonding_height >= 0)
 );
-CREATE INDEX ON quarantined_notes (height);
+CREATE INDEX ON quarantined_notes (unbonding_height);
 CREATE INDEX ON quarantined_notes (validator_identity_key);
 
 -- Set of quarantined nullifiers: once the epoch is large enough, all old-enough quarantined
@@ -131,8 +133,10 @@ CREATE INDEX ON quarantined_notes (validator_identity_key);
 -- making the spend which revealed them irreversible
 CREATE TABLE IF NOT EXISTS quarantined_nullifiers (
     nullifier bytea PRIMARY KEY REFERENCES nullifiers (nullifier),
-    height bigint NOT NULL REFERENCES blocks (height),
-    validator_identity_key bytea NOT NULL REFERENCES validators (identity_key)
+    unbonding_height bigint NOT NULL, -- height at which to make the spend permanent
+    validator_identity_key bytea NOT NULL REFERENCES validators (identity_key),
+    -- unbonding_height can't be negative
+    CONSTRAINT positive_unbonding_height CHECK (unbonding_height >= 0)
 );
-CREATE INDEX ON quarantined_nullifiers (height);
+CREATE INDEX ON quarantined_nullifiers (unbonding_height);
 CREATE INDEX ON quarantined_nullifiers (validator_identity_key);

@@ -1,5 +1,31 @@
 {
   "db": "PostgreSQL",
+  "0089b78dbca1ee091d2d7c93c32e33581b65bc08a34de9ae0d02f70f8c28f9c6": {
+    "query": "SELECT validator_identity_key, nullifier FROM quarantined_nullifiers WHERE unbonding_height <= $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "validator_identity_key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 1,
+          "name": "nullifier",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
   "0a6306cae406df1b23e52d503b22768210c72fb679fda34fa80d08cd2498fec4": {
     "query": "INSERT INTO validators (\n                    identity_key,\n                    consensus_key,\n                    sequence_number,\n                    name,\n                    website,\n                    description,\n                    voting_power,\n                    validator_state,\n                    unbonding_epoch\n                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
     "describe": {
@@ -31,6 +57,32 @@
         ]
       },
       "nullable": []
+    }
+  },
+  "0cd1d8cc730671b5ec0081ff00f30630b4b58f6ca4771a988e4202d2cdf1aff4": {
+    "query": "SELECT validator_identity_key, note_commitment FROM quarantined_notes WHERE unbonding_height <= $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "validator_identity_key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 1,
+          "name": "note_commitment",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false
+      ]
     }
   },
   "1329be38905d802df374dc416fd0ce36d0b556af2d3d07d6248722b7025bfe3d": {
@@ -106,6 +158,20 @@
         false,
         false
       ]
+    }
+  },
+  "308588a01bb3ed66958ef26b636e2c344ac302749e3538f8a6698ed719fe3a73": {
+    "query": "\n                    INSERT INTO quarantined_nullifiers (nullifier, unbonding_height, validator_identity_key)\n                    VALUES ($1, $2, $3)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Int8",
+          "Bytea"
+        ]
+      },
+      "nullable": []
     }
   },
   "3f13d5f8a2ffc438e79f3297b7dfbcc14ffca7611f5ea3d4a5e8acfba3b9807e": {
@@ -311,6 +377,23 @@
         false,
         false
       ]
+    }
+  },
+  "71bf9cc82a3fd6ebbb72e56a7f19850e64cb41222a454582917da54aa21c914e": {
+    "query": "\n                    INSERT INTO quarantined_notes (\n                        note_commitment,\n                        ephemeral_key,\n                        encrypted_note,\n                        transaction_id,\n                        unbonding_height,\n                        validator_identity_key\n                    ) VALUES ($1, $2, $3, $4, $5, $6)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Bytea",
+          "Bytea",
+          "Bytea",
+          "Int8",
+          "Bytea"
+        ]
+      },
+      "nullable": []
     }
   },
   "73d0d102af9c9dbf753248c60bd967e744e909208ba53271f1f8238438da52b7": {
@@ -621,20 +704,6 @@
       ]
     }
   },
-  "bf8f833d9d607b4831f95f81c8c7bef8f9ce86f2c855faaa3b09b6220e70c271": {
-    "query": "\n                    INSERT INTO quarantined_nullifiers (nullifier, height, validator_identity_key)\n                    VALUES ($1, $2, $3)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea",
-          "Int8",
-          "Bytea"
-        ]
-      },
-      "nullable": []
-    }
-  },
   "c0838e2487bc88b229fe4b5ab786b11780d5196f3e88a5281e7a409171fe4734": {
     "query": "SELECT * from validator_fundingstreams WHERE identity_key = $1",
     "describe": {
@@ -767,23 +836,6 @@
         false,
         false
       ]
-    }
-  },
-  "ee9d36552e16c2f29b21884bde5bce5814431dde2f60bb9f8a5f525e1951ef40": {
-    "query": "\n                    INSERT INTO quarantined_notes (\n                        note_commitment,\n                        ephemeral_key,\n                        encrypted_note,\n                        transaction_id,\n                        height,\n                        validator_identity_key\n                    ) VALUES ($1, $2, $3, $4, $5, $6)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea",
-          "Bytea",
-          "Bytea",
-          "Bytea",
-          "Int8",
-          "Bytea"
-        ]
-      },
-      "nullable": []
     }
   },
   "f364b8966b90d430a23cf88f17589aa9120d5dfbb76c52755ad580436f95580a": {
