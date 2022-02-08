@@ -43,6 +43,15 @@ pub struct PendingBlock {
     pub validator_state_changes: BTreeMap<IdentityKey, ValidatorState>,
     /// Records all the quarantined inputs/outputs from this block.
     pub quarantine: Vec<QuarantineGroup>,
+    /// Notes to add to the main set of notes (and NCT) when this block is committed, making them available.
+    pub unbonding_notes: BTreeSet<note::Commitment>,
+    /// Nullifiers to remove from the quarantined set when this block is committed, making their
+    /// spend permanent.
+    pub unbonding_nullifiers: BTreeSet<Nullifier>,
+    /// Notes to be dropped from the quarantine set when this block is committed, reverting their spend.
+    pub reverting_notes: BTreeSet<note::Commitment>,
+    /// Nullifiers to remove from the nullifier set when this block is committed, reverting their spend.
+    pub reverting_nullifiers: BTreeSet<Nullifier>,
 }
 
 /// A group of notes and nullifiers, all to be quarantined relative to a shared set of validators.
@@ -73,6 +82,10 @@ impl PendingBlock {
             reward_counter: 0,
             validator_state_changes: BTreeMap::new(),
             quarantine: Vec::new(),
+            unbonding_notes: BTreeSet::new(),
+            unbonding_nullifiers: BTreeSet::new(),
+            reverting_notes: BTreeSet::new(),
+            reverting_nullifiers: BTreeSet::new(),
         }
     }
 
