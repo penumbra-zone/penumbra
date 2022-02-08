@@ -489,17 +489,40 @@ impl Reader {
         })
     }
 
-    /// Retrieve a stream of quarantined notes and their commitments in a given block or older,
-    /// paired with the validator identity key with which they are associated.
-    pub fn notes_quarantined_up_to(
+    /// Retrieve a stream of quarantined notes and their commitments, paired with the validator
+    /// identity key with which they are associated.
+    ///
+    /// If `maximum_unbonding_height` is `Some`, only notes whose unbonding height is less than or
+    /// equal to that height will be returned.
+    ///
+    /// If `validators` is `Some`, only notes which were associated with an undelegation from some
+    /// validator in that set will be returned. (This is more efficient than filtering after
+    /// receiving he stream, because the database is performing the filtration.)
+    pub fn quarantined_notes(
         &self,
-        maximum_block_height: u64,
+        maximum_unbonding_height: Option<u64>,
+        validators: Option<impl IntoIterator<Item = impl AsRef<IdentityKey>>>,
     ) -> impl Stream<Item = Result<(IdentityKey, note::Commitment, NoteData)>> + Send + Unpin + '_
     {
+        // Should we list outputs from all validators?
+        let all_validators = validators.is_none();
+
+        // If not, what's the list of validator identities (as bytes) to filter for?
+        let validator_list = validators
+            .map(|v| v.into_iter().map(|i| i.as_ref().encode_to_vec()))
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>();
+
         query!(
             "SELECT validator_identity_key, note_commitment, ephemeral_key, encrypted_note, transaction_id
-            FROM quarantined_notes WHERE unbonding_height <= $1",
-            maximum_block_height as i64,
+            FROM quarantined_notes
+            WHERE
+                unbonding_height <= $1 AND
+                ($2 OR validator_identity_key = ANY($3))",
+            maximum_unbonding_height.unwrap_or(u64::MAX) as i64,
+            all_validators,
+            &validator_list,
         )
         .fetch(&self.pool)
         .map_err(Into::into)
@@ -520,15 +543,39 @@ impl Reader {
         })
     }
 
-    /// Retrieve a stream of quarantined nullifiers in a given block or older, paired with the
-    /// validator identity key with which they are associated.
-    pub fn nullifiers_quarantined_up_to(
+    /// Retrieve a stream of quarantined nullifiers, paired with the validator identity key with
+    /// which they are associated.
+    ///
+    /// If `maximum_unbonding_height` is `Some`, only nullifiers whose unbonding height is less than or
+    /// equal to that height will be returned.
+    ///
+    /// If `validators` is `Some`, only nullifiers which were associated with an undelegation from some
+    /// validator in that set will be returned. (This is more efficient than filtering after
+    /// receiving he stream, because the database is performing the filtration.)
+    pub fn quarantined_nullifiers(
         &self,
-        maximum_block_height: u64,
+        maximum_unbonding_height: Option<u64>,
+        validators: Option<impl IntoIterator<Item = impl AsRef<IdentityKey>>>,
     ) -> impl Stream<Item = Result<(IdentityKey, Nullifier)>> + Send + Unpin + '_ {
+        // Should we list outputs from all validators?
+        let all_validators = validators.is_none();
+
+        // If not, what's the list of validator identities (as bytes) to filter for?
+        let validator_list = validators
+            .map(|v| v.into_iter().map(|i| i.as_ref().encode_to_vec()))
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>();
+
         query!(
-            "SELECT validator_identity_key, nullifier FROM quarantined_nullifiers WHERE unbonding_height <= $1",
-            maximum_block_height as i64,
+            "SELECT validator_identity_key, nullifier
+            FROM quarantined_nullifiers
+            WHERE
+                unbonding_height <= $1 AND
+                ($2 OR validator_identity_key = ANY($3))",
+            maximum_unbonding_height.unwrap_or(u64::MAX) as i64,
+            all_validators,
+            &validator_list,
         )
         .fetch(&self.pool)
         .map_err(Into::into)
