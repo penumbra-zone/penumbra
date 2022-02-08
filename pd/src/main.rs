@@ -172,7 +172,7 @@ async fn main() -> anyhow::Result<()> {
 
             // This service lets Prometheus pull metrics from `pd`
             PrometheusBuilder::new()
-                .listen_address(
+                .with_http_listener(
                     format!("{}:{}", host, metrics_port)
                         .parse::<SocketAddr>()
                         .expect("this is a valid address"),
