@@ -43,8 +43,6 @@ pub struct PendingBlock {
     pub validator_state_changes: BTreeMap<IdentityKey, ValidatorState>,
     /// Records all the quarantined inputs/outputs from this block.
     pub quarantine: Vec<QuarantineGroup>,
-    /// Notes to add to the main set of notes (and NCT) when this block is committed, making them available.
-    pub unbonding_notes: BTreeSet<note::Commitment>,
     /// Nullifiers to remove from the quarantined set when this block is committed, making their
     /// spend permanent.
     pub unbonding_nullifiers: BTreeSet<Nullifier>,
@@ -82,9 +80,8 @@ impl PendingBlock {
             reward_counter: 0,
             validator_state_changes: BTreeMap::new(),
             quarantine: Vec::new(),
-            unbonding_notes: BTreeSet::new(),
-            unbonding_nullifiers: BTreeSet::new(),
             reverting_notes: BTreeSet::new(),
+            unbonding_nullifiers: BTreeSet::new(),
             reverting_nullifiers: BTreeSet::new(),
         }
     }
@@ -137,6 +134,13 @@ impl PendingBlock {
             transaction_id: [0; 32],
         };
 
+        self.add_note(commitment, note_data);
+
+        self.reward_counter += 1;
+    }
+
+    /// Adds a new note to this pending block.
+    pub fn add_note(&mut self, commitment: note::Commitment, data: NoteData) {
         self.note_commitment_tree.append(&commitment);
 
         let position = self
@@ -147,15 +151,8 @@ impl PendingBlock {
             // If there are no bridges, the tree is empty
             .unwrap_or(0u64);
 
-        self.notes.insert(
-            commitment,
-            PositionedNoteData {
-                position,
-                data: note_data,
-            },
-        );
-
-        self.reward_counter += 1;
+        self.notes
+            .insert(commitment, PositionedNoteData { position, data });
     }
 
     /// Adds the state changes from a verified transaction.
@@ -172,19 +169,8 @@ impl PendingBlock {
         } else {
             // If a transaction does not contain any undelegations, we insert its outputs
             // immediately into the NCT.
-            for (note_commitment, data) in transaction.new_notes {
-                self.note_commitment_tree.append(&note_commitment);
-
-                let position = self
-                    .note_commitment_tree
-                    .bridges()
-                    .last()
-                    .map(|b| b.frontier().position().into())
-                    // If there are no bridges, the tree is empty
-                    .unwrap_or(0u64);
-
-                self.notes
-                    .insert(note_commitment, PositionedNoteData { position, data });
+            for (commitment, data) in transaction.new_notes {
+                self.add_note(commitment, data);
             }
         }
 
