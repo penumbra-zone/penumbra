@@ -124,6 +124,11 @@ accomplished using ECDH with `decaf377`, and an AEAD cipher (though
 authentication is not strictly required, since vote extensions are signed). 
 
 
+TODO:
+
+[] concrete robust FROST implementation
+
+
 [ethdkg]: https://eprint.iacr.org/2019/985
 [feldman]: https://www.cs.umd.edu/~gasarch/TOPICS/secretsharing/feldmanVSS.pdf
 [gennaro]: http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.134.6445&rep=rep1&type=pdf
