@@ -41,7 +41,7 @@
     - [Parameter Considerations](./crypto/fmd/considerations.md)
   - [Homomorphic Threshold Decryption](./crypto/threshold.md)
     - [Encryption]()
-    - [Distributed Key Generation]()
+    - [Distributed Key Generation](./crypto/flow-encryption/dkg.md)
     - [Threshold Decryption]()
   - [Randomizable Signatures](./crypto/decaf377-rdsa.md)
   - [Key Agreement](./crypto/decaf377-ka.md)
