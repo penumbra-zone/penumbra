@@ -1,31 +1,5 @@
 {
   "db": "PostgreSQL",
-  "0089b78dbca1ee091d2d7c93c32e33581b65bc08a34de9ae0d02f70f8c28f9c6": {
-    "query": "SELECT validator_identity_key, nullifier FROM quarantined_nullifiers WHERE unbonding_height <= $1",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "validator_identity_key",
-          "type_info": "Bytea"
-        },
-        {
-          "ordinal": 1,
-          "name": "nullifier",
-          "type_info": "Bytea"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8"
-        ]
-      },
-      "nullable": [
-        false,
-        false
-      ]
-    }
-  },
   "0a6306cae406df1b23e52d503b22768210c72fb679fda34fa80d08cd2498fec4": {
     "query": "INSERT INTO validators (\n                    identity_key,\n                    consensus_key,\n                    sequence_number,\n                    name,\n                    website,\n                    description,\n                    voting_power,\n                    validator_state,\n                    unbonding_epoch\n                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
     "describe": {
@@ -264,8 +238,23 @@
       ]
     }
   },
-  "4f15cc9779b5d99f9ba43f6dbb1717045350af9203cb4043add8275b47d9b0a0": {
-    "query": "SELECT validator_identity_key, note_commitment, ephemeral_key, encrypted_note, transaction_id\n            FROM quarantined_notes WHERE unbonding_height <= $1",
+  "4f9e6ca2890b779cf788f5993de20c8a2b80baa56966dac4c4f1e215171db0c8": {
+    "query": "INSERT INTO validator_rates (\n                    identity_key,\n                    epoch,\n                    validator_reward_rate,\n                    validator_exchange_rate\n                ) VALUES ($1, $2, $3, $4)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Int8",
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "5b21c8f02b71c8101743848e10e198ca4bf1b06fa0a703382354f241d8c86b0f": {
+    "query": "SELECT validator_identity_key, note_commitment, ephemeral_key, encrypted_note, transaction_id\n            FROM quarantined_notes\n            WHERE\n                unbonding_height <= $1 AND\n                ($2 OR validator_identity_key = ANY($3))",
     "describe": {
       "columns": [
         {
@@ -296,7 +285,9 @@
       ],
       "parameters": {
         "Left": [
-          "Int8"
+          "Int8",
+          "Bool",
+          "ByteaArray"
         ]
       },
       "nullable": [
@@ -306,21 +297,6 @@
         false,
         false
       ]
-    }
-  },
-  "4f9e6ca2890b779cf788f5993de20c8a2b80baa56966dac4c4f1e215171db0c8": {
-    "query": "INSERT INTO validator_rates (\n                    identity_key,\n                    epoch,\n                    validator_reward_rate,\n                    validator_exchange_rate\n                ) VALUES ($1, $2, $3, $4)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea",
-          "Int8",
-          "Int8",
-          "Int8"
-        ]
-      },
-      "nullable": []
     }
   },
   "5f0f6af5d9b30fbea0e33d478e61d311cd065dd0552bfc3988710b6655a3cd1c": {
@@ -851,6 +827,34 @@
         ]
       },
       "nullable": []
+    }
+  },
+  "e4a933931ef751ddebcffc649efe21929b949c314284f8615b03086cd90d00e0": {
+    "query": "SELECT validator_identity_key, nullifier\n            FROM quarantined_nullifiers\n            WHERE\n                unbonding_height <= $1 AND\n                ($2 OR validator_identity_key = ANY($3))",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "validator_identity_key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 1,
+          "name": "nullifier",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Bool",
+          "ByteaArray"
+        ]
+      },
+      "nullable": [
+        false,
+        false
+      ]
     }
   },
   "e57d8617299261390fc7448d3bfda816a5b2bbdf7cb03c0f76af7da9f26743ba": {
