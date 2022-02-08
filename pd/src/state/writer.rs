@@ -338,7 +338,9 @@ impl Writer {
         // Save any new assets found in the block to the asset registry.
         for (id, asset) in block.supply_updates {
             query!(
-                r#"INSERT INTO assets (asset_id, denom, total_supply) VALUES ($1, $2, $3) ON CONFLICT (asset_id) DO UPDATE SET denom=$2, total_supply=$3"#,
+                "INSERT INTO assets (asset_id, denom, total_supply)
+                VALUES ($1, $2, $3)
+                ON CONFLICT (asset_id) DO UPDATE SET denom=$2, total_supply=$3",
                 &id.to_bytes()[..],
                 asset.0.to_string(),
                 asset.1 as i64
@@ -398,6 +400,7 @@ impl Writer {
 
         // Finally, commit the transaction and then update subscribers
         dbtx.commit().await?;
+
         // Errors in sends arise only if no one is listening -- not our problem.
         let _ = self.height_tx.send(height.try_into().unwrap());
         let _ = self.valid_anchors_tx.send(valid_anchors);
