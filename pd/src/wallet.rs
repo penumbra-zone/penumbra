@@ -22,6 +22,24 @@ use tracing::{instrument, Instrument, Span};
 
 use crate::state;
 
+impl state::Reader {
+    /// Checks a provided chain_id against the chain state.
+    ///
+    /// Passes through if the provided chain_id is empty or matches, and
+    /// otherwise errors.
+    fn check_chain_id(&self, provided: &str) -> Result<(), tonic::Status> {
+        if provided.is_empty() || self.chain_params_rx().borrow().chain_id == provided {
+            Ok(())
+        } else {
+            Err(tonic::Status::failed_precondition(format!(
+                "provided chain_id {} does not match chain_id {}",
+                provided,
+                self.chain_params_rx().borrow().chain_id
+            )))
+        }
+    }
+}
+
 #[tonic::async_trait]
 impl LightWallet for state::Reader {
     type CompactBlockRangeStream =
@@ -30,11 +48,13 @@ impl LightWallet for state::Reader {
     type ValidatorInfoStream =
         Pin<Box<dyn futures::Stream<Item = Result<ValidatorInfo, tonic::Status>> + Send>>;
 
-    #[instrument(skip(self, _request), fields())]
+    #[instrument(skip(self, request), fields())]
     async fn chain_params(
         &self,
-        _request: tonic::Request<ChainParamsRequest>,
+        request: tonic::Request<ChainParamsRequest>,
     ) -> Result<tonic::Response<ChainParams>, Status> {
+        self.check_chain_id(&request.get_ref().chain_id)?;
+
         let genesis_configuration = self
             .genesis_configuration()
             .await
@@ -51,6 +71,8 @@ impl LightWallet for state::Reader {
         &self,
         request: tonic::Request<ValidatorInfoRequest>,
     ) -> Result<tonic::Response<Self::ValidatorInfoStream>, Status> {
+        self.check_chain_id(&request.get_ref().chain_id)?;
+
         let validator_info = self
             .validator_info(request.into_inner().show_inactive)
             .await
@@ -72,6 +94,8 @@ impl LightWallet for state::Reader {
         &self,
         request: tonic::Request<CompactBlockRangeRequest>,
     ) -> Result<tonic::Response<Self::CompactBlockRangeStream>, Status> {
+        self.check_chain_id(&request.get_ref().chain_id)?;
+
         let CompactBlockRangeRequest {
             start_height,
             end_height,
@@ -121,6 +145,8 @@ impl ThinWallet for state::Reader {
         &self,
         request: tonic::Request<TransactionByNoteRequest>,
     ) -> Result<tonic::Response<TransactionDetail>, Status> {
+        self.check_chain_id(&request.get_ref().chain_id)?;
+
         tracing::debug!(cm = ?hex::encode(&request.get_ref().cm));
         let state = self.clone();
         let transaction = state
@@ -135,6 +161,8 @@ impl ThinWallet for state::Reader {
         &self,
         request: tonic::Request<AssetLookupRequest>,
     ) -> Result<tonic::Response<AssetInfo>, Status> {
+        self.check_chain_id(&request.get_ref().chain_id)?;
+
         let asset_id = penumbra_crypto::asset::Id::try_from(
             request
                 .into_inner()
@@ -154,11 +182,13 @@ impl ThinWallet for state::Reader {
         Ok(tonic::Response::new(asset))
     }
 
-    #[instrument(skip(self, _request))]
+    #[instrument(skip(self, request))]
     async fn asset_list(
         &self,
-        _request: tonic::Request<AssetListRequest>,
+        request: tonic::Request<AssetListRequest>,
     ) -> Result<tonic::Response<Self::AssetListStream>, Status> {
+        self.check_chain_id(&request.get_ref().chain_id)?;
+
         tracing::debug!("processing request");
         let state = self.clone();
 
@@ -181,11 +211,13 @@ tracing::debug!(asset_id = ?hex::encode(&asset.asset_id), asset_denom = ?asset.a
         Ok(tonic::Response::new(Self::AssetListStream::new(rx)))
     }
 
-    #[instrument(skip(self, _request))]
+    #[instrument(skip(self, request))]
     async fn validator_status(
         &self,
-        _request: tonic::Request<ValidatorStatusRequest>,
+        request: tonic::Request<ValidatorStatusRequest>,
     ) -> Result<tonic::Response<proto::stake::ValidatorStatus>, Status> {
+        self.check_chain_id(&request.get_ref().chain_id)?;
+
         todo!()
     }
 
@@ -194,6 +226,8 @@ tracing::debug!(asset_id = ?hex::encode(&asset.asset_id), asset_denom = ?asset.a
         &self,
         request: tonic::Request<ValidatorRateRequest>,
     ) -> Result<tonic::Response<proto::stake::RateData>, Status> {
+        self.check_chain_id(&request.get_ref().chain_id)?;
+
         let request = request.into_inner();
         let rates = self
             .rate_data(request.epoch_index)
