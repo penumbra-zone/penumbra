@@ -425,7 +425,7 @@ impl Reader {
 
             for height in start_height..=end_height {
                 let mut compact_block = CompactBlock {
-                    height: height as u32,
+                    height: height as u64,
                     fragments: vec![],
                     nullifiers: vec![],
                 };

@@ -35,7 +35,7 @@ const SUBMITTED_TRANSACTION_TIMEOUT: Duration = Duration::from_secs(60);
 )]
 pub struct ClientState {
     /// The last block height we've scanned to, if any.
-    last_block_height: Option<u32>,
+    last_block_height: Option<u64>,
     /// Note commitment tree.
     note_commitment_tree: NoteCommitmentTree,
     /// Our nullifiers and the notes they correspond to.
@@ -592,7 +592,7 @@ impl ClientState {
     }
 
     /// Returns the last block height the client state has synced up to, if any.
-    pub fn last_block_height(&self) -> Option<u32> {
+    pub fn last_block_height(&self) -> Option<u64> {
         self.last_block_height
     }
 
@@ -798,7 +798,7 @@ mod serde_helpers {
     #[derive(Serialize, Deserialize)]
     pub struct ClientStateHelper {
         wallet: Wallet, // this should be at the top to make `wallet reset` faster
-        last_block_height: Option<u32>,
+        last_block_height: Option<u64>,
         #[serde_as(as = "serde_with::hex::Hex")]
         note_commitment_tree: Vec<u8>,
         nullifier_map: Vec<(String, String)>,
