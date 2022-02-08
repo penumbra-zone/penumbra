@@ -59,32 +59,6 @@
       "nullable": []
     }
   },
-  "0cd1d8cc730671b5ec0081ff00f30630b4b58f6ca4771a988e4202d2cdf1aff4": {
-    "query": "SELECT validator_identity_key, note_commitment FROM quarantined_notes WHERE unbonding_height <= $1",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "validator_identity_key",
-          "type_info": "Bytea"
-        },
-        {
-          "ordinal": 1,
-          "name": "note_commitment",
-          "type_info": "Bytea"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8"
-        ]
-      },
-      "nullable": [
-        false,
-        false
-      ]
-    }
-  },
   "1329be38905d802df374dc416fd0ce36d0b556af2d3d07d6248722b7025bfe3d": {
     "query": "SELECT identity_key, epoch, validator_reward_rate, validator_exchange_rate\n            FROM validator_rates\n            WHERE epoch = (SELECT MAX(epoch) from base_rates)",
     "describe": {
@@ -119,6 +93,18 @@
         false,
         false
       ]
+    }
+  },
+  "2b00fd7700707a635a3d5827f69f2a16a45737fe24797d9aae3874c95d640524": {
+    "query": "DELETE FROM nullifiers WHERE nullifier = $1",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea"
+        ]
+      },
+      "nullable": []
     }
   },
   "302a33ec1eec61c43e6b5507b6e059e3c9f61c6da3c853ec9c6d4c815d04df61": {
@@ -278,6 +264,50 @@
       ]
     }
   },
+  "4f15cc9779b5d99f9ba43f6dbb1717045350af9203cb4043add8275b47d9b0a0": {
+    "query": "SELECT validator_identity_key, note_commitment, ephemeral_key, encrypted_note, transaction_id\n            FROM quarantined_notes WHERE unbonding_height <= $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "validator_identity_key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 1,
+          "name": "note_commitment",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 2,
+          "name": "ephemeral_key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 3,
+          "name": "encrypted_note",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 4,
+          "name": "transaction_id",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "4f9e6ca2890b779cf788f5993de20c8a2b80baa56966dac4c4f1e215171db0c8": {
     "query": "INSERT INTO validator_rates (\n                    identity_key,\n                    epoch,\n                    validator_reward_rate,\n                    validator_exchange_rate\n                ) VALUES ($1, $2, $3, $4)",
     "describe": {
@@ -390,6 +420,18 @@
           "Bytea",
           "Bytea",
           "Int8",
+          "Bytea"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "7274786d3be393b0c70c571dde279722f79b8654b771dfebd11f0653c4fec002": {
+    "query": "DELETE FROM quarantined_nullifiers WHERE nullifier = $1",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
           "Bytea"
         ]
       },
@@ -551,6 +593,18 @@
         false,
         false
       ]
+    }
+  },
+  "89bf53aa2587b0bdb4f4937cfa9954795e8dd5f319c860d6648ceaa3ee8c7f9d": {
+    "query": "DELETE FROM quarantined_notes WHERE note_commitment = $1",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea"
+        ]
+      },
+      "nullable": []
     }
   },
   "8c67c25c88aef9780fb468fde0efc219247511c20f13c9e1fc0545fddf7d485c": {
