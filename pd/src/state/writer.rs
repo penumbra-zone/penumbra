@@ -238,10 +238,35 @@ impl Writer {
         .execute(&mut dbtx)
         .await?;
 
-        // TODO: roll back quarantined notes and nullifiers for newly slashed validators
+        // Drop quarantined notes associated with a validator slashed in this block
+        for note_commitment in block.reverting_notes {
+            query!(
+                "DELETE FROM quarantined_notes WHERE note_commitment = $1",
+                &<[u8; 32]>::from(note_commitment)[..]
+            )
+            .execute(&mut dbtx)
+            .await?;
+        }
 
-        // TODO: on epoch boundary only, unquarantine notes and drop quarantined nullifiers for that
-        // have unbonded
+        // Drop quarantined nullifiers from the main nullifier set if they were associated with a
+        // validator slashed in this block (thus reverting their spend)
+        for nullifier in block.reverting_nullifiers {
+            // Forget about this nullifier, making the associated note spendable again
+            query!(
+                "DELETE FROM nullifiers WHERE nullifier = $1",
+                &nullifier.to_bytes()[..]
+            )
+            .execute(&mut dbtx)
+            .await?;
+
+            // We have reverted this nullifier, so we can remove it from quarantine
+            query!(
+                "DELETE FROM quarantined_nullifiers WHERE nullifier = $1",
+                &nullifier.to_bytes()[..]
+            )
+            .execute(&mut dbtx)
+            .await?;
+        }
 
         // Add newly created notes into the chain state.
         for (note_commitment, positioned_note) in block.notes.into_iter() {
@@ -261,6 +286,14 @@ impl Writer {
                 &positioned_note.data.transaction_id[..],
                 positioned_note.position as i64,
                 height as i64,
+            )
+            .execute(&mut dbtx)
+            .await?;
+
+            // If the note was previously quarantined, drop it from quarantine
+            query!(
+                "DELETE FROM quarantined_notes WHERE note_commitment = $1",
+                &<[u8; 32]>::from(note_commitment)[..]
             )
             .execute(&mut dbtx)
             .await?;

@@ -28,7 +28,7 @@ use tendermint::block;
 use tokio::sync::watch;
 use tracing::instrument;
 
-use crate::{db::schema, genesis};
+use crate::{db::schema, genesis, verify::NoteData};
 
 #[derive(Debug, Clone)]
 pub struct Reader {
@@ -489,14 +489,16 @@ impl Reader {
         })
     }
 
-    /// Retrieve a stream of quarantined note commitments in a given block or older, paired with the
-    /// validator identity key with which they are associated.
+    /// Retrieve a stream of quarantined notes and their commitments in a given block or older,
+    /// paired with the validator identity key with which they are associated.
     pub fn notes_quarantined_up_to(
         &self,
         maximum_block_height: u64,
-    ) -> impl Stream<Item = Result<(IdentityKey, note::Commitment)>> + Send + Unpin + '_ {
+    ) -> impl Stream<Item = Result<(IdentityKey, note::Commitment, NoteData)>> + Send + Unpin + '_
+    {
         query!(
-            "SELECT validator_identity_key, note_commitment FROM quarantined_notes WHERE unbonding_height <= $1",
+            "SELECT validator_identity_key, note_commitment, ephemeral_key, encrypted_note, transaction_id
+            FROM quarantined_notes WHERE unbonding_height <= $1",
             maximum_block_height as i64,
         )
         .fetch(&self.pool)
@@ -506,7 +508,12 @@ impl Reader {
                 .and_then(|row| {
                     Ok::<_, anyhow::Error>((
                         IdentityKey::decode(&*row.validator_identity_key)?,
-                        note::Commitment::try_from(&row.note_commitment[..])?,
+                        note::Commitment::try_from(&*row.note_commitment)?,
+                        NoteData {
+                            ephemeral_key: row.ephemeral_key[..].try_into()?,
+                            encrypted_note: row.encrypted_note[..].try_into()?,
+                            transaction_id: row.transaction_id[..].try_into()?,
+                        },
                     ))
                 })
                 .map_err(Into::into)
