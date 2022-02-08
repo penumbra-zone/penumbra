@@ -1,6 +1,7 @@
 use std::io::{Cursor, Read, Write};
 
 use ark_serialize::CanonicalDeserialize;
+use f4jumble::{f4jumble, f4jumble_inv};
 use penumbra_proto::{crypto as pb, serializers::bech32str};
 use serde::{Deserialize, Serialize};
 
@@ -116,8 +117,9 @@ impl TryFrom<pb::Address> for Address {
 impl std::fmt::Display for Address {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let proto_address = pb::Address::from(self.clone());
+        let jumbled_proto = f4jumble(&proto_address.inner).ok_or(std::fmt::Error)?;
         f.write_str(&bech32str::encode(
-            &proto_address.inner,
+            &jumbled_proto,
             bech32str::address::BECH32_PREFIX,
             bech32str::Bech32m,
         ))
@@ -128,8 +130,9 @@ impl std::str::FromStr for Address {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let inner = bech32str::decode(s, bech32str::address::BECH32_PREFIX, bech32str::Bech32m)?;
         pb::Address {
-            inner: bech32str::decode(s, bech32str::address::BECH32_PREFIX, bech32str::Bech32m)?,
+            inner: f4jumble_inv(&inner).ok_or(std::fmt::Error)?,
         }
         .try_into()
     }
