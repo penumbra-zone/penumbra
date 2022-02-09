@@ -51,15 +51,49 @@ impl ValidatorStateMachine {
                         .insert(identity_key.clone(), ValidatorState::Active);
                     Ok(())
                 }
+                _ => Err(anyhow::anyhow!(
+                    "only inactive or unbonding validators can move to active state"
+                )),
+            },
+            ValidatorStateEvent::Deactivate => match current_state {
+                ValidatorState::Unbonding { unbonding_epoch: _ } => {
+                    self.validator_state_changes
+                        .insert(identity_key.clone(), ValidatorState::Inactive);
+                    Ok(())
+                }
+                _ => Err(anyhow::anyhow!(
+                    "only unbonding validators can move to inactive state"
+                )),
+            },
+            ValidatorStateEvent::Unbond(unbonding_epoch) => match current_state {
+                ValidatorState::Active => {
+                    self.validator_state_changes.insert(
+                        identity_key.clone(),
+                        ValidatorState::Unbonding { unbonding_epoch },
+                    );
+                    Ok(())
+                }
+                _ => Err(anyhow::anyhow!(
+                    "only active validators can move to unbonding state"
+                )),
+            },
+            ValidatorStateEvent::Slash => match current_state {
+                ValidatorState::Active => {
+                    self.validator_state_changes
+                        .insert(identity_key.clone(), ValidatorState::Slashed);
+                    Ok(())
+                }
+                ValidatorState::Unbonding { unbonding_epoch: _ } => {
+                    self.validator_state_changes
+                        .insert(identity_key.clone(), ValidatorState::Slashed);
+                    Ok(())
+                }
                 _ => {
                     return Err(anyhow::anyhow!(
-                        "only inactive or unbonding validators can move to active state"
+                        "only active or unbonding validators can move to slashed state"
                     ))
                 }
             },
-            ValidatorStateEvent::Deactivate => Err(anyhow::anyhow!("Not implemented")),
-            ValidatorStateEvent::Unbond(unbonding_epoch) => Err(anyhow::anyhow!("Not implemented")),
-            ValidatorStateEvent::Slash => Err(anyhow::anyhow!("Not implemented")),
         }
     }
 
