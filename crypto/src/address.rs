@@ -90,8 +90,9 @@ impl From<Address> for pb::Address {
             .write_all(ADDR_PADDING)
             .expect("can write padding into vec");
 
+        let jumbled_bytes = f4jumble(bytes.get_ref()).expect("can jumble");
         pb::Address {
-            inner: bytes.into_inner(),
+            inner: jumbled_bytes,
         }
     }
 }
@@ -99,7 +100,9 @@ impl From<Address> for pb::Address {
 impl TryFrom<pb::Address> for Address {
     type Error = anyhow::Error;
     fn try_from(value: pb::Address) -> Result<Self, Self::Error> {
-        let mut bytes = Cursor::new(value.inner);
+        let unjumbled_bytes =
+            f4jumble_inv(&value.inner).ok_or_else(|| anyhow::anyhow!("invalid address"))?;
+        let mut bytes = Cursor::new(unjumbled_bytes);
 
         let mut diversifier_bytes = [0u8; 11];
         bytes.read_exact(&mut diversifier_bytes)?;
@@ -131,9 +134,8 @@ impl TryFrom<pb::Address> for Address {
 impl std::fmt::Display for Address {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let proto_address = pb::Address::from(self.clone());
-        let jumbled_proto = f4jumble(&proto_address.inner).ok_or(std::fmt::Error)?;
         f.write_str(&bech32str::encode(
-            &jumbled_proto,
+            &proto_address.inner,
             bech32str::address::BECH32_PREFIX,
             bech32str::Bech32m,
         ))
@@ -144,9 +146,8 @@ impl std::str::FromStr for Address {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let inner = bech32str::decode(s, bech32str::address::BECH32_PREFIX, bech32str::Bech32m)?;
         pb::Address {
-            inner: f4jumble_inv(&inner).ok_or(std::fmt::Error)?,
+            inner: bech32str::decode(s, bech32str::address::BECH32_PREFIX, bech32str::Bech32m)?,
         }
         .try_into()
     }
