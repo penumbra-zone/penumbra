@@ -1,4 +1,5 @@
 use std::{
+    borrow::Borrow,
     collections::{BTreeMap, BTreeSet, VecDeque},
     pin::Pin,
     str::FromStr,
@@ -498,10 +499,10 @@ impl Reader {
     /// If `validators` is `Some`, only notes which were associated with an undelegation from some
     /// validator in that set will be returned. (This is more efficient than filtering after
     /// receiving he stream, because the database is performing the filtration.)
-    pub fn quarantined_notes(
+    pub fn quarantined_notes<'a>(
         &self,
         maximum_unbonding_height: Option<u64>,
-        validators: Option<impl IntoIterator<Item = impl AsRef<IdentityKey>>>,
+        validators: Option<impl IntoIterator<Item = impl Borrow<&'a IdentityKey>>>,
     ) -> impl Stream<Item = Result<(IdentityKey, note::Commitment, NoteData)>> + Send + Unpin + '_
     {
         // Should we list outputs from all validators?
@@ -509,7 +510,7 @@ impl Reader {
 
         // If not, what's the list of validator identities (as bytes) to filter for?
         let validator_list = validators
-            .map(|v| v.into_iter().map(|i| i.as_ref().encode_to_vec()))
+            .map(|v| v.into_iter().map(|i| i.borrow().encode_to_vec()))
             .into_iter()
             .flatten()
             .collect::<Vec<_>>();
@@ -552,17 +553,17 @@ impl Reader {
     /// If `validators` is `Some`, only nullifiers which were associated with an undelegation from some
     /// validator in that set will be returned. (This is more efficient than filtering after
     /// receiving he stream, because the database is performing the filtration.)
-    pub fn quarantined_nullifiers(
+    pub fn quarantined_nullifiers<'a>(
         &self,
         maximum_unbonding_height: Option<u64>,
-        validators: Option<impl IntoIterator<Item = impl AsRef<IdentityKey>>>,
+        validators: Option<impl IntoIterator<Item = impl Borrow<&'a IdentityKey>>>,
     ) -> impl Stream<Item = Result<(IdentityKey, Nullifier)>> + Send + Unpin + '_ {
         // Should we list outputs from all validators?
         let all_validators = validators.is_none();
 
         // If not, what's the list of validator identities (as bytes) to filter for?
         let validator_list = validators
-            .map(|v| v.into_iter().map(|i| i.as_ref().encode_to_vec()))
+            .map(|v| v.into_iter().map(|i| i.borrow().encode_to_vec()))
             .into_iter()
             .flatten()
             .collect::<Vec<_>>();
