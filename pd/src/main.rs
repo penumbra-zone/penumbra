@@ -64,6 +64,9 @@ enum Command {
         /// Number of epochs before unbonding stake is released.
         #[structopt(short, long, default_value = "60")]
         unbonding_epochs: u64,
+        /// Maximum number of validators in the consensus set.
+        #[structopt(short, long, default_value = "10")]
+        validator_limit: u64,
         /// Path to CSV file containing initial allocations.
         #[structopt(
             short,
@@ -202,6 +205,7 @@ async fn main() -> anyhow::Result<()> {
             starting_ip: _,
             epoch_duration,
             unbonding_epochs,
+            validator_limit,
             allocations_input_file,
             validators_input_file,
             output_dir,
@@ -301,6 +305,7 @@ async fn main() -> anyhow::Result<()> {
                         chain_id: chain_id.clone(),
                         epoch_duration,
                         unbonding_epochs,
+                        validator_limit,
                     },
                     validators: validators
                         .iter()

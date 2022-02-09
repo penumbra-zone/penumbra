@@ -42,6 +42,7 @@ pub struct ChainParams {
     pub chain_id: String,
     pub epoch_duration: u64,
     pub unbonding_epochs: u64,
+    pub validator_limit: u64,
 }
 
 impl Protobuf<pb::ChainParams> for ChainParams {}
@@ -52,6 +53,7 @@ impl From<pb::ChainParams> for ChainParams {
             chain_id: msg.chain_id,
             epoch_duration: msg.epoch_duration,
             unbonding_epochs: msg.unbonding_epochs,
+            validator_limit: msg.validator_limit,
         }
     }
 }
@@ -62,6 +64,7 @@ impl From<ChainParams> for pb::ChainParams {
             chain_id: params.chain_id,
             epoch_duration: params.epoch_duration,
             unbonding_epochs: params.unbonding_epochs,
+            validator_limit: params.validator_limit,
         }
     }
 }
@@ -72,6 +75,7 @@ impl Default for ChainParams {
             chain_id: String::new(),
             epoch_duration: 8640,
             unbonding_epochs: 30,
+            validator_limit: 10,
         }
     }
 }

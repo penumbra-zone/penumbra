@@ -11,6 +11,8 @@ message ChainParams {
   uint64 epoch_duration = 2;
   // The number of epochs an unbonding note for before being released.
   uint64 unbonding_epochs = 3;
+  // The maximum number of validators in the consensus set.
+  uint64 validator_limit = 4;
 }
 
 // Information about a given asset at a given time (as specified by block
