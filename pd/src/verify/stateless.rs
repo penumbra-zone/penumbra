@@ -36,7 +36,7 @@ impl StatelessTransactionExt for Transaction {
         let mut new_notes = BTreeMap::<note::Commitment, NoteData>::new();
         let mut delegations = Vec::<Delegate>::new();
         let mut undelegation = None::<Undelegate>;
-        let validators = Vec::<Validator>::new();
+        let mut validators = Vec::<Validator>::new();
 
         for action in self.transaction_body().actions {
             match action {
@@ -104,6 +104,19 @@ impl StatelessTransactionExt for Transaction {
                     } else {
                         return Err(anyhow::anyhow!("Multiple undelegations in one transaction"));
                     }
+                }
+                Action::ValidatorDefinition(validator) => {
+                    // Perform stateless checks that the validator definition is valid.
+
+                    // Validate that the transaction signature is valid and signed by the
+                    // validator's identity key.
+                    validator
+                        .validator
+                        .identity_key
+                        .0
+                        .verify(&sighash, &validator.auth_sig)
+                        .context("validator definition signature failed to verify")?;
+                    validators.push(validator.into());
                 }
                 _ => {
                     return Err(anyhow::anyhow!("unsupported action"));

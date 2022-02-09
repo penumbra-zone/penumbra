@@ -1,4 +1,7 @@
-use std::{collections::BTreeMap, str::FromStr};
+use std::{
+    collections::{BTreeMap, HashSet},
+    str::FromStr,
+};
 
 use anyhow::Result;
 
@@ -34,15 +37,15 @@ impl ValidatorStateMachine {
         }
     }
 
+    pub fn add_validator(&mut self, validator: ValidatorInfo) {
+        self.block_validators.push(validator);
+    }
+
     pub fn get_state(&self, identity_key: &IdentityKey) -> Option<&ValidatorState> {
         self.validator_states.get(identity_key)
     }
 
-    pub fn transition(
-        &mut self,
-        identity_key: &IdentityKey,
-        event: ValidatorStateEvent,
-    ) -> Result<()> {
+    fn transition(&mut self, identity_key: &IdentityKey, event: ValidatorStateEvent) -> Result<()> {
         // Enforce the semantics of the state machine by using the current state and the
         // data contained within the event to determine the next state.
         let current_state = self

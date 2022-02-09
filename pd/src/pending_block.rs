@@ -9,7 +9,7 @@ use penumbra_crypto::{
     note, Address, Fq, Note, Nullifier, One, Value,
 };
 use penumbra_stake::{
-    BaseRateData, Epoch, IdentityKey, RateData, ValidatorInfo, ValidatorStateEvent,
+    BaseRateData, Epoch, IdentityKey, RateData, ValidatorInfo, ValidatorState, ValidatorStateEvent,
     ValidatorStateMachine, ValidatorStatus, STAKING_TOKEN_ASSET_ID,
 };
 use tendermint::PublicKey;
@@ -202,6 +202,25 @@ impl PendingBlock {
         // Tally the delegation changes in this transaction
         for (identity_key, delegation_change) in transaction.delegation_changes {
             *self.delegation_changes.entry(identity_key).or_insert(0) += delegation_change;
+        }
+
+        for validator in transaction.new_validators {
+            // TODO: needs to be determined by the funding streams
+            let validator_info = ValidatorInfo {
+                validator: validator.clone(),
+                status: ValidatorStatus {
+                    identity_key: validator.identity_key.clone(),
+                    voting_power: 0,
+                    state: ValidatorState::Inactive,
+                },
+                rate_data: RateData {
+                    identity_key: validator.identity_key.clone(),
+                    epoch_index: 0,
+                    validator_reward_rate: 0,
+                    validator_exchange_rate: 0,
+                },
+            };
+            self.validator_state_machine.add_validator(validator_info);
         }
     }
 }

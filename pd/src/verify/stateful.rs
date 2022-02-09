@@ -166,6 +166,7 @@ impl state::Reader {
             spent_nullifiers: transaction.spent_nullifiers,
             delegation_changes,
             undelegation_validator: transaction.undelegation.map(|u| u.validator_identity),
+            new_validators: transaction.validators,
         })
     }
 }
@@ -199,5 +200,6 @@ pub fn mark_genesis_as_verified(transaction: Transaction) -> VerifiedTransaction
         spent_nullifiers: BTreeSet::<Nullifier>::new(),
         delegation_changes: BTreeMap::new(),
         undelegation_validator: None,
+        new_validators: vec![],
     }
 }

@@ -62,4 +62,6 @@ pub struct VerifiedTransaction {
     pub delegation_changes: BTreeMap<IdentityKey, i64>,
     /// The validators from whom an undelegation was performed in this transaction.
     pub undelegation_validator: Option<IdentityKey>,
+    /// Validators added in the transaction.
+    pub new_validators: Vec<Validator>,
 }

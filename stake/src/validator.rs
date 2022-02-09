@@ -7,7 +7,7 @@ use crate::{FundingStream, IdentityKey};
 /// Describes a Penumbra validator's configuration data.
 ///
 /// This data is unauthenticated; the [`ValidatorDefinition`] structure includes
-/// a signature over the configuration with the validator's identity key.
+/// a signature over the transaction with the validator's identity key.
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::Validator", into = "pb::Validator")]
 pub struct Validator {
@@ -117,6 +117,12 @@ impl From<Validator> for pb::Validator {
             funding_streams: v.funding_streams.into_iter().map(Into::into).collect(),
             sequence_number: v.sequence_number,
         }
+    }
+}
+
+impl From<ValidatorDefinition> for Validator {
+    fn from(v: ValidatorDefinition) -> Self {
+        v.validator
     }
 }
 
