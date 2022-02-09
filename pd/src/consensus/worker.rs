@@ -1,9 +1,12 @@
+use std::collections::BTreeSet;
+
 use anyhow::{anyhow, Result};
+use futures::StreamExt;
 use metrics::absolute_counter;
-use penumbra_crypto::{asset, merkle::NoteCommitmentTree};
+use penumbra_crypto::{asset, merkle::NoteCommitmentTree, note};
 use penumbra_proto::Protobuf;
 use penumbra_stake::{
-    ValidatorState, ValidatorStatus, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
+    IdentityKey, ValidatorState, ValidatorStatus, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
 };
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, ConsensusRequest as Request, ConsensusResponse as Response};
@@ -232,6 +235,8 @@ impl Worker {
     ) -> Result<abci::response::EndBlock> {
         tracing::debug!(?end_block);
 
+        let reader = self.state.private_reader();
+
         let pending_block = self
             .pending_block
             .as_mut()
@@ -252,6 +257,28 @@ impl Worker {
 
         tracing::debug!(?height, ?epoch, end_height = ?epoch.end_height());
 
+        // Find out which validators were slashed in this block
+        let slashed_validators = pending_block
+            .validator_state_changes
+            .iter()
+            .filter(|p| matches!(p.1, ValidatorState::Slashed))
+            .map(|p| p.0) // get the validator ID
+            .collect::<Vec<_>>();
+
+        // Immediately revert notes and nullifiers immediately from slashed validators in this block
+        let (mut slashed_notes, mut slashed_nullifiers) = (
+            reader.quarantined_notes(None, Some(slashed_validators.iter())),
+            reader.quarantined_nullifiers(None, Some(slashed_validators.iter())),
+        );
+        while let Some(result) = slashed_notes.next().await {
+            pending_block.reverting_notes.insert(result?.1); // insert the commitment
+        }
+        while let Some(result) = slashed_nullifiers.next().await {
+            pending_block.reverting_nullifiers.insert(result?.1); // insert the nullifier
+        }
+        drop(slashed_notes);
+        drop(slashed_nullifiers);
+
         // If we are at the end of an epoch, process changes for it
         if epoch.end_height().value() == height {
             self.end_epoch().await?;
@@ -259,8 +286,6 @@ impl Worker {
 
         // TODO: later, set the EndBlock response to add validators
         // at the epoch boundary
-
-        // TODO: revert notes and nullifiers immediately from slashed validators in this block
 
         // TODO: right now we are not writing the updated voting power from validator statuses
         // back to tendermint, so that we can see how the statuses are computed without risking
@@ -299,6 +324,30 @@ impl Worker {
             "crossed epoch boundary, processing rate updates"
         );
         metrics::increment_counter!("epoch");
+
+        // Find all the validators which were *not* slashed in this block
+        let well_behaved_validators = pending_block
+            .validator_state_changes
+            .iter()
+            // THIS IS A LOAD-BEARING NEGATION: we want all validators which are *NOT* slashed
+            .filter(|p| !matches!(p.1, ValidatorState::Slashed))
+            .map(|p| p.0.clone()) // get the validator ID
+            .collect::<Vec<_>>();
+
+        // Process unbonding notes and nullifiers for this epoch
+        let (mut unbonding_notes, mut unbonding_nullifiers) = (
+            reader.quarantined_notes(Some(height), Some(well_behaved_validators.iter())),
+            reader.quarantined_nullifiers(Some(height), Some(well_behaved_validators.iter())),
+        );
+        while let Some(result) = unbonding_notes.next().await {
+            let (_, commitment, data) = result?;
+            pending_block.add_note(commitment, data);
+        }
+        while let Some(result) = unbonding_nullifiers.next().await {
+            pending_block.unbonding_nullifiers.insert(result?.1); // insert the nullifier
+        }
+        drop(unbonding_notes);
+        drop(unbonding_nullifiers);
 
         // TODO (optimization): batch these queries
         let current_base_rate = reader.base_rate_data(current_epoch.index).await?;
