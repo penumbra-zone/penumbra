@@ -144,7 +144,7 @@ impl state::Reader {
                 .filter(|z| z.validator.identity_key == v.identity_key)
                 .collect();
 
-            if existing_v.len() == 0 {
+            if existing_v.is_empty() {
                 // This is a new validator definition.
                 continue;
             } else {

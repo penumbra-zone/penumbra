@@ -205,19 +205,22 @@ impl PendingBlock {
         }
 
         for validator in transaction.new_validators {
-            // TODO: needs to be determined by the funding streams
             let validator_info = ValidatorInfo {
                 validator: validator.clone(),
                 status: ValidatorStatus {
                     identity_key: validator.identity_key.clone(),
+                    // Voting power for inactive validators is 0
                     voting_power: 0,
                     state: ValidatorState::Inactive,
                 },
                 rate_data: RateData {
                     identity_key: validator.identity_key.clone(),
                     epoch_index: 0,
+                    // TODO: needs to be determined by the funding streams
                     validator_reward_rate: 0,
-                    validator_exchange_rate: 0,
+                    // Exchange rate for inactive validators is held constant
+                    // and starts at 1
+                    validator_exchange_rate: 1,
                 },
             };
             self.validator_state_machine.add_validator(validator_info);
