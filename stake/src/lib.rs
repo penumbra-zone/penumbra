@@ -12,6 +12,7 @@ mod status;
 mod token;
 mod undelegate;
 mod validator;
+mod validator_state;
 
 pub use delegate::Delegate;
 pub use epoch::Epoch;
@@ -23,6 +24,7 @@ pub use status::{ValidatorState, ValidatorStateName, ValidatorStatus};
 pub use token::DelegationToken;
 pub use undelegate::Undelegate;
 pub use validator::{FundingStreams, Validator, ValidatorDefinition};
+pub use validator_state::ValidatorStateMachine;
 
 /// The Bech32 prefix used for validator consensus pubkeys.
 pub const VALIDATOR_CONSENSUS_BECH32_PREFIX: &str = "penumbravalconspub";

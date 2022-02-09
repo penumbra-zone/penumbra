@@ -9,8 +9,8 @@ use penumbra_crypto::{
     note, Address, Fq, Note, Nullifier, One, Value,
 };
 use penumbra_stake::{
-    BaseRateData, Epoch, IdentityKey, RateData, ValidatorInfo, ValidatorState, ValidatorStatus,
-    STAKING_TOKEN_ASSET_ID,
+    BaseRateData, Epoch, IdentityKey, RateData, ValidatorInfo, ValidatorState,
+    ValidatorStateMachine, ValidatorStatus, STAKING_TOKEN_ASSET_ID,
 };
 use tendermint::PublicKey;
 use tracing::instrument;
@@ -52,11 +52,10 @@ pub struct PendingBlock {
     pub reverting_notes: BTreeSet<note::Commitment>,
     /// Nullifiers to remove from the nullifier set when this block is committed, reverting their spend.
     pub reverting_nullifiers: BTreeSet<Nullifier>,
-    /// List of validators that exist during the lifespan of the block.
-    ///
-    /// Updated as changes occur during the block, but will not be persisted
-    /// to the database until the block is committed.
-    pub block_validators: Vec<ValidatorInfo>,
+    /// Responsible for performing state changes and enforcing semantics of validator state changes.
+    /// During end_block, validator state changes will be copied to `self.next_validator_statuses`
+    /// and then saved to the database during commit_block.
+    pub validator_state_machine: ValidatorStateMachine,
 }
 
 /// A group of notes and nullifiers, all to be quarantined relative to a shared set of validators.
@@ -94,7 +93,10 @@ impl PendingBlock {
             reverting_notes: BTreeSet::new(),
             unbonding_nullifiers: BTreeSet::new(),
             reverting_nullifiers: BTreeSet::new(),
-            block_validators,
+            validator_state_machine: ValidatorStateMachine {
+                validator_state_changes: BTreeMap::new(),
+                block_validators,
+            },
         }
     }
 

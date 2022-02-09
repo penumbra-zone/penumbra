@@ -416,7 +416,7 @@ impl Worker {
         // If there's a pending state change, use that, otherwise use
         // the existing state.
         let next_state = pending_block
-            .validator_state_changes
+            .validator_state_machine
             .get(&identity_key)
             .cloned()
             .unwrap_or(existing_state);
