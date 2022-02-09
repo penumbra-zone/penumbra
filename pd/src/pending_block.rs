@@ -9,7 +9,7 @@ use penumbra_crypto::{
     note, Address, Fq, Note, Nullifier, One, Value,
 };
 use penumbra_stake::{
-    BaseRateData, Epoch, IdentityKey, RateData, ValidatorInfo, ValidatorState,
+    BaseRateData, Epoch, IdentityKey, RateData, ValidatorInfo, ValidatorState, ValidatorStateEvent,
     ValidatorStateMachine, ValidatorStatus, STAKING_TOKEN_ASSET_ID,
 };
 use tendermint::PublicKey;
@@ -109,25 +109,12 @@ impl PendingBlock {
     }
 
     /// Apply a state transition to a given validator based on Tendermint public key.
-    ///
-    /// TODO: Validation of state machine semantics here?
-    /// Otherwise state machine semantics are split across various functions and may not
-    /// be held invariant.
     pub fn transition_validator_state(
         &mut self,
         ck: PublicKey,
-        new_state: ValidatorState,
+        event: ValidatorStateEvent,
     ) -> Result<()> {
-        let validator_info = self
-            .block_validators
-            .iter()
-            .find(|v| v.validator.consensus_key == ck)
-            .ok_or(anyhow::anyhow!("No validator found"))?;
-
-        self.validator_state_changes
-            .insert(validator_info.validator.identity_key.clone(), new_state);
-
-        Ok(())
+        self.validator_state_machine.transition_validator(ck, event)
     }
 
     /// Adds a reward output for a validator's funding stream.
