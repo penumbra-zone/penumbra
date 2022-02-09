@@ -207,7 +207,7 @@ impl Worker {
                 .unwrap();
 
             let pb_mut = &mut self.pending_block.as_mut().unwrap();
-            pb_mut.transition_validator_state(ck, ValidatorStateEvent::SlashValidator)?;
+            pb_mut.transition_validator_state(ck, ValidatorStateEvent::Slash)?;
         }
 
         Ok(Default::default())

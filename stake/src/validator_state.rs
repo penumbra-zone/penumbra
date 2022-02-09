@@ -18,34 +18,73 @@ pub struct ValidatorStateMachine {
 }
 
 impl ValidatorStateMachine {
+    pub fn new(block_validators: Vec<ValidatorInfo>) -> Self {
+        ValidatorStateMachine {
+            validator_state_changes: BTreeMap::new(),
+            block_validators,
+        }
+    }
+
     pub fn get_state(&self, identity_key: &IdentityKey) -> Option<&ValidatorState> {
         self.validator_state_changes.get(identity_key)
     }
 
-    pub fn transition(&self, identity_key: &IdentityKey, event: ValidatorStateEvent) -> Result<()> {
+    pub fn transition(
+        &mut self,
+        identity_key: &IdentityKey,
+        event: ValidatorStateEvent,
+    ) -> Result<()> {
         // Enforce the semantics of the state machine by using the current state and the
         // data contained within the event to determine the next state.
-        Err(anyhow::anyhow!("Unimplemented"))
+        let current_state = self
+            .get_state(identity_key)
+            .ok_or(anyhow::anyhow!("validator must exist to transition state"))?;
+        match event {
+            ValidatorStateEvent::Activate => match current_state {
+                ValidatorState::Inactive => {
+                    self.validator_state_changes
+                        .insert(identity_key.clone(), ValidatorState::Active);
+                    Ok(())
+                }
+                ValidatorState::Unbonding { unbonding_epoch } => {
+                    self.validator_state_changes
+                        .insert(identity_key.clone(), ValidatorState::Active);
+                    Ok(())
+                }
+                _ => {
+                    return Err(anyhow::anyhow!(
+                        "only inactive or unbonding validators can move to active state"
+                    ))
+                }
+            },
+            ValidatorStateEvent::Deactivate => Err(anyhow::anyhow!("Not implemented")),
+            ValidatorStateEvent::Unbond(unbonding_epoch) => Err(anyhow::anyhow!("Not implemented")),
+            ValidatorStateEvent::Slash => Err(anyhow::anyhow!("Not implemented")),
+        }
     }
 
-    pub fn transition_validator(&self, ck: PublicKey, event: ValidatorStateEvent) -> Result<()> {
+    pub fn transition_validator(
+        &mut self,
+        ck: PublicKey,
+        event: ValidatorStateEvent,
+    ) -> Result<()> {
         let validator_info = self
             .block_validators
             .iter()
             .find(|v| v.validator.consensus_key == ck)
             .ok_or(anyhow::anyhow!("No validator found"))?;
 
-        self.transition(&validator_info.validator.identity_key, event)
+        self.transition(&validator_info.validator.identity_key.clone(), event)
     }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 /// An event triggering a validator state transition.
 pub enum ValidatorStateEvent {
-    SlashValidator,
-    UnbondValidator,
-    ActivateValidator,
-    DeactivateValidator,
+    Slash,
+    Unbond(u64),
+    Activate,
+    Deactivate,
 }
 
 /// The state of a validator in the validator state machine.

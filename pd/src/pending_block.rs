@@ -88,15 +88,11 @@ impl PendingBlock {
             next_validator_statuses: BTreeMap::new(),
             delegation_changes: BTreeMap::new(),
             reward_counter: 0,
-            validator_state_changes: BTreeMap::new(),
             quarantine: Vec::new(),
             reverting_notes: BTreeSet::new(),
             unbonding_nullifiers: BTreeSet::new(),
             reverting_nullifiers: BTreeSet::new(),
-            validator_state_machine: ValidatorStateMachine {
-                validator_state_changes: BTreeMap::new(),
-                block_validators,
-            },
+            validator_state_machine: ValidatorStateMachine::new(block_validators),
         }
     }
 
