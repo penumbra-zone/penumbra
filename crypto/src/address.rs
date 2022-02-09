@@ -7,6 +7,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{fmd, ka, keys::Diversifier, Fq};
 
+// We pad addresses to 80 bytes (before jumbling and Bech32m encoding)
+// using this 5 byte padding.
+const ADDR_PADDING: &[u8] = "pen00".as_bytes();
+
 /// A valid payment address.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "pb::Address", into = "pb::Address")]
@@ -82,6 +86,9 @@ impl From<Address> for pb::Address {
         bytes
             .write_all(&a.clue_key().0)
             .expect("can write clue key into vec");
+        bytes
+            .write_all(ADDR_PADDING)
+            .expect("can write padding into vec");
 
         pb::Address {
             inner: bytes.into_inner(),
@@ -102,6 +109,13 @@ impl TryFrom<pb::Address> for Address {
 
         let mut clue_key_bytes = [0; 32];
         bytes.read_exact(&mut clue_key_bytes)?;
+
+        let mut padding_bytes = [0; 5];
+        bytes.read_exact(&mut padding_bytes)?;
+
+        if padding_bytes != ADDR_PADDING {
+            return Err(anyhow::anyhow!("invalid address"));
+        }
 
         let diversifier = Diversifier(diversifier_bytes);
         Address::from_components(

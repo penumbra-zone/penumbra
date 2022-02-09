@@ -68,15 +68,16 @@ The clue key is $\mathsf{ck_d}$ is derived as $\mathsf{ck_d} =
 ### Address Encodings
 
 The raw binary encoding of a payment address is the 75-byte string `d || pk_d ||
-ck_d`.  The [F4Jumble] algorithm is then applied to this string to mitigate attacks
-where an attacker replaces a valid address with one derived from an attacker
-controlled key that encodes to an address with a subset of characters that collide with
-the target valid address. For example, an attacker may try to generate an address with
-the first $n$ characters matching the target address (see [ZIP316] for more on this
-attack and [F4Jumble]).
+ck_d`.  We pad this string to 80 bytes, then apply the [F4Jumble] algorithm to
+this padded string. This mitigates attacks where an attacker replaces a valid
+address with one derived from an attacker controlled key that encodes to an
+address with a subset of characters that collide with the target valid address.
+For example, an attacker may try to generate an address with the first
+$n$ characters matching the target address. See [ZIP316] for more on this
+scenario as well as [F4Jumble], which is a 4-round Feistel construction.
 
-This jumbled string is then encoded with [Bech32m] with the following human-readable
-prefixes:
+This jumbled string is then encoded with [Bech32m] with the following
+human-readable prefixes:
 
 * `penumbra` for mainnet, and
 * `penumbra_tnXYZ_` for testnets, where XYZ is the current testnet number padded
