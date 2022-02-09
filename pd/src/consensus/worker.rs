@@ -6,8 +6,7 @@ use metrics::absolute_counter;
 use penumbra_crypto::{asset, merkle::NoteCommitmentTree};
 use penumbra_proto::Protobuf;
 use penumbra_stake::{
-    IdentityKey, ValidatorInfo, ValidatorState, ValidatorStatus, STAKING_TOKEN_ASSET_ID,
-    STAKING_TOKEN_DENOM,
+    ValidatorState, ValidatorStatus, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
 };
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, ConsensusRequest as Request, ConsensusResponse as Response};

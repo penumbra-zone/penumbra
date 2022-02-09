@@ -9,7 +9,7 @@ use penumbra_crypto::{
     note, Address, Fq, Note, Nullifier, One, Value,
 };
 use penumbra_stake::{
-    BaseRateData, Epoch, IdentityKey, RateData, ValidatorInfo, ValidatorState, ValidatorStateEvent,
+    BaseRateData, Epoch, IdentityKey, RateData, ValidatorInfo, ValidatorStateEvent,
     ValidatorStateMachine, ValidatorStatus, STAKING_TOKEN_ASSET_ID,
 };
 use tendermint::PublicKey;

@@ -46,7 +46,7 @@ impl ValidatorStateMachine {
                         .insert(identity_key.clone(), ValidatorState::Active);
                     Ok(())
                 }
-                ValidatorState::Unbonding { unbonding_epoch } => {
+                ValidatorState::Unbonding { unbonding_epoch: _ } => {
                     self.validator_state_changes
                         .insert(identity_key.clone(), ValidatorState::Active);
                     Ok(())
@@ -106,9 +106,10 @@ impl ValidatorStateMachine {
             .block_validators
             .iter()
             .find(|v| v.validator.consensus_key == ck)
+            .cloned()
             .ok_or(anyhow::anyhow!("No validator found"))?;
 
-        self.transition(&validator_info.validator.identity_key.clone(), event)
+        self.transition(&validator_info.validator.identity_key, event)
     }
 }
 
