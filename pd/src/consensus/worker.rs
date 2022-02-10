@@ -178,9 +178,9 @@ impl Worker {
     ) -> Result<abci::response::BeginBlock> {
         tracing::debug!(?begin_block);
 
-        // Update metrics.
-        let current_nullifier_count = self.state.private_reader().nullifier_count().await?;
-        absolute_counter!("node_spent_nullifiers_total", current_nullifier_count);
+        let block_metrics = self.state.private_reader().metrics().await?;
+        absolute_counter!("node_spent_nullifiers_total", block_metrics.nullifier_count);
+        absolute_counter!("node_notes_total", block_metrics.note_count);
 
         assert!(self.pending_block.is_none());
         self.pending_block = Some(PendingBlock::new(self.note_commitment_tree.clone()));

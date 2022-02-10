@@ -29,7 +29,7 @@ use tendermint::block;
 use tokio::sync::watch;
 use tracing::instrument;
 
-use crate::{db::schema, genesis, verify::NoteData};
+use crate::{db::schema, genesis, pd_metrics::MetricsData, verify::NoteData};
 
 #[derive(Debug, Clone)]
 pub struct Reader {
@@ -113,17 +113,26 @@ impl Reader {
         Ok(note_commitment_tree)
     }
 
-    /// Returns the number of revealed nullifiers (for updating metrics dashboard).
-    pub async fn nullifier_count(&self) -> Result<u64> {
+    /// Returns statistics for updating the metrics dashboard.
+    pub async fn metrics(&self) -> Result<MetricsData> {
         let mut conn = self.pool.acquire().await?;
 
-        // Special column name "count!" is used to return i64 instead of
-        // Option<i64> due to https://github.com/launchbadge/sqlx/issues/864
-        let nullifiers = query!(r#"SELECT COUNT(*) as "count!" FROM nullifiers"#)
-            .fetch_one(&mut conn)
-            .await?;
+        let row = query!(
+            "
+            WITH a AS
+            (SELECT COUNT(*) AS nullifier_count FROM nullifiers),
+            b AS
+            (SELECT COUNT(*) AS note_count FROM notes)
+            SELECT nullifier_count, note_count FROM a, b
+            "
+        )
+        .fetch_one(&mut conn)
+        .await?;
 
-        Ok(nullifiers.count.try_into().unwrap())
+        Ok(MetricsData {
+            nullifier_count: row.nullifier_count.unwrap_or(0) as u64,
+            note_count: row.note_count.unwrap_or(0) as u64,
+        })
     }
 
     /// Returns the intersection of the provided nullifiers with the nullifiers
