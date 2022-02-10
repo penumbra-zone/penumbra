@@ -153,6 +153,30 @@ impl std::str::FromStr for Address {
     }
 }
 
+/// Parse v0 testnet address string (temporary migration used in `pcli`)
+pub fn parse_v0_testnet_address(v0_address: String) -> Result<Address, anyhow::Error> {
+    let decoded_bytes = &bech32str::decode(&v0_address, "penumbrav0t", bech32str::Bech32m)?;
+
+    let mut bytes = Cursor::new(decoded_bytes);
+    let mut diversifier_bytes = [0u8; 11];
+    bytes.read_exact(&mut diversifier_bytes)?;
+    let mut pk_d_bytes = [0u8; 32];
+    bytes.read_exact(&mut pk_d_bytes)?;
+    let mut clue_key_bytes = [0; 32];
+    bytes.read_exact(&mut clue_key_bytes)?;
+
+    let diversifier = Diversifier(diversifier_bytes);
+    let addr = Address::from_components(
+        diversifier,
+        diversifier.diversified_generator(),
+        ka::Public(pk_d_bytes),
+        fmd::ClueKey(clue_key_bytes),
+    )
+    .ok_or_else(|| anyhow::anyhow!("invalid address"))?;
+
+    Ok(addr)
+}
+
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
