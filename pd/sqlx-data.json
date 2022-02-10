@@ -134,6 +134,30 @@
       "nullable": []
     }
   },
+  "321616ee11510c15f5ac2d1e6aa3c22c5f6601b926a5d41f8e0ce8410223b1bb": {
+    "query": "\n            WITH a AS\n            (SELECT COUNT(*) AS nullifier_count FROM nullifiers),\n            b AS\n            (SELECT COUNT(*) AS note_count FROM notes)\n            SELECT nullifier_count, note_count FROM a, b\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "nullifier_count",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "note_count",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": [
+        true,
+        null
+      ]
+    }
+  },
   "3f13d5f8a2ffc438e79f3297b7dfbcc14ffca7611f5ea3d4a5e8acfba3b9807e": {
     "query": "\n            INSERT INTO blobs (id, data) VALUES ('nct', $1)\n            ON CONFLICT (id) DO UPDATE SET data = $1\n            ",
     "describe": {
@@ -907,24 +931,6 @@
         ]
       },
       "nullable": []
-    }
-  },
-  "f67369fd61cb4ff4a7f0dd51fabcd4557ff3e104f50f9fce7601e4787cb60f7c": {
-    "query": "SELECT COUNT(*) as \"count!\" FROM nullifiers",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "count!",
-          "type_info": "Int8"
-        }
-      ],
-      "parameters": {
-        "Left": []
-      },
-      "nullable": [
-        null
-      ]
     }
   },
   "feb219cf82779306d199c5f733359b2cafd5ab51fca03922a9e73c3a4ff44bf7": {
