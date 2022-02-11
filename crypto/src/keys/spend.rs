@@ -1,19 +1,43 @@
 use std::convert::TryFrom;
 
+use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
-use super::{FullViewingKey, IncomingViewingKey, NullifierKey, OutgoingViewingKey};
+use super::{
+    seed_phrase::BIP39_WORDS, FullViewingKey, IncomingViewingKey, NullifierKey, OutgoingViewingKey,
+};
 use crate::{
     prf,
     rdsa::{SigningKey, SpendAuth},
 };
+
+pub const SEED_PHRASE_LEN: usize = 24;
+
+/// A mnemonic seed phrase.
+pub struct SeedPhrase(pub [String; SEED_PHRASE_LEN]);
+
+impl SeedPhrase {
+    pub fn generate<R: RngCore + CryptoRng>(mut rng: R) -> Self {
+        let mut phrases: [String; SEED_PHRASE_LEN] = Default::default();
+        for phrase in phrases.iter_mut() {
+            *phrase = BIP39_WORDS.choose(&mut rng).unwrap().to_string();
+        }
+        SeedPhrase(phrases)
+    }
+}
 
 pub const SPENDSEED_LEN_BYTES: usize = 32;
 
 /// The root key material for a [`SpendKey`].
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SpendSeed(pub [u8; SPENDSEED_LEN_BYTES]);
+
+impl SpendSeed {
+    pub fn generate_from_seed_phrase(seed_phrase: SeedPhrase, index: u64) -> Self {
+        todo!()
+    }
+}
 
 /// A key representing a single spending authority.
 #[derive(Debug, Clone)]
