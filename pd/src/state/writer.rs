@@ -421,7 +421,7 @@ impl Writer {
             }
         }
 
-        for (_, status) in block.next_validator_statuses {
+        for status in block.next_validator_statuses.unwrap_or_default() {
             let (state_name, unbonding_epoch) = status.state.into();
             query!(
                     "UPDATE validators SET voting_power=$1, validator_state=$2, unbonding_epoch=$3 WHERE identity_key = $4",

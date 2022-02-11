@@ -1,4 +1,5 @@
 use std::{
+    borrow::Borrow,
     collections::{BTreeMap, HashSet},
     str::FromStr,
 };
@@ -7,7 +8,7 @@ use anyhow::Result;
 
 use tendermint::PublicKey;
 
-use crate::{IdentityKey, ValidatorInfo};
+use crate::{IdentityKey, Validator, ValidatorInfo};
 
 #[derive(Debug, Clone)]
 pub struct ValidatorStateMachine {
@@ -15,52 +16,70 @@ pub struct ValidatorStateMachine {
     ///
     /// Updated as changes occur during the block, but will not be persisted
     /// to the database until the block is committed.
-    validator_states: BTreeMap<IdentityKey, ValidatorState>,
-    /// List of validators that exist during the lifespan of the block.
-    block_validators: Vec<ValidatorInfo>,
+    validator_states: BTreeMap<IdentityKey, (Validator, ValidatorState)>,
 }
 
 impl ValidatorStateMachine {
-    pub fn new(block_validators: Vec<ValidatorInfo>) -> Self {
+    pub fn new(block_validator_info: Vec<ValidatorInfo>) -> Self {
         // Initialize all state machine validator states to their current state from the block validators.
         let mut validator_states = BTreeMap::new();
-        for validator in block_validators.iter() {
+        for validator in block_validator_info.iter() {
             validator_states.insert(
                 validator.validator.identity_key.clone(),
-                validator.status.state.clone(),
+                (validator.validator.clone(), validator.status.state.clone()),
             );
         }
 
-        ValidatorStateMachine {
-            validator_states,
-            block_validators,
-        }
+        ValidatorStateMachine { validator_states }
     }
 
     pub fn add_validator(&mut self, validator: ValidatorInfo) {
-        self.block_validators.push(validator);
+        self.validator_states.insert(
+            validator.validator.identity_key.clone(),
+            (validator.validator.clone(), validator.status.state.clone()),
+        );
     }
 
     pub fn get_state(&self, identity_key: &IdentityKey) -> Option<&ValidatorState> {
-        self.validator_states.get(identity_key)
+        self.validator_states.get(identity_key).map(|x| &x.1)
     }
 
-    fn transition(&mut self, identity_key: &IdentityKey, event: ValidatorStateEvent) -> Result<()> {
+    pub fn slashed_validators(&self) -> impl Iterator<Item = impl Borrow<&'_ Validator>> {
+        self.validator_states
+            .iter()
+            .filter(|v| v.1 .1 == ValidatorState::Slashed)
+            .map(|v| &v.1 .0)
+    }
+
+    pub fn unslashed_validators(&self) -> impl Iterator<Item = impl Borrow<&'_ Validator>> {
+        // validators: Option<impl IntoIterator<Item = impl Borrow<&'a IdentityKey>>>,
+        self.validator_states
+            .iter()
+            // Return all validators that are *not slashed*
+            .filter(|v| v.1 .1 != ValidatorState::Slashed)
+            .map(|v| &v.1 .0)
+    }
+
+    fn transition(&mut self, validator: &Validator, event: ValidatorStateEvent) -> Result<()> {
         // Enforce the semantics of the state machine by using the current state and the
         // data contained within the event to determine the next state.
         let current_state = self
-            .get_state(identity_key)
+            .get_state(&validator.identity_key)
             .ok_or(anyhow::anyhow!("validator must exist to transition state"))?;
         match event {
             ValidatorStateEvent::Activate => match current_state {
                 ValidatorState::Inactive => {
-                    self.validator_states
-                        .insert(identity_key.clone(), ValidatorState::Active);
+                    self.validator_states.insert(
+                        validator.identity_key.clone(),
+                        (validator.clone(), ValidatorState::Active),
+                    );
                     Ok(())
                 }
                 ValidatorState::Unbonding { unbonding_epoch: _ } => {
-                    self.validator_states
-                        .insert(identity_key.clone(), ValidatorState::Active);
+                    self.validator_states.insert(
+                        validator.identity_key.clone(),
+                        (validator.clone(), ValidatorState::Active),
+                    );
                     Ok(())
                 }
                 _ => Err(anyhow::anyhow!(
@@ -69,8 +88,10 @@ impl ValidatorStateMachine {
             },
             ValidatorStateEvent::Deactivate => match current_state {
                 ValidatorState::Unbonding { unbonding_epoch: _ } => {
-                    self.validator_states
-                        .insert(identity_key.clone(), ValidatorState::Inactive);
+                    self.validator_states.insert(
+                        validator.identity_key.clone(),
+                        (validator.clone(), ValidatorState::Inactive),
+                    );
                     Ok(())
                 }
                 _ => Err(anyhow::anyhow!(
@@ -80,8 +101,11 @@ impl ValidatorStateMachine {
             ValidatorStateEvent::Unbond(unbonding_epoch) => match current_state {
                 ValidatorState::Active => {
                     self.validator_states.insert(
-                        identity_key.clone(),
-                        ValidatorState::Unbonding { unbonding_epoch },
+                        validator.identity_key.clone(),
+                        (
+                            validator.clone(),
+                            ValidatorState::Unbonding { unbonding_epoch },
+                        ),
                     );
                     Ok(())
                 }
@@ -91,13 +115,17 @@ impl ValidatorStateMachine {
             },
             ValidatorStateEvent::Slash => match current_state {
                 ValidatorState::Active => {
-                    self.validator_states
-                        .insert(identity_key.clone(), ValidatorState::Slashed);
+                    self.validator_states.insert(
+                        validator.identity_key.clone(),
+                        (validator.clone(), ValidatorState::Slashed),
+                    );
                     Ok(())
                 }
                 ValidatorState::Unbonding { unbonding_epoch: _ } => {
-                    self.validator_states
-                        .insert(identity_key.clone(), ValidatorState::Slashed);
+                    self.validator_states.insert(
+                        validator.identity_key.clone(),
+                        (validator.clone(), ValidatorState::Slashed),
+                    );
                     Ok(())
                 }
                 _ => {
@@ -114,14 +142,13 @@ impl ValidatorStateMachine {
         ck: PublicKey,
         event: ValidatorStateEvent,
     ) -> Result<()> {
-        let validator_info = self
-            .block_validators
+        let validator = self
+            .validator_states
             .iter()
-            .find(|v| v.validator.consensus_key == ck)
-            .cloned()
+            .find(|v| v.1 .0.consensus_key == ck)
             .ok_or(anyhow::anyhow!("No validator found"))?;
 
-        self.transition(&validator_info.validator.identity_key, event)
+        self.transition(&validator.1 .0.clone(), event)
     }
 }
 

@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::borrow::Borrow;
 
 use anyhow::{anyhow, Result};
 use futures::StreamExt;
@@ -6,7 +6,7 @@ use metrics::absolute_counter;
 use penumbra_crypto::{asset, merkle::NoteCommitmentTree};
 use penumbra_proto::Protobuf;
 use penumbra_stake::{
-    ValidatorState, ValidatorStatus, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
+    ValidatorStateEvent, ValidatorStatus, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
 };
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, ConsensusRequest as Request, ConsensusResponse as Response};
@@ -190,11 +190,6 @@ impl Worker {
         let block_validators = reader.validator_info(true).await?;
         self.pending_block = Some(PendingBlock::new(
             self.note_commitment_tree.clone(),
-            self.state
-                .private_reader()
-                .chain_params_rx()
-                .borrow()
-                .epoch_duration,
             block_validators,
         ));
 
@@ -285,10 +280,9 @@ impl Worker {
 
         // Find out which validators were slashed in this block
         let slashed_validators = pending_block
-            .validator_state_changes
-            .iter()
-            .filter(|p| matches!(p.1, ValidatorState::Slashed))
-            .map(|p| p.0) // get the validator ID
+            .validator_state_machine
+            .slashed_validators()
+            .map(|v| &v.borrow().identity_key)
             .collect::<Vec<_>>();
 
         // Immediately revert notes and nullifiers immediately from slashed validators in this block
@@ -351,13 +345,12 @@ impl Worker {
         );
         metrics::increment_counter!("epoch");
 
-        // Find all the validators which were *not* slashed in this block
+        // Find all the validators which are *not* slashed in this block
         let well_behaved_validators = pending_block
-            .validator_state_changes
-            .iter()
-            // THIS IS A LOAD-BEARING NEGATION: we want all validators which are *NOT* slashed
-            .filter(|p| !matches!(p.1, ValidatorState::Slashed))
-            .map(|p| p.0.clone()) // get the validator ID
+            .validator_state_machine
+            .unslashed_validators()
+            // Don't love this clone.
+            .map(|v| v.borrow().identity_key.clone())
             .collect::<Vec<_>>();
 
         // Process unbonding notes and nullifiers for this epoch
@@ -399,45 +392,6 @@ impl Worker {
         const BASE_REWARD_RATE: u64 = 3_0000;
 
         let next_base_rate = current_base_rate.next(BASE_REWARD_RATE);
-
-        // rename to curr_rate so it lines up with next_rate (same # chars)
-        tracing::debug!(curr_base_rate = ?current_base_rate);
-        tracing::debug!(?next_base_rate);
-        let voting_power = next_rate.voting_power(delegation_token_supply, &next_base_rate);
-        // If there's a pending state change, use that, otherwise use
-        // the existing state.
-        let next_state = pending_block
-            .validator_state_machine
-            .get_state(&identity_key)
-            .cloned()
-            // If the next state can't be grabbed from the validator state machine, something is wrong.
-            .unwrap();
-        let next_status = ValidatorStatus {
-            identity_key: identity_key.clone(),
-            voting_power,
-            state: next_state,
-        };
-
-        // distribute validator commission
-        for stream in funding_streams {
-            let commission_reward_amount =
-                stream.reward_amount(delegation_token_supply, &next_base_rate, &current_base_rate);
-
-            pending_block.add_validator_reward_note(commission_reward_amount, stream.address);
-        }
-
-        let mut next_rates = Vec::new();
-        let mut next_validator_statuses = BTreeMap::new();
-
-        // this is a bit complicated: because we're in the EndBlock phase, and the
-        // delegations in this block have not yet been committed, we have to combine
-        // the delegations in pending_block with the ones already committed to the
-        // state. otherwise the delegations committed in the epoch threshold block
-        // would be lost.
-        let mut delegation_changes = reader.delegation_changes(prev_epoch.index).await?;
-        for (id_key, delta) in &pending_block.delegation_changes {
-            *delegation_changes.entry(id_key.clone()).or_insert(0) += delta;
-        }
 
         // rename to curr_rate so it lines up with next_rate (same # chars)
         tracing::debug!(curr_base_rate = ?current_base_rate);
@@ -499,12 +453,19 @@ impl Worker {
             );
 
             let voting_power = next_rate.voting_power(delegation_token_supply, &next_base_rate);
+
+            // If there's a pending state change, use that, otherwise use
+            // the existing state.
+            let next_state = pending_block
+                .validator_state_machine
+                .get_state(&identity_key)
+                .cloned()
+                // If the next state can't be grabbed from the validator state machine, something is wrong.
+                .unwrap();
             let next_status = ValidatorStatus {
-                identity_key,
+                identity_key: identity_key.clone(),
                 voting_power,
-                // TODO: this state needs to be set correctly based on current state and any changes
-                // within the current block. This will be fixed by #375.
-                state: ValidatorState::Active,
+                state: next_state,
             };
 
             // distribute validator commission
@@ -526,9 +487,7 @@ impl Worker {
             tracing::debug!(?next_status);
 
             next_rates.push(next_rate);
-            pending_block
-                .next_validator_statuses
-                .insert(identity_key, next_status);
+            next_validator_statuses.push(next_status);
         }
 
         tracing::debug!(?staking_token_supply);
