@@ -277,6 +277,21 @@
       "nullable": []
     }
   },
+  "52c952817de81679a3200e99874d3886d569721f7821ad2dd63918c66bc6708e": {
+    "query": "UPDATE validators SET voting_power=$1, validator_state=$2, unbonding_epoch=$3 WHERE identity_key = $4",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Varchar",
+          "Int8",
+          "Bytea"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "5b21c8f02b71c8101743848e10e198ca4bf1b06fa0a703382354f241d8c86b0f": {
     "query": "SELECT validator_identity_key, note_commitment, ephemeral_key, encrypted_note, transaction_id\n            FROM quarantined_notes\n            WHERE\n                unbonding_height <= $1 AND\n                ($2 OR validator_identity_key = ANY($3))",
     "describe": {
@@ -920,13 +935,13 @@
       ]
     }
   },
-  "f364b8966b90d430a23cf88f17589aa9120d5dfbb76c52755ad580436f95580a": {
-    "query": "UPDATE validators SET voting_power=$1 WHERE identity_key = $2",
+  "f53d38021b00811466a282564e20eb45402876ada1431e4a1714009e521950f7": {
+    "query": "UPDATE validators SET validator_state=$1 WHERE identity_key = $2",
     "describe": {
       "columns": [],
       "parameters": {
         "Left": [
-          "Int8",
+          "Varchar",
           "Bytea"
         ]
       },
