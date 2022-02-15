@@ -1,7 +1,7 @@
 use ark_ff::Zero;
 use penumbra_crypto::{
     asset,
-    keys::SpendKey,
+    keys::{SeedPhrase, SpendKey, SpendSeed},
     memo::MemoPlaintext,
     merkle::{Frontier, NoteCommitmentTree, Tree, TreeExt},
     Fq, Note, Value,
@@ -14,12 +14,16 @@ use super::*;
 #[test]
 fn test_transaction_succeeds_if_values_balance() {
     let mut rng = OsRng;
-    let sk_sender = SpendKey::generate(&mut rng);
+    let seed_phrase = SeedPhrase::generate(&mut rng);
+    let spend_seed = SpendSeed::from_seed_phrase(seed_phrase, 0);
+    let sk_sender = SpendKey::new(spend_seed);
     let fvk_sender = sk_sender.full_viewing_key();
     let ovk_sender = fvk_sender.outgoing();
     let (send_addr, _) = fvk_sender.incoming().payment_address(0u64.into());
 
-    let sk_recipient = SpendKey::generate(&mut rng);
+    let seed_phrase = SeedPhrase::generate(&mut rng);
+    let spend_seed = SpendSeed::from_seed_phrase(seed_phrase, 0);
+    let sk_recipient = SpendKey::new(spend_seed);
     let fvk_recipient = sk_recipient.full_viewing_key();
     let ivk_recipient = fvk_recipient.incoming();
     let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());

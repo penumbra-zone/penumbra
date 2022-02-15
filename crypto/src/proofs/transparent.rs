@@ -436,7 +436,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        keys::SpendKey,
+        keys::{SeedPhrase, SpendKey, SpendSeed},
         merkle,
         merkle::{Frontier, Tree, TreeExt},
         note, Note, Value,
@@ -446,7 +446,9 @@ mod tests {
     fn test_output_proof_verification_success() {
         let mut rng = OsRng;
 
-        let sk_recipient = SpendKey::generate(&mut rng);
+        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let spend_seed = SpendSeed::from_seed_phrase(seed_phrase, 0);
+        let sk_recipient = SpendKey::new(spend_seed);
         let fvk_recipient = sk_recipient.full_viewing_key();
         let ivk_recipient = fvk_recipient.incoming();
         let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
@@ -478,7 +480,9 @@ mod tests {
     fn test_output_proof_verification_note_commitment_integrity_failure() {
         let mut rng = OsRng;
 
-        let sk_recipient = SpendKey::generate(&mut rng);
+        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let spend_seed = SpendSeed::from_seed_phrase(seed_phrase, 0);
+        let sk_recipient = SpendKey::new(spend_seed);
         let fvk_recipient = sk_recipient.full_viewing_key();
         let ivk_recipient = fvk_recipient.incoming();
         let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
@@ -521,7 +525,9 @@ mod tests {
     fn test_output_proof_verification_value_commitment_integrity_failure() {
         let mut rng = OsRng;
 
-        let sk_recipient = SpendKey::generate(&mut rng);
+        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let spend_seed = SpendSeed::from_seed_phrase(seed_phrase, 0);
+        let sk_recipient = SpendKey::new(spend_seed);
         let fvk_recipient = sk_recipient.full_viewing_key();
         let ivk_recipient = fvk_recipient.incoming();
         let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
@@ -554,7 +560,9 @@ mod tests {
     fn test_output_proof_verification_ephemeral_public_key_integrity_failure() {
         let mut rng = OsRng;
 
-        let sk_recipient = SpendKey::generate(&mut rng);
+        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let spend_seed = SpendSeed::from_seed_phrase(seed_phrase, 0);
+        let sk_recipient = SpendKey::new(spend_seed);
         let fvk_recipient = sk_recipient.full_viewing_key();
         let ivk_recipient = fvk_recipient.incoming();
         let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
@@ -591,7 +599,9 @@ mod tests {
     fn test_output_proof_verification_identity_check_failure() {
         let mut rng = OsRng;
 
-        let sk_recipient = SpendKey::generate(&mut rng);
+        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let spend_seed = SpendSeed::from_seed_phrase(seed_phrase, 0);
+        let sk_recipient = SpendKey::new(spend_seed);
         let fvk_recipient = sk_recipient.full_viewing_key();
         let ivk_recipient = fvk_recipient.incoming();
         let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
@@ -622,7 +632,10 @@ mod tests {
     #[test]
     fn test_spend_proof_verification_success() {
         let mut rng = OsRng;
-        let sk_sender = SpendKey::generate(&mut rng);
+
+        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let spend_seed = SpendSeed::from_seed_phrase(seed_phrase, 0);
+        let sk_sender = SpendKey::new(spend_seed);
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.incoming();
         let (sender, _dtk_d) = ivk_sender.payment_address(0u64.into());
@@ -669,7 +682,9 @@ mod tests {
     #[test]
     fn test_spend_proof_verification_merkle_path_integrity_failure() {
         let mut rng = OsRng;
-        let sk_sender = SpendKey::generate(&mut rng);
+        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let spend_seed = SpendSeed::from_seed_phrase(seed_phrase, 0);
+        let sk_sender = SpendKey::new(spend_seed);
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.incoming();
         let (sender, _dtk_d) = ivk_sender.payment_address(0u64.into());
@@ -716,7 +731,9 @@ mod tests {
     #[test]
     fn test_spend_proof_verification_value_commitment_integrity_failure() {
         let mut rng = OsRng;
-        let sk_sender = SpendKey::generate(&mut rng);
+        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let spend_seed = SpendSeed::from_seed_phrase(seed_phrase, 0);
+        let sk_sender = SpendKey::new(spend_seed);
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.incoming();
         let (sender, _dtk_d) = ivk_sender.payment_address(0u64.into());
@@ -762,7 +779,9 @@ mod tests {
     #[test]
     fn test_spend_proof_verification_nullifier_integrity_failure() {
         let mut rng = OsRng;
-        let sk_sender = SpendKey::generate(&mut rng);
+        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let spend_seed = SpendSeed::from_seed_phrase(seed_phrase, 0);
+        let sk_sender = SpendKey::new(spend_seed);
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.incoming();
         let (sender, _dtk_d) = ivk_sender.payment_address(0u64.into());

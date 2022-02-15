@@ -184,11 +184,14 @@ mod tests {
     use rand_core::OsRng;
 
     use super::*;
-    use crate::keys::SpendKey;
+    use crate::keys::{SeedPhrase, SpendKey, SpendSeed};
 
     #[test]
     fn test_address_encoding() {
-        let sk = SpendKey::generate(OsRng);
+        let mut rng = OsRng;
+        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let spend_seed = SpendSeed::from_seed_phrase(seed_phrase, 0);
+        let sk = SpendKey::new(spend_seed);
         let fvk = sk.full_viewing_key();
         let ivk = fvk.incoming();
         let (dest, _dtk_d) = ivk.payment_address(0u64.into());
