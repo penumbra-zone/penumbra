@@ -8,10 +8,9 @@ use penumbra_crypto::{
     merkle::{Frontier, NoteCommitmentTree},
     note, Address, Fq, Note, Nullifier, One, Value,
 };
-use penumbra_proto::stake::ValidatorDefinition;
 use penumbra_stake::{
-    BaseRateData, Epoch, IdentityKey, RateData, Validator, ValidatorInfo, ValidatorState,
-    ValidatorStateEvent, ValidatorStateMachine, ValidatorStatus, STAKING_TOKEN_ASSET_ID,
+    BaseRateData, Epoch, IdentityKey, RateData, ValidatorInfo, ValidatorState,
+    ValidatorStateMachine, ValidatorStatus, STAKING_TOKEN_ASSET_ID,
 };
 use tendermint::PublicKey;
 use tracing::instrument;

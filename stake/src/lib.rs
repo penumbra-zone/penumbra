@@ -24,9 +24,7 @@ pub use status::ValidatorStatus;
 pub use token::DelegationToken;
 pub use undelegate::Undelegate;
 pub use validator::{FundingStreams, Validator, ValidatorDefinition};
-pub use validator_state::{
-    ValidatorState, ValidatorStateEvent, ValidatorStateMachine, ValidatorStateName,
-};
+pub use validator_state::{ValidatorState, ValidatorStateMachine, ValidatorStateName};
 
 /// The Bech32 prefix used for validator consensus pubkeys.
 pub const VALIDATOR_CONSENSUS_BECH32_PREFIX: &str = "penumbravalconspub";

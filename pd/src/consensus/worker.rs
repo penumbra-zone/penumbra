@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use std::borrow::Borrow;
 
 use anyhow::{anyhow, Result};
@@ -500,19 +501,6 @@ impl Worker {
                 .cloned()
                 .expect("should be able to get next validator state from state machine");
 
-            // TODO: handle state transitions on epoch change here
-            //
-            // TODO: If an Inactive validator is in the top `validator_limit` based
-            // on voting power and the delegation pool has a nonzero balance,
-            // then the validator should be moved to the Active state.
-            //
-            // TODO: An Active validator could also be displaced and move to the
-            // Unbonding state.
-            //
-            // TODO: Unbonding validators have three possible state transitions:
-            // they can become Active again, if new delegations boost its weight back into the top N;
-            // they can be Slashed, if evidence of misbehavior arises during the unbonding period (handled in begin_block);
-            // they can become Inactive, if neither (1) nor (2) occurs before the unbonding period passes
             let next_status = ValidatorStatus {
                 identity_key: identity_key.clone(),
                 voting_power,
@@ -539,6 +527,66 @@ impl Worker {
 
             next_rates.push(next_rate);
             next_validator_statuses.push(next_status);
+        }
+
+        // State transitions on epoch change are handled here
+        // after all rates have been calculated
+        //
+        // TODO: this has some overlap with the logic in ValidatorStateMachine,
+        // and we never end up using some of the transition methods in ValidatorStateMachine
+        // and the checks there aren't enforced as a result. Due to the code architecture
+        // this was easier for the time being but should probably be addressed by ditching
+        // next_validator_statuses, and making all changes directly to the validator state machine,
+        // and have commit_block pull statuses from the state machine rather than next_validator_statuses
+        let unbonding_epochs = self
+            .state
+            .private_reader()
+            .chain_params_rx()
+            .borrow()
+            .unbonding_epochs;
+        let validator_limit = self
+            .state
+            .private_reader()
+            .chain_params_rx()
+            .borrow()
+            .validator_limit;
+        let top_validators = next_validator_statuses
+            .iter()
+            .sorted_by(|a, b| b.voting_power.cmp(&a.voting_power))
+            .take(validator_limit as usize)
+            .map(|v| v.identity_key.clone())
+            .collect::<Vec<_>>();
+        for validator_status in &mut next_validator_statuses {
+            if validator_status.state == ValidatorState::Inactive
+                || matches!(
+                    validator_status.state,
+                    ValidatorState::Unbonding { unbonding_epoch: _ }
+                )
+            {
+                // If an Inactive or Unbonding validator is in the top `validator_limit` based
+                // on voting power and the delegation pool has a nonzero balance,
+                // then the validator should be moved to the Active state.
+                if top_validators.contains(&validator_status.identity_key) {
+                    // TODO: How do we check the delegation pool balance here?
+                    validator_status.state = ValidatorState::Active;
+                }
+            } else if validator_status.state == ValidatorState::Active {
+                // An Active validator could also be displaced and move to the
+                // Unbonding state.
+                if !top_validators.contains(&validator_status.identity_key) {
+                    validator_status.state = ValidatorState::Unbonding {
+                        unbonding_epoch: current_epoch.index + unbonding_epochs,
+                    };
+                }
+            }
+
+            // An Unbonding validator can become Inactive if the unbonding period expires
+            // and the validator is still in Unbonding state
+            if let ValidatorState::Unbonding { unbonding_epoch } = validator_status.state {
+                if unbonding_epoch <= current_epoch.index {
+                    validator_status.state = ValidatorState::Inactive;
+                }
+            };
         }
 
         tracing::debug!(?staking_token_supply);

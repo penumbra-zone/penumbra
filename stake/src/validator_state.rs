@@ -1,14 +1,10 @@
-use std::{
-    borrow::Borrow,
-    collections::{BTreeMap, HashSet},
-    str::FromStr,
-};
+use std::{borrow::Borrow, collections::BTreeMap, str::FromStr};
 
 use anyhow::Result;
 
 use tendermint::PublicKey;
 
-use crate::{IdentityKey, Validator, ValidatorInfo, ValidatorStatus};
+use crate::{IdentityKey, Validator, ValidatorInfo};
 
 #[derive(Debug, Clone)]
 pub struct ValidatorStateMachine {
@@ -200,15 +196,6 @@ impl ValidatorStateMachine {
             .ok_or(anyhow::anyhow!("No validator found"))?;
         Ok(&validator.1.validator)
     }
-}
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-/// An event triggering a validator state transition.
-pub enum ValidatorStateEvent {
-    Slash,
-    Unbond(u64),
-    Activate,
-    Deactivate,
 }
 
 /// The state of a validator in the validator state machine.
