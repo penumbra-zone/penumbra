@@ -1,10 +1,11 @@
 use anyhow::Context;
 use penumbra_crypto::{
     fmd,
-    keys::{FullViewingKey, IncomingViewingKey, OutgoingViewingKey, SpendKey, SpendSeed},
+    keys::{
+        FullViewingKey, IncomingViewingKey, OutgoingViewingKey, SeedPhrase, SpendKey, SpendSeed,
+    },
     Address, Note,
 };
-use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
 /// The contents of the wallet file that share a spend authority.
@@ -21,14 +22,19 @@ pub struct Wallet {
 
 impl Wallet {
     /// Create a new wallet.
-    pub fn generate<R: CryptoRng + RngCore>(rng: R) -> Self {
+    pub fn from_seed_phrase(seed_phrase: SeedPhrase) -> Self {
+        // Currently we support a single spend authority per wallet. In the future,
+        // we can derive multiple spend seeds from a single seed phrase.
+        let spend_seed = SpendSeed::from_seed_phrase(seed_phrase, 0);
+        let spend_key = SpendKey::new(spend_seed);
+
         Self {
-            spend_key: SpendKey::generate(rng),
+            spend_key,
             address_labels: vec!["Default".to_string()],
         }
     }
 
-    /// Imports a wallet from a [`SpendSeed`].
+    /// Imports a wallet from a legacy [`SpendSeed`].
     pub fn import(spend_seed: SpendSeed) -> Self {
         let spend_key = spend_seed.into();
         Self {
