@@ -302,11 +302,6 @@ impl Worker {
         drop(slashed_notes);
         drop(slashed_nullifiers);
 
-        // TODO: The validators slashed in this block also need to be updated in the database.
-        for validator in pending_block.validator_state_machine.slashed_validators() {
-            let v = validator.borrow();
-        }
-
         // If we are at the end of an epoch, process changes for it
         if epoch.end_height().value() == height {
             self.end_epoch().await?;
@@ -317,14 +312,20 @@ impl Worker {
             .as_ref()
             .expect("pending block must be Some in EndBlock");
 
-        // TODO: right now we are not writing the updated voting power from validator statuses
-        // back to tendermint, so that we can see how the statuses are computed without risking
-        // halting the testnet. in the future we want to add code here to send the next voting
-        // powers back to tendermint.
-        let validator_updates = Vec::new();
-
-        // Any validators added during this block will be present in the validator state machine.
-        // Those will have been copied to self.pending_block.next_validator_statuses during end_epoch
+        // Send the next voting powers back to tendermint. This also
+        // incorporates any newly added validators.
+        let mut validator_updates = Vec::new();
+        for v in pending_block.validator_state_machine.validators_info() {
+            let v = v.borrow();
+            let power = v.status.voting_power as u32;
+            let validator = &v.validator;
+            let pub_key = validator.consensus_key;
+            let validator_update = tendermint::abci::types::ValidatorUpdate {
+                pub_key,
+                power: power.into(),
+            };
+            validator_updates.push(validator_update);
+        }
 
         Ok(abci::response::EndBlock {
             validator_updates,
