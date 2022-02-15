@@ -67,6 +67,10 @@ enum Command {
         /// Maximum number of validators in the consensus set.
         #[structopt(short, long, default_value = "10")]
         validator_limit: u64,
+        /// Penalty to be applied to slashed validators' rates.
+        /// TODO: not sure what a good default is
+        #[structopt(short, long, default_value = "10")]
+        slashing_penalty: u64,
         /// Path to CSV file containing initial allocations.
         #[structopt(
             short,
@@ -210,6 +214,7 @@ async fn main() -> anyhow::Result<()> {
             validators_input_file,
             output_dir,
             chain_id,
+            slashing_penalty,
         } => {
             use rand::Rng;
             use std::{
@@ -306,6 +311,7 @@ async fn main() -> anyhow::Result<()> {
                         epoch_duration,
                         unbonding_epochs,
                         validator_limit,
+                        slashing_penalty,
                     },
                     validators: validators
                         .iter()

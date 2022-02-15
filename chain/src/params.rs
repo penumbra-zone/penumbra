@@ -43,6 +43,7 @@ pub struct ChainParams {
     pub epoch_duration: u64,
     pub unbonding_epochs: u64,
     pub validator_limit: u64,
+    pub slashing_penalty: u64,
 }
 
 impl Protobuf<pb::ChainParams> for ChainParams {}
@@ -54,6 +55,7 @@ impl From<pb::ChainParams> for ChainParams {
             epoch_duration: msg.epoch_duration,
             unbonding_epochs: msg.unbonding_epochs,
             validator_limit: msg.validator_limit,
+            slashing_penalty: msg.slashing_penalty,
         }
     }
 }
@@ -65,10 +67,13 @@ impl From<ChainParams> for pb::ChainParams {
             epoch_duration: params.epoch_duration,
             unbonding_epochs: params.unbonding_epochs,
             validator_limit: params.validator_limit,
+            slashing_penalty: params.slashing_penalty,
         }
     }
 }
 
+// TODO: defaults are implemented here as well as in the
+// `pd::main`
 impl Default for ChainParams {
     fn default() -> Self {
         Self {
@@ -76,6 +81,7 @@ impl Default for ChainParams {
             epoch_duration: 8640,
             unbonding_epochs: 30,
             validator_limit: 10,
+            slashing_penalty: 10,
         }
     }
 }
