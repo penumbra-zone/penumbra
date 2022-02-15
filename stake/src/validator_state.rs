@@ -170,6 +170,13 @@ impl ValidatorStateMachine {
 
         match current_state {
             ValidatorState::Active => {
+                // Unbonding the validator means that it can no longer participate
+                // in consensus, so its voting power is set to 0.
+                self.validator_states
+                    .get_mut(&validator.identity_key)
+                    .ok_or_else(|| anyhow::anyhow!("Validator not found"))?
+                    .status
+                    .voting_power = 0;
                 self.validator_states
                     .get_mut(&validator.identity_key)
                     .ok_or_else(|| anyhow::anyhow!("Validator not found"))?

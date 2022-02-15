@@ -493,17 +493,26 @@ impl Worker {
 
             let voting_power = next_rate.voting_power(delegation_token_supply, &next_base_rate);
 
-            // If there's a pending state change, use that, otherwise use
-            // the existing state.
+            // Default the next state to the current state from the validator state machine.
             let next_state = pending_block
                 .validator_state_machine
                 .get_state(&identity_key)
                 .cloned()
                 .expect("should be able to get next validator state from state machine");
 
-            // TODO: If the validator is in the top `validator_limit` based
+            // TODO: handle state transitions on epoch change here
+            //
+            // TODO: If an Inactive validator is in the top `validator_limit` based
             // on voting power and the delegation pool has a nonzero balance,
-            // then the validator should be moved to the Active status
+            // then the validator should be moved to the Active state.
+            //
+            // TODO: An Active validator could also be displaced and move to the
+            // Unbonding state.
+            //
+            // TODO: Unbonding validators have three possible state transitions:
+            // they can become Active again, if new delegations boost its weight back into the top N;
+            // they can be Slashed, if evidence of misbehavior arises during the unbonding period (handled in begin_block);
+            // they can become Inactive, if neither (1) nor (2) occurs before the unbonding period passes
             let next_status = ValidatorStatus {
                 identity_key: identity_key.clone(),
                 voting_power,
