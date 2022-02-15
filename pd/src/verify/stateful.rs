@@ -143,6 +143,8 @@ impl state::Reader {
         // Check that the sequence numbers of newly added validators are correct.
         // TODO: are any other checks necessary here?
         // TODO: what if multiple validators are added in the same block w/ same sequence numbers?
+        // the winning definition will need to be selected deterministically. We could do this by sorting them
+        // based on the signature bytes.
         for v in &transaction.validators {
             let existing_v: Vec<&ValidatorInfo> = block_validators
                 .iter()
