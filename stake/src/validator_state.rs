@@ -74,7 +74,7 @@ impl ValidatorStateMachine {
     /// can be deactivated.
     pub fn deactivate_validator(&mut self, ck: PublicKey) -> Result<()> {
         // Don't love this clone.
-        let validator = self.get_validator_by_consensus_key(ck)?.clone();
+        let validator = self.get_validator_by_consensus_key(&ck)?.clone();
 
         let current_info = self
             .get_validator_info(&validator.identity_key)
@@ -101,7 +101,7 @@ impl ValidatorStateMachine {
     // may be activated.
     pub fn activate_validator(&mut self, ck: PublicKey) -> Result<()> {
         // Don't love this clone.
-        let validator = self.get_validator_by_consensus_key(ck)?.clone();
+        let validator = self.get_validator_by_consensus_key(&ck)?.clone();
 
         let current_info = self
             .get_validator_info(&validator.identity_key)
@@ -130,9 +130,9 @@ impl ValidatorStateMachine {
 
     // Marks a validator as slashed. Only validators in the active or unbonding
     // state may be slashed.
-    pub fn slash_validator(&mut self, ck: PublicKey) -> Result<()> {
+    pub fn slash_validator(&mut self, ck: &PublicKey) -> Result<()> {
         // Don't love this clone.
-        let validator = self.get_validator_by_consensus_key(ck)?.clone();
+        let validator = self.get_validator_by_consensus_key(&ck)?.clone();
 
         let current_info = self
             .get_validator_info(&validator.identity_key)
@@ -162,7 +162,7 @@ impl ValidatorStateMachine {
     // may begin unbonding.
     pub fn unbond_validator(&mut self, ck: PublicKey, unbonding_epoch: u64) -> Result<()> {
         // Don't love this clone.
-        let validator = self.get_validator_by_consensus_key(ck)?.clone();
+        let validator = self.get_validator_by_consensus_key(&ck)?.clone();
         let current_info = self
             .get_validator_info(&validator.identity_key)
             .ok_or(anyhow::anyhow!("Validator not found in state machine"))?;
@@ -185,11 +185,11 @@ impl ValidatorStateMachine {
 
     // Tendermint validators are referenced to us by their Tendermint consensus key,
     // but we reference them by their Penumbra identity key.
-    pub fn get_validator_by_consensus_key(&self, ck: PublicKey) -> Result<&Validator> {
+    pub fn get_validator_by_consensus_key(&self, ck: &PublicKey) -> Result<&Validator> {
         let validator = self
             .validator_states
             .iter()
-            .find(|v| v.1.validator.consensus_key == ck)
+            .find(|v| v.1.validator.consensus_key == *ck)
             .ok_or(anyhow::anyhow!("No validator found"))?;
         Ok(&validator.1.validator)
     }

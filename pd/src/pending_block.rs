@@ -238,8 +238,7 @@ impl PendingBlock {
             .validator_state_machine
             .get_validator_by_consensus_key(ck)?;
         self.slashed_validators.push(validator.identity_key.clone());
-        self.validator_state_machine
-            .slash_validator(validator.consensus_key)?;
+        self.validator_state_machine.slash_validator(ck)?;
         Ok(())
     }
 }

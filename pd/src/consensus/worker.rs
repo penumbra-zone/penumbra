@@ -500,6 +500,10 @@ impl Worker {
                 .get_state(&identity_key)
                 .cloned()
                 .expect("should be able to get next validator state from state machine");
+
+            // TODO: If the validator is in the top `validator_limit` based
+            // on voting power and the delegation pool has a nonzero balance,
+            // then the validator should be moved to the Active status
             let next_status = ValidatorStatus {
                 identity_key: identity_key.clone(),
                 voting_power,
