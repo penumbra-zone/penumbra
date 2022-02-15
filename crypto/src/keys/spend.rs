@@ -1,4 +1,5 @@
 use std::convert::TryFrom;
+use std::fmt;
 
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
@@ -25,6 +26,18 @@ impl SeedPhrase {
             *phrase = BIP39_WORDS.choose(&mut rng).unwrap().to_string();
         }
         SeedPhrase(phrases)
+    }
+}
+
+impl fmt::Display for SeedPhrase {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for (i, word) in self.0.iter().enumerate() {
+            if i > 0 || i != SEED_PHRASE_LEN - 1 {
+                f.write_str(" ")?;
+            }
+            f.write_str(word)?;
+        }
+        Ok(())
     }
 }
 
