@@ -2,7 +2,7 @@ use std::{fs::File, io::BufReader, path::PathBuf};
 
 use anyhow::{anyhow, Context as _, Result};
 use directories::ProjectDirs;
-use penumbra_crypto::keys::SpendSeed;
+use penumbra_crypto::keys::{SeedPhrase, SpendSeed};
 use penumbra_wallet::{ClientState, Wallet};
 use rand_core::OsRng;
 use serde::Deserialize;
@@ -45,7 +45,18 @@ impl WalletCmd {
         // wallet state to be saved to disk
         let state = match self {
             // These two commands return new wallets to be saved to disk:
-            WalletCmd::Generate => Some(ClientState::new(Wallet::generate(&mut OsRng))),
+            WalletCmd::Generate => {
+                let seed_phrase = SeedPhrase::generate(&mut OsRng);
+
+                // xxx: Something better should be done here, this is in danger of being
+                // shared by users accidentally in log output.
+                println!(
+                    "YOUR PRIVATE SEED PHRASE: {}. DO NOT SHARE WITH ANYONE.",
+                    seed_phrase
+                );
+
+                Some(ClientState::new(Wallet::from_seed_phrase(seed_phrase)))
+            }
             WalletCmd::Import { spend_seed } => {
                 let seed = hex::decode(spend_seed)?;
                 let seed = SpendSeed::try_from(seed.as_slice())?;
