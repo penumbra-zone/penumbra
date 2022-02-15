@@ -200,4 +200,14 @@ $$v = v_{ui} + v_{ui} * 2^{16} + v_{ui} * 2^{32} + v_{ui} * 2^{48} + v_{ui} * 2^
 
 This value is bounded by $[0, 2^71]$, assuming that the coefficients in the previous step were correctly bounded.
 
+
+## Notes
+
+On verifiability, this scheme must include some snark proof that coefficients
+were honestly created from values, and that values were honestly aggregated.
+This can be accomplished by providing a SNARK proof $\pi$ that accompanies each
+value and each aggregated value. 
+
+
+
 ***TODO***: end-to-end complexity analysis (number of scalar mults per block, LUT size, etc)
