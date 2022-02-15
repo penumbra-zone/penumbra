@@ -425,7 +425,7 @@ impl Worker {
 
             let mut hold_rate_constant = |current_rate: RateData| {
                 // The next epoch's rate is set to the current rate
-                let mut next_rate = current_rate.clone();
+                let mut next_rate = current_rate;
                 next_rate.epoch_index = next_epoch.index;
 
                 next_rates.push(next_rate);

@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use penumbra_crypto::{ka, merkle, note, Nullifier};
-use penumbra_stake::{Delegate, IdentityKey, Undelegate, Validator, ValidatorDefinition};
+use penumbra_stake::{Delegate, IdentityKey, Undelegate, ValidatorDefinition};
 
 mod stateful;
 mod stateless;

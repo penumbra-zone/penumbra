@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::{Context, Error};
 use penumbra_crypto::{note, Nullifier};
-use penumbra_stake::{Delegate, Undelegate, Validator, ValidatorDefinition};
+use penumbra_stake::{Delegate, Undelegate, ValidatorDefinition};
 use penumbra_transaction::{Action, Transaction};
 
 use super::{NoteData, PendingTransaction};
@@ -116,7 +116,7 @@ impl StatelessTransactionExt for Transaction {
                         .0
                         .verify(&sighash, &validator.auth_sig)
                         .context("validator definition signature failed to verify")?;
-                    validators.push(validator.into());
+                    validators.push(validator);
                 }
                 _ => {
                     return Err(anyhow::anyhow!("unsupported action"));

@@ -128,7 +128,7 @@ impl ValidatorStateMachine {
     // state may be slashed.
     pub fn slash_validator(&mut self, ck: &PublicKey) -> Result<()> {
         // Don't love this clone.
-        let validator = self.get_validator_by_consensus_key(&ck)?.clone();
+        let validator = self.get_validator_by_consensus_key(ck)?.clone();
 
         let current_info = self
             .get_validator_info(&validator.identity_key)
