@@ -14,10 +14,11 @@ use crate::{
 
 pub const SEED_PHRASE_LEN: usize = 24;
 
-/// A mnemonic seed phrase.
+/// A mnemonic seed phrase. Used to generate [`SpendSeed`]s.
 pub struct SeedPhrase(pub [String; SEED_PHRASE_LEN]);
 
 impl SeedPhrase {
+    /// Randomly generates a [`SeedPhrase`].
     pub fn generate<R: RngCore + CryptoRng>(mut rng: R) -> Self {
         let mut phrases: [String; SEED_PHRASE_LEN] = Default::default();
         for phrase in phrases.iter_mut() {
@@ -34,7 +35,8 @@ pub const SPENDSEED_LEN_BYTES: usize = 32;
 pub struct SpendSeed(pub [u8; SPENDSEED_LEN_BYTES]);
 
 impl SpendSeed {
-    pub fn generate_from_seed_phrase(seed_phrase: SeedPhrase, index: u64) -> Self {
+    /// Deterministically generate a [`SpendSeed`] from a [`SeedPhrase`].
+    pub fn from_seed_phrase(seed_phrase: SeedPhrase, index: u64) -> Self {
         todo!()
     }
 }
@@ -58,11 +60,9 @@ impl From<SpendSeed> for SpendKey {
 }
 
 impl SpendKey {
-    /// Generates a new [`SpendKey`] from the supplied RNG.
-    pub fn generate<R: RngCore + CryptoRng>(mut rng: R) -> Self {
-        let mut seed_bytes = [0u8; SPENDSEED_LEN_BYTES];
-        rng.fill_bytes(&mut seed_bytes);
-        Self::from(SpendSeed(seed_bytes))
+    /// Create a [`SpendKey`] from a [`SpendSeed`].
+    pub fn new(seed: SpendSeed) -> Self {
+        Self::from(seed)
     }
 
     /// Get the [`SpendSeed`] this [`SpendKey`] was derived from.
