@@ -126,7 +126,7 @@ impl ValidatorStateMachine {
 
     // Marks a validator as slashed. Only validators in the active or unbonding
     // state may be slashed.
-    pub fn slash_validator(&mut self, ck: &PublicKey) -> Result<()> {
+    pub fn slash_validator(&mut self, ck: &PublicKey, slashing_penalty: u64) -> Result<()> {
         // Don't love this clone.
         let validator = self.get_validator_by_consensus_key(ck)?.clone();
 
@@ -136,12 +136,17 @@ impl ValidatorStateMachine {
         let current_state = current_info.status.state;
 
         let mut mark_slashed = |validator: &Validator| -> Result<()> {
-            // TODO: Need to include slashing penalty here!
             self.validator_states
                 .get_mut(&validator.identity_key)
                 .ok_or_else(|| anyhow::anyhow!("Validator not found"))?
                 .status
                 .state = ValidatorState::Slashed;
+            self.validator_states
+                .get_mut(&validator.identity_key)
+                .ok_or_else(|| anyhow::anyhow!("Validator not found"))?
+                .rate_data
+                // TODO: pretty sure this calculation of slashed rate is wrong
+                .validator_reward_rate -= slashing_penalty;
             Ok(())
         };
 

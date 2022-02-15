@@ -194,6 +194,13 @@ impl Worker {
             block_validators,
         ));
 
+        let slashing_penalty = self
+            .state
+            .private_reader()
+            .chain_params_rx()
+            .borrow()
+            .slashing_penalty;
+
         // For each validator identified as byzantine by tendermint, update its
         // status to be slashed.
         for evidence in begin_block.byzantine_validators.iter() {
@@ -202,7 +209,7 @@ impl Worker {
                 .unwrap();
 
             let pb_mut = &mut self.pending_block.as_mut().unwrap();
-            pb_mut.slash_validator(&ck)?;
+            pb_mut.slash_validator(&ck, slashing_penalty)?;
         }
 
         Ok(Default::default())

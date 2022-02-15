@@ -485,6 +485,10 @@ impl Writer {
         }
 
         // Slashed validator states are saved at the end of the block.
+        //
+        // When the validator was slashed their rate was updated to incorporate
+        // the slashing penalty and then their rate will be held constant, so
+        // there is no need to take into account the slashing penalty here.
         for ik in block.slashed_validators {
             query!(
                 "UPDATE validators SET validator_state=$1 WHERE identity_key = $2",
@@ -493,9 +497,6 @@ impl Writer {
             )
             .execute(&mut dbtx)
             .await?;
-
-            // TODO: set the validator's rate for the current epoch
-            // to the slashed value
         }
 
         // next_validator_statuses are only saved during epoch transitions.

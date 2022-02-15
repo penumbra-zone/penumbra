@@ -232,12 +232,13 @@ impl PendingBlock {
         }
     }
 
-    pub fn slash_validator(&mut self, ck: &PublicKey) -> Result<()> {
+    pub fn slash_validator(&mut self, ck: &PublicKey, slashing_penalty: u64) -> Result<()> {
         let validator = self
             .validator_state_machine
             .get_validator_by_consensus_key(ck)?;
         self.slashed_validators.push(validator.identity_key.clone());
-        self.validator_state_machine.slash_validator(ck)?;
+        self.validator_state_machine
+            .slash_validator(ck, slashing_penalty)?;
         Ok(())
     }
 }
