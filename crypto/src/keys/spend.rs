@@ -1,6 +1,8 @@
 use std::convert::TryFrom;
 use std::fmt;
 
+use hmac::Hmac;
+use pbkdf2::pbkdf2;
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
@@ -13,6 +15,7 @@ use crate::{
     rdsa::{SigningKey, SpendAuth},
 };
 
+pub const SEED_PHRASE_PBKDF2_ROUNDS: u32 = 2048;
 pub const SEED_PHRASE_LEN: usize = 24;
 
 /// A mnemonic seed phrase. Used to generate [`SpendSeed`]s.
@@ -49,8 +52,24 @@ pub struct SpendSeed(pub [u8; SPENDSEED_LEN_BYTES]);
 
 impl SpendSeed {
     /// Deterministically generate a [`SpendSeed`] from a [`SeedPhrase`].
+    ///
+    /// The choice of KDF (PBKDF2), iteration count, and PRF (HMAC-SHA512) are specified
+    /// in [`BIP39`]. The salt is specified in BIP39 as the string "mnemonic" plus an optional
+    /// passphrase, which we set to an index. This allows us to derive multiple spend
+    /// authorities from a single seed phrase.
+    ///
+    /// [`BIP39`]: https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
     pub fn from_seed_phrase(seed_phrase: SeedPhrase, index: u64) -> Self {
-        todo!()
+        let password = format!("{}", seed_phrase);
+        let salt = format!("mnemonic{}", index);
+        let mut spend_seed_bytes = [0u8; 32];
+        pbkdf2::<Hmac<sha2::Sha512>>(
+            password.as_bytes(),
+            salt.as_bytes(),
+            SEED_PHRASE_PBKDF2_ROUNDS,
+            &mut spend_seed_bytes,
+        );
+        SpendSeed(spend_seed_bytes)
     }
 }
 
