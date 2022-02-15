@@ -8,9 +8,10 @@ use penumbra_crypto::{
     merkle::{Frontier, NoteCommitmentTree},
     note, Address, Fq, Note, Nullifier, One, Value,
 };
+use penumbra_proto::stake::ValidatorDefinition;
 use penumbra_stake::{
-    BaseRateData, Epoch, IdentityKey, RateData, ValidatorInfo, ValidatorState, ValidatorStateEvent,
-    ValidatorStateMachine, ValidatorStatus, STAKING_TOKEN_ASSET_ID,
+    BaseRateData, Epoch, IdentityKey, RateData, Validator, ValidatorInfo, ValidatorState,
+    ValidatorStateEvent, ValidatorStateMachine, ValidatorStatus, STAKING_TOKEN_ASSET_ID,
 };
 use tendermint::PublicKey;
 use tracing::instrument;
@@ -54,6 +55,13 @@ pub struct PendingBlock {
     /// During end_block, validator state changes will be copied to `self.next_validator_statuses`
     /// and then saved to the database during commit_block.
     pub validator_state_machine: ValidatorStateMachine,
+    /// New validators added during the block. Saved and available for staking when the block is committed.
+    pub new_validators: Vec<ValidatorInfo>,
+    /// Validators slashed during this block. Saved when the block is committed.
+    ///
+    /// The validator's rate will have a slashing penalty immediately applied during the current epoch.
+    /// Their future rates will be held constant.
+    pub slashed_validators: Vec<IdentityKey>,
 }
 
 /// A group of notes and nullifiers, all to be quarantined relative to a shared set of validators.
@@ -81,6 +89,8 @@ impl PendingBlock {
             supply_updates: BTreeMap::new(),
             epoch: None,
             next_base_rate: None,
+            // TODO: We should probably use the validator state machine
+            // for all rate and status management
             next_rates: None,
             next_validator_statuses: None,
             delegation_changes: BTreeMap::new(),
@@ -90,6 +100,8 @@ impl PendingBlock {
             unbonding_nullifiers: BTreeSet::new(),
             reverting_nullifiers: BTreeSet::new(),
             validator_state_machine: ValidatorStateMachine::new(block_validators),
+            new_validators: Vec::new(),
+            slashed_validators: Vec::new(),
         }
     }
 
@@ -99,15 +111,6 @@ impl PendingBlock {
         let epoch = Epoch::from_height(height, epoch_duration);
         self.epoch = Some(epoch.clone());
         epoch
-    }
-
-    /// Apply a state transition to a given validator based on Tendermint public key.
-    pub fn transition_validator_state(
-        &mut self,
-        ck: PublicKey,
-        event: ValidatorStateEvent,
-    ) -> Result<()> {
-        self.validator_state_machine.transition_validator(ck, event)
     }
 
     /// Adds a reward output for a validator's funding stream.
@@ -201,26 +204,42 @@ impl PendingBlock {
             *self.delegation_changes.entry(identity_key).or_insert(0) += delegation_change;
         }
 
-        for validator in transaction.new_validators {
+        let current_epoch = self
+            .epoch
+            .as_ref()
+            .expect("expected epoch to be set on pending_block");
+        for v in transaction.new_validators {
             let validator_info = ValidatorInfo {
-                validator: validator.clone(),
+                validator: v.validator.clone(),
                 status: ValidatorStatus {
-                    identity_key: validator.identity_key.clone(),
+                    identity_key: v.validator.identity_key.clone(),
                     // Voting power for inactive validators is 0
                     voting_power: 0,
                     state: ValidatorState::Inactive,
                 },
                 rate_data: RateData {
-                    identity_key: validator.identity_key.clone(),
-                    epoch_index: 0,
-                    // TODO: needs to be determined by the funding streams
+                    identity_key: v.validator.identity_key.clone(),
+                    epoch_index: current_epoch.index,
+                    // Validator reward rate is held constant for inactive validators.
+                    // Stake committed to inactive validators earns no rewards.
                     validator_reward_rate: 0,
                     // Exchange rate for inactive validators is held constant
                     // and starts at 1
                     validator_exchange_rate: 1,
                 },
             };
+            self.new_validators.push(validator_info.clone());
             self.validator_state_machine.add_validator(validator_info);
         }
+    }
+
+    pub fn slash_validator(&mut self, ck: &PublicKey) -> Result<()> {
+        let validator = self
+            .validator_state_machine
+            .get_validator_by_consensus_key(ck)?;
+        self.slashed_validators.push(validator.identity_key.clone());
+        self.validator_state_machine
+            .slash_validator(validator.consensus_key)?;
+        Ok(())
     }
 }

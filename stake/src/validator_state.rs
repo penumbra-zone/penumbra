@@ -8,15 +8,15 @@ use anyhow::Result;
 
 use tendermint::PublicKey;
 
-use crate::{IdentityKey, Validator, ValidatorInfo};
+use crate::{IdentityKey, Validator, ValidatorInfo, ValidatorStatus};
 
 #[derive(Debug, Clone)]
 pub struct ValidatorStateMachine {
-    /// Records validator states as they change during the course of the block.
+    /// Records complete validator states as they change during the course of the block.
     ///
     /// Updated as changes occur during the block, but will not be persisted
     /// to the database until the block is committed.
-    validator_states: BTreeMap<IdentityKey, (Validator, ValidatorState)>,
+    validator_states: BTreeMap<IdentityKey, ValidatorInfo>,
 }
 
 impl ValidatorStateMachine {
@@ -24,31 +24,41 @@ impl ValidatorStateMachine {
         // Initialize all state machine validator states to their current state from the block validators.
         let mut validator_states = BTreeMap::new();
         for validator in block_validator_info.iter() {
-            validator_states.insert(
-                validator.validator.identity_key.clone(),
-                (validator.validator.clone(), validator.status.state.clone()),
-            );
+            validator_states.insert(validator.validator.identity_key.clone(), validator.clone());
         }
 
         ValidatorStateMachine { validator_states }
     }
 
     pub fn add_validator(&mut self, validator: ValidatorInfo) {
-        self.validator_states.insert(
-            validator.validator.identity_key.clone(),
-            (validator.validator.clone(), validator.status.state.clone()),
-        );
+        self.validator_states
+            .insert(validator.validator.identity_key.clone(), validator);
+    }
+
+    pub fn get_validator_info(&self, identity_key: &IdentityKey) -> Option<&ValidatorInfo> {
+        self.validator_states.get(identity_key)
     }
 
     pub fn get_state(&self, identity_key: &IdentityKey) -> Option<&ValidatorState> {
-        self.validator_states.get(identity_key).map(|x| &x.1)
+        self.validator_states
+            .get(identity_key)
+            .map(|x| &x.status.state)
     }
 
+    pub fn validators(&self) -> impl Iterator<Item = impl Borrow<&'_ Validator>> {
+        self.validator_states.iter().map(|v| &v.1.validator)
+    }
+
+    pub fn validators_info(&self) -> impl Iterator<Item = impl Borrow<&'_ ValidatorInfo>> {
+        self.validator_states.iter().map(|v| v.1)
+    }
+
+    /// Returns all validators that are currently in the `Slashed` state.
     pub fn slashed_validators(&self) -> impl Iterator<Item = impl Borrow<&'_ Validator>> {
         self.validator_states
             .iter()
-            .filter(|v| v.1 .1 == ValidatorState::Slashed)
-            .map(|v| &v.1 .0)
+            .filter(|v| v.1.status.state == ValidatorState::Slashed)
+            .map(|v| &v.1.validator)
     }
 
     pub fn unslashed_validators(&self) -> impl Iterator<Item = impl Borrow<&'_ Validator>> {
@@ -56,99 +66,132 @@ impl ValidatorStateMachine {
         self.validator_states
             .iter()
             // Return all validators that are *not slashed*
-            .filter(|v| v.1 .1 != ValidatorState::Slashed)
-            .map(|v| &v.1 .0)
+            .filter(|v| v.1.status.state != ValidatorState::Slashed)
+            .map(|v| &v.1.validator)
     }
 
-    fn transition(&mut self, validator: &Validator, event: ValidatorStateEvent) -> Result<()> {
-        // Enforce the semantics of the state machine by using the current state and the
-        // data contained within the event to determine the next state.
-        let current_state = self
-            .get_state(&validator.identity_key)
-            .ok_or(anyhow::anyhow!("validator must exist to transition state"))?;
-        match event {
-            ValidatorStateEvent::Activate => match current_state {
-                ValidatorState::Inactive => {
-                    self.validator_states.insert(
-                        validator.identity_key.clone(),
-                        (validator.clone(), ValidatorState::Active),
-                    );
-                    Ok(())
-                }
-                ValidatorState::Unbonding { unbonding_epoch: _ } => {
-                    self.validator_states.insert(
-                        validator.identity_key.clone(),
-                        (validator.clone(), ValidatorState::Active),
-                    );
-                    Ok(())
-                }
-                _ => Err(anyhow::anyhow!(
-                    "only inactive or unbonding validators can move to active state"
-                )),
-            },
-            ValidatorStateEvent::Deactivate => match current_state {
-                ValidatorState::Unbonding { unbonding_epoch: _ } => {
-                    self.validator_states.insert(
-                        validator.identity_key.clone(),
-                        (validator.clone(), ValidatorState::Inactive),
-                    );
-                    Ok(())
-                }
-                _ => Err(anyhow::anyhow!(
-                    "only unbonding validators can move to inactive state"
-                )),
-            },
-            ValidatorStateEvent::Unbond(unbonding_epoch) => match current_state {
-                ValidatorState::Active => {
-                    self.validator_states.insert(
-                        validator.identity_key.clone(),
-                        (
-                            validator.clone(),
-                            ValidatorState::Unbonding { unbonding_epoch },
-                        ),
-                    );
-                    Ok(())
-                }
-                _ => Err(anyhow::anyhow!(
-                    "only active validators can move to unbonding state"
-                )),
-            },
-            ValidatorStateEvent::Slash => match current_state {
-                ValidatorState::Active => {
-                    self.validator_states.insert(
-                        validator.identity_key.clone(),
-                        (validator.clone(), ValidatorState::Slashed),
-                    );
-                    Ok(())
-                }
-                ValidatorState::Unbonding { unbonding_epoch: _ } => {
-                    self.validator_states.insert(
-                        validator.identity_key.clone(),
-                        (validator.clone(), ValidatorState::Slashed),
-                    );
-                    Ok(())
-                }
-                _ => {
-                    return Err(anyhow::anyhow!(
-                        "only active or unbonding validators can move to slashed state"
-                    ))
-                }
-            },
+    /// Mark a validator as deactivated. Only validators in the unbonding state
+    /// can be deactivated.
+    pub fn deactivate_validator(&mut self, ck: PublicKey) -> Result<()> {
+        // Don't love this clone.
+        let validator = self.get_validator_by_consensus_key(ck)?.clone();
+
+        let current_info = self
+            .get_validator_info(&validator.identity_key)
+            .ok_or(anyhow::anyhow!("Validator not found in state machine"))?;
+        let current_state = current_info.status.state;
+
+        match current_state {
+            ValidatorState::Unbonding { unbonding_epoch: _ } => {
+                self.validator_states
+                    .get_mut(&validator.identity_key)
+                    .ok_or_else(|| anyhow::anyhow!("Validator not found"))?
+                    .status
+                    .state = ValidatorState::Inactive;
+                Ok(())
+            }
+            _ => Err(anyhow::anyhow!(
+                "Validator {} is not in unbonding state",
+                validator.identity_key
+            )),
         }
     }
 
-    pub fn transition_validator(
-        &mut self,
-        ck: PublicKey,
-        event: ValidatorStateEvent,
-    ) -> Result<()> {
+    // Activate a validator. Only validators in the inactive or unbonding state
+    // may be activated.
+    pub fn activate_validator(&mut self, ck: PublicKey) -> Result<()> {
+        // Don't love this clone.
+        let validator = self.get_validator_by_consensus_key(ck)?.clone();
+
+        let current_info = self
+            .get_validator_info(&validator.identity_key)
+            .ok_or(anyhow::anyhow!("Validator not found in state machine"))?;
+        let current_state = current_info.status.state;
+
+        let mut mark_active = |validator: &Validator| -> Result<()> {
+            self.validator_states
+                .get_mut(&validator.identity_key)
+                .ok_or_else(|| anyhow::anyhow!("Validator not found"))?
+                .status
+                .state = ValidatorState::Active;
+            Ok(())
+        };
+
+        match current_state {
+            ValidatorState::Inactive => mark_active(&validator),
+            // The unbonding epoch is not checked here. It is checked in the
+            // consensus worker.
+            ValidatorState::Unbonding { unbonding_epoch: _ } => mark_active(&validator),
+            _ => Err(anyhow::anyhow!(
+                "only validators in the inactive or unbonding state may be activated"
+            )),
+        }
+    }
+
+    // Marks a validator as slashed. Only validators in the active or unbonding
+    // state may be slashed.
+    pub fn slash_validator(&mut self, ck: PublicKey) -> Result<()> {
+        // Don't love this clone.
+        let validator = self.get_validator_by_consensus_key(ck)?.clone();
+
+        let current_info = self
+            .get_validator_info(&validator.identity_key)
+            .ok_or(anyhow::anyhow!("Validator not found in state machine"))?;
+        let current_state = current_info.status.state;
+
+        let mut mark_slashed = |validator: &Validator| -> Result<()> {
+            // TODO: Need to include slashing penalty here!
+            self.validator_states
+                .get_mut(&validator.identity_key)
+                .ok_or_else(|| anyhow::anyhow!("Validator not found"))?
+                .status
+                .state = ValidatorState::Slashed;
+            Ok(())
+        };
+
+        match current_state {
+            ValidatorState::Active => mark_slashed(&validator),
+            ValidatorState::Unbonding { unbonding_epoch: _ } => mark_slashed(&validator),
+            _ => Err(anyhow::anyhow!(
+                "only validators in the active or unbonding state may be slashed"
+            )),
+        }
+    }
+
+    // Marks a validator as unbonding. Only validators in the active state
+    // may begin unbonding.
+    pub fn unbond_validator(&mut self, ck: PublicKey, unbonding_epoch: u64) -> Result<()> {
+        // Don't love this clone.
+        let validator = self.get_validator_by_consensus_key(ck)?.clone();
+        let current_info = self
+            .get_validator_info(&validator.identity_key)
+            .ok_or(anyhow::anyhow!("Validator not found in state machine"))?;
+        let current_state = current_info.status.state;
+
+        match current_state {
+            ValidatorState::Active => {
+                self.validator_states
+                    .get_mut(&validator.identity_key)
+                    .ok_or_else(|| anyhow::anyhow!("Validator not found"))?
+                    .status
+                    .state = ValidatorState::Unbonding { unbonding_epoch };
+                Ok(())
+            }
+            _ => Err(anyhow::anyhow!(
+                "only validators in the active state may begin unbonding"
+            )),
+        }
+    }
+
+    // Tendermint validators are referenced to us by their Tendermint consensus key,
+    // but we reference them by their Penumbra identity key.
+    pub fn get_validator_by_consensus_key(&self, ck: PublicKey) -> Result<&Validator> {
         let validator = self
             .validator_states
             .iter()
-            .find(|v| v.1 .0.consensus_key == ck)
+            .find(|v| v.1.validator.consensus_key == ck)
             .ok_or(anyhow::anyhow!("No validator found"))?;
-
-        self.transition(&validator.1 .0.clone(), event)
+        Ok(&validator.1.validator)
     }
 }
 
@@ -162,7 +205,7 @@ pub enum ValidatorStateEvent {
 }
 
 /// The state of a validator in the validator state machine.
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum ValidatorState {
     /// The validator is not currently a part of the consensus set, but could become so if it
     /// acquired enough voting power.

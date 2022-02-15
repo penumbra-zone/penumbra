@@ -6,7 +6,7 @@ use metrics::absolute_counter;
 use penumbra_crypto::{asset, merkle::NoteCommitmentTree};
 use penumbra_proto::Protobuf;
 use penumbra_stake::{
-    ValidatorStateEvent, ValidatorStatus, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
+    RateData, ValidatorState, ValidatorStatus, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
 };
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, ConsensusRequest as Request, ConsensusResponse as Response};
@@ -201,8 +201,7 @@ impl Worker {
                 .unwrap();
 
             let pb_mut = &mut self.pending_block.as_mut().unwrap();
-            pb_mut.transition_validator_state(ck, ValidatorStateEvent::Slash)?;
-            // pb_mut.slash_validator(ck)?;
+            pb_mut.slash_validator(&ck)?;
         }
 
         Ok(Default::default())
@@ -279,11 +278,7 @@ impl Worker {
         tracing::debug!(?height, ?epoch, end_height = ?epoch.end_height());
 
         // Find out which validators were slashed in this block
-        let slashed_validators = pending_block
-            .validator_state_machine
-            .slashed_validators()
-            .map(|v| &v.borrow().identity_key)
-            .collect::<Vec<_>>();
+        let slashed_validators = &pending_block.slashed_validators;
 
         // Immediately revert notes and nullifiers immediately from slashed validators in this block
         let (mut slashed_notes, mut slashed_nullifiers) = (
@@ -299,19 +294,35 @@ impl Worker {
         drop(slashed_notes);
         drop(slashed_nullifiers);
 
+        // TODO: The validators slashed in this block also need to be updated in the database.
+        for validator in pending_block.validator_state_machine.slashed_validators() {
+            let v = validator.borrow();
+        }
+
         // If we are at the end of an epoch, process changes for it
         if epoch.end_height().value() == height {
             self.end_epoch().await?;
         }
 
-        // TODO: later, set the EndBlock response to add validators
-        // at the epoch boundary
+        let pending_block = self
+            .pending_block
+            .as_ref()
+            .expect("pending block must be Some in EndBlock");
 
         // TODO: right now we are not writing the updated voting power from validator statuses
         // back to tendermint, so that we can see how the statuses are computed without risking
         // halting the testnet. in the future we want to add code here to send the next voting
         // powers back to tendermint.
-        Ok(Default::default())
+        let validator_updates = Vec::new();
+
+        // Any validators added during this block will be present in the validator state machine.
+        // Those will have been copied to self.pending_block.next_validator_statuses during end_epoch
+
+        Ok(abci::response::EndBlock {
+            validator_updates,
+            consensus_param_updates: None,
+            events: Vec::new(),
+        })
     }
 
     /// Process the state transitions for the end of an epoch.
@@ -349,7 +360,6 @@ impl Worker {
         let well_behaved_validators = pending_block
             .validator_state_machine
             .unslashed_validators()
-            // Don't love this clone.
             .map(|v| v.borrow().identity_key.clone())
             .collect::<Vec<_>>();
 
@@ -368,9 +378,7 @@ impl Worker {
         drop(unbonding_notes);
         drop(unbonding_nullifiers);
 
-        // TODO (optimization): batch these queries
         let current_base_rate = reader.base_rate_data(current_epoch.index).await?;
-        let current_rates = reader.rate_data(current_epoch.index).await?;
 
         let mut staking_token_supply = reader
             .asset_lookup(*STAKING_TOKEN_ASSET_ID)
@@ -399,6 +407,7 @@ impl Worker {
 
         let mut next_rates = Vec::new();
         let mut next_validator_statuses = Vec::new();
+        let mut reward_notes = Vec::new();
 
         // this is a bit complicated: because we're in the EndBlock phase, and the
         // delegations in this block have not yet been committed, we have to combine
@@ -410,14 +419,44 @@ impl Worker {
             *delegation_changes.entry(id_key.clone()).or_insert(0) += delta;
         }
 
-        for current_rate in &current_rates {
-            let identity_key = current_rate.identity_key.clone();
+        for validator in pending_block.validator_state_machine.validators_info() {
+            let current_rate = validator.borrow().rate_data.clone();
 
-            let funding_streams = reader.funding_streams(identity_key.clone()).await?;
+            let mut hold_rate_constant = |current_rate: RateData| {
+                // The next epoch's rate is set to the current rate
+                let mut next_rate = current_rate.clone();
+                next_rate.epoch_index = next_epoch.index;
+
+                next_rates.push(next_rate);
+                next_validator_statuses.push(validator.borrow().status.clone());
+            };
+            match validator.borrow().status.state {
+                // if a validator is slashed, their rates are updated to include the slashing penalty
+                // and then held constant.
+                //
+                // if a validator is slashed during the epoch transition the current epoch's rate is set
+                // to the slashed value (during end_block) and in here, the next epoch's rate is held constant.
+                ValidatorState::Slashed => {
+                    hold_rate_constant(current_rate);
+                    continue;
+                }
+                // if a validator isn't part of the consensus set, we do not update their rates
+                ValidatorState::Inactive => {
+                    hold_rate_constant(current_rate);
+                    continue;
+                }
+                // TODO: Are unbonding validators being handled correctly here?
+                // Their rates should be held constant, but (un)delegations need to be handled as well
+                _ => {}
+            };
+
+            let funding_streams = reader
+                .funding_streams(validator.borrow().validator.identity_key.clone())
+                .await?;
+
             let next_rate = current_rate.next(&next_base_rate, funding_streams.as_ref());
+            let identity_key = validator.borrow().validator.identity_key.clone();
 
-            // TODO: if a validator isn't part of the consensus set, should we ignore them
-            // and not update their rates?
             let delegation_delta = delegation_changes.get(&identity_key).unwrap_or(&0i64);
 
             let delegation_amount = delegation_delta.abs() as u64;
@@ -460,8 +499,7 @@ impl Worker {
                 .validator_state_machine
                 .get_state(&identity_key)
                 .cloned()
-                // If the next state can't be grabbed from the validator state machine, something is wrong.
-                .unwrap();
+                .expect("should be able to get next validator state from state machine");
             let next_status = ValidatorStatus {
                 identity_key: identity_key.clone(),
                 voting_power,
@@ -476,7 +514,7 @@ impl Worker {
                     &current_base_rate,
                 );
 
-                pending_block.add_validator_reward_note(commission_reward_amount, stream.address);
+                reward_notes.push((commission_reward_amount, stream.address));
             }
 
             // rename to curr_rate so it lines up with next_rate (same # chars)
@@ -499,6 +537,9 @@ impl Worker {
             *STAKING_TOKEN_ASSET_ID,
             (STAKING_TOKEN_DENOM.clone(), staking_token_supply),
         );
+        for reward_note in reward_notes {
+            pending_block.add_validator_reward_note(reward_note.0, reward_note.1);
+        }
 
         Ok(())
     }

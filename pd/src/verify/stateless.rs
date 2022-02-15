@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::{Context, Error};
 use penumbra_crypto::{note, Nullifier};
-use penumbra_stake::{Delegate, Undelegate, Validator};
+use penumbra_stake::{Delegate, Undelegate, Validator, ValidatorDefinition};
 use penumbra_transaction::{Action, Transaction};
 
 use super::{NoteData, PendingTransaction};
@@ -36,7 +36,7 @@ impl StatelessTransactionExt for Transaction {
         let mut new_notes = BTreeMap::<note::Commitment, NoteData>::new();
         let mut delegations = Vec::<Delegate>::new();
         let mut undelegation = None::<Undelegate>;
-        let mut validators = Vec::<Validator>::new();
+        let mut validators = Vec::<ValidatorDefinition>::new();
 
         for action in self.transaction_body().actions {
             match action {

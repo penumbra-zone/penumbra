@@ -12,6 +12,10 @@ impl state::Reader {
     pub async fn verify_stateful(
         &self,
         transaction: PendingTransaction,
+        // TODO: block_validators should just be a
+        // Vec<Validator> or Vec<ValidatorDefinition> because we can't calculate
+        // funding streams (necessary for ValidatorInfo)
+        // until end_block
         block_validators: &[ValidatorInfo],
     ) -> Result<VerifiedTransaction, Error> {
         let anchor_is_valid = self.valid_anchors_rx().borrow().contains(&transaction.root);
@@ -138,10 +142,11 @@ impl state::Reader {
 
         // Check that the sequence numbers of newly added validators are correct.
         // TODO: are any other checks necessary here?
+        // TODO: what if multiple validators are added in the same block w/ same sequence numbers?
         for v in &transaction.validators {
             let existing_v: Vec<&ValidatorInfo> = block_validators
                 .iter()
-                .filter(|z| z.validator.identity_key == v.identity_key)
+                .filter(|z| z.validator.identity_key == v.validator.identity_key)
                 .collect();
 
             if existing_v.is_empty() {
@@ -151,7 +156,7 @@ impl state::Reader {
                 // This is an existing validator definition. Ensure that the highest
                 // existing sequence number is less than the new sequence number.
                 let current_seq = existing_v.iter().map(|z| z.validator.sequence_number).max().ok_or_else(|| {anyhow::anyhow!("Validator with this ID key existed but had no existing sequence numbers")})?;
-                if v.sequence_number <= current_seq {
+                if v.validator.sequence_number <= current_seq {
                     return Err(anyhow::anyhow!(
                         "Expected sequence numbers to be increasing. Current sequence number is {}",
                         current_seq

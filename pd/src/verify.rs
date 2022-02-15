@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use penumbra_crypto::{ka, merkle, note, Nullifier};
-use penumbra_stake::{Delegate, IdentityKey, Undelegate, Validator};
+use penumbra_stake::{Delegate, IdentityKey, Undelegate, Validator, ValidatorDefinition};
 
 mod stateful;
 mod stateless;
@@ -42,7 +42,7 @@ pub struct PendingTransaction {
     /// Undelegation, if any, performed in this transaction (there must be no more than one).
     pub undelegation: Option<Undelegate>,
     /// Validators defined in the transaction.
-    pub validators: Vec<Validator>,
+    pub validators: Vec<ValidatorDefinition>,
 }
 
 /// `VerifiedTransaction` represents a transaction after all checks have passed.
@@ -63,5 +63,5 @@ pub struct VerifiedTransaction {
     /// The validators from whom an undelegation was performed in this transaction.
     pub undelegation_validator: Option<IdentityKey>,
     /// Validators added in the transaction.
-    pub new_validators: Vec<Validator>,
+    pub new_validators: Vec<ValidatorDefinition>,
 }

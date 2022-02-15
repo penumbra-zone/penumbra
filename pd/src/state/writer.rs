@@ -421,6 +421,84 @@ impl Writer {
             }
         }
 
+        // Handle adding newly added validators with default rates
+        for v in block.new_validators {
+            query!(
+                "INSERT INTO validators (
+                    identity_key,
+                    consensus_key,
+                    sequence_number,
+                    name,
+                    website,
+                    description,
+                    voting_power,
+                    validator_state,
+                    unbonding_epoch
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+                v.validator.identity_key.encode_to_vec(),
+                v.validator.consensus_key.to_bytes(),
+                v.validator.sequence_number as i64,
+                v.validator.name,
+                v.validator.website,
+                v.validator.description,
+                v.status.voting_power as i64,
+                ValidatorStateName::Active.to_str().to_string(),
+                Option::<i64>::None,
+            )
+            .execute(&mut dbtx)
+            .await?;
+
+            for FundingStream { address, rate_bps } in v.validator.funding_streams.as_ref() {
+                query!(
+                    "INSERT INTO validator_fundingstreams (
+                        identity_key,
+                        address,
+                        rate_bps
+                    ) VALUES ($1, $2, $3)",
+                    v.validator.identity_key.encode_to_vec(),
+                    address.to_string(),
+                    *rate_bps as i32,
+                )
+                .execute(&mut dbtx)
+                .await?;
+            }
+
+            // Delegations require knowing the rates for the
+            // next epoch, so pre-populate with 0 reward => exchange rate 1 for
+            // the current and next epochs.
+            for epoch in [epoch_index, epoch_index + 1] {
+                query!(
+                    "INSERT INTO validator_rates (
+                    identity_key,
+                    epoch,
+                    validator_reward_rate,
+                    validator_exchange_rate
+                ) VALUES ($1, $2, $3, $4)",
+                    v.validator.identity_key.encode_to_vec(),
+                    epoch as i64,
+                    0,
+                    1_0000_0000i64, // 1 represented as 1e8
+                )
+                .execute(&mut dbtx)
+                .await?;
+            }
+        }
+
+        // Slashed validator states are saved at the end of the block.
+        for ik in block.slashed_validators {
+            query!(
+                "UPDATE validators SET validator_state=$1 WHERE identity_key = $2",
+                ValidatorStateName::Slashed.to_str(),
+                ik.encode_to_vec(),
+            )
+            .execute(&mut dbtx)
+            .await?;
+
+            // TODO: set the validator's rate for the current epoch
+            // to the slashed value
+        }
+
+        // next_validator_statuses are only saved during epoch transitions.
         for status in block.next_validator_statuses.unwrap_or_default() {
             let (state_name, unbonding_epoch) = status.state.into();
             query!(
