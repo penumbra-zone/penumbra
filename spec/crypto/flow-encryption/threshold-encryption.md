@@ -199,3 +199,5 @@ To recombine the value, iterate over each $v_i$, packing each $v_i$ into a `u16`
 $$v = v_{ui} + v_{ui} * 2^{16} + v_{ui} * 2^{32} + v_{ui} * 2^{48} + v_{ui} * 2^{64}$$
 
 This value is bounded by $[0, 2^71]$, assuming that the coefficients in the previous step were correctly bounded.
+
+***TODO***: end-to-end complexity analysis (number of scalar mults per block, LUT size, etc)
