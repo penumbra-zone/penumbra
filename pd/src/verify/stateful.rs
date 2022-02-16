@@ -12,10 +12,6 @@ impl state::Reader {
     pub async fn verify_stateful(
         &self,
         transaction: PendingTransaction,
-        // TODO: block_validators should just be a
-        // Vec<Validator> or Vec<ValidatorDefinition> because we can't calculate
-        // funding streams (necessary for ValidatorInfo)
-        // until end_block
         block_validators: &[ValidatorInfo],
     ) -> Result<VerifiedTransaction, Error> {
         let anchor_is_valid = self.valid_anchors_rx().borrow().contains(&transaction.root);
