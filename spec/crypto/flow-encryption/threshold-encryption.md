@@ -177,24 +177,34 @@ decryption share $s_pi$:
 
 $$s_{pi} = d_{p}c_{i0}$$
 
-Then, each participant computes a proof of knowledge of $d_{p}$ relative to $c_{i0}$ by taking
+Next, each participant must compute a proof that their decryption share is well
+formed relative to the commitment to their secret share $\phi_{p} = G \cdot d_p$.
+This is accomplished by adopting the Chaum-Pedersen protocol for proving
+DH-triples.
+
+With $c_{i0}$, $s_{pi}$, and $d_p$ as inputs, each participant computes their proof $\sigma_{pi}$ by taking 
 
 $k \overset{{\scriptscriptstyle\\$}}{\leftarrow} \mathbb{F_q}$
-$u = c_{i0} \cdot k$
-$e = H(u, p, i)$
-$r = k - d_{p} \cdot e$
+$\alpha = k \cdot G$
+$\gamma = k \cdot c_{i0}$
+$e = H(i, p, \alpha, \gamma)$
+$r = k + d_p \cdot e$
 
-The proof of knowledge is the tuple $\sigma_{pi} = (r, e)$.
+The proof is the tuple $\sigma_{pi} = (r, \alpha, \gamma)$.
 
 Every participant then broadcasts their proof of knowledge $\sigma_{pi}$ along
 with their decryption share $s_{pi}$ to every other participant.
 
-After receiving $s_{pi}, \sigma_{pi} = (r, e)$ from each participant, each participant verifies that $s_{pi}$ is valid by checking
+After receiving $s_{pi}, \sigma_{pi} = (r, \alpha, \gamma)$ from each participant, each
+participant verifies that $s_{pi}$ is valid by checking
 
-$u_{v} = c_{i0} \cdot r + s_{pi} \cdot e$
-$H(u_{v}, p, i) = e$
+$e = H(i, p, \alpha, \gamma)$
+$G \cdot r \stackrel{?}{=} \alpha + \phi_{p} \cdot e$
+$c_{i0} \cdot r \stackrel{?}{=} \gamma + s_{pi} \cdot e$
 
 and aborting if verification fails. (TODO: should we ignore this participant's share, or report/slash them?)
+
+This protocol is the Chaum-Pedersen sigma protocol which here proves the relation $$\phi_{p} = G \cdot d_p \wedge s_{pi} = c_{i0} \cdot d_p$$
 
 Now each participant can sum their received and validated decryption shares by taking 
 
