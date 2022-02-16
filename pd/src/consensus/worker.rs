@@ -330,7 +330,9 @@ impl Worker {
         };
 
         // Any conflicts in validator definitions added to the pending block need to be resolved.
-        for (ik, defs) in pending_block.new_validator_definitions.iter() {
+        for (ik, defs) in pending_block.validator_definitions.iter() {
+            // TODO: Need to determine whether this is a new validator or an updated validator
+            // and insert into the appropriate vec!
             if defs.len() == 1 {
                 // If there was only one definition for an identity key, use it.
                 pending_block
