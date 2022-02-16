@@ -148,7 +148,7 @@ This holds due to the homomorphic property of ElGamal cipertexts.
 │ ┌──────────┐ │     │                         │     │                           │     
 │ │   c_1    │─┼────▶│Create Decryption Shares │     │    Gossip (ABCI++ Vote    │     
 │ └──────────┘ │     │                         │     │        Extensions)        │     
-│ ┌──────────┐ │     │  s_{pi} = -d_{p}c_{i0}  │────▶│                           │     
+│ ┌──────────┐ │     │  s_{pi} =-d_{p}c_{i0}   │────▶│                           │     
 │ │   c_2    │─┼────▶│                         │     │  v_m = sum(s_pi + c_i1)   │     
 │ └──────────┘ │     │                         │     │                           │     
 │ ┌──────────┐ │     │                         │     └───────────────────────────┘     
@@ -175,17 +175,40 @@ To decrypt each $v_e$, take each ciphertext $c_i$ and perform threshold ElGamal
 decryption using the participant's DKG private key share $d_p$ to produce
 decryption share $s_pi$:
 
-$$s_{pi} = -d_{p}c_{i0}$$
+$$s_{pi} = d_{p}c_{i0}$$
 
-Then broadcast each decryption share $s_{pi}$ to every participant. 
+Then, each participant computes a proof of knowledge of $d_{p}$ relative to $c_{i0}$ by taking
 
-Upon receiving $s_{pi}$ from every participant, perform threshold decryption by taking
+$k \overset{{\scriptscriptstyle\\$}}{\leftarrow} \mathbb{F_q}$
+$u = c_{i0} \cdot k$
+$e = H(u, p, i)$
+$r = k - d_{p} \cdot e$
 
-$$v_m = \sum_{p=0}^{n} s_{pi} + c_{i1}$$
+The proof of knowledge is the tuple $\sigma_{pi} = (r, e)$.
 
-***TODO/NOTE***: This needs a notion of *verifiability*: a single participant can influence the decryption of $v_m$ by biasing their broadcast $s_{pi}$. Can we address this with a commitment, or is a SNARK required? 
+Every participant then broadcasts their proof of knowledge $\sigma_{pi}$ along
+with their decryption share $s_{pi}$ to every other participant.
 
-***TODO/NOTE***: As described, this is a n/n scheme. How do we transform it to t/n for an arbitrary `t`? (lagrange interpolation)
+After receiving $s_{pi}, \sigma_{pi} = (r, e)$ from each participant, each participant verifies that $s_{pi}$ is valid by checking
+
+$u_{v} = c_{i0} \cdot r + s_{pi} \cdot e$
+$H(u_{v}, p, i) = e$
+
+and aborting if verification fails. (TODO: should we ignore this participant's share, or report/slash them?)
+
+Now each participant can sum their received and validated decryption shares by taking 
+
+$$d = \sum_{p=0}^{n} s_{pi} \lambda_{0,i}$$
+
+where $\lambda_{i}$ is the lagrange coefficient (for x=0) at $i$, defined by 
+
+$$\lambda_{0,i} = \prod_{n \in S, n \neq i} \frac{n}{n - i}$$
+
+where $S$ is the set of all participant indicies.
+
+Then, compute the resulting decryption by taking
+
+$$v_m = -d + c_{i1}$$
 
 Now we have the output $v_m = [v_{im}...]$. Each $v_{im}$ is a `decaf377` group
 element. Use our lookup table $LUT$ from the setup phase to transform each
@@ -201,12 +224,11 @@ $$v = v_{ui} + v_{ui} * 2^{16} + v_{ui} * 2^{32} + v_{ui} * 2^{48} + v_{ui} * 2^
 This value is bounded by $[0, 2^71]$, assuming that the coefficients in the previous step were correctly bounded.
 
 
-## Notes
+## Note
 
 On verifiability, this scheme must include some snark proof that coefficients
-were honestly created from values, and that values were honestly aggregated.
-This can be accomplished by providing a SNARK proof $\pi$ that accompanies each
-value and each aggregated value. 
+were correctly created from input values. This can be accomplished by providing
+a SNARK proof $\pi$ that accompanies each value.
 
 
 
