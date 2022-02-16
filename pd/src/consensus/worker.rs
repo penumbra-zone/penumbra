@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use std::borrow::Borrow;
+use std::{borrow::Borrow, collections::BTreeMap};
 
 use anyhow::{anyhow, Result};
 use futures::StreamExt;
@@ -7,7 +7,8 @@ use metrics::absolute_counter;
 use penumbra_crypto::{asset, merkle::NoteCommitmentTree};
 use penumbra_proto::Protobuf;
 use penumbra_stake::{
-    RateData, ValidatorState, ValidatorStatus, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
+    RateData, ValidatorDefinition, ValidatorInfo, ValidatorState, ValidatorStatus,
+    STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
 };
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, ConsensusRequest as Request, ConsensusResponse as Response};
@@ -301,6 +302,51 @@ impl Worker {
         }
         drop(slashed_notes);
         drop(slashed_nullifiers);
+
+        let make_validator = |v: ValidatorDefinition| -> ValidatorInfo {
+            ValidatorInfo {
+                validator: v.validator.clone(),
+                // TODO: This is definitely wrong in the case of updated validator
+                // definitions and would allow resetting state/rate data!
+                //
+                // These should be pulled from the existing validator if it exists!
+                status: ValidatorStatus {
+                    identity_key: v.validator.identity_key.clone(),
+                    // Voting power for inactive validators is 0
+                    voting_power: 0,
+                    state: ValidatorState::Inactive,
+                },
+                rate_data: RateData {
+                    identity_key: v.validator.identity_key.clone(),
+                    epoch_index: epoch.index,
+                    // Validator reward rate is held constant for inactive validators.
+                    // Stake committed to inactive validators earns no rewards.
+                    validator_reward_rate: 0,
+                    // Exchange rate for inactive validators is held constant
+                    // and starts at 1
+                    validator_exchange_rate: 1,
+                },
+            }
+        };
+
+        // Any conflicts in validator definitions added to the pending block need to be resolved.
+        for (ik, defs) in pending_block.new_validator_definitions.iter() {
+            if defs.len() == 1 {
+                // If there was only one definition for an identity key, use it.
+                pending_block
+                    .new_validators
+                    .push(make_validator(defs[0].clone()));
+                continue;
+            }
+
+            // Sort the validator definitions into buckets by their sequence number.
+            let new_validator_definitions_by_seq =
+                BTreeMap::<u32, Vec<ValidatorDefinition>>::from_iter(
+                    defs.iter()
+                        .sorted_by_key(|def| def.validator.sequence_number)
+                        .map(|def| (def.validator.sequence_number, vec![def.clone()])),
+                );
+        }
 
         // If we are at the end of an epoch, process changes for it
         if epoch.end_height().value() == height {

@@ -9,7 +9,7 @@ use penumbra_crypto::{
     note, Address, Fq, Note, Nullifier, One, Value,
 };
 use penumbra_stake::{
-    BaseRateData, Epoch, IdentityKey, RateData, ValidatorInfo, ValidatorState,
+    BaseRateData, Epoch, IdentityKey, RateData, ValidatorDefinition, ValidatorInfo, ValidatorState,
     ValidatorStateMachine, ValidatorStatus, STAKING_TOKEN_ASSET_ID,
 };
 use tendermint::PublicKey;
@@ -54,6 +54,10 @@ pub struct PendingBlock {
     /// During end_block, validator state changes will be copied to `self.next_validator_statuses`
     /// and then saved to the database during commit_block.
     pub validator_state_machine: ValidatorStateMachine,
+    /// New validator definitions added during the block. Since multiple definitions could
+    /// come in for the same validator during a block, we need to deterministically pick
+    /// one definition to use. This will be pushed to `self.new_validators` during end_block.
+    pub new_validator_definitions: BTreeMap<IdentityKey, Vec<ValidatorDefinition>>,
     /// New validators added during the block. Saved and available for staking when the block is committed.
     pub new_validators: Vec<ValidatorInfo>,
     /// Validators slashed during this block. Saved when the block is committed.
@@ -99,6 +103,7 @@ impl PendingBlock {
             unbonding_nullifiers: BTreeSet::new(),
             reverting_nullifiers: BTreeSet::new(),
             validator_state_machine: ValidatorStateMachine::new(block_validators),
+            new_validator_definitions: BTreeMap::new(),
             new_validators: Vec::new(),
             slashed_validators: Vec::new(),
         }
@@ -210,6 +215,10 @@ impl PendingBlock {
         for v in transaction.new_validators {
             let validator_info = ValidatorInfo {
                 validator: v.validator.clone(),
+                // TODO: This is definitely wrong in the case of updated validator
+                // definitions and would allow resetting state/rate data!
+                //
+                // These should be pulled from the existing validator if it exists!
                 status: ValidatorStatus {
                     identity_key: v.validator.identity_key.clone(),
                     // Voting power for inactive validators is 0
@@ -227,8 +236,26 @@ impl PendingBlock {
                     validator_exchange_rate: 1,
                 },
             };
-            self.new_validators.push(validator_info.clone());
-            self.validator_state_machine.add_validator(validator_info);
+            if let Some(vd) = self
+                .new_validator_definitions
+                .get_mut(&v.validator.identity_key)
+            {
+                vd.push(v.clone());
+            } else {
+                self.new_validator_definitions
+                    .insert(v.validator.identity_key.clone(), vec![v.clone()]);
+            }
+            // TODO: This might not be right, since the new validator definition
+            // needs to be resolved during end_block. If multiple validators
+            // are defined for the same sequence ID within a transaction, it
+            // is possible that state could be overriden for a validator as a
+            // result.
+            //
+            // For example:
+            // Validator A is slashed during begin_block, but then an updated
+            // ValidatorDefinition is submitted for Validator A in the same block.
+            self.validator_state_machine
+                .add_validator(validator_info.clone());
         }
     }
 
