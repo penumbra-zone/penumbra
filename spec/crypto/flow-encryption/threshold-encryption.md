@@ -65,41 +65,40 @@ $$v_q = v_0 + v_1 2^{16} + v_2 2^{32} + v_3 2^{48}$$ with $v_i \in [0, 2^{16}]$.
 
 Then, perform ElGamal encryption to form the ciphertext $v_e$ by taking (for each $v_i$)
 
-$M_i = v_i*G$
+$$M_i = v_i*G$$
+$$e \overset{rand}{\leftarrow} \mathbb{F_q}$$
+$$c_i = (e*G,  M_i + e*D)$$
 
-$e \overset{{\scriptscriptstyle\\$}}{\leftarrow} \mathbb{F_q}$
-
-$c_i = (e\mathbb{G},  M_i + eD)$
-
-
-Where $\mathbb{G}$ is the basepoint generator for `decaf377`, $\mathbb{F_q}$ is
+Where $G$ is the basepoint generator for `decaf377`, $\mathbb{F_q}$ is
 the scalar field, and $D$ is the public key output from [DKG](./dkg.md).
 
 Next, compute a proof of correctness of the ElGamal encryption by executing the following protocol:
 
-$k_{1} \overset{{\scriptscriptstyle\\$}}{\leftarrow} \mathbb{F_q}$
-$k_{2} \overset{{\scriptscriptstyle\\$}}{\leftarrow} \mathbb{F_q}$
-$r = k_{1}*G + k_{2}*D$
-$s = k_{2}*G$
-$c = H(r, s)$ 
+$$k_{1} \overset{rand}{\leftarrow} \mathbb{F_q} $$
+$$k_{2} \overset{rand}{\leftarrow} \mathbb{F_q}$$
+$$\alpha = k_{1}*G + k_{2}*D$$
+$$\gamma = k_{2}*G$$
+$$c = H(r, s)$$
 
-$\alpha = k_{1} + v_i*c$
-$\gamma = k_{2} + e*c$
+$$r = k_{1} + v_i*c$$
+$$s = k_{2} + e*c$$
 
-The proof is then $\sigma_{c_i} = (\alpha, \gamma, r, s)$.
+The proof is then $\sigma_{c_i} = (r, s, \alpha, \gamma)$.
 The encryption of value $v$ is given as $v_e = [c_1, c_2, c_3, c_4]$.
 
 Upon receiving an encrypted value $v_e$ with proofs $\sigma_{c_i}$, a validator
 or validating full node should verify each proof $\sigma_{c_i}$ by checking
 
-$c = H(r, s)$
-$G*\gamma \stackrel{?}{=} s + c_{i0}*c$
-$G*\alpha + D*\gamma \stackrel{?}{=} r + c_{i1}*c$
+$$c = H(r, s)$$
+$$G*s \stackrel{?}{=} \gamma + c_{i0}*c$$
+$$G*r+ D*s \stackrel{?}{=} \alpha + c_{i1}*c$$
 
 Considering the value invalid if the proof fails to verify.
 
-Each ciphertext $c_i$ is two group elements. `decaf377` group elements are
-encoded as 32-byte values, thus every encrypted value $v_e$ is 256 bytes.
+Each ciphertext $c_i$ is two group elements, accompanied by a proof
+$\sigma_{c_i}$ which is two group elements and two scalars. `decaf377` group
+elements and scalars are encoded as 32-byte values, thus every encrypted value
+$v_e$ combined with its proof $\sigma_{ci}$ is $6*32*4$ = 768 bytes.
 
 ### Value Aggregation
 
@@ -212,11 +211,11 @@ DH-triples.
 
 With $c_{i0}$, $s_{pi}$, and $d_p$ as inputs, each participant computes their proof $\sigma_{pi}$ by taking 
 
-$k \overset{{\scriptscriptstyle\\$}}{\leftarrow} \mathbb{F_q}$
-$\alpha = k \cdot G$
-$\gamma = k \cdot c_{i0}$
-$e = H(i, p, \alpha, \gamma)$
-$r = k + d_p \cdot e$
+$$k \overset{rand}{\leftarrow} \mathbb{F_q}$$
+$$\alpha = k * G$$
+$$\gamma = k * c_{i0}$$
+$$e = H(i, p, \alpha, \gamma)$$
+$$r = k + d_p * e$$
 
 The proof is the tuple $\sigma_{pi} = (r, \alpha, \gamma)$.
 
@@ -226,13 +225,13 @@ with their decryption share $s_{pi}$ to every other participant.
 After receiving $s_{pi}, \sigma_{pi} = (r, \alpha, \gamma)$ from each participant, each
 participant verifies that $s_{pi}$ is valid by checking
 
-$e = H(i, p, \alpha, \gamma)$
-$G \cdot r \stackrel{?}{=} \alpha + \phi_{p} \cdot e$
-$c_{i0} \cdot r \stackrel{?}{=} \gamma + s_{pi} \cdot e$
+$$e = H(i, p, \alpha, \gamma)$$
+$$G * r \stackrel{?}{=} \alpha + \phi_{p} * e$$
+$$c_{i0} * r \stackrel{?}{=} \gamma + s_{pi} * e$$
 
 and aborting if verification fails. (TODO: should we ignore this participant's share, or report/slash them?)
 
-This protocol is the Chaum-Pedersen sigma protocol which here proves the relation $$\phi_{p} = G \cdot d_p \wedge s_{pi} = c_{i0} \cdot d_p$$
+This protocol is the Chaum-Pedersen sigma protocol which here proves the relation $$\phi_{p} = G * d_p \wedge s_{pi} = c_{i0} * d_p$$
 
 Now each participant can sum their received and validated decryption shares by taking 
 
@@ -266,7 +265,9 @@ This value is bounded by $[0, 2^71]$, assuming that the coefficients in the prev
 
 On verifiability, this scheme must include some snark proof that coefficients
 were correctly created from input values. This can be accomplished by providing
-a SNARK proof $\pi$ that accompanies each value.
+a SNARK proof $\pi$ that accompanies each value. It may also be desirable to
+SNARK the sigma protocol given in the value encryption phase in order to save
+on chain space.
 
 
 
