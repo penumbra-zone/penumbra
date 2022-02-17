@@ -328,7 +328,7 @@ impl Worker {
                     state: ValidatorState::Inactive,
                 },
                 rate_data: RateData {
-                    identity_key: v.validator.identity_key.clone(),
+                    identity_key: v.validator.identity_key,
                     epoch_index: epoch.index,
                     // Validator reward rate is held constant for inactive validators.
                     // Stake committed to inactive validators earns no rewards.
