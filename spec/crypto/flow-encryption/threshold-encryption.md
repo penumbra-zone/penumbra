@@ -27,34 +27,36 @@ Store $LUT$ for later use in value decryption.
 ### Value Encryption
 
 ```
-                                  ┌───────────────────┐                    
-                                  │DKG Public Key (D) │                    
-                                  │                   │                    
-                                  └───────────────────┘                    
-                                            │                              
-                                  ┌─────────▼─────────┐    ┌──────────────┐
-                                  │                   │    │     v_e      │
-                                  │                   │    │  (encrypted  │
-                                  │                   │    │    value)    │
-                  ┌──────────┐    │                   │    │ ┌──────────┐ │
-               ┌─▶│v_0 (u16) │────▶                   ├────┼▶│   c_0    │ │
-               │  └──────────┘    │                   │    │ └──────────┘ │
-               │  ┌──────────┐    │ElGamal Encryption │    │ ┌──────────┐ │
-┌────────────┐ ├─▶│v_1 (u16) │────▶   D: DKG Pubkey   ├────┼▶│   c_1    │ │
-│            │ │  └──────────┘    │     M = v_i*G     │    │ └──────────┘ │
-│v [0, 2^64) │─┤  ┌──────────┐    │     e <- F_q      │    │ ┌──────────┐ │
-│            │ ├─▶│v_2 (u16) │────▶ c_i = (e*G, M+eD) ├────┼▶│   c_2    │ │
-└────────────┘ │  └──────────┘    │                   │    │ └──────────┘ │
-               │  ┌──────────┐    │                   │    │ ┌──────────┐ │
-               └─▶│v_3 (u16) │────▶                   ├────┼▶│   c_3    │ │
-                  └──────────┘    │                   │    │ └──────────┘ │
-                                  │                   │    │              │
-                                  │                   │    │              │
-                                  └───────────────────┘    └──────────────┘
+                                  ┌───────────────────┐                           
+                                  │DKG Public Key (D) │                           
+                                  │                   │                           
+                                  └───────────────────┘                           
+                                            │                                     
+                                  ┌─────────▼─────────┐    ┌──────────────┐       
+                                  │                   │    │     v_e      │       
+                                  │                   │    │  (encrypted  │       
+                                  │                   │    │    value)    │       
+                  ┌──────────┐    │ElGamal Encryption │    │ ┌──────────┐ │       
+               ┌─▶│v_0 (u16) │────▶   D: DKG Pubkey   ├────┼▶│   c_0    │ │       
+               │  └──────────┘    │     M = v_i*G     │    │ └──────────┘ │       
+               │  ┌──────────┐    │     e <- F_q      │    │ ┌──────────┐ │       
+┌────────────┐ ├─▶│v_1 (u16) │────▶ c_i = (e*G, M+eD) ├────┼▶│   c_1    │ │       
+│            │ │  └──────────┘    │                   │    │ └──────────┘ │       
+│v [0, 2^64) │─┤  ┌──────────┐    │                   │    │ ┌──────────┐ │       
+│            │ ├─▶│v_2 (u16) │────▶ Correctness Proof ├────┼▶│   c_2    │ │       
+└────────────┘ │  └──────────┘    │         σ         │    │ └──────────┘ │       
+               │  ┌──────────┐    │                   │    │ ┌──────────┐ │       
+               └─▶│v_3 (u16) │────▶                   ├────┼▶│   c_3    │ │       
+                  └──────────┘    │                   │    │ └──────────┘ │       
+                                  │                   │    │              │       
+                                  │                   │    │              │       
+                                  └───────────────────┘    └──────────────┘       
+                                            │                                     
+                                            │           ┌────────────────────────┐
+                                            └──────────▶│proofs σ_ci = (α,γ,r,s) │
+                                                        └────────────────────────┘
 ```
 
-
-A sketch of one construction is as follows.
 
 A *value* $v$ is given by an unsigned 64-bit integer $v \in [0, 2^{64})$. Split $v$ into four 16-bit limbs 
 
@@ -73,7 +75,28 @@ $c_i = (e\mathbb{G},  M_i + eD)$
 Where $\mathbb{G}$ is the basepoint generator for `decaf377`, $\mathbb{F_q}$ is
 the scalar field, and $D$ is the public key output from [DKG](./dkg.md).
 
+Next, compute a proof of correctness of the ElGamal encryption by executing the following protocol:
+
+$k_{1} \overset{{\scriptscriptstyle\\$}}{\leftarrow} \mathbb{F_q}$
+$k_{2} \overset{{\scriptscriptstyle\\$}}{\leftarrow} \mathbb{F_q}$
+$r = k_{1}*G + k_{2}*D$
+$s = k_{2}*G$
+$c = H(r, s)$ 
+
+$\alpha = k_{1} + v_i*c$
+$\gamma = k_{2} + e*c$
+
+The proof is then $\sigma_{c_i} = (\alpha, \gamma, r, s)$.
 The encryption of value $v$ is given as $v_e = [c_1, c_2, c_3, c_4]$.
+
+Upon receiving an encrypted value $v_e$ with proofs $\sigma_{c_i}$, a validator
+or validating full node should verify each proof $\sigma_{c_i}$ by checking
+
+$c = H(r, s)$
+$G*\gamma \stackrel{?}{=} s + c_{i0}*c$
+$G*\alpha + D*\gamma \stackrel{?}{=} r + c_{i1}*c$
+
+Considering the value invalid if the proof fails to verify.
 
 Each ciphertext $c_i$ is two group elements. `decaf377` group elements are
 encoded as 32-byte values, thus every encrypted value $v_e$ is 256 bytes.
@@ -135,40 +158,45 @@ $$v_n = v_e + v_e' = [c_0+c_0', c_1+c_1', c_2+c_2', c_3+c_3'] = \cdots = v_q + v
 
 This holds due to the homomorphic property of ElGamal cipertexts.
 
+Aggregation can be publicly verified by any validator or validating full node,
+by simply publicly adding together all ciphertexts and verifying that the same
+result as $v_{agg}$ was achieved.
+
 
 ### Value Decryption
 ```
-┌──────────────┐                                                                       
-│     v_e      │                                                                       
-│  (encrypted  │                                                                       
-│    value)    │                                                                       
-│ ┌──────────┐ │     ┌─────────────────────────┐                                       
-│ │   c_0    │─┼────▶│                         │                                       
-│ └──────────┘ │     │                         │     ┌───────────────────────────┐     
-│ ┌──────────┐ │     │                         │     │                           │     
-│ │   c_1    │─┼────▶│Create Decryption Shares │     │    Gossip (ABCI++ Vote    │     
-│ └──────────┘ │     │                         │     │        Extensions)        │     
-│ ┌──────────┐ │     │  s_{pi} =-d_{p}c_{i0}   │────▶│                           │     
-│ │   c_2    │─┼────▶│                         │     │  v_m = sum(s_pi + c_i1)   │     
-│ └──────────┘ │     │                         │     │                           │     
-│ ┌──────────┐ │     │                         │     └───────────────────────────┘     
-│ │   c_3    │─┼────▶│                         │                   │                   
-│ └──────────┘ │     └─────────────────────────┘                   │     ┌───────┐     
-│              │                                                   │     │  LUT  │     
-│              │                                                   │     └───┬───┘     
-└──────────────┘    ┌─────────────────────────┐     ┌──────────────▼─────────▼────────┐
-                    │                         │     │       Reverse dLog Lookup       │
-                    │ Reconstruct from Limbs  │     │                                 │
-                    │                         │◀────│v_q = [LUT[v_mi], ..., LUT[v_mn]]│
-                    │                         │     │                                 │
-                    └─────────────────────────┘     └─────────────────────────────────┘
-                                 │                                                     
-                                 │                                                     
-                            ┌────▼────┐                                                
-                            │         │                                                
-                            │v (u128) │                                                
-                            │         │                                                
-                            └─────────┘                                                
+┌──────────────┐                                                                        
+│     v_e      │                                                                        
+│  (encrypted  │                                                                        
+│    value)    │                                                                        
+│ ┌──────────┐ │     ┌─────────────────────────┐                                        
+│ │   c_0    │─┼────▶│                         │    ┌─────────────────────────────────┐ 
+│ └──────────┘ │     │                         │    │       Gossip (ABCI++ Vote       │ 
+│ ┌──────────┐ │     │                         │    │           Extensions)           │ 
+│ │   c_1    │─┼────▶│Decryption Shares + Proof│    │                                 │ 
+│ └──────────┘ │     │                         │    │        verify share proof       │ 
+│ ┌──────────┐ │     │  s_{pi} = d_{p}c_{i0}   │───▶│          σ_pi for s_pi          │ 
+│ │   c_2    │─┼────▶│   σ_{pi} = (r, α, γ)    │    │                                 │ 
+│ └──────────┘ │     │                         │    │      d = sum(s_pi*λ_{0,i})      │ 
+│ ┌──────────┐ │     │                         │    │        v_mi = -d + c_{i1}       │ 
+│ │   c_3    │─┼────▶│                         │    │                                 │ 
+│ └──────────┘ │     └─────────────────────────┘    └─────────────────────────────────┘ 
+│              │                                                     │    ┌───────┐     
+│              │                                                    ┌┘    │  LUT  │     
+└──────────────┘                                                    │     └───┬───┘     
+                   ┌─────────────────────────┐       ┌──────────────▼─────────▼────────┐
+                   │                         │       │       Reverse dLog Lookup       │
+                   │ Reconstruct from Limbs  │       │                                 │
+                   │                         │◀──────│v_q = [LUT[v_mi], ..., LUT[v_mn]]│
+                   │                         │       │                                 │
+                   └─────────────────────────┘       └─────────────────────────────────┘
+                                │                                                       
+                                ▼                                                       
+                           ┌─────────┐                                                  
+                           │         │                                                  
+                           │v (u128) │                                                  
+                           │         │                                                  
+                           └─────────┘                                                   
 ```
 
 To decrypt each $v_e$, take each ciphertext $c_i$ and perform threshold ElGamal
