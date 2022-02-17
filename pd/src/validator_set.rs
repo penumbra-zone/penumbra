@@ -80,12 +80,67 @@ impl BlockValidatorSet {
         })
     }
 
-    // Called during `end_block`. Will calculate validator changes that can happen during any block.
-    pub fn end_block(&mut self) {}
+    // Called during `end_block`. Responsible for resolving conflicting ValidatorDefinitions
+    // that came in during the block and updating `validator_set` with new validator info.
+    pub fn end_block(&mut self) {
+        let make_validator = |v: ValidatorDefinition| -> ValidatorInfo {
+            ValidatorInfo {
+                validator: v.validator.clone(),
+                // TODO: This is definitely wrong in the case of updated validator
+                // definitions and would allow resetting state/rate data!
+                //
+                // These should be pulled from the existing validator if it exists!
+                status: ValidatorStatus {
+                    identity_key: v.validator.identity_key.clone(),
+                    // Voting power for inactive validators is 0
+                    voting_power: 0,
+                    state: ValidatorState::Inactive,
+                },
+                rate_data: RateData {
+                    identity_key: v.validator.identity_key,
+                    epoch_index: self.epoch.as_ref().unwrap().index,
+                    // Validator reward rate is held constant for inactive validators.
+                    // Stake committed to inactive validators earns no rewards.
+                    validator_reward_rate: 0,
+                    // Exchange rate for inactive validators is held constant
+                    // and starts at 1
+                    validator_exchange_rate: 1,
+                },
+            }
+        };
+
+        // Any conflicts in validator definitions added to the pending block need to be resolved.
+        for (ik, defs) in self.validator_definitions.iter_mut() {
+            // Ensure the definitions are sorted by sequence number
+            defs.sort_by(|a, b| {
+                b.validator
+                    .sequence_number
+                    .cmp(&a.validator.sequence_number)
+            });
+            // TODO: Need to determine whether this is a new validator or an updated validator
+            // and insert into the appropriate vec!
+            if defs.len() == 1 {
+                // If there was only one definition for an identity key, use it.
+                self.new_validators.push(make_validator(defs[0].clone()));
+                continue;
+            }
+
+            // Sort the validator definitions into buckets by their sequence number.
+            let new_validator_definitions_by_seq =
+                Vec::<(u32, Vec<ValidatorDefinition>)>::from_iter(
+                    defs.iter()
+                        .map(|def| (def.validator.sequence_number, vec![def.clone()])),
+                );
+
+            // The highest sequence number bucket wins.
+            let highest_seq_bucket = &new_validator_definitions_by_seq[0];
+        }
+    }
 
     // Called during `end_epoch`. Will calculate validator changes that can only happen during epoch changes.
     pub fn end_epoch(&mut self) {}
 
+    // TODO: this should *only* be called during `end_block`.
     pub fn add_validator(&mut self, validator: ValidatorInfo) {
         self.validator_set
             .insert(validator.validator.identity_key.clone(), validator);

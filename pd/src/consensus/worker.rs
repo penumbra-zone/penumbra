@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use std::{borrow::Borrow, collections::BTreeMap};
 
 use anyhow::{anyhow, Result};
@@ -314,53 +313,10 @@ impl Worker {
         drop(slashed_notes);
         drop(slashed_nullifiers);
 
-        let make_validator = |v: ValidatorDefinition| -> ValidatorInfo {
-            ValidatorInfo {
-                validator: v.validator.clone(),
-                // TODO: This is definitely wrong in the case of updated validator
-                // definitions and would allow resetting state/rate data!
-                //
-                // These should be pulled from the existing validator if it exists!
-                status: ValidatorStatus {
-                    identity_key: v.validator.identity_key.clone(),
-                    // Voting power for inactive validators is 0
-                    voting_power: 0,
-                    state: ValidatorState::Inactive,
-                },
-                rate_data: RateData {
-                    identity_key: v.validator.identity_key,
-                    epoch_index: epoch.index,
-                    // Validator reward rate is held constant for inactive validators.
-                    // Stake committed to inactive validators earns no rewards.
-                    validator_reward_rate: 0,
-                    // Exchange rate for inactive validators is held constant
-                    // and starts at 1
-                    validator_exchange_rate: 1,
-                },
-            }
-        };
-
-        // Any conflicts in validator definitions added to the pending block need to be resolved.
-        for (ik, defs) in self.block_validator_set.validator_definitions.iter() {
-            // TODO: Need to determine whether this is a new validator or an updated validator
-            // and insert into the appropriate vec!
-            if defs.len() == 1 {
-                // If there was only one definition for an identity key, use it.
-                &self
-                    .block_validator_set
-                    .new_validators
-                    .push(make_validator(defs[0].clone()));
-                continue;
-            }
-
-            // Sort the validator definitions into buckets by their sequence number.
-            let new_validator_definitions_by_seq =
-                BTreeMap::<u32, Vec<ValidatorDefinition>>::from_iter(
-                    defs.iter()
-                        .sorted_by_key(|def| def.validator.sequence_number)
-                        .map(|def| (def.validator.sequence_number, vec![def.clone()])),
-                );
-        }
+        // Validator updates need to be sent back to Tendermint during end_block, so we need to
+        // tell the validator set the block has ended so it can resolve conflicts and prepare
+        // data to commit.
+        self.block_validator_set.end_block();
 
         // If we are at the end of an epoch, process changes for it
         if epoch.end_height().value() == height {
@@ -619,9 +575,10 @@ impl Worker {
             .chain_params_rx()
             .borrow()
             .validator_limit;
+        // Sort the next validator states by voting power.
+        next_validator_statuses.sort_by(|a, b| a.voting_power.cmp(&b.voting_power));
         let top_validators = next_validator_statuses
             .iter()
-            .sorted_by(|a, b| b.voting_power.cmp(&a.voting_power))
             .take(validator_limit as usize)
             .map(|v| v.identity_key.clone())
             .collect::<Vec<_>>();
