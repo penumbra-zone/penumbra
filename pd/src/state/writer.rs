@@ -533,7 +533,7 @@ impl Writer {
         valid_anchors.push_front(nct_anchor);
         let next_rate_data = block_validator_set.next_rates.as_ref().map(|next_rates| {
             next_rates
-                .into_iter()
+                .iter()
                 .map(|rd| (rd.identity_key.clone(), rd.clone()))
                 .collect::<RateDataById>()
         });

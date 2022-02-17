@@ -1,4 +1,4 @@
-use std::{borrow::Borrow, collections::BTreeMap};
+use std::borrow::Borrow;
 
 use anyhow::{anyhow, Result};
 use futures::StreamExt;
@@ -6,8 +6,7 @@ use metrics::absolute_counter;
 use penumbra_crypto::{asset, merkle::NoteCommitmentTree};
 use penumbra_proto::Protobuf;
 use penumbra_stake::{
-    RateData, ValidatorDefinition, ValidatorInfo, ValidatorState, ValidatorStatus,
-    STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
+    RateData, ValidatorState, ValidatorStatus, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
 };
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, ConsensusRequest as Request, ConsensusResponse as Response};
@@ -106,10 +105,7 @@ impl Worker {
 
         // Now start building the genesis block:
         self.note_commitment_tree = NoteCommitmentTree::new(0);
-        let reader = self.state.private_reader();
-        let block_validators = reader.validator_info(true).await?;
-        let mut genesis_block =
-            PendingBlock::new(self.note_commitment_tree.clone(), block_validators);
+        let mut genesis_block = PendingBlock::new(self.note_commitment_tree.clone());
         genesis_block.set_height(0, app_state.chain_params.epoch_duration);
 
         // Create a genesis transaction to record genesis notes.
@@ -192,12 +188,7 @@ impl Worker {
         absolute_counter!("node_notes_total", block_metrics.note_count);
 
         assert!(self.pending_block.is_none());
-        let reader = self.state.private_reader();
-        let block_validators = reader.validator_info(true).await?;
-        self.pending_block = Some(PendingBlock::new(
-            self.note_commitment_tree.clone(),
-            block_validators,
-        ));
+        self.pending_block = Some(PendingBlock::new(self.note_commitment_tree.clone()));
 
         let slashing_penalty = self
             .state
@@ -322,11 +313,6 @@ impl Worker {
         if epoch.end_height().value() == height {
             self.end_epoch().await?;
         }
-
-        let pending_block = self
-            .pending_block
-            .as_ref()
-            .expect("pending block must be Some in EndBlock");
 
         // Send the next voting powers back to tendermint. This also
         // incorporates any newly added validators.

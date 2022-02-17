@@ -1,6 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use anyhow::Result;
 use ark_ff::PrimeField;
 use decaf377::Fr;
 use penumbra_crypto::{
@@ -8,11 +7,7 @@ use penumbra_crypto::{
     merkle::{Frontier, NoteCommitmentTree},
     note, Address, Fq, Note, Nullifier, One, Value,
 };
-use penumbra_stake::{
-    BaseRateData, Epoch, IdentityKey, RateData, ValidatorDefinition, ValidatorInfo, ValidatorState,
-    ValidatorStatus, STAKING_TOKEN_ASSET_ID,
-};
-use tendermint::PublicKey;
+use penumbra_stake::{Epoch, IdentityKey, STAKING_TOKEN_ASSET_ID};
 use tracing::instrument;
 
 use crate::verify::{NoteData, PositionedNoteData, VerifiedTransaction};
@@ -59,10 +54,7 @@ pub struct QuarantineGroup {
 }
 
 impl PendingBlock {
-    pub fn new(
-        note_commitment_tree: NoteCommitmentTree,
-        block_validators: Vec<ValidatorInfo>,
-    ) -> Self {
+    pub fn new(note_commitment_tree: NoteCommitmentTree) -> Self {
         Self {
             height: None,
             note_commitment_tree,
@@ -177,10 +169,5 @@ impl PendingBlock {
         for (identity_key, delegation_change) in transaction.delegation_changes {
             *self.delegation_changes.entry(identity_key).or_insert(0) += delegation_change;
         }
-
-        let current_epoch = self
-            .epoch
-            .as_ref()
-            .expect("expected epoch to be set on pending_block");
     }
 }
