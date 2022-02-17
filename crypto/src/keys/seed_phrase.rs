@@ -116,6 +116,8 @@ impl std::str::FromStr for SeedPhrase {
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use super::*;
 
     #[test]
@@ -148,6 +150,24 @@ mod tests {
             let randomness = hex::decode(hex_randomness).expect("can decode test vector");
             let actual_phrase = SeedPhrase::from_randomness(randomness.clone().try_into().unwrap());
             assert_eq!(actual_phrase.to_string(), *expected_phrase);
+        }
+    }
+
+    #[test]
+    fn seed_phrase_from_str() {
+        let invalid_phrases = [
+            "too short",
+            "zoo zoooooooo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo vote", // Invalid word
+        ];
+        for phrase in invalid_phrases {
+            assert!(SeedPhrase::from_str(phrase).is_err());
+        }
+
+        let valid_phrases = [
+            "zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo vote"
+        ];
+        for phrase in valid_phrases {
+            assert!(SeedPhrase::from_str(phrase).is_ok());
         }
     }
 }
