@@ -8,7 +8,7 @@ batching procedure, leaving the mechanics of the trading function for later.
 
 A key challenge in the design of any private swap mechanism is that
 zero-knowledge proofs only allow privacy for user-specific state, not for global
-state, because [they don't let you prove statements about things that you don't know][barrywhitehat-private-uniswap].  While users can prove that their
+state, because [they don't let you prove statements about things that you don't know](https://ethresear.ch/t/why-you-cant-build-a-private-uniswap-with-zkps/7754).  While users can prove that their
 user-specific state was updated correctly without revealing it, they cannot
 do so for other users' state.
 
