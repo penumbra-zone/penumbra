@@ -20,12 +20,12 @@ pub enum WalletCmd {
     },
     /// Import from an existing seed phrase.
     ImportFromPhrase {
-        /// A 24 word phrase.
+        /// A 24 word phrase in quotes.
         seed_phrase: String,
     },
     /// Export the spend seed for the wallet.
     Export,
-    /// Generate a new spend seed.
+    /// Generate a new seed phrase.
     Generate,
     /// Keep the spend seed, but reset all other client state.
     Reset,
@@ -57,7 +57,7 @@ impl WalletCmd {
                 // xxx: Something better should be done here, this is in danger of being
                 // shared by users accidentally in log output.
                 println!(
-                    "YOUR PRIVATE SEED PHRASE: {}. DO NOT SHARE WITH ANYONE.",
+                    "YOUR PRIVATE SEED PHRASE: {}\nDO NOT SHARE WITH ANYONE!",
                     seed_phrase
                 );
 
