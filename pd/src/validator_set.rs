@@ -82,14 +82,17 @@ impl BlockValidatorSet {
 
     // Called during `end_block`. Responsible for resolving conflicting ValidatorDefinitions
     // that came in during the block and updating `validator_set` with new validator info.
+    //
+    // Any *state changes* (i.e. ValidatorState) should have already been applied to `validator_set`
+    // by the time this is called!
     pub fn end_block(&mut self) {
+        let epoch = self.epoch.as_ref().unwrap().clone();
+        // This closure is used to generate a new ValidatorInfo from a ValidatorDefinition.
+        // This should *only* be called for *new validators* as it sets the validator's state
+        // to Inactive and sets default rate data!
         let make_validator = |v: ValidatorDefinition| -> ValidatorInfo {
             ValidatorInfo {
                 validator: v.validator.clone(),
-                // TODO: This is definitely wrong in the case of updated validator
-                // definitions and would allow resetting state/rate data!
-                //
-                // These should be pulled from the existing validator if it exists!
                 status: ValidatorStatus {
                     identity_key: v.validator.identity_key.clone(),
                     // Voting power for inactive validators is 0
@@ -98,7 +101,7 @@ impl BlockValidatorSet {
                 },
                 rate_data: RateData {
                     identity_key: v.validator.identity_key,
-                    epoch_index: self.epoch.as_ref().unwrap().index,
+                    epoch_index: epoch.index,
                     // Validator reward rate is held constant for inactive validators.
                     // Stake committed to inactive validators earns no rewards.
                     validator_reward_rate: 0,
@@ -173,14 +176,40 @@ impl BlockValidatorSet {
 
         // Now that we have resolved all validator definitions, we can determine the validator
         // changes that occurred in this block.
-        for (ik, def) in resolved_validator_definitions.iter() {}
+        for (ik, def) in resolved_validator_definitions.iter() {
+            if self.validators().any(|v| v.borrow().identity_key == *ik) {
+                // If this is an existing validator, there will need to be a database UPDATE query.
+                // The existing state will be maintained but the validator configuration will change
+                // to the new definition.
+                // (TODO: ensure funding stream changes are properly accounted for).
+                let mut validator_info = self.validator_set.get_mut(ik).unwrap();
 
-        // TODO: Need to determine whether this is a new validator or an updated validator
-        // and insert into the appropriate vec!
+                // Update the internal validator configuration
+                validator_info.validator = def.validator.clone();
+
+                // Add the validator to the block's updated validators list so an UPDATE query will be generated in
+                // `commit_block`.
+                self.updated_validators.push(validator_info.clone());
+            } else {
+                // Create the new validator's ValidatorInfo struct.
+                // The status will default to Inactive for new validators.
+                let new_validator = make_validator(def.clone());
+
+                // Add the validator to the internal validator set.
+                self.add_validator(new_validator.clone());
+
+                // Add the validator to the block's new validators list so an INSERT query will be generated in `commit_block`.
+                self.new_validators.push(new_validator);
+            }
+        }
     }
 
-    // Called during `end_epoch`. Will calculate validator changes that can only happen during epoch changes.
+    /// Called during `end_epoch`. Will calculate validator changes that can only happen during epoch changes.
     pub fn end_epoch(&mut self) {}
+
+    /// Called during `commit_block`. Will iterate all internal structs to generate the appropriate database
+    /// queries and reset internal state.
+    pub fn commit_block(&mut self) {}
 
     // TODO: this should *only* be called during `end_block`.
     pub fn add_validator(&mut self, validator: ValidatorInfo) {
