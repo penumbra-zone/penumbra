@@ -73,11 +73,49 @@ impl SeedPhrase {
 impl fmt::Display for SeedPhrase {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for (i, word) in self.0.iter().enumerate() {
-            if i > 0 || i != SEED_PHRASE_LEN - 1 {
+            if i > 0 {
                 f.write_str(" ")?;
             }
             f.write_str(word)?;
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn bip39_mnemonic_derivation() {
+        // These test vectors are taken from: https://github.com/trezor/python-mnemonic/blob/master/vectors.json
+        let randomness_arr: [&str; 8] = [
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f",
+            "8080808080808080808080808080808080808080808080808080808080808080",
+            "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+            "68a79eaca2324873eacc50cb9c6eca8cc68ea5d936f98787c60c7ebc74e6ce7c",
+            "9f6a2878b2520799a44ef18bc7df394e7061a224d2c33cd015b157d746869863",
+            "066dca1a2bb7e8a1db2832148ce9933eea0f3ac9548d793112d9a95c9407efad",
+            "f585c11aec520db57dd353c69554b21a89b20fb0650966fa0a9d6f74fd989d8f",
+        ];
+        let expected_phrase_arr: [&str; 8] = [
+            "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art",
+            "legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth title",
+            "letter advice cage absurd amount doctor acoustic avoid letter advice cage absurd amount doctor acoustic avoid letter advice cage absurd amount doctor acoustic bless",
+            "zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo vote",
+            "hamster diagram private dutch cause delay private meat slide toddler razor book happy fancy gospel tennis maple dilemma loan word shrug inflict delay length",
+            "panda eyebrow bullet gorilla call smoke muffin taste mesh discover soft ostrich alcohol speed nation flash devote level hobby quick inner drive ghost inside",
+            "all hour make first leader extend hole alien behind guard gospel lava path output census museum junior mass reopen famous sing advance salt reform",
+            "void come effort suffer camp survey warrior heavy shoot primary clutch crush open amazing screen patrol group space point ten exist slush involve unfold",
+        ];
+
+        for (hex_randomness, expected_phrase) in
+            randomness_arr.iter().zip(expected_phrase_arr.iter())
+        {
+            let randomness = hex::decode(hex_randomness).expect("can decode test vector");
+            let actual_phrase = SeedPhrase::from_randomness(randomness.clone().try_into().unwrap());
+            assert_eq!(actual_phrase.to_string(), *expected_phrase);
+        }
     }
 }
