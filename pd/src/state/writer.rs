@@ -11,7 +11,10 @@ use tendermint::block;
 use tokio::sync::watch;
 
 use super::jellyfish;
-use crate::{genesis, pending_block::QuarantineGroup, PendingBlock, NUM_RECENT_ANCHORS};
+use crate::{
+    genesis, pending_block::QuarantineGroup, validator_set::BlockValidatorSet, PendingBlock,
+    NUM_RECENT_ANCHORS,
+};
 
 #[derive(Debug)]
 pub struct Writer {
@@ -185,7 +188,11 @@ impl Writer {
     }
 
     /// Commits a block to the state, returning the new app hash.
-    pub async fn commit_block(&self, block: PendingBlock) -> Result<Vec<u8>> {
+    pub async fn commit_block(
+        &self,
+        block: PendingBlock,
+        block_validator_set: &BlockValidatorSet,
+    ) -> Result<Vec<u8>> {
         // TODO: batch these queries?
         let mut dbtx = self.pool.begin().await?;
 
@@ -396,9 +403,10 @@ impl Writer {
             .await?;
         }
 
-        if let (Some(base_rate_data), Some(rate_data)) =
-            (block.next_base_rate, block.next_rates.as_ref())
-        {
+        if let (Some(base_rate_data), Some(rate_data)) = (
+            block_validator_set.next_base_rate.clone(),
+            block_validator_set.next_rates.as_ref(),
+        ) {
             query!(
                 "INSERT INTO base_rates VALUES ($1, $2, $3)",
                 base_rate_data.epoch_index as i64,
@@ -422,7 +430,7 @@ impl Writer {
         }
 
         // Handle adding newly added validators with default rates
-        for v in block.new_validators {
+        for v in &block_validator_set.new_validators {
             query!(
                 "INSERT INTO validators (
                     identity_key,
@@ -489,7 +497,7 @@ impl Writer {
         // When the validator was slashed their rate was updated to incorporate
         // the slashing penalty and then their rate will be held constant, so
         // there is no need to take into account the slashing penalty here.
-        for ik in block.slashed_validators {
+        for ik in &block_validator_set.slashed_validators {
             query!(
                 "UPDATE validators SET validator_state=$1 WHERE identity_key = $2",
                 ValidatorStateName::Slashed.to_str(),
@@ -500,7 +508,11 @@ impl Writer {
         }
 
         // next_validator_statuses are only saved during epoch transitions.
-        for status in block.next_validator_statuses.unwrap_or_default() {
+        for status in block_validator_set
+            .next_validator_statuses
+            .as_ref()
+            .expect("next_validator_statuses should be set during commit")
+        {
             let (state_name, unbonding_epoch) = status.state.into();
             query!(
                     "UPDATE validators SET voting_power=$1, validator_state=$2, unbonding_epoch=$3 WHERE identity_key = $4",
@@ -519,10 +531,10 @@ impl Writer {
             valid_anchors.pop_back();
         }
         valid_anchors.push_front(nct_anchor);
-        let next_rate_data = block.next_rates.map(|next_rates| {
+        let next_rate_data = block_validator_set.next_rates.as_ref().map(|next_rates| {
             next_rates
                 .into_iter()
-                .map(|rd| (rd.identity_key.clone(), rd))
+                .map(|rd| (rd.identity_key.clone(), rd.clone()))
                 .collect::<RateDataById>()
         });
 

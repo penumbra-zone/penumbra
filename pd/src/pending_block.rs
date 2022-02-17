@@ -10,7 +10,7 @@ use penumbra_crypto::{
 };
 use penumbra_stake::{
     BaseRateData, Epoch, IdentityKey, RateData, ValidatorDefinition, ValidatorInfo, ValidatorState,
-    ValidatorStateMachine, ValidatorStatus, STAKING_TOKEN_ASSET_ID,
+    ValidatorStatus, STAKING_TOKEN_ASSET_ID,
 };
 use tendermint::PublicKey;
 use tracing::instrument;
@@ -28,14 +28,6 @@ pub struct PendingBlock {
     pub spent_nullifiers: BTreeSet<Nullifier>,
     /// Records any updates to the token supply of some asset that happened in this block.
     pub supply_updates: BTreeMap<asset::Id, (asset::Denom, u64)>,
-    /// Indicates the epoch the block belongs to.
-    pub epoch: Option<Epoch>,
-    /// If this is the last block of an epoch, base rates for the next epoch go here.
-    pub next_base_rate: Option<BaseRateData>,
-    /// If this is the last block of an epoch, validator rates for the next epoch go here.
-    pub next_rates: Option<Vec<RateData>>,
-    /// If this is the last block of an epoch, validator statuses for the next epoch go here.
-    pub next_validator_statuses: Option<Vec<ValidatorStatus>>,
     /// The net delegations performed in this block per validator.
     pub delegation_changes: BTreeMap<IdentityKey, i64>,
     /// The counter containing the number of rewards notes in the epoch. we need this to keep the
@@ -50,29 +42,8 @@ pub struct PendingBlock {
     pub reverting_notes: BTreeSet<note::Commitment>,
     /// Nullifiers to remove from the nullifier set when this block is committed, reverting their spend.
     pub reverting_nullifiers: BTreeSet<Nullifier>,
-    /// Responsible for performing state changes and enforcing semantics of validator state changes.
-    /// During end_block, validator state changes will be copied to `self.next_validator_statuses`
-    /// and then saved to the database during commit_block.
-    pub validator_state_machine: ValidatorStateMachine,
-    /// Validator definitions added during the block. Since multiple definitions could
-    /// come in for the same validator during a block, we need to deterministically pick
-    /// one definition to use.
-    ///
-    /// If the definition is for an existing validator, this will be pushed to `self.updated_validators`
-    /// during end_block.
-    ///
-    /// Otherwise if the definition is for a new validator, this will be pushed to `self.new_validators`
-    /// during end_block.
-    pub validator_definitions: BTreeMap<IdentityKey, Vec<ValidatorDefinition>>,
-    /// New validators added during the block. Saved and available for staking when the block is committed.
-    pub new_validators: Vec<ValidatorInfo>,
-    /// Existing validators updated during the block. Saved when the block is committed.
-    pub updated_validators: Vec<ValidatorInfo>,
-    /// Validators slashed during this block. Saved when the block is committed.
-    ///
-    /// The validator's rate will have a slashing penalty immediately applied during the current epoch.
-    /// Their future rates will be held constant.
-    pub slashed_validators: Vec<IdentityKey>,
+    /// Indicates the epoch the block belongs to.
+    pub epoch: Option<Epoch>,
 }
 
 /// A group of notes and nullifiers, all to be quarantined relative to a shared set of validators.
@@ -98,23 +69,13 @@ impl PendingBlock {
             notes: BTreeMap::new(),
             spent_nullifiers: BTreeSet::new(),
             supply_updates: BTreeMap::new(),
-            epoch: None,
-            next_base_rate: None,
-            // TODO: We should probably use the validator state machine
-            // for all rate and status management
-            next_rates: None,
-            next_validator_statuses: None,
             delegation_changes: BTreeMap::new(),
             reward_counter: 0,
             quarantine: Vec::new(),
             reverting_notes: BTreeSet::new(),
             unbonding_nullifiers: BTreeSet::new(),
             reverting_nullifiers: BTreeSet::new(),
-            validator_state_machine: ValidatorStateMachine::new(block_validators),
-            validator_definitions: BTreeMap::new(),
-            new_validators: Vec::new(),
-            updated_validators: Vec::new(),
-            slashed_validators: Vec::new(),
+            epoch: None,
         }
     }
 
@@ -221,60 +182,5 @@ impl PendingBlock {
             .epoch
             .as_ref()
             .expect("expected epoch to be set on pending_block");
-        for v in transaction.new_validators {
-            let validator_info = ValidatorInfo {
-                validator: v.validator.clone(),
-                // TODO: This is definitely wrong in the case of updated validator
-                // definitions and would allow resetting state/rate data!
-                //
-                // These should be pulled from the existing validator if it exists!
-                status: ValidatorStatus {
-                    identity_key: v.validator.identity_key.clone(),
-                    // Voting power for inactive validators is 0
-                    voting_power: 0,
-                    state: ValidatorState::Inactive,
-                },
-                rate_data: RateData {
-                    identity_key: v.validator.identity_key.clone(),
-                    epoch_index: current_epoch.index,
-                    // Validator reward rate is held constant for inactive validators.
-                    // Stake committed to inactive validators earns no rewards.
-                    validator_reward_rate: 0,
-                    // Exchange rate for inactive validators is held constant
-                    // and starts at 1
-                    validator_exchange_rate: 1,
-                },
-            };
-            if let Some(vd) = self
-                .validator_definitions
-                .get_mut(&v.validator.identity_key)
-            {
-                vd.push(v.clone());
-            } else {
-                self.validator_definitions
-                    .insert(v.validator.identity_key.clone(), vec![v.clone()]);
-            }
-            // TODO: This might not be right, since the new validator definition
-            // needs to be resolved during end_block. If multiple validators
-            // are defined for the same sequence ID within a transaction, it
-            // is possible that state could be overriden for a validator as a
-            // result.
-            //
-            // For example:
-            // Validator A is slashed during begin_block, but then an updated
-            // ValidatorDefinition is submitted for Validator A in the same block.
-            self.validator_state_machine
-                .add_validator(validator_info.clone());
-        }
-    }
-
-    pub fn slash_validator(&mut self, ck: &PublicKey, slashing_penalty: u64) -> Result<()> {
-        let validator = self
-            .validator_state_machine
-            .get_validator_by_consensus_key(ck)?;
-        self.slashed_validators.push(validator.identity_key.clone());
-        self.validator_state_machine
-            .slash_validator(ck, slashing_penalty)?;
-        Ok(())
     }
 }

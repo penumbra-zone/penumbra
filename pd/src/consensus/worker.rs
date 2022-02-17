@@ -16,25 +16,30 @@ use tokio::sync::mpsc;
 use tracing::Instrument;
 
 use super::Message;
-use crate::{genesis, state, verify::StatelessTransactionExt, PendingBlock};
+use crate::{
+    genesis, state, validator_set::BlockValidatorSet, verify::StatelessTransactionExt, PendingBlock,
+};
 
 pub struct Worker {
     state: state::Writer,
     queue: mpsc::Receiver<Message>,
     // todo: split up and modularize
     pending_block: Option<PendingBlock>,
+    block_validator_set: BlockValidatorSet,
     note_commitment_tree: NoteCommitmentTree,
 }
 
 impl Worker {
     pub async fn new(state: state::Writer, queue: mpsc::Receiver<Message>) -> Result<Self> {
         let note_commitment_tree = state.private_reader().note_commitment_tree().await?;
+        let block_validator_set = BlockValidatorSet::new(state.private_reader().clone()).await?;
 
         Ok(Self {
             state,
             queue,
             pending_block: None,
             note_commitment_tree,
+            block_validator_set,
         })
     }
 
@@ -209,8 +214,8 @@ impl Worker {
                 .ok_or_else(|| anyhow::anyhow!("invalid ed25519 consensus pubkey from tendermint"))
                 .unwrap();
 
-            let pb_mut = &mut self.pending_block.as_mut().unwrap();
-            pb_mut.slash_validator(&ck, slashing_penalty)?;
+            self.block_validator_set
+                .slash_validator(&ck, slashing_penalty)?;
         }
 
         Ok(Default::default())
@@ -250,6 +255,10 @@ impl Worker {
             ));
         }
 
+        for v in &transaction.new_validators {
+            self.block_validator_set.add_validator_definition(v.clone());
+        }
+
         self.pending_block
             .as_mut()
             .unwrap()
@@ -284,10 +293,12 @@ impl Worker {
                 .epoch_duration,
         );
 
+        // The block validator set also needs to know the epoch to perform rate calculations.
+
         tracing::debug!(?height, ?epoch, end_height = ?epoch.end_height());
 
         // Find out which validators were slashed in this block
-        let slashed_validators = &pending_block.slashed_validators;
+        let slashed_validators = &self.block_validator_set.slashed_validators;
 
         // Immediately revert notes and nullifiers immediately from slashed validators in this block
         let (mut slashed_notes, mut slashed_nullifiers) = (
@@ -330,12 +341,13 @@ impl Worker {
         };
 
         // Any conflicts in validator definitions added to the pending block need to be resolved.
-        for (ik, defs) in pending_block.validator_definitions.iter() {
+        for (ik, defs) in self.block_validator_set.validator_definitions.iter() {
             // TODO: Need to determine whether this is a new validator or an updated validator
             // and insert into the appropriate vec!
             if defs.len() == 1 {
                 // If there was only one definition for an identity key, use it.
-                pending_block
+                &self
+                    .block_validator_set
                     .new_validators
                     .push(make_validator(defs[0].clone()));
                 continue;
@@ -363,7 +375,7 @@ impl Worker {
         // Send the next voting powers back to tendermint. This also
         // incorporates any newly added validators.
         let mut validator_updates = Vec::new();
-        for v in pending_block.validator_state_machine.validators_info() {
+        for v in self.block_validator_set.validators_info() {
             let v = v.borrow();
             let power = v.status.voting_power as u32;
             let validator = &v.validator;
@@ -397,7 +409,8 @@ impl Worker {
 
         // We've finished processing the last block of `epoch`, so we've
         // crossed the epoch boundary, and (prev | current | next) are:
-        let prev_epoch = pending_block
+        let prev_epoch = &self
+            .block_validator_set
             .epoch
             .clone()
             .expect("epoch must already have been set");
@@ -414,8 +427,8 @@ impl Worker {
         metrics::increment_counter!("epoch");
 
         // Find all the validators which are *not* slashed in this block
-        let well_behaved_validators = pending_block
-            .validator_state_machine
+        let well_behaved_validators = &self
+            .block_validator_set
             .unslashed_validators()
             .map(|v| v.borrow().identity_key.clone())
             .collect::<Vec<_>>();
@@ -476,7 +489,7 @@ impl Worker {
             *delegation_changes.entry(id_key.clone()).or_insert(0) += delta;
         }
 
-        for validator in pending_block.validator_state_machine.validators_info() {
+        for validator in self.block_validator_set.validators_info() {
             let current_rate = validator.borrow().rate_data.clone();
 
             let mut hold_rate_constant = |current_rate: RateData| {
@@ -551,8 +564,8 @@ impl Worker {
             let voting_power = next_rate.voting_power(delegation_token_supply, &next_base_rate);
 
             // Default the next state to the current state from the validator state machine.
-            let next_state = pending_block
-                .validator_state_machine
+            let next_state = &self
+                .block_validator_set
                 .get_state(&identity_key)
                 .cloned()
                 .expect("should be able to get next validator state from state machine");
@@ -560,7 +573,7 @@ impl Worker {
             let next_status = ValidatorStatus {
                 identity_key: identity_key.clone(),
                 voting_power,
-                state: next_state,
+                state: *next_state,
             };
 
             // distribute validator commission
@@ -647,9 +660,9 @@ impl Worker {
 
         tracing::debug!(?staking_token_supply);
 
-        pending_block.next_rates = Some(next_rates);
-        pending_block.next_base_rate = Some(next_base_rate);
-        pending_block.next_validator_statuses = Some(next_validator_statuses);
+        self.block_validator_set.next_rates = Some(next_rates);
+        self.block_validator_set.next_base_rate = Some(next_base_rate);
+        self.block_validator_set.next_validator_statuses = Some(next_validator_statuses);
         pending_block.supply_updates.insert(
             *STAKING_TOKEN_ASSET_ID,
             (STAKING_TOKEN_DENOM.clone(), staking_token_supply),
@@ -670,7 +683,10 @@ impl Worker {
         // Pull the updated note commitment tree, for use in the next block.
         self.note_commitment_tree = pending_block.note_commitment_tree.clone();
 
-        let app_hash = self.state.commit_block(pending_block).await?;
+        let app_hash = self
+            .state
+            .commit_block(pending_block, &self.block_validator_set)
+            .await?;
 
         tracing::info!(app_hash = ?hex::encode(&app_hash), "finished block commit");
 
