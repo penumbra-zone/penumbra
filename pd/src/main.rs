@@ -207,6 +207,7 @@ async fn main() -> anyhow::Result<()> {
             output_dir,
             chain_id,
         } => {
+            use rand::Rng;
             use std::{
                 fs,
                 fs::File,
@@ -214,6 +215,9 @@ async fn main() -> anyhow::Result<()> {
                 str::FromStr,
                 time::{Duration, SystemTime, UNIX_EPOCH},
             };
+
+            let randomizer = OsRng.gen::<u32>();
+            let chain_id = format!("{}-{}", chain_id, hex::encode(&randomizer.to_le_bytes()));
 
             use pd::{genesis, genesis::ValidatorPower, testnet::*};
             use penumbra_crypto::Address;
