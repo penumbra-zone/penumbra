@@ -42,7 +42,6 @@ jobs:
           cargo doc --no-deps \
             -p tendermint \
             -p tower-abci \
-            -p ics23 \
             -p incrementalmerkletree \
             -p jmt \
             -p ark-ff \
