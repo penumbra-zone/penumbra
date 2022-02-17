@@ -109,32 +109,74 @@ impl BlockValidatorSet {
             }
         };
 
+        // This will hold a single deterministically chosen validator definition for every identity key
+        // we received validator definitions for.
+        let mut resolved_validator_definitions: BTreeMap<IdentityKey, ValidatorDefinition> =
+            BTreeMap::new();
         // Any conflicts in validator definitions added to the pending block need to be resolved.
+        // TODO: this code should be tested to ensure changes don't break the ordering.
         for (ik, defs) in self.validator_definitions.iter_mut() {
-            // Ensure the definitions are sorted by sequence number
+            // Ensure the definitions are sorted by descending sequence number
             defs.sort_by(|a, b| {
                 b.validator
                     .sequence_number
                     .cmp(&a.validator.sequence_number)
             });
-            // TODO: Need to determine whether this is a new validator or an updated validator
-            // and insert into the appropriate vec!
+
             if defs.len() == 1 {
                 // If there was only one definition for an identity key, use it.
-                self.new_validators.push(make_validator(defs[0].clone()));
+                resolved_validator_definitions.insert(ik.clone(), defs[0].clone());
                 continue;
             }
 
             // Sort the validator definitions into buckets by their sequence number.
-            let new_validator_definitions_by_seq =
-                Vec::<(u32, Vec<ValidatorDefinition>)>::from_iter(
-                    defs.iter()
-                        .map(|def| (def.validator.sequence_number, vec![def.clone()])),
-                );
+            let mut new_validator_definitions_by_seq: Vec<(u32, Vec<ValidatorDefinition>)> =
+                Vec::new();
+            for def in defs.iter() {
+                let seq = def.validator.sequence_number;
+                let def = def.clone();
+
+                // If we haven't seen this sequence number before, create a new bucket.
+                if !new_validator_definitions_by_seq
+                    .iter()
+                    .any(|(s, _)| *s == seq)
+                {
+                    new_validator_definitions_by_seq.push((seq, vec![def]));
+                } else {
+                    // Otherwise, add the definition to the existing bucket.
+                    let mut found = false;
+                    for (s, defs) in new_validator_definitions_by_seq.iter_mut() {
+                        if *s == seq {
+                            defs.push(def);
+                            found = true;
+                            break;
+                        }
+                    }
+                    assert!(found);
+                }
+            }
 
             // The highest sequence number bucket wins.
-            let highest_seq_bucket = &new_validator_definitions_by_seq[0];
+            let highest_seq_bucket = &mut new_validator_definitions_by_seq[0];
+
+            // Sort any conflicting definitions for the highest sequence number by
+            // their signatures to get a deterministic ordering.
+            highest_seq_bucket.1.sort_by(|a, b| {
+                let a_sig = a.auth_sig.to_bytes();
+                let b_sig = b.auth_sig.to_bytes();
+                a_sig.cmp(&b_sig)
+            });
+
+            // Our pick will be the first definition in the bucket after sorting by signature.
+            resolved_validator_definitions.insert(ik.clone(), highest_seq_bucket.1[0].clone());
         }
+
+        // Now that we have resolved all validator definitions, we can determine the validator
+        // changes that occurred in this block.
+        for (ik, def) in resolved_validator_definitions.iter() {}
+
+        // TODO: Need to determine whether this is a new validator or an updated validator
+        // and insert into the appropriate vec!
     }
 
     // Called during `end_epoch`. Will calculate validator changes that can only happen during epoch changes.
