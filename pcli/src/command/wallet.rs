@@ -1,4 +1,4 @@
-use std::{fs::File, io::BufReader, path::PathBuf};
+use std::{fs::File, io::BufReader, path::PathBuf, str::FromStr};
 
 use anyhow::{anyhow, Context as _, Result};
 use directories::ProjectDirs;
@@ -18,6 +18,11 @@ pub enum WalletCmd {
         /// A 32-byte hex string encoding the spend seed.
         spend_seed: String,
     },
+    /// Import from an existing seed phrase.
+    ImportFromPhrase {
+        /// A 24 word phrase.
+        seed_phrase: String,
+    },
     /// Export the spend seed for the wallet.
     Export,
     /// Generate a new spend seed.
@@ -33,6 +38,7 @@ impl WalletCmd {
     pub fn needs_sync(&self) -> bool {
         match self {
             WalletCmd::Import { .. } => false,
+            WalletCmd::ImportFromPhrase { .. } => false,
             WalletCmd::Export => false,
             WalletCmd::Generate => false,
             WalletCmd::Reset => false,
@@ -62,6 +68,9 @@ impl WalletCmd {
                 let seed = SpendSeed::try_from(seed.as_slice())?;
                 Some(ClientState::new(Wallet::import(seed)))
             }
+            WalletCmd::ImportFromPhrase { seed_phrase } => Some(ClientState::new(
+                Wallet::from_seed_phrase(SeedPhrase::from_str(seed_phrase)?),
+            )),
             // The rest of these commands don't require a wallet state to be saved to disk:
             WalletCmd::Export => {
                 let state = ClientStateFile::load(wallet_path.clone())?;

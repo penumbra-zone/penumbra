@@ -82,6 +82,38 @@ impl fmt::Display for SeedPhrase {
     }
 }
 
+impl std::str::FromStr for SeedPhrase {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let words = s.split(" ").collect::<Vec<&str>>();
+
+        if words.len() != SEED_PHRASE_LEN {
+            return Err(anyhow::anyhow!(
+                "seed phrases should have {} words",
+                SEED_PHRASE_LEN
+            ));
+        }
+
+        for word in words.clone() {
+            if !BIP39_WORDS.contains(&word) {
+                return Err(anyhow::anyhow!("invalid BIP39 seed phrase"));
+            }
+        }
+
+        // xxx Verify seed phrase checksum
+
+        let word_arr: [String; SEED_PHRASE_LEN] = words
+            .into_iter()
+            .map(|s| s.to_string())
+            .collect::<Vec<String>>()
+            .try_into()
+            .expect("can convert to seed phrase");
+
+        Ok(SeedPhrase(word_arr))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
