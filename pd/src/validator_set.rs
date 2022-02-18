@@ -286,7 +286,7 @@ impl ValidatorSet {
     /// Called during `end_epoch`. Will calculate validator changes that can only happen during epoch changes
     /// such as rate updates.
     // pub async fn end_epoch(&mut self) -> Result<()> {
-    pub fn end_epoch<'a>(&'_ mut self) -> impl Future<Output = Result<()>> + Send + Unpin + '_ {
+    pub fn end_epoch(&'_ mut self) -> impl Future<Output = Result<()>> + Send + Unpin + '_ {
         let chain_params = self.reader.chain_params_rx().borrow();
         let unbonding_epochs: u64 = chain_params.unbonding_epochs;
         let validator_limit: u64 = chain_params.validator_limit;
@@ -300,7 +300,7 @@ impl ValidatorSet {
                 .clone()
                 .expect("epoch must already have been set");
             let current_epoch = prev_epoch.next();
-            let next_epoch = current_epoch.next();
+            let _next_epoch = current_epoch.next();
             let current_base_rate = self.reader.base_rate_data(current_epoch.index).await?;
 
             // steps (foreach validator):
@@ -581,7 +581,7 @@ impl ValidatorSet {
         // For example:
         // Validator A is slashed during begin_block, but then an updated
         // ValidatorDefinition is submitted for Validator A in the same block.
-        self.add_validator(validator_info.clone());
+        self.add_validator(validator_info);
         self.validator_definitions
             .entry(identity_key)
             .or_insert_with(Vec::new)
@@ -693,6 +693,7 @@ impl ValidatorSet {
             .get_validator_info(&validator.identity_key)
             .ok_or(anyhow::anyhow!("Validator not found in state machine"))?;
         let current_state = current_info.status.state;
+        let current_validator_reward_rate = current_info.rate_data.validator_reward_rate;
 
         let mut mark_slashed = |validator: &Validator| -> Result<()> {
             self.validator_set
@@ -704,8 +705,10 @@ impl ValidatorSet {
                 .get_mut(&validator.identity_key)
                 .ok_or_else(|| anyhow::anyhow!("Validator not found"))?
                 .rate_data
-                // TODO: pretty sure this calculation of slashed rate is wrong
-                .validator_reward_rate -= slashing_penalty;
+                // Slashing penalty is in base points
+                // TODO: confirm this math is correct
+                .validator_reward_rate -=
+                current_validator_reward_rate * slashing_penalty / 1_0000_0000;
             Ok(())
         };
 

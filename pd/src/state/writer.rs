@@ -545,7 +545,9 @@ impl Writer {
         }
         // chain_params_tx is a no-op, currently chain params don't change
 
-        block_validator_set.commit_block(block.epoch.unwrap().clone());
+        block_validator_set
+            .commit_block(block.epoch.unwrap().clone())
+            .await;
 
         Ok(app_hash.to_vec())
     }

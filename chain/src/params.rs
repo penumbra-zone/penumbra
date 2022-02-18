@@ -43,6 +43,7 @@ pub struct ChainParams {
     pub epoch_duration: u64,
     pub unbonding_epochs: u64,
     pub validator_limit: u64,
+    // Slashing penalty in basis points
     pub slashing_penalty: u64,
 }
 
@@ -81,7 +82,8 @@ impl Default for ChainParams {
             epoch_duration: 8640,
             unbonding_epochs: 30,
             validator_limit: 10,
-            slashing_penalty: 10,
+            // 1000 basis points = 10%
+            slashing_penalty: 1000,
         }
     }
 }
