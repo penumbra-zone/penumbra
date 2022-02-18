@@ -56,24 +56,23 @@ enum Command {
     /// testnet based on input configuration.
     GenerateTestnet {
         /// How many validator nodes to create configuration for.
-        #[structopt(short, long, default_value = "4")]
+        #[structopt(long, default_value = "4")]
         num_validator_nodes: usize,
         /// Number of blocks per epoch.
-        #[structopt(short, long, default_value = "60")]
+        #[structopt(long, default_value = "60")]
         epoch_duration: u64,
         /// Number of epochs before unbonding stake is released.
-        #[structopt(short, long, default_value = "60")]
+        #[structopt(long, default_value = "60")]
         unbonding_epochs: u64,
         /// Maximum number of validators in the consensus set.
-        #[structopt(short, long, default_value = "10")]
+        #[structopt(long, default_value = "10")]
         validator_limit: u64,
         /// Penalty to be applied to slashed validators' rates.
         /// TODO: not sure what a good default is
-        #[structopt(short, long, default_value = "10")]
+        #[structopt(long, default_value = "10")]
         slashing_penalty: u64,
         /// Path to CSV file containing initial allocations.
         #[structopt(
-            short,
             long,
             parse(from_os_str),
             default_value = "testnets/004-thelxinoe/allocations.csv"
@@ -81,20 +80,19 @@ enum Command {
         allocations_input_file: PathBuf,
         /// Path to JSON file containing initial validator configs.
         #[structopt(
-            short,
             long,
             parse(from_os_str),
             default_value = "testnets/004-thelxinoe/validators.json"
         )]
         validators_input_file: PathBuf,
         /// Path to directory to store output in. Must not exist.
-        #[structopt(short, long)]
+        #[structopt(long)]
         output_dir: Option<PathBuf>,
         /// Testnet name, e.g. `penumbra-euporie`
-        #[structopt(short, long, default_value = "penumbra-thelxinoe")]
+        #[structopt(long, default_value = "penumbra-thelxinoe")]
         chain_id: String,
         /// IP Address to start `tendermint` nodes on. Increments by three to make room for `pd` and `postgres` per node.
-        #[structopt(short, long, default_value = "192.167.10.2")]
+        #[structopt(long, default_value = "192.167.10.2")]
         starting_ip: Ipv4Addr,
     },
 }
