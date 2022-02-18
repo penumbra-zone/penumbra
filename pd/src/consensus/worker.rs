@@ -5,9 +5,6 @@ use futures::StreamExt;
 use metrics::absolute_counter;
 use penumbra_crypto::{asset, merkle::NoteCommitmentTree};
 use penumbra_proto::Protobuf;
-use penumbra_stake::{
-    RateData, ValidatorState, ValidatorStatus, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
-};
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, ConsensusRequest as Request, ConsensusResponse as Response};
 use tokio::sync::mpsc;
@@ -305,7 +302,7 @@ impl Worker {
         // Validator updates need to be sent back to Tendermint during end_block, so we need to
         // tell the validator set the block has ended so it can resolve conflicts and prepare
         // data to commit.
-        self.block_validator_set.end_block(epoch.clone());
+        self.block_validator_set.end_block(epoch.clone()).await?;
 
         // If we are at the end of an epoch, process changes for it
         if epoch.end_height().value() == height {
@@ -377,10 +374,8 @@ impl Worker {
         drop(unbonding_notes);
         drop(unbonding_nullifiers);
 
-        let current_base_rate = reader.base_rate_data(current_epoch.index).await?;
-
         // Tell the validator set that the epoch is changing so it can prepare to commit.
-        self.block_validator_set.end_epoch();
+        self.block_validator_set.end_epoch().await?;
 
         // Add reward notes to the pending block.
         for reward_note in &self.block_validator_set.reward_notes {

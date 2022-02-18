@@ -1,4 +1,3 @@
-use futures::stream::{StreamExt, TryStreamExt};
 use penumbra_proto::{
     self as proto,
     chain::AssetInfo,

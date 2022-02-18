@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use ark_ff::PrimeField;
 use decaf377::Fr;
 use penumbra_crypto::{
-    asset, ka,
+    ka,
     merkle::{Frontier, NoteCommitmentTree},
     note, Address, Fq, Note, Nullifier, One, Value,
 };
