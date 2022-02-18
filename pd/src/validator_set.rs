@@ -2,7 +2,7 @@ use std::{borrow::Borrow, collections::BTreeMap};
 
 use anyhow::Result;
 
-use tendermint::PublicKey;
+use tendermint::{abci::types::ValidatorUpdate, PublicKey};
 
 use crate::state::Reader;
 use penumbra_stake::{
@@ -52,6 +52,8 @@ pub struct BlockValidatorSet {
     pub next_rates: Option<Vec<RateData>>,
     /// If this is the last block of an epoch, validator statuses for the next epoch go here.
     pub next_validator_statuses: Option<Vec<ValidatorStatus>>,
+    /// Set in `end_block` and reset to None when `tm_validator_updates` is called.
+    tm_validator_updates: Option<Vec<ValidatorUpdate>>,
 }
 
 impl BlockValidatorSet {
@@ -77,6 +79,7 @@ impl BlockValidatorSet {
             updated_validators: Vec::new(),
             slashed_validators: Vec::new(),
             reader,
+            tm_validator_updates: None,
         })
     }
 
@@ -202,6 +205,36 @@ impl BlockValidatorSet {
                 self.new_validators.push(new_validator);
             }
         }
+
+        // Set `self.tm_validator_updates` to the complete set of
+        // validators and voting power.
+        //
+        // TODO: It could be more efficient to only return the power of
+        // updated validators.
+        self.tm_validator_updates = Some(
+            self.validators_info()
+                .map(|v| {
+                    let v = v.borrow();
+                    let power = v.status.voting_power as u32;
+                    let validator = &v.validator;
+                    let pub_key = validator.consensus_key;
+                    tendermint::abci::types::ValidatorUpdate {
+                        pub_key,
+                        power: power.into(),
+                    }
+                })
+                .collect(),
+        );
+    }
+
+    /// Returns the set of Tendermint validator updates and resets `self.tm_validator_updates` for the next block.
+    pub fn tm_validator_updates(&mut self) -> Vec<ValidatorUpdate> {
+        let validator_updates = self
+            .tm_validator_updates
+            .take()
+            .expect("tm_validator_updates called before end_block");
+        self.tm_validator_updates = None;
+        validator_updates
     }
 
     /// Called during `end_epoch`. Will calculate validator changes that can only happen during epoch changes.

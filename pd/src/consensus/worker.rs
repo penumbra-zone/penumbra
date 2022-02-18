@@ -316,18 +316,7 @@ impl Worker {
 
         // Send the next voting powers back to tendermint. This also
         // incorporates any newly added validators.
-        let mut validator_updates = Vec::new();
-        for v in self.block_validator_set.validators_info() {
-            let v = v.borrow();
-            let power = v.status.voting_power as u32;
-            let validator = &v.validator;
-            let pub_key = validator.consensus_key;
-            let validator_update = tendermint::abci::types::ValidatorUpdate {
-                pub_key,
-                power: power.into(),
-            };
-            validator_updates.push(validator_update);
-        }
+        let validator_updates = self.block_validator_set.tm_validator_updates();
 
         Ok(abci::response::EndBlock {
             validator_updates,
