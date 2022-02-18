@@ -6,67 +6,115 @@ use sha2::Digest;
 mod words;
 use words::BIP39_WORDS;
 
-pub const SEED_PHRASE_PBKDF2_ROUNDS: u32 = 2048;
-pub const SEED_PHRASE_LEN: usize = 24;
-pub const SEED_PHRASE_ENTROPY_BITS: usize = 256;
-pub const SEED_PHRASE_CHECKSUM_BITS: usize = 8;
-pub const SEED_PHRASE_BITS_PER_WORD: usize = 11;
+pub const NUM_PBKDF2_ROUNDS: u32 = 2048;
+pub const NUM_WORDS: usize = 24;
+pub const NUM_ENTROPY_BITS: usize = 256;
+pub const NUM_CHECKSUM_BITS: usize = 8;
+pub const NUM_TOTAL_BITS: usize = NUM_ENTROPY_BITS + NUM_CHECKSUM_BITS;
+pub const NUM_BITS_PER_WORD: usize = 11;
+pub const NUM_BITS_PER_BYTE: usize = 8;
 
 /// A mnemonic seed phrase. Used to generate [`SpendSeed`]s.
-pub struct SeedPhrase(pub [String; SEED_PHRASE_LEN]);
+pub struct SeedPhrase(pub [String; NUM_WORDS]);
 
 impl SeedPhrase {
     /// Randomly generates a BIP39 [`SeedPhrase`].
     pub fn generate<R: RngCore + CryptoRng>(mut rng: R) -> Self {
-        // We get 256 bits of entropy.
-        let mut randomness = [0u8; SEED_PHRASE_ENTROPY_BITS / 8];
+        let mut randomness = [0u8; NUM_ENTROPY_BITS / NUM_BITS_PER_BYTE];
         rng.fill_bytes(&mut randomness);
         Self::from_randomness(randomness)
     }
 
-    /// Given 32 bytes, generate a [`SeedPhrase`].
+    /// Given 32 bytes of randomness, generate a [`SeedPhrase`].
     fn from_randomness(randomness: [u8; 32]) -> Self {
-        // Convert to bits.
-        const SEED_PHRASE_TOTAL_BITS: usize = SEED_PHRASE_ENTROPY_BITS + SEED_PHRASE_CHECKSUM_BITS;
-        let mut bits = [false; SEED_PHRASE_TOTAL_BITS];
-
-        // Add the random bits.
-        for (i, bit) in bits[0..SEED_PHRASE_ENTROPY_BITS].iter_mut().enumerate() {
-            *bit = (randomness[i / 8] & (1 << (7 - (i % 8)))) > 0
+        let mut bits = [false; NUM_TOTAL_BITS];
+        for (i, bit) in bits[0..NUM_ENTROPY_BITS].iter_mut().enumerate() {
+            *bit = (randomness[i / NUM_BITS_PER_BYTE] & (1 << (7 - (i % NUM_BITS_PER_BYTE)))) > 0
         }
 
-        // We take the first 256/32 = 8 bits = 1 byte of the SHA256
-        // hash of the randomness and treat it as a checksum, that we append
-        // to the initial randomness.
+        // We take the first 256/32 = 8 bits of the SHA256 hash of the randomness and
+        // treat it as a checksum. We append that checksum byte to the initial randomness.
         let mut hasher = sha2::Sha256::new();
         hasher.update(randomness);
-
-        // Checksum is just the first byte of `r_hash`.
-        let r_hash = hasher.finalize();
-        for (i, bit) in bits[SEED_PHRASE_ENTROPY_BITS..].iter_mut().enumerate() {
-            *bit = (r_hash[0] & (1 << (7 - (i % 8)))) > 0
+        let checksum = hasher.finalize()[0];
+        for (i, bit) in bits[NUM_ENTROPY_BITS..].iter_mut().enumerate() {
+            *bit = (checksum & (1 << (7 - (i % NUM_BITS_PER_BYTE)))) > 0
         }
 
         // Concatenated bits are split into groups of 11 bits, each
         // encoding a number that is an index into the BIP39 word list.
-        let mut phrases: [String; SEED_PHRASE_LEN] = Default::default();
-        for (i, phrase) in phrases.iter_mut().enumerate() {
-            let bits_this_word =
-                &bits[i * SEED_PHRASE_BITS_PER_WORD..(i + 1) * SEED_PHRASE_BITS_PER_WORD];
-            let index = bits_this_word
+        let mut words: [String; NUM_WORDS] = Default::default();
+        for (i, word) in words.iter_mut().enumerate() {
+            let bits_this_word = &bits[i * NUM_BITS_PER_WORD..(i + 1) * NUM_BITS_PER_WORD];
+            let word_index = bits_this_word
                 .iter()
                 .enumerate()
                 .map(|(i, bit)| {
                     if *bit {
-                        1 << (SEED_PHRASE_BITS_PER_WORD - 1 - i)
+                        1 << (NUM_BITS_PER_WORD - 1 - i)
                     } else {
                         0
                     }
                 })
-                .sum::<usize>();
-            *phrase = BIP39_WORDS[index].to_string();
+                .sum::<u16>();
+            *word = BIP39_WORDS[word_index as usize].to_string();
         }
-        SeedPhrase(phrases)
+        SeedPhrase(words)
+    }
+
+    /// Verify the checksum of this [`SeedPhrase`].
+    fn verify_checksum(&self) -> Result<(), anyhow::Error> {
+        let mut words = self.0.clone();
+        let mut bits = [false; NUM_TOTAL_BITS];
+        for (i, word) in words.iter().enumerate() {
+            if !BIP39_WORDS.contains(&word.as_str()) {
+                return Err(anyhow::anyhow!("invalid word in BIP39 seed phrase"));
+            }
+
+            let word_index = BIP39_WORDS.iter().position(|&x| x == word).unwrap();
+            let word_bits = &mut bits[i * NUM_BITS_PER_WORD..(i + 1) * NUM_BITS_PER_WORD];
+            word_bits
+                .iter_mut()
+                .enumerate()
+                .for_each(|(j, bit)| *bit = (word_index >> (NUM_BITS_PER_WORD - 1 - j)) & 1 == 1);
+        }
+
+        let mut randomness = [0u8; NUM_ENTROPY_BITS / NUM_BITS_PER_BYTE];
+        for (i, random_byte) in randomness.iter_mut().enumerate() {
+            let bits_this_byte = &bits[i * NUM_BITS_PER_BYTE..(i + 1) * NUM_BITS_PER_BYTE];
+            *random_byte = bits_this_byte
+                .iter()
+                .enumerate()
+                .map(|(i, bit)| {
+                    if *bit {
+                        1 << (NUM_BITS_PER_BYTE - 1 - i)
+                    } else {
+                        0
+                    }
+                })
+                .sum::<u8>();
+        }
+
+        let checksum_bits = &bits[NUM_ENTROPY_BITS..];
+        let checksum = checksum_bits
+            .iter()
+            .enumerate()
+            .map(|(i, bit)| {
+                if *bit {
+                    1 << (NUM_CHECKSUM_BITS - 1 - i)
+                } else {
+                    0
+                }
+            })
+            .sum::<u8>();
+
+        let mut hasher = sha2::Sha256::new();
+        hasher.update(randomness);
+        if hasher.finalize()[0] != checksum {
+            return Err(anyhow::anyhow!("seed phrase checksum did not validate"));
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -86,31 +134,22 @@ impl std::str::FromStr for SeedPhrase {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let words = s.split(" ").collect::<Vec<&str>>();
+        let words = s
+            .split_whitespace()
+            .map(|w| w.to_lowercase())
+            .collect::<Vec<String>>();
 
-        if words.len() != SEED_PHRASE_LEN {
+        if words.len() != NUM_WORDS {
             return Err(anyhow::anyhow!(
                 "seed phrases should have {} words",
-                SEED_PHRASE_LEN
+                NUM_WORDS
             ));
         }
 
-        for word in words.clone() {
-            if !BIP39_WORDS.contains(&word) {
-                return Err(anyhow::anyhow!("invalid BIP39 seed phrase"));
-            }
-        }
+        let seed_phrase = SeedPhrase(words.try_into().expect("can convert vec to arr"));
+        seed_phrase.verify_checksum()?;
 
-        // xxx Verify seed phrase checksum
-
-        let word_arr: [String; SEED_PHRASE_LEN] = words
-            .into_iter()
-            .map(|s| s.to_string())
-            .collect::<Vec<String>>()
-            .try_into()
-            .expect("can convert to seed phrase");
-
-        Ok(SeedPhrase(word_arr))
+        Ok(seed_phrase)
     }
 }
 
@@ -158,13 +197,16 @@ mod tests {
         let invalid_phrases = [
             "too short",
             "zoo zoooooooo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo vote", // Invalid word
+            "legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth vote", // Invalid checksum
         ];
         for phrase in invalid_phrases {
             assert!(SeedPhrase::from_str(phrase).is_err());
         }
 
         let valid_phrases = [
-            "zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo vote"
+            "zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo vote",
+            "ZOO zoo ZOO zoo ZOO zoo ZOO zoo ZOO zoo ZOO zoo ZOO zoo ZOO zoo ZOO zoo ZOO zoo ZOO zoo ZOO VOTE",
+            "legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth title"
         ];
         for phrase in valid_phrases {
             assert!(SeedPhrase::from_str(phrase).is_ok());
