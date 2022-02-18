@@ -46,27 +46,16 @@ impl SeedPhrase {
         let mut words: [String; NUM_WORDS] = Default::default();
         for (i, word) in words.iter_mut().enumerate() {
             let bits_this_word = &bits[i * NUM_BITS_PER_WORD..(i + 1) * NUM_BITS_PER_WORD];
-            let word_index = bits_this_word
-                .iter()
-                .enumerate()
-                .map(|(i, bit)| {
-                    if *bit {
-                        1 << (NUM_BITS_PER_WORD - 1 - i)
-                    } else {
-                        0
-                    }
-                })
-                .sum::<u16>();
-            *word = BIP39_WORDS[word_index as usize].to_string();
+            let word_index = convert_bits_to_usize(bits_this_word);
+            *word = BIP39_WORDS[word_index].to_string();
         }
         SeedPhrase(words)
     }
 
     /// Verify the checksum of this [`SeedPhrase`].
     fn verify_checksum(&self) -> Result<(), anyhow::Error> {
-        let mut words = self.0.clone();
         let mut bits = [false; NUM_TOTAL_BITS];
-        for (i, word) in words.iter().enumerate() {
+        for (i, word) in self.0.iter().enumerate() {
             if !BIP39_WORDS.contains(&word.as_str()) {
                 return Err(anyhow::anyhow!("invalid word in BIP39 seed phrase"));
             }
@@ -82,31 +71,11 @@ impl SeedPhrase {
         let mut randomness = [0u8; NUM_ENTROPY_BITS / NUM_BITS_PER_BYTE];
         for (i, random_byte) in randomness.iter_mut().enumerate() {
             let bits_this_byte = &bits[i * NUM_BITS_PER_BYTE..(i + 1) * NUM_BITS_PER_BYTE];
-            *random_byte = bits_this_byte
-                .iter()
-                .enumerate()
-                .map(|(i, bit)| {
-                    if *bit {
-                        1 << (NUM_BITS_PER_BYTE - 1 - i)
-                    } else {
-                        0
-                    }
-                })
-                .sum::<u8>();
+            *random_byte = convert_bits_to_usize(bits_this_byte) as u8;
         }
 
         let checksum_bits = &bits[NUM_ENTROPY_BITS..];
-        let checksum = checksum_bits
-            .iter()
-            .enumerate()
-            .map(|(i, bit)| {
-                if *bit {
-                    1 << (NUM_CHECKSUM_BITS - 1 - i)
-                } else {
-                    0
-                }
-            })
-            .sum::<u8>();
+        let checksum = convert_bits_to_usize(checksum_bits) as u8;
 
         let mut hasher = sha2::Sha256::new();
         hasher.update(randomness);
@@ -151,6 +120,13 @@ impl std::str::FromStr for SeedPhrase {
 
         Ok(seed_phrase)
     }
+}
+
+fn convert_bits_to_usize(bits: &[bool]) -> usize {
+    bits.iter()
+        .enumerate()
+        .map(|(i, bit)| if *bit { 1 << (bits.len() - 1 - i) } else { 0 })
+        .sum::<usize>()
 }
 
 #[cfg(test)]
