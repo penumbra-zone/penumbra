@@ -5,7 +5,7 @@ use pbkdf2::pbkdf2;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    seed_phrase::{SeedPhrase, SEED_PHRASE_PBKDF2_ROUNDS},
+    seed_phrase::{SeedPhrase, NUM_PBKDF2_ROUNDS},
     FullViewingKey, IncomingViewingKey, NullifierKey, OutgoingViewingKey,
 };
 use crate::{
@@ -35,7 +35,7 @@ impl SpendSeed {
         pbkdf2::<Hmac<sha2::Sha512>>(
             password.as_bytes(),
             salt.as_bytes(),
-            SEED_PHRASE_PBKDF2_ROUNDS,
+            NUM_PBKDF2_ROUNDS,
             &mut spend_seed_bytes,
         );
         SpendSeed(spend_seed_bytes)
