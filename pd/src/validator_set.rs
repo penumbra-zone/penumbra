@@ -286,7 +286,12 @@ impl ValidatorSet {
     /// Called during `end_epoch`. Will calculate validator changes that can only happen during epoch changes
     /// such as rate updates.
     // pub async fn end_epoch(&mut self) -> Result<()> {
-    pub fn end_epoch<'a>(&'a mut self) -> impl Future<Output = Result<()>> + Send + Unpin + 'a {
+    pub fn end_epoch<'a>(&'_ mut self) -> impl Future<Output = Result<()>> + Send + Unpin + '_ {
+        let chain_params = self.reader.chain_params_rx().borrow();
+        let unbonding_epochs: u64 = chain_params.unbonding_epochs;
+        let validator_limit: u64 = chain_params.validator_limit;
+        drop(chain_params);
+
         Box::pin(async move {
             // We've finished processing the last block of `epoch`, so we've
             // crossed the epoch boundary, and (prev | current | next) are:
@@ -323,11 +328,6 @@ impl ValidatorSet {
                 .await?
                 .map(|info| info.total_supply)
                 .unwrap();
-
-            let chain_params = self.reader.chain_params_rx().borrow();
-            let unbonding_epochs: u64 = chain_params.unbonding_epochs;
-            let validator_limit: u64 = chain_params.validator_limit;
-            drop(chain_params);
 
             let mut next_rates = Vec::new();
             let mut next_validator_statuses = Vec::new();
