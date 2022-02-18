@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::{borrow::Borrow, collections::VecDeque};
 
 use anyhow::Result;
 use jmt::TreeWriterAsync;
@@ -12,7 +12,7 @@ use tokio::sync::watch;
 
 use super::jellyfish;
 use crate::{
-    genesis, pending_block::QuarantineGroup, validator_set::BlockValidatorSet, PendingBlock,
+    genesis, pending_block::QuarantineGroup, validator_set::ValidatorSet, PendingBlock,
     NUM_RECENT_ANCHORS,
 };
 
@@ -191,7 +191,7 @@ impl Writer {
     pub async fn commit_block(
         &self,
         block: PendingBlock,
-        block_validator_set: &BlockValidatorSet,
+        block_validator_set: &mut ValidatorSet,
     ) -> Result<Vec<u8>> {
         // TODO: batch these queries?
         let mut dbtx = self.pool.begin().await?;
@@ -377,8 +377,8 @@ impl Writer {
         }
 
         // Track the net change in delegations in this block.
-        let epoch_index = block.epoch.unwrap().index;
-        for (identity_key, delegation_change) in block.delegation_changes {
+        let epoch_index = block.epoch.clone().unwrap().index;
+        for (identity_key, delegation_change) in &block_validator_set.delegation_changes {
             query!(
                 "INSERT INTO delegation_changes VALUES ($1, $2, $3)",
                 identity_key.encode_to_vec(),
@@ -390,7 +390,7 @@ impl Writer {
         }
 
         // Save any new assets found in the block to the asset registry.
-        for (id, asset) in block.supply_updates {
+        for (id, asset) in &block_validator_set.supply_updates {
             query!(
                 "INSERT INTO assets (asset_id, denom, total_supply)
                 VALUES ($1, $2, $3)
@@ -405,7 +405,7 @@ impl Writer {
 
         if let (Some(base_rate_data), Some(rate_data)) = (
             block_validator_set.next_base_rate.clone(),
-            block_validator_set.next_rates.as_ref(),
+            block_validator_set.next_rates.clone(),
         ) {
             query!(
                 "INSERT INTO base_rates VALUES ($1, $2, $3)",
@@ -497,22 +497,18 @@ impl Writer {
         // When the validator was slashed their rate was updated to incorporate
         // the slashing penalty and then their rate will be held constant, so
         // there is no need to take into account the slashing penalty here.
-        for ik in &block_validator_set.slashed_validators {
+        for ik in block_validator_set.slashed_validators() {
             query!(
                 "UPDATE validators SET validator_state=$1 WHERE identity_key = $2",
                 ValidatorStateName::Slashed.to_str(),
-                ik.encode_to_vec(),
+                ik.borrow().encode_to_vec(),
             )
             .execute(&mut dbtx)
             .await?;
         }
 
         // next_validator_statuses are only saved during epoch transitions.
-        for status in block_validator_set
-            .next_validator_statuses
-            .as_ref()
-            .expect("next_validator_statuses should be set during commit")
-        {
+        for status in &block_validator_set.next_validator_statuses {
             let (state_name, unbonding_epoch) = status.state.into();
             query!(
                     "UPDATE validators SET voting_power=$1, validator_state=$2, unbonding_epoch=$3 WHERE identity_key = $4",
@@ -548,6 +544,8 @@ impl Writer {
             let _ = self.next_rate_data_tx.send(next_rate_data);
         }
         // chain_params_tx is a no-op, currently chain params don't change
+
+        block_validator_set.commit_block(block.epoch.unwrap().clone());
 
         Ok(app_hash.to_vec())
     }

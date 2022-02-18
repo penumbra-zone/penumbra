@@ -15,7 +15,7 @@ use tracing::Instrument;
 
 use super::Message;
 use crate::{
-    genesis, state, validator_set::BlockValidatorSet, verify::StatelessTransactionExt, PendingBlock,
+    genesis, state, validator_set::ValidatorSet, verify::StatelessTransactionExt, PendingBlock,
 };
 
 pub struct Worker {
@@ -23,14 +23,14 @@ pub struct Worker {
     queue: mpsc::Receiver<Message>,
     // todo: split up and modularize
     pending_block: Option<PendingBlock>,
-    block_validator_set: BlockValidatorSet,
+    block_validator_set: ValidatorSet,
     note_commitment_tree: NoteCommitmentTree,
 }
 
 impl Worker {
     pub async fn new(state: state::Writer, queue: mpsc::Receiver<Message>) -> Result<Self> {
         let note_commitment_tree = state.private_reader().note_commitment_tree().await?;
-        let block_validator_set = BlockValidatorSet::new(state.private_reader().clone()).await?;
+        let block_validator_set = ValidatorSet::new(state.private_reader().clone()).await?;
 
         Ok(Self {
             state,
@@ -124,20 +124,14 @@ impl Worker {
                 .expect("genesis allocations must have valid denominations");
 
             // Accumulate the allocation amount into the supply updates for this denom.
-            genesis_block
-                .supply_updates
-                .entry(denom.id())
-                .or_insert((denom, 0))
-                .1 += allocation.amount;
+            self.block_validator_set
+                .update_supply_for_denom(denom, allocation.amount);
         }
 
         // We might not have any allocations of delegation tokens, but we should record the denoms.
         for genesis::ValidatorPower { validator, .. } in app_state.validators.iter() {
             let denom = validator.identity_key.delegation_token().denom();
-            genesis_block
-                .supply_updates
-                .entry(denom.id())
-                .or_insert((denom, 0));
+            self.block_validator_set.update_supply_for_denom(denom, 0);
         }
 
         let genesis_tx = tx_builder
@@ -249,6 +243,10 @@ impl Worker {
             self.block_validator_set.add_validator_definition(v.clone());
         }
 
+        // Tell the validator set about the delegation changes in this transaction
+        self.block_validator_set
+            .update_delegations(&transaction.delegation_changes);
+
         self.pending_block
             .as_mut()
             .unwrap()
@@ -307,7 +305,7 @@ impl Worker {
         // Validator updates need to be sent back to Tendermint during end_block, so we need to
         // tell the validator set the block has ended so it can resolve conflicts and prepare
         // data to commit.
-        self.block_validator_set.end_block();
+        self.block_validator_set.end_block(epoch.clone());
 
         // If we are at the end of an epoch, process changes for it
         if epoch.end_height().value() == height {
@@ -316,7 +314,7 @@ impl Worker {
 
         // Send the next voting powers back to tendermint. This also
         // incorporates any newly added validators.
-        let validator_updates = self.block_validator_set.tm_validator_updates();
+        let validator_updates = self.block_validator_set.tm_validator_updates.clone();
 
         Ok(abci::response::EndBlock {
             validator_updates,
@@ -381,225 +379,11 @@ impl Worker {
 
         let current_base_rate = reader.base_rate_data(current_epoch.index).await?;
 
-        let mut staking_token_supply = reader
-            .asset_lookup(*STAKING_TOKEN_ASSET_ID)
-            .await?
-            .map(|info| info.total_supply)
-            .unwrap();
+        // Tell the validator set that the epoch is changing so it can prepare to commit.
+        self.block_validator_set.end_epoch();
 
-        // steps (foreach validator):
-        // - get the total token supply for the validator's delegation tokens
-        // - process the updates to the token supply:
-        //   - collect all delegations occurring in previous epoch and apply them (adds to supply);
-        //   - collect all undelegations started in previous epoch and apply them (reduces supply);
-        // - feed the updated (current) token supply into current_rates.voting_power()
-        // - persist both the current voting power and the current supply
-        //
-
-        /// FIXME: set this less arbitrarily, and allow this to be set per-epoch
-        /// 3bps -> 11% return over 365 epochs, why not
-        const BASE_REWARD_RATE: u64 = 3_0000;
-
-        let next_base_rate = current_base_rate.next(BASE_REWARD_RATE);
-
-        // rename to curr_rate so it lines up with next_rate (same # chars)
-        tracing::debug!(curr_base_rate = ?current_base_rate);
-        tracing::debug!(?next_base_rate);
-
-        let mut next_rates = Vec::new();
-        let mut next_validator_statuses = Vec::new();
-        let mut reward_notes = Vec::new();
-
-        // this is a bit complicated: because we're in the EndBlock phase, and the
-        // delegations in this block have not yet been committed, we have to combine
-        // the delegations in pending_block with the ones already committed to the
-        // state. otherwise the delegations committed in the epoch threshold block
-        // would be lost.
-        let mut delegation_changes = reader.delegation_changes(prev_epoch.index).await?;
-        for (id_key, delta) in &pending_block.delegation_changes {
-            *delegation_changes.entry(id_key.clone()).or_insert(0) += delta;
-        }
-
-        for validator in self.block_validator_set.validators_info() {
-            let current_rate = validator.borrow().rate_data.clone();
-
-            let mut hold_rate_constant = |current_rate: RateData| {
-                // The next epoch's rate is set to the current rate
-                let mut next_rate = current_rate;
-                next_rate.epoch_index = next_epoch.index;
-
-                next_rates.push(next_rate);
-                next_validator_statuses.push(validator.borrow().status.clone());
-            };
-            match validator.borrow().status.state {
-                // if a validator is slashed, their rates are updated to include the slashing penalty
-                // and then held constant.
-                //
-                // if a validator is slashed during the epoch transition the current epoch's rate is set
-                // to the slashed value (during end_block) and in here, the next epoch's rate is held constant.
-                ValidatorState::Slashed => {
-                    hold_rate_constant(current_rate);
-                    continue;
-                }
-                // if a validator isn't part of the consensus set, we do not update their rates
-                ValidatorState::Inactive => {
-                    hold_rate_constant(current_rate);
-                    continue;
-                }
-                // TODO: Are unbonding validators being handled correctly here?
-                // Their rates should be held constant, but (un)delegations need to be handled as well
-                _ => {}
-            };
-
-            let funding_streams = reader
-                .funding_streams(validator.borrow().validator.identity_key.clone())
-                .await?;
-
-            let next_rate = current_rate.next(&next_base_rate, funding_streams.as_ref());
-            let identity_key = validator.borrow().validator.identity_key.clone();
-
-            let delegation_delta = delegation_changes.get(&identity_key).unwrap_or(&0i64);
-
-            let delegation_amount = delegation_delta.abs() as u64;
-            let unbonded_amount = current_rate.unbonded_amount(delegation_amount);
-
-            let mut delegation_token_supply = reader
-                .asset_lookup(identity_key.delegation_token().id())
-                .await?
-                .map(|info| info.total_supply)
-                .unwrap_or(0);
-
-            if *delegation_delta > 0 {
-                // net delegation: subtract the unbonded amount from the staking token supply
-                staking_token_supply = staking_token_supply.checked_sub(unbonded_amount).unwrap();
-                delegation_token_supply = delegation_token_supply
-                    .checked_add(delegation_amount)
-                    .unwrap();
-            } else {
-                // net undelegation: add the unbonded amount to the staking token supply
-                staking_token_supply = staking_token_supply.checked_add(unbonded_amount).unwrap();
-                delegation_token_supply = delegation_token_supply
-                    .checked_sub(delegation_amount)
-                    .unwrap();
-            }
-
-            // update the delegation token supply
-            pending_block.supply_updates.insert(
-                identity_key.delegation_token().id(),
-                (
-                    identity_key.delegation_token().denom(),
-                    delegation_token_supply,
-                ),
-            );
-
-            let voting_power = next_rate.voting_power(delegation_token_supply, &next_base_rate);
-
-            // Default the next state to the current state from the validator state machine.
-            let next_state = &self
-                .block_validator_set
-                .get_state(&identity_key)
-                .cloned()
-                .expect("should be able to get next validator state from state machine");
-
-            let next_status = ValidatorStatus {
-                identity_key: identity_key.clone(),
-                voting_power,
-                state: *next_state,
-            };
-
-            // distribute validator commission
-            for stream in funding_streams {
-                let commission_reward_amount = stream.reward_amount(
-                    delegation_token_supply,
-                    &next_base_rate,
-                    &current_base_rate,
-                );
-
-                reward_notes.push((commission_reward_amount, stream.address));
-            }
-
-            // rename to curr_rate so it lines up with next_rate (same # chars)
-            tracing::debug!(curr_rate = ?current_rate);
-            tracing::debug!(?next_rate);
-            tracing::debug!(?delegation_delta);
-            tracing::debug!(?delegation_token_supply);
-            tracing::debug!(?next_status);
-
-            next_rates.push(next_rate);
-            next_validator_statuses.push(next_status);
-        }
-
-        // State transitions on epoch change are handled here
-        // after all rates have been calculated
-        //
-        // TODO: this has some overlap with the logic in ValidatorStateMachine,
-        // and we never end up using some of the transition methods in ValidatorStateMachine
-        // and the checks there aren't enforced as a result. Due to the code architecture
-        // this was easier for the time being but should probably be addressed by ditching
-        // next_validator_statuses, and making all changes directly to the validator state machine,
-        // and have commit_block pull statuses from the state machine rather than next_validator_statuses
-        let unbonding_epochs = self
-            .state
-            .private_reader()
-            .chain_params_rx()
-            .borrow()
-            .unbonding_epochs;
-        let validator_limit = self
-            .state
-            .private_reader()
-            .chain_params_rx()
-            .borrow()
-            .validator_limit;
-        // Sort the next validator states by voting power.
-        next_validator_statuses.sort_by(|a, b| a.voting_power.cmp(&b.voting_power));
-        let top_validators = next_validator_statuses
-            .iter()
-            .take(validator_limit as usize)
-            .map(|v| v.identity_key.clone())
-            .collect::<Vec<_>>();
-        for validator_status in &mut next_validator_statuses {
-            if validator_status.state == ValidatorState::Inactive
-                || matches!(
-                    validator_status.state,
-                    ValidatorState::Unbonding { unbonding_epoch: _ }
-                )
-            {
-                // If an Inactive or Unbonding validator is in the top `validator_limit` based
-                // on voting power and the delegation pool has a nonzero balance,
-                // then the validator should be moved to the Active state.
-                if top_validators.contains(&validator_status.identity_key) {
-                    // TODO: How do we check the delegation pool balance here?
-                    validator_status.state = ValidatorState::Active;
-                }
-            } else if validator_status.state == ValidatorState::Active {
-                // An Active validator could also be displaced and move to the
-                // Unbonding state.
-                if !top_validators.contains(&validator_status.identity_key) {
-                    validator_status.state = ValidatorState::Unbonding {
-                        unbonding_epoch: current_epoch.index + unbonding_epochs,
-                    };
-                }
-            }
-
-            // An Unbonding validator can become Inactive if the unbonding period expires
-            // and the validator is still in Unbonding state
-            if let ValidatorState::Unbonding { unbonding_epoch } = validator_status.state {
-                if unbonding_epoch <= current_epoch.index {
-                    validator_status.state = ValidatorState::Inactive;
-                }
-            };
-        }
-
-        tracing::debug!(?staking_token_supply);
-
-        self.block_validator_set.next_rates = Some(next_rates);
-        self.block_validator_set.next_base_rate = Some(next_base_rate);
-        self.block_validator_set.next_validator_statuses = Some(next_validator_statuses);
-        pending_block.supply_updates.insert(
-            *STAKING_TOKEN_ASSET_ID,
-            (STAKING_TOKEN_DENOM.clone(), staking_token_supply),
-        );
-        for reward_note in reward_notes {
+        // Add reward notes to the pending block.
+        for reward_note in &self.block_validator_set.reward_notes {
             pending_block.add_validator_reward_note(reward_note.0, reward_note.1);
         }
 
@@ -617,7 +401,7 @@ impl Worker {
 
         let app_hash = self
             .state
-            .commit_block(pending_block, &self.block_validator_set)
+            .commit_block(pending_block, &mut self.block_validator_set)
             .await?;
 
         tracing::info!(app_hash = ?hex::encode(&app_hash), "finished block commit");

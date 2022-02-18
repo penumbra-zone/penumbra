@@ -21,10 +21,6 @@ pub struct PendingBlock {
     pub notes: BTreeMap<note::Commitment, PositionedNoteData>,
     /// Nullifiers that were spent in this block.
     pub spent_nullifiers: BTreeSet<Nullifier>,
-    /// Records any updates to the token supply of some asset that happened in this block.
-    pub supply_updates: BTreeMap<asset::Id, (asset::Denom, u64)>,
-    /// The net delegations performed in this block per validator.
-    pub delegation_changes: BTreeMap<IdentityKey, i64>,
     /// The counter containing the number of rewards notes in the epoch. we need this to keep the
     /// blinding factor of the reward notes unique.
     reward_counter: u64,
@@ -60,8 +56,6 @@ impl PendingBlock {
             note_commitment_tree,
             notes: BTreeMap::new(),
             spent_nullifiers: BTreeSet::new(),
-            supply_updates: BTreeMap::new(),
-            delegation_changes: BTreeMap::new(),
             reward_counter: 0,
             quarantine: Vec::new(),
             reverting_notes: BTreeSet::new(),
@@ -163,11 +157,6 @@ impl PendingBlock {
         // prevent double-spends, regardless of quarantine status.
         for nullifier in transaction.spent_nullifiers {
             self.spent_nullifiers.insert(nullifier);
-        }
-
-        // Tally the delegation changes in this transaction
-        for (identity_key, delegation_change) in transaction.delegation_changes {
-            *self.delegation_changes.entry(identity_key).or_insert(0) += delegation_change;
         }
     }
 }
