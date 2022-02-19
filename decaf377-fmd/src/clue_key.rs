@@ -1,4 +1,4 @@
-use std::convert::TryInto;
+use std::{convert::TryInto, cell::RefCell};
 
 use ark_ff::{Field, UniformRand};
 use bitvec::{array::BitArray, order};
@@ -14,8 +14,12 @@ use crate::{hash, hkd, Clue, Error, MAX_PRECISION};
 /// situations where clue key might or might not actually be used.  This saves
 /// computation; at the point that a clue key will be used to create a [`Clue`],
 /// it can be expanded to an [`ExpandedClueKey`].
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub struct ClueKey(pub [u8; 32]);
+/// Implement copy
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct ClueKey {
+    pub root: [u8; 32],
+    subkeys: RefCell<Vec<decaf377::Element>>,
+}
 
 /// An expanded and validated clue key that can be used to create [`Clue`]s
 /// intended for the corresponding [`DetectionKey`](crate::DetectionKey).
@@ -23,6 +27,15 @@ pub struct ClueKey(pub [u8; 32]);
 pub struct ExpandedClueKey {
     // should this really generate everything upfront?
     Xs: [decaf377::Element; MAX_PRECISION],
+}
+
+impl From<[u8; 32]> for ClueKey {
+    fn from(root: [u8; 32]) -> Self {
+        ClueKey {
+            root: root,
+            subkeys: RefCell::new(Vec::new()),
+        }
+    }
 }
 
 impl ClueKey {
@@ -33,7 +46,7 @@ impl ClueKey {
     /// Fails if the bytes don't encode a valid clue key.
     #[allow(non_snake_case)]
     pub fn expand(&self) -> Result<ExpandedClueKey, Error> {
-        let root_pub_enc = decaf377::Encoding(self.0);
+        let root_pub_enc = decaf377::Encoding(self.root);
         let root_pub = root_pub_enc
             .decompress()
             .map_err(|_| Error::InvalidAddress)?;
@@ -48,6 +61,11 @@ impl ClueKey {
             .expect("iterator of length `MAX_PRECISION`");
 
         Ok(ExpandedClueKey { Xs })
+    }
+
+    #[allow(non_snake_case)]
+    pub fn generate_subkeys(&self, n: usize) -> Result<ExpandedClueKey, Error> {
+        unimplemented!()
     }
 }
 
