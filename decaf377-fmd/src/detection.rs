@@ -67,7 +67,7 @@ impl DetectionKey {
 
     /// Obtain the clue key corresponding to this detection key.
     pub fn clue_key(&self) -> ClueKey {
-        ClueKey::from((self.dtk * decaf377::basepoint()).compress().0)
+        ClueKey((self.dtk * decaf377::basepoint()).compress().0)
     }
 
     /// Use this detection key to examine the given `clue`, returning `true` if the
