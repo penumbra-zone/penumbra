@@ -4,12 +4,12 @@ use thiserror::Error;
 #[derive(Clone, Error, Debug)]
 pub enum Error {
     /// Clue creation for larger than maximum precision was requested.
-    #[error("Precision {0} bigger than MAX_PRECISION")]
+    #[error("Precision {0} is larger than `MAX_PRECISION` or current key expansion.")]
     PrecisionTooLarge(usize),
     /// An address encoding was invalid.
-    #[error("Invalid address")]
+    #[error("Invalid address.")]
     InvalidAddress,
     /// A detection key encoding was invalid.
-    #[error("Invalid detection key")]
+    #[error("Invalid detection key.")]
     InvalidDetectionKey,
 }
