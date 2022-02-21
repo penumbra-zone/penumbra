@@ -310,7 +310,8 @@ impl Worker {
         }
 
         // Send the next voting powers back to tendermint. This also
-        // incorporates any newly added validators.
+        // incorporates any newly added validators. Non-Active validators
+        // will have their voting power reported to Tendermint set to 0.
         let validator_updates = self.block_validator_set.tm_validator_updates.clone();
 
         Ok(abci::response::EndBlock {

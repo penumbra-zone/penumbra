@@ -252,7 +252,9 @@ impl ValidatorSet {
         }
 
         // Set `self.tm_validator_updates` to the complete set of
-        // validators and voting power.
+        // validators and voting power. This must be the last step performed,
+        // after all voting power calculations and validator state transitions have
+        // been completed.
         //
         // TODO: It could be more efficient to only return the power of
         // updated validators.
@@ -260,7 +262,14 @@ impl ValidatorSet {
             .validators_info()
             .map(|v| {
                 let v = v.borrow();
-                let power = v.status.voting_power as u32;
+                // if the validator is non-Active, set their voting power as
+                // returned to Tendermint to 0. Only Active validators report
+                // voting power to Tendermint.
+                let power = if v.status.state == ValidatorState::Active {
+                    v.status.voting_power as u32
+                } else {
+                    0
+                };
                 let validator = &v.validator;
                 let pub_key = validator.consensus_key;
                 tendermint::abci::types::ValidatorUpdate {
@@ -459,12 +468,11 @@ impl ValidatorSet {
             // State transitions on epoch change are handled here
             // after all rates have been calculated
             //
-            // TODO: this has some overlap with the logic in ValidatorStateMachine,
-            // and we never end up using some of the transition methods in ValidatorStateMachine
+            // TODO: we never end up using some of the transition methods in ValidatorSet
             // and the checks there aren't enforced as a result. Due to the code architecture
             // this was easier for the time being but should probably be addressed by ditching
-            // next_validator_statuses, and making all changes directly to the validator state machine,
-            // and have commit_block pull statuses from the state machine rather than next_validator_statuses
+            // next_validator_statuses, and making all changes directly to the ValidatorSet.validator_set,
+            // and have commit_block pull statuses from the validator_set rather than next_validator_statuses
 
             // Sort the next validator states by voting power.
             next_validator_statuses.sort_by(|a, b| a.voting_power.cmp(&b.voting_power));
@@ -485,6 +493,7 @@ impl ValidatorSet {
                     // then the validator should be moved to the Active state.
                     if top_validators.contains(&validator_status.identity_key) {
                         // TODO: How do we check the delegation pool balance here?
+                        // https://github.com/penumbra-zone/penumbra/issues/445
                         validator_status.state = ValidatorState::Active;
                     }
                 } else if validator_status.state == ValidatorState::Active {

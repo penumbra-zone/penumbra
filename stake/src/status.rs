@@ -10,7 +10,11 @@ use crate::{IdentityKey, ValidatorState};
 pub struct ValidatorStatus {
     /// The validator's identity.
     pub identity_key: IdentityKey,
-    /// The validator's voting power.
+    /// The validator's voting power. Note that only `Active` validators are part of the consensus set
+    /// and will have their voting power returned to Tendermint. Non-`Active` validators will return
+    /// voting power 0 to Tendermint in `end_block`, despite the value of this field. We need to maintain
+    /// this field for non-`Active` validators to trigger state transitions into `Active` when the validator's
+    /// potential voting power pushes them into the consensus set.
     pub voting_power: u64,
     /// The validator's current state.
     pub state: ValidatorState,
