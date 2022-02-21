@@ -1,4 +1,4 @@
-use std::{convert::TryInto, cell::RefCell};
+use std::cell::RefCell;
 
 use ark_ff::{Field, UniformRand};
 use bitvec::{array::BitArray, order};
@@ -34,7 +34,7 @@ impl ClueKey {
     #[allow(non_snake_case)]
     pub fn expand(&self, precision: usize) -> Result<ExpandedClueKey, Error> {
         if precision > MAX_PRECISION {
-            return Err(Error::PrecisionTooLarge(precision))
+            return Err(Error::PrecisionTooLarge(precision));
         }
 
         let root_pub_enc = decaf377::Encoding(self.0);
@@ -49,7 +49,9 @@ impl ClueKey {
             .map(|i| hkd::derive_public(&root_pub, &root_pub_enc, i as u8))
             .collect::<Vec<_>>();
 
-        Ok(ExpandedClueKey { subkeys: RefCell::new(Xs) })
+        Ok(ExpandedClueKey {
+            subkeys: RefCell::new(Xs),
+        })
     }
 }
 
@@ -75,7 +77,7 @@ impl ExpandedClueKey {
         }
 
         if !self.ensure_at_least(precision_bits) {
-            return Err(Error::PrecisionTooLarge(precision_bits))
+            return Err(Error::PrecisionTooLarge(precision_bits));
         }
 
         let r = Fr::rand(&mut rng);
@@ -111,7 +113,6 @@ impl ExpandedClueKey {
     /// Checks that the expanded clue key has at least `precision` subkeys
     fn ensure_at_least(&self, precision: usize) -> bool {
         // TODO: handle try_borrow failure via Result
-        return self.subkeys.try_borrow().unwrap().len() >= precision
+        return self.subkeys.try_borrow().unwrap().len() >= precision;
     }
-
 }
