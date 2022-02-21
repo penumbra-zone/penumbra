@@ -4,7 +4,7 @@ use rand_core::OsRng;
 #[test]
 fn detection_distribution_matches_expectation() {
     let alice_dk = fmd::DetectionKey::new(OsRng);
-    let alice_clue_key = alice_dk.clue_key().expand().unwrap();
+    let alice_clue_key = alice_dk.clue_key().expand(4).unwrap();
     // alice's friend bobce, whose name has the same number of letters
     let bobce_dk = fmd::DetectionKey::new(OsRng);
 
@@ -28,4 +28,27 @@ fn detection_distribution_matches_expectation() {
 
     assert_eq!(alice_detections, NUM_CLUES);
     assert!((expected_rate - bobce_detection_rate).abs() < 0.04);
+}
+
+#[test]
+fn fails_to_expand_clue_key() {
+    let detection_key = fmd::DetectionKey::new(OsRng);
+
+    detection_key
+        .clue_key()
+        .expand(fmd::MAX_PRECISION + 1)
+        .err()
+        .expect("fails to generate expanded clue key with precision greater than `MAX_PRECISION`");
+}
+
+#[test]
+fn fails_to_generate_clue() {
+    const PRECISION_BITS: usize = 2;
+    let detection_key = fmd::DetectionKey::new(OsRng);
+    let expanded_clue_key = detection_key.clue_key().expand(PRECISION_BITS).unwrap();
+
+    expanded_clue_key
+        .create_clue(PRECISION_BITS + 1, OsRng)
+        .err()
+        .expect("fails to generate clue with excessive precision");
 }
