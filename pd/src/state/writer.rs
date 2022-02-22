@@ -507,8 +507,12 @@ impl Writer {
             .await?;
         }
 
-        // next_validator_statuses are only saved during epoch transitions.
-        for status in &block_validator_set.next_validator_statuses {
+        // This happens during every end_block. Most modifications to validator status occur
+        // during end_epoch, and others (slashing) occur during begin_block, and both are
+        // applied here.
+        //
+        // TODO: This isn't a differential update. This should be OK but is sub-optimal.
+        for status in &block_validator_set.next_validator_statuses() {
             let (state_name, unbonding_epoch) = status.state.into();
             query!(
                     "UPDATE validators SET voting_power=$1, validator_state=$2, unbonding_epoch=$3 WHERE identity_key = $4",

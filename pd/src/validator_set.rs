@@ -1,4 +1,7 @@
-use std::{borrow::Borrow, collections::BTreeMap};
+use std::{
+    borrow::{Borrow, BorrowMut},
+    collections::BTreeMap,
+};
 
 use anyhow::Result;
 
@@ -57,8 +60,6 @@ pub struct ValidatorSet {
     pub next_base_rate: Option<BaseRateData>,
     /// If this is the last block of an epoch, validator rates for the next epoch go here.
     pub next_rates: Option<Vec<RateData>>,
-    /// If this is the last block of an epoch, validator statuses for the next epoch go here.
-    pub next_validator_statuses: Vec<ValidatorStatus>,
     /// The list of updated validator identity keys and powers to send to Tendermint during `end_block`.
     ///
     /// Set in `end_block` and reset to `None` when `tm_validator_updates` is called.
@@ -86,7 +87,6 @@ impl ValidatorSet {
             epoch: None,
             next_base_rate: None,
             next_rates: None,
-            next_validator_statuses: Vec::new(),
             validator_definitions: BTreeMap::new(),
             new_validators: Vec::new(),
             updated_validators: Vec::new(),
@@ -109,9 +109,6 @@ impl ValidatorSet {
             self.epoch = Some(new_epoch);
             self.next_base_rate = None;
             self.next_rates = None;
-            // TODO: next_validator_statuses is a subset of the data
-            // within self.updated_validators, this is bad design
-            self.next_validator_statuses = Vec::new();
             self.reward_notes = Vec::new();
             self.supply_updates = BTreeMap::new();
         }
@@ -292,6 +289,80 @@ impl ValidatorSet {
         }
     }
 
+    /// Called during the commit phase of a block. Will return the current status of
+    /// all validators within the state machine.
+    pub fn next_validator_statuses(&self) -> Vec<ValidatorStatus> {
+        self.validators_info()
+            .map(|v| v.borrow().status.clone())
+            .collect()
+    }
+
+    /// Called during `end_epoch`. Will perform state transitions to validators based
+    /// on changes to voting power that occurred in this epoch.
+    pub fn process_epoch_transitions(
+        &mut self,
+        validator_limit: u64,
+        current_epoch: Epoch,
+        unbonding_epochs: u64,
+    ) -> Result<()> {
+        // Sort the next validator states by voting power.
+        // Dislike this clone, but the borrow checker was complaining about the loop modifying itself
+        // when I tried using the validators_info() iterator.
+        let mut validators_info = self
+            .validator_set
+            .iter()
+            .map(|(_, v)| (v.clone()))
+            .collect::<Vec<_>>();
+        validators_info.sort_by(|a, b| {
+            a.borrow()
+                .status
+                .voting_power
+                .cmp(&b.borrow().status.voting_power)
+        });
+        let top_validators = validators_info
+            .iter()
+            .take(validator_limit as usize)
+            .map(|v| v.borrow().validator.identity_key.clone())
+            .collect::<Vec<_>>();
+        for vi in &validators_info {
+            let validator_status = &vi.borrow().status.clone();
+            if validator_status.state == ValidatorState::Inactive
+                || matches!(
+                    validator_status.state,
+                    ValidatorState::Unbonding { unbonding_epoch: _ }
+                )
+            {
+                // If an Inactive or Unbonding validator is in the top `validator_limit` based
+                // on voting power and the delegation pool has a nonzero balance,
+                // then the validator should be moved to the Active state.
+                if top_validators.contains(&validator_status.identity_key) {
+                    // TODO: How do we check the delegation pool balance here?
+                    // https://github.com/penumbra-zone/penumbra/issues/445
+                    self.activate_validator(vi.borrow().validator.consensus_key.clone())?;
+                }
+            } else if validator_status.state == ValidatorState::Active {
+                // An Active validator could also be displaced and move to the
+                // Unbonding state.
+                if !top_validators.contains(&validator_status.identity_key) {
+                    self.unbond_validator(
+                        vi.borrow().validator.consensus_key.clone(),
+                        current_epoch.index + unbonding_epochs,
+                    )?;
+                }
+            }
+
+            // An Unbonding validator can become Inactive if the unbonding period expires
+            // and the validator is still in Unbonding state
+            if let ValidatorState::Unbonding { unbonding_epoch } = validator_status.state {
+                if unbonding_epoch <= current_epoch.index {
+                    self.deactivate_validator(vi.borrow().validator.consensus_key.clone())?;
+                }
+            };
+        }
+
+        Ok(())
+    }
+
     /// Called during `end_epoch`. Will calculate validator changes that can only happen during epoch changes
     /// such as rate updates.
     // pub async fn end_epoch(&mut self) -> Result<()> {
@@ -339,7 +410,6 @@ impl ValidatorSet {
                 .unwrap();
 
             let mut next_rates = Vec::new();
-            let mut next_validator_statuses = Vec::new();
             let mut reward_notes = Vec::new();
             let mut supply_updates = Vec::new();
 
@@ -353,7 +423,7 @@ impl ValidatorSet {
                 *delegation_changes.entry(id_key.clone()).or_insert(0) += delta;
             }
 
-            for v in &self.validator_set {
+            for v in &mut self.validator_set {
                 let validator = v.1;
                 let current_rate = validator.rate_data.clone();
 
@@ -365,7 +435,6 @@ impl ValidatorSet {
                     next_rate.epoch_index = current_epoch.index;
 
                     next_rates.push(next_rate);
-                    next_validator_statuses.push(validator.status.clone());
                 };
                 match validator.status.state {
                     // if a validator is slashed, their rates are updated to include the slashing penalty
@@ -431,17 +500,9 @@ impl ValidatorSet {
                 ));
                 let voting_power = next_rate.voting_power(delegation_token_supply, &next_base_rate);
 
-                // Default the next state to the current state from the validator state machine.
-                let next_state = self
-                    .get_state(&identity_key)
-                    .cloned()
-                    .expect("should be able to get next validator state from state machine");
-
-                let next_status = ValidatorStatus {
-                    identity_key: identity_key.clone(),
-                    voting_power,
-                    state: next_state,
-                };
+                // Update the status of the validator within the validator set
+                // with the newly calculated voting power.
+                validator.status.voting_power = voting_power;
 
                 // distribute validator commission
                 for stream in funding_streams {
@@ -459,61 +520,13 @@ impl ValidatorSet {
                 tracing::debug!(?next_rate);
                 tracing::debug!(?delegation_delta);
                 tracing::debug!(?delegation_token_supply);
-                tracing::debug!(?next_status);
 
                 next_rates.push(next_rate);
-                next_validator_statuses.push(next_status);
             }
 
             // State transitions on epoch change are handled here
             // after all rates have been calculated
-            //
-            // TODO: we never end up using some of the transition methods in ValidatorSet
-            // and the checks there aren't enforced as a result. Due to the code architecture
-            // this was easier for the time being but should probably be addressed by ditching
-            // next_validator_statuses, and making all changes directly to the ValidatorSet.validator_set,
-            // and have commit_block pull statuses from the validator_set rather than next_validator_statuses
-
-            // Sort the next validator states by voting power.
-            next_validator_statuses.sort_by(|a, b| a.voting_power.cmp(&b.voting_power));
-            let top_validators = next_validator_statuses
-                .iter()
-                .take(validator_limit as usize)
-                .map(|v| v.identity_key.clone())
-                .collect::<Vec<_>>();
-            for validator_status in &mut next_validator_statuses {
-                if validator_status.state == ValidatorState::Inactive
-                    || matches!(
-                        validator_status.state,
-                        ValidatorState::Unbonding { unbonding_epoch: _ }
-                    )
-                {
-                    // If an Inactive or Unbonding validator is in the top `validator_limit` based
-                    // on voting power and the delegation pool has a nonzero balance,
-                    // then the validator should be moved to the Active state.
-                    if top_validators.contains(&validator_status.identity_key) {
-                        // TODO: How do we check the delegation pool balance here?
-                        // https://github.com/penumbra-zone/penumbra/issues/445
-                        validator_status.state = ValidatorState::Active;
-                    }
-                } else if validator_status.state == ValidatorState::Active {
-                    // An Active validator could also be displaced and move to the
-                    // Unbonding state.
-                    if !top_validators.contains(&validator_status.identity_key) {
-                        validator_status.state = ValidatorState::Unbonding {
-                            unbonding_epoch: current_epoch.index + unbonding_epochs,
-                        };
-                    }
-                }
-
-                // An Unbonding validator can become Inactive if the unbonding period expires
-                // and the validator is still in Unbonding state
-                if let ValidatorState::Unbonding { unbonding_epoch } = validator_status.state {
-                    if unbonding_epoch <= current_epoch.index {
-                        validator_status.state = ValidatorState::Inactive;
-                    }
-                };
-            }
+            self.process_epoch_transitions(validator_limit, current_epoch, unbonding_epochs)?;
 
             for supply_update in supply_updates {
                 self.add_supply_update(supply_update.0, supply_update.1, supply_update.2);
@@ -523,7 +536,6 @@ impl ValidatorSet {
 
             self.next_rates = Some(next_rates);
             self.next_base_rate = Some(next_base_rate);
-            self.next_validator_statuses = next_validator_statuses;
             self.reward_notes = reward_notes;
             self.supply_updates.insert(
                 *STAKING_TOKEN_ASSET_ID,
@@ -611,7 +623,9 @@ impl ValidatorSet {
         self.validator_set.iter().map(|v| &v.1.validator)
     }
 
-    pub fn validators_info(&self) -> impl Iterator<Item = impl Borrow<&'_ ValidatorInfo>> {
+    pub fn validators_info(
+        &self,
+    ) -> impl Iterator<Item = impl Borrow<&'_ ValidatorInfo> + BorrowMut<&'_ ValidatorInfo>> {
         self.validator_set.iter().map(|v| v.1)
     }
 

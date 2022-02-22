@@ -68,8 +68,8 @@ enum Command {
         #[structopt(long, default_value = "10")]
         validator_limit: u64,
         /// Penalty to be applied to slashed validators' rates.
-        /// TODO: not sure what a good default is
-        #[structopt(long, default_value = "10")]
+        /// Expressed in basis points.
+        #[structopt(long, default_value = "1000")]
         slashing_penalty: u64,
         /// Path to CSV file containing initial allocations.
         #[structopt(
