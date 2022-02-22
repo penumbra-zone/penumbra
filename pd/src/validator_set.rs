@@ -306,7 +306,7 @@ impl ValidatorSet {
     /// on changes to voting power that occurred in this epoch.
     pub fn process_epoch_transitions(
         &mut self,
-        validator_limit: u64,
+        active_validator_limit: u64,
         current_epoch: Epoch,
         unbonding_epochs: u64,
     ) -> Result<()> {
@@ -326,7 +326,7 @@ impl ValidatorSet {
         });
         let top_validators = validators_info
             .iter()
-            .take(validator_limit as usize)
+            .take(active_validator_limit as usize)
             .map(|v| v.borrow().validator.identity_key.clone())
             .collect::<Vec<_>>();
         for vi in &validators_info {
@@ -337,7 +337,7 @@ impl ValidatorSet {
                     ValidatorState::Unbonding { unbonding_epoch: _ }
                 )
             {
-                // If an Inactive or Unbonding validator is in the top `validator_limit` based
+                // If an Inactive or Unbonding validator is in the top `active_validator_limit` based
                 // on voting power and the delegation pool has a nonzero balance,
                 // then the validator should be moved to the Active state.
                 if top_validators.contains(&validator_status.identity_key) {
@@ -374,7 +374,7 @@ impl ValidatorSet {
     pub fn end_epoch(&'_ mut self) -> impl Future<Output = Result<()>> + Send + Unpin + '_ {
         let chain_params = self.reader.chain_params_rx().borrow();
         let unbonding_epochs: u64 = chain_params.unbonding_epochs;
-        let validator_limit: u64 = chain_params.validator_limit;
+        let active_validator_limit: u64 = chain_params.active_validator_limit;
         drop(chain_params);
 
         Box::pin(async move {
@@ -531,7 +531,11 @@ impl ValidatorSet {
 
             // State transitions on epoch change are handled here
             // after all rates have been calculated
-            self.process_epoch_transitions(validator_limit, current_epoch, unbonding_epochs)?;
+            self.process_epoch_transitions(
+                active_validator_limit,
+                current_epoch,
+                unbonding_epochs,
+            )?;
 
             for supply_update in supply_updates {
                 self.add_supply_update(supply_update.0, supply_update.1, supply_update.2);

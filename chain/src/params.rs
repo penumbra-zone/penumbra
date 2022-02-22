@@ -42,8 +42,9 @@ pub struct ChainParams {
     pub chain_id: String,
     pub epoch_duration: u64,
     pub unbonding_epochs: u64,
-    pub validator_limit: u64,
-    // Slashing penalty in basis points
+    /// The number of validators allowed in the consensus set (Active state).
+    pub active_validator_limit: u64,
+    /// Slashing penalty in basis points
     pub slashing_penalty: u64,
 }
 
@@ -55,7 +56,7 @@ impl From<pb::ChainParams> for ChainParams {
             chain_id: msg.chain_id,
             epoch_duration: msg.epoch_duration,
             unbonding_epochs: msg.unbonding_epochs,
-            validator_limit: msg.validator_limit,
+            active_validator_limit: msg.active_validator_limit,
             slashing_penalty: msg.slashing_penalty,
         }
     }
@@ -67,7 +68,7 @@ impl From<ChainParams> for pb::ChainParams {
             chain_id: params.chain_id,
             epoch_duration: params.epoch_duration,
             unbonding_epochs: params.unbonding_epochs,
-            validator_limit: params.validator_limit,
+            active_validator_limit: params.active_validator_limit,
             slashing_penalty: params.slashing_penalty,
         }
     }
@@ -81,7 +82,7 @@ impl Default for ChainParams {
             chain_id: String::new(),
             epoch_duration: 8640,
             unbonding_epochs: 30,
-            validator_limit: 10,
+            active_validator_limit: 10,
             // 1000 basis points = 10%
             slashing_penalty: 1000,
         }

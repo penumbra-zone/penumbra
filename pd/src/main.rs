@@ -66,7 +66,7 @@ enum Command {
         unbonding_epochs: u64,
         /// Maximum number of validators in the consensus set.
         #[structopt(long, default_value = "10")]
-        validator_limit: u64,
+        active_validator_limit: u64,
         /// Penalty to be applied to slashed validators' rates.
         /// Expressed in basis points.
         #[structopt(long, default_value = "1000")]
@@ -207,7 +207,7 @@ async fn main() -> anyhow::Result<()> {
             starting_ip: _,
             epoch_duration,
             unbonding_epochs,
-            validator_limit,
+            active_validator_limit,
             allocations_input_file,
             validators_input_file,
             output_dir,
@@ -308,7 +308,7 @@ async fn main() -> anyhow::Result<()> {
                         chain_id: chain_id.clone(),
                         epoch_duration,
                         unbonding_epochs,
-                        validator_limit,
+                        active_validator_limit,
                         slashing_penalty,
                     },
                     validators: validators
