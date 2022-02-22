@@ -116,6 +116,8 @@ impl StatelessTransactionExt for Transaction {
                         .0
                         .verify(&sighash, &validator.auth_sig)
                         .context("validator definition signature failed to verify")?;
+
+                    // TODO: Validate that the definition's funding streams do not exceed 100% (10000bps)
                     validators.push(validator);
                 }
                 _ => {

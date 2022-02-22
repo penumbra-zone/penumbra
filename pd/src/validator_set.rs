@@ -566,43 +566,56 @@ impl ValidatorSet {
 
     pub fn add_validator_definition(&mut self, validator_definition: ValidatorDefinition) {
         let identity_key = validator_definition.validator.identity_key.clone();
-        let validator_info = ValidatorInfo {
-            validator: validator_definition.validator.clone(),
-            // TODO: This is definitely wrong in the case of updated validator
-            // definitions and would allow resetting state/rate data!
-            //
-            // These should be pulled from the existing validator if it exists!
-            status: ValidatorStatus {
-                identity_key: validator_definition.validator.identity_key.clone(),
-                // Voting power for inactive validators is 0
-                voting_power: 0,
-                state: ValidatorState::Inactive,
-            },
-            rate_data: RateData {
-                identity_key: validator_definition.validator.identity_key.clone(),
-                epoch_index: self
-                    .epoch
-                    .as_ref()
-                    .expect("expect epoch to be set when validator definitions are added")
-                    .index,
-                // Validator reward rate is held constant for inactive validators.
-                // Stake committed to inactive validators earns no rewards.
-                validator_reward_rate: 0,
-                // Exchange rate for inactive validators is held constant
-                // and starts at 1
-                validator_exchange_rate: 1,
-            },
-        };
-        // TODO: This might not be right, since the new validator definition
+        // TODO: This is not right, since the new validator definition
         // needs to be resolved during end_block. If multiple validators
         // are defined for the same sequence ID within a transaction, it
-        // is possible that state could be overriden for a validator as a
-        // result.
+        // is possible that the validator in self.validator_set doesn't match
+        // the validator resolved during end_block
         //
-        // For example:
-        // Validator A is slashed during begin_block, but then an updated
-        // ValidatorDefinition is submitted for Validator A in the same block.
-        self.add_validator(validator_info);
+        // Really this method should just keep track of the validator definitions
+        // and then after they've been resolved, the state machine can be updated
+        // during end_block.
+
+        // determine whether this is a new or updated validator
+        if self.validator_set.contains_key(&identity_key) {
+            // update the validator definition
+            let mut validator = self
+                .validator_set
+                .get_mut(&identity_key)
+                .expect("validator should exist in validator set");
+            // The validator definition was already verified during verify_stateless/verify_stateful
+            // Replace the validator within the validator set with the new definition
+            // but keep the current status/state/rate data
+            validator.validator = validator_definition.clone().into();
+        } else {
+            // add the validator to the validator set
+            self.add_validator(ValidatorInfo {
+                validator: validator_definition.clone().into(),
+                status: ValidatorStatus {
+                    // Newly added validators enter in the Inactive state
+                    state: ValidatorState::Inactive,
+                    // Voting power for new validators is 0. This will be replaced
+                    // by a calculated voting power during the next `end_epoch`.
+                    voting_power: 0,
+                    identity_key: identity_key.clone(),
+                },
+                rate_data: RateData {
+                    identity_key: validator_definition.validator.identity_key.clone(),
+                    epoch_index: self
+                        .epoch
+                        .as_ref()
+                        .expect("expect epoch to be set when validator definitions are added")
+                        .index,
+                    // Validator reward rate is held constant for inactive validators.
+                    // Stake committed to inactive validators earns no rewards.
+                    validator_reward_rate: 0,
+                    // Exchange rate for inactive validators is held constant
+                    // and starts at 1
+                    validator_exchange_rate: 1,
+                },
+            });
+        }
+
         self.validator_definitions
             .entry(identity_key)
             .or_insert_with(Vec::new)
