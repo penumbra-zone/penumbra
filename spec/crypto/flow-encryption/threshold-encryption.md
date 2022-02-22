@@ -9,7 +9,7 @@ scheme described here.
 
 ## Desired Properties
 
-For our threshold encryption scheme, we require two important properties:
+For our threshold encryption scheme, we require three important properties:
 
 * Homomorphism: we must be able to operate over ciphertexts, by combining value commitments from many participants into a batched value.
 * Verifiability: we must be able to verify that a given value $v_i$ was encrypted correctly to a given ciphertext $c_i$
@@ -78,7 +78,7 @@ $$k_{1} \overset{rand}{\leftarrow} \mathbb{F_q} $$
 $$k_{2} \overset{rand}{\leftarrow} \mathbb{F_q}$$
 $$\alpha = k_{1}*G + k_{2}*D$$
 $$\gamma = k_{2}*G$$
-$$c = H(r, s)$$
+$$c = H(\alpha, \gamma)$$
 
 $$r = k_{1} + v_i*c$$
 $$s = k_{2} + e*c$$
@@ -89,7 +89,7 @@ The encryption of value $v$ is given as $v_e = [c_1, c_2, c_3, c_4]$.
 Upon receiving an encrypted value $v_e$ with proofs $\sigma_{c_i}$, a validator
 or validating full node should verify each proof $\sigma_{c_i}$ by checking
 
-$$c = H(r, s)$$
+$$c = H(\alpha, \gamma)$$
 $$G*s \stackrel{?}{=} \gamma + c_{i0}*c$$
 $$G*r+ D*s \stackrel{?}{=} \alpha + c_{i1}*c$$
 
