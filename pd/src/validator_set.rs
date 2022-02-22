@@ -695,7 +695,6 @@ impl ValidatorSet {
             .get_validator_info(&validator.identity_key)
             .ok_or(anyhow::anyhow!("Validator not found in state machine"))?;
         let current_state = current_info.status.state;
-        let current_validator_reward_rate = current_info.rate_data.validator_reward_rate;
 
         let mut mark_slashed = |validator: &Validator| -> Result<()> {
             self.validator_set
@@ -707,10 +706,7 @@ impl ValidatorSet {
                 .get_mut(&validator.identity_key)
                 .ok_or_else(|| anyhow::anyhow!("Validator not found"))?
                 .rate_data
-                // Slashing penalty is in base points
-                // TODO: confirm this math is correct
-                .validator_reward_rate -=
-                current_validator_reward_rate * slashing_penalty / 1_0000_0000;
+                .slash(slashing_penalty);
             Ok(())
         };
 
