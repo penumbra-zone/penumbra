@@ -23,7 +23,7 @@ pub use rate::{BaseRateData, RateData, RateDataById};
 pub use status::ValidatorStatus;
 pub use token::DelegationToken;
 pub use undelegate::Undelegate;
-pub use validator::{FundingStreams, Validator, ValidatorDefinition};
+pub use validator::{FundingStreams, Validator, ValidatorDefinition, VerifiedValidatorDefinition};
 pub use validator_state::{ValidatorState, ValidatorStateName};
 
 /// The Bech32 prefix used for validator consensus pubkeys.

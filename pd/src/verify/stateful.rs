@@ -140,7 +140,8 @@ impl state::Reader {
         // TODO: are any other checks necessary here?
         // Resolution of conflicting validator definitions is performed later in `end_block` after
         // they've all been received.
-        for v in &transaction.validators {
+        let mut validator_definitions = Vec::new();
+        for v in &transaction.validator_definitions {
             let existing_v: Vec<&ValidatorInfo> = block_validators
                 .iter()
                 .filter(|z| z.validator.identity_key == v.validator.identity_key)
@@ -160,6 +161,9 @@ impl state::Reader {
                     ));
                 }
             }
+
+            // the validator definition has now passed all verification checks, so add it to the list
+            validator_definitions.push(v.clone().into());
         }
 
         Ok(VerifiedTransaction {
@@ -168,7 +172,7 @@ impl state::Reader {
             spent_nullifiers: transaction.spent_nullifiers,
             delegation_changes,
             undelegation_validator: transaction.undelegation.map(|u| u.validator_identity),
-            new_validators: transaction.validators,
+            validator_definitions,
         })
     }
 }
@@ -202,6 +206,6 @@ pub fn mark_genesis_as_verified(transaction: Transaction) -> VerifiedTransaction
         spent_nullifiers: BTreeSet::<Nullifier>::new(),
         delegation_changes: BTreeMap::new(),
         undelegation_validator: None,
-        new_validators: vec![],
+        validator_definitions: vec![],
     }
 }

@@ -14,8 +14,8 @@ use tendermint::{abci::types::ValidatorUpdate, PublicKey};
 
 use crate::state::Reader;
 use penumbra_stake::{
-    BaseRateData, Epoch, IdentityKey, RateData, Validator, ValidatorDefinition, ValidatorInfo,
-    ValidatorState, ValidatorStatus, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
+    BaseRateData, Epoch, IdentityKey, RateData, Validator, ValidatorInfo, ValidatorState,
+    ValidatorStatus, VerifiedValidatorDefinition, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
 };
 
 #[derive(Debug, Clone)]
@@ -42,7 +42,7 @@ pub struct ValidatorSet {
     ///
     /// Otherwise if the definition is for a new validator, this will be pushed to `self.new_validators`
     /// during end_block.
-    validator_definitions: BTreeMap<IdentityKey, Vec<ValidatorDefinition>>,
+    validator_definitions: BTreeMap<IdentityKey, Vec<VerifiedValidatorDefinition>>,
     /// New validators added during the block. Saved and available for staking when the block is committed.
     pub new_validators: Vec<ValidatorInfo>,
     /// Existing validators updated during the block. Saved when the block is committed.
@@ -135,7 +135,7 @@ impl ValidatorSet {
         // This closure is used to generate a new ValidatorInfo from a ValidatorDefinition.
         // This should *only* be called for *new validators* as it sets the validator's state
         // to Inactive and sets default rate data!
-        let make_validator = |v: ValidatorDefinition| -> ValidatorInfo {
+        let make_validator = |v: VerifiedValidatorDefinition| -> ValidatorInfo {
             ValidatorInfo {
                 validator: v.validator.clone(),
                 status: ValidatorStatus {
@@ -145,7 +145,7 @@ impl ValidatorSet {
                     state: ValidatorState::Inactive,
                 },
                 rate_data: RateData {
-                    identity_key: v.validator.identity_key,
+                    identity_key: v.validator.identity_key.clone(),
                     epoch_index: epoch.index,
                     // Validator reward rate is held constant for inactive validators.
                     // Stake committed to inactive validators earns no rewards.
@@ -159,7 +159,7 @@ impl ValidatorSet {
 
         // This will hold a single deterministically chosen validator definition for every identity key
         // we received validator definitions for.
-        let mut resolved_validator_definitions: BTreeMap<IdentityKey, ValidatorDefinition> =
+        let mut resolved_validator_definitions: BTreeMap<IdentityKey, VerifiedValidatorDefinition> =
             BTreeMap::new();
         // Any conflicts in validator definitions added to the pending block need to be resolved.
         // TODO: this code should be tested to ensure changes don't break the ordering.
@@ -178,7 +178,7 @@ impl ValidatorSet {
             }
 
             // Sort the validator definitions into buckets by their sequence number.
-            let mut new_validator_definitions_by_seq: Vec<(u32, Vec<ValidatorDefinition>)> =
+            let mut new_validator_definitions_by_seq: Vec<(u32, Vec<VerifiedValidatorDefinition>)> =
                 Vec::new();
             for def in defs.iter() {
                 let seq = def.validator.sequence_number;
@@ -226,10 +226,15 @@ impl ValidatorSet {
                 // If this is an existing validator, there will need to be a database UPDATE query.
                 // The existing state will be maintained but the validator configuration will change
                 // to the new definition.
-                // (TODO: ensure funding stream changes are properly accounted for).
+                //
+                // Funding stream, rate, and voting power calculations will occur for this validator
+                // during end_epoch. The old values are maintained until then.
                 let mut validator_info = self.validator_set.get_mut(ik).unwrap();
 
                 // Update the internal validator configuration
+                // The validator definition was already verified during verify_stateless/verify_stateful
+                // Replace the validator within the validator set with the new definition
+                // but keep the current status/state/rate data
                 validator_info.validator = def.validator.clone();
 
                 // Add the validator to the block's updated validators list so an UPDATE query will be generated in
@@ -263,18 +268,18 @@ impl ValidatorSet {
                 // returned to Tendermint to 0. Only Active validators report
                 // voting power to Tendermint.
                 let power = if v.status.state == ValidatorState::Active {
-                    v.status.voting_power as u32
+                    v.status.voting_power as u64
                 } else {
                     0
                 };
                 let validator = &v.validator;
                 let pub_key = validator.consensus_key;
-                tendermint::abci::types::ValidatorUpdate {
+                Ok(tendermint::abci::types::ValidatorUpdate {
                     pub_key,
-                    power: power.into(),
-                }
+                    power: power.try_into()?,
+                })
             })
-            .collect();
+            .collect::<Result<Vec<_>>>()?;
 
         Ok(())
     }
@@ -564,57 +569,14 @@ impl ValidatorSet {
             .1 += amount;
     }
 
-    pub fn add_validator_definition(&mut self, validator_definition: ValidatorDefinition) {
+    /// This keeps track of validator definitions received during the block.
+    /// Any conflicts will be resolved and resulting changes to the validator set
+    /// will be applied during end_block.
+    ///
+    /// Validator definitions must have been already validated by verify_stateful/verify_stateless
+    /// prior to calling this method.
+    pub fn add_validator_definition(&mut self, validator_definition: VerifiedValidatorDefinition) {
         let identity_key = validator_definition.validator.identity_key.clone();
-        // TODO: This is not right, since the new validator definition
-        // needs to be resolved during end_block. If multiple validators
-        // are defined for the same sequence ID within a transaction, it
-        // is possible that the validator in self.validator_set doesn't match
-        // the validator resolved during end_block
-        //
-        // Really this method should just keep track of the validator definitions
-        // and then after they've been resolved, the state machine can be updated
-        // during end_block.
-
-        // determine whether this is a new or updated validator
-        if self.validator_set.contains_key(&identity_key) {
-            // update the validator definition
-            let mut validator = self
-                .validator_set
-                .get_mut(&identity_key)
-                .expect("validator should exist in validator set");
-            // The validator definition was already verified during verify_stateless/verify_stateful
-            // Replace the validator within the validator set with the new definition
-            // but keep the current status/state/rate data
-            validator.validator = validator_definition.clone().into();
-        } else {
-            // add the validator to the validator set
-            self.add_validator(ValidatorInfo {
-                validator: validator_definition.clone().into(),
-                status: ValidatorStatus {
-                    // Newly added validators enter in the Inactive state
-                    state: ValidatorState::Inactive,
-                    // Voting power for new validators is 0. This will be replaced
-                    // by a calculated voting power during the next `end_epoch`.
-                    voting_power: 0,
-                    identity_key: identity_key.clone(),
-                },
-                rate_data: RateData {
-                    identity_key: validator_definition.validator.identity_key.clone(),
-                    epoch_index: self
-                        .epoch
-                        .as_ref()
-                        .expect("expect epoch to be set when validator definitions are added")
-                        .index,
-                    // Validator reward rate is held constant for inactive validators.
-                    // Stake committed to inactive validators earns no rewards.
-                    validator_reward_rate: 0,
-                    // Exchange rate for inactive validators is held constant
-                    // and starts at 1
-                    validator_exchange_rate: 1,
-                },
-            });
-        }
 
         self.validator_definitions
             .entry(identity_key)

@@ -236,7 +236,7 @@ impl Worker {
             ));
         }
 
-        for v in &transaction.new_validators {
+        for v in &transaction.validator_definitions {
             self.block_validator_set.add_validator_definition(v.clone());
         }
 

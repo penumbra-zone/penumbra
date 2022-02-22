@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use penumbra_crypto::rdsa::{Signature, SpendAuth};
 use penumbra_proto::{stake as pb, Protobuf};
 use serde::{Deserialize, Serialize};
@@ -102,6 +104,27 @@ impl IntoIterator for FundingStreams {
 pub struct ValidatorDefinition {
     pub validator: Validator,
     pub auth_sig: Signature<SpendAuth>,
+}
+
+/// A ValidatorDefinition that has had stateful and stateless validation applied
+/// and is ready for inclusion into the validator set.
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
+pub struct VerifiedValidatorDefinition(ValidatorDefinition);
+
+impl From<ValidatorDefinition> for VerifiedValidatorDefinition {
+    fn from(v: ValidatorDefinition) -> Self {
+        VerifiedValidatorDefinition(v)
+    }
+}
+
+/// Implementing Deref for VerifiedValidatorDefinition allows us to use the
+/// inner ValidatorDefinition cleanly.
+impl Deref for VerifiedValidatorDefinition {
+    type Target = ValidatorDefinition;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 impl Protobuf<pb::Validator> for Validator {}

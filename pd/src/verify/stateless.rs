@@ -36,7 +36,7 @@ impl StatelessTransactionExt for Transaction {
         let mut new_notes = BTreeMap::<note::Commitment, NoteData>::new();
         let mut delegations = Vec::<Delegate>::new();
         let mut undelegation = None::<Undelegate>;
-        let mut validators = Vec::<ValidatorDefinition>::new();
+        let mut validator_definitions = Vec::<ValidatorDefinition>::new();
 
         for action in self.transaction_body().actions {
             match action {
@@ -118,7 +118,7 @@ impl StatelessTransactionExt for Transaction {
                         .context("validator definition signature failed to verify")?;
 
                     // TODO: Validate that the definition's funding streams do not exceed 100% (10000bps)
-                    validators.push(validator);
+                    validator_definitions.push(validator);
                 }
                 _ => {
                     return Err(anyhow::anyhow!("unsupported action"));
@@ -144,7 +144,7 @@ impl StatelessTransactionExt for Transaction {
             spent_nullifiers,
             delegations,
             undelegation,
-            validators,
+            validator_definitions,
         })
     }
 }
