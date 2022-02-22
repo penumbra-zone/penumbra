@@ -87,8 +87,9 @@ impl RateData {
 
     pub fn slash(&mut self, slashing_penalty: u64) {
         // Slashing penalty is in base points
-        // TODO: confirm this math is correct
-        self.validator_reward_rate -= self.validator_reward_rate * slashing_penalty / 1_0000_0000;
+        self.validator_reward_rate = self
+            .validator_reward_rate
+            .saturating_sub(self.validator_reward_rate * slashing_penalty / 1_0000_0000);
     }
 
     /// Computes the amount of unbonded stake corresponding to the given amount of delegation tokens.
