@@ -117,7 +117,24 @@ impl StatelessTransactionExt for Transaction {
                         .verify(&sighash, &validator.auth_sig)
                         .context("validator definition signature failed to verify")?;
 
-                    // TODO: Validate that the definition's funding streams do not exceed 100% (10000bps)
+                    // Validate that the definition's funding streams do not exceed 100% (10000bps)
+                    let total_funding_bps = validator
+                        .validator
+                        .funding_streams
+                        // TODO: possible to remove this clone?
+                        .clone()
+                        .into_iter()
+                        .map(|stream| stream.rate_bps as u64)
+                        .sum::<u64>();
+
+                    if total_funding_bps > 10000 {
+                        return Err(anyhow::anyhow!(
+                            "Total validator definition funding streams exceeds 100%"
+                        ));
+                    }
+
+                    // TODO: Any other stateless checks to apply to validator definitions?
+
                     validator_definitions.push(validator);
                 }
                 _ => {
