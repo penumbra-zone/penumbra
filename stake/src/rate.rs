@@ -30,6 +30,9 @@ impl RateData {
         &self,
         base_rate_data: &BaseRateData,
         funding_streams: &[FundingStream],
+        // TODO: maybe this should be made aware of the validator's state, that way
+        // logic for keeping the next rate fixed can be moved here? currently that logic
+        // exists in `end_epoch` of `ValidatorSet` (look for `hold_rate_constant`).
     ) -> RateData {
         // compute the validator's total commissio
         let commission_rate_bps = funding_streams
