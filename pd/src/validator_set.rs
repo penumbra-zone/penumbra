@@ -584,7 +584,8 @@ impl ValidatorSet {
 
     pub fn validators_info(
         &self,
-    ) -> impl Iterator<Item = impl Borrow<&'_ ValidatorInfo> + BorrowMut<&'_ ValidatorInfo>> {
+    ) -> impl Clone + Iterator<Item = impl Borrow<&'_ ValidatorInfo> + BorrowMut<&'_ ValidatorInfo>>
+    {
         self.validator_set.iter().map(|v| v.1)
     }
 

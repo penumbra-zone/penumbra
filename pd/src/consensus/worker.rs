@@ -210,7 +210,8 @@ impl Worker {
     /// Byzantine node may propose a block containing double spends or other disallowed behavior,
     /// so it is not safe to assume all checks performed in `CheckTx` were done.
     async fn deliver_tx(&mut self, deliver_tx: abci::request::DeliverTx) -> Result<()> {
-        let block_validators = self.state.private_reader().validator_info(true).await?;
+        // Use the current state of the validators in the state machine, not the ones in the db.
+        let block_validators = self.block_validator_set.validators_info();
         // Verify the transaction is well-formed...
         let transaction = Transaction::decode(deliver_tx.tx)?
             // ... and that it is internally consistent ...
@@ -219,9 +220,7 @@ impl Worker {
         let transaction = self
             .state
             .private_reader()
-            // TODO: pass in the ValidatorSet instead of a Vec<> so we can avoid
-            // linear search time.
-            .verify_stateful(transaction, &block_validators)
+            .verify_stateful(transaction, block_validators)
             .await?;
 
         let mut conflicts = self

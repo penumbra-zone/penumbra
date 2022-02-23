@@ -1,4 +1,7 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    borrow::Borrow,
+    collections::{BTreeMap, BTreeSet},
+};
 
 use anyhow::Error;
 use penumbra_crypto::{note, Nullifier};
@@ -9,10 +12,11 @@ use super::{NoteData, PendingTransaction, VerifiedTransaction};
 use crate::state;
 
 impl state::Reader {
-    pub async fn verify_stateful(
+    pub async fn verify_stateful<'a, T: Clone + Iterator<Item = impl Borrow<&'a ValidatorInfo>>>(
         &self,
         transaction: PendingTransaction,
-        block_validators: &[ValidatorInfo],
+        // TODO: taking a BTreeMap here would let us avoid linear search times later on
+        block_validators: T,
     ) -> Result<VerifiedTransaction, Error> {
         let anchor_is_valid = self.valid_anchors_rx().borrow().contains(&transaction.root);
         if !anchor_is_valid {
@@ -27,7 +31,7 @@ impl state::Reader {
             ));
         }
 
-        // TODO: split into methods (after refactoring to have a single db query)
+        // TODO: split into methods
 
         // Tally the delegations and undelegations
         let mut delegation_changes = BTreeMap::new();
@@ -52,6 +56,8 @@ impl state::Reader {
             }
 
             // TODO: check whether the delegation is for a slashed validator
+            // if block_validators.any(|v| v.borrow().validator.identity_key == d.validator_identity) {
+            // }
 
             // For delegations, we enforce correct computation (with rounding)
             // of the *delegation amount based on the unbonded amount*, because
@@ -139,14 +145,16 @@ impl state::Reader {
         }
 
         // Check that the sequence numbers of newly added validators are correct.
-        // TODO: are any other checks necessary here?
+        //
         // Resolution of conflicting validator definitions is performed later in `end_block` after
         // they've all been received.
         let mut validator_definitions = Vec::new();
         for v in &transaction.validator_definitions {
             let existing_v: Vec<&ValidatorInfo> = block_validators
-                .iter()
-                .filter(|z| z.validator.identity_key == v.validator.identity_key)
+                .clone()
+                .filter(|z| z.borrow().validator.identity_key == v.validator.identity_key)
+                // vvv that looks weird to me and seems like a potential anti-pattern
+                .map(|z| *z.borrow())
                 .collect();
 
             if existing_v.is_empty() {
@@ -163,9 +171,6 @@ impl state::Reader {
                     ));
                 }
             }
-
-            // TODO: is there really any reason not to just reject a validator definition for
-            // a duplicated sequence number?
 
             // the validator definition has now passed all verification checks, so add it to the list
             validator_definitions.push(v.clone().into());
