@@ -6,7 +6,7 @@ use penumbra_proto::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{FundingStream, IdentityKey};
+use crate::{FundingStream, IdentityKey, ValidatorState};
 
 pub type RateDataById = BTreeMap<IdentityKey, RateData>;
 
@@ -30,11 +30,38 @@ impl RateData {
         &self,
         base_rate_data: &BaseRateData,
         funding_streams: &[FundingStream],
-        // TODO: maybe this should be made aware of the validator's state, that way
-        // logic for keeping the next rate fixed can be moved here? currently that logic
-        // exists in `end_epoch` of `ValidatorSet` (look for `hold_rate_constant`).
+        validator_state: &ValidatorState,
     ) -> RateData {
-        // compute the validator's total commissio
+        let constant_rate = 
+            // Non-Active validator states result in a constant rate. This means
+            // the next epoch's rate is set to the current rate.
+            RateData {
+                identity_key: self.identity_key.clone(),
+                epoch_index: self.epoch_index + 1,
+                validator_reward_rate: self.validator_reward_rate,
+                validator_exchange_rate: self.validator_exchange_rate,
+            };
+
+        match validator_state {
+            // if a validator is slashed, their rates are updated to include the slashing penalty
+            // and then held constant.
+            //
+            // if a validator is slashed during the epoch transition the current epoch's rate is set
+            // to the slashed value (during end_block) and in here, the next epoch's rate is held constant.
+            ValidatorState::Slashed => {
+                return constant_rate;
+            }
+            // if a validator isn't part of the consensus set, we do not update their rates
+            ValidatorState::Inactive => {
+                return constant_rate;
+            }
+            ValidatorState::Unbonding { unbonding_epoch: _ } => {
+                return constant_rate;
+            }
+            _ => {}
+        };
+
+        // compute the validator's total commission
         let commission_rate_bps = funding_streams
             .iter()
             .fold(0u64, |total, stream| total + stream.rate_bps as u64);
@@ -56,6 +83,7 @@ impl RateData {
         let validator_exchange_rate = (self.validator_exchange_rate
             * (self.validator_reward_rate + 1_0000_0000))
             / 1_0000_0000;
+
 
         RateData {
             identity_key: self.identity_key.clone(),

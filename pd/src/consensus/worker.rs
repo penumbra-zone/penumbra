@@ -219,6 +219,8 @@ impl Worker {
         let transaction = self
             .state
             .private_reader()
+            // TODO: pass in the ValidatorSet instead of a Vec<> so we can avoid
+            // linear search time.
             .verify_stateful(transaction, &block_validators)
             .await?;
 

@@ -51,6 +51,8 @@ impl state::Reader {
                 ));
             }
 
+            // TODO: check whether the delegation is for a slashed validator
+
             // For delegations, we enforce correct computation (with rounding)
             // of the *delegation amount based on the unbonded amount*, because
             // users (should be) starting with the amount of unbonded stake they
@@ -161,6 +163,9 @@ impl state::Reader {
                     ));
                 }
             }
+
+            // TODO: is there really any reason not to just reject a validator definition for
+            // a duplicated sequence number?
 
             // the validator definition has now passed all verification checks, so add it to the list
             validator_definitions.push(v.clone().into());

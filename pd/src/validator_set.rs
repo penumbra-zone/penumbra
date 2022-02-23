@@ -113,6 +113,9 @@ impl ValidatorSet {
             self.supply_updates = BTreeMap::new();
         }
 
+        // TODO: split per-block and per-epoch state
+        // into separate structs wrapping the data
+
         // New, slashed, and updated validators can happen in any block,
         // not just on epoch transitions.
         self.new_validators = Vec::new();
@@ -388,15 +391,6 @@ impl ValidatorSet {
             let _next_epoch = current_epoch.next();
             let current_base_rate = self.reader.base_rate_data(current_epoch.index).await?;
 
-            // steps (foreach validator):
-            // - get the total token supply for the validator's delegation tokens
-            // - process the updates to the token supply:
-            //   - collect all delegations occurring in previous epoch and apply them (adds to supply);
-            //   - collect all undelegations started in previous epoch and apply them (reduces supply);
-            // - feed the updated (current) token supply into current_rates.voting_power()
-            // - persist both the current voting power and the current supply
-            //
-
             /// FIXME: set this less arbitrarily, and allow this to be set per-epoch
             /// 3bps -> 11% return over 365 epochs, why not
             const BASE_REWARD_RATE: u64 = 3_0000;
@@ -428,45 +422,28 @@ impl ValidatorSet {
                 *delegation_changes.entry(id_key.clone()).or_insert(0) += delta;
             }
 
+            // steps (foreach validator):
+            // - get the total token supply for the validator's delegation tokens
+            // - process the updates to the token supply:
+            //   - collect all delegations occurring in previous epoch and apply them (adds to supply);
+            //   - collect all undelegations started in previous epoch and apply them (reduces supply);
+            // - feed the updated (current) token supply into current_rates.voting_power()
+            // - persist both the current voting power and the current supply
+            //
             for v in &mut self.validator_set {
                 let validator = v.1;
                 let current_rate = validator.rate_data.clone();
-
-                let mut hold_rate_constant = |current_rate: RateData| {
-                    // The next epoch's rate is set to the current rate.
-                    let mut next_rate = current_rate;
-                    // Since we passed the epoch boundary, `current_epoch` will begin with
-                    // the next `begin_block` message.
-                    next_rate.epoch_index = current_epoch.index;
-
-                    next_rates.push(next_rate);
-                };
-                match validator.status.state {
-                    // if a validator is slashed, their rates are updated to include the slashing penalty
-                    // and then held constant.
-                    //
-                    // if a validator is slashed during the epoch transition the current epoch's rate is set
-                    // to the slashed value (during end_block) and in here, the next epoch's rate is held constant.
-                    ValidatorState::Slashed => {
-                        hold_rate_constant(current_rate);
-                        continue;
-                    }
-                    // if a validator isn't part of the consensus set, we do not update their rates
-                    ValidatorState::Inactive => {
-                        hold_rate_constant(current_rate);
-                        continue;
-                    }
-                    // TODO: Are unbonding validators being handled correctly here?
-                    // Their rates should be held constant, but (un)delegations need to be handled as well
-                    _ => {}
-                };
 
                 let funding_streams = self
                     .reader
                     .funding_streams(validator.validator.identity_key.clone())
                     .await?;
 
-                let next_rate = current_rate.next(&next_base_rate, funding_streams.as_ref());
+                let next_rate = current_rate.next(
+                    &next_base_rate,
+                    funding_streams.as_ref(),
+                    &validator.status.state,
+                );
                 let identity_key = validator.validator.identity_key.clone();
 
                 let delegation_delta = delegation_changes.get(&identity_key).unwrap_or(&0i64);
@@ -509,15 +486,18 @@ impl ValidatorSet {
                 // with the newly calculated voting power.
                 validator.status.voting_power = voting_power;
 
-                // distribute validator commission
-                for stream in funding_streams {
-                    let commission_reward_amount = stream.reward_amount(
-                        delegation_token_supply,
-                        &next_base_rate,
-                        &current_base_rate,
-                    );
+                // Only Active validators produce commission rewards
+                if validator.status.state == ValidatorState::Active {
+                    // distribute validator commission
+                    for stream in funding_streams {
+                        let commission_reward_amount = stream.reward_amount(
+                            delegation_token_supply,
+                            &next_base_rate,
+                            &current_base_rate,
+                        );
 
-                    reward_notes.push((commission_reward_amount, stream.address));
+                        reward_notes.push((commission_reward_amount, stream.address));
+                    }
                 }
 
                 // rename to curr_rate so it lines up with next_rate (same # chars)
