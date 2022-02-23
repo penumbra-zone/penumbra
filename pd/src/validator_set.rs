@@ -71,7 +71,7 @@ pub struct ValidatorSet {
 }
 
 impl ValidatorSet {
-    pub async fn new(reader: Reader) -> Result<Self> {
+    pub async fn new(reader: Reader, epoch: Epoch) -> Result<Self> {
         // Grab all validator info from the database. This will only happen when the
         // ValidatorSet is first instantiated.
         let block_validators = reader.validator_info(true).await?;
@@ -84,7 +84,7 @@ impl ValidatorSet {
 
         Ok(ValidatorSet {
             validator_set,
-            epoch: None,
+            epoch: Some(epoch),
             next_base_rate: None,
             next_rates: None,
             validator_definitions: BTreeMap::new(),

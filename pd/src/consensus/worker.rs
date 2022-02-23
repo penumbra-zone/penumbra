@@ -4,7 +4,8 @@ use anyhow::{anyhow, Result};
 use futures::StreamExt;
 use metrics::absolute_counter;
 use penumbra_crypto::{asset, merkle::NoteCommitmentTree};
-use penumbra_proto::Protobuf;
+use penumbra_proto::{light_wallet::light_wallet_server::LightWallet, Protobuf};
+use penumbra_stake::Epoch;
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, ConsensusRequest as Request, ConsensusResponse as Response};
 use tokio::sync::mpsc;
@@ -27,7 +28,11 @@ pub struct Worker {
 impl Worker {
     pub async fn new(state: state::Writer, queue: mpsc::Receiver<Message>) -> Result<Self> {
         let note_commitment_tree = state.private_reader().note_commitment_tree().await?;
-        let block_validator_set = ValidatorSet::new(state.private_reader().clone()).await?;
+        let height = state.private_reader().height().await?;
+        let chain_params = state.private_reader().chain_params_rx().borrow().clone();
+        let epoch_duration = chain_params.epoch_duration;
+        let epoch = Epoch::from_height(height.into(), epoch_duration);
+        let block_validator_set = ValidatorSet::new(state.private_reader().clone(), epoch).await?;
 
         Ok(Self {
             state,
