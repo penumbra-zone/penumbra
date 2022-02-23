@@ -3,14 +3,11 @@ use std::collections::{BTreeMap, BTreeSet};
 use ark_ff::PrimeField;
 use decaf377::Fr;
 use penumbra_crypto::{
-    asset, ka,
+    ka,
     merkle::{Frontier, NoteCommitmentTree},
     note, Address, Fq, Note, Nullifier, One, Value,
 };
-use penumbra_stake::{
-    BaseRateData, Epoch, IdentityKey, RateData, ValidatorState, ValidatorStatus,
-    STAKING_TOKEN_ASSET_ID,
-};
+use penumbra_stake::{Epoch, IdentityKey, STAKING_TOKEN_ASSET_ID};
 use tracing::instrument;
 
 use crate::verify::{NoteData, PositionedNoteData, VerifiedTransaction};
@@ -24,23 +21,9 @@ pub struct PendingBlock {
     pub notes: BTreeMap<note::Commitment, PositionedNoteData>,
     /// Nullifiers that were spent in this block.
     pub spent_nullifiers: BTreeSet<Nullifier>,
-    /// Records any updates to the token supply of some asset that happened in this block.
-    pub supply_updates: BTreeMap<asset::Id, (asset::Denom, u64)>,
-    /// Indicates the epoch the block belongs to.
-    pub epoch: Option<Epoch>,
-    /// If this is the last block of an epoch, base rates for the next epoch go here.
-    pub next_base_rate: Option<BaseRateData>,
-    /// If this is the last block of an epoch, validator rates for the next epoch go here.
-    pub next_rates: Option<Vec<RateData>>,
-    /// If this is the last block of an epoch, validator statuses for the next epoch go here.
-    pub next_validator_statuses: Option<Vec<ValidatorStatus>>,
-    /// The net delegations performed in this block per validator.
-    pub delegation_changes: BTreeMap<IdentityKey, i64>,
     /// The counter containing the number of rewards notes in the epoch. we need this to keep the
     /// blinding factor of the reward notes unique.
     reward_counter: u64,
-    /// Records pending state changes to validators.
-    pub validator_state_changes: BTreeMap<IdentityKey, ValidatorState>,
     /// Records all the quarantined inputs/outputs from this block.
     pub quarantine: Vec<QuarantineGroup>,
     /// Nullifiers to remove from the quarantined set when this block is committed, making their
@@ -50,6 +33,8 @@ pub struct PendingBlock {
     pub reverting_notes: BTreeSet<note::Commitment>,
     /// Nullifiers to remove from the nullifier set when this block is committed, reverting their spend.
     pub reverting_nullifiers: BTreeSet<Nullifier>,
+    /// Indicates the epoch the block belongs to.
+    pub epoch: Option<Epoch>,
 }
 
 /// A group of notes and nullifiers, all to be quarantined relative to a shared set of validators.
@@ -71,18 +56,12 @@ impl PendingBlock {
             note_commitment_tree,
             notes: BTreeMap::new(),
             spent_nullifiers: BTreeSet::new(),
-            supply_updates: BTreeMap::new(),
-            epoch: None,
-            next_base_rate: None,
-            next_rates: None,
-            next_validator_statuses: None,
-            delegation_changes: BTreeMap::new(),
             reward_counter: 0,
-            validator_state_changes: BTreeMap::new(),
             quarantine: Vec::new(),
             reverting_notes: BTreeSet::new(),
             unbonding_nullifiers: BTreeSet::new(),
             reverting_nullifiers: BTreeSet::new(),
+            epoch: None,
         }
     }
 
@@ -178,11 +157,6 @@ impl PendingBlock {
         // prevent double-spends, regardless of quarantine status.
         for nullifier in transaction.spent_nullifiers {
             self.spent_nullifiers.insert(nullifier);
-        }
-
-        // Tally the delegation changes in this transaction
-        for (identity_key, delegation_change) in transaction.delegation_changes {
-            *self.delegation_changes.entry(identity_key).or_insert(0) += delegation_change;
         }
     }
 }

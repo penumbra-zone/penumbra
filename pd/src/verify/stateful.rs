@@ -1,16 +1,24 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    borrow::Borrow,
+    collections::{BTreeMap, BTreeSet},
+};
 
 use anyhow::Error;
 use penumbra_crypto::{note, Nullifier};
+use penumbra_stake::{ValidatorInfo, ValidatorState};
 use penumbra_transaction::{Action, Transaction};
 
 use super::{NoteData, PendingTransaction, VerifiedTransaction};
 use crate::state;
 
 impl state::Reader {
-    pub async fn verify_stateful(
+    pub async fn verify_stateful<'a, T: Clone + Iterator<Item = impl Borrow<&'a ValidatorInfo>>>(
         &self,
         transaction: PendingTransaction,
+        // TODO: taking a BTreeMap here would let us avoid linear search times later on
+        // We can't take a `ValidatorSet` because it's also called during `check_tx` and
+        // the mempool worker doesn't have access to the consensus worker's validator set.
+        block_validators: T,
     ) -> Result<VerifiedTransaction, Error> {
         let anchor_is_valid = self.valid_anchors_rx().borrow().contains(&transaction.root);
         if !anchor_is_valid {
@@ -25,7 +33,7 @@ impl state::Reader {
             ));
         }
 
-        // TODO: split into methods (after refactoring to have a single db query)
+        // TODO: split into methods
 
         // Tally the delegations and undelegations
         let mut delegation_changes = BTreeMap::new();
@@ -48,6 +56,19 @@ impl state::Reader {
                     rate_data.epoch_index
                 ));
             }
+
+            // Check whether the delegation is for a slashed validator
+            if let Some(v) = block_validators
+                .clone()
+                .find(|v| v.borrow().validator.identity_key == d.validator_identity)
+            {
+                if v.borrow().status.state == ValidatorState::Slashed {
+                    return Err(anyhow::anyhow!(
+                        "Delegation to slashed validator {}",
+                        d.validator_identity
+                    ));
+                }
+            };
 
             // For delegations, we enforce correct computation (with rounding)
             // of the *delegation amount based on the unbonded amount*, because
@@ -134,12 +155,45 @@ impl state::Reader {
             }
         }
 
+        // Check that the sequence numbers of newly added validators are correct.
+        //
+        // Resolution of conflicting validator definitions is performed later in `end_block` after
+        // they've all been received.
+        let mut validator_definitions = Vec::new();
+        for v in &transaction.validator_definitions {
+            let existing_v: Vec<&ValidatorInfo> = block_validators
+                .clone()
+                .filter(|z| z.borrow().validator.identity_key == v.validator.identity_key)
+                // vvv that looks weird to me and seems like a potential anti-pattern
+                .map(|z| *z.borrow())
+                .collect();
+
+            if existing_v.is_empty() {
+                // This is a new validator definition.
+                continue;
+            } else {
+                // This is an existing validator definition. Ensure that the highest
+                // existing sequence number is less than the new sequence number.
+                let current_seq = existing_v.iter().map(|z| z.validator.sequence_number).max().ok_or_else(|| {anyhow::anyhow!("Validator with this ID key existed but had no existing sequence numbers")})?;
+                if v.validator.sequence_number <= current_seq {
+                    return Err(anyhow::anyhow!(
+                        "Expected sequence numbers to be increasing. Current sequence number is {}",
+                        current_seq
+                    ));
+                }
+            }
+
+            // the validator definition has now passed all verification checks, so add it to the list
+            validator_definitions.push(v.clone().into());
+        }
+
         Ok(VerifiedTransaction {
             id: transaction.id,
             new_notes: transaction.new_notes,
             spent_nullifiers: transaction.spent_nullifiers,
             delegation_changes,
             undelegation_validator: transaction.undelegation.map(|u| u.validator_identity),
+            validator_definitions,
         })
     }
 }
@@ -173,5 +227,6 @@ pub fn mark_genesis_as_verified(transaction: Transaction) -> VerifiedTransaction
         spent_nullifiers: BTreeSet::<Nullifier>::new(),
         delegation_changes: BTreeMap::new(),
         undelegation_validator: None,
+        validator_definitions: vec![],
     }
 }

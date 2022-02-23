@@ -12,6 +12,7 @@ mod pd_metrics;
 mod pending_block;
 mod request_ext;
 mod snapshot;
+mod validator_set;
 mod verify;
 mod wallet;
 

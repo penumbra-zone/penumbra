@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::{Context, Error};
 use penumbra_crypto::{note, Nullifier};
-use penumbra_stake::{Delegate, Undelegate, Validator};
+use penumbra_stake::{Delegate, Undelegate, ValidatorDefinition};
 use penumbra_transaction::{Action, Transaction};
 
 use super::{NoteData, PendingTransaction};
@@ -36,7 +36,7 @@ impl StatelessTransactionExt for Transaction {
         let mut new_notes = BTreeMap::<note::Commitment, NoteData>::new();
         let mut delegations = Vec::<Delegate>::new();
         let mut undelegation = None::<Undelegate>;
-        let validators = Vec::<Validator>::new();
+        let mut validator_definitions = Vec::<ValidatorDefinition>::new();
 
         for action in self.transaction_body().actions {
             match action {
@@ -105,6 +105,38 @@ impl StatelessTransactionExt for Transaction {
                         return Err(anyhow::anyhow!("Multiple undelegations in one transaction"));
                     }
                 }
+                Action::ValidatorDefinition(validator) => {
+                    // Perform stateless checks that the validator definition is valid.
+
+                    // Validate that the transaction signature is valid and signed by the
+                    // validator's identity key.
+                    validator
+                        .validator
+                        .identity_key
+                        .0
+                        .verify(&sighash, &validator.auth_sig)
+                        .context("validator definition signature failed to verify")?;
+
+                    // Validate that the definition's funding streams do not exceed 100% (10000bps)
+                    let total_funding_bps = validator
+                        .validator
+                        .funding_streams
+                        // TODO: possible to remove this clone?
+                        .clone()
+                        .into_iter()
+                        .map(|stream| stream.rate_bps as u64)
+                        .sum::<u64>();
+
+                    if total_funding_bps > 10000 {
+                        return Err(anyhow::anyhow!(
+                            "Total validator definition funding streams exceeds 100%"
+                        ));
+                    }
+
+                    // TODO: Any other stateless checks to apply to validator definitions?
+
+                    validator_definitions.push(validator);
+                }
                 _ => {
                     return Err(anyhow::anyhow!("unsupported action"));
                 }
@@ -129,7 +161,7 @@ impl StatelessTransactionExt for Transaction {
             spent_nullifiers,
             delegations,
             undelegation,
-            validators,
+            validator_definitions,
         })
     }
 }

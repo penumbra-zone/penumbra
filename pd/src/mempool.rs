@@ -66,7 +66,11 @@ impl Mempool {
         // ... and that it is internally consistent ...
         let transaction = transaction.verify_stateless()?;
         // ... and that it is consistent with the existing chain state.
-        let transaction = self.state.verify_stateful(transaction).await?;
+        let block_validators = self.state.validator_info(true).await?;
+        let transaction = self
+            .state
+            .verify_stateful(transaction, block_validators.iter())
+            .await?;
 
         // We've verified that the transaction is consistent with the existing
         // chain state, but we want to ensure that it doesn't conflict with any
