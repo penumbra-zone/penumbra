@@ -20,7 +20,7 @@ For our threshold encryption scheme, we require three important properties:
 ### Setup
 
 Compute a lookup table $LUT$ for every $v_i \in [0, 2^{23})$ by setting
-$LUT[v_i] = v_i\mathbb{G}$ where $\mathbb{G}$ is the basepoint of `decaf377`.
+$LUT[v_i] = v_iG$ where $G$ is the basepoint of `decaf377`.
 Store $LUT$ for later use in value decryption.
 
 
@@ -53,7 +53,7 @@ Store $LUT$ for later use in value decryption.
                                   └───────────────────┘    └──────────────┘       
                                             │                                     
                                             │           ┌────────────────────────┐
-                                            └──────────▶│proofs σ_ci = (α,γ,r,s) │
+                                            └──────────▶│proofs σ_ci = (r, s, t) │
                                                         └────────────────────────┘
 ```
 
@@ -69,36 +69,41 @@ $$M_i = v_i*G$$
 $$e \overset{rand}{\leftarrow} \mathbb{F_q}$$
 $$c_i = (e*G,  M_i + e*D)$$
 
-Where $G$ is the basepoint generator for `decaf377`, $\mathbb{F_q}$ is
-the scalar field, and $D$ is the public key output from [DKG](./dkg.md).
+Where $G$ is the basepoint generator for `decaf377`, $\mathbb{F_q}$ is the
+large prime-order scalar field for `decaf377`, and $D$ is the public key output
+from [DKG](./dkg.md).
 
-Next, compute a proof of correctness of the ElGamal encryption by executing the following protocol:
+Next, compute a proof of correctness of the ElGamal encryption by executing the following [sigma protocol](https://crypto.stanford.edu/cs355/19sp/lec6.pdf):
 
-$$k_{1} \overset{rand}{\leftarrow} \mathbb{F_q} $$
+$$k_{1} \overset{rand}{\leftarrow} \mathbb{F_q}$$
 $$k_{2} \overset{rand}{\leftarrow} \mathbb{F_q}$$
 $$\alpha = k_{1}*G + k_{2}*D$$
 $$\gamma = k_{2}*G$$
-$$c = H(\alpha, \gamma)$$
+$$t = H(c_{i0}, c_{i1}, D, \alpha, \gamma)$$
+$$r = k_{1} - v_i*t$$
+$$s = k_{2} - e*t$$
 
-$$r = k_{1} + v_i*c$$
-$$s = k_{2} + e*c$$
-
-The proof is then $\sigma_{c_i} = (r, s, \alpha, \gamma)$.
+The proof is then $\sigma_{c_i} = (r, s, t)$.
 The encryption of value $v$ is given as $v_e = [c_1, c_2, c_3, c_4]$.
 
 Upon receiving an encrypted value $v_e$ with proofs $\sigma_{c_i}$, a validator
 or validating full node should verify each proof $\sigma_{c_i}$ by checking
 
-$$c = H(\alpha, \gamma)$$
-$$G*s \stackrel{?}{=} \gamma + c_{i0}*c$$
-$$G*r+ D*s \stackrel{?}{=} \alpha + c_{i1}*c$$
+$$\alpha \leftarrow D*s + G*r + c_{i1}*t$$
+$$\gamma \leftarrow G*s + c_{i0}*t$$
+$$H(c_{i0}, c_{i1}, D, \alpha, \gamma) \stackrel{?}{=} t$$
 
 Considering the value invalid if the proof fails to verify.
 
+This protocol proves, in NIZK, the relation
+$$R = \bigg\{ ((e, v_i), c_{i0}, c_{i1}) \in \mathbb{F_q} \times \mathbb{G}: c_{i0} = eG \wedge c_{i1} = v_iG + eD \bigg\}$$
+
+Showing that the ciphertext $c_i$ is an actual encryption of $v_i$ for the DKG pubkey $D$, and using the hash transcript to bind the proof of knowledge of $(e, v_i)$ to each $c_i$.
+
 Each ciphertext $c_i$ is two group elements, accompanied by a proof
-$\sigma_{c_i}$ which is two group elements and two scalars. `decaf377` group
-elements and scalars are encoded as 32-byte values, thus every encrypted value
-$v_e$ combined with its proof $\sigma_{ci}$ is $6*32*4$ = 768 bytes.
+$\sigma_{c_i}$ which is three scalars. `decaf377` group elements and scalars
+are encoded as 32-byte values, thus every encrypted value $v_e$ combined with
+its proof $\sigma_{ci}$ is $5*32*4$ = 640 bytes.
 
 ### Value Aggregation
 
@@ -153,13 +158,14 @@ To batch flows, we must use the homomorphic property of ElGamal ciphertexts.
 Aggregation should be done component-wise, that is, on each limb of the
 ciphertext ($c_i$). To aggregate a given $v_e, v_e'$, simply add each limb:
 
-$$v_n = v_e + v_e' = [c_0+c_0', c_1+c_1', c_2+c_2', c_3+c_3'] = \cdots = v_q + v_q' = v + v'$$
+$$v_{agg} = v_e + v_e' = [c_0+c_0', c_1+c_1', c_2+c_2', c_3+c_3'] = \cdots = v_q + v_q' = v + v'$$
 
 This holds due to the homomorphic property of ElGamal cipertexts.
 
-Aggregation can be publicly verified by any validator or validating full node,
-by simply publicly adding together all ciphertexts and verifying that the same
-result as $v_{agg}$ was achieved.
+The block producer aggregates every $v_{ei}$, producing a public transcript of
+the aggregation. The transcript can then be publicly validated by any validator
+or full node by adding together each $v_{ei}$ in the transcript and verifying
+that the correct $v_{agg}$ was committed by the block producer.
 
 
 ### Value Decryption
@@ -198,40 +204,43 @@ result as $v_{agg}$ was achieved.
                            └─────────┘                                                   
 ```
 
-To decrypt each $v_e$, take each ciphertext $c_i$ and perform threshold ElGamal
-decryption using the participant's DKG private key share $d_p$ to produce
-decryption share $s_pi$:
+To decrypt the aggregate $v_{agg}$, take each ciphertext component $c_i$ and
+perform threshold ElGamal decryption using the participant's DKG private key
+share $d_p$ to produce decryption share $s_pi$:
 
 $$s_{pi} = d_{p}c_{i0}$$
 
 Next, each participant must compute a proof that their decryption share is well
-formed relative to the commitment to their secret share $\phi_{p} = G \cdot d_p$.
-This is accomplished by adopting the Chaum-Pedersen protocol for proving
-DH-triples.
+formed relative to the commitment to their secret share $\phi_{p} = G \cdot
+d_p$.  This is accomplished by adopting the Chaum-Pedersen sigma protocol for
+proving DH-triples.
 
 With $c_{i0}$, $s_{pi}$, and $d_p$ as inputs, each participant computes their proof $\sigma_{pi}$ by taking 
 
 $$k \overset{rand}{\leftarrow} \mathbb{F_q}$$
-$$\alpha = k * G$$
-$$\gamma = k * c_{i0}$$
-$$e = H(i, p, \alpha, \gamma)$$
-$$r = k + d_p * e$$
+$$\alpha = k*G$$
+$$\gamma = k*c_{i0}$$
+$$t = H(s_{pi}, c_{i0}, i, p, \alpha, \gamma)$$
+$$r = k - d_p*t$$
 
-The proof is the tuple $\sigma_{pi} = (r, \alpha, \gamma)$.
+The proof is the tuple $\sigma_{pi} = (r, t)$.
 
 Every participant then broadcasts their proof of knowledge $\sigma_{pi}$ along
 with their decryption share $s_{pi}$ to every other participant.
 
-After receiving $s_{pi}, \sigma_{pi} = (r, \alpha, \gamma)$ from each participant, each
+After receiving $s_{pi}, \sigma_{pi} = (r, t)$ from each participant, each
 participant verifies that $s_{pi}$ is valid by checking
 
-$$e = H(i, p, \alpha, \gamma)$$
-$$G * r \stackrel{?}{=} \alpha + \phi_{p} * e$$
-$$c_{i0} * r \stackrel{?}{=} \gamma + s_{pi} * e$$
+$$\alpha = G*r + \phi_{p}*t$$
+$$\gamma = c_{i0}*r + s_{pi}*t$$
+$$H(s_{pi}, c_{i0}, i, p, \alpha, \gamma) \stackrel{?}{=} t$$
 
 and aborting if verification fails. (TODO: should we ignore this participant's share, or report/slash them?)
 
-This protocol is the Chaum-Pedersen sigma protocol which here proves the relation $$\phi_{p} = G * d_p \wedge s_{pi} = c_{i0} * d_p$$
+This protocol is the Chaum-Pedersen sigma protocol which here proves the relation
+$$R = \bigg\{ \big(d_p, (c_{i0}, \phi_{p}, s_{pi})\big) \in \mathbb{F_q} \times \mathbb{G}: \phi_{p} = d_pG \wedge s_{pi} = d_pc_{i0} \bigg\}$$
+
+Showing that the validator's decryption share is correctly formed for their key share which was committed to during DKG.
 
 Now each participant can sum their received and validated decryption shares by taking 
 
@@ -258,7 +267,7 @@ To recombine the value, iterate over each $v_i$, packing each $v_i$ into a `u16`
 
 $$v = v_{ui} + v_{ui} * 2^{16} + v_{ui} * 2^{32} + v_{ui} * 2^{48} + v_{ui} * 2^{64}$$
 
-This value is bounded by $[0, 2^71]$, assuming that the coefficients in the previous step were correctly bounded.
+This value is bounded by $[0, 2^{71}]$, assuming that the coefficients in the previous step were correctly bounded.
 
 
 ## Note
@@ -269,6 +278,10 @@ a SNARK proof $\pi$ that accompanies each value. It may also be desirable to
 SNARK the sigma protocol given in the value encryption phase in order to save
 on chain space.
 
+## Acknowledgements
+
+Thanks to samczsun for his discussion and review of this spec, and for finding
+a flaw with an earlier instantiation of the encryption proof.
 
 
 ***TODO***: end-to-end complexity analysis (number of scalar mults per block, LUT size, etc)
