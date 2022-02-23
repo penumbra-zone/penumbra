@@ -58,7 +58,7 @@ impl RateData {
             ValidatorState::Unbonding { unbonding_epoch: _ } => {
                 return constant_rate;
             }
-            _ => {}
+            ValidatorState::Active => {}
         };
 
         // compute the validator's total commission
