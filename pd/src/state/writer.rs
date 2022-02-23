@@ -407,6 +407,7 @@ impl Writer {
             block_validator_set.next_base_rate.clone(),
             block_validator_set.next_rates.clone(),
         ) {
+            tracing::debug!(?base_rate_data, "Saving next base rate to the database");
             query!(
                 "INSERT INTO base_rates VALUES ($1, $2, $3)",
                 base_rate_data.epoch_index as i64,
