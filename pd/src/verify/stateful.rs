@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::Error;
 use penumbra_crypto::{note, Nullifier};
-use penumbra_stake::ValidatorInfo;
+use penumbra_stake::{ValidatorInfo, ValidatorState};
 use penumbra_transaction::{Action, Transaction};
 
 use super::{NoteData, PendingTransaction, VerifiedTransaction};
@@ -16,6 +16,8 @@ impl state::Reader {
         &self,
         transaction: PendingTransaction,
         // TODO: taking a BTreeMap here would let us avoid linear search times later on
+        // We can't take a `ValidatorSet` because it's also called during `check_tx` and
+        // the mempool worker doesn't have access to the consensus worker's validator set.
         block_validators: T,
     ) -> Result<VerifiedTransaction, Error> {
         let anchor_is_valid = self.valid_anchors_rx().borrow().contains(&transaction.root);
@@ -55,9 +57,18 @@ impl state::Reader {
                 ));
             }
 
-            // TODO: check whether the delegation is for a slashed validator
-            // if block_validators.any(|v| v.borrow().validator.identity_key == d.validator_identity) {
-            // }
+            // Check whether the delegation is for a slashed validator
+            if let Some(v) = block_validators
+                .clone()
+                .find(|v| v.borrow().validator.identity_key == d.validator_identity)
+            {
+                if v.borrow().status.state == ValidatorState::Slashed {
+                    return Err(anyhow::anyhow!(
+                        "Delegation to slashed validator {}",
+                        d.validator_identity
+                    ));
+                }
+            };
 
             // For delegations, we enforce correct computation (with rounding)
             // of the *delegation amount based on the unbonded amount*, because
