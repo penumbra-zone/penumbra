@@ -161,6 +161,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "ark-poly"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b0f78f47537c2f15706db7e98fe64cc1711dbf9def81218194e17239e53e5aa"
+dependencies = [
+ "ark-ff",
+ "ark-serialize",
+ "ark-std",
+ "derivative",
+ "hashbrown",
+]
+
+[[package]]
 name = "ark-r1cs-std"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -194,8 +207,20 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d6c2b318ee6e10f8c2853e73a83adc0ccb88995aa978d8a3408d492ab2ee671"
 dependencies = [
+ "ark-serialize-derive",
  "ark-std",
  "digest 0.9.0",
+]
+
+[[package]]
+name = "ark-serialize-derive"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8dd4e5f0bf8285d5ed538d27fab7411f3e297908fd93c62195de8bee3f199e82"
+dependencies = [
+ "proc-macro2 1.0.39",
+ "quote 1.0.18",
+ "syn 1.0.95",
 ]
 
 [[package]]
@@ -1344,6 +1369,19 @@ dependencies = [
  "num-bigint",
  "num-integer",
  "num-traits",
+]
+
+[[package]]
+name = "frost377"
+version = "0.1.0"
+source = "git+https://github.com/penumbra-zone/frost377#c439a41f6a0c4b6b3a9b766ffa5a456ec3208434"
+dependencies = [
+ "anyhow",
+ "ark-ff",
+ "ark-poly",
+ "blake2b_simd 0.5.11",
+ "decaf377",
+ "rand",
 ]
 
 [[package]]
@@ -2686,6 +2724,7 @@ dependencies = [
  "anyhow",
  "ark-ff",
  "ark-serialize",
+ "ark-std",
  "bech32",
  "bincode",
  "blake2b_simd 0.5.11",
@@ -2698,6 +2737,7 @@ dependencies = [
  "derivative",
  "f4jumble",
  "fpe",
+ "frost377",
  "hex",
  "hmac",
  "jmt",
