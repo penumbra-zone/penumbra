@@ -12,7 +12,7 @@ use penumbra_crypto::{
     merkle::{Frontier, NoteCommitmentTree, Tree, TreeExt},
     note, Address, FieldExt, Note, Nullifier, Value,
 };
-use penumbra_proto::light_wallet::{CompactBlock, StateFragment};
+use penumbra_proto::light_wallet::{state_fragment::QuarantineUpdate, CompactBlock, StateFragment};
 use penumbra_stake::{RateData, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM};
 use penumbra_transaction::Transaction;
 use rand::seq::SliceRandom;
@@ -661,6 +661,7 @@ impl ClientState {
             height,
             fragments,
             nullifiers,
+            quarantined_nullifiers,
         }: CompactBlock,
     ) -> Result<(), anyhow::Error> {
         // We have to do a bit of a dance to use None as "-1" and handle genesis notes.
@@ -681,15 +682,20 @@ impl ClientState {
             note_commitment,
             ephemeral_key,
             encrypted_note,
+            quarantine_update,
         } in fragments.into_iter()
         {
-            // Unconditionally insert the note commitment into the merkle tree
             let note_commitment = note_commitment
                 .as_ref()
                 .try_into()
                 .context("invalid note commitment")?;
-            tracing::debug!(?note_commitment, "appending to note commitment tree");
-            self.note_commitment_tree.append(&note_commitment);
+
+            // Insert the note commitment into the merkle tree if it represents a new state fragment
+            // committed to the chain (and not a quarantined note or a reverted note).
+            if quarantine_update.is_none() {
+                tracing::debug!(?note_commitment, "appending to note commitment tree");
+                self.note_commitment_tree.append(&note_commitment);
+            }
 
             // Try to decrypt the encrypted note using the ephemeral key and persistent incoming
             // viewing key -- if it doesn't decrypt, it wasn't meant for us.
@@ -702,29 +708,95 @@ impl ClientState {
                     .context("invalid ephemeral key")?,
             ) {
                 tracing::debug!(?note_commitment, ?note, "found note while scanning");
-                // Mark the most-recently-inserted note commitment (the one corresponding to this
-                // note) as worth keeping track of, because it's ours
-                self.note_commitment_tree.witness();
 
-                // Insert the note associated with its computed nullifier into the nullifier map
-                let (pos, _auth_path) = self
-                    .note_commitment_tree
-                    .authentication_path(&note_commitment)
-                    .expect("we just witnessed this commitment");
-                self.nullifier_map.insert(
-                    self.wallet
-                        .full_viewing_key()
-                        .derive_nullifier(pos, &note_commitment),
-                    note_commitment,
-                );
+                // Depending on the nature of this state fragment, process it appropriately:
+                use QuarantineUpdate::*;
+                match quarantine_update {
+                    // The state fragment represents the output of an undelegation which has not yet
+                    // unbonded. It is not yet spendable, but we should keep track of it until it
+                    // is, so we can present this information to the user.
+                    Some(QuarantinedWithUnbondingHeight(unbonding_height)) => todo!(),
 
-                // If the note was a submitted change note, remove it from the submitted change set
-                if self.submitted_change_set.remove(&note_commitment).is_some() {
-                    tracing::debug!(value = ?note.value(), "found submitted change note while scanning, removing it from the submitted change set");
+                    // The state fragment represents a note which we had previously marked as spent
+                    // because we used it in an undelegation, but the undelegation has now been
+                    // reverted by slashing, so we can spend it again.
+                    Some(RevertedFromQuarantinedHeight(quarantined_height)) => {
+                        tracing::debug!(
+                            ?note_commitment,
+                            ?note,
+                            ?quarantined_height,
+                            "detected reverted note"
+                        );
+
+                        // Remove the note from wherever it currently is: it could potentially be in
+                        // the submitted spend set or the spent set, depending on whether we've yet
+                        // gotten confirmation about it.
+                        if self.submitted_spend_set.remove(&note_commitment).is_some() {
+                            tracing::debug!(
+                                ?note_commitment,
+                                ?note,
+                                "removing reverted note from submitted spend set"
+                            );
+                        } else if self.spent_set.remove(&note_commitment).is_some() {
+                            tracing::debug!(
+                                ?note_commitment,
+                                ?note,
+                                "removing reverted note from spent set"
+                            );
+                        } else {
+                            tracing::warn!(
+                                ?note_commitment,
+                                ?note,
+                                "note not found in submitted or spent set: possibly corrupted state?"
+                            );
+                        }
+
+                        // Because the note was made spendable again, its computed nullifier in the
+                        // nullifier map is no longer valid, so we need to remove it.
+                        let (pos, _auth_path) = self
+                            .note_commitment_tree
+                            .authentication_path(&note_commitment)
+                            .expect("this commitment should still be witnessed");
+
+                        self.nullifier_map.remove(
+                            &self
+                                .wallet
+                                .full_viewing_key()
+                                .derive_nullifier(pos, &note_commitment),
+                        );
+
+                        // Now, we can insert the note back into the unspent set.
+                        self.unspent_set.insert(note_commitment, note);
+                    }
+
+                    // The state fragment represents a new note we have received, either sent to us
+                    // or the unbonded result of an undelegation that has exited quarantine.
+                    None => {
+                        // Mark the most-recently-inserted note commitment (the one corresponding to this
+                        // note) as worth keeping track of, because it's ours
+                        self.note_commitment_tree.witness();
+
+                        // Insert the note associated with its computed nullifier into the nullifier map
+                        let (pos, _auth_path) = self
+                            .note_commitment_tree
+                            .authentication_path(&note_commitment)
+                            .expect("we just witnessed this commitment");
+                        self.nullifier_map.insert(
+                            self.wallet
+                                .full_viewing_key()
+                                .derive_nullifier(pos, &note_commitment),
+                            note_commitment,
+                        );
+
+                        // If the note was a submitted change note, remove it from the submitted change set
+                        if self.submitted_change_set.remove(&note_commitment).is_some() {
+                            tracing::debug!(value = ?note.value(), "found submitted change note while scanning, removing it from the submitted change set");
+                        }
+
+                        // Insert the note into the received set
+                        self.unspent_set.insert(note_commitment, note.clone());
+                    }
                 }
-
-                // Insert the note into the received set
-                self.unspent_set.insert(note_commitment, note.clone());
             }
         }
 

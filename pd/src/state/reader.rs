@@ -445,6 +445,19 @@ impl Reader {
             .fetch(&pool)
             .peekable();
 
+            let mut quarantined_nullifiers = query!(
+                "SELECT quarantined_height AS height, nullifier
+                    FROM quarantined_nullifiers
+                    WHERE
+                        quarantined_height BETWEEN $1 AND $2 AND
+                        reverted_height IS NULL
+                    ORDER BY height ASC",
+                start_height,
+                end_height
+            )
+            .fetch(&pool)
+            .peekable();
+
             let mut fragments = query!(
                 "SELECT height, note_commitment, ephemeral_key, encrypted_note
                     FROM notes
@@ -496,6 +509,7 @@ impl Reader {
                     height: height as u64,
                     fragments: vec![],
                     nullifiers: vec![],
+                    quarantined_nullifiers: vec![],
                 };
 
                 // Put all the nullifiers into the compact block
@@ -508,6 +522,22 @@ impl Reader {
                     }
 
                     let row = Pin::new(&mut nullifiers)
+                        .next()
+                        .await
+                        .expect("we already peeked, so there is a next row")?;
+                    compact_block.nullifiers.push(row.nullifier.into());
+                }
+
+                // Put all the quarantined nullifiers into the compact block
+                while let Some(row) = Pin::new(&mut quarantined_nullifiers).peek().await {
+                    // Bail out of the loop if the next iteration would be a different height
+                    if let Ok(row) = row {
+                        if row.height != height {
+                            break;
+                        }
+                    }
+
+                    let row = Pin::new(&mut quarantined_nullifiers)
                         .next()
                         .await
                         .expect("we already peeked, so there is a next row")?;

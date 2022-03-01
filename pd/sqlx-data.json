@@ -83,6 +83,33 @@
       "nullable": []
     }
   },
+  "1d865734f3b465d0683ec471b6977eca9fb873c0c7a673f2d7f2ecca6b5fc119": {
+    "query": "SELECT quarantined_height AS height, nullifier\n                    FROM quarantined_nullifiers\n                    WHERE\n                        quarantined_height BETWEEN $1 AND $2 AND\n                        reverted_height IS NULL\n                    ORDER BY height ASC",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "height",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "nullifier",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
   "23271acfbb896cd6a0875d6420c5dad66e5ff20d09f8c61e7c82fb62e1a1b6a2": {
     "query": "UPDATE quarantined_notes SET reverted_height = $1 WHERE note_commitment = $2",
     "describe": {

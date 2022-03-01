@@ -141,18 +141,23 @@ impl PendingBlock {
                 notes: transaction.new_notes.into_iter().collect(),
                 nullifiers: transaction.spent_nullifiers.iter().cloned().collect(),
             });
+
+            // NOTE: We *do not* insert nullifiers into the main nullifier set here; when querying
+            // for double-spends, pd's internal logic checks both the main nullifier set and the
+            // quarantined nullifier set, the latter of which is implicitly inserted into when a
+            // `QuarantineGroup` is processed in `commit_block`.
         } else {
             // If a transaction does not contain any undelegations, we insert its outputs
             // immediately into the NCT.
             for (commitment, data) in transaction.new_notes {
                 self.add_note(commitment, data);
             }
-        }
 
-        // Unconditionally, insert all nullifiers spent in this transaction into the spent set to
-        // prevent double-spends, regardless of quarantine status.
-        for nullifier in transaction.spent_nullifiers {
-            self.spent_nullifiers.insert(nullifier);
+            // We also immediately insert all its nullifiers into the main nullifier set, to prevent
+            // double-spends.
+            for nullifier in transaction.spent_nullifiers {
+                self.spent_nullifiers.insert(nullifier);
+            }
         }
     }
 }

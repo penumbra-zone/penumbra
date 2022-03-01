@@ -28,8 +28,10 @@ message CompactBlock {
   uint64 height = 1;
   // Fragments of new notes.
   repeated StateFragment fragments = 2;
-  // Nullifiers identifying spent notes.
+  // Nullifiers identifying spent notes that are permanently committed and will never be reverted.
   repeated bytes nullifiers = 3;
+  // Nullifiers identifying spent notes that might be reverted later.
+  repeated bytes quarantined_nullifiers = 4;
 }
 
 // The minimum data needed to identify a new note.
