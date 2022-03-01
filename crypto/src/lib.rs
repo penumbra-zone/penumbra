@@ -16,6 +16,7 @@ mod note_payload;
 mod nullifier;
 mod prf;
 pub mod proofs;
+pub mod threshold;
 pub mod value;
 
 pub use address::Address;
