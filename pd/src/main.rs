@@ -65,10 +65,10 @@ enum Command {
         #[structopt(long, default_value = "4")]
         num_validator_nodes: usize,
         /// Number of blocks per epoch.
-        #[structopt(long, default_value = "60")]
+        #[structopt(long, default_value = "40")]
         epoch_duration: u64,
         /// Number of epochs before unbonding stake is released.
-        #[structopt(long, default_value = "60")]
+        #[structopt(long, default_value = "40")]
         unbonding_epochs: u64,
         /// Maximum number of validators in the consensus set.
         #[structopt(long, default_value = "10")]

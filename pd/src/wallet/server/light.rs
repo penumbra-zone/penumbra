@@ -47,6 +47,7 @@ impl LightWallet for state::Reader {
     ) -> Result<tonic::Response<Self::ValidatorInfoStream>, Status> {
         self.check_chain_id(&request.get_ref().chain_id)?;
 
+        // TODO: not working right now for some reason
         let validator_info = self
             .validator_info(request.into_inner().show_inactive)
             .await

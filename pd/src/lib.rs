@@ -4,6 +4,7 @@
 #![recursion_limit = "512"]
 #![allow(clippy::clone_on_copy)]
 
+mod components;
 mod consensus;
 mod db;
 mod info;
@@ -12,7 +13,6 @@ mod pd_metrics;
 mod pending_block;
 mod request_ext;
 mod snapshot;
-mod validator_set;
 mod verify;
 mod wallet;
 
