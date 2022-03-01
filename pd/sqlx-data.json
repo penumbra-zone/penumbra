@@ -69,6 +69,20 @@
       ]
     }
   },
+  "155f64fb6352d1170eb4df09f7bf64c98edbfbf88c03168d6b80d84905eb0517": {
+    "query": "INSERT INTO base_rates VALUES ($1, $2, $3) ON CONFLICT ON CONSTRAINT base_rates_pkey DO UPDATE SET base_reward_rate=$2, base_exchange_rate=$3",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "2b00fd7700707a635a3d5827f69f2a16a45737fe24797d9aae3874c95d640524": {
     "query": "DELETE FROM nullifiers WHERE nullifier = $1",
     "describe": {
@@ -682,20 +696,6 @@
         false,
         false
       ]
-    }
-  },
-  "9ab28d6b1cdbe8fd02e4382ab9cf5a2fa2914aaf460020977aeadfb8818c70af": {
-    "query": "INSERT INTO base_rates VALUES ($1, $2, $3)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Int8",
-          "Int8"
-        ]
-      },
-      "nullable": []
     }
   },
   "9efba3ba5ace824dfbf620cd5d9cd46ea8e0e99c6fc791723d1490a2b84d07ac": {
