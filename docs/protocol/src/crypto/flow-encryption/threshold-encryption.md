@@ -220,7 +220,7 @@ With $c_{i0}$, $s_{pi}$, and $d_p$ as inputs, each participant computes their pr
 $$k \overset{rand}{\leftarrow} \mathbb{F_q}$$
 $$\alpha = k*G$$
 $$\gamma = k*c_{i0}$$
-$$t = H(s_{pi}, c_{i0}, i, p, \alpha, \gamma)$$
+$$t = H(s_{pi}, c_{i0}, i, p, \phi_{p}, \alpha, \gamma)$$
 $$r = k - d_p*t$$
 
 The proof is the tuple $\sigma_{pi} = (r, t)$.
@@ -233,7 +233,7 @@ participant verifies that $s_{pi}$ is valid by checking
 
 $$\alpha = G*r + \phi_{p}*t$$
 $$\gamma = c_{i0}*r + s_{pi}*t$$
-$$H(s_{pi}, c_{i0}, i, p, \alpha, \gamma) \stackrel{?}{=} t$$
+$$H(s_{pi}, c_{i0}, i, p, \phi_{p}, \alpha, \gamma) \stackrel{?}{=} t$$
 
 and aborting if verification fails. (TODO: should we ignore this participant's share, or report/slash them?)
 
