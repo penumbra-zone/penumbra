@@ -122,7 +122,7 @@ pub fn aggregate_values(
 }
 
 // compute a look-up-table for the discrete logarithm of the set of values [1, 2, ..., maxval]
-pub fn compute_lut(maxval: u64) -> BTreeMap<[u8; 32], u64> {
+fn compute_lut(maxval: u64) -> BTreeMap<[u8; 32], u64> {
     let mut res = BTreeMap::new();
     for i in 1..maxval {
         let ge = Fr::from(i) * decaf377::basepoint();
@@ -133,7 +133,7 @@ pub fn compute_lut(maxval: u64) -> BTreeMap<[u8; 32], u64> {
 
 // compute the lagrange coefficient for the participant given by `participant_index` in the set of
 // participants given by participant_indicies
-pub fn lagrange_coefficient(participant_index: u32, participant_indicies: &[u32]) -> decaf377::Fr {
+fn lagrange_coefficient(participant_index: u32, participant_indicies: &[u32]) -> decaf377::Fr {
     participant_indicies
         .iter()
         .filter(|x| **x != participant_index)
@@ -279,6 +279,7 @@ mod tests {
     #[test]
     fn test_threshold_decryption() {
         // do a dkg (using frost dkg for now), the do aggregation + threshold decryption
+        let lut = compute_lut(1000);
         let t = 10;
         let n = 20;
 
@@ -345,12 +346,7 @@ mod tests {
             &pubkey_commitments,
         );
 
-        assert!(
-            decrypted_value.unwrap().compress().0
-                == (decaf377::Fr::from(600u64) * decaf377::basepoint())
-                    .compress()
-                    .0
-        );
+        assert!(lut.get(&decrypted_value.unwrap().compress().0).unwrap() == &600u64);
 
         // randomly select t/n shares
         let mut subset = Vec::new();
@@ -374,10 +370,9 @@ mod tests {
             decrypt_value(&aggregate_value, &subset, &subset_pubkey_commitments);
 
         assert!(
-            decrypted_value_rand_subset.unwrap().compress().0
-                == (decaf377::Fr::from(600u64) * decaf377::basepoint())
-                    .compress()
-                    .0
+            lut.get(&decrypted_value_rand_subset.unwrap().compress().0)
+                .unwrap()
+                == &600u64
         );
     }
 }
