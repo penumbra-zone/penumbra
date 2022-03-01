@@ -409,7 +409,7 @@ impl Writer {
         ) {
             tracing::debug!(?base_rate_data, "Saving next base rate to the database");
             query!(
-                "INSERT INTO base_rates VALUES ($1, $2, $3)",
+                "INSERT INTO base_rates VALUES ($1, $2, $3) ON CONFLICT ON CONSTRAINT base_rates_pkey DO UPDATE SET base_reward_rate=$2, base_exchange_rate=$3",
                 base_rate_data.epoch_index as i64,
                 base_rate_data.base_reward_rate as i64,
                 base_rate_data.base_exchange_rate as i64,
