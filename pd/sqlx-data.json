@@ -1,5 +1,44 @@
 {
   "db": "PostgreSQL",
+  "06ea89fe4519f7aaa5f896b6de480805148fce68dc4c775283243192f27b5ca2": {
+    "query": "SELECT\n                    reverted_height AS height,\n                    note_commitment,\n                    ephemeral_key,\n                    encrypted_note\n                FROM quarantined_notes\n                WHERE\n                    reverted_height IS NOT NULL AND\n                    reverted_height BETWEEN $1 and $2\n                ORDER BY height ASC",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "height",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "note_commitment",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 2,
+          "name": "ephemeral_key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 3,
+          "name": "encrypted_note",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": [
+        true,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "0a6306cae406df1b23e52d503b22768210c72fb679fda34fa80d08cd2498fec4": {
     "query": "INSERT INTO validators (\n                    identity_key,\n                    consensus_key,\n                    sequence_number,\n                    name,\n                    website,\n                    description,\n                    voting_power,\n                    validator_state,\n                    unbonding_epoch\n                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
     "describe": {
@@ -600,6 +639,51 @@
         ]
       },
       "nullable": [
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "8ee50b0f5a24770d8e4d729ec19bcf1a209f93c00a3d663df4e037fec8288097": {
+    "query": "SELECT\n                    quarantined_height AS height,\n                    unbonding_height,\n                    note_commitment,\n                    ephemeral_key,\n                    encrypted_note\n                FROM quarantined_notes\n                WHERE\n                    quarantined_height BETWEEN $1 and $2\n                ORDER BY height ASC",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "height",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "unbonding_height",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 2,
+          "name": "note_commitment",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 3,
+          "name": "ephemeral_key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 4,
+          "name": "encrypted_note",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
         false,
         false,
         false

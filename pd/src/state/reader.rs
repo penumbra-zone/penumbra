@@ -456,6 +456,40 @@ impl Reader {
             .fetch(&pool)
             .peekable();
 
+            let mut quarantined_fragments = query!(
+                "SELECT
+                    quarantined_height AS height,
+                    unbonding_height,
+                    note_commitment,
+                    ephemeral_key,
+                    encrypted_note
+                FROM quarantined_notes
+                WHERE
+                    quarantined_height BETWEEN $1 and $2
+                ORDER BY height ASC",
+                start_height,
+                end_height
+            )
+            .fetch(&pool)
+            .peekable();
+
+            let mut reverted_fragments = query!(
+                "SELECT
+                    reverted_height AS height,
+                    note_commitment,
+                    ephemeral_key,
+                    encrypted_note
+                FROM quarantined_notes
+                WHERE
+                    reverted_height IS NOT NULL AND
+                    reverted_height BETWEEN $1 and $2
+                ORDER BY height ASC",
+                start_height,
+                end_height
+            )
+            .fetch(&pool)
+            .peekable();
+
             for height in start_height..=end_height {
                 let mut compact_block = CompactBlock {
                     height: height as u64,
