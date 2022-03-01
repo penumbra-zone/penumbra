@@ -41,6 +41,18 @@ message StateFragment {
   // An encryption of the newly created note.
   // 132 = 1(type) + 11(d) + 8(amount) + 32(asset_id) + 32(rcm) + 32(pk_d) + 16(MAC) bytes.
   bytes encrypted_note = 4;
+  // If the state fragment represents an update related to quarantine (excepting successful
+  // unbonding, which is handled along totally ordinary codepaths client-side), this describes what
+  // sort of update the state fragment represents.
+  oneof quarantine_update {
+    // The fragment is the result of an undelegation to a validator and is currently being
+    // quarantined, and will unbond at this height if the validator from which it was undelegated is
+    // not slashed before then.
+    uint64 quarantined_with_unbonding_height = 5;
+    // The fragment is the result of an undelegation to a validator and has been reverted to being
+    // spendable again because the validator from which it was undelegated is slashed.
+    uint64 reverted_from_quarantined_height = 6;
+  }
 }
 
 // Requests the global configuration data for the chain.

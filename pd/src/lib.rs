@@ -1,7 +1,7 @@
 //! Source code for the Penumbra node software.
 
 // This is for the async_stream macros
-#![recursion_limit = "512"]
+#![recursion_limit = "1024"]
 #![allow(clippy::clone_on_copy)]
 
 mod consensus;

@@ -16,7 +16,7 @@ use penumbra_crypto::{
 };
 use penumbra_proto::{
     chain,
-    light_wallet::{CompactBlock, StateFragment},
+    light_wallet::{state_fragment::QuarantineUpdate, CompactBlock, StateFragment},
     thin_wallet::{Asset, TransactionDetail},
     Protobuf,
 };
@@ -475,6 +475,7 @@ impl Reader {
 
             let mut reverted_fragments = query!(
                 "SELECT
+                    quarantined_height,
                     reverted_height AS height,
                     note_commitment,
                     ephemeral_key,
@@ -497,6 +498,7 @@ impl Reader {
                     nullifiers: vec![],
                 };
 
+                // Put all the nullifiers into the compact block
                 while let Some(row) = Pin::new(&mut nullifiers).peek().await {
                     // Bail out of the loop if the next iteration would be a different height
                     if let Ok(row) = row {
@@ -512,6 +514,7 @@ impl Reader {
                     compact_block.nullifiers.push(row.nullifier.into());
                 }
 
+                // Put all the normal fragments into the compact block
                 while let Some(row) = Pin::new(&mut fragments).peek().await {
                     // Bail out of the loop if the next iteration would be a different height
                     if let Ok(row) = row {
@@ -528,6 +531,57 @@ impl Reader {
                         note_commitment: row.note_commitment.into(),
                         ephemeral_key: row.ephemeral_key.into(),
                         encrypted_note: row.encrypted_note.into(),
+                        quarantine_update: None,
+                    });
+                }
+
+                // Put all the quarantined fragments into the compact block
+                while let Some(row) = Pin::new(&mut quarantined_fragments).peek().await {
+                    // Bail out of the loop if the next iteration would be a different height
+                    if let Ok(row) = row {
+                        if row.height != height {
+                            break;
+                        }
+                    }
+
+                    let row = Pin::new(&mut quarantined_fragments)
+                        .next()
+                        .await
+                        .expect("we already peeked, so there is a next row")?;
+                    compact_block.fragments.push(StateFragment {
+                        note_commitment: row.note_commitment.into(),
+                        ephemeral_key: row.ephemeral_key.into(),
+                        encrypted_note: row.encrypted_note.into(),
+                        quarantine_update: Some(
+                            QuarantineUpdate::QuarantinedWithUnbondingHeight(
+                                row.unbonding_height.try_into().expect("unbonding height is positive")
+                            )
+                        ),
+                    });
+                }
+
+                // Put all the reverted fragments into the compact block
+                while let Some(row) = Pin::new(&mut reverted_fragments).peek().await {
+                    // Bail out of the loop if the next iteration would be a different height
+                    if let Ok(row) = row {
+                        if row.height.expect("reverted fragments row has height") != height {
+                            break;
+                        }
+                    }
+
+                    let row = Pin::new(&mut reverted_fragments)
+                        .next()
+                        .await
+                        .expect("we already peeked, so there is a next row")?;
+                    compact_block.fragments.push(StateFragment {
+                        note_commitment: row.note_commitment.into(),
+                        ephemeral_key: row.ephemeral_key.into(),
+                        encrypted_note: row.encrypted_note.into(),
+                        quarantine_update: Some(
+                            QuarantineUpdate::RevertedFromQuarantinedHeight(
+                                row.quarantined_height.try_into().expect("quarantined height is positive")
+                            )
+                        ),
                     });
                 }
 
