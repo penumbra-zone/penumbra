@@ -23,7 +23,9 @@ pub struct EncryptedValue {
 }
 
 impl EncryptedValue {
-    // verify the EncryptionProof for this EncryptedValue. see the spec for more details
+    /// Verifies the [`EncryptionProof`] for this [`EncryptedValue`].
+    ///
+    /// See the [spec](https://protocol.penumbra.zone/main/crypto/flow-encryption/threshold-encryption.html) for more details.
     pub fn verify(&self, for_pubkey: decaf377::Element) -> Result<(), anyhow::Error> {
         let alpha = decaf377::basepoint() * self.proof.r + self.c1 * self.proof.t;
         let gamma = for_pubkey * self.proof.r
@@ -45,8 +47,9 @@ impl EncryptedValue {
         }
         Ok(())
     }
-    // use the homomorphism property to add two encrypted values together. NOTE: proofs are not
-    // aggregatable, so any aggregations must be verified independently.
+
+    /// Add this [`EncryptedValue`] to another [`EncryptedValue`] to produce a new [`EncryptedValue`].
+    /// NOTE: proofs are not aggregatable, so any aggregations must be verified independently.
     pub fn add(&self, other: &EncryptedValue) -> EncryptedValue {
         EncryptedValue {
             c1: self.c1 + other.c1,
@@ -56,8 +59,8 @@ impl EncryptedValue {
     }
 }
 
-// encrypted the given `value` as value*decaf377::basepoint() using the elgamal scheme, and compute
-// a proof of correctness for the encryption of the value.
+/// Encrypt the given `values` as value*decaf377::basepoint using the elgamal scheme, and compute
+/// an [`EncrytionProof`] of correctness.
 pub fn encrypt_value(value: decaf377::Fr, for_pubkey: decaf377::Element) -> EncryptedValue {
     let mut rng = rand::thread_rng();
     let e = Fr::rand(&mut rng);
@@ -85,7 +88,7 @@ pub fn encrypt_value(value: decaf377::Fr, for_pubkey: decaf377::Element) -> Encr
     EncryptedValue { c1, c2, proof }
 }
 
-// decrypt a given encrypted value in the threshold setting using a set of decryption shares.
+/// Decrypt a given [`EncryptedValue`] in the threshold setting using a set of decryption shares.
 pub fn decrypt_value(
     encrypted_value: &EncryptedValue,
     decryption_shares: &[DecryptionShare],
@@ -107,7 +110,7 @@ pub fn decrypt_value(
     Ok(-d + encrypted_value.c2)
 }
 
-// sum a set of encrypted values together using the additive homomorphism.
+/// Sum a set of encrypted values together using the additive homomorphism.
 pub fn aggregate_values(
     values: &[EncryptedValue],
     dkg_pubkey: decaf377::Element,
@@ -145,16 +148,17 @@ fn lagrange_coefficient(participant_index: u32, participant_indicies: &[u32]) ->
         })
 }
 
-// A proof of a threshold decryption share (r, t)
-// see the spec for more details
+/// A proof of a threshold decryption share (r, t)
+/// [spec](https://protocol.penumbra.zone/main/crypto/flow-encryption/threshold-encryption.html)
+/// for more details
 #[derive(Clone)]
 pub struct DecryptionProof {
     r: decaf377::Fr,
     t: decaf377::Fr,
 }
 
-// a threshold decryption share of a given encrypted value, along with its proof and the index of
-// the participant that created the share.
+/// Threshold decryption share of a given encrypted value, along with its proof and the index of
+/// the participant that created the share.
 #[derive(Clone)]
 pub struct DecryptionShare {
     share: decaf377::Element,
@@ -163,8 +167,10 @@ pub struct DecryptionShare {
 }
 
 impl DecryptionShare {
-    // compute a decryption share (and proof) for the given `c1` using the participant's key share
-    // `private_key`. see the spec for more details.
+    /// Creates a decryption share (and proof) for the given `c1` using the participant's key share
+    /// `private_key`. see the
+    /// [spec](https://protocol.penumbra.zone/main/crypto/flow-encryption/threshold-encryption.html)
+    /// for more details.
     pub fn new(
         private_key: decaf377::Fr,
         c1: decaf377::Element,
@@ -198,8 +204,8 @@ impl DecryptionShare {
             participant_index,
         }
     }
-    // verify a decryption share over `c1` using the commitment to the participant's secret share
-    // (output from DKG)
+    /// Verifies a decryption share over `c1` using the commitment to the participant's secret
+    /// share (output from DKG)
     pub fn verify(
         &self,
         c1: decaf377::Element,
