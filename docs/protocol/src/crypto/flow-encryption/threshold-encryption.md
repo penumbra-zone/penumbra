@@ -77,11 +77,11 @@ Next, compute a proof of correctness of the ElGamal encryption by executing the 
 
 $$k_{1} \overset{rand}{\leftarrow} \mathbb{F_q}$$
 $$k_{2} \overset{rand}{\leftarrow} \mathbb{F_q}$$
-$$\alpha = k_{1}*G + k_{2}*D$$
-$$\gamma = k_{2}*G$$
+$$\alpha = k_{1}*G$$
+$$\gamma = k_{1}*D + k_{2}*G$$
 $$t = H(c_{i0}, c_{i1}, D, \alpha, \gamma)$$
-$$r = k_{1} - v_i*t$$
-$$s = k_{2} - e*t$$
+$$r = k_{1} - e*t$$
+$$s = k_{2} - v_i*t$$
 
 The proof is then $\sigma_{c_i} = (r, s, t)$.
 The encryption of value $v$ is given as $v_e = [c_1, c_2, c_3, c_4]$.
@@ -89,8 +89,8 @@ The encryption of value $v$ is given as $v_e = [c_1, c_2, c_3, c_4]$.
 Upon receiving an encrypted value $v_e$ with proofs $\sigma_{c_i}$, a validator
 or validating full node should verify each proof $\sigma_{c_i}$ by checking
 
-$$\alpha \leftarrow D*s + G*r + c_{i1}*t$$
-$$\gamma \leftarrow G*s + c_{i0}*t$$
+$$\alpha \leftarrow G*r + c_{i0}*t$$
+$$\gamma \leftarrow D*r + G*s + c_{i1}*t$$
 $$H(c_{i0}, c_{i1}, D, \alpha, \gamma) \stackrel{?}{=} t$$
 
 Considering the value invalid if the proof fails to verify.
