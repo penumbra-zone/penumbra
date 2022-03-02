@@ -11,13 +11,20 @@ use crate::genesis;
 
 /// Methods and types used for generating testnet configurations.
 
-pub fn parse_allocations_file(input_file: PathBuf) -> Result<Vec<TestnetAllocation>> {
-    let file = File::open(&input_file).context("couldn't open allocations file")?;
+pub fn parse_allocations_file(input_file: PathBuf) -> Result<Vec<genesis::Allocation>> {
+    let file = File::open(&input_file)
+        .with_context(|| format!("couldn't open allocations file {:?}", input_file))?;
 
     let mut rdr = csv::Reader::from_reader(file);
     let mut res = vec![];
-    for result in rdr.deserialize() {
+    for (line, result) in rdr.deserialize().enumerate() {
         let record: TestnetAllocation = result?;
+        let record: genesis::Allocation = record.try_into().with_context(|| {
+            format!(
+                "invalid address in entry {} of allocations file {:?}",
+                line, input_file
+            )
+        })?;
         res.push(record);
     }
 
@@ -102,14 +109,16 @@ pub struct TestnetValidator {
     pub voting_power: u32,
 }
 
-impl From<&TestnetAllocation> for genesis::Allocation {
-    fn from(a: &TestnetAllocation) -> genesis::Allocation {
-        genesis::Allocation {
+impl TryFrom<TestnetAllocation> for genesis::Allocation {
+    type Error = anyhow::Error;
+
+    fn try_from(a: TestnetAllocation) -> anyhow::Result<genesis::Allocation> {
+        Ok(genesis::Allocation {
             amount: a.amount,
             denom: a.denom.clone(),
             address: Address::from_str(&a.address)
-                .expect("Invalid address format in allocations.csv"),
-        }
+                .context("invalid address format in genesis allocations")?,
+        })
     }
 }
 

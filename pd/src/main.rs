@@ -385,7 +385,7 @@ async fn main() -> anyhow::Result<()> {
                 let node_name = format!("node{}", n);
 
                 let app_state = genesis::AppState {
-                    allocations: allocations.iter().map(|a| a.into()).collect(),
+                    allocations: allocations.clone(),
                     chain_params: ChainParams {
                         chain_id: chain_id.clone(),
                         epoch_duration,
