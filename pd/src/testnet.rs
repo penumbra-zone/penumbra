@@ -1,4 +1,4 @@
-use std::{env::current_dir, fmt, fs::File, path::PathBuf, str::FromStr};
+use std::{env::current_dir, fmt, io::Read, path::PathBuf, str::FromStr};
 
 use anyhow::{Context, Result};
 use directories::UserDirs;
@@ -11,25 +11,22 @@ use crate::genesis;
 
 /// Methods and types used for generating testnet configurations.
 
-pub fn parse_allocations_file(input_file: PathBuf) -> Result<Vec<TestnetAllocation>> {
-    let file = File::open(&input_file).context("couldn't open allocations file")?;
-
-    let mut rdr = csv::Reader::from_reader(file);
+pub fn parse_allocations(input: impl Read) -> Result<Vec<genesis::Allocation>> {
+    let mut rdr = csv::Reader::from_reader(input);
     let mut res = vec![];
-    for result in rdr.deserialize() {
+    for (line, result) in rdr.deserialize().enumerate() {
         let record: TestnetAllocation = result?;
+        let record: genesis::Allocation = record
+            .try_into()
+            .with_context(|| format!("invalid address in entry {} of allocations file", line))?;
         res.push(record);
     }
 
     Ok(res)
 }
 
-pub fn parse_validators_file(input_file: PathBuf) -> Result<Vec<TestnetValidator>> {
-    let file = File::open(&input_file).context("couldn't open validators file")?;
-
-    let validators: Vec<TestnetValidator> = serde_json::from_reader(file)?;
-
-    Ok(validators)
+pub fn parse_validators(input: impl Read) -> Result<Vec<TestnetValidator>> {
+    Ok(serde_json::from_reader(input)?)
 }
 
 fn string_u64<'de, D>(deserializer: D) -> Result<u64, D::Error>
@@ -102,14 +99,16 @@ pub struct TestnetValidator {
     pub voting_power: u32,
 }
 
-impl From<&TestnetAllocation> for genesis::Allocation {
-    fn from(a: &TestnetAllocation) -> genesis::Allocation {
-        genesis::Allocation {
+impl TryFrom<TestnetAllocation> for genesis::Allocation {
+    type Error = anyhow::Error;
+
+    fn try_from(a: TestnetAllocation) -> anyhow::Result<genesis::Allocation> {
+        Ok(genesis::Allocation {
             amount: a.amount,
             denom: a.denom.clone(),
             address: Address::from_str(&a.address)
-                .expect("Invalid address format in allocations.csv"),
-        }
+                .context("invalid address format in genesis allocations")?,
+        })
     }
 }
 

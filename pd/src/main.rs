@@ -1,10 +1,12 @@
 #![allow(clippy::clone_on_copy)]
 use std::{
     net::{Ipv4Addr, SocketAddr},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
+use anyhow::Context;
 use metrics_exporter_prometheus::PrometheusBuilder;
+use once_cell::sync::Lazy;
 use penumbra_chain::params::ChainParams;
 use penumbra_crypto::rdsa::{SigningKey, SpendAuth, VerificationKey};
 use penumbra_proto::{
@@ -71,26 +73,18 @@ enum Command {
         /// Expressed in basis points.
         #[structopt(long, default_value = "1000")]
         slashing_penalty: u64,
-        /// Path to CSV file containing initial allocations.
-        #[structopt(
-            long,
-            parse(from_os_str),
-            default_value = "testnets/004-thelxinoe/allocations.csv"
-        )]
-        allocations_input_file: PathBuf,
-        /// Path to JSON file containing initial validator configs.
-        #[structopt(
-            long,
-            parse(from_os_str),
-            default_value = "testnets/004-thelxinoe/validators.json"
-        )]
-        validators_input_file: PathBuf,
+        /// Path to CSV file containing initial allocations [default: latest testnet].
+        #[structopt(long, parse(from_os_str))]
+        allocations_input_file: Option<PathBuf>,
+        /// Path to JSON file containing initial validator configs [default: latest testnet].
+        #[structopt(long, parse(from_os_str))]
+        validators_input_file: Option<PathBuf>,
         /// Path to directory to store output in. Must not exist.
         #[structopt(long)]
         output_dir: Option<PathBuf>,
-        /// Testnet name, e.g. `penumbra-euporie`
-        #[structopt(long, default_value = "penumbra-thelxinoe")]
-        chain_id: String,
+        /// Testnet name [default: latest testnet].
+        #[structopt(long)]
+        chain_id: Option<String>,
         /// IP Address to start `tendermint` nodes on. Increments by three to make room for `pd` and `postgres` per node.
         #[structopt(long, default_value = "192.167.10.2")]
         starting_ip: Ipv4Addr,
@@ -223,6 +217,9 @@ async fn main() -> anyhow::Result<()> {
                 time::{Duration, SystemTime, UNIX_EPOCH},
             };
 
+            // Build script computes the latest testnet name and sets it as an env variable
+            let chain_id = chain_id.unwrap_or_else(|| env!("PD_LATEST_TESTNET_NAME").to_string());
+
             let randomizer = OsRng.gen::<u32>();
             let chain_id = format!("{}-{}", chain_id, hex::encode(&randomizer.to_le_bytes()));
 
@@ -252,11 +249,48 @@ async fn main() -> anyhow::Result<()> {
                 None => canonicalize_path("~/.penumbra/testnet_data"),
             };
 
-            // Parse allocations from input file
-            let allocations = parse_allocations_file(allocations_input_file)?;
+            // Parse allocations from input file or default to latest testnet allocations computed
+            // in the build script
+            let allocations = if let Some(allocations_input_file) = allocations_input_file {
+                let allocations_file = File::open(&allocations_input_file)
+                    .with_context(|| format!("cannot open file {:?}", allocations_input_file))?;
+                parse_allocations(allocations_file).with_context(|| {
+                    format!(
+                        "could not parse allocations file {:?}",
+                        allocations_input_file
+                    )
+                })?
+            } else {
+                static LATEST_ALLOCATIONS: &str =
+                    include_str!(env!("PD_LATEST_TESTNET_ALLOCATIONS"));
+                parse_allocations(std::io::Cursor::new(LATEST_ALLOCATIONS)).with_context(|| {
+                    format!(
+                        "could not parse default latest testnet allocations file {:?}",
+                        env!("PD_LATEST_TESTNET_ALLOCATIONS")
+                    )
+                })?
+            };
 
-            // Parse validators from input file
-            let validators = parse_validators_file(validators_input_file)?;
+            // Parse validators from input file or default to latest testnet validators computed in
+            // the build script
+            let validators = if let Some(validators_input_file) = validators_input_file {
+                let validators_file = File::open(&validators_input_file)
+                    .with_context(|| format!("cannot open file {:?}", validators_input_file))?;
+                parse_validators(validators_file).with_context(|| {
+                    format!(
+                        "could not parse validators file {:?}",
+                        validators_input_file
+                    )
+                })?
+            } else {
+                static LATEST_VALIDATORS: &str = include_str!(env!("PD_LATEST_TESTNET_VALIDATORS"));
+                parse_validators(std::io::Cursor::new(LATEST_VALIDATORS)).with_context(|| {
+                    format!(
+                        "could not parse default latest testnet validators file {:?}",
+                        env!("PD_LATEST_TESTNET_VALIDATORS")
+                    )
+                })?
+            };
 
             struct ValidatorKeys {
                 // Penumbra spending key and viewing key for this node.
@@ -303,7 +337,7 @@ async fn main() -> anyhow::Result<()> {
                 let node_name = format!("node{}", n);
 
                 let app_state = genesis::AppState {
-                    allocations: allocations.iter().map(|a| a.into()).collect(),
+                    allocations: allocations.clone(),
                     chain_params: ChainParams {
                         chain_id: chain_id.clone(),
                         epoch_duration,
@@ -353,10 +387,10 @@ async fn main() -> anyhow::Result<()> {
                 node_dir.push(&node_name);
 
                 let mut node_config_dir = node_dir.clone();
-                node_config_dir.push("config".to_string());
+                node_config_dir.push("config");
 
                 let mut node_data_dir = node_dir.clone();
-                node_data_dir.push("data".to_string());
+                node_data_dir.push("data");
 
                 fs::create_dir_all(&node_config_dir)?;
                 fs::create_dir_all(&node_data_dir)?;
