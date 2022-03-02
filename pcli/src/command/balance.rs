@@ -23,6 +23,7 @@ struct FormattedTally {
     available: String,
     submitted_spend: String,
     submitted_change: String,
+    unbonding: String,
 }
 
 // Format a tally of notes as a set of strings.
@@ -39,12 +40,14 @@ fn tally_format_notes<'a>(
         let mut unspent = 0;
         let mut submitted_spend = 0;
         let mut submitted_change = 0;
+        let mut unbonding = 0;
 
         for note in notes {
             *match note {
                 UnspentNote::Ready(_) => &mut unspent,
                 UnspentNote::SubmittedSpend(_) => &mut submitted_spend,
                 UnspentNote::SubmittedChange(_) => &mut submitted_change,
+                UnspentNote::Quarantined { .. } => &mut unbonding,
             } += note.as_ref().amount();
         }
 
@@ -70,6 +73,12 @@ fn tally_format_notes<'a>(
             "".to_string()
         };
 
+        let unbonding_string = if unbonding > 0 {
+            format!("+{unbonding} (unbonding)")
+        } else {
+            "".to_string()
+        };
+
         // The total amount, disregarding submitted transactions:
         let total = denom.value(submitted_change.amount + unspent);
 
@@ -81,6 +90,7 @@ fn tally_format_notes<'a>(
             available: available.try_format(cache).unwrap(),
             submitted_change: submitted_change_string,
             submitted_spend: submitted_spend_string,
+            unbonding: unbonding_string,
         }
     })
 }
@@ -94,7 +104,6 @@ impl BalanceCmd {
         // Initialize the table
         let mut table = Table::new();
         table.load_preset(presets::NOTHING);
-        let mut print_submitted_column = false; // This will become true if there are any submitted transactions
         let mut headers;
 
         if self.by_address {
@@ -109,12 +118,10 @@ impl BalanceCmd {
                     let tallies = tally_format_notes(&denom, state.asset_cache(), notes_groups);
                     for tally in tallies {
                         let mut row = vec![label.clone(), tally.total];
-                        if !tally.submitted_change.is_empty() || !tally.submitted_spend.is_empty() {
-                            print_submitted_column = true;
-                            row.push(tally.available);
-                            row.push(tally.submitted_change);
-                            row.push(tally.submitted_spend);
-                        }
+                        row.push(tally.available);
+                        row.push(tally.submitted_change);
+                        row.push(tally.submitted_spend);
+                        row.push(tally.unbonding);
                         table.add_row(row);
 
                         // Only display the label on the first row
@@ -140,12 +147,10 @@ impl BalanceCmd {
 
                 for tally in tallies {
                     let mut row = vec![tally.total];
-                    if !tally.submitted_change.is_empty() || !tally.submitted_spend.is_empty() {
-                        print_submitted_column = true;
-                        row.push(tally.available);
-                        row.push(tally.submitted_change);
-                        row.push(tally.submitted_spend);
-                    }
+                    row.push(tally.available);
+                    row.push(tally.submitted_change);
+                    row.push(tally.submitted_spend);
+                    row.push(tally.unbonding);
                     table.add_row(row);
                 }
             }
@@ -155,11 +160,11 @@ impl BalanceCmd {
             headers = vec!["Total"];
         }
 
-        // Add an "Available" and "Submitted" column if there are any submitted transactions
-        if print_submitted_column {
-            headers.push("Available");
-            headers.push("Submitted");
-        }
+        // Set up column headers and print table
+        headers.push("Available");
+        headers.push("Submitted");
+        headers.push("");
+        headers.push("Unbonding");
         table.set_header(headers);
         println!("{}", table);
 
