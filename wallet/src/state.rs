@@ -80,6 +80,12 @@ pub enum UnspentNote<'a> {
     /// A note which resulted as predicted change from a spend transaction, but which has not
     /// yet been confirmed on the chain (so we cannot spend it yet).
     SubmittedChange(&'a Note),
+    /// A note which has resulted as the output from an undelegation, which cannot yet be spent
+    /// until the unbonding period expires.
+    Quarantined {
+        note: &'a Note,
+        unbonding_height: u64,
+    },
 }
 
 impl<'a> UnspentNote<'a> {
@@ -98,6 +104,7 @@ impl AsRef<Note> for UnspentNote<'_> {
             UnspentNote::Ready(note) => note,
             UnspentNote::SubmittedSpend(note) => note,
             UnspentNote::SubmittedChange(note) => note,
+            UnspentNote::Quarantined { note, .. } => note,
         }
     }
 }
@@ -537,6 +544,14 @@ impl ClientState {
                 self.submitted_change_set
                     .values()
                     .map(|(_, note)| UnspentNote::SubmittedChange(note)),
+            )
+            .chain(
+                self.quarantined_set
+                    .values()
+                    .map(|(note, unbonding_height)| UnspentNote::Quarantined {
+                        note,
+                        unbonding_height: *unbonding_height,
+                    }),
             )
             .map(|note| {
                 // Any notes we have in the unspent set we will have the corresponding denominations
