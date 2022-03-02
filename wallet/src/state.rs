@@ -1,6 +1,6 @@
 use std::{
     collections::{BTreeMap, HashMap},
-    mem,
+    iter, mem,
     time::{Duration, SystemTime},
 };
 
@@ -753,6 +753,9 @@ impl ClientState {
 
                         // Because the note was made spendable again, its computed nullifier in the
                         // nullifier map is no longer valid, so we need to remove it.
+
+                        // Because we do not prune the NCT until a nullifier unbonds, we know that
+                        // the witness is still there.
                         let (pos, _auth_path) = self
                             .note_commitment_tree
                             .authentication_path(&note_commitment)
@@ -802,47 +805,53 @@ impl ClientState {
 
         // Scan through the list of nullifiers to find those which refer to notes in our unspent
         // set, submitted change set, or submitted spend set and move them into the spent set.
-        for nullifier in nullifiers {
+
+        // Nullifiers, paired with a boolean indicating whether they are quarantined (and thus
+        // revertible) or permanently spent (and thus not revertible).
+        let all_nullifiers = nullifiers
+            .into_iter()
+            .zip(iter::repeat(false))
+            .chain(quarantined_nullifiers.into_iter().zip(iter::repeat(true)));
+
+        for (nullifier, quarantined) in all_nullifiers {
             // Try to decode the nullifier
             let nullifier = nullifier.as_ref().try_into()?;
 
             // Try to find the corresponding note commitment in the nullifier map
             if let Some(&note_commitment) = self.nullifier_map.get(&nullifier) {
-                // Try to remove the nullifier from the unspent set
                 if let Some(note) = self.unspent_set.remove(&note_commitment) {
                     // Insert the note into the spent set
                     tracing::debug!(
                         value = ?note.value(),
                         ?nullifier,
+                        ?quarantined,
                         "found nullifier for unspent note, marking it as spent"
                     );
                     self.spent_set.insert(note_commitment, note);
-                    self.note_commitment_tree.remove_witness(&note_commitment);
                 } else if let Some((_, note)) = self.submitted_spend_set.remove(&note_commitment) {
                     // Insert the note into the spent set
                     tracing::debug!(
                         value = ?note.value(),
                         ?nullifier,
+                        ?quarantined,
                         "found nullifier for submitted spend note, marking it as spent"
                     );
                     self.spent_set.insert(note_commitment, note);
-                    self.note_commitment_tree.remove_witness(&note_commitment);
                 } else if let Some((_, note)) = self.submitted_change_set.remove(&note_commitment) {
                     // Insert the note into the spent set
                     tracing::debug!(
                         value = ?note.value(),
                         ?nullifier,
+                        ?quarantined,
                         "found nullifier for submitted change note, marking it as spent"
                     );
                     self.spent_set.insert(note_commitment, note);
+                }
+
+                // Only in the case when a nullifier is unbonded from quarantine, should we
+                // unwitness it; otherwise, we might need this authentication path later.
+                if !quarantined {
                     self.note_commitment_tree.remove_witness(&note_commitment);
-                } else if self.spent_set.contains_key(&note_commitment) {
-                    // If the nullifier is already in the spent set, it means we've already
-                    // processed this note and it's spent. This should never happen
-                    tracing::warn!(
-                        ?nullifier,
-                        "found nullifier for already-spent note, possibly corrupted state?"
-                    )
                 }
             } else {
                 // This happens all the time, but if you really want to see every nullifier,

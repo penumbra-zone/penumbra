@@ -247,7 +247,7 @@ impl Writer {
         // in this block (thus reverting their spend)
         for nullifier in block.reverting_nullifiers {
             query!(
-                "UPDATE quarantined_nullifiers SET reverted_height = $1 WHERE nullifier = $2",
+                "UPDATE nullifiers SET reverted_height = $1 WHERE nullifier = $2",
                 height as i64,
                 &nullifier.to_bytes()[..],
             )
@@ -342,8 +342,8 @@ impl Writer {
                 // Keep track of the nullifier associated with the block height
                 query!(
                     r#"
-                    INSERT INTO quarantined_nullifiers
-                        (nullifier, quarantined_height, unbonding_height, validator_identity_key)
+                    INSERT INTO nullifiers
+                        (nullifier, height, unbonding_height, validator_identity_key)
                     VALUES ($1, $2, $3, $4)"#,
                     nullifier_bytes,
                     height as i64,

@@ -83,29 +83,22 @@
       "nullable": []
     }
   },
-  "1d865734f3b465d0683ec471b6977eca9fb873c0c7a673f2d7f2ecca6b5fc119": {
-    "query": "SELECT quarantined_height AS height, nullifier\n                    FROM quarantined_nullifiers\n                    WHERE\n                        quarantined_height BETWEEN $1 AND $2 AND\n                        reverted_height IS NULL\n                    ORDER BY height ASC",
+  "1f5d0fb80de71c6cfbe06d1fd186b85c18d64e73862f658e075edf250e49c163": {
+    "query": "SELECT nullifier FROM nullifiers WHERE nullifier = ANY($1) AND reverted_height IS NULL",
     "describe": {
       "columns": [
         {
           "ordinal": 0,
-          "name": "height",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 1,
           "name": "nullifier",
           "type_info": "Bytea"
         }
       ],
       "parameters": {
         "Left": [
-          "Int8",
-          "Int8"
+          "ByteaArray"
         ]
       },
       "nullable": [
-        false,
         false
       ]
     }
@@ -186,6 +179,34 @@
       ]
     }
   },
+  "39b5b249c803249b252343e112173acd656ad5544912db18bb4426b48da896f6": {
+    "query": "SELECT validator_identity_key, nullifier\n            FROM nullifiers\n            WHERE\n                unbonding_height IS NOT NULL AND\n                unbonding_height <= $1 AND\n                ($2 OR validator_identity_key = ANY($3)) AND\n                reverted_height IS NULL",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "validator_identity_key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 1,
+          "name": "nullifier",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Bool",
+          "ByteaArray"
+        ]
+      },
+      "nullable": [
+        true,
+        false
+      ]
+    }
+  },
   "3f13d5f8a2ffc438e79f3297b7dfbcc14ffca7611f5ea3d4a5e8acfba3b9807e": {
     "query": "\n            INSERT INTO blobs (id, data) VALUES ('nct', $1)\n            ON CONFLICT (id) DO UPDATE SET data = $1\n            ",
     "describe": {
@@ -198,23 +219,30 @@
       "nullable": []
     }
   },
-  "409ccf7907870212891003a8d4bfaf6bb6a8fd2d802125227a9cac4679a8f37b": {
-    "query": "SELECT nullifier FROM nullifiers WHERE nullifier = ANY($1)\n            UNION\n            SELECT nullifier FROM quarantined_nullifiers WHERE nullifier = ANY($1) AND reverted_height IS NULL",
+  "3fad9360a2ca39e075d04e3ac0f5fc2bca9159ba4a4aa85be9ed5d7d57c3c052": {
+    "query": "SELECT unbonding_height AS height, nullifier\n                    FROM nullifiers\n                    WHERE\n                        height BETWEEN $1 AND $2 AND\n                        reverted_height IS NULL\n                    ORDER BY unbonding_height ASC",
     "describe": {
       "columns": [
         {
           "ordinal": 0,
+          "name": "height",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
           "name": "nullifier",
           "type_info": "Bytea"
         }
       ],
       "parameters": {
         "Left": [
-          "ByteaArray"
+          "Int8",
+          "Int8"
         ]
       },
       "nullable": [
-        null
+        true,
+        false
       ]
     }
   },
@@ -242,21 +270,6 @@
         false,
         false
       ]
-    }
-  },
-  "411101a7d2f094b3c7fcb95553bc651450dec68554e61b226bcc7340956e9144": {
-    "query": "\n                    INSERT INTO quarantined_nullifiers\n                        (nullifier, quarantined_height, unbonding_height, validator_identity_key)\n                    VALUES ($1, $2, $3, $4)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea",
-          "Int8",
-          "Int8",
-          "Bytea"
-        ]
-      },
-      "nullable": []
     }
   },
   "4501b3fc1446d51abde3513efb7df1201092a9695f858fc090043d81ad3db490": {
@@ -310,6 +323,19 @@
         "Left": [
           "Int8",
           "Varchar",
+          "Int8",
+          "Bytea"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "5fb7b2ea74ad768b7fb7345f0324f6d9e41553d31455f9da71fde11f0f81fc4d": {
+    "query": "UPDATE nullifiers SET reverted_height = $1 WHERE nullifier = $2",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
           "Int8",
           "Bytea"
         ]
@@ -378,33 +404,6 @@
       },
       "nullable": [
         false,
-        false,
-        false
-      ]
-    }
-  },
-  "73d0d102af9c9dbf753248c60bd967e744e909208ba53271f1f8238438da52b7": {
-    "query": "SELECT height, nullifier\n                    FROM nullifiers\n                    WHERE height BETWEEN $1 AND $2\n                    ORDER BY height ASC",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "height",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 1,
-          "name": "nullifier",
-          "type_info": "Bytea"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Int8"
-        ]
-      },
-      "nullable": [
         false,
         false
       ]
@@ -516,47 +515,6 @@
       ]
     }
   },
-  "75ef7a8f69ca5c7ef191098e849ea78309b527f56538a835692314ef2b632643": {
-    "query": "UPDATE quarantined_nullifiers SET reverted_height = $1 WHERE nullifier = $2",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Bytea"
-        ]
-      },
-      "nullable": []
-    }
-  },
-  "7b95ef68a3b25791189802abf8bd8b8ed4e45aaac36580a4f816bfc048cf28f8": {
-    "query": "SELECT validator_identity_key, nullifier\n            FROM quarantined_nullifiers\n            WHERE\n                unbonding_height <= $1 AND\n                ($2 OR validator_identity_key = ANY($3)) AND\n                reverted_height IS NULL",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "validator_identity_key",
-          "type_info": "Bytea"
-        },
-        {
-          "ordinal": 1,
-          "name": "nullifier",
-          "type_info": "Bytea"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Bool",
-          "ByteaArray"
-        ]
-      },
-      "nullable": [
-        false,
-        false
-      ]
-    }
-  },
   "8195450f9f1cedf05eebd974adbdc42dc70a8e2abb7753d7b02cba03786bee0d": {
     "query": "SELECT denom, asset_id FROM assets",
     "describe": {
@@ -578,26 +536,6 @@
       "nullable": [
         false,
         false
-      ]
-    }
-  },
-  "8307f09e9e3099cb6048bd97ac169607bef15bce35a7fc5610f055f820fc6e61": {
-    "query": "SELECT height FROM nullifiers WHERE nullifier = $1\n            UNION\n            SELECT quarantined_height AS height\n                FROM quarantined_nullifiers\n                WHERE nullifier = $1 AND reverted_height IS NULL\n            LIMIT 1",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "height",
-          "type_info": "Int8"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Bytea"
-        ]
-      },
-      "nullable": [
-        null
       ]
     }
   },
@@ -833,6 +771,39 @@
       ]
     }
   },
+  "c3ef567d69223884354c3725f59aee2d163972a09bf7a00cb616b30a1edc6b13": {
+    "query": "SELECT height, nullifier, (validator_identity_key = NULL) AS quarantined\n                    FROM nullifiers\n                    WHERE height BETWEEN $1 AND $2\n                    ORDER BY height ASC",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "height",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "nullifier",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 2,
+          "name": "quarantined",
+          "type_info": "Bool"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        null
+      ]
+    }
+  },
   "c4883ef6ef60bb03503ea9f5f67c96cbc47afedcd6ba9aeb11b3e71173c62915": {
     "query": "\n                    INSERT INTO jmt (key, value) VALUES ($1, $2)\n                    ",
     "describe": {
@@ -840,6 +811,21 @@
       "parameters": {
         "Left": [
           "Bytea",
+          "Bytea"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "c9fa67e55cb9b5fd6ed25b0d64f18b1795bfe54f6eeb31cd8869b70565bf60a0": {
+    "query": "\n                    INSERT INTO nullifiers\n                        (nullifier, height, unbonding_height, validator_identity_key)\n                    VALUES ($1, $2, $3, $4)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Int8",
+          "Int8",
           "Bytea"
         ]
       },
@@ -926,6 +912,26 @@
       },
       "nullable": [
         false,
+        false
+      ]
+    }
+  },
+  "de1c18af3b0b9dfe6f246ae78075298fc8efc270c448bfdd3279e412cdadb5e5": {
+    "query": "SELECT height FROM nullifiers WHERE nullifier = $1 AND reverted_height IS NULL LIMIT 1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "height",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Bytea"
+        ]
+      },
+      "nullable": [
         false
       ]
     }

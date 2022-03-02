@@ -84,19 +84,14 @@ impl Reader {
     pub async fn nullifier(&self, nullifier: Nullifier) -> Result<Option<schema::NullifiersRow>> {
         let mut conn = self.pool.acquire().await?;
         let nullifier_row = query!(
-            r#"SELECT height FROM nullifiers WHERE nullifier = $1
-            UNION
-            SELECT quarantined_height AS height
-                FROM quarantined_nullifiers
-                WHERE nullifier = $1 AND reverted_height IS NULL
-            LIMIT 1"#,
+            r#"SELECT height FROM nullifiers WHERE nullifier = $1 AND reverted_height IS NULL LIMIT 1"#,
             &<[u8; 32]>::from(nullifier.clone())[..]
         )
         .fetch_optional(&mut conn)
         .await?
         .map(|row| schema::NullifiersRow {
             nullifier,
-            height: row.height.expect("nullifier row has height"),
+            height: row.height,
         });
 
         Ok(nullifier_row)
@@ -157,9 +152,7 @@ impl Reader {
             .map(|nf| nf.to_bytes().to_vec())
             .collect::<Vec<_>>();
         let existing = query!(
-            "SELECT nullifier FROM nullifiers WHERE nullifier = ANY($1)
-            UNION
-            SELECT nullifier FROM quarantined_nullifiers WHERE nullifier = ANY($1) AND reverted_height IS NULL",
+            "SELECT nullifier FROM nullifiers WHERE nullifier = ANY($1) AND reverted_height IS NULL",
             &nullifiers[..],
         )
         .fetch_all(&mut conn)
@@ -167,7 +160,6 @@ impl Reader {
         .into_iter()
         .map(|row| {
             row.nullifier
-                .expect("nullifier row has nullifier")
                 .as_slice()
                 .try_into()
                 .expect("db data is valid")
@@ -434,8 +426,9 @@ impl Reader {
     ) -> impl Stream<Item = Result<CompactBlock>> + Send + Unpin {
         let pool = self.pool.clone();
         Box::pin(try_stream! {
+            // Nullifiers, including reverted nullifiers, ordered by height of insertion
             let mut nullifiers = query!(
-                "SELECT height, nullifier
+                "SELECT height, nullifier, (validator_identity_key = NULL) AS quarantined
                     FROM nullifiers
                     WHERE height BETWEEN $1 AND $2
                     ORDER BY height ASC",
@@ -445,19 +438,27 @@ impl Reader {
             .fetch(&pool)
             .peekable();
 
-            let mut quarantined_nullifiers = query!(
-                "SELECT quarantined_height AS height, nullifier
-                    FROM quarantined_nullifiers
+            // Unbonding nullifiers, excluding reverted nullifiers, ordered by height of unbonding
+            // (we will only ever look at nullifiers which have *definitely* unbonded or been
+            // reverted, because by the time we examine one, the current height of the chain is
+            // above the unbonding height for the nullifier, so if it wasn't reverted by then, it
+            // won't be ever).
+            let mut unbonding_nullifiers = query!(
+                "SELECT unbonding_height AS height, nullifier
+                    FROM nullifiers
                     WHERE
-                        quarantined_height BETWEEN $1 AND $2 AND
+                        height BETWEEN $1 AND $2 AND
                         reverted_height IS NULL
-                    ORDER BY height ASC",
+                    ORDER BY unbonding_height ASC",
                 start_height,
                 end_height
             )
             .fetch(&pool)
             .peekable();
 
+            // State fragments that have been committed to the chain (are not in quarantine),
+            // including those which have never been quarantined, as well as those which have
+            // unbonded.
             let mut fragments = query!(
                 "SELECT height, note_commitment, ephemeral_key, encrypted_note
                     FROM notes
@@ -469,6 +470,7 @@ impl Reader {
             .fetch(&pool)
             .peekable();
 
+            // State fragments that are in quarantine, waiting to unbond.
             let mut quarantined_fragments = query!(
                 "SELECT
                     quarantined_height AS height,
@@ -486,6 +488,7 @@ impl Reader {
             .fetch(&pool)
             .peekable();
 
+            // State fragments that have been reverted, so they are spendable again.
             let mut reverted_fragments = query!(
                 "SELECT
                     quarantined_height,
@@ -525,19 +528,27 @@ impl Reader {
                         .next()
                         .await
                         .expect("we already peeked, so there is a next row")?;
-                    compact_block.nullifiers.push(row.nullifier.into());
+
+                    // Depending on whether this nullifier was quarantined on insertion into the
+                    // state or not, report it differently in the compact block. This is to permit
+                    // the client to avoid pruning the NCT overzealously.
+                    if row.quarantined.expect("row is either quarantined or not") {
+                        compact_block.quarantined_nullifiers.push(row.nullifier.into());
+                    } else {
+                        compact_block.nullifiers.push(row.nullifier.into());
+                    }
                 }
 
-                // Put all the quarantined nullifiers into the compact block
-                while let Some(row) = Pin::new(&mut quarantined_nullifiers).peek().await {
+                // Put all the unbonding nullifiers into the compact block as they unbond
+                while let Some(row) = Pin::new(&mut unbonding_nullifiers).peek().await {
                     // Bail out of the loop if the next iteration would be a different height
                     if let Ok(row) = row {
-                        if row.height != height {
+                        if row.height.expect("row has height") != height {
                             break;
                         }
                     }
 
-                    let row = Pin::new(&mut quarantined_nullifiers)
+                    let row = Pin::new(&mut unbonding_nullifiers)
                         .next()
                         .await
                         .expect("we already peeked, so there is a next row")?;
@@ -708,8 +719,9 @@ impl Reader {
 
         query!(
             "SELECT validator_identity_key, nullifier
-            FROM quarantined_nullifiers
+            FROM nullifiers
             WHERE
+                unbonding_height IS NOT NULL AND
                 unbonding_height <= $1 AND
                 ($2 OR validator_identity_key = ANY($3)) AND
                 reverted_height IS NULL",
@@ -723,7 +735,11 @@ impl Reader {
             result
                 .and_then(|row| {
                     Ok::<_, anyhow::Error>((
-                        IdentityKey::decode(&*row.validator_identity_key)?,
+                        IdentityKey::decode(
+                            &*row
+                                .validator_identity_key
+                                .expect("row has validator identity key"),
+                        )?,
                         Nullifier::try_from(&row.nullifier[..])?,
                     ))
                 })

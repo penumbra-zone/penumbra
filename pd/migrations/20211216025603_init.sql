@@ -28,13 +28,6 @@ CREATE TABLE IF NOT EXISTS blocks (
     CONSTRAINT positive_height CHECK (height >= 0)
 );
 
--- Nullifiers, indexed by height
-CREATE TABLE IF NOT EXISTS nullifiers (
-    nullifier bytea PRIMARY KEY,
-    height bigint NOT NULL REFERENCES blocks (height)
-);
-CREATE INDEX ON nullifiers (height);
-
 -- Notes that appear in each block, indexed by height and position
 CREATE TABLE IF NOT EXISTS notes (
     note_commitment bytea PRIMARY KEY,
@@ -113,6 +106,42 @@ CREATE TABLE IF NOT EXISTS delegation_changes (
 CREATE INDEX ON delegation_changes (epoch);
 CREATE INDEX ON delegation_changes (validator_identity_key);
 
+-- Nullifiers, indexed by height
+CREATE TABLE IF NOT EXISTS nullifiers (
+    nullifier bytea PRIMARY KEY,
+    height bigint NOT NULL REFERENCES blocks (height),
+
+    -- if this nullifier was quarantined at any point in the past:
+    unbonding_height bigint, -- height at which to make the spend permanent
+    reverted_height bigint REFERENCES blocks (height), -- height at which the revert was made, if it was reverted
+    validator_identity_key bytea REFERENCES validators (identity_key),
+
+    -- iff the nullifier was quarantined, it has an unbonding height and a validator identity key
+    CONSTRAINT valid_quarantine CHECK (
+        (unbonding_height IS NULL OR validator_identity_key IS NOT NULL) AND
+        (validator_identity_key IS NULL OR unbonding_height IS NOT NULL)
+    ),
+    -- if the nullifier has a reverted height, then it was quarantined, so it has an unbonding
+    -- height and a validator identity key
+    CONSTRAINT valid_reverted CHECK (
+        reverted_height IS NULL
+        OR (unbonding_height IS NOT NULL AND validator_identity_key IS NOT NULL)
+    ),
+    -- unbonding_height can't be negative
+    CONSTRAINT positive_unbonding_height
+        CHECK (unbonding_height IS NULL OR unbonding_height >= 0),
+    -- if unbonding_height is not null, it is greater than or equal to height
+    CONSTRAINT unbonding_height_greater_than_height
+        CHECK (unbonding_height IS NULL OR height <= unbonding_height),
+    -- if reverted_height is not null, it is less than or equal to unbonding_height
+    CONSTRAINT reverted_height_less_than_or_equal_unbonding_height
+        CHECK (reverted_height IS NULL OR reverted_height <= unbonding_height)
+);
+CREATE INDEX ON nullifiers (height);
+CREATE INDEX ON nullifiers (unbonding_height);
+CREATE INDEX ON nullifiers (reverted_height);
+CREATE INDEX ON nullifiers (validator_identity_key);
+
 -- Set of quarantined notes, historical and current
 CREATE TABLE IF NOT EXISTS quarantined_notes (
     note_commitment bytea PRIMARY KEY,
@@ -123,12 +152,8 @@ CREATE TABLE IF NOT EXISTS quarantined_notes (
     unbonding_height bigint NOT NULL, -- height at which to make the note available
     reverted_height bigint REFERENCES blocks (height), -- height at which the revert was made, if it was reverted
     validator_identity_key bytea NOT NULL REFERENCES validators (identity_key),
-    -- quarantined_height can't be negative
-    CONSTRAINT positive_quarantined_height CHECK (quarantined_height >= 0),
     -- unbonding_height can't be negative
     CONSTRAINT positive_unbonding_height CHECK (unbonding_height >= 0),
-    -- reverted_height can't be negative
-    CONSTRAINT positive_reverted_height CHECK (reverted_height >= 0),
     -- if reverted_height is not null, it is less than or equal to unbonding_height
     CONSTRAINT reverted_height_less_than_or_equal_unbonding_height
         CHECK (reverted_height IS NULL OR reverted_height <= unbonding_height)
@@ -137,25 +162,3 @@ CREATE INDEX ON quarantined_notes (quarantined_height);
 CREATE INDEX ON quarantined_notes (unbonding_height);
 CREATE INDEX ON quarantined_notes (reverted_height);
 CREATE INDEX ON quarantined_notes (validator_identity_key);
-
--- Set of quarantined nullifiers, historical and current
-CREATE TABLE IF NOT EXISTS quarantined_nullifiers (
-    nullifier bytea PRIMARY KEY REFERENCES nullifiers (nullifier),
-    quarantined_height bigint NOT NULL REFERENCES blocks (height), -- height at which the nullifier was quarantined
-    unbonding_height bigint NOT NULL, -- height at which to make the spend permanent
-    reverted_height bigint REFERENCES blocks (height), -- height at which the revert was made, if it was reverted
-    validator_identity_key bytea NOT NULL REFERENCES validators (identity_key),
-    -- quarantined_height can't be negative
-    CONSTRAINT positive_quarantined_height CHECK (quarantined_height >= 0),
-    -- unbonding_height can't be negative
-    CONSTRAINT positive_unbonding_height CHECK (unbonding_height >= 0),
-    -- reverted_height can't be negative
-    CONSTRAINT positive_reverted_height CHECK (reverted_height >= 0),
-    -- if reverted_height is not null, it is less than or equal to unbonding_height
-    CONSTRAINT reverted_height_less_than_or_equal_unbonding_height
-        CHECK (reverted_height IS NULL OR reverted_height <= unbonding_height)
-);
-CREATE INDEX ON quarantined_nullifiers (quarantined_height);
-CREATE INDEX ON quarantined_nullifiers (unbonding_height);
-CREATE INDEX ON quarantined_nullifiers (reverted_height);
-CREATE INDEX ON quarantined_nullifiers (validator_identity_key);
