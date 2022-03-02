@@ -19,7 +19,7 @@ pub struct EncryptionProof {
 pub struct EncryptedValue {
     c1: decaf377::Element,
     c2: decaf377::Element,
-    proof: EncryptionProof,
+    proof: Option<EncryptionProof>,
 }
 
 impl EncryptedValue {
@@ -27,10 +27,9 @@ impl EncryptedValue {
     ///
     /// See the [spec](https://protocol.penumbra.zone/main/crypto/flow-encryption/threshold-encryption.html) for more details.
     pub fn verify(&self, for_pubkey: decaf377::Element) -> Result<(), anyhow::Error> {
-        let alpha = decaf377::basepoint() * self.proof.r + self.c1 * self.proof.t;
-        let gamma = for_pubkey * self.proof.r
-            + decaf377::basepoint() * self.proof.s
-            + self.c2 * self.proof.t;
+        let proof = self.proof.ok_or_else(|| anyhow::anyhow!("no proof"))?;
+        let alpha = decaf377::basepoint() * proof.r + self.c1 * proof.t;
+        let gamma = for_pubkey * proof.r + decaf377::basepoint() * proof.s + self.c2 * proof.t;
         let res_hash = blake2b_simd::Params::default()
             .personal(b"elgenc")
             .to_state()
@@ -42,7 +41,7 @@ impl EncryptedValue {
             .finalize();
         let res = Fr::from_le_bytes_mod_order(res_hash.as_bytes());
 
-        if res != self.proof.t {
+        if res != proof.t {
             return Err(anyhow::anyhow!("invalid encryption proof"));
         }
         Ok(())
@@ -54,7 +53,7 @@ impl EncryptedValue {
         EncryptedValue {
             c1: self.c1 + other.c1,
             c2: self.c2 + other.c2,
-            proof: self.proof,
+            proof: None,
         }
     }
 }
@@ -85,7 +84,11 @@ pub fn encrypt_value(value: decaf377::Fr, for_pubkey: decaf377::Element) -> Encr
     let s = k2 - value * t;
 
     let proof = EncryptionProof { r, s, t };
-    EncryptedValue { c1, c2, proof }
+    EncryptedValue {
+        c1,
+        c2,
+        proof: Some(proof),
+    }
 }
 
 /// Decrypt a given [`EncryptedValue`] in the threshold setting using a set of decryption shares.
@@ -98,14 +101,14 @@ pub fn decrypt_value(
         share.verify(encrypted_value.c1, participant_commitments[i])?;
     }
 
-    let indicies = decryption_shares
+    let indices = decryption_shares
         .iter()
         .map(|share| share.participant_index)
         .collect::<Vec<_>>();
 
     let mut d = decaf377::Element::default();
     for share in decryption_shares {
-        d = d + share.share * lagrange_coefficient(share.participant_index, &indicies);
+        d = d + share.share * lagrange_coefficient(share.participant_index, &indices);
     }
     Ok(-d + encrypted_value.c2)
 }
@@ -135,9 +138,9 @@ fn compute_lut(maxval: u64) -> BTreeMap<[u8; 32], u64> {
 }
 
 // compute the lagrange coefficient for the participant given by `participant_index` in the set of
-// participants given by participant_indicies
-fn lagrange_coefficient(participant_index: u32, participant_indicies: &[u32]) -> decaf377::Fr {
-    participant_indicies
+// participants given by participant_indices
+fn lagrange_coefficient(participant_index: u32, participant_indices: &[u32]) -> decaf377::Fr {
+    participant_indices
         .iter()
         .filter(|x| **x != participant_index)
         .fold(decaf377::Fr::one(), |acc, x| {
