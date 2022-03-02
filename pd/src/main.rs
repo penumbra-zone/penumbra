@@ -217,93 +217,8 @@ async fn main() -> anyhow::Result<()> {
                 time::{Duration, SystemTime, UNIX_EPOCH},
             };
 
-            // TODO: detect the correct directory by means of cargo or git?
-            let testnets_path = "testnets";
-
-            // Scan through the testnets directory to find the latest one
-            fn latest_testnet(
-                testnets_path: impl AsRef<Path>,
-            ) -> anyhow::Result<(String, PathBuf, PathBuf)> {
-                let mut testnets = Vec::new();
-                for result in std::fs::read_dir(testnets_path)? {
-                    let entry = result?;
-                    if entry.file_type()?.is_dir() {
-                        let path = entry.path();
-                        // Split the testnet directory name into (index, name), i.e. `001-valetudo`
-                        // becomes (1, "valetudo")
-                        let (index, name): (u64, _) = entry
-                            .file_name()
-                            .to_str()
-                            .ok_or_else(|| {
-                                anyhow::anyhow!("testnet path '{:?}' is invalid utf8", path)
-                            })?
-                            .split_once('-')
-                            .ok_or_else(|| {
-                                anyhow::anyhow!(
-                                    "testnet path '{:?}' is not correctly formatted",
-                                    path
-                                )
-                            })
-                            .and_then(|(index_str, name)| {
-                                Ok((
-                                    index_str.parse().with_context(|| {
-                                        format!(
-                                        "could not parse testnet index as a number in path '{:?}'",
-                                        path
-                                    )
-                                    })?,
-                                    name.to_string(),
-                                ))
-                            })?;
-                        testnets.push((index, name, path));
-                    }
-                }
-
-                // Compute the maximum index testnet in the testnets directory
-                testnets
-                    .into_iter()
-                    .max_by_key(|(index, _, _)| *index)
-                    .map(|(_, name, path)| {
-                        (
-                            "penumbra-".to_string() + &name,
-                            path.join("allocations.csv"),
-                            path.join("validators.json"),
-                        )
-                    })
-                    .ok_or_else(|| {
-                        anyhow::anyhow!("no testnets found in directory '{}'", "testnets")
-                    })
-            }
-
-            // Using an option as a lazy cell to avoid borrow checker woes
-            let mut default_testnet = None;
-            #[allow(clippy::eval_order_dependence)]
-            let (chain_id, allocations_input_file, validators_input_file) = (
-                if let Some(chain_id) = chain_id {
-                    chain_id
-                } else {
-                    if default_testnet.is_none() {
-                        default_testnet = Some(latest_testnet(testnets_path)?);
-                    }
-                    default_testnet.clone().unwrap().0
-                },
-                if let Some(allocations_input_file) = allocations_input_file {
-                    allocations_input_file
-                } else {
-                    if default_testnet.is_none() {
-                        default_testnet = Some(latest_testnet(testnets_path)?);
-                    }
-                    default_testnet.clone().unwrap().1
-                },
-                if let Some(validators_input_file) = validators_input_file {
-                    validators_input_file
-                } else {
-                    if default_testnet.is_none() {
-                        default_testnet = Some(latest_testnet(testnets_path)?);
-                    }
-                    default_testnet.unwrap().2
-                },
-            );
+            // Build script computes the latest testnet name and sets it as an env variable
+            let chain_id = chain_id.unwrap_or_else(|| env!("PD_LATEST_TESTNET_NAME").to_string());
 
             let randomizer = OsRng.gen::<u32>();
             let chain_id = format!("{}-{}", chain_id, hex::encode(&randomizer.to_le_bytes()));
@@ -334,11 +249,48 @@ async fn main() -> anyhow::Result<()> {
                 None => canonicalize_path("~/.penumbra/testnet_data"),
             };
 
-            // Parse allocations from input file
-            let allocations = parse_allocations_file(allocations_input_file)?;
+            // Parse allocations from input file or default to latest testnet allocations computed
+            // in the build script
+            let allocations = if let Some(allocations_input_file) = allocations_input_file {
+                let allocations_file = File::open(&allocations_input_file)
+                    .with_context(|| format!("cannot open file {:?}", allocations_input_file))?;
+                parse_allocations(allocations_file).with_context(|| {
+                    format!(
+                        "could not parse allocations file {:?}",
+                        allocations_input_file
+                    )
+                })?
+            } else {
+                static LATEST_ALLOCATIONS: &str =
+                    include_str!(env!("PD_LATEST_TESTNET_ALLOCATIONS"));
+                parse_allocations(std::io::Cursor::new(LATEST_ALLOCATIONS)).with_context(|| {
+                    format!(
+                        "could not parse default latest testnet allocations file {:?}",
+                        env!("PD_LATEST_TESTNET_ALLOCATIONS")
+                    )
+                })?
+            };
 
-            // Parse validators from input file
-            let validators = parse_validators_file(validators_input_file)?;
+            // Parse validators from input file or default to latest testnet validators computed in
+            // the build script
+            let validators = if let Some(validators_input_file) = validators_input_file {
+                let validators_file = File::open(&validators_input_file)
+                    .with_context(|| format!("cannot open file {:?}", validators_input_file))?;
+                parse_validators(validators_file).with_context(|| {
+                    format!(
+                        "could not parse validators file {:?}",
+                        validators_input_file
+                    )
+                })?
+            } else {
+                static LATEST_VALIDATORS: &str = include_str!(env!("PD_LATEST_TESTNET_VALIDATORS"));
+                parse_validators(std::io::Cursor::new(LATEST_VALIDATORS)).with_context(|| {
+                    format!(
+                        "could not parse default latest testnet validators file {:?}",
+                        env!("PD_LATEST_TESTNET_VALIDATORS")
+                    )
+                })?
+            };
 
             struct ValidatorKeys {
                 // Penumbra spending key and viewing key for this node.
