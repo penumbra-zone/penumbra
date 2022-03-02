@@ -32,6 +32,8 @@ bytes = "1"
 comfy-table = "5"
 directories = "4.0.1"
 fslock = "0.2"
+humantime = "2"
+itertools = "0.10"
 tokio = { version = "1", features = ["full"]}
 tokio-stream = "0.1"
 tokio-util = "0.6"

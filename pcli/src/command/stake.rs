@@ -1,8 +1,9 @@
-use std::collections::{BTreeMap, HashMap};
+use std::{collections::BTreeMap, time::Duration};
 
 use anyhow::{anyhow, Context, Result};
 use comfy_table::{presets, Table};
 use futures::stream::TryStreamExt;
+use itertools::Itertools;
 use penumbra_crypto::Value;
 use penumbra_proto::{light_wallet::ValidatorInfoRequest, thin_wallet::ValidatorRateRequest};
 use penumbra_stake::{
@@ -248,33 +249,60 @@ impl StakeCmd {
                     asset_id: *STAKING_TOKEN_ASSET_ID,
                 };
 
-                let mut unbonding = Value {
+                let mut total_unbonding = Value {
                     amount: 0,
                     asset_id: *STAKING_TOKEN_ASSET_ID,
                 };
+                let mut unbonding_timeline = BTreeMap::new();
+
+                // Lifted out because borrow checker
+                let empty_notes = BTreeMap::default();
 
                 for note in notes
                     .get(&*STAKING_TOKEN_DENOM)
-                    .unwrap_or(&BTreeMap::default())
+                    .unwrap_or(&empty_notes)
                     .values()
                     .flatten()
                 {
                     // Add the note to the correct total, depending on whether it's quarantined currently
-                    if matches!(note, UnspentNote::Quarantined { .. }) {
-                        unbonding.amount += note.as_ref().amount();
+                    if let UnspentNote::Quarantined {
+                        note,
+                        unbonding_height,
+                    } = note
+                    {
+                        total_unbonding.amount += note.amount();
+                        unbonding_timeline
+                            .entry(unbonding_height)
+                            .or_insert(Value {
+                                amount: 0,
+                                asset_id: *STAKING_TOKEN_ASSET_ID,
+                            })
+                            .amount += note.amount();
                     } else {
                         unbonded.amount += note.as_ref().amount();
                     }
                 }
 
-                total += unbonded.amount + unbonding.amount;
+                total += unbonded.amount + total_unbonding.amount;
 
-                table.add_row(vec![
-                    "Unbonding Stake".to_string(),
-                    unbonding.try_format(state.asset_cache()).unwrap(),
-                    format!("{:.4}", 1.0),
-                    unbonding.try_format(state.asset_cache()).unwrap(),
-                ]);
+                // Separate out each chunk of unbonding stake into its own line item so we can
+                // display a separated ETA for each chunk of stake
+                let chain_height = state.last_block_height().unwrap_or_default();
+                for (unbonding_height, value) in unbonding_timeline {
+                    let remaining_blocks = unbonding_height - chain_height;
+                    const ESTIMATED_BLOCK_DURATION: Duration = Duration::from_secs(10);
+                    let eta = humantime::Duration::from(
+                        ESTIMATED_BLOCK_DURATION * remaining_blocks as u32,
+                    );
+                    let approx_eta = eta.to_string().split(' ').take(2).join(" ");
+
+                    table.add_row(vec![
+                        format!("Unbonding (ETA: {approx_eta})"),
+                        value.try_format(state.asset_cache()).unwrap(),
+                        format!("{:.4}", 1.0),
+                        value.try_format(state.asset_cache()).unwrap(),
+                    ]);
+                }
 
                 table.add_row(vec![
                     "Unbonded Stake".to_string(),
