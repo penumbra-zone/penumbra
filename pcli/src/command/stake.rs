@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 use anyhow::{anyhow, Context, Result};
 use comfy_table::{presets, Table};
@@ -9,6 +9,7 @@ use penumbra_stake::{
     DelegationToken, Epoch, IdentityKey, RateData, ValidatorInfo, STAKING_TOKEN_ASSET_ID,
     STAKING_TOKEN_DENOM,
 };
+use penumbra_wallet::UnspentNote;
 use rand_core::OsRng;
 use structopt::StructOpt;
 
@@ -242,17 +243,38 @@ impl StakeCmd {
                     total += unbonded.amount;
                 }
 
-                let unbonded = Value {
-                    amount: notes
-                        .get(&*STAKING_TOKEN_DENOM)
-                        .unwrap_or(&BTreeMap::default())
-                        .values()
-                        .flat_map(|notes| notes.iter().map(|n| n.as_ref().amount()))
-                        .sum::<u64>(),
+                let mut unbonded = Value {
+                    amount: 0,
                     asset_id: *STAKING_TOKEN_ASSET_ID,
                 };
 
-                total += unbonded.amount;
+                let mut unbonding = Value {
+                    amount: 0,
+                    asset_id: *STAKING_TOKEN_ASSET_ID,
+                };
+
+                for note in notes
+                    .get(&*STAKING_TOKEN_DENOM)
+                    .unwrap_or(&BTreeMap::default())
+                    .values()
+                    .flatten()
+                {
+                    // Add the note to the correct total, depending on whether it's quarantined currently
+                    if matches!(note, UnspentNote::Quarantined { .. }) {
+                        unbonding.amount += note.as_ref().amount();
+                    } else {
+                        unbonded.amount += note.as_ref().amount();
+                    }
+                }
+
+                total += unbonded.amount + unbonding.amount;
+
+                table.add_row(vec![
+                    "Unbonding Stake".to_string(),
+                    unbonding.try_format(state.asset_cache()).unwrap(),
+                    format!("{:.4}", 1.0),
+                    unbonding.try_format(state.asset_cache()).unwrap(),
+                ]);
 
                 table.add_row(vec![
                     "Unbonded Stake".to_string(),
