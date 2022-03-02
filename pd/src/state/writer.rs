@@ -243,31 +243,25 @@ impl Writer {
         .execute(&mut dbtx)
         .await?;
 
-        // Drop quarantined notes associated with a validator slashed in this block
-        for note_commitment in block.reverting_notes {
+        // Mark quarantined nullifiers as reverted if they were associated with a validator slashed
+        // in this block (thus reverting their spend)
+        for nullifier in block.reverting_nullifiers {
             query!(
-                "DELETE FROM quarantined_notes WHERE note_commitment = $1",
-                &<[u8; 32]>::from(note_commitment)[..]
+                "UPDATE quarantined_nullifiers SET reverted_height = $1 WHERE nullifier = $2",
+                height as i64,
+                &nullifier.to_bytes()[..],
             )
             .execute(&mut dbtx)
             .await?;
         }
 
-        // Drop quarantined nullifiers from the main nullifier set if they were associated with a
-        // validator slashed in this block (thus reverting their spend)
-        for nullifier in block.reverting_nullifiers {
-            // Forget about this nullifier, making the associated note spendable again
+        // Mark quarantined notes as reverted if they were associated with a validator slashed in
+        // this block (thus preventing them from being made available at unbonding time).
+        for note_commitment in block.reverting_notes {
             query!(
-                "DELETE FROM nullifiers WHERE nullifier = $1",
-                &nullifier.to_bytes()[..]
-            )
-            .execute(&mut dbtx)
-            .await?;
-
-            // We have reverted this nullifier, so we can remove it from quarantine
-            query!(
-                "DELETE FROM quarantined_nullifiers WHERE nullifier = $1",
-                &nullifier.to_bytes()[..]
+                "UPDATE quarantined_notes SET reverted_height = $1 WHERE note_commitment = $2",
+                height as i64,
+                &<[u8; 32]>::from(note_commitment)[..],
             )
             .execute(&mut dbtx)
             .await?;
@@ -291,14 +285,6 @@ impl Writer {
                 &positioned_note.data.transaction_id[..],
                 positioned_note.position as i64,
                 height as i64,
-            )
-            .execute(&mut dbtx)
-            .await?;
-
-            // If the note was previously quarantined, drop it from quarantine
-            query!(
-                "DELETE FROM quarantined_notes WHERE note_commitment = $1",
-                &<[u8; 32]>::from(note_commitment)[..]
             )
             .execute(&mut dbtx)
             .await?;
@@ -333,13 +319,15 @@ impl Writer {
                         ephemeral_key,
                         encrypted_note,
                         transaction_id,
+                        quarantined_height,
                         unbonding_height,
                         validator_identity_key
-                    ) VALUES ($1, $2, $3, $4, $5, $6)"#,
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7)"#,
                     &<[u8; 32]>::from(note_commitment)[..],
                     &data.ephemeral_key.0[..],
                     &data.encrypted_note[..],
                     &data.transaction_id[..],
+                    height as i64,
                     unbonding_height as i64,
                     &validator_identity_key.0.to_bytes()[..],
                 )
@@ -354,9 +342,11 @@ impl Writer {
                 // Keep track of the nullifier associated with the block height
                 query!(
                     r#"
-                    INSERT INTO quarantined_nullifiers (nullifier, unbonding_height, validator_identity_key)
-                    VALUES ($1, $2, $3)"#,
+                    INSERT INTO quarantined_nullifiers
+                        (nullifier, quarantined_height, unbonding_height, validator_identity_key)
+                    VALUES ($1, $2, $3, $4)"#,
                     nullifier_bytes,
+                    height as i64,
                     unbonding_height as i64,
                     &validator_identity_key.0.to_bytes()[..],
                 )

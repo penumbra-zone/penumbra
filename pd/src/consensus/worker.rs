@@ -4,7 +4,7 @@ use anyhow::{anyhow, Result};
 use futures::StreamExt;
 use metrics::absolute_counter;
 use penumbra_crypto::{asset, merkle::NoteCommitmentTree};
-use penumbra_proto::{light_wallet::light_wallet_server::LightWallet, Protobuf};
+use penumbra_proto::Protobuf;
 use penumbra_stake::Epoch;
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, ConsensusRequest as Request, ConsensusResponse as Response};
@@ -366,20 +366,14 @@ impl Worker {
             .map(|v| v.borrow().identity_key.clone())
             .collect::<Vec<_>>();
 
-        // Process unbonding notes and nullifiers for this epoch
-        let (mut unbonding_notes, mut unbonding_nullifiers) = (
-            reader.quarantined_notes(Some(height), Some(well_behaved_validators.iter())),
-            reader.quarantined_nullifiers(Some(height), Some(well_behaved_validators.iter())),
-        );
+        // Process unbonding notes and for this epoch
+        let mut unbonding_notes =
+            reader.quarantined_notes(Some(height), Some(well_behaved_validators.iter()));
         while let Some(result) = unbonding_notes.next().await {
             let (_, commitment, data) = result?;
             pending_block.add_note(commitment, data);
         }
-        while let Some(result) = unbonding_nullifiers.next().await {
-            pending_block.unbonding_nullifiers.insert(result?.1); // insert the nullifier
-        }
         drop(unbonding_notes);
-        drop(unbonding_nullifiers);
 
         // Tell the validator set that the epoch is changing so it can prepare to commit.
         self.block_validator_set.end_epoch().await?;

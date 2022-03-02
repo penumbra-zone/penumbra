@@ -26,9 +26,6 @@ pub struct PendingBlock {
     reward_counter: u64,
     /// Records all the quarantined inputs/outputs from this block.
     pub quarantine: Vec<QuarantineGroup>,
-    /// Nullifiers to remove from the quarantined set when this block is committed, making their
-    /// spend permanent.
-    pub unbonding_nullifiers: BTreeSet<Nullifier>,
     /// Notes to be dropped from the quarantine set when this block is committed, reverting their spend.
     pub reverting_notes: BTreeSet<note::Commitment>,
     /// Nullifiers to remove from the nullifier set when this block is committed, reverting their spend.
@@ -59,7 +56,6 @@ impl PendingBlock {
             reward_counter: 0,
             quarantine: Vec::new(),
             reverting_notes: BTreeSet::new(),
-            unbonding_nullifiers: BTreeSet::new(),
             reverting_nullifiers: BTreeSet::new(),
             epoch: None,
         }

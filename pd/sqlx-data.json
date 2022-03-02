@@ -83,12 +83,13 @@
       "nullable": []
     }
   },
-  "2b00fd7700707a635a3d5827f69f2a16a45737fe24797d9aae3874c95d640524": {
-    "query": "DELETE FROM nullifiers WHERE nullifier = $1",
+  "23271acfbb896cd6a0875d6420c5dad66e5ff20d09f8c61e7c82fb62e1a1b6a2": {
+    "query": "UPDATE quarantined_notes SET reverted_height = $1 WHERE note_commitment = $2",
     "describe": {
       "columns": [],
       "parameters": {
         "Left": [
+          "Int8",
           "Bytea"
         ]
       },
@@ -134,20 +135,6 @@
       ]
     }
   },
-  "308588a01bb3ed66958ef26b636e2c344ac302749e3538f8a6698ed719fe3a73": {
-    "query": "\n                    INSERT INTO quarantined_nullifiers (nullifier, unbonding_height, validator_identity_key)\n                    VALUES ($1, $2, $3)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea",
-          "Int8",
-          "Bytea"
-        ]
-      },
-      "nullable": []
-    }
-  },
   "321616ee11510c15f5ac2d1e6aa3c22c5f6601b926a5d41f8e0ce8410223b1bb": {
     "query": "\n            WITH a AS\n            (SELECT COUNT(*) AS nullifier_count FROM nullifiers),\n            b AS\n            (SELECT COUNT(*) AS note_count FROM notes)\n            SELECT nullifier_count, note_count FROM a, b\n            ",
     "describe": {
@@ -184,6 +171,26 @@
       "nullable": []
     }
   },
+  "409ccf7907870212891003a8d4bfaf6bb6a8fd2d802125227a9cac4679a8f37b": {
+    "query": "SELECT nullifier FROM nullifiers WHERE nullifier = ANY($1)\n            UNION\n            SELECT nullifier FROM quarantined_nullifiers WHERE nullifier = ANY($1) AND reverted_height IS NULL",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "nullifier",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "ByteaArray"
+        ]
+      },
+      "nullable": [
+        null
+      ]
+    }
+  },
   "40da344f10b8dfccf3ebc3ac7c44f028bdef4b924b900c9f2125320caf04e8d6": {
     "query": "SELECT validator_identity_key, delegation_change FROM delegation_changes WHERE epoch = $1",
     "describe": {
@@ -208,6 +215,21 @@
         false,
         false
       ]
+    }
+  },
+  "411101a7d2f094b3c7fcb95553bc651450dec68554e61b226bcc7340956e9144": {
+    "query": "\n                    INSERT INTO quarantined_nullifiers\n                        (nullifier, quarantined_height, unbonding_height, validator_identity_key)\n                    VALUES ($1, $2, $3, $4)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Int8",
+          "Int8",
+          "Bytea"
+        ]
+      },
+      "nullable": []
     }
   },
   "4501b3fc1446d51abde3513efb7df1201092a9695f858fc090043d81ad3db490": {
@@ -238,44 +260,6 @@
       "nullable": []
     }
   },
-  "4e81d31b835953b15b3afce317f51732374cd7cbbf46f80407403bd1f3fd6248": {
-    "query": "\n            SELECT DISTINCT ON (identity_key)\n            identity_key, \n            epoch, \n            validator_reward_rate, \n            validator_exchange_rate\n\n            FROM validator_rates \n            WHERE epoch <= $1\n            ORDER BY identity_key, epoch DESC",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "identity_key",
-          "type_info": "Bytea"
-        },
-        {
-          "ordinal": 1,
-          "name": "epoch",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 2,
-          "name": "validator_reward_rate",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 3,
-          "name": "validator_exchange_rate",
-          "type_info": "Int8"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8"
-        ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false
-      ]
-    }
-  },
   "4f9e6ca2890b779cf788f5993de20c8a2b80baa56966dac4c4f1e215171db0c8": {
     "query": "INSERT INTO validator_rates (\n                    identity_key,\n                    epoch,\n                    validator_reward_rate,\n                    validator_exchange_rate\n                ) VALUES ($1, $2, $3, $4)",
     "describe": {
@@ -304,72 +288,6 @@
         ]
       },
       "nullable": []
-    }
-  },
-  "5b21c8f02b71c8101743848e10e198ca4bf1b06fa0a703382354f241d8c86b0f": {
-    "query": "SELECT validator_identity_key, note_commitment, ephemeral_key, encrypted_note, transaction_id\n            FROM quarantined_notes\n            WHERE\n                unbonding_height <= $1 AND\n                ($2 OR validator_identity_key = ANY($3))",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "validator_identity_key",
-          "type_info": "Bytea"
-        },
-        {
-          "ordinal": 1,
-          "name": "note_commitment",
-          "type_info": "Bytea"
-        },
-        {
-          "ordinal": 2,
-          "name": "ephemeral_key",
-          "type_info": "Bytea"
-        },
-        {
-          "ordinal": 3,
-          "name": "encrypted_note",
-          "type_info": "Bytea"
-        },
-        {
-          "ordinal": 4,
-          "name": "transaction_id",
-          "type_info": "Bytea"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Bool",
-          "ByteaArray"
-        ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false
-      ]
-    }
-  },
-  "5f0f6af5d9b30fbea0e33d478e61d311cd065dd0552bfc3988710b6655a3cd1c": {
-    "query": "SELECT nullifier FROM nullifiers WHERE nullifier = ANY($1)",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "nullifier",
-          "type_info": "Bytea"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "ByteaArray"
-        ]
-      },
-      "nullable": [
-        false
-      ]
     }
   },
   "68ecee6442fbca8293efe210d7b798e0a070f2be083b074583048ac513c3dc96": {
@@ -436,35 +354,6 @@
         false,
         false
       ]
-    }
-  },
-  "71bf9cc82a3fd6ebbb72e56a7f19850e64cb41222a454582917da54aa21c914e": {
-    "query": "\n                    INSERT INTO quarantined_notes (\n                        note_commitment,\n                        ephemeral_key,\n                        encrypted_note,\n                        transaction_id,\n                        unbonding_height,\n                        validator_identity_key\n                    ) VALUES ($1, $2, $3, $4, $5, $6)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea",
-          "Bytea",
-          "Bytea",
-          "Bytea",
-          "Int8",
-          "Bytea"
-        ]
-      },
-      "nullable": []
-    }
-  },
-  "7274786d3be393b0c70c571dde279722f79b8654b771dfebd11f0653c4fec002": {
-    "query": "DELETE FROM quarantined_nullifiers WHERE nullifier = $1",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea"
-        ]
-      },
-      "nullable": []
     }
   },
   "73d0d102af9c9dbf753248c60bd967e744e909208ba53271f1f8238438da52b7": {
@@ -600,6 +489,47 @@
       ]
     }
   },
+  "75ef7a8f69ca5c7ef191098e849ea78309b527f56538a835692314ef2b632643": {
+    "query": "UPDATE quarantined_nullifiers SET reverted_height = $1 WHERE nullifier = $2",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Bytea"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "7b95ef68a3b25791189802abf8bd8b8ed4e45aaac36580a4f816bfc048cf28f8": {
+    "query": "SELECT validator_identity_key, nullifier\n            FROM quarantined_nullifiers\n            WHERE\n                unbonding_height <= $1 AND\n                ($2 OR validator_identity_key = ANY($3)) AND\n                reverted_height IS NULL",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "validator_identity_key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 1,
+          "name": "nullifier",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Bool",
+          "ByteaArray"
+        ]
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
   "8195450f9f1cedf05eebd974adbdc42dc70a8e2abb7753d7b02cba03786bee0d": {
     "query": "SELECT denom, asset_id FROM assets",
     "describe": {
@@ -624,16 +554,24 @@
       ]
     }
   },
-  "89bf53aa2587b0bdb4f4937cfa9954795e8dd5f319c860d6648ceaa3ee8c7f9d": {
-    "query": "DELETE FROM quarantined_notes WHERE note_commitment = $1",
+  "8307f09e9e3099cb6048bd97ac169607bef15bce35a7fc5610f055f820fc6e61": {
+    "query": "SELECT height FROM nullifiers WHERE nullifier = $1\n            UNION\n            SELECT quarantined_height AS height\n                FROM quarantined_nullifiers\n                WHERE nullifier = $1 AND reverted_height IS NULL\n            LIMIT 1",
     "describe": {
-      "columns": [],
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "height",
+          "type_info": "Int8"
+        }
+      ],
       "parameters": {
         "Left": [
           "Bytea"
         ]
       },
-      "nullable": []
+      "nullable": [
+        null
+      ]
     }
   },
   "8c67c25c88aef9780fb468fde0efc219247511c20f13c9e1fc0545fddf7d485c": {
@@ -753,6 +691,24 @@
       "nullable": []
     }
   },
+  "b4889e77812ce68f2ea6bf59c0dbab5a5197210d76048b4e9bace6af0b4695f1": {
+    "query": "\n                    INSERT INTO quarantined_notes (\n                        note_commitment,\n                        ephemeral_key,\n                        encrypted_note,\n                        transaction_id,\n                        quarantined_height,\n                        unbonding_height,\n                        validator_identity_key\n                    ) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Bytea",
+          "Bytea",
+          "Bytea",
+          "Int8",
+          "Int8",
+          "Bytea"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "ba507b5c58a391df95f9bfac4985ab63e799383309e17717fbcb1f5e4f6ca936": {
     "query": "SELECT value FROM jmt WHERE key = $1 LIMIT 1",
     "describe": {
@@ -818,6 +774,52 @@
       "nullable": []
     }
   },
+  "d02a1f319b146158c24c3cb76eca9050180306dd200b3e43ca99743870482121": {
+    "query": "SELECT validator_identity_key, note_commitment, ephemeral_key, encrypted_note, transaction_id\n            FROM quarantined_notes\n            WHERE\n                unbonding_height <= $1 AND\n                ($2 OR validator_identity_key = ANY($3)) AND\n                reverted_height IS NULL",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "validator_identity_key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 1,
+          "name": "note_commitment",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 2,
+          "name": "ephemeral_key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 3,
+          "name": "encrypted_note",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 4,
+          "name": "transaction_id",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Bool",
+          "ByteaArray"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "d12d2e8c0c1d522212ea874d422f99e950fbd843afe73bac2b7de7a1ec31af3f": {
     "query": "INSERT INTO delegation_changes VALUES ($1, $2, $3)",
     "describe": {
@@ -868,34 +870,6 @@
       "nullable": []
     }
   },
-  "e4a933931ef751ddebcffc649efe21929b949c314284f8615b03086cd90d00e0": {
-    "query": "SELECT validator_identity_key, nullifier\n            FROM quarantined_nullifiers\n            WHERE\n                unbonding_height <= $1 AND\n                ($2 OR validator_identity_key = ANY($3))",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "validator_identity_key",
-          "type_info": "Bytea"
-        },
-        {
-          "ordinal": 1,
-          "name": "nullifier",
-          "type_info": "Bytea"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Bool",
-          "ByteaArray"
-        ]
-      },
-      "nullable": [
-        false,
-        false
-      ]
-    }
-  },
   "e57d8617299261390fc7448d3bfda816a5b2bbdf7cb03c0f76af7da9f26743ba": {
     "query": "INSERT INTO validator_rates VALUES ($1, $2, $3, $4)",
     "describe": {
@@ -909,6 +883,44 @@
         ]
       },
       "nullable": []
+    }
+  },
+  "eb19e8763905f060f3f9341d4fc5f2970ebc678cc2e9aa4906e901c8f72aef83": {
+    "query": "\n            SELECT DISTINCT ON (identity_key)\n            identity_key,\n            epoch,\n            validator_reward_rate,\n            validator_exchange_rate\n\n            FROM validator_rates\n            WHERE epoch <= $1\n            ORDER BY identity_key, epoch DESC",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "identity_key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 1,
+          "name": "epoch",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 2,
+          "name": "validator_reward_rate",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 3,
+          "name": "validator_exchange_rate",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false
+      ]
     }
   },
   "ebeb8d290f5ee97174d57b70ea2898a0e259573fa3cad6158779158092e771a0": {
@@ -946,26 +958,6 @@
         ]
       },
       "nullable": []
-    }
-  },
-  "feb219cf82779306d199c5f733359b2cafd5ab51fca03922a9e73c3a4ff44bf7": {
-    "query": "SELECT height FROM nullifiers WHERE nullifier = $1 LIMIT 1",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "height",
-          "type_info": "Int8"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Bytea"
-        ]
-      },
-      "nullable": [
-        false
-      ]
     }
   }
 }

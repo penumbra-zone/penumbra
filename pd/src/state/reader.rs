@@ -79,17 +79,24 @@ impl Reader {
     }
 
     /// Retrieve a nullifier if it exists.
+    ///
+    /// Checks both fully committed and quarantined nullifiers.
     pub async fn nullifier(&self, nullifier: Nullifier) -> Result<Option<schema::NullifiersRow>> {
         let mut conn = self.pool.acquire().await?;
         let nullifier_row = query!(
-            r#"SELECT height FROM nullifiers WHERE nullifier = $1 LIMIT 1"#,
+            r#"SELECT height FROM nullifiers WHERE nullifier = $1
+            UNION
+            SELECT quarantined_height AS height
+                FROM quarantined_nullifiers
+                WHERE nullifier = $1 AND reverted_height IS NULL
+            LIMIT 1"#,
             &<[u8; 32]>::from(nullifier.clone())[..]
         )
         .fetch_optional(&mut conn)
         .await?
         .map(|row| schema::NullifiersRow {
             nullifier,
-            height: row.height,
+            height: row.height.expect("nullifier row has height"),
         });
 
         Ok(nullifier_row)
@@ -150,7 +157,9 @@ impl Reader {
             .map(|nf| nf.to_bytes().to_vec())
             .collect::<Vec<_>>();
         let existing = query!(
-            "SELECT nullifier FROM nullifiers WHERE nullifier = ANY($1)",
+            "SELECT nullifier FROM nullifiers WHERE nullifier = ANY($1)
+            UNION
+            SELECT nullifier FROM quarantined_nullifiers WHERE nullifier = ANY($1) AND reverted_height IS NULL",
             &nullifiers[..],
         )
         .fetch_all(&mut conn)
@@ -158,6 +167,7 @@ impl Reader {
         .into_iter()
         .map(|row| {
             row.nullifier
+                .expect("nullifier row has nullifier")
                 .as_slice()
                 .try_into()
                 .expect("db data is valid")
@@ -263,12 +273,12 @@ impl Reader {
         let rows = query!(
             "
             SELECT DISTINCT ON (identity_key)
-            identity_key, 
-            epoch, 
-            validator_reward_rate, 
+            identity_key,
+            epoch,
+            validator_reward_rate,
             validator_exchange_rate
 
-            FROM validator_rates 
+            FROM validator_rates
             WHERE epoch <= $1
             ORDER BY identity_key, epoch DESC",
             epoch_index as i64,
@@ -499,8 +509,8 @@ impl Reader {
         })
     }
 
-    /// Retrieve a stream of quarantined notes and their commitments, paired with the validator
-    /// identity key with which they are associated.
+    /// Retrieve a stream of non-reverted quarantined notes and their commitments, paired with the
+    /// validator identity key with which they are associated.
     ///
     /// If `maximum_unbonding_height` is `Some`, only notes whose unbonding height is less than or
     /// equal to that height will be returned.
@@ -529,7 +539,8 @@ impl Reader {
             FROM quarantined_notes
             WHERE
                 unbonding_height <= $1 AND
-                ($2 OR validator_identity_key = ANY($3))",
+                ($2 OR validator_identity_key = ANY($3)) AND
+                reverted_height IS NULL",
             maximum_unbonding_height.unwrap_or(u64::MAX) as i64,
             all_validators,
             &validator_list,
@@ -553,14 +564,14 @@ impl Reader {
         })
     }
 
-    /// Retrieve a stream of quarantined nullifiers, paired with the validator identity key with
-    /// which they are associated.
+    /// Retrieve a stream of non-reverted quarantined nullifiers, paired with the validator identity
+    /// key with which they are associated.
     ///
-    /// If `maximum_unbonding_height` is `Some`, only nullifiers whose unbonding height is less than or
-    /// equal to that height will be returned.
+    /// If `maximum_unbonding_height` is `Some`, only nullifiers whose unbonding height is less than
+    /// or equal to that height will be returned.
     ///
-    /// If `validators` is `Some`, only nullifiers which were associated with an undelegation from some
-    /// validator in that set will be returned. (This is more efficient than filtering after
+    /// If `validators` is `Some`, only nullifiers which were associated with an undelegation from
+    /// some validator in that set will be returned. (This is more efficient than filtering after
     /// receiving he stream, because the database is performing the filtration.)
     pub fn quarantined_nullifiers<'a>(
         &self,
@@ -582,7 +593,8 @@ impl Reader {
             FROM quarantined_nullifiers
             WHERE
                 unbonding_height <= $1 AND
-                ($2 OR validator_identity_key = ANY($3))",
+                ($2 OR validator_identity_key = ANY($3)) AND
+                reverted_height IS NULL",
             maximum_unbonding_height.unwrap_or(u64::MAX) as i64,
             all_validators,
             &validator_list,
