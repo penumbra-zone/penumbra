@@ -97,8 +97,8 @@ pub fn decrypt_value(
     decryption_shares: &[DecryptionShare],
     participant_commitments: &[decaf377::Element],
 ) -> Result<decaf377::Element, anyhow::Error> {
-    for (i, share) in decryption_shares.iter().enumerate() {
-        share.verify(encrypted_value.c1, participant_commitments[i])?;
+    for (share, participant_commitment) in decryption_shares.iter().zip(participant_commitments) {
+        share.verify(encrypted_value.c1, *participant_commitment)?;
     }
 
     let indices = decryption_shares
@@ -120,9 +120,9 @@ pub fn aggregate_values(
 ) -> Result<EncryptedValue, anyhow::Error> {
     let mut res = values.first().unwrap().clone();
     res.verify(dkg_pubkey)?;
-    for i in 1..values.len() {
-        values[i].verify(dkg_pubkey)?;
-        res = res.add(&values[i]);
+    for value in values.iter().skip(1) {
+        value.verify(dkg_pubkey)?;
+        res = res.add(value);
     }
     Ok(res)
 }
