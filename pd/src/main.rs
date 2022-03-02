@@ -1,10 +1,12 @@
 #![allow(clippy::clone_on_copy)]
 use std::{
     net::{Ipv4Addr, SocketAddr},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
+use anyhow::Context;
 use metrics_exporter_prometheus::PrometheusBuilder;
+use once_cell::sync::Lazy;
 use penumbra_chain::params::ChainParams;
 use penumbra_crypto::rdsa::{SigningKey, SpendAuth, VerificationKey};
 use penumbra_proto::{
@@ -71,26 +73,18 @@ enum Command {
         /// Expressed in basis points.
         #[structopt(long, default_value = "1000")]
         slashing_penalty: u64,
-        /// Path to CSV file containing initial allocations.
-        #[structopt(
-            long,
-            parse(from_os_str),
-            default_value = "testnets/004-thelxinoe/allocations.csv"
-        )]
-        allocations_input_file: PathBuf,
-        /// Path to JSON file containing initial validator configs.
-        #[structopt(
-            long,
-            parse(from_os_str),
-            default_value = "testnets/004-thelxinoe/validators.json"
-        )]
-        validators_input_file: PathBuf,
+        /// Path to CSV file containing initial allocations [default: latest testnet].
+        #[structopt(long, parse(from_os_str))]
+        allocations_input_file: Option<PathBuf>,
+        /// Path to JSON file containing initial validator configs [default: latest testnet].
+        #[structopt(long, parse(from_os_str))]
+        validators_input_file: Option<PathBuf>,
         /// Path to directory to store output in. Must not exist.
         #[structopt(long)]
         output_dir: Option<PathBuf>,
-        /// Testnet name, e.g. `penumbra-euporie`
-        #[structopt(long, default_value = "penumbra-thelxinoe")]
-        chain_id: String,
+        /// Testnet name [default: latest testnet].
+        #[structopt(long)]
+        chain_id: Option<String>,
         /// IP Address to start `tendermint` nodes on. Increments by three to make room for `pd` and `postgres` per node.
         #[structopt(long, default_value = "192.167.10.2")]
         starting_ip: Ipv4Addr,
@@ -223,6 +217,94 @@ async fn main() -> anyhow::Result<()> {
                 time::{Duration, SystemTime, UNIX_EPOCH},
             };
 
+            // TODO: detect the correct directory by means of cargo or git?
+            let testnets_path = "testnets";
+
+            // Scan through the testnets directory to find the latest one
+            fn latest_testnet(
+                testnets_path: impl AsRef<Path>,
+            ) -> anyhow::Result<(String, PathBuf, PathBuf)> {
+                let mut testnets = Vec::new();
+                for result in std::fs::read_dir(testnets_path)? {
+                    let entry = result?;
+                    if entry.file_type()?.is_dir() {
+                        let path = entry.path();
+                        // Split the testnet directory name into (index, name), i.e. `001-valetudo`
+                        // becomes (1, "valetudo")
+                        let (index, name): (u64, _) = entry
+                            .file_name()
+                            .to_str()
+                            .ok_or_else(|| {
+                                anyhow::anyhow!("testnet path '{:?}' is invalid utf8", path)
+                            })?
+                            .split_once('-')
+                            .ok_or_else(|| {
+                                anyhow::anyhow!(
+                                    "testnet path '{:?}' is not correctly formatted",
+                                    path
+                                )
+                            })
+                            .and_then(|(index_str, name)| {
+                                Ok((
+                                    index_str.parse().with_context(|| {
+                                        format!(
+                                        "could not parse testnet index as a number in path '{:?}'",
+                                        path
+                                    )
+                                    })?,
+                                    name.to_string(),
+                                ))
+                            })?;
+                        testnets.push((index, name, path));
+                    }
+                }
+
+                // Compute the maximum index testnet in the testnets directory
+                testnets
+                    .into_iter()
+                    .max_by_key(|(index, _, _)| *index)
+                    .map(|(_, name, path)| {
+                        (
+                            "penumbra-".to_string() + &name,
+                            path.join("allocations.csv"),
+                            path.join("validators.json"),
+                        )
+                    })
+                    .ok_or_else(|| {
+                        anyhow::anyhow!("no testnets found in directory '{}'", "testnets")
+                    })
+            }
+
+            // Using an option as a lazy cell to avoid borrow checker woes
+            let mut default_testnet = None;
+            #[allow(clippy::eval_order_dependence)]
+            let (chain_id, allocations_input_file, validators_input_file) = (
+                if let Some(chain_id) = chain_id {
+                    chain_id
+                } else {
+                    if default_testnet.is_none() {
+                        default_testnet = Some(latest_testnet(testnets_path)?);
+                    }
+                    default_testnet.clone().unwrap().0
+                },
+                if let Some(allocations_input_file) = allocations_input_file {
+                    allocations_input_file
+                } else {
+                    if default_testnet.is_none() {
+                        default_testnet = Some(latest_testnet(testnets_path)?);
+                    }
+                    default_testnet.clone().unwrap().1
+                },
+                if let Some(validators_input_file) = validators_input_file {
+                    validators_input_file
+                } else {
+                    if default_testnet.is_none() {
+                        default_testnet = Some(latest_testnet(testnets_path)?);
+                    }
+                    default_testnet.unwrap().2
+                },
+            );
+
             let randomizer = OsRng.gen::<u32>();
             let chain_id = format!("{}-{}", chain_id, hex::encode(&randomizer.to_le_bytes()));
 
@@ -353,10 +435,10 @@ async fn main() -> anyhow::Result<()> {
                 node_dir.push(&node_name);
 
                 let mut node_config_dir = node_dir.clone();
-                node_config_dir.push("config".to_string());
+                node_config_dir.push("config");
 
                 let mut node_data_dir = node_dir.clone();
-                node_data_dir.push("data".to_string());
+                node_data_dir.push("data");
 
                 fs::create_dir_all(&node_config_dir)?;
                 fs::create_dir_all(&node_data_dir)?;
