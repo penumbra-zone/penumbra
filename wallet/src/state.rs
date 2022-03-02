@@ -46,9 +46,13 @@ pub struct ClientState {
     submitted_spend_set: BTreeMap<note::Commitment, (SystemTime, Note)>,
     /// Notes that we anticipate receiving on-chain as change but which have not yet been confirmed.
     submitted_change_set: BTreeMap<note::Commitment, (SystemTime, Note)>,
+    /// Notes that are quarantined, which we anticipate will unbond unless the validator is slashed.
+    /// The integer represents the anticipated unbonding height of each note.
+    quarantined_set: BTreeMap<note::Commitment, (Note, u64)>,
     /// Notes that we have spent.
     spent_set: BTreeMap<note::Commitment, Note>,
     /// Map of note commitment to full transaction data for transactions we have visibility into.
+    #[allow(unused)]
     transactions: BTreeMap<note::Commitment, Option<Vec<u8>>>,
     /// Map of asset IDs to (raw) asset denominations.
     asset_cache: asset::Cache,
@@ -107,6 +111,7 @@ impl ClientState {
             unspent_set: BTreeMap::new(),
             submitted_spend_set: BTreeMap::new(),
             submitted_change_set: BTreeMap::new(),
+            quarantined_set: BTreeMap::new(),
             spent_set: BTreeMap::new(),
             transactions: BTreeMap::new(),
             asset_cache: Default::default(),
@@ -715,7 +720,16 @@ impl ClientState {
                     // The state fragment represents the output of an undelegation which has not yet
                     // unbonded. It is not yet spendable, but we should keep track of it until it
                     // is, so we can present this information to the user.
-                    Some(QuarantinedWithUnbondingHeight(unbonding_height)) => todo!(),
+                    Some(QuarantinedWithUnbondingHeight(unbonding_height)) => {
+                        tracing::debug!(
+                            ?note_commitment,
+                            ?note,
+                            ?unbonding_height,
+                            "detected unbonding note"
+                        );
+                        self.quarantined_set
+                            .insert(note_commitment, (note, unbonding_height));
+                    }
 
                     // The state fragment represents a note which we had previously marked as spent
                     // because we used it in an undelegation, but the undelegation has now been
@@ -743,6 +757,12 @@ impl ClientState {
                                 ?note,
                                 "removing reverted note from spent set"
                             );
+                        } else if self.quarantined_set.remove(&note_commitment).is_some() {
+                            tracing::debug!(
+                                ?note_commitment,
+                                ?note,
+                                "removing reverted note from quarantined set"
+                            );
                         } else {
                             tracing::warn!(
                                 ?note_commitment,
@@ -759,7 +779,7 @@ impl ClientState {
                         let (pos, _auth_path) = self
                             .note_commitment_tree
                             .authentication_path(&note_commitment)
-                            .expect("this commitment should still be witnessed");
+                            .expect("commitment for quarantined note should still be witnessed");
 
                         self.nullifier_map.remove(
                             &self
@@ -796,6 +816,11 @@ impl ClientState {
                             tracing::debug!(value = ?note.value(), "found submitted change note while scanning, removing it from the submitted change set");
                         }
 
+                        // If the note was a quarantined note, remove it from the quarantined set
+                        if self.quarantined_set.remove(&note_commitment).is_some() {
+                            tracing::debug!(value = ?note.value(), "found quarantined note while scanning, removing it from the quarantined set");
+                        }
+
                         // Insert the note into the received set
                         self.unspent_set.insert(note_commitment, note.clone());
                     }
@@ -817,39 +842,62 @@ impl ClientState {
             // Try to decode the nullifier
             let nullifier = nullifier.as_ref().try_into()?;
 
-            // Try to find the corresponding note commitment in the nullifier map
+            // Try to find the corresponding note commitment in the nullifier map, and locate thei
+            // note in one of our sets of notes. If we are tracking the nullifier, we should not
+            // have forgotten about the corresponding note!
             if let Some(&note_commitment) = self.nullifier_map.get(&nullifier) {
-                if let Some(note) = self.unspent_set.remove(&note_commitment) {
-                    // Insert the note into the spent set
+                let note = if let Some(note) = self.unspent_set.remove(&note_commitment) {
                     tracing::debug!(
                         value = ?note.value(),
                         ?nullifier,
                         ?quarantined,
                         "found nullifier for unspent note, marking it as spent"
                     );
-                    self.spent_set.insert(note_commitment, note);
+                    Some(note)
                 } else if let Some((_, note)) = self.submitted_spend_set.remove(&note_commitment) {
-                    // Insert the note into the spent set
                     tracing::debug!(
                         value = ?note.value(),
                         ?nullifier,
                         ?quarantined,
                         "found nullifier for submitted spend note, marking it as spent"
                     );
-                    self.spent_set.insert(note_commitment, note);
+                    Some(note)
+                } else if let Some((note, _)) = self.quarantined_set.remove(&note_commitment) {
+                    tracing::debug!(
+                        value = ?note.value(),
+                        ?nullifier,
+                        ?quarantined,
+                        "found nullifier for quarantined note, marking it as spent"
+                    );
+                    Some(note)
                 } else if let Some((_, note)) = self.submitted_change_set.remove(&note_commitment) {
-                    // Insert the note into the spent set
                     tracing::debug!(
                         value = ?note.value(),
                         ?nullifier,
                         ?quarantined,
                         "found nullifier for submitted change note, marking it as spent"
                     );
+                    Some(note)
+                } else {
+                    None
+                };
+
+                // Insert the note into the spent set
+                if let Some(note) = note {
                     self.spent_set.insert(note_commitment, note);
+                } else {
+                    tracing::warn!(
+                        ?nullifier,
+                        ?quarantined,
+                        "known nullifier doesn't correspond to a known note: possibly corrupted state?"
+                    );
                 }
 
                 // Only in the case when a nullifier is unbonded from quarantine, should we
                 // unwitness it; otherwise, we might need this authentication path later.
+                //
+                // To elaborate: we see each nullifier spent in an undelegation *twice*: once when
+                // the undelegation is first processed and the
                 if !quarantined {
                     self.note_commitment_tree.remove_witness(&note_commitment);
                 }
@@ -886,6 +934,7 @@ mod serde_helpers {
         submitted_spend_set: Vec<(String, SystemTime, String)>,
         #[serde(default, alias = "pending_change_set")]
         submitted_change_set: Vec<(String, SystemTime, String)>,
+        quarantined_set: Vec<(String, String, u64)>,
         spent_set: Vec<(String, String)>,
         transactions: Vec<(String, String)>,
         asset_registry: Vec<(asset::Id, String)>,
@@ -981,6 +1030,17 @@ mod serde_helpers {
                         )
                     })
                     .collect(),
+                quarantined_set: state
+                    .quarantined_set
+                    .iter()
+                    .map(|(commitment, (note, unbonding_height))| {
+                        (
+                            hex::encode(commitment.0.to_bytes()),
+                            hex::encode(note.to_bytes()),
+                            *unbonding_height,
+                        )
+                    })
+                    .collect(),
                 spent_set: state
                     .spent_set
                     .iter()
@@ -1040,6 +1100,14 @@ mod serde_helpers {
                 );
             }
 
+            let mut quarantined_set = BTreeMap::new();
+            for (commitment, note, unbonding_height) in state.quarantined_set.into_iter() {
+                quarantined_set.insert(
+                    hex::decode(commitment)?.as_slice().try_into()?,
+                    (hex::decode(note)?.as_slice().try_into()?, unbonding_height),
+                );
+            }
+
             let mut spent_set = BTreeMap::new();
             for (commitment, note) in state.spent_set.into_iter() {
                 spent_set.insert(
@@ -1061,6 +1129,7 @@ mod serde_helpers {
                 unspent_set,
                 submitted_spend_set,
                 submitted_change_set,
+                quarantined_set,
                 spent_set,
                 asset_cache: asset_registry.try_into()?,
                 // TODO: serialize full transactions
