@@ -7,8 +7,12 @@ use std::{
 use anyhow::Context;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use once_cell::sync::Lazy;
+use pd::genesis::Allocation;
 use penumbra_chain::params::ChainParams;
-use penumbra_crypto::rdsa::{SigningKey, SpendAuth, VerificationKey};
+use penumbra_crypto::{
+    keys::{SpendKey, SpendSeed},
+    rdsa::{SigningKey, SpendAuth, VerificationKey},
+};
 use penumbra_proto::{
     light_wallet::light_wallet_server::LightWalletServer,
     thin_wallet::thin_wallet_server::ThinWalletServer,
@@ -251,7 +255,7 @@ async fn main() -> anyhow::Result<()> {
 
             // Parse allocations from input file or default to latest testnet allocations computed
             // in the build script
-            let allocations = if let Some(allocations_input_file) = allocations_input_file {
+            let mut allocations = if let Some(allocations_input_file) = allocations_input_file {
                 let allocations_file = File::open(&allocations_input_file)
                     .with_context(|| format!("cannot open file {:?}", allocations_input_file))?;
                 parse_allocations(allocations_file).with_context(|| {
@@ -307,9 +311,13 @@ async fn main() -> anyhow::Result<()> {
             let mut validator_keys = Vec::<ValidatorKeys>::new();
             // Generate a keypair for each validator
             for _ in 0..num_validator_nodes {
-                // Create spending key and viewing key for this node.
-                let validator_id_sk = SigningKey::<SpendAuth>::new(OsRng);
-                let validator_id_vk = VerificationKey::from(&validator_id_sk);
+                // Create the spend key for this node.
+                let seed = SpendSeed(OsRng.gen());
+                let spend_key = SpendKey::from(seed);
+
+                // Create signing key and verification key for this node.
+                let validator_id_sk = spend_key.spend_auth_key();
+                let validator_id_vk = VerificationKey::from(validator_id_sk);
 
                 // generate consensus key for tendermint.
                 let validator_cons_sk =
@@ -322,13 +330,27 @@ async fn main() -> anyhow::Result<()> {
                 let node_key_pk = node_key_sk.public_key();
 
                 let vk = ValidatorKeys {
-                    validator_id_sk,
+                    validator_id_sk: validator_id_sk.clone(),
                     validator_id_vk,
                     validator_cons_sk,
                     validator_cons_pk,
                     node_key_sk,
                     node_key_pk,
                 };
+
+                let fvk = spend_key.full_viewing_key();
+                let ivk = fvk.incoming();
+                let (dest, _dtk_d) = ivk.payment_address(0u64.into());
+
+                // Ensure every validator has at least a single allocation from the input file. If not,
+                // add a default 1 upenumbra allocation to the validator.
+                if allocations.iter().filter(|a| a.address == dest).count() == 0 {
+                    allocations.push(Allocation {
+                        address: dest,
+                        amount: 1,
+                        denom: "upenumbra".to_string(),
+                    });
+                }
 
                 validator_keys.push(vk);
             }
