@@ -307,13 +307,14 @@ async fn main() -> anyhow::Result<()> {
                 pub node_key_sk: tendermint::PrivateKey,
                 #[allow(unused_variables, dead_code)]
                 pub node_key_pk: tendermint::PublicKey,
+                pub validator_spendseed: SpendSeed,
             }
             let mut validator_keys = Vec::<ValidatorKeys>::new();
             // Generate a keypair for each validator
             for _ in 0..num_validator_nodes {
                 // Create the spend key for this node.
                 let seed = SpendSeed(OsRng.gen());
-                let spend_key = SpendKey::from(seed);
+                let spend_key = SpendKey::from(seed.clone());
 
                 // Create signing key and verification key for this node.
                 let validator_id_sk = spend_key.spend_auth_key();
@@ -336,6 +337,7 @@ async fn main() -> anyhow::Result<()> {
                     validator_cons_pk,
                     node_key_sk,
                     node_key_pk,
+                    validator_spendseed: seed,
                 };
 
                 let fvk = spend_key.full_viewing_key();
@@ -545,6 +547,18 @@ async fn main() -> anyhow::Result<()> {
                 let mut validator_signingkey_file = File::create(validator_signingkey_file_path)?;
                 validator_signingkey_file
                     .write_all(serde_json::to_string_pretty(&vk.validator_id_sk)?.as_bytes())?;
+
+                // Write the validator's spend seed:
+                let mut validator_spendseed_file_path = node_config_dir.clone();
+                validator_spendseed_file_path.push("validator_spendseed.json");
+                println!(
+                    "Writing {} validator spend seed file to: {}",
+                    &node_name,
+                    validator_spendseed_file_path.display()
+                );
+                let mut validator_spendseed_file = File::create(validator_spendseed_file_path)?;
+                validator_spendseed_file
+                    .write_all(serde_json::to_string_pretty(&vk.validator_spendseed)?.as_bytes())?;
 
                 println!("-------------------------------------");
             }
