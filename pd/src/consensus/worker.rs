@@ -4,7 +4,7 @@ use anyhow::{anyhow, Result};
 use futures::StreamExt;
 use metrics::absolute_counter;
 use penumbra_crypto::merkle::NoteCommitmentTree;
-use penumbra_proto::Protobuf;
+use penumbra_proto::{stake::Validator, Protobuf};
 use penumbra_stake::Epoch;
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, ConsensusRequest as Request, ConsensusResponse as Response};
@@ -31,24 +31,55 @@ pub struct Worker {
 
 impl Worker {
     pub async fn new(state: state::Writer, queue: mpsc::Receiver<Message>) -> Result<Self> {
-        let note_commitment_tree = state.private_reader().note_commitment_tree().await?;
-        let height = state.private_reader().height().await?;
-        // Chain params aren't actually available here for a newly initialized chain,
-        // so these values will be defaults that will be replaced after `commit_genesis`, during `init_chain`.
-        //
-        // For an existing chain, the chain params set below will be correct.
-        let chain_params = state.private_reader().chain_params_rx().borrow().clone();
-        let epoch_duration = chain_params.epoch_duration;
-        let epoch = Epoch::from_height(height.into(), epoch_duration);
-        let block_validator_set = ValidatorSet::new(state.private_reader().clone(), epoch).await?;
-
-        Ok(Self {
+        // Because we want to be able to handle (re)loading the worker data after writing
+        // the state snapshot in init_chain, we split out the real data loading into a single
+        // Worker::load() method that can be called from both places. Since we need to initialize
+        // the worker, though, fill in some garbage data that we'll immediately overwrite.
+        // A more pedantically correct option would be to make everything Optional, but that
+        // "contaminates" all of the other logic of the application to handle the initialization
+        // special case.
+        let mut worker = Self {
             state,
             queue,
             pending_block: None,
-            note_commitment_tree,
-            block_validator_set,
-        })
+            note_commitment_tree: NoteCommitmentTree::new(0),
+            block_validator_set: ValidatorSet::new(
+                state.private_reader().clone(),
+                Epoch {
+                    index: 0,
+                    duration: 1,
+                },
+            ),
+        };
+        // If the database is still empty, this will still be garbage data, but we'll call
+        // load() again when processing init_chain.
+        worker.load().await?;
+
+        Ok(worker)
+    }
+
+    /// Loads the worker's application data from the state.
+    ///
+    /// This is called in `new`, and also when (re)loading after writing the state snapshot from init_chain.
+    async fn load(&mut self) -> Result<()> {
+        let height = self.state.private_reader().height().await?.into();
+        let epoch_duration = self
+            .state
+            .private_reader()
+            .chain_params_rx()
+            .borrow()
+            .epoch_duration;
+        let epoch = Epoch::from_height(height, epoch_duration);
+
+        self.note_commitment_tree = self.state.private_reader().note_commitment_tree().await?;
+        self.block_validator_set =
+            ValidatorSet::new(self.state.private_reader().clone(), epoch).await?;
+        self.pending_block = None;
+
+        // Now (re)load the caches from the state writer:
+        self.state.init_caches()?;
+
+        Ok(())
     }
 
     pub async fn run(mut self) -> Result<()> {
@@ -121,30 +152,8 @@ impl Worker {
         // Initialize the database with the app state.
         let app_hash = self.state.commit_genesis(&app_state).await?;
 
-        // Reload the worker from the database
-        let writer_pool = PgPoolOptions::new()
-            .max_connections(04)
-            .connect(uri)
-            .await?;
-        let chain_params_tx = mem::replace(
-            &mut self.state.chain_params_tx,
-            writer_pool.clone().chain_params_rx(),
-        );
-        // let (chain_params_tx, chain_params_rx) = watch::channel(Default::default());
-        // let (height_tx, height_rx) = watch::channel(Default::default());
-        // let (next_rate_data_tx, next_rate_data_rx) = watch::channel(Default::default());
-        // let (valid_anchors_tx, valid_anchors_rx) = watch::channel(Default::default());
-        let writer = Writer {
-            pool: writer_pool,
-            private_reader,
-            //tmp: writer_tmp,
-            chain_params_tx,
-            height_tx,
-            next_rate_data_tx,
-            valid_anchors_tx,
-        };
-        let q: mpsc::Receiver<Message> = self.queue.clone();
-        *self = Worker::new(s, q).await?;
+        // Reload the worker data from the database.
+        self.load().await?;
 
         // Extract the Tendermint validators from the app state
         //

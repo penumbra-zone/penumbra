@@ -44,7 +44,7 @@ pub struct Writer {
 impl Writer {
     /// Initializes in-memory caches / notification channels.
     /// Called by `state::new()` on init, and when reloading the state after init_chain
-    pub(super) async fn init_caches(&self) -> Result<()> {
+    pub async fn init_caches(&self) -> Result<()> {
         let chain_params = self
             .private_reader
             .genesis_configuration()
