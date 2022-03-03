@@ -344,6 +344,9 @@ async fn main() -> anyhow::Result<()> {
                         unbonding_epochs,
                         active_validator_limit,
                         slashing_penalty,
+                        ibc_enabled: false,
+                        inbound_ics20_transfers_enabled: false,
+                        outbound_ics20_transfers_enabled: false,
                     },
                     validators: validators
                         .iter()

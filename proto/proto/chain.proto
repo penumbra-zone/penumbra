@@ -15,6 +15,12 @@ message ChainParams {
   uint64 active_validator_limit = 4;
   // The penalty expressed in base points to be applied to slashed validators' rates.
   uint64 slashing_penalty = 5;
+  /// Whether IBC (forming connections, processing IBC packets) is enabled.
+  bool ibc_enabled = 6;
+  /// Whether inbound ICS-20 transfers are enabled
+  bool inbound_ics20_transfers_enabled = 7;
+  /// Whether outbound ICS-20 transfers are enabled
+  bool outbound_ics20_transfers_enabled = 8;
 }
 
 // Information about a given asset at a given time (as specified by block
