@@ -342,15 +342,12 @@ async fn main() -> anyhow::Result<()> {
                 let ivk = fvk.incoming();
                 let (dest, _dtk_d) = ivk.payment_address(0u64.into());
 
-                // Ensure every validator has at least a single allocation from the input file. If not,
-                // add a default 1 upenumbra allocation to the validator.
-                if allocations.iter().filter(|a| a.address == dest).count() == 0 {
-                    allocations.push(Allocation {
-                        address: dest,
-                        amount: 1,
-                        denom: "upenumbra".to_string(),
-                    });
-                }
+                // Add a default 1 upenumbra allocation to the validator.
+                allocations.push(Allocation {
+                    address: dest,
+                    amount: 1,
+                    denom: "upenumbra".to_string(),
+                });
 
                 validator_keys.push(vk);
             }
