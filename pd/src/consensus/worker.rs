@@ -3,7 +3,7 @@ use std::borrow::Borrow;
 use anyhow::{anyhow, Result};
 use futures::StreamExt;
 use metrics::absolute_counter;
-use penumbra_crypto::{asset, merkle::NoteCommitmentTree};
+use penumbra_crypto::merkle::NoteCommitmentTree;
 use penumbra_proto::Protobuf;
 use penumbra_stake::Epoch;
 use penumbra_transaction::Transaction;
@@ -13,7 +13,10 @@ use tracing::Instrument;
 
 use super::Message;
 use crate::{
-    components::validator_set::ValidatorSet, genesis, state, verify::StatelessTransactionExt,
+    components::validator_set::ValidatorSet,
+    genesis,
+    state::{self, Writer},
+    verify::StatelessTransactionExt,
     PendingBlock,
 };
 
@@ -98,6 +101,14 @@ impl Worker {
         Ok(())
     }
 
+    /// Initializes the chain based on the genesis data.
+    ///
+    /// The genesis data is provided by tendermint, and is used to initialize
+    /// the database.
+    ///
+    /// After the database has been initialized, the worker is reinstantiated,
+    /// which will cause it to reload its state from the database, preparing it
+    /// for the first block to begin.
     async fn init_chain(
         &mut self,
         init_chain: abci::request::InitChain,
@@ -107,85 +118,151 @@ impl Worker {
         let app_state: genesis::AppState = serde_json::from_slice(&init_chain.app_state_bytes)
             .expect("can parse app_state in genesis file");
 
-        // Initialize the validator set for the genesis block, as if a `begin_block` message was received.
-        self.block_validator_set.begin_block();
-
         // Initialize the database with the app state.
-        self.state
-            .commit_genesis(&app_state, &mut self.block_validator_set)
+        let app_hash = self.state.commit_genesis(&app_state).await?;
+
+        // Reload the worker from the database
+        let writer_pool = PgPoolOptions::new()
+            .max_connections(04)
+            .connect(uri)
             .await?;
+        let chain_params_tx = mem::replace(
+            &mut self.state.chain_params_tx,
+            writer_pool.clone().chain_params_rx(),
+        );
+        // let (chain_params_tx, chain_params_rx) = watch::channel(Default::default());
+        // let (height_tx, height_rx) = watch::channel(Default::default());
+        // let (next_rate_data_tx, next_rate_data_rx) = watch::channel(Default::default());
+        // let (valid_anchors_tx, valid_anchors_rx) = watch::channel(Default::default());
+        let writer = Writer {
+            pool: writer_pool,
+            private_reader,
+            //tmp: writer_tmp,
+            chain_params_tx,
+            height_tx,
+            next_rate_data_tx,
+            valid_anchors_tx,
+        };
+        let q: mpsc::Receiver<Message> = self.queue.clone();
+        *self = Worker::new(s, q).await?;
 
-        // The validator set needs to know the initial epoch and duration:
-        self.block_validator_set
-            .set_epoch(Epoch::from_height(0, app_state.chain_params.epoch_duration));
-
-        // Now start building the genesis block:
-        self.note_commitment_tree = NoteCommitmentTree::new(0);
-        let mut genesis_block = PendingBlock::new(self.note_commitment_tree.clone());
-        genesis_block.set_height(0, app_state.chain_params.epoch_duration);
-
-        // Create a genesis transaction to record genesis notes.
-        // TODO: eliminate this (#374)
-        // replace with methods on pendingblock for genesis notes that handle
-        // supply tracking
-        let mut tx_builder = Transaction::genesis_builder();
-
-        for allocation in &app_state.allocations {
-            tracing::info!(?allocation, "processing allocation");
-
-            tx_builder.add_output(allocation.note().expect("genesis allocations are valid"));
-
-            let denom = asset::REGISTRY
-                .parse_denom(&allocation.denom)
-                .expect("genesis allocations must have valid denominations");
-
-            // Accumulate the allocation amount into the supply updates for this denom.
-            self.block_validator_set
-                .update_supply_for_denom(denom, allocation.amount);
-        }
-
-        // We might not have any allocations of delegation tokens, but we should record the denoms.
-        for genesis::ValidatorPower { validator, .. } in app_state.validators.iter() {
-            let denom = validator.identity_key.delegation_token().denom();
-            self.block_validator_set.update_supply_for_denom(denom, 0);
-        }
-
-        let genesis_tx = tx_builder
-            .set_chain_id(init_chain.chain_id)
-            .finalize()
-            .expect("can form genesis transaction");
-        let verified_transaction = crate::verify::mark_genesis_as_verified(genesis_tx);
-
-        // Now add the transaction and its note fragments to the pending state changes.
-        genesis_block.add_transaction(verified_transaction);
-
-        // Commit the genesis block to the state
-        self.pending_block = Some(genesis_block);
-        let app_hash = self.commit().await?.data;
-
-        // Extract the Tendermint validators from the genesis app state
+        // Extract the Tendermint validators from the app state
         //
         // NOTE: we ignore the validators passed to InitChain.validators, and instead expect them
         // to be provided inside the initial app genesis state (`GenesisAppState`). Returning those
         // validators in InitChain::Response tells Tendermint that they are the initial validator
         // set. See https://docs.tendermint.com/master/spec/abci/abci.html#initchain
-        let validators = app_state
-            .validators
-            .iter()
-            .map(|genesis::ValidatorPower { validator, power }| {
-                tendermint::abci::types::ValidatorUpdate {
-                    pub_key: validator.consensus_key,
-                    power: *power,
-                }
+        let validators = self
+            .block_validator_set
+            .validators_info()
+            .map(|v| {
+                Ok(tendermint::abci::types::ValidatorUpdate {
+                    pub_key: v.borrow().validator.consensus_key,
+                    power: v.borrow().status.voting_power.try_into()?,
+                })
             })
-            .collect();
+            .collect::<Result<Vec<tendermint::abci::types::ValidatorUpdate>>>()
+            .expect("expected genesis state to reload correctly");
 
         Ok(abci::response::InitChain {
             consensus_params: Some(init_chain.consensus_params),
             validators,
-            app_hash,
+            app_hash: app_hash.into(),
         })
     }
+
+    // async fn init_chain(
+    //     &mut self,
+    //     init_chain: abci::request::InitChain,
+    // ) -> Result<abci::response::InitChain> {
+    //     tracing::info!(?init_chain);
+    //     // Note that errors cannot be handled in InitChain, the application must crash.
+    //     let app_state: genesis::AppState = serde_json::from_slice(&init_chain.app_state_bytes)
+    //         .expect("can parse app_state in genesis file");
+
+    //     // Initialize the validator set for the genesis block, as if a `begin_block` message was received.
+    //     self.block_validator_set.begin_block();
+
+    //     // Initialize the database with the app state.
+    //     self.state
+    //         .commit_genesis(&app_state, &mut self.block_validator_set)
+    //         .await?;
+
+    //     // The validator set needs to know the initial epoch and duration:
+    //     self.block_validator_set
+    //         .set_epoch(Epoch::from_height(0, app_state.chain_params.epoch_duration));
+
+    //     // Now start building the genesis block:
+    //     let note_commitment_tree = NoteCommitmentTree::new(0);
+    //     let mut genesis_block = PendingBlock::new(self.note_commitment_tree.clone());
+    //     genesis_block.set_height(0, app_state.chain_params.epoch_duration);
+
+    //     // Create a genesis transaction to record genesis notes.
+    //     // TODO: eliminate this (#374)
+    //     // replace with methods on pendingblock for genesis notes that handle
+    //     // supply tracking
+    //     let mut tx_builder = Transaction::genesis_builder();
+
+    //     for allocation in &app_state.allocations {
+    //         tracing::info!(?allocation, "processing allocation");
+
+    //         tx_builder.add_output(allocation.note().expect("genesis allocations are valid"));
+
+    //         let denom = asset::REGISTRY
+    //             .parse_denom(&allocation.denom)
+    //             .expect("genesis allocations must have valid denominations");
+
+    //         // Accumulate the allocation amount into the supply updates for this denom.
+    //         self.block_validator_set
+    //             .update_supply_for_denom(denom, allocation.amount);
+    //     }
+
+    //     // We might not have any allocations of delegation tokens, but we should record the denoms.
+    //     for genesis::ValidatorPower { validator, .. } in app_state.validators.iter() {
+    //         let denom = validator.identity_key.delegation_token().denom();
+    //         self.block_validator_set.update_supply_for_denom(denom, 0);
+    //     }
+
+    //     let genesis_tx = tx_builder
+    //         .set_chain_id(init_chain.chain_id)
+    //         .finalize()
+    //         .expect("can form genesis transaction");
+    //     let verified_transaction = crate::verify::mark_genesis_as_verified(genesis_tx);
+
+    //     // Now add the transaction and its note fragments to the pending state changes.
+    //     genesis_block.add_transaction(verified_transaction);
+
+    //     // Commit the genesis block to the state
+    //     self.pending_block = Some(genesis_block);
+    //     // TODO: stop using commit() and use raw SQL inserts in this method
+    //     let app_hash = self.commit().await?.data;
+
+    //     // Extract the Tendermint validators from the genesis app state
+    //     //
+    //     // NOTE: we ignore the validators passed to InitChain.validators, and instead expect them
+    //     // to be provided inside the initial app genesis state (`GenesisAppState`). Returning those
+    //     // validators in InitChain::Response tells Tendermint that they are the initial validator
+    //     // set. See https://docs.tendermint.com/master/spec/abci/abci.html#initchain
+    //     let validators = app_state
+    //         .validators
+    //         .iter()
+    //         .map(|genesis::ValidatorPower { validator, power }| {
+    //             tendermint::abci::types::ValidatorUpdate {
+    //                 pub_key: validator.consensus_key,
+    //                 power: *power,
+    //             }
+    //         })
+    //         .collect();
+
+    //     // TODO: reload from database
+    //     self.block_validator_set = ValidatorSet::new(reader, epoch).await?;
+
+    //     Ok(abci::response::InitChain {
+    //         consensus_params: Some(init_chain.consensus_params),
+    //         validators,
+    //         app_hash,
+    //     })
+    // }
 
     async fn begin_block(
         &mut self,

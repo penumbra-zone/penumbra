@@ -9,7 +9,6 @@ mod stateful;
 mod stateless;
 
 // TODO: eliminate (#374)
-pub use stateful::mark_genesis_as_verified;
 pub use stateless::StatelessTransactionExt;
 
 #[cfg(test)]

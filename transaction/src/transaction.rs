@@ -4,7 +4,7 @@ use ark_ff::Zero;
 use bytes::Bytes;
 use decaf377::FieldExt;
 use penumbra_crypto::{
-    merkle::{self, NoteCommitmentTree, TreeExt},
+    merkle,
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
     Fr, Value,
 };
@@ -17,7 +17,7 @@ use penumbra_proto::{
 use penumbra_stake::STAKING_TOKEN_ASSET_ID;
 
 // TODO: remove & replace with anyhow
-use crate::{action::error::ProtoError, Action, GenesisBuilder};
+use crate::{action::error::ProtoError, Action};
 
 mod builder;
 pub use builder::Builder;
@@ -62,21 +62,6 @@ impl Transaction {
             outputs: Vec::new(),
             delegations: Vec::new(),
             undelegations: Vec::new(),
-            fee: None,
-            synthetic_blinding_factor: Fr::zero(),
-            value_balance: decaf377::Element::default(),
-            value_commitments: decaf377::Element::default(),
-            merkle_root,
-            expiry_height: None,
-            chain_id: None,
-        }
-    }
-
-    /// Build the genesis transactions.
-    pub fn genesis_builder() -> GenesisBuilder {
-        let merkle_root = NoteCommitmentTree::new(0).root2();
-        GenesisBuilder {
-            actions: Vec::new(),
             fee: None,
             synthetic_blinding_factor: Fr::zero(),
             value_balance: decaf377::Element::default(),

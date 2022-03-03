@@ -1,22 +1,29 @@
-use std::collections::VecDeque;
+use std::collections::{BTreeMap, VecDeque};
 
 use anyhow::Result;
+use ark_ff::PrimeField;
+use decaf377::{Fq, Fr};
 use jmt::TreeWriterAsync;
 use penumbra_chain::params::ChainParams;
-use penumbra_crypto::merkle::{self, TreeExt};
-use penumbra_proto::Protobuf;
-use penumbra_stake::{
-    FundingStream, RateData, RateDataById, Validator, ValidatorInfo, ValidatorState,
-    ValidatorStateName, ValidatorStatus,
+use penumbra_crypto::asset::{Denom, Id};
+use penumbra_crypto::merkle::Frontier;
+use penumbra_crypto::One;
+use penumbra_crypto::{
+    asset, ka,
+    merkle::{self, NoteCommitmentTree, TreeExt},
+    Note, Value,
 };
+use penumbra_proto::Protobuf;
+use penumbra_stake::{FundingStream, RateDataById, ValidatorStateName};
 use sqlx::{query, Pool, Postgres};
 use tendermint::block;
 use tokio::sync::watch;
 
 use super::jellyfish;
+use crate::verify::PositionedNoteData;
 use crate::{
-    components::validator_set::ValidatorSet, genesis, pending_block::QuarantineGroup, PendingBlock,
-    NUM_RECENT_ANCHORS,
+    components::validator_set::ValidatorSet, genesis, pending_block::QuarantineGroup,
+    verify::NoteData, PendingBlock, NUM_RECENT_ANCHORS,
 };
 
 #[derive(Debug)]
@@ -36,7 +43,7 @@ pub struct Writer {
 
 impl Writer {
     /// Initializes in-memory caches / notification channels.
-    /// Called by `state::new()` on init.
+    /// Called by `state::new()` on init, and when reloading the state after init_chain
     pub(super) async fn init_caches(&self) -> Result<()> {
         let chain_params = self
             .private_reader
@@ -67,11 +74,11 @@ impl Writer {
     }
 
     /// Commits the genesis config to the database, prior to the first block commit.
-    pub async fn commit_genesis(
-        &self,
-        genesis_config: &genesis::AppState,
-        block_validators: &mut ValidatorSet,
-    ) -> Result<()> {
+    ///
+    /// The database queries here have quite a bit of overlap with the queries in
+    /// commit_block(), but this is because the genesis setup is better treated
+    /// as a simple special case rather than creating a fake pseudo-block.
+    pub async fn commit_genesis(&self, genesis_config: &genesis::AppState) -> Result<Vec<u8>> {
         let mut dbtx = self.pool.begin().await?;
 
         let genesis_bytes = serde_json::to_vec(&genesis_config)?;
@@ -86,6 +93,11 @@ impl Writer {
         )
         .execute(&mut dbtx)
         .await?;
+
+        // TODO(future): rewrite all of this as
+        // ValidatorSet::commit_genesis(...)
+        // ShieldedPool::commit_genesis(...)
+        // and figure out how to pass any required state between those methods
 
         // Delegations require knowing the rates for the next epoch, so
         // pre-populate with 0 reward => exchange rate 1 for the current
@@ -105,109 +117,243 @@ impl Writer {
             .await?;
         }
 
-        let mut next_rate_data = RateDataById::default();
         for genesis::ValidatorPower { validator, power } in &genesis_config.validators {
-            // query!(
-            //     "INSERT INTO validators (
-            //         identity_key,
-            //         consensus_key,
-            //         sequence_number,
-            //         name,
-            //         website,
-            //         description,
-            //         voting_power,
-            //         validator_state,
-            //         unbonding_epoch
-            //     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
-            //     validator.identity_key.encode_to_vec(),
-            //     validator.consensus_key.to_bytes(),
-            //     validator.sequence_number as i64,
-            //     validator.name,
-            //     validator.website,
-            //     validator.description,
-            //     power.value() as i64,
-            //     ValidatorStateName::Active.to_str().to_string(),
-            //     Option::<i64>::None,
-            // )
-            // .execute(&mut dbtx)
-            // .await?;
+            query!(
+                "INSERT INTO validators (
+                    identity_key,
+                    consensus_key,
+                    sequence_number,
+                    name,
+                    website,
+                    description,
+                    voting_power,
+                    validator_state,
+                    unbonding_epoch
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+                validator.identity_key.encode_to_vec(),
+                validator.consensus_key.to_bytes(),
+                validator.sequence_number as i64,
+                validator.name,
+                validator.website,
+                validator.description,
+                power.value() as i64,
+                ValidatorStateName::Active.to_str().to_string(),
+                Option::<i64>::None,
+            )
+            .execute(&mut dbtx)
+            .await?;
 
-            // for FundingStream { address, rate_bps } in validator.funding_streams.as_ref() {
-            //     query!(
-            //         "INSERT INTO validator_fundingstreams (
-            //             identity_key,
-            //             address,
-            //             rate_bps
-            //         ) VALUES ($1, $2, $3)",
-            //         validator.identity_key.encode_to_vec(),
-            //         address.to_string(),
-            //         *rate_bps as i32,
-            //     )
-            //     .execute(&mut dbtx)
-            //     .await?;
-            // }
+            for FundingStream { address, rate_bps } in validator.funding_streams.as_ref() {
+                query!(
+                    "INSERT INTO validator_fundingstreams (
+                        identity_key,
+                        address,
+                        rate_bps
+                    ) VALUES ($1, $2, $3)",
+                    validator.identity_key.encode_to_vec(),
+                    address.to_string(),
+                    *rate_bps as i32,
+                )
+                .execute(&mut dbtx)
+                .await?;
+            }
 
-            // // The initial voting power is set from the genesis configuration,
-            // // but later, it's recomputed based on the size of each validator's
-            // // delegation pool.  Delegations require knowing the rates for the
-            // // next epoch, so pre-populate with 0 reward => exchange rate 1 for
-            // // the current (index 0) and next (index 1) epochs.
-            // for epoch in [0, 1] {
-            //     query!(
-            //         "INSERT INTO validator_rates (
-            //         identity_key,
-            //         epoch,
-            //         validator_reward_rate,
-            //         validator_exchange_rate
-            //     ) VALUES ($1, $2, $3, $4)",
-            //         validator.identity_key.encode_to_vec(),
-            //         epoch,
-            //         0,
-            //         1_0000_0000i64, // 1 represented as 1e8
-            //     )
-            //     .execute(&mut dbtx)
-            //     .await?;
-            // }
-
-            next_rate_data.insert(
-                validator.identity_key.clone(),
-                penumbra_stake::RateData {
-                    identity_key: validator.identity_key.clone(),
-                    epoch_index: 1,
-                    validator_reward_rate: 0,
-                    validator_exchange_rate: 1_0000_0000,
-                },
-            );
-
-            // Add the genesis validator to the validator set
-            block_validators.add_validator(ValidatorInfo {
-                validator: validator.clone(),
-                status: ValidatorStatus {
-                    identity_key: validator.identity_key.clone(),
-                    voting_power: power.value(),
-                    state: ValidatorState::Active,
-                },
-                rate_data: RateData {
-                    identity_key: validator.identity_key.clone(),
-                    epoch_index: 0,
-                    validator_reward_rate: 0,
-                    validator_exchange_rate: 1_0000_0000,
-                },
-            });
+            // The initial voting power is set from the genesis configuration,
+            // but later, it's recomputed based on the size of each validator's
+            // delegation pool.  Delegations require knowing the rates for the
+            // next epoch, so pre-populate with 0 reward => exchange rate 1 for
+            // the current (index 0) and next (index 1) epochs.
+            for epoch in [0, 1] {
+                query!(
+                    "INSERT INTO validator_rates (
+                    identity_key,
+                    epoch,
+                    validator_reward_rate,
+                    validator_exchange_rate
+                ) VALUES ($1, $2, $3, $4)",
+                    validator.identity_key.encode_to_vec(),
+                    epoch,
+                    0,
+                    1_0000_0000i64, // 1 represented as 1e8
+                )
+                .execute(&mut dbtx)
+                .await?;
+            }
         }
 
-        let chain_params = genesis_config.chain_params.clone();
-        // Finally, commit the transaction and then update subscribers
-        dbtx.commit().await?;
-        // Sends fail if every receiver has been dropped, which is not our problem.
-        // We wrote these, so push updates to subscribers.
-        let _ = self.chain_params_tx.send(chain_params);
-        let _ = self.next_rate_data_tx.send(next_rate_data);
-        // These haven't been set yet.
-        // let _ = self.height_tx.send(height);
-        // let _ = self.valid_anchors_tx.send(valid_anchors);
+        // build a note commitment tree
+        let mut note_commitment_tree = NoteCommitmentTree::new(0);
 
-        Ok(())
+        // iterate over genesis allocations
+        //
+        // - add the note to the NCT
+        // - insert the note into the database as appropriate (#374) https://github.com/penumbra-zone/penumbra/issues/374
+        // - accumulate the value into a supply tracker
+        // The blinding factor needs to be unique per genesis note
+        let mut reward_counter = 0;
+        let mut supply_updates: BTreeMap<Id, (Denom, u64)> = BTreeMap::new();
+        let mut notes = Vec::new();
+        for allocation in &genesis_config.allocations {
+            tracing::info!(?allocation, "processing allocation");
+
+            if allocation.amount == 0 {
+                // Skip adding an empty note to the chain.
+                continue;
+            }
+
+            let validator_base_denom = asset::REGISTRY.parse_denom(&allocation.denom).unwrap();
+
+            let val = Value {
+                amount: allocation.amount,
+                asset_id: validator_base_denom.into(),
+            };
+
+            let blinding_factor_input = blake2b_simd::Params::default()
+                .personal(b"genesis_note")
+                .to_state()
+                .update(&[reward_counter])
+                .finalize();
+            reward_counter += 1;
+
+            let destination = allocation.address;
+            // build the note
+            let note = Note::from_parts(
+                *destination.diversifier(),
+                *destination.transmission_key(),
+                val,
+                Fq::from_le_bytes_mod_order(blinding_factor_input.as_bytes()),
+            )
+            .unwrap();
+            let commitment = note.commit();
+
+            // append the note to the commitment tree
+            note_commitment_tree.append(&commitment);
+
+            tracing::debug!(?note, ?commitment);
+
+            let esk = ka::Secret::new_from_field(Fr::one());
+            let encrypted_note = note.encrypt(&esk);
+
+            let note_data = NoteData {
+                ephemeral_key: esk.diversified_public(&note.diversified_generator()),
+                encrypted_note,
+                // A transaction ID is either a hash of a transaction, or special data.
+                // Special data is encoded with 23 leading 0 bytes, followed by a nonzero code byte,
+                // followed by 8 data bytes.
+                //
+                // Transaction hashes can be confused with special data only if the transaction hash begins with 23 leading 0 bytes; this happens with probability 2^{-184}.
+                //
+                // Genesis transaction IDs use code 0x1.
+                transaction_id: [[0; 23].to_vec(), [1].to_vec(), [0; 8].to_vec()]
+                    .concat()
+                    .try_into()
+                    .unwrap(),
+            };
+
+            let denom = asset::REGISTRY
+                .parse_denom(&allocation.denom)
+                .expect("genesis allocations must have valid denominations");
+
+            // Accumulate the allocation amount into the supply updates for this denom.
+            supply_updates.entry(denom.id()).or_insert((denom, 0)).1 += allocation.amount;
+
+            // Keep track of the note so we can insert that as well for the sake of CompactBlock
+            // it will need the position the note commitment tree
+            let position = note_commitment_tree
+                .bridges()
+                .last()
+                .map(|b| b.frontier().position().into())
+                // If there are no bridges, the tree is empty
+                .unwrap_or(0u64);
+            let positioned_note = PositionedNoteData {
+                position,
+                data: note_data,
+            };
+
+            notes.push((commitment, positioned_note));
+        }
+
+        // We might not have any allocations of some delegation tokens, but we should record the denoms.
+        for genesis::ValidatorPower { validator, .. } in genesis_config.validators.iter() {
+            let denom = validator.identity_key.delegation_token().denom();
+            supply_updates.entry(denom.id()).or_insert((denom, 0)).1 += 0;
+        }
+
+        // update the NCT
+        let nct_anchor = note_commitment_tree.root2();
+        let (jmt_root, tree_update_batch) = jmt::JellyfishMerkleTree::new(&self.private_reader)
+            .put_value_set(
+                // TODO: create a JmtKey enum, where each variant has
+                // a different domain-separated hash
+                vec![(
+                    jellyfish::Key::NoteCommitmentAnchor.hash(),
+                    nct_anchor.clone(),
+                )],
+                // height 0 for genesis
+                0,
+            )
+            .await?;
+        // ... and then write the resulting batch update to the backing store:
+        jellyfish::DbTx(&mut dbtx)
+            .write_node_batch(&tree_update_batch.node_batch)
+            .await?;
+
+        // The app hash needs to be returned to Tendermint
+        let app_hash: [u8; 32] = jmt_root.to_vec().try_into().unwrap();
+
+        // Insert the block into the DB
+        query!(
+            "INSERT INTO blocks (height, nct_anchor, app_hash) VALUES ($1, $2, $3)",
+            0 as i64,
+            &nct_anchor.to_bytes()[..],
+            &app_hash[..]
+        )
+        .execute(&mut dbtx)
+        .await?;
+
+        // write the token supplies to the database
+        for (id, asset) in &supply_updates {
+            query!(
+                "INSERT INTO assets (asset_id, denom, total_supply)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (asset_id) DO UPDATE SET denom=$2, total_supply=$3",
+                &id.to_bytes()[..],
+                asset.0.to_string(),
+                asset.1 as i64
+            )
+            .execute(&mut *dbtx)
+            .await?;
+        }
+        for (commitment, positioned_note) in notes {
+            query!(
+                r#"
+                INSERT INTO notes (
+                    note_commitment,
+                    ephemeral_key,
+                    encrypted_note,
+                    transaction_id,
+                    position,
+                    height
+                ) VALUES ($1, $2, $3, $4, $5, $6)"#,
+                &<[u8; 32]>::from(commitment)[..],
+                &positioned_note.data.ephemeral_key.0[..],
+                &positioned_note.data.encrypted_note[..],
+                &positioned_note.data.transaction_id[..],
+                positioned_note.position as i64,
+                // height 0 for genesis
+                0 as i64,
+            )
+            .execute(&mut dbtx)
+            .await?;
+        }
+
+        // Finally, commit the transaction and then update subscribers
+        // We've initialized the database for the first time, so replace
+        // the default values as if we were loading while starting the node.
+        dbtx.commit().await?;
+        self.init_caches().await?;
+
+        Ok(app_hash.to_vec())
     }
 
     /// Commits a block to the state, returning the new app hash.

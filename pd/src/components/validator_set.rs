@@ -152,7 +152,6 @@ impl ValidatorSet {
         height: u64,
         dbtx: &mut Transaction<'_, Postgres>,
     ) -> Result<()> {
-        // TODO: seeing the height being passed in here be inconsistent
         tracing::debug!(?height, "Committing block");
         tracing::debug!("end height {}", self.epoch().end_height().value(),);
 
