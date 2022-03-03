@@ -1,0 +1,26 @@
+on: [push, pull_request]
+
+jobs:
+  smoke_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+
+      - name: Install sqlx.
+        run: cargo install sqlx-cli
+
+      - name: Build the testnet.
+        run: |
+          mkdir ~/scratch
+          ./scripts/docker_compose_freshstart.sh ~/scratch/testnet_build
+          chmod -R 777 ~/scratch/testnet_build
+          docker-compose build
+
+      - name: Run testnet for smoke test duration.
+        run: timeout $TESTNET_RUNTIME docker-compose up
+        env:
+          TESTNET_RUNTIME: 20s
