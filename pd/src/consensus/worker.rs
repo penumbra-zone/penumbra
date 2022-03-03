@@ -38,18 +38,20 @@ impl Worker {
         // A more pedantically correct option would be to make everything Optional, but that
         // "contaminates" all of the other logic of the application to handle the initialization
         // special case.
+        let reader = state.private_reader().clone();
         let mut worker = Self {
             state,
             queue,
             pending_block: None,
             note_commitment_tree: NoteCommitmentTree::new(0),
             block_validator_set: ValidatorSet::new(
-                state.private_reader().clone(),
+                reader,
                 Epoch {
                     index: 0,
                     duration: 1,
                 },
-            ),
+            )
+            .await?,
         };
         // If the database is still empty, this will still be garbage data, but we'll call
         // load() again when processing init_chain.
@@ -77,7 +79,7 @@ impl Worker {
         self.pending_block = None;
 
         // Now (re)load the caches from the state writer:
-        self.state.init_caches()?;
+        self.state.init_caches().await?;
 
         Ok(())
     }
