@@ -344,10 +344,12 @@ async fn main() -> anyhow::Result<()> {
                 let (dest, _dtk_d) = ivk.payment_address(0u64.into());
 
                 // Add a default 1 upenumbra allocation to the validator.
+                let identity_key: IdentityKey = IdentityKey(fvk.spend_verification_key().clone());
+                let delegation_denom = identity_key.delegation_token().denom();
                 allocations.push(Allocation {
                     address: dest,
                     amount: 1,
-                    denom: "upenumbra".to_string(),
+                    denom: delegation_denom.to_string(),
                 });
 
                 validator_keys.push(vk);
