@@ -10,14 +10,16 @@ pub use node::Node;
 mod rightmost;
 pub use rightmost::Segment;
 
-pub trait Arboreal
+pub trait Height {
+    const HEIGHT: usize;
+}
+
+pub trait Arboreal: Height
 where
     Self: Sized,
 {
     type Item;
     type Carry;
-
-    const HEIGHT: usize;
 
     fn singleton(item: Self::Item) -> Self;
 
@@ -28,7 +30,7 @@ pub trait GetHash {
     fn hash(&self) -> Hash;
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Hash;
 
 impl Hash {

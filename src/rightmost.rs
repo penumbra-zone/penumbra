@@ -1,4 +1,4 @@
-use crate::{Arboreal, GetHash, Hash, Node, Split, Three};
+use crate::{Arboreal, GetHash, Hash, Height, Node, Split, Three};
 
 pub struct Segment<Sibling, Focus> {
     witnessed: bool,
@@ -49,15 +49,17 @@ impl<Sibling, Focus: Arboreal> Segment<Sibling, Focus> {
     }
 }
 
+impl<Sibling, Focus: Height> Height for Segment<Sibling, Focus> {
+    const HEIGHT: usize = Focus::HEIGHT + 1;
+}
+
 impl<Sibling, Focus> Arboreal for Segment<Sibling, Focus>
 where
     Focus: Arboreal<Carry = Sibling> + GetHash,
-    Sibling: GetHash + Default,
+    Sibling: Height + GetHash + Default,
 {
     type Item = Focus::Item;
     type Carry = Node<Sibling>;
-
-    const HEIGHT: usize = Focus::HEIGHT + 1;
 
     fn singleton(item: Self::Item) -> Self {
         let focus = Focus::singleton(item);

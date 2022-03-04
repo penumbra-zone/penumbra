@@ -1,4 +1,4 @@
-use crate::{Arboreal, Commitment, GetHash, Hash};
+use crate::{Arboreal, Commitment, GetHash, Hash, Height};
 
 pub struct Leaf<const BASE_HEIGHT: usize> {
     hash: Hash,
@@ -11,11 +11,13 @@ impl<const BASE_HEIGHT: usize> GetHash for Leaf<BASE_HEIGHT> {
     }
 }
 
+impl<const BASE_HEIGHT: usize> Height for Leaf<BASE_HEIGHT> {
+    const HEIGHT: usize = BASE_HEIGHT;
+}
+
 impl<const BASE_HEIGHT: usize> Arboreal for Leaf<BASE_HEIGHT> {
     type Item = Commitment;
     type Carry = Leaf<BASE_HEIGHT>;
-
-    const HEIGHT: usize = BASE_HEIGHT;
 
     #[inline]
     fn singleton(item: Self::Item) -> Self {
