@@ -30,16 +30,6 @@ struct Cache {
     validator_set: BTreeMap<IdentityKey, ValidatorInfo>,
     /// Indicates the current epoch.
     epoch: Epoch,
-    /// Validator definitions added during the block. Since multiple definitions could
-    /// come in for the same validator during a block, we need to deterministically pick
-    /// one definition to use.
-    ///
-    /// If the definition is for an existing validator, this will be pushed to `self.updated_validators`
-    /// during `end_block`.
-    ///
-    /// Otherwise if the definition is for a new validator, this will be pushed to `self.new_validators`
-    /// during `end_block`.
-    validator_definitions: BTreeMap<IdentityKey, Vec<VerifiedValidatorDefinition>>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -59,6 +49,16 @@ pub struct BlockChanges {
     pub tm_validator_updates: Vec<ValidatorUpdate>,
     /// Records any updates to the token supply of some asset that happened in this block.
     pub supply_updates: BTreeMap<asset::Id, (asset::Denom, u64)>,
+    /// Validator definitions added during the block. Since multiple definitions could
+    /// come in for the same validator during a block, we need to deterministically pick
+    /// one definition to use.
+    ///
+    /// If the definition is for an existing validator, this will be pushed to `self.updated_validators`
+    /// during `end_block`.
+    ///
+    /// Otherwise if the definition is for a new validator, this will be pushed to `self.new_validators`
+    /// during `end_block`.
+    pub validator_definitions: BTreeMap<IdentityKey, Vec<VerifiedValidatorDefinition>>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -87,6 +87,8 @@ pub struct ValidatorSet {
     /// Will be reset every time `end_epoch` is called.
     epoch_changes: Option<EpochChanges>,
     /// Cache of validator states.
+    // TODO: use this as a read-only cache, don't write to it
+    // except when fetching validator states during begin_block
     cache: Cache,
     // TODO: make this a parameter? it's only used for chain params
     /// Database reader.
@@ -109,7 +111,6 @@ impl ValidatorSet {
             cache: Cache {
                 validator_set,
                 epoch,
-                validator_definitions: BTreeMap::new(),
             },
             reader,
             block_changes: None,
@@ -138,9 +139,11 @@ impl ValidatorSet {
     // TODO: maybe the begin/end/commit flow should be a trait or something
     pub fn begin_block(&mut self) {
         self.block_changes = Some(Default::default());
+        // TODO: reload the validator cache from the database for the current epoch
     }
 
-    pub fn begin_epoch(&mut self) {
+    pub fn begin_epoch(&mut self, epoch: Epoch) {
+        self.cache.epoch = epoch;
         self.epoch_changes = Some(Default::default());
     }
 
@@ -384,7 +387,13 @@ impl ValidatorSet {
         let mut resolved_validator_definitions: BTreeMap<IdentityKey, VerifiedValidatorDefinition> =
             BTreeMap::new();
         // Any conflicts in validator definitions added to the pending block need to be resolved.
-        for (ik, defs) in self.cache.validator_definitions.iter_mut() {
+        for (ik, defs) in self
+            .block_changes
+            .as_mut()
+            .unwrap()
+            .validator_definitions
+            .iter_mut()
+        {
             // Ensure the definitions are sorted by descending sequence number
             defs.sort_by(|a, b| {
                 b.validator
@@ -612,7 +621,7 @@ impl ValidatorSet {
         assert_eq!(prev_epoch.index + 1, new_epoch.index);
 
         tracing::debug!(?new_epoch, "Advancing epoch");
-        self.set_epoch(new_epoch);
+        self.begin_epoch(new_epoch);
         let current_epoch = new_epoch.clone();
 
         Box::pin(async move {
@@ -621,7 +630,7 @@ impl ValidatorSet {
 
             // We are calculating the rates for the next epoch. For example, if
             // we have just ended epoch 2 and are entering epoch 3, we are calculating the rates
-            // for epoch 3.
+            // for epoch 4.
 
             /// FIXME: set this less arbitrarily, and allow this to be set per-epoch
             /// 3bps -> 11% return over 365 epochs, why not
@@ -837,7 +846,9 @@ impl ValidatorSet {
     pub fn add_validator_definition(&mut self, validator_definition: VerifiedValidatorDefinition) {
         let identity_key = validator_definition.validator.identity_key.clone();
 
-        self.cache
+        self.block_changes
+            .as_mut()
+            .unwrap()
             .validator_definitions
             .entry(identity_key)
             .or_insert_with(Vec::new)
@@ -1035,14 +1046,6 @@ impl ValidatorSet {
             .find(|v| v.1.validator.consensus_key == *ck)
             .ok_or(anyhow::anyhow!("No validator found"))?;
         Ok(&validator.1.validator)
-    }
-
-    // This is used to set the epoch after initializing the ValidatorSet,
-    // as chain parameters aren't yet available at initialization for a new
-    // chain.
-    pub fn set_epoch(&mut self, epoch: Epoch) {
-        self.cache.epoch = epoch;
-        self.begin_epoch();
     }
 
     pub fn epoch(&self) -> Epoch {
