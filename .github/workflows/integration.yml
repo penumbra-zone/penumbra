@@ -1,0 +1,41 @@
+name: integration
+on: [push, pull_request]
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+
+      - name: Install dependencies
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+
+      - name: Check sqlx configuration
+        run: |
+          cargo install sqlx-cli
+          cd pd
+          cargo sqlx database create
+          cargo sqlx migrate run
+          cargo sqlx prepare --check -- --lib
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/penumbra
