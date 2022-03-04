@@ -358,9 +358,6 @@ impl Worker {
         // crossed the epoch boundary, and (prev | current | next) are:
         let prev_epoch = &self.block_validator_set.epoch();
         let current_epoch = prev_epoch.next();
-
-        // Update the epoch used by the validator set
-        self.block_validator_set.set_epoch(current_epoch);
         let next_epoch = current_epoch.next();
 
         tracing::info!(
@@ -395,7 +392,6 @@ impl Worker {
         drop(unbonding_nullifiers);
 
         // Tell the validator set that the epoch is changing so it can prepare to commit.
-        // Let the validator set know about the epoch change
         self.block_validator_set
             .end_epoch(current_epoch.clone())
             .await?;

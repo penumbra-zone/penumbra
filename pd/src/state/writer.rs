@@ -132,11 +132,11 @@ impl Writer {
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
                 validator.identity_key.encode_to_vec(),
                 validator.consensus_key.to_bytes(),
-                validator.sequence_number as i64,
+                i64::try_from(validator.sequence_number)?,
                 validator.name,
                 validator.website,
                 validator.description,
-                power.value() as i64,
+                i64::try_from(power.value())?,
                 ValidatorStateName::Active.to_str().to_string(),
                 Option::<i64>::None,
             )
@@ -319,7 +319,7 @@ impl Writer {
             ON CONFLICT (asset_id) DO UPDATE SET denom=$2, total_supply=$3",
                 &id.to_bytes()[..],
                 asset.0.to_string(),
-                asset.1 as i64
+                i64::try_from(asset.1)?
             )
             .execute(&mut *dbtx)
             .await?;
@@ -339,7 +339,7 @@ impl Writer {
                 &positioned_note.data.ephemeral_key.0[..],
                 &positioned_note.data.encrypted_note[..],
                 &positioned_note.data.transaction_id[..],
-                positioned_note.position as i64,
+                i64::try_from(positioned_note.position)?,
                 // height 0 for genesis
                 0 as i64,
             )
@@ -406,7 +406,7 @@ impl Writer {
 
         query!(
             "INSERT INTO blocks (height, nct_anchor, app_hash) VALUES ($1, $2, $3)",
-            height as i64,
+            i64::try_from(height)?,
             &nct_anchor.to_bytes()[..],
             &app_hash[..]
         )
@@ -459,8 +459,8 @@ impl Writer {
                 &positioned_note.data.ephemeral_key.0[..],
                 &positioned_note.data.encrypted_note[..],
                 &positioned_note.data.transaction_id[..],
-                positioned_note.position as i64,
-                height as i64,
+                i64::try_from(positioned_note.position)?,
+                i64::try_from(height)?,
             )
             .execute(&mut dbtx)
             .await?;
@@ -510,7 +510,7 @@ impl Writer {
                     &data.ephemeral_key.0[..],
                     &data.encrypted_note[..],
                     &data.transaction_id[..],
-                    unbonding_height as i64,
+                    i64::try_from(unbonding_height)?,
                     &validator_identity_key.0.to_bytes()[..],
                 )
                 .execute(&mut dbtx)
@@ -527,7 +527,7 @@ impl Writer {
                     INSERT INTO quarantined_nullifiers (nullifier, unbonding_height, validator_identity_key)
                     VALUES ($1, $2, $3)"#,
                     nullifier_bytes,
-                    unbonding_height as i64,
+                    i64::try_from(unbonding_height)?,
                     &validator_identity_key.0.to_bytes()[..],
                 )
                 .execute(&mut dbtx)
@@ -540,7 +540,7 @@ impl Writer {
             query!(
                 "INSERT INTO nullifiers VALUES ($1, $2)",
                 &<[u8; 32]>::from(nullifier)[..],
-                height as i64,
+                i64::try_from(height)?,
             )
             .execute(&mut dbtx)
             .await?;

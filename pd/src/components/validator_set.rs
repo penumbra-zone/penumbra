@@ -186,11 +186,11 @@ impl ValidatorSet {
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
                 v.validator.identity_key.encode_to_vec(),
                 v.validator.consensus_key.to_bytes(),
-                v.validator.sequence_number as i64,
+                i64::try_from(v.validator.sequence_number)?,
                 v.validator.name,
                 v.validator.website,
                 v.validator.description,
-                v.status.voting_power as i64,
+                i64::try_from(v.status.voting_power)?,
                 ValidatorStateName::Active.to_str().to_string(),
                 Option::<i64>::None,
             )
@@ -608,6 +608,7 @@ impl ValidatorSet {
         drop(chain_params);
 
         let prev_epoch = self.epoch().clone();
+        assert_eq!(prev_epoch.index + 1, new_epoch.index);
         tracing::debug!(?new_epoch, "Advancing epoch");
         self.set_epoch(new_epoch);
 
