@@ -725,7 +725,8 @@ impl ValidatorSet {
                 tracing::debug!(?voting_power);
 
                 // Update the status of the validator within the validator set
-                // with the newly calculated voting power.
+                // with the newly calculated voting rate and power.
+                validator.rate_data = next_rate.clone();
                 validator.status.voting_power = voting_power;
 
                 // Only Active validators produce commission rewards
