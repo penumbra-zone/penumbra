@@ -1,28 +1,44 @@
-pub enum Sparse<T, H> {
-    Pruned { hash: H },
-    Kept { hash: H, value: T },
+mod three;
+use three::{Split, Three};
+
+mod leaf;
+pub use leaf::Leaf;
+
+mod node;
+pub use node::Node;
+
+mod rightmost;
+pub use rightmost::Segment;
+
+pub trait Arboreal
+where
+    Self: Sized,
+{
+    type Item;
+    type Carry;
+
+    const HEIGHT: usize;
+
+    fn singleton(item: Self::Item) -> Self;
+
+    fn insert(self, item: Self::Item) -> Result<Self, (Self::Item, Self::Carry)>;
 }
 
-impl<T, H> Sparse<T, H> {
-    pub fn hash(&self) -> &H {
-        match self {
-            Sparse::Pruned { hash } => hash,
-            Sparse::Kept { hash, .. } => hash,
-        }
+pub trait GetHash {
+    fn hash(&self) -> Hash;
+}
+
+#[derive(Clone, Copy)]
+pub struct Hash;
+
+impl Hash {
+    fn leaf(height: usize, commitment: &Commitment) -> Hash {
+        Hash
+    }
+
+    fn node(height: usize, a: Hash, b: Hash, c: Hash, d: Hash) -> Hash {
+        Hash
     }
 }
 
-pub enum Tree<T, H, const ARITY: usize> {
-    Leaf {
-        value: T,
-    },
-    Node {
-        children: Box<[Sparse<Tree<T, H, ARITY>, H>; ARITY]>,
-    },
-}
-
-pub const NCT_ARITY: usize = 4;
-
-pub struct Hash;
-
-pub type Nct<T> = Sparse<Tree<T, Hash, NCT_ARITY>, Hash>;
+pub struct Commitment;
