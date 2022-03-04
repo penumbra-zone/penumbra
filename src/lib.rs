@@ -44,3 +44,7 @@ impl Hash {
 }
 
 pub struct Commitment;
+
+type X = Segment<Leaf<0>, Leaf<0>>;
+
+const Y: usize = X::HEIGHT;

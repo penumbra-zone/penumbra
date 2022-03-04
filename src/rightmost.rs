@@ -49,8 +49,16 @@ impl<Sibling, Focus: Arboreal> Segment<Sibling, Focus> {
     }
 }
 
-impl<Sibling, Focus: Height> Height for Segment<Sibling, Focus> {
-    const HEIGHT: usize = Focus::HEIGHT + 1;
+impl<Sibling, Focus> Height for Segment<Sibling, Focus>
+where
+    Sibling: Height,
+    Focus: Height,
+{
+    const HEIGHT: usize = if Focus::HEIGHT == Sibling::HEIGHT {
+        Focus::HEIGHT + 1
+    } else {
+        panic!("`Sibling::HEIGHT` does not match `Focus::HEIGHT` in `Segment`: check for improper depth types")
+    };
 }
 
 impl<Sibling, Focus> Arboreal for Segment<Sibling, Focus>
