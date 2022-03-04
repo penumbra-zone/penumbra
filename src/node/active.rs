@@ -1,16 +1,16 @@
-use crate::{Arboreal, GetHash, Hash, Height, Node, Split, Three};
+use crate::{GetHash, Hash, Height, Split, Three};
 
-pub struct Segment<Sibling, Focus> {
+pub struct Active<Sibling, Focus> {
+    focus: Focus,
+    siblings: Three<Sibling>,
     witnessed: bool,
     hash: Hash,
-    siblings: Three<Sibling>,
-    focus: Focus,
 }
 
-impl<Sibling, Focus: Arboreal> Segment<Sibling, Focus> {
-    pub fn from_parts(siblings: Three<Sibling>, focus: Focus) -> Self
+impl<Sibling, Focus> Active<Sibling, Focus> {
+    pub(crate) fn from_parts(siblings: Three<Sibling>, focus: Focus) -> Self
     where
-        Focus: GetHash,
+        Focus: crate::Active + GetHash,
         Sibling: GetHash,
     {
         // Get the four elements of this segment, *in order*, and extract their hashes
@@ -49,7 +49,7 @@ impl<Sibling, Focus: Arboreal> Segment<Sibling, Focus> {
     }
 }
 
-impl<Sibling, Focus> Height for Segment<Sibling, Focus>
+impl<Sibling, Focus> Height for Active<Sibling, Focus>
 where
     Sibling: Height,
     Focus: Height,
@@ -61,13 +61,13 @@ where
     };
 }
 
-impl<Sibling, Focus> Arboreal for Segment<Sibling, Focus>
+impl<Sibling, Focus> crate::Active for Active<Sibling, Focus>
 where
-    Focus: Arboreal<Carry = Sibling> + GetHash,
-    Sibling: Height + GetHash + Default,
+    Focus: crate::Active<Complete = Sibling> + GetHash,
+    Sibling: crate::Complete<Active = Focus> + Height + GetHash + Default,
 {
     type Item = Focus::Item;
-    type Carry = Node<Sibling>;
+    type Complete = super::Complete<Sibling>;
 
     fn singleton(item: Self::Item) -> Self {
         let focus = Focus::singleton(item);
@@ -76,8 +76,8 @@ where
     }
 
     #[inline]
-    fn insert(self, item: Self::Item) -> Result<Self, (Self::Item, Self::Carry)> {
-        let Segment {
+    fn insert(self, item: Self::Item) -> Result<Self, (Self::Item, Self::Complete)> {
+        let Active {
             witnessed,
             focus,
             siblings,
@@ -101,7 +101,7 @@ where
                 // as a carry, to be propagated up above us and added to some ancestor segment's
                 // siblings, along with the item we couldn't insert
                 Err(complete) => {
-                    let node = Node::from_parts_unchecked(
+                    let node = super::Complete::from_parts_unchecked(
                         // We can avoid recomputing this hash because our hash calculation is
                         // carefully designed to hash in the exact same order as the hash
                         // calculation for a node itself

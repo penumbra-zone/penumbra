@@ -5,28 +5,25 @@ mod leaf;
 pub use leaf::Leaf;
 
 mod node;
-pub use node::Node;
 
-mod rightmost;
-pub use rightmost::Segment;
-
-pub trait Height {
+trait Height {
     const HEIGHT: usize;
 }
 
-pub trait Arboreal: Height
-where
-    Self: Sized,
-{
+trait Active: Height + Sized {
     type Item;
-    type Carry;
+    type Complete: Complete<Active = Self>;
 
     fn singleton(item: Self::Item) -> Self;
 
-    fn insert(self, item: Self::Item) -> Result<Self, (Self::Item, Self::Carry)>;
+    fn insert(self, item: Self::Item) -> Result<Self, (Self::Item, Self::Complete)>;
 }
 
-pub trait GetHash {
+trait Complete: Height {
+    type Active: Active<Complete = Self>;
+}
+
+trait GetHash {
     fn hash(&self) -> Hash;
 }
 
@@ -45,6 +42,6 @@ impl Hash {
 
 pub struct Commitment;
 
-type X = Segment<Leaf<0>, Leaf<0>>;
+type X = node::Active<Leaf<0>, Leaf<0>>;
 
 const Y: usize = X::HEIGHT;
