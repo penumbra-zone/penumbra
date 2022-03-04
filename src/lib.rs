@@ -4,7 +4,8 @@ use three::{Split, Three};
 mod leaf;
 pub use leaf::Leaf;
 
-mod node;
+pub mod level;
+pub mod node;
 
 trait Height {
     const HEIGHT: usize;
@@ -17,10 +18,14 @@ trait Active: Height + Sized {
     fn singleton(item: Self::Item) -> Self;
 
     fn insert(self, item: Self::Item) -> Result<Self, (Self::Item, Self::Complete)>;
+
+    fn witness(&mut self);
 }
 
 trait Complete: Height {
     type Active: Active<Complete = Self>;
+
+    fn witnessed(&self) -> bool;
 }
 
 trait GetHash {

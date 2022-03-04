@@ -1,3 +1,3 @@
-pub mod active;
-pub mod complete;
+mod active;
+mod complete;
 pub use {active::Active, complete::Complete};

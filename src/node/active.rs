@@ -69,10 +69,19 @@ where
     type Item = Focus::Item;
     type Complete = super::Complete<Sibling>;
 
+    #[inline]
     fn singleton(item: Self::Item) -> Self {
         let focus = Focus::singleton(item);
         let siblings = Three::new();
         Self::from_parts(siblings, focus)
+    }
+
+    #[inline]
+    fn witness(&mut self) {
+        if !self.witnessed {
+            self.witnessed = true;
+            self.focus.witness();
+        }
     }
 
     #[inline]
@@ -108,7 +117,7 @@ where
                         hash,
                         // If this segment was not marked as witnessed, we know that any
                         // sub-segments are likewise not witnessed, so we can erase the subtree
-                        if witnessed { Some(complete) } else { None },
+                        complete,
                     );
                     Err((item, node))
                 }

@@ -3,6 +3,7 @@ use crate::{Active, Commitment, Complete, GetHash, Hash, Height};
 pub struct Leaf<const BASE_HEIGHT: usize> {
     hash: Hash,
     commitment: Commitment,
+    witnessed: bool,
 }
 
 impl<const BASE_HEIGHT: usize> GetHash for Leaf<BASE_HEIGHT> {
@@ -25,7 +26,13 @@ impl<const BASE_HEIGHT: usize> Active for Leaf<BASE_HEIGHT> {
         Self {
             hash,
             commitment: item,
+            witnessed: false,
         }
+    }
+
+    #[inline]
+    fn witness(&mut self) {
+        self.witnessed = true;
     }
 
     #[inline]
@@ -36,4 +43,8 @@ impl<const BASE_HEIGHT: usize> Active for Leaf<BASE_HEIGHT> {
 
 impl<const BASE_HEIGHT: usize> Complete for Leaf<BASE_HEIGHT> {
     type Active = Leaf<BASE_HEIGHT>;
+
+    fn witnessed(&self) -> bool {
+        self.witnessed
+    }
 }
