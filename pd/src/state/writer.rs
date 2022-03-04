@@ -190,7 +190,7 @@ impl Writer {
         // - insert the note into the database as appropriate (#374) https://github.com/penumbra-zone/penumbra/issues/374
         // - accumulate the value into a supply tracker
         // The blinding factor needs to be unique per genesis note
-        let mut reward_counter = 0;
+        let mut reward_counter: u64 = 0;
         let mut supply_updates: BTreeMap<Id, (Denom, u64)> = BTreeMap::new();
         let mut notes = Vec::new();
         for allocation in &genesis_config.allocations {
@@ -211,7 +211,7 @@ impl Writer {
             let blinding_factor_input = blake2b_simd::Params::default()
                 .personal(b"genesis_note")
                 .to_state()
-                .update(&[reward_counter])
+                .update(&reward_counter.to_le_bytes())
                 .finalize();
             reward_counter += 1;
 
