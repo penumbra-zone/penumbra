@@ -609,17 +609,14 @@ impl ValidatorSet {
 
         let prev_epoch = self.epoch().clone();
         assert_eq!(prev_epoch.index + 1, new_epoch.index);
-        tracing::debug!(?new_epoch, "Advancing epoch");
-        self.set_epoch(new_epoch);
 
         Box::pin(async move {
             tracing::debug!("processing base rate");
-            let current_epoch = self.cache.epoch.clone();
-            let current_base_rate = self.reader.base_rate_data(current_epoch.index).await?;
+            let current_base_rate = self.reader.base_rate_data(prev_epoch.index).await?;
 
-            // We are calculating the rates for the epoch *after the new epoch*. For example, if
+            // We are calculating the rates for the next epoch. For example, if
             // we have just ended epoch 2 and are entering epoch 3, we are calculating the rates
-            // for epoch 4.
+            // for epoch 3.
 
             /// FIXME: set this less arbitrarily, and allow this to be set per-epoch
             /// 3bps -> 11% return over 365 epochs, why not
@@ -674,6 +671,7 @@ impl ValidatorSet {
                 let validator = v.1;
                 let current_rate = validator.rate_data.clone();
                 tracing::debug!(?validator, "processing validator rate updates");
+                assert!(current_rate.epoch_index == prev_epoch.index);
 
                 let funding_streams = self
                     .reader
@@ -685,6 +683,7 @@ impl ValidatorSet {
                     funding_streams.as_ref(),
                     &validator.status.state,
                 );
+                assert!(next_rate.epoch_index == prev_epoch.index + 1);
                 let identity_key = validator.validator.identity_key.clone();
 
                 let delegation_delta = delegation_changes.get(&identity_key).unwrap_or(&0i64);
@@ -744,10 +743,12 @@ impl ValidatorSet {
                 }
 
                 // rename to curr_rate so it lines up with next_rate (same # chars)
+                let delegation_denom = identity_key.delegation_token().denom();
                 tracing::debug!(curr_rate = ?current_rate);
                 tracing::debug!(?next_rate);
                 tracing::debug!(?delegation_delta);
                 tracing::debug!(?delegation_token_supply);
+                tracing::debug!(?delegation_denom);
 
                 next_rates.push(next_rate);
             }
@@ -782,6 +783,9 @@ impl ValidatorSet {
                     *STAKING_TOKEN_ASSET_ID,
                     (STAKING_TOKEN_DENOM.clone(), staking_token_supply),
                 );
+
+            tracing::debug!(?new_epoch, "Advancing epoch");
+            self.set_epoch(new_epoch);
 
             Ok(())
         })
