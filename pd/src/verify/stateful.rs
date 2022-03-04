@@ -1,14 +1,9 @@
-use std::{
-    borrow::Borrow,
-    collections::{BTreeMap, BTreeSet},
-};
+use std::{borrow::Borrow, collections::BTreeMap};
 
 use anyhow::Error;
-use penumbra_crypto::{note, Nullifier};
 use penumbra_stake::{ValidatorInfo, ValidatorState};
-use penumbra_transaction::{Action, Transaction};
 
-use super::{NoteData, PendingTransaction, VerifiedTransaction};
+use super::{PendingTransaction, VerifiedTransaction};
 use crate::state;
 
 impl state::Reader {
@@ -195,38 +190,5 @@ impl state::Reader {
             undelegation_validator: transaction.undelegation.map(|u| u.validator_identity),
             validator_definitions,
         })
-    }
-}
-
-// TODO: replace this with just inserting genesis notes directly
-
-/// One-off function used to mark a genesis transaction as verified.
-pub fn mark_genesis_as_verified(transaction: Transaction) -> VerifiedTransaction {
-    let mut new_notes = BTreeMap::<note::Commitment, NoteData>::new();
-    for action in transaction.transaction_body().actions {
-        match action {
-            Action::Output(inner) => {
-                new_notes.insert(
-                    inner.body.note_commitment,
-                    NoteData {
-                        ephemeral_key: inner.body.ephemeral_key,
-                        encrypted_note: inner.body.encrypted_note,
-                        transaction_id: transaction.id(),
-                    },
-                );
-            }
-            _ => {
-                panic!("genesis transaction only has outputs")
-            }
-        }
-    }
-
-    VerifiedTransaction {
-        id: transaction.id(),
-        new_notes,
-        spent_nullifiers: BTreeSet::<Nullifier>::new(),
-        delegation_changes: BTreeMap::new(),
-        undelegation_validator: None,
-        validator_definitions: vec![],
     }
 }

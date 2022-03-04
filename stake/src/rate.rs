@@ -91,6 +91,7 @@ impl RateData {
             validator_exchange_rate,
         }
     }
+
     /// Computes the amount of delegation tokens corresponding to the given amount of unbonded stake.
     ///
     /// # Warning

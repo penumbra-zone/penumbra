@@ -137,6 +137,7 @@ impl StatelessTransactionExt for Transaction {
 
                     validator_definitions.push(validator);
                 }
+                #[allow(unreachable_patterns)]
                 _ => {
                     return Err(anyhow::anyhow!("unsupported action"));
                 }

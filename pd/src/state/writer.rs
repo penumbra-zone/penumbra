@@ -1,9 +1,18 @@
-use std::{borrow::Borrow, collections::VecDeque};
+use std::collections::{BTreeMap, VecDeque};
 
 use anyhow::Result;
+use ark_ff::PrimeField;
+use decaf377::{Fq, Fr};
 use jmt::TreeWriterAsync;
 use penumbra_chain::params::ChainParams;
-use penumbra_crypto::merkle::{self, TreeExt};
+use penumbra_crypto::asset::{Denom, Id};
+use penumbra_crypto::merkle::Frontier;
+use penumbra_crypto::One;
+use penumbra_crypto::{
+    asset, ka,
+    merkle::{self, NoteCommitmentTree, TreeExt},
+    Note, Value,
+};
 use penumbra_proto::Protobuf;
 use penumbra_stake::{FundingStream, RateDataById, ValidatorStateName};
 use sqlx::{query, Pool, Postgres};
@@ -11,9 +20,10 @@ use tendermint::block;
 use tokio::sync::watch;
 
 use super::jellyfish;
+use crate::verify::PositionedNoteData;
 use crate::{
-    genesis, pending_block::QuarantineGroup, validator_set::ValidatorSet, PendingBlock,
-    NUM_RECENT_ANCHORS,
+    components::validator_set::ValidatorSet, genesis, pending_block::QuarantineGroup,
+    verify::NoteData, PendingBlock, NUM_RECENT_ANCHORS,
 };
 
 #[derive(Debug)]
@@ -33,8 +43,8 @@ pub struct Writer {
 
 impl Writer {
     /// Initializes in-memory caches / notification channels.
-    /// Called by `state::new()` on init.
-    pub(super) async fn init_caches(&self) -> Result<()> {
+    /// Called by `state::new()` on init, and when reloading the state after init_chain
+    pub async fn init_caches(&self) -> Result<()> {
         let chain_params = self
             .private_reader
             .genesis_configuration()
@@ -64,7 +74,11 @@ impl Writer {
     }
 
     /// Commits the genesis config to the database, prior to the first block commit.
-    pub async fn commit_genesis(&self, genesis_config: &genesis::AppState) -> Result<()> {
+    ///
+    /// The database queries here have quite a bit of overlap with the queries in
+    /// commit_block(), but this is because the genesis setup is better treated
+    /// as a simple special case rather than creating a fake pseudo-block.
+    pub async fn commit_genesis(&self, genesis_config: &genesis::AppState) -> Result<Vec<u8>> {
         let mut dbtx = self.pool.begin().await?;
 
         let genesis_bytes = serde_json::to_vec(&genesis_config)?;
@@ -79,6 +93,11 @@ impl Writer {
         )
         .execute(&mut dbtx)
         .await?;
+
+        // TODO(future): rewrite all of this as
+        // ValidatorSet::commit_genesis(...)
+        // ShieldedPool::commit_genesis(...)
+        // and figure out how to pass any required state between those methods
 
         // Delegations require knowing the rates for the next epoch, so
         // pre-populate with 0 reward => exchange rate 1 for the current
@@ -98,7 +117,6 @@ impl Writer {
             .await?;
         }
 
-        let mut next_rate_data = RateDataById::default();
         for genesis::ValidatorPower { validator, power } in &genesis_config.validators {
             query!(
                 "INSERT INTO validators (
@@ -114,11 +132,11 @@ impl Writer {
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
                 validator.identity_key.encode_to_vec(),
                 validator.consensus_key.to_bytes(),
-                validator.sequence_number as i64,
+                i64::try_from(validator.sequence_number)?,
                 validator.name,
                 validator.website,
                 validator.description,
-                power.value() as i64,
+                i64::try_from(power.value())?,
                 ValidatorStateName::Active.to_str().to_string(),
                 Option::<i64>::None,
             )
@@ -161,30 +179,181 @@ impl Writer {
                 .execute(&mut dbtx)
                 .await?;
             }
-
-            next_rate_data.insert(
-                validator.identity_key.clone(),
-                penumbra_stake::RateData {
-                    identity_key: validator.identity_key.clone(),
-                    epoch_index: 1,
-                    validator_reward_rate: 0,
-                    validator_exchange_rate: 1_0000_0000,
-                },
-            );
         }
 
-        let chain_params = genesis_config.chain_params.clone();
-        // Finally, commit the transaction and then update subscribers
-        dbtx.commit().await?;
-        // Sends fail if every receiver has been dropped, which is not our problem.
-        // We wrote these, so push updates to subscribers.
-        let _ = self.chain_params_tx.send(chain_params);
-        let _ = self.next_rate_data_tx.send(next_rate_data);
-        // These haven't been set yet.
-        // let _ = self.height_tx.send(height);
-        // let _ = self.valid_anchors_tx.send(valid_anchors);
+        // build a note commitment tree
+        let mut note_commitment_tree = NoteCommitmentTree::new(0);
 
-        Ok(())
+        // iterate over genesis allocations
+        //
+        // - add the note to the NCT
+        // - insert the note into the database as appropriate (#374) https://github.com/penumbra-zone/penumbra/issues/374
+        // - accumulate the value into a supply tracker
+        // The blinding factor needs to be unique per genesis note
+        let mut reward_counter: u64 = 0;
+        let mut supply_updates: BTreeMap<Id, (Denom, u64)> = BTreeMap::new();
+        let mut notes = Vec::new();
+        for allocation in &genesis_config.allocations {
+            tracing::info!(?allocation, "processing allocation");
+
+            if allocation.amount == 0 {
+                // Skip adding an empty note to the chain.
+                continue;
+            }
+
+            let validator_base_denom = asset::REGISTRY.parse_denom(&allocation.denom).unwrap();
+
+            let val = Value {
+                amount: allocation.amount,
+                asset_id: validator_base_denom.into(),
+            };
+
+            let blinding_factor_input = blake2b_simd::Params::default()
+                .personal(b"genesis_note")
+                .to_state()
+                .update(&reward_counter.to_le_bytes())
+                .finalize();
+            reward_counter += 1;
+
+            let destination = allocation.address;
+            // build the note
+            let note = Note::from_parts(
+                *destination.diversifier(),
+                *destination.transmission_key(),
+                val,
+                Fq::from_le_bytes_mod_order(blinding_factor_input.as_bytes()),
+            )
+            .unwrap();
+            let commitment = note.commit();
+
+            // append the note to the commitment tree
+            note_commitment_tree.append(&commitment);
+
+            tracing::debug!(?note, ?commitment);
+
+            let esk = ka::Secret::new_from_field(Fr::one());
+            let encrypted_note = note.encrypt(&esk);
+
+            let note_data = NoteData {
+                ephemeral_key: esk.diversified_public(&note.diversified_generator()),
+                encrypted_note,
+                // A transaction ID is either a hash of a transaction, or special data.
+                // Special data is encoded with 23 leading 0 bytes, followed by a nonzero code byte,
+                // followed by 8 data bytes.
+                //
+                // Transaction hashes can be confused with special data only if the transaction hash begins with 23 leading 0 bytes; this happens with probability 2^{-184}.
+                //
+                // Genesis transaction IDs use code 0x1.
+                transaction_id: [[0; 23].to_vec(), [1].to_vec(), [0; 8].to_vec()]
+                    .concat()
+                    .try_into()
+                    .unwrap(),
+            };
+
+            let denom = asset::REGISTRY
+                .parse_denom(&allocation.denom)
+                .expect("genesis allocations must have valid denominations");
+
+            // Accumulate the allocation amount into the supply updates for this denom.
+            supply_updates.entry(denom.id()).or_insert((denom, 0)).1 += allocation.amount;
+
+            // Keep track of the note so we can insert that as well for the sake of CompactBlock
+            // it will need the position the note commitment tree
+            let position = note_commitment_tree
+                .bridges()
+                .last()
+                .map(|b| b.frontier().position().into())
+                // If there are no bridges, the tree is empty
+                .unwrap_or(0u64);
+            let positioned_note = PositionedNoteData {
+                position,
+                data: note_data,
+            };
+
+            notes.push((commitment, positioned_note));
+        }
+
+        // We might not have any allocations of some delegation tokens, but we should record the denoms.
+        for genesis::ValidatorPower { validator, .. } in genesis_config.validators.iter() {
+            let denom = validator.identity_key.delegation_token().denom();
+            supply_updates.entry(denom.id()).or_insert((denom, 0)).1 += 0;
+        }
+
+        // update the NCT
+        let nct_anchor = note_commitment_tree.root2();
+        let (jmt_root, tree_update_batch) = jmt::JellyfishMerkleTree::new(&self.private_reader)
+            .put_value_set(
+                // TODO: create a JmtKey enum, where each variant has
+                // a different domain-separated hash
+                vec![(
+                    jellyfish::Key::NoteCommitmentAnchor.hash(),
+                    nct_anchor.clone(),
+                )],
+                // height 0 for genesis
+                0,
+            )
+            .await?;
+        // ... and then write the resulting batch update to the backing store:
+        jellyfish::DbTx(&mut dbtx)
+            .write_node_batch(&tree_update_batch.node_batch)
+            .await?;
+
+        // The app hash needs to be returned to Tendermint
+        let app_hash: [u8; 32] = jmt_root.to_vec().try_into().unwrap();
+
+        // Insert the block into the DB
+        query!(
+            "INSERT INTO blocks (height, nct_anchor, app_hash) VALUES ($1, $2, $3)",
+            0 as i64,
+            &nct_anchor.to_bytes()[..],
+            &app_hash[..]
+        )
+        .execute(&mut dbtx)
+        .await?;
+
+        // write the token supplies to the database
+        for (id, asset) in &supply_updates {
+            query!(
+                "INSERT INTO assets (asset_id, denom, total_supply)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (asset_id) DO UPDATE SET denom=$2, total_supply=$3",
+                &id.to_bytes()[..],
+                asset.0.to_string(),
+                i64::try_from(asset.1)?
+            )
+            .execute(&mut *dbtx)
+            .await?;
+        }
+        for (commitment, positioned_note) in notes {
+            query!(
+                r#"
+                INSERT INTO notes (
+                    note_commitment,
+                    ephemeral_key,
+                    encrypted_note,
+                    transaction_id,
+                    position,
+                    height
+                ) VALUES ($1, $2, $3, $4, $5, $6)"#,
+                &<[u8; 32]>::from(commitment)[..],
+                &positioned_note.data.ephemeral_key.0[..],
+                &positioned_note.data.encrypted_note[..],
+                &positioned_note.data.transaction_id[..],
+                i64::try_from(positioned_note.position)?,
+                // height 0 for genesis
+                0 as i64,
+            )
+            .execute(&mut dbtx)
+            .await?;
+        }
+
+        // Finally, commit the transaction and then update subscribers
+        // We've initialized the database for the first time, so replace
+        // the default values as if we were loading while starting the node.
+        dbtx.commit().await?;
+        self.init_caches().await?;
+
+        Ok(app_hash.to_vec())
     }
 
     /// Commits a block to the state, returning the new app hash.
@@ -208,6 +377,7 @@ impl Writer {
         .execute(&mut dbtx)
         .await?;
 
+        let epoch = block.epoch.unwrap();
         let height = block.height.expect("height must be set");
 
         // The Jellyfish Merkle tree batches writes to its backing store, so we
@@ -236,7 +406,7 @@ impl Writer {
 
         query!(
             "INSERT INTO blocks (height, nct_anchor, app_hash) VALUES ($1, $2, $3)",
-            height as i64,
+            i64::try_from(height)?,
             &nct_anchor.to_bytes()[..],
             &app_hash[..]
         )
@@ -289,8 +459,8 @@ impl Writer {
                 &positioned_note.data.ephemeral_key.0[..],
                 &positioned_note.data.encrypted_note[..],
                 &positioned_note.data.transaction_id[..],
-                positioned_note.position as i64,
-                height as i64,
+                i64::try_from(positioned_note.position)?,
+                i64::try_from(height)?,
             )
             .execute(&mut dbtx)
             .await?;
@@ -340,7 +510,7 @@ impl Writer {
                     &data.ephemeral_key.0[..],
                     &data.encrypted_note[..],
                     &data.transaction_id[..],
-                    unbonding_height as i64,
+                    i64::try_from(unbonding_height)?,
                     &validator_identity_key.0.to_bytes()[..],
                 )
                 .execute(&mut dbtx)
@@ -357,7 +527,7 @@ impl Writer {
                     INSERT INTO quarantined_nullifiers (nullifier, unbonding_height, validator_identity_key)
                     VALUES ($1, $2, $3)"#,
                     nullifier_bytes,
-                    unbonding_height as i64,
+                    i64::try_from(unbonding_height)?,
                     &validator_identity_key.0.to_bytes()[..],
                 )
                 .execute(&mut dbtx)
@@ -370,189 +540,51 @@ impl Writer {
             query!(
                 "INSERT INTO nullifiers VALUES ($1, $2)",
                 &<[u8; 32]>::from(nullifier)[..],
-                height as i64,
+                i64::try_from(height)?,
             )
             .execute(&mut dbtx)
             .await?;
         }
 
-        // Track the net change in delegations in this block.
-        let epoch_index = block.epoch.clone().unwrap().index;
-        for (identity_key, delegation_change) in &block_validator_set.delegation_changes {
-            query!(
-                "INSERT INTO delegation_changes VALUES ($1, $2, $3)",
-                identity_key.encode_to_vec(),
-                epoch_index as i64,
-                delegation_change
-            )
-            .execute(&mut dbtx)
-            .await?;
-        }
+        // Save the validator set for this block to the database.
+        let valid_anchors = &mut self.valid_anchors_tx.borrow().clone();
 
-        // Save any new assets found in the block to the asset registry.
-        for (id, asset) in &block_validator_set.supply_updates {
-            query!(
-                "INSERT INTO assets (asset_id, denom, total_supply)
-                VALUES ($1, $2, $3)
-                ON CONFLICT (asset_id) DO UPDATE SET denom=$2, total_supply=$3",
-                &id.to_bytes()[..],
-                asset.0.to_string(),
-                asset.1 as i64
-            )
-            .execute(&mut dbtx)
-            .await?;
-        }
-
-        if let (Some(base_rate_data), Some(rate_data)) = (
-            block_validator_set.next_base_rate.clone(),
-            block_validator_set.next_rates.clone(),
-        ) {
-            tracing::debug!(?base_rate_data, "Saving next base rate to the database");
-            query!(
-                "INSERT INTO base_rates VALUES ($1, $2, $3) ON CONFLICT ON CONSTRAINT base_rates_pkey DO UPDATE SET base_reward_rate=$2, base_exchange_rate=$3",
-                base_rate_data.epoch_index as i64,
-                base_rate_data.base_reward_rate as i64,
-                base_rate_data.base_exchange_rate as i64,
-            )
-            .execute(&mut dbtx)
-            .await?;
-
-            for rate in rate_data {
-                query!(
-                    "INSERT INTO validator_rates VALUES ($1, $2, $3, $4)",
-                    rate.identity_key.encode_to_vec(),
-                    rate.epoch_index as i64,
-                    rate.validator_reward_rate as i64,
-                    rate.validator_exchange_rate as i64,
-                )
-                .execute(&mut dbtx)
-                .await?;
-            }
-        }
-
-        // Handle adding newly added validators with default rates
-        for v in &block_validator_set.new_validators {
-            query!(
-                "INSERT INTO validators (
-                    identity_key,
-                    consensus_key,
-                    sequence_number,
-                    name,
-                    website,
-                    description,
-                    voting_power,
-                    validator_state,
-                    unbonding_epoch
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
-                v.validator.identity_key.encode_to_vec(),
-                v.validator.consensus_key.to_bytes(),
-                v.validator.sequence_number as i64,
-                v.validator.name,
-                v.validator.website,
-                v.validator.description,
-                v.status.voting_power as i64,
-                ValidatorStateName::Active.to_str().to_string(),
-                Option::<i64>::None,
-            )
-            .execute(&mut dbtx)
-            .await?;
-
-            for FundingStream { address, rate_bps } in v.validator.funding_streams.as_ref() {
-                query!(
-                    "INSERT INTO validator_fundingstreams (
-                        identity_key,
-                        address,
-                        rate_bps
-                    ) VALUES ($1, $2, $3)",
-                    v.validator.identity_key.encode_to_vec(),
-                    address.to_string(),
-                    *rate_bps as i32,
-                )
-                .execute(&mut dbtx)
-                .await?;
-            }
-
-            // Delegations require knowing the rates for the
-            // next epoch, so pre-populate with 0 reward => exchange rate 1 for
-            // the current and next epochs.
-            for epoch in [epoch_index, epoch_index + 1] {
-                query!(
-                    "INSERT INTO validator_rates (
-                    identity_key,
-                    epoch,
-                    validator_reward_rate,
-                    validator_exchange_rate
-                ) VALUES ($1, $2, $3, $4)",
-                    v.validator.identity_key.encode_to_vec(),
-                    epoch as i64,
-                    0,
-                    1_0000_0000i64, // 1 represented as 1e8
-                )
-                .execute(&mut dbtx)
-                .await?;
-            }
-        }
-
-        // Slashed validator states are saved at the end of the block.
-        //
-        // When the validator was slashed their rate was updated to incorporate
-        // the slashing penalty and then their rate will be held constant, so
-        // there is no need to take into account the slashing penalty here.
-        for ik in block_validator_set.slashed_validators() {
-            query!(
-                "UPDATE validators SET validator_state=$1 WHERE identity_key = $2",
-                ValidatorStateName::Slashed.to_str(),
-                ik.borrow().encode_to_vec(),
-            )
-            .execute(&mut dbtx)
-            .await?;
-        }
-
-        // This happens during every end_block. Most modifications to validator status occur
-        // during end_epoch, and others (slashing) occur during begin_block, and both are
-        // applied here.
-        //
-        // TODO: This isn't a differential update. This should be OK but is sub-optimal.
-        for status in &block_validator_set.next_validator_statuses() {
-            let (state_name, unbonding_epoch) = status.state.into();
-            query!(
-                    "UPDATE validators SET voting_power=$1, validator_state=$2, unbonding_epoch=$3 WHERE identity_key = $4",
-                    status.voting_power as i64,
-                    state_name.to_str(),
-                    // unbonding_epoch column will be NULL if unbonding_epoch is None (i.e. the state is not unbonding)
-                    unbonding_epoch.map(|i| i as i64),
-                    status.identity_key.encode_to_vec(),
-                )
-                .execute(&mut dbtx)
-                .await?;
-        }
-
-        let mut valid_anchors = self.valid_anchors_tx.borrow().clone();
+        // move to shielded pool handler
         if valid_anchors.len() >= NUM_RECENT_ANCHORS {
             valid_anchors.pop_back();
         }
-        valid_anchors.push_front(nct_anchor);
-        let next_rate_data = block_validator_set.next_rates.as_ref().map(|next_rates| {
-            next_rates
-                .iter()
-                .map(|rd| (rd.identity_key.clone(), rd.clone()))
-                .collect::<RateDataById>()
-        });
+
+        valid_anchors.push_front(nct_anchor.clone());
+
+        // Next rate data is only available on the last block per epoch.
+        let next_rate_data = match epoch.end_height().value() == height {
+            true => {
+                let epoch_changes = block_validator_set.epoch_changes()?;
+                Some(
+                    epoch_changes
+                        .next_rates
+                        .iter()
+                        .map(|next_rate| (next_rate.identity_key.clone(), next_rate.clone()))
+                        .collect::<RateDataById>(),
+                )
+            }
+            false => None,
+        };
+
+        block_validator_set
+            .commit_block(block.height.unwrap(), &mut dbtx)
+            .await?;
 
         // Finally, commit the transaction and then update subscribers
         dbtx.commit().await?;
 
         // Errors in sends arise only if no one is listening -- not our problem.
         let _ = self.height_tx.send(height.try_into().unwrap());
-        let _ = self.valid_anchors_tx.send(valid_anchors);
+        let _ = self.valid_anchors_tx.send(valid_anchors.clone());
         if let Some(next_rate_data) = next_rate_data {
             let _ = self.next_rate_data_tx.send(next_rate_data);
         }
         // chain_params_tx is a no-op, currently chain params don't change
-
-        block_validator_set
-            .commit_block(block.epoch.unwrap().clone())
-            .await;
 
         Ok(app_hash.to_vec())
     }

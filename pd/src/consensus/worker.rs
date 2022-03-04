@@ -3,8 +3,8 @@ use std::borrow::Borrow;
 use anyhow::{anyhow, Result};
 use futures::StreamExt;
 use metrics::absolute_counter;
-use penumbra_crypto::{asset, merkle::NoteCommitmentTree};
-use penumbra_proto::{light_wallet::light_wallet_server::LightWallet, Protobuf};
+use penumbra_crypto::merkle::NoteCommitmentTree;
+use penumbra_proto::Protobuf;
 use penumbra_stake::Epoch;
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, ConsensusRequest as Request, ConsensusResponse as Response};
@@ -13,7 +13,8 @@ use tracing::Instrument;
 
 use super::Message;
 use crate::{
-    genesis, state, validator_set::ValidatorSet, verify::StatelessTransactionExt, PendingBlock,
+    components::validator_set::ValidatorSet, genesis, state, verify::StatelessTransactionExt,
+    PendingBlock,
 };
 
 pub struct Worker {
@@ -27,20 +28,57 @@ pub struct Worker {
 
 impl Worker {
     pub async fn new(state: state::Writer, queue: mpsc::Receiver<Message>) -> Result<Self> {
-        let note_commitment_tree = state.private_reader().note_commitment_tree().await?;
-        let height = state.private_reader().height().await?;
-        let chain_params = state.private_reader().chain_params_rx().borrow().clone();
-        let epoch_duration = chain_params.epoch_duration;
-        let epoch = Epoch::from_height(height.into(), epoch_duration);
-        let block_validator_set = ValidatorSet::new(state.private_reader().clone(), epoch).await?;
-
-        Ok(Self {
+        // Because we want to be able to handle (re)loading the worker data after writing
+        // the state snapshot in init_chain, we split out the real data loading into a single
+        // Worker::load() method that can be called from both places. Since we need to initialize
+        // the worker, though, fill in some garbage data that we'll immediately overwrite.
+        // A more pedantically correct option would be to make everything Optional, but that
+        // "contaminates" all of the other logic of the application to handle the initialization
+        // special case.
+        let reader = state.private_reader().clone();
+        let mut worker = Self {
             state,
             queue,
             pending_block: None,
-            note_commitment_tree,
-            block_validator_set,
-        })
+            note_commitment_tree: NoteCommitmentTree::new(0),
+            block_validator_set: ValidatorSet::new(
+                reader,
+                Epoch {
+                    index: 0,
+                    duration: 1,
+                },
+            )
+            .await?,
+        };
+        // If the database is still empty, this will still be garbage data, but we'll call
+        // load() again when processing init_chain.
+        worker.load().await?;
+
+        Ok(worker)
+    }
+
+    /// Loads the worker's application data from the state.
+    ///
+    /// This is called in `new`, and also when (re)loading after writing the state snapshot from init_chain.
+    async fn load(&mut self) -> Result<()> {
+        let height = self.state.private_reader().height().await?.into();
+        let epoch_duration = self
+            .state
+            .private_reader()
+            .chain_params_rx()
+            .borrow()
+            .epoch_duration;
+        let epoch = Epoch::from_height(height, epoch_duration);
+
+        self.note_commitment_tree = self.state.private_reader().note_commitment_tree().await?;
+        self.block_validator_set =
+            ValidatorSet::new(self.state.private_reader().clone(), epoch).await?;
+        self.pending_block = None;
+
+        // Now (re)load the caches from the state writer:
+        self.state.init_caches().await?;
+
+        Ok(())
     }
 
     pub async fn run(mut self) -> Result<()> {
@@ -93,6 +131,14 @@ impl Worker {
         Ok(())
     }
 
+    /// Initializes the chain based on the genesis data.
+    ///
+    /// The genesis data is provided by tendermint, and is used to initialize
+    /// the database.
+    ///
+    /// After the database has been initialized, the worker is reinstantiated,
+    /// which will cause it to reload its state from the database, preparing it
+    /// for the first block to begin.
     async fn init_chain(
         &mut self,
         init_chain: abci::request::InitChain,
@@ -103,73 +149,33 @@ impl Worker {
             .expect("can parse app_state in genesis file");
 
         // Initialize the database with the app state.
-        self.state.commit_genesis(&app_state).await?;
+        let app_hash = self.state.commit_genesis(&app_state).await?;
 
-        // Now start building the genesis block:
-        self.note_commitment_tree = NoteCommitmentTree::new(0);
-        let mut genesis_block = PendingBlock::new(self.note_commitment_tree.clone());
-        genesis_block.set_height(0, app_state.chain_params.epoch_duration);
+        // Reload the worker data from the database.
+        self.load().await?;
 
-        // Create a genesis transaction to record genesis notes.
-        // TODO: eliminate this (#374)
-        // replace with methods on pendingblock for genesis notes that handle
-        // supply tracking
-        let mut tx_builder = Transaction::genesis_builder();
-
-        for allocation in &app_state.allocations {
-            tracing::info!(?allocation, "processing allocation");
-
-            tx_builder.add_output(allocation.note().expect("genesis allocations are valid"));
-
-            let denom = asset::REGISTRY
-                .parse_denom(&allocation.denom)
-                .expect("genesis allocations must have valid denominations");
-
-            // Accumulate the allocation amount into the supply updates for this denom.
-            self.block_validator_set
-                .update_supply_for_denom(denom, allocation.amount);
-        }
-
-        // We might not have any allocations of delegation tokens, but we should record the denoms.
-        for genesis::ValidatorPower { validator, .. } in app_state.validators.iter() {
-            let denom = validator.identity_key.delegation_token().denom();
-            self.block_validator_set.update_supply_for_denom(denom, 0);
-        }
-
-        let genesis_tx = tx_builder
-            .set_chain_id(init_chain.chain_id)
-            .finalize()
-            .expect("can form genesis transaction");
-        let verified_transaction = crate::verify::mark_genesis_as_verified(genesis_tx);
-
-        // Now add the transaction and its note fragments to the pending state changes.
-        genesis_block.add_transaction(verified_transaction);
-
-        // Commit the genesis block to the state
-        self.pending_block = Some(genesis_block);
-        let app_hash = self.commit().await?.data;
-
-        // Extract the Tendermint validators from the genesis app state
+        // Extract the Tendermint validators from the app state
         //
         // NOTE: we ignore the validators passed to InitChain.validators, and instead expect them
         // to be provided inside the initial app genesis state (`GenesisAppState`). Returning those
         // validators in InitChain::Response tells Tendermint that they are the initial validator
         // set. See https://docs.tendermint.com/master/spec/abci/abci.html#initchain
-        let validators = app_state
-            .validators
-            .iter()
-            .map(|genesis::ValidatorPower { validator, power }| {
-                tendermint::abci::types::ValidatorUpdate {
-                    pub_key: validator.consensus_key,
-                    power: *power,
-                }
+        let validators = self
+            .block_validator_set
+            .validators_info()
+            .map(|v| {
+                Ok(tendermint::abci::types::ValidatorUpdate {
+                    pub_key: v.borrow().validator.consensus_key,
+                    power: v.borrow().status.voting_power.try_into()?,
+                })
             })
-            .collect();
+            .collect::<Result<Vec<tendermint::abci::types::ValidatorUpdate>>>()
+            .expect("expected genesis state to reload correctly");
 
         Ok(abci::response::InitChain {
             consensus_params: Some(init_chain.consensus_params),
             validators,
-            app_hash,
+            app_hash: app_hash.into(),
         })
     }
 
@@ -185,6 +191,8 @@ impl Worker {
 
         assert!(self.pending_block.is_none());
         self.pending_block = Some(PendingBlock::new(self.note_commitment_tree.clone()));
+
+        self.block_validator_set.begin_block();
 
         let slashing_penalty = self
             .state
@@ -288,8 +296,21 @@ impl Worker {
 
         tracing::debug!(?height, ?epoch, end_height = ?epoch.end_height());
 
+        // Validator updates need to be sent back to Tendermint during end_block, so we need to
+        // tell the validator set the block has ended so it can resolve conflicts and prepare
+        // data to commit.
+        self.block_validator_set.end_block().await?;
+
+        // Retrieve any changes that occurred during the block.
+        let block_changes = self.block_validator_set.block_changes()?;
+
+        // Send the next voting powers back to tendermint. This also
+        // incorporates any newly added validators. Non-Active validators
+        // will have their voting power reported to Tendermint set to 0.
+        let validator_updates = block_changes.tm_validator_updates.clone();
+
         // Find out which validators were slashed in this block
-        let slashed_validators = &self.block_validator_set.slashed_validators;
+        let slashed_validators = &block_changes.slashed_validators;
 
         // Immediately revert notes and nullifiers immediately from slashed validators in this block
         let (mut slashed_notes, mut slashed_nullifiers) = (
@@ -305,20 +326,12 @@ impl Worker {
         drop(slashed_notes);
         drop(slashed_nullifiers);
 
-        // Validator updates need to be sent back to Tendermint during end_block, so we need to
-        // tell the validator set the block has ended so it can resolve conflicts and prepare
-        // data to commit.
-        self.block_validator_set.end_block(epoch.clone()).await?;
-
         // If we are at the end of an epoch, process changes for it
         if epoch.end_height().value() == height {
             self.end_epoch().await?;
         }
 
-        // Send the next voting powers back to tendermint. This also
-        // incorporates any newly added validators. Non-Active validators
-        // will have their voting power reported to Tendermint set to 0.
-        let validator_updates = self.block_validator_set.tm_validator_updates.clone();
+        tracing::debug!(?validator_updates, "setting validator updates");
 
         Ok(abci::response::EndBlock {
             validator_updates,
@@ -329,6 +342,7 @@ impl Worker {
 
     /// Process the state transitions for the end of an epoch.
     async fn end_epoch(&mut self) -> Result<()> {
+        tracing::debug!("consensus: end_epoch");
         let reader = self.state.private_reader();
 
         let pending_block = self
@@ -342,11 +356,7 @@ impl Worker {
 
         // We've finished processing the last block of `epoch`, so we've
         // crossed the epoch boundary, and (prev | current | next) are:
-        let prev_epoch = &self
-            .block_validator_set
-            .epoch
-            .clone()
-            .expect("epoch must already have been set");
+        let prev_epoch = &self.block_validator_set.epoch();
         let current_epoch = prev_epoch.next();
         let next_epoch = current_epoch.next();
 
@@ -382,10 +392,13 @@ impl Worker {
         drop(unbonding_nullifiers);
 
         // Tell the validator set that the epoch is changing so it can prepare to commit.
-        self.block_validator_set.end_epoch().await?;
+        self.block_validator_set
+            .end_epoch(current_epoch.clone())
+            .await?;
 
+        let epoch_changes = self.block_validator_set.epoch_changes()?;
         // Add reward notes to the pending block.
-        for reward_note in &self.block_validator_set.reward_notes {
+        for reward_note in &epoch_changes.reward_notes {
             pending_block.add_validator_reward_note(reward_note.0, reward_note.1);
         }
 
