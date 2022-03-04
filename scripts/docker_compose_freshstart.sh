@@ -35,8 +35,8 @@ docker volume rm penumbra_db_data || true
 # The db container must be running for pd build to succeed
 docker-compose up -d db
 export DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/penumbra
-# sleep 1 second because postgres isn't immediately responsive
-sleep 1
+# sleep because postgres isn't immediately responsive
+sleep 2
 cd pd
 printf "Preparing DB\n"
 cargo sqlx database create
