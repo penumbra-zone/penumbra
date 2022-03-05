@@ -13,42 +13,48 @@ impl<Sibling, Focus> Active<Sibling, Focus> {
         Focus: crate::Active + GetHash,
         Sibling: Height + GetHash,
     {
-        // Get the correct padding hash for this height
-        let padding = Hash::padding();
-
-        // Get the four elements of this segment, *in order*, and extract their hashes
-        let (a, b, c, d) = match siblings.elems() {
-            Elems::_0([]) => {
-                let a = focus.hash();
-                let [b, c, d] = [padding, padding, padding];
-                (a, b, c, d)
-            }
-            Elems::_1(full) => {
-                let [a] = full.map(Sibling::hash);
-                let b = focus.hash();
-                let [c, d] = [padding, padding];
-                (a, b, c, d)
-            }
-            Elems::_2(full) => {
-                let [a, b] = full.map(Sibling::hash);
-                let c = focus.hash();
-                let [d] = [padding];
-                (a, b, c, d)
-            }
-            Elems::_3(full) => {
-                let [a, b, c] = full.map(Sibling::hash);
-                let d = focus.hash();
-                (a, b, c, d)
-            }
-        };
-
-        let hash = Hash::node(Focus::HEIGHT + 1, a, b, c, d);
         Self {
-            hash,
+            hash: hash_active(&siblings, &focus),
             siblings,
             focus,
         }
     }
+}
+
+fn hash_active<Sibling: GetHash, Focus: crate::Active + GetHash>(
+    siblings: &Three<Sibling>,
+    focus: &Focus,
+) -> Hash {
+    // Get the correct padding hash for this height
+    let padding = Hash::padding();
+
+    // Get the four elements of this segment, *in order*, and extract their hashes
+    let (a, b, c, d) = match siblings.elems() {
+        Elems::_0([]) => {
+            let a = focus.hash();
+            let [b, c, d] = [padding, padding, padding];
+            (a, b, c, d)
+        }
+        Elems::_1(full) => {
+            let [a] = full.map(Sibling::hash);
+            let b = focus.hash();
+            let [c, d] = [padding, padding];
+            (a, b, c, d)
+        }
+        Elems::_2(full) => {
+            let [a, b] = full.map(Sibling::hash);
+            let c = focus.hash();
+            let [d] = [padding];
+            (a, b, c, d)
+        }
+        Elems::_3(full) => {
+            let [a, b, c] = full.map(Sibling::hash);
+            let d = focus.hash();
+            (a, b, c, d)
+        }
+    };
+
+    Hash::node(Focus::HEIGHT + 1, a, b, c, d)
 }
 
 impl<Sibling, Focus> Height for Active<Sibling, Focus>
@@ -99,32 +105,21 @@ where
     }
 
     #[inline]
-    fn insert(
-        self,
-        shift_height: Option<usize>,
-        item: Self::Item,
-    ) -> Result<Self, (Self::Item, Self::Complete)> {
+    fn alter(&mut self, f: impl FnOnce(&mut Self::Item)) {
+        self.focus.alter(f);
+        self.hash = hash_active(&self.siblings, &self.focus);
+    }
+
+    #[inline]
+    fn insert(self, item: Self::Item) -> Result<Self, (Self::Item, Self::Complete)> {
         let Active {
             focus,
             siblings,
             hash, // NOTE: ONLY VALID TO RE-USE WHEN CONSTRUCTING A NODE
         } = self;
 
-        // If the shift height indicates we should complete and restart the focus at this height, do so:
-        if shift_height == Some(Self::HEIGHT) {
-            return match siblings.push(focus.complete()) {
-                Ok(siblings) => Ok(Self::from_parts(siblings, Focus::singleton(item))),
-                Err(complete) => {
-                    // This is okay because `complete` is guaranteed to have the same elements in
-                    // the same order as `siblings + [focus]`.
-                    let node = super::Complete::from_parts_unchecked(hash, complete);
-                    Err((item, node))
-                }
-            };
-        }
-
         // Otherwise, insert into the existing focus:
-        match focus.insert(shift_height, item) {
+        match focus.insert(item) {
             // We successfully inserted at the focus, so siblings don't need to be changed
             Ok(focus) => Ok(Self::from_parts(siblings, focus)),
 

@@ -17,11 +17,9 @@ trait Active: Height + Sized {
 
     fn singleton(item: Self::Item) -> Self;
 
-    fn insert(
-        self,
-        shift_height: Option<usize>,
-        item: Self::Item,
-    ) -> Result<Self, (Self::Item, Self::Complete)>;
+    fn insert(self, item: Self::Item) -> Result<Self, (Self::Item, Self::Complete)>;
+
+    fn alter(&mut self, f: impl FnOnce(&mut Self::Item));
 
     fn witness(&mut self);
 
@@ -56,6 +54,17 @@ impl Hash {
 }
 
 pub struct Commitment;
+
+pub struct WithHash<T> {
+    hash: Hash,
+    item: Option<T>,
+}
+
+impl<T> GetHash for WithHash<T> {
+    fn hash(&self) -> Hash {
+        self.hash
+    }
+}
 
 #[cfg(test)]
 mod test {

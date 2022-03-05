@@ -30,7 +30,7 @@ mod test {
 
     use crate::node::{Active as A, Complete as N};
     #[allow(unused)]
-    type L = crate::Leaf<0>;
+    type L = crate::Leaf<crate::WithHash<crate::Commitment>, 0>;
 
     #[test]
     fn test_complete_type() {

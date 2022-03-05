@@ -1,31 +1,30 @@
-use crate::{Active, Commitment, Complete, GetHash, Hash, Height};
+use crate::{Active, Complete, GetHash, Hash, Height};
 
-pub struct Leaf<const BASE_HEIGHT: usize> {
-    hash: Hash,
-    commitment: Commitment,
+// TODO: separate leaves into active and complete
+
+pub struct Leaf<T, const BASE_HEIGHT: usize> {
+    item: T,
     witnessed: bool,
 }
 
-impl<const BASE_HEIGHT: usize> GetHash for Leaf<BASE_HEIGHT> {
+impl<T: GetHash, const BASE_HEIGHT: usize> GetHash for Leaf<T, BASE_HEIGHT> {
     fn hash(&self) -> Hash {
-        self.hash
+        self.item.hash()
     }
 }
 
-impl<const BASE_HEIGHT: usize> Height for Leaf<BASE_HEIGHT> {
+impl<T, const BASE_HEIGHT: usize> Height for Leaf<T, BASE_HEIGHT> {
     const HEIGHT: usize = BASE_HEIGHT;
 }
 
-impl<const BASE_HEIGHT: usize> Active for Leaf<BASE_HEIGHT> {
-    type Item = Commitment;
-    type Complete = Leaf<BASE_HEIGHT>;
+impl<T, const BASE_HEIGHT: usize> Active for Leaf<T, BASE_HEIGHT> {
+    type Item = T;
+    type Complete = Leaf<T, BASE_HEIGHT>;
 
     #[inline]
     fn singleton(item: Self::Item) -> Self {
-        let hash = Hash::leaf(Self::HEIGHT, &item);
         Self {
-            hash,
-            commitment: item,
+            item,
             witnessed: false,
         }
     }
@@ -36,11 +35,12 @@ impl<const BASE_HEIGHT: usize> Active for Leaf<BASE_HEIGHT> {
     }
 
     #[inline]
-    fn insert(
-        self,
-        _shift_height: Option<usize>,
-        item: Self::Item,
-    ) -> Result<Self, (Self::Item, Self::Complete)> {
+    fn alter(&mut self, f: impl FnOnce(&mut Self::Item)) {
+        f(&mut self.item);
+    }
+
+    #[inline]
+    fn insert(self, item: Self::Item) -> Result<Self, (Self::Item, Self::Complete)> {
         Err((item, self))
     }
 
@@ -50,8 +50,8 @@ impl<const BASE_HEIGHT: usize> Active for Leaf<BASE_HEIGHT> {
     }
 }
 
-impl<const BASE_HEIGHT: usize> Complete for Leaf<BASE_HEIGHT> {
-    type Active = Leaf<BASE_HEIGHT>;
+impl<T, const BASE_HEIGHT: usize> Complete for Leaf<T, BASE_HEIGHT> {
+    type Active = Leaf<T, BASE_HEIGHT>;
 
     fn witnessed(&self) -> bool {
         self.witnessed
