@@ -1,6 +1,15 @@
+use crate::{GetHash, Height};
+
 type N<Child> = crate::node::Complete<Child>;
 
-pub struct Complete<L>(
-    // tree depth: 1  2  3  4  5  6  7 [8]
-    complete_type!(N  N  N  N  N  N  N  N  L),
-);
+pub(super) type Inner<L> = complete_type!(N, L: @@@@@@@@);
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Complete<L>(Inner<L>);
+
+impl<L> Height for Complete<L>
+where
+    Inner<L>: Height,
+{
+    const HEIGHT: usize = <Inner<L> as Height>::HEIGHT;
+}

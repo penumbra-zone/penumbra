@@ -7,6 +7,9 @@ edition = "2021"
 
 [dependencies]
 
+[dev-dependencies]
+static_assertions = "1"
+
 [[bin]]
 name = "simulate"
 path = "bin/simulate/main.rs"

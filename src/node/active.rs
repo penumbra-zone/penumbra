@@ -1,5 +1,6 @@
-use crate::{GetHash, Hash, Height, Split, Three};
+use crate::{Elems, GetHash, Hash, Height, Inserted, Three};
 
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Active<Sibling, Focus> {
     focus: Focus,
     siblings: Three<Sibling>,
@@ -11,28 +12,31 @@ impl<Sibling, Focus> Active<Sibling, Focus> {
     pub(crate) fn from_parts(siblings: Three<Sibling>, focus: Focus) -> Self
     where
         Focus: crate::Active + GetHash,
-        Sibling: GetHash,
+        Sibling: Height + GetHash,
     {
+        // Get the correct padding hash for this height
+        let padding = Hash::padding();
+
         // Get the four elements of this segment, *in order*, and extract their hashes
-        let (a, b, c, d) = match siblings.split() {
-            Split::_0([], default) => {
+        let (a, b, c, d) = match siblings.elems() {
+            Elems::_0([]) => {
                 let a = focus.hash();
-                let [b, c, d] = default.map(Sibling::hash);
+                let [b, c, d] = [padding, padding, padding];
                 (a, b, c, d)
             }
-            Split::_1(full, default) => {
+            Elems::_1(full) => {
                 let [a] = full.map(Sibling::hash);
                 let b = focus.hash();
-                let [c, d] = default.map(Sibling::hash);
+                let [c, d] = [padding, padding];
                 (a, b, c, d)
             }
-            Split::_2(full, default) => {
+            Elems::_2(full) => {
                 let [a, b] = full.map(Sibling::hash);
                 let c = focus.hash();
-                let [d] = default.map(Sibling::hash);
+                let [d] = [padding];
                 (a, b, c, d)
             }
-            Split::_3(full, []) => {
+            Elems::_3(full) => {
                 let [a, b, c] = full.map(Sibling::hash);
                 let d = focus.hash();
                 (a, b, c, d)
@@ -61,10 +65,16 @@ where
     };
 }
 
+impl<Sibling, Focus> GetHash for Active<Sibling, Focus> {
+    fn hash(&self) -> Hash {
+        self.hash
+    }
+}
+
 impl<Sibling, Focus> crate::Active for Active<Sibling, Focus>
 where
     Focus: crate::Active<Complete = Sibling> + GetHash,
-    Sibling: crate::Complete<Active = Focus> + Height + GetHash + Default,
+    Sibling: crate::Complete<Active = Focus> + Height + GetHash,
 {
     type Item = Focus::Item;
     type Complete = super::Complete<Sibling>;
@@ -85,7 +95,16 @@ where
     }
 
     #[inline]
-    fn insert(self, item: Self::Item) -> Result<Self, (Self::Item, Self::Complete)> {
+    fn complete(self) -> Self::Complete {
+        super::Complete::from_siblings_and_focus_unchecked(
+            self.hash,
+            self.siblings,
+            self.focus.complete(),
+        )
+    }
+
+    #[inline]
+    fn insert(self, item: Self::Item) -> Inserted<Self> {
         let Active {
             witnessed,
             focus,
@@ -95,16 +114,29 @@ where
 
         match focus.insert(item) {
             // We successfully inserted at the focus, so siblings don't need to be changed
-            Ok(focus) => Ok(Self::from_parts(siblings, focus)),
+            Inserted::Success(focus) => Inserted::Success(Self::from_parts(siblings, focus)),
+
+            // We failed to insert at the focus and we should not carry on to keep inserting at a
+            // new focus, so we propagate the error
+            Inserted::Failure(item, focus) => Inserted::Failure(
+                item,
+                Self {
+                    witnessed,
+                    focus,
+                    siblings,
+                    hash,
+                },
+            ),
 
             // We couldn't insert at the focus because it was full, so we need to move our path
             // rightwards and insert into a newly created focus
-            Err((item, sibling)) => match siblings.push(sibling) {
-                // We had enough room to add another sibling, so we set our focus to a new focus
-                // containing only the item we couldn't previously insert
+            Inserted::Full(item, sibling) => match siblings.push(sibling) {
+                // We were instructed to carry the item to a fresh active focus, and we had enough
+                // room to add another sibling, so we set our focus to a new focus containing only
+                // the item we couldn't previously insert
                 Ok(siblings) => {
                     let focus = Focus::singleton(item);
-                    Ok(Self::from_parts(siblings, focus))
+                    Inserted::Success(Self::from_parts(siblings, focus))
                 }
                 // We didn't have enough room to add another sibling, so we return a complete node
                 // as a carry, to be propagated up above us and added to some ancestor segment's
@@ -119,7 +151,7 @@ where
                         // sub-segments are likewise not witnessed, so we can erase the subtree
                         complete,
                     );
-                    Err((item, node))
+                    Inserted::Full(item, node)
                 }
             },
         }

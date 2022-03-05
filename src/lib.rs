@@ -1,5 +1,5 @@
 mod three;
-use three::{Split, Three};
+use three::{Elems, Three};
 
 mod leaf;
 pub use leaf::Leaf;
@@ -17,9 +17,20 @@ trait Active: Height + Sized {
 
     fn singleton(item: Self::Item) -> Self;
 
-    fn insert(self, item: Self::Item) -> Result<Self, (Self::Item, Self::Complete)>;
+    /// **Important:** If returning [`Inserted::Failure`], the returned `Self` *must be the same* as
+    /// the original input. Violating this will break internal assumptions about the validity of
+    /// hashes, because when a failure occurs, we do not re-hash the returned thing.
+    fn insert(self, item: Self::Item) -> Inserted<Self>;
 
     fn witness(&mut self);
+
+    fn complete(self) -> Self::Complete;
+}
+
+enum Inserted<T: Active> {
+    Success(T),
+    Full(T::Item, T::Complete),
+    Failure(T::Item, T),
 }
 
 trait Complete: Height {
@@ -36,6 +47,10 @@ trait GetHash {
 pub struct Hash;
 
 impl Hash {
+    fn padding() -> Hash {
+        Hash
+    }
+
     fn leaf(height: usize, commitment: &Commitment) -> Hash {
         Hash
     }
@@ -47,6 +62,8 @@ impl Hash {
 
 pub struct Commitment;
 
-type X = node::Active<Leaf<0>, Leaf<0>>;
-
-const Y: usize = X::HEIGHT;
+#[cfg(test)]
+mod test {
+    #[test]
+    fn it_works() {}
+}
