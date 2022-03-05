@@ -1,4 +1,4 @@
-use crate::{GetHash, Height};
+use crate::Height;
 
 type A<Sibling, Focus> = crate::node::Active<Sibling, Focus>;
 type N<Child> = crate::node::Complete<Child>;

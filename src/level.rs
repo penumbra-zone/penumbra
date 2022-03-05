@@ -1,5 +1,3 @@
-use crate::{Active as _, Complete as _};
-
 /// This is used to make it easier to declare the 8-deep nested type of `Complete`.
 macro_rules! complete_type {
     ($node:ident, $leaf:ident :) => {
@@ -34,6 +32,7 @@ mod test {
     };
     #[allow(unused)]
     type F = crate::leaf::Active<Commitment, 0>;
+    #[allow(unused)]
     type L = crate::leaf::Complete<Commitment, 0>;
 
     #[test]
@@ -62,7 +61,7 @@ mod test {
 
 mod active;
 mod complete;
-use {active::Active, complete::Complete};
+pub use {active::Active, complete::Complete};
 
 // #[derive(Debug, Clone, PartialEq, Eq)]
 // enum Inner<L> {

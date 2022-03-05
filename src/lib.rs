@@ -37,6 +37,7 @@ trait GetHash {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Hash;
 
+#[allow(unused)]
 impl Hash {
     fn padding() -> Hash {
         Hash

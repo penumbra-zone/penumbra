@@ -1,4 +1,4 @@
-use crate::{GetHash, Height};
+use crate::Height;
 
 type N<Child> = crate::node::Complete<Child>;
 
