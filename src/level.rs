@@ -28,9 +28,13 @@ macro_rules! active_type {
 mod test {
     use static_assertions::assert_type_eq_all as type_eq;
 
-    use crate::node::{Active as A, Complete as N};
+    use crate::{
+        node::{Active as A, Complete as N},
+        Commitment,
+    };
     #[allow(unused)]
-    type L = crate::Leaf<crate::WithHash<crate::Commitment>, 0>;
+    type F = crate::leaf::Active<Commitment, 0>;
+    type L = crate::leaf::Complete<Commitment, 0>;
 
     #[test]
     fn test_complete_type() {
@@ -46,11 +50,11 @@ mod test {
     fn test_duals() {
         type_eq!(
             <complete_type!(N, L: @@@@@@@@) as crate::Complete>::Active,
-            active_type!(A, N, L, L: @@@@@@@@)
+            active_type!(A, N, L, F: @@@@@@@@)
         );
 
         type_eq!(
-            <active_type!(A, N, L, L: @@@@@@@@) as crate::Active>::Complete,
+            <active_type!(A, N, L, F: @@@@@@@@) as crate::Active>::Complete,
             complete_type!(N, L: @@@@@@@@)
         );
     }

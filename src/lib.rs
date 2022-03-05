@@ -1,9 +1,7 @@
 mod three;
 use three::{Elems, Three};
 
-mod leaf;
-pub use leaf::Leaf;
-
+pub mod leaf;
 pub mod level;
 pub mod node;
 
@@ -55,14 +53,9 @@ impl Hash {
 
 pub struct Commitment;
 
-pub struct WithHash<T> {
-    hash: Hash,
-    item: Option<T>,
-}
-
-impl<T> GetHash for WithHash<T> {
+impl GetHash for Commitment {
     fn hash(&self) -> Hash {
-        self.hash
+        Hash
     }
 }
 
