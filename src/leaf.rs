@@ -1,4 +1,4 @@
-use crate::{Active, Commitment, Complete, GetHash, Hash, Height, Inserted};
+use crate::{Active, Commitment, Complete, GetHash, Hash, Height};
 
 pub struct Leaf<const BASE_HEIGHT: usize> {
     hash: Hash,
@@ -36,8 +36,8 @@ impl<const BASE_HEIGHT: usize> Active for Leaf<BASE_HEIGHT> {
     }
 
     #[inline]
-    fn insert(self, item: Self::Item) -> Inserted<Self> {
-        Inserted::Full(item, self)
+    fn insert(self, item: Self::Item) -> Result<Self, (Self::Item, Self::Complete)> {
+        Err((item, self))
     }
 
     #[inline]

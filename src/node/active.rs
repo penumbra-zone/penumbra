@@ -1,4 +1,4 @@
-use crate::{Elems, GetHash, Hash, Height, Inserted, Three};
+use crate::{Elems, GetHash, Hash, Height, Three};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Active<Sibling, Focus> {
@@ -104,7 +104,7 @@ where
     }
 
     #[inline]
-    fn insert(self, item: Self::Item) -> Inserted<Self> {
+    fn insert(self, item: Self::Item) -> Result<Self, (Self::Item, Self::Complete)> {
         let Active {
             witnessed,
             focus,
@@ -114,29 +114,17 @@ where
 
         match focus.insert(item) {
             // We successfully inserted at the focus, so siblings don't need to be changed
-            Inserted::Success(focus) => Inserted::Success(Self::from_parts(siblings, focus)),
-
-            // We failed to insert at the focus and we should not carry on to keep inserting at a
-            // new focus, so we propagate the error
-            Inserted::Failure(item, focus) => Inserted::Failure(
-                item,
-                Self {
-                    witnessed,
-                    focus,
-                    siblings,
-                    hash,
-                },
-            ),
+            Ok(focus) => Ok(Self::from_parts(siblings, focus)),
 
             // We couldn't insert at the focus because it was full, so we need to move our path
             // rightwards and insert into a newly created focus
-            Inserted::Full(item, sibling) => match siblings.push(sibling) {
+            Err((item, sibling)) => match siblings.push(sibling) {
                 // We were instructed to carry the item to a fresh active focus, and we had enough
                 // room to add another sibling, so we set our focus to a new focus containing only
                 // the item we couldn't previously insert
                 Ok(siblings) => {
                     let focus = Focus::singleton(item);
-                    Inserted::Success(Self::from_parts(siblings, focus))
+                    Ok(Self::from_parts(siblings, focus))
                 }
                 // We didn't have enough room to add another sibling, so we return a complete node
                 // as a carry, to be propagated up above us and added to some ancestor segment's
@@ -151,7 +139,7 @@ where
                         // sub-segments are likewise not witnessed, so we can erase the subtree
                         complete,
                     );
-                    Inserted::Full(item, node)
+                    Err((item, node))
                 }
             },
         }

@@ -17,20 +17,11 @@ trait Active: Height + Sized {
 
     fn singleton(item: Self::Item) -> Self;
 
-    /// **Important:** If returning [`Inserted::Failure`], the returned `Self` *must be the same* as
-    /// the original input. Violating this will break internal assumptions about the validity of
-    /// hashes, because when a failure occurs, we do not re-hash the returned thing.
-    fn insert(self, item: Self::Item) -> Inserted<Self>;
+    fn insert(self, item: Self::Item) -> Result<Self, (Self::Item, Self::Complete)>;
 
     fn witness(&mut self);
 
     fn complete(self) -> Self::Complete;
-}
-
-enum Inserted<T: Active> {
-    Success(T),
-    Full(T::Item, T::Complete),
-    Failure(T::Item, T),
 }
 
 trait Complete: Height {
