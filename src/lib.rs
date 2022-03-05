@@ -17,7 +17,11 @@ trait Active: Height + Sized {
 
     fn singleton(item: Self::Item) -> Self;
 
-    fn insert(self, item: Self::Item) -> Result<Self, (Self::Item, Self::Complete)>;
+    fn insert(
+        self,
+        shift_height: Option<usize>,
+        item: Self::Item,
+    ) -> Result<Self, (Self::Item, Self::Complete)>;
 
     fn witness(&mut self);
 

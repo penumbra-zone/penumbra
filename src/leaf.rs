@@ -36,7 +36,11 @@ impl<const BASE_HEIGHT: usize> Active for Leaf<BASE_HEIGHT> {
     }
 
     #[inline]
-    fn insert(self, item: Self::Item) -> Result<Self, (Self::Item, Self::Complete)> {
+    fn insert(
+        self,
+        _shift_height: Option<usize>,
+        item: Self::Item,
+    ) -> Result<Self, (Self::Item, Self::Complete)> {
         Err((item, self))
     }
 

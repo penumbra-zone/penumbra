@@ -104,15 +104,33 @@ where
     }
 
     #[inline]
-    fn insert(self, item: Self::Item) -> Result<Self, (Self::Item, Self::Complete)> {
+    fn insert(
+        self,
+        shift_height: Option<usize>,
+        item: Self::Item,
+    ) -> Result<Self, (Self::Item, Self::Complete)> {
         let Active {
-            witnessed,
             focus,
             siblings,
             hash, // NOTE: ONLY VALID TO RE-USE WHEN CONSTRUCTING A NODE
+            ..
         } = self;
 
-        match focus.insert(item) {
+        // If the shift height indicates we should complete and restart the focus at this height, do so:
+        if shift_height == Some(Self::HEIGHT) {
+            return match siblings.push(focus.complete()) {
+                Ok(siblings) => Ok(Self::from_parts(siblings, Focus::singleton(item))),
+                Err(complete) => {
+                    // This is okay because `complete` is guaranteed to have the same elements in
+                    // the same order as `siblings + [focus]`.
+                    let node = super::Complete::from_parts_unchecked(hash, complete);
+                    Err((item, node))
+                }
+            };
+        }
+
+        // Otherwise, insert into the existing focus:
+        match focus.insert(shift_height, item) {
             // We successfully inserted at the focus, so siblings don't need to be changed
             Ok(focus) => Ok(Self::from_parts(siblings, focus)),
 
@@ -130,15 +148,9 @@ where
                 // as a carry, to be propagated up above us and added to some ancestor segment's
                 // siblings, along with the item we couldn't insert
                 Err(complete) => {
-                    let node = super::Complete::from_parts_unchecked(
-                        // We can avoid recomputing this hash because our hash calculation is
-                        // carefully designed to hash in the exact same order as the hash
-                        // calculation for a node itself
-                        hash,
-                        // If this segment was not marked as witnessed, we know that any
-                        // sub-segments are likewise not witnessed, so we can erase the subtree
-                        complete,
-                    );
+                    // This is okay because `complete` is guaranteed to have the same elements in
+                    // the same order as `siblings + [focus]`.
+                    let node = super::Complete::from_parts_unchecked(hash, complete);
                     Err((item, node))
                 }
             },
