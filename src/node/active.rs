@@ -4,7 +4,6 @@ use crate::{Elems, GetHash, Hash, Height, Three};
 pub struct Active<Sibling, Focus> {
     focus: Focus,
     siblings: Three<Sibling>,
-    witnessed: bool,
     hash: Hash,
 }
 
@@ -45,7 +44,6 @@ impl<Sibling, Focus> Active<Sibling, Focus> {
 
         let hash = Hash::node(Focus::HEIGHT + 1, a, b, c, d);
         Self {
-            witnessed: false,
             hash,
             siblings,
             focus,
@@ -88,10 +86,7 @@ where
 
     #[inline]
     fn witness(&mut self) {
-        if !self.witnessed {
-            self.witnessed = true;
-            self.focus.witness();
-        }
+        self.focus.witness();
     }
 
     #[inline]
@@ -113,7 +108,6 @@ where
             focus,
             siblings,
             hash, // NOTE: ONLY VALID TO RE-USE WHEN CONSTRUCTING A NODE
-            ..
         } = self;
 
         // If the shift height indicates we should complete and restart the focus at this height, do so:
