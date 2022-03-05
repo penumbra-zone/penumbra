@@ -8,9 +8,9 @@ pub(super) type Inner<Complete, Focus> = active_type!(A, N, Complete, Focus: @@@
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Active<Complete, Focus>(Inner<Complete, Focus>);
 
-impl<Sibling, Focus> Height for Active<Sibling, Focus>
+impl<Complete, Focus> Height for Active<Complete, Focus>
 where
-    Inner<Sibling, Focus>: Height,
+    Inner<Complete, Focus>: Height,
 {
-    const HEIGHT: usize = <Inner<Sibling, Focus> as Height>::HEIGHT;
+    const HEIGHT: usize = <Inner<Complete, Focus> as Height>::HEIGHT;
 }
