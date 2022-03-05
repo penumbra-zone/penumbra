@@ -42,7 +42,7 @@ mod test {
 
     #[test]
     fn test_active_type() {
-        type_eq!(active_type!(A, N, L, L: @@), A<N<L>, A<L, L>>);
+        type_eq!(active_type!(A, N, L, F: @@), A<N<L>, A<L, F>>);
     }
 
     #[test]
