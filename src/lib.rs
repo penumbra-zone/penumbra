@@ -9,7 +9,7 @@ trait Height {
     const HEIGHT: usize;
 }
 
-trait Active: Height + Sized {
+trait Active: Height + GetHash + Sized {
     type Item;
     type Complete: Complete<Active = Self>;
 
@@ -24,7 +24,7 @@ trait Active: Height + Sized {
     fn complete(self) -> Self::Complete;
 }
 
-trait Complete: Height {
+trait Complete: Height + GetHash {
     type Active: Active<Complete = Self>;
 
     fn witnessed(&self) -> bool;

@@ -63,7 +63,7 @@ where
     Child: crate::Complete + GetHash,
     Child::Active: GetHash,
 {
-    type Active = super::Active<Child, Child::Active>;
+    type Active = super::Active<Child::Active>;
 
     #[inline]
     fn witnessed(&self) -> bool {

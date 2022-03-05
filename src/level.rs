@@ -10,14 +10,11 @@ macro_rules! complete_type {
 
 /// This is used to make it easier to declare the 8-deep, 8-wide nested type of `Active`.
 macro_rules! active_type {
-    ($active:ident, $node:ident, $complete_leaf:ident, $active_leaf:ident :) => {
+    ($active:ident, $active_leaf:ident :) => {
 	$active_leaf
     };
-    ($active:ident, $node:ident, $complete_leaf:ident, $active_leaf:ident : @ $($rest:tt)*) => {
-	$active<
-	    complete_type!($node, $complete_leaf : $($rest)*),
-	    active_type!($active, $node, $complete_leaf, $active_leaf : $($rest)*)
-	>
+    ($active:ident, $active_leaf:ident : @ $($rest:tt)*) => {
+	$active<active_type!($active, $active_leaf : $($rest)*)>
     };
 }
 
@@ -42,18 +39,18 @@ mod test {
 
     #[test]
     fn test_active_type() {
-        type_eq!(active_type!(A, N, L, F: @@), A<N<L>, A<L, F>>);
+        type_eq!(active_type!(A, F: @@), A<N<L>, A<L, F>>);
     }
 
     #[test]
     fn test_duals() {
         type_eq!(
             <complete_type!(N, L: @@@@@@@@) as crate::Complete>::Active,
-            active_type!(A, N, L, F: @@@@@@@@)
+            active_type!(A, F: @@@@@@@@)
         );
 
         type_eq!(
-            <active_type!(A, N, L, F: @@@@@@@@) as crate::Active>::Complete,
+            <active_type!(A, F: @@@@@@@@) as crate::Active>::Complete,
             complete_type!(N, L: @@@@@@@@)
         );
     }
@@ -61,7 +58,7 @@ mod test {
 
 mod active;
 mod complete;
-pub use {active::Active, complete::Complete};
+pub(crate) use {active::Active, complete::Complete};
 
 // #[derive(Debug, Clone, PartialEq, Eq)]
 // enum Inner<L> {

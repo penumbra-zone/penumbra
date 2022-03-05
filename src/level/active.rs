@@ -1,16 +1,15 @@
 use crate::Height;
 
-type A<Sibling, Focus> = crate::node::Active<Sibling, Focus>;
-type N<Child> = crate::node::Complete<Child>;
+type A<Focus> = crate::node::Active<Focus>;
 
-pub(super) type Inner<Complete, Focus> = active_type!(A, N, Complete, Focus: @@@@@@@@);
+pub(super) type Inner<Focus> = active_type!(A, Focus: @@@@@@@@);
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Active<Complete, Focus>(Inner<Complete, Focus>);
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Active<Focus>(Inner<Focus>);
 
-impl<Complete, Focus> Height for Active<Complete, Focus>
+impl<Focus> Height for Active<Focus>
 where
-    Inner<Complete, Focus>: Height,
+    Inner<Focus>: crate::Height,
 {
-    const HEIGHT: usize = <Inner<Complete, Focus> as Height>::HEIGHT;
+    const HEIGHT: usize = <Inner<Focus> as Height>::HEIGHT;
 }

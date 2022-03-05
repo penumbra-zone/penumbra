@@ -1,17 +1,16 @@
 use crate::{Elems, GetHash, Hash, Height, Three};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Active<Sibling, Focus> {
+pub struct Active<Focus: crate::Active> {
     focus: Focus,
-    siblings: Three<Sibling>,
+    siblings: Three<Focus::Complete>,
     hash: Hash,
 }
 
-impl<Sibling, Focus> Active<Sibling, Focus> {
-    pub(crate) fn from_parts(siblings: Three<Sibling>, focus: Focus) -> Self
+impl<Focus: crate::Active> Active<Focus> {
+    pub(crate) fn from_parts(siblings: Three<Focus::Complete>, focus: Focus) -> Self
     where
         Focus: crate::Active + GetHash,
-        Sibling: Height + GetHash,
     {
         Self {
             hash: hash_active(&siblings, &focus),
@@ -57,31 +56,29 @@ fn hash_active<Sibling: GetHash, Focus: crate::Active + GetHash>(
     Hash::node(Focus::HEIGHT + 1, a, b, c, d)
 }
 
-impl<Sibling, Focus> Height for Active<Sibling, Focus>
+impl<Focus: crate::Active> Height for Active<Focus>
 where
-    Sibling: Height,
     Focus: Height,
 {
-    const HEIGHT: usize = if Focus::HEIGHT == Sibling::HEIGHT {
+    const HEIGHT: usize = if Focus::HEIGHT == <Focus as crate::Active>::Complete::HEIGHT {
         Focus::HEIGHT + 1
     } else {
         panic!("`Sibling::HEIGHT` does not match `Focus::HEIGHT` in `Segment`: check for improper depth types")
     };
 }
 
-impl<Sibling, Focus> GetHash for Active<Sibling, Focus> {
+impl<Focus: crate::Active> GetHash for Active<Focus> {
     fn hash(&self) -> Hash {
         self.hash
     }
 }
 
-impl<Sibling, Focus> crate::Active for Active<Sibling, Focus>
+impl<Focus> crate::Active for Active<Focus>
 where
-    Focus: crate::Active<Complete = Sibling> + GetHash,
-    Sibling: crate::Complete<Active = Focus> + Height + GetHash,
+    Focus: crate::Active + GetHash,
 {
     type Item = Focus::Item;
-    type Complete = super::Complete<Sibling>;
+    type Complete = super::Complete<Focus::Complete>;
 
     #[inline]
     fn singleton(item: Self::Item) -> Self {
@@ -118,7 +115,6 @@ where
             hash, // NOTE: ONLY VALID TO RE-USE WHEN CONSTRUCTING A NODE
         } = self;
 
-        // Otherwise, insert into the existing focus:
         match focus.insert(item) {
             // We successfully inserted at the focus, so siblings don't need to be changed
             Ok(focus) => Ok(Self::from_parts(siblings, focus)),
@@ -126,9 +122,8 @@ where
             // We couldn't insert at the focus because it was full, so we need to move our path
             // rightwards and insert into a newly created focus
             Err((item, sibling)) => match siblings.push(sibling) {
-                // We were instructed to carry the item to a fresh active focus, and we had enough
-                // room to add another sibling, so we set our focus to a new focus containing only
-                // the item we couldn't previously insert
+                // We had enough room to add another sibling, so we set our focus to a new focus
+                // containing only the item we couldn't previously insert
                 Ok(siblings) => {
                     let focus = Focus::singleton(item);
                     Ok(Self::from_parts(siblings, focus))
