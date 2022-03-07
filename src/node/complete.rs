@@ -1,6 +1,6 @@
 use crate::{
     three::{IntoElems, Three},
-    GetHash, Hash, Height,
+    GetHash, Hash, HashOr, Height,
 };
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -16,18 +16,16 @@ impl<Child> Complete<Child> {
     }
 
     pub(super) fn from_siblings_and_focus_or_else_hash(
-        siblings: Three<Result<Child, Hash>>,
-        focus: Result<Child, Hash>,
-    ) -> Result<Self, Hash>
+        siblings: Three<HashOr<Child>>,
+        focus: HashOr<Child>,
+    ) -> HashOr<Self>
     where
         Child: crate::Complete,
     {
         todo!("construct `Complete` from siblings and focus")
     }
 
-    pub(super) fn from_children_or_else_hash(
-        children: [Result<Child, Hash>; 4],
-    ) -> Result<Self, Hash>
+    pub(super) fn from_children_or_else_hash(children: [HashOr<Child>; 4]) -> HashOr<Self>
     where
         Child: crate::Complete + GetHash + Height,
     {

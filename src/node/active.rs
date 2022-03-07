@@ -1,17 +1,17 @@
 use std::cell::Cell;
 
-use crate::{Elems, GetHash, Hash, Height, Three};
+use crate::{Elems, Full, GetHash, Hash, HashOr, Height, Three};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub(crate) struct Active<Focus: crate::Active> {
     focus: Focus,
-    siblings: Three<Result<Focus::Complete, Hash>>,
+    siblings: Three<HashOr<Focus::Complete>>,
     // TODO: replace this with space-saving `Cell<OptionHash>`?
     hash: Cell<Option<Hash>>,
 }
 
 impl<Focus: crate::Active> Active<Focus> {
-    pub(crate) fn from_parts(siblings: Three<Result<Focus::Complete, Hash>>, focus: Focus) -> Self
+    pub(crate) fn from_parts(siblings: Three<HashOr<Focus::Complete>>, focus: Focus) -> Self
     where
         Focus: crate::Active + GetHash,
     {
@@ -24,7 +24,7 @@ impl<Focus: crate::Active> Active<Focus> {
 }
 
 fn hash_active<Focus: crate::Active + GetHash>(
-    siblings: &Three<Result<Focus::Complete, Hash>>,
+    siblings: &Three<HashOr<Focus::Complete>>,
     focus: &Focus,
 ) -> Hash {
     // Get the correct padding hash for this height
@@ -32,12 +32,10 @@ fn hash_active<Focus: crate::Active + GetHash>(
 
     // Get the hashes of all the `Result<T, Hash>` in the array, hashing `T` as necessary
     #[inline]
-    fn hashes_of_all<T: GetHash, const N: usize>(full: [&Result<T, Hash>; N]) -> [Hash; N] {
-        full.map(|result| {
-            result
-                .as_ref()
-                .map(|complete| complete.hash())
-                .unwrap_or_else(|hash| *hash)
+    fn hashes_of_all<T: GetHash, const N: usize>(full: [&HashOr<T>; N]) -> [Hash; N] {
+        full.map(|hash_or_t| match hash_or_t {
+            HashOr::Hash(hash) => *hash,
+            HashOr::Item(t) => t.hash(),
         })
     }
 
@@ -102,33 +100,39 @@ where
     type Complete = super::Complete<Focus::Complete>;
 
     #[inline]
-    fn singleton(item: Self::Item) -> Self {
+    fn singleton(item: HashOr<Self::Item>) -> Self {
         let focus = Focus::singleton(item);
         let siblings = Three::new();
         Self::from_parts(siblings, focus)
     }
 
     #[inline]
-    fn complete(self) -> Result<Self::Complete, Hash> {
+    fn complete(self) -> HashOr<Self::Complete> {
         super::Complete::from_siblings_and_focus_or_else_hash(self.siblings, self.focus.complete())
     }
 
     #[inline]
     fn alter<T>(&mut self, f: impl FnOnce(&mut Self::Item) -> T) -> Option<T> {
         let result = self.focus.alter(f);
-        self.hash.set(None); // the hash could have changed, so clear the cache
+        if result.is_some() {
+            // If the function was run, clear the cached hash, because it could now be invalid
+            self.hash.set(None);
+        }
         result
     }
 
     #[inline]
-    fn insert(self, item: Self::Item) -> Result<Self, (Self::Item, Result<Self::Complete, Hash>)> {
+    fn insert(self, item: HashOr<Self::Item>) -> Result<Self, Full<Self::Item, Self::Complete>> {
         match self.focus.insert(item) {
             // We successfully inserted at the focus, so siblings don't need to be changed
             Ok(focus) => Ok(Self::from_parts(self.siblings, focus)),
 
             // We couldn't insert at the focus because it was full, so we need to move our path
             // rightwards and insert into a newly created focus
-            Err((item, sibling)) => match self.siblings.push(sibling) {
+            Err(Full {
+                item,
+                complete: sibling,
+            }) => match self.siblings.push(sibling) {
                 // We had enough room to add another sibling, so we set our focus to a new focus
                 // containing only the item we couldn't previously insert
                 Ok(siblings) => Ok(Self::from_parts(siblings, Focus::singleton(item))),
@@ -137,21 +141,24 @@ where
                 // as a carry, to be propagated up above us and added to some ancestor segment's
                 // siblings, along with the item we couldn't insert
                 Err(complete) => {
-                    Err((
+                    Err(Full {
                         item,
                         // Implicitly, we only hash the children together when we're pruning them
                         // (because otherwise we would lose that informtion); if at least one child
                         // and its sibling hashes/subtrees is preserved in a `Complete` node, then
                         // we defer calculating the node hash until looking up an authentication path
-                        super::Complete::from_children_or_else_hash(complete).map(|node| {
-                            if let Some(hash) = self.hash.get() {
-                                // This is okay because `complete` is guaranteed to have the same elements in
-                                // the same order as `siblings + [focus]`:
-                                node.set_hash_unchecked(hash)
+                        complete: match super::Complete::from_children_or_else_hash(complete) {
+                            HashOr::Hash(hash) => HashOr::Hash(hash),
+                            HashOr::Item(node) => {
+                                if let Some(hash) = self.hash.get() {
+                                    // This is okay because `complete` is guaranteed to have the same elements in
+                                    // the same order as `siblings + [focus]`:
+                                    node.set_hash_unchecked(hash)
+                                }
+                                HashOr::Item(node)
                             }
-                            node
-                        }),
-                    ))
+                        },
+                    })
                 }
             },
         }
