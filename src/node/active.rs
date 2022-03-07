@@ -122,25 +122,17 @@ where
 
     #[inline]
     fn insert(self, item: Self::Item) -> Result<Self, (Self::Item, Result<Self::Complete, Hash>)> {
-        let Active {
-            focus,
-            siblings,
-            hash, // NOTE: ONLY VALID TO RE-USE WHEN CONSTRUCTING A NODE
-        } = self;
-
-        match focus.insert(item) {
+        match self.focus.insert(item) {
             // We successfully inserted at the focus, so siblings don't need to be changed
-            Ok(focus) => Ok(Self::from_parts(siblings, focus)),
+            Ok(focus) => Ok(Self::from_parts(self.siblings, focus)),
 
             // We couldn't insert at the focus because it was full, so we need to move our path
             // rightwards and insert into a newly created focus
-            Err((item, sibling)) => match siblings.push(sibling) {
+            Err((item, sibling)) => match self.siblings.push(sibling) {
                 // We had enough room to add another sibling, so we set our focus to a new focus
                 // containing only the item we couldn't previously insert
-                Ok(siblings) => {
-                    let focus = Focus::singleton(item);
-                    Ok(Self::from_parts(siblings, focus))
-                }
+                Ok(siblings) => Ok(Self::from_parts(siblings, Focus::singleton(item))),
+
                 // We didn't have enough room to add another sibling, so we return a complete node
                 // as a carry, to be propagated up above us and added to some ancestor segment's
                 // siblings, along with the item we couldn't insert
@@ -152,7 +144,7 @@ where
                         // and its sibling hashes/subtrees is preserved in a `Complete` node, then
                         // we defer calculating the node hash until looking up an authentication path
                         super::Complete::from_children_or_else_hash(complete).map(|node| {
-                            if let Some(hash) = hash.get() {
+                            if let Some(hash) = self.hash.get() {
                                 // This is okay because `complete` is guaranteed to have the same elements in
                                 // the same order as `siblings + [focus]`:
                                 node.set_hash_unchecked(hash)
