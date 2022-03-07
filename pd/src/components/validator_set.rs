@@ -35,30 +35,20 @@ struct Cache {
 #[derive(Debug, Clone, Default)]
 pub struct BlockChanges {
     /// New validators added during the block. Saved and available for staking when the block is committed.
-    pub new_validators: Vec<ValidatorInfo>,
+    pub new_validators: BTreeMap<IdentityKey, Vec<VerifiedValidatorDefinition>>,
     /// Existing validators updated during the block. Saved when the block is committed.
-    pub updated_validators: Vec<ValidatorInfo>,
+    pub updated_validators: Vec<VerifiedValidatorDefinition>,
     /// Validators slashed during this block. Saved when the block is committed.
     ///
     /// The validator's rate will have a slashing penalty immediately applied during the current epoch.
     /// Their future rates will be held constant.
-    pub slashed_validators: Vec<IdentityKey>,
+    pub slashed_validators: Vec<(IdentityKey, u64)>,
     /// The net delegations performed in this block per validator.
     pub delegation_changes: BTreeMap<IdentityKey, i64>,
     /// The list of updated validator identity keys and powers to send to Tendermint during `end_block`.
     pub tm_validator_updates: Vec<ValidatorUpdate>,
     /// Records any updates to the token supply of some asset that happened in this block.
     pub supply_updates: BTreeMap<asset::Id, (asset::Denom, u64)>,
-    /// Validator definitions added during the block. Since multiple definitions could
-    /// come in for the same validator during a block, we need to deterministically pick
-    /// one definition to use.
-    ///
-    /// If the definition is for an existing validator, this will be pushed to `self.updated_validators`
-    /// during `end_block`.
-    ///
-    /// Otherwise if the definition is for a new validator, this will be pushed to `self.new_validators`
-    /// during `end_block`.
-    pub validator_definitions: BTreeMap<IdentityKey, Vec<VerifiedValidatorDefinition>>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -173,8 +163,24 @@ impl ValidatorSet {
             .await?;
         }
 
+        // Queue redefinitions of existing validators to be processed at the epoch boundary
+        for v in &block_changes.updated_validators {
+            query!(
+                "INSERT INTO pending_validator_redefinitions (definition) VALUES ($1)",
+                v.encode_to_vec()
+            )
+            .execute(&mut *dbtx)
+            .await?;
+        }
+
         // Handle adding newly added validators with default rates
-        for v in &block_changes.new_validators {
+        for (ik, defs) in &block_changes.new_validators {
+            // Sort the validator definitions by sequence number + tiebreaker,
+            // in case there are conflicts.
+            let mut defs = defs.clone();
+            defs.sort();
+            let v = defs.pop().expect("new_validators has no empty lists");
+
             query!(
                 "INSERT INTO validators (
                     identity_key,
@@ -193,8 +199,10 @@ impl ValidatorSet {
                 v.validator.name,
                 v.validator.website,
                 v.validator.description,
-                i64::try_from(v.status.voting_power)?,
-                ValidatorStateName::Active.to_str().to_string(),
+                // New validators have initial voting power of 0
+                0,
+                // New validators start in Inactive state
+                ValidatorStateName::Inactive.to_str().to_string(),
                 Option::<i64>::None,
             )
             .execute(&mut *dbtx)
@@ -241,11 +249,27 @@ impl ValidatorSet {
         // When the validator was slashed their rate was updated to incorporate
         // the slashing penalty and then their rate will be held constant, so
         // there is no need to take into account the slashing penalty here.
-        for ik in self.slashed_validators() {
+        for (ik, slashing_penalty) in &block_changes.slashed_validators {
+            let slashed_rate = self
+                .cache
+                .validator_set
+                .get(&ik)
+                .expect("slashed validator must be known")
+                .rate_data
+                .slash(*slashing_penalty);
+
             query!(
                 "UPDATE validators SET validator_state=$1 WHERE identity_key = $2",
                 ValidatorStateName::Slashed.to_str(),
                 ik.borrow().encode_to_vec(),
+            )
+            .execute(&mut *dbtx)
+            .await?;
+            query!(
+                    "UPDATE validator_rates SET validator_exchange_rate=$1 WHERE identity_key=$2 AND epoch=$3",
+                    slashed_rate.validator_exchange_rate as i64,
+                    slashed_rate.identity_key.encode_to_vec(),
+                    slashed_rate.epoch_index as i64,
             )
             .execute(&mut *dbtx)
             .await?;
@@ -358,29 +382,8 @@ impl ValidatorSet {
         // This closure is used to generate a new ValidatorInfo from a ValidatorDefinition.
         // This should *only* be called for *new validators* as it sets the validator's state
         // to Inactive and sets default rate data!
-        // TODO: make this a From impl
-        let make_validator = |v: VerifiedValidatorDefinition| -> ValidatorInfo {
-            ValidatorInfo {
-                validator: v.validator.clone(),
-                status: ValidatorStatus {
-                    identity_key: v.validator.identity_key.clone(),
-                    // Voting power for inactive validators is 0
-                    voting_power: 0,
-                    state: ValidatorState::Inactive,
-                },
-                rate_data: RateData {
-                    identity_key: v.validator.identity_key.clone(),
-                    epoch_index: epoch.index,
-                    // Validator reward rate is held constant for inactive validators.
-                    // Stake committed to inactive validators earns no rewards.
-                    validator_reward_rate: 0,
-                    // Exchange rate for inactive validators is held constant
-                    // and starts at 1
-                    validator_exchange_rate: 1,
-                },
-            }
-        };
 
+        /*
         // TODO: break this apart more
         // This will hold a single deterministically chosen validator definition for every identity key
         // we received validator definitions for.
@@ -451,38 +454,25 @@ impl ValidatorSet {
 
         // Now that we have resolved all validator definitions, we can determine the validator
         // changes that occurred in this block.
-        for (ik, def) in resolved_validator_definitions.iter() {
-            if self.validators().any(|v| v.borrow().identity_key == *ik) {
-                // If this is an existing validator, there will need to be a database UPDATE query.
-                // The existing state will be maintained but the validator configuration will change
-                // to the new definition.
-                //
-                // Funding stream, rate, and voting power calculations will occur for this validator
-                // during end_epoch. The old values are maintained until then.
-                let mut validator_info = self.cache.validator_set.get_mut(ik).unwrap();
-
-                // Update the internal validator configuration
-                // The validator definition was already verified during verify_stateless/verify_stateful
-                // Replace the validator within the validator set with the new definition
-                // but keep the current status/state/rate data
-                validator_info.validator = def.validator.clone();
-
-                // Add the validator to the block's updated validators list so an UPDATE query will be generated in
-                // `commit_block`.
+        for (ik, def) in resolved_validator_definitions.into_iter() {
+            if self.validators().any(|v| v.borrow().identity_key == ik) {
+                // If this is an existing validator, we may be changing the rates, because the funding streams may have changed,
+                // so queue the redefinition to be processed at the next epoch boundary.
                 self.block_changes
                     .as_mut()
                     .expect("block_changes should be initialized during begin_block")
                     .updated_validators
-                    .push(validator_info.clone());
+                    .push(def);
             } else {
-                // Create the new validator's ValidatorInfo struct.
-                // The status will default to Inactive for new validators.
-                let new_validator = make_validator(def.clone());
-
-                // Add the validator to the internal validator set.
-                self.add_validator(new_validator.clone());
+                // Add the validator to the block's new validators list so an INSERT query will be generated in `commit_block`.
+                self.block_changes
+                    .as_mut()
+                    .expect("block_changes should be initialized during begin_block")
+                    .new_validators
+                    .push(def);
             }
         }
+        */
 
         // Set `self.tm_validator_updates` to the complete set of
         // validators and voting power. This must be the last step performed,
@@ -625,6 +615,11 @@ impl ValidatorSet {
         let current_epoch = new_epoch.clone();
 
         Box::pin(async move {
+            // TODO: pull out the pending validator redefinitions and apply them:
+            // - group them by identity key
+            // - sort each group by sequence number + tiebreaker
+            // - write the new definitions
+
             tracing::debug!("processing base rate");
             let current_base_rate = self.reader.base_rate_data(current_epoch.index).await?;
 
@@ -846,13 +841,27 @@ impl ValidatorSet {
     pub fn add_validator_definition(&mut self, validator_definition: VerifiedValidatorDefinition) {
         let identity_key = validator_definition.validator.identity_key.clone();
 
-        self.block_changes
-            .as_mut()
-            .unwrap()
-            .validator_definitions
-            .entry(identity_key)
-            .or_insert_with(Vec::new)
-            .push(validator_definition);
+        if self
+            .validators()
+            .any(|v| v.borrow().identity_key == identity_key)
+        {
+            // If this is an existing validator, we may be changing the rates, because the funding streams may have changed,
+            // so queue the redefinition to be processed at the next epoch boundary.
+            self.block_changes
+                .as_mut()
+                .expect("block_changes should be initialized during begin_block")
+                .updated_validators
+                .push(validator_definition);
+        } else {
+            // Add the validator to the block's new validators list so an INSERT query will be generated in `commit_block`.
+            self.block_changes
+                .as_mut()
+                .expect("block_changes should be initialized during begin_block")
+                .new_validators
+                .entry(identity_key)
+                .or_default()
+                .push(validator_definition);
+        }
     }
 
     pub fn get_validator_info(&self, identity_key: &IdentityKey) -> Option<&ValidatorInfo> {
