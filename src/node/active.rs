@@ -79,6 +79,7 @@ where
 }
 
 impl<Focus: crate::Active> GetHash for Active<Focus> {
+    #[inline]
     fn hash(&self) -> Hash {
         match self.hash.get() {
             Some(hash) => hash,
@@ -91,23 +92,26 @@ impl<Focus: crate::Active> GetHash for Active<Focus> {
     }
 }
 
+impl<Focus: crate::Active> crate::Finalize for Active<Focus> {
+    type Complete = super::Complete<Focus::Complete>;
+
+    #[inline]
+    fn finalize(self) -> HashOr<Self::Complete> {
+        super::Complete::from_siblings_and_focus_or_else_hash(self.siblings, self.focus.finalize())
+    }
+}
+
 impl<Focus> crate::Active for Active<Focus>
 where
     Focus: crate::Active + GetHash,
 {
     type Item = Focus::Item;
-    type Complete = super::Complete<Focus::Complete>;
 
     #[inline]
     fn singleton(item: HashOr<Self::Item>) -> Self {
         let focus = Focus::singleton(item);
         let siblings = Three::new();
         Self::from_parts(siblings, focus)
-    }
-
-    #[inline]
-    fn complete(self) -> HashOr<Self::Complete> {
-        super::Complete::from_siblings_and_focus_or_else_hash(self.siblings, self.focus.complete())
     }
 
     #[inline]
@@ -139,20 +143,20 @@ where
                 // We didn't have enough room to add another sibling, so we return a complete node
                 // as a carry, to be propagated up above us and added to some ancestor segment's
                 // siblings, along with the item we couldn't insert
-                Err(complete) => {
+                Err(children) => {
                     Err(Full {
                         item,
                         // Implicitly, we only hash the children together when we're pruning them
                         // (because otherwise we would lose that informtion); if at least one child
                         // and its sibling hashes/subtrees is preserved in a `Complete` node, then
                         // we defer calculating the node hash until looking up an authentication path
-                        complete: match super::Complete::from_children_or_else_hash(complete) {
+                        complete: match super::Complete::from_children_or_else_hash(children) {
                             HashOr::Hash(hash) => HashOr::Hash(hash),
                             HashOr::Item(node) => {
                                 if let Some(hash) = self.hash.get() {
                                     // This is okay because `complete` is guaranteed to have the same elements in
                                     // the same order as `siblings + [focus]`:
-                                    node.set_hash_unchecked(hash)
+                                    node.set_hash_unchecked(hash);
                                 }
                                 HashOr::Item(node)
                             }

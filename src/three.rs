@@ -6,6 +6,8 @@ pub struct Three<T> {
 impl<T> Three<T> {
     pub fn new() -> Self {
         Self {
+            // This has capacity 4 to prevent re-allocating memory when we push to a filled `Three`
+            // and thereby generate a [T; 4].
             elems: Vec::with_capacity(4),
         }
     }

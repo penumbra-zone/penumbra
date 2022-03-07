@@ -1,10 +1,11 @@
-use crate::{Full, GetHash, Hash, HashOr, Height};
+use crate::{Finalize, Full, GetHash, Hash, HashOr, Height};
 
 pub struct Active<T> {
     item: HashOr<T>,
 }
 
 impl<Item: GetHash> GetHash for Active<Item> {
+    #[inline]
     fn hash(&self) -> Hash {
         match self.item {
             HashOr::Hash(hash) => hash,
@@ -17,9 +18,8 @@ impl<Item: Height> Height for Active<Item> {
     type Height = Item::Height;
 }
 
-impl<Item: crate::Active> crate::Active for Active<Item> {
+impl<Item: crate::Finalize> crate::Active for Active<Item> {
     type Item = Item;
-    type Complete = super::Complete<<Item as crate::Active>::Complete>;
 
     #[inline]
     fn singleton(item: HashOr<Self::Item>) -> Self {
@@ -38,15 +38,19 @@ impl<Item: crate::Active> crate::Active for Active<Item> {
     fn insert(self, item: HashOr<Self::Item>) -> Result<Self, Full<Self::Item, Self::Complete>> {
         Err(Full {
             item,
-            complete: self.complete(),
+            complete: self.finalize(),
         })
     }
+}
+
+impl<Item: crate::Finalize> crate::Finalize for Active<Item> {
+    type Complete = super::Complete<<Item as crate::Finalize>::Complete>;
 
     #[inline]
-    fn complete(self) -> HashOr<Self::Complete> {
+    fn finalize(self) -> HashOr<Self::Complete> {
         match self.item {
             HashOr::Hash(hash) => HashOr::Hash(hash),
-            HashOr::Item(item) => match item.complete() {
+            HashOr::Item(item) => match item.finalize() {
                 HashOr::Hash(hash) => HashOr::Hash(hash),
                 HashOr::Item(item) => HashOr::Item(super::Complete::new(item)),
             },

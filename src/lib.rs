@@ -39,12 +39,8 @@ mod height {
 
 use height::Height;
 
-trait Active: Height + GetHash + Sized
-where
-    Self: Height<Height = <Self::Complete as Height>::Height>,
-{
+trait Active: Finalize + Sized {
     type Item;
-    type Complete: Complete<Active = Self>;
 
     /// Make a new [`Active`] containing a single [`Hash`] or `Self::Item`.
     fn singleton(item: HashOr<Self::Item>) -> Self;
@@ -65,9 +61,15 @@ where
     /// called, and the return value of `None` should be used only to indicate that these caches do
     /// not need to be updated.
     fn alter<T>(&mut self, f: impl FnOnce(&mut Self::Item) -> T) -> Option<T>;
+}
 
-    /// Transform this [`Active`] into a [`Complete`].
-    fn complete(self) -> HashOr<Self::Complete>;
+/// Describes the relationship of an [`Active`] to its [`Complete`].
+trait Finalize: Height<Height = <Self::Complete as Height>::Height> + GetHash {
+    /// The [`Complete`] of this [`Active`].
+    type Complete: Complete<Active = Self>;
+
+    /// Transition from an [`Active`] to being [`Complete`].
+    fn finalize(self) -> HashOr<Self::Complete>;
 }
 
 /// Marker trait identifying a type which is the frozen completion of some [`Active`] insertion
