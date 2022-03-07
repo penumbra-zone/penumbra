@@ -147,10 +147,14 @@ where
                 Err(complete) => {
                     Err((
                         item,
+                        // Implicitly, we only hash the children together when we're pruning them
+                        // (because otherwise we would lose that informtion); if at least one child
+                        // and its sibling hashes/subtrees is preserved in a `Complete` node, then
+                        // we defer calculating the node hash until looking up an authentication path
                         super::Complete::from_children_or_else_hash(complete).map(|node| {
-                            // This is okay because `complete` is guaranteed to have the same elements in
-                            // the same order as `siblings + [focus]`.
                             if let Some(hash) = hash.get() {
+                                // This is okay because `complete` is guaranteed to have the same elements in
+                                // the same order as `siblings + [focus]`:
                                 node.set_hash_unchecked(hash)
                             }
                             node
