@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate derivative;
+
 mod three;
 use three::{Elems, Three};
 
@@ -15,13 +18,12 @@ trait Active: Height + GetHash + Sized {
 
     fn singleton(item: Self::Item) -> Self;
 
-    fn insert(self, item: Self::Item) -> Result<Self, (Self::Item, Self::Complete)>;
+    #[allow(clippy::type_complexity)]
+    fn insert(self, item: Self::Item) -> Result<Self, (Self::Item, Result<Self::Complete, Hash>)>;
 
-    fn alter(&mut self, f: impl FnOnce(&mut Self::Item));
+    fn alter<T>(&mut self, f: impl FnOnce(&mut Self::Item) -> T) -> Option<T>;
 
-    fn witness(&mut self);
-
-    fn complete(self) -> Self::Complete;
+    fn complete(self) -> Result<Self::Complete, Hash>;
 }
 
 trait Complete: Height + GetHash {

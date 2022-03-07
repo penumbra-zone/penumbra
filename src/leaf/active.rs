@@ -1,53 +1,44 @@
 use crate::{GetHash, Hash, Height};
 
-pub struct Active<T, const BASE_HEIGHT: usize> {
-    item: T,
-    witnessed: bool,
+pub struct Active<T> {
+    item: Result<T, Hash>,
 }
 
-impl<T: GetHash, const BASE_HEIGHT: usize> GetHash for Active<T, BASE_HEIGHT> {
+impl<Item: GetHash> GetHash for Active<Item> {
     fn hash(&self) -> Hash {
-        self.item.hash()
+        self.item
+            .as_ref()
+            .map(|item| item.hash())
+            .unwrap_or_else(|hash| *hash)
     }
 }
 
-impl<T, const BASE_HEIGHT: usize> Height for Active<T, BASE_HEIGHT> {
-    const HEIGHT: usize = BASE_HEIGHT;
+impl<Item: Height> Height for Active<Item> {
+    const HEIGHT: usize = Item::HEIGHT;
 }
 
-impl<T: GetHash, const BASE_HEIGHT: usize> crate::Active for Active<T, BASE_HEIGHT> {
-    type Item = T;
-    type Complete = super::Complete<T, BASE_HEIGHT>;
+impl<Item: crate::Active> crate::Active for Active<Item> {
+    type Item = Item;
+    type Complete = super::Complete<<Item as crate::Active>::Complete>;
 
     #[inline]
     fn singleton(item: Self::Item) -> Self {
-        Self {
-            item,
-            witnessed: false,
-        }
+        Self { item: Ok(item) }
     }
 
     #[inline]
-    fn witness(&mut self) {
-        self.witnessed = true;
+    fn alter<T>(&mut self, f: impl FnOnce(&mut Self::Item) -> T) -> Option<T> {
+        self.item.as_mut().map(f).ok()
     }
 
     #[inline]
-    fn alter(&mut self, f: impl FnOnce(&mut Self::Item)) {
-        f(&mut self.item);
-    }
-
-    #[inline]
-    fn insert(self, item: Self::Item) -> Result<Self, (Self::Item, Self::Complete)> {
+    fn insert(self, item: Self::Item) -> Result<Self, (Self::Item, Result<Self::Complete, Hash>)> {
         Err((item, self.complete()))
     }
 
     #[inline]
-    fn complete(self) -> Self::Complete {
-        if self.witnessed {
-            super::Complete::from_item(self.item)
-        } else {
-            super::Complete::from_hash(self.hash())
-        }
+    fn complete(self) -> Result<Self::Complete, Hash> {
+        let item = self.item?;
+        Ok(super::Complete::new(item.complete()?))
     }
 }

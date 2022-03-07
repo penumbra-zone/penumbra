@@ -2,7 +2,7 @@ use crate::Height;
 
 type N<Child> = crate::node::Complete<Child>;
 
-pub(super) type Inner<L> = complete_type!(N, L: @@@@@@@@);
+pub(super) type Inner<Leaf> = N<N<N<N<N<N<N<N<Leaf>>>>>>>>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Complete<L>(Inner<L>);

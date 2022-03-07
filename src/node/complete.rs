@@ -12,45 +12,23 @@ pub struct Complete<Child> {
 impl<Child> Complete<Child> {
     /// This is a *dangerous function*: it does not check or recompute the hash given, so it should
     /// only be used when it is known that the hash is the correct hash of the children provided.
-    pub(super) fn from_siblings_and_focus_unchecked(
-        hash: Hash,
-        siblings: Three<Child>,
-        focus: Child,
-    ) -> Self
+    pub(super) fn try_from_siblings_and_focus_or_else_hash(
+        siblings: Three<Result<Child, Hash>>,
+        focus: Result<Child, Hash>,
+    ) -> Result<Self, Hash>
     where
         Child: crate::Complete,
     {
-        // Place the focus in the appropriate position in the children array
-        let children = match siblings.into_elems() {
-            IntoElems::_0([]) => [Some(focus), None, None, None],
-            IntoElems::_1([a]) => [Some(a), Some(focus), None, None],
-            IntoElems::_2([a, b]) => [Some(a), Some(b), Some(focus), None],
-            IntoElems::_3([a, b, c]) => [Some(a), Some(b), Some(c), Some(focus)],
-        };
-        // Filter the children array to prune out unwitnessed subtrees
-        let children =
-            children.map(|child| child.filter(Child::witnessed).map(|child| Box::new(child)));
-        // Return the node
-        Self { hash, children }
+        todo!("construct `Complete` from siblings and focus")
     }
 
     /// This is a *dangerous function*: it does not check or recompute the hash given, so it should
     /// only be used when it is known that the hash is the correct hash of the children provided.
-    pub(super) fn from_parts_unchecked(hash: Hash, children: [Child; 4]) -> Self
+    pub(super) fn try_from_children(children: [Result<Child, Hash>; 4]) -> Option<Self>
     where
         Child: crate::Complete + GetHash + Height,
     {
-        Self {
-            hash,
-            // Drop children which contain no witnesses
-            children: children.map(|child| {
-                if child.witnessed() {
-                    Some(Box::new(child))
-                } else {
-                    None
-                }
-            }),
-        }
+        todo!("construct `Complete` from all four children")
     }
 }
 

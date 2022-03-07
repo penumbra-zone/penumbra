@@ -1,45 +1,27 @@
 use crate::{GetHash, Hash, Height};
 
-enum Inner<T> {
-    Hash(Hash),
-    Item(T),
-}
+pub struct Complete<T>(T);
 
-pub struct Complete<T, const BASE_HEIGHT: usize> {
-    inner: Inner<T>,
-}
-
-impl<T, const BASE_HEIGHT: usize> Complete<T, BASE_HEIGHT> {
-    pub fn from_hash(hash: Hash) -> Self {
-        Self {
-            inner: Inner::Hash(hash),
-        }
-    }
-
-    pub fn from_item(item: T) -> Self {
-        Self {
-            inner: Inner::Item(item),
-        }
+impl<T> Complete<T> {
+    pub fn new(item: T) -> Self {
+        Self(item)
     }
 }
 
-impl<T: GetHash, const BASE_HEIGHT: usize> GetHash for Complete<T, BASE_HEIGHT> {
+impl<T: GetHash> GetHash for Complete<T> {
     fn hash(&self) -> Hash {
-        match &self.inner {
-            Inner::Hash(hash) => *hash,
-            Inner::Item(item) => item.hash(),
-        }
+        self.0.hash()
     }
 }
 
-impl<T, const BASE_HEIGHT: usize> Height for Complete<T, BASE_HEIGHT> {
-    const HEIGHT: usize = BASE_HEIGHT;
+impl<T: Height> Height for Complete<T> {
+    const HEIGHT: usize = T::HEIGHT;
 }
 
-impl<T: GetHash, const BASE_HEIGHT: usize> crate::Complete for Complete<T, BASE_HEIGHT> {
-    type Active = super::Active<T, BASE_HEIGHT>;
+impl<T: crate::Complete> crate::Complete for Complete<T> {
+    type Active = super::Active<<T as crate::Complete>::Active>;
 
     fn witnessed(&self) -> bool {
-        matches!(self.inner, Inner::Item(_))
+        self.0.witnessed()
     }
 }
