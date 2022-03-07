@@ -22,7 +22,7 @@ impl Hash {
         Hash
     }
 
-    pub(crate) fn commitment(height: usize, commitment: &Commitment) -> Hash {
+    pub(crate) fn commitment(commitment: &Commitment) -> Hash {
         Hash
     }
 

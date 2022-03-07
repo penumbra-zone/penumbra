@@ -1,4 +1,4 @@
-use crate::{height::S, Full, GetHash, Hash, HashOr, Height};
+use crate::{Full, GetHash, Hash, HashOr, Height};
 
 pub struct Active<T> {
     item: HashOr<T>,
@@ -46,10 +46,10 @@ impl<Item: crate::Active> crate::Active for Active<Item> {
     fn complete(self) -> HashOr<Self::Complete> {
         match self.item {
             HashOr::Hash(hash) => HashOr::Hash(hash),
-            HashOr::Item(item) => HashOr::Item(super::Complete::new(match item.complete() {
-                HashOr::Hash(hash) => return HashOr::Hash(hash),
-                HashOr::Item(complete) => complete,
-            })),
+            HashOr::Item(item) => match item.complete() {
+                HashOr::Hash(hash) => HashOr::Hash(hash),
+                HashOr::Item(item) => HashOr::Item(super::Complete::new(item)),
+            },
         }
     }
 }
