@@ -10,9 +10,12 @@ pub struct Complete<Child> {
 }
 
 impl<Child> Complete<Child> {
-    /// This is a *dangerous function*: it does not check or recompute the hash given, so it should
-    /// only be used when it is known that the hash is the correct hash of the children provided.
-    pub(super) fn try_from_siblings_and_focus_or_else_hash(
+    /// Only call this when you know what the hash should be!
+    pub(super) fn set_hash_unchecked(&self, hash: Hash) {
+        todo!("set the hash");
+    }
+
+    pub(super) fn from_siblings_and_focus_or_else_hash(
         siblings: Three<Result<Child, Hash>>,
         focus: Result<Child, Hash>,
     ) -> Result<Self, Hash>
@@ -22,9 +25,9 @@ impl<Child> Complete<Child> {
         todo!("construct `Complete` from siblings and focus")
     }
 
-    /// This is a *dangerous function*: it does not check or recompute the hash given, so it should
-    /// only be used when it is known that the hash is the correct hash of the children provided.
-    pub(super) fn try_from_children(children: [Result<Child, Hash>; 4]) -> Option<Self>
+    pub(super) fn from_children_or_else_hash(
+        children: [Result<Child, Hash>; 4],
+    ) -> Result<Self, Hash>
     where
         Child: crate::Complete + GetHash + Height,
     {
@@ -36,17 +39,8 @@ impl<Child: Height> Height for Complete<Child> {
     const HEIGHT: usize = Child::HEIGHT + 1;
 }
 
-impl<Child> crate::Complete for Complete<Child>
-where
-    Child: crate::Complete + GetHash,
-    Child::Active: GetHash,
-{
+impl<Child: crate::Complete> crate::Complete for Complete<Child> {
     type Active = super::Active<Child::Active>;
-
-    #[inline]
-    fn witnessed(&self) -> bool {
-        self.children.iter().any(|child| child.is_some())
-    }
 }
 
 impl<Child> GetHash for Complete<Child> {

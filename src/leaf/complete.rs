@@ -20,8 +20,4 @@ impl<T: Height> Height for Complete<T> {
 
 impl<T: crate::Complete> crate::Complete for Complete<T> {
     type Active = super::Active<<T as crate::Complete>::Active>;
-
-    fn witnessed(&self) -> bool {
-        self.0.witnessed()
-    }
 }

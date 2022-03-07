@@ -28,8 +28,6 @@ trait Active: Height + GetHash + Sized {
 
 trait Complete: Height + GetHash {
     type Active: Active<Complete = Self>;
-
-    fn witnessed(&self) -> bool;
 }
 
 trait GetHash {

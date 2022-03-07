@@ -1,10 +1,13 @@
+use std::cell::Cell;
+
 use crate::{Elems, GetHash, Hash, Height, Three};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub(crate) struct Active<Focus: crate::Active> {
     focus: Focus,
     siblings: Three<Result<Focus::Complete, Hash>>,
-    hash: Hash,
+    // TODO: replace this with space-saving `Cell<OptionHash>`?
+    hash: Cell<Option<Hash>>,
 }
 
 impl<Focus: crate::Active> Active<Focus> {
@@ -13,7 +16,7 @@ impl<Focus: crate::Active> Active<Focus> {
         Focus: crate::Active + GetHash,
     {
         Self {
-            hash: hash_active(&siblings, &focus),
+            hash: Cell::new(None),
             siblings,
             focus,
         }
@@ -80,7 +83,14 @@ where
 
 impl<Focus: crate::Active> GetHash for Active<Focus> {
     fn hash(&self) -> Hash {
-        self.hash
+        match self.hash.get() {
+            Some(hash) => hash,
+            None => {
+                let hash = hash_active(&self.siblings, &self.focus);
+                self.hash.set(Some(hash));
+                hash
+            }
+        }
     }
 }
 
@@ -100,16 +110,13 @@ where
 
     #[inline]
     fn complete(self) -> Result<Self::Complete, Hash> {
-        super::Complete::try_from_siblings_and_focus_or_else_hash(
-            self.siblings,
-            self.focus.complete(),
-        )
+        super::Complete::from_siblings_and_focus_or_else_hash(self.siblings, self.focus.complete())
     }
 
     #[inline]
     fn alter<T>(&mut self, f: impl FnOnce(&mut Self::Item) -> T) -> Option<T> {
         let result = self.focus.alter(f);
-        self.hash = hash_active(&self.siblings, &self.focus);
+        self.hash.set(None); // the hash could have changed, so clear the cache
         result
     }
 
@@ -138,11 +145,16 @@ where
                 // as a carry, to be propagated up above us and added to some ancestor segment's
                 // siblings, along with the item we couldn't insert
                 Err(complete) => {
-                    // This is okay because `complete` is guaranteed to have the same elements in
-                    // the same order as `siblings + [focus]`.
                     Err((
                         item,
-                        super::Complete::try_from_children(complete).ok_or(hash),
+                        super::Complete::from_children_or_else_hash(complete).map(|node| {
+                            // This is okay because `complete` is guaranteed to have the same elements in
+                            // the same order as `siblings + [focus]`.
+                            if let Some(hash) = hash.get() {
+                                node.set_hash_unchecked(hash)
+                            }
+                            node
+                        }),
                     ))
                 }
             },
