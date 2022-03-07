@@ -17,5 +17,5 @@ impl<Focus: crate::Active> Height for Active<Focus>
 where
     Inner<Focus>: crate::Active,
 {
-    const HEIGHT: usize = <Inner<Focus> as Height>::HEIGHT;
+    type Height = <Inner<Focus> as Height>::Height;
 }

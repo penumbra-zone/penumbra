@@ -1,4 +1,5 @@
 use crate::{
+    height::S,
     three::{IntoElems, Three},
     GetHash, Hash, HashOr, Height,
 };
@@ -34,7 +35,7 @@ impl<Child> Complete<Child> {
 }
 
 impl<Child: Height> Height for Complete<Child> {
-    const HEIGHT: usize = Child::HEIGHT + 1;
+    type Height = S<Child::Height>;
 }
 
 impl<Child: crate::Complete> crate::Complete for Complete<Child> {

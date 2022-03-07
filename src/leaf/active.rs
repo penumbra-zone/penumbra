@@ -1,4 +1,4 @@
-use crate::{Full, GetHash, Hash, HashOr, Height};
+use crate::{height::S, Full, GetHash, Hash, HashOr, Height};
 
 pub struct Active<T> {
     item: HashOr<T>,
@@ -14,7 +14,7 @@ impl<Item: GetHash> GetHash for Active<Item> {
 }
 
 impl<Item: Height> Height for Active<Item> {
-    const HEIGHT: usize = Item::HEIGHT;
+    type Height = Item::Height;
 }
 
 impl<Item: crate::Active> crate::Active for Active<Item> {

@@ -1,6 +1,9 @@
 use std::cell::Cell;
 
-use crate::{Elems, Full, GetHash, Hash, HashOr, Height, Three};
+use crate::{
+    height::{IsHeight, S},
+    Elems, Full, GetHash, Hash, HashOr, Height, Three,
+};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub(crate) struct Active<Focus: crate::Active> {
@@ -65,18 +68,14 @@ fn hash_active<Focus: crate::Active + GetHash>(
         }
     };
 
-    Hash::node(Focus::HEIGHT + 1, a, b, c, d)
+    Hash::node(Focus::Height::HEIGHT + 1, a, b, c, d)
 }
 
 impl<Focus: crate::Active> Height for Active<Focus>
 where
     Focus: Height,
 {
-    const HEIGHT: usize = if Focus::HEIGHT == <Focus as crate::Active>::Complete::HEIGHT {
-        Focus::HEIGHT + 1
-    } else {
-        panic!("`Sibling::HEIGHT` does not match `Focus::HEIGHT` in `Segment`: check for improper depth types")
-    };
+    type Height = S<Focus::Height>;
 }
 
 impl<Focus: crate::Active> GetHash for Active<Focus> {

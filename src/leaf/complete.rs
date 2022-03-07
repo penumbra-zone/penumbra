@@ -15,7 +15,7 @@ impl<T: GetHash> GetHash for Complete<T> {
 }
 
 impl<T: Height> Height for Complete<T> {
-    const HEIGHT: usize = T::HEIGHT;
+    type Height = T::Height;
 }
 
 impl<T: crate::Complete> crate::Complete for Complete<T> {

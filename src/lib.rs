@@ -11,15 +11,38 @@ pub mod leaf;
 pub mod level;
 pub mod node;
 
-/// Trait identifying the statically-known height of a given tree element.
-///
-/// This is used to differentiate the hashes at each level of the tree.
-trait Height {
-    /// The height of this type above the leaves of the tree.
-    const HEIGHT: usize;
+mod height {
+    /// Trait identifying the statically-known height of a given tree element.
+    ///
+    /// This is used to differentiate the hashes at each level of the tree.
+    pub trait Height {
+        /// The height of this type above the leaves of the tree.
+        type Height: IsHeight;
+    }
+
+    pub trait IsHeight {
+        const HEIGHT: usize;
+    }
+
+    pub struct Z;
+
+    impl IsHeight for Z {
+        const HEIGHT: usize = 0;
+    }
+
+    pub struct S<N>(N);
+
+    impl<N: IsHeight> IsHeight for S<N> {
+        const HEIGHT: usize = N::HEIGHT + 1;
+    }
 }
 
-trait Active: Height + GetHash + Sized {
+use height::Height;
+
+trait Active: Height + GetHash + Sized
+where
+    Self: Height<Height = <Self::Complete as Height>::Height>,
+{
     type Item;
     type Complete: Complete<Active = Self>;
 
@@ -56,7 +79,7 @@ trait Complete: Height + GetHash {
 }
 
 /// The result of [`Active::insert`] when the [`Active`] is full.
-pub struct Full<Item, Complete> {
+struct Full<Item, Complete> {
     /// The original hash or item that could not be inserted.
     pub item: HashOr<Item>,
     /// The completed structure, which has no more room for any further insertions.

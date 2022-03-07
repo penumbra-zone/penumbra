@@ -11,5 +11,5 @@ impl<L> Height for Complete<L>
 where
     Inner<L>: Height,
 {
-    const HEIGHT: usize = <Inner<L> as Height>::HEIGHT;
+    type Height = <Inner<L> as Height>::Height;
 }
