@@ -21,6 +21,6 @@ pub struct Commitment;
 
 impl GetHash for Commitment {
     fn hash(&self) -> Hash {
-        Hash
+        Hash::commitment(self)
     }
 }

@@ -19,6 +19,12 @@ impl<T> Item<T> {
     }
 }
 
+impl<T> From<T> for Item<T> {
+    fn from(item: T) -> Self {
+        Self::new(item)
+    }
+}
+
 impl<T> AsRef<T> for Item<T> {
     fn as_ref(&self) -> &T {
         &self.item
