@@ -2,7 +2,9 @@
 
 use std::cell::Cell;
 
-use crate::{internal::height::Zero, GetHash, Hash, Insert};
+use poseidon377::Fq;
+
+use crate::{internal::height::Zero, GetHash, Hash, Height, Insert};
 
 /// Both a hash and the item hashed, with the hash computed lazily, to be used when inserting into a
 /// tree.
@@ -10,15 +12,15 @@ use crate::{internal::height::Zero, GetHash, Hash, Insert};
 /// If you don't want to store actual items at the leaves of a tree but rather just store their
 /// hashes, use [`struct@Hash`] directly as the item of the tree.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Item<T> {
+pub struct Item {
     // TODO: replace with `OptionHash` optimization?
     hash: Cell<Option<Hash>>,
-    item: T,
+    item: Fq,
 }
 
-impl<T> Item<T> {
+impl Item {
     /// Create a new [`Item`] from the given value.
-    pub fn new(item: T) -> Self {
+    pub fn new(item: Fq) -> Self {
         Self {
             hash: Cell::new(None),
             item,
@@ -26,23 +28,23 @@ impl<T> Item<T> {
     }
 }
 
-impl<T> From<T> for Item<T> {
-    fn from(item: T) -> Self {
+impl From<Fq> for Item {
+    fn from(item: Fq) -> Self {
         Self::new(item)
     }
 }
 
-impl<T> AsRef<T> for Item<T> {
-    fn as_ref(&self) -> &T {
+impl AsRef<Fq> for Item {
+    fn as_ref(&self) -> &Fq {
         &self.item
     }
 }
 
-impl<T: GetHash> GetHash for Item<T> {
+impl GetHash for Item {
     #[inline]
     fn hash(&self) -> Hash {
         self.hash.get().unwrap_or_else(|| {
-            let hash = self.item.hash();
+            let hash = Hash::item(self.item);
             self.hash.set(Some(hash));
             hash
         })
@@ -54,11 +56,11 @@ impl<T: GetHash> GetHash for Item<T> {
     }
 }
 
-impl<T> crate::Height for Item<T> {
+impl Height for Item {
     type Height = Zero;
 }
 
-impl<T: GetHash> crate::Focus for Item<T> {
+impl crate::Focus for Item {
     type Complete = Self;
 
     #[inline]
@@ -67,6 +69,6 @@ impl<T: GetHash> crate::Focus for Item<T> {
     }
 }
 
-impl<T: GetHash> crate::Complete for Item<T> {
+impl crate::Complete for Item {
     type Focus = Self;
 }
