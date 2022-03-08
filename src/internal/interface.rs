@@ -1,6 +1,9 @@
 use crate::{GetHash, Hash, Height};
 
-/// Either a hash or some item, or the item itself, for insertion into a tree.
+/// Either an item or just its hash, to be used when inserting into a tree.
+///
+/// When inserting, only items inserted with [`Insert::Keep`] are retained as witnessed leaves of
+/// the tree; those inserted with [`Insert::Hash`] are pruned.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Insert<T> {
     /// An item unto itself: when inserting, keep this witnessed in the tree.

@@ -4,8 +4,8 @@ use std::cell::Cell;
 
 use crate::{internal::height::Zero, GetHash, Hash, Insert};
 
-/// Both a hash and the item hashed, with the hash computed lazily, to be used for inserting into a
-/// tree. This implements [`Focus`](crate::Focus) and thus can be used as the item of a tree.
+/// Both a hash and the item hashed, with the hash computed lazily, to be used when inserting into a
+/// tree.
 ///
 /// If you don't want to store actual items at the leaves of a tree but rather just store their
 /// hashes, use [`struct@Hash`] directly as the item of the tree.

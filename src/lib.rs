@@ -19,6 +19,7 @@ pub use internal::height::Height;
 pub mod internal;
 #[doc(inline)]
 pub use internal::active::Insert;
+
 use internal::{
     active::{Active, Focus, Full},
     complete::Complete,

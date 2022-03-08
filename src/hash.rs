@@ -4,7 +4,7 @@
 //! This module defines the trait [`GetHash`] for these operations, as well as the [`struct@Hash`] type
 //! used throughout.
 
-use crate::{internal::height::Zero, Commitment, Insert};
+use crate::{internal::height::Zero, Insert};
 
 /// A type which can be transformed into a [`struct@Hash`], either by retrieving a cached hash, computing a
 /// hash for it, or some combination of both.
@@ -31,7 +31,7 @@ pub trait GetHash {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 // TODO: replace this with `Fq`
-/// The hash of some part of the tree, or an individual commitment.
+/// The hash of an individual item, to be used when inserting into a tree.
 ///
 /// Like [`Item`](crate::Item), [`struct@Hash`] itself implements [`Focus`](crate::Focus) and thus can be
 /// used as the item of a tree, if it is not desired to store commitments at the leaves.
@@ -45,11 +45,6 @@ impl<T: GetHash> From<&T> for Hash {
 
 #[allow(unused)]
 impl Hash {
-    #[inline]
-    pub(crate) fn commitment(commitment: &Commitment) -> Hash {
-        Hash(todo!("hash commitment"))
-    }
-
     #[inline]
     pub(crate) fn node(height: usize, a: Hash, b: Hash, c: Hash, d: Hash) -> Hash {
         Hash(todo!("hash node"))
