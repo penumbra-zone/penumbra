@@ -1,6 +1,6 @@
 use std::cell::Cell;
 
-use crate::{height::Z, GetHash, Hash, HashOr};
+use crate::{internal::height::Zero, GetHash, Hash, Insert};
 
 /// Both a hash and the item hashed.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -37,15 +37,15 @@ impl<T: GetHash> GetHash for Item<T> {
 }
 
 impl<T> crate::Height for Item<T> {
-    type Height = Z;
+    type Height = Zero;
 }
 
 impl<T: GetHash> crate::Focus for Item<T> {
     type Complete = Self;
 
     #[inline]
-    fn finalize(self) -> HashOr<Self::Complete> {
-        HashOr::Item(self)
+    fn finalize(self) -> Insert<Self::Complete> {
+        Insert::Keep(self)
     }
 }
 

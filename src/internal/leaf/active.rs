@@ -1,15 +1,15 @@
-use crate::{Focus, Full, GetHash, Hash, HashOr, Height};
+use crate::{Focus, Full, GetHash, Hash, Height, Insert};
 
 pub struct Active<T> {
-    item: HashOr<T>,
+    item: Insert<T>,
 }
 
 impl<Item: GetHash> GetHash for Active<Item> {
     #[inline]
     fn hash(&self) -> Hash {
         match self.item {
-            HashOr::Hash(hash) => hash,
-            HashOr::Item(ref item) => item.hash(),
+            Insert::Hash(hash) => hash,
+            Insert::Keep(ref item) => item.hash(),
         }
     }
 }
@@ -22,20 +22,20 @@ impl<Item: crate::Focus> crate::Active for Active<Item> {
     type Item = Item;
 
     #[inline]
-    fn singleton(item: HashOr<Self::Item>) -> Self {
+    fn singleton(item: Insert<Self::Item>) -> Self {
         Self { item }
     }
 
     #[inline]
     fn alter<T>(&mut self, f: impl FnOnce(&mut Self::Item) -> T) -> Option<T> {
         match self.item {
-            HashOr::Hash(_) => None,
-            HashOr::Item(ref mut item) => Some(f(item)),
+            Insert::Hash(_) => None,
+            Insert::Keep(ref mut item) => Some(f(item)),
         }
     }
 
     #[inline]
-    fn insert(self, item: HashOr<Self::Item>) -> Result<Self, Full<Self::Item, Self::Complete>> {
+    fn insert(self, item: Insert<Self::Item>) -> Result<Self, Full<Self>> {
         Err(Full {
             item,
             complete: self.finalize(),
@@ -47,12 +47,12 @@ impl<Item: crate::Focus> crate::Focus for Active<Item> {
     type Complete = super::Complete<<Item as crate::Focus>::Complete>;
 
     #[inline]
-    fn finalize(self) -> HashOr<Self::Complete> {
+    fn finalize(self) -> Insert<Self::Complete> {
         match self.item {
-            HashOr::Hash(hash) => HashOr::Hash(hash),
-            HashOr::Item(item) => match item.finalize() {
-                HashOr::Hash(hash) => HashOr::Hash(hash),
-                HashOr::Item(item) => HashOr::Item(super::Complete::new(item)),
+            Insert::Hash(hash) => Insert::Hash(hash),
+            Insert::Keep(item) => match item.finalize() {
+                Insert::Hash(hash) => Insert::Hash(hash),
+                Insert::Keep(item) => Insert::Keep(super::Complete::new(item)),
             },
         }
     }

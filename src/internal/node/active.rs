@@ -1,20 +1,21 @@
 use std::cell::Cell;
 
 use crate::{
-    height::{IsHeight, S},
-    Elems, Full, GetHash, Hash, HashOr, Height, Three,
+    internal::height::{IsHeight, Succ},
+    internal::three::{Elems, Three},
+    Full, GetHash, Hash, Height, Insert,
 };
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Active<Focus: crate::Focus> {
     focus: Focus,
-    siblings: Three<HashOr<Focus::Complete>>,
+    siblings: Three<Insert<Focus::Complete>>,
     // TODO: replace this with space-saving `Cell<OptionHash>`?
     hash: Cell<Option<Hash>>,
 }
 
 impl<Focus: crate::Active> Active<Focus> {
-    pub(crate) fn from_parts(siblings: Three<HashOr<Focus::Complete>>, focus: Focus) -> Self
+    pub(crate) fn from_parts(siblings: Three<Insert<Focus::Complete>>, focus: Focus) -> Self
     where
         Focus: crate::Active + GetHash,
     {
@@ -27,7 +28,7 @@ impl<Focus: crate::Active> Active<Focus> {
 }
 
 fn hash_active<Focus: crate::Focus>(
-    siblings: &Three<HashOr<Focus::Complete>>,
+    siblings: &Three<Insert<Focus::Complete>>,
     focus: &Focus,
 ) -> Hash {
     // Get the correct padding hash for this height
@@ -66,7 +67,7 @@ impl<Focus: crate::Focus> Height for Active<Focus>
 where
     Focus: Height,
 {
-    type Height = S<Focus::Height>;
+    type Height = Succ<Focus::Height>;
 }
 
 impl<Focus: crate::Focus> GetHash for Active<Focus> {
@@ -87,7 +88,7 @@ impl<Focus: crate::Focus> crate::Focus for Active<Focus> {
     type Complete = super::Complete<Focus::Complete>;
 
     #[inline]
-    fn finalize(self) -> HashOr<Self::Complete> {
+    fn finalize(self) -> Insert<Self::Complete> {
         super::Complete::from_siblings_and_focus_or_else_hash(self.siblings, self.focus.finalize())
     }
 }
@@ -99,7 +100,7 @@ where
     type Item = Focus::Item;
 
     #[inline]
-    fn singleton(item: HashOr<Self::Item>) -> Self {
+    fn singleton(item: Insert<Self::Item>) -> Self {
         let focus = Focus::singleton(item);
         let siblings = Three::new();
         Self::from_parts(siblings, focus)
@@ -116,7 +117,7 @@ where
     }
 
     #[inline]
-    fn insert(self, item: HashOr<Self::Item>) -> Result<Self, Full<Self::Item, Self::Complete>> {
+    fn insert(self, item: Insert<Self::Item>) -> Result<Self, Full<Self>> {
         match self.focus.insert(item) {
             // We successfully inserted at the focus, so siblings don't need to be changed
             Ok(focus) => Ok(Self::from_parts(self.siblings, focus)),
@@ -142,14 +143,14 @@ where
                         // and its sibling hashes/subtrees is preserved in a `Complete` node, then
                         // we defer calculating the node hash until looking up an authentication path
                         complete: match super::Complete::from_children_or_else_hash(children) {
-                            HashOr::Hash(hash) => HashOr::Hash(hash),
-                            HashOr::Item(node) => {
+                            Insert::Hash(hash) => Insert::Hash(hash),
+                            Insert::Keep(node) => {
                                 if let Some(hash) = self.hash.get() {
                                     // This is okay because `complete` is guaranteed to have the same elements in
                                     // the same order as `siblings + [focus]`:
                                     node.set_hash_unchecked(hash);
                                 }
-                                HashOr::Item(node)
+                                Insert::Keep(node)
                             }
                         },
                     })

@@ -1,4 +1,4 @@
-use crate::{height::S, three::Three, GetHash, Hash, HashOr, Height};
+use crate::{internal::height::Succ, internal::three::Three, GetHash, Hash, Height, Insert};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Complete<Child> {
@@ -13,16 +13,16 @@ impl<Child> Complete<Child> {
     }
 
     pub(super) fn from_siblings_and_focus_or_else_hash(
-        siblings: Three<HashOr<Child>>,
-        focus: HashOr<Child>,
-    ) -> HashOr<Self>
+        siblings: Three<Insert<Child>>,
+        focus: Insert<Child>,
+    ) -> Insert<Self>
     where
         Child: crate::Complete,
     {
         todo!("construct `Complete` from siblings and focus")
     }
 
-    pub(super) fn from_children_or_else_hash(children: [HashOr<Child>; 4]) -> HashOr<Self>
+    pub(super) fn from_children_or_else_hash(children: [Insert<Child>; 4]) -> Insert<Self>
     where
         Child: crate::Complete + GetHash + Height,
     {
@@ -31,7 +31,7 @@ impl<Child> Complete<Child> {
 }
 
 impl<Child: Height> Height for Complete<Child> {
-    type Height = S<Child::Height>;
+    type Height = Succ<Child::Height>;
 }
 
 impl<Child: crate::Complete> crate::Complete for Complete<Child> {

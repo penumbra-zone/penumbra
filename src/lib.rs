@@ -1,19 +1,16 @@
 #[macro_use]
 extern crate derivative;
 
-mod three;
-use three::{Elems, Three};
-
 pub mod hash;
-pub use hash::{GetHash, Hash, HashOr};
+pub use hash::{GetHash, Hash};
 
 pub mod item;
 pub use item::Item;
 
-pub mod height;
-pub use height::Height;
+pub use internal::height::Height;
 
 pub mod internal;
+pub use internal::Insert;
 use internal::{Active, Complete, Focus, Full};
 
 pub struct Commitment;

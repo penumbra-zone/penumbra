@@ -1,4 +1,4 @@
-use crate::{height::Z, Commitment};
+use crate::{internal::height::Zero, Commitment, Insert};
 
 /// A type which can be transformed into a [`Hash`], either by retrieving a cached hash, computing a
 /// hash for it, or some combination of both.
@@ -35,10 +35,10 @@ impl Hash {
 
     /// Get the hashes of all the `HashOr<T>` in the array, hashing `T` as necessary.
     #[inline]
-    pub(crate) fn hashes_of_all<T: GetHash, const N: usize>(full: [&HashOr<T>; N]) -> [Hash; N] {
+    pub(crate) fn hashes_of_all<T: GetHash, const N: usize>(full: [&Insert<T>; N]) -> [Hash; N] {
         full.map(|hash_or_t| match hash_or_t {
-            HashOr::Hash(hash) => *hash,
-            HashOr::Item(t) => t.hash(),
+            Insert::Hash(hash) => *hash,
+            Insert::Keep(t) => t.hash(),
         })
     }
 }
@@ -51,27 +51,18 @@ impl GetHash for Hash {
 }
 
 impl crate::Height for Hash {
-    type Height = Z;
+    type Height = Zero;
 }
 
 impl crate::Focus for Hash {
     type Complete = Self;
 
     #[inline]
-    fn finalize(self) -> HashOr<Self::Complete> {
-        HashOr::Item(self)
+    fn finalize(self) -> Insert<Self::Complete> {
+        Insert::Keep(self)
     }
 }
 
 impl crate::Complete for Hash {
     type Active = Self;
-}
-
-/// Either a hash or some item, or the item itself.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum HashOr<T> {
-    /// The hash of an item.
-    Hash(Hash),
-    /// The item itself.
-    Item(T),
 }
