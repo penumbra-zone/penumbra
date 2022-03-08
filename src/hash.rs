@@ -23,7 +23,7 @@ pub trait GetHash {
     fn cached_hash(&self) -> Option<Hash>;
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 // TODO: replace this with `Fq`
 pub struct Hash([u64; 4]);
 
@@ -35,16 +35,6 @@ impl<T: GetHash> From<&T> for Hash {
 
 #[allow(unused)]
 impl Hash {
-    #[inline]
-    pub(crate) fn padding() -> Hash {
-        Hash(todo!("hash for padding"))
-    }
-
-    #[inline]
-    pub(crate) fn empty_tree() -> Hash {
-        Hash(todo!("hash for empty tree"))
-    }
-
     #[inline]
     pub(crate) fn commitment(commitment: &Commitment) -> Hash {
         Hash(todo!("hash commitment"))

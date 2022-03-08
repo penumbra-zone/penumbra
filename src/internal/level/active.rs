@@ -94,7 +94,7 @@ impl<Item: Focus> GetHash for Active<Item> {
     #[inline]
     fn hash(&self) -> Hash {
         match &self.inner {
-            Inner::Empty => Hash::empty_tree(),
+            Inner::Empty => Hash::default(),
             Inner::Active(active) => active.hash(),
             Inner::Complete(complete) => complete.hash(),
             Inner::Hash(hash) => *hash,
@@ -104,7 +104,7 @@ impl<Item: Focus> GetHash for Active<Item> {
     #[inline]
     fn cached_hash(&self) -> Option<Hash> {
         match &self.inner {
-            Inner::Empty => Some(Hash::empty_tree()),
+            Inner::Empty => Some(Hash::default()),
             Inner::Active(active) => active.cached_hash(),
             Inner::Complete(complete) => complete.cached_hash(),
             Inner::Hash(hash) => Some(*hash),
@@ -118,7 +118,7 @@ impl<Item: Focus> Focus for Active<Item> {
     #[inline]
     fn finalize(self) -> Insert<Self::Complete> {
         match self.inner {
-            Inner::Empty => Insert::Hash(Hash::empty_tree()),
+            Inner::Empty => Insert::Hash(Hash::default()),
             Inner::Active(active) => match active.finalize() {
                 Insert::Hash(hash) => Insert::Hash(hash),
                 Insert::Keep(inner) => Insert::Keep(super::Complete { inner }),

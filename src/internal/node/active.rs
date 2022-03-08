@@ -32,7 +32,7 @@ fn hash_active<Focus: crate::Focus>(
     focus: &Focus,
 ) -> Hash {
     // Get the correct padding hash for this height
-    let padding = Hash::padding();
+    let padding = Hash::default();
 
     // Get the four elements of this segment, *in order*, and extract their hashes
     let (a, b, c, d) = match siblings.elems() {
@@ -114,7 +114,7 @@ where
     #[inline]
     fn update<T>(&mut self, f: impl FnOnce(&mut Insert<Self::Item>) -> T) -> T {
         let before_hash = self.focus.cached_hash();
-        let result = self.focus.update(f);
+        let output = self.focus.update(f);
         let after_hash = self.focus.cached_hash();
 
         // If the cached hash of the focus changed, clear the cached hash here, because it is now
@@ -123,7 +123,7 @@ where
             self.hash.set(None);
         }
 
-        result
+        output
     }
 
     #[inline]
