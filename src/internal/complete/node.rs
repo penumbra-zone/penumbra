@@ -1,45 +1,49 @@
-use crate::{internal::height::Succ, internal::three::Three, GetHash, Hash, Height, Insert};
+use crate::{
+    internal::height::Succ, internal::three::Three, Complete, GetHash, Hash, Height, Insert,
+};
+
+use super::super::active;
 
 /// A complete sparse node in a tree, storing only the witnessed subtrees.
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Complete<Child> {
+pub struct Node<Child> {
     hash: Hash,
     children: [Option<Box<Child>>; 4],
 }
 
-impl<Child> Complete<Child> {
+impl<Child> Node<Child> {
     /// Only call this when you know what the hash should be!
-    pub(super) fn set_hash_unchecked(&self, hash: Hash) {
+    pub(crate) fn set_hash_unchecked(&self, hash: Hash) {
         todo!("set the hash");
     }
 
-    pub(super) fn from_siblings_and_focus_or_else_hash(
+    pub(in super::super) fn from_siblings_and_focus_or_else_hash(
         siblings: Three<Insert<Child>>,
         focus: Insert<Child>,
     ) -> Insert<Self>
     where
-        Child: crate::Complete,
+        Child: Complete,
     {
         todo!("construct `Complete` from siblings and focus")
     }
 
-    pub(super) fn from_children_or_else_hash(children: [Insert<Child>; 4]) -> Insert<Self>
+    pub(in super::super) fn from_children_or_else_hash(children: [Insert<Child>; 4]) -> Insert<Self>
     where
-        Child: crate::Complete + GetHash + Height,
+        Child: Complete + GetHash + Height,
     {
         todo!("construct `Complete` from all four children")
     }
 }
 
-impl<Child: Height> Height for Complete<Child> {
+impl<Child: Height> Height for Node<Child> {
     type Height = Succ<Child::Height>;
 }
 
-impl<Child: crate::Complete> crate::Complete for Complete<Child> {
-    type Focus = super::Active<Child::Focus>;
+impl<Child: Complete> Complete for Node<Child> {
+    type Focus = active::Node<Child::Focus>;
 }
 
-impl<Child> GetHash for Complete<Child> {
+impl<Child> GetHash for Node<Child> {
     #[inline]
     fn hash(&self) -> Hash {
         self.hash

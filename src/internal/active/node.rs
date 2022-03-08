@@ -3,22 +3,24 @@ use std::cell::Cell;
 use crate::{
     internal::height::{IsHeight, Succ},
     internal::three::{Elems, Three},
-    Full, GetHash, Hash, Height, Insert,
+    Active, Focus, Full, GetHash, Hash, Height, Insert,
 };
+
+use super::super::complete;
 
 /// An active node in a tree, into which items can be inserted.
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Active<Focus: crate::Focus> {
-    focus: Focus,
-    siblings: Three<Insert<Focus::Complete>>,
+pub struct Node<Child: Focus> {
+    focus: Child,
+    siblings: Three<Insert<Child::Complete>>,
     // TODO: replace this with space-saving `Cell<OptionHash>`?
     hash: Cell<Option<Hash>>,
 }
 
-impl<Focus: crate::Active> Active<Focus> {
-    pub(crate) fn from_parts(siblings: Three<Insert<Focus::Complete>>, focus: Focus) -> Self
+impl<Child: Focus> Node<Child> {
+    pub(crate) fn from_parts(siblings: Three<Insert<Child::Complete>>, focus: Child) -> Self
     where
-        Focus: crate::Active + GetHash,
+        Child: Active + GetHash,
     {
         Self {
             hash: Cell::new(None),
@@ -28,10 +30,7 @@ impl<Focus: crate::Active> Active<Focus> {
     }
 }
 
-fn hash_active<Focus: crate::Focus>(
-    siblings: &Three<Insert<Focus::Complete>>,
-    focus: &Focus,
-) -> Hash {
+fn hash_active<Child: Focus>(siblings: &Three<Insert<Child::Complete>>, focus: &Child) -> Hash {
     // Get the correct padding hash for this height
     let padding = Hash::default();
 
@@ -70,17 +69,14 @@ fn hash_active<Focus: crate::Focus>(
         }
     };
 
-    Hash::node(Focus::Height::HEIGHT + 1, a, b, c, d)
+    Hash::node(Child::Height::HEIGHT + 1, a, b, c, d)
 }
 
-impl<Focus: crate::Focus> Height for Active<Focus>
-where
-    Focus: Height,
-{
-    type Height = Succ<Focus::Height>;
+impl<Child: Focus> Height for Node<Child> {
+    type Height = Succ<Child::Height>;
 }
 
-impl<Focus: crate::Focus> GetHash for Active<Focus> {
+impl<Child: Focus> GetHash for Node<Child> {
     #[inline]
     fn hash(&self) -> Hash {
         match self.hash.get() {
@@ -99,18 +95,18 @@ impl<Focus: crate::Focus> GetHash for Active<Focus> {
     }
 }
 
-impl<Focus: crate::Focus> crate::Focus for Active<Focus> {
-    type Complete = super::Complete<Focus::Complete>;
+impl<Child: Focus> Focus for Node<Child> {
+    type Complete = complete::Node<Child::Complete>;
 
     #[inline]
     fn finalize(self) -> Insert<Self::Complete> {
-        super::Complete::from_siblings_and_focus_or_else_hash(self.siblings, self.focus.finalize())
+        complete::Node::from_siblings_and_focus_or_else_hash(self.siblings, self.focus.finalize())
     }
 }
 
-impl<Focus> crate::Active for Active<Focus>
+impl<Focus> Active for Node<Focus>
 where
-    Focus: crate::Active + GetHash,
+    Focus: Active + GetHash,
 {
     type Item = Focus::Item;
 
@@ -167,7 +163,7 @@ where
                         // (because otherwise we would lose that informtion); if at least one child
                         // and its sibling hashes/subtrees is preserved in a `Complete` node, then
                         // we defer calculating the node hash until looking up an authentication path
-                        complete: match super::Complete::from_children_or_else_hash(children) {
+                        complete: match complete::Node::from_children_or_else_hash(children) {
                             Insert::Hash(hash) => Insert::Hash(hash),
                             Insert::Keep(node) => {
                                 if let Some(hash) = self.hash.get() {

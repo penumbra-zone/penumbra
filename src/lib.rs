@@ -5,11 +5,11 @@
 #[macro_use]
 extern crate derivative;
 
-pub mod hash;
+mod hash;
 #[doc(inline)]
 pub use hash::{GetHash, Hash};
 
-pub mod item;
+mod item;
 #[doc(inline)]
 pub use item::Item;
 

@@ -15,10 +15,10 @@ pub trait Active: Focus + Sized {
     /// The type of item to persist in each witnessed leaf of the active tree.
     type Item;
 
-    /// Make a new [`Active`] containing a single [`Hash`] or `Self::Item`.
+    /// Make a new [`Active`] containing a single [`struct@Hash`] or `Self::Item`.
     fn singleton(item: Insert<Self::Item>) -> Self;
 
-    /// Insert a new [`Hash`] or `Self::Item` into this [`Active`], returning either `Self` with the
+    /// Insert a new [`struct@Hash`] or `Self::Item` into this [`Active`], returning either `Self` with the
     /// thing inserted, or the un-inserted thing and the [`Complete`] of this [`Active`].
     fn insert(self, item: Insert<Self::Item>) -> Result<Self, Full<Self>>;
 
@@ -40,11 +40,11 @@ pub trait Focus: Height<Height = <Self::Complete as Height>::Height> + GetHash {
     fn finalize(self) -> Insert<Self::Complete>;
 }
 
-/// A type which is the frozen completion of some [`Focus`]ed insertion point.
+/// Marker trait for a type which is the frozen completion of some [`Focus`]ed insertion point.
 ///
 /// It is enforced by the type system that [`Complete`] and [`Focus`] are dual to one another.
 pub trait Complete: Height + GetHash {
-    /// The [`Active`] of this [`Complete`].
+    /// The [`Focus`] of this [`Complete`].
     type Focus: Focus<Complete = Self>;
 }
 

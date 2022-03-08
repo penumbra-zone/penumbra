@@ -8,38 +8,20 @@ pub mod height;
 
 mod interface;
 
-mod leaf {
-    mod active;
-    mod complete;
-    #[doc(inline)]
-    pub use {active::Active, complete::Complete};
-}
-
-mod node {
-    mod active;
-    mod complete;
-    #[doc(inline)]
-    pub use {active::Active, complete::Complete};
-}
-
-mod tier {
-    mod active;
-    mod complete;
-    #[doc(inline)]
-    pub use {active::Active, complete::Complete};
-}
-
 pub mod active {
     //! [`Active`] things can be inserted into and updated, always representing the rightmost (most
     //! recently inserted) element of a tree.
     //!
     //! The structure of a single [`Tier`] contains eight [`Node`]s, the bottom-most of which
     //! contains a [`Leaf`].
-    use super::{interface, leaf, node, tier};
+    use super::interface;
     pub use interface::{Active, Focus, Full, Insert};
-    pub use leaf::Active as Leaf;
-    pub use node::Active as Node;
-    pub use tier::Active as Tier;
+    pub(super) mod leaf;
+    pub(super) mod node;
+    pub(super) mod tier;
+    pub use leaf::Leaf;
+    pub use node::Node;
+    pub use tier::{Nested, Tier};
 }
 
 pub mod complete {
@@ -49,9 +31,12 @@ pub mod complete {
     //!
     //! The structure of a single [`Tier`] contains eight levels of [`Node`]s, the bottom-most level
     //! of which contains [`Leaf`]s.
-    use super::{interface, leaf, node, tier};
+    use super::interface;
     pub use interface::Complete;
-    pub use leaf::Complete as Leaf;
-    pub use node::Complete as Node;
-    pub use tier::Complete as Tier;
+    pub(super) mod leaf;
+    pub(super) mod node;
+    pub(super) mod tier;
+    pub use leaf::Leaf;
+    pub use node::Node;
+    pub use tier::{Nested, Tier};
 }

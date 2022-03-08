@@ -1,15 +1,17 @@
-use crate::{Focus, Full, GetHash, Hash, Height, Insert};
+use crate::{Active, Focus, Full, GetHash, Hash, Height, Insert};
+
+use super::super::complete;
 
 /// The active (rightmost) leaf in an active tree.
 ///
 /// Insertion into a leaf always fails, causing the tree above it to insert a new leaf to contain
 /// the inserted item.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Active<T> {
+pub struct Leaf<T> {
     item: Insert<T>,
 }
 
-impl<Item: GetHash> GetHash for Active<Item> {
+impl<Item: GetHash> GetHash for Leaf<Item> {
     #[inline]
     fn hash(&self) -> Hash {
         match self.item {
@@ -27,11 +29,11 @@ impl<Item: GetHash> GetHash for Active<Item> {
     }
 }
 
-impl<Item: Height> Height for Active<Item> {
+impl<Item: Height> Height for Leaf<Item> {
     type Height = Item::Height;
 }
 
-impl<Item: crate::Focus> crate::Active for Active<Item> {
+impl<Item: Focus> Active for Leaf<Item> {
     type Item = Item;
 
     #[inline]
@@ -60,8 +62,8 @@ impl<Item: crate::Focus> crate::Active for Active<Item> {
     }
 }
 
-impl<Item: crate::Focus> crate::Focus for Active<Item> {
-    type Complete = super::Complete<<Item as crate::Focus>::Complete>;
+impl<Item: Focus> Focus for Leaf<Item> {
+    type Complete = complete::Leaf<<Item as Focus>::Complete>;
 
     #[inline]
     fn finalize(self) -> Insert<Self::Complete> {
@@ -69,7 +71,7 @@ impl<Item: crate::Focus> crate::Focus for Active<Item> {
             Insert::Hash(hash) => Insert::Hash(hash),
             Insert::Keep(item) => match item.finalize() {
                 Insert::Hash(hash) => Insert::Hash(hash),
-                Insert::Keep(item) => Insert::Keep(super::Complete::new(item)),
+                Insert::Keep(item) => Insert::Keep(complete::Leaf::new(item)),
             },
         }
     }

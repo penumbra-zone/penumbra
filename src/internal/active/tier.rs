@@ -1,6 +1,8 @@
 use std::{fmt::Debug, mem};
 
-use crate::{Active as _, Focus, Full, GetHash, Hash, Height, Insert};
+use crate::{Active, Focus, Full, GetHash, Hash, Height, Insert};
+
+use super::super::{active, complete};
 
 /// An active tier of the tiered commitment tree, being an 8-deep quad-tree of items.
 #[derive(Derivative)]
@@ -8,16 +10,16 @@ use crate::{Active as _, Focus, Full, GetHash, Hash, Height, Insert};
 #[derivative(Clone(bound = "Item: Clone, <Item as Focus>::Complete: Clone"))]
 #[derivative(PartialEq(bound = "Item: PartialEq, <Item as Focus>::Complete: PartialEq"))]
 #[derivative(Eq(bound = "Item: Eq, <Item as Focus>::Complete: Eq"))]
-pub struct Active<Item: Focus> {
+pub struct Tier<Item: Focus> {
     inner: Inner<Item>,
 }
 
-type N<Focus> = super::super::node::Active<Focus>;
-type L<Item> = super::super::leaf::Active<Item>;
+type N<Focus> = active::Node<Focus>;
+type L<Item> = active::Leaf<Item>;
 
 /// An eight-deep active tree with the given item stored in each leaf.
-pub(super) type Nested<Item> = N<N<N<N<N<N<N<N<L<Item>>>>>>>>>;
-// You can count the levels:   1 2 3 4 5 6 7 8
+pub type Nested<Item> = N<N<N<N<N<N<N<N<L<Item>>>>>>>>>;
+// Count the levels:    1 2 3 4 5 6 7 8
 
 /// The inside of an active level.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -29,7 +31,7 @@ enum Inner<Item: Focus> {
     /// A tree which has been filled, so no more elements can be inserted.
     ///
     /// This is one of two final states; the other is [`Inner::Hash`].
-    Complete(super::complete::Nested<Item::Complete>),
+    Complete(complete::tier::Nested<Item::Complete>),
     /// A tree which has been filled, but which witnessed no elements, so it is represented by a
     /// single hash.
     ///
@@ -43,7 +45,7 @@ impl<Item: Focus> Default for Inner<Item> {
     }
 }
 
-impl<Item: Focus> Active<Item> {
+impl<Item: Focus> Tier<Item> {
     /// Create a new active tier.
     pub fn new() -> Self {
         Self {
@@ -85,17 +87,17 @@ impl<Item: Focus> Active<Item> {
     }
 }
 
-impl<Item: Focus> Default for Active<Item> {
+impl<Item: Focus> Default for Tier<Item> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<Item: Focus> Height for Active<Item> {
+impl<Item: Focus> Height for Tier<Item> {
     type Height = <Nested<Item> as Height>::Height;
 }
 
-impl<Item: Focus> GetHash for Active<Item> {
+impl<Item: Focus> GetHash for Tier<Item> {
     #[inline]
     fn hash(&self) -> Hash {
         match &self.inner {
@@ -117,8 +119,8 @@ impl<Item: Focus> GetHash for Active<Item> {
     }
 }
 
-impl<Item: Focus> Focus for Active<Item> {
-    type Complete = super::Complete<Item::Complete>;
+impl<Item: Focus> Focus for Tier<Item> {
+    type Complete = complete::Tier<Item::Complete>;
 
     #[inline]
     fn finalize(self) -> Insert<Self::Complete> {
@@ -126,9 +128,9 @@ impl<Item: Focus> Focus for Active<Item> {
             Inner::Empty => Insert::Hash(Hash::default()),
             Inner::Active(active) => match active.finalize() {
                 Insert::Hash(hash) => Insert::Hash(hash),
-                Insert::Keep(inner) => Insert::Keep(super::Complete { inner }),
+                Insert::Keep(inner) => Insert::Keep(complete::Tier { inner }),
             },
-            Inner::Complete(inner) => Insert::Keep(super::Complete { inner }),
+            Inner::Complete(inner) => Insert::Keep(complete::Tier { inner }),
             Inner::Hash(hash) => Insert::Hash(hash),
         }
     }

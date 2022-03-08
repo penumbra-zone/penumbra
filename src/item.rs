@@ -8,7 +8,7 @@ use crate::{internal::height::Zero, GetHash, Hash, Insert};
 /// tree. This implements [`Focus`](crate::Focus) and thus can be used as the item of a tree.
 ///
 /// If you don't want to store actual items at the leaves of a tree but rather just store their
-/// hashes, use [`Hash`] directly as the item of the tree.
+/// hashes, use [`struct@Hash`] directly as the item of the tree.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Item<T> {
     // TODO: replace with `OptionHash` optimization?
