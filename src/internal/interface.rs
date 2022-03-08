@@ -20,6 +20,7 @@ pub trait Active: Focus + Sized {
     /// thing inserted, or the un-inserted thing and the [`Complete`] of this [`Active`].
     fn insert(self, item: Insert<Self::Item>) -> Result<Self, Full<Self>>;
 
+    // TODO: can this be replaced with a more ergonomic guard-pattern thing?
     /// Alter the currently active `Self::Item` (i.e. the most-recently [`insert`](Active::insert)ed
     /// one), returning the result of the function. This does nothing if the most-recently inserted
     /// thing was a [`Hash`].

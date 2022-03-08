@@ -31,6 +31,11 @@ impl Hash {
     }
 
     #[inline]
+    pub(crate) fn empty_tree() -> Hash {
+        Hash(todo!("hash for empty tree"))
+    }
+
+    #[inline]
     pub(crate) fn commitment(commitment: &Commitment) -> Hash {
         Hash(todo!("hash commitment"))
     }

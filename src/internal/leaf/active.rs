@@ -1,5 +1,6 @@
 use crate::{Focus, Full, GetHash, Hash, Height, Insert};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Active<T> {
     item: Insert<T>,
 }

@@ -1,13 +1,27 @@
-use crate::Height;
+use crate::{GetHash, Hash, Height};
 
-type C<Child> = super::super::node::Complete<Child>;
+type N<Child> = super::super::node::Complete<Child>;
+type L<Item> = super::super::leaf::Complete<Item>;
 
-/// An eight-deep complete tree with the given leaf.
-pub(super) type Inner<Leaf> = C<C<C<C<C<C<C<C<Leaf>>>>>>>>;
+/// An eight-deep complete tree with the given item at each leaf.
+pub(super) type Nested<Item> = N<N<N<N<N<N<N<N<L<Item>>>>>>>>>;
+// You can count the levels:   1 2 3 4 5 6 7 8
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Complete<Child>(Inner<Child>);
+pub struct Complete<Item> {
+    pub(super) inner: Nested<Item>,
+}
 
-impl<Child: Height> Height for Complete<Child> {
-    type Height = <Inner<Child> as Height>::Height;
+impl<Item: Height> Height for Complete<Item> {
+    type Height = <Nested<Item> as Height>::Height;
+}
+
+impl<Item: GetHash> GetHash for Complete<Item> {
+    fn hash(&self) -> Hash {
+        self.inner.hash()
+    }
+}
+
+impl<Item: crate::Complete> crate::Complete for Complete<Item> {
+    type Active = super::Active<Item::Active>;
 }

@@ -1,5 +1,6 @@
 use crate::{GetHash, Hash, Height};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Complete<T>(T);
 
 impl<T> Complete<T> {
