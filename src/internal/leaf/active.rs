@@ -36,11 +36,13 @@ impl<Item: crate::Focus> crate::Active for Active<Item> {
     }
 
     #[inline]
-    fn alter<T>(&mut self, f: impl FnOnce(&mut Self::Item) -> T) -> Option<T> {
-        match self.item {
-            Insert::Hash(_) => None,
-            Insert::Keep(ref mut item) => Some(f(item)),
-        }
+    fn update<T>(&mut self, f: impl FnOnce(&mut Insert<Self::Item>) -> T) -> T {
+        f(&mut self.item)
+    }
+
+    #[inline]
+    fn last(&self) -> &Insert<Self::Item> {
+        &self.item
     }
 
     #[inline]

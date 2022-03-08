@@ -112,17 +112,23 @@ where
     }
 
     #[inline]
-    fn alter<T>(&mut self, f: impl FnOnce(&mut Self::Item) -> T) -> Option<T> {
+    fn update<T>(&mut self, f: impl FnOnce(&mut Insert<Self::Item>) -> T) -> T {
         let before_hash = self.focus.cached_hash();
-        let result = self.focus.alter(f);
+        let result = self.focus.update(f);
         let after_hash = self.focus.cached_hash();
 
+        // If the cached hash of the focus changed, clear the cached hash here, because it is now
+        // invalid and needs to be recalculated
         if before_hash != after_hash {
-            // If the cached hash of the focus changed, clear the cached hash here, because it is
-            // now invalid and needs to be recalculated
             self.hash.set(None);
         }
+
         result
+    }
+
+    #[inline]
+    fn last(&self) -> &Insert<Self::Item> {
+        self.focus.last()
     }
 
     #[inline]

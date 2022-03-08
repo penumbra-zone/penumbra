@@ -20,11 +20,12 @@ pub trait Active: Focus + Sized {
     /// thing inserted, or the un-inserted thing and the [`Complete`] of this [`Active`].
     fn insert(self, item: Insert<Self::Item>) -> Result<Self, Full<Self>>;
 
-    // TODO: can this be replaced with a more ergonomic guard-pattern thing?
-    /// Alter the currently active `Self::Item` (i.e. the most-recently [`insert`](Active::insert)ed
-    /// one), returning the result of the function. This should do nothing if the most-recently
-    /// inserted thing was a [`Hash`].
-    fn alter<T>(&mut self, f: impl FnOnce(&mut Self::Item) -> T) -> Option<T>;
+    /// Update the currently active `Insert<Self::Item>` (i.e. the most-recently
+    /// [`insert`](Active::insert)ed one), returning the result of the function.
+    fn update<T>(&mut self, f: impl FnOnce(&mut Insert<Self::Item>) -> T) -> T;
+
+    /// Get a reference to the last-inserted item.
+    fn last(&self) -> &Insert<Self::Item>;
 }
 
 /// Describes a type which can be the focus of an [`Active`] tree: it can be finalized to make a
