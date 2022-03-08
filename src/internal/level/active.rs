@@ -12,11 +12,8 @@ pub(super) type Inner<Focus> = A<A<A<A<A<A<A<A<Focus>>>>>>>>;
 #[derivative(Clone(bound = "Focus: Clone, <Focus as crate::Focus>::Complete: Clone"))]
 #[derivative(PartialEq(bound = "Focus: PartialEq, <Focus as crate::Focus>::Complete: PartialEq"))]
 #[derivative(Eq(bound = "Focus: Eq, <Focus as crate::Focus>::Complete: Eq"))]
-pub struct Active<Focus: crate::Active>(Inner<Focus>);
+pub struct Active<Focus: crate::Focus>(Inner<Focus>);
 
-impl<Focus: crate::Active> Height for Active<Focus>
-where
-    Inner<Focus>: crate::Active,
-{
+impl<Focus: crate::Focus> Height for Active<Focus> {
     type Height = <Inner<Focus> as Height>::Height;
 }

@@ -6,11 +6,8 @@ type C<Child> = super::super::node::Complete<Child>;
 pub(super) type Inner<Leaf> = C<C<C<C<C<C<C<C<Leaf>>>>>>>>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Complete<L>(Inner<L>);
+pub struct Complete<Child>(Inner<Child>);
 
-impl<L> Height for Complete<L>
-where
-    Inner<L>: Height,
-{
-    type Height = <Inner<L> as Height>::Height;
+impl<Child: Height> Height for Complete<Child> {
+    type Height = <Inner<Child> as Height>::Height;
 }
