@@ -244,12 +244,10 @@ impl ValidatorSet {
             }
         }
 
-        // Slashed validator states are saved at the end of the block.
-        //
-        // When the validator was slashed their rate was updated to incorporate
-        // the slashing penalty and then their rate will be held constant, so
-        // there is no need to take into account the slashing penalty here.
+        // Slash validators by updating their state to "Slashed" and
+        // writing the slashed exchange rate.
         for (ik, slashing_penalty) in &block_changes.slashed_validators {
+            // First, update the exchange rate to reflect the slashing penalty.
             let slashed_rate = self
                 .cache
                 .validator_set
@@ -257,14 +255,6 @@ impl ValidatorSet {
                 .expect("slashed validator must be known")
                 .rate_data
                 .slash(*slashing_penalty);
-
-            query!(
-                "UPDATE validators SET validator_state=$1 WHERE identity_key = $2",
-                ValidatorStateName::Slashed.to_str(),
-                ik.borrow().encode_to_vec(),
-            )
-            .execute(&mut *dbtx)
-            .await?;
             query!(
                     "UPDATE validator_rates SET validator_exchange_rate=$1 WHERE identity_key=$2 AND epoch=$3",
                     slashed_rate.validator_exchange_rate as i64,
@@ -273,27 +263,22 @@ impl ValidatorSet {
             )
             .execute(&mut *dbtx)
             .await?;
-        }
 
-        // This happens during every end_block. Most modifications to validator status occur
-        // during end_epoch, and others (slashing) occur during begin_block, and both are
-        // applied here.
-        //
-        // TODO: This isn't a differential update. This should be OK but is sub-optimal.
-        for status in self.next_validator_statuses() {
-            let (state_name, unbonding_epoch) = status.state.into();
+            // Next, update the validator state to reflect that the validator
+            // was slashed, has no voting power, and is no longer unbonding (if
+            // it was at the time of slashing).
             query!(
-                    "UPDATE validators SET voting_power=$1, validator_state=$2, unbonding_epoch=$3 WHERE identity_key = $4",
-                    status.voting_power as i64,
-                    state_name.to_str(),
-                    // unbonding_epoch column will be NULL if unbonding_epoch is None (i.e. the state is not unbonding)
-                    unbonding_epoch.map(|i| i as i64),
-                    status.identity_key.encode_to_vec(),
-                )
-                .execute(&mut *dbtx)
-                .await?;
+                "UPDATE validators SET validator_state=$2, voting_power=$3, unbonding_epoch=$4 WHERE identity_key = $1",
+                ik.borrow().encode_to_vec(),
+                ValidatorStateName::Slashed.to_str(),
+                0,
+                None,
+            )
+            .execute(&mut *dbtx)
+            .await?;
         }
 
+        // TODO: should this be part of a future shielded pool component?
         // Save any new assets found in the block to the asset registry.
         for (id, asset) in &block_changes.supply_updates {
             query!(
@@ -316,8 +301,7 @@ impl ValidatorSet {
             self.commit_epoch(dbtx).await?;
         }
 
-        // New, slashed, and updated validators can happen in any block,
-        // not just on epoch transitions.
+        // Reset the pending block changes now that we've written them to the state.
         self.block_changes = None;
 
         Ok(())
@@ -379,100 +363,6 @@ impl ValidatorSet {
     // by the time this is called!
     pub async fn end_block(&mut self) -> Result<()> {
         let epoch = self.epoch().clone();
-        // This closure is used to generate a new ValidatorInfo from a ValidatorDefinition.
-        // This should *only* be called for *new validators* as it sets the validator's state
-        // to Inactive and sets default rate data!
-
-        /*
-        // TODO: break this apart more
-        // This will hold a single deterministically chosen validator definition for every identity key
-        // we received validator definitions for.
-        let mut resolved_validator_definitions: BTreeMap<IdentityKey, VerifiedValidatorDefinition> =
-            BTreeMap::new();
-        // Any conflicts in validator definitions added to the pending block need to be resolved.
-        for (ik, defs) in self
-            .block_changes
-            .as_mut()
-            .unwrap()
-            .validator_definitions
-            .iter_mut()
-        {
-            // Ensure the definitions are sorted by descending sequence number
-            defs.sort_by(|a, b| {
-                b.validator
-                    .sequence_number
-                    .cmp(&a.validator.sequence_number)
-            });
-
-            if defs.len() == 1 {
-                // If there was only one definition for an identity key, use it.
-                resolved_validator_definitions.insert(ik.clone(), defs[0].clone());
-                continue;
-            }
-
-            // Sort the validator definitions into buckets by their sequence number.
-            let mut new_validator_definitions_by_seq: Vec<(u32, Vec<VerifiedValidatorDefinition>)> =
-                Vec::new();
-            for def in defs.iter() {
-                let seq = def.validator.sequence_number;
-                let def = def.clone();
-
-                // If we haven't seen this sequence number before, create a new bucket.
-                if !new_validator_definitions_by_seq
-                    .iter()
-                    .any(|(s, _)| *s == seq)
-                {
-                    new_validator_definitions_by_seq.push((seq, vec![def]));
-                } else {
-                    // Otherwise, add the definition to the existing bucket.
-                    let mut found = false;
-                    for (s, defs) in new_validator_definitions_by_seq.iter_mut() {
-                        if *s == seq {
-                            defs.push(def);
-                            found = true;
-                            break;
-                        }
-                    }
-                    assert!(found);
-                }
-            }
-
-            // The highest sequence number bucket wins.
-            let highest_seq_bucket = &mut new_validator_definitions_by_seq[0];
-
-            // Sort any conflicting definitions for the highest sequence number by
-            // their signatures to get a deterministic ordering.
-            highest_seq_bucket.1.sort_by(|a, b| {
-                let a_sig = a.auth_sig.to_bytes();
-                let b_sig = b.auth_sig.to_bytes();
-                a_sig.cmp(&b_sig)
-            });
-
-            // Our pick will be the first definition in the bucket after sorting by signature.
-            resolved_validator_definitions.insert(ik.clone(), highest_seq_bucket.1[0].clone());
-        }
-
-        // Now that we have resolved all validator definitions, we can determine the validator
-        // changes that occurred in this block.
-        for (ik, def) in resolved_validator_definitions.into_iter() {
-            if self.validators().any(|v| v.borrow().identity_key == ik) {
-                // If this is an existing validator, we may be changing the rates, because the funding streams may have changed,
-                // so queue the redefinition to be processed at the next epoch boundary.
-                self.block_changes
-                    .as_mut()
-                    .expect("block_changes should be initialized during begin_block")
-                    .updated_validators
-                    .push(def);
-            } else {
-                // Add the validator to the block's new validators list so an INSERT query will be generated in `commit_block`.
-                self.block_changes
-                    .as_mut()
-                    .expect("block_changes should be initialized during begin_block")
-                    .new_validators
-                    .push(def);
-            }
-        }
-        */
 
         // Set `self.tm_validator_updates` to the complete set of
         // validators and voting power. This must be the last step performed,

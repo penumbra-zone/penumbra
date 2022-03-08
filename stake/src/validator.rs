@@ -108,6 +108,9 @@ pub struct ValidatorDefinition {
 
 impl std::cmp::Ord for ValidatorDefinition {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        // This is a total ordering on validator definitions, because the
+        // signatures can only be equal if the validator definitions are
+        // themselves equal.
         self.validator
             .sequence_number
             .cmp(&other.validator.sequence_number)
