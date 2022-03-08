@@ -12,13 +12,16 @@ use penumbra_crypto::{
 };
 use penumbra_proto::Protobuf;
 use sqlx::{query, Postgres, Transaction};
-use tendermint::{abci::types::ValidatorUpdate, PublicKey};
+use tendermint::{
+    abci::types::{Evidence, ValidatorUpdate},
+    PublicKey,
+};
 
 use crate::state::Reader;
 use penumbra_stake::{
-    BaseRateData, Epoch, FundingStream, IdentityKey, RateData, Validator, ValidatorInfo,
-    ValidatorState, ValidatorStateName, ValidatorStatus, VerifiedValidatorDefinition,
-    STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
+    BaseRateData, Epoch, FundingStream, IdentityKey, RateData, Validator, ValidatorDefinition,
+    ValidatorInfo, ValidatorState, ValidatorStateName, ValidatorStatus,
+    VerifiedValidatorDefinition, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
 };
 
 #[derive(Debug, Clone)]
@@ -32,127 +35,47 @@ struct Cache {
     epoch: Epoch,
 }
 
+impl Cache {
+    async fn load(reader: &Reader, epoch: Epoch) -> Result<Self> {
+        let mut validator_set = BTreeMap::new();
+        for validator in reader.validator_info(true).await? {
+            validator_set.insert(validator.validator.identity_key.clone(), validator.clone());
+        }
+
+        Ok(Self {
+            validator_set,
+            epoch,
+        })
+    }
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct BlockChanges {
     /// New validators added during the block. Saved and available for staking when the block is committed.
     pub new_validators: BTreeMap<IdentityKey, Vec<VerifiedValidatorDefinition>>,
-    /// Existing validators updated during the block. Saved when the block is committed.
-    pub updated_validators: Vec<VerifiedValidatorDefinition>,
+    /// Existing validators updated during the block. Saved when the block is committed, queued for the next epoch.
+    pub pending_validator_updates: Vec<VerifiedValidatorDefinition>,
     /// Validators slashed during this block. Saved when the block is committed.
     ///
     /// The validator's rate will have a slashing penalty immediately applied during the current epoch.
     /// Their future rates will be held constant.
-    pub slashed_validators: Vec<(IdentityKey, u64)>,
+    pub slashed_validators: Vec<IdentityKey>,
     /// The net delegations performed in this block per validator.
     pub delegation_changes: BTreeMap<IdentityKey, i64>,
     /// The list of updated validator identity keys and powers to send to Tendermint during `end_block`.
     pub tm_validator_updates: Vec<ValidatorUpdate>,
-    /// Records any updates to the token supply of some asset that happened in this block.
-    pub supply_updates: BTreeMap<asset::Id, (asset::Denom, u64)>,
+    /// If this is the last block in an epoch, epoch-related changes are recorded here.
+    pub epoch_changes: Option<EpochChanges>,
 }
 
-#[derive(Debug, Clone, Default)]
-pub struct EpochChanges {
-    /// Base rates for the next epoch go here.
-    pub next_base_rate: Option<BaseRateData>,
-    /// Validator rates for the next epoch go here.
-    pub next_rates: Vec<RateData>,
-    /// Set in `end_epoch` and reset to `None` when `reward_notes` is called.
-    // TODO: produce in end_epoch and return to caller, make this private
-    pub reward_notes: Vec<(u64, Address)>,
-}
-
-/// Records the complete state of all validators throughout a block,
-/// and is responsible for producing the necessary database queries
-/// for persistence.
-///
-/// After calling `ValidatorSet.commit`, the block is advanced.
-/// Internal tracking of validator changes is reset for the new block.
-#[derive(Debug, Clone)]
-pub struct ValidatorSet {
-    /// Changes to the validator set during the course of the block.
-    /// Will be reset every time `end_block` is called.
-    block_changes: Option<BlockChanges>,
-    /// Changes to the validator set over the course of an epoch.
-    /// Will be reset every time `end_epoch` is called.
-    epoch_changes: Option<EpochChanges>,
-    /// Cache of validator states.
-    // TODO: use this as a read-only cache, don't write to it
-    // except when fetching validator states during begin_block
-    cache: Cache,
-    // TODO: make this a parameter? it's only used for chain params
-    /// Database reader.
-    reader: Reader,
-}
-
-impl ValidatorSet {
-    pub async fn new(reader: Reader, epoch: Epoch) -> Result<Self> {
-        // Grab all validator info from the database. This will only happen when the
-        // ValidatorSet is first instantiated.
-        let block_validators = reader.validator_info(true).await?;
-
-        // Initialize all state machine validator states to their current state from the block validators.
-        let mut validator_set = BTreeMap::new();
-        for validator in block_validators.iter() {
-            validator_set.insert(validator.validator.identity_key.clone(), validator.clone());
-        }
-
-        Ok(ValidatorSet {
-            cache: Cache {
-                validator_set,
-                epoch,
-            },
-            reader,
-            block_changes: None,
-            epoch_changes: None,
-        })
-    }
-
-    /// Returns any changes to the validator set that occurred during
-    /// the course of the block.
-    pub fn block_changes(&self) -> Result<&BlockChanges> {
-        Ok(self
-            .block_changes
-            .as_ref()
-            .expect("block_changes called before end_block"))
-    }
-
-    /// Returns any changes to the validator set that occurred during
-    /// the course of the epoch.
-    pub fn epoch_changes(&self) -> Result<&EpochChanges> {
-        Ok(self
-            .epoch_changes
-            .as_ref()
-            .expect("epoch_changes called before end_epoch"))
-    }
-
-    // TODO: maybe the begin/end/commit flow should be a trait or something
-    pub fn begin_block(&mut self) {
-        self.block_changes = Some(Default::default());
-        // TODO: reload the validator cache from the database for the current epoch
-    }
-
-    pub fn begin_epoch(&mut self, epoch: Epoch) {
-        self.cache.epoch = epoch;
-        self.epoch_changes = Some(Default::default());
-    }
-
-    /// Called during `commit_block` and will append database queries to save
-    /// the validator set, reset internal state for the next block, as well as
-    /// set `self.epoch` to the `new_epoch` value passed in.
-    pub async fn commit_block(
-        &mut self,
-        height: u64,
-        dbtx: &mut Transaction<'_, Postgres>,
-    ) -> Result<()> {
+impl BlockChanges {
+    pub async fn commit(self, dbtx: &mut Transaction<'_, Postgres>) -> Result<()> {
         tracing::debug!(?height, "Committing block");
         tracing::debug!("end height {}", self.epoch().end_height().value(),);
 
-        let block_changes = self.block_changes()?;
-
         // Track the net change in delegations in this block.
         let epoch_index = self.epoch().index;
-        for (identity_key, delegation_change) in &block_changes.delegation_changes {
+        for (identity_key, delegation_change) in &self.delegation_changes {
             query!(
                 "INSERT INTO delegation_changes VALUES ($1, $2, $3)",
                 identity_key.encode_to_vec(),
@@ -164,9 +87,9 @@ impl ValidatorSet {
         }
 
         // Queue redefinitions of existing validators to be processed at the epoch boundary
-        for v in &block_changes.updated_validators {
+        for v in &self.updated_validators {
             query!(
-                "INSERT INTO pending_validator_redefinitions (definition) VALUES ($1)",
+                "INSERT INTO pending_validator_updates (definition) VALUES ($1)",
                 v.encode_to_vec()
             )
             .execute(&mut *dbtx)
@@ -174,7 +97,7 @@ impl ValidatorSet {
         }
 
         // Handle adding newly added validators with default rates
-        for (ik, defs) in &block_changes.new_validators {
+        for (ik, defs) in &self.new_validators {
             // Sort the validator definitions by sequence number + tiebreaker,
             // in case there are conflicts.
             let mut defs = defs.clone();
@@ -246,15 +169,15 @@ impl ValidatorSet {
 
         // Slash validators by updating their state to "Slashed" and
         // writing the slashed exchange rate.
-        for (ik, slashing_penalty) in &block_changes.slashed_validators {
-            // First, update the exchange rate to reflect the slashing penalty.
+        for ik in &self.slashed_validators {
+            // The exchange rate was already updated during `slash_validator`,
+            // so we just need to rewrite the rate for the current epoch.
             let slashed_rate = self
                 .cache
                 .validator_set
                 .get(&ik)
                 .expect("slashed validator must be known")
-                .rate_data
-                .slash(*slashing_penalty);
+                .rate_data;
             query!(
                     "UPDATE validator_rates SET validator_exchange_rate=$1 WHERE identity_key=$2 AND epoch=$3",
                     slashed_rate.validator_exchange_rate as i64,
@@ -280,7 +203,7 @@ impl ValidatorSet {
 
         // TODO: should this be part of a future shielded pool component?
         // Save any new assets found in the block to the asset registry.
-        for (id, asset) in &block_changes.supply_updates {
+        for (id, asset) in &self.supply_updates {
             query!(
                 "INSERT INTO assets (asset_id, denom, total_supply)
             VALUES ($1, $2, $3)
@@ -293,46 +216,45 @@ impl ValidatorSet {
             .await?;
         }
 
-        // If we are at the end of an epoch, process changes for it
-        // Since the epoch is set during end_block, we have to check
-        // the previous epoch here. Since this could be epoch 0, we
-        // need to check the index here before calling `prev`.
-        if self.epoch().index != 0 && self.epoch().prev().end_height().value() == height {
-            self.commit_epoch(dbtx).await?;
+        if let Some(epoch_changes) = self.epoch_changes.take() {
+            epoch_changes.commit(dbtx).await?;
         }
-
-        // Reset the pending block changes now that we've written them to the state.
-        self.block_changes = None;
 
         Ok(())
     }
+}
 
-    pub async fn commit_epoch(&mut self, dbtx: &mut Transaction<'_, Postgres>) -> Result<()> {
+#[derive(Debug, Clone)]
+pub struct EpochChanges {
+    /// Base rates for the next epoch go here.
+    pub next_base_rate: BaseRateData,
+    /// Validator rates for the next epoch go here.
+    pub next_rates: Vec<RateData>,
+    /// Set in `end_epoch` and reset to `None` when `reward_notes` is called.
+    // TODO: produce in end_epoch and return to caller, make this private
+    pub reward_notes: Vec<(u64, Address)>,
+    /// Updates to existing validator definitions that are applied as part of
+    /// this epoch transition.
+    pub updated_validators: Vec<ValidatorDefinition>,
+    /// Records updates to the supply of staking or delegation tokens as a result of an epoch transition.
+    pub supply_updates: BTreeMap<asset::Id, (asset::Denom, u64)>,
+}
+
+impl EpochChanges {
+    pub async fn commit(self, dbtx: &mut Transaction<'_, Postgres>) -> Result<()> {
         tracing::debug!("commit epoch");
-        if let (Some(base_rate_data), rate_data) = (
-            self.epoch_changes
-                .as_ref()
-                .expect("expected epoch_changes to be set before commit_epoch")
-                .next_base_rate
-                .clone(),
-            self.epoch_changes
-                .as_ref()
-                .expect("expected epoch_changes to be set before commit_epoch")
-                .next_rates
-                .clone(),
-        ) {
-            tracing::debug!(?base_rate_data, "Saving next base rate to the database");
-            query!(
-                "INSERT INTO base_rates VALUES ($1, $2, $3)",
-                base_rate_data.epoch_index as i64,
-                base_rate_data.base_reward_rate as i64,
-                base_rate_data.base_exchange_rate as i64,
-            )
-            .execute(&mut *dbtx)
-            .await?;
+        tracing::debug!(?self.next_base_rate, "Saving next base rate to the database");
+        query!(
+            "INSERT INTO base_rates VALUES ($1, $2, $3)",
+            self.next_base_rate.epoch_index as i64,
+            self.next_base_rate.base_reward_rate as i64,
+            self.next_base_rate.base_exchange_rate as i64,
+        )
+        .execute(&mut *dbtx)
+        .await?;
 
-            for rate in rate_data {
-                query!(
+        for rate in self.next_rates {
+            query!(
                     // This query needs to be ON CONFLICT UPDATE because this rate will have already been set
                     // in the case of a new validator.
                     "INSERT INTO validator_rates VALUES ($1, $2, $3, $4) ON CONFLICT ON CONSTRAINT validator_rates_pkey
@@ -344,14 +266,51 @@ impl ValidatorSet {
                 )
                 .execute(&mut *dbtx)
                 .await?;
-            }
         }
 
-        // This resets the rate and supply information
-        // that only changes during epoch transitions.
-        // tracing::debug!(?self.epoch, "commit_block in validator_set");
-        tracing::debug!("commit_block in validator_set");
-        self.epoch_changes = None;
+        // TODO: write the updated validators
+        // TODO: write the supply updates
+        // TODO: what processes the reward notes?
+        // -- problem: how do we connect this code with the code that handles the shielded pool?
+
+        Ok(())
+    }
+}
+
+/// Records the complete state of all validators throughout a block,
+/// and is responsible for producing the necessary database queries
+/// for persistence.
+///
+/// After calling `ValidatorSet.commit`, the block is advanced.
+/// Internal tracking of validator changes is reset for the new block.
+#[derive(Debug, Clone)]
+pub struct ValidatorSet {
+    /// Changes to the validator set during the course of the block.
+    /// Will be reset every time `end_block` is called.
+    block_changes: Option<BlockChanges>,
+    /// Cache of validator states.
+    ///
+    /// This should only be written to in end_block, immediately before commit.
+    cache: Cache,
+    /// Database reader.
+    reader: Reader,
+}
+
+impl ValidatorSet {
+    pub async fn new(reader: Reader, epoch: Epoch) -> Result<Self> {
+        let cache = Cache::load(&reader, epoch).await?;
+
+        Ok(ValidatorSet {
+            cache,
+            reader,
+            block_changes: None,
+        })
+    }
+
+    // TODO: maybe the begin/end/commit flow should be a trait or something
+    pub async fn begin_block(&mut self) -> Result<()> {
+        self.cache = Cache::load(&self.reader).await?;
+        self.block_changes = Some(Default::default());
 
         Ok(())
     }
@@ -361,8 +320,15 @@ impl ValidatorSet {
     //
     // Any *state changes* (i.e. ValidatorState) should have already been applied to `validator_set`
     // by the time this is called!
-    pub async fn end_block(&mut self) -> Result<()> {
+    pub async fn end_block(&mut self, height: u64) -> Result<()> {
         let epoch = self.epoch().clone();
+
+        if epoch.end_height().value() == height {
+            self.end_epoch().await?;
+        }
+
+        // TODO: update the below code to reflect that we'll build the list of
+        // validator changes differently
 
         // Set `self.tm_validator_updates` to the complete set of
         // validators and voting power. This must be the last step performed,
@@ -397,6 +363,10 @@ impl ValidatorSet {
             .collect::<Result<Vec<_>>>()?;
 
         Ok(())
+    }
+
+    pub async fn commit(&mut self, dbtx: &mut Transaction<'_, Postgres>) -> Result<()> {
+        self.block_changes.take().unwrap().commit(dbtx).await
     }
 
     pub fn update_delegations(&mut self, delegation_changes: &BTreeMap<IdentityKey, i64>) {
@@ -488,212 +458,209 @@ impl ValidatorSet {
 
     /// Called during `end_epoch`. Will calculate validator changes that can only happen during epoch changes
     /// such as rate updates.
-    pub fn end_epoch(
-        &'_ mut self,
-        new_epoch: Epoch,
-    ) -> impl Future<Output = Result<()>> + Send + Unpin + '_ {
-        let chain_params = self.reader.chain_params_rx().borrow();
-        let unbonding_epochs: u64 = chain_params.unbonding_epochs;
-        let active_validator_limit: u64 = chain_params.active_validator_limit;
-        drop(chain_params);
+    async fn end_epoch(&mut self) -> Result<()> {
+        // We've finished processing the last block of `epoch`, so we've
+        // crossed the epoch boundary, and (prev | current | next) are:
+        let prev_epoch = self.epoch();
+        let current_epoch = prev_epoch.next();
+        let next_epoch = current_epoch.next();
 
-        let prev_epoch = self.epoch().clone();
-        assert_eq!(prev_epoch.index + 1, new_epoch.index);
+        tracing::info!(
+            ?prev_epoch,
+            ?current_epoch,
+            ?next_epoch,
+            "crossed epoch boundary, processing rate updates"
+        );
+        metrics::increment_counter!("epoch");
 
-        tracing::debug!(?new_epoch, "Advancing epoch");
-        self.begin_epoch(new_epoch);
-        let current_epoch = new_epoch.clone();
+        let unbonding_epochs = self.reader.chain_params_rx().borrow().unbonding_epochs;
+        let active_validator_limit = self
+            .reader
+            .chain_params_rx()
+            .borrow()
+            .active_validator_limit;
 
-        Box::pin(async move {
-            // TODO: pull out the pending validator redefinitions and apply them:
-            // - group them by identity key
-            // - sort each group by sequence number + tiebreaker
-            // - write the new definitions
+        // Pull out pending validator redefinitions and apply them to the cache,
+        // then queue them to be written to the state.
+        let mut updated_validators = Vec::new();
+        for (ik, mut defs) in self.reader.pending_validator_redefinitions().await? {
+            // Select the validator redefinition with the highest sequence number.
+            defs.sort();
+            let update = defs.pop().expect("redefinitions list is nonempty");
+            tracing::info!(?update, "processing queued redefinition");
+            // Overwrite the cache with the new update, so we'll use it while computing new
+            // rates.  Because we're in EndBlock, we know the "divergent" data will be reconciled
+            // when we write the updates in Commit and reload the cache.
+            self.cache
+                .validator_set
+                .get_mut(&ik)
+                .expect("redefined validators must exist")
+                .validator = update.validator.clone();
+            updated_validators.push(update);
+        }
 
-            tracing::debug!("processing base rate");
-            let current_base_rate = self.reader.base_rate_data(current_epoch.index).await?;
+        tracing::debug!("processing base rate");
+        let current_base_rate = self.reader.base_rate_data(current_epoch.index).await?;
 
-            // We are calculating the rates for the next epoch. For example, if
-            // we have just ended epoch 2 and are entering epoch 3, we are calculating the rates
-            // for epoch 4.
+        // We are calculating the rates for the next epoch. For example, if
+        // we have just ended epoch 2 and are entering epoch 3, we are calculating the rates
+        // for epoch 4.
 
-            /// FIXME: set this less arbitrarily, and allow this to be set per-epoch
-            /// 3bps -> 11% return over 365 epochs, why not
-            const BASE_REWARD_RATE: u64 = 3_0000;
+        /// FIXME: set this less arbitrarily, and allow this to be set per-epoch
+        /// 3bps -> 11% return over 365 epochs, why not
+        const BASE_REWARD_RATE: u64 = 3_0000;
 
-            let next_base_rate = current_base_rate.next(BASE_REWARD_RATE);
+        let next_base_rate = current_base_rate.next(BASE_REWARD_RATE);
 
-            // rename to curr_rate so it lines up with next_rate (same # chars)
-            tracing::debug!(curr_base_rate = ?current_base_rate);
-            tracing::debug!(?next_base_rate);
+        // rename to curr_rate so it lines up with next_rate (same # chars)
+        tracing::debug!(curr_base_rate = ?current_base_rate);
+        tracing::debug!(?next_base_rate);
 
-            let mut staking_token_supply = self
+        let mut staking_token_supply = self
+            .reader
+            .asset_lookup(*STAKING_TOKEN_ASSET_ID)
+            .await?
+            .map(|info| info.total_supply)
+            .unwrap();
+
+        let mut next_rates = Vec::new();
+        let mut reward_notes = Vec::new();
+        let mut supply_updates = BTreeMap::new();
+
+        // this is a bit complicated: because we're in the EndBlock phase, and the
+        // delegations in this block have not yet been committed, we have to combine
+        // the delegations in pending_block with the ones already committed to the
+        // state. otherwise the delegations committed in the epoch threshold block
+        // would be lost.
+        //
+        // TODO: encapsulate the delegations logic
+        let mut delegation_changes = self.reader.delegation_changes(prev_epoch.index).await?;
+        for (id_key, delta) in &self
+            .block_changes
+            .as_ref()
+            .expect("block_changes should be initialized during begin_block")
+            .delegation_changes
+        {
+            // TODO: does this need to be copied back to `self.block_changes.delegation_changes`
+            // at the end of this method, so that `commit_block` will be able to use any
+            // changes?
+            *delegation_changes.entry(id_key.clone()).or_insert(0) += delta;
+        }
+
+        // steps (foreach validator):
+        // - get the total token supply for the validator's delegation tokens
+        // - process the updates to the token supply:
+        //   - collect all delegations occurring in previous epoch and apply them (adds to supply);
+        //   - collect all undelegations started in previous epoch and apply them (reduces supply);
+        // - feed the updated (current) token supply into current_rates.voting_power()
+        // - persist both the current voting power and the current supply
+        //
+        for v in &mut self.cache.validator_set {
+            let validator = v.1;
+            let current_rate = validator.rate_data.clone();
+            tracing::debug!(?validator, "processing validator rate updates");
+            assert!(current_rate.epoch_index == current_epoch.index);
+
+            let funding_streams = self
                 .reader
-                .asset_lookup(*STAKING_TOKEN_ASSET_ID)
+                .funding_streams(validator.validator.identity_key.clone())
+                .await?;
+
+            let next_rate = current_rate.next(
+                &next_base_rate,
+                funding_streams.as_ref(),
+                &validator.status.state,
+            );
+            assert!(next_rate.epoch_index == current_epoch.index + 1);
+            let identity_key = validator.validator.identity_key.clone();
+
+            let delegation_delta = delegation_changes.get(&identity_key).unwrap_or(&0i64);
+
+            let delegation_amount = delegation_delta.abs() as u64;
+            let unbonded_amount = current_rate.unbonded_amount(delegation_amount);
+
+            let mut delegation_token_supply = self
+                .reader
+                .asset_lookup(identity_key.delegation_token().id())
                 .await?
                 .map(|info| info.total_supply)
-                .unwrap();
+                .unwrap_or(0);
 
-            let mut next_rates = Vec::new();
-            let mut reward_notes = Vec::new();
-            let mut supply_updates = Vec::new();
-
-            // this is a bit complicated: because we're in the EndBlock phase, and the
-            // delegations in this block have not yet been committed, we have to combine
-            // the delegations in pending_block with the ones already committed to the
-            // state. otherwise the delegations committed in the epoch threshold block
-            // would be lost.
-            //
-            // TODO: encapsulate the delegations logic
-            let mut delegation_changes = self.reader.delegation_changes(prev_epoch.index).await?;
-            for (id_key, delta) in &self
-                .block_changes
-                .as_ref()
-                .expect("block_changes should be initialized during begin_block")
-                .delegation_changes
-            {
-                // TODO: does this need to be copied back to `self.block_changes.delegation_changes`
-                // at the end of this method, so that `commit_block` will be able to use any
-                // changes?
-                *delegation_changes.entry(id_key.clone()).or_insert(0) += delta;
+            if *delegation_delta > 0 {
+                // net delegation: subtract the unbonded amount from the staking token supply
+                staking_token_supply = staking_token_supply.checked_sub(unbonded_amount).unwrap();
+                delegation_token_supply = delegation_token_supply
+                    .checked_add(delegation_amount)
+                    .unwrap();
+            } else {
+                // net undelegation: add the unbonded amount to the staking token supply
+                staking_token_supply = staking_token_supply.checked_add(unbonded_amount).unwrap();
+                delegation_token_supply = delegation_token_supply
+                    .checked_sub(delegation_amount)
+                    .unwrap();
             }
 
-            // steps (foreach validator):
-            // - get the total token supply for the validator's delegation tokens
-            // - process the updates to the token supply:
-            //   - collect all delegations occurring in previous epoch and apply them (adds to supply);
-            //   - collect all undelegations started in previous epoch and apply them (reduces supply);
-            // - feed the updated (current) token supply into current_rates.voting_power()
-            // - persist both the current voting power and the current supply
-            //
-            for v in &mut self.cache.validator_set {
-                let validator = v.1;
-                let current_rate = validator.rate_data.clone();
-                tracing::debug!(?validator, "processing validator rate updates");
-                assert!(current_rate.epoch_index == current_epoch.index);
-
-                let funding_streams = self
-                    .reader
-                    .funding_streams(validator.validator.identity_key.clone())
-                    .await?;
-
-                let next_rate = current_rate.next(
-                    &next_base_rate,
-                    funding_streams.as_ref(),
-                    &validator.status.state,
-                );
-                assert!(next_rate.epoch_index == current_epoch.index + 1);
-                let identity_key = validator.validator.identity_key.clone();
-
-                let delegation_delta = delegation_changes.get(&identity_key).unwrap_or(&0i64);
-
-                let delegation_amount = delegation_delta.abs() as u64;
-                let unbonded_amount = current_rate.unbonded_amount(delegation_amount);
-
-                let mut delegation_token_supply = self
-                    .reader
-                    .asset_lookup(identity_key.delegation_token().id())
-                    .await?
-                    .map(|info| info.total_supply)
-                    .unwrap_or(0);
-
-                if *delegation_delta > 0 {
-                    // net delegation: subtract the unbonded amount from the staking token supply
-                    staking_token_supply =
-                        staking_token_supply.checked_sub(unbonded_amount).unwrap();
-                    delegation_token_supply = delegation_token_supply
-                        .checked_add(delegation_amount)
-                        .unwrap();
-                } else {
-                    // net undelegation: add the unbonded amount to the staking token supply
-                    staking_token_supply =
-                        staking_token_supply.checked_add(unbonded_amount).unwrap();
-                    delegation_token_supply = delegation_token_supply
-                        .checked_sub(delegation_amount)
-                        .unwrap();
-                }
-
-                // update the delegation token supply
-                supply_updates.push((
-                    identity_key.delegation_token().id(),
+            // update the delegation token supply
+            supply_updates.insert(
+                identity_key.delegation_token().id(),
+                (
                     identity_key.delegation_token().denom(),
                     delegation_token_supply,
-                ));
-                let voting_power =
-                    current_rate.voting_power(delegation_token_supply, &current_base_rate);
-                tracing::debug!(?voting_power);
+                ),
+            );
+            let voting_power =
+                current_rate.voting_power(delegation_token_supply, &current_base_rate);
+            tracing::debug!(?voting_power);
 
-                // Update the status of the validator within the validator set
-                // with the newly starting epoch's calculated voting rate and power.
-                validator.rate_data = current_rate.clone();
-                validator.status.voting_power = voting_power;
+            // Update the status of the validator within the validator set
+            // with the newly starting epoch's calculated voting rate and power.
+            validator.rate_data = current_rate.clone();
+            validator.status.voting_power = voting_power;
 
-                // Only Active validators produce commission rewards
-                if validator.status.state == ValidatorState::Active {
-                    // distribute validator commission
-                    for stream in funding_streams {
-                        let commission_reward_amount = stream.reward_amount(
-                            delegation_token_supply,
-                            &next_base_rate,
-                            &current_base_rate,
-                        );
+            // Only Active validators produce commission rewards
+            if validator.status.state == ValidatorState::Active {
+                // distribute validator commission
+                for stream in funding_streams {
+                    let commission_reward_amount = stream.reward_amount(
+                        delegation_token_supply,
+                        &next_base_rate,
+                        &current_base_rate,
+                    );
 
-                        reward_notes.push((commission_reward_amount, stream.address));
-                    }
+                    reward_notes.push((commission_reward_amount, stream.address));
                 }
-
-                // rename to curr_rate so it lines up with next_rate (same # chars)
-                let delegation_denom = identity_key.delegation_token().denom();
-                tracing::debug!(curr_rate = ?current_rate);
-                tracing::debug!(?next_rate);
-                tracing::debug!(?delegation_delta);
-                tracing::debug!(?delegation_token_supply);
-                tracing::debug!(?delegation_denom);
-
-                next_rates.push(next_rate);
             }
 
-            // State transitions on epoch change are handled here
-            // after all rates have been calculated
-            self.process_epoch_transitions(active_validator_limit, unbonding_epochs)?;
+            // rename to curr_rate so it lines up with next_rate (same # chars)
+            let delegation_denom = identity_key.delegation_token().denom();
+            tracing::debug!(curr_rate = ?current_rate);
+            tracing::debug!(?next_rate);
+            tracing::debug!(?delegation_delta);
+            tracing::debug!(?delegation_token_supply);
+            tracing::debug!(?delegation_denom);
 
-            for supply_update in supply_updates {
-                self.add_supply_update(supply_update.0, supply_update.1, supply_update.2);
-            }
+            next_rates.push(next_rate);
+        }
 
-            tracing::debug!(?staking_token_supply);
+        tracing::debug!(?staking_token_supply);
+        supply_updates.insert(
+            *STAKING_TOKEN_ASSET_ID,
+            (STAKING_TOKEN_DENOM.clone(), staking_token_supply),
+        );
 
-            self.epoch_changes
-                .as_mut()
-                .expect("epoch_changes should be set")
-                .next_rates = next_rates;
-            self.epoch_changes
-                .as_mut()
-                .expect("epoch_changes should be set")
-                .next_base_rate = Some(next_base_rate);
-            self.epoch_changes
-                .as_mut()
-                .expect("epoch_changes should be set")
-                .reward_notes = reward_notes;
-            self.block_changes
-                .as_mut()
-                .expect("block_changes should be set")
-                .supply_updates
-                .insert(
-                    *STAKING_TOKEN_ASSET_ID,
-                    (STAKING_TOKEN_DENOM.clone(), staking_token_supply),
-                );
+        // State transitions on epoch change are handled here
+        // after all rates have been calculated
+        self.process_epoch_transitions(active_validator_limit, unbonding_epochs)?;
 
-            Ok(())
-        })
-    }
+        self.block_changes.as_mut().unwrap().epoch_changes = Some(EpochChanges {
+            next_rates,
+            next_base_rate,
+            reward_notes,
+            supply_updates,
+            updated_validators,
+        });
 
-    pub fn add_supply_update(&mut self, id: Id, denom: Denom, token_supply: u64) {
-        self.block_changes
-            .as_mut()
-            .expect("block_changes should be initialized during begin_block")
-            .supply_updates
-            .insert(id, (denom, token_supply));
+        Ok(())
     }
 
     // This should *only* be called during `end_block` as validators don't
@@ -708,18 +675,7 @@ impl ValidatorSet {
             .as_mut()
             .expect("block_changes should be initialized during begin_block")
             .new_validators
-            .push(validator);
-    }
-
-    pub fn update_supply_for_denom(&mut self, denom: Denom, amount: u64) {
-        tracing::debug!(?amount, ?denom, "update_supply_for_denom");
-        self.block_changes
-            .as_mut()
-            .expect("block_changes should be initialized during begin_block")
-            .supply_updates
-            .entry(denom.id())
-            .or_insert((denom, 0))
-            .1 += amount;
+            .insert(validator.validator.identity_key.clone(), validator);
     }
 
     /// This keeps track of validator definitions received during the block.
@@ -740,7 +696,7 @@ impl ValidatorSet {
             self.block_changes
                 .as_mut()
                 .expect("block_changes should be initialized during begin_block")
-                .updated_validators
+                .pending_validator_updates
                 .push(validator_definition);
         } else {
             // Add the validator to the block's new validators list so an INSERT query will be generated in `commit_block`.
@@ -859,16 +815,17 @@ impl ValidatorSet {
 
     // Marks a validator as slashed. Only validators in the active or unbonding
     // state may be slashed.
-    pub fn slash_validator(&mut self, ck: &PublicKey, slashing_penalty: u64) -> Result<()> {
-        tracing::debug!(?ck, "slash_validator");
-        // Don't love this clone.
-        let validator = self.get_validator_by_consensus_key(ck)?.clone();
+    #[tracing::instrument(skip(self))]
+    pub fn slash_validator(&mut self, evidence: &Evidence) -> Result<()> {
+        let ck = tendermint::PublicKey::from_raw_ed25519(&evidence.validator.address)
+            .ok_or_else(|| anyhow::anyhow!("invalid ed25519 consensus pubkey from tendermint"))
+            .unwrap();
 
-        self.block_changes
-            .as_mut()
-            .expect("block_changes should be initialized during begin_block")
-            .slashed_validators
-            .push(validator.identity_key.clone());
+        let slashing_penalty = self.reader.chain_params_rx().borrow().slashing_penalty;
+        // Don't love this clone.
+        let validator = self.get_validator_by_consensus_key(&ck)?.clone();
+
+        tracing::info!(?validator, ?slashing_penalty, "slashing validator");
 
         let current_info = self
             .get_validator_info(&validator.identity_key)
@@ -876,18 +833,24 @@ impl ValidatorSet {
         let current_state = current_info.status.state;
 
         let mut mark_slashed = |validator: &Validator| -> Result<()> {
-            self.cache
+            // It's safe to modify the cache here, as it will be reset
+            // during begin_block. We need to access the updated state/rate data
+            // during end_block and commit.
+            let mut cv = self
+                .cache
                 .validator_set
                 .get_mut(&validator.identity_key)
-                .ok_or_else(|| anyhow::anyhow!("Validator not found"))?
-                .status
-                .state = ValidatorState::Slashed;
-            self.cache
-                .validator_set
-                .get_mut(&validator.identity_key)
-                .ok_or_else(|| anyhow::anyhow!("Validator not found"))?
-                .rate_data
-                .slash(slashing_penalty);
+                .ok_or_else(|| anyhow::anyhow!("Validator not found"))?;
+
+            cv.status.state = ValidatorState::Slashed;
+            cv.rate_data = cv.rate_data.slash(slashing_penalty);
+
+            self.block_changes
+                .as_mut()
+                .expect("block_changes should be initialized during begin_block")
+                .slashed_validators
+                .push(validator.identity_key.clone());
+
             Ok(())
         };
 

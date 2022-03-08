@@ -73,8 +73,8 @@ CREATE TABLE IF NOT EXISTS validators (
                (validator_state != 'UNBONDING' AND unbonding_epoch IS NULL))
 );
 
--- Pending validator redefinitions, to be processed at the next epoch boundary
-CREATE TABLE IF NOT EXISTS pending_validator_redefinitions (
+-- Pending validator updates, to be processed at the next epoch boundary
+CREATE TABLE IF NOT EXISTS pending_validator_updates (
     definition bytea NOT NULL,
 );
 

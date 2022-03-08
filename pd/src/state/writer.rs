@@ -571,9 +571,7 @@ impl Writer {
             false => None,
         };
 
-        block_validator_set
-            .commit_block(block.height.unwrap(), &mut dbtx)
-            .await?;
+        block_validator_set.commit(&mut dbtx).await?;
 
         // Finally, commit the transaction and then update subscribers
         dbtx.commit().await?;
