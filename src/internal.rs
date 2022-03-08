@@ -37,6 +37,7 @@ pub mod complete {
     pub(super) mod node;
     pub(super) mod tier;
     pub use leaf::Leaf;
+    pub use node::children;
     pub use node::Node;
     pub use tier::{Nested, Tier};
 }

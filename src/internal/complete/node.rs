@@ -1,20 +1,30 @@
+use std::cell::Cell;
+
 use crate::{
     internal::height::Succ, internal::three::Three, Complete, GetHash, Hash, Height, Insert,
 };
 
 use super::super::active;
 
+pub mod children;
+pub use children::Children;
+
 /// A complete sparse node in a tree, storing only the witnessed subtrees.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Node<Child> {
-    hash: Hash,
-    children: [Option<Box<Child>>; 4],
+    hash: Cell<Option<Hash>>,
+    children: Children<Child>,
 }
 
 impl<Child> Node<Child> {
-    /// Only call this when you know what the hash should be!
-    pub(crate) fn set_hash_unchecked(&self, hash: Hash) {
-        todo!("set the hash");
+    /// Set the hash of this node without checking to see whether the hash is correct.
+    ///
+    /// # Correctness
+    ///
+    /// This should only be called when the hash is already known (i.e. after construction from
+    /// children with a known node hash).
+    pub(in super::super) fn set_hash_unchecked(&self, hash: Hash) {
+        self.hash.set(Some(hash));
     }
 
     pub(in super::super) fn from_siblings_and_focus_or_else_hash(
@@ -46,11 +56,15 @@ impl<Child: Complete> Complete for Node<Child> {
 impl<Child> GetHash for Node<Child> {
     #[inline]
     fn hash(&self) -> Hash {
-        self.hash
+        self.hash.get().unwrap_or_else(|| {
+            let hash = todo!("hash children");
+            self.hash.set(Some(hash));
+            hash
+        })
     }
 
     #[inline]
     fn cached_hash(&self) -> Option<Hash> {
-        Some(self.hash)
+        self.hash.get()
     }
 }
