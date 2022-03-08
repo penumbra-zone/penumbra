@@ -6,7 +6,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub(crate) struct Active<Focus: crate::Active> {
+pub struct Active<Focus: crate::Focus> {
     focus: Focus,
     siblings: Three<HashOr<Focus::Complete>>,
     // TODO: replace this with space-saving `Cell<OptionHash>`?
@@ -26,21 +26,12 @@ impl<Focus: crate::Active> Active<Focus> {
     }
 }
 
-fn hash_active<Focus: crate::Active + GetHash>(
+fn hash_active<Focus: crate::Focus>(
     siblings: &Three<HashOr<Focus::Complete>>,
     focus: &Focus,
 ) -> Hash {
     // Get the correct padding hash for this height
     let padding = Hash::padding();
-
-    // Get the hashes of all the `Result<T, Hash>` in the array, hashing `T` as necessary
-    #[inline]
-    fn hashes_of_all<T: GetHash, const N: usize>(full: [&HashOr<T>; N]) -> [Hash; N] {
-        full.map(|hash_or_t| match hash_or_t {
-            HashOr::Hash(hash) => *hash,
-            HashOr::Item(t) => t.hash(),
-        })
-    }
 
     // Get the four elements of this segment, *in order*, and extract their hashes
     let (a, b, c, d) = match siblings.elems() {
@@ -50,19 +41,19 @@ fn hash_active<Focus: crate::Active + GetHash>(
             (a, b, c, d)
         }
         Elems::_1(full) => {
-            let [a] = hashes_of_all(full);
+            let [a] = Hash::hashes_of_all(full);
             let b = focus.hash();
             let [c, d] = [padding, padding];
             (a, b, c, d)
         }
         Elems::_2(full) => {
-            let [a, b] = hashes_of_all(full);
+            let [a, b] = Hash::hashes_of_all(full);
             let c = focus.hash();
             let [d] = [padding];
             (a, b, c, d)
         }
         Elems::_3(full) => {
-            let [a, b, c] = hashes_of_all(full);
+            let [a, b, c] = Hash::hashes_of_all(full);
             let d = focus.hash();
             (a, b, c, d)
         }
@@ -71,14 +62,14 @@ fn hash_active<Focus: crate::Active + GetHash>(
     Hash::node(Focus::Height::HEIGHT + 1, a, b, c, d)
 }
 
-impl<Focus: crate::Active> Height for Active<Focus>
+impl<Focus: crate::Focus> Height for Active<Focus>
 where
     Focus: Height,
 {
     type Height = S<Focus::Height>;
 }
 
-impl<Focus: crate::Active> GetHash for Active<Focus> {
+impl<Focus: crate::Focus> GetHash for Active<Focus> {
     #[inline]
     fn hash(&self) -> Hash {
         match self.hash.get() {
@@ -92,7 +83,7 @@ impl<Focus: crate::Active> GetHash for Active<Focus> {
     }
 }
 
-impl<Focus: crate::Active> crate::Finalize for Active<Focus> {
+impl<Focus: crate::Focus> crate::Focus for Active<Focus> {
     type Complete = super::Complete<Focus::Complete>;
 
     #[inline]

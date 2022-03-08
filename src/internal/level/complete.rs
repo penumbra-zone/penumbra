@@ -1,6 +1,6 @@
 use crate::Height;
 
-type C<Child> = crate::node::Complete<Child>;
+type C<Child> = super::super::node::Complete<Child>;
 
 /// An eight-deep complete tree with the given leaf.
 pub(super) type Inner<Leaf> = C<C<C<C<C<C<C<C<Leaf>>>>>>>>;

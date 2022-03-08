@@ -1,8 +1,4 @@
-use crate::{
-    height::S,
-    three::{IntoElems, Three},
-    GetHash, Hash, HashOr, Height,
-};
+use crate::{height::S, three::Three, GetHash, Hash, HashOr, Height};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Complete<Child> {

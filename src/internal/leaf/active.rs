@@ -1,4 +1,4 @@
-use crate::{Finalize, Full, GetHash, Hash, HashOr, Height};
+use crate::{Focus, Full, GetHash, Hash, HashOr, Height};
 
 pub struct Active<T> {
     item: HashOr<T>,
@@ -18,7 +18,7 @@ impl<Item: Height> Height for Active<Item> {
     type Height = Item::Height;
 }
 
-impl<Item: crate::Finalize> crate::Active for Active<Item> {
+impl<Item: crate::Focus> crate::Active for Active<Item> {
     type Item = Item;
 
     #[inline]
@@ -43,8 +43,8 @@ impl<Item: crate::Finalize> crate::Active for Active<Item> {
     }
 }
 
-impl<Item: crate::Finalize> crate::Finalize for Active<Item> {
-    type Complete = super::Complete<<Item as crate::Finalize>::Complete>;
+impl<Item: crate::Focus> crate::Focus for Active<Item> {
+    type Complete = super::Complete<<Item as crate::Focus>::Complete>;
 
     #[inline]
     fn finalize(self) -> HashOr<Self::Complete> {
