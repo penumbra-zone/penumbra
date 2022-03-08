@@ -7,3 +7,12 @@ edition = "2021"
 
 [dependencies]
 derivative = "2"
+once_cell = "1"
+blake2b_simd = "1"
+ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
+ark-serialize = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
+poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377" }
+
+[patch.crates-io]
+ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
+ark-serialize = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }

@@ -5,10 +5,6 @@
 #[macro_use]
 extern crate derivative;
 
-mod hash;
-#[doc(inline)]
-pub use hash::{GetHash, Hash};
-
 mod item;
 #[doc(inline)]
 pub use item::Item;
@@ -18,9 +14,10 @@ pub use internal::height::Height;
 
 pub mod internal;
 #[doc(inline)]
-pub use internal::active::Insert;
+pub use internal::{active::Insert, hash::Hash};
 
 use internal::{
     active::{Active, Focus, Full},
     complete::Complete,
+    hash::GetHash,
 };
