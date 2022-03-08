@@ -58,6 +58,12 @@ impl<T> Three<T> {
     }
 }
 
+impl<T> Default for Three<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub enum Elems<'a, T> {
     _0([&'a T; 0]),
     _1([&'a T; 1]),
