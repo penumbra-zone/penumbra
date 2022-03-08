@@ -39,7 +39,13 @@ impl<Child: crate::Complete> crate::Complete for Complete<Child> {
 }
 
 impl<Child> GetHash for Complete<Child> {
+    #[inline]
     fn hash(&self) -> Hash {
         self.hash
+    }
+
+    #[inline]
+    fn cached_hash(&self) -> Option<Hash> {
+        Some(self.hash)
     }
 }

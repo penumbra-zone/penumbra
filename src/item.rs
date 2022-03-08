@@ -40,6 +40,11 @@ impl<T: GetHash> GetHash for Item<T> {
             hash
         })
     }
+
+    #[inline]
+    fn cached_hash(&self) -> Option<Hash> {
+        self.hash.get()
+    }
 }
 
 impl<T> crate::Height for Item<T> {

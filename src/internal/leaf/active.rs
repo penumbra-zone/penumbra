@@ -13,6 +13,14 @@ impl<Item: GetHash> GetHash for Active<Item> {
             Insert::Keep(ref item) => item.hash(),
         }
     }
+
+    #[inline]
+    fn cached_hash(&self) -> Option<Hash> {
+        match self.item {
+            Insert::Hash(hash) => Some(hash),
+            Insert::Keep(ref item) => item.cached_hash(),
+        }
+    }
 }
 
 impl<Item: Height> Height for Active<Item> {

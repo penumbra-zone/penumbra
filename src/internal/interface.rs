@@ -22,16 +22,8 @@ pub trait Active: Focus + Sized {
 
     // TODO: can this be replaced with a more ergonomic guard-pattern thing?
     /// Alter the currently active `Self::Item` (i.e. the most-recently [`insert`](Active::insert)ed
-    /// one), returning the result of the function. This does nothing if the most-recently inserted
-    /// thing was a [`Hash`].
-    ///
-    /// # Correctness
-    ///
-    /// If the function is invoked on a `Self::Item`, this function *must* return `Some(T)`. It is a
-    /// violation of this condition to return `None` if the function was called. This condition is
-    /// required because internally cached hashes are only cleared if the function was actually
-    /// called, and the return value of `None` should be used only to indicate that these caches do
-    /// not need to be updated.
+    /// one), returning the result of the function. This should do nothing if the most-recently
+    /// inserted thing was a [`Hash`].
     fn alter<T>(&mut self, f: impl FnOnce(&mut Self::Item) -> T) -> Option<T>;
 }
 

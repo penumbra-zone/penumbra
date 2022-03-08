@@ -20,7 +20,13 @@ use internal::{Active, Complete, Focus, Full};
 pub struct Commitment;
 
 impl GetHash for Commitment {
+    #[inline]
     fn hash(&self) -> Hash {
         Hash::commitment(self)
+    }
+
+    #[inline]
+    fn cached_hash(&self) -> Option<Hash> {
+        None
     }
 }

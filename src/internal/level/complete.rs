@@ -17,8 +17,14 @@ impl<Item: Height> Height for Complete<Item> {
 }
 
 impl<Item: GetHash> GetHash for Complete<Item> {
+    #[inline]
     fn hash(&self) -> Hash {
         self.inner.hash()
+    }
+
+    #[inline]
+    fn cached_hash(&self) -> Option<Hash> {
+        self.inner.cached_hash()
     }
 }
 

@@ -10,8 +10,14 @@ impl<T> Complete<T> {
 }
 
 impl<T: GetHash> GetHash for Complete<T> {
+    #[inline]
     fn hash(&self) -> Hash {
         self.0.hash()
+    }
+
+    #[inline]
+    fn cached_hash(&self) -> Option<Hash> {
+        self.0.cached_hash()
     }
 }
 

@@ -91,12 +91,23 @@ impl<Item: Focus> Height for Active<Item> {
 }
 
 impl<Item: Focus> GetHash for Active<Item> {
+    #[inline]
     fn hash(&self) -> Hash {
         match &self.inner {
             Inner::Empty => Hash::empty_tree(),
             Inner::Active(active) => active.hash(),
             Inner::Complete(complete) => complete.hash(),
             Inner::Hash(hash) => *hash,
+        }
+    }
+
+    #[inline]
+    fn cached_hash(&self) -> Option<Hash> {
+        match &self.inner {
+            Inner::Empty => Some(Hash::empty_tree()),
+            Inner::Active(active) => active.cached_hash(),
+            Inner::Complete(complete) => complete.cached_hash(),
+            Inner::Hash(hash) => Some(*hash),
         }
     }
 }

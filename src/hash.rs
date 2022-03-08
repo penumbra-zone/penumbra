@@ -11,6 +11,16 @@ pub trait GetHash {
     /// mutability to cache hashes, but caching must ensure that the item cannot be mutated without
     /// recalculating the hash.
     fn hash(&self) -> Hash;
+
+    /// Get the hash of this item, only if the hash is already cached and does not require
+    /// recalculation.
+    ///
+    /// # Correctness
+    ///
+    /// It will not cause correctness issues to return a hash after recalculating it, but users of
+    /// this function expect it to be reliably fast, so it may cause unexpected performance issues
+    /// if this function performs any significant work
+    fn cached_hash(&self) -> Option<Hash>;
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -60,6 +70,11 @@ impl GetHash for Hash {
     fn hash(&self) -> Hash {
         *self
     }
+
+    #[inline]
+    fn cached_hash(&self) -> Option<Hash> {
+        Some(*self)
+    }
 }
 
 impl<T: GetHash> GetHash for &T {
@@ -67,12 +82,22 @@ impl<T: GetHash> GetHash for &T {
     fn hash(&self) -> Hash {
         (**self).hash()
     }
+
+    #[inline]
+    fn cached_hash(&self) -> Option<Hash> {
+        (**self).cached_hash()
+    }
 }
 
 impl<T: GetHash> GetHash for &mut T {
     #[inline]
     fn hash(&self) -> Hash {
         (**self).hash()
+    }
+
+    #[inline]
+    fn cached_hash(&self) -> Option<Hash> {
+        (**self).cached_hash()
     }
 }
 

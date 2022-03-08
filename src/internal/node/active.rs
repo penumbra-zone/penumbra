@@ -82,6 +82,11 @@ impl<Focus: crate::Focus> GetHash for Active<Focus> {
             }
         }
     }
+
+    #[inline]
+    fn cached_hash(&self) -> Option<Hash> {
+        self.hash.get()
+    }
 }
 
 impl<Focus: crate::Focus> crate::Focus for Active<Focus> {
@@ -108,9 +113,13 @@ where
 
     #[inline]
     fn alter<T>(&mut self, f: impl FnOnce(&mut Self::Item) -> T) -> Option<T> {
+        let before_hash = self.focus.cached_hash();
         let result = self.focus.alter(f);
-        if result.is_some() {
-            // If the function was run, clear the cached hash, because it could now be invalid
+        let after_hash = self.focus.cached_hash();
+
+        if before_hash != after_hash {
+            // If the cached hash of the focus changed, clear the cached hash here, because it is
+            // now invalid and needs to be recalculated
             self.hash.set(None);
         }
         result
