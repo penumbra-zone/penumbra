@@ -23,18 +23,3 @@ use internal::{
     active::{Active, Focus, Full},
     complete::Complete,
 };
-
-/// A commitment stored in the tree.
-pub struct Commitment;
-
-impl GetHash for Commitment {
-    #[inline]
-    fn hash(&self) -> Hash {
-        Hash::commitment(self)
-    }
-
-    #[inline]
-    fn cached_hash(&self) -> Option<Hash> {
-        None
-    }
-}
