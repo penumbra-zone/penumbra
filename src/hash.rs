@@ -19,7 +19,7 @@ pub trait GetHash {
     ///
     /// It will not cause correctness issues to return a hash after recalculating it, but users of
     /// this function expect it to be reliably fast, so it may cause unexpected performance issues
-    /// if this function performs any significant work
+    /// if this function performs any significant work.
     fn cached_hash(&self) -> Option<Hash>;
 }
 
