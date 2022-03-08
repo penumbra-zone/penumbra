@@ -12,6 +12,24 @@ pub enum Insert<T> {
     Hash(Hash),
 }
 
+impl<T: GetHash> GetHash for Insert<T> {
+    #[inline]
+    fn hash(&self) -> Hash {
+        match self {
+            Insert::Keep(item) => item.hash(),
+            Insert::Hash(hash) => *hash,
+        }
+    }
+
+    #[inline]
+    fn cached_hash(&self) -> Option<Hash> {
+        match self {
+            Insert::Keep(item) => item.cached_hash(),
+            Insert::Hash(hash) => Some(*hash),
+        }
+    }
+}
+
 /// An active tree supporting the insertion of new elements and the updating of the
 /// most-recently-inserted element.
 pub trait Active: Focus + Sized {

@@ -33,6 +33,30 @@ pub trait GetHash {
     fn cached_hash(&self) -> Option<Hash>;
 }
 
+impl<T: GetHash> GetHash for &T {
+    #[inline]
+    fn hash(&self) -> Hash {
+        (**self).hash()
+    }
+
+    #[inline]
+    fn cached_hash(&self) -> Option<Hash> {
+        (**self).cached_hash()
+    }
+}
+
+impl<T: GetHash> GetHash for &mut T {
+    #[inline]
+    fn hash(&self) -> Hash {
+        (**self).hash()
+    }
+
+    #[inline]
+    fn cached_hash(&self) -> Option<Hash> {
+        (**self).cached_hash()
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 /// The hash of an individual item, to be used when inserting into a tree.
 ///

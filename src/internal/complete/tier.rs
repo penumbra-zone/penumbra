@@ -19,7 +19,7 @@ impl<Item: Height> Height for Tier<Item> {
     type Height = <Nested<Item> as Height>::Height;
 }
 
-impl<Item: GetHash> GetHash for Tier<Item> {
+impl<Item: Height + GetHash> GetHash for Tier<Item> {
     #[inline]
     fn hash(&self) -> Hash {
         self.inner.hash()

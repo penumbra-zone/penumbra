@@ -1,7 +1,9 @@
 use std::cell::Cell;
 
 use crate::{
-    internal::height::Succ, internal::three::Three, Complete, GetHash, Hash, Height, Insert,
+    internal::height::{IsHeight, Succ},
+    internal::three::{IntoElems, Three},
+    Complete, GetHash, Hash, Height, Insert,
 };
 
 use super::super::active;
@@ -16,7 +18,7 @@ pub struct Node<Child> {
     children: Children<Child>,
 }
 
-impl<Child> Node<Child> {
+impl<Child: Height> Node<Child> {
     /// Set the hash of this node without checking to see whether the hash is correct.
     ///
     /// # Correctness
@@ -30,18 +32,37 @@ impl<Child> Node<Child> {
     pub(in super::super) fn from_siblings_and_focus_or_else_hash(
         siblings: Three<Insert<Child>>,
         focus: Insert<Child>,
-    ) -> Insert<Self>
-    where
-        Child: Complete,
-    {
-        todo!("construct `Complete` from siblings and focus")
+    ) -> Insert<Self> {
+        fn zero<T>() -> Insert<T> {
+            Insert::Hash(Hash::default())
+        }
+
+        // Push the focus into the siblings, and fill any empty children with the zero hash
+        Self::from_children_or_else_hash(match siblings.push(focus) {
+            Err([a, b, c, d]) => [a, b, c, d],
+            Ok(siblings) => match siblings.into_elems() {
+                IntoElems::_3([a, b, c]) => [a, b, c, zero()],
+                IntoElems::_2([a, b]) => [a, b, zero(), zero()],
+                IntoElems::_1([a]) => [a, zero(), zero(), zero()],
+                IntoElems::_0([]) => [zero(), zero(), zero(), zero()],
+            },
+        })
     }
 
-    pub(in super::super) fn from_children_or_else_hash(children: [Insert<Child>; 4]) -> Insert<Self>
-    where
-        Child: Complete + GetHash + Height,
-    {
-        todo!("construct `Complete` from all four children")
+    pub(in super::super) fn from_children_or_else_hash(
+        children: [Insert<Child>; 4],
+    ) -> Insert<Self> {
+        match Children::try_from(children) {
+            Ok(children) => Insert::Keep(Self {
+                hash: Cell::new(None),
+                children,
+            }),
+            Err([a, b, c, d]) => {
+                // If there were no witnessed children, compute a hash for this node based on the
+                // node's height and the hashes of its children.
+                Insert::Hash(Hash::node(<Self as Height>::Height::HEIGHT, a, b, c, d))
+            }
+        }
     }
 }
 
@@ -53,11 +74,12 @@ impl<Child: Complete> Complete for Node<Child> {
     type Focus = active::Node<Child::Focus>;
 }
 
-impl<Child> GetHash for Node<Child> {
+impl<Child: Height + GetHash> GetHash for Node<Child> {
     #[inline]
     fn hash(&self) -> Hash {
         self.hash.get().unwrap_or_else(|| {
-            let hash = todo!("hash children");
+            let [a, b, c, d] = self.children.children().map(|x| x.hash());
+            let hash = Hash::node(<Self as Height>::Height::HEIGHT, a, b, c, d);
             self.hash.set(Some(hash));
             hash
         })
