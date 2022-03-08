@@ -1,8 +1,14 @@
+//! Items at the leaves of a tree, paired with a lazily-computed hash.
+
 use std::cell::Cell;
 
 use crate::{internal::height::Zero, GetHash, Hash, Insert};
 
-/// Both a hash and the item hashed.
+/// Both a hash and the item hashed, with the hash computed lazily, to be used for inserting into a
+/// tree. This implements [`Focus`](crate::Focus) and thus can be used as the item of a tree.
+///
+/// If you don't want to store actual items at the leaves of a tree but rather just store their
+/// hashes, use [`Hash`] directly as the item of the tree.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Item<T> {
     // TODO: replace with `OptionHash` optimization?
@@ -11,6 +17,7 @@ pub struct Item<T> {
 }
 
 impl<T> Item<T> {
+    /// Create a new [`Item`] from the given value.
     pub fn new(item: T) -> Self {
         Self {
             hash: Cell::new(None),
@@ -61,5 +68,5 @@ impl<T: GetHash> crate::Focus for Item<T> {
 }
 
 impl<T: GetHash> crate::Complete for Item<T> {
-    type Active = Self;
+    type Focus = Self;
 }

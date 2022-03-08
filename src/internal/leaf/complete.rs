@@ -1,9 +1,11 @@
 use crate::{GetHash, Hash, Height};
 
+/// A complete, witnessed leaf of a tree.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Complete<T>(T);
 
 impl<T> Complete<T> {
+    /// Create a new complete leaf from the item stored in the tree.
     pub fn new(item: T) -> Self {
         Self(item)
     }
@@ -26,5 +28,5 @@ impl<T: Height> Height for Complete<T> {
 }
 
 impl<T: crate::Complete> crate::Complete for Complete<T> {
-    type Active = super::Active<<T as crate::Complete>::Active>;
+    type Focus = super::Active<<T as crate::Complete>::Focus>;
 }

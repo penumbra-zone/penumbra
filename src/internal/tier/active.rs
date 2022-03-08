@@ -1,7 +1,8 @@
 use std::{fmt::Debug, mem};
 
-use crate::{internal::Full, Active as _, Focus, GetHash, Hash, Height, Insert};
+use crate::{Active as _, Focus, Full, GetHash, Hash, Height, Insert};
 
+/// An active tier of the tiered commitment tree, being an 8-deep quad-tree of items.
 #[derive(Derivative)]
 #[derivative(Debug(bound = "Item: Debug, <Item as Focus>::Complete: Debug"))]
 #[derivative(Clone(bound = "Item: Clone, <Item as Focus>::Complete: Clone"))]
@@ -43,12 +44,16 @@ impl<Item: Focus> Default for Inner<Item> {
 }
 
 impl<Item: Focus> Active<Item> {
+    /// Create a new active tier.
     pub fn new() -> Self {
         Self {
             inner: Inner::default(),
         }
     }
 
+    /// Insert an item or its hash into this active tier.
+    ///
+    /// If the tier is full, return the input item without inserting it.
     pub fn insert(&mut self, item: Insert<Item>) -> Result<(), Insert<Item>> {
         match mem::take(&mut self.inner) {
             Inner::Empty => {

@@ -1,5 +1,6 @@
 use crate::{internal::height::Succ, internal::three::Three, GetHash, Hash, Height, Insert};
 
+/// A complete sparse node in a tree, storing only the witnessed subtrees.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Complete<Child> {
     hash: Hash,
@@ -35,7 +36,7 @@ impl<Child: Height> Height for Complete<Child> {
 }
 
 impl<Child: crate::Complete> crate::Complete for Complete<Child> {
-    type Active = super::Active<Child::Active>;
+    type Focus = super::Active<Child::Focus>;
 }
 
 impl<Child> GetHash for Complete<Child> {

@@ -1,3 +1,7 @@
+//! The tiered commitment tree for Penumbra.
+
+#![warn(missing_docs)]
+
 #[macro_use]
 extern crate derivative;
 
@@ -14,9 +18,13 @@ pub use internal::height::Height;
 
 pub mod internal;
 #[doc(inline)]
-pub use internal::Insert;
-use internal::{Active, Complete, Focus, Full};
+pub use internal::active::Insert;
+use internal::{
+    active::{Active, Focus, Full},
+    complete::Complete,
+};
 
+/// A commitment stored in the tree.
 pub struct Commitment;
 
 impl GetHash for Commitment {

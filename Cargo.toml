@@ -1,5 +1,5 @@
 [package]
-name = "penumbra-nct"
+name = "penumbra-tct"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,10 +7,3 @@ edition = "2021"
 
 [dependencies]
 derivative = "2"
-
-[dev-dependencies]
-static_assertions = "1"
-
-[[bin]]
-name = "simulate"
-path = "bin/simulate/main.rs"

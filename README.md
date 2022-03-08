@@ -1,3 +1,3 @@
-# nct
+# penumbra-tct
 
-The note commitment tree for Penumbra (prototype in development).
+The tiered note commitment tree for Penumbra.

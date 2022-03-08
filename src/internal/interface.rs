@@ -9,6 +9,8 @@ pub enum Insert<T> {
     Hash(Hash),
 }
 
+/// An active tree supporting the insertion of new elements and the updating of the
+/// most-recently-inserted element.
 pub trait Active: Focus + Sized {
     /// The type of item to persist in each witnessed leaf of the active tree.
     type Item;
@@ -28,11 +30,11 @@ pub trait Active: Focus + Sized {
     fn last(&self) -> &Insert<Self::Item>;
 }
 
-/// Describes a type which can be the focus of an [`Active`] tree: it can be finalized to make a
-/// [`Complete`] tree.
+/// A type which can be the focus of an [`Active`] tree: it can be finalized to make a [`Complete`]
+/// tree.
 pub trait Focus: Height<Height = <Self::Complete as Height>::Height> + GetHash {
     /// The [`Complete`] of this [`Active`].
-    type Complete: Complete<Active = Self>;
+    type Complete: Complete<Focus = Self>;
 
     /// Transition from an [`Active`] to being [`Complete`].
     fn finalize(self) -> Insert<Self::Complete>;
@@ -42,7 +44,8 @@ pub trait Focus: Height<Height = <Self::Complete as Height>::Height> + GetHash {
 ///
 /// It is enforced by the type system that [`Complete`] and [`Focus`] are dual to one another.
 pub trait Complete: Height + GetHash {
-    type Active: Focus<Complete = Self>;
+    /// The [`Active`] of this [`Complete`].
+    type Focus: Focus<Complete = Self>;
 }
 
 /// The result of [`Active::insert`] when the [`Active`] is full.

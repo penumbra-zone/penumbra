@@ -1,5 +1,9 @@
 use crate::{Focus, Full, GetHash, Hash, Height, Insert};
 
+/// The active (rightmost) leaf in an active tree.
+///
+/// Insertion into a leaf always fails, causing the tree above it to insert a new leaf to contain
+/// the inserted item.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Active<T> {
     item: Insert<T>,
@@ -46,6 +50,8 @@ impl<Item: crate::Focus> crate::Active for Active<Item> {
     }
 
     #[inline]
+    /// Insertion into a leaf always fails, causing the tree above it to insert a new leaf to
+    /// contain the inserted item.
     fn insert(self, item: Insert<Self::Item>) -> Result<Self, Full<Self>> {
         Err(Full {
             item,

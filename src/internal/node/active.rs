@@ -6,6 +6,7 @@ use crate::{
     Full, GetHash, Hash, Height, Insert,
 };
 
+/// An active node in a tree, into which items can be inserted.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Active<Focus: crate::Focus> {
     focus: Focus,

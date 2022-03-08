@@ -1,3 +1,9 @@
+//! Every structure in this crate can be hashed, and many use interior mutation to cache their
+//! hashes lazily.
+//!
+//! This module defines the trait [`GetHash`] for these operations, as well as the [`Hash`] type
+//! used throughout.
+
 use crate::{internal::height::Zero, Commitment, Insert};
 
 /// A type which can be transformed into a [`Hash`], either by retrieving a cached hash, computing a
@@ -25,6 +31,10 @@ pub trait GetHash {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 // TODO: replace this with `Fq`
+/// The hash of some part of the tree, or an individual commitment.
+///
+/// Like [`Item`](crate::Item), [`Hash`] itself can be used as the item of a tree, if it is not
+/// desired to store commitments at the leaves.
 pub struct Hash([u64; 4]);
 
 impl<T: GetHash> From<&T> for Hash {
@@ -72,5 +82,5 @@ impl crate::Focus for Hash {
 }
 
 impl crate::Complete for Hash {
-    type Active = Self;
+    type Focus = Self;
 }

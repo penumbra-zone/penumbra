@@ -7,6 +7,7 @@ type L<Item> = super::super::leaf::Complete<Item>;
 pub(super) type Nested<Item> = N<N<N<N<N<N<N<N<L<Item>>>>>>>>>;
 // You can count the levels:   1 2 3 4 5 6 7 8
 
+/// A complete tier of the tiered commitment tree, being an 8-deep sparse quad-tree.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Complete<Item> {
     pub(super) inner: Nested<Item>,
@@ -29,5 +30,5 @@ impl<Item: GetHash> GetHash for Complete<Item> {
 }
 
 impl<Item: crate::Complete> crate::Complete for Complete<Item> {
-    type Active = super::Active<Item::Active>;
+    type Focus = super::Active<Item::Focus>;
 }
