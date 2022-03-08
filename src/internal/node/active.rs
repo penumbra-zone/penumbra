@@ -34,6 +34,15 @@ fn hash_active<Focus: crate::Focus>(
     // Get the correct padding hash for this height
     let padding = Hash::default();
 
+    /// Get the hashes of all the `HashOr<T>` in the array, hashing `T` as necessary.
+    #[inline]
+    pub(crate) fn hashes_of_all<T: GetHash, const N: usize>(full: [&Insert<T>; N]) -> [Hash; N] {
+        full.map(|hash_or_t| match hash_or_t {
+            Insert::Hash(hash) => *hash,
+            Insert::Keep(t) => t.hash(),
+        })
+    }
+
     // Get the four elements of this segment, *in order*, and extract their hashes
     let (a, b, c, d) = match siblings.elems() {
         Elems::_0([]) => {
@@ -42,19 +51,19 @@ fn hash_active<Focus: crate::Focus>(
             (a, b, c, d)
         }
         Elems::_1(full) => {
-            let [a] = Hash::hashes_of_all(full);
+            let [a] = hashes_of_all(full);
             let b = focus.hash();
             let [c, d] = [padding, padding];
             (a, b, c, d)
         }
         Elems::_2(full) => {
-            let [a, b] = Hash::hashes_of_all(full);
+            let [a, b] = hashes_of_all(full);
             let c = focus.hash();
             let [d] = [padding];
             (a, b, c, d)
         }
         Elems::_3(full) => {
-            let [a, b, c] = Hash::hashes_of_all(full);
+            let [a, b, c] = hashes_of_all(full);
             let d = focus.hash();
             (a, b, c, d)
         }

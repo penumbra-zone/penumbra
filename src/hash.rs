@@ -44,15 +44,6 @@ impl Hash {
     pub(crate) fn node(height: usize, a: Hash, b: Hash, c: Hash, d: Hash) -> Hash {
         Hash(todo!("hash node"))
     }
-
-    /// Get the hashes of all the `HashOr<T>` in the array, hashing `T` as necessary.
-    #[inline]
-    pub(crate) fn hashes_of_all<T: GetHash, const N: usize>(full: [&Insert<T>; N]) -> [Hash; N] {
-        full.map(|hash_or_t| match hash_or_t {
-            Insert::Hash(hash) => *hash,
-            Insert::Keep(t) => t.hash(),
-        })
-    }
 }
 
 impl GetHash for Hash {
@@ -64,30 +55,6 @@ impl GetHash for Hash {
     #[inline]
     fn cached_hash(&self) -> Option<Hash> {
         Some(*self)
-    }
-}
-
-impl<T: GetHash> GetHash for &T {
-    #[inline]
-    fn hash(&self) -> Hash {
-        (**self).hash()
-    }
-
-    #[inline]
-    fn cached_hash(&self) -> Option<Hash> {
-        (**self).cached_hash()
-    }
-}
-
-impl<T: GetHash> GetHash for &mut T {
-    #[inline]
-    fn hash(&self) -> Hash {
-        (**self).hash()
-    }
-
-    #[inline]
-    fn cached_hash(&self) -> Option<Hash> {
-        (**self).cached_hash()
     }
 }
 
