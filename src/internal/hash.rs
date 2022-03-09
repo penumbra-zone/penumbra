@@ -70,23 +70,18 @@ impl<T: GetHash> From<&T> for Hash {
     }
 }
 
-/// The domain separator used for items in the tree.
-pub static ITEM_DOMAIN_SEPARATOR: Lazy<Fq> = Lazy::new(|| {
-    Fq::from_le_bytes_mod_order(blake2b_simd::blake2b(b"penumbra.tct.item").as_bytes())
-});
-
-/// The base domain separator used for nodes in the tree (the height of the node is added to this to
-/// differentiate nodes at different heights).
-pub static NODE_DOMAIN_SEPARATOR: Lazy<Fq> = Lazy::new(|| {
-    Fq::from_le_bytes_mod_order(blake2b_simd::blake2b(b"penumbra.tct.node").as_bytes())
-});
+/// The domain separator used for leaves in the tree, and used as a base index for the domain
+/// separators of nodes in the tree (nodes get a domain separator of the form `DOMAIN_SEPARATOR +
+/// HEIGHT`).
+pub static DOMAIN_SEPARATOR: Lazy<Fq> =
+    Lazy::new(|| Fq::from_le_bytes_mod_order(blake2b_simd::blake2b(b"penumbra.tct").as_bytes()));
 
 #[allow(unused)]
 impl Hash {
     /// Hash an individual item to be inserted into the tree.
     #[inline]
-    pub fn item(item: Fq) -> Hash {
-        Hash(poseidon377::hash_1(&ITEM_DOMAIN_SEPARATOR, item))
+    pub fn of(item: Fq) -> Hash {
+        Hash(poseidon377::hash_1(&DOMAIN_SEPARATOR, item))
     }
 
     #[inline]
@@ -99,7 +94,7 @@ impl Hash {
     ) -> Hash {
         let height = Fq::from_le_bytes_mod_order(&height.to_le_bytes());
         Hash(poseidon377::hash_4(
-            &(*NODE_DOMAIN_SEPARATOR + height),
+            &(*DOMAIN_SEPARATOR + height),
             (a, b, c, d),
         ))
     }

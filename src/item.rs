@@ -45,7 +45,7 @@ impl GetHash for Item {
     #[inline]
     fn hash(&self) -> Hash {
         self.hash.get().unwrap_or_else(|| {
-            let hash = Hash::item(self.item);
+            let hash = Hash::of(self.item);
             self.hash.set(Some(hash));
             hash
         })
