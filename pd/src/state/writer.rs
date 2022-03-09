@@ -190,7 +190,9 @@ impl Writer {
         // - add the note to the NCT
         // - insert the note into the database as appropriate (#374) https://github.com/penumbra-zone/penumbra/issues/374
         // - accumulate the value into a supply tracker
+        //
         // The blinding factor needs to be unique per genesis note
+        // so a monotonically increasing reward counter is used.
         let mut reward_counter: u64 = 0;
         let mut supply_updates: BTreeMap<Id, (Denom, u64)> = BTreeMap::new();
         let mut notes = Vec::new();

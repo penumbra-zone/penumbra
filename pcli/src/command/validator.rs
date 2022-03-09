@@ -9,12 +9,19 @@ use crate::Opt;
 pub enum ValidatorCmd {
     /// Display the validator identity key derived from this wallet's spend seed.
     Identity,
+    /// Create a ValidatorDefinition transaction to create or update a validator.
+    UploadDefinition {
+        /// The JSON file containing the ValidatorDefinition to upload
+        #[structopt(long)]
+        file: String,
+    },
 }
 
 impl ValidatorCmd {
     pub fn needs_sync(&self) -> bool {
         match self {
             ValidatorCmd::Identity => false,
+            ValidatorCmd::UploadDefinition { .. } => true,
         }
     }
 
@@ -30,6 +37,9 @@ impl ValidatorCmd {
                 );
 
                 println!("{}", ik);
+            }
+            ValidatorCmd::UploadDefinition { file } => {
+                println!("Uploaded validator definition");
             }
         }
 
