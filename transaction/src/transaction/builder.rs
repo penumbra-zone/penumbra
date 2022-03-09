@@ -10,7 +10,7 @@ use penumbra_crypto::{
     rdsa::{Binding, Signature, SigningKey, SpendAuth},
     value, Address, Fr, Note, Value,
 };
-use penumbra_stake::{Delegate, RateData, Undelegate, STAKING_TOKEN_ASSET_ID};
+use penumbra_stake::{Delegate, RateData, Undelegate, ValidatorDefinition, STAKING_TOKEN_ASSET_ID};
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
 
@@ -30,6 +30,8 @@ pub struct Builder {
     pub delegations: Vec<Delegate>,
     /// List of undelegations in the transaction.
     pub undelegations: Vec<Undelegate>,
+    /// List of validator (re-)definitions in the transaction.
+    pub validator_definitions: Vec<ValidatorDefinition>,
     /// Transaction fee. None if unset.
     pub fee: Option<Fee>,
     /// Sum of blinding factors for each value commitment.
