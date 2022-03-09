@@ -226,6 +226,18 @@ impl<Item: Focus> Eternity<Item> {
     pub fn is_empty(&self) -> bool {
         self.inner.is_empty()
     }
+
+    /// Get the root [`struct@Hash`] of this [`Eternity`].
+    ///
+    /// Internal hashing is performed lazily to prevent unnecessary intermediary hashes from being
+    /// computed, so the first hash returned after a long sequence of insertions may take more time
+    /// than subsequent calls.
+    ///
+    /// Computed hashes are cached so that subsequent calls without further modification are very
+    /// fast.
+    pub fn hash(&self) -> Hash {
+        self.inner.hash()
+    }
 }
 
 /// A sparse commitment tree to store up to 65,536 [`Block`]s, each containing up to 65,536 `Item`s
@@ -349,6 +361,18 @@ impl<Item: Focus> Epoch<Item> {
     pub fn is_empty(&self) -> bool {
         self.inner.is_empty()
     }
+
+    /// Get the root [`struct@Hash`] of this [`Epoch`].
+    ///
+    /// Internal hashing is performed lazily to prevent unnecessary intermediary hashes from being
+    /// computed, so the first hash returned after a long sequence of insertions may take more time
+    /// than subsequent calls.
+    ///
+    /// Computed hashes are cached so that subsequent calls without further modification are very
+    /// fast.
+    pub fn hash(&self) -> Hash {
+        self.inner.hash()
+    }
 }
 
 /// A sparse commitment tree to store up to 65,536 individual `Item`s or their [`struct@Hash`]es.
@@ -393,5 +417,17 @@ impl<Item: Focus> Block<Item> {
     /// Check whether this [`Block`] is empty.
     pub fn is_empty(&self) -> bool {
         self.inner.is_empty()
+    }
+
+    /// Get the root [`struct@Hash`] of this [`Block`].
+    ///
+    /// Internal hashing is performed lazily to prevent unnecessary intermediary hashes from being
+    /// computed, so the first hash returned after a long sequence of insertions may take more time
+    /// than subsequent calls.
+    ///
+    /// Computed hashes are cached so that subsequent calls without further modification are very
+    /// fast.
+    pub fn hash(&self) -> Hash {
+        self.inner.hash()
     }
 }
