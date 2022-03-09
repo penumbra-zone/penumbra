@@ -75,6 +75,13 @@ where
     }
 }
 
+#[cfg(test)]
+#[test]
+fn check_eq_impl() {
+    static_assertions::assert_impl_all!(Tier<Tier<Tier<crate::Item>>>: Eq);
+    static_assertions::assert_impl_all!(Tier<Tier<Tier<Hash>>>: Eq);
+}
+
 impl<Item: Focus> PartialEq<complete::Tier<Item::Complete>> for Tier<Item>
 where
     Item: PartialEq + PartialEq<Item::Complete>,
