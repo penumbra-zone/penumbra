@@ -108,3 +108,55 @@ pub struct Full<T: Active> {
     /// that structure if it contained no witnesses.
     pub complete: Insert<T::Complete>,
 }
+
+pub mod path;
+
+/// An authentication path into the `Tree`.
+///
+/// This is statically guaranteed to have the same length as the height of the tree.
+pub type AuthPath<Tree> = <<Tree as Height>::Height as path::Path>::Path;
+
+/// Witness an authentication path into a tree, or remove a witnessed item from one.
+pub trait Witness: Height + Sized {
+    /// Witness an authentication path to the given index in the tree.
+    ///
+    /// The input mutable slice should be at least the height of the tree, and is overwritten by
+    /// this function.
+    fn witness(&self, index: usize) -> Option<(AuthPath<Self>, Hash)>;
+
+    /// Remove the witness for the given index.
+    ///
+    /// Returns either `(Self, boool)` where the boolean is `true` if the witness was removed or
+    /// `false` if the witness was not present, or `Hash` if the witness was removed and it was the
+    /// last witness remaining in this tree.
+    fn remove_witness(self, index: usize) -> Result<(Self, bool), Hash>;
+}
+
+/// A proof of inclusion for a single commitment in a tree.
+pub struct Proof<Tree: Height> {
+    index: usize,
+    auth_path: AuthPath<Tree>,
+    leaf: Hash,
+}
+
+impl<Tree: Height> Proof<Tree> {
+    /// Verify a [`Proof`] of inclusion against the root hash of a tree.
+    ///
+    /// Returns `true` if and only if the proof was valid for this root.
+    pub fn verify(&self, root: Hash) -> bool {
+        root == <Tree::Height as path::Path>::root(&self.auth_path, self.index, self.leaf)
+    }
+
+    /// Create a proof of inclusion for the given index in the tree, or return `None` if the index
+    /// does not have a witness in the tree.
+    pub fn of_inclusion(index: usize, tree: &Tree) -> Option<Self>
+    where
+        Tree: Witness,
+    {
+        tree.witness(index).map(|(auth_path, leaf)| Self {
+            index,
+            auth_path,
+            leaf,
+        })
+    }
+}

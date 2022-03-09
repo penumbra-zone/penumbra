@@ -8,6 +8,7 @@ pub mod item;
 pub mod three;
 
 mod interface;
+pub use interface::{path, AuthPath, Proof, Witness};
 
 pub mod active {
     //! [`Active`] things can be inserted into and updated, always representing the rightmost (most

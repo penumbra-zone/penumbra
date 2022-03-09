@@ -10,7 +10,7 @@ use std::fmt::Debug;
 pub mod internal;
 
 #[doc(inline)]
-pub use internal::{active::Insert, hash::Hash};
+pub use internal::{active::Insert, hash::Hash, Proof};
 
 #[allow(unused_imports)]
 use internal::{
@@ -35,7 +35,7 @@ pub struct Eternity {
     blocks_witnessed: u16,
     items_witnessed: u16,
     len: u64,
-    inner: Tier<Tier<Tier<Item>>>,
+    inner: Tier<Tier<Tier<Hash>>>,
 }
 
 impl Eternity {
@@ -165,35 +165,24 @@ impl Eternity {
     /// 5. the current [`Block`] was inserted as [`Insert::Hash`], which means that it cannot be
     /// modified after insertion.
     pub fn insert_item(&mut self, item: Insert<Fq>) -> Result<(), Insert<Fq>> {
-        // Mutable container for the thing to be inserted: we will take it out of here if the
-        // closure is run, but if it isn't, we need to recover it
-        let mut item = Some(item);
-
         let result = self
             .inner
             .update(|focus| {
                 if let Insert::Keep(focus) = focus {
                     focus
                         .update(|focus| {
-                            // The closure is being run, so we take the item to insert
-                            let item = item.take().unwrap();
-
                             if let Insert::Keep(focus) = focus {
-                                focus
-                                    .insert(item.map(Into::into))
-                                    .map_err(|item| item.map(Into::into))
+                                focus.insert(item.map(Hash::of)).map_err(|_| item)
                             } else {
                                 Err(item)
                             }
                         })
-                        // In this case, the closure was never invoked, so we can take the item back here
-                        .unwrap_or_else(|| Err(item.take().unwrap()))
+                        .unwrap_or(Err(item))
                 } else {
-                    Err(item.take().unwrap())
+                    Err(item)
                 }
             })
-            // In this case, the closure was never invoked, so we can take the item back here
-            .unwrap_or_else(|| Err(item.take().unwrap()));
+            .unwrap_or(Err(item));
 
         if result.is_ok() {
             self.len += 1;
@@ -250,7 +239,7 @@ pub struct Epoch {
     blocks_witnessed: u16,
     items_witnessed: u16,
     len: u32,
-    inner: Tier<Tier<Item>>,
+    inner: Tier<Tier<Hash>>,
 }
 
 impl Epoch {
@@ -308,26 +297,16 @@ impl Epoch {
     /// 3. the current [`Block`] was inserted as [`Insert::Hash`], which means that it cannot be
     /// modified after insertion.
     pub fn insert_item(&mut self, item: Insert<Fq>) -> Result<(), Insert<Fq>> {
-        // Mutable container for the thing to be inserted: we will take it out of here if the
-        // closure is run, but if it isn't, we need to recover it
-        let mut item = Some(item);
-
         let result = self
             .inner
             .update(|focus| {
-                // The closure is being run, so we take the item to insert
-                let item = item.take().unwrap();
-
                 if let Insert::Keep(focus) = focus {
-                    focus
-                        .insert(item.map(Into::into))
-                        .map_err(|item| item.map(Into::into))
+                    focus.insert(item.map(Hash::of)).map_err(|_| item)
                 } else {
                     Err(item)
                 }
             })
-            // In this case, the closure was never invoked, so we can take the item back here
-            .unwrap_or_else(|| Err(item.take().unwrap()));
+            .unwrap_or(Err(item));
 
         if result.is_ok() {
             self.items_witnessed += 1;
@@ -378,7 +357,7 @@ impl Epoch {
 /// This is one [`Block`] in an [`Epoch`], which is one [`Epoch`] in an [`Eternity`].
 #[derive(Derivative, Debug, Clone, PartialEq, Eq, Default)]
 pub struct Block {
-    inner: Tier<Item>,
+    inner: Tier<Hash>,
 }
 
 impl Block {
@@ -394,9 +373,7 @@ impl Block {
     /// Returns `Err(item)` containing the inserted item without adding it to the [`Block`] if the
     /// block is full.
     pub fn insert_item(&mut self, item: Insert<Fq>) -> Result<(), Insert<Fq>> {
-        self.inner
-            .insert(item.map(Into::into))
-            .map_err(|item| item.map(Into::into))
+        self.inner.insert(item.map(Hash::of)).map_err(|_| item)
     }
 
     /// The number of items witnessed in this [`Block`].
