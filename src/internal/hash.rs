@@ -61,10 +61,8 @@ impl<T: GetHash> GetHash for &mut T {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
-/// The hash of an individual item, to be used when inserting into a tree.
-///
-/// Like [`Item`](crate::Item), [`struct@Hash`] itself implements [`Focus`](crate::Focus) and thus can be
-/// used as the item of a tree, if it is not desired to store commitments at the leaves.
+/// The hash of an individual item, tree root, or intermediate node. Use [`Insert::Hash`] with this
+/// type when you want to insert something into the tree that you don't want to witness later.
 pub struct Hash(Fq);
 
 impl<T: GetHash> From<&T> for Hash {

@@ -2,7 +2,7 @@ use crate::Hash;
 
 /// A representation of `Option<Hash>` without the tag bytes required by `Option`, because we
 /// know that no valid [`struct@Hash`] will be equal to `[u64::MAX; 4]`, since the modulus for
-/// [`Fq`] is too small.
+/// [`Fq`](crate::Fq) is too small.
 ///
 /// This type is inter-convertible via [`From`] and [`Into`] with `Option<Hash>`, and that is
 /// its only purpose.

@@ -22,6 +22,9 @@ use internal::{
 };
 
 pub use ark_ff::fields::PrimeField;
+
+/// A commitment to be stored in the tree, as an element of the base field of the curve used by the
+/// Poseidon hash function instantiated for BLS12-377.
 pub use poseidon377::Fq;
 
 /// A sparse commitment tree to witness up to 65,536 [`Epoch`]s, each witnessing up to 65,536

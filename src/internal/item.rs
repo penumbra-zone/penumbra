@@ -4,10 +4,7 @@ use poseidon377::Fq;
 
 use crate::{internal::height::Zero, GetHash, Hash, Height, Insert};
 
-/// Both a hash and the item hashed, to be used when inserting into a tree.
-///
-/// If you don't want to store actual items at the leaves of a tree but rather just store their
-/// hashes, use [`struct@Hash`] directly as the item of the tree.
+/// Both a hash and the item hashed, used internally when inserting into a tree.
 #[derive(Debug, Clone, Copy, Derivative)]
 #[derivative(PartialEq, Eq)]
 pub struct Item {
