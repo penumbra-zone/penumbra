@@ -431,3 +431,13 @@ impl<Item: Focus> Block<Item> {
         self.inner.hash()
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn check_eternity_size() {
+        static_assertions::assert_eq_size!(Eternity<Hash>, [u8; 32]);
+    }
+}

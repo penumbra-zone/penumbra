@@ -13,7 +13,7 @@ use super::super::{active, complete};
 pub struct Tier<Item: Focus> {
     len: u16,
     witnessed: u16,
-    inner: Inner<Item>,
+    inner: Box<Inner<Item>>,
 }
 
 type N<Focus> = active::Node<Focus>;
@@ -90,7 +90,7 @@ where
     Item::Complete: PartialEq,
 {
     fn eq(&self, complete::Tier { inner: r }: &complete::Tier<Item::Complete>) -> bool {
-        match self.inner {
+        match *self.inner {
             // Complete tiers are never empty, an empty or hash-only tier is never equal to one,
             // because they don't have witnesses
             Inner::Empty | Inner::Hash(_) => false,
@@ -114,7 +114,7 @@ impl<Item: Focus> Tier<Item> {
         Self {
             len: 0,
             witnessed: 0,
-            inner: Inner::default(),
+            inner: Box::new(Inner::default()),
         }
     }
 
@@ -122,20 +122,20 @@ impl<Item: Focus> Tier<Item> {
     ///
     /// If the tier is full, return the input item without inserting it.
     pub fn insert(&mut self, item: Insert<Item>) -> Result<(), Insert<Item>> {
-        match mem::take(&mut self.inner) {
+        match mem::take(&mut *self.inner) {
             Inner::Empty => {
-                self.inner = Inner::Active(Nested::singleton(item));
+                *self.inner = Inner::Active(Nested::singleton(item));
                 self.len += 1;
                 Ok(())
             }
             Inner::Active(active) => match active.insert(item) {
                 Ok(active) => {
-                    self.inner = Inner::Active(active);
+                    *self.inner = Inner::Active(active);
                     self.len += 1;
                     Ok(())
                 }
                 Err(Full { item, complete }) => {
-                    self.inner = match complete {
+                    *self.inner = match complete {
                         Insert::Hash(hash) => Inner::Hash(hash),
                         Insert::Keep(complete) => Inner::Complete(complete),
                     };
@@ -143,11 +143,11 @@ impl<Item: Focus> Tier<Item> {
                 }
             },
             Inner::Complete(complete) => {
-                self.inner = Inner::Complete(complete);
+                *self.inner = Inner::Complete(complete);
                 Err(item)
             }
             Inner::Hash(hash) => {
-                self.inner = Inner::Hash(hash);
+                *self.inner = Inner::Hash(hash);
                 Err(item)
             }
         }
@@ -159,7 +159,7 @@ impl<Item: Focus> Tier<Item> {
     /// If there is no currently active `Insert<Item>` (in the case that the tier is empty or full),
     /// the function is not called, and `None` is returned.
     pub fn update<T>(&mut self, f: impl FnOnce(&mut Insert<Item>) -> T) -> Option<T> {
-        if let Inner::Active(active) = &mut self.inner {
+        if let Inner::Active(active) = &mut *self.inner {
             Some(active.update(f))
         } else {
             None
@@ -171,7 +171,7 @@ impl<Item: Focus> Tier<Item> {
     /// If there is no focused `Insert<Item>` (in the case that the tier is empty or full), `None`
     /// is returned.
     pub fn focus(&self) -> Option<&Insert<Item>> {
-        if let Inner::Active(active) = &self.inner {
+        if let Inner::Active(active) = &*self.inner {
             Some(active.focus())
         } else {
             None
@@ -192,7 +192,7 @@ impl<Item: Focus> Tier<Item> {
 
     /// Check if this [`Tier`] is empty.
     pub fn is_empty(&self) -> bool {
-        matches!(self.inner, Inner::Empty)
+        matches!(*self.inner, Inner::Empty)
     }
 }
 
@@ -209,7 +209,7 @@ impl<Item: Focus> Height for Tier<Item> {
 impl<Item: Focus> GetHash for Tier<Item> {
     #[inline]
     fn hash(&self) -> Hash {
-        match &self.inner {
+        match &*self.inner {
             Inner::Empty => Hash::default(),
             Inner::Active(active) => active.hash(),
             Inner::Complete(complete) => complete.hash(),
@@ -219,7 +219,7 @@ impl<Item: Focus> GetHash for Tier<Item> {
 
     #[inline]
     fn cached_hash(&self) -> Option<Hash> {
-        match &self.inner {
+        match &*self.inner {
             Inner::Empty => Some(Hash::default()),
             Inner::Active(active) => active.cached_hash(),
             Inner::Complete(complete) => complete.cached_hash(),
@@ -233,7 +233,7 @@ impl<Item: Focus> Focus for Tier<Item> {
 
     #[inline]
     fn finalize(self) -> Insert<Self::Complete> {
-        match self.inner {
+        match *self.inner {
             Inner::Empty => Insert::Hash(Hash::default()),
             Inner::Active(active) => match active.finalize() {
                 Insert::Hash(hash) => Insert::Hash(hash),
