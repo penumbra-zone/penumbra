@@ -1,6 +1,7 @@
 use std::cell::Cell;
 
 use crate::{
+    internal::hash::OptionHash,
     internal::height::{IsHeight, Succ},
     internal::three::{IntoElems, Three},
     Complete, GetHash, Hash, Height, Insert,
@@ -16,7 +17,7 @@ pub use children::Children;
 #[derivative(PartialEq(bound = "Child: PartialEq"))]
 pub struct Node<Child> {
     #[derivative(PartialEq = "ignore")]
-    hash: Cell<Option<Hash>>,
+    hash: Cell<OptionHash>,
     children: Children<Child>,
 }
 
@@ -37,7 +38,7 @@ impl<Child: Height> Node<Child> {
     /// This should only be called when the hash is already known (i.e. after construction from
     /// children with a known node hash).
     pub(in super::super) fn set_hash_unchecked(&self, hash: Hash) {
-        self.hash.set(Some(hash));
+        self.hash.set(Some(hash).into());
     }
 
     pub(in super::super) fn from_siblings_and_focus_or_else_hash(
@@ -65,7 +66,7 @@ impl<Child: Height> Node<Child> {
     ) -> Insert<Self> {
         match Children::try_from(children) {
             Ok(children) => Insert::Keep(Self {
-                hash: Cell::new(None),
+                hash: Cell::new(None.into()),
                 children,
             }),
             Err([a, b, c, d]) => {
@@ -93,17 +94,17 @@ impl<Child: Complete> Complete for Node<Child> {
 impl<Child: Height + GetHash> GetHash for Node<Child> {
     #[inline]
     fn hash(&self) -> Hash {
-        self.hash.get().unwrap_or_else(|| {
+        self.cached_hash().unwrap_or_else(|| {
             let [a, b, c, d] = self.children.children().map(|x| x.hash());
             let hash = Hash::node(<Self as Height>::Height::HEIGHT, a, b, c, d);
-            self.hash.set(Some(hash));
+            self.hash.set(Some(hash).into());
             hash
         })
     }
 
     #[inline]
     fn cached_hash(&self) -> Option<Hash> {
-        self.hash.get()
+        self.hash.get().into()
     }
 }
 
@@ -113,6 +114,6 @@ mod test {
 
     #[test]
     fn check_node_size() {
-        static_assertions::assert_eq_size!(Node<()>, [u8; 56]);
+        static_assertions::assert_eq_size!(Node<()>, [u8; 48]);
     }
 }

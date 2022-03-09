@@ -4,11 +4,14 @@
 //! This module defines the trait [`GetHash`] for these operations, as well as the [`struct@Hash`] type
 //! used throughout.
 
-use ark_ff::fields::PrimeField;
+use ark_ff::{fields::PrimeField, BigInteger256, Fp256};
 use once_cell::sync::Lazy;
 use poseidon377::Fq;
 
 use crate::{internal::height::Zero, Insert};
+
+mod option_hash;
+pub use option_hash::OptionHash;
 
 /// A type which can be transformed into a [`struct@Hash`], either by retrieving a cached hash, computing a
 /// hash for it, or some combination of both.
@@ -82,6 +85,18 @@ impl Hash {
     #[inline]
     pub fn of(item: Fq) -> Hash {
         Hash(poseidon377::hash_1(&DOMAIN_SEPARATOR, item))
+    }
+
+    /// Get the underlying bytes for the hash
+    pub(crate) fn into_bytes(self) -> [u64; 4] {
+        self.0 .0 .0
+    }
+
+    /// Construct a hash from bytes directly without checking whether they are in range for [`Fq`].
+    ///
+    /// This should only be called when you know that the bytes are valid.
+    pub(crate) fn from_bytes_unchecked(bytes: [u64; 4]) -> Hash {
+        Self(Fp256::new(BigInteger256(bytes)))
     }
 
     #[inline]
