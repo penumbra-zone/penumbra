@@ -25,7 +25,7 @@ pub use ark_ff::fields::PrimeField;
 pub use poseidon377::Fq;
 
 /// A sparse commitment tree to store up to 65,536 [`Epoch`]s, each containing up to 65,536
-/// [`Block`]s, each containing up to 65,536 `Item`s or their [`struct@Hash`]es.
+/// [`Block`]s, each containing up to 65,536 [`Fq`]s or their [`struct@Hash`]es.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Eternity {
     epochs_witnessed: u16,
@@ -147,7 +147,7 @@ impl Eternity {
         self.blocks_witnessed
     }
 
-    /// Add a new `Item` (or its hash) to the current [`Block`] of the current [`Epoch`] of this
+    /// Add a new [`Fq`] (or its hash) to the current [`Block`] of the current [`Epoch`] of this
     /// [`Eternity`].
     ///
     /// # Errors
@@ -200,12 +200,12 @@ impl Eternity {
         result
     }
 
-    /// The total number of [`Item`]s witnessed in every [`Block`] in every [`Epoch`] in this [`Eternity`].
+    /// The total number of [`Fq`]s witnessed in every [`Block`] in every [`Epoch`] in this [`Eternity`].
     pub fn items_witnessed(&self) -> u16 {
         self.items_witnessed
     }
 
-    /// The total number of [`Item`]s or [`struct@Hash`]es represented in this [`Epoch`].
+    /// The total number of [`Fq`]s or [`struct@Hash`]es represented in this [`Epoch`].
     ///
     /// This count includes those which were elided due to a partially filled [`Block`] or
     /// [`Epoch`], or summary root [`struct@Hash`] of a block or epoch being inserted.
@@ -238,7 +238,7 @@ impl Eternity {
     }
 }
 
-/// A sparse commitment tree to store up to 65,536 [`Block`]s, each containing up to 65,536 `Item`s
+/// A sparse commitment tree to store up to 65,536 [`Block`]s, each containing up to 65,536 [`Fq`]s
 /// or their [`struct@Hash`]es.
 ///
 /// This is one [`Epoch`] in an [`Eternity`].
@@ -294,7 +294,7 @@ impl Epoch {
         self.blocks_witnessed
     }
 
-    /// Add a new `Item` (or its hash) to the current [`Block`] of this [`Epoch`].
+    /// Add a new [`Fq`] (or its hash) to the current [`Block`] of this [`Epoch`].
     ///
     /// # Errors
     ///
@@ -334,12 +334,12 @@ impl Epoch {
         result
     }
 
-    /// The total number of [`Item`]s witnessed in every [`Block`] in this [`Epoch`].
+    /// The total number of [`Fq`]s witnessed in every [`Block`] in this [`Epoch`].
     pub fn items_witnessed(&self) -> u16 {
         self.items_witnessed
     }
 
-    /// The total number of [`Item`]s or [`struct@Hash`]es represented in this [`Epoch`].
+    /// The total number of [`Fq`]s or [`struct@Hash`]es represented in this [`Epoch`].
     ///
     /// This count includes those which were elided due to a partially filled [`Block`] or summary
     /// root [`struct@Hash`] of a block being inserted.
@@ -370,7 +370,7 @@ impl Epoch {
     }
 }
 
-/// A sparse commitment tree to store up to 65,536 individual `Item`s or their [`struct@Hash`]es.
+/// A sparse commitment tree to store up to 65,536 individual [`Fq`]s or their [`struct@Hash`]es.
 ///
 /// This is one [`Block`] in an [`Epoch`], which is one [`Epoch`] in an [`Eternity`].
 #[derive(Derivative, Debug, Clone, PartialEq, Eq, Default)]
@@ -401,7 +401,7 @@ impl Block {
         self.inner.size()
     }
 
-    /// The total number of [`Item`]s or [`struct@Hash`]es represented in this [`Block`].
+    /// The total number of [`Fq`]s or [`struct@Hash`]es represented in this [`Block`].
     pub fn len(&self) -> u16 {
         self.inner.len()
     }
