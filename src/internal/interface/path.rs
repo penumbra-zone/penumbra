@@ -1,3 +1,9 @@
+//! An authentication path of a tree is a sequence of triples of hashes equal in length to the
+//! height of the tree.
+//!
+//! The interpretation of an authentication path is dependent on an _index_ into the tree, stored
+//! separately, which indicates the position of the leaf witnessed by the authentication path.
+
 use crate::{
     internal::height::{IsHeight, Succ, Zero},
     Hash,
@@ -8,7 +14,7 @@ pub trait Path: IsHeight + Sized {
     /// The authentication path for this height.
     type Path;
 
-    /// Calculate the root hash for a path leading to a leaf with the given index.
+    /// Calculate the root hash for a path leading to a leaf with the given index and hash.
     fn root(path: &Self::Path, index: usize, leaf: Hash) -> Hash;
 }
 
@@ -42,6 +48,7 @@ impl<Child, N: Path<Path = Child>> Path for Succ<N> {
     type Path = Node<Child>;
 
     #[inline]
+    #[rustfmt::skip] // For reading clarity, this function is laid out very carefully
     fn root(Node { siblings, child }: &Node<Child>, index: usize, leaf: Hash) -> Hash {
         use WhichWay::*;
 
@@ -52,13 +59,14 @@ impl<Child, N: Path<Path = Child>> Path for Succ<N> {
             N::root(child, index, leaf),    // The root hash down to the leaf from the child
             *siblings,                      // The hashes of the siblings of the child
         ) {
-            (Leftmost, leftmost, [left, right, rightmost]) => [leftmost, left, right, rightmost],
-            (Left, left, [leftmost, right, rightmost]) => [leftmost, left, right, rightmost],
-            (Right, right, [leftmost, left, rightmost]) => [leftmost, left, right, rightmost],
-            (Rightmost, rightmost, [leftmost, left, right]) => [leftmost, left, right, rightmost],
+            (Leftmost,  leftmost,  [/* leftmost, */ left,    right,    rightmost   ]) |
+            (Left,      left,      [   leftmost, /* left, */ right,    rightmost   ]) |
+            (Right,     right,     [   leftmost,    left, /* right, */ rightmost   ]) |
+            (Rightmost, rightmost, [   leftmost,    left,    right, /* rightmost */])
+	                        => [   leftmost,    left,    right,    rightmost   ],
         };
 
-        // Hash the node
+        // Get the hash of this node at its correct height
         Hash::node(Self::HEIGHT, leftmost, left, right, rightmost)
     }
 }
@@ -80,6 +88,8 @@ pub enum WhichWay {
 /// should branch at the node at that height.
 #[inline]
 pub fn which_way(height: usize, index: usize) -> WhichWay {
+    // Shift the index right by (2 * (height - 1)) so that the last 2 bits are our direction, then
+    // mask off just those bits and branch on them to generate the output
     match (index >> (2 * (height - 1))) & 0b11 {
         0 => WhichWay::Leftmost,
         1 => WhichWay::Left,
@@ -87,4 +97,10 @@ pub fn which_way(height: usize, index: usize) -> WhichWay {
         3 => WhichWay::Rightmost,
         _ => unreachable!(),
     }
+}
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn which_way_works() {}
 }
