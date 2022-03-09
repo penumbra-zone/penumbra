@@ -21,8 +21,9 @@ use penumbra_proto::{
     Protobuf,
 };
 use penumbra_stake::{
-    BaseRateData, FundingStream, FundingStreams, IdentityKey, RateData, RateDataById, Validator,
-    ValidatorDefinition, ValidatorInfo, ValidatorState, ValidatorStateName, ValidatorStatus,
+    BaseRateData, Epoch, FundingStream, FundingStreams, IdentityKey, RateData, RateDataById,
+    Validator, ValidatorDefinition, ValidatorInfo, ValidatorState, ValidatorStateName,
+    ValidatorStatus,
 };
 use sqlx::{query, query_as, Pool, Postgres};
 use tendermint::block;
@@ -219,14 +220,14 @@ impl Reader {
     }
 
     /// Retrieve the latest block height.
-    pub async fn height(&self) -> Result<block::Height> {
-        Ok(self
-            .latest_block_info()
-            .await?
-            .map(|row| row.height)
-            .unwrap_or(0)
-            .try_into()
-            .unwrap())
+    pub fn height(&self) -> block::Height {
+        *self.height_rx().borrow()
+    }
+
+    /// Retrieve the epoch associated with the latest block height.
+    pub fn epoch(&self) -> Epoch {
+        let epoch_duration = self.chain_params_rx().borrow().epoch_duration;
+        Epoch::from_height(self.height().into(), epoch_duration)
     }
 
     /// Retrieve the latest apphash.

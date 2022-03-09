@@ -49,7 +49,7 @@ impl Cache {
     }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct BlockChanges {
     /// New validators added during the block. Saved and available for staking when the block is committed.
     pub new_validators: BTreeMap<IdentityKey, Vec<VerifiedValidatorDefinition>>,
@@ -62,6 +62,13 @@ pub struct BlockChanges {
     pub slashed_validators: Vec<IdentityKey>,
     /// The net delegations performed in this block per validator.
     pub delegation_changes: BTreeMap<IdentityKey, i64>,
+    /// The current epoch when the block was started.
+    ///
+    /// If this is the last block of the epoch, the epoch rolls forward as the
+    /// block ends, but that does not affect the starting epoch.  This allows us
+    /// to ensure that we write delegation changes or other state in the correct
+    /// epoch.
+    pub starting_epoch: Epoch,
     /// The list of updated validator identity keys and powers to send to Tendermint during `end_block`.
     pub tm_validator_updates: Vec<ValidatorUpdate>,
     /// If this is the last block in an epoch, epoch-related changes are recorded here.
@@ -70,23 +77,29 @@ pub struct BlockChanges {
 
 impl BlockChanges {
     pub async fn commit(self, dbtx: &mut Transaction<'_, Postgres>) -> Result<()> {
-        tracing::debug!(?height, "Committing block");
-        tracing::debug!("end height {}", self.epoch().end_height().value(),);
+        tracing::debug!("Committing block");
 
         // Track the net change in delegations in this block.
-        let epoch_index = self.epoch().index;
+        //
+        // We need to record this with the starting epoch, not the ending epoch,
+        // because the delegations happen within the block, but any epoch
+        // rollover (if we are in the last block of an epoch) happens at the end
+        // of the block.  We don't want to accidentally record them with the
+        // *next* epoch, since that would cause us to pick them up again and
+        // re-apply them at the end of the next epoch.
         for (identity_key, delegation_change) in &self.delegation_changes {
             query!(
                 "INSERT INTO delegation_changes VALUES ($1, $2, $3)",
                 identity_key.encode_to_vec(),
-                epoch_index as i64,
+                self.starting_epoch.index as i64,
                 delegation_change
             )
             .execute(&mut *dbtx)
             .await?;
         }
 
-        // Queue redefinitions of existing validators to be processed at the epoch boundary
+        // Queue redefinitions of existing validators to be processed at the
+        // epoch boundary
         for v in &self.updated_validators {
             query!(
                 "INSERT INTO pending_validator_updates (definition) VALUES ($1)",
@@ -149,6 +162,7 @@ impl BlockChanges {
             // Delegations require knowing the rates for the
             // next epoch, so pre-populate with 0 reward => exchange rate 1 for
             // the current and next epochs.
+            let epoch_index = self.starting_epoch.index;
             for epoch in [epoch_index, epoch_index + 1] {
                 query!(
                     "INSERT INTO validator_rates (
