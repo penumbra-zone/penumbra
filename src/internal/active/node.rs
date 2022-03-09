@@ -72,7 +72,7 @@ impl<Child: Focus> Node<Child> {
 
 fn hash_active<Child: Focus>(siblings: &Three<Insert<Child::Complete>>, focus: &Child) -> Hash {
     // Get the correct padding hash for this height
-    let padding = Hash::default();
+    let zero = Hash::default();
 
     /// Get the hashes of all the `HashOr<T>` in the array, hashing `T` as necessary.
     #[inline]
@@ -85,27 +85,18 @@ fn hash_active<Child: Focus>(siblings: &Three<Insert<Child::Complete>>, focus: &
 
     // Get the four elements of this segment, *in order*, and extract their hashes
     let (a, b, c, d) = match siblings.elems() {
-        Elems::_0([]) => {
-            let a = focus.hash();
-            let [b, c, d] = [padding, padding, padding];
-            (a, b, c, d)
-        }
+        Elems::_0([]) => (focus.hash(), zero, zero, zero),
         Elems::_1(full) => {
             let [a] = hashes_of_all(full);
-            let b = focus.hash();
-            let [c, d] = [padding, padding];
-            (a, b, c, d)
+            (a, focus.hash(), zero, zero)
         }
         Elems::_2(full) => {
             let [a, b] = hashes_of_all(full);
-            let c = focus.hash();
-            let [d] = [padding];
-            (a, b, c, d)
+            (a, b, focus.hash(), zero)
         }
         Elems::_3(full) => {
             let [a, b, c] = hashes_of_all(full);
-            let d = focus.hash();
-            (a, b, c, d)
+            (a, b, c, focus.hash())
         }
     };
 
