@@ -1,6 +1,6 @@
 //! Every possible shape of a non-empty quad-tree node, enumerated as 15 distinct structs.
 
-#![allow(non_camel_case_types)]
+#![allow(non_camel_case_types, clippy::upper_case_acronyms)]
 
 use crate::Hash;
 

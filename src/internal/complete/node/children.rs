@@ -3,7 +3,7 @@
 //! Each complete node must have at least one child, but some other children may be missing because
 //! they have been pruned from the sparse tree.
 
-#![allow(non_camel_case_types)]
+#![allow(non_camel_case_types, clippy::upper_case_acronyms)]
 
 mod shape;
 pub use shape::*;
