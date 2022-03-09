@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, VecDeque};
 use anyhow::Result;
 use ark_ff::PrimeField;
 use decaf377::{Fq, Fr};
-use jmt::TreeWriterAsync;
+use jmt::storage::TreeWriter;
 use penumbra_chain::params::ChainParams;
 use penumbra_crypto::asset::{Denom, Id};
 use penumbra_crypto::merkle::Frontier;
@@ -287,7 +287,7 @@ impl Writer {
                 // a different domain-separated hash
                 vec![(
                     jellyfish::Key::NoteCommitmentAnchor.hash(),
-                    nct_anchor.clone(),
+                    nct_anchor.clone().to_bytes().to_vec(),
                 )],
                 // height 0 for genesis
                 0,
@@ -299,7 +299,7 @@ impl Writer {
             .await?;
 
         // The app hash needs to be returned to Tendermint
-        let app_hash: [u8; 32] = jmt_root.to_vec().try_into().unwrap();
+        let app_hash: [u8; 32] = jmt_root.0.to_vec().try_into().unwrap();
 
         // Insert the block into the DB
         query!(
@@ -388,7 +388,7 @@ impl Writer {
                 // a different domain-separated hash
                 vec![(
                     jellyfish::Key::NoteCommitmentAnchor.hash(),
-                    nct_anchor.clone(),
+                    nct_anchor.clone().to_bytes().to_vec(),
                 )],
                 height,
             )
@@ -402,7 +402,7 @@ impl Writer {
         // NCT anchor separately for convenience, but it's already included in
         // the JMT root.
         // TODO: no way to access the Diem HashValue as array, even though it's stored that way?
-        let app_hash: [u8; 32] = jmt_root.to_vec().try_into().unwrap();
+        let app_hash: [u8; 32] = jmt_root.0.to_vec().try_into().unwrap();
 
         query!(
             "INSERT INTO blocks (height, nct_anchor, app_hash) VALUES ($1, $2, $3)",

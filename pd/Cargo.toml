@@ -26,7 +26,7 @@ tower-abci = { git = "https://github.com/penumbra-zone/tower-abci/" }
 tendermint-config = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "master" }
 tendermint-proto = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "master" }
 tendermint = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "master" }
-jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "async-poc" }
+jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "main" }
 
 
 # External dependencies
