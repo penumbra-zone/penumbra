@@ -106,3 +106,13 @@ impl<Child: Height + GetHash> GetHash for Node<Child> {
         self.hash.get()
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn check_node_size() {
+        static_assertions::assert_eq_size!(Node<()>, [u8; 56]);
+    }
+}

@@ -77,13 +77,6 @@ where
     }
 }
 
-#[cfg(test)]
-#[test]
-fn check_eq_impl() {
-    static_assertions::assert_impl_all!(Tier<Tier<Tier<crate::Item>>>: Eq);
-    static_assertions::assert_impl_all!(Tier<Tier<Tier<Hash>>>: Eq);
-}
-
 impl<Item: Focus> PartialEq<complete::Tier<Item::Complete>> for Tier<Item>
 where
     Item: PartialEq + PartialEq<Item::Complete>,
@@ -242,5 +235,21 @@ impl<Item: Focus> Focus for Tier<Item> {
             Inner::Complete(inner) => Insert::Keep(complete::Tier { inner }),
             Inner::Hash(hash) => Insert::Hash(hash),
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn check_eq_impl() {
+        static_assertions::assert_impl_all!(Tier<Tier<Tier<crate::Item>>>: Eq);
+        static_assertions::assert_impl_all!(Tier<Tier<Tier<Hash>>>: Eq);
+    }
+
+    #[test]
+    fn check_inner_size() {
+        static_assertions::assert_eq_size!(Inner<Hash>, [u8; 560]);
     }
 }
