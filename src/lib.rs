@@ -110,6 +110,18 @@ impl Eternity {
     /// 3. the current [`Epoch`] was inserted as [`Insert::Hash`], which means that it cannot be
     /// modified after insertion.
     pub fn insert_block(&mut self, block: Insert<Block>) -> Result<(), Insert<Block>> {
+        // If the eternity is empty, we need to insert a new `Epoch` before we can insert a `Block`
+        // into it
+        let initialized = if self.inner.is_empty() {
+            if self.inner.insert(Insert::Keep(Tier::default())).is_err() {
+                return Err(block);
+            } else {
+                true
+            }
+        } else {
+            false
+        };
+
         let (items_witnessed, len) = match block {
             Insert::Keep(ref block) => (block.items_witnessed(), block.len()),
             Insert::Hash(_) => (0, 0),
@@ -137,12 +149,25 @@ impl Eternity {
             .unwrap_or_else(|| Err(block.take().unwrap()));
 
         if result.is_ok() {
+            if initialized {
+                self.epochs_witnessed += 1;
+            }
+
             // The start index of the current block (mask off the last 16 bits)
             let block_start = self.len & (!(u16::MAX as u64));
             // The size of each block (2^16)
             let block_size = 1 << 16;
+            // The start of the next block
+            let next_block_start = if !initialized {
+                // If we just initialized this, we shouldn't increment the length to the next block
+                0
+            } else {
+                // Otherwise, we need to move forward to the start of the next block
+                block_start + block_size
+            };
+
             // The new length is the start index of the *next* block plus the size of the one being added
-            self.len = block_start + block_size + (len as u64);
+            self.len = next_block_start + (len as u64);
 
             self.blocks_witnessed += 1;
             self.items_witnessed += items_witnessed;
@@ -171,6 +196,21 @@ impl Eternity {
     /// 5. the current [`Block`] was inserted as [`Insert::Hash`], which means that it cannot be
     /// modified after insertion.
     pub fn insert_item(&mut self, item: Insert<Fq>) -> Result<(), Insert<Fq>> {
+        // If the eternity is empty, we need to insert a new `Block` into a new `Epoch`, then insert
+        //that `Epoch` into the eternity before we can insert an item into that `Block`
+        let initialized = if self.inner.is_empty() {
+            let mut tier = Tier::default();
+            if tier.insert(Insert::Keep(Tier::default())).is_err()
+                || self.inner.insert(Insert::Keep(tier)).is_err()
+            {
+                return Err(item);
+            } else {
+                true
+            }
+        } else {
+            false
+        };
+
         let result = self
             .inner
             .update(|focus| {
@@ -191,6 +231,11 @@ impl Eternity {
             .unwrap_or(Err(item));
 
         if result.is_ok() {
+            if initialized {
+                self.epochs_witnessed += 1;
+                self.blocks_witnessed += 1;
+            }
+
             self.len += 1;
             self.items_witnessed += 1;
         }
@@ -303,6 +348,17 @@ impl Epoch {
     /// 3. the current [`Block`] was inserted as [`Insert::Hash`], which means that it cannot be
     /// modified after insertion.
     pub fn insert_item(&mut self, item: Insert<Fq>) -> Result<(), Insert<Fq>> {
+        // If the epoch is empty, we need to insert a new `Block` before we can insert into that block
+        let initialized = if self.inner.is_empty() {
+            if self.inner.insert(Insert::Keep(Tier::default())).is_err() {
+                return Err(item);
+            } else {
+                true
+            }
+        } else {
+            false
+        };
+
         let result = self
             .inner
             .update(|focus| {
@@ -315,6 +371,9 @@ impl Epoch {
             .unwrap_or(Err(item));
 
         if result.is_ok() {
+            if initialized {
+                self.blocks_witnessed += 1;
+            }
             self.items_witnessed += 1;
             self.len += 1;
         }
