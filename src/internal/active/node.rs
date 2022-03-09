@@ -16,13 +16,13 @@ use super::super::complete;
     PartialEq(bound = "Child: PartialEq, Child::Complete: PartialEq")
 )]
 pub struct Node<Child: Focus> {
-    focus: Child,
-    siblings: Three<Insert<Child::Complete>>,
     #[derivative(
         PartialEq = "ignore",
         Debug(format_with = "super::super::complete::node::fmt_cache")
     )]
     hash: Cell<OptionHash>,
+    siblings: Three<Insert<Child::Complete>>,
+    focus: Child,
 }
 
 impl<Child: Focus> PartialEq<complete::Node<Child::Complete>> for Node<Child>
