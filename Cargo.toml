@@ -15,6 +15,7 @@ poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377" }
 
 [dev-dependencies]
 static_assertions = "1"
+proptest = "1"
 
 [patch.crates-io]
 ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }

@@ -101,6 +101,45 @@ pub fn which_way(height: usize, index: usize) -> WhichWay {
 
 #[cfg(test)]
 mod test {
+    use super::*;
+    use proptest::prelude::*;
+
+    /// Get directions from the root (at the given height)
+    fn directions_of_index(height: usize, index: usize) -> Vec<WhichWay> {
+        (1..=height + 1)
+            .rev() // iterate from the root to the leaf (height down to 1)
+            .map(|height| which_way(height, index))
+            .collect()
+    }
+
     #[test]
-    fn which_way_works() {}
+    fn directions_of_index_check() {
+        assert_eq!(directions_of_index(1, 0), &[WhichWay::Leftmost]);
+        assert_eq!(directions_of_index(1, 1), &[WhichWay::Left]);
+        assert_eq!(directions_of_index(1, 2), &[WhichWay::Right]);
+        assert_eq!(directions_of_index(1, 3), &[WhichWay::Rightmost]);
+    }
+
+    /// Get the index which represents the given sequence of directions.
+    fn index_of_directions(directions: &[WhichWay]) -> usize {
+        directions
+            .iter()
+            .rev() // Iterating rom the leaf to the root...
+            .zip(1..) // Keeping track of the height (starting at 1 for the leafmost node)...
+            .fold(0, |index, (&direction, height)| {
+                index | // Set the bits in the index...
+                (direction as usize) << (2 * (height - 1)) // ...which correspond to the direction at the height - 1.
+            })
+    }
+
+    proptest! {
+        #[test]
+        fn which_way_correct(
+        (height, index) in (
+            // This is a dependent generator: we ensure that the index is in-bounds for the height
+            (0usize..(3 * 8)), 0usize..usize::MAX).prop_map(|(height, index)| (height, (index % (4usize.pow(height as u32)))))
+        ) {
+            assert_eq!(index, index_of_directions(&directions_of_index(height, index)));
+        }
+    }
 }
