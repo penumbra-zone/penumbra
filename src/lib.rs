@@ -20,7 +20,9 @@ use internal::{
     height::Height,
     item::Item,
 };
-use poseidon377::Fq;
+
+pub use ark_ff::fields::PrimeField;
+pub use poseidon377::Fq;
 
 /// A sparse commitment tree to store up to 65,536 [`Epoch`]s, each containing up to 65,536
 /// [`Block`]s, each containing up to 65,536 `Item`s or their [`struct@Hash`]es.
