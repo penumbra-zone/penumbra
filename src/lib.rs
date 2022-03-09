@@ -24,7 +24,7 @@ use internal::{
 pub use ark_ff::fields::PrimeField;
 pub use poseidon377::Fq;
 
-/// A sparse commitment tree to store up to 65,536 [`Epoch`]s, each witnessing up to 65,536
+/// A sparse commitment tree to witness up to 65,536 [`Epoch`]s, each witnessing up to 65,536
 /// [`Block`]s, each witnessing up to 65,536 [`Fq`]s or their [`struct@Hash`]es.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Eternity {
@@ -238,7 +238,7 @@ impl Eternity {
     }
 }
 
-/// A sparse commitment tree to store up to 65,536 [`Block`]s, each witnessing up to 65,536 [`Fq`]s
+/// A sparse commitment tree to witness up to 65,536 [`Block`]s, each witnessing up to 65,536 [`Fq`]s
 /// or their [`struct@Hash`]es.
 ///
 /// This is one [`Epoch`] in an [`Eternity`].
