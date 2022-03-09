@@ -10,7 +10,11 @@ pub type Nested<Item> = N<N<N<N<N<N<N<N<L<Item>>>>>>>>>;
 // Count the levels:    1 2 3 4 5 6 7 8
 
 /// A complete tier of the tiered commitment tree, being an 8-deep sparse quad-tree.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Derivative)]
+#[derivative(
+    PartialEq(bound = "Item: Height + GetHash + PartialEq"),
+    Eq(bound = "Item: Height + GetHash + Eq")
+)]
 pub struct Tier<Item> {
     pub(in super::super) inner: Nested<Item>,
 }

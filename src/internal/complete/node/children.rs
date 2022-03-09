@@ -1,12 +1,12 @@
-//! Enumeration of the possible shapes of the children of a node.
+//! Enumeration of the possible shapes of the children of a [`Node`](super::Node).
 //!
 //! Each complete node must have at least one child, but some other children may be missing because
 //! they have been pruned from the sparse tree.
 
 #![allow(non_camel_case_types)]
 
-pub mod shape;
-use shape::*;
+mod shape;
+pub use shape::*;
 
 use crate::{Hash, Height, Insert};
 

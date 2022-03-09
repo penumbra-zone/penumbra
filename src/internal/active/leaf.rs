@@ -7,8 +7,20 @@ use super::super::complete;
 /// Insertion into a leaf always fails, causing the tree above it to insert a new leaf to contain
 /// the inserted item.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Leaf<T> {
-    item: Insert<T>,
+pub struct Leaf<Item> {
+    item: Insert<Item>,
+}
+
+impl<Item: Focus> PartialEq<complete::Leaf<Item::Complete>> for Leaf<Item>
+where
+    Item: PartialEq<Item::Complete>,
+{
+    fn eq(&self, complete::Leaf(other): &complete::Leaf<Item::Complete>) -> bool {
+        match self.item {
+            Insert::Keep(ref item) => item == other,
+            Insert::Hash(_) => false,
+        }
+    }
 }
 
 impl<Item: GetHash> GetHash for Leaf<Item> {

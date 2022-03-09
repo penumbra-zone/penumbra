@@ -6,10 +6,10 @@ use super::super::{active, complete};
 
 /// An active tier of the tiered commitment tree, being an 8-deep quad-tree of items.
 #[derive(Derivative)]
-#[derivative(Debug(bound = "Item: Debug, <Item as Focus>::Complete: Debug"))]
-#[derivative(Clone(bound = "Item: Clone, <Item as Focus>::Complete: Clone"))]
-#[derivative(PartialEq(bound = "Item: PartialEq, <Item as Focus>::Complete: PartialEq"))]
-#[derivative(Eq(bound = "Item: Eq, <Item as Focus>::Complete: Eq"))]
+#[derivative(Debug(bound = "Item: Debug, Item::Complete: Debug"))]
+#[derivative(Clone(bound = "Item: Clone, Item::Complete: Clone"))]
+#[derivative(PartialEq(bound = "Item: Eq + PartialEq<Item::Complete>, Item::Complete: Eq"))]
+#[derivative(Eq(bound = "Item: Eq + PartialEq<Item::Complete>, Item::Complete: Eq"))]
 pub struct Tier<Item: Focus> {
     inner: Inner<Item>,
 }
@@ -22,7 +22,8 @@ pub type Nested<Item> = N<N<N<N<N<N<N<N<L<Item>>>>>>>>>;
 // Count the levels:    1 2 3 4 5 6 7 8
 
 /// The inside of an active level.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Derivative)]
+#[derivative(Eq(bound = "Item: Eq + PartialEq<Item::Complete>, Item::Complete: Eq"))]
 enum Inner<Item: Focus> {
     /// The starting state: an empty tree.
     Empty,
@@ -37,6 +38,59 @@ enum Inner<Item: Focus> {
     ///
     /// This is one of two final states: the other is [`Inner::Complete`].
     Hash(Hash),
+}
+
+impl<Item: Focus> PartialEq for Inner<Item>
+where
+    Item: PartialEq + PartialEq<Item::Complete>,
+    Item::Complete: PartialEq,
+{
+    fn eq(&self, other: &Inner<Item>) -> bool {
+        match (self, other) {
+            // Empty tiers are always equal to each other
+            (Inner::Empty, Inner::Empty) => true,
+            // An empty tier is never equal to a non-empty tier
+            (Inner::Empty, Inner::Active(_))
+            | (Inner::Empty, Inner::Complete(_))
+            | (Inner::Empty, Inner::Hash(_))
+            | (Inner::Active(_), Inner::Empty)
+            | (Inner::Complete(_), Inner::Empty)
+            | (Inner::Hash(_), Inner::Empty)
+            // A non-empty, non-hash tier is never equal to a hash tier (because one has witnesses
+            // and the other does not)
+            | (Inner::Active(_), Inner::Hash(_))
+            | (Inner::Complete(_), Inner::Hash(_))
+            | (Inner::Hash(_), Inner::Active(_))
+            | (Inner::Hash(_), Inner::Complete(_)) => false,
+            // Two non-empty, non-hash tiers are equal if their trees are equal (this relies on the
+            // `==` implementation between the two inner trees, which is heterogeneous in the case
+            // between `Active` and `Complete`)
+            (Inner::Active(l), Inner::Active(r)) => l == r,
+            (Inner::Active(l), Inner::Complete(r)) => l == r,
+            (Inner::Complete(l), Inner::Active(r)) => l == r,
+            (Inner::Complete(l), Inner::Complete(r)) => l == r,
+            // Two tiers with no witnesses are equal if their hashes are equal
+            (Inner::Hash(l), Inner::Hash(r)) => l == r,
+        }
+    }
+}
+
+impl<Item: Focus> PartialEq<complete::Tier<Item::Complete>> for Tier<Item>
+where
+    Item: PartialEq + PartialEq<Item::Complete>,
+    Item::Complete: PartialEq,
+{
+    fn eq(&self, complete::Tier { inner: r }: &complete::Tier<Item::Complete>) -> bool {
+        match self.inner {
+            // Complete tiers are never empty, an empty or hash-only tier is never equal to one,
+            // because they don't have witnesses
+            Inner::Empty | Inner::Hash(_) => false,
+            // Active tiers are equal to complete tiers if their trees are equal (relying on
+            // heterogeneous equality between `Active` and `Complete`)
+            Inner::Active(ref l) => l == r,
+            Inner::Complete(ref l) => l == r,
+        }
+    }
 }
 
 impl<Item: Focus> Default for Inner<Item> {

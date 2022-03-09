@@ -1,19 +1,28 @@
-use crate::{GetHash, Hash, Height};
+use crate::{Complete, GetHash, Hash, Height};
 
 use super::super::active;
 
 /// A complete, witnessed leaf of a tree.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Leaf<T>(T);
+pub struct Leaf<Item>(pub(in super::super) Item);
 
-impl<T> Leaf<T> {
+impl<Item> Leaf<Item> {
     /// Create a new complete leaf from the item stored in the tree.
-    pub fn new(item: T) -> Self {
+    pub fn new(item: Item) -> Self {
         Self(item)
     }
 }
 
-impl<T: GetHash> GetHash for Leaf<T> {
+impl<Item: Complete> PartialEq<active::Leaf<Item::Focus>> for Leaf<Item>
+where
+    Item::Focus: PartialEq<Item>,
+{
+    fn eq(&self, other: &active::Leaf<Item::Focus>) -> bool {
+        other == self
+    }
+}
+
+impl<Item: GetHash> GetHash for Leaf<Item> {
     #[inline]
     fn hash(&self) -> Hash {
         self.0.hash()
@@ -25,10 +34,10 @@ impl<T: GetHash> GetHash for Leaf<T> {
     }
 }
 
-impl<T: Height> Height for Leaf<T> {
-    type Height = T::Height;
+impl<Item: Height> Height for Leaf<Item> {
+    type Height = Item::Height;
 }
 
-impl<T: crate::Complete> crate::Complete for Leaf<T> {
-    type Focus = active::Leaf<<T as crate::Complete>::Focus>;
+impl<Item: crate::Complete> crate::Complete for Leaf<Item> {
+    type Focus = active::Leaf<<Item as crate::Complete>::Focus>;
 }

@@ -11,9 +11,10 @@ use crate::{internal::height::Zero, GetHash, Hash, Height, Insert};
 ///
 /// If you don't want to store actual items at the leaves of a tree but rather just store their
 /// hashes, use [`struct@Hash`] directly as the item of the tree.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Derivative)]
+#[derivative(PartialEq, Eq)]
 pub struct Item {
-    // TODO: replace with `OptionHash` optimization?
+    #[derivative(PartialEq = "ignore")]
     hash: Cell<Option<Hash>>,
     item: Fq,
 }

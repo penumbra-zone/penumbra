@@ -9,12 +9,52 @@ use crate::{
 use super::super::complete;
 
 /// An active node in a tree, into which items can be inserted.
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, Derivative)]
+#[derivative(PartialEq(bound = "Child: PartialEq, Child::Complete: PartialEq"))]
 pub struct Node<Child: Focus> {
     focus: Child,
     siblings: Three<Insert<Child::Complete>>,
     // TODO: replace this with space-saving `Cell<OptionHash>`?
+    #[derivative(PartialEq = "ignore")]
     hash: Cell<Option<Hash>>,
+}
+
+impl<Child: Focus> PartialEq<complete::Node<Child::Complete>> for Node<Child>
+where
+    Child::Complete: PartialEq<Child> + PartialEq,
+{
+    fn eq(&self, other: &complete::Node<Child::Complete>) -> bool {
+        let zero = || -> Insert<&Child> { Insert::Hash(Hash::default()) };
+
+        let children = other.children();
+
+        match (self.siblings.elems(), &self.focus) {
+            (Elems::_0([]), a) => {
+                children[0] == Insert::Keep(a)
+                    && children[1] == zero()
+                    && children[2] == zero()
+                    && children[3] == zero()
+            }
+            (Elems::_1([a]), b) => {
+                children[0] == a.as_ref()
+                    && children[1] == Insert::Keep(b)
+                    && children[2] == zero()
+                    && children[3] == zero()
+            }
+            (Elems::_2([a, b]), c) => {
+                children[0] == a.as_ref()
+                    && children[1] == b.as_ref()
+                    && children[2] == Insert::Keep(c)
+                    && children[3] == zero()
+            }
+            (Elems::_3([a, b, c]), d) => {
+                children[0] == a.as_ref()
+                    && children[1] == b.as_ref()
+                    && children[2] == c.as_ref()
+                    && children[3] == Insert::Keep(d)
+            }
+        }
+    }
 }
 
 impl<Child: Focus> Node<Child> {

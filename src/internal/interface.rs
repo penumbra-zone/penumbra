@@ -4,12 +4,33 @@ use crate::{GetHash, Hash, Height};
 ///
 /// When inserting, only items inserted with [`Insert::Keep`] are retained as witnessed leaves of
 /// the tree; those inserted with [`Insert::Hash`] are pruned.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Eq)]
 pub enum Insert<T> {
     /// An item unto itself: when inserting, keep this witnessed in the tree.
     Keep(T),
     /// The hash of an item: when inserting, don't keep this witnessed in the tree.
     Hash(Hash),
+}
+
+impl<T> Insert<T> {
+    /// Transform a `&Insert<T>` into a `Insert<&T>`.
+    #[inline]
+    pub fn as_ref(&self) -> Insert<&T> {
+        match self {
+            Insert::Keep(item) => Insert::Keep(item),
+            Insert::Hash(hash) => Insert::Hash(*hash),
+        }
+    }
+}
+
+impl<T: PartialEq<S>, S> PartialEq<Insert<S>> for Insert<T> {
+    fn eq(&self, other: &Insert<S>) -> bool {
+        match (self, other) {
+            (Insert::Keep(item), Insert::Keep(other)) => item == other,
+            (Insert::Hash(hash), Insert::Hash(other)) => hash == other,
+            _ => false,
+        }
+    }
 }
 
 impl<T: GetHash> GetHash for Insert<T> {

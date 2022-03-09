@@ -12,10 +12,21 @@ pub mod children;
 pub use children::Children;
 
 /// A complete sparse node in a tree, storing only the witnessed subtrees.
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, Derivative)]
+#[derivative(PartialEq(bound = "Child: PartialEq"))]
 pub struct Node<Child> {
+    #[derivative(PartialEq = "ignore")]
     hash: Cell<Option<Hash>>,
     children: Children<Child>,
+}
+
+impl<Child: Complete> PartialEq<active::Node<Child::Focus>> for Node<Child>
+where
+    Child: PartialEq + PartialEq<Child::Focus>,
+{
+    fn eq(&self, other: &active::Node<Child::Focus>) -> bool {
+        other == self
+    }
 }
 
 impl<Child: Height> Node<Child> {
@@ -63,6 +74,11 @@ impl<Child: Height> Node<Child> {
                 Insert::Hash(Hash::node(<Self as Height>::Height::HEIGHT, a, b, c, d))
             }
         }
+    }
+
+    /// Get the children of this node as an array of either children or hashes.
+    pub fn children(&self) -> [Insert<&Child>; 4] {
+        self.children.children()
     }
 }
 
