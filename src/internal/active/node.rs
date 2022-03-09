@@ -14,7 +14,6 @@ use super::super::complete;
 pub struct Node<Child: Focus> {
     focus: Child,
     siblings: Three<Insert<Child::Complete>>,
-    // TODO: replace this with space-saving `Cell<OptionHash>`?
     #[derivative(PartialEq = "ignore")]
     hash: Cell<Option<Hash>>,
 }
