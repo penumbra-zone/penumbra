@@ -209,11 +209,11 @@ impl Eternity {
     /// [`Epoch`], or summary root [`struct@Hash`] of a block or epoch being inserted.
     ///
     /// In other words, this is `2 ^ 32` times the number of epochs represented in this
-    /// [`Eternity`], plus `2 ^ 16` times the number of blocks represented in this [`Eternity`],
+    /// [`Eternity`], plus `4 ^ 8` times the number of blocks represented in this [`Eternity`],
     /// plus the number of items in the latest block.
     ///
-    /// The maximum capacity of an [`Eternity`] is `2 ^ 48`, i.e. `2 ^ 16` epochs of `2 ^ 16` blocks
-    /// of `2 ^ 16` items.
+    /// The maximum capacity of an [`Eternity`] is `2 ^ 48`, i.e. `4 ^ 8` epochs of `4 ^ 8` blocks
+    /// of `4 ^ 8` items.
     pub fn len(&self) -> u64 {
         self.len
     }
@@ -332,10 +332,10 @@ impl Epoch {
     /// This count includes those which were elided due to a partially filled [`Block`] or summary
     /// root [`struct@Hash`] of a block being inserted.
     ///
-    /// In other words, this is `2 ^ 16` times the number of blocks represented in this [`Epoch`],
+    /// In other words, this is `4 ^ 8` times the number of blocks represented in this [`Epoch`],
     /// plus the number of items in the latest block.
     ///
-    /// The maximum capacity of an [`Epoch`] is `2 ^ 32`, i.e. `2 ^ 16` blocks of `2 ^ 16` items.
+    /// The maximum capacity of an [`Epoch`] is `2 ^ 32`, i.e. `4 ^ 8` blocks of `4 ^ 8` items.
     pub fn len(&self) -> u32 {
         self.len
     }
