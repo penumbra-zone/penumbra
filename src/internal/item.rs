@@ -1,21 +1,18 @@
 //! Items at the leaves of a tree, paired with a lazily-computed hash.
 
-use std::cell::Cell;
-
 use poseidon377::Fq;
 
 use crate::{internal::height::Zero, GetHash, Hash, Height, Insert};
 
-/// Both a hash and the item hashed, with the hash computed lazily, to be used when inserting into a
-/// tree.
+/// Both a hash and the item hashed, to be used when inserting into a tree.
 ///
 /// If you don't want to store actual items at the leaves of a tree but rather just store their
 /// hashes, use [`struct@Hash`] directly as the item of the tree.
-#[derive(Debug, Clone, Derivative)]
+#[derive(Debug, Clone, Copy, Derivative)]
 #[derivative(PartialEq, Eq)]
 pub struct Item {
     #[derivative(PartialEq = "ignore")]
-    hash: Cell<Option<Hash>>,
+    hash: Hash,
     item: Fq,
 }
 
@@ -23,7 +20,7 @@ impl Item {
     /// Create a new [`Item`] from the given value.
     pub fn new(item: Fq) -> Self {
         Self {
-            hash: Cell::new(None),
+            hash: Hash::of(item),
             item,
         }
     }
@@ -32,6 +29,18 @@ impl Item {
 impl From<Fq> for Item {
     fn from(item: Fq) -> Self {
         Self::new(item)
+    }
+}
+
+impl From<Item> for Fq {
+    fn from(item: Item) -> Self {
+        item.item
+    }
+}
+
+impl From<Item> for Hash {
+    fn from(item: Item) -> Self {
+        item.hash
     }
 }
 
@@ -44,16 +53,12 @@ impl AsRef<Fq> for Item {
 impl GetHash for Item {
     #[inline]
     fn hash(&self) -> Hash {
-        self.hash.get().unwrap_or_else(|| {
-            let hash = Hash::of(self.item);
-            self.hash.set(Some(hash));
-            hash
-        })
+        self.hash
     }
 
     #[inline]
     fn cached_hash(&self) -> Option<Hash> {
-        self.hash.get()
+        Some(self.hash)
     }
 }
 

@@ -4,6 +4,7 @@
 
 pub mod hash;
 pub mod height;
+pub mod item;
 pub mod three;
 
 mod interface;

@@ -8,30 +8,24 @@ extern crate derivative;
 use std::fmt::Debug;
 
 pub mod internal;
-mod item;
-
-#[doc(inline)]
-pub use item::Item;
 
 #[doc(inline)]
 pub use internal::{active::Insert, hash::Hash};
 
+#[allow(unused_imports)]
 use internal::{
     active::{Active, Focus, Full, Tier},
     complete::Complete,
     hash::GetHash,
     height::Height,
+    item::Item,
 };
+use poseidon377::Fq;
 
 /// A sparse commitment tree to store up to 65,536 [`Epoch`]s, each containing up to 65,536
 /// [`Block`]s, each containing up to 65,536 `Item`s or their [`struct@Hash`]es.
-#[derive(Derivative)]
-#[derivative(Default(bound = ""))]
-#[derivative(Debug(bound = "Item: Debug, Item::Complete: Debug"))]
-#[derivative(Clone(bound = "Item: Clone, Item::Complete: Clone"))]
-#[derivative(PartialEq(bound = "Item: Eq + PartialEq<Item::Complete>, Item::Complete: Eq"))]
-#[derivative(Eq(bound = "Item: Eq + PartialEq<Item::Complete>, Item::Complete: Eq"))]
-pub struct Eternity<Item: Focus> {
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct Eternity {
     epochs_witnessed: u16,
     blocks_witnessed: u16,
     items_witnessed: u16,
@@ -39,7 +33,7 @@ pub struct Eternity<Item: Focus> {
     inner: Tier<Tier<Tier<Item>>>,
 }
 
-impl<Item: Focus> Eternity<Item> {
+impl Eternity {
     /// Create a new empty [`Eternity`] for storing all commitments to the end of time.
     pub fn new() -> Self {
         Self::default()
@@ -50,7 +44,7 @@ impl<Item: Focus> Eternity<Item> {
     /// # Errors
     ///
     /// Returns `Err(epoch)` without adding it to the [`Eternity`] if the [`Eternity`] is full.
-    pub fn insert_epoch(&mut self, epoch: Insert<Epoch<Item>>) -> Result<(), Insert<Epoch<Item>>> {
+    pub fn insert_epoch(&mut self, epoch: Insert<Epoch>) -> Result<(), Insert<Epoch>> {
         let (blocks_witnessed, items_witnessed, len) = match epoch {
             Insert::Keep(ref epoch) => (
                 epoch.blocks_witnessed(),
@@ -104,7 +98,7 @@ impl<Item: Focus> Eternity<Item> {
     /// 2. the current [`Epoch`] is full, or
     /// 3. the current [`Epoch`] was inserted as [`Insert::Hash`], which means that it cannot be
     /// modified after insertion.
-    pub fn insert_block(&mut self, block: Insert<Block<Item>>) -> Result<(), Insert<Block<Item>>> {
+    pub fn insert_block(&mut self, block: Insert<Block>) -> Result<(), Insert<Block>> {
         let (items_witnessed, len) = match block {
             Insert::Keep(ref block) => (block.items_witnessed(), block.len()),
             Insert::Hash(_) => (0, 0),
@@ -165,7 +159,7 @@ impl<Item: Focus> Eternity<Item> {
     /// 4. the current [`Block`] is full, or
     /// 5. the current [`Block`] was inserted as [`Insert::Hash`], which means that it cannot be
     /// modified after insertion.
-    pub fn insert_item(&mut self, item: Insert<Item>) -> Result<(), Insert<Item>> {
+    pub fn insert_item(&mut self, item: Insert<Fq>) -> Result<(), Insert<Fq>> {
         // Mutable container for the thing to be inserted: we will take it out of here if the
         // closure is run, but if it isn't, we need to recover it
         let mut item = Some(item);
@@ -180,7 +174,9 @@ impl<Item: Focus> Eternity<Item> {
                             let item = item.take().unwrap();
 
                             if let Insert::Keep(focus) = focus {
-                                focus.insert(item)
+                                focus
+                                    .insert(item.map(Into::into))
+                                    .map_err(|item| item.map(Into::into))
                             } else {
                                 Err(item)
                             }
@@ -244,20 +240,15 @@ impl<Item: Focus> Eternity<Item> {
 /// or their [`struct@Hash`]es.
 ///
 /// This is one [`Epoch`] in an [`Eternity`].
-#[derive(Derivative)]
-#[derivative(Default(bound = ""))]
-#[derivative(Debug(bound = "Item: Debug, Item::Complete: Debug"))]
-#[derivative(Clone(bound = "Item: Clone, Item::Complete: Clone"))]
-#[derivative(PartialEq(bound = "Item: Eq + PartialEq<Item::Complete>, Item::Complete: Eq"))]
-#[derivative(Eq(bound = "Item: Eq + PartialEq<Item::Complete>, Item::Complete: Eq"))]
-pub struct Epoch<Item: Focus> {
+#[derive(Derivative, Debug, Clone, PartialEq, Eq, Default)]
+pub struct Epoch {
     blocks_witnessed: u16,
     items_witnessed: u16,
     len: u32,
     inner: Tier<Tier<Item>>,
 }
 
-impl<Item: Focus> Epoch<Item> {
+impl Epoch {
     /// Create a new empty [`Epoch`].
     pub fn new() -> Self {
         Self::default()
@@ -270,7 +261,7 @@ impl<Item: Focus> Epoch<Item> {
     ///
     /// Returns `Err(block)` containing the inserted block without adding it to the [`Epoch`] if the
     /// [`Epoch`] is full.
-    pub fn insert_block(&mut self, block: Insert<Block<Item>>) -> Result<(), Insert<Block<Item>>> {
+    pub fn insert_block(&mut self, block: Insert<Block>) -> Result<(), Insert<Block>> {
         let (items_witnessed, len) = match block {
             Insert::Keep(ref block) => (block.items_witnessed(), block.len()),
             Insert::Hash(_) => (0, 0),
@@ -311,7 +302,7 @@ impl<Item: Focus> Epoch<Item> {
     /// 2. the current [`Block`] is full, or
     /// 3. the current [`Block`] was inserted as [`Insert::Hash`], which means that it cannot be
     /// modified after insertion.
-    pub fn insert_item(&mut self, item: Insert<Item>) -> Result<(), Insert<Item>> {
+    pub fn insert_item(&mut self, item: Insert<Fq>) -> Result<(), Insert<Fq>> {
         // Mutable container for the thing to be inserted: we will take it out of here if the
         // closure is run, but if it isn't, we need to recover it
         let mut item = Some(item);
@@ -323,7 +314,9 @@ impl<Item: Focus> Epoch<Item> {
                 let item = item.take().unwrap();
 
                 if let Insert::Keep(focus) = focus {
-                    focus.insert(item)
+                    focus
+                        .insert(item.map(Into::into))
+                        .map_err(|item| item.map(Into::into))
                 } else {
                     Err(item)
                 }
@@ -378,17 +371,12 @@ impl<Item: Focus> Epoch<Item> {
 /// A sparse commitment tree to store up to 65,536 individual `Item`s or their [`struct@Hash`]es.
 ///
 /// This is one [`Block`] in an [`Epoch`], which is one [`Epoch`] in an [`Eternity`].
-#[derive(Derivative)]
-#[derivative(Default(bound = ""))]
-#[derivative(Debug(bound = "Item: Debug, Item::Complete: Debug"))]
-#[derivative(Clone(bound = "Item: Clone, Item::Complete: Clone"))]
-#[derivative(PartialEq(bound = "Item: Eq + PartialEq<Item::Complete>, Item::Complete: Eq"))]
-#[derivative(Eq(bound = "Item: Eq + PartialEq<Item::Complete>, Item::Complete: Eq"))]
-pub struct Block<Item: Focus> {
+#[derive(Derivative, Debug, Clone, PartialEq, Eq, Default)]
+pub struct Block {
     inner: Tier<Item>,
 }
 
-impl<Item: Focus> Block<Item> {
+impl Block {
     /// Create a new empty [`Block`].
     pub fn new() -> Self {
         Self::default()
@@ -400,8 +388,10 @@ impl<Item: Focus> Block<Item> {
     ///
     /// Returns `Err(item)` containing the inserted item without adding it to the [`Block`] if the
     /// block is full.
-    pub fn insert_item(&mut self, item: Insert<Item>) -> Result<(), Insert<Item>> {
-        self.inner.insert(item)
+    pub fn insert_item(&mut self, item: Insert<Fq>) -> Result<(), Insert<Fq>> {
+        self.inner
+            .insert(item.map(Into::into))
+            .map_err(|item| item.map(Into::into))
     }
 
     /// The number of items witnessed in this [`Block`].
@@ -438,6 +428,6 @@ mod test {
 
     #[test]
     fn check_eternity_size() {
-        static_assertions::assert_eq_size!(Eternity<Hash>, [u8; 32]);
+        static_assertions::assert_eq_size!(Eternity, [u8; 32]);
     }
 }
