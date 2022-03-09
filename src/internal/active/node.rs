@@ -1,6 +1,7 @@
-use std::cell::Cell;
+use std::{cell::Cell, fmt::Debug};
 
 use crate::{
+    internal::hash::OptionHash,
     internal::height::{IsHeight, Succ},
     internal::three::{Elems, Three},
     Active, Focus, Full, GetHash, Hash, Height, Insert,
@@ -9,13 +10,19 @@ use crate::{
 use super::super::complete;
 
 /// An active node in a tree, into which items can be inserted.
-#[derive(Debug, Clone, Eq, Derivative)]
-#[derivative(PartialEq(bound = "Child: PartialEq, Child::Complete: PartialEq"))]
+#[derive(Clone, Eq, Derivative)]
+#[derivative(
+    Debug(bound = "Child: Debug, Child::Complete: Debug"),
+    PartialEq(bound = "Child: PartialEq, Child::Complete: PartialEq")
+)]
 pub struct Node<Child: Focus> {
     focus: Child,
     siblings: Three<Insert<Child::Complete>>,
-    #[derivative(PartialEq = "ignore")]
-    hash: Cell<Option<Hash>>,
+    #[derivative(
+        PartialEq = "ignore",
+        Debug(format_with = "super::super::complete::node::fmt_cache")
+    )]
+    hash: Cell<OptionHash>,
 }
 
 impl<Child: Focus> PartialEq<complete::Node<Child::Complete>> for Node<Child>
@@ -62,7 +69,7 @@ impl<Child: Focus> Node<Child> {
         Child: Active + GetHash,
     {
         Self {
-            hash: Cell::new(None),
+            hash: Cell::new(None.into()),
             siblings,
             focus,
         }
@@ -83,7 +90,7 @@ impl<Child: Focus> GetHash for Node<Child> {
             })
         }
 
-        match self.hash.get() {
+        match self.hash.get().into() {
             // If the hash was already cached, return that without doing any more work
             Some(hash) => hash,
 
@@ -113,7 +120,7 @@ impl<Child: Focus> GetHash for Node<Child> {
                 // Compute the hash of the node based on its height and the height of its children,
                 // and cache it in the node
                 let hash = Hash::node(Child::Height::HEIGHT + 1, a, b, c, d);
-                self.hash.set(Some(hash));
+                self.hash.set(Some(hash).into());
                 hash
             }
         }
@@ -121,7 +128,7 @@ impl<Child: Focus> GetHash for Node<Child> {
 
     #[inline]
     fn cached_hash(&self) -> Option<Hash> {
-        self.hash.get()
+        self.hash.get().into()
     }
 }
 
@@ -156,7 +163,7 @@ where
         // If the cached hash of the focus changed, clear the cached hash here, because it is now
         // invalid and needs to be recalculated
         if before_hash != after_hash {
-            self.hash.set(None);
+            self.hash.set(None.into());
         }
 
         output
@@ -196,7 +203,7 @@ where
                         complete: match complete::Node::from_children_or_else_hash(children) {
                             Insert::Hash(hash) => Insert::Hash(hash),
                             Insert::Keep(node) => {
-                                if let Some(hash) = self.hash.get() {
+                                if let Some(hash) = self.hash.get().into() {
                                     // This is okay because `complete` is guaranteed to have the same elements in
                                     // the same order as `siblings + [focus]`:
                                     node.set_hash_unchecked(hash);

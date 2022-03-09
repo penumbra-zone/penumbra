@@ -1,7 +1,8 @@
 //! Vectors capable of containing at most 3 elements.
 
 /// A vector capable of storing at most 3 elements.
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Derivative)]
+#[derivative(Debug = "transparent")]
 pub struct Three<T> {
     elems: Vec<T>,
 }

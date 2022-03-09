@@ -13,12 +13,25 @@ pub mod children;
 pub use children::Children;
 
 /// A complete sparse node in a tree, storing only the witnessed subtrees.
-#[derive(Debug, Clone, Eq, Derivative)]
-#[derivative(PartialEq(bound = "Child: PartialEq"))]
+#[derive(Clone, Eq, Derivative)]
+#[derivative(Debug, PartialEq(bound = "Child: PartialEq"))]
 pub struct Node<Child> {
     #[derivative(PartialEq = "ignore")]
+    #[derivative(Debug(format_with = "fmt_cache"))]
     hash: Cell<OptionHash>,
     children: Children<Child>,
+}
+
+/// Concisely format `OptionHash` for debug output.
+pub(crate) fn fmt_cache(
+    cell: &Cell<OptionHash>,
+    f: &mut std::fmt::Formatter,
+) -> Result<(), std::fmt::Error> {
+    if let Some(hash) = <Option<Hash>>::from(cell.get()) {
+        write!(f, "{:?}", hash)
+    } else {
+        write!(f, "_")
+    }
 }
 
 impl<Child: Complete> PartialEq<active::Node<Child::Focus>> for Node<Child>
