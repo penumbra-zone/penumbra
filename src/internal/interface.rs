@@ -55,7 +55,7 @@ impl<T: GetHash> GetHash for Insert<T> {
 /// most-recently-inserted element.
 pub trait Active: Focus + Sized {
     /// The type of item to persist in each witnessed leaf of the active tree.
-    type Item;
+    type Item: Focus;
 
     /// Make a new [`Active`] containing a single [`struct@Hash`] or `Self::Item`.
     fn singleton(item: Insert<Self::Item>) -> Self;
@@ -68,8 +68,9 @@ pub trait Active: Focus + Sized {
     /// [`insert`](Active::insert)ed one), returning the result of the function.
     fn update<T>(&mut self, f: impl FnOnce(&mut Insert<Self::Item>) -> T) -> T;
 
-    /// Get a reference to the last-inserted item.
-    fn last(&self) -> &Insert<Self::Item>;
+    /// Get a reference to the focused `Insert<Self::Item>` (i.e. the most-recently
+    /// [`insert`](Active::insert)ed one).
+    fn focus(&self) -> &Insert<Self::Item>;
 }
 
 /// A type which can be the focus of an [`Active`] tree: it can be finalized to make a [`Complete`]

@@ -139,6 +139,31 @@ impl<Item: Focus> Tier<Item> {
             }
         }
     }
+
+    /// Update the currently active `Insert<Item>` (i.e. the
+    /// most-recently-[`insert`](Self::insert)ed one), returning the result of the function.
+    ///
+    /// If there is no currently active `Insert<Item>` (in the case that the tier is empty or full),
+    /// the function is not called, and `None` is returned.
+    pub fn update<T>(&mut self, f: impl FnOnce(&mut Insert<Item>) -> T) -> Option<T> {
+        if let Inner::Active(active) = &mut self.inner {
+            Some(active.update(f))
+        } else {
+            None
+        }
+    }
+
+    /// Get a reference to the focused `Insert<Item>`, if there is one.
+    ///
+    /// If there is no focused `Insert<Item>` (in the case that the tier is empty or full), `None`
+    /// is returned.
+    pub fn focus(&self) -> Option<&Insert<Item>> {
+        if let Inner::Active(active) = &self.inner {
+            Some(active.focus())
+        } else {
+            None
+        }
+    }
 }
 
 impl<Item: Focus> Default for Tier<Item> {

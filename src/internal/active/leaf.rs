@@ -59,7 +59,7 @@ impl<Item: Focus> Active for Leaf<Item> {
     }
 
     #[inline]
-    fn last(&self) -> &Insert<Self::Item> {
+    fn focus(&self) -> &Insert<Self::Item> {
         &self.item
     }
 

@@ -163,8 +163,8 @@ where
     }
 
     #[inline]
-    fn last(&self) -> &Insert<Self::Item> {
-        self.focus.last()
+    fn focus(&self) -> &Insert<Self::Item> {
+        self.focus.focus()
     }
 
     #[inline]
