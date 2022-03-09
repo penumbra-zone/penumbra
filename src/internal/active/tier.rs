@@ -125,12 +125,14 @@ impl<Item: Focus> Tier<Item> {
                 None => {
                     // The tier is empty, so insert the item
                     **incomplete = Some(Nested::singleton(item));
+                    self.len += 1;
                     Ok(())
                 }
                 Some(active) => match active.insert(item) {
                     // The insertion succeeded, so we're still active
                     Ok(active) => {
                         **incomplete = Some(active);
+                        self.len += 1;
                         Ok(())
                     }
                     // The insertion failed, so we need to become complete
