@@ -75,7 +75,6 @@ impl<Child: Focus> Height for Node<Child> {
 }
 
 impl<Child: Focus> GetHash for Node<Child> {
-    #[inline]
     fn hash(&self) -> Hash {
         // Extract the hashes of an array of `Insert<T>`s.
         fn hashes_of_all<T: GetHash, const N: usize>(full: [&Insert<T>; N]) -> [Hash; N] {
