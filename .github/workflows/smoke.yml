@@ -21,6 +21,6 @@ jobs:
           docker-compose build
 
       - name: Run testnet for smoke test duration.
-        run: timeout $TESTNET_RUNTIME docker-compose up
+        run: timeout --preserve-status $TESTNET_RUNTIME docker-compose up
         env:
           TESTNET_RUNTIME: 20s
