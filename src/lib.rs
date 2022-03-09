@@ -49,7 +49,7 @@ impl<Item: Focus> Eternity<Item> {
     ///
     /// # Errors
     ///
-    /// Returns `Err(epoch)` without modifying the [`Eternity`] if the [`Eternity`] is full.
+    /// Returns `Err(epoch)` without adding it to the [`Eternity`] if the [`Eternity`] is full.
     pub fn insert_epoch(&mut self, epoch: Insert<Epoch<Item>>) -> Result<(), Insert<Epoch<Item>>> {
         let (blocks_witnessed, items_witnessed, len) = match epoch {
             Insert::Keep(ref epoch) => (
