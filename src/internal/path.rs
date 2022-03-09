@@ -6,8 +6,13 @@
 
 use crate::{
     internal::height::{IsHeight, Succ, Zero},
-    Hash,
+    Hash, Height,
 };
+
+/// An authentication path into a `Tree`.
+///
+/// This is statically guaranteed to have the same length as the height of the tree.
+pub type AuthPath<Tree> = <<Tree as Height>::Height as Path>::Path;
 
 /// Identifies the unique type representing an authentication path for the given height.
 pub trait Path: IsHeight + Sized {

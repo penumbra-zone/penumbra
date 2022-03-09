@@ -10,7 +10,7 @@ use std::fmt::Debug;
 pub mod internal;
 
 #[doc(inline)]
-pub use internal::{active::Insert, hash::Hash, Proof};
+pub use internal::{active::Insert, hash::Hash, path::AuthPath};
 
 #[allow(unused_imports)]
 use internal::{
@@ -19,6 +19,7 @@ use internal::{
     hash::GetHash,
     height::Height,
     item::Item,
+    Witness,
 };
 
 pub use ark_ff::fields::PrimeField;

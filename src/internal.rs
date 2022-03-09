@@ -5,10 +5,12 @@
 pub mod hash;
 pub mod height;
 pub mod item;
+pub mod path;
+pub mod proof;
 pub mod three;
 
 mod interface;
-pub use interface::{path, AuthPath, Proof, Witness};
+pub use interface::Witness;
 
 pub mod active {
     //! [`Active`] things can be inserted into and updated, always representing the rightmost (most
