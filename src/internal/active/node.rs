@@ -70,39 +70,6 @@ impl<Child: Focus> Node<Child> {
     }
 }
 
-fn hash_active<Child: Focus>(siblings: &Three<Insert<Child::Complete>>, focus: &Child) -> Hash {
-    // Get the correct padding hash for this height
-    let zero = Hash::default();
-
-    /// Get the hashes of all the `HashOr<T>` in the array, hashing `T` as necessary.
-    #[inline]
-    pub(crate) fn hashes_of_all<T: GetHash, const N: usize>(full: [&Insert<T>; N]) -> [Hash; N] {
-        full.map(|hash_or_t| match hash_or_t {
-            Insert::Hash(hash) => *hash,
-            Insert::Keep(t) => t.hash(),
-        })
-    }
-
-    // Get the four elements of this segment, *in order*, and extract their hashes
-    let (a, b, c, d) = match siblings.elems() {
-        Elems::_0([]) => (focus.hash(), zero, zero, zero),
-        Elems::_1(full) => {
-            let [a] = hashes_of_all(full);
-            (a, focus.hash(), zero, zero)
-        }
-        Elems::_2(full) => {
-            let [a, b] = hashes_of_all(full);
-            (a, b, focus.hash(), zero)
-        }
-        Elems::_3(full) => {
-            let [a, b, c] = hashes_of_all(full);
-            (a, b, c, focus.hash())
-        }
-    };
-
-    Hash::node(Child::Height::HEIGHT + 1, a, b, c, d)
-}
-
 impl<Child: Focus> Height for Node<Child> {
     type Height = Succ<Child::Height>;
 }
@@ -110,10 +77,44 @@ impl<Child: Focus> Height for Node<Child> {
 impl<Child: Focus> GetHash for Node<Child> {
     #[inline]
     fn hash(&self) -> Hash {
+        // Extract the hashes of an array of `Insert<T>`s.
+        fn hashes_of_all<T: GetHash, const N: usize>(full: [&Insert<T>; N]) -> [Hash; N] {
+            full.map(|hash_or_t| match hash_or_t {
+                Insert::Hash(hash) => *hash,
+                Insert::Keep(t) => t.hash(),
+            })
+        }
+
         match self.hash.get() {
+            // If the hash was already cached, return that without doing any more work
             Some(hash) => hash,
+
+            // If the hash was not already cached, compute and cache it
             None => {
-                let hash = hash_active(&self.siblings, &self.focus);
+                // Get the four hashes of the node's siblings + focus, *in that order*, adding
+                // zero-padding when there are less than four elements
+                let zero = Hash::default();
+                let focus = self.focus.hash();
+
+                let (a, b, c, d) = match self.siblings.elems() {
+                    Elems::_0([]) => (focus, zero, zero, zero),
+                    Elems::_1(full) => {
+                        let [a] = hashes_of_all(full);
+                        (a, focus, zero, zero)
+                    }
+                    Elems::_2(full) => {
+                        let [a, b] = hashes_of_all(full);
+                        (a, b, focus, zero)
+                    }
+                    Elems::_3(full) => {
+                        let [a, b, c] = hashes_of_all(full);
+                        (a, b, c, focus)
+                    }
+                };
+
+                // Compute the hash of the node based on its height and the height of its children,
+                // and cache it in the node
+                let hash = Hash::node(Child::Height::HEIGHT + 1, a, b, c, d);
                 self.hash.set(Some(hash));
                 hash
             }
