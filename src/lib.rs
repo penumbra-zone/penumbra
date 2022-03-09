@@ -74,7 +74,7 @@ impl<Item: Focus> Eternity<Item> {
 
         if result.is_ok() {
             // The start index of the current epoch (mask off the last 32 bits)
-            let epoch_start = self.len & (!(1u32 as u64));
+            let epoch_start = self.len & (!(u32::MAX as u64));
             // The size of each block (2^32)
             let epoch_size = 1 << 32;
             // The new length is the start index of the *next* block plus the size of the one being added
@@ -133,7 +133,7 @@ impl<Item: Focus> Eternity<Item> {
 
         if result.is_ok() {
             // The start index of the current block (mask off the last 16 bits)
-            let block_start = self.len & (!(1u16 as u64));
+            let block_start = self.len & (!(u16::MAX as u64));
             // The size of each block (2^16)
             let block_size = 1 << 16;
             // The new length is the start index of the *next* block plus the size of the one being added
@@ -283,7 +283,7 @@ impl<Item: Focus> Epoch<Item> {
 
         if result.is_ok() {
             // The start index of the current block (mask off the last 16 bits)
-            let block_start = self.len & (!(1u16 as u32));
+            let block_start = self.len & (!(u16::MAX as u32));
             // The size of each block (2^16)
             let block_size = 1 << 16;
             // The new length is the start index of the *next* block plus the size of the one being added
