@@ -100,7 +100,7 @@ impl<Item: Focus> Eternity<Item> {
     ///
     /// Returns `Err(block)` containing the inserted block without adding it to the [`Eternity`] if:
     ///
-    /// 1. we have reached the end of time (i.e. the [`Eternity`] is full),
+    /// 1. the [`Eternity`] is full,
     /// 2. the current [`Epoch`] is full, or
     /// 3. the current [`Epoch`] was inserted as [`Insert::Hash`], which means that it cannot be
     /// modified after insertion.
@@ -158,7 +158,7 @@ impl<Item: Focus> Eternity<Item> {
     ///
     /// Returns `Err(item)` containing the inserted item without adding it to the [`Eternity`] if:
     ///
-    /// 1. we have reached the end of time (i.e. the [`Eternity`] is full),
+    /// 1. the [`Eternity`] is full,
     /// 2. the current [`Epoch`] is full,
     /// 3. the current [`Epoch`] was inserted as [`Insert::Hash`], which means that it cannot be
     /// modified after insertion,
