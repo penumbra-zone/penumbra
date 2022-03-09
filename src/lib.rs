@@ -10,7 +10,12 @@ use std::fmt::Debug;
 pub mod internal;
 
 #[doc(inline)]
-pub use internal::{active::Insert, hash::Hash, path::AuthPath};
+pub use internal::{
+    active::Insert,
+    hash::Hash,
+    path::AuthPath,
+    proof::{Proof, ProveError, VerifiedProof, VerifyError},
+};
 
 #[allow(unused_imports)]
 use internal::{
