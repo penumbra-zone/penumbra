@@ -21,6 +21,15 @@ impl<T> Insert<T> {
             Insert::Hash(hash) => Insert::Hash(*hash),
         }
     }
+
+    /// Map a function over the [`Insert::Keep`] part of an `Insert<T>`.
+    #[inline]
+    pub fn map<U, F: FnOnce(T) -> U>(self, f: F) -> Insert<U> {
+        match self {
+            Insert::Keep(item) => Insert::Keep(f(item)),
+            Insert::Hash(hash) => Insert::Hash(hash),
+        }
+    }
 }
 
 impl<T: PartialEq<S>, S> PartialEq<Insert<S>> for Insert<T> {

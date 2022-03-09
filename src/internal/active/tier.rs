@@ -11,6 +11,8 @@ use super::super::{active, complete};
 #[derivative(PartialEq(bound = "Item: Eq + PartialEq<Item::Complete>, Item::Complete: Eq"))]
 #[derivative(Eq(bound = "Item: Eq + PartialEq<Item::Complete>, Item::Complete: Eq"))]
 pub struct Tier<Item: Focus> {
+    len: u16,
+    witnessed: u16,
     inner: Inner<Item>,
 }
 
@@ -110,6 +112,8 @@ impl<Item: Focus> Tier<Item> {
     /// Create a new active tier.
     pub fn new() -> Self {
         Self {
+            len: 0,
+            witnessed: 0,
             inner: Inner::default(),
         }
     }
@@ -121,11 +125,13 @@ impl<Item: Focus> Tier<Item> {
         match mem::take(&mut self.inner) {
             Inner::Empty => {
                 self.inner = Inner::Active(Nested::singleton(item));
+                self.len += 1;
                 Ok(())
             }
             Inner::Active(active) => match active.insert(item) {
                 Ok(active) => {
                     self.inner = Inner::Active(active);
+                    self.len += 1;
                     Ok(())
                 }
                 Err(Full { item, complete }) => {
@@ -170,6 +176,23 @@ impl<Item: Focus> Tier<Item> {
         } else {
             None
         }
+    }
+
+    /// Get the total number of insertions performed on this [`Tier`].
+    pub fn len(&self) -> u16 {
+        self.len
+    }
+
+    /// Get the number of items stored in this [`Tier`].
+    ///
+    /// This will be less than [`Tier::len`] if some hashes were inserted via [`Insert::Hash`].
+    pub fn size(&self) -> u16 {
+        self.witnessed
+    }
+
+    /// Check if this [`Tier`] is empty.
+    pub fn is_empty(&self) -> bool {
+        matches!(self.inner, Inner::Empty)
     }
 }
 
