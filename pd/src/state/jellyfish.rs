@@ -1,14 +1,11 @@
 use anyhow::Result;
 use futures::future::BoxFuture;
 use jmt::{
-    define_hasher,
-    hash::{CryptoHasher, DefaultHasher, HashValue},
-    node_type::{LeafNode, Node, NodeKey},
-    NodeBatch, TreeReaderAsync, TreeWriterAsync, Value,
+    storage::{LeafNode, Node, NodeBatch, NodeKey, TreeReader, TreeWriter},
+    KeyHash,
 };
-use once_cell::sync::{Lazy, OnceCell};
+use sha2::Digest;
 use sqlx::{query, Postgres};
-use tracing::instrument;
 
 use crate::state;
 
@@ -17,39 +14,26 @@ pub enum Key {
 }
 
 impl Key {
-    pub fn hash(self) -> HashValue {
+    pub fn hash(self) -> KeyHash {
         match self {
             Key::NoteCommitmentAnchor => {
-                let mut state = NoteCommitmentAnchorHasher::default();
-                state.update(b"");
-                state.finish()
+                let mut state = sha2::Sha256::new();
+                state.update(b"nct");
+                KeyHash(*state.finalize().as_ref())
             }
         }
     }
-}
-
-define_hasher! {
-    (
-        NoteCommitmentAnchorHasher,
-        NOTE_COMMITMENT_ANCHOR_HASHER,
-        NOTE_COMMITMENT_ANCHOR_SEED,
-        b"nct"
-    )
 }
 
 /// Wrapper struct used to implement [`jmt::TreeWriterAsync`] for a Postgres
 /// transaction, without violating the orphan rules.
 pub struct DbTx<'conn, 'tx>(pub &'tx mut sqlx::Transaction<'conn, Postgres>);
 
-impl<'conn, 'tx, V> TreeWriterAsync<V> for DbTx<'conn, 'tx>
-where
-    V: Value,
-{
+impl<'conn, 'tx> TreeWriter for DbTx<'conn, 'tx> {
     /// Writes a node batch into storage.
-    #[instrument(skip(self, node_batch))]
     fn write_node_batch<'future, 'a: 'future, 'n: 'future>(
         &'a mut self,
-        node_batch: &'n NodeBatch<V>,
+        node_batch: &'n NodeBatch,
     ) -> BoxFuture<'future, Result<()>> {
         Box::pin(async move {
             for (node_key, node) in node_batch.clone() {
@@ -72,13 +56,12 @@ where
     }
 }
 
-impl<V: Value> TreeReaderAsync<V> for state::Reader {
+impl TreeReader for state::Reader {
     /// Gets node given a node key. Returns `None` if the node does not exist.
-    #[instrument(skip(self))]
     fn get_node_option<'future, 'a: 'future, 'n: 'future>(
         &'a self,
         node_key: &'n NodeKey,
-    ) -> BoxFuture<'future, Result<Option<Node<V>>>> {
+    ) -> BoxFuture<'future, Result<Option<Node>>> {
         Box::pin(async {
             let mut conn = self.pool.acquire().await?;
 
@@ -101,10 +84,9 @@ impl<V: Value> TreeReaderAsync<V> for state::Reader {
     /// Gets the rightmost leaf. Note that this assumes we are in the process of restoring the tree
     /// and all nodes are at the same version.
     #[allow(clippy::type_complexity)]
-    #[instrument(skip(self))]
     fn get_rightmost_leaf<'future, 'a: 'future>(
         &'a self,
-    ) -> BoxFuture<'future, Result<Option<(NodeKey, LeafNode<V>)>>> {
+    ) -> BoxFuture<'future, Result<Option<(NodeKey, LeafNode)>>> {
         Box::pin(async {
             let mut conn = self.pool.acquire().await?;
 
@@ -117,14 +99,10 @@ impl<V: Value> TreeReaderAsync<V> for state::Reader {
                 _ => None,
             };
 
-            let mut node_key_and_node: Option<(NodeKey, LeafNode<V>)> = None;
+            let mut node_key_and_node: Option<(NodeKey, LeafNode)> = None;
 
             if let Some((key, Node::Leaf(leaf_node))) = value {
-                if node_key_and_node.is_none()
-                    || leaf_node.account_key() > node_key_and_node.as_ref().unwrap().1.account_key()
-                {
-                    node_key_and_node.replace((key, leaf_node));
-                }
+                node_key_and_node.replace((key, leaf_node));
             }
 
             Ok(node_key_and_node)
