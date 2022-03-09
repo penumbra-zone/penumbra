@@ -1,5 +1,7 @@
 //! The tiered commitment tree for Penumbra.
 
+// Cargo doc complains if the recursion limit isn't higher, even though cargo build succeeds:
+#![recursion_limit = "256"]
 #![warn(missing_docs)]
 
 #[macro_use]
