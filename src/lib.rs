@@ -24,8 +24,8 @@ use internal::{
 pub use ark_ff::fields::PrimeField;
 pub use poseidon377::Fq;
 
-/// A sparse commitment tree to store up to 65,536 [`Epoch`]s, each containing up to 65,536
-/// [`Block`]s, each containing up to 65,536 [`Fq`]s or their [`struct@Hash`]es.
+/// A sparse commitment tree to store up to 65,536 [`Epoch`]s, each witnessing up to 65,536
+/// [`Block`]s, each witnessing up to 65,536 [`Fq`]s or their [`struct@Hash`]es.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Eternity {
     epochs_witnessed: u16,
@@ -89,7 +89,7 @@ impl Eternity {
         self.epochs_witnessed
     }
 
-    /// Add a new [`Block`] (or its root hash) all at once to the current [`Epoch`] of this
+    /// Add a new [`Block`] or its root [`struct@Hash`] all at once to the current [`Epoch`] of this
     /// [`Eternity`].
     ///
     /// # Errors
@@ -147,8 +147,8 @@ impl Eternity {
         self.blocks_witnessed
     }
 
-    /// Add a new [`Fq`] (or its hash) to the current [`Block`] of the current [`Epoch`] of this
-    /// [`Eternity`].
+    /// Add a new [`Fq`] or its [`struct@Hash`] to the current [`Block`] of the current [`Epoch`] of
+    /// this [`Eternity`].
     ///
     /// # Errors
     ///
@@ -238,7 +238,7 @@ impl Eternity {
     }
 }
 
-/// A sparse commitment tree to store up to 65,536 [`Block`]s, each containing up to 65,536 [`Fq`]s
+/// A sparse commitment tree to store up to 65,536 [`Block`]s, each witnessing up to 65,536 [`Fq`]s
 /// or their [`struct@Hash`]es.
 ///
 /// This is one [`Epoch`] in an [`Eternity`].
@@ -256,7 +256,7 @@ impl Epoch {
         Self::default()
     }
 
-    /// Add a new [`Block`] (or its root hash) all at once to the current [`Epoch`] of this
+    /// Add a new [`Block`] or its root [`struct@Hash`] all at once to the current [`Epoch`] of this
     /// [`Eternity`].
     ///
     /// # Errors
@@ -294,7 +294,7 @@ impl Epoch {
         self.blocks_witnessed
     }
 
-    /// Add a new [`Fq`] (or its hash) to the current [`Block`] of this [`Epoch`].
+    /// Add a new [`Fq`] or its [`struct@Hash`] to the current [`Block`] of this [`Epoch`].
     ///
     /// # Errors
     ///
@@ -370,7 +370,7 @@ impl Epoch {
     }
 }
 
-/// A sparse commitment tree to store up to 65,536 individual [`Fq`]s or their [`struct@Hash`]es.
+/// A sparse commitment tree to witness up to 65,536 individual [`Fq`]s or their [`struct@Hash`]es.
 ///
 /// This is one [`Block`] in an [`Epoch`], which is one [`Epoch`] in an [`Eternity`].
 #[derive(Derivative, Debug, Clone, PartialEq, Eq, Default)]
@@ -384,7 +384,7 @@ impl Block {
         Self::default()
     }
 
-    /// Add a new item or its hash to this [`Block`].
+    /// Add a new [`Fq`] or its [`struct@Hash`] to this [`Block`].
     ///
     /// # Errors
     ///
