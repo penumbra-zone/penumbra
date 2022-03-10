@@ -24,13 +24,8 @@ impl Block {
     ///
     /// Returns `Err(item)` containing the inserted item without adding it to the [`Block`] if the
     /// block is full.
-    pub fn insert_item(&mut self, item: Insert<Fq>) -> Result<(), Insert<Fq>> {
+    pub fn insert(&mut self, item: Insert<Fq>) -> Result<(), Insert<Fq>> {
         self.inner.insert(item.map(Item::new)).map_err(|_| item)
-    }
-
-    /// The number of items witnessed in this [`Block`].
-    pub fn items_witnessed(&self) -> u16 {
-        self.inner.size()
     }
 
     /// The total number of [`Fq`]s or [`struct@Hash`]es represented in this [`Block`].

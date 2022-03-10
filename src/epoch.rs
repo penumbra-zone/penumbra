@@ -6,9 +6,6 @@ use crate::*;
 /// This is one [`Epoch`] in an [`Eternity`].
 #[derive(Derivative, Debug, Clone, PartialEq, Eq, Default)]
 pub struct Epoch {
-    pub(super) blocks_witnessed: u16,
-    pub(super) items_witnessed: u16,
-    pub(super) len: u32,
     pub(super) inner: Tier<Tier<Item>>,
 }
 
@@ -29,92 +26,10 @@ impl Epoch {
     ///
     /// Returns `Err(block)` containing the inserted block without adding it to the [`Epoch`] if the
     /// [`Epoch`] is full.
-    pub fn insert_block(&mut self, block: Insert<Block>) -> Result<(), Insert<Block>> {
-        let keep = block.is_keep();
-
-        let (items_witnessed, len) = match block {
-            Insert::Keep(ref block) => (block.items_witnessed(), block.len()),
-            Insert::Hash(_) => (0, 0),
-        };
-
-        let result = self
-            .inner
+    pub fn insert(&mut self, block: Insert<Block>) -> Result<(), Insert<Block>> {
+        self.inner
             .insert(block.map(|block| block.inner))
-            .map_err(|inner| inner.map(|inner| Block { inner }));
-
-        if result.is_ok() {
-            // The start index of the current block (mask off the last 16 bits)
-            let block_start = self.len & (!(u16::MAX as u32));
-            // The size of each block (2^16)
-            let block_size = 1 << 16;
-            // The new length is the start index of the *next* block plus the size of the one being added
-            self.len = block_start + block_size + (len as u32);
-
-            if keep {
-                self.blocks_witnessed += 1;
-            }
-            self.items_witnessed += items_witnessed;
-        }
-
-        result
-    }
-
-    /// The number of [`Block`]s witnessed in this [`Epoch`].
-    pub fn blocks_witnessed(&self) -> u16 {
-        self.blocks_witnessed
-    }
-
-    /// Add a new [`Fq`] or its [`struct@Hash`] to the current [`Block`] of this [`Epoch`].
-    ///
-    /// # Errors
-    ///
-    /// Returns `Err(block)` containing the inserted block without adding it to the [`Epoch`] if:
-    ///
-    /// 1. the [`Epoch`] is full,
-    /// 2. the current [`Block`] is full, or
-    /// 3. the current [`Block`] was inserted as [`Insert::Hash`], which means that it cannot be
-    /// modified after insertion.
-    pub fn insert_item(&mut self, item: Insert<Fq>) -> Result<(), Insert<Fq>> {
-        let keep = item.is_keep();
-
-        // If the epoch is empty, we need to insert a new `Block` before we can insert into that block
-        let initialized = if self.inner.is_empty() {
-            if self.inner.insert(Insert::Keep(Tier::default())).is_err() {
-                return Err(item);
-            } else {
-                true
-            }
-        } else {
-            false
-        };
-
-        let result = self
-            .inner
-            .update(|focus| {
-                if let Insert::Keep(focus) = focus {
-                    focus.insert(item.map(Item::new)).map_err(|_| item)
-                } else {
-                    Err(item)
-                }
-            })
-            .unwrap_or(Err(item));
-
-        if result.is_ok() {
-            if initialized {
-                self.blocks_witnessed += 1;
-            }
-            if keep {
-                self.items_witnessed += 1;
-            }
-            self.len += 1;
-        }
-
-        result
-    }
-
-    /// The total number of [`Fq`]s witnessed in every [`Block`] in this [`Epoch`].
-    pub fn items_witnessed(&self) -> u16 {
-        self.items_witnessed
+            .map_err(|block| block.map(|inner| Block { inner }))
     }
 
     /// The total number of [`Fq`]s or [`struct@Hash`]es represented in this [`Epoch`].
@@ -127,7 +42,12 @@ impl Epoch {
     ///
     /// The maximum capacity of an [`Epoch`] is `2 ^ 32`, i.e. `4 ^ 8` blocks of `4 ^ 8` items.
     pub fn len(&self) -> u32 {
-        self.len
+        ((self.inner.len() as u32) << 16)
+            + match self.inner.focus() {
+                None => 0,
+                Some(Insert::Hash(_)) => u16::MAX,
+                Some(Insert::Keep(block)) => block.len(),
+            } as u32
     }
 
     /// Check whether this [`Epoch`] is empty.

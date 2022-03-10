@@ -13,7 +13,6 @@ use super::super::{active, complete};
 #[derivative(Eq(bound = "Item: Eq + PartialEq<Item::Complete>, Item::Complete: Eq"))]
 pub struct Tier<Item: Focus> {
     len: u16,
-    witnessed: u16,
     inner: Inner<Item>,
 }
 
@@ -178,13 +177,6 @@ impl<Item: Focus> Tier<Item> {
     /// Get the total number of insertions performed on this [`Tier`].
     pub fn len(&self) -> u16 {
         self.len
-    }
-
-    /// Get the number of items stored in this [`Tier`].
-    ///
-    /// This will be less than [`Tier::len`] if some hashes were inserted via [`Insert::Hash`].
-    pub fn size(&self) -> u16 {
-        self.witnessed
     }
 
     /// Check if this [`Tier`] is empty.
