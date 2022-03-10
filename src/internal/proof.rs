@@ -16,7 +16,7 @@ use crate::{Fq, Hash, Height};
     Eq(bound = "<Tree::Height as path::Path>::Path: Eq")
 )]
 pub struct Proof<Tree: Height> {
-    pub(crate) index: [u16; 3],
+    pub(crate) index: usize,
     pub(crate) auth_path: AuthPath<Tree>,
     pub(crate) leaf: Fq,
 }
@@ -28,7 +28,7 @@ impl<Tree: Height> Proof<Tree> {
     pub fn verify(self, root: Hash) -> Result<VerifiedProof<Tree>, VerifyError<Tree>> {
         use path::Path;
 
-        if root == Tree::Height::root(&self.auth_path, self.index(), Hash::of(self.leaf)) {
+        if root == Tree::Height::root(&self.auth_path, self.index, Hash::of(self.leaf)) {
             Ok(VerifiedProof { proof: self, root })
         } else {
             Err(VerifyError { proof: self, root })
@@ -37,8 +37,7 @@ impl<Tree: Height> Proof<Tree> {
 
     /// Get the index of the item this proof claims to witness.
     pub fn index(&self) -> usize {
-        let [epoch, block, commitment] = self.index;
-        epoch as usize * 4usize.pow(32) + block as usize * 4usize.pow(16) + commitment as usize
+        self.index
     }
 
     /// Get the [`AuthPath`] of this proof, representing the path from the root to the leaf of the
