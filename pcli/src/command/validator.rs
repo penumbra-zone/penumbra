@@ -1,8 +1,14 @@
+use std::fs::File;
+
+use anyhow::Context;
 use anyhow::Result;
-use penumbra_stake::IdentityKey;
-use penumbra_wallet::ClientState;
 use structopt::StructOpt;
 
+use penumbra_stake::IdentityKey;
+use penumbra_stake::ValidatorDefinition;
+use penumbra_wallet::ClientState;
+
+use crate::state::ClientStateFile;
 use crate::Opt;
 
 #[derive(Debug, StructOpt)]
@@ -25,7 +31,7 @@ impl ValidatorCmd {
         }
     }
 
-    pub async fn exec(&self, _opt: &Opt, state: &ClientState) -> Result<()> {
+    pub async fn exec(&self, opt: &Opt, state: &mut ClientStateFile) -> Result<()> {
         match self {
             ValidatorCmd::Identity => {
                 let ik = IdentityKey(
@@ -39,6 +45,18 @@ impl ValidatorCmd {
                 println!("{}", ik);
             }
             ValidatorCmd::UploadDefinition { file } => {
+                let definition_file =
+                    File::open(&file).with_context(|| format!("cannot open file {:?}", file))?;
+                let definition: ValidatorDefinition = serde_json::from_reader(definition_file)
+                    .expect("can parse app_state in genesis file");
+                // Construct a new transaction and include the validator definition.
+                let transaction = state.build_validator_definition(definition)?;
+
+                opt.submit_transaction(&transaction).await?;
+                // Only commit the state if the transaction was submitted
+                // successfully, so that we don't store pending notes that will
+                // never appear on-chain.
+                state.commit()?;
                 println!("Uploaded validator definition");
             }
         }

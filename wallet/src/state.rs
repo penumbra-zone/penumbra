@@ -13,7 +13,7 @@ use penumbra_crypto::{
     note, Address, FieldExt, Note, Nullifier, Value,
 };
 use penumbra_proto::light_wallet::{CompactBlock, StateFragment};
-use penumbra_stake::{RateData, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM};
+use penumbra_stake::{RateData, ValidatorDefinition, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM};
 use penumbra_transaction::Transaction;
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
@@ -412,6 +412,15 @@ impl ClientState {
         self.register_change(output_note);
 
         tx_builder.finalize(rng).map_err(Into::into)
+    }
+
+    /// Generate a new transaction uploading a validator definition.
+    #[instrument(skip(self))]
+    pub fn build_validator_definition(
+        &mut self,
+        definition: ValidatorDefinition,
+    ) -> Result<Transaction, anyhow::Error> {
+        Err(anyhow!("not implemented"))
     }
 
     /// Generate a new transaction sending value to `dest_address`.
