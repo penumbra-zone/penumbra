@@ -69,7 +69,7 @@ pub struct Hash(#[derivative(Debug(format_with = "fmt_hash"))] Fq);
 fn fmt_hash(hash: &Fq, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
     let mut bytes = Vec::with_capacity(4 * 8);
     hash.0 .0.write(&mut bytes).unwrap();
-    write!(f, "{}", hex::encode(&bytes))
+    write!(f, "{}", hex::encode(&bytes[3 * 8 + 4..]))
 }
 
 impl<T: GetHash> From<&T> for Hash {

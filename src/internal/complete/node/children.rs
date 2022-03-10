@@ -5,13 +5,15 @@
 
 #![allow(non_camel_case_types, clippy::upper_case_acronyms)]
 
+use std::fmt::Debug;
+
 mod shape;
 pub use shape::*;
 
 use crate::{Hash, Height, Insert};
 
 /// The children of a [`Node`](super::Node).
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum Children<Child> {
     /// Children of a node having children in the positions: 3.
     ___C(Box<___C<Child>>),
@@ -43,6 +45,12 @@ pub enum Children<Child> {
     CCC_(Box<CCC_<Child>>),
     /// Children of a node having children in the positions: 0, 1, 2, 3.
     CCCC(Box<CCCC<Child>>),
+}
+
+impl<Child: Debug> Debug for Children<Child> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.children().fmt(f)
+    }
 }
 
 impl<Child> TryFrom<[Insert<Child>; 4]> for Children<Child>

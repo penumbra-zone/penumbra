@@ -3,7 +3,8 @@ use crate::{Complete, GetHash, Hash, Height};
 use super::super::active;
 
 /// A complete, witnessed leaf of a tree.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Derivative)]
+#[derivative(Debug = "transparent")]
 pub struct Leaf<Item>(pub(in super::super) Item);
 
 impl<Item> Leaf<Item> {

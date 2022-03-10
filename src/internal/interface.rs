@@ -1,16 +1,16 @@
-use std::fmt::Debug;
-
 use crate::{AuthPath, GetHash, Hash, Height};
 
 /// Either an item or just its hash, to be used when inserting into a tree.
 ///
 /// When inserting, only items inserted with [`Insert::Keep`] are retained as witnessed leaves of
 /// the tree; those inserted with [`Insert::Hash`] are pruned.
-#[derive(Debug, Clone, Copy, Eq)]
+#[derive(Clone, Copy, Eq, Derivative)]
+#[derivative(Debug)]
 pub enum Insert<T> {
     /// An item unto itself: when inserting, keep this witnessed in the tree.
     Keep(T),
     /// The hash of an item: when inserting, don't keep this witnessed in the tree.
+    #[derivative(Debug = "transparent")]
     Hash(Hash),
 }
 

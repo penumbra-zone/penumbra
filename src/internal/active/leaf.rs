@@ -6,7 +6,8 @@ use super::super::complete;
 ///
 /// Insertion into a leaf always fails, causing the tree above it to insert a new leaf to contain
 /// the inserted item.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Derivative)]
+#[derivative(Debug = "transparent")]
 pub struct Leaf<Item> {
     item: Insert<Item>,
 }

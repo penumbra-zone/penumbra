@@ -13,7 +13,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         } else {
             tree.insert_item(Insert::Hash(Hash::of(fq))).unwrap();
         }
-        println!("{}", i);
     }
     println!("{:?}", tree);
     Ok(())
