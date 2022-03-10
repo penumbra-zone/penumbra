@@ -1,4 +1,4 @@
-use crate::{Complete, GetHash, Hash, Height};
+use crate::{AuthPath, Complete, GetHash, Hash, Height, Witness};
 
 use super::super::active;
 
@@ -37,4 +37,12 @@ impl<Item: Height + GetHash> GetHash for Tier<Item> {
 
 impl<Item: Complete> Complete for Tier<Item> {
     type Focus = active::Tier<Item::Focus>;
+}
+
+impl<Item: GetHash + Witness> Witness for Tier<Item> {
+    type Item = Item::Item;
+
+    fn witness(&self, index: usize) -> Option<(AuthPath<Self>, Self::Item)> {
+        self.inner.witness(index)
+    }
 }

@@ -10,7 +10,10 @@ use ark_ff::{fields::PrimeField, BigInteger256, Fp256, ToBytes};
 use once_cell::sync::Lazy;
 use poseidon377::Fq;
 
-use crate::{internal::height::Zero, Insert};
+use crate::{
+    internal::{height::Zero, path},
+    AuthPath, Complete, Focus, Height, Insert, Witness,
+};
 
 mod option_hash;
 pub use option_hash::OptionHash;
@@ -135,11 +138,11 @@ impl GetHash for Hash {
     }
 }
 
-impl crate::Height for Hash {
+impl Height for Hash {
     type Height = Zero;
 }
 
-impl crate::Focus for Hash {
+impl Focus for Hash {
     type Complete = Self;
 
     #[inline]
@@ -148,6 +151,18 @@ impl crate::Focus for Hash {
     }
 }
 
-impl crate::Complete for Hash {
+impl Complete for Hash {
     type Focus = Self;
+}
+
+impl Witness for Hash {
+    type Item = Hash;
+
+    fn witness(&self, index: usize) -> Option<(AuthPath<Self>, Hash)> {
+        if index == 0 {
+            Some((path::Leaf, *self))
+        } else {
+            None
+        }
+    }
 }

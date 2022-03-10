@@ -16,7 +16,6 @@ pub enum Insert<T> {
 
 impl<T> Insert<T> {
     /// Transform a `&Insert<T>` into a `Insert<&T>`.
-    #[inline]
     pub fn as_ref(&self) -> Insert<&T> {
         match self {
             Insert::Keep(item) => Insert::Keep(item),
@@ -35,11 +34,18 @@ impl<T> Insert<T> {
     }
 
     /// Map a function over the [`Insert::Keep`] part of an `Insert<T>`.
-    #[inline]
     pub fn map<U, F: FnOnce(T) -> U>(self, f: F) -> Insert<U> {
         match self {
             Insert::Keep(item) => Insert::Keep(f(item)),
             Insert::Hash(hash) => Insert::Hash(hash),
+        }
+    }
+
+    /// Get the kept `T` out of this [`Insert<T>`] or return `None`.
+    pub fn keep(self) -> Option<T> {
+        match self {
+            Insert::Keep(item) => Some(item),
+            Insert::Hash(_) => None,
         }
     }
 }
@@ -122,16 +128,29 @@ pub struct Full<T: Active> {
 }
 /// Witness an authentication path into a tree, or remove a witnessed item from one.
 pub trait Witness: Height + Sized {
+    /// The leaf of the tree: the element being witnessed.
+    type Item;
+
     /// Witness an authentication path to the given index in the tree.
     ///
     /// The input mutable slice should be at least the height of the tree, and is overwritten by
     /// this function.
-    fn witness(&self, index: usize) -> Option<(AuthPath<Self>, Hash)>;
+    fn witness(&self, index: usize) -> Option<(AuthPath<Self>, Self::Item)>;
+}
 
+pub trait Release: Height {
     /// Remove the witness for the given index.
+    ///
+    /// Returns `true` if the witness was previously present in the tree.
+    fn release(&mut self, index: usize) -> bool;
+}
+
+pub trait ReleaseOwned: Height + Sized {
+    /// Remove the witness for the given index and summarize the item as a single `Hash` if it now
+    /// contains no more witnesses.
     ///
     /// Returns either `(Self, boool)` where the boolean is `true` if the witness was removed or
     /// `false` if the witness was not present, or `Hash` if the witness was removed and it was the
     /// last witness remaining in this tree.
-    fn remove_witness(self, index: usize) -> Result<(Self, bool), Hash>;
+    fn release(self, index: usize) -> Result<(Self, bool), Hash>;
 }

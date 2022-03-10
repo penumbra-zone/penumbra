@@ -1,4 +1,4 @@
-use crate::{Complete, GetHash, Hash, Height};
+use crate::{Complete, GetHash, Hash, Height, Witness};
 
 use super::super::active;
 
@@ -39,6 +39,14 @@ impl<Item: Height> Height for Leaf<Item> {
     type Height = Item::Height;
 }
 
-impl<Item: crate::Complete> crate::Complete for Leaf<Item> {
+impl<Item: Complete> Complete for Leaf<Item> {
     type Focus = active::Leaf<<Item as crate::Complete>::Focus>;
+}
+
+impl<Item: Witness> Witness for Leaf<Item> {
+    type Item = Item::Item;
+
+    fn witness(&self, index: usize) -> Option<(crate::AuthPath<Self>, Self::Item)> {
+        self.0.witness(index)
+    }
 }

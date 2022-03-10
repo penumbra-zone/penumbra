@@ -1,4 +1,4 @@
-use crate::{Active, Focus, Full, GetHash, Hash, Height, Insert};
+use crate::{Active, AuthPath, Focus, Full, GetHash, Hash, Height, Insert, Witness};
 
 use super::super::complete;
 
@@ -87,5 +87,13 @@ impl<Item: Focus> Focus for Leaf<Item> {
                 Insert::Keep(item) => Insert::Keep(complete::Leaf::new(item)),
             },
         }
+    }
+}
+
+impl<Item: Witness> Witness for Leaf<Item> {
+    type Item = Item::Item;
+
+    fn witness(&self, index: usize) -> Option<(AuthPath<Self>, Self::Item)> {
+        self.item.as_ref().keep()?.witness(index)
     }
 }

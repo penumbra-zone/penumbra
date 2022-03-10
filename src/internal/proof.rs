@@ -5,7 +5,7 @@
 use std::fmt::Debug;
 
 use super::path::{self, AuthPath};
-use crate::{Fq, Hash, Height, Witness};
+use crate::{Fq, Hash, Height};
 
 /// A proof of inclusion for a single [`Fq`](crate::Fq) commitment in a tree.
 #[derive(Derivative)]
@@ -16,9 +16,9 @@ use crate::{Fq, Hash, Height, Witness};
     Eq(bound = "<Tree::Height as path::Path>::Path: Eq")
 )]
 pub struct Proof<Tree: Height> {
-    index: usize,
-    auth_path: AuthPath<Tree>,
-    leaf: Fq,
+    pub(crate) index: usize,
+    pub(crate) auth_path: AuthPath<Tree>,
+    pub(crate) leaf: Fq,
 }
 
 impl<Tree: Height> Proof<Tree> {
@@ -32,29 +32,6 @@ impl<Tree: Height> Proof<Tree> {
             Ok(VerifiedProof { proof: self, root })
         } else {
             Err(VerifyError { proof: self, root })
-        }
-    }
-
-    /// Create a proof of inclusion for the given index in the tree, or return `None` if the index
-    /// does not have a witness in the tree.
-    pub fn prove(index: usize, item: Fq, tree: &Tree) -> Result<Self, ProveError>
-    where
-        Tree: Witness,
-    {
-        // Try to witness this index in the tree and retrieve the authentication path and leaf hash
-        if let Some((auth_path, leaf)) = tree.witness(index) {
-            // Check that the leaf hash matches the provided item
-            if leaf == Hash::of(item) {
-                Ok(Self {
-                    index,
-                    auth_path,
-                    leaf: item,
-                })
-            } else {
-                Err(ProveError::ItemHashMismatch)
-            }
-        } else {
-            Err(ProveError::IndexNotWitnessed)
         }
     }
 

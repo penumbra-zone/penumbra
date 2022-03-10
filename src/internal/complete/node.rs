@@ -1,10 +1,13 @@
 use std::cell::Cell;
 
 use crate::{
-    internal::hash::OptionHash,
-    internal::height::{IsHeight, Succ},
-    internal::three::{IntoElems, Three},
-    Complete, GetHash, Hash, Height, Insert,
+    internal::{
+        hash::OptionHash,
+        height::{IsHeight, Succ},
+        path::{self, AuthPath, WhichWay},
+        three::{IntoElems, Three},
+    },
+    Complete, GetHash, Hash, Height, Insert, Witness,
 };
 
 use super::super::active;
@@ -118,6 +121,50 @@ impl<Child: Height + GetHash> GetHash for Node<Child> {
     #[inline]
     fn cached_hash(&self) -> Option<Hash> {
         self.hash.get().into()
+    }
+}
+
+impl<Child: GetHash + Witness> Witness for Node<Child> {
+    type Item = Child::Item;
+
+    fn witness(&self, index: usize) -> Option<(AuthPath<Self>, Self::Item)> {
+        let [a, b, c, d] = self.children();
+
+        // Which way to go down the tree from this node
+        let which_way = WhichWay::at(Self::Height::HEIGHT, index);
+
+        // The index to use when witnessing the child: mask off all the bits for the parent nodes of
+        // the path above us
+        let index = index & (0b11 << ((Self::Height::HEIGHT - 1) * 2));
+
+        let (siblings, (child, leaf)) = match which_way {
+            WhichWay::Leftmost => (
+                // Siblings are the left, right, and rightmost children
+                [b, c, d].map(|x| x.hash()),
+                // Authentication path to the leftmost child
+                a.keep()?.witness(index)?,
+            ),
+            WhichWay::Left => (
+                // Siblings are the leftmost, right, and rightmost children
+                [a, c, d].map(|x| x.hash()),
+                // Authentication path to the left child
+                b.keep()?.witness(index)?,
+            ),
+            WhichWay::Right => (
+                // Siblings are the leftmost, left, and rightmost children
+                [a, b, d].map(|x| x.hash()),
+                // Authentication path to the right child
+                c.keep()?.witness(index)?,
+            ),
+            WhichWay::Rightmost => (
+                // Siblings are the leftmost, left, and right children
+                [a, b, c].map(|x| x.hash()),
+                // Authentication path to the rightmost child
+                d.keep()?.witness(index)?,
+            ),
+        };
+
+        Some((path::Node { siblings, child }, leaf))
     }
 }
 

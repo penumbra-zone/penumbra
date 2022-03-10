@@ -1,10 +1,13 @@
 use std::{cell::Cell, fmt::Debug};
 
 use crate::{
-    internal::hash::OptionHash,
-    internal::height::{IsHeight, Succ},
-    internal::three::{Elems, Three},
-    Active, Focus, Full, GetHash, Hash, Height, Insert,
+    internal::{
+        hash::OptionHash,
+        height::{IsHeight, Succ},
+        path::{self, WhichWay},
+        three::{Elems, Three},
+    },
+    Active, AuthPath, Focus, Full, GetHash, Hash, Height, Insert, Witness,
 };
 
 use super::super::complete;
@@ -215,5 +218,107 @@ where
                 }
             },
         }
+    }
+}
+
+impl<Child: Focus + Witness> Witness for Node<Child>
+where
+    Child::Complete: Witness<Item = Child::Item>,
+{
+    type Item = Child::Item;
+
+    fn witness(&self, index: usize) -> Option<(AuthPath<Self>, Self::Item)> {
+        use Elems::*;
+        use WhichWay::*;
+
+        // Which direction should we go from this node?
+        let which_way = WhichWay::at(Self::Height::HEIGHT, index);
+
+        // The index to use when witnessing the child: mask off all the bits for the parent nodes of
+        // the path above us
+        let index = index & (0b11 << ((Self::Height::HEIGHT - 1) * 2));
+
+        let (siblings, (child, leaf)) = match (self.siblings.elems(), &self.focus) {
+            // Zero siblings to the left
+            (_0([]), a) => match which_way {
+                Leftmost => (
+                    // All sibling hashes are default for the left, right, and rightmost
+                    [Hash::default(); 3],
+                    // Authentication path is to the leftmost child
+                    a.witness(index)?,
+                ),
+                Left | Right | Rightmost => return None,
+            },
+
+            // One sibling to the left
+            (_1([a]), b) => match which_way {
+                Leftmost => (
+                    // Sibling hashes are the left child and default for right and rightmost
+                    [b.hash(), Hash::default(), Hash::default()],
+                    // Authentication path is to the leftmost child
+                    a.as_ref().keep()?.witness(index)?,
+                ),
+                Left => (
+                    // Sibling hashes are the leftmost child and default for right and rightmost
+                    [a.hash(), Hash::default(), Hash::default()],
+                    // Authentication path is to the left child
+                    b.witness(index)?,
+                ),
+                Right | Rightmost => return None,
+            },
+
+            // Two siblings to the left
+            (_2([a, b]), c) => match which_way {
+                Leftmost => (
+                    // Sibling hashes are the left child and right child and default for rightmost
+                    [b.hash(), c.hash(), Hash::default()],
+                    // Authentication path is to the leftmost child
+                    a.as_ref().keep()?.witness(index)?,
+                ),
+                Left => (
+                    // Sibling hashes are the leftmost child and right child and default for rightmost
+                    [a.hash(), c.hash(), Hash::default()],
+                    // Authentication path is to the left child
+                    b.as_ref().keep()?.witness(index)?,
+                ),
+                Right => (
+                    // Sibling hashes are the leftmost child and left child and default for rightmost
+                    [a.hash(), b.hash(), Hash::default()],
+                    // Authentication path is to the right child
+                    c.witness(index)?,
+                ),
+                Rightmost => return None,
+            },
+
+            // Three siblings to the left
+            (_3([a, b, c]), d) => match which_way {
+                Leftmost => (
+                    // Sibling hashes are the left child, right child, and rightmost child
+                    [b.hash(), c.hash(), d.hash()],
+                    // Authentication path is to the leftmost child
+                    a.as_ref().keep()?.witness(index)?,
+                ),
+                Left => (
+                    // Sibling hashes are the leftmost child, right child, and rightmost child
+                    [a.hash(), c.hash(), d.hash()],
+                    // Authentication path is to the left child
+                    b.as_ref().keep()?.witness(index)?,
+                ),
+                Right => (
+                    // Sibling hashes are the leftmost child, left child, and rightmost child
+                    [a.hash(), b.hash(), d.hash()],
+                    // Authentication path is to the right child
+                    c.as_ref().keep()?.witness(index)?,
+                ),
+                Rightmost => (
+                    // Sibling hashes are the leftmost child, left child, and right child
+                    [a.hash(), b.hash(), c.hash()],
+                    // Authentication path is to the rightmost child
+                    d.witness(index)?,
+                ),
+            },
+        };
+
+        Some((path::Node { siblings, child }, leaf))
     }
 }

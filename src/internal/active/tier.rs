@@ -1,6 +1,6 @@
 use std::{fmt::Debug, mem};
 
-use crate::{Active, Focus, Full, GetHash, Hash, Height, Insert};
+use crate::{Active, AuthPath, Focus, Full, GetHash, Hash, Height, Insert, Witness};
 
 use super::super::{active, complete};
 
@@ -247,6 +247,24 @@ impl<Item: Focus> Focus for Tier<Item> {
             }
             Inner::Complete(inner) => Insert::Keep(complete::Tier { inner }),
             Inner::Hash(hash) => Insert::Hash(hash),
+        }
+    }
+}
+
+impl<Item: Focus + Witness> Witness for Tier<Item>
+where
+    Item::Complete: Witness<Item = Item::Item>,
+{
+    type Item = Item::Item;
+
+    fn witness(&self, index: usize) -> Option<(AuthPath<Self>, Self::Item)> {
+        match &self.inner {
+            Inner::Active(active) => active
+                .as_ref()
+                .as_ref()
+                .and_then(|active| active.witness(index)),
+            Inner::Complete(complete) => complete.witness(index),
+            Inner::Hash(_) => None,
         }
     }
 }

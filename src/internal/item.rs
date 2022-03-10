@@ -2,7 +2,9 @@
 
 use poseidon377::Fq;
 
-use crate::{internal::height::Zero, GetHash, Hash, Height, Insert};
+use crate::{
+    internal::height::Zero, AuthPath, Complete, Focus, GetHash, Hash, Height, Insert, Witness,
+};
 
 /// Both a hash and the item hashed, used internally when inserting into a tree.
 #[derive(Debug, Clone, Copy, Derivative)]
@@ -63,7 +65,7 @@ impl Height for Item {
     type Height = Zero;
 }
 
-impl crate::Focus for Item {
+impl Focus for Item {
     type Complete = Self;
 
     #[inline]
@@ -72,6 +74,16 @@ impl crate::Focus for Item {
     }
 }
 
-impl crate::Complete for Item {
+impl Complete for Item {
     type Focus = Self;
+}
+
+impl Witness for Item {
+    type Item = Fq;
+
+    fn witness(&self, index: usize) -> Option<(AuthPath<Self>, Self::Item)> {
+        self.hash
+            .witness(index)
+            .map(|(auth_path, _)| (auth_path, self.item))
+    }
 }
