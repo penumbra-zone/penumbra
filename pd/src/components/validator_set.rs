@@ -4,13 +4,17 @@ use std::{
 };
 
 use anyhow::Result;
-
 use futures::Future;
 use penumbra_crypto::{
     asset::{self, Denom, Id},
     Address,
 };
 use penumbra_proto::Protobuf;
+use penumbra_stake::{
+    BaseRateData, Epoch, FundingStream, IdentityKey, RateData, Validator, ValidatorDefinition,
+    ValidatorInfo, ValidatorState, ValidatorStateName, ValidatorStatus,
+    VerifiedValidatorDefinition, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
+};
 use sqlx::{query, Postgres, Transaction};
 use tendermint::{
     abci::types::{Evidence, ValidatorUpdate},
@@ -18,11 +22,6 @@ use tendermint::{
 };
 
 use crate::state::Reader;
-use penumbra_stake::{
-    BaseRateData, Epoch, FundingStream, IdentityKey, RateData, Validator, ValidatorDefinition,
-    ValidatorInfo, ValidatorState, ValidatorStateName, ValidatorStatus,
-    VerifiedValidatorDefinition, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
-};
 
 #[derive(Debug, Clone)]
 struct Cache {

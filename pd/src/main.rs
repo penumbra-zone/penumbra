@@ -211,7 +211,6 @@ async fn main() -> anyhow::Result<()> {
             chain_id,
             slashing_penalty,
         } => {
-            use rand::Rng;
             use std::{
                 fs,
                 fs::File,
@@ -219,6 +218,8 @@ async fn main() -> anyhow::Result<()> {
                 str::FromStr,
                 time::{Duration, SystemTime, UNIX_EPOCH},
             };
+
+            use rand::Rng;
 
             // Build script computes the latest testnet name and sets it as an env variable
             let chain_id = chain_id.unwrap_or_else(|| env!("PD_LATEST_TESTNET_NAME").to_string());

@@ -9,7 +9,6 @@ use penumbra_proto::{
     },
     stake::ValidatorInfo,
 };
-
 use tonic::Status;
 use tracing::instrument;
 

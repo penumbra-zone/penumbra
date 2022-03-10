@@ -5,13 +5,12 @@ use ark_ff::PrimeField;
 use decaf377::{Fq, Fr};
 use jmt::TreeWriterAsync;
 use penumbra_chain::params::ChainParams;
-use penumbra_crypto::asset::{Denom, Id};
-use penumbra_crypto::merkle::Frontier;
-use penumbra_crypto::One;
 use penumbra_crypto::{
-    asset, ka,
-    merkle::{self, NoteCommitmentTree, TreeExt},
-    Note, Value,
+    asset,
+    asset::{Denom, Id},
+    ka,
+    merkle::{self, Frontier, NoteCommitmentTree, TreeExt},
+    Note, One, Value,
 };
 use penumbra_proto::Protobuf;
 use penumbra_stake::{FundingStream, RateDataById, ValidatorStateName};
@@ -20,10 +19,12 @@ use tendermint::block;
 use tokio::sync::watch;
 
 use super::jellyfish;
-use crate::verify::PositionedNoteData;
 use crate::{
-    components::validator_set::ValidatorSet, genesis, pending_block::QuarantineGroup,
-    verify::NoteData, PendingBlock, NUM_RECENT_ANCHORS,
+    components::validator_set::ValidatorSet,
+    genesis,
+    pending_block::QuarantineGroup,
+    verify::{NoteData, PositionedNoteData},
+    PendingBlock, NUM_RECENT_ANCHORS,
 };
 
 #[derive(Debug)]
