@@ -14,7 +14,6 @@ use crate::{hash, hkd, Clue, Error, MAX_PRECISION};
 /// situations where clue key might or might not actually be used.  This saves
 /// computation; at the point that a clue key will be used to create a [`Clue`],
 /// it can be expanded to an [`ExpandedClueKey`].
-/// TODO: use Zeroize?
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub struct ClueKey(pub [u8; 32]);
 
@@ -22,6 +21,8 @@ pub struct ClueKey(pub [u8; 32]);
 /// intended for the corresponding [`DetectionKey`](crate::DetectionKey).
 #[allow(non_snake_case)]
 pub struct ExpandedClueKey {
+    root_pub: decaf377::Element,
+    root_pub_enc: decaf377::Encoding,
     subkeys: RefCell<Vec<decaf377::Element>>,
 }
 
@@ -32,30 +33,48 @@ impl ClueKey {
     ///
     /// Fails if the bytes don't encode a valid clue key.
     #[allow(non_snake_case)]
-    pub fn expand(&self, precision: usize) -> Result<ExpandedClueKey, Error> {
-        if precision > MAX_PRECISION {
-            return Err(Error::PrecisionTooLarge(precision));
-        }
-
-        let root_pub_enc = decaf377::Encoding(self.0);
-        let root_pub = root_pub_enc
-            .decompress()
-            .map_err(|_| Error::InvalidAddress)?;
-
-        // TOOD: generate subkeys between 0 and `precision`, should we instead handle an arbitrary
-        //       range (e.g. K_i <> K_{i+k})
-        let Xs = (0..precision)
-            .into_iter()
-            .map(|i| hkd::derive_public(&root_pub, &root_pub_enc, i as u8))
-            .collect::<Vec<_>>();
-
-        Ok(ExpandedClueKey {
-            subkeys: RefCell::new(Xs),
-        })
+    pub fn expand(&self) -> Result<ExpandedClueKey, Error> {
+        ExpandedClueKey::new(&self)
     }
 }
 
 impl ExpandedClueKey {
+    pub fn new(clue_key: &ClueKey) -> Result<Self, Error> {
+        let root_pub_enc = decaf377::Encoding(clue_key.0);
+        let root_pub = root_pub_enc
+            .decompress()
+            .map_err(|_| Error::InvalidAddress)?;
+
+        Ok(ExpandedClueKey {
+            root_pub,
+            root_pub_enc,
+            subkeys: RefCell::new(Vec::new()),
+        })
+    }
+
+    /// Checks that the expanded clue key has at least `precision` subkeys
+    fn ensure_at_least(&self, precision: usize) -> Result<(), Error> {
+        if precision > MAX_PRECISION {
+            return Err(Error::PrecisionTooLarge(precision));
+        }
+
+        let current_precision = self.subkeys.try_borrow()?.len();
+
+        // The cached expansion is large enough to accomodate the specified precision.
+        if precision <= current_precision {
+            return Ok(());
+        }
+
+        let mut expanded_keys = (current_precision..precision)
+            .into_iter()
+            .map(|i| hkd::derive_public(&self.root_pub, &self.root_pub_enc, i as u8))
+            .collect::<Vec<_>>();
+
+        self.subkeys.try_borrow_mut()?.append(&mut expanded_keys);
+
+        return Ok(());
+    }
+
     /// Create a [`Clue`] intended for the [`DetectionKey`](crate::DetectionKey)
     /// corresponding to this clue key.
     ///
@@ -76,9 +95,8 @@ impl ExpandedClueKey {
             return Err(Error::PrecisionTooLarge(precision_bits));
         }
 
-        if !self.ensure_at_least(precision_bits) {
-            return Err(Error::PrecisionTooLarge(precision_bits));
-        }
+        // Ensure that at least `precision_bits` subkeys are available.
+        self.ensure_at_least(precision_bits)?;
 
         let r = Fr::rand(&mut rng);
         let z = Fr::rand(&mut rng);
@@ -89,7 +107,7 @@ impl ExpandedClueKey {
         let Q_encoding = Q.compress();
 
         let mut ctxts = BitArray::<order::Lsb0, [u8; 3]>::zeroed();
-        let Xs = self.subkeys.try_borrow().unwrap();
+        let Xs = self.subkeys.try_borrow()?;
 
         for i in 0..precision_bits {
             let rXi = (r * Xs[i]).compress();
@@ -108,11 +126,5 @@ impl ExpandedClueKey {
         buf[65..68].copy_from_slice(ctxts.as_buffer());
 
         Ok(Clue(buf))
-    }
-
-    /// Checks that the expanded clue key has at least `precision` subkeys
-    fn ensure_at_least(&self, precision: usize) -> bool {
-        // TODO: handle try_borrow failure via Result
-        return self.subkeys.try_borrow().unwrap().len() >= precision;
     }
 }
