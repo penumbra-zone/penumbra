@@ -15,7 +15,7 @@
   - [Undelegation](./stake/undelegation.md)
   - [Example Staking Dynamics](./stake/example.md)
   - [Arithmetic](./stake/arithmetic.md)
-- [IBC Integration]()
+- [IBC Integration](./ibc.md)
   - [Transfers into Penumbra](./ibc/in.md)
   - [Transfers out of Penumbra]()
 - [ZSwap](./zswap.md)
