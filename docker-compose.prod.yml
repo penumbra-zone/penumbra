@@ -1,10 +1,5 @@
 version: "3.7"
-# docker-compose oerrides for local development.
-#
-# this modifies the docker-compose configuration for locally testing and
-# debugging the Penumbra daemon. these configurations may not be desirable when
-# running in production, so the main `docker-compose.yml` defines a canonical
-# configuration for prod deployments.
+# docker-compose overrides for production.
 services:
   pd:
     build:
@@ -18,6 +13,11 @@ services:
         "pd start --host 0.0.0.0 --database-uri $$(cat
           /run/secrets/db_connection_string)"
       ]
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "10"
+        max-size: "1g"
 
   # add prometheus and grafana
   #
