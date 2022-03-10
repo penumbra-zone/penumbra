@@ -53,8 +53,8 @@ impl Cache {
 pub struct BlockChanges {
     /// New validators added during the block. Saved and available for staking when the block is committed.
     pub new_validators: BTreeMap<IdentityKey, Vec<VerifiedValidatorDefinition>>,
-    /// Existing validators updated during the block. Saved when the block is committed, queued for the next epoch.
-    pub pending_validator_updates: Vec<VerifiedValidatorDefinition>,
+    /// Existing validators updated during the block.  Changes to funding streams take effect at the next epoch rollover.
+    pub updated_validators: BTreeMap<IdentityKey, Vec<VerifiedValidatorDefinition>>,
     /// Validators slashed during this block. Saved when the block is committed.
     ///
     /// The validator's rate will have a slashing penalty immediately applied during the current epoch.
@@ -78,7 +78,7 @@ pub struct BlockChanges {
 }
 
 impl BlockChanges {
-    pub async fn commit(self, dbtx: &mut Transaction<'_, Postgres>) -> Result<()> {
+    pub async fn commit(mut self, dbtx: &mut Transaction<'_, Postgres>) -> Result<()> {
         tracing::debug!("Committing block");
 
         // Track the net change in delegations in this block.
@@ -100,22 +100,55 @@ impl BlockChanges {
             .await?;
         }
 
-        // Queue redefinitions of existing validators to be processed at the
-        // epoch boundary
-        for v in &self.pending_validator_updates {
+        // Handle updating validators, leaving their current rates unchanged.
+        for (ik, mut defs) in self.updated_validators {
+            // Sort the validator definitions by sequence number + tiebreaker,
+            // in case there are conflicts.
+            defs.sort();
+            let v = defs.pop().expect("updated_validators has no empty lists");
+
             query!(
-                "INSERT INTO pending_validator_updates (definition) VALUES ($1)",
-                v.encode_to_vec()
+                "UPDATE validators 
+                SET
+                consensus_key=$2, 
+                sequence_number=$3,
+                name=$4,
+                website=$5,
+                description=$6
+                WHERE
+                identity_key=$1 ",
+                v.validator.identity_key.encode_to_vec(),
+                v.validator.consensus_key.to_bytes(),
+                v.validator.sequence_number as i64,
+                v.validator.name,
+                v.validator.website,
+                v.validator.description,
             )
             .execute(&mut *dbtx)
             .await?;
+
+            for FundingStream { address, rate_bps } in v.validator.funding_streams.as_ref() {
+                query!(
+                    "INSERT INTO validator_fundingstreams (
+                        identity_key,
+                        address,
+                        rate_bps
+                    ) VALUES ($1, $2, $3)
+                    ON CONFLICT (identity_key, address)
+                    DO UPDATE SET rate_bps = $3",
+                    v.validator.identity_key.encode_to_vec(),
+                    address.to_string(),
+                    *rate_bps as i32,
+                )
+                .execute(&mut *dbtx)
+                .await?;
+            }
         }
 
         // Handle adding newly added validators with default rates
-        for (ik, defs) in &self.new_validators {
+        for (ik, mut defs) in self.new_validators {
             // Sort the validator definitions by sequence number + tiebreaker,
             // in case there are conflicts.
-            let mut defs = defs.clone();
             defs.sort();
             let v = defs.pop().expect("new_validators has no empty lists");
 
@@ -133,7 +166,7 @@ impl BlockChanges {
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
                 v.validator.identity_key.encode_to_vec(),
                 v.validator.consensus_key.to_bytes(),
-                i64::try_from(v.validator.sequence_number)?,
+                v.validator.sequence_number as i64,
                 v.validator.name,
                 v.validator.website,
                 v.validator.description,
@@ -208,7 +241,7 @@ impl BlockChanges {
                 ik.borrow().encode_to_vec(),
                 ValidatorStateName::Slashed.to_str(),
                 0,
-                None,
+                Option::<i64>::None,
             )
             .execute(&mut *dbtx)
             .await?;
@@ -246,9 +279,6 @@ pub struct EpochChanges {
     /// Set in `end_epoch` and reset to `None` when `reward_notes` is called.
     // TODO: produce in end_epoch and return to caller, make this private
     pub reward_notes: Vec<(u64, Address)>,
-    /// Updates to existing validator definitions that are applied as part of
-    /// this epoch transition.
-    pub updated_validators: Vec<ValidatorDefinition>,
     /// Records updates to the supply of staking or delegation tokens as a result of an epoch transition.
     pub supply_updates: BTreeMap<asset::Id, (asset::Denom, u64)>,
 }
@@ -281,7 +311,6 @@ impl EpochChanges {
                 .await?;
         }
 
-        // TODO: write the updated validators
         // TODO: write the supply updates
         // TODO: what processes the reward notes?
         // -- problem: how do we connect this code with the code that handles the shielded pool?
@@ -326,7 +355,7 @@ impl ValidatorSet {
         self.block_changes = Some(BlockChanges {
             starting_epoch: self.reader.epoch(),
             new_validators: Default::default(),
-            pending_validator_updates: Default::default(),
+            updated_validators: Default::default(),
             slashed_validators: Default::default(),
             delegation_changes: Default::default(),
             tm_validator_updates: Default::default(),
@@ -342,6 +371,7 @@ impl ValidatorSet {
     /// with a more general solution.
     pub fn epoch_changes(&self) -> Option<&EpochChanges> {
         self.block_changes
+            .as_ref()
             .expect("this method should only be called during an active block")
             .epoch_changes
             .as_ref()
@@ -512,21 +542,33 @@ impl ValidatorSet {
         );
         metrics::increment_counter!("epoch");
 
-        let unbonding_epochs = self.reader.chain_params_rx().borrow().unbonding_epochs;
-        let active_validator_limit = self
-            .reader
-            .chain_params_rx()
-            .borrow()
-            .active_validator_limit;
+        // TODO: eliminate this ad-hoc state updating with an OverlayTree
 
-        // Pull out pending validator redefinitions and apply them to the cache,
-        // then queue them to be written to the state.
-        let mut updated_validators = Vec::new();
-        for (ik, mut defs) in self.reader.pending_validator_redefinitions().await? {
-            // Select the validator redefinition with the highest sequence number.
+        // this is a bit complicated: because we're in the EndBlock phase, and the
+        // delegations in this block have not yet been committed, we have to combine
+        // the delegations in pending_block with the ones already committed to the
+        // state. otherwise the delegations committed in the epoch threshold block
+        // would be lost.
+        //
+        // TODO: encapsulate the delegations logic
+        let mut delegation_changes = self.reader.delegation_changes(prev_epoch.index).await?;
+        for (id_key, delta) in &self
+            .block_changes
+            .as_ref()
+            .expect("block_changes should be initialized during begin_block")
+            .delegation_changes
+        {
+            // TODO: does this need to be copied back to `self.block_changes.delegation_changes`
+            // at the end of this method, so that `commit_block` will be able to use any
+            // changes?
+            *delegation_changes.entry(id_key.clone()).or_insert(0) += delta;
+        }
+        // We also have to do the same thing for the validator updates we got in this block, but
+        // haven't yet committed.
+        for (ik, defs) in &self.block_changes.as_ref().unwrap().updated_validators {
+            let mut defs = defs.clone();
             defs.sort();
-            let update = defs.pop().expect("redefinitions list is nonempty");
-            tracing::info!(?update, "processing queued redefinition");
+            let v = defs.pop().expect("updated_validators has no empty lists");
             // Overwrite the cache with the new update, so we'll use it while computing new
             // rates.  Because we're in EndBlock, we know the "divergent" data will be reconciled
             // when we write the updates in Commit and reload the cache.
@@ -534,9 +576,15 @@ impl ValidatorSet {
                 .validator_set
                 .get_mut(&ik)
                 .expect("redefined validators must exist")
-                .validator = update.validator.clone();
-            updated_validators.push(update);
+                .validator = v.validator.clone();
         }
+
+        let unbonding_epochs = self.reader.chain_params_rx().borrow().unbonding_epochs;
+        let active_validator_limit = self
+            .reader
+            .chain_params_rx()
+            .borrow()
+            .active_validator_limit;
 
         tracing::debug!("processing base rate");
         let current_base_rate = self.reader.base_rate_data(current_epoch.index).await?;
@@ -565,26 +613,6 @@ impl ValidatorSet {
         let mut next_rates = Vec::new();
         let mut reward_notes = Vec::new();
         let mut supply_updates = BTreeMap::new();
-
-        // this is a bit complicated: because we're in the EndBlock phase, and the
-        // delegations in this block have not yet been committed, we have to combine
-        // the delegations in pending_block with the ones already committed to the
-        // state. otherwise the delegations committed in the epoch threshold block
-        // would be lost.
-        //
-        // TODO: encapsulate the delegations logic
-        let mut delegation_changes = self.reader.delegation_changes(prev_epoch.index).await?;
-        for (id_key, delta) in &self
-            .block_changes
-            .as_ref()
-            .expect("block_changes should be initialized during begin_block")
-            .delegation_changes
-        {
-            // TODO: does this need to be copied back to `self.block_changes.delegation_changes`
-            // at the end of this method, so that `commit_block` will be able to use any
-            // changes?
-            *delegation_changes.entry(id_key.clone()).or_insert(0) += delta;
-        }
 
         // steps (foreach validator):
         // - get the total token supply for the validator's delegation tokens
@@ -696,7 +724,6 @@ impl ValidatorSet {
             next_base_rate,
             reward_notes,
             supply_updates,
-            updated_validators,
         });
 
         Ok(())
@@ -725,27 +752,28 @@ impl ValidatorSet {
     pub fn add_validator_definition(&mut self, validator_definition: VerifiedValidatorDefinition) {
         let identity_key = validator_definition.validator.identity_key.clone();
 
-        if self
+        let map = if self
             .validators()
             .any(|v| v.borrow().identity_key == identity_key)
         {
-            // If this is an existing validator, we may be changing the rates, because the funding streams may have changed,
-            // so queue the redefinition to be processed at the next epoch boundary.
-            self.block_changes
+            // Add the validator to the block's updated validators list
+            &mut self
+                .block_changes
                 .as_mut()
                 .expect("block_changes should be initialized during begin_block")
-                .pending_validator_updates
-                .push(validator_definition);
+                .updated_validators
         } else {
-            // Add the validator to the block's new validators list so an INSERT query will be generated in `commit_block`.
-            self.block_changes
+            // Add the validator to the block's new validators list
+            &mut self
+                .block_changes
                 .as_mut()
                 .expect("block_changes should be initialized during begin_block")
                 .new_validators
-                .entry(identity_key)
-                .or_default()
-                .push(validator_definition);
-        }
+        };
+
+        map.entry(identity_key)
+            .or_default()
+            .push(validator_definition);
     }
 
     pub fn get_validator_info(&self, identity_key: &IdentityKey) -> Option<&ValidatorInfo> {

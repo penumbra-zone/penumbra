@@ -73,11 +73,6 @@ CREATE TABLE IF NOT EXISTS validators (
                (validator_state != 'UNBONDING' AND unbonding_epoch IS NULL))
 );
 
--- Pending validator updates, to be processed at the next epoch boundary
-CREATE TABLE IF NOT EXISTS pending_validator_updates (
-    definition bytea NOT NULL,
-);
-
 -- The funding streams for all validators who have ever been declared
 CREATE TABLE IF NOT EXISTS validator_fundingstreams (
     identity_key bytea NOT NULL REFERENCES validators (identity_key),

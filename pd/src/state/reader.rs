@@ -682,22 +682,4 @@ impl Reader {
 
         Ok(changes)
     }
-
-    pub async fn pending_validator_redefinitions(
-        &self,
-    ) -> Result<BTreeMap<IdentityKey, Vec<ValidatorDefinition>>> {
-        let mut conn = self.pool.acquire().await?;
-
-        let rows = query!("SELECT definition FROM pending_validator_updates")
-            .fetch_all(&mut conn)
-            .await?;
-
-        let mut redefinitions = BTreeMap::new();
-        for row in rows {
-            let definition = ValidatorDefinition::decode(&row)?;
-            redefinitions.insert(definition.validator.identity_key.clone(), definition);
-        }
-
-        Ok(redefinitions)
-    }
 }
