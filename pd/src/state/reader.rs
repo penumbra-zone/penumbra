@@ -628,7 +628,7 @@ impl Reader {
         .fetch_optional(&mut conn)
         .await?;
 
-        let height = self.height().await?;
+        let height = self.height();
 
         // TODO: should we be returning proto types from our state methods, or domain types?
         Ok(asset.map(|asset| {

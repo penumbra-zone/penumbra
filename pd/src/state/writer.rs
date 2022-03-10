@@ -50,7 +50,7 @@ impl Writer {
             .genesis_configuration()
             .await?
             .chain_params;
-        let height = self.private_reader.height().await?;
+        let height = self.private_reader.height();
         let next_rate_data = self.private_reader.next_rate_data().await?;
         let valid_anchors = self
             .private_reader
@@ -557,9 +557,13 @@ impl Writer {
         valid_anchors.push_front(nct_anchor.clone());
 
         // Next rate data is only available on the last block per epoch.
+        // TODO: we don't want to reach into the epoch changes within ther block validator set here,
+        // but we only have access to the next_rate_data_tx here presently. This needs refactoring.
         let next_rate_data = match epoch.end_height().value() == height {
             true => {
-                let epoch_changes = block_validator_set.epoch_changes()?;
+                let epoch_changes = block_validator_set
+                    .epoch_changes()
+                    .expect("epoch changes should be set during last block of epoch");
                 Some(
                     epoch_changes
                         .next_rates

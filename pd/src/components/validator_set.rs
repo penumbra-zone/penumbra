@@ -59,7 +59,7 @@ pub struct BlockChanges {
     ///
     /// The validator's rate will have a slashing penalty immediately applied during the current epoch.
     /// Their future rates will be held constant.
-    pub slashed_validators: Vec<IdentityKey>,
+    pub slashed_validators: Vec<(IdentityKey, RateData)>,
     /// The net delegations performed in this block per validator.
     pub delegation_changes: BTreeMap<IdentityKey, i64>,
     /// The current epoch when the block was started.
@@ -73,6 +73,8 @@ pub struct BlockChanges {
     pub tm_validator_updates: Vec<ValidatorUpdate>,
     /// If this is the last block in an epoch, epoch-related changes are recorded here.
     pub epoch_changes: Option<EpochChanges>,
+    /// Records the supply of staking or delegation tokens during the genesis block.
+    pub genesis_supply_updates: BTreeMap<asset::Id, (asset::Denom, u64)>,
 }
 
 impl BlockChanges {
@@ -100,7 +102,7 @@ impl BlockChanges {
 
         // Queue redefinitions of existing validators to be processed at the
         // epoch boundary
-        for v in &self.updated_validators {
+        for v in &self.pending_validator_updates {
             query!(
                 "INSERT INTO pending_validator_updates (definition) VALUES ($1)",
                 v.encode_to_vec()
@@ -183,15 +185,12 @@ impl BlockChanges {
 
         // Slash validators by updating their state to "Slashed" and
         // writing the slashed exchange rate.
-        for ik in &self.slashed_validators {
-            // The exchange rate was already updated during `slash_validator`,
-            // so we just need to rewrite the rate for the current epoch.
-            let slashed_rate = self
-                .cache
-                .validator_set
-                .get(&ik)
-                .expect("slashed validator must be known")
-                .rate_data;
+        for (ik, slashed_rate) in &self.slashed_validators {
+            // The exchange rate in the cache was updated during `slash_validator`,
+            // so we only need to update the rate for the current epoch, rather than
+            // the next, as slashing takes place immediately.
+            //
+            // The next epoch's rate will be correctly set during the epoch transition.
             query!(
                     "UPDATE validator_rates SET validator_exchange_rate=$1 WHERE identity_key=$2 AND epoch=$3",
                     slashed_rate.validator_exchange_rate as i64,
@@ -217,7 +216,7 @@ impl BlockChanges {
 
         // TODO: should this be part of a future shielded pool component?
         // Save any new assets found in the block to the asset registry.
-        for (id, asset) in &self.supply_updates {
+        for (id, asset) in &self.genesis_supply_updates {
             query!(
                 "INSERT INTO assets (asset_id, denom, total_supply)
             VALUES ($1, $2, $3)
@@ -323,10 +322,29 @@ impl ValidatorSet {
 
     // TODO: maybe the begin/end/commit flow should be a trait or something
     pub async fn begin_block(&mut self) -> Result<()> {
-        self.cache = Cache::load(&self.reader).await?;
-        self.block_changes = Some(Default::default());
+        self.cache = Cache::load(&self.reader, self.reader.epoch()).await?;
+        self.block_changes = Some(BlockChanges {
+            starting_epoch: self.reader.epoch(),
+            new_validators: Default::default(),
+            pending_validator_updates: Default::default(),
+            slashed_validators: Default::default(),
+            delegation_changes: Default::default(),
+            tm_validator_updates: Default::default(),
+            epoch_changes: Default::default(),
+            genesis_supply_updates: Default::default(),
+        });
 
         Ok(())
+    }
+
+    /// Called during `end_epoch` by the worker. This is only needed to share data
+    /// with the pending block and should be TODO: removed by a future refactoring
+    /// with a more general solution.
+    pub fn epoch_changes(&self) -> Option<&EpochChanges> {
+        self.block_changes
+            .expect("this method should only be called during an active block")
+            .epoch_changes
+            .as_ref()
     }
 
     // Called during `end_block`. Responsible for resolving conflicting ValidatorDefinitions
@@ -334,7 +352,10 @@ impl ValidatorSet {
     //
     // Any *state changes* (i.e. ValidatorState) should have already been applied to `validator_set`
     // by the time this is called!
-    pub async fn end_block(&mut self, height: u64) -> Result<()> {
+    pub async fn end_block(
+        &mut self,
+        height: u64,
+    ) -> Result<(Vec<Validator>, Vec<ValidatorUpdate>)> {
         let epoch = self.epoch().clone();
 
         if epoch.end_height().value() == height {
@@ -342,7 +363,7 @@ impl ValidatorSet {
         }
 
         // TODO: update the below code to reflect that we'll build the list of
-        // validator changes differently
+        // validator changes differently (how?)
 
         // Set `self.tm_validator_updates` to the complete set of
         // validators and voting power. This must be the last step performed,
@@ -351,10 +372,7 @@ impl ValidatorSet {
         //
         // TODO: It could be more efficient to only return the power of
         // updated validators.
-        self.block_changes
-            .as_mut()
-            .expect("block_changes should be initialized during begin_block")
-            .tm_validator_updates = self
+        let validator_updates = self
             .validators_info()
             .map(|v| {
                 let v = v.borrow();
@@ -369,14 +387,21 @@ impl ValidatorSet {
                 };
                 let validator = &v.validator;
                 let pub_key = validator.consensus_key;
-                Ok(tendermint::abci::types::ValidatorUpdate {
-                    pub_key,
-                    power: power.try_into()?,
-                })
+                Ok((
+                    validator.clone(),
+                    tendermint::abci::types::ValidatorUpdate {
+                        pub_key,
+                        power: power.try_into()?,
+                    },
+                ))
             })
-            .collect::<Result<Vec<_>>>()?;
+            // There has *got* to be a better way to do this.
+            .collect::<Result<Vec<(_, _)>>>()?
+            .iter()
+            .cloned()
+            .unzip();
 
-        Ok(())
+        Ok(validator_updates)
     }
 
     pub async fn commit(&mut self, dbtx: &mut Transaction<'_, Postgres>) -> Result<()> {
@@ -677,19 +702,18 @@ impl ValidatorSet {
         Ok(())
     }
 
-    // This should *only* be called during `end_block` as validators don't
-    // get exposed to consensus until then.
-    pub fn add_validator(&mut self, validator: ValidatorInfo) {
-        self.cache
-            .validator_set
-            .insert(validator.validator.identity_key.clone(), validator.clone());
-
+    /// Adds an update to the block changes so that the new validator will be committed at the commit phase of
+    /// the current block. The validator will be loaded to the active validator set cache from state when the next
+    /// block begins.
+    pub fn add_validator(&mut self, validator: VerifiedValidatorDefinition) {
         // Add the validator to the block's new validators list so an INSERT query will be generated in `commit_block`.
         self.block_changes
             .as_mut()
             .expect("block_changes should be initialized during begin_block")
             .new_validators
-            .insert(validator.validator.identity_key.clone(), validator);
+            .entry(validator.validator.identity_key.clone())
+            .or_insert(vec![])
+            .push(validator);
     }
 
     /// This keeps track of validator definitions received during the block.
@@ -847,8 +871,8 @@ impl ValidatorSet {
         let current_state = current_info.status.state;
 
         let mut mark_slashed = |validator: &Validator| -> Result<()> {
-            // It's safe to modify the cache here, as it will be reset
-            // during begin_block. We need to access the updated state/rate data
+            // It's safe to modify the cache here, as it will be reloaded from the db
+            // during begin_block. We need to access the updated state/rate data set here
             // during end_block and commit.
             let mut cv = self
                 .cache
@@ -863,7 +887,7 @@ impl ValidatorSet {
                 .as_mut()
                 .expect("block_changes should be initialized during begin_block")
                 .slashed_validators
-                .push(validator.identity_key.clone());
+                .push((validator.identity_key.clone(), cv.rate_data.clone()));
 
             Ok(())
         };

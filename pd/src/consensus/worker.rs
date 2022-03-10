@@ -61,7 +61,7 @@ impl Worker {
     ///
     /// This is called in `new`, and also when (re)loading after writing the state snapshot from init_chain.
     async fn load(&mut self) -> Result<()> {
-        let height = self.state.private_reader().height().await?.into();
+        let height = self.state.private_reader().height().into();
         let epoch_duration = self
             .state
             .private_reader()
@@ -303,25 +303,18 @@ impl Worker {
         // Validator updates need to be sent back to Tendermint during end_block, so we need to
         // tell the validator set the block has ended so it can resolve conflicts and prepare
         // data to commit.
-        self.validator_set.end_block(height).await?;
-
-        // TODO: should this be folded into the validator set?
-
-        // Retrieve any changes that occurred during the block.
-        let block_changes = self.validator_set.block_changes()?;
-
-        // Send the next voting powers back to tendermint. This also
-        // incorporates any newly added validators. Non-Active validators
-        // will have their voting power reported to Tendermint set to 0.
-        let validator_updates = block_changes.tm_validator_updates.clone();
-
-        // Find out which validators were slashed in this block
-        let slashed_validators = &block_changes.slashed_validators;
+        let (slashed_validators, validator_updates) = self.validator_set.end_block(height).await?;
 
         // Immediately revert notes and nullifiers immediately from slashed validators in this block
         let (mut slashed_notes, mut slashed_nullifiers) = (
-            reader.quarantined_notes(None, Some(slashed_validators.iter())),
-            reader.quarantined_nullifiers(None, Some(slashed_validators.iter())),
+            reader.quarantined_notes(
+                None,
+                Some(slashed_validators.iter().map(|v| &v.identity_key)),
+            ),
+            reader.quarantined_nullifiers(
+                None,
+                Some(slashed_validators.iter().map(|v| &v.identity_key)),
+            ),
         );
         while let Some(result) = slashed_notes.next().await {
             pending_block.reverting_notes.insert(result?.1); // insert the commitment
@@ -382,10 +375,13 @@ impl Worker {
         drop(unbonding_notes);
         drop(unbonding_nullifiers);
 
-        // Tell the validator set that the epoch is changing so it can prepare to commit.
-        self.validator_set.end_epoch(current_epoch.clone()).await?;
-
-        let epoch_changes = self.validator_set.epoch_changes()?;
+        // TODO: we need to share some state between the pending block and the validator set.
+        // we are reaching into the validator set to get the epoch changes for now but we should
+        // address how to share data between components more generally in the future.
+        let epoch_changes = self
+            .validator_set
+            .epoch_changes()
+            .expect("expect epoch changes during end_epoch");
         // Add reward notes to the pending block.
         for reward_note in &epoch_changes.reward_notes {
             pending_block.add_validator_reward_note(reward_note.0, reward_note.1);

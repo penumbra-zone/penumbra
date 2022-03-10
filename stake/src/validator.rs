@@ -145,6 +145,18 @@ impl Deref for VerifiedValidatorDefinition {
     }
 }
 
+impl std::cmp::Ord for VerifiedValidatorDefinition {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.0.cmp(&other.0)
+    }
+}
+
+impl std::cmp::PartialOrd for VerifiedValidatorDefinition {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.0.partial_cmp(&other.0)
+    }
+}
+
 impl Protobuf<pb::Validator> for Validator {}
 
 impl From<Validator> for pb::Validator {
