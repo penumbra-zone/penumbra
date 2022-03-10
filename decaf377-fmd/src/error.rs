@@ -1,3 +1,5 @@
+use std::cell::{BorrowError, BorrowMutError};
+
 use thiserror::Error;
 
 /// An error in message detection.
@@ -12,4 +14,19 @@ pub enum Error {
     /// A detection key encoding was invalid.
     #[error("Invalid detection key.")]
     InvalidDetectionKey,
+    /// Wrapper for a runtime internal error.
+    #[error("Internal Error.")]
+    InternalError(String),
+}
+
+impl From<BorrowError> for Error {
+    fn from(err: BorrowError) -> Error {
+        Error::InternalError(err.to_string())
+    }
+}
+
+impl From<BorrowMutError> for Error {
+    fn from(err: BorrowMutError) -> Error {
+        Error::InternalError(err.to_string())
+    }
 }
