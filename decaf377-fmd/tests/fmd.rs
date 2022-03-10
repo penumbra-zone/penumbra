@@ -1,10 +1,11 @@
 use decaf377_fmd as fmd;
+use fmd::ClueKey;
 use rand_core::OsRng;
 
 #[test]
 fn detection_distribution_matches_expectation() {
     let alice_dk = fmd::DetectionKey::new(OsRng);
-    let alice_clue_key = alice_dk.clue_key().expand(4).unwrap();
+    let alice_clue_key = alice_dk.clue_key().expand().unwrap();
     // alice's friend bobce, whose name has the same number of letters
     let bobce_dk = fmd::DetectionKey::new(OsRng);
 
@@ -31,24 +32,23 @@ fn detection_distribution_matches_expectation() {
 }
 
 #[test]
+#[ignore] // TODO: test vector with invalid encoding
 fn fails_to_expand_clue_key() {
-    let detection_key = fmd::DetectionKey::new(OsRng);
+    let clue_key = ClueKey([0; 32]);
 
-    detection_key
-        .clue_key()
-        .expand(fmd::MAX_PRECISION + 1)
+    clue_key
+        .expand()
         .err()
-        .expect("fails to generate expanded clue key with precision greater than `MAX_PRECISION`");
+        .expect("fails to generate an expanded clue key with invalid encoding");
 }
 
 #[test]
 fn fails_to_generate_clue() {
-    const PRECISION_BITS: usize = 2;
     let detection_key = fmd::DetectionKey::new(OsRng);
-    let expanded_clue_key = detection_key.clue_key().expand(PRECISION_BITS).unwrap();
+    let expanded_clue_key = detection_key.clue_key().expand().unwrap();
 
     expanded_clue_key
-        .create_clue(PRECISION_BITS + 1, OsRng)
+        .create_clue(fmd::MAX_PRECISION + 1, OsRng)
         .err()
         .expect("fails to generate clue with excessive precision");
 }
