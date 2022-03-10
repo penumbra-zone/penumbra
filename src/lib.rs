@@ -44,3 +44,18 @@ pub use epoch::Epoch;
 
 mod block;
 pub use block::Block;
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn check_eternity_size() {
+        static_assertions::assert_eq_size!(Eternity, [u8; 80]);
+    }
+
+    #[test]
+    fn check_eternity_proof_size() {
+        static_assertions::assert_eq_size!(Proof<Eternity>, [u8; 2344]);
+    }
+}

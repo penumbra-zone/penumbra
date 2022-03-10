@@ -8,6 +8,10 @@ pub struct Block {
     pub(super) inner: Tier<Hash>,
 }
 
+impl Height for Block {
+    type Height = <Tier<Hash> as Height>::Height;
+}
+
 impl Block {
     /// Create a new empty [`Block`].
     pub fn new() -> Self {
@@ -49,15 +53,5 @@ impl Block {
     /// fast.
     pub fn hash(&self) -> Hash {
         self.inner.hash()
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn check_eternity_size() {
-        static_assertions::assert_eq_size!(Eternity, [u8; 80]);
     }
 }

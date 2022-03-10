@@ -11,6 +11,10 @@ pub struct Eternity {
     inner: Tier<Tier<Tier<Hash>>>,
 }
 
+impl Height for Eternity {
+    type Height = <Tier<Tier<Tier<Hash>>> as Height>::Height;
+}
+
 impl Eternity {
     /// Create a new empty [`Eternity`] for storing all commitments to the end of time.
     pub fn new() -> Self {

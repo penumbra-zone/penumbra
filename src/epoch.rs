@@ -12,6 +12,10 @@ pub struct Epoch {
     pub(super) inner: Tier<Tier<Hash>>,
 }
 
+impl Height for Epoch {
+    type Height = <Tier<Tier<Hash>> as Height>::Height;
+}
+
 impl Epoch {
     /// Create a new empty [`Epoch`].
     pub fn new() -> Self {
