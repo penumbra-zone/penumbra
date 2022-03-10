@@ -27,6 +27,7 @@ impl Eternity {
     ///
     /// Returns `Err(epoch)` without adding it to the [`Eternity`] if the [`Eternity`] is full.
     pub fn insert_epoch(&mut self, epoch: Insert<Epoch>) -> Result<(), Insert<Epoch>> {
+        let keep = epoch.is_keep();
         let (blocks_witnessed, items_witnessed, len) = match epoch {
             Insert::Keep(ref epoch) => (
                 epoch.blocks_witnessed(),
@@ -56,7 +57,10 @@ impl Eternity {
             // The new length is the start index of the *next* block plus the size of the one being added
             self.len = epoch_start + epoch_size + (len as u64);
 
-            self.epochs_witnessed += 1;
+            if keep {
+                self.epochs_witnessed += 1;
+            }
+
             self.blocks_witnessed += blocks_witnessed;
             self.items_witnessed += items_witnessed;
         }
@@ -81,6 +85,8 @@ impl Eternity {
     /// 3. the current [`Epoch`] was inserted as [`Insert::Hash`], which means that it cannot be
     /// modified after insertion.
     pub fn insert_block(&mut self, block: Insert<Block>) -> Result<(), Insert<Block>> {
+        let keep = block.is_keep();
+
         // If the eternity is empty, we need to insert a new `Epoch` before we can insert a `Block`
         // into it
         let initialized = if self.inner.is_empty() {
@@ -140,7 +146,10 @@ impl Eternity {
             // The new length is the start index of the *next* block plus the size of the one being added
             self.len = next_block_start + (len as u64);
 
-            self.blocks_witnessed += 1;
+            if keep {
+                self.blocks_witnessed += 1;
+            }
+
             self.items_witnessed += items_witnessed;
         }
 
@@ -167,6 +176,8 @@ impl Eternity {
     /// 5. the current [`Block`] was inserted as [`Insert::Hash`], which means that it cannot be
     /// modified after insertion.
     pub fn insert_item(&mut self, item: Insert<Fq>) -> Result<(), Insert<Fq>> {
+        let keep = item.is_keep();
+
         // If the eternity is empty, we need to insert a new `Block` into a new `Epoch`, then insert
         //that `Epoch` into the eternity before we can insert an item into that `Block`
         let initialized = if self.inner.is_empty() {
@@ -208,7 +219,10 @@ impl Eternity {
             }
 
             self.len += 1;
-            self.items_witnessed += 1;
+
+            if keep {
+                self.items_witnessed += 1;
+            }
         }
 
         result

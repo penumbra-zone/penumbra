@@ -4,6 +4,8 @@
 //! This module defines the trait [`GetHash`] for these operations, as well as the [`struct@Hash`] type
 //! used throughout.
 
+use std::fmt::Debug;
+
 use ark_ff::{fields::PrimeField, BigInteger256, Fp256, ToBytes};
 use once_cell::sync::Lazy;
 use poseidon377::Fq;
@@ -60,16 +62,17 @@ impl<T: GetHash> GetHash for &mut T {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Default, Derivative)]
-#[derivative(Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Default)]
 /// The hash of an individual item, tree root, or intermediate node. Use [`Insert::Hash`] with this
 /// type when you want to insert something into the tree that you don't want to witness later.
-pub struct Hash(#[derivative(Debug(format_with = "fmt_hash"))] Fq);
+pub struct Hash(Fq);
 
-fn fmt_hash(hash: &Fq, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-    let mut bytes = Vec::with_capacity(4 * 8);
-    hash.0 .0.write(&mut bytes).unwrap();
-    write!(f, "{}", hex::encode(&bytes[3 * 8 + 4..]))
+impl Debug for Hash {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        let mut bytes = Vec::with_capacity(4 * 8);
+        self.0.write(&mut bytes).unwrap();
+        write!(f, "{}", hex::encode(&bytes[3 * 8 + 4..]))
+    }
 }
 
 impl<T: GetHash> From<&T> for Hash {

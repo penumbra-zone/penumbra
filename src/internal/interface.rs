@@ -24,6 +24,16 @@ impl<T> Insert<T> {
         }
     }
 
+    /// Test if this [`Insert`] is a [`Insert::Keep`].
+    pub fn is_keep(&self) -> bool {
+        matches!(self, Insert::Keep(_))
+    }
+
+    /// Test if this [`Insert`] is a [`Insert::Hash`].
+    pub fn is_hash(&self) -> bool {
+        matches!(self, Insert::Hash(_))
+    }
+
     /// Map a function over the [`Insert::Keep`] part of an `Insert<T>`.
     #[inline]
     pub fn map<U, F: FnOnce(T) -> U>(self, f: F) -> Insert<U> {

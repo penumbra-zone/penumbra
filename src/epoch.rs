@@ -30,6 +30,8 @@ impl Epoch {
     /// Returns `Err(block)` containing the inserted block without adding it to the [`Epoch`] if the
     /// [`Epoch`] is full.
     pub fn insert_block(&mut self, block: Insert<Block>) -> Result<(), Insert<Block>> {
+        let keep = block.is_keep();
+
         let (items_witnessed, len) = match block {
             Insert::Keep(ref block) => (block.items_witnessed(), block.len()),
             Insert::Hash(_) => (0, 0),
@@ -48,7 +50,9 @@ impl Epoch {
             // The new length is the start index of the *next* block plus the size of the one being added
             self.len = block_start + block_size + (len as u32);
 
-            self.blocks_witnessed += 1;
+            if keep {
+                self.blocks_witnessed += 1;
+            }
             self.items_witnessed += items_witnessed;
         }
 
@@ -71,6 +75,8 @@ impl Epoch {
     /// 3. the current [`Block`] was inserted as [`Insert::Hash`], which means that it cannot be
     /// modified after insertion.
     pub fn insert_item(&mut self, item: Insert<Fq>) -> Result<(), Insert<Fq>> {
+        let keep = item.is_keep();
+
         // If the epoch is empty, we need to insert a new `Block` before we can insert into that block
         let initialized = if self.inner.is_empty() {
             if self.inner.insert(Insert::Keep(Tier::default())).is_err() {
@@ -97,7 +103,9 @@ impl Epoch {
             if initialized {
                 self.blocks_witnessed += 1;
             }
-            self.items_witnessed += 1;
+            if keep {
+                self.items_witnessed += 1;
+            }
             self.len += 1;
         }
 
