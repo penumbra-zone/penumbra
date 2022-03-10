@@ -556,29 +556,18 @@ impl Writer {
 
         valid_anchors.push_front(nct_anchor.clone());
 
-        // Next rate data is only available on the last block per epoch.
-        // TODO: we don't want to reach into the epoch changes within ther block validator set here,
-        // but we only have access to the next_rate_data_tx here presently. This needs refactoring.
-        let next_rate_data = match epoch.end_height().value() == height {
-            true => {
-                let epoch_changes = block_validator_set
-                    .epoch_changes()
-                    .expect("epoch changes should be set during last block of epoch");
-                Some(
-                    epoch_changes
-                        .next_rates
-                        .iter()
-                        .map(|next_rate| (next_rate.identity_key.clone(), next_rate.clone()))
-                        .collect::<RateDataById>(),
-                )
-            }
-            false => None,
-        };
-
         block_validator_set.commit(&mut dbtx).await?;
 
         // Finally, commit the transaction and then update subscribers
         dbtx.commit().await?;
+
+        // Next rate data is only available on the last block per epoch.
+        // Fetch the next rate data from the DB
+        // TODO: this should probably be stored on the JMT, but this works for now
+        let next_rate_data = match epoch.end_height().value() == height {
+            true => Some(self.private_reader().next_rate_data().await?),
+            false => None,
+        };
 
         // Errors in sends arise only if no one is listening -- not our problem.
         let _ = self.height_tx.send(height.try_into().unwrap());
