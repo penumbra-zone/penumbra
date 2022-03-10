@@ -9,11 +9,11 @@ pub struct Epoch {
     pub(super) blocks_witnessed: u16,
     pub(super) items_witnessed: u16,
     pub(super) len: u32,
-    pub(super) inner: Tier<Tier<Hash>>,
+    pub(super) inner: Tier<Tier<Item>>,
 }
 
 impl Height for Epoch {
-    type Height = <Tier<Tier<Hash>> as Height>::Height;
+    type Height = <Tier<Tier<Item>> as Height>::Height;
 }
 
 impl Epoch {
@@ -92,7 +92,7 @@ impl Epoch {
             .inner
             .update(|focus| {
                 if let Insert::Keep(focus) = focus {
-                    focus.insert(item.map(Hash::of)).map_err(|_| item)
+                    focus.insert(item.map(Item::new)).map_err(|_| item)
                 } else {
                     Err(item)
                 }
@@ -145,5 +145,17 @@ impl Epoch {
     /// fast.
     pub fn hash(&self) -> Hash {
         self.inner.hash()
+    }
+
+    /// Get a [`Proof`] of inclusion for the item at this index in the epoch.
+    ///
+    /// If the index is not witnessed in this epoch, return `None`.
+    pub fn witness(&self, index: usize) -> Option<Proof<Epoch>> {
+        let (auth_path, leaf) = self.inner.witness(index)?;
+        Some(Proof {
+            index,
+            auth_path,
+            leaf,
+        })
     }
 }

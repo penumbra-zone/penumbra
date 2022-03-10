@@ -5,11 +5,11 @@ use crate::*;
 /// This is one [`Block`] in an [`Epoch`], which is one [`Epoch`] in an [`Eternity`].
 #[derive(Derivative, Debug, Clone, PartialEq, Eq, Default)]
 pub struct Block {
-    pub(super) inner: Tier<Hash>,
+    pub(super) inner: Tier<Item>,
 }
 
 impl Height for Block {
-    type Height = <Tier<Hash> as Height>::Height;
+    type Height = <Tier<Item> as Height>::Height;
 }
 
 impl Block {
@@ -25,7 +25,7 @@ impl Block {
     /// Returns `Err(item)` containing the inserted item without adding it to the [`Block`] if the
     /// block is full.
     pub fn insert_item(&mut self, item: Insert<Fq>) -> Result<(), Insert<Fq>> {
-        self.inner.insert(item.map(Hash::of)).map_err(|_| item)
+        self.inner.insert(item.map(Item::new)).map_err(|_| item)
     }
 
     /// The number of items witnessed in this [`Block`].
@@ -53,5 +53,17 @@ impl Block {
     /// fast.
     pub fn hash(&self) -> Hash {
         self.inner.hash()
+    }
+
+    /// Get a [`Proof`] of inclusion for the item at this index in the block.
+    ///
+    /// If the index is not witnessed in this block, return `None`.
+    pub fn witness(&self, index: usize) -> Option<Proof<Block>> {
+        let (auth_path, leaf) = self.inner.witness(index)?;
+        Some(Proof {
+            index,
+            auth_path,
+            leaf,
+        })
     }
 }
