@@ -39,6 +39,7 @@ fn main() -> Result<()> {
     config.compile_protos(&["proto/stake.proto"], &["proto/"])?;
     config.compile_protos(&["proto/chain.proto"], &["proto/"])?;
     config.compile_protos(&["proto/genesis.proto"], &["proto/"])?;
+    config.compile_protos(&["proto/ibc.proto"], &["proto/", "ibc-go-vendor/"])?;
 
     // These should disappear, eventually.
     config.compile_protos(&["proto/transparent_proofs.proto"], &["proto/"])?;
