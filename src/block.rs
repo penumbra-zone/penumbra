@@ -66,6 +66,13 @@ impl Block {
         self.as_mut().insert(item)
     }
 
+    /// Forget the witness of the given item, if it was witnessed.
+    ///
+    /// Returns `true` if the item was previously witnessed, and `false` if it was not witnessed.
+    pub fn forget(&mut self, item: Fq) -> bool {
+        self.as_mut().forget(item)
+    }
+
     /// The total number of [`Fq`]s or [`struct@Hash`]es represented in the underlying [`Block`].
     pub fn len(&self) -> u16 {
         self.inner.len()
@@ -127,5 +134,10 @@ impl BlockMut<'_> {
             }
             Ok(())
         }
+    }
+
+    /// Forget the witness of the given item, if it was witnessed: see [`Block::forget`].
+    pub fn forget(&mut self, _item: Fq) -> bool {
+        todo!()
     }
 }

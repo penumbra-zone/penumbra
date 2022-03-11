@@ -157,4 +157,46 @@ impl EpochMut<'_> {
             Ok(())
         }
     }
+
+    /// Forget the witness of the given item, if it was witnessed: see [`Epoch::forget`].
+    pub fn forget(&mut self, item: Fq) -> bool {
+        if let Some(this_block) = self.block_index.get(&item) {
+            // If this `EpochMut` refers to a containing `Eternity`, it could be that the item
+            // doesn't belong to this epoch, but rather another one: check this before proceeding
+            if let Some((this_epoch, epoch_index)) = &self.super_index {
+                let correct_epoch = this_epoch
+                    == epoch_index
+                        .get(&item)
+                        .expect("if block index contains item, then epoch index must contain item");
+                if !correct_epoch {
+                    return false;
+                }
+            }
+
+            let this_item = *self
+                .item_index
+                .get(&item)
+                .expect("if block index contains item, then item index must contain item");
+
+            // Calculate the index for the item
+            let index = ((*this_block as u64) << 16) | (this_item as u64);
+
+            let forgotten = self.inner.forget(index);
+
+            // The index should never contain things that aren't witnessed
+            debug_assert!(forgotten, "indexed item must be witnessed in tree");
+
+            // Remove the item from all indices
+            self.item_index.remove(&item);
+            self.block_index.remove(&item);
+            if let Some((_, epoch_index)) = &mut self.super_index {
+                epoch_index.remove(&item);
+            }
+
+            // The item was indeed previously present, now forgotten
+            true
+        } else {
+            false
+        }
+    }
 }
