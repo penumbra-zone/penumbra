@@ -106,6 +106,24 @@ pub struct ValidatorDefinition {
     pub auth_sig: Signature<SpendAuth>,
 }
 
+impl std::cmp::Ord for ValidatorDefinition {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        // This is a total ordering on validator definitions, because the
+        // signatures can only be equal if the validator definitions are
+        // themselves equal.
+        self.validator
+            .sequence_number
+            .cmp(&other.validator.sequence_number)
+            .then_with(|| self.auth_sig.to_bytes().cmp(&other.auth_sig.to_bytes()))
+    }
+}
+
+impl std::cmp::PartialOrd for ValidatorDefinition {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 /// A ValidatorDefinition that has had stateful and stateless validation applied
 /// and is ready for inclusion into the validator set.
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
@@ -124,6 +142,18 @@ impl Deref for VerifiedValidatorDefinition {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl std::cmp::Ord for VerifiedValidatorDefinition {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.0.cmp(&other.0)
+    }
+}
+
+impl std::cmp::PartialOrd for VerifiedValidatorDefinition {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.0.partial_cmp(&other.0)
     }
 }
 

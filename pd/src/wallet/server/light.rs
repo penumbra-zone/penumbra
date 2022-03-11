@@ -9,7 +9,6 @@ use penumbra_proto::{
     },
     stake::ValidatorInfo,
 };
-
 use tonic::Status;
 use tracing::instrument;
 
@@ -76,11 +75,7 @@ impl LightWallet for state::Reader {
             ..
         } = request.into_inner();
 
-        let current_height = self
-            .height()
-            .await
-            .map_err(|_| tonic::Status::unavailable("database error"))?
-            .value();
+        let current_height = self.height().value();
 
         // Treat end_height = 0 as end_height = current_height so that if the
         // end_height is unspecified in the proto, it will be treated as a

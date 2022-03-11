@@ -22,7 +22,7 @@ pub struct Worker {
     queue: mpsc::Receiver<Message>,
     // todo: split up and modularize
     pending_block: Option<PendingBlock>,
-    block_validator_set: ValidatorSet,
+    validator_set: ValidatorSet,
     note_commitment_tree: NoteCommitmentTree,
 }
 
@@ -41,7 +41,7 @@ impl Worker {
             queue,
             pending_block: None,
             note_commitment_tree: NoteCommitmentTree::new(0),
-            block_validator_set: ValidatorSet::new(
+            validator_set: ValidatorSet::new(
                 reader,
                 Epoch {
                     index: 0,
@@ -61,7 +61,7 @@ impl Worker {
     ///
     /// This is called in `new`, and also when (re)loading after writing the state snapshot from init_chain.
     async fn load(&mut self) -> Result<()> {
-        let height = self.state.private_reader().height().await?.into();
+        let height = self.state.private_reader().height().into();
         let epoch_duration = self
             .state
             .private_reader()
@@ -71,8 +71,7 @@ impl Worker {
         let epoch = Epoch::from_height(height, epoch_duration);
 
         self.note_commitment_tree = self.state.private_reader().note_commitment_tree().await?;
-        self.block_validator_set =
-            ValidatorSet::new(self.state.private_reader().clone(), epoch).await?;
+        self.validator_set = ValidatorSet::new(self.state.private_reader().clone(), epoch).await?;
         self.pending_block = None;
 
         // Now (re)load the caches from the state writer:
@@ -161,7 +160,7 @@ impl Worker {
         // validators in InitChain::Response tells Tendermint that they are the initial validator
         // set. See https://docs.tendermint.com/master/spec/abci/abci.html#initchain
         let validators = self
-            .block_validator_set
+            .validator_set
             .validators_info()
             .map(|v| {
                 Ok(tendermint::abci::types::ValidatorUpdate {
@@ -185,33 +184,25 @@ impl Worker {
     ) -> Result<abci::response::BeginBlock> {
         tracing::debug!(?begin_block);
 
+        // TODO: fold into separate begin_block_metrics() function
         let block_metrics = self.state.private_reader().metrics().await?;
         absolute_counter!("node_spent_nullifiers_total", block_metrics.nullifier_count);
         absolute_counter!("node_notes_total", block_metrics.note_count);
 
+        // TODO: eventually eliminate pending block, and just have a bunch of application components
+        // that can queue whatever changes are relevant to their application scope
         assert!(self.pending_block.is_none());
         self.pending_block = Some(PendingBlock::new(self.note_commitment_tree.clone()));
 
-        self.block_validator_set.begin_block();
-
-        let slashing_penalty = self
-            .state
-            .private_reader()
-            .chain_params_rx()
-            .borrow()
-            .slashing_penalty;
+        self.validator_set.begin_block().await?;
 
         // For each validator identified as byzantine by tendermint, update its
         // status to be slashed.
         for evidence in begin_block.byzantine_validators.iter() {
-            let ck = tendermint::PublicKey::from_raw_ed25519(&evidence.validator.address)
-                .ok_or_else(|| anyhow::anyhow!("invalid ed25519 consensus pubkey from tendermint"))
-                .unwrap();
-
-            self.block_validator_set
-                .slash_validator(&ck, slashing_penalty)?;
+            self.validator_set.slash_validator(evidence)?;
         }
 
+        // TODO(events): consider creating + returning Events to Tendermint here.
         Ok(Default::default())
     }
 
@@ -224,7 +215,7 @@ impl Worker {
     /// so it is not safe to assume all checks performed in `CheckTx` were done.
     async fn deliver_tx(&mut self, deliver_tx: abci::request::DeliverTx) -> Result<()> {
         // Use the current state of the validators in the state machine, not the ones in the db.
-        let block_validators = self.block_validator_set.validators_info();
+        let block_validators = self.validator_set.validators_info();
         // Verify the transaction is well-formed...
         let transaction = Transaction::decode(deliver_tx.tx)?
             // ... and that it is internally consistent ...
@@ -235,6 +226,14 @@ impl Worker {
             .private_reader()
             .verify_stateful(transaction, block_validators)
             .await?;
+
+        // TODO: this conflict mechanism is really a special case of conflicts
+        // that happen within the shielded pool, but other components could
+        // potentially have conflicting requirements -- for instance, can we
+        // understand multiple validator definitions using this mechanism?
+
+        // if we used ABCI++, we have control over voting, so we can not vote
+        // for blocks that have conflicts and maybe that problem goes away?
 
         let mut conflicts = self
             .pending_block
@@ -250,14 +249,14 @@ impl Worker {
             ));
         }
 
+        // validator set changes
         for v in &transaction.validator_definitions {
-            self.block_validator_set.add_validator_definition(v.clone());
+            self.validator_set.add_validator_definition(v.clone());
         }
-
-        // Tell the validator set about the delegation changes in this transaction
-        self.block_validator_set
+        self.validator_set
             .update_delegations(&transaction.delegation_changes);
 
+        // changes to shielded pool
         self.pending_block
             .as_mut()
             .unwrap()
@@ -273,6 +272,11 @@ impl Worker {
         tracing::debug!(?end_block);
 
         let reader = self.state.private_reader();
+
+        // pending block code should be folded into shielded pool ?
+        //
+        // possible exception: the height / epoch, should these be on the worker directly?
+        // should we have an App that contains all the components and the worker just has an App?
 
         let pending_block = self
             .pending_block
@@ -299,23 +303,18 @@ impl Worker {
         // Validator updates need to be sent back to Tendermint during end_block, so we need to
         // tell the validator set the block has ended so it can resolve conflicts and prepare
         // data to commit.
-        self.block_validator_set.end_block().await?;
-
-        // Retrieve any changes that occurred during the block.
-        let block_changes = self.block_validator_set.block_changes()?;
-
-        // Send the next voting powers back to tendermint. This also
-        // incorporates any newly added validators. Non-Active validators
-        // will have their voting power reported to Tendermint set to 0.
-        let validator_updates = block_changes.tm_validator_updates.clone();
-
-        // Find out which validators were slashed in this block
-        let slashed_validators = &block_changes.slashed_validators;
+        let (slashed_validators, validator_updates) = self.validator_set.end_block(height).await?;
 
         // Immediately revert notes and nullifiers immediately from slashed validators in this block
         let (mut slashed_notes, mut slashed_nullifiers) = (
-            reader.quarantined_notes(None, Some(slashed_validators.iter())),
-            reader.quarantined_nullifiers(None, Some(slashed_validators.iter())),
+            reader.quarantined_notes(
+                None,
+                Some(slashed_validators.iter().map(|v| &v.identity_key)),
+            ),
+            reader.quarantined_nullifiers(
+                None,
+                Some(slashed_validators.iter().map(|v| &v.identity_key)),
+            ),
         );
         while let Some(result) = slashed_notes.next().await {
             pending_block.reverting_notes.insert(result?.1); // insert the commitment
@@ -331,10 +330,16 @@ impl Worker {
             self.end_epoch().await?;
         }
 
-        tracing::debug!(?validator_updates, "setting validator updates");
+        tracing::debug!(
+            ?validator_updates,
+            "sending validator updates to tendermint (XXX not really, but this is what they _would_ be)"
+        );
 
         Ok(abci::response::EndBlock {
-            validator_updates,
+            // TODO: the voting power calculations aren't working right and are knocking validators out of the tendermint
+            // consensus set, so we'll return an empty list of updates for now to prevent them from dropping out of tendermint.
+            // validator_updates,
+            validator_updates: vec![],
             consensus_param_updates: None,
             events: Vec::new(),
         })
@@ -354,24 +359,9 @@ impl Worker {
             .height
             .expect("height must already have been set");
 
-        // We've finished processing the last block of `epoch`, so we've
-        // crossed the epoch boundary, and (prev | current | next) are:
-        let prev_epoch = &self.block_validator_set.epoch();
-        let current_epoch = prev_epoch.next();
-        let next_epoch = current_epoch.next();
-
-        tracing::info!(
-            ?height,
-            ?prev_epoch,
-            ?current_epoch,
-            ?next_epoch,
-            "crossed epoch boundary, processing rate updates"
-        );
-        metrics::increment_counter!("epoch");
-
         // Find all the validators which are *not* slashed in this block
         let well_behaved_validators = &self
-            .block_validator_set
+            .validator_set
             .unslashed_validators()
             .map(|v| v.borrow().identity_key.clone())
             .collect::<Vec<_>>();
@@ -391,12 +381,13 @@ impl Worker {
         drop(unbonding_notes);
         drop(unbonding_nullifiers);
 
-        // Tell the validator set that the epoch is changing so it can prepare to commit.
-        self.block_validator_set
-            .end_epoch(current_epoch.clone())
-            .await?;
-
-        let epoch_changes = self.block_validator_set.epoch_changes()?;
+        // TODO: we need to share some state between the pending block and the validator set.
+        // we are reaching into the validator set to get the epoch changes for now but we should
+        // address how to share data between components more generally in the future.
+        let epoch_changes = self
+            .validator_set
+            .epoch_changes()
+            .expect("expect epoch changes during end_epoch");
         // Add reward notes to the pending block.
         for reward_note in &epoch_changes.reward_notes {
             pending_block.add_validator_reward_note(reward_note.0, reward_note.1);
@@ -416,7 +407,7 @@ impl Worker {
 
         let app_hash = self
             .state
-            .commit_block(pending_block, &mut self.block_validator_set)
+            .commit_block(pending_block, &mut self.validator_set)
             .await?;
 
         tracing::info!(app_hash = ?hex::encode(&app_hash), "finished block commit");

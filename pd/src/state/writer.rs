@@ -5,13 +5,12 @@ use ark_ff::PrimeField;
 use decaf377::{Fq, Fr};
 use jmt::TreeWriterAsync;
 use penumbra_chain::params::ChainParams;
-use penumbra_crypto::asset::{Denom, Id};
-use penumbra_crypto::merkle::Frontier;
-use penumbra_crypto::One;
 use penumbra_crypto::{
-    asset, ka,
-    merkle::{self, NoteCommitmentTree, TreeExt},
-    Note, Value,
+    asset,
+    asset::{Denom, Id},
+    ka,
+    merkle::{self, Frontier, NoteCommitmentTree, TreeExt},
+    Note, One, Value,
 };
 use penumbra_proto::Protobuf;
 use penumbra_stake::{FundingStream, RateDataById, ValidatorStateName};
@@ -20,10 +19,12 @@ use tendermint::block;
 use tokio::sync::watch;
 
 use super::jellyfish;
-use crate::verify::PositionedNoteData;
 use crate::{
-    components::validator_set::ValidatorSet, genesis, pending_block::QuarantineGroup,
-    verify::NoteData, PendingBlock, NUM_RECENT_ANCHORS,
+    components::validator_set::ValidatorSet,
+    genesis,
+    pending_block::QuarantineGroup,
+    verify::{NoteData, PositionedNoteData},
+    PendingBlock, NUM_RECENT_ANCHORS,
 };
 
 #[derive(Debug)]
@@ -50,7 +51,7 @@ impl Writer {
             .genesis_configuration()
             .await?
             .chain_params;
-        let height = self.private_reader.height().await?;
+        let height = self.private_reader.height();
         let next_rate_data = self.private_reader.next_rate_data().await?;
         let valid_anchors = self
             .private_reader
@@ -556,27 +557,19 @@ impl Writer {
 
         valid_anchors.push_front(nct_anchor.clone());
 
-        // Next rate data is only available on the last block per epoch.
-        let next_rate_data = match epoch.end_height().value() == height {
-            true => {
-                let epoch_changes = block_validator_set.epoch_changes()?;
-                Some(
-                    epoch_changes
-                        .next_rates
-                        .iter()
-                        .map(|next_rate| (next_rate.identity_key.clone(), next_rate.clone()))
-                        .collect::<RateDataById>(),
-                )
-            }
-            false => None,
-        };
-
-        block_validator_set
-            .commit_block(block.height.unwrap(), &mut dbtx)
-            .await?;
+        tracing::debug!("calling block_validator_set.commit");
+        block_validator_set.commit(&mut dbtx).await?;
 
         // Finally, commit the transaction and then update subscribers
         dbtx.commit().await?;
+
+        // Next rate data is only available on the last block per epoch.
+        // Fetch the next rate data from the DB
+        // TODO: this should probably be stored on the JMT, but this works for now
+        let next_rate_data = match epoch.end_height().value() == height {
+            true => Some(self.private_reader().next_rate_data().await?),
+            false => None,
+        };
 
         // Errors in sends arise only if no one is listening -- not our problem.
         let _ = self.height_tx.send(height.try_into().unwrap());

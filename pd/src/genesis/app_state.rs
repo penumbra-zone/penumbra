@@ -1,5 +1,4 @@
 use penumbra_chain::params::ChainParams;
-
 use penumbra_proto::{genesis as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
