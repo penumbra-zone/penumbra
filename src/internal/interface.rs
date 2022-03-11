@@ -138,19 +138,19 @@ pub trait Witness: Height + Sized {
     fn witness(&self, index: u64) -> Option<(AuthPath<Self>, Self::Item)>;
 }
 
-pub trait Release: Height {
+pub trait Forget: Height {
     /// Remove the witness for the given index.
     ///
     /// Returns `true` if the witness was previously present in the tree.
-    fn release(&mut self, index: u64) -> bool;
+    fn forget(&mut self, index: u64) -> bool;
 }
 
-pub trait ReleaseOwned: Height + Sized {
+pub trait ForgetOwned: Height + Sized {
     /// Remove the witness for the given index and summarize the item as a single `Hash` if it now
     /// contains no more witnesses.
     ///
     /// Returns either `(Self, boool)` where the boolean is `true` if the witness was removed or
     /// `false` if the witness was not present, or `Hash` if the witness was removed and it was the
     /// last witness remaining in this tree.
-    fn release(self, index: u64) -> Result<(Self, bool), Hash>;
+    fn forget_owned(self, index: u64) -> Result<(Self, bool), Hash>;
 }
