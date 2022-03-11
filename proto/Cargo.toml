@@ -14,7 +14,9 @@ hex = "0.4"
 anyhow = "1.0"
 subtle-encoding = "0.5"
 bech32 = "0.8"
+ibc-proto = { git = "https://github.com/penumbra-zone/ibc-rs" }
 
 [build-dependencies]
 prost-build = "0.9"
+ibc-proto = { git = "https://github.com/penumbra-zone/ibc-rs" }
 tonic-build = "0.6"
