@@ -557,6 +557,7 @@ impl Writer {
 
         valid_anchors.push_front(nct_anchor.clone());
 
+        tracing::debug!("calling block_validator_set.commit");
         block_validator_set.commit(&mut dbtx).await?;
 
         // Finally, commit the transaction and then update subscribers

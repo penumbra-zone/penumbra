@@ -194,7 +194,7 @@ impl Worker {
         assert!(self.pending_block.is_none());
         self.pending_block = Some(PendingBlock::new(self.note_commitment_tree.clone()));
 
-        self.validator_set.begin_block();
+        self.validator_set.begin_block().await?;
 
         // For each validator identified as byzantine by tendermint, update its
         // status to be slashed.
@@ -330,10 +330,16 @@ impl Worker {
             self.end_epoch().await?;
         }
 
-        tracing::debug!(?validator_updates, "setting validator updates");
+        tracing::debug!(
+            ?validator_updates,
+            "sending validator updates to tendermint (XXX not really, but this is what they _would_ be)"
+        );
 
         Ok(abci::response::EndBlock {
-            validator_updates,
+            // TODO: the voting power calculations aren't working right and are knocking validators out of the tendermint
+            // consensus set, so we'll return an empty list of updates for now to prevent them from dropping out of tendermint.
+            // validator_updates,
+            validator_updates: vec![],
             consensus_param_updates: None,
             events: Vec::new(),
         })

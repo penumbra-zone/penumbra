@@ -350,6 +350,7 @@ impl ValidatorSet {
 
     // TODO: maybe the begin/end/commit flow should be a trait or something
     pub async fn begin_block(&mut self) -> Result<()> {
+        tracing::debug!("validator_set: begin_block");
         self.cache = Cache::load(&self.reader, self.reader.epoch()).await?;
         self.block_changes = Some(BlockChanges {
             starting_epoch: self.reader.epoch(),
@@ -434,6 +435,7 @@ impl ValidatorSet {
     }
 
     pub async fn commit(&mut self, dbtx: &mut Transaction<'_, Postgres>) -> Result<()> {
+        tracing::debug!("validator_set: commit");
         self.block_changes.take().unwrap().commit(dbtx).await
     }
 
