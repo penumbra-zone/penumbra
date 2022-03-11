@@ -1,8 +1,21 @@
 syntax = "proto3";
 package penumbra.transparent_proofs;
 
-// A Penumbra transparent Spend Proof.
-message SpendProof {
+// A Penumbra transaction proof.
+message TransactionProof {
+  repeated ProofAction proof_actions = 1;
+}
+
+// Constraints associated with a given action.
+message ProofAction {
+  oneof proof_action {
+    Spend spend = 1;
+    Output output = 2;
+  }
+}
+
+// Constraints for a Penumbra transparent spend.
+message Spend {
   // Auxiliary inputs
   uint32 merkle_path_field_0 = 1;
   repeated bytes merkle_path_field_1 = 2;
@@ -19,8 +32,8 @@ message SpendProof {
   bytes nk = 13;
 }
 
-// A Penumbra transparent output proof.
-message OutputProof {
+// Constraints for a Penumbra transparent output.
+message Output {
   // Auxiliary inputs
   bytes g_d = 1;
   bytes pk_d = 2;
