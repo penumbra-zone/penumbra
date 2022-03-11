@@ -16,21 +16,21 @@ pub trait Height {
 /// The constant `u64` associated with each unary height.
 pub trait IsHeight: sealed::IsHeight {
     /// The number for this height.
-    const HEIGHT: u64;
+    const HEIGHT: u8;
 }
 
 /// Height zero.
 pub struct Zero;
 
 impl IsHeight for Zero {
-    const HEIGHT: u64 = 0;
+    const HEIGHT: u8 = 0;
 }
 
 /// Height `N + 1`.
 pub struct Succ<N>(N);
 
 impl<N: IsHeight> IsHeight for Succ<N> {
-    const HEIGHT: u64 = N::HEIGHT + 1;
+    const HEIGHT: u8 = N::HEIGHT + 1;
 }
 
 /// Seal the `IsHeight` trait so that only `Succ` and `Zero` can inhabit it.

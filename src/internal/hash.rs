@@ -112,7 +112,7 @@ impl Hash {
 
     #[inline]
     pub(crate) fn node(
-        height: u64,
+        height: u8,
         Hash(a): Hash,
         Hash(b): Hash,
         Hash(c): Hash,
