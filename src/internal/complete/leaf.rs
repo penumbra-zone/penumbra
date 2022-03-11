@@ -46,7 +46,7 @@ impl<Item: Complete> Complete for Leaf<Item> {
 impl<Item: Witness> Witness for Leaf<Item> {
     type Item = Item::Item;
 
-    fn witness(&self, index: usize) -> Option<(crate::AuthPath<Self>, Self::Item)> {
+    fn witness(&self, index: u64) -> Option<(crate::AuthPath<Self>, Self::Item)> {
         self.0.witness(index)
     }
 }

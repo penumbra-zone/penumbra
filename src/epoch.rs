@@ -111,7 +111,7 @@ impl Epoch {
             .item_index
             .get(&item)
             .expect("if item is present in block index, it must be present in item index");
-        let index = ((block_in_epoch as usize) << 16) | item_in_block as usize;
+        let index = ((block_in_epoch as u64) << 16) | item_in_block as u64;
 
         let (auth_path, leaf) = self.inner.witness(index)?;
         Some(Proof {

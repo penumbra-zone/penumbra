@@ -112,7 +112,7 @@ impl Hash {
 
     #[inline]
     pub(crate) fn node(
-        height: usize,
+        height: u64,
         Hash(a): Hash,
         Hash(b): Hash,
         Hash(c): Hash,
@@ -158,7 +158,7 @@ impl Complete for Hash {
 impl Witness for Hash {
     type Item = Hash;
 
-    fn witness(&self, index: usize) -> Option<(AuthPath<Self>, Hash)> {
+    fn witness(&self, index: u64) -> Option<(AuthPath<Self>, Hash)> {
         if index == 0 {
             Some((path::Leaf, *self))
         } else {

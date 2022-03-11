@@ -92,7 +92,7 @@ impl Block {
     ///
     /// If the index is not witnessed in this block, return `None`.
     pub fn witness(&self, item: Fq) -> Option<Proof<Block>> {
-        let index = *self.item_index.get(&item)? as usize;
+        let index = *self.item_index.get(&item)? as u64;
         let (auth_path, leaf) = self.inner.witness(index)?;
         Some(Proof {
             index,

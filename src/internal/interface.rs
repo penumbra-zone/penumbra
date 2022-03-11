@@ -135,14 +135,14 @@ pub trait Witness: Height + Sized {
     ///
     /// The input mutable slice should be at least the height of the tree, and is overwritten by
     /// this function.
-    fn witness(&self, index: usize) -> Option<(AuthPath<Self>, Self::Item)>;
+    fn witness(&self, index: u64) -> Option<(AuthPath<Self>, Self::Item)>;
 }
 
 pub trait Release: Height {
     /// Remove the witness for the given index.
     ///
     /// Returns `true` if the witness was previously present in the tree.
-    fn release(&mut self, index: usize) -> bool;
+    fn release(&mut self, index: u64) -> bool;
 }
 
 pub trait ReleaseOwned: Height + Sized {
@@ -152,5 +152,5 @@ pub trait ReleaseOwned: Height + Sized {
     /// Returns either `(Self, boool)` where the boolean is `true` if the witness was removed or
     /// `false` if the witness was not present, or `Hash` if the witness was removed and it was the
     /// last witness remaining in this tree.
-    fn release(self, index: usize) -> Result<(Self, bool), Hash>;
+    fn release(self, index: u64) -> Result<(Self, bool), Hash>;
 }

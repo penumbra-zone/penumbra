@@ -227,7 +227,7 @@ where
 {
     type Item = Child::Item;
 
-    fn witness(&self, index: usize) -> Option<(AuthPath<Self>, Self::Item)> {
+    fn witness(&self, index: u64) -> Option<(AuthPath<Self>, Self::Item)> {
         use Elems::*;
         use WhichWay::*;
 

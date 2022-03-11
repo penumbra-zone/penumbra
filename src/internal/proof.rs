@@ -16,7 +16,7 @@ use crate::{Fq, Hash, Height};
     Eq(bound = "<Tree::Height as path::Path>::Path: Eq")
 )]
 pub struct Proof<Tree: Height> {
-    pub(crate) index: usize,
+    pub(crate) index: u64,
     pub(crate) auth_path: AuthPath<Tree>,
     pub(crate) leaf: Fq,
 }
@@ -36,7 +36,7 @@ impl<Tree: Height> Proof<Tree> {
     }
 
     /// Get the index of the item this proof claims to witness.
-    pub fn index(&self) -> usize {
+    pub fn index(&self) -> u64 {
         self.index
     }
 

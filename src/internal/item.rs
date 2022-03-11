@@ -81,7 +81,7 @@ impl Complete for Item {
 impl Witness for Item {
     type Item = Fq;
 
-    fn witness(&self, index: usize) -> Option<(AuthPath<Self>, Self::Item)> {
+    fn witness(&self, index: u64) -> Option<(AuthPath<Self>, Self::Item)> {
         self.hash
             .witness(index)
             .map(|(auth_path, _)| (auth_path, self.item))

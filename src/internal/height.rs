@@ -3,7 +3,7 @@
 //!
 //! This module contains type-level machinery for computing the height of structures and translating
 //! an unary representation good for type-level constraints ([`Succ`] and [`Zero`]) into constant
-//! `usize`s suitable for value-level computation.
+//! `u64`s suitable for value-level computation.
 
 /// Trait identifying the statically-known height of a given tree element.
 ///
@@ -13,24 +13,24 @@ pub trait Height {
     type Height: crate::internal::path::Path;
 }
 
-/// The constant `usize` associated with each unary height.
+/// The constant `u64` associated with each unary height.
 pub trait IsHeight: sealed::IsHeight {
     /// The number for this height.
-    const HEIGHT: usize;
+    const HEIGHT: u64;
 }
 
 /// Height zero.
 pub struct Zero;
 
 impl IsHeight for Zero {
-    const HEIGHT: usize = 0;
+    const HEIGHT: u64 = 0;
 }
 
 /// Height `N + 1`.
 pub struct Succ<N>(N);
 
 impl<N: IsHeight> IsHeight for Succ<N> {
-    const HEIGHT: usize = N::HEIGHT + 1;
+    const HEIGHT: u64 = N::HEIGHT + 1;
 }
 
 /// Seal the `IsHeight` trait so that only `Succ` and `Zero` can inhabit it.

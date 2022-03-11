@@ -127,7 +127,7 @@ impl<Child: Height + GetHash> GetHash for Node<Child> {
 impl<Child: GetHash + Witness> Witness for Node<Child> {
     type Item = Child::Item;
 
-    fn witness(&self, index: usize) -> Option<(AuthPath<Self>, Self::Item)> {
+    fn witness(&self, index: u64) -> Option<(AuthPath<Self>, Self::Item)> {
         let [a, b, c, d] = self.children();
 
         // Which way to go down the tree from this node

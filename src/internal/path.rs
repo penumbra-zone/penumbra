@@ -20,7 +20,7 @@ pub trait Path: IsHeight + Sized {
     type Path;
 
     /// Calculate the root hash for a path leading to a leaf with the given index and hash.
-    fn root(path: &Self::Path, index: usize, leaf: Hash) -> Hash;
+    fn root(path: &Self::Path, index: u64, leaf: Hash) -> Hash;
 }
 
 /// The empty authentication path, for the zero-height tree.
@@ -31,7 +31,7 @@ impl Path for Zero {
     type Path = Leaf;
 
     #[inline]
-    fn root(Leaf: &Leaf, _index: usize, leaf: Hash) -> Hash {
+    fn root(Leaf: &Leaf, _index: u64, leaf: Hash) -> Hash {
         leaf
     }
 }
@@ -54,7 +54,7 @@ impl<Child, N: Path<Path = Child>> Path for Succ<N> {
 
     #[inline]
     #[rustfmt::skip] // For reading clarity, this function is laid out very carefully
-    fn root(Node { siblings, child }: &Node<Child>, index: usize, leaf: Hash) -> Hash {
+    fn root(Node { siblings, child }: &Node<Child>, index: u64, leaf: Hash) -> Hash {
         use WhichWay::*;
 
         // Based on the index, place the root hash of the child in the correct position among its
@@ -93,7 +93,7 @@ impl WhichWay {
     /// Given a height and an index of a leaf, determine which direction the path down to that leaf
     /// should branch at the node at that height.
     #[inline]
-    pub fn at(height: usize, index: usize) -> WhichWay {
+    pub fn at(height: u64, index: u64) -> WhichWay {
         // Shift the index right by (2 * (height - 1)) so that the last 2 bits are our direction, then
         // mask off just those bits and branch on them to generate the output
         match (index >> (2 * (height - 1))) & 0b11 {
@@ -112,7 +112,7 @@ mod test {
     use proptest::prelude::*;
 
     /// Get directions from the root (at the given height)
-    fn directions_of_index(height: usize, index: usize) -> Vec<WhichWay> {
+    fn directions_of_index(height: u64, index: u64) -> Vec<WhichWay> {
         (1..=height + 1)
             .rev() // iterate from the root to the leaf (height down to 1)
             .map(|height| WhichWay::at(height, index))
@@ -128,14 +128,14 @@ mod test {
     }
 
     /// Get the index which represents the given sequence of directions.
-    fn index_of_directions(directions: &[WhichWay]) -> usize {
+    fn index_of_directions(directions: &[WhichWay]) -> u64 {
         directions
             .iter()
             .rev() // Iterating rom the leaf to the root...
             .zip(1..) // Keeping track of the height (starting at 1 for the leafmost node)...
             .fold(0, |index, (&direction, height)| {
                 index | // Set the bits in the index...
-                (direction as usize) << (2 * (height - 1)) // ...which correspond to the direction at the height - 1.
+                (direction as u64) << (2 * (height - 1)) // ...which correspond to the direction at the height - 1.
             })
     }
 
@@ -144,7 +144,7 @@ mod test {
         fn which_way_correct(
         (height, index) in (
             // This is a dependent generator: we ensure that the index is in-bounds for the height
-            (0usize..(3 * 8)), 0usize..usize::MAX).prop_map(|(height, index)| (height, (index % (4usize.pow(height as u32)))))
+            (0u64..(3 * 8)), 0u64..u64::MAX).prop_map(|(height, index)| (height, (index % (4u64.pow(height as u32)))))
         ) {
             assert_eq!(index, index_of_directions(&directions_of_index(height, index)));
         }
