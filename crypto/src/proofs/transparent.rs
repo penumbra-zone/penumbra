@@ -35,6 +35,60 @@ pub enum Error {
     ProtoMalformed,
 }
 
+/// Transparent proof for a transaction.
+///
+/// This structure keeps track of the auxiliary (private)
+/// inputs for each action in the transaction.
+#[derive(Clone, Debug)]
+pub struct TransactionProof {
+    pub proof_actions: Vec<ProofAction>,
+}
+
+/// Supported actions in a Penumbra transaction proof.
+#[derive(Clone, Debug)]
+pub enum ProofAction {
+    Output(OutputProof),
+    Spend(SpendProof),
+}
+
+impl Protobuf<transparent_proofs::ProofAction> for ProofAction {}
+
+impl From<ProofAction> for transparent_proofs::ProofAction {
+    fn from(msg: ProofAction) -> Self {
+        match msg {
+            ProofAction::Output(inner) => transparent_proofs::ProofAction {
+                proof_action: Some(transparent_proofs::proof_action::ProofAction::Output(
+                    inner.into(),
+                )),
+            },
+            ProofAction::Spend(inner) => transparent_proofs::ProofAction {
+                proof_action: Some(transparent_proofs::proof_action::ProofAction::Spend(
+                    inner.into(),
+                )),
+            },
+        }
+    }
+}
+
+impl TryFrom<transparent_proofs::ProofAction> for ProofAction {
+    type Error = anyhow::Error;
+
+    fn try_from(proto: transparent_proofs::ProofAction) -> anyhow::Result<Self, Self::Error> {
+        if proto.proof_action.is_none() {
+            return Err(anyhow::anyhow!("no action!"));
+        }
+
+        match proto.proof_action.unwrap() {
+            transparent_proofs::proof_action::ProofAction::Output(inner) => {
+                Ok(ProofAction::Output(inner.try_into()?))
+            }
+            transparent_proofs::proof_action::ProofAction::Spend(inner) => {
+                Ok(ProofAction::Spend(inner.try_into()?))
+            }
+        }
+    }
+}
+
 /// Transparent proof for spending existing notes.
 ///
 /// This structure keeps track of the auxiliary (private) inputs.
@@ -230,13 +284,38 @@ impl OutputProof {
 
 // Conversions
 
-impl Protobuf<transparent_proofs::SpendProof> for SpendProof {}
+impl Protobuf<transparent_proofs::TransactionProof> for TransactionProof {}
 
-impl From<SpendProof> for transparent_proofs::SpendProof {
+impl From<TransactionProof> for transparent_proofs::TransactionProof {
+    fn from(msg: TransactionProof) -> Self {
+        let proof_actions = msg
+            .proof_actions
+            .into_iter()
+            .map(|proof_action| proof_action.into())
+            .collect();
+        transparent_proofs::TransactionProof { proof_actions }
+    }
+}
+
+impl TryFrom<transparent_proofs::TransactionProof> for TransactionProof {
+    type Error = anyhow::Error;
+
+    fn try_from(proto: transparent_proofs::TransactionProof) -> anyhow::Result<Self, Self::Error> {
+        let mut proof_actions = Vec::new();
+        for proof_action in proto.proof_actions {
+            proof_actions.push(proof_action.try_into()?)
+        }
+        Ok(TransactionProof { proof_actions })
+    }
+}
+
+impl Protobuf<transparent_proofs::Spend> for SpendProof {}
+
+impl From<SpendProof> for transparent_proofs::Spend {
     fn from(msg: SpendProof) -> Self {
         let ak_bytes: [u8; 32] = msg.ak.into();
         let nk_bytes: [u8; 32] = msg.nk.0.to_bytes();
-        transparent_proofs::SpendProof {
+        transparent_proofs::Spend {
             merkle_path_field_0: u64::from(msg.merkle_path.0) as u32,
             merkle_path_field_1: msg
                 .merkle_path
@@ -259,10 +338,10 @@ impl From<SpendProof> for transparent_proofs::SpendProof {
     }
 }
 
-impl TryFrom<transparent_proofs::SpendProof> for SpendProof {
+impl TryFrom<transparent_proofs::Spend> for SpendProof {
     type Error = Error;
 
-    fn try_from(proto: transparent_proofs::SpendProof) -> anyhow::Result<Self, Self::Error> {
+    fn try_from(proto: transparent_proofs::Spend) -> anyhow::Result<Self, Self::Error> {
         let g_d_bytes: [u8; 32] = proto.g_d.try_into().map_err(|_| Error::ProtoMalformed)?;
         let g_d_encoding = decaf377::Encoding(g_d_bytes);
 
@@ -328,11 +407,11 @@ impl TryFrom<transparent_proofs::SpendProof> for SpendProof {
     }
 }
 
-impl Protobuf<transparent_proofs::OutputProof> for OutputProof {}
+impl Protobuf<transparent_proofs::Output> for OutputProof {}
 
-impl From<OutputProof> for transparent_proofs::OutputProof {
+impl From<OutputProof> for transparent_proofs::Output {
     fn from(msg: OutputProof) -> Self {
-        transparent_proofs::OutputProof {
+        transparent_proofs::Output {
             g_d: msg.g_d.compress().0.to_vec(),
             pk_d: msg.pk_d.0.to_vec(),
             value_amount: msg.value.amount,
@@ -344,10 +423,10 @@ impl From<OutputProof> for transparent_proofs::OutputProof {
     }
 }
 
-impl TryFrom<transparent_proofs::OutputProof> for OutputProof {
+impl TryFrom<transparent_proofs::Output> for OutputProof {
     type Error = Error;
 
-    fn try_from(proto: transparent_proofs::OutputProof) -> anyhow::Result<Self, Self::Error> {
+    fn try_from(proto: transparent_proofs::Output) -> anyhow::Result<Self, Self::Error> {
         let g_d_bytes: [u8; 32] = proto.g_d.try_into().map_err(|_| Error::ProtoMalformed)?;
         let g_d_encoding = decaf377::Encoding(g_d_bytes);
 
@@ -393,7 +472,7 @@ impl TryFrom<transparent_proofs::OutputProof> for OutputProof {
 
 impl From<SpendProof> for Vec<u8> {
     fn from(spend_proof: SpendProof) -> Vec<u8> {
-        let protobuf_serialized_proof: transparent_proofs::SpendProof = spend_proof.into();
+        let protobuf_serialized_proof: transparent_proofs::Spend = spend_proof.into();
         protobuf_serialized_proof.encode_to_vec()
     }
 }
@@ -403,7 +482,7 @@ impl TryFrom<&[u8]> for SpendProof {
 
     fn try_from(bytes: &[u8]) -> Result<SpendProof, Self::Error> {
         let protobuf_serialized_proof =
-            transparent_proofs::SpendProof::decode(bytes).map_err(|_| Error::ProtoMalformed)?;
+            transparent_proofs::Spend::decode(bytes).map_err(|_| Error::ProtoMalformed)?;
         protobuf_serialized_proof
             .try_into()
             .map_err(|_| Error::ProtoMalformed)
@@ -412,7 +491,7 @@ impl TryFrom<&[u8]> for SpendProof {
 
 impl From<OutputProof> for Vec<u8> {
     fn from(output_proof: OutputProof) -> Vec<u8> {
-        let protobuf_serialized_proof: transparent_proofs::OutputProof = output_proof.into();
+        let protobuf_serialized_proof: transparent_proofs::Output = output_proof.into();
         protobuf_serialized_proof.encode_to_vec()
     }
 }
@@ -422,7 +501,7 @@ impl TryFrom<&[u8]> for OutputProof {
 
     fn try_from(bytes: &[u8]) -> Result<OutputProof, Self::Error> {
         let protobuf_serialized_proof =
-            transparent_proofs::OutputProof::decode(bytes).map_err(|_| Error::ProtoMalformed)?;
+            transparent_proofs::Output::decode(bytes).map_err(|_| Error::ProtoMalformed)?;
         protobuf_serialized_proof
             .try_into()
             .map_err(|_| Error::ProtoMalformed)
