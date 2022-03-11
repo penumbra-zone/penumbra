@@ -58,6 +58,11 @@ pub mod thin_wallet {
     tonic::include_proto!("penumbra.thin_wallet");
 }
 
+/// IBC protocol structures.
+pub mod ibc {
+    tonic::include_proto!("penumbra.ibc");
+}
+
 pub mod sighash {
     include!(concat!(env!("OUT_DIR"), "/penumbra.sighash.rs"));
 
