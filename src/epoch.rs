@@ -131,7 +131,7 @@ impl EpochMut<'_> {
         // If we successfully insert this block, here's what its index in the epoch will be:
         let this_block = self.inner.len();
 
-        // Strip out the item index of the block
+        // Decompose the block into its components
         let (block, item_index) = match block {
             Insert::Hash(hash) => (Insert::Hash(hash), Default::default()),
             Insert::Keep(Block { item_index, inner }) => (Insert::Keep(inner), item_index),

@@ -37,8 +37,8 @@ impl Eternity {
         // If we successfully insert this epoch, here's what its index in the epoch will be:
         let epoch_index = self.inner.len();
 
-        // Strip out the item index, block index, and released set of the epoch
-        let (block, block_index, item_index) = match epoch {
+        // Decompose the epoch into its components
+        let (epoch, block_index, item_index) = match epoch {
             Insert::Hash(hash) => (Insert::Hash(hash), Default::default(), Default::default()),
             Insert::Keep(Epoch {
                 inner,
@@ -49,7 +49,7 @@ impl Eternity {
 
         // Try to insert the epoch into the tree, and if successful, track the item, block, and
         // epoch indices of each item in the epoch
-        if let Err(epoch) = self.inner.insert(block) {
+        if let Err(epoch) = self.inner.insert(epoch) {
             Err(epoch.map(|inner| Epoch {
                 block_index,
                 item_index,
