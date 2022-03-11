@@ -37,13 +37,7 @@ pub use ark_ff::fields::PrimeField;
 pub use poseidon377::Fq;
 
 mod eternity;
-pub use eternity::Eternity;
-
-mod epoch;
-pub use epoch::Epoch;
-
-mod block;
-pub use block::Block;
+pub use eternity::{Block, BlockMut, Epoch, EpochMut, Eternity};
 
 #[cfg(test)]
 mod test {
@@ -51,7 +45,7 @@ mod test {
 
     #[test]
     fn check_eternity_size() {
-        static_assertions::assert_eq_size!(Eternity, [u8; 88]);
+        static_assertions::assert_eq_size!(Eternity, [u8; 160]);
     }
 
     #[test]
