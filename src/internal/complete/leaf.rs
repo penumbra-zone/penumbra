@@ -1,4 +1,4 @@
-use crate::{Complete, GetHash, Hash, Height, Witness};
+use crate::{Complete, ForgetOwned, GetHash, Hash, Height, Insert, Witness};
 
 use super::super::active;
 
@@ -48,5 +48,12 @@ impl<Item: Witness> Witness for Leaf<Item> {
 
     fn witness(&self, index: impl Into<u64>) -> Option<(crate::AuthPath<Self>, Self::Item)> {
         self.0.witness(index)
+    }
+}
+
+impl<Item: ForgetOwned> ForgetOwned for Leaf<Item> {
+    fn forget_owned(self, index: u64) -> (Insert<Self>, bool) {
+        let (item, forgotten) = self.0.forget_owned(index);
+        (item.map(Leaf), forgotten)
     }
 }

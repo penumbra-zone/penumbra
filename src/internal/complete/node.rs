@@ -7,7 +7,7 @@ use crate::{
         path::{self, AuthPath, WhichWay},
         three::{IntoElems, Three},
     },
-    Complete, GetHash, Hash, Height, Insert, Witness,
+    Complete, ForgetOwned, GetHash, Hash, Height, Insert, Witness,
 };
 
 use super::super::active;
@@ -127,6 +127,7 @@ impl<Child: Height + GetHash> GetHash for Node<Child> {
 impl<Child: GetHash + Witness> Witness for Node<Child> {
     type Item = Child::Item;
 
+    #[inline]
     fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Self::Item)> {
         let index = index.into();
 
@@ -167,6 +168,68 @@ impl<Child: GetHash + Witness> Witness for Node<Child> {
         };
 
         Some((path::Node { siblings, child }, leaf))
+    }
+}
+
+impl<Child: GetHash + ForgetOwned> ForgetOwned for Node<Child> {
+    #[inline]
+    fn forget_owned(self, index: u64) -> (Insert<Self>, bool) {
+        let index = index.into();
+
+        let [a, b, c, d]: [Insert<Child>; 4] = self.children.into();
+
+        // Which child should we be forgetting?
+        let which_way = WhichWay::at(Self::Height::HEIGHT, index);
+
+        // The index to use when forgetting the child: mask off all the bits for the parent nodes of
+        // the path above us
+        let index = index & (0b11 << ((Self::Height::HEIGHT - 1) * 2));
+
+        // Recursively forget the appropriate child
+        let (children, forgotten) = match which_way {
+            WhichWay::Leftmost => {
+                let (a, forgotten) = match a {
+                    Insert::Keep(a) => a.forget_owned(index),
+                    Insert::Hash(_) => (a, false),
+                };
+                ([a, b, c, d], forgotten)
+            }
+            WhichWay::Left => {
+                let (b, forgotten) = match b {
+                    Insert::Keep(b) => b.forget_owned(index),
+                    Insert::Hash(_) => (b, false),
+                };
+                ([a, b, c, d], forgotten)
+            }
+            WhichWay::Right => {
+                let (c, forgotten) = match c {
+                    Insert::Keep(c) => c.forget_owned(index),
+                    Insert::Hash(_) => (c, false),
+                };
+                ([a, b, c, d], forgotten)
+            }
+            WhichWay::Rightmost => {
+                let (d, forgotten) = match d {
+                    Insert::Keep(d) => d.forget_owned(index),
+                    Insert::Hash(_) => (d, false),
+                };
+                ([a, b, c, d], forgotten)
+            }
+        };
+
+        // Reconstruct the node from the children, or else (if all the children are hashes) hash
+        // those hashes into a single node hash
+        let mut reconstructed = Self::from_children_or_else_hash(children);
+
+        // If the node was reconstructed, we know that its hash should not have changed, so carry
+        // over the old cached hash, if any existed, to prevent recomputation
+        reconstructed.map(|node| {
+            if let Some(hash) = self.hash.get().into() {
+                node.set_hash_unchecked(hash);
+            }
+        });
+
+        (reconstructed, forgotten)
     }
 }
 

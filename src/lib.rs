@@ -21,8 +21,8 @@ pub use internal::{
 
 #[allow(unused_imports)]
 use internal::{
-    active::{Active, Focus, Full, Tier},
-    complete::Complete,
+    active::{Active, Focus, Forget, Full, Tier},
+    complete::{Complete, ForgetOwned},
     hash::GetHash,
     height::Height,
     index,

@@ -1,4 +1,4 @@
-use crate::{AuthPath, Complete, GetHash, Hash, Height, Witness};
+use crate::{AuthPath, Complete, ForgetOwned, GetHash, Hash, Height, Witness};
 
 use super::super::active;
 
@@ -44,5 +44,12 @@ impl<Item: GetHash + Witness> Witness for Tier<Item> {
 
     fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Self::Item)> {
         self.inner.witness(index)
+    }
+}
+
+impl<Item: GetHash + ForgetOwned> ForgetOwned for Tier<Item> {
+    fn forget_owned(self, index: u64) -> (crate::Insert<Self>, bool) {
+        let (inner, forgotten) = self.inner.forget_owned(index);
+        (inner.map(|inner| Tier { inner }), forgotten)
     }
 }

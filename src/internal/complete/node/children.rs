@@ -114,3 +114,29 @@ impl<Child> Children<Child> {
         }
     }
 }
+
+impl<Child> From<Children<Child>> for [Insert<Child>; 4] {
+    /// Get an array of references to the children or hashes stored in this [`Children`].
+    fn from(children: Children<Child>) -> [Insert<Child>; 4] {
+        use Children::*;
+        use Insert::*;
+
+        match children {
+            ___C(c) => [Hash(c.0), Hash(c.1), Hash(c.2), Keep(c.3)],
+            __C_(c) => [Hash(c.0), Hash(c.1), Keep(c.2), Hash(c.3)],
+            __CC(c) => [Hash(c.0), Hash(c.1), Keep(c.2), Keep(c.3)],
+            _C__(c) => [Hash(c.0), Keep(c.1), Hash(c.2), Hash(c.3)],
+            _C_C(c) => [Hash(c.0), Keep(c.1), Hash(c.2), Keep(c.3)],
+            _CC_(c) => [Hash(c.0), Keep(c.1), Keep(c.2), Hash(c.3)],
+            _CCC(c) => [Hash(c.0), Keep(c.1), Keep(c.2), Keep(c.3)],
+            C___(c) => [Keep(c.0), Hash(c.1), Hash(c.2), Hash(c.3)],
+            C__C(c) => [Keep(c.0), Hash(c.1), Hash(c.2), Keep(c.3)],
+            C_C_(c) => [Keep(c.0), Hash(c.1), Keep(c.2), Hash(c.3)],
+            C_CC(c) => [Keep(c.0), Hash(c.1), Keep(c.2), Keep(c.3)],
+            CC__(c) => [Keep(c.0), Keep(c.1), Hash(c.2), Hash(c.3)],
+            CC_C(c) => [Keep(c.0), Keep(c.1), Hash(c.2), Keep(c.3)],
+            CCC_(c) => [Keep(c.0), Keep(c.1), Keep(c.2), Hash(c.3)],
+            CCCC(c) => [Keep(c.0), Keep(c.1), Keep(c.2), Keep(c.3)],
+        }
+    }
+}

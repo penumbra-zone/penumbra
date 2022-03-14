@@ -20,7 +20,7 @@ pub mod active {
     //! The structure of a single [`Tier`] contains eight [`Node`]s, the bottom-most of which
     //! contains a [`Leaf`].
     use super::interface;
-    pub use interface::{Active, Focus, Full, Insert};
+    pub use interface::{Active, Focus, Forget, Full, Insert};
     pub(super) mod leaf;
     pub(super) mod node;
     pub(super) mod tier;
@@ -37,7 +37,7 @@ pub mod complete {
     //! The structure of a single [`Tier`] contains eight levels of [`Node`]s, the bottom-most level
     //! of which contains [`Leaf`]s.
     use super::interface;
-    pub use interface::Complete;
+    pub use interface::{Complete, ForgetOwned};
     pub(super) mod leaf;
     pub(super) mod node;
     pub(super) mod tier;

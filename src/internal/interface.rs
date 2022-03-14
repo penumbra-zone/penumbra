@@ -152,5 +152,5 @@ pub trait ForgetOwned: Height + Sized {
     /// Returns either `(Self, boool)` where the boolean is `true` if the witness was removed or
     /// `false` if the witness was not present, or `Hash` if the witness was removed and it was the
     /// last witness remaining in this tree.
-    fn forget_owned(self, index: u64) -> Result<(Self, bool), Hash>;
+    fn forget_owned(self, index: u64) -> (Insert<Self>, bool);
 }
