@@ -1,4 +1,4 @@
-use crate::{Active, AuthPath, Focus, Full, GetHash, Hash, Height, Insert, Witness};
+use crate::{Active, AuthPath, Focus, Forget, Full, GetHash, Hash, Height, Insert, Witness};
 
 use super::super::complete;
 
@@ -95,5 +95,14 @@ impl<Item: Witness> Witness for Leaf<Item> {
 
     fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Self::Item)> {
         self.item.as_ref().keep()?.witness(index)
+    }
+}
+
+impl<Item: Forget> Forget for Leaf<Item> {
+    fn forget(&mut self, index: impl Into<u64>) -> bool {
+        match self.item {
+            Insert::Keep(ref mut item) => item.forget(index),
+            Insert::Hash(_) => false,
+        }
     }
 }

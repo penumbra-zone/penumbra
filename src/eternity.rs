@@ -116,22 +116,28 @@ impl Eternity {
     /// If the index is not witnessed in this eternity, return `None`.
     pub fn witness(&self, item: Fq) -> Option<Proof<Eternity>> {
         // Calculate the index for this item
-        let epoch = *self.epoch_index.get(&item)?;
-        let block = *self
+        let this_epoch = *self.epoch_index.get(&item)?;
+        let this_block = *self
             .block_index
             .get(&item)
             .expect("if item is present in the epoch index, it must be present in the block index");
-        let item = *self
+        let this_item = *self
             .item_index
             .get(&item)
             .expect("if item is present in block index, it must be present in item index");
-        let index = index::within::Eternity { epoch, block, item };
+        let index = index::within::Eternity {
+            epoch: this_epoch,
+            block: this_block,
+            item: this_item,
+        };
 
         let (auth_path, leaf) = self.inner.witness(index)?;
+        debug_assert_eq!(leaf, Hash::of(item));
+
         Some(Proof {
             index: index.into(),
             auth_path,
-            leaf,
+            leaf: item,
         })
     }
 

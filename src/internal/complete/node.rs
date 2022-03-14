@@ -173,7 +173,7 @@ impl<Child: GetHash + Witness> Witness for Node<Child> {
 
 impl<Child: GetHash + ForgetOwned> ForgetOwned for Node<Child> {
     #[inline]
-    fn forget_owned(self, index: u64) -> (Insert<Self>, bool) {
+    fn forget_owned(self, index: impl Into<u64>) -> (Insert<Self>, bool) {
         let index = index.into();
 
         let [a, b, c, d]: [Insert<Child>; 4] = self.children.into();
@@ -219,14 +219,15 @@ impl<Child: GetHash + ForgetOwned> ForgetOwned for Node<Child> {
 
         // Reconstruct the node from the children, or else (if all the children are hashes) hash
         // those hashes into a single node hash
-        let mut reconstructed = Self::from_children_or_else_hash(children);
+        let reconstructed = Self::from_children_or_else_hash(children);
 
         // If the node was reconstructed, we know that its hash should not have changed, so carry
         // over the old cached hash, if any existed, to prevent recomputation
-        reconstructed.map(|node| {
+        let reconstructed = reconstructed.map(|node| {
             if let Some(hash) = self.hash.get().into() {
                 node.set_hash_unchecked(hash);
             }
+            node
         });
 
         (reconstructed, forgotten)

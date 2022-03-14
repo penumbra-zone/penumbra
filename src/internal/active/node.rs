@@ -5,9 +5,9 @@ use crate::{
         hash::OptionHash,
         height::{IsHeight, Succ},
         path::{self, WhichWay},
-        three::{Elems, Three},
+        three::{Elems, ElemsMut, Three},
     },
-    Active, AuthPath, Focus, Full, GetHash, Hash, Height, Insert, Witness,
+    Active, AuthPath, Focus, Forget, ForgetOwned, Full, GetHash, Hash, Height, Insert, Witness,
 };
 
 use super::super::complete;
@@ -322,5 +322,48 @@ where
         };
 
         Some((path::Node { siblings, child }, leaf))
+    }
+}
+
+impl<Child: Focus + Forget> Forget for Node<Child>
+where
+    Child::Complete: ForgetOwned,
+{
+    fn forget(&mut self, index: impl Into<u64>) -> bool {
+        use ElemsMut::*;
+        use WhichWay::*;
+
+        let index = index.into();
+
+        // Which direction should we forget from this node?
+        let which_way = WhichWay::at(Self::Height::HEIGHT, index);
+
+        // The index to use when forgetting the child: mask off all the bits for the parent nodes of
+        // the path above us
+        let index = index & (0b11 << ((Self::Height::HEIGHT - 1) * 2));
+
+        match (self.siblings.elems_mut(), &mut self.focus) {
+            (_0([]), a) => match which_way {
+                Leftmost => a.forget(index),
+                Left | Right | Rightmost => false,
+            },
+            (_1([a]), b) => match which_way {
+                Leftmost => a.forget(index),
+                Left => b.forget(index),
+                Right | Rightmost => false,
+            },
+            (_2([a, b]), c) => match which_way {
+                Leftmost => a.forget(index),
+                Left => b.forget(index),
+                Right => c.forget(index),
+                Rightmost => false,
+            },
+            (_3([a, b, c]), d) => match which_way {
+                Leftmost => a.forget(index),
+                Left => b.forget(index),
+                Right => c.forget(index),
+                Rightmost => d.forget(index),
+            },
+        }
     }
 }

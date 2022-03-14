@@ -10,6 +10,7 @@ pub mod path;
 pub mod proof;
 pub mod three;
 
+mod insert;
 mod interface;
 pub use interface::Witness;
 
@@ -20,10 +21,11 @@ pub mod active {
     //! The structure of a single [`Tier`] contains eight [`Node`]s, the bottom-most of which
     //! contains a [`Leaf`].
     use super::interface;
-    pub use interface::{Active, Focus, Forget, Full, Insert};
+    pub use interface::{Active, Focus, Forget, Full};
     pub(super) mod leaf;
     pub(super) mod node;
     pub(super) mod tier;
+    pub use super::insert::Insert;
     pub use leaf::Leaf;
     pub use node::Node;
     pub use tier::{Nested, Tier};

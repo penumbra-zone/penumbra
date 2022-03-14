@@ -12,7 +12,7 @@ use poseidon377::Fq;
 
 use crate::{
     internal::{height::Zero, path},
-    AuthPath, Complete, Focus, Height, Insert, Witness,
+    AuthPath, Complete, ForgetOwned, Height, Insert, Item, Witness,
 };
 
 mod option_hash;
@@ -142,17 +142,8 @@ impl Height for Hash {
     type Height = Zero;
 }
 
-impl Focus for Hash {
-    type Complete = Self;
-
-    #[inline]
-    fn finalize(self) -> Insert<Self::Complete> {
-        Insert::Keep(self)
-    }
-}
-
 impl Complete for Hash {
-    type Focus = Self;
+    type Focus = Item;
 }
 
 impl Witness for Hash {
@@ -163,6 +154,16 @@ impl Witness for Hash {
             Some((path::Leaf, *self))
         } else {
             None
+        }
+    }
+}
+
+impl ForgetOwned for Hash {
+    fn forget_owned(self, index: impl Into<u64>) -> (Insert<Self>, bool) {
+        if index.into() == 0 {
+            (Insert::Hash(self), true)
+        } else {
+            (Insert::Keep(self), false)
         }
     }
 }

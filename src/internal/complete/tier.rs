@@ -48,7 +48,7 @@ impl<Item: GetHash + Witness> Witness for Tier<Item> {
 }
 
 impl<Item: GetHash + ForgetOwned> ForgetOwned for Tier<Item> {
-    fn forget_owned(self, index: u64) -> (crate::Insert<Self>, bool) {
+    fn forget_owned(self, index: impl Into<u64>) -> (crate::Insert<Self>, bool) {
         let (inner, forgotten) = self.inner.forget_owned(index);
         (inner.map(|inner| Tier { inner }), forgotten)
     }

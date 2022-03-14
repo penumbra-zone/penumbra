@@ -68,8 +68,8 @@ impl Epoch {
 
     /// Forget about the witness for the given [`Fq`].
     ///
-    /// Returns `true` if the item was previously witnessed (and now is forgotten), and `false` if it
-    /// was not witnessed.
+    /// Returns `true` if the item was previously witnessed (and now is forgotten), and `false` if
+    /// it was not witnessed.
     pub fn forget(&mut self, item: Fq) -> bool {
         self.as_mut().forget(item)
     }
@@ -114,22 +114,24 @@ impl Epoch {
     /// If the index is not witnessed in this epoch, return `None`.
     pub fn witness(&self, item: Fq) -> Option<Proof<Epoch>> {
         // Calculate the index for this item
-        let block_in_epoch = *self.block_index.get(&item)?;
-        let item_in_block = *self
+        let this_block = *self.block_index.get(&item)?;
+        let this_item = *self
             .item_index
             .get(&item)
             .expect("if item is present in block index, it must be present in item index");
 
         let index = index::within::Epoch {
-            item: item_in_block,
-            block: block_in_epoch,
+            item: this_item,
+            block: this_block,
         };
 
         let (auth_path, leaf) = self.inner.witness(index)?;
+        debug_assert_eq!(leaf, Hash::of(item));
+
         Some(Proof {
             index: index.into(),
             auth_path,
-            leaf,
+            leaf: item,
         })
     }
 }
@@ -197,14 +199,14 @@ impl EpochMut<'_> {
             };
 
             // Forget the item from the inner tree
-            let forgotten = self.inner.forget(index);
+            let forgotten = self.epoch.inner.forget(index);
 
             // The index should never contain things that aren't witnessed
             debug_assert!(forgotten, "indexed item must be witnessed in tree");
 
             // Remove the item from all indices
-            self.item_index.remove(&item);
-            self.block_index.remove(&item);
+            self.epoch.item_index.remove(&item);
+            self.epoch.block_index.remove(&item);
             if let Some((_, epoch_index)) = &mut self.super_index {
                 epoch_index.remove(&item);
             }

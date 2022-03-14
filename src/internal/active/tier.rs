@@ -1,6 +1,8 @@
 use std::{fmt::Debug, mem};
 
-use crate::{Active, AuthPath, Focus, Full, GetHash, Hash, Height, Insert, Witness};
+use crate::{
+    Active, AuthPath, Focus, Forget, ForgetOwned, Full, GetHash, Hash, Height, Insert, Witness,
+};
 
 use super::super::{active, complete};
 
@@ -261,6 +263,44 @@ where
     }
 }
 
+impl<Item: Focus + Forget> Forget for Tier<Item>
+where
+    Item::Complete: ForgetOwned,
+{
+    fn forget(&mut self, index: impl Into<u64>) -> bool {
+        // Replace `self.inner` temporarily with an empty hash, so we can move out of it
+        let inner = mem::replace(&mut self.inner, Inner::Hash(Hash::default()));
+
+        // Whether something was actually forgotten
+        let forgotten;
+
+        // No matter which branch we take, we always put something valid back into `self.inner` before
+        // returning from this function
+        (forgotten, self.inner) = match inner {
+            // If the tier is active, try to forget from the active path, if it's not empty
+            Inner::Active(mut active) => (
+                if let Some(ref mut active) = *active {
+                    active.forget(index)
+                } else {
+                    false
+                },
+                Inner::Active(active),
+            ),
+            // If the tier is complete, forget from the complete tier and if it resulted in a hash,
+            // set the self to that hash
+            Inner::Complete(complete) => match complete.forget_owned(index) {
+                (Insert::Keep(complete), forgotten) => (forgotten, Inner::Complete(complete)),
+                (Insert::Hash(hash), forgotten) => (forgotten, Inner::Hash(hash)),
+            },
+            // If the tier was just a hash, nothing to do
+            Inner::Hash(hash) => (false, Inner::Hash(hash)),
+        };
+
+        // Return whether something was actually forgotten
+        forgotten
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -268,11 +308,10 @@ mod test {
     #[test]
     fn check_eq_impl() {
         static_assertions::assert_impl_all!(Tier<Tier<Tier<crate::Item>>>: Eq);
-        static_assertions::assert_impl_all!(Tier<Tier<Tier<Hash>>>: Eq);
     }
 
     #[test]
     fn check_inner_size() {
-        static_assertions::assert_eq_size!(Inner<Hash>, [u8; 56]);
+        static_assertions::assert_eq_size!(Inner<crate::Item>, [u8; 56]);
     }
 }

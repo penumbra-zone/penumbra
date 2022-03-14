@@ -1,3 +1,13 @@
+//! Types to distinguish between different kinds of indices, to prevent them from being confused for
+//! each other internally.
+//!
+//! Methods that take `Into<u64>` as an index argument can be given types from the [`within`]
+//! module, which are all `Into<u64>`. They can be constructed from types in this module, which are
+//! all `From<u16>`.
+
+/// The index of an individual item in a block.
+///
+/// Create this using `From<u16>`.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Item(u16);
 
@@ -7,6 +17,9 @@ impl From<u16> for Item {
     }
 }
 
+/// The index of an individual block in an epoch.
+///
+/// Create this using `From<u16>`.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Block(u16);
 
@@ -16,6 +29,9 @@ impl From<u16> for Block {
     }
 }
 
+/// The index of an individual epoch in an eternity.
+///
+/// Create this using `From<u16>`.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Epoch(u16);
 
@@ -25,11 +41,14 @@ impl From<u16> for Epoch {
     }
 }
 
+/// Indices of individual items within larger structures.
 pub mod within {
     use super::*;
 
+    /// The index of an individual item within a block.
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
     pub struct Block {
+        /// The index of the item within its block.
         pub item: super::Item,
     }
 
@@ -39,9 +58,12 @@ pub mod within {
         }
     }
 
+    /// The index of an individual item within an epoch.
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
     pub struct Epoch {
+        /// The index of the block within its epoch.
         pub block: super::Block,
+        /// The index of the item within its block.
         pub item: super::Item,
     }
 
@@ -56,10 +78,14 @@ pub mod within {
         }
     }
 
+    /// The index of an individual item within an eternity.
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
     pub struct Eternity {
+        /// The index of the epoch within its eternity.
         pub epoch: super::Epoch,
+        /// The index of the block within its epoch.
         pub block: super::Block,
+        /// The index of the item within its block.
         pub item: super::Item,
     }
 

@@ -1,82 +1,4 @@
-use crate::{AuthPath, GetHash, Hash, Height};
-
-/// Either an item or just its hash, to be used when inserting into a tree.
-///
-/// When inserting, only items inserted with [`Insert::Keep`] are retained as witnessed leaves of
-/// the tree; those inserted with [`Insert::Hash`] are pruned.
-#[derive(Clone, Copy, Eq, Derivative)]
-#[derivative(Debug)]
-pub enum Insert<T> {
-    /// An item unto itself: when inserting, keep this witnessed in the tree.
-    Keep(T),
-    /// The hash of an item: when inserting, don't keep this witnessed in the tree.
-    #[derivative(Debug = "transparent")]
-    Hash(Hash),
-}
-
-impl<T> Insert<T> {
-    /// Transform a `&Insert<T>` into a `Insert<&T>`.
-    pub fn as_ref(&self) -> Insert<&T> {
-        match self {
-            Insert::Keep(item) => Insert::Keep(item),
-            Insert::Hash(hash) => Insert::Hash(*hash),
-        }
-    }
-
-    /// Test if this [`Insert`] is a [`Insert::Keep`].
-    pub fn is_keep(&self) -> bool {
-        matches!(self, Insert::Keep(_))
-    }
-
-    /// Test if this [`Insert`] is a [`Insert::Hash`].
-    pub fn is_hash(&self) -> bool {
-        matches!(self, Insert::Hash(_))
-    }
-
-    /// Map a function over the [`Insert::Keep`] part of an `Insert<T>`.
-    pub fn map<U, F: FnOnce(T) -> U>(self, f: F) -> Insert<U> {
-        match self {
-            Insert::Keep(item) => Insert::Keep(f(item)),
-            Insert::Hash(hash) => Insert::Hash(hash),
-        }
-    }
-
-    /// Get the kept `T` out of this [`Insert<T>`] or return `None`.
-    pub fn keep(self) -> Option<T> {
-        match self {
-            Insert::Keep(item) => Some(item),
-            Insert::Hash(_) => None,
-        }
-    }
-}
-
-impl<T: PartialEq<S>, S> PartialEq<Insert<S>> for Insert<T> {
-    fn eq(&self, other: &Insert<S>) -> bool {
-        match (self, other) {
-            (Insert::Keep(item), Insert::Keep(other)) => item == other,
-            (Insert::Hash(hash), Insert::Hash(other)) => hash == other,
-            _ => false,
-        }
-    }
-}
-
-impl<T: GetHash> GetHash for Insert<T> {
-    #[inline]
-    fn hash(&self) -> Hash {
-        match self {
-            Insert::Keep(item) => item.hash(),
-            Insert::Hash(hash) => *hash,
-        }
-    }
-
-    #[inline]
-    fn cached_hash(&self) -> Option<Hash> {
-        match self {
-            Insert::Keep(item) => item.cached_hash(),
-            Insert::Hash(hash) => Some(*hash),
-        }
-    }
-}
+use crate::{AuthPath, GetHash, Height, Insert};
 
 /// An active tree supporting the insertion of new elements and the updating of the
 /// most-recently-inserted element.
@@ -138,6 +60,7 @@ pub trait Witness: Height + Sized {
     fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Self::Item)>;
 }
 
+/// Forget about the authentication path to a given index.
 pub trait Forget: Height {
     /// Remove the witness for the given index.
     ///
@@ -145,6 +68,8 @@ pub trait Forget: Height {
     fn forget(&mut self, index: impl Into<u64>) -> bool;
 }
 
+/// Forget about the authentication path to a given index, when forgetting can turn the entirety of
+/// `Self` into a hash.
 pub trait ForgetOwned: Height + Sized {
     /// Remove the witness for the given index and summarize the item as a single `Hash` if it now
     /// contains no more witnesses.
@@ -152,5 +77,5 @@ pub trait ForgetOwned: Height + Sized {
     /// Returns either `(Self, boool)` where the boolean is `true` if the witness was removed or
     /// `false` if the witness was not present, or `Hash` if the witness was removed and it was the
     /// last witness remaining in this tree.
-    fn forget_owned(self, index: u64) -> (Insert<Self>, bool);
+    fn forget_owned(self, index: impl Into<u64>) -> (Insert<Self>, bool);
 }

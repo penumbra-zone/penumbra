@@ -3,16 +3,21 @@
 use poseidon377::Fq;
 
 use crate::{
-    internal::height::Zero, AuthPath, Complete, Focus, GetHash, Hash, Height, Insert, Witness,
+    internal::height::Zero, AuthPath, Focus, Forget, GetHash, Hash, Height, Insert, Witness,
 };
 
 /// Both a hash and the item hashed, used internally when inserting into a tree.
 #[derive(Debug, Clone, Copy, Derivative)]
 #[derivative(PartialEq, Eq)]
 pub struct Item {
-    #[derivative(PartialEq = "ignore")]
+    keep: bool,
     hash: Hash,
-    item: Fq,
+}
+
+impl PartialEq<Hash> for Item {
+    fn eq(&self, hash: &Hash) -> bool {
+        self.hash == *hash
+    }
 }
 
 impl Item {
@@ -20,7 +25,7 @@ impl Item {
     pub fn new(item: Fq) -> Self {
         Self {
             hash: Hash::of(item),
-            item,
+            keep: true,
         }
     }
 }
@@ -31,21 +36,9 @@ impl From<Fq> for Item {
     }
 }
 
-impl From<Item> for Fq {
-    fn from(item: Item) -> Self {
-        item.item
-    }
-}
-
 impl From<Item> for Hash {
     fn from(item: Item) -> Self {
         item.hash
-    }
-}
-
-impl AsRef<Fq> for Item {
-    fn as_ref(&self) -> &Fq {
-        &self.item
     }
 }
 
@@ -66,24 +59,35 @@ impl Height for Item {
 }
 
 impl Focus for Item {
-    type Complete = Self;
+    type Complete = Hash;
 
     #[inline]
     fn finalize(self) -> Insert<Self::Complete> {
-        Insert::Keep(self)
+        if self.keep {
+            Insert::Keep(self.hash)
+        } else {
+            Insert::Hash(self.hash)
+        }
     }
 }
 
-impl Complete for Item {
-    type Focus = Self;
-}
-
 impl Witness for Item {
-    type Item = Fq;
+    type Item = Hash;
 
     fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Self::Item)> {
         self.hash
             .witness(index)
-            .map(|(auth_path, _)| (auth_path, self.item))
+            .map(|(auth_path, _)| (auth_path, self.hash))
+    }
+}
+
+impl Forget for Item {
+    fn forget(&mut self, index: impl Into<u64>) -> bool {
+        if index.into() == 0 {
+            self.keep = false;
+            true
+        } else {
+            false
+        }
     }
 }

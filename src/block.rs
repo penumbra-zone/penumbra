@@ -106,10 +106,12 @@ impl Block {
         .into();
 
         let (auth_path, leaf) = self.inner.witness(index)?;
+        debug_assert_eq!(leaf, Hash::of(item));
+
         Some(Proof {
             index,
             auth_path,
-            leaf,
+            leaf: item,
         })
     }
 }
@@ -165,22 +167,17 @@ impl BlockMut<'_> {
                 }
             }
 
-            let this_item = *self
-                .item_index
-                .get(&item)
-                .expect("if block index contains item, then item index must contain item");
-
             // Calculate the index for the item
-            let index = index::within::Block { item: this_item };
+            let index = index::within::Block { item: *this_item };
 
             // Forget the item from the inner tree
-            let forgotten = self.inner.forget(index);
+            let forgotten = self.block.inner.forget(index);
 
             // The index should never contain things that aren't witnessed
             debug_assert!(forgotten, "indexed item must be witnessed in tree");
 
             // Remove the item from all indices
-            self.item_index.remove(&item);
+            self.block.item_index.remove(&item);
             if let Some((_, block_index, epoch_index)) = &mut self.super_index {
                 block_index.remove(&item);
                 if let Some((_, epoch_index)) = epoch_index {

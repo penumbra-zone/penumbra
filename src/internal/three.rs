@@ -49,6 +49,17 @@ impl<T> Three<T> {
         }
     }
 
+    /// Get an enumeration of the elements of this [`Three`] by mutable reference.
+    pub fn elems_mut(&mut self) -> ElemsMut<T> {
+        match self.elems.as_mut_slice() {
+            [] => ElemsMut::_0([]),
+            [a] => ElemsMut::_1([a]),
+            [a, b] => ElemsMut::_2([a, b]),
+            [a, b, c] => ElemsMut::_3([a, b, c]),
+            _ => unreachable!("impossible for `Three` to contain more than 3 elements"),
+        }
+    }
+
     /// Convert this [`Three`] into an enumeration of its elements.
     pub fn into_elems(self) -> IntoElems<T> {
         match self.elems.len() {
@@ -89,6 +100,18 @@ pub enum Elems<'a, T> {
     _2([&'a T; 2]),
     /// Three elements.
     _3([&'a T; 3]),
+}
+
+/// All the possible cases of the elements in a [`Three`], by mutable reference.
+pub enum ElemsMut<'a, T> {
+    /// Zero elements.
+    _0([&'a mut T; 0]),
+    /// One element.
+    _1([&'a mut T; 1]),
+    /// Two elements.
+    _2([&'a mut T; 2]),
+    /// Three elements.
+    _3([&'a mut T; 3]),
 }
 
 /// All the possible cases of the elements in a [`Three`], by value.
