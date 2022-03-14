@@ -10,9 +10,9 @@ pub use epoch::{Block, BlockMut, Epoch, EpochMut};
 /// [`Block`]s, each witnessing up to 65,536 [`Fq`]s or their [`struct@Hash`]es.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Eternity {
-    epoch_index: HashedMap<Fq, u16>,
-    block_index: HashedMap<Fq, u16>,
-    item_index: HashedMap<Fq, u16>,
+    epoch_index: HashedMap<Fq, index::Epoch>,
+    block_index: HashedMap<Fq, index::Block>,
+    item_index: HashedMap<Fq, index::Item>,
     inner: Tier<Tier<Tier<Item>>>,
 }
 
@@ -35,7 +35,7 @@ impl Eternity {
         // TODO: deal with duplicates
 
         // If we successfully insert this epoch, here's what its index in the epoch will be:
-        let epoch_index = self.inner.len();
+        let epoch_index = self.inner.len().into();
 
         // Decompose the epoch into its components
         let (epoch, block_index, item_index) = match epoch {
@@ -116,22 +116,20 @@ impl Eternity {
     /// If the index is not witnessed in this eternity, return `None`.
     pub fn witness(&self, item: Fq) -> Option<Proof<Eternity>> {
         // Calculate the index for this item
-        let epoch_in_eternity = *self.epoch_index.get(&item)?;
-        let block_in_epoch = *self
+        let epoch = *self.epoch_index.get(&item)?;
+        let block = *self
             .block_index
             .get(&item)
             .expect("if item is present in the epoch index, it must be present in the block index");
-        let item_in_block = *self
+        let item = *self
             .item_index
             .get(&item)
             .expect("if item is present in block index, it must be present in item index");
-        let index = ((epoch_in_eternity as u64) << 32)
-            | ((block_in_epoch as u64) << 16)
-            | item_in_block as u64;
+        let index = index::within::Eternity { epoch, block, item };
 
         let (auth_path, leaf) = self.inner.witness(index)?;
         Some(Proof {
-            index,
+            index: index.into(),
             auth_path,
             leaf,
         })

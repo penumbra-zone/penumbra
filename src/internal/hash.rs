@@ -158,8 +158,8 @@ impl Complete for Hash {
 impl Witness for Hash {
     type Item = Hash;
 
-    fn witness(&self, index: u64) -> Option<(AuthPath<Self>, Hash)> {
-        if index == 0 {
+    fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Hash)> {
+        if index.into() == 0 {
             Some((path::Leaf, *self))
         } else {
             None

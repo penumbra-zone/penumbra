@@ -42,7 +42,7 @@ impl<Item: Complete> Complete for Tier<Item> {
 impl<Item: GetHash + Witness> Witness for Tier<Item> {
     type Item = Item::Item;
 
-    fn witness(&self, index: u64) -> Option<(AuthPath<Self>, Self::Item)> {
+    fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Self::Item)> {
         self.inner.witness(index)
     }
 }

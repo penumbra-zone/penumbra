@@ -135,14 +135,14 @@ pub trait Witness: Height + Sized {
     ///
     /// The input mutable slice should be at least the height of the tree, and is overwritten by
     /// this function.
-    fn witness(&self, index: u64) -> Option<(AuthPath<Self>, Self::Item)>;
+    fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Self::Item)>;
 }
 
 pub trait Forget: Height {
     /// Remove the witness for the given index.
     ///
     /// Returns `true` if the witness was previously present in the tree.
-    fn forget(&mut self, index: u64) -> bool;
+    fn forget(&mut self, index: impl Into<u64>) -> bool;
 }
 
 pub trait ForgetOwned: Height + Sized {

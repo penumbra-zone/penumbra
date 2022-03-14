@@ -14,8 +14,8 @@ pub use block::{Block, BlockMut};
 /// This is one [`Epoch`] in an [`Eternity`].
 #[derive(Derivative, Debug, Clone, PartialEq, Eq, Default)]
 pub struct Epoch {
-    pub(super) block_index: HashedMap<Fq, u16>,
-    pub(super) item_index: HashedMap<Fq, u16>,
+    pub(super) block_index: HashedMap<Fq, index::Block>,
+    pub(super) item_index: HashedMap<Fq, index::Item>,
     pub(super) inner: Tier<Tier<Item>>,
 }
 
@@ -23,7 +23,7 @@ pub struct Epoch {
 ///
 /// This supports all the methods of [`Epoch`] that take `&mut self` or `&self`.
 pub struct EpochMut<'a> {
-    pub(super) super_index: Option<(u16, &'a mut HashedMap<Fq, u16>)>,
+    pub(super) super_index: Option<(index::Epoch, &'a mut HashedMap<Fq, index::Epoch>)>,
     epoch: &'a mut Epoch,
 }
 
@@ -111,11 +111,15 @@ impl Epoch {
             .item_index
             .get(&item)
             .expect("if item is present in block index, it must be present in item index");
-        let index = ((block_in_epoch as u64) << 16) | item_in_block as u64;
+
+        let index = index::within::Epoch {
+            item: item_in_block,
+            block: block_in_epoch,
+        };
 
         let (auth_path, leaf) = self.inner.witness(index)?;
         Some(Proof {
-            index,
+            index: index.into(),
             auth_path,
             leaf,
         })
@@ -129,7 +133,7 @@ impl EpochMut<'_> {
         // TODO: deal with duplicates
 
         // If we successfully insert this block, here's what its index in the epoch will be:
-        let this_block = self.inner.len();
+        let this_block = self.inner.len().into();
 
         // Decompose the block into its components
         let (block, item_index) = match block {
@@ -179,7 +183,10 @@ impl EpochMut<'_> {
                 .expect("if block index contains item, then item index must contain item");
 
             // Calculate the index for the item
-            let index = ((*this_block as u64) << 16) | (this_item as u64);
+            let index = index::within::Epoch {
+                item: this_item,
+                block: *this_block,
+            };
 
             let forgotten = self.inner.forget(index);
 

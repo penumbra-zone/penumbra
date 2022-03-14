@@ -249,7 +249,7 @@ where
 {
     type Item = Item::Item;
 
-    fn witness(&self, index: u64) -> Option<(AuthPath<Self>, Self::Item)> {
+    fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Self::Item)> {
         match &self.inner {
             Inner::Active(active) => active
                 .as_ref()

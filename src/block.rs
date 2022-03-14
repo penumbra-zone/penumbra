@@ -9,7 +9,7 @@ use crate::*;
 /// This is one [`Block`] in an [`Epoch`], which is one [`Epoch`] in an [`Eternity`].
 #[derive(Derivative, Debug, Clone, PartialEq, Eq, Default)]
 pub struct Block {
-    pub(super) item_index: HashedMap<Fq, u16>,
+    pub(super) item_index: HashedMap<Fq, index::Item>,
     pub(super) inner: Tier<Item>,
 }
 
@@ -20,9 +20,9 @@ pub struct Block {
 pub struct BlockMut<'a> {
     #[allow(clippy::type_complexity)]
     pub(super) super_index: Option<(
-        u16,
-        &'a mut HashedMap<Fq, u16>,
-        Option<(u16, &'a mut HashedMap<Fq, u16>)>,
+        index::Block,
+        &'a mut HashedMap<Fq, index::Block>,
+        Option<(index::Epoch, &'a mut HashedMap<Fq, index::Epoch>)>,
     )>,
     block: &'a mut Block,
 }
@@ -99,7 +99,11 @@ impl Block {
     ///
     /// If the index is not witnessed in this block, return `None`.
     pub fn witness(&self, item: Fq) -> Option<Proof<Block>> {
-        let index = *self.item_index.get(&item)? as u64;
+        let index = index::within::Block {
+            item: *self.item_index.get(&item)?,
+        }
+        .into();
+
         let (auth_path, leaf) = self.inner.witness(index)?;
         Some(Proof {
             index,
@@ -115,7 +119,7 @@ impl BlockMut<'_> {
         // TODO: deal with duplicates
 
         // If we successfully insert this item, here's what its index in the block will be:
-        let this_item = self.len();
+        let this_item = self.len().into();
 
         // Try to insert the item into the inner tree, and if successful, track the index
         if self.block.inner.insert(item.map(Item::new)).is_err() {

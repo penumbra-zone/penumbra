@@ -227,9 +227,11 @@ where
 {
     type Item = Child::Item;
 
-    fn witness(&self, index: u64) -> Option<(AuthPath<Self>, Self::Item)> {
+    fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Self::Item)> {
         use Elems::*;
         use WhichWay::*;
+
+        let index = index.into();
 
         // Which direction should we go from this node?
         let which_way = WhichWay::at(Self::Height::HEIGHT, index);

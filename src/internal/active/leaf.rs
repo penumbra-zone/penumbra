@@ -93,7 +93,7 @@ impl<Item: Focus> Focus for Leaf<Item> {
 impl<Item: Witness> Witness for Leaf<Item> {
     type Item = Item::Item;
 
-    fn witness(&self, index: u64) -> Option<(AuthPath<Self>, Self::Item)> {
+    fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Self::Item)> {
         self.item.as_ref().keep()?.witness(index)
     }
 }

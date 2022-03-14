@@ -25,6 +25,7 @@ use internal::{
     complete::Complete,
     hash::GetHash,
     height::Height,
+    index,
     item::Item,
     Witness,
 };
