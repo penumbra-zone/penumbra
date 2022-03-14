@@ -68,7 +68,8 @@ impl Block {
 
     /// Forget the witness of the given item, if it was witnessed.
     ///
-    /// Returns `true` if the item was previously witnessed, and `false` if it was not witnessed.
+    /// Returns `true` if the item was previously witnessed (and now is forgotten), and `false` if
+    /// it was not witnessed.
     pub fn forget(&mut self, item: Fq) -> bool {
         self.as_mut().forget(item)
     }
@@ -141,7 +142,56 @@ impl BlockMut<'_> {
     }
 
     /// Forget the witness of the given item, if it was witnessed: see [`Block::forget`].
-    pub fn forget(&mut self, _item: Fq) -> bool {
-        todo!()
+    pub fn forget(&mut self, item: Fq) -> bool {
+        if let Some(this_item) = self.item_index.get(&item) {
+            // If this `EpochMut` refers to a containing `Eternity`, it could be that the item
+            // doesn't belong to this epoch, but rather another one: check this before proceeding
+            if let Some((this_block, block_index, epoch_index)) = &self.super_index {
+                let correct_block = this_block
+                    == block_index
+                        .get(&item)
+                        .expect("if block index contains item, then epoch index must contain item");
+                if !correct_block {
+                    return false;
+                }
+                if let Some((this_epoch, epoch_index)) = epoch_index {
+                    let correct_epoch = this_epoch
+                        == epoch_index.get(&item).expect(
+                            "if block index contains item, then epoch index must contain item",
+                        );
+                    if !correct_epoch {
+                        return false;
+                    }
+                }
+            }
+
+            let this_item = *self
+                .item_index
+                .get(&item)
+                .expect("if block index contains item, then item index must contain item");
+
+            // Calculate the index for the item
+            let index = index::within::Block { item: this_item };
+
+            // Forget the item from the inner tree
+            let forgotten = self.inner.forget(index);
+
+            // The index should never contain things that aren't witnessed
+            debug_assert!(forgotten, "indexed item must be witnessed in tree");
+
+            // Remove the item from all indices
+            self.item_index.remove(&item);
+            if let Some((_, block_index, epoch_index)) = &mut self.super_index {
+                block_index.remove(&item);
+                if let Some((_, epoch_index)) = epoch_index {
+                    epoch_index.remove(&item);
+                }
+            }
+
+            // The item was indeed previously present, now forgotten
+            true
+        } else {
+            false
+        }
     }
 }

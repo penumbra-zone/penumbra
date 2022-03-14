@@ -66,6 +66,14 @@ impl Epoch {
         self.as_mut().insert(block)
     }
 
+    /// Forget about the witness for the given [`Fq`].
+    ///
+    /// Returns `true` if the item was previously witnessed (and now is forgotten), and `false` if it
+    /// was not witnessed.
+    pub fn forget(&mut self, item: Fq) -> bool {
+        self.as_mut().forget(item)
+    }
+
     /// The total number of [`Fq`]s or [`struct@Hash`]es represented in this [`Epoch`].
     ///
     /// This count includes those which were elided due to a partially filled [`Block`] or summary
@@ -188,6 +196,7 @@ impl EpochMut<'_> {
                 block: *this_block,
             };
 
+            // Forget the item from the inner tree
             let forgotten = self.inner.forget(index);
 
             // The index should never contain things that aren't witnessed

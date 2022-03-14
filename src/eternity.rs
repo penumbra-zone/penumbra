@@ -134,4 +134,45 @@ impl Eternity {
             leaf,
         })
     }
+
+    /// Forget about the witness for the given [`Fq`].
+    ///
+    /// Returns `true` if the item was previously witnessed (and now is forgotten), and `false` if
+    /// it was not witnessed.
+    pub fn forget(&mut self, item: Fq) -> bool {
+        if let Some(this_item) = self.item_index.get(&item) {
+            let this_block = *self
+                .block_index
+                .get(&item)
+                .expect("if item index contains item, then block index must contain item");
+
+            let this_epoch = *self
+                .epoch_index
+                .get(&item)
+                .expect("if item index contains item, then epoch index must contain item");
+
+            // Calculate the index for the item
+            let index = index::within::Eternity {
+                item: *this_item,
+                block: this_block,
+                epoch: this_epoch,
+            };
+
+            // Forget the item from the inner tree
+            let forgotten = self.inner.forget(index);
+
+            // The index should never contain things that aren't witnessed
+            debug_assert!(forgotten, "indexed item must be witnessed in tree");
+
+            // Remove the item from all indices
+            self.item_index.remove(&item);
+            self.block_index.remove(&item);
+            self.epoch_index.remove(&item);
+
+            // The item was indeed previously present, now forgotten
+            true
+        } else {
+            false
+        }
+    }
 }
