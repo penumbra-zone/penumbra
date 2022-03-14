@@ -10,11 +10,6 @@ use ark_ff::{fields::PrimeField, BigInteger256, Fp256, ToBytes};
 use once_cell::sync::Lazy;
 use poseidon377::Fq;
 
-use crate::{
-    internal::{height::Zero, path},
-    AuthPath, Complete, ForgetOwned, Height, Insert, Item, Witness,
-};
-
 mod option_hash;
 pub use option_hash::OptionHash;
 
@@ -78,12 +73,6 @@ impl Debug for Hash {
     }
 }
 
-impl<T: GetHash> From<&T> for Hash {
-    fn from(item: &T) -> Self {
-        item.hash()
-    }
-}
-
 /// The domain separator used for leaves in the tree, and used as a base index for the domain
 /// separators of nodes in the tree (nodes get a domain separator of the form `DOMAIN_SEPARATOR +
 /// HEIGHT`).
@@ -123,47 +112,5 @@ impl Hash {
             &(*DOMAIN_SEPARATOR + height),
             (a, b, c, d),
         ))
-    }
-}
-
-impl GetHash for Hash {
-    #[inline]
-    fn hash(&self) -> Hash {
-        *self
-    }
-
-    #[inline]
-    fn cached_hash(&self) -> Option<Hash> {
-        Some(*self)
-    }
-}
-
-impl Height for Hash {
-    type Height = Zero;
-}
-
-impl Complete for Hash {
-    type Focus = Item;
-}
-
-impl Witness for Hash {
-    type Item = Hash;
-
-    fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Hash)> {
-        if index.into() == 0 {
-            Some((path::Leaf, *self))
-        } else {
-            None
-        }
-    }
-}
-
-impl ForgetOwned for Hash {
-    fn forget_owned(self, index: impl Into<u64>) -> (Insert<Self>, bool) {
-        if index.into() == 0 {
-            (Insert::Hash(self), true)
-        } else {
-            (Insert::Keep(self), false)
-        }
     }
 }

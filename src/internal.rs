@@ -41,9 +41,11 @@ pub mod complete {
     //! of which contains [`Leaf`]s.
     use super::interface;
     pub use interface::{Complete, ForgetOwned};
+    pub(super) mod item;
     pub(super) mod leaf;
     pub(super) mod node;
     pub(super) mod tier;
+    pub use item::Item;
     pub use leaf::Leaf;
     pub use node::children;
     pub use node::Node;

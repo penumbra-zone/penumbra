@@ -1,7 +1,8 @@
 use poseidon377::Fq;
 
 use crate::{
-    internal::height::Zero, AuthPath, Focus, Forget, GetHash, Hash, Height, Insert, Witness,
+    internal::{complete, height::Zero, path},
+    AuthPath, Focus, Forget, GetHash, Hash, Height, Insert, Witness,
 };
 
 /// The hash of the most-recently-inserted item, stored at the tip of the active path.
@@ -12,9 +13,9 @@ pub struct Item {
     hash: Hash,
 }
 
-impl PartialEq<Hash> for Item {
-    fn eq(&self, hash: &Hash) -> bool {
-        self.hash == *hash
+impl PartialEq<complete::Item> for Item {
+    fn eq(&self, other: &complete::Item) -> bool {
+        self.hash == other.hash()
     }
 }
 
@@ -57,12 +58,12 @@ impl Height for Item {
 }
 
 impl Focus for Item {
-    type Complete = Hash;
+    type Complete = complete::Item;
 
     #[inline]
     fn finalize(self) -> Insert<Self::Complete> {
         if self.keep {
-            Insert::Keep(self.hash)
+            Insert::Keep(complete::Item::new(self.hash))
         } else {
             Insert::Hash(self.hash)
         }
@@ -73,9 +74,11 @@ impl Witness for Item {
     type Item = Hash;
 
     fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Self::Item)> {
-        self.hash
-            .witness(index)
-            .map(|(auth_path, _)| (auth_path, self.hash))
+        if self.keep && index.into() == 0 {
+            Some((path::Leaf, self.hash))
+        } else {
+            None
+        }
     }
 }
 
