@@ -19,7 +19,6 @@ pub struct ClueKey(pub [u8; 32]);
 
 /// An expanded and validated clue key that can be used to create [`Clue`]s
 /// intended for the corresponding [`DetectionKey`](crate::DetectionKey).
-#[allow(non_snake_case)]
 pub struct ExpandedClueKey {
     root_pub: decaf377::Element,
     root_pub_enc: decaf377::Encoding,
@@ -32,7 +31,6 @@ impl ClueKey {
     /// # Errors
     ///
     /// Fails if the bytes don't encode a valid clue key.
-    #[allow(non_snake_case)]
     pub fn expand(&self) -> Result<ExpandedClueKey, Error> {
         ExpandedClueKey::new(&self)
     }
@@ -58,7 +56,7 @@ impl ExpandedClueKey {
             return Err(Error::PrecisionTooLarge(precision));
         }
 
-        let current_precision = self.subkeys.try_borrow()?.len();
+        let current_precision = self.subkeys.borrow().len();
 
         // The cached expansion is large enough to accomodate the specified precision.
         if precision <= current_precision {
@@ -70,7 +68,7 @@ impl ExpandedClueKey {
             .map(|i| hkd::derive_public(&self.root_pub, &self.root_pub_enc, i as u8))
             .collect::<Vec<_>>();
 
-        self.subkeys.try_borrow_mut()?.append(&mut expanded_keys);
+        self.subkeys.borrow_mut().append(&mut expanded_keys);
 
         return Ok(());
     }
@@ -84,7 +82,6 @@ impl ExpandedClueKey {
     /// # Errors
     ///
     /// `precision_bits` must be smaller than [`MAX_PRECISION`].
-    /// `precision_bits` must be smaller or equal to the `ExpandedClueKey` precision.
     #[allow(non_snake_case)]
     pub fn create_clue<R: RngCore + CryptoRng>(
         &self,
@@ -107,7 +104,7 @@ impl ExpandedClueKey {
         let Q_encoding = Q.compress();
 
         let mut ctxts = BitArray::<order::Lsb0, [u8; 3]>::zeroed();
-        let Xs = self.subkeys.try_borrow()?;
+        let Xs = self.subkeys.borrow();
 
         for i in 0..precision_bits {
             let rXi = (r * Xs[i]).compress();

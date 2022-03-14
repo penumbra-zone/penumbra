@@ -32,9 +32,8 @@ fn detection_distribution_matches_expectation() {
 }
 
 #[test]
-#[ignore] // TODO: test vector with invalid encoding
 fn fails_to_expand_clue_key() {
-    let clue_key = ClueKey([0; 32]);
+    let clue_key = ClueKey([1; 32]);
 
     clue_key
         .expand()
