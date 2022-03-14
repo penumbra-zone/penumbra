@@ -5,7 +5,6 @@
 pub mod hash;
 pub mod height;
 pub mod index;
-pub mod item;
 pub mod path;
 pub mod proof;
 pub mod three;
@@ -22,10 +21,12 @@ pub mod active {
     //! contains a [`Leaf`].
     use super::interface;
     pub use interface::{Active, Focus, Forget, Full};
+    pub(super) mod item;
     pub(super) mod leaf;
     pub(super) mod node;
     pub(super) mod tier;
     pub use super::insert::Insert;
+    pub use item::Item;
     pub use leaf::Leaf;
     pub use node::Node;
     pub use tier::{Nested, Tier};

@@ -1,12 +1,10 @@
-//! Items at the leaves of a tree, paired with a lazily-computed hash.
-
 use poseidon377::Fq;
 
 use crate::{
     internal::height::Zero, AuthPath, Focus, Forget, GetHash, Hash, Height, Insert, Witness,
 };
 
-/// Both a hash and the item hashed, used internally when inserting into a tree.
+/// The hash of the most-recently-inserted item, stored at the tip of the active path.
 #[derive(Debug, Clone, Copy, Derivative)]
 #[derivative(PartialEq, Eq)]
 pub struct Item {

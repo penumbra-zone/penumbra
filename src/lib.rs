@@ -21,13 +21,11 @@ pub use internal::{
 
 #[allow(unused_imports)]
 use internal::{
-    active::{Active, Focus, Forget, Full, Tier},
+    active::{Active, Focus, Forget, Full, Item, Tier},
     complete::{Complete, ForgetOwned},
     hash::GetHash,
     height::Height,
-    index,
-    item::Item,
-    Witness,
+    index, Witness,
 };
 
 pub use ark_ff::fields::PrimeField;
@@ -38,7 +36,7 @@ pub use ark_ff::fields::PrimeField;
 pub use poseidon377::Fq;
 
 mod eternity;
-pub use eternity::{Block, BlockMut, Epoch, EpochMut, Eternity};
+pub use eternity::{Block, Epoch, Eternity};
 
 #[cfg(test)]
 mod test {
