@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::{Context, Error};
 use penumbra_crypto::{note, Nullifier};
+use penumbra_proto::{stake::Validator as ProtoValidator, Message};
 use penumbra_stake::{Delegate, Undelegate, ValidatorDefinition};
 use penumbra_transaction::{Action, Transaction};
 
@@ -110,11 +111,13 @@ impl StatelessTransactionExt for Transaction {
 
                     // Validate that the transaction signature is valid and signed by the
                     // validator's identity key.
+                    let protobuf_serialized: ProtoValidator = validator.validator.clone().into();
+                    let v_bytes = protobuf_serialized.encode_to_vec();
                     validator
                         .validator
                         .identity_key
                         .0
-                        .verify(&sighash, &validator.auth_sig)
+                        .verify(&v_bytes, &validator.auth_sig)
                         .context("validator definition signature failed to verify")?;
 
                     // Validate that the definition's funding streams do not exceed 100% (10000bps)

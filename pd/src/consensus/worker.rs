@@ -3,7 +3,7 @@ use std::borrow::Borrow;
 use anyhow::{anyhow, Result};
 use futures::StreamExt;
 use metrics::absolute_counter;
-use penumbra_crypto::merkle::{NoteCommitmentTree, TreeExt};
+use penumbra_crypto::merkle::NoteCommitmentTree;
 use penumbra_proto::Protobuf;
 use penumbra_stake::Epoch;
 use penumbra_transaction::Transaction;
