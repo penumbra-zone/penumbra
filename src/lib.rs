@@ -31,8 +31,7 @@ pub use poseidon377::Fq as Commitment;
 
 mod eternity;
 pub use eternity::{
-    block, epoch, Block, Epoch, Eternity, InsertBlockError, InsertError, Proof, Root,
-    VerifiedProof, VerifyError,
+    block, epoch, error, Block, Epoch, Eternity, Proof, Root, VerifiedProof, VerifyError,
 };
 
 /// When inserting an item into an [`Eternity`], [`Epoch`], or [`Block`], should we [`Keep`] it to

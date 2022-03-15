@@ -1,7 +1,6 @@
 //! [`Epoch`]s within [`Eternity`]s, and their [`Root`]s and [`Proof`]s of inclusion.
 
 use hash_hasher::HashedMap;
-use thiserror::Error;
 
 use crate::internal::{active::Forget as _, path::Witness as _};
 use crate::*;
@@ -14,6 +13,10 @@ use block::BlockMut;
 #[path = "epoch/proof.rs"]
 mod proof;
 pub use proof::{Proof, VerifiedProof, VerifyError};
+
+#[path = "epoch/error.rs"]
+pub mod error;
+pub use error::{InsertBlockError, InsertBlockRootError, InsertError};
 
 /// A sparse commitment tree to witness up to 65,536 [`Block`]s, each witnessing up to 65,536 [`Commitment`]s
 /// or their [`struct@Hash`]es.
@@ -56,35 +59,6 @@ pub(super) enum IndexMut<'a> {
 impl Height for Epoch {
     type Height = <Tier<Tier<Item>> as Height>::Height;
 }
-
-/// A [`Commitment`] could not be inserted into the [`Epoch`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
-pub enum InsertError {
-    /// The [`Epoch`] was full.
-    #[error("epoch is full")]
-    #[non_exhaustive]
-    Full,
-    /// The most recent [`Block`] in the [`Epoch`] was full.
-    #[error("most recent block in epoch is full")]
-    #[non_exhaustive]
-    BlockFull,
-    /// The most recent [`Block`] in the [`Epoch`] was forgotten.
-    #[error("most recent block in epoch was forgotten")]
-    #[non_exhaustive]
-    BlockForgotten,
-}
-
-/// The [`Epoch`] was full when attempting to insert a block.
-#[derive(Debug, Clone, PartialEq, Eq, Error)]
-#[error("epoch is full")]
-#[non_exhaustive]
-pub struct InsertBlockError(pub Block);
-
-/// The [`Epoch`] was full when attempting to insert a block root.
-#[derive(Debug, Clone, PartialEq, Eq, Error)]
-#[error("epoch is full")]
-#[non_exhaustive]
-pub struct InsertBlockRootError;
 
 impl Epoch {
     /// Create a new empty [`Epoch`].

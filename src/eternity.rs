@@ -1,5 +1,4 @@
 use hash_hasher::HashedMap;
-use thiserror::Error;
 
 use crate::internal::{active::Forget as _, path::Witness as _};
 use crate::*;
@@ -11,6 +10,11 @@ pub use epoch::{block, Block, Epoch};
 
 mod proof;
 pub use proof::{Proof, VerifiedProof, VerifyError};
+
+pub mod error;
+pub use error::{
+    InsertBlockError, InsertBlockRootError, InsertEpochError, InsertEpochRootError, InsertError,
+};
 
 /// A sparse commitment tree to witness up to 65,536 [`Epoch`]s, each witnessing up to 65,536
 /// [`Block`]s, each witnessing up to 65,536 [`Commitment`]s or their [`struct@Hash`]es.
@@ -27,65 +31,6 @@ pub struct Root(Hash);
 impl Height for Eternity {
     type Height = <Tier<Tier<Tier<Item>>> as Height>::Height;
 }
-
-/// An error occurred when trying to insert an item into an [`Eternity`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
-pub enum InsertError {
-    /// The [`Eternity`] was full.
-    #[error("eternity is full")]
-    #[non_exhaustive]
-    Full,
-    /// The most recent [`Epoch`] of the [`Eternity`] was full.
-    #[error("most recent epoch in eternity is full")]
-    EpochFull,
-    /// The most recent [`Epoch`] of the [`Eternity`] was forgotten.
-    #[error("most recent epoch in eternity was forgotten")]
-    EpochForgotten,
-    /// The most recent [`Block`] of the most recent [`Epoch`] of the [`Eternity`] was full.
-    #[error("most recent block in most recent epoch of eternity is full")]
-    BlockFull,
-    /// The most recent [`Block`] of the most recent [`Epoch`] of the [`Eternity`] was forgotten.
-    #[error("most recent block in most recent epoch of eternity was forgotten")]
-    BlockForgotten,
-}
-
-/// An error occurred when trying to insert a [`Block`] root into the [`Eternity`].
-#[derive(Debug, Clone, PartialEq, Eq, Error)]
-pub enum InsertBlockError {
-    /// The [`Eternity`] was full.
-    #[error("eternity is full")]
-    Full(Block),
-    /// The most recent [`Epoch`] of the [`Eternity`] was full.
-    #[error("most recent epoch is full")]
-    EpochFull(Block),
-    /// The most recent [`Epoch`] of the [`Eternity`] was forgotten.
-    #[error("most recent epoch was forgotten")]
-    EpochForgotten(Block),
-}
-
-/// An error occurred when trying to insert a [`Block`] root into the [`Eternity`].
-#[derive(Debug, Clone, PartialEq, Eq, Error)]
-pub enum InsertBlockRootError {
-    /// The [`Eternity`] was full.
-    #[error("eternity is full")]
-    Full,
-    /// The most recent [`Epoch`] of the [`Eternity`] was full.
-    #[error("most recent epoch is full")]
-    EpochFull,
-    /// The most recent [`Epoch`] of the [`Eternity`] was forgotten.
-    #[error("most recent epoch was forgotten")]
-    EpochForgotten,
-}
-
-/// The [`Eternity`] was full when trying to insert an [`Epoch`].
-#[derive(Debug, Clone, PartialEq, Eq, Error)]
-#[error("eternity is full")]
-pub struct InsertEpochError(pub Epoch);
-
-/// The [`Eternity`] was full when trying to insert an [`Epoch`] root.
-#[derive(Debug, Clone, PartialEq, Eq, Error)]
-#[error("eternity is full")]
-pub struct InsertEpochRootError;
 
 impl Eternity {
     /// Create a new empty [`Eternity`] for storing all commitments to the end of time.
