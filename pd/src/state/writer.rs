@@ -276,50 +276,8 @@ impl Writer {
             notes.push((commitment, positioned_note));
         }
 
-        // We might not have any allocations of some delegation tokens, but we should record the denoms.
-        for genesis::ValidatorPower { validator, .. } in genesis_config.validators.iter() {
-            let denom = validator.identity_key.delegation_token().denom();
-            supply_updates.entry(denom.id()).or_insert((denom, 0)).1 += 0;
-        }
-
-        // write the token supplies to the database
-        for (id, asset) in &supply_updates {
-            query!(
-                "INSERT INTO assets (asset_id, denom, total_supply)
-            VALUES ($1, $2, $3)
-            ON CONFLICT (asset_id) DO UPDATE SET denom=$2, total_supply=$3",
-                &id.to_bytes()[..],
-                asset.0.to_string(),
-                i64::try_from(asset.1)?
-            )
-            .execute(&mut *dbtx)
-            .await?;
-        }
-        for (commitment, positioned_note) in notes {
-            query!(
-                r#"
-                INSERT INTO notes (
-                    note_commitment,
-                    ephemeral_key,
-                    encrypted_note,
-                    transaction_id,
-                    position,
-                    height
-                ) VALUES ($1, $2, $3, $4, $5, $6)"#,
-                &<[u8; 32]>::from(commitment)[..],
-                &positioned_note.data.ephemeral_key.0[..],
-                &positioned_note.data.encrypted_note[..],
-                &positioned_note.data.transaction_id[..],
-                i64::try_from(positioned_note.position)?,
-                // height 0 for genesis
-                0 as i64,
-            )
-            .execute(&mut dbtx)
-            .await?;
-        }
-
-        // Now that we've added all of the genesis notes, compute the resulting NCT anchor
-        // and save it in the database and in the JMT.
+        // Now that we've added all of the genesis notes to the NCT, compute the
+        // resulting NCT anchor and save it in the database and in the JMT.
         let nct_anchor = note_commitment_tree.root2();
         let nct_bytes = bincode::serialize(&note_commitment_tree)?;
 
@@ -365,6 +323,48 @@ impl Writer {
         )
         .execute(&mut dbtx)
         .await?;
+
+        // We might not have any allocations of some delegation tokens, but we should record the denoms.
+        for genesis::ValidatorPower { validator, .. } in genesis_config.validators.iter() {
+            let denom = validator.identity_key.delegation_token().denom();
+            supply_updates.entry(denom.id()).or_insert((denom, 0)).1 += 0;
+        }
+
+        // write the token supplies to the database
+        for (id, asset) in &supply_updates {
+            query!(
+                "INSERT INTO assets (asset_id, denom, total_supply)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (asset_id) DO UPDATE SET denom=$2, total_supply=$3",
+                &id.to_bytes()[..],
+                asset.0.to_string(),
+                i64::try_from(asset.1)?
+            )
+            .execute(&mut *dbtx)
+            .await?;
+        }
+        for (commitment, positioned_note) in notes {
+            query!(
+                r#"
+                INSERT INTO notes (
+                    note_commitment,
+                    ephemeral_key,
+                    encrypted_note,
+                    transaction_id,
+                    position,
+                    height
+                ) VALUES ($1, $2, $3, $4, $5, $6)"#,
+                &<[u8; 32]>::from(commitment)[..],
+                &positioned_note.data.ephemeral_key.0[..],
+                &positioned_note.data.encrypted_note[..],
+                &positioned_note.data.transaction_id[..],
+                i64::try_from(positioned_note.position)?,
+                // height 0 for genesis
+                0 as i64,
+            )
+            .execute(&mut dbtx)
+            .await?;
+        }
 
         // Finally, commit the transaction and then update subscribers
         // We've initialized the database for the first time, so replace
