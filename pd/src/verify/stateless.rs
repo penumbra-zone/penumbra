@@ -110,7 +110,6 @@ impl StatelessTransactionExt for Transaction {
 
                     // Validate that the transaction signature is valid and signed by the
                     // validator's identity key.
-                    println!("2nd validation: {:#?}, {:#?}", sighash, validator.auth_sig);
                     validator
                         .validator
                         .identity_key

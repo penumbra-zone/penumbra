@@ -76,7 +76,6 @@ impl ValidatorCmd {
                     *source,
                 )?;
 
-                println!("Submitting...");
                 opt.submit_transaction(&transaction).await?;
                 // Only commit the state if the transaction was submitted
                 // successfully, so that we don't store pending notes that will

@@ -286,8 +286,6 @@ impl Builder {
         self.undelegations.shuffle(rng);
         self.validator_definitions.shuffle(rng);
 
-        println!("Shuffled... {:#?}", self.validator_definitions);
-
         // Fill in the spends using blank signatures, so we can build the sighash tx
         for (_, body) in &self.spends {
             actions.push(Action::Spend(Spend {
@@ -347,10 +345,8 @@ impl Builder {
                 }) = transaction_body.actions[j]
                 {
                     if *validator == *v {
-                        println!("Signing validator definition");
                         *auth_sig = rsk.sign(&mut rng, &sighash);
 
-                        println!("1st validation: {:#?}, {:#?}", sighash, auth_sig);
                         // Ensure the key matches the identity key within the `Validator` for a client-side safety check
                         validator.identity_key.0.verify(&sighash, auth_sig).expect(
                             "expected identity key within validator definition to match wallet",

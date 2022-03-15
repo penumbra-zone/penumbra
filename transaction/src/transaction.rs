@@ -12,9 +12,11 @@ use penumbra_proto::{
     transaction::{
         Fee as ProtoFee, Transaction as ProtoTransaction, TransactionBody as ProtoTransactionBody,
     },
-    Message, ProtoError, Protobuf,
+    Message, Protobuf,
 };
 use penumbra_stake::STAKING_TOKEN_ASSET_ID;
+
+use anyhow::Error;
 
 // TODO: remove & replace with anyhow
 use crate::Action;
@@ -138,22 +140,21 @@ impl From<TransactionBody> for ProtoTransactionBody {
 }
 
 impl TryFrom<ProtoTransactionBody> for TransactionBody {
-    type Error = ProtoError;
+    type Error = Error;
 
     fn try_from(proto: ProtoTransactionBody) -> anyhow::Result<Self, Self::Error> {
         let mut actions = Vec::<Action>::new();
         for action in proto.actions {
-            println!("{:?}", action);
             actions.push(
                 action
                     .try_into()
-                    .map_err(|_| ProtoError::TransactionBodyMalformed)?,
+                    .map_err(|_| anyhow::anyhow!("transaction body malformed"))?,
             );
         }
 
         let merkle_root = proto.anchor[..]
             .try_into()
-            .map_err(|_| ProtoError::TransactionBodyMalformed)?;
+            .map_err(|_| anyhow::anyhow!("transaction body malformed"))?;
 
         let expiry_height = proto.expiry_height;
 
@@ -161,7 +162,7 @@ impl TryFrom<ProtoTransactionBody> for TransactionBody {
 
         let fee: Fee = proto
             .fee
-            .ok_or(ProtoError::TransactionBodyMalformed)?
+            .ok_or(anyhow::anyhow!("transaction body malformed"))?
             .into();
 
         Ok(TransactionBody {
@@ -192,18 +193,18 @@ impl From<&Transaction> for ProtoTransaction {
 }
 
 impl TryFrom<ProtoTransaction> for Transaction {
-    type Error = ProtoError;
+    type Error = Error;
 
     fn try_from(proto: ProtoTransaction) -> anyhow::Result<Self, Self::Error> {
         let transaction_body = proto
             .body
-            .ok_or(ProtoError::TransactionMalformed)?
+            .ok_or(anyhow::anyhow!("transaction malformed"))?
             .try_into()
-            .map_err(|_| ProtoError::TransactionBodyMalformed)?;
+            .map_err(|_| anyhow::anyhow!("transaction body malformed"))?;
 
         let sig_bytes: [u8; 64] = proto.binding_sig[..]
             .try_into()
-            .map_err(|_| ProtoError::TransactionMalformed)?;
+            .map_err(|_| anyhow::anyhow!("transaction malformed"))?;
 
         Ok(Transaction {
             transaction_body,
@@ -213,19 +214,19 @@ impl TryFrom<ProtoTransaction> for Transaction {
 }
 
 impl TryFrom<&[u8]> for Transaction {
-    type Error = ProtoError;
+    type Error = Error;
 
     fn try_from(bytes: &[u8]) -> Result<Transaction, Self::Error> {
-        let protobuf_serialized_proof =
-            ProtoTransaction::decode(bytes).map_err(|_| ProtoError::TransactionMalformed)?;
+        let protobuf_serialized_proof = ProtoTransaction::decode(bytes)
+            .map_err(|_| anyhow::anyhow!("transaction malformed"))?;
         protobuf_serialized_proof
             .try_into()
-            .map_err(|_| ProtoError::TransactionMalformed)
+            .map_err(|_| anyhow::anyhow!("transaction malformed"))
     }
 }
 
 impl TryFrom<Vec<u8>> for Transaction {
-    type Error = ProtoError;
+    type Error = Error;
 
     fn try_from(bytes: Vec<u8>) -> Result<Transaction, Self::Error> {
         Self::try_from(&bytes[..])

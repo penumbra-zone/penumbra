@@ -23,9 +23,6 @@ pub mod serializers;
 mod protobuf;
 pub use protobuf::Protobuf;
 
-mod error;
-pub use error::ProtoError;
-
 /// Crypto structures.
 pub mod crypto {
     include!(concat!(env!("OUT_DIR"), "/penumbra.crypto.rs"));
