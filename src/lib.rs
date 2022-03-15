@@ -16,7 +16,7 @@ pub use internal::{
     active::Insert,
     hash::Hash,
     path::AuthPath,
-    proof::{Proof, ProveError, VerifiedProof, VerifyError},
+    proof::{Proof, VerifiedProof, VerifyError},
 };
 
 #[allow(unused_imports)]

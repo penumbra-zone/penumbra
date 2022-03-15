@@ -1,8 +1,8 @@
 //! Proofs of inclusion in the tree: how to create them, and how to verify them.
 
-// TODO: make errors implement Error
-
 use std::fmt::Debug;
+
+use thiserror::Error;
 
 use super::path::{self, AuthPath};
 use crate::{Fq, Hash, Height};
@@ -52,23 +52,15 @@ impl<Tree: Height> Proof<Tree> {
     }
 }
 
-/// A proof of inclusion could not be created for the given index and item in the tree.
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum ProveError {
-    /// The index provided is not witnessed in the tree.
-    IndexNotWitnessed,
-    /// The item provided does not match the hash witnessed in the tree at the index.
-    ItemHashMismatch,
-}
-
 /// A proof of inclusion did not verify against the provided root hash.
-#[derive(Derivative)]
+#[derive(Derivative, Error)]
 #[derivative(
     Debug(bound = "<Tree::Height as path::Path>::Path: Debug"),
     Clone(bound = "<Tree::Height as path::Path>::Path: Clone"),
     PartialEq(bound = "<Tree::Height as path::Path>::Path: PartialEq"),
     Eq(bound = "<Tree::Height as path::Path>::Path: Eq")
 )]
+#[error("invalid inclusion proof for root hash {root:?}")]
 pub struct VerifyError<Tree: Height> {
     proof: Proof<Tree>,
     root: Hash,
