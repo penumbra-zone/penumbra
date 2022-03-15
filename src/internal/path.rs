@@ -9,6 +9,8 @@ use crate::{
     Hash, Height,
 };
 
+pub use crate::internal::interface::Witness;
+
 /// An authentication path into a `Tree`.
 ///
 /// This is statically guaranteed to have the same length as the height of the tree.

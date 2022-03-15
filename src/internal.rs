@@ -11,7 +11,6 @@ pub mod three;
 
 mod insert;
 mod interface;
-pub use interface::Witness;
 
 pub mod active {
     //! [`Active`] things can be inserted into and updated, always representing the rightmost (most

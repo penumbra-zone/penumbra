@@ -25,8 +25,7 @@ use internal::{
     hash::GetHash,
     height::Height,
     index,
-    path::AuthPath,
-    Witness,
+    path::{AuthPath, Witness},
 };
 
 /// A commitment to be stored in the tree, as an element of the base field of the curve used by the
