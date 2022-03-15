@@ -282,38 +282,6 @@ impl Writer {
             supply_updates.entry(denom.id()).or_insert((denom, 0)).1 += 0;
         }
 
-        // update the NCT
-        let nct_anchor = note_commitment_tree.root2();
-        let (jmt_root, tree_update_batch) = jmt::JellyfishMerkleTree::new(&self.private_reader)
-            .put_value_set(
-                // TODO: create a JmtKey enum, where each variant has
-                // a different domain-separated hash
-                vec![(
-                    jellyfish::Key::NoteCommitmentAnchor.hash(),
-                    nct_anchor.clone(),
-                )],
-                // height 0 for genesis
-                0,
-            )
-            .await?;
-        // ... and then write the resulting batch update to the backing store:
-        jellyfish::DbTx(&mut dbtx)
-            .write_node_batch(&tree_update_batch.node_batch)
-            .await?;
-
-        // The app hash needs to be returned to Tendermint
-        let app_hash: [u8; 32] = jmt_root.to_vec().try_into().unwrap();
-
-        // Insert the block into the DB
-        query!(
-            "INSERT INTO blocks (height, nct_anchor, app_hash) VALUES ($1, $2, $3)",
-            0 as i64,
-            &nct_anchor.to_bytes()[..],
-            &app_hash[..]
-        )
-        .execute(&mut dbtx)
-        .await?;
-
         // write the token supplies to the database
         for (id, asset) in &supply_updates {
             query!(
@@ -350,14 +318,50 @@ impl Writer {
             .await?;
         }
 
+        // Now that we've added all of the genesis notes, compute the resulting NCT anchor
+        // and save it in the database and in the JMT.
         let nct_anchor = note_commitment_tree.root2();
         let nct_bytes = bincode::serialize(&note_commitment_tree)?;
+
+        // Save the NCT itself in the database ...
         query!(
             r#"
             INSERT INTO blobs (id, data) VALUES ('nct', $1)
             ON CONFLICT (id) DO UPDATE SET data = $1
             "#,
             &nct_bytes[..]
+        )
+        .execute(&mut dbtx)
+        .await?;
+
+        // ... and add its root to the public chain state ...
+        let (jmt_root, tree_update_batch) = jmt::JellyfishMerkleTree::new(&self.private_reader)
+            .put_value_set(
+                // TODO: create a JmtKey enum, where each variant has
+                // a different domain-separated hash
+                vec![(
+                    jellyfish::Key::NoteCommitmentAnchor.hash(),
+                    nct_anchor.clone(),
+                )],
+                // height 0 for genesis
+                0,
+            )
+            .await?;
+
+        // ... and then write the resulting batch update to the backing store:
+        jellyfish::DbTx(&mut dbtx)
+            .write_node_batch(&tree_update_batch.node_batch)
+            .await?;
+
+        // As the very last step, compute the JMT root and return it as the apphash.
+        let app_hash: [u8; 32] = jmt_root.to_vec().try_into().unwrap();
+
+        // Insert the block into the DB
+        query!(
+            "INSERT INTO blocks (height, nct_anchor, app_hash) VALUES ($1, $2, $3)",
+            0 as i64,
+            &nct_anchor.to_bytes()[..],
+            &app_hash[..]
         )
         .execute(&mut dbtx)
         .await?;
