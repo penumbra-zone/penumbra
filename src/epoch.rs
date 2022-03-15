@@ -234,7 +234,7 @@ impl EpochMut<'_> {
 
     /// Update the most recently inserted [`Block`] via methods on [`BlockMut`], and return the
     /// result of the function.
-    pub(super) fn update<T>(&mut self, f: impl FnOnce(&mut BlockMut<'_>) -> T) -> Option<T> {
+    pub(super) fn update<T>(&mut self, f: impl FnOnce(Option<&mut BlockMut<'_>>) -> T) -> T {
         let this_block = self.inner.len().saturating_sub(1).into();
 
         let index = match self.index {
@@ -249,13 +249,16 @@ impl EpochMut<'_> {
             },
         };
 
-        self.inner
-            .update(|ref mut inner| {
-                Some(f(&mut BlockMut {
-                    inner: inner.as_mut().keep()?,
-                    index,
-                }))
-            })
-            .flatten()
+        self.inner.update(|inner| {
+            if let Some(inner) = inner {
+                if let Insert::Keep(inner) = inner.as_mut() {
+                    f(Some(&mut BlockMut { inner, index }))
+                } else {
+                    f(None)
+                }
+            } else {
+                f(None)
+            }
+        })
     }
 }

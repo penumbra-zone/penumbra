@@ -156,7 +156,7 @@ impl Eternity {
 
     /// Update the most recently inserted [`Epoch`] via methods on [`EpochMut`], and return the
     /// result of the function.
-    pub(super) fn update<T>(&mut self, f: impl FnOnce(&mut EpochMut<'_>) -> T) -> Option<T> {
+    fn update<T>(&mut self, f: impl FnOnce(Option<&mut EpochMut<'_>>) -> T) -> T {
         let this_epoch = self.inner.len().saturating_sub(1).into();
 
         let index = epoch::IndexMut::Eternity {
@@ -164,13 +164,16 @@ impl Eternity {
             index: &mut self.index,
         };
 
-        self.inner
-            .update(|ref mut inner| {
-                Some(f(&mut EpochMut {
-                    inner: inner.as_mut().keep()?,
-                    index,
-                }))
-            })
-            .flatten()
+        self.inner.update(|inner| {
+            if let Some(inner) = inner {
+                if let Insert::Keep(inner) = inner.as_mut() {
+                    f(Some(&mut EpochMut { inner, index }))
+                } else {
+                    f(None)
+                }
+            } else {
+                f(None)
+            }
+        })
     }
 }

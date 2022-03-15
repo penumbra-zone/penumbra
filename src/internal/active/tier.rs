@@ -154,13 +154,16 @@ impl<Item: Focus> Tier<Item> {
     /// Update the currently active `Insert<Item>` (i.e. the
     /// most-recently-[`insert`](Self::insert)ed one), returning the result of the function.
     ///
-    /// If there is no currently active `Insert<Item>` (in the case that the tier is empty or full),
-    /// the function is not called, and `None` is returned.
-    pub fn update<T>(&mut self, f: impl FnOnce(&mut Insert<Item>) -> T) -> Option<T> {
+    /// If there is no currently active `Insert<Item>`, the function is called on `None`.
+    pub fn update<T>(&mut self, f: impl FnOnce(Option<&mut Insert<Item>>) -> T) -> T {
         if let Inner::Active(active) = &mut self.inner {
-            active.as_mut().as_mut().map(|active| active.update(f))
+            if let Some(ref mut active) = **active {
+                active.update(|item| f(Some(item)))
+            } else {
+                f(None)
+            }
         } else {
-            None
+            f(None)
         }
     }
 
