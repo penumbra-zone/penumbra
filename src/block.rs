@@ -68,8 +68,8 @@ impl Block {
     ///
     /// Returns `Err(item)` containing the inserted item without adding it to the [`Block`] if the
     /// block is full.
-    pub fn insert(&mut self, item: Insert<Fq>) -> Result<(), Insert<Fq>> {
-        self.as_mut().insert(item)
+    pub fn insert_item(&mut self, item: Insert<Fq>) -> Result<(), Insert<Fq>> {
+        self.as_mut().insert_item(item)
     }
 
     /// The total number of [`Fq`]s or [`struct@Hash`]es represented in the underlying [`Block`].
@@ -124,7 +124,7 @@ impl Block {
 }
 
 impl BlockMut<'_> {
-    pub fn insert(&mut self, item: Insert<Fq>) -> Result<(), Insert<Fq>> {
+    pub fn insert_item(&mut self, item: Insert<Fq>) -> Result<(), Insert<Fq>> {
         // If we successfully insert this item, here's what its index in the block will be:
         let this_item: index::Item = self.inner.len().into();
 

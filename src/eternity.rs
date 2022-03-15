@@ -29,7 +29,7 @@ impl Eternity {
     /// # Errors
     ///
     /// Returns `Err(epoch)` without adding it to the [`Eternity`] if the [`Eternity`] is full.
-    pub fn insert(&mut self, epoch: Insert<Epoch>) -> Result<(), Insert<Epoch>> {
+    pub fn insert_epoch(&mut self, epoch: Insert<Epoch>) -> Result<(), Insert<Epoch>> {
         // If we successfully insert this epoch, here's what its index in the epoch will be:
         let this_epoch = self.inner.len().into();
 
@@ -66,6 +66,43 @@ impl Eternity {
 
             Ok(())
         }
+    }
+
+    /// Add a new [`Block`] or its root [`struct@Hash`] all at once to the most recently inserted
+    /// [`Epoch`] of this [`Eternity`].
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err(block)` containing the inserted block without adding it to the [`Eternity`] if
+    /// the [`Eternity`] is full, or the most recently inserted [`Epoch`] is full or was inserted by
+    /// [`Insert::Hash`].
+    pub fn insert_block(&mut self, block: Insert<Block>) -> Result<(), Insert<Block>> {
+        self.update(|epoch| {
+            if let Some(epoch) = epoch {
+                epoch.insert_block(block)
+            } else {
+                Err(block)
+            }
+        })
+    }
+
+    /// Add a new [`Fq`] or its [`struct@Hash`] to the most recent [`Block`] of the most recent
+    /// [`Epoch`] of this [`Eternity`].
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err(block)` containing the inserted block without adding it to the [`Eternity`] if
+    /// the [`Eternity`] is full, or the most recently inserted [`Epoch`] is full or was inserted by
+    /// [`Insert::Hash`], or the most recently inserted [`Block`] is full or was inserted by
+    /// [`Insert::Hash`].
+    pub fn insert_item(&mut self, item: Insert<Fq>) -> Result<(), Insert<Fq>> {
+        self.update(|epoch| {
+            if let Some(epoch) = epoch {
+                epoch.insert_item(item)
+            } else {
+                Err(item)
+            }
+        })
     }
 
     /// The total number of [`Fq`]s or [`struct@Hash`]es represented in this [`Epoch`].

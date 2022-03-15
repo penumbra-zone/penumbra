@@ -69,8 +69,19 @@ impl Epoch {
     ///
     /// Returns `Err(block)` containing the inserted block without adding it to the [`Epoch`] if the
     /// [`Epoch`] is full.
-    pub fn insert(&mut self, block: Insert<Block>) -> Result<(), Insert<Block>> {
-        self.as_mut().insert(block)
+    pub fn insert_block(&mut self, block: Insert<Block>) -> Result<(), Insert<Block>> {
+        self.as_mut().insert_block(block)
+    }
+
+    /// Add a new [`Fq`] or its [`struct@Hash`] to the most recent [`Block`] of this [`Epoch`].
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err(block)` containing the inserted item without adding it to the [`Epoch`] if the
+    /// [`Epoch`] is full, or if the most recent [`Block`] is full or was inserted by
+    /// [`Insert::Hash`].
+    pub fn insert_item(&mut self, block: Insert<Fq>) -> Result<(), Insert<Fq>> {
+        self.as_mut().insert_item(block)
     }
 
     /// Forget about the witness for the given [`Fq`].
@@ -140,7 +151,7 @@ impl Epoch {
 impl EpochMut<'_> {
     /// Add a new [`Block`] or its root [`struct@Hash`] all at once to the underlying [`Epoch`]: see
     /// [`Epoch::insert`].
-    pub fn insert(&mut self, block: Insert<Block>) -> Result<(), Insert<Block>> {
+    pub fn insert_block(&mut self, block: Insert<Block>) -> Result<(), Insert<Block>> {
         // If we successfully insert this block, here's what its index in the epoch will be:
         let this_block = self.inner.len().into();
 
@@ -189,6 +200,16 @@ impl EpochMut<'_> {
 
             Ok(())
         }
+    }
+
+    pub fn insert_item(&mut self, item: Insert<Fq>) -> Result<(), Insert<Fq>> {
+        self.update(|block| {
+            if let Some(block) = block {
+                block.insert_item(item)
+            } else {
+                Err(item)
+            }
+        })
     }
 
     /// Forget the witness of the given item, if it was witnessed: see [`Epoch::forget`].
