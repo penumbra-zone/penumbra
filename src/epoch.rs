@@ -17,7 +17,7 @@ pub use proof::{Proof, VerifiedProof, VerifyError};
 pub mod error;
 pub use error::{InsertBlockError, InsertBlockRootError, InsertError};
 
-/// A sparse commitment tree to witness up to 65,536 [`Block`]s, each witnessing up to 65,536
+/// A sparse merkle tree to witness up to 65,536 [`Block`]s, each witnessing up to 65,536
 /// [`Commitment`]s.
 ///
 /// This is one [`Epoch`] in an [`Eternity`].

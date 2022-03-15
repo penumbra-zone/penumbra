@@ -4,7 +4,7 @@ pub use crate::Commitment;
 
 pub use super::{Block, Root};
 
-/// An inclusion proof in a [`Block`] which has not yet been verified.
+/// An as-yet-unverified proof of the inclusion of some [`Commitment`] in a [`Block`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Proof(pub(super) crate::proof::Proof<Block>);
 
@@ -25,7 +25,7 @@ impl Proof {
     }
 }
 
-/// A verified inclusion [`Proof`] in an [`Block`], witnessing the presence of a single [`Commitment`].
+/// A verified [`Proof`] of the inclusion of a single [`Commitment`] in a [`Block`].
 ///
 /// The only way to produce this is via [`Proof::verify`].
 #[derive(Debug, Clone, PartialEq, Eq)]

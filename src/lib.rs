@@ -50,7 +50,14 @@ pub enum Witness {
     Forget,
 }
 
-pub use Witness::{Forget, Keep};
+/// When inserting a [`Commitment`] into an [`Eternity`], [`Epoch`], or [`Block`], this flag
+/// indicates that we should immediately forget about it to save space, because we will not want to
+/// witness its presence later.
+pub use Witness::Forget;
+
+/// When inserting a [`Commitment`] into an [`Eternity`], [`Epoch`], or [`Block`], this flag
+/// indicates that we should keep this commitment to allow it to be witnessed later.
+pub use Witness::Keep;
 
 #[cfg(test)]
 mod test {
