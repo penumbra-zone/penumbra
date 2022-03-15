@@ -7,9 +7,7 @@ use penumbra_crypto::{
     rdsa::{Signature, SigningKey, SpendAuth, VerificationKey},
     value, Fr, Note, Nullifier,
 };
-use penumbra_proto::{transaction, Message, Protobuf};
-
-use super::error::ProtoError;
+use penumbra_proto::{transaction, Message, ProtoError, Protobuf};
 
 #[derive(Clone, Debug)]
 pub struct Spend {

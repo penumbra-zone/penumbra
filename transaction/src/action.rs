@@ -4,9 +4,6 @@ use penumbra_crypto::value;
 use penumbra_proto::{transaction as pb, Protobuf};
 use penumbra_stake as stake;
 
-// TODO: remove & replace w/ anyhow
-pub mod error;
-
 pub mod output;
 pub mod spend;
 
