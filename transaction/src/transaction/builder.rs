@@ -1,6 +1,7 @@
 use std::ops::Deref;
 
 use ark_ff::{UniformRand, Zero};
+use decaf377_rdsa::VerificationKey;
 use incrementalmerkletree::Tree;
 use penumbra_crypto::{
     ka,
@@ -10,7 +11,9 @@ use penumbra_crypto::{
     rdsa::{Binding, Signature, SigningKey, SpendAuth},
     value, Address, Fr, Note, Value,
 };
-use penumbra_stake::{Delegate, RateData, Undelegate, ValidatorDefinition, STAKING_TOKEN_ASSET_ID};
+use penumbra_stake::{
+    Delegate, RateData, Undelegate, Validator, ValidatorDefinition, STAKING_TOKEN_ASSET_ID,
+};
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
 
@@ -31,7 +34,7 @@ pub struct Builder {
     /// List of undelegations in the transaction.
     pub undelegations: Vec<Undelegate>,
     /// List of validator (re-)definitions in the transaction.
-    pub validator_definitions: Vec<ValidatorDefinition>,
+    pub validator_definitions: Vec<(Validator, SigningKey<SpendAuth>)>,
     /// Transaction fee. None if unset.
     pub fee: Option<Fee>,
     /// Sum of blinding factors for each value commitment.
@@ -195,6 +198,15 @@ impl Builder {
         self
     }
 
+    pub fn add_validator_definition(
+        &mut self,
+        validator: Validator,
+        signing_key: SigningKey<SpendAuth>,
+    ) -> &mut Self {
+        self.validator_definitions.push((validator, signing_key));
+        self
+    }
+
     /// Set the transaction fee in PEN.
     ///
     /// Note that we're using the lower case `pen` in the code.
@@ -273,6 +285,9 @@ impl Builder {
         self.outputs.shuffle(rng);
         self.delegations.shuffle(rng);
         self.undelegations.shuffle(rng);
+        self.validator_definitions.shuffle(rng);
+
+        println!("Shuffled... {:#?}", self.validator_definitions);
 
         // Fill in the spends using blank signatures, so we can build the sighash tx
         for (_, body) in &self.spends {
@@ -289,6 +304,12 @@ impl Builder {
         }
         for undelegation in self.undelegations.drain(..) {
             actions.push(Action::Undelegate(undelegation));
+        }
+        for (validator, _signing_key) in &self.validator_definitions {
+            actions.push(Action::ValidatorDefinition(ValidatorDefinition {
+                validator: validator.clone(),
+                auth_sig: Signature::from([0; 64]),
+            }));
         }
 
         let mut transaction_body = TransactionBody {
@@ -313,6 +334,30 @@ impl Builder {
                 *auth_sig = rsk.sign(&mut rng, &sighash);
             } else {
                 unreachable!("spends come first in actions list")
+            }
+        }
+
+        // also sign the validators and create validator definitions
+        for (v, rsk) in &self.validator_definitions {
+            for j in 0..transaction_body.actions.len() {
+                // We can't take advantage of the ordering here (well, maybe if we reordered the actions)
+                // like we could for spends, so we just iterate all the actions in the transaction for now
+                if let Action::ValidatorDefinition(ValidatorDefinition {
+                    ref mut auth_sig,
+                    ref validator,
+                }) = transaction_body.actions[j]
+                {
+                    if *validator == *v {
+                        println!("Signing validator definition");
+                        *auth_sig = rsk.sign(&mut rng, &sighash);
+
+                        println!("1st validation: {:#?}, {:#?}", sighash, auth_sig);
+                        // Ensure the key matches the identity key within the `Validator` for a client-side safety check
+                        validator.identity_key.0.verify(&sighash, &auth_sig).expect(
+                            "expected identity key within validator definition to match wallet",
+                        );
+                    }
+                }
             }
         }
 
