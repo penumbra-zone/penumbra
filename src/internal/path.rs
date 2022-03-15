@@ -126,6 +126,19 @@ mod test {
             .collect()
     }
 
+    /// Get a sequence of indices representing the index of the originally specified leaf from the
+    /// starting height down to zero.
+    fn directions_via_indices(height: u8, index: u64) -> Vec<WhichWay> {
+        (1..=height + 1)
+            .rev() // iterate from the leaf to the root (height down to 1)
+            .scan(index, |index, height| {
+                let (which_way, next_index) = WhichWay::at(height, *index);
+                *index = next_index;
+                Some(which_way)
+            })
+            .collect()
+    }
+
     #[test]
     fn directions_of_index_check() {
         assert_eq!(directions_of_index(1, 0), &[WhichWay::Leftmost]);
@@ -148,10 +161,20 @@ mod test {
 
     proptest! {
         #[test]
-        fn which_way_correct(
-        (height, index) in (
-            // This is a dependent generator: we ensure that the index is in-bounds for the height
-            (0u8..(3 * 8)), 0u64..u64::MAX).prop_map(|(height, index)| (height, (index % (4u64.pow(height as u32)))))
+        fn which_way_indices_correct(
+            (height, index) in (
+                // This is a dependent generator: we ensure that the index is in-bounds for the height
+                (0u8..(3 * 8)), 0u64..u64::MAX).prop_map(|(height, index)| (height, (index % (4u64.pow(height as u32))))
+            )
+        ) {
+            assert_eq!(directions_of_index(height, index), directions_via_indices(height, index));
+        }
+
+        #[test]
+        fn which_way_direction_correct(
+            (height, index) in (
+                // This is a dependent generator: we ensure that the index is in-bounds for the height
+                (0u8..(3 * 8)), 0u64..u64::MAX).prop_map(|(height, index)| (height, (index % (4u64.pow(height as u32)))))
         ) {
             assert_eq!(index, index_of_directions(&directions_of_index(height, index)));
         }
