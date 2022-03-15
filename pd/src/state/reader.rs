@@ -22,8 +22,7 @@ use penumbra_proto::{
 };
 use penumbra_stake::{
     BaseRateData, Epoch, FundingStream, FundingStreams, IdentityKey, RateData, RateDataById,
-    Validator, ValidatorDefinition, ValidatorInfo, ValidatorState, ValidatorStateName,
-    ValidatorStatus,
+    Validator, ValidatorInfo, ValidatorState, ValidatorStateName, ValidatorStatus,
 };
 use sqlx::{query, query_as, Pool, Postgres};
 use tendermint::block;

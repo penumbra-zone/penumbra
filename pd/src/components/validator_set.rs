@@ -4,16 +4,15 @@ use std::{
 };
 
 use anyhow::Result;
-use futures::Future;
 use penumbra_crypto::{
-    asset::{self, Denom, Id},
+    asset::{self},
     Address,
 };
 use penumbra_proto::Protobuf;
 use penumbra_stake::{
-    BaseRateData, Epoch, FundingStream, IdentityKey, RateData, Validator, ValidatorDefinition,
-    ValidatorInfo, ValidatorState, ValidatorStateName, ValidatorStatus,
-    VerifiedValidatorDefinition, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
+    BaseRateData, Epoch, FundingStream, IdentityKey, RateData, Validator, ValidatorInfo,
+    ValidatorState, ValidatorStateName, ValidatorStatus, VerifiedValidatorDefinition,
+    STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
 };
 use sqlx::{query, Postgres, Transaction};
 use tendermint::{
@@ -740,7 +739,7 @@ impl ValidatorSet {
             .expect("block_changes should be initialized during begin_block")
             .new_validators
             .entry(validator.validator.identity_key.clone())
-            .or_insert(vec![])
+            .or_insert_with(Vec::new)
             .push(validator);
     }
 

@@ -2,11 +2,11 @@ use std::fs::File;
 
 use anyhow::Context;
 use anyhow::Result;
+use penumbra_stake::Validator;
+use rand_core::OsRng;
 use structopt::StructOpt;
 
 use penumbra_stake::IdentityKey;
-use penumbra_stake::ValidatorDefinition;
-use penumbra_wallet::ClientState;
 
 use crate::state::ClientStateFile;
 use crate::Opt;
@@ -20,6 +20,12 @@ pub enum ValidatorCmd {
         /// The JSON file containing the ValidatorDefinition to upload
         #[structopt(long)]
         file: String,
+        /// The transaction fee (paid in upenumbra).
+        #[structopt(long, default_value = "0")]
+        fee: u64,
+        /// Optional. Only spend funds originally received by the given address index.
+        #[structopt(long)]
+        source: Option<u64>,
     },
 }
 
@@ -44,14 +50,33 @@ impl ValidatorCmd {
 
                 println!("{}", ik);
             }
-            ValidatorCmd::UploadDefinition { file } => {
+            ValidatorCmd::UploadDefinition { file, fee, source } => {
+                // The definitions are stored in a JSON document,
+                // however for ease of use it's best for us to generate
+                // the signature here based on the configured wallet.
+                //
+                // TODO: eventually we'll probably want to support defining the
+                // identity key in the JSON file.
+                //
+                // We could also support defining multiple validators in a single
+                // file.
                 let definition_file =
                     File::open(&file).with_context(|| format!("cannot open file {:?}", file))?;
-                let definition: ValidatorDefinition = serde_json::from_reader(definition_file)
-                    .expect("can parse app_state in genesis file");
+                let new_validator: Validator = serde_json::from_reader(definition_file)
+                    .map_err(|_| anyhow::anyhow!("Unable to parse validator definition"))?;
                 // Construct a new transaction and include the validator definition.
-                let transaction = state.build_validator_definition(definition)?;
+                // TODO: is it possible to get rid of this clone? It's only used because we can't
+                // borrow state mutably & immutably.
+                let signing_key = state.wallet().spend_key().spend_auth_key().clone();
+                let transaction = state.build_validator_definition(
+                    &mut OsRng,
+                    new_validator,
+                    &signing_key,
+                    *fee,
+                    *source,
+                )?;
 
+                println!("Submitting...");
                 opt.submit_transaction(&transaction).await?;
                 // Only commit the state if the transaction was submitted
                 // successfully, so that we don't store pending notes that will

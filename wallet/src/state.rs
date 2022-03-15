@@ -10,10 +10,12 @@ use penumbra_crypto::{
     asset::{self, Denom},
     memo,
     merkle::{Frontier, NoteCommitmentTree, Tree, TreeExt},
-    note, Address, FieldExt, Note, Nullifier, Value,
+    note,
+    rdsa::{SigningKey, SpendAuth},
+    Address, FieldExt, Note, Nullifier, Value,
 };
 use penumbra_proto::light_wallet::{CompactBlock, StateFragment};
-use penumbra_stake::{RateData, ValidatorDefinition, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM};
+use penumbra_stake::{RateData, Validator, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM};
 use penumbra_transaction::Transaction;
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
@@ -415,12 +417,83 @@ impl ClientState {
     }
 
     /// Generate a new transaction uploading a validator definition.
-    #[instrument(skip(self))]
-    pub fn build_validator_definition(
+    #[instrument(skip(self, rng))]
+    pub fn build_validator_definition<R: RngCore + CryptoRng>(
         &mut self,
-        definition: ValidatorDefinition,
+        rng: &mut R,
+        new_validator: Validator,
+        signing_key: &SigningKey<SpendAuth>,
+        fee: u64,
+        source_address: Option<u64>,
     ) -> Result<Transaction, anyhow::Error> {
-        Err(anyhow!("not implemented"))
+        let mut tx_builder = Transaction::build_with_root(self.note_commitment_tree.root2());
+
+        tx_builder
+            .set_fee(fee)
+            .set_chain_id(self.chain_id().ok_or_else(|| anyhow!("missing chain_id"))?);
+
+        // Add the Validator along with the associated SigningKey to the tx_builder.
+        tx_builder.add_validator_definition(new_validator, *signing_key);
+
+        // If there are any fees, they need to be spent.
+        let mut value_to_spend = HashMap::<Denom, u64>::new();
+        if fee > 0 {
+            *value_to_spend
+                .entry(STAKING_TOKEN_DENOM.clone())
+                .or_default() += fee;
+        }
+
+        for (denom, amount) in value_to_spend {
+            // Only produce an output if the amount is greater than zero
+            if amount == 0 {
+                continue;
+            }
+
+            // Select a list of notes that provides at least the required amount.
+            let notes: Vec<Note> = self.notes_to_spend(rng, amount, &denom, source_address)?;
+            let change_address = self
+                .wallet
+                .change_address(notes.last().expect("spent at least one note"))?;
+            let spent: u64 = notes.iter().map(|note| note.amount()).sum();
+
+            // Spend each of the notes we selected.
+            for note in notes {
+                tx_builder.add_spend(
+                    rng,
+                    &self.note_commitment_tree,
+                    // The active wallet pays the fees for all the validators it is defining.
+                    self.wallet.spend_key(),
+                    note,
+                )?;
+            }
+
+            // Find out how much change we have and whether to add a change output.
+            let change = spent - amount;
+            if change > 0 {
+                // xx: add memo handling
+                let memo = memo::MemoPlaintext([0u8; 512]);
+                let note = tx_builder.add_output_producing_note(
+                    rng,
+                    &change_address,
+                    Value {
+                        amount: change,
+                        asset_id: denom.id(),
+                    },
+                    memo,
+                    self.wallet.outgoing_viewing_key(),
+                );
+
+                self.register_change(note);
+            }
+        }
+
+        println!("Finalizing...");
+
+        let transaction = tx_builder
+            .finalize(rng)
+            .map_err(|err| anyhow::anyhow!("error during transaction finalization: {}", err))?;
+
+        Ok(transaction)
     }
 
     /// Generate a new transaction sending value to `dest_address`.
