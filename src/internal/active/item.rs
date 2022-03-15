@@ -1,8 +1,13 @@
-use poseidon377::Fq;
+use crate::Commitment;
 
 use crate::{
-    internal::{complete, height::Zero, path},
-    AuthPath, Focus, Forget, GetHash, Hash, Height, Insert, Witness,
+    internal::{
+        active::Forget,
+        complete,
+        height::Zero,
+        path::{self, Witness},
+    },
+    AuthPath, Focus, GetHash, Hash, Height, Insert,
 };
 
 /// The hash of the most-recently-inserted item, stored at the tip of the active path.
@@ -21,7 +26,7 @@ impl PartialEq<complete::Item> for Item {
 
 impl Item {
     /// Create a new [`Item`] from the given value.
-    pub fn new(item: Fq) -> Self {
+    pub fn new(item: Commitment) -> Self {
         Self {
             hash: Hash::of(item),
             keep: true,
@@ -29,8 +34,8 @@ impl Item {
     }
 }
 
-impl From<Fq> for Item {
-    fn from(item: Fq) -> Self {
+impl From<Commitment> for Item {
+    fn from(item: Commitment) -> Self {
         Self::new(item)
     }
 }

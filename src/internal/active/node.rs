@@ -2,12 +2,13 @@ use std::{cell::Cell, fmt::Debug};
 
 use crate::{
     internal::{
+        active::Forget,
         hash::OptionHash,
         height::{IsHeight, Succ},
-        path::{self, WhichWay},
+        path::{self, WhichWay, Witness},
         three::{Elems, ElemsMut, Three},
     },
-    Active, AuthPath, Focus, Forget, ForgetOwned, Full, GetHash, Hash, Height, Insert, Witness,
+    Active, AuthPath, Focus, ForgetOwned, Full, GetHash, Hash, Height, Insert,
 };
 
 use super::super::complete;

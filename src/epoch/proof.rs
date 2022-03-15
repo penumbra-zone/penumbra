@@ -1,0 +1,61 @@
+pub use thiserror::Error;
+
+pub use crate::Commitment;
+
+pub use super::{Epoch, Root};
+
+/// An inclusion proof in a [`Epoch`] which has not yet been verified.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Proof(pub(super) crate::proof::Proof<Epoch>);
+
+impl Proof {
+    /// Verify a [`Proof`] of inclusion against the [`Root`] of an [`Epoch`].
+    ///
+    /// Returns a [`VerifiedProof`] if and only if this proof verified against the hash.
+    pub fn verify(self, root: &Root) -> Result<VerifiedProof, VerifyError> {
+        self.0
+            .verify(root.0)
+            .map(VerifiedProof)
+            .map_err(VerifyError)
+    }
+
+    /// Get the commitment whose inclusion is witnessed by the proof.
+    pub fn item(&self) -> Commitment {
+        self.0.leaf
+    }
+}
+
+/// A verified inclusion [`Proof`] in an [`Epoch`], witnessing the presence of a single [`Commitment`].
+///
+/// The only way to produce this is via [`Proof::verify`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct VerifiedProof(crate::proof::VerifiedProof<Epoch>);
+
+impl VerifiedProof {
+    /// Get the root hash against which the proof failed to verify.
+    pub fn root(&self) -> Root {
+        Root(self.0.root())
+    }
+
+    /// Extract the original proof from this error.
+    pub fn unverify(self) -> Proof {
+        Proof(self.0.unverify())
+    }
+}
+
+/// A [`Proof`] of inclusion did not verify against the provided root of the [`Epoch`].
+#[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[error("invalid inclusion proof for epoch root hash {0:?}")]
+pub struct VerifyError(crate::proof::VerifyError<Epoch>);
+
+impl VerifyError {
+    /// Get the root hash against which the proof failed to verify.
+    pub fn root(&self) -> Root {
+        Root(self.0.root())
+    }
+
+    /// Extract the original proof from this error.
+    pub fn into_proof(self) -> Proof {
+        Proof(self.0.into_proof())
+    }
+}

@@ -1,6 +1,10 @@
 use crate::{
-    internal::{active, height::Zero, path},
-    AuthPath, Complete, ForgetOwned, GetHash, Hash, Height, Insert, Witness,
+    internal::{
+        active,
+        height::Zero,
+        path::{self, Witness},
+    },
+    AuthPath, Complete, ForgetOwned, GetHash, Hash, Height, Insert,
 };
 
 /// A witnessed hash of a commitment at the true leaf of a complete tree.

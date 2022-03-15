@@ -1,4 +1,4 @@
-use crate::{Complete, ForgetOwned, GetHash, Hash, Height, Insert, Witness};
+use crate::{internal::path::Witness, Complete, ForgetOwned, GetHash, Hash, Height, Insert};
 
 use super::super::active;
 

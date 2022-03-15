@@ -1,4 +1,7 @@
-use crate::{Active, AuthPath, Focus, Forget, Full, GetHash, Hash, Height, Insert, Witness};
+use crate::{
+    internal::{active::Forget, path::Witness},
+    Active, AuthPath, Focus, Full, GetHash, Hash, Height, Insert,
+};
 
 use super::super::complete;
 

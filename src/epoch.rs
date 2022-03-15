@@ -1,44 +1,54 @@
+//! [`Epoch`]s within [`Eternity`]s, and their [`Root`]s and [`Proof`]s of inclusion.
+
 use hash_hasher::HashedMap;
 
+use crate::internal::{active::Forget as _, path::Witness as _};
 use crate::*;
 
 #[path = "block.rs"]
-mod block;
-pub use block::{Block, BlockMut};
+pub mod block;
+pub use block::Block;
+use block::BlockMut;
 
-/// A sparse commitment tree to witness up to 65,536 [`Block`]s, each witnessing up to 65,536 [`Fq`]s
+#[path = "epoch/proof.rs"]
+mod proof;
+pub use proof::{Proof, VerifiedProof, VerifyError};
+
+/// A sparse commitment tree to witness up to 65,536 [`Block`]s, each witnessing up to 65,536 [`Commitment`]s
 /// or their [`struct@Hash`]es.
 ///
 /// This is one [`Epoch`] in an [`Eternity`].
 #[derive(Derivative, Debug, Clone, PartialEq, Eq, Default)]
 pub struct Epoch {
-    pub(super) index: HashedMap<Fq, index::within::Epoch>,
+    pub(super) index: HashedMap<Commitment, index::within::Epoch>,
     pub(super) inner: Tier<Tier<Item>>,
 }
 
-/// A mutable reference to an [`Epoch`] within an [`Eternity`](super::Eternity).
-///
-/// This supports all the methods of [`Epoch`] that take `&mut self` or `&self`.
+/// The root hash of an [`Epoch`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Root(pub(super) Hash);
+
+/// A mutable reference to an [`Epoch`].
 #[derive(Debug, PartialEq, Eq)]
-pub struct EpochMut<'a> {
+pub(super) struct EpochMut<'a> {
     pub(super) index: IndexMut<'a>,
     pub(super) inner: &'a mut Tier<Tier<Item>>,
 }
 
-/// A mutable reference to an index from [`Fq`] to indices into a tree.
+/// A mutable reference to an index from [`Commitment`] to indices into a tree.
 ///
 /// When a [`BlockMut`] is derived from some containing [`Epoch`] or [`Eternity`], this index
 /// contains all the indices for everything in the tree so far.
 #[derive(Debug, PartialEq, Eq)]
-pub enum IndexMut<'a> {
+pub(super) enum IndexMut<'a> {
     /// An index just for items within an epoch.
     Epoch {
-        index: &'a mut HashedMap<Fq, index::within::Epoch>,
+        index: &'a mut HashedMap<Commitment, index::within::Epoch>,
     },
     /// An index for items within an entire eternity.
     Eternity {
         this_epoch: index::Epoch,
-        index: &'a mut HashedMap<Fq, index::within::Eternity>,
+        index: &'a mut HashedMap<Commitment, index::within::Eternity>,
     },
 }
 
@@ -62,13 +72,43 @@ impl Epoch {
         }
     }
 
-    /// Add a new [`Block`] or its root [`struct@Hash`] all at once to this [`Epoch`].
+    /// Add a new [`Block`] all at once to this [`Epoch`].
     ///
     /// # Errors
     ///
     /// Returns `Err(block)` containing the inserted block without adding it to the [`Epoch`] if the
     /// [`Epoch`] is full.
-    pub fn insert_block(&mut self, block: Insert<Block>) -> Result<(), Insert<Block>> {
+    pub fn insert_block(&mut self, block: Block) -> Result<(), Block> {
+        self.insert_block_or_root(Insert::Keep(block))
+            .map_err(|insert| {
+                if let Insert::Keep(block) = insert {
+                    block
+                } else {
+                    unreachable!("failing to insert a block always returns the original block")
+                }
+            })
+    }
+
+    /// Add the root hash of a [`Block`] to this [`Epoch`], without inserting any of the witnessed
+    /// items in that [`Epoch`].
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err(root)` containing the inserted root without adding it to the [`Epoch`] if the
+    /// [`Epoch`] is full.
+    pub fn insert_block_root(&mut self, block_root: block::Root) -> Result<(), block::Root> {
+        self.insert_block_or_root(Insert::Hash(block_root.0))
+            .map_err(|insert| {
+                if let Insert::Hash(block_root) = insert {
+                    block::Root(block_root)
+                } else {
+                    unreachable!("failing to insert a block root always returns the original root")
+                }
+            })
+    }
+
+    /// Insert a block or its root (helper function for [`insert_block`] and [`insert_block_root`]).
+    fn insert_block_or_root(&mut self, block: Insert<Block>) -> Result<(), Insert<Block>> {
         self.as_mut().insert_block(block).map(|replaced| {
             // When inserting into an epoch that's not part of a larger eternity, we should never return
             // further indices to be forgotten, because they should be forgotten internally
@@ -76,36 +116,47 @@ impl Epoch {
         })
     }
 
-    /// Add a new [`Fq`] or its [`struct@Hash`] to the most recent [`Block`] of this [`Epoch`].
+    /// Add a new [`Commitment`] or its [`struct@Hash`] to the most recent [`Block`] of this
+    /// [`Epoch`].
     ///
     /// # Errors
     ///
-    /// Returns `Err(block)` containing the inserted item without adding it to the [`Epoch`] if the
-    /// [`Epoch`] is full, or if the most recent [`Block`] is full or was inserted by
+    /// Returns `Err(block)` containing the inserted commitment without adding it to the [`Epoch`]
+    /// if the [`Epoch`] is full, or if the most recent [`Block`] is full or was inserted by
     /// [`Insert::Hash`].
-    pub fn insert_item(&mut self, block: Insert<Fq>) -> Result<(), Insert<Fq>> {
-        self.as_mut().insert_item(block).map(|replaced| {
-            // When inserting into an epoch that's not part of a larger eternity, we should never return
-            // further indices to be forgotten, because they should be forgotten internally
-            debug_assert!(replaced.is_none());
-        })
+    pub fn insert_commitment(
+        &mut self,
+        witness: Witness,
+        commitment: Commitment,
+    ) -> Result<(), Commitment> {
+        self.as_mut()
+            .insert_commitment(match witness {
+                Keep => Insert::Keep(commitment),
+                Forget => Insert::Hash(Hash::of(commitment)),
+            })
+            .map(|replaced| {
+                // When inserting into an epoch that's not part of a larger eternity, we should never return
+                // further indices to be forgotten, because they should be forgotten internally
+                debug_assert!(replaced.is_none());
+            })
+            .map_err(|_| commitment)
     }
 
-    /// Forget about the witness for the given [`Fq`].
+    /// Forget about the witness for the given [`Commitment`].
     ///
     /// Returns `true` if the item was previously witnessed (and now is forgotten), and `false` if
     /// it was not witnessed.
-    pub fn forget(&mut self, item: Fq) -> bool {
+    pub fn forget(&mut self, item: Commitment) -> bool {
         self.as_mut().forget(item)
     }
 
-    /// The total number of [`Fq`]s or [`struct@Hash`]es represented in this [`Epoch`].
+    /// The total number of [`Commitment`]s or [`struct@Hash`]es represented in this [`Epoch`].
     ///
     /// This count includes those which were elided due to a partially filled [`Block`] or summary
     /// root [`struct@Hash`] of a block being inserted.
     ///
     /// The maximum capacity of an [`Epoch`] is 4,294,967,296, i.e. 65,536 [`Block`]s of 65,536
-    /// [`Fq`]s.
+    /// [`Commitment`]s.
     pub fn len(&self) -> u32 {
         ((self.inner.len() as u32) << 16)
             + match self.inner.focus() {
@@ -120,7 +171,7 @@ impl Epoch {
         self.inner.is_empty()
     }
 
-    /// Get the root [`struct@Hash`] of this [`Epoch`].
+    /// Get the root hash of this [`Epoch`].
     ///
     /// Internal hashing is performed lazily to prevent unnecessary intermediary hashes from being
     /// computed, so the first hash returned after a long sequence of insertions may take more time
@@ -128,24 +179,24 @@ impl Epoch {
     ///
     /// Computed hashes are cached so that subsequent calls without further modification are very
     /// fast.
-    pub fn root(&self) -> Hash {
-        self.inner.hash()
+    pub fn root(&self) -> Root {
+        Root(self.inner.hash())
     }
 
     /// Get a [`Proof`] of inclusion for the item at this index in the epoch.
     ///
     /// If the index is not witnessed in this epoch, return `None`.
-    pub fn witness(&self, item: Fq) -> Option<Proof<Epoch>> {
+    pub fn witness(&self, item: Commitment) -> Option<Proof> {
         let index = *self.index.get(&item)?;
 
         let (auth_path, leaf) = self.inner.witness(index)?;
         debug_assert_eq!(leaf, Hash::of(item));
 
-        Some(Proof {
+        Some(Proof(crate::proof::Proof {
             index: index.into(),
             auth_path,
             leaf: item,
-        })
+        }))
     }
 }
 
@@ -219,11 +270,11 @@ impl EpochMut<'_> {
         }
     }
 
-    /// Insert an item into the most recent [`Block`] of this [`Epoch`]: see [`Epoch::insert_item`].
-    pub fn insert_item(
+    /// Insert an item into the most recent [`Block`] of this [`Epoch`]: see [`Epoch::insert_commitment`].
+    pub fn insert_commitment(
         &mut self,
-        item: Insert<Fq>,
-    ) -> Result<Option<index::within::Eternity>, Insert<Fq>> {
+        item: Insert<Commitment>,
+    ) -> Result<Option<index::within::Eternity>, Insert<Commitment>> {
         // If the epoch is empty, we need to create a new block to insert the item into
         if self.inner.is_empty() && self.insert_block(Insert::Keep(Block::new())).is_err() {
             return Err(item);
@@ -231,7 +282,7 @@ impl EpochMut<'_> {
 
         match self.update(|block| {
             if let Some(block) = block {
-                block.insert_item(item)
+                block.insert_commitment(item)
             } else {
                 Err(item)
             }
@@ -252,7 +303,7 @@ impl EpochMut<'_> {
     }
 
     /// Forget the witness of the given item, if it was witnessed: see [`Epoch::forget`].
-    pub fn forget(&mut self, item: Fq) -> bool {
+    pub fn forget(&mut self, item: Commitment) -> bool {
         let mut forgotten = false;
 
         match self.index {

@@ -4,10 +4,10 @@ use crate::{
     internal::{
         hash::OptionHash,
         height::{IsHeight, Succ},
-        path::{self, AuthPath, WhichWay},
+        path::{self, AuthPath, WhichWay, Witness},
         three::{IntoElems, Three},
     },
-    Complete, ForgetOwned, GetHash, Hash, Height, Insert, Witness,
+    Complete, ForgetOwned, GetHash, Hash, Height, Insert,
 };
 
 use super::super::active;

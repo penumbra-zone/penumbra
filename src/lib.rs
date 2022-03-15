@@ -11,30 +11,38 @@ use std::fmt::Debug;
 
 pub mod internal;
 
-#[doc(inline)]
-pub use internal::{
-    active::Insert,
-    hash::Hash,
-    proof::{Proof, VerifiedProof, VerifyError},
-};
-
 #[allow(unused_imports)]
 use internal::{
-    active::{Active, Focus, Forget, Full, Item, Tier},
+    active::{Active, Focus, Full, Insert, Item, Tier},
     complete::{Complete, ForgetOwned},
     hash::GetHash,
+    hash::Hash,
     height::Height,
     index,
-    path::{AuthPath, Witness},
+    path::AuthPath,
+    proof,
 };
 
-/// A commitment to be stored in the tree, as an element of the base field of the curve used by the
-/// Poseidon hash function instantiated for BLS12-377. If you want to witness this commitment in a
-/// tree, insert it using [`Insert::Keep`](crate::Insert::Keep).
-pub use poseidon377::Fq;
+/// A commitment to be stored in a [`Block`].
+///
+/// This is an element of the base field of the curve used by the Poseidon hash function
+/// instantiated for BLS12-377.
+pub use poseidon377::Fq as Commitment;
 
 mod eternity;
-pub use eternity::{Block, Epoch, Eternity};
+pub use eternity::{block, epoch, Block, Epoch, Eternity, Proof, Root, VerifiedProof, VerifyError};
+
+/// When inserting an item into an [`Eternity`], [`Epoch`], or [`Block`], should we [`Keep`] it to
+/// allow it to be witnessed later, or [`Forget`] about it after updating the root hash?
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Witness {
+    /// Keep this item so it can be witnessed later.
+    Keep,
+    /// Forget this item so it does not take up space, but it cannot be witnessed later.
+    Forget,
+}
+
+pub use Witness::{Forget, Keep};
 
 #[cfg(test)]
 mod test {
@@ -47,6 +55,6 @@ mod test {
 
     #[test]
     fn check_eternity_proof_size() {
-        static_assertions::assert_eq_size!(Proof<Eternity>, [u8; 2344]);
+        static_assertions::assert_eq_size!(Proof, [u8; 2344]);
     }
 }

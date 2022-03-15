@@ -5,9 +5,9 @@ use std::fmt::Debug;
 use thiserror::Error;
 
 use super::path::{self, AuthPath};
-use crate::{Fq, Hash, Height};
+use crate::{Commitment, Hash, Height};
 
-/// A proof of inclusion for a single [`Fq`](crate::Fq) commitment in a tree.
+/// A proof of inclusion for a single [`Commitment`](crate::Commitment) commitment in a tree.
 #[derive(Derivative)]
 #[derivative(
     Debug(bound = "<Tree::Height as path::Path>::Path: Debug"),
@@ -18,7 +18,7 @@ use crate::{Fq, Hash, Height};
 pub struct Proof<Tree: Height> {
     pub(crate) index: u64,
     pub(crate) auth_path: AuthPath<Tree>,
-    pub(crate) leaf: Fq,
+    pub(crate) leaf: Commitment,
 }
 
 impl<Tree: Height> Proof<Tree> {
@@ -47,7 +47,7 @@ impl<Tree: Height> Proof<Tree> {
     }
 
     /// Get the commitment whose inclusion is witnessed by the proof.
-    pub fn item(&self) -> Fq {
+    pub fn item(&self) -> Commitment {
         self.leaf
     }
 }

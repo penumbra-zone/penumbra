@@ -1,6 +1,6 @@
 use std::mem;
 
-use crate::{Forget, ForgetOwned, GetHash, Hash, Height};
+use crate::{internal::active::Forget, ForgetOwned, GetHash, Hash, Height};
 
 /// Either an item or just its hash, to be used when inserting into a tree.
 ///

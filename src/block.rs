@@ -1,49 +1,60 @@
+//! [`Block`]s within [`Epoch`]s, and their [`Root`]s and [`Proof`]s of inclusion.
+
 use hash_hasher::HashedMap;
 
+use crate::internal::{active::Forget as _, path::Witness as _};
 use crate::*;
 
-/// A sparse commitment tree to witness up to 65,536 individual [`Fq`]s or their [`struct@Hash`]es.
+#[path = "block/proof.rs"]
+mod proof;
+pub use proof::{Proof, VerifiedProof, VerifyError};
+
+/// A sparse commitment tree to witness up to 65,536 individual [`Commitment`]s or their [`struct@Hash`]es.
 ///
 /// This is one [`Block`] in an [`Epoch`], which is one [`Epoch`] in an [`Eternity`].
 #[derive(Derivative, Debug, Clone, PartialEq, Eq, Default)]
 pub struct Block {
-    pub(super) index: HashedMap<Fq, index::within::Block>,
+    pub(super) index: HashedMap<Commitment, index::within::Block>,
     pub(super) inner: Tier<Item>,
 }
 
+/// The root hash of a [`Block`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Root(pub(in super::super) Hash);
+
 /// A mutable reference to a [`Block`].
 #[derive(Debug, PartialEq, Eq)]
-pub struct BlockMut<'a> {
+pub(in super::super) struct BlockMut<'a> {
     pub(super) index: IndexMut<'a>,
     pub(super) inner: &'a mut Tier<Item>,
 }
 
-/// A mutable reference to an index from [`Fq`] to indices into a tree.
+/// A mutable reference to an index from [`Commitment`] to indices into a tree.
 ///
 /// When a [`BlockMut`] is derived from some containing [`Epoch`] or [`Eternity`], this index
 /// contains all the indices for everything in the tree so far.
 #[derive(Debug, PartialEq, Eq)]
-pub enum IndexMut<'a> {
+pub(super) enum IndexMut<'a> {
     /// An index just for items within a block.
     Block {
-        index: &'a mut HashedMap<Fq, index::within::Block>,
+        index: &'a mut HashedMap<Commitment, index::within::Block>,
     },
     /// An index just for items within an epoch.
     Epoch {
         this_block: index::Block,
-        index: &'a mut HashedMap<Fq, index::within::Epoch>,
+        index: &'a mut HashedMap<Commitment, index::within::Epoch>,
     },
     /// An index for items within an entire eternity.
     Eternity {
         this_epoch: index::Epoch,
         this_block: index::Block,
-        index: &'a mut HashedMap<Fq, index::within::Eternity>,
+        index: &'a mut HashedMap<Commitment, index::within::Eternity>,
     },
 }
 
 /// An overwritten index which should be forgotten.
 #[derive(Debug, PartialEq, Eq)]
-pub enum ReplacedIndex {
+pub(super) enum ReplacedIndex {
     /// An index from within an epoch.
     Epoch(index::within::Epoch),
     /// An index from within an entire eternity.
@@ -70,20 +81,30 @@ impl Block {
         }
     }
 
-    /// Add a new [`Fq`] or its [`struct@Hash`] to this [`Block`].
+    /// Add a new [`Commitment`] or its [`struct@Hash`] to this [`Block`].
     ///
     /// # Errors
     ///
     /// Returns `Err(item)` containing the inserted item without adding it to the [`Block`] if the
     /// block is full.
-    pub fn insert_item(&mut self, item: Insert<Fq>) -> Result<(), Insert<Fq>> {
-        self.as_mut().insert_item(item).map(|option|
+    pub fn insert_commitment(
+        &mut self,
+        witness: Witness,
+        commitment: Commitment,
+    ) -> Result<(), Commitment> {
+        self.as_mut()
+            .insert_commitment(match witness {
+                Keep => Insert::Keep(commitment),
+                Forget => Insert::Hash(Hash::of(commitment)),
+            })
+            .map(|option|
                 // We shouldn't ever be handing back a replaced index here, because the index should
                 // be forgotten internally to the method when the block is not owned by a larger structure
                 debug_assert!(option.is_none()))
+            .map_err(|_| commitment)
     }
 
-    /// The total number of [`Fq`]s or [`struct@Hash`]es represented in the underlying [`Block`].
+    /// The total number of [`Commitment`]s or [`struct@Hash`]es represented in the underlying [`Block`].
     pub fn len(&self) -> u16 {
         self.inner.len()
     }
@@ -108,30 +129,33 @@ impl Block {
     /// Get a [`Proof`] of inclusion for this item in the block.
     ///
     /// If the index is not witnessed in this block, return `None`.
-    pub fn witness(&self, item: Fq) -> Option<Proof<Block>> {
+    pub fn witness(&self, item: Commitment) -> Option<Proof> {
         let index = *self.index.get(&item)?;
 
         let (auth_path, leaf) = self.inner.witness(index)?;
         debug_assert_eq!(leaf, Hash::of(item));
 
-        Some(Proof {
+        Some(Proof(crate::proof::Proof {
             index: index.into(),
             auth_path,
             leaf: item,
-        })
+        }))
     }
 
     /// Forget the witness of the given item, if it was witnessed.
     ///
     /// Returns `true` if the item was previously witnessed (and now is forgotten), and `false` if
     /// it was not witnessed.
-    pub fn forget(&mut self, item: Fq) -> bool {
+    pub fn forget(&mut self, item: Commitment) -> bool {
         self.as_mut().forget(item)
     }
 }
 
 impl BlockMut<'_> {
-    pub fn insert_item(&mut self, item: Insert<Fq>) -> Result<Option<ReplacedIndex>, Insert<Fq>> {
+    pub(super) fn insert_commitment(
+        &mut self,
+        item: Insert<Commitment>,
+    ) -> Result<Option<ReplacedIndex>, Insert<Commitment>> {
         // If we successfully insert this item, here's what its index in the block will be:
         let this_item: index::Item = self.inner.len().into();
 
@@ -184,7 +208,7 @@ impl BlockMut<'_> {
         }
     }
 
-    pub fn forget(&mut self, item: Fq) -> bool {
+    pub fn forget(&mut self, item: Commitment) -> bool {
         let mut forgotten = false;
 
         match self.index {
