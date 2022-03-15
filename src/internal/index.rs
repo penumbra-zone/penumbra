@@ -8,7 +8,8 @@
 /// The index of an individual item in a block.
 ///
 /// Create this using `From<u16>`.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, Derivative)]
+#[derivative(Debug = "transparent")]
 pub struct Commitment(u16);
 
 impl From<u16> for Commitment {
@@ -20,7 +21,8 @@ impl From<u16> for Commitment {
 /// The index of an individual block in an epoch.
 ///
 /// Create this using `From<u16>`.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, Derivative)]
+#[derivative(Debug = "transparent")]
 pub struct Block(u16);
 
 impl From<u16> for Block {
@@ -32,7 +34,8 @@ impl From<u16> for Block {
 /// The index of an individual epoch in an eternity.
 ///
 /// Create this using `From<u16>`.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, Derivative)]
+#[derivative(Debug = "transparent")]
 pub struct Epoch(u16);
 
 impl From<u16> for Epoch {

@@ -14,6 +14,7 @@ use crate::{
 #[derive(Debug, Clone, Copy, Derivative)]
 #[derivative(PartialEq, Eq)]
 pub struct Item {
+    #[derivative(PartialEq = "ignore")]
     keep: bool,
     hash: Hash,
 }

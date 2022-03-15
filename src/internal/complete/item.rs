@@ -8,7 +8,8 @@ use crate::{
 };
 
 /// A witnessed hash of a commitment at the true leaf of a complete tree.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Derivative)]
+#[derivative(Debug = "transparent")]
 pub struct Item(Hash);
 
 impl Item {
