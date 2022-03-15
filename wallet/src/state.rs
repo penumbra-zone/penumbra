@@ -865,6 +865,8 @@ impl ClientState {
         self.last_block_height = Some(height);
         tracing::debug!(self.last_block_height, "finished scanning block");
 
+        println!("height: {}", self.last_block_height.unwrap());
+        println!("nct root: {:?}", self.note_commitment_tree.root2());
         Ok(())
     }
 }
