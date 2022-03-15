@@ -3,7 +3,6 @@ use std::convert::{TryFrom, TryInto};
 use bytes::Bytes;
 use penumbra_crypto::{
     keys, merkle,
-    proofs::transparent::SpendProof,
     rdsa::{Signature, SigningKey, SpendAuth, VerificationKey},
     value, Fr, Note, Nullifier,
 };
@@ -56,7 +55,6 @@ pub struct Body {
     pub nullifier: Nullifier,
     // Randomized verification key.
     pub rk: VerificationKey<SpendAuth>,
-    pub proof: SpendProof,
 }
 
 impl Body {
@@ -66,33 +64,16 @@ impl Body {
         spend_auth_randomizer: Fr,
         merkle_path: merkle::Path,
         note: Note,
-        v_blinding: Fr,
         nk: keys::NullifierKey,
     ) -> Body {
         let rsk = ask.randomize(&spend_auth_randomizer);
         let rk = rsk.into();
         let note_commitment = note.commit();
         let position = merkle_path.0.clone();
-        let proof = SpendProof {
-            // XXX: the position field duplicates data from the merkle path
-            // probably not worth fixing before we just make them snarks...
-            position,
-            merkle_path,
-            g_d: note.diversified_generator(),
-            pk_d: note.transmission_key(),
-            value: note.value(),
-            v_blinding,
-            note_commitment,
-            note_blinding: note.note_blinding(),
-            spend_auth_randomizer,
-            ak: ask.into(),
-            nk,
-        };
         Body {
             value_commitment,
             nullifier: nk.derive_nullifier(position, &note_commitment),
             rk,
-            proof,
         }
     }
 }
@@ -111,12 +92,10 @@ impl From<Body> for transaction::SpendBody {
         let cv_bytes: [u8; 32] = msg.value_commitment.into();
         let nullifier_bytes: [u8; 32] = msg.nullifier.into();
         let rk_bytes: [u8; 32] = msg.rk.into();
-        let proof: Vec<u8> = msg.proof.into();
         transaction::SpendBody {
             cv: Bytes::copy_from_slice(&cv_bytes),
             nullifier: Bytes::copy_from_slice(&nullifier_bytes),
             rk: Bytes::copy_from_slice(&rk_bytes),
-            zkproof: proof.into(),
         }
     }
 }
@@ -139,16 +118,10 @@ impl TryFrom<transaction::SpendBody> for Body {
         let rk = rk_bytes
             .try_into()
             .map_err(|_| anyhow::anyhow!("spend body malformed"))?;
-
-        let proof = (proto.zkproof[..])
-            .try_into()
-            .map_err(|_| anyhow::anyhow!("spend body malformed"))?;
-
         Ok(Body {
             value_commitment,
             nullifier,
             rk,
-            proof,
         })
     }
 }
