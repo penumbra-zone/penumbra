@@ -77,6 +77,11 @@ impl Eternity {
     /// the [`Eternity`] is full, or the most recently inserted [`Epoch`] is full or was inserted by
     /// [`Insert::Hash`].
     pub fn insert_block(&mut self, block: Insert<Block>) -> Result<(), Insert<Block>> {
+        // If the eternity is empty, we need to create a new epoch to insert the block into
+        if self.inner.is_empty() && self.insert_epoch(Insert::Keep(Epoch::new())).is_err() {
+            return Err(block);
+        }
+
         self.update(|epoch| {
             if let Some(epoch) = epoch {
                 epoch.insert_block(block)
@@ -96,6 +101,11 @@ impl Eternity {
     /// [`Insert::Hash`], or the most recently inserted [`Block`] is full or was inserted by
     /// [`Insert::Hash`].
     pub fn insert_item(&mut self, item: Insert<Fq>) -> Result<(), Insert<Fq>> {
+        // If the eternity is empty, we need to create a new epoch to insert the item into
+        if self.inner.is_empty() && self.insert_epoch(Insert::Keep(Epoch::new())).is_err() {
+            return Err(item);
+        }
+
         self.update(|epoch| {
             if let Some(epoch) = epoch {
                 epoch.insert_item(item)

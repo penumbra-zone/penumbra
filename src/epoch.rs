@@ -200,7 +200,13 @@ impl EpochMut<'_> {
         }
     }
 
+    /// Insert an item into the most recent [`Block`] of this [`Epoch`]: see [`Epoch::insert_item`].
     pub fn insert_item(&mut self, item: Insert<Fq>) -> Result<(), Insert<Fq>> {
+        // If the epoch is empty, we need to create a new block to insert the item into
+        if self.inner.is_empty() && self.insert_block(Insert::Keep(Block::new())).is_err() {
+            return Err(item);
+        }
+
         self.update(|block| {
             if let Some(block) = block {
                 block.insert_item(item)
