@@ -107,15 +107,11 @@ impl Eternity {
 
     /// The total number of [`Fq`]s or [`struct@Hash`]es represented in this [`Epoch`].
     ///
-    /// This count includes those which were elided due to a partially filled [`Block`] or
+    /// This count includes those items which are elided due to a partially filled [`Block`] or
     /// [`Epoch`], or summary root [`struct@Hash`] of a block or epoch being inserted.
     ///
-    /// In other words, this is `2 ^ 32` times the number of epochs represented in this
-    /// [`Eternity`], plus `4 ^ 8` times the number of blocks represented in this [`Eternity`],
-    /// plus the number of items in the latest block.
-    ///
-    /// The maximum capacity of an [`Eternity`] is `2 ^ 48`, i.e. `4 ^ 8` epochs of `4 ^ 8` blocks
-    /// of `4 ^ 8` items.
+    /// The maximum capacity of an [`Eternity`] is 281,474,976,710,656 = 65,536 [`Epoch`]s of 65,536
+    /// [`Block`]s of 65,536 [`Fq`]s.
     pub fn len(&self) -> u64 {
         ((self.inner.len() as u64) << 32)
             + (match self.inner.focus() {
@@ -144,7 +140,7 @@ impl Eternity {
     ///
     /// Computed hashes are cached so that subsequent calls without further modification are very
     /// fast.
-    pub fn hash(&self) -> Hash {
+    pub fn root(&self) -> Hash {
         self.inner.hash()
     }
 

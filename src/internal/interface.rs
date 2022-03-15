@@ -6,11 +6,12 @@ pub trait Active: Focus + Sized {
     /// The type of item to persist in each witnessed leaf of the active tree.
     type Item: Focus;
 
-    /// Make a new [`Active`] containing a single [`struct@Hash`] or `Self::Item`.
+    /// Make a new [`Active`] containing a single [`Hash`](crate::Hash) or `Self::Item`.
     fn singleton(item: Insert<Self::Item>) -> Self;
 
-    /// Insert a new [`struct@Hash`] or `Self::Item` into this [`Active`], returning either `Self` with the
-    /// thing inserted, or the un-inserted thing and the [`Complete`] of this [`Active`].
+    /// Insert a new [`Hash`](crate::Hash) or `Self::Item` into this [`Active`], returning either
+    /// `Self` with the thing inserted, or the un-inserted thing and the [`Complete`] of this
+    /// [`Active`].
     fn insert(self, item: Insert<Self::Item>) -> Result<Self, Full<Self>>;
 
     /// Update the currently active `Insert<Self::Item>` (i.e. the most-recently

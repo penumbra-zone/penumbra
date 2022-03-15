@@ -8,7 +8,7 @@ use crate::{
 pub struct Item(Hash);
 
 impl Item {
-    /// Create a new `Item` from a [`Hash`].
+    /// Create a new `Item` from a [`Hash`](crate::Hash).
     pub fn new(hash: Hash) -> Self {
         Self(hash)
     }

@@ -54,7 +54,7 @@ impl Epoch {
     }
 
     /// Get an [`EpochMut`] referring to this [`Epoch`].
-    pub fn as_mut(&mut self) -> EpochMut {
+    pub(super) fn as_mut(&mut self) -> EpochMut {
         EpochMut {
             index: IndexMut::Epoch {
                 index: &mut self.index,
@@ -97,10 +97,8 @@ impl Epoch {
     /// This count includes those which were elided due to a partially filled [`Block`] or summary
     /// root [`struct@Hash`] of a block being inserted.
     ///
-    /// In other words, this is `4 ^ 8` times the number of blocks represented in this [`Epoch`],
-    /// plus the number of items in the latest block.
-    ///
-    /// The maximum capacity of an [`Epoch`] is `2 ^ 32`, i.e. `4 ^ 8` blocks of `4 ^ 8` items.
+    /// The maximum capacity of an [`Epoch`] is 4,294,967,296, i.e. 65,536 [`Block`]s of 65,536
+    /// [`Fq`]s.
     pub fn len(&self) -> u32 {
         ((self.inner.len() as u32) << 16)
             + match self.inner.focus() {
@@ -123,7 +121,7 @@ impl Epoch {
     ///
     /// Computed hashes are cached so that subsequent calls without further modification are very
     /// fast.
-    pub fn hash(&self) -> Hash {
+    pub fn root(&self) -> Hash {
         self.inner.hash()
     }
 

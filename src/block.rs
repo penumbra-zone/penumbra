@@ -53,7 +53,7 @@ impl Block {
     }
 
     /// Get a [`BlockMut`] from this [`Block`].
-    pub fn as_mut(&mut self) -> BlockMut {
+    pub(super) fn as_mut(&mut self) -> BlockMut {
         BlockMut {
             index: IndexMut::Block {
                 index: &mut self.index,
@@ -90,7 +90,7 @@ impl Block {
     ///
     /// Computed hashes are cached so that subsequent calls without further modification are very
     /// fast.
-    pub fn hash(&self) -> Hash {
+    pub fn root(&self) -> Hash {
         self.inner.hash()
     }
 
