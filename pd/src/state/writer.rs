@@ -350,6 +350,18 @@ impl Writer {
             .await?;
         }
 
+        let nct_anchor = note_commitment_tree.root2();
+        let nct_bytes = bincode::serialize(&note_commitment_tree)?;
+        query!(
+            r#"
+            INSERT INTO blobs (id, data) VALUES ('nct', $1)
+            ON CONFLICT (id) DO UPDATE SET data = $1
+            "#,
+            &nct_bytes[..]
+        )
+        .execute(&mut dbtx)
+        .await?;
+
         // Finally, commit the transaction and then update subscribers
         // We've initialized the database for the first time, so replace
         // the default values as if we were loading while starting the node.
