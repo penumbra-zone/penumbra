@@ -1,6 +1,7 @@
 //! [`Epoch`]s within [`Eternity`]s, and their [`Root`]s and [`Proof`]s of inclusion.
 
 use hash_hasher::HashedMap;
+use thiserror::Error;
 
 use crate::internal::{active::Forget as _, path::Witness as _};
 use crate::*;
@@ -56,6 +57,35 @@ impl Height for Epoch {
     type Height = <Tier<Tier<Item>> as Height>::Height;
 }
 
+/// A [`Commitment`] could not be inserted into the [`Epoch`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
+pub enum InsertError {
+    /// The [`Epoch`] was full.
+    #[error("epoch is full")]
+    #[non_exhaustive]
+    Full,
+    /// The most recent [`Block`] in the [`Epoch`] was full.
+    #[error("most recent block in epoch is full")]
+    #[non_exhaustive]
+    BlockFull,
+    /// The most recent [`Block`] in the [`Epoch`] was forgotten.
+    #[error("most recent block in epoch was forgotten")]
+    #[non_exhaustive]
+    BlockForgotten,
+}
+
+/// The [`Epoch`] was full when attempting to insert a block.
+#[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[error("epoch is full")]
+#[non_exhaustive]
+pub struct InsertBlockError(pub Block);
+
+/// The [`Epoch`] was full when attempting to insert a block root.
+#[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[error("epoch is full")]
+#[non_exhaustive]
+pub struct InsertBlockRootError;
+
 impl Epoch {
     /// Create a new empty [`Epoch`].
     pub fn new() -> Self {
@@ -91,7 +121,7 @@ impl Epoch {
     /// Returns `Err(commitment)` containing the inserted commitment without adding it to the [`Epoch`]
     /// if the [`Epoch`] is full, or if the most recent [`Block`] is full or was inserted by
     /// [`Insert::Hash`].
-    pub fn insert(&mut self, witness: Witness, commitment: Commitment) -> Result<(), Commitment> {
+    pub fn insert(&mut self, witness: Witness, commitment: Commitment) -> Result<(), InsertError> {
         self.as_mut()
             .insert(match witness {
                 Keep => Insert::Keep(commitment),
@@ -102,7 +132,6 @@ impl Epoch {
                 // further indices to be forgotten, because they should be forgotten internally
                 debug_assert!(replaced.is_none());
             })
-            .map_err(|_| commitment)
     }
 
     /// Get a [`Proof`] of inclusion for the item at this index in the epoch.
@@ -133,13 +162,13 @@ impl Epoch {
     ///
     /// # Errors
     ///
-    /// Returns `Err(block)` containing the inserted block without adding it to the [`Epoch`] if the
-    /// [`Epoch`] is full.
-    pub fn insert_block(&mut self, block: Block) -> Result<(), Block> {
+    /// Returns [`InsertBlockError`] containing the inserted block without adding it to the
+    /// [`Epoch`] if the [`Epoch`] is full.
+    pub fn insert_block(&mut self, block: Block) -> Result<(), InsertBlockError> {
         self.insert_block_or_root(Insert::Keep(block))
             .map_err(|insert| {
                 if let Insert::Keep(block) = insert {
-                    block
+                    InsertBlockError(block)
                 } else {
                     unreachable!("failing to insert a block always returns the original block")
                 }
@@ -151,13 +180,16 @@ impl Epoch {
     ///
     /// # Errors
     ///
-    /// Returns `Err(root)` containing the inserted root without adding it to the [`Epoch`] if the
-    /// [`Epoch`] is full.
-    pub fn insert_block_root(&mut self, block_root: block::Root) -> Result<(), block::Root> {
+    /// Returns [`InsertBlockRootError`] without adding it to the [`Epoch`] if the [`Epoch`] is
+    /// full.
+    pub fn insert_block_root(
+        &mut self,
+        block_root: block::Root,
+    ) -> Result<(), InsertBlockRootError> {
         self.insert_block_or_root(Insert::Hash(block_root.0))
             .map_err(|insert| {
-                if let Insert::Hash(block_root) = insert {
-                    block::Root(block_root)
+                if let Insert::Hash(_) = insert {
+                    InsertBlockRootError
                 } else {
                     unreachable!("failing to insert a block root always returns the original root")
                 }
@@ -166,7 +198,7 @@ impl Epoch {
 
     /// Insert a block or its root (helper function for [`insert_block`] and [`insert_block_root`]).
     fn insert_block_or_root(&mut self, block: Insert<Block>) -> Result<(), Insert<Block>> {
-        self.as_mut().insert_block(block).map(|replaced| {
+        self.as_mut().insert_block_or_root(block).map(|replaced| {
             // When inserting into an epoch that's not part of a larger eternity, we should never return
             // further indices to be forgotten, because they should be forgotten internally
             debug_assert!(replaced.is_empty());
@@ -198,7 +230,7 @@ impl Epoch {
 impl EpochMut<'_> {
     /// Add a new [`Block`] or its root [`struct@Hash`] all at once to the underlying [`Epoch`]: see
     /// [`Epoch::insert`].
-    pub fn insert_block(
+    pub fn insert_block_or_root(
         &mut self,
         block: Insert<Block>,
     ) -> Result<Vec<index::within::Eternity>, Insert<Block>> {
@@ -269,20 +301,24 @@ impl EpochMut<'_> {
     pub fn insert(
         &mut self,
         item: Insert<Commitment>,
-    ) -> Result<Option<index::within::Eternity>, Insert<Commitment>> {
+    ) -> Result<Option<index::within::Eternity>, InsertError> {
         // If the epoch is empty, we need to create a new block to insert the item into
-        if self.inner.is_empty() && self.insert_block(Insert::Keep(Block::new())).is_err() {
-            return Err(item);
+        if self.inner.is_empty()
+            && self
+                .insert_block_or_root(Insert::Keep(Block::new()))
+                .is_err()
+        {
+            return Err(InsertError::Full);
         }
 
         match self.update(|block| {
             if let Some(block) = block {
-                block.insert(item)
+                block.insert(item).map_err(|_| InsertError::BlockFull)
             } else {
-                Err(item)
+                Err(InsertError::BlockForgotten)
             }
         }) {
-            Err(item) => Err(item),
+            Err(err) => Err(err),
             Ok(None) => Ok(None),
             Ok(Some(replaced)) => match replaced {
                 // If the replaced index was within this epoch, forget it immediately

@@ -1,4 +1,5 @@
 use hash_hasher::HashedMap;
+use thiserror::Error;
 
 use crate::internal::{active::Forget as _, path::Witness as _};
 use crate::*;
@@ -26,6 +27,65 @@ pub struct Root(Hash);
 impl Height for Eternity {
     type Height = <Tier<Tier<Tier<Item>>> as Height>::Height;
 }
+
+/// An error occurred when trying to insert an item into an [`Eternity`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
+pub enum InsertError {
+    /// The [`Eternity`] was full.
+    #[error("eternity is full")]
+    #[non_exhaustive]
+    Full,
+    /// The most recent [`Epoch`] of the [`Eternity`] was full.
+    #[error("most recent epoch in eternity is full")]
+    EpochFull,
+    /// The most recent [`Epoch`] of the [`Eternity`] was forgotten.
+    #[error("most recent epoch in eternity was forgotten")]
+    EpochForgotten,
+    /// The most recent [`Block`] of the most recent [`Epoch`] of the [`Eternity`] was full.
+    #[error("most recent block in most recent epoch of eternity is full")]
+    BlockFull,
+    /// The most recent [`Block`] of the most recent [`Epoch`] of the [`Eternity`] was forgotten.
+    #[error("most recent block in most recent epoch of eternity was forgotten")]
+    BlockForgotten,
+}
+
+/// An error occurred when trying to insert a [`Block`] root into the [`Eternity`].
+#[derive(Debug, Clone, PartialEq, Eq, Error)]
+pub enum InsertBlockError {
+    /// The [`Eternity`] was full.
+    #[error("eternity is full")]
+    Full(Block),
+    /// The most recent [`Epoch`] of the [`Eternity`] was full.
+    #[error("most recent epoch is full")]
+    EpochFull(Block),
+    /// The most recent [`Epoch`] of the [`Eternity`] was forgotten.
+    #[error("most recent epoch was forgotten")]
+    EpochForgotten(Block),
+}
+
+/// An error occurred when trying to insert a [`Block`] root into the [`Eternity`].
+#[derive(Debug, Clone, PartialEq, Eq, Error)]
+pub enum InsertBlockRootError {
+    /// The [`Eternity`] was full.
+    #[error("eternity is full")]
+    Full,
+    /// The most recent [`Epoch`] of the [`Eternity`] was full.
+    #[error("most recent epoch is full")]
+    EpochFull,
+    /// The most recent [`Epoch`] of the [`Eternity`] was forgotten.
+    #[error("most recent epoch was forgotten")]
+    EpochForgotten,
+}
+
+/// The [`Eternity`] was full when trying to insert an [`Epoch`].
+#[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[error("eternity is full")]
+pub struct InsertEpochError(pub Epoch);
+
+/// The [`Eternity`] was full when trying to insert an [`Epoch`] root.
+#[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[error("eternity is full")]
+pub struct InsertEpochRootError;
 
 impl Eternity {
     /// Create a new empty [`Eternity`] for storing all commitments to the end of time.
@@ -99,23 +159,24 @@ impl Eternity {
     }
 
     /// Insert an item or its root (helper function for [`insert`].
-    fn insert_commitment_or_root(
-        &mut self,
-        item: Insert<Commitment>,
-    ) -> Result<(), Insert<Commitment>> {
+    fn insert_commitment_or_root(&mut self, item: Insert<Commitment>) -> Result<(), InsertError> {
         // If the eternity is empty, we need to create a new epoch to insert the item into
         if self.inner.is_empty() && self.insert_epoch(Epoch::new()).is_err() {
-            return Err(item);
+            return Err(InsertError::Full);
         }
 
         match self.update(|epoch| {
             if let Some(epoch) = epoch {
-                epoch.insert(item)
+                epoch.insert(item).map_err(|err| match err {
+                    epoch::InsertError::Full => InsertError::EpochFull,
+                    epoch::InsertError::BlockFull => InsertError::BlockFull,
+                    epoch::InsertError::BlockForgotten => InsertError::BlockForgotten,
+                })
             } else {
-                Err(item)
+                Err(InsertError::EpochForgotten)
             }
         }) {
-            Err(item) => Err(item),
+            Err(err) => Err(err),
             Ok(None) => Ok(()),
             Ok(Some(replaced)) => {
                 // If inserting this item replaced some other item, forget the replaced index
@@ -131,18 +192,39 @@ impl Eternity {
     ///
     /// # Errors
     ///
-    /// Returns `Err(block)` containing the inserted block without adding it to the [`Eternity`] if
-    /// the [`Eternity`] is full, or the most recently inserted [`Epoch`] is full or was inserted by
-    /// [`Insert::Hash`].
-    pub fn insert_block(&mut self, block: Block) -> Result<(), Block> {
-        self.insert_block_or_root(Insert::Keep(block))
-            .map_err(|insert| {
-                if let Insert::Keep(block) = insert {
-                    block
-                } else {
-                    unreachable!("failing to insert a block always returns the original block")
+    /// Returns [`InsertBlockError`] containing the inserted block without adding it to the
+    /// [`Eternity`] if the [`Eternity`] is full, or the most recently inserted [`Epoch`] is full or
+    /// was inserted by [`Insert::Hash`].
+    pub fn insert_block(&mut self, block: Block) -> Result<(), InsertBlockError> {
+        // If the eternity is empty, we need to create a new epoch to insert the block into
+        if self.inner.is_empty() && self.insert_epoch(Epoch::new()).is_err() {
+            return Err(InsertBlockError::Full(block));
+        }
+
+        match self.update(|epoch| {
+            if let Some(epoch) = epoch {
+                epoch
+                    .insert_block_or_root(Insert::Keep(block))
+                    .map_err(|err| {
+                        InsertBlockError::EpochFull(err.keep().expect(
+                            "block must be returned in error case of `EpochMut::insert_block`",
+                        ))
+                    })
+            } else {
+                Err(InsertBlockError::EpochForgotten(block))
+            }
+        }) {
+            Err(err) => Err(err),
+            Ok(replaced) => {
+                // When inserting the block, some indices in the block may overwrite existing
+                // indices; we now can forget those indices because they're inaccessible
+                for replaced in replaced {
+                    let forgotten = self.inner.forget(replaced);
+                    debug_assert!(forgotten);
                 }
-            })
+                Ok(())
+            }
+        }
     }
 
     /// Add the root hash of an [`Block`] to this [`Eternity`], without inserting any of the
@@ -150,35 +232,27 @@ impl Eternity {
     ///
     /// # Errors
     ///
-    /// Returns `Err(root)` containing the inserted block's root without adding it to the
-    /// [`Eternity`] if the [`Eternity`] is full, or the most recently inserted [`Epoch`] was
-    /// inserted by [`insert_epoch_root`](Eternity::insert_epoch_root).
-    pub fn insert_block_root(&mut self, block_root: block::Root) -> Result<(), block::Root> {
-        self.insert_block_or_root(Insert::Hash(block_root.0))
-            .map_err(|insert| {
-                if let Insert::Hash(root) = insert {
-                    block::Root(root)
-                } else {
-                    unreachable!("failing to insert a block root always returns the original root")
-                }
-            })
-    }
-
-    /// Insert a block or its root (helper function for [`insert_block`] and [`insert_block_root`]).
-    fn insert_block_or_root(&mut self, block: Insert<Block>) -> Result<(), Insert<Block>> {
+    /// Returns [`InsertBlockRootError`] if the [`Eternity`] is full, or the most recently inserted
+    /// [`Epoch`] is full or was inserted by [`insert_epoch_root`](Eternity::insert_epoch_root).
+    pub fn insert_block_root(
+        &mut self,
+        block_root: block::Root,
+    ) -> Result<(), InsertBlockRootError> {
         // If the eternity is empty, we need to create a new epoch to insert the block into
         if self.inner.is_empty() && self.insert_epoch(Epoch::new()).is_err() {
-            return Err(block);
+            return Err(InsertBlockRootError::Full);
         }
 
         match self.update(|epoch| {
             if let Some(epoch) = epoch {
-                epoch.insert_block(block)
+                epoch
+                    .insert_block_or_root(Insert::Hash(block_root.0))
+                    .map_err(|_| InsertBlockRootError::EpochFull)
             } else {
-                Err(block)
+                Err(InsertBlockRootError::EpochForgotten)
             }
         }) {
-            Err(block) => Err(block),
+            Err(err) => Err(err),
             Ok(replaced) => {
                 // When inserting the block, some indices in the block may overwrite existing
                 // indices; we now can forget those indices because they're inaccessible
@@ -195,12 +269,13 @@ impl Eternity {
     ///
     /// # Errors
     ///
-    /// Returns `Err(epoch)` without adding it to the [`Eternity`] if the [`Eternity`] is full.
-    pub fn insert_epoch(&mut self, epoch: Epoch) -> Result<(), Epoch> {
+    /// Returns [`InsertEpochError`] containing the epoch without adding it to the [`Eternity`] if
+    /// the [`Eternity`] is full.
+    pub fn insert_epoch(&mut self, epoch: Epoch) -> Result<(), InsertEpochError> {
         self.insert_epoch_or_root(Insert::Keep(epoch))
             .map_err(|insert| {
                 if let Insert::Keep(epoch) = insert {
-                    epoch
+                    InsertEpochError(epoch)
                 } else {
                     unreachable!("failing to insert an epoch always returns the original epoch")
                 }
@@ -212,12 +287,15 @@ impl Eternity {
     ///
     /// # Errors
     ///
-    /// Returns `Err(root)` without adding it to the [`Eternity`] if the [`Eternity`] is full.
-    pub fn insert_epoch_root(&mut self, epoch_root: epoch::Root) -> Result<(), epoch::Root> {
+    /// Returns [`InsertEpochRootError`] if the [`Eternity`] is full.
+    pub fn insert_epoch_root(
+        &mut self,
+        epoch_root: epoch::Root,
+    ) -> Result<(), InsertEpochRootError> {
         self.insert_epoch_or_root(Insert::Hash(epoch_root.0))
             .map_err(|insert| {
-                if let Insert::Hash(root) = insert {
-                    epoch::Root(root)
+                if let Insert::Hash(_) = insert {
+                    InsertEpochRootError
                 } else {
                     unreachable!("failing to insert an epoch root always returns the original root")
                 }

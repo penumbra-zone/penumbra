@@ -1,6 +1,7 @@
 //! [`Block`]s within [`Epoch`]s, and their [`Root`]s and [`Proof`]s of inclusion.
 
 use hash_hasher::HashedMap;
+use thiserror::Error;
 
 use crate::internal::{active::Forget as _, path::Witness as _};
 use crate::*;
@@ -65,6 +66,12 @@ impl Height for Block {
     type Height = <Tier<Item> as Height>::Height;
 }
 
+/// When inserting into a block, this error is returned when it is full.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
+#[error("block is full")]
+#[non_exhaustive]
+pub struct InsertError;
+
 impl Block {
     /// Create a new empty [`Block`].
     pub fn new() -> Self {
@@ -97,9 +104,8 @@ impl Block {
     ///
     /// # Errors
     ///
-    /// Returns `Err(commitment)` containing the inserted commitment without adding it to the
-    /// [`Block`] if the block is full.
-    pub fn insert(&mut self, witness: Witness, commitment: Commitment) -> Result<(), Commitment> {
+    /// Returns [`InsertError`] if the block is full.
+    pub fn insert(&mut self, witness: Witness, commitment: Commitment) -> Result<(), InsertError> {
         self.as_mut()
             .insert(match witness {
                 Keep => Insert::Keep(commitment),
@@ -109,7 +115,7 @@ impl Block {
                 // We shouldn't ever be handing back a replaced index here, because the index should
                 // be forgotten internally to the method when the block is not owned by a larger structure
                 debug_assert!(option.is_none()))
-            .map_err(|_| commitment)
+            .map_err(|_| InsertError)
     }
 
     /// Get a [`Proof`] of inclusion for this item in the block.

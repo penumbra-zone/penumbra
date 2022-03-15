@@ -13,7 +13,7 @@ pub mod internal;
 
 #[allow(unused_imports)]
 use internal::{
-    active::{Active, Focus, Full, Insert, Item, Tier},
+    active::{Active, Focus, Insert, Item, Tier},
     complete::{Complete, ForgetOwned},
     hash::GetHash,
     hash::Hash,
@@ -30,7 +30,10 @@ use internal::{
 pub use poseidon377::Fq as Commitment;
 
 mod eternity;
-pub use eternity::{block, epoch, Block, Epoch, Eternity, Proof, Root, VerifiedProof, VerifyError};
+pub use eternity::{
+    block, epoch, Block, Epoch, Eternity, InsertBlockError, InsertError, Proof, Root,
+    VerifiedProof, VerifyError,
+};
 
 /// When inserting an item into an [`Eternity`], [`Epoch`], or [`Block`], should we [`Keep`] it to
 /// allow it to be witnessed later, or [`Forget`] about it after updating the root hash?

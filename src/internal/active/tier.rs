@@ -1,8 +1,11 @@
 use std::{fmt::Debug, mem};
 
 use crate::{
-    internal::{active::Forget, path::Witness},
-    Active, AuthPath, Focus, ForgetOwned, Full, GetHash, Hash, Height, Insert,
+    internal::{
+        active::{Forget, Full},
+        path::Witness,
+    },
+    Active, AuthPath, Focus, ForgetOwned, GetHash, Hash, Height, Insert,
 };
 
 use super::super::{active, complete};
