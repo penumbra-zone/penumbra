@@ -1,7 +1,6 @@
 use std::ops::Deref;
 
 use ark_ff::{UniformRand, Zero};
-use decaf377_rdsa::VerificationKey;
 use incrementalmerkletree::Tree;
 use penumbra_crypto::{
     ka,
@@ -353,7 +352,7 @@ impl Builder {
 
                         println!("1st validation: {:#?}, {:#?}", sighash, auth_sig);
                         // Ensure the key matches the identity key within the `Validator` for a client-side safety check
-                        validator.identity_key.0.verify(&sighash, &auth_sig).expect(
+                        validator.identity_key.0.verify(&sighash, auth_sig).expect(
                             "expected identity key within validator definition to match wallet",
                         );
                     }

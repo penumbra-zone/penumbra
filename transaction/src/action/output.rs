@@ -4,9 +4,7 @@ use bytes::Bytes;
 use penumbra_crypto::{
     ka, memo::MemoCiphertext, note, proofs::transparent::OutputProof, value, Fr, Note,
 };
-use penumbra_proto::{transaction, Protobuf};
-
-use super::error::ProtoError;
+use penumbra_proto::{transaction, ProtoError, Protobuf};
 
 #[derive(Clone, Debug)]
 pub struct Output {
