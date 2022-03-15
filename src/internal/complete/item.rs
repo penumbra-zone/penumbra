@@ -43,20 +43,14 @@ impl Witness for Item {
     type Item = Hash;
 
     fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Hash)> {
-        if index.into() == 0 {
-            Some((path::Leaf, self.0))
-        } else {
-            None
-        }
+        debug_assert_eq!(index.into(), 0, "non-zero index when witnessing leaf");
+        Some((path::Leaf, self.0))
     }
 }
 
 impl ForgetOwned for Item {
     fn forget_owned(self, index: impl Into<u64>) -> (Insert<Self>, bool) {
-        if index.into() == 0 {
-            (Insert::Hash(self.0), true)
-        } else {
-            (Insert::Keep(self), false)
-        }
+        debug_assert_eq!(index.into(), 0, "non-zero index when forgetting leaf");
+        (Insert::Hash(self.0), true)
     }
 }

@@ -80,7 +80,8 @@ impl Witness for Item {
     type Item = Hash;
 
     fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Self::Item)> {
-        if self.keep && index.into() == 0 {
+        debug_assert_eq!(index.into(), 0, "non-zero index when witnessing leaf");
+        if self.keep {
             Some((path::Leaf, self.hash))
         } else {
             None
@@ -90,11 +91,9 @@ impl Witness for Item {
 
 impl Forget for Item {
     fn forget(&mut self, index: impl Into<u64>) -> bool {
-        if index.into() == 0 {
-            self.keep = false;
-            true
-        } else {
-            false
-        }
+        debug_assert_eq!(index.into(), 0, "non-zero index when witnessing leaf");
+        let was_keep = self.keep;
+        self.keep = false;
+        was_keep
     }
 }

@@ -11,7 +11,6 @@ use std::fmt::Debug;
 
 pub mod internal;
 
-#[allow(unused_imports)]
 use internal::{
     active::{Active, Focus, Insert, Item, Tier},
     complete::{Complete, ForgetOwned},
