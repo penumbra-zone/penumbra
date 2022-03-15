@@ -23,8 +23,8 @@ message TransactionBody {
   string chain_id = 4;
   // The transaction fee.
   Fee fee = 5;
-  // The proof over all actions.
-  bytes zkproof = 6;
+  // The proof over all actions. Optional to support the IBC relayer case.
+  optional bytes zkproof = 6;
 }
 
 // A state change performed by a transaction.

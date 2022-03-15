@@ -7,6 +7,7 @@ use penumbra_crypto::{
     keys::{OutgoingViewingKey, SpendKey},
     memo::MemoPlaintext,
     merkle::{self, NoteCommitmentTree},
+    proofs::transparent::TransactionProof,
     rdsa::{Binding, Signature, SigningKey, SpendAuth},
     value, Address, Fr, Note, Value,
 };
@@ -47,6 +48,8 @@ pub struct Builder {
     pub expiry_height: Option<u32>,
     /// Chain ID. None if unset.
     pub chain_id: Option<String>,
+    /// Proof. Can be None if no actions with proofs are added.
+    pub zkproof: Option<TransactionProof>,
 }
 
 impl Builder {
@@ -317,6 +320,7 @@ impl Builder {
             expiry_height: self.expiry_height.unwrap_or(0),
             chain_id: self.chain_id.take().unwrap(),
             fee: self.fee.take().unwrap(),
+            zkproof: self.zkproof.take(),
         };
 
         // The transaction body is filled except for the signatures,
