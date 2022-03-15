@@ -1,5 +1,7 @@
 #![allow(unused_imports)]
-use penumbra_tct::{Block, Epoch, Eternity, Fq, Hash, Insert, PrimeField};
+use penumbra_tct::{Block, Epoch, Eternity, Fq, Hash, Insert};
+
+use ark_ff::PrimeField;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // let mut tree = Eternity::new();

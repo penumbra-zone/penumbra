@@ -15,7 +15,6 @@ pub mod internal;
 pub use internal::{
     active::Insert,
     hash::Hash,
-    path::AuthPath,
     proof::{Proof, VerifiedProof, VerifyError},
 };
 
@@ -25,10 +24,10 @@ use internal::{
     complete::{Complete, ForgetOwned},
     hash::GetHash,
     height::Height,
-    index, Witness,
+    index,
+    path::AuthPath,
+    Witness,
 };
-
-pub use ark_ff::fields::PrimeField;
 
 /// A commitment to be stored in the tree, as an element of the base field of the curve used by the
 /// Poseidon hash function instantiated for BLS12-377. If you want to witness this commitment in a
