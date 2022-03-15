@@ -20,7 +20,7 @@ impl Proof {
     }
 
     /// Get the commitment whose inclusion is witnessed by the proof.
-    pub fn item(&self) -> Commitment {
+    pub fn commitment(&self) -> Commitment {
         self.0.leaf
     }
 }

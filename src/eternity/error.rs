@@ -6,7 +6,7 @@ use thiserror::Error;
 use super::Eternity;
 use super::{Block, Epoch};
 
-/// An error occurred when trying to insert an item into an [`Eternity`].
+/// An error occurred when trying to insert an commitment into an [`Eternity`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
 pub enum InsertError {
     /// The [`Eternity`] was full.

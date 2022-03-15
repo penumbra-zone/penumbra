@@ -36,16 +36,16 @@ pub(in super::super) struct BlockMut<'a> {
 /// contains all the indices for everything in the tree so far.
 #[derive(Debug, PartialEq, Eq)]
 pub(super) enum IndexMut<'a> {
-    /// An index just for items within a block.
+    /// An index just for commitments within a block.
     Block {
         index: &'a mut HashedMap<Commitment, index::within::Block>,
     },
-    /// An index just for items within an epoch.
+    /// An index just for commitments within an epoch.
     Epoch {
         this_block: index::Block,
         index: &'a mut HashedMap<Commitment, index::within::Epoch>,
     },
-    /// An index for items within an entire eternity.
+    /// An index for commitments within an entire eternity.
     Eternity {
         this_epoch: index::Epoch,
         this_block: index::Block,
@@ -118,28 +118,28 @@ impl Block {
             .map_err(|_| InsertError)
     }
 
-    /// Get a [`Proof`] of inclusion for this item in the block.
+    /// Get a [`Proof`] of inclusion for this commitment in the block.
     ///
     /// If the index is not witnessed in this block, return `None`.
-    pub fn witness(&self, item: Commitment) -> Option<Proof> {
-        let index = *self.index.get(&item)?;
+    pub fn witness(&self, commitment: Commitment) -> Option<Proof> {
+        let index = *self.index.get(&commitment)?;
 
         let (auth_path, leaf) = self.inner.witness(index)?;
-        debug_assert_eq!(leaf, Hash::of(item));
+        debug_assert_eq!(leaf, Hash::of(commitment));
 
         Some(Proof(crate::proof::Proof {
             index: index.into(),
             auth_path,
-            leaf: item,
+            leaf: commitment,
         }))
     }
 
-    /// Forget the witness of the given item, if it was witnessed.
+    /// Forget the witness of the given commitment, if it was witnessed.
     ///
-    /// Returns `true` if the item was previously witnessed (and now is forgotten), and `false` if
+    /// Returns `true` if the commitment was previously witnessed (and now is forgotten), and `false` if
     /// it was not witnessed.
-    pub fn forget(&mut self, item: Commitment) -> bool {
-        self.as_mut().forget(item)
+    pub fn forget(&mut self, commitment: Commitment) -> bool {
+        self.as_mut().forget(commitment)
     }
     /// The total number of [`Commitment`]s or [`struct@Hash`]es represented in the underlying [`Block`].
     pub fn len(&self) -> u16 {
@@ -155,23 +155,26 @@ impl Block {
 impl BlockMut<'_> {
     pub(super) fn insert(
         &mut self,
-        item: Insert<Commitment>,
+        commitment: Insert<Commitment>,
     ) -> Result<Option<ReplacedIndex>, Insert<Commitment>> {
-        // If we successfully insert this item, here's what its index in the block will be:
-        let this_item: index::Item = self.inner.len().into();
+        // If we successfully insert this commitment, here's what its index in the block will be:
+        let this_commitment: index::Commitment = self.inner.len().into();
 
-        // Try to insert the item into the inner tree, and if successful, track the index
-        if self.inner.insert(item.map(Item::new)).is_err() {
-            Err(item)
+        // Try to insert the commitment into the inner tree, and if successful, track the index
+        if self.inner.insert(commitment.map(Item::new)).is_err() {
+            Err(commitment)
         } else {
-            // Keep track of the item's index in the block, and if applicable, the block's index
+            // Keep track of the commitment's index in the block, and if applicable, the block's index
             // within its epoch, and if applicable, the epoch's index in the eternity
-            if let Insert::Keep(item) = item {
+            if let Insert::Keep(commitment) = commitment {
                 match self.index {
                     IndexMut::Block { ref mut index } => {
-                        if let Some(replaced) =
-                            index.insert(item, index::within::Block { item: this_item })
-                        {
+                        if let Some(replaced) = index.insert(
+                            commitment,
+                            index::within::Block {
+                                commitment: this_commitment,
+                            },
+                        ) {
                             self.inner.forget(replaced);
                         }
                         Ok(None)
@@ -181,10 +184,10 @@ impl BlockMut<'_> {
                         ref mut index,
                     } => Ok(index
                         .insert(
-                            item,
+                            commitment,
                             index::within::Epoch {
                                 block: this_block,
-                                item: this_item,
+                                commitment: this_commitment,
                             },
                         )
                         .map(ReplacedIndex::Epoch)),
@@ -194,11 +197,11 @@ impl BlockMut<'_> {
                         ref mut index,
                     } => Ok(index
                         .insert(
-                            item,
+                            commitment,
                             index::within::Eternity {
                                 epoch: this_epoch,
                                 block: this_block,
-                                item: this_item,
+                                commitment: this_commitment,
                             },
                         )
                         .map(ReplacedIndex::Eternity)),
@@ -209,26 +212,26 @@ impl BlockMut<'_> {
         }
     }
 
-    pub fn forget(&mut self, item: Commitment) -> bool {
+    pub fn forget(&mut self, commitment: Commitment) -> bool {
         let mut forgotten = false;
 
         match self.index {
             IndexMut::Block { ref mut index } => {
-                if let Some(&within_block) = index.get(&item) {
+                if let Some(&within_block) = index.get(&commitment) {
                     // We forgot something
                     forgotten = true;
                     // Forget the index for this element in the tree
                     let forgotten = self.inner.forget(within_block);
                     debug_assert!(forgotten);
                     // Remove this entry from the index
-                    index.remove(&item);
+                    index.remove(&commitment);
                 }
             }
             IndexMut::Epoch {
                 this_block,
                 ref mut index,
             } => {
-                if let Some(&within_epoch) = index.get(&item) {
+                if let Some(&within_epoch) = index.get(&commitment) {
                     // Only forget this index if it belongs to the current block
                     if within_epoch.block == this_block {
                         // We forgot something
@@ -237,7 +240,7 @@ impl BlockMut<'_> {
                         let forgotten = self.inner.forget(within_epoch);
                         debug_assert!(forgotten);
                         // Remove this entry from the index
-                        index.remove(&item);
+                        index.remove(&commitment);
                     }
                 }
             }
@@ -246,7 +249,7 @@ impl BlockMut<'_> {
                 this_block,
                 ref mut index,
             } => {
-                if let Some(&within_eternity) = index.get(&item) {
+                if let Some(&within_eternity) = index.get(&commitment) {
                     // Only forget this index if it belongs to the current block and that block
                     // belongs to the current epoch
                     if within_eternity.block == this_block && within_eternity.epoch == this_epoch {
@@ -256,7 +259,7 @@ impl BlockMut<'_> {
                         let forgotten = self.inner.forget(within_eternity);
                         debug_assert!(forgotten);
                         // Remove this entry from the index
-                        index.remove(&item);
+                        index.remove(&commitment);
                     }
                 }
             }

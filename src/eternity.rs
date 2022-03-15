@@ -67,52 +67,55 @@ impl Eternity {
         .map_err(|_| commitment)
     }
 
-    /// Get a [`Proof`] of inclusion for the item at this index in the eternity.
+    /// Get a [`Proof`] of inclusion for the commitment at this index in the eternity.
     ///
     /// If the index is not witnessed in this eternity, return `None`.
-    pub fn witness(&self, item: Commitment) -> Option<Proof> {
-        let index = *self.index.get(&item)?;
+    pub fn witness(&self, commitment: Commitment) -> Option<Proof> {
+        let index = *self.index.get(&commitment)?;
 
         let (auth_path, leaf) = self.inner.witness(index)?;
-        debug_assert_eq!(leaf, Hash::of(item));
+        debug_assert_eq!(leaf, Hash::of(commitment));
 
         Some(Proof(crate::proof::Proof {
             index: index.into(),
             auth_path,
-            leaf: item,
+            leaf: commitment,
         }))
     }
 
     /// Forget about the witness for the given [`Commitment`].
     ///
-    /// Returns `true` if the item was previously witnessed (and now is forgotten), and `false` if
+    /// Returns `true` if the commitment was previously witnessed (and now is forgotten), and `false` if
     /// it was not witnessed.
-    pub fn forget(&mut self, item: Commitment) -> bool {
+    pub fn forget(&mut self, commitment: Commitment) -> bool {
         let mut forgotten = false;
 
-        if let Some(&within_epoch) = self.index.get(&item) {
+        if let Some(&within_epoch) = self.index.get(&commitment) {
             // We forgot something
             forgotten = true;
             // Forget the index for this element in the tree
             let forgotten = self.inner.forget(within_epoch);
             debug_assert!(forgotten);
             // Remove this entry from the index
-            self.index.remove(&item);
+            self.index.remove(&commitment);
         }
 
         forgotten
     }
 
-    /// Insert an item or its root (helper function for [`insert`].
-    fn insert_commitment_or_root(&mut self, item: Insert<Commitment>) -> Result<(), InsertError> {
-        // If the eternity is empty, we need to create a new epoch to insert the item into
+    /// Insert an commitment or its root (helper function for [`insert`].
+    fn insert_commitment_or_root(
+        &mut self,
+        commitment: Insert<Commitment>,
+    ) -> Result<(), InsertError> {
+        // If the eternity is empty, we need to create a new epoch to insert the commitment into
         if self.inner.is_empty() && self.insert_epoch(Epoch::new()).is_err() {
             return Err(InsertError::Full);
         }
 
         match self.update(|epoch| {
             if let Some(epoch) = epoch {
-                epoch.insert(item).map_err(|err| match err {
+                epoch.insert(commitment).map_err(|err| match err {
                     epoch::InsertError::Full => InsertError::EpochFull,
                     epoch::InsertError::BlockFull => InsertError::BlockFull,
                     epoch::InsertError::BlockForgotten => InsertError::BlockForgotten,
@@ -124,7 +127,7 @@ impl Eternity {
             Err(err) => Err(err),
             Ok(None) => Ok(()),
             Ok(Some(replaced)) => {
-                // If inserting this item replaced some other item, forget the replaced index
+                // If inserting this commitment replaced some other commitment, forget the replaced index
                 let forgotten = self.inner.forget(replaced);
                 debug_assert!(forgotten);
                 Ok(())
@@ -173,7 +176,7 @@ impl Eternity {
     }
 
     /// Add the root hash of an [`Block`] to this [`Eternity`], without inserting any of the
-    /// witnessed items in that [`Block`].
+    /// witnessed commitments in that [`Block`].
     ///
     /// # Errors
     ///
@@ -228,7 +231,7 @@ impl Eternity {
     }
 
     /// Add the root hash of an [`Epoch`] to this [`Eternity`], without inserting any of the
-    /// witnessed items in that [`Epoch`].
+    /// witnessed commitments in that [`Epoch`].
     ///
     /// # Errors
     ///
@@ -258,8 +261,8 @@ impl Eternity {
             Insert::Keep(Epoch { index, inner }) => (Insert::Keep(inner), index),
         };
 
-        // Try to insert the block into the tree, and if successful, track the item, block, and
-        // epoch indices of each inserted item
+        // Try to insert the block into the tree, and if successful, track the commitment, block, and
+        // epoch indices of each inserted commitment
         if let Err(epoch) = self.inner.insert(epoch) {
             Err(epoch.map(|inner| Epoch {
                 index: epoch_index,
@@ -267,19 +270,19 @@ impl Eternity {
             }))
         } else {
             for (
-                item,
+                commitment,
                 index::within::Epoch {
                     block: this_block,
-                    item: this_item,
+                    commitment: this_commitment,
                 },
             ) in epoch_index.into_iter()
             {
                 if let Some(replaced) = self.index.insert(
-                    item,
+                    commitment,
                     index::within::Eternity {
                         epoch: this_epoch,
                         block: this_block,
-                        item: this_item,
+                        commitment: this_commitment,
                     },
                 ) {
                     // Forget the previous index of this inserted epoch, if there was one
@@ -293,7 +296,7 @@ impl Eternity {
 
     /// The total number of [`Commitment`]s or [`struct@Hash`]es represented in this [`Epoch`].
     ///
-    /// This count includes those items which are elided due to a partially filled [`Block`] or
+    /// This count includes those commitments which are elided due to a partially filled [`Block`] or
     /// [`Epoch`], or summary root [`struct@Hash`] of a block or epoch being inserted.
     ///
     /// The maximum capacity of an [`Eternity`] is 281,474,976,710,656 = 65,536 [`Epoch`]s of 65,536

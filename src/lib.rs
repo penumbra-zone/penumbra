@@ -34,13 +34,14 @@ pub use eternity::{
     block, epoch, error, Block, Epoch, Eternity, Proof, Root, VerifiedProof, VerifyError,
 };
 
-/// When inserting an item into an [`Eternity`], [`Epoch`], or [`Block`], should we [`Keep`] it to
-/// allow it to be witnessed later, or [`Forget`] about it after updating the root hash?
+/// When inserting a [`Commitment`] into an [`Eternity`], [`Epoch`], or [`Block`], should we
+/// [`Keep`] it to allow it to be witnessed later, or [`Forget`] about it after updating the root
+/// hash?
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Witness {
-    /// Keep this item so it can be witnessed later.
+    /// Keep this commitment so it can be witnessed later.
     Keep,
-    /// Forget this item so it does not take up space, but it cannot be witnessed later.
+    /// Forget this commitment so it does not take up space, but it cannot be witnessed later.
     Forget,
 }
 

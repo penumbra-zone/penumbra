@@ -9,9 +9,9 @@
 ///
 /// Create this using `From<u16>`.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct Item(u16);
+pub struct Commitment(u16);
 
-impl From<u16> for Item {
+impl From<u16> for Commitment {
     fn from(index: u16) -> Self {
         Self(index)
     }
@@ -49,11 +49,15 @@ pub mod within {
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
     pub struct Block {
         /// The index of the item within its block.
-        pub item: super::Item,
+        pub commitment: super::Commitment,
     }
 
     impl From<Block> for u64 {
-        fn from(Block { item: Item(item) }: Block) -> Self {
+        fn from(
+            Block {
+                commitment: Commitment(item),
+            }: Block,
+        ) -> Self {
             item as u64
         }
     }
@@ -64,14 +68,14 @@ pub mod within {
         /// The index of the block within its epoch.
         pub block: super::Block,
         /// The index of the item within its block.
-        pub item: super::Item,
+        pub commitment: super::Commitment,
     }
 
     impl From<Epoch> for u64 {
         fn from(
             Epoch {
                 block: super::Block(block),
-                item: Item(item),
+                commitment: Commitment(item),
             }: Epoch,
         ) -> Self {
             ((block as u64) << 16) | item as u64
@@ -86,7 +90,7 @@ pub mod within {
         /// The index of the block within its epoch.
         pub block: super::Block,
         /// The index of the item within its block.
-        pub item: super::Item,
+        pub commitment: super::Commitment,
     }
 
     impl From<Eternity> for u64 {
@@ -94,7 +98,7 @@ pub mod within {
             Eternity {
                 epoch: super::Epoch(epoch),
                 block: super::Block(block),
-                item: super::Item(item),
+                commitment: super::Commitment(item),
             }: Eternity,
         ) -> Self {
             ((epoch as u64) << 32) | ((block as u64) << 16) | item as u64

@@ -45,11 +45,11 @@ pub(super) struct EpochMut<'a> {
 /// contains all the indices for everything in the tree so far.
 #[derive(Debug, PartialEq, Eq)]
 pub(super) enum IndexMut<'a> {
-    /// An index just for items within an epoch.
+    /// An index just for commitments within an epoch.
     Epoch {
         index: &'a mut HashedMap<Commitment, index::within::Epoch>,
     },
-    /// An index for items within an entire eternity.
+    /// An index for commitments within an entire eternity.
     Eternity {
         this_epoch: index::Epoch,
         index: &'a mut HashedMap<Commitment, index::within::Eternity>,
@@ -108,28 +108,28 @@ impl Epoch {
             })
     }
 
-    /// Get a [`Proof`] of inclusion for the item at this index in the epoch.
+    /// Get a [`Proof`] of inclusion for the commitment at this index in the epoch.
     ///
     /// If the index is not witnessed in this epoch, return `None`.
-    pub fn witness(&self, item: Commitment) -> Option<Proof> {
-        let index = *self.index.get(&item)?;
+    pub fn witness(&self, commitment: Commitment) -> Option<Proof> {
+        let index = *self.index.get(&commitment)?;
 
         let (auth_path, leaf) = self.inner.witness(index)?;
-        debug_assert_eq!(leaf, Hash::of(item));
+        debug_assert_eq!(leaf, Hash::of(commitment));
 
         Some(Proof(crate::proof::Proof {
             index: index.into(),
             auth_path,
-            leaf: item,
+            leaf: commitment,
         }))
     }
 
     /// Forget about the witness for the given [`Commitment`].
     ///
-    /// Returns `true` if the item was previously witnessed (and now is forgotten), and `false` if
+    /// Returns `true` if the commitment was previously witnessed (and now is forgotten), and `false` if
     /// it was not witnessed.
-    pub fn forget(&mut self, item: Commitment) -> bool {
-        self.as_mut().forget(item)
+    pub fn forget(&mut self, commitment: Commitment) -> bool {
+        self.as_mut().forget(commitment)
     }
 
     /// Add a new [`Block`] all at once to this [`Epoch`].
@@ -150,7 +150,7 @@ impl Epoch {
     }
 
     /// Add the root hash of a [`Block`] to this [`Epoch`], without inserting any of the witnessed
-    /// items in that [`Epoch`].
+    /// commitments in that [`Epoch`].
     ///
     /// # Errors
     ///
@@ -220,8 +220,8 @@ impl EpochMut<'_> {
             Insert::Keep(Block { index, inner }) => (Insert::Keep(inner), index),
         };
 
-        // Try to insert the block into the tree, and if successful, track the item and block
-        // indices of each item in the inserted block
+        // Try to insert the block into the tree, and if successful, track the commitment and block
+        // indices of each commitment in the inserted block
         if let Err(block) = self.inner.insert(block) {
             Err(block.map(|inner| Block {
                 index: block_index,
@@ -230,13 +230,18 @@ impl EpochMut<'_> {
         } else {
             match self.index {
                 IndexMut::Epoch { ref mut index } => {
-                    for (item, index::within::Block { item: this_item }) in block_index.into_iter()
+                    for (
+                        commitment,
+                        index::within::Block {
+                            commitment: this_commitment,
+                        },
+                    ) in block_index.into_iter()
                     {
                         if let Some(replaced) = index.insert(
-                            item,
+                            commitment,
                             index::within::Epoch {
                                 block: this_block,
-                                item: this_item,
+                                commitment: this_commitment,
                             },
                         ) {
                             // Immediately forget replaced indices if we are a standalone epoch
@@ -249,14 +254,19 @@ impl EpochMut<'_> {
                     this_epoch,
                     ref mut index,
                 } => {
-                    for (item, index::within::Block { item: this_item }) in block_index.into_iter()
+                    for (
+                        commitment,
+                        index::within::Block {
+                            commitment: this_commitment,
+                        },
+                    ) in block_index.into_iter()
                     {
                         if let Some(index) = index.insert(
-                            item,
+                            commitment,
                             index::within::Eternity {
                                 epoch: this_epoch,
                                 block: this_block,
-                                item: this_item,
+                                commitment: this_commitment,
                             },
                         ) {
                             // If we are part of a larger eternity, collect indices to be forgotten
@@ -271,12 +281,12 @@ impl EpochMut<'_> {
         }
     }
 
-    /// Insert an item into the most recent [`Block`] of this [`Epoch`]: see [`Epoch::insert`].
+    /// Insert an commitment into the most recent [`Block`] of this [`Epoch`]: see [`Epoch::insert`].
     pub fn insert(
         &mut self,
-        item: Insert<Commitment>,
+        commitment: Insert<Commitment>,
     ) -> Result<Option<index::within::Eternity>, InsertError> {
-        // If the epoch is empty, we need to create a new block to insert the item into
+        // If the epoch is empty, we need to create a new block to insert the commitment into
         if self.inner.is_empty()
             && self
                 .insert_block_or_root(Insert::Keep(Block::new()))
@@ -287,7 +297,7 @@ impl EpochMut<'_> {
 
         match self.update(|block| {
             if let Some(block) = block {
-                block.insert(item).map_err(|_| InsertError::BlockFull)
+                block.insert(commitment).map_err(|_| InsertError::BlockFull)
             } else {
                 Err(InsertError::BlockForgotten)
             }
@@ -307,27 +317,27 @@ impl EpochMut<'_> {
         }
     }
 
-    /// Forget the witness of the given item, if it was witnessed: see [`Epoch::forget`].
-    pub fn forget(&mut self, item: Commitment) -> bool {
+    /// Forget the witness of the given commitment, if it was witnessed: see [`Epoch::forget`].
+    pub fn forget(&mut self, commitment: Commitment) -> bool {
         let mut forgotten = false;
 
         match self.index {
             IndexMut::Epoch { ref mut index } => {
-                if let Some(&within_epoch) = index.get(&item) {
+                if let Some(&within_epoch) = index.get(&commitment) {
                     // We forgot something
                     forgotten = true;
                     // Forget the index for this element in the tree
                     let forgotten = self.inner.forget(within_epoch);
                     debug_assert!(forgotten);
                     // Remove this entry from the index
-                    index.remove(&item);
+                    index.remove(&commitment);
                 }
             }
             IndexMut::Eternity {
                 this_epoch,
                 ref mut index,
             } => {
-                if let Some(&within_eternity) = index.get(&item) {
+                if let Some(&within_eternity) = index.get(&commitment) {
                     // Only forget this index if it belongs to the current epoch
                     if within_eternity.epoch == this_epoch {
                         // We forgot something
@@ -336,7 +346,7 @@ impl EpochMut<'_> {
                         let forgotten = self.inner.forget(within_eternity);
                         debug_assert!(forgotten);
                         // Remove this entry from the index
-                        index.remove(&item);
+                        index.remove(&commitment);
                     }
                 }
             }
