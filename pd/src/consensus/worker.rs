@@ -171,10 +171,6 @@ impl Worker {
             .collect::<Result<Vec<tendermint::abci::types::ValidatorUpdate>>>()
             .expect("expected genesis state to reload correctly");
 
-        println!(
-            "INIT CHAIN! nct root: {:?}",
-            self.note_commitment_tree.root2()
-        );
         Ok(abci::response::InitChain {
             consensus_params: Some(init_chain.consensus_params),
             validators,
@@ -338,9 +334,6 @@ impl Worker {
             ?validator_updates,
             "sending validator updates to tendermint (XXX not really, but this is what they _would_ be)"
         );
-
-        println!("height: {}", height);
-        println!("nct root: {:?}", self.note_commitment_tree.root2());
 
         Ok(abci::response::EndBlock {
             // TODO: the voting power calculations aren't working right and are knocking validators out of the tendermint

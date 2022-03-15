@@ -574,7 +574,7 @@ impl ValidatorSet {
             // when we write the updates in Commit and reload the cache.
             self.cache
                 .validator_set
-                .get_mut(&ik)
+                .get_mut(ik)
                 .expect("redefined validators must exist")
                 .validator = v.validator.clone();
         }

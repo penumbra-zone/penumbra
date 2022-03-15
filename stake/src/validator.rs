@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
 use penumbra_crypto::rdsa::{Signature, SpendAuth};
-use penumbra_proto::{stake as pb, ProtoError, Protobuf};
+use penumbra_proto::{stake as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
 use crate::{FundingStream, IdentityKey};
