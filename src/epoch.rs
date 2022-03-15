@@ -72,6 +72,63 @@ impl Epoch {
         }
     }
 
+    /// Get the root hash of this [`Epoch`].
+    ///
+    /// Internal hashing is performed lazily to prevent unnecessary intermediary hashes from being
+    /// computed, so the first hash returned after a long sequence of insertions may take more time
+    /// than subsequent calls.
+    ///
+    /// Computed hashes are cached so that subsequent calls without further modification are very
+    /// fast.
+    pub fn root(&self) -> Root {
+        Root(self.inner.hash())
+    }
+
+    /// Add a new [`Commitment`] to the most recent [`Block`] of this [`Epoch`].
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err(commitment)` containing the inserted commitment without adding it to the [`Epoch`]
+    /// if the [`Epoch`] is full, or if the most recent [`Block`] is full or was inserted by
+    /// [`Insert::Hash`].
+    pub fn insert(&mut self, witness: Witness, commitment: Commitment) -> Result<(), Commitment> {
+        self.as_mut()
+            .insert(match witness {
+                Keep => Insert::Keep(commitment),
+                Forget => Insert::Hash(Hash::of(commitment)),
+            })
+            .map(|replaced| {
+                // When inserting into an epoch that's not part of a larger eternity, we should never return
+                // further indices to be forgotten, because they should be forgotten internally
+                debug_assert!(replaced.is_none());
+            })
+            .map_err(|_| commitment)
+    }
+
+    /// Get a [`Proof`] of inclusion for the item at this index in the epoch.
+    ///
+    /// If the index is not witnessed in this epoch, return `None`.
+    pub fn witness(&self, item: Commitment) -> Option<Proof> {
+        let index = *self.index.get(&item)?;
+
+        let (auth_path, leaf) = self.inner.witness(index)?;
+        debug_assert_eq!(leaf, Hash::of(item));
+
+        Some(Proof(crate::proof::Proof {
+            index: index.into(),
+            auth_path,
+            leaf: item,
+        }))
+    }
+
+    /// Forget about the witness for the given [`Commitment`].
+    ///
+    /// Returns `true` if the item was previously witnessed (and now is forgotten), and `false` if
+    /// it was not witnessed.
+    pub fn forget(&mut self, item: Commitment) -> bool {
+        self.as_mut().forget(item)
+    }
+
     /// Add a new [`Block`] all at once to this [`Epoch`].
     ///
     /// # Errors
@@ -116,40 +173,6 @@ impl Epoch {
         })
     }
 
-    /// Add a new [`Commitment`] or its [`struct@Hash`] to the most recent [`Block`] of this
-    /// [`Epoch`].
-    ///
-    /// # Errors
-    ///
-    /// Returns `Err(block)` containing the inserted commitment without adding it to the [`Epoch`]
-    /// if the [`Epoch`] is full, or if the most recent [`Block`] is full or was inserted by
-    /// [`Insert::Hash`].
-    pub fn insert_commitment(
-        &mut self,
-        witness: Witness,
-        commitment: Commitment,
-    ) -> Result<(), Commitment> {
-        self.as_mut()
-            .insert_commitment(match witness {
-                Keep => Insert::Keep(commitment),
-                Forget => Insert::Hash(Hash::of(commitment)),
-            })
-            .map(|replaced| {
-                // When inserting into an epoch that's not part of a larger eternity, we should never return
-                // further indices to be forgotten, because they should be forgotten internally
-                debug_assert!(replaced.is_none());
-            })
-            .map_err(|_| commitment)
-    }
-
-    /// Forget about the witness for the given [`Commitment`].
-    ///
-    /// Returns `true` if the item was previously witnessed (and now is forgotten), and `false` if
-    /// it was not witnessed.
-    pub fn forget(&mut self, item: Commitment) -> bool {
-        self.as_mut().forget(item)
-    }
-
     /// The total number of [`Commitment`]s or [`struct@Hash`]es represented in this [`Epoch`].
     ///
     /// This count includes those which were elided due to a partially filled [`Block`] or summary
@@ -169,34 +192,6 @@ impl Epoch {
     /// Check whether this [`Epoch`] is empty.
     pub fn is_empty(&self) -> bool {
         self.inner.is_empty()
-    }
-
-    /// Get the root hash of this [`Epoch`].
-    ///
-    /// Internal hashing is performed lazily to prevent unnecessary intermediary hashes from being
-    /// computed, so the first hash returned after a long sequence of insertions may take more time
-    /// than subsequent calls.
-    ///
-    /// Computed hashes are cached so that subsequent calls without further modification are very
-    /// fast.
-    pub fn root(&self) -> Root {
-        Root(self.inner.hash())
-    }
-
-    /// Get a [`Proof`] of inclusion for the item at this index in the epoch.
-    ///
-    /// If the index is not witnessed in this epoch, return `None`.
-    pub fn witness(&self, item: Commitment) -> Option<Proof> {
-        let index = *self.index.get(&item)?;
-
-        let (auth_path, leaf) = self.inner.witness(index)?;
-        debug_assert_eq!(leaf, Hash::of(item));
-
-        Some(Proof(crate::proof::Proof {
-            index: index.into(),
-            auth_path,
-            leaf: item,
-        }))
     }
 }
 
@@ -270,8 +265,8 @@ impl EpochMut<'_> {
         }
     }
 
-    /// Insert an item into the most recent [`Block`] of this [`Epoch`]: see [`Epoch::insert_commitment`].
-    pub fn insert_commitment(
+    /// Insert an item into the most recent [`Block`] of this [`Epoch`]: see [`Epoch::insert`].
+    pub fn insert(
         &mut self,
         item: Insert<Commitment>,
     ) -> Result<Option<index::within::Eternity>, Insert<Commitment>> {
@@ -282,7 +277,7 @@ impl EpochMut<'_> {
 
         match self.update(|block| {
             if let Some(block) = block {
-                block.insert_commitment(item)
+                block.insert(item)
             } else {
                 Err(item)
             }

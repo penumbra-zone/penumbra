@@ -8,7 +8,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     for (i, witness) in (0u64..1000).zip([Keep].into_iter().cycle()) {
         let fq = Commitment::from_le_bytes_mod_order(&i.to_le_bytes());
-        tree.insert_commitment(witness, fq).unwrap();
+        tree.insert(witness, fq).unwrap();
     }
 
     // println!("{tree:?}");

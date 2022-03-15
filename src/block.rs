@@ -81,39 +81,6 @@ impl Block {
         }
     }
 
-    /// Add a new [`Commitment`] or its [`struct@Hash`] to this [`Block`].
-    ///
-    /// # Errors
-    ///
-    /// Returns `Err(item)` containing the inserted item without adding it to the [`Block`] if the
-    /// block is full.
-    pub fn insert_commitment(
-        &mut self,
-        witness: Witness,
-        commitment: Commitment,
-    ) -> Result<(), Commitment> {
-        self.as_mut()
-            .insert_commitment(match witness {
-                Keep => Insert::Keep(commitment),
-                Forget => Insert::Hash(Hash::of(commitment)),
-            })
-            .map(|option|
-                // We shouldn't ever be handing back a replaced index here, because the index should
-                // be forgotten internally to the method when the block is not owned by a larger structure
-                debug_assert!(option.is_none()))
-            .map_err(|_| commitment)
-    }
-
-    /// The total number of [`Commitment`]s or [`struct@Hash`]es represented in the underlying [`Block`].
-    pub fn len(&self) -> u16 {
-        self.inner.len()
-    }
-
-    /// Check whether the underlying [`Block`] is empty.
-    pub fn is_empty(&self) -> bool {
-        self.inner.is_empty()
-    }
-
     /// Get the root [`struct@Hash`] of this [`Block`].
     ///
     /// Internal hashing is performed lazily to prevent unnecessary intermediary hashes from being
@@ -124,6 +91,25 @@ impl Block {
     /// fast.
     pub fn root(&self) -> Hash {
         self.inner.hash()
+    }
+
+    /// Add a new [`Commitment`] to this [`Block`].
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err(commitment)` containing the inserted commitment without adding it to the
+    /// [`Block`] if the block is full.
+    pub fn insert(&mut self, witness: Witness, commitment: Commitment) -> Result<(), Commitment> {
+        self.as_mut()
+            .insert(match witness {
+                Keep => Insert::Keep(commitment),
+                Forget => Insert::Hash(Hash::of(commitment)),
+            })
+            .map(|option|
+                // We shouldn't ever be handing back a replaced index here, because the index should
+                // be forgotten internally to the method when the block is not owned by a larger structure
+                debug_assert!(option.is_none()))
+            .map_err(|_| commitment)
     }
 
     /// Get a [`Proof`] of inclusion for this item in the block.
@@ -149,10 +135,19 @@ impl Block {
     pub fn forget(&mut self, item: Commitment) -> bool {
         self.as_mut().forget(item)
     }
+    /// The total number of [`Commitment`]s or [`struct@Hash`]es represented in the underlying [`Block`].
+    pub fn len(&self) -> u16 {
+        self.inner.len()
+    }
+
+    /// Check whether the underlying [`Block`] is empty.
+    pub fn is_empty(&self) -> bool {
+        self.inner.is_empty()
+    }
 }
 
 impl BlockMut<'_> {
-    pub(super) fn insert_commitment(
+    pub(super) fn insert(
         &mut self,
         item: Insert<Commitment>,
     ) -> Result<Option<ReplacedIndex>, Insert<Commitment>> {
