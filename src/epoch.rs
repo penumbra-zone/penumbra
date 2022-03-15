@@ -22,7 +22,7 @@ pub struct Epoch {
 /// This supports all the methods of [`Epoch`] that take `&mut self` or `&self`.
 #[derive(Debug, PartialEq, Eq)]
 pub struct EpochMut<'a> {
-    pub(super) index: Index<'a>,
+    pub(super) index: IndexMut<'a>,
     pub(super) inner: &'a mut Tier<Tier<Item>>,
 }
 
@@ -31,7 +31,7 @@ pub struct EpochMut<'a> {
 /// When a [`BlockMut`] is derived from some containing [`Epoch`] or [`Eternity`], this index
 /// contains all the indices for everything in the tree so far.
 #[derive(Debug, PartialEq, Eq)]
-pub enum Index<'a> {
+pub enum IndexMut<'a> {
     /// An index just for items within an epoch.
     Epoch {
         index: &'a mut HashedMap<Fq, Vec<index::within::Epoch>>,
@@ -56,7 +56,7 @@ impl Epoch {
     /// Get an [`EpochMut`] referring to this [`Epoch`].
     pub fn as_mut(&mut self) -> EpochMut {
         EpochMut {
-            index: Index::Epoch {
+            index: IndexMut::Epoch {
                 index: &mut self.index,
             },
             inner: &mut self.inner,
@@ -161,7 +161,7 @@ impl EpochMut<'_> {
             for (item, indices) in block_index.into_iter() {
                 for index::within::Block { item: this_item } in indices {
                     match self.index {
-                        Index::Epoch { ref mut index } => {
+                        IndexMut::Epoch { ref mut index } => {
                             index
                                 .entry(item)
                                 .or_insert_with(|| Vec::with_capacity(1))
@@ -170,7 +170,7 @@ impl EpochMut<'_> {
                                     item: this_item,
                                 });
                         }
-                        Index::Eternity {
+                        IndexMut::Eternity {
                             this_epoch,
                             ref mut index,
                         } => {
@@ -196,7 +196,7 @@ impl EpochMut<'_> {
         let mut forgotten = false;
 
         match self.index {
-            Index::Epoch { ref mut index } => {
+            IndexMut::Epoch { ref mut index } => {
                 if let Some(within_epoch) = index.get(&item) {
                     // Forget each index for this element in the tree
                     within_epoch.iter().for_each(|&index| {
@@ -207,7 +207,7 @@ impl EpochMut<'_> {
                     index.remove(&item);
                 }
             }
-            Index::Eternity {
+            IndexMut::Eternity {
                 this_epoch,
                 ref mut index,
             } => {
@@ -230,5 +230,32 @@ impl EpochMut<'_> {
         }
 
         forgotten
+    }
+
+    /// Update the most recently inserted [`Block`] via methods on [`BlockMut`], and return the
+    /// result of the function.
+    pub(super) fn update<T>(&mut self, f: impl FnOnce(&mut BlockMut<'_>) -> T) -> Option<T> {
+        let this_block = self.inner.len().saturating_sub(1).into();
+
+        let index = match self.index {
+            IndexMut::Epoch { ref mut index } => block::IndexMut::Epoch { this_block, index },
+            IndexMut::Eternity {
+                this_epoch,
+                ref mut index,
+            } => block::IndexMut::Eternity {
+                this_epoch,
+                this_block,
+                index,
+            },
+        };
+
+        self.inner
+            .update(|ref mut inner| {
+                Some(f(&mut BlockMut {
+                    inner: inner.as_mut().keep()?,
+                    index,
+                }))
+            })
+            .flatten()
     }
 }

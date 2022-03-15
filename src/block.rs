@@ -15,7 +15,7 @@ pub struct Block {
 /// A mutable reference to a [`Block`].
 #[derive(Debug, PartialEq, Eq)]
 pub struct BlockMut<'a> {
-    pub(super) index: Index<'a>,
+    pub(super) index: IndexMut<'a>,
     pub(super) inner: &'a mut Tier<Item>,
 }
 
@@ -24,7 +24,7 @@ pub struct BlockMut<'a> {
 /// When a [`BlockMut`] is derived from some containing [`Epoch`] or [`Eternity`], this index
 /// contains all the indices for everything in the tree so far.
 #[derive(Debug, PartialEq, Eq)]
-pub enum Index<'a> {
+pub enum IndexMut<'a> {
     /// An index just for items within a block.
     Block {
         index: &'a mut HashedMap<Fq, Vec<index::within::Block>>,
@@ -55,7 +55,7 @@ impl Block {
     /// Get a [`BlockMut`] from this [`Block`].
     pub fn as_mut(&mut self) -> BlockMut {
         BlockMut {
-            index: Index::Block {
+            index: IndexMut::Block {
                 index: &mut self.index,
             },
             inner: &mut self.inner,
@@ -136,13 +136,13 @@ impl BlockMut<'_> {
             // within its epoch, and if applicable, the epoch's index in the eternity
             if let Insert::Keep(item) = item {
                 match self.index {
-                    Index::Block { ref mut index } => {
+                    IndexMut::Block { ref mut index } => {
                         index
                             .entry(item)
                             .or_insert_with(|| Vec::with_capacity(1))
                             .push(index::within::Block { item: this_item });
                     }
-                    Index::Epoch {
+                    IndexMut::Epoch {
                         this_block,
                         ref mut index,
                     } => {
@@ -154,7 +154,7 @@ impl BlockMut<'_> {
                                 item: this_item,
                             });
                     }
-                    Index::Eternity {
+                    IndexMut::Eternity {
                         this_epoch,
                         this_block,
                         ref mut index,
@@ -179,7 +179,7 @@ impl BlockMut<'_> {
         let mut forgotten = false;
 
         match self.index {
-            Index::Block { ref mut index } => {
+            IndexMut::Block { ref mut index } => {
                 if let Some(within_block) = index.get(&item) {
                     // Forget each index for this element in the tree
                     within_block.iter().for_each(|&index| {
@@ -190,7 +190,7 @@ impl BlockMut<'_> {
                     index.remove(&item);
                 }
             }
-            Index::Epoch {
+            IndexMut::Epoch {
                 this_block,
                 ref mut index,
             } => {
@@ -209,7 +209,7 @@ impl BlockMut<'_> {
                     }
                 }
             }
-            Index::Eternity {
+            IndexMut::Eternity {
                 this_epoch,
                 this_block,
                 ref mut index,

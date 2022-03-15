@@ -25,6 +25,14 @@ impl<T> Insert<T> {
         }
     }
 
+    /// Transform a `&mut Insert<T>` into a `Insert<&mut T>`.
+    pub fn as_mut(&mut self) -> Insert<&mut T> {
+        match self {
+            Insert::Keep(item) => Insert::Keep(item),
+            Insert::Hash(hash) => Insert::Hash(*hash),
+        }
+    }
+
     /// Test if this [`Insert`] is a [`Insert::Keep`].
     pub fn is_keep(&self) -> bool {
         matches!(self, Insert::Keep(_))
