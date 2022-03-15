@@ -10,7 +10,7 @@ pub use epoch::{Block, BlockMut, Epoch, EpochMut};
 /// [`Block`]s, each witnessing up to 65,536 [`Fq`]s or their [`struct@Hash`]es.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Eternity {
-    index: HashedMap<Fq, Vec<index::within::Eternity>>,
+    index: HashedMap<Fq, index::within::Eternity>,
     inner: Tier<Tier<Tier<Item>>>,
 }
 
@@ -47,20 +47,24 @@ impl Eternity {
                 inner,
             }))
         } else {
-            for (item, indices) in epoch_index.into_iter() {
-                for index::within::Epoch {
-                    item: this_item,
+            for (
+                item,
+                index::within::Epoch {
                     block: this_block,
-                } in indices
-                {
-                    self.index
-                        .entry(item)
-                        .or_insert_with(|| Vec::with_capacity(1))
-                        .push(index::within::Eternity {
-                            epoch: this_epoch,
-                            block: this_block,
-                            item: this_item,
-                        });
+                    item: this_item,
+                },
+            ) in epoch_index.into_iter()
+            {
+                if let Some(replaced) = self.index.insert(
+                    item,
+                    index::within::Eternity {
+                        epoch: this_epoch,
+                        block: this_block,
+                        item: this_item,
+                    },
+                ) {
+                    // Forget the previous index of this inserted epoch, if there was one
+                    self.inner.forget(replaced);
                 }
             }
 
@@ -82,13 +86,24 @@ impl Eternity {
             return Err(block);
         }
 
-        self.update(|epoch| {
+        match self.update(|epoch| {
             if let Some(epoch) = epoch {
                 epoch.insert_block(block)
             } else {
                 Err(block)
             }
-        })
+        }) {
+            Err(block) => Err(block),
+            Ok(replaced) => {
+                // When inserting the block, some indices in the block may overwrite existing
+                // indices; we now can forget those indices because they're inaccessible
+                for replaced in replaced {
+                    let forgotten = self.inner.forget(replaced);
+                    debug_assert!(forgotten);
+                }
+                Ok(())
+            }
+        }
     }
 
     /// Add a new [`Fq`] or its [`struct@Hash`] to the most recent [`Block`] of the most recent
@@ -106,13 +121,22 @@ impl Eternity {
             return Err(item);
         }
 
-        self.update(|epoch| {
+        match self.update(|epoch| {
             if let Some(epoch) = epoch {
                 epoch.insert_item(item)
             } else {
                 Err(item)
             }
-        })
+        }) {
+            Err(item) => Err(item),
+            Ok(None) => Ok(()),
+            Ok(Some(replaced)) => {
+                // If inserting this item replaced some other item, forget the replaced index
+                let forgotten = self.inner.forget(replaced);
+                debug_assert!(forgotten);
+                Ok(())
+            }
+        }
     }
 
     /// The total number of [`Fq`]s or [`struct@Hash`]es represented in this [`Epoch`].
@@ -158,11 +182,7 @@ impl Eternity {
     ///
     /// If the index is not witnessed in this eternity, return `None`.
     pub fn witness(&self, item: Fq) -> Option<Proof<Eternity>> {
-        let index = *self
-            .index
-            .get(&item)?
-            .last()
-            .expect("vector of indices is non-empty");
+        let index = *self.index.get(&item)?;
 
         let (auth_path, leaf) = self.inner.witness(index)?;
         debug_assert_eq!(leaf, Hash::of(item));
@@ -181,20 +201,17 @@ impl Eternity {
     pub fn forget(&mut self, item: Fq) -> bool {
         let mut forgotten = false;
 
-        if let Some(within_epoch) = self.index.get(&item) {
-            // Forget each index for this element in the tree
-            within_epoch.iter().for_each(|&index| {
-                forgotten = true;
-                self.inner.forget(index);
-            });
+        if let Some(&within_epoch) = self.index.get(&item) {
+            // We forgot something
+            forgotten = true;
+            // Forget the index for this element in the tree
+            let forgotten = self.inner.forget(within_epoch);
+            debug_assert!(forgotten);
             // Remove this entry from the index
             self.index.remove(&item);
-
-            // The item was indeed previously present, now forgotten
-            true
-        } else {
-            false
         }
+
+        forgotten
     }
 
     /// Update the most recently inserted [`Epoch`] via methods on [`EpochMut`], and return the

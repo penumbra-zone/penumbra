@@ -1,4 +1,3 @@
-use drain_filter_polyfill::VecExt;
 use hash_hasher::HashedMap;
 
 use crate::*;
@@ -8,7 +7,7 @@ use crate::*;
 /// This is one [`Block`] in an [`Epoch`], which is one [`Epoch`] in an [`Eternity`].
 #[derive(Derivative, Debug, Clone, PartialEq, Eq, Default)]
 pub struct Block {
-    pub(super) index: HashedMap<Fq, Vec<index::within::Block>>,
+    pub(super) index: HashedMap<Fq, index::within::Block>,
     pub(super) inner: Tier<Item>,
 }
 
@@ -27,19 +26,28 @@ pub struct BlockMut<'a> {
 pub enum IndexMut<'a> {
     /// An index just for items within a block.
     Block {
-        index: &'a mut HashedMap<Fq, Vec<index::within::Block>>,
+        index: &'a mut HashedMap<Fq, index::within::Block>,
     },
     /// An index just for items within an epoch.
     Epoch {
         this_block: index::Block,
-        index: &'a mut HashedMap<Fq, Vec<index::within::Epoch>>,
+        index: &'a mut HashedMap<Fq, index::within::Epoch>,
     },
     /// An index for items within an entire eternity.
     Eternity {
         this_epoch: index::Epoch,
         this_block: index::Block,
-        index: &'a mut HashedMap<Fq, Vec<index::within::Eternity>>,
+        index: &'a mut HashedMap<Fq, index::within::Eternity>,
     },
+}
+
+/// An overwritten index which should be forgotten.
+#[derive(Debug, PartialEq, Eq)]
+pub enum ReplacedIndex {
+    /// An index from within an epoch.
+    Epoch(index::within::Epoch),
+    /// An index from within an entire eternity.
+    Eternity(index::within::Eternity),
 }
 
 impl Height for Block {
@@ -69,7 +77,10 @@ impl Block {
     /// Returns `Err(item)` containing the inserted item without adding it to the [`Block`] if the
     /// block is full.
     pub fn insert_item(&mut self, item: Insert<Fq>) -> Result<(), Insert<Fq>> {
-        self.as_mut().insert_item(item)
+        self.as_mut().insert_item(item).map(|option|
+                // We shouldn't ever be handing back a replaced index here, because the index should
+                // be forgotten internally to the method when the block is not owned by a larger structure
+                debug_assert!(option.is_none()))
     }
 
     /// The total number of [`Fq`]s or [`struct@Hash`]es represented in the underlying [`Block`].
@@ -98,11 +109,7 @@ impl Block {
     ///
     /// If the index is not witnessed in this block, return `None`.
     pub fn witness(&self, item: Fq) -> Option<Proof<Block>> {
-        let index = *self
-            .index
-            .get(&item)?
-            .last()
-            .expect("vector of indices is non-empty");
+        let index = *self.index.get(&item)?;
 
         let (auth_path, leaf) = self.inner.witness(index)?;
         debug_assert_eq!(leaf, Hash::of(item));
@@ -124,55 +131,57 @@ impl Block {
 }
 
 impl BlockMut<'_> {
-    pub fn insert_item(&mut self, item: Insert<Fq>) -> Result<(), Insert<Fq>> {
+    pub fn insert_item(&mut self, item: Insert<Fq>) -> Result<Option<ReplacedIndex>, Insert<Fq>> {
         // If we successfully insert this item, here's what its index in the block will be:
         let this_item: index::Item = self.inner.len().into();
 
         // Try to insert the item into the inner tree, and if successful, track the index
         if self.inner.insert(item.map(Item::new)).is_err() {
-            return Err(item);
+            Err(item)
         } else {
             // Keep track of the item's index in the block, and if applicable, the block's index
             // within its epoch, and if applicable, the epoch's index in the eternity
             if let Insert::Keep(item) = item {
                 match self.index {
                     IndexMut::Block { ref mut index } => {
-                        index
-                            .entry(item)
-                            .or_insert_with(|| Vec::with_capacity(1))
-                            .push(index::within::Block { item: this_item });
+                        if let Some(replaced) =
+                            index.insert(item, index::within::Block { item: this_item })
+                        {
+                            self.inner.forget(replaced);
+                        }
+                        Ok(None)
                     }
                     IndexMut::Epoch {
                         this_block,
                         ref mut index,
-                    } => {
-                        index
-                            .entry(item)
-                            .or_insert_with(|| Vec::with_capacity(1))
-                            .push(index::within::Epoch {
+                    } => Ok(index
+                        .insert(
+                            item,
+                            index::within::Epoch {
                                 block: this_block,
                                 item: this_item,
-                            });
-                    }
+                            },
+                        )
+                        .map(ReplacedIndex::Epoch)),
                     IndexMut::Eternity {
                         this_epoch,
                         this_block,
                         ref mut index,
-                    } => {
-                        index
-                            .entry(item)
-                            .or_insert_with(|| Vec::with_capacity(1))
-                            .push(index::within::Eternity {
+                    } => Ok(index
+                        .insert(
+                            item,
+                            index::within::Eternity {
                                 epoch: this_epoch,
                                 block: this_block,
                                 item: this_item,
-                            });
-                    }
+                            },
+                        )
+                        .map(ReplacedIndex::Eternity)),
                 }
+            } else {
+                Ok(None)
             }
         }
-
-        Ok(())
     }
 
     pub fn forget(&mut self, item: Fq) -> bool {
@@ -180,12 +189,12 @@ impl BlockMut<'_> {
 
         match self.index {
             IndexMut::Block { ref mut index } => {
-                if let Some(within_block) = index.get(&item) {
-                    // Forget each index for this element in the tree
-                    within_block.iter().for_each(|&index| {
-                        forgotten = true;
-                        self.inner.forget(index);
-                    });
+                if let Some(&within_block) = index.get(&item) {
+                    // We forgot something
+                    forgotten = true;
+                    // Forget the index for this element in the tree
+                    let forgotten = self.inner.forget(within_block);
+                    debug_assert!(forgotten);
                     // Remove this entry from the index
                     index.remove(&item);
                 }
@@ -194,17 +203,15 @@ impl BlockMut<'_> {
                 this_block,
                 ref mut index,
             } => {
-                if let Some(within_epoch) = index.get_mut(&item) {
-                    // Forget each index within this block for this element in the tree
-                    VecExt::drain_filter(within_epoch, |index::within::Epoch { block, .. }| {
-                        *block == this_block
-                    })
-                    .for_each(|index| {
+                if let Some(&within_epoch) = index.get(&item) {
+                    // Only forget this index if it belongs to the current block
+                    if within_epoch.block == this_block {
+                        // We forgot something
                         forgotten = true;
-                        self.inner.forget(index);
-                    });
-                    // Remove this entry from the index if we've removed all its indices
-                    if within_epoch.is_empty() {
+                        // Forget the index for this element in the tree
+                        let forgotten = self.inner.forget(within_epoch);
+                        debug_assert!(forgotten);
+                        // Remove this entry from the index
                         index.remove(&item);
                     }
                 }
@@ -214,20 +221,16 @@ impl BlockMut<'_> {
                 this_block,
                 ref mut index,
             } => {
-                if let Some(within_eternity) = index.get_mut(&item) {
-                    // Forget each index within this epoch for this element in the tree
-                    VecExt::drain_filter(
-                        within_eternity,
-                        |index::within::Eternity { block, epoch, .. }| {
-                            *epoch == this_epoch && *block == this_block
-                        },
-                    )
-                    .for_each(|index| {
+                if let Some(&within_eternity) = index.get(&item) {
+                    // Only forget this index if it belongs to the current block and that block
+                    // belongs to the current epoch
+                    if within_eternity.block == this_block && within_eternity.epoch == this_epoch {
+                        // We forgot something
                         forgotten = true;
-                        self.inner.forget(index);
-                    });
-                    // Remove this entry from the index if we've removed all its indices
-                    if within_eternity.is_empty() {
+                        // Forget the index for this element in the tree
+                        let forgotten = self.inner.forget(within_eternity);
+                        debug_assert!(forgotten);
+                        // Remove this entry from the index
                         index.remove(&item);
                     }
                 }

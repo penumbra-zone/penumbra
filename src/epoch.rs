@@ -1,4 +1,3 @@
-use drain_filter_polyfill::VecExt;
 use hash_hasher::HashedMap;
 
 use crate::*;
@@ -13,7 +12,7 @@ pub use block::{Block, BlockMut};
 /// This is one [`Epoch`] in an [`Eternity`].
 #[derive(Derivative, Debug, Clone, PartialEq, Eq, Default)]
 pub struct Epoch {
-    pub(super) index: HashedMap<Fq, Vec<index::within::Epoch>>,
+    pub(super) index: HashedMap<Fq, index::within::Epoch>,
     pub(super) inner: Tier<Tier<Item>>,
 }
 
@@ -34,12 +33,12 @@ pub struct EpochMut<'a> {
 pub enum IndexMut<'a> {
     /// An index just for items within an epoch.
     Epoch {
-        index: &'a mut HashedMap<Fq, Vec<index::within::Epoch>>,
+        index: &'a mut HashedMap<Fq, index::within::Epoch>,
     },
     /// An index for items within an entire eternity.
     Eternity {
         this_epoch: index::Epoch,
-        index: &'a mut HashedMap<Fq, Vec<index::within::Eternity>>,
+        index: &'a mut HashedMap<Fq, index::within::Eternity>,
     },
 }
 
@@ -70,7 +69,11 @@ impl Epoch {
     /// Returns `Err(block)` containing the inserted block without adding it to the [`Epoch`] if the
     /// [`Epoch`] is full.
     pub fn insert_block(&mut self, block: Insert<Block>) -> Result<(), Insert<Block>> {
-        self.as_mut().insert_block(block)
+        self.as_mut().insert_block(block).map(|replaced| {
+            // When inserting into an epoch that's not part of a larger eternity, we should never return
+            // further indices to be forgotten, because they should be forgotten internally
+            debug_assert!(replaced.is_empty());
+        })
     }
 
     /// Add a new [`Fq`] or its [`struct@Hash`] to the most recent [`Block`] of this [`Epoch`].
@@ -81,7 +84,11 @@ impl Epoch {
     /// [`Epoch`] is full, or if the most recent [`Block`] is full or was inserted by
     /// [`Insert::Hash`].
     pub fn insert_item(&mut self, block: Insert<Fq>) -> Result<(), Insert<Fq>> {
-        self.as_mut().insert_item(block)
+        self.as_mut().insert_item(block).map(|replaced| {
+            // When inserting into an epoch that's not part of a larger eternity, we should never return
+            // further indices to be forgotten, because they should be forgotten internally
+            debug_assert!(replaced.is_none());
+        })
     }
 
     /// Forget about the witness for the given [`Fq`].
@@ -129,11 +136,7 @@ impl Epoch {
     ///
     /// If the index is not witnessed in this epoch, return `None`.
     pub fn witness(&self, item: Fq) -> Option<Proof<Epoch>> {
-        let index = *self
-            .index
-            .get(&item)?
-            .last()
-            .expect("vector of indices is non-empty");
+        let index = *self.index.get(&item)?;
 
         let (auth_path, leaf) = self.inner.witness(index)?;
         debug_assert_eq!(leaf, Hash::of(item));
@@ -149,7 +152,13 @@ impl Epoch {
 impl EpochMut<'_> {
     /// Add a new [`Block`] or its root [`struct@Hash`] all at once to the underlying [`Epoch`]: see
     /// [`Epoch::insert`].
-    pub fn insert_block(&mut self, block: Insert<Block>) -> Result<(), Insert<Block>> {
+    pub fn insert_block(
+        &mut self,
+        block: Insert<Block>,
+    ) -> Result<Vec<index::within::Eternity>, Insert<Block>> {
+        // All the indices that we've replaced while inserting this block
+        let mut replaced_indices = Vec::new();
+
         // If we successfully insert this block, here's what its index in the epoch will be:
         let this_block = self.inner.len().into();
 
@@ -167,53 +176,79 @@ impl EpochMut<'_> {
                 inner,
             }))
         } else {
-            for (item, indices) in block_index.into_iter() {
-                for index::within::Block { item: this_item } in indices {
-                    match self.index {
-                        IndexMut::Epoch { ref mut index } => {
-                            index
-                                .entry(item)
-                                .or_insert_with(|| Vec::with_capacity(1))
-                                .push(index::within::Epoch {
-                                    block: this_block,
-                                    item: this_item,
-                                });
+            match self.index {
+                IndexMut::Epoch { ref mut index } => {
+                    for (item, index::within::Block { item: this_item }) in block_index.into_iter()
+                    {
+                        if let Some(replaced) = index.insert(
+                            item,
+                            index::within::Epoch {
+                                block: this_block,
+                                item: this_item,
+                            },
+                        ) {
+                            // Immediately forget replaced indices if we are a standalone epoch
+                            let forgotten = self.inner.forget(replaced);
+                            debug_assert!(forgotten);
                         }
-                        IndexMut::Eternity {
-                            this_epoch,
-                            ref mut index,
-                        } => {
-                            index
-                                .entry(item)
-                                .or_insert_with(|| Vec::with_capacity(1))
-                                .push(index::within::Eternity {
-                                    epoch: this_epoch,
-                                    block: this_block,
-                                    item: this_item,
-                                });
+                    }
+                }
+                IndexMut::Eternity {
+                    this_epoch,
+                    ref mut index,
+                } => {
+                    for (item, index::within::Block { item: this_item }) in block_index.into_iter()
+                    {
+                        if let Some(index) = index.insert(
+                            item,
+                            index::within::Eternity {
+                                epoch: this_epoch,
+                                block: this_block,
+                                item: this_item,
+                            },
+                        ) {
+                            // If we are part of a larger eternity, collect indices to be forgotten
+                            // by the eternity later
+                            replaced_indices.push(index)
                         }
                     }
                 }
             }
 
-            Ok(())
+            Ok(replaced_indices)
         }
     }
 
     /// Insert an item into the most recent [`Block`] of this [`Epoch`]: see [`Epoch::insert_item`].
-    pub fn insert_item(&mut self, item: Insert<Fq>) -> Result<(), Insert<Fq>> {
+    pub fn insert_item(
+        &mut self,
+        item: Insert<Fq>,
+    ) -> Result<Option<index::within::Eternity>, Insert<Fq>> {
         // If the epoch is empty, we need to create a new block to insert the item into
         if self.inner.is_empty() && self.insert_block(Insert::Keep(Block::new())).is_err() {
             return Err(item);
         }
 
-        self.update(|block| {
+        match self.update(|block| {
             if let Some(block) = block {
                 block.insert_item(item)
             } else {
                 Err(item)
             }
-        })
+        }) {
+            Err(item) => Err(item),
+            Ok(None) => Ok(None),
+            Ok(Some(replaced)) => match replaced {
+                // If the replaced index was within this epoch, forget it immediately
+                block::ReplacedIndex::Epoch(replaced) => {
+                    let forgotten = self.inner.forget(replaced);
+                    debug_assert!(forgotten);
+                    Ok(None)
+                }
+                // If the replaced index was in a larger eternity, return it to be forgotten above
+                block::ReplacedIndex::Eternity(replaced) => Ok(Some(replaced)),
+            },
+        }
     }
 
     /// Forget the witness of the given item, if it was witnessed: see [`Epoch::forget`].
@@ -222,12 +257,12 @@ impl EpochMut<'_> {
 
         match self.index {
             IndexMut::Epoch { ref mut index } => {
-                if let Some(within_epoch) = index.get(&item) {
-                    // Forget each index for this element in the tree
-                    within_epoch.iter().for_each(|&index| {
-                        forgotten = true;
-                        self.inner.forget(index);
-                    });
+                if let Some(&within_epoch) = index.get(&item) {
+                    // We forgot something
+                    forgotten = true;
+                    // Forget the index for this element in the tree
+                    let forgotten = self.inner.forget(within_epoch);
+                    debug_assert!(forgotten);
                     // Remove this entry from the index
                     index.remove(&item);
                 }
@@ -236,18 +271,15 @@ impl EpochMut<'_> {
                 this_epoch,
                 ref mut index,
             } => {
-                if let Some(within_eternity) = index.get_mut(&item) {
-                    // Forget each index within this epoch for this element in the tree
-                    VecExt::drain_filter(
-                        within_eternity,
-                        |index::within::Eternity { epoch, .. }| *epoch == this_epoch,
-                    )
-                    .for_each(|index| {
+                if let Some(&within_eternity) = index.get(&item) {
+                    // Only forget this index if it belongs to the current epoch
+                    if within_eternity.epoch == this_epoch {
+                        // We forgot something
                         forgotten = true;
-                        self.inner.forget(index);
-                    });
-                    // Remove this entry from the index if we've removed all its indices
-                    if within_eternity.is_empty() {
+                        // Forget the index for this element in the tree
+                        let forgotten = self.inner.forget(within_eternity);
+                        debug_assert!(forgotten);
+                        // Remove this entry from the index
                         index.remove(&item);
                     }
                 }
