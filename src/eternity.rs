@@ -10,9 +10,7 @@ pub use epoch::{Block, BlockMut, Epoch, EpochMut};
 /// [`Block`]s, each witnessing up to 65,536 [`Fq`]s or their [`struct@Hash`]es.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Eternity {
-    epoch_index: HashedMap<Fq, index::Epoch>,
-    block_index: HashedMap<Fq, index::Block>,
-    item_index: HashedMap<Fq, index::Item>,
+    index: HashedMap<Fq, Vec<index::within::Eternity>>,
     inner: Tier<Tier<Tier<Item>>>,
 }
 
@@ -32,38 +30,40 @@ impl Eternity {
     ///
     /// Returns `Err(epoch)` without adding it to the [`Eternity`] if the [`Eternity`] is full.
     pub fn insert(&mut self, epoch: Insert<Epoch>) -> Result<(), Insert<Epoch>> {
-        // TODO: deal with duplicates
-
         // If we successfully insert this epoch, here's what its index in the epoch will be:
-        let epoch_index = self.inner.len().into();
+        let this_epoch = self.inner.len().into();
 
-        // Decompose the epoch into its components
-        let (epoch, block_index, item_index) = match epoch {
-            Insert::Hash(hash) => (Insert::Hash(hash), Default::default(), Default::default()),
-            Insert::Keep(Epoch {
-                inner,
-                block_index,
-                item_index,
-            }) => (Insert::Keep(inner), block_index, item_index),
+        // Decompose the block into its components
+        let (epoch, epoch_index) = match epoch {
+            Insert::Hash(hash) => (Insert::Hash(hash), Default::default()),
+            Insert::Keep(Epoch { index, inner }) => (Insert::Keep(inner), index),
         };
 
-        // Try to insert the epoch into the tree, and if successful, track the item, block, and
-        // epoch indices of each item in the epoch
+        // Try to insert the block into the tree, and if successful, track the item, block, and
+        // epoch indices of each inserted item
         if let Err(epoch) = self.inner.insert(epoch) {
             Err(epoch.map(|inner| Epoch {
-                block_index,
-                item_index,
+                index: epoch_index,
                 inner,
             }))
         } else {
-            // Keep track of the epoch index of each item in the epoch (these are all the same, all
-            // pointing to this epoch we just inserted)
-            self.epoch_index
-                .extend(item_index.iter().map(|(item, _)| (*item, epoch_index)));
-            // Keep track of the block index of each block within its own epoch
-            self.block_index.extend(block_index.iter());
-            // Keep track of the index within its own block of each item in the block
-            self.item_index.extend(item_index.iter());
+            for (item, indices) in epoch_index.into_iter() {
+                for index::within::Epoch {
+                    item: this_item,
+                    block: this_block,
+                } in indices
+                {
+                    self.index
+                        .entry(item)
+                        .or_insert_with(|| Vec::with_capacity(1))
+                        .push(index::within::Eternity {
+                            epoch: this_epoch,
+                            block: this_block,
+                            item: this_item,
+                        });
+                }
+            }
+
             Ok(())
         }
     }
@@ -115,21 +115,11 @@ impl Eternity {
     ///
     /// If the index is not witnessed in this eternity, return `None`.
     pub fn witness(&self, item: Fq) -> Option<Proof<Eternity>> {
-        // Calculate the index for this item
-        let this_epoch = *self.epoch_index.get(&item)?;
-        let this_block = *self
-            .block_index
-            .get(&item)
-            .expect("if item is present in the epoch index, it must be present in the block index");
-        let this_item = *self
-            .item_index
-            .get(&item)
-            .expect("if item is present in block index, it must be present in item index");
-        let index = index::within::Eternity {
-            epoch: this_epoch,
-            block: this_block,
-            item: this_item,
-        };
+        let index = *self
+            .index
+            .get(&item)?
+            .last()
+            .expect("vector of indices is non-empty");
 
         let (auth_path, leaf) = self.inner.witness(index)?;
         debug_assert_eq!(leaf, Hash::of(item));
@@ -146,34 +136,16 @@ impl Eternity {
     /// Returns `true` if the item was previously witnessed (and now is forgotten), and `false` if
     /// it was not witnessed.
     pub fn forget(&mut self, item: Fq) -> bool {
-        if let Some(this_item) = self.item_index.get(&item) {
-            let this_block = *self
-                .block_index
-                .get(&item)
-                .expect("if item index contains item, then block index must contain item");
+        let mut forgotten = false;
 
-            let this_epoch = *self
-                .epoch_index
-                .get(&item)
-                .expect("if item index contains item, then epoch index must contain item");
-
-            // Calculate the index for the item
-            let index = index::within::Eternity {
-                item: *this_item,
-                block: this_block,
-                epoch: this_epoch,
-            };
-
-            // Forget the item from the inner tree
-            let forgotten = self.inner.forget(index);
-
-            // The index should never contain things that aren't witnessed
-            debug_assert!(forgotten, "indexed item must be witnessed in tree");
-
-            // Remove the item from all indices
-            self.item_index.remove(&item);
-            self.block_index.remove(&item);
-            self.epoch_index.remove(&item);
+        if let Some(within_epoch) = self.index.get(&item) {
+            // Forget each index for this element in the tree
+            within_epoch.iter().for_each(|&index| {
+                forgotten = true;
+                self.inner.forget(index);
+            });
+            // Remove this entry from the index
+            self.index.remove(&item);
 
             // The item was indeed previously present, now forgotten
             true

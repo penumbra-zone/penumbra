@@ -44,7 +44,7 @@ mod test {
 
     #[test]
     fn check_eternity_size() {
-        static_assertions::assert_eq_size!(Eternity, [u8; 160]);
+        static_assertions::assert_eq_size!(Eternity, [u8; 96]);
     }
 
     #[test]

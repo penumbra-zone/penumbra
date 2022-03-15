@@ -1,5 +1,4 @@
-use std::ops::Deref;
-
+use drain_filter_polyfill::VecExt;
 use hash_hasher::HashedMap;
 
 use crate::*;
@@ -14,28 +13,34 @@ pub use block::{Block, BlockMut};
 /// This is one [`Epoch`] in an [`Eternity`].
 #[derive(Derivative, Debug, Clone, PartialEq, Eq, Default)]
 pub struct Epoch {
-    pub(super) block_index: HashedMap<Fq, index::Block>,
-    pub(super) item_index: HashedMap<Fq, index::Item>,
+    pub(super) index: HashedMap<Fq, Vec<index::within::Epoch>>,
     pub(super) inner: Tier<Tier<Item>>,
 }
 
 /// A mutable reference to an [`Epoch`] within an [`Eternity`](super::Eternity).
 ///
 /// This supports all the methods of [`Epoch`] that take `&mut self` or `&self`.
+#[derive(Debug, PartialEq, Eq)]
 pub struct EpochMut<'a> {
-    pub(super) super_index: Option<(index::Epoch, &'a mut HashedMap<Fq, index::Epoch>)>,
-    epoch: &'a mut Epoch,
+    pub(super) index: Index<'a>,
+    pub(super) inner: &'a mut Tier<Tier<Item>>,
 }
 
-/// [`EpochMut`] implements `Deref<Target = Epoch>` so it inherits all the *immutable* methods from
-/// [`Epoch`], but crucially it *does not* implemennt `DerefMut`, because the *mutable* methods in
-/// `Epoch` are defined in terms of methods on `EpochMut`.
-impl Deref for EpochMut<'_> {
-    type Target = Epoch;
-
-    fn deref(&self) -> &Self::Target {
-        &*self.epoch
-    }
+/// A mutable reference to an index from [`Fq`] to indices into a tree.
+///
+/// When a [`BlockMut`] is derived from some containing [`Epoch`] or [`Eternity`], this index
+/// contains all the indices for everything in the tree so far.
+#[derive(Debug, PartialEq, Eq)]
+pub enum Index<'a> {
+    /// An index just for items within an epoch.
+    Epoch {
+        index: &'a mut HashedMap<Fq, Vec<index::within::Epoch>>,
+    },
+    /// An index for items within an entire eternity.
+    Eternity {
+        this_epoch: index::Epoch,
+        index: &'a mut HashedMap<Fq, Vec<index::within::Eternity>>,
+    },
 }
 
 impl Height for Epoch {
@@ -51,8 +56,10 @@ impl Epoch {
     /// Get an [`EpochMut`] referring to this [`Epoch`].
     pub fn as_mut(&mut self) -> EpochMut {
         EpochMut {
-            super_index: None,
-            epoch: self,
+            index: Index::Epoch {
+                index: &mut self.index,
+            },
+            inner: &mut self.inner,
         }
     }
 
@@ -113,17 +120,11 @@ impl Epoch {
     ///
     /// If the index is not witnessed in this epoch, return `None`.
     pub fn witness(&self, item: Fq) -> Option<Proof<Epoch>> {
-        // Calculate the index for this item
-        let this_block = *self.block_index.get(&item)?;
-        let this_item = *self
-            .item_index
-            .get(&item)
-            .expect("if item is present in block index, it must be present in item index");
-
-        let index = index::within::Epoch {
-            item: this_item,
-            block: this_block,
-        };
+        let index = *self
+            .index
+            .get(&item)?
+            .last()
+            .expect("vector of indices is non-empty");
 
         let (auth_path, leaf) = self.inner.witness(index)?;
         debug_assert_eq!(leaf, Hash::of(item));
@@ -140,81 +141,94 @@ impl EpochMut<'_> {
     /// Add a new [`Block`] or its root [`struct@Hash`] all at once to the underlying [`Epoch`]: see
     /// [`Epoch::insert`].
     pub fn insert(&mut self, block: Insert<Block>) -> Result<(), Insert<Block>> {
-        // TODO: deal with duplicates
-
         // If we successfully insert this block, here's what its index in the epoch will be:
         let this_block = self.inner.len().into();
 
         // Decompose the block into its components
-        let (block, item_index) = match block {
+        let (block, block_index) = match block {
             Insert::Hash(hash) => (Insert::Hash(hash), Default::default()),
-            Insert::Keep(Block { item_index, inner }) => (Insert::Keep(inner), item_index),
+            Insert::Keep(Block { index, inner }) => (Insert::Keep(inner), index),
         };
 
         // Try to insert the block into the tree, and if successful, track the item and block
         // indices of each item in the inserted block
-        if let Err(block) = self.epoch.inner.insert(block) {
-            Err(block.map(|inner| Block { item_index, inner }))
+        if let Err(block) = self.inner.insert(block) {
+            Err(block.map(|inner| Block {
+                index: block_index,
+                inner,
+            }))
         } else {
-            // If there is a super-index (i.e. we are one epoch of an extant eternity), then also
-            // insert our own epoch index as the epoch index of each item in the block
-            if let Some((this_epoch, epoch_index)) = &mut self.super_index {
-                epoch_index.extend(item_index.iter().map(|(item, _)| (*item, *this_epoch)));
+            for (item, indices) in block_index.into_iter() {
+                for index::within::Block { item: this_item } in indices {
+                    match self.index {
+                        Index::Epoch { ref mut index } => {
+                            index
+                                .entry(item)
+                                .or_insert_with(|| Vec::with_capacity(1))
+                                .push(index::within::Epoch {
+                                    block: this_block,
+                                    item: this_item,
+                                });
+                        }
+                        Index::Eternity {
+                            this_epoch,
+                            ref mut index,
+                        } => {
+                            index
+                                .entry(item)
+                                .or_insert_with(|| Vec::with_capacity(1))
+                                .push(index::within::Eternity {
+                                    epoch: this_epoch,
+                                    block: this_block,
+                                    item: this_item,
+                                });
+                        }
+                    }
+                }
             }
-            // Keep track of the block index of each item in the block (these are all the same, all
-            // pointing to this block we just inserted)
-            self.epoch
-                .block_index
-                .extend(item_index.iter().map(|(item, _)| (*item, this_block)));
-            // Keep track of the index within its own block of each item in the block
-            self.epoch.item_index.extend(item_index.iter());
+
             Ok(())
         }
     }
 
     /// Forget the witness of the given item, if it was witnessed: see [`Epoch::forget`].
     pub fn forget(&mut self, item: Fq) -> bool {
-        if let Some(this_block) = self.block_index.get(&item) {
-            // If this `EpochMut` refers to a containing `Eternity`, it could be that the item
-            // doesn't belong to this epoch, but rather another one: check this before proceeding
-            if let Some((this_epoch, epoch_index)) = &self.super_index {
-                let correct_epoch = this_epoch
-                    == epoch_index
-                        .get(&item)
-                        .expect("if block index contains item, then epoch index must contain item");
-                if !correct_epoch {
-                    return false;
+        let mut forgotten = false;
+
+        match self.index {
+            Index::Epoch { ref mut index } => {
+                if let Some(within_epoch) = index.get(&item) {
+                    // Forget each index for this element in the tree
+                    within_epoch.iter().for_each(|&index| {
+                        forgotten = true;
+                        self.inner.forget(index);
+                    });
+                    // Remove this entry from the index
+                    index.remove(&item);
                 }
             }
-
-            let this_item = *self
-                .item_index
-                .get(&item)
-                .expect("if block index contains item, then item index must contain item");
-
-            // Calculate the index for the item
-            let index = index::within::Epoch {
-                item: this_item,
-                block: *this_block,
-            };
-
-            // Forget the item from the inner tree
-            let forgotten = self.epoch.inner.forget(index);
-
-            // The index should never contain things that aren't witnessed
-            debug_assert!(forgotten, "indexed item must be witnessed in tree");
-
-            // Remove the item from all indices
-            self.epoch.item_index.remove(&item);
-            self.epoch.block_index.remove(&item);
-            if let Some((_, epoch_index)) = &mut self.super_index {
-                epoch_index.remove(&item);
+            Index::Eternity {
+                this_epoch,
+                ref mut index,
+            } => {
+                if let Some(within_eternity) = index.get_mut(&item) {
+                    // Forget each index within this epoch for this element in the tree
+                    VecExt::drain_filter(
+                        within_eternity,
+                        |index::within::Eternity { epoch, .. }| *epoch == this_epoch,
+                    )
+                    .for_each(|index| {
+                        forgotten = true;
+                        self.inner.forget(index);
+                    });
+                    // Remove this entry from the index if we've removed all its indices
+                    if within_eternity.is_empty() {
+                        index.remove(&item);
+                    }
+                }
             }
-
-            // The item was indeed previously present, now forgotten
-            true
-        } else {
-            false
         }
+
+        forgotten
     }
 }
