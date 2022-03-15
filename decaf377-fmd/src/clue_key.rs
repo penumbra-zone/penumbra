@@ -1,4 +1,4 @@
-use std::convert::TryInto;
+use std::cell::RefCell;
 
 use ark_ff::{Field, UniformRand};
 use bitvec::{array::BitArray, order};
@@ -19,10 +19,10 @@ pub struct ClueKey(pub [u8; 32]);
 
 /// An expanded and validated clue key that can be used to create [`Clue`]s
 /// intended for the corresponding [`DetectionKey`](crate::DetectionKey).
-#[allow(non_snake_case)]
 pub struct ExpandedClueKey {
-    // should this really generate everything upfront?
-    Xs: [decaf377::Element; MAX_PRECISION],
+    root_pub: decaf377::Element,
+    root_pub_enc: decaf377::Encoding,
+    subkeys: RefCell<Vec<decaf377::Element>>,
 }
 
 impl ClueKey {
@@ -31,27 +31,48 @@ impl ClueKey {
     /// # Errors
     ///
     /// Fails if the bytes don't encode a valid clue key.
-    #[allow(non_snake_case)]
     pub fn expand(&self) -> Result<ExpandedClueKey, Error> {
-        let root_pub_enc = decaf377::Encoding(self.0);
-        let root_pub = root_pub_enc
-            .decompress()
-            .map_err(|_| Error::InvalidAddress)?;
-
-        let Xs: [_; MAX_PRECISION] = (0..MAX_PRECISION)
-            .into_iter()
-            .map(|i| hkd::derive_public(&root_pub, &root_pub_enc, i as u8))
-            .collect::<Vec<_>>()
-            // this conversion into an array will always succeed because we started with an iterator
-            // of length `MAX_PRECISION` and we're converting to an array of the same length
-            .try_into()
-            .expect("iterator of length `MAX_PRECISION`");
-
-        Ok(ExpandedClueKey { Xs })
+        ExpandedClueKey::new(&self)
     }
 }
 
 impl ExpandedClueKey {
+    pub fn new(clue_key: &ClueKey) -> Result<Self, Error> {
+        let root_pub_enc = decaf377::Encoding(clue_key.0);
+        let root_pub = root_pub_enc
+            .decompress()
+            .map_err(|_| Error::InvalidAddress)?;
+
+        Ok(ExpandedClueKey {
+            root_pub,
+            root_pub_enc,
+            subkeys: RefCell::new(Vec::new()),
+        })
+    }
+
+    /// Checks that the expanded clue key has at least `precision` subkeys
+    fn ensure_at_least(&self, precision: usize) -> Result<(), Error> {
+        if precision > MAX_PRECISION {
+            return Err(Error::PrecisionTooLarge(precision));
+        }
+
+        let current_precision = self.subkeys.borrow().len();
+
+        // The cached expansion is large enough to accomodate the specified precision.
+        if precision <= current_precision {
+            return Ok(());
+        }
+
+        let mut expanded_keys = (current_precision..precision)
+            .into_iter()
+            .map(|i| hkd::derive_public(&self.root_pub, &self.root_pub_enc, i as u8))
+            .collect::<Vec<_>>();
+
+        self.subkeys.borrow_mut().append(&mut expanded_keys);
+
+        return Ok(());
+    }
+
     /// Create a [`Clue`] intended for the [`DetectionKey`](crate::DetectionKey)
     /// corresponding to this clue key.
     ///
@@ -71,6 +92,9 @@ impl ExpandedClueKey {
             return Err(Error::PrecisionTooLarge(precision_bits));
         }
 
+        // Ensure that at least `precision_bits` subkeys are available.
+        self.ensure_at_least(precision_bits)?;
+
         let r = Fr::rand(&mut rng);
         let z = Fr::rand(&mut rng);
 
@@ -80,9 +104,10 @@ impl ExpandedClueKey {
         let Q_encoding = Q.compress();
 
         let mut ctxts = BitArray::<order::Lsb0, [u8; 3]>::zeroed();
+        let Xs = self.subkeys.borrow();
 
         for i in 0..precision_bits {
-            let rXi = (r * self.Xs[i]).compress();
+            let rXi = (r * Xs[i]).compress();
             let key_i = hash::to_bit(&P_encoding.0, &rXi.0, &Q_encoding.0);
             let ctxt_i = key_i ^ 1u8;
             ctxts.set(i, ctxt_i != 0);
