@@ -10,7 +10,7 @@ use crate::*;
 mod proof;
 pub use proof::{Proof, VerifiedProof, VerifyError};
 
-/// A sparse commitment tree to witness up to 65,536 individual [`Commitment`]s or their [`struct@Hash`]es.
+/// A sparse commitment tree to witness up to 65,536 individual [`Commitment`]s.
 ///
 /// This is one [`Block`] in an [`Epoch`], which is one [`Epoch`] in an [`Eternity`].
 #[derive(Derivative, Debug, Clone, PartialEq, Eq, Default)]

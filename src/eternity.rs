@@ -6,7 +6,7 @@ use crate::*;
 #[path = "epoch.rs"]
 pub mod epoch;
 use epoch::EpochMut;
-pub use epoch::{block, Block, Epoch};
+use epoch::{block, block::Block, Epoch};
 
 mod proof;
 pub use proof::{Proof, VerifiedProof, VerifyError};
@@ -17,7 +17,7 @@ pub use error::{
 };
 
 /// A sparse commitment tree to witness up to 65,536 [`Epoch`]s, each witnessing up to 65,536
-/// [`Block`]s, each witnessing up to 65,536 [`Commitment`]s or their [`struct@Hash`]es.
+/// [`Block`]s, each witnessing up to 65,536 [`Commitment`]s.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Eternity {
     index: HashedMap<Commitment, index::within::Eternity>,
@@ -55,16 +55,15 @@ impl Eternity {
     ///
     /// # Errors
     ///
-    /// Returns `Err(commitment)` containing the inserted block without adding it to the [`Eternity`] if
-    /// the [`Eternity`] is full, or the most recently inserted [`Epoch`] is full or was inserted by
-    /// [`insert_epoch_root`](Eternity::insert_epoch_root), or the most recently inserted [`Block`]
-    /// is full or was inserted by [`insert_block_root`](Eternity::insert_block_root).
-    pub fn insert(&mut self, witness: Witness, commitment: Commitment) -> Result<(), Commitment> {
+    /// Returns [`InsertError`] if the [`Eternity`] is full, or the most recently inserted [`Epoch`]
+    /// is full or was inserted by [`insert_epoch_root`](Eternity::insert_epoch_root), or the most
+    /// recently inserted [`Block`] is full or was inserted by
+    /// [`insert_block_root`](Eternity::insert_block_root).
+    pub fn insert(&mut self, witness: Witness, commitment: Commitment) -> Result<(), InsertError> {
         self.insert_commitment_or_root(match witness {
             Keep => Insert::Keep(commitment),
             Forget => Insert::Hash(Hash::of(commitment)),
         })
-        .map_err(|_| commitment)
     }
 
     /// Get a [`Proof`] of inclusion for the commitment at this index in the eternity.

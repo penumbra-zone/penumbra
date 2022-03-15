@@ -7,8 +7,7 @@ use crate::*;
 
 #[path = "block.rs"]
 pub mod block;
-pub use block::Block;
-use block::BlockMut;
+use block::{Block, BlockMut};
 
 #[path = "epoch/proof.rs"]
 mod proof;
@@ -18,8 +17,8 @@ pub use proof::{Proof, VerifiedProof, VerifyError};
 pub mod error;
 pub use error::{InsertBlockError, InsertBlockRootError, InsertError};
 
-/// A sparse commitment tree to witness up to 65,536 [`Block`]s, each witnessing up to 65,536 [`Commitment`]s
-/// or their [`struct@Hash`]es.
+/// A sparse commitment tree to witness up to 65,536 [`Block`]s, each witnessing up to 65,536
+/// [`Commitment`]s.
 ///
 /// This is one [`Epoch`] in an [`Eternity`].
 #[derive(Derivative, Debug, Clone, PartialEq, Eq, Default)]
