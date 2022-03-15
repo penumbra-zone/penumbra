@@ -12,12 +12,12 @@ use penumbra_proto::{
     transaction::{
         Fee as ProtoFee, Transaction as ProtoTransaction, TransactionBody as ProtoTransactionBody,
     },
-    Message, Protobuf,
+    Message, ProtoError, Protobuf,
 };
 use penumbra_stake::STAKING_TOKEN_ASSET_ID;
 
 // TODO: remove & replace with anyhow
-use crate::{action::error::ProtoError, Action};
+use crate::Action;
 
 mod builder;
 pub use builder::Builder;
@@ -143,6 +143,7 @@ impl TryFrom<ProtoTransactionBody> for TransactionBody {
     fn try_from(proto: ProtoTransactionBody) -> anyhow::Result<Self, Self::Error> {
         let mut actions = Vec::<Action>::new();
         for action in proto.actions {
+            println!("{:?}", action);
             actions.push(
                 action
                     .try_into()
