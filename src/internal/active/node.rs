@@ -235,11 +235,7 @@ where
         let index = index.into();
 
         // Which direction should we go from this node?
-        let which_way = WhichWay::at(Self::Height::HEIGHT, index);
-
-        // The index to use when witnessing the child: mask off all the bits for the parent nodes of
-        // the path above us
-        let index = index & !(0b11 << ((Self::Height::HEIGHT - 1) * 2));
+        let (which_way, index) = WhichWay::at(Self::Height::HEIGHT, index);
 
         let (siblings, (child, leaf)) = match (self.siblings.elems(), &self.focus) {
             // Zero siblings to the left
@@ -337,11 +333,7 @@ where
         let index = index.into();
 
         // Which direction should we forget from this node?
-        let which_way = WhichWay::at(Self::Height::HEIGHT, index);
-
-        // The index to use when forgetting the child: mask off all the bits for the parent nodes of
-        // the path above us
-        let index = index & !(0b11 << ((Self::Height::HEIGHT - 1) * 2));
+        let (which_way, index) = WhichWay::at(Self::Height::HEIGHT, index);
 
         match (self.siblings.elems_mut(), &mut self.focus) {
             (_0([]), a) => match which_way {

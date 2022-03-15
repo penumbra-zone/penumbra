@@ -62,7 +62,7 @@ impl<Child, N: Path<Path = Child>> Path for Succ<N> {
         // Based on the index, place the root hash of the child in the correct position among its
         // sibling hashes, so that we can hash this node
         let [leftmost, left, right, rightmost] = match (
-            WhichWay::at(Self::HEIGHT, index), // Which child is the child?
+            WhichWay::at(Self::HEIGHT, index).0, // Which child is the child?
             N::root(child, index, leaf),    // The root hash down to the leaf from the child
             *siblings,                      // The hashes of the siblings of the child
         ) {
@@ -95,16 +95,21 @@ impl WhichWay {
     /// Given a height and an index of a leaf, determine which direction the path down to that leaf
     /// should branch at the node at that height.
     #[inline]
-    pub fn at(height: u8, index: u64) -> WhichWay {
+    pub fn at(height: u8, index: u64) -> (WhichWay, u64) {
         // Shift the index right by (2 * (height - 1)) so that the last 2 bits are our direction, then
         // mask off just those bits and branch on them to generate the output
-        match (index >> (2 * (height - 1))) & 0b11 {
+        let which_way = match (index >> (2 * (height - 1))) & 0b11 {
             0 => WhichWay::Leftmost,
             1 => WhichWay::Left,
             2 => WhichWay::Right,
             3 => WhichWay::Rightmost,
             _ => unreachable!(),
-        }
+        };
+
+        // The index into the child: mask off the bits we just used to determine the direction
+        let index = index & !(0b11 << ((height - 1) * 2));
+
+        (which_way, index)
     }
 }
 
@@ -117,7 +122,7 @@ mod test {
     fn directions_of_index(height: u8, index: u64) -> Vec<WhichWay> {
         (1..=height + 1)
             .rev() // iterate from the root to the leaf (height down to 1)
-            .map(|height| WhichWay::at(height, index))
+            .map(|height| WhichWay::at(height, index).0)
             .collect()
     }
 

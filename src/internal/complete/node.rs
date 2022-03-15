@@ -134,11 +134,7 @@ impl<Child: GetHash + Witness> Witness for Node<Child> {
         let [a, b, c, d] = self.children();
 
         // Which way to go down the tree from this node
-        let which_way = WhichWay::at(Self::Height::HEIGHT, index);
-
-        // The index to use when witnessing the child: mask off all the bits for the parent nodes of
-        // the path above us
-        let index = index & !(0b11 << ((Self::Height::HEIGHT - 1) * 2));
+        let (which_way, index) = WhichWay::at(Self::Height::HEIGHT, index);
 
         let (siblings, (child, leaf)) = match which_way {
             WhichWay::Leftmost => (
@@ -179,11 +175,7 @@ impl<Child: GetHash + ForgetOwned> ForgetOwned for Node<Child> {
         let [a, b, c, d]: [Insert<Child>; 4] = self.children.into();
 
         // Which child should we be forgetting?
-        let which_way = WhichWay::at(Self::Height::HEIGHT, index);
-
-        // The index to use when forgetting the child: mask off all the bits for the parent nodes of
-        // the path above us
-        let index = index & !(0b11 << ((Self::Height::HEIGHT - 1) * 2));
+        let (which_way, index) = WhichWay::at(Self::Height::HEIGHT, index);
 
         // Recursively forget the appropriate child
         let (children, forgotten) = match which_way {
