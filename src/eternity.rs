@@ -152,10 +152,14 @@ impl Eternity {
             if let Some(epoch) = epoch {
                 epoch
                     .insert_block_or_root(Insert::Keep(block))
-                    .map_err(|err| {
-                        InsertBlockError::EpochFull(err.keep().expect(
-                            "block must be returned in error case of `EpochMut::insert_block`",
-                        ))
+                    .map_err(|insert| {
+                        if let Insert::Keep(block) = insert {
+                            InsertBlockError::EpochFull(block)
+                        } else {
+                            unreachable!(
+                                "failing to insert a block always returns the original block"
+                            )
+                        }
                     })
             } else {
                 Err(InsertBlockError::EpochForgotten(block))
