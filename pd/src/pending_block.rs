@@ -120,6 +120,8 @@ impl PendingBlock {
 
     /// Adds a new note to this pending block.
     pub fn add_note(&mut self, commitment: note::Commitment, data: NoteData) {
+        tracing::info!(?commitment, "adding note");
+
         self.note_commitment_tree.append(&commitment);
 
         let position = self
