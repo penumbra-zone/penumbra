@@ -10,9 +10,8 @@ use penumbra_crypto::{
     rdsa::{Binding, Signature, SigningKey, SpendAuth},
     value, Address, Fr, Note, Value,
 };
-use penumbra_stake::{
-    Delegate, RateData, Undelegate, Validator, ValidatorDefinition, STAKING_TOKEN_ASSET_ID,
-};
+use penumbra_proto::{stake::Validator as ProtoValidator, Message};
+use penumbra_stake::{Delegate, RateData, Undelegate, ValidatorDefinition, STAKING_TOKEN_ASSET_ID};
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
 
@@ -33,7 +32,7 @@ pub struct Builder {
     /// List of undelegations in the transaction.
     pub undelegations: Vec<Undelegate>,
     /// List of validator (re-)definitions in the transaction.
-    pub validator_definitions: Vec<(Validator, SigningKey<SpendAuth>)>,
+    pub validator_definitions: Vec<ValidatorDefinition>,
     /// Transaction fee. None if unset.
     pub fee: Option<Fee>,
     /// Sum of blinding factors for each value commitment.
@@ -197,12 +196,8 @@ impl Builder {
         self
     }
 
-    pub fn add_validator_definition(
-        &mut self,
-        validator: Validator,
-        signing_key: SigningKey<SpendAuth>,
-    ) -> &mut Self {
-        self.validator_definitions.push((validator, signing_key));
+    pub fn add_validator_definition(&mut self, validator: ValidatorDefinition) -> &mut Self {
+        self.validator_definitions.push(validator);
         self
     }
 
@@ -302,11 +297,18 @@ impl Builder {
         for undelegation in self.undelegations.drain(..) {
             actions.push(Action::Undelegate(undelegation));
         }
-        for (validator, _signing_key) in &self.validator_definitions {
-            actions.push(Action::ValidatorDefinition(ValidatorDefinition {
-                validator: validator.clone(),
-                auth_sig: Signature::from([0; 64]),
-            }));
+        for vd in &self.validator_definitions {
+            // validate the validator signature is signed by the identity key within the validator
+            // for a client-side safety check
+            let protobuf_serialized: ProtoValidator = vd.validator.clone().into();
+            let v_bytes = protobuf_serialized.encode_to_vec();
+
+            vd.validator
+                .identity_key
+                .0
+                .verify(&v_bytes, &vd.auth_sig)
+                .expect("expected identity key within validator definition to have signed validator definition");
+            actions.push(Action::ValidatorDefinition(vd.clone()));
         }
 
         let mut transaction_body = TransactionBody {
@@ -331,28 +333,6 @@ impl Builder {
                 *auth_sig = rsk.sign(&mut rng, &sighash);
             } else {
                 unreachable!("spends come first in actions list")
-            }
-        }
-
-        // also sign the validators and create validator definitions
-        for (v, rsk) in &self.validator_definitions {
-            for j in 0..transaction_body.actions.len() {
-                // We can't take advantage of the ordering here (well, maybe if we reordered the actions)
-                // like we could for spends, so we just iterate all the actions in the transaction for now
-                if let Action::ValidatorDefinition(ValidatorDefinition {
-                    ref mut auth_sig,
-                    ref validator,
-                }) = transaction_body.actions[j]
-                {
-                    if *validator == *v {
-                        *auth_sig = rsk.sign(&mut rng, &sighash);
-
-                        // Ensure the key matches the identity key within the `Validator` for a client-side safety check
-                        validator.identity_key.0.verify(&sighash, auth_sig).expect(
-                            "expected identity key within validator definition to match wallet",
-                        );
-                    }
-                }
             }
         }
 

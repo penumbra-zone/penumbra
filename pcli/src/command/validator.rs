@@ -3,9 +3,11 @@ use std::fs::File;
 use anyhow::Context;
 use anyhow::Result;
 use penumbra_stake::Validator;
+use penumbra_stake::ValidatorDefinition;
 use rand_core::OsRng;
 use structopt::StructOpt;
 
+use penumbra_proto::{stake::Validator as ProtoValidator, Message};
 use penumbra_stake::IdentityKey;
 
 use crate::state::ClientStateFile;
@@ -64,17 +66,21 @@ impl ValidatorCmd {
                     File::open(&file).with_context(|| format!("cannot open file {:?}", file))?;
                 let new_validator: Validator = serde_json::from_reader(definition_file)
                     .map_err(|_| anyhow::anyhow!("Unable to parse validator definition"))?;
+
+                // Sign the validator definition with the wallet's spend key.
+                let protobuf_serialized: ProtoValidator = new_validator.clone().into();
+                let v_bytes = protobuf_serialized.encode_to_vec();
+                let signing_key = state.wallet().spend_key().spend_auth_key().clone();
+                let auth_sig = signing_key.sign(&mut OsRng, &v_bytes);
+                let vd = ValidatorDefinition {
+                    validator: new_validator,
+                    auth_sig,
+                };
                 // Construct a new transaction and include the validator definition.
                 // TODO: is it possible to get rid of this clone? It's only used because we can't
                 // borrow state mutably & immutably.
-                let signing_key = state.wallet().spend_key().spend_auth_key().clone();
-                let transaction = state.build_validator_definition(
-                    &mut OsRng,
-                    new_validator,
-                    &signing_key,
-                    *fee,
-                    *source,
-                )?;
+                let transaction =
+                    state.build_validator_definition(&mut OsRng, vd, *fee, *source)?;
 
                 opt.submit_transaction(&transaction).await?;
                 // Only commit the state if the transaction was submitted

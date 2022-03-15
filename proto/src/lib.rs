@@ -68,8 +68,6 @@ pub mod sighash {
 
     use sig_hash_action::Action as SHAction;
 
-    use crate::stake::ValidatorDefinition;
-
     use super::transaction::{action::Action as TxAction, Spend};
 
     impl From<super::transaction::Action> for SigHashAction {
@@ -79,16 +77,9 @@ pub mod sighash {
                 Some(TxAction::Output(o)) => Some(SHAction::Output(o)),
                 Some(TxAction::Delegate(d)) => Some(SHAction::Delegate(d)),
                 Some(TxAction::Undelegate(d)) => Some(SHAction::Undelegate(d)),
-                // The `ValidatorDefinition` contains sig bytes, so we only want to hash the `Validator` itself.
-                // Some(TxAction::ValidatorDefinition(v)) => Some(SHAction::Validator(v)),
-                Some(TxAction::ValidatorDefinition(ValidatorDefinition {
-                    validator: None,
-                    ..
-                })) => None,
-                Some(TxAction::ValidatorDefinition(ValidatorDefinition {
-                    validator: Some(v),
-                    ..
-                })) => Some(SHAction::Validator(v)),
+                // The `ValidatorDefinition` contains sig bytes, but they're across the validator itself,
+                // not the transaction, therefore it's fine to include them in the sighash.
+                Some(TxAction::ValidatorDefinition(vd)) => Some(SHAction::ValidatorDefinition(vd)),
                 // Collapse spends to spend bodies
                 Some(TxAction::Spend(Spend { body: None, .. })) => None,
                 Some(TxAction::Spend(Spend {
