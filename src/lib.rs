@@ -51,7 +51,7 @@ pub use eternity::{
         block::{self, Block},
         Epoch,
     },
-    error, Eternity, Proof, Root, VerifiedProof, VerifyError,
+    error, Eternity, Proof, Root, VerifyError,
 };
 
 /// When inserting a [`Commitment`] into an [`Eternity`], [`Epoch`], or [`Block`], should we

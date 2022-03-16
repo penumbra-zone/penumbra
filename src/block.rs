@@ -9,7 +9,7 @@ use crate::*;
 
 #[path = "block/proof.rs"]
 mod proof;
-pub use proof::{Proof, VerifiedProof, VerifyError};
+pub use proof::{Proof, VerifyError};
 
 /// A sparse merkle tree to witness up to 65,536 individual [`Commitment`]s.
 ///

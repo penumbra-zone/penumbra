@@ -12,7 +12,7 @@ use block::{Block, BlockMut};
 
 #[path = "epoch/proof.rs"]
 mod proof;
-pub use proof::{Proof, VerifiedProof, VerifyError};
+pub use proof::{Proof, VerifyError};
 
 #[path = "epoch/error.rs"]
 pub mod error;

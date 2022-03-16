@@ -10,7 +10,7 @@ use epoch::EpochMut;
 use epoch::{block, block::Block, Epoch};
 
 mod proof;
-pub use proof::{Proof, VerifiedProof, VerifyError};
+pub use proof::{Proof, VerifyError};
 
 pub mod error;
 pub use error::{
