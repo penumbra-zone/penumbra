@@ -88,7 +88,10 @@ impl Proof {
 
     /// Verify a [`Proof`] of inclusion against the [`Root`] of an [`Epoch`].
     ///
-    /// Returns a [`VerifiedProof`] if and only if this proof verified against the hash.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`VerifyError`] if the proof is invalid for that [`Root`].
     pub fn verify(self, root: &Root) -> Result<(), VerifyError> {
         self.0.verify(root.0).map_err(VerifyError).map(|_| ())
     }
