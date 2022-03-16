@@ -71,8 +71,6 @@ pub struct BlockChanges {
     pub tm_validator_updates: Vec<ValidatorUpdate>,
     /// If this is the last block in an epoch, epoch-related changes are recorded here.
     pub epoch_changes: Option<EpochChanges>,
-    /// Records the supply of staking or delegation tokens during the genesis block.
-    pub genesis_supply_updates: BTreeMap<asset::Id, (asset::Denom, u64)>,
 }
 
 impl BlockChanges {
@@ -98,7 +96,7 @@ impl BlockChanges {
             .await?;
         }
 
-        // Handle updating validators, leaving their current rates unchanged.
+        // Handle updating validators, incorporating any rate updates during epoch transitions.
         for (ik, mut defs) in self.updated_validators {
             // Sort the validator definitions by sequence number + tiebreaker,
             // in case there are conflicts.
@@ -245,21 +243,6 @@ impl BlockChanges {
             .await?;
         }
 
-        // TODO: should this be part of a future shielded pool component?
-        // Save any new assets found in the block to the asset registry.
-        for (id, asset) in &self.genesis_supply_updates {
-            query!(
-                "INSERT INTO assets (asset_id, denom, total_supply)
-            VALUES ($1, $2, $3)
-            ON CONFLICT (asset_id) DO UPDATE SET denom=$2, total_supply=$3",
-                &id.to_bytes()[..],
-                asset.0.to_string(),
-                asset.1 as i64
-            )
-            .execute(&mut *dbtx)
-            .await?;
-        }
-
         if let Some(epoch_changes) = self.epoch_changes.take() {
             epoch_changes.commit(dbtx).await?;
         }
@@ -272,8 +255,8 @@ impl BlockChanges {
 pub struct EpochChanges {
     /// Base rates for the next epoch go here.
     pub next_base_rate: BaseRateData,
-    /// Validator rates for the next epoch go here.
-    pub next_rates: Vec<RateData>,
+    /// Validator rates and powers for the next epoch go here.
+    pub next_rates: Vec<(RateData, u64)>,
     /// Set in `end_epoch` and reset to `None` when `reward_notes` is called.
     // TODO: produce in end_epoch and return to caller, make this private
     pub reward_notes: Vec<(u64, Address)>,
@@ -294,7 +277,7 @@ impl EpochChanges {
         .execute(&mut *dbtx)
         .await?;
 
-        for rate in self.next_rates {
+        for (rate, power) in self.next_rates {
             query!(
                     // This query needs to be ON CONFLICT UPDATE because this rate will have already been set
                     // in the case of a new validator.
@@ -307,6 +290,14 @@ impl EpochChanges {
                 )
                 .execute(&mut *dbtx)
                 .await?;
+            // handle the voting power update
+            query!(
+                "UPDATE validators SET voting_power=$1 WHERE identity_key=$2",
+                i64::try_from(power)?,
+                rate.identity_key.encode_to_vec(),
+            )
+            .execute(&mut *dbtx)
+            .await?;
         }
 
         // TODO: write the supply updates
@@ -359,7 +350,6 @@ impl ValidatorSet {
             delegation_changes: Default::default(),
             tm_validator_updates: Default::default(),
             epoch_changes: Default::default(),
-            genesis_supply_updates: Default::default(),
         });
 
         Ok(())
@@ -400,7 +390,8 @@ impl ValidatorSet {
         // been completed.
         //
         // TODO: It could be more efficient to only return the power of
-        // updated validators.
+        // updated validators. This is difficult because of potentially newly added validators
+        // that have never been reported to Tendermint.
         let validator_updates = self
             .validators_info()
             .map(|v| {
@@ -706,7 +697,8 @@ impl ValidatorSet {
             tracing::debug!(?delegation_token_supply);
             tracing::debug!(?delegation_denom);
 
-            next_rates.push(next_rate);
+            // Update the validator voting power and rates in the db
+            next_rates.push((next_rate, voting_power));
         }
 
         tracing::debug!(?staking_token_supply);

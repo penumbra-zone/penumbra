@@ -349,7 +349,7 @@ async fn main() -> anyhow::Result<()> {
                 let delegation_denom = identity_key.delegation_token().denom();
                 allocations.push(Allocation {
                     address: dest,
-                    amount: 1,
+                    amount: 1_000_000, // 1e6 udelegation tokens
                     denom: delegation_denom.to_string(),
                 });
 
