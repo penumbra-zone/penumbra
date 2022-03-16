@@ -102,14 +102,10 @@ impl Hash {
         Self(Fp256::new(BigInteger256(bytes)))
     }
 
+    /// Construct a hash for an internal node of the tree, given its height and the hashes of its
+    /// four children.
     #[inline]
-    pub(crate) fn node(
-        height: u8,
-        Hash(a): Hash,
-        Hash(b): Hash,
-        Hash(c): Hash,
-        Hash(d): Hash,
-    ) -> Hash {
+    pub fn node(height: u8, Hash(a): Hash, Hash(b): Hash, Hash(c): Hash, Hash(d): Hash) -> Hash {
         let height = Commitment::from_le_bytes_mod_order(&height.to_le_bytes());
         Hash(poseidon377::hash_4(
             &(*DOMAIN_SEPARATOR + height),
