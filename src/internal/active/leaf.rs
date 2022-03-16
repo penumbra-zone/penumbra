@@ -1,6 +1,7 @@
 use crate::{
     internal::{
         active::{Forget, Full},
+        height::IsHeight,
         path::Witness,
     },
     Active, AuthPath, Focus, GetHash, Hash, Height, Insert,
@@ -104,10 +105,24 @@ impl<Item: Witness> Witness for Leaf<Item> {
     }
 }
 
-impl<Item: Forget> Forget for Leaf<Item> {
+impl<Item: GetHash + Forget> Forget for Leaf<Item> {
     fn forget(&mut self, index: impl Into<u64>) -> bool {
         match self.item {
-            Insert::Keep(ref mut item) => item.forget(index),
+            Insert::Keep(ref mut item) => {
+                // An optimization: when we know we're at the leaf, instead of recursively
+                // delegating to some built-in way to forget an `Item` (which would require
+                // additional bookkeeping), we can just forget the item directly by getting out the
+                // stored hash and setting `self.item` to that hash.
+                //
+                // Of note, the `forget` method on `Item` unconditionally panics, but it is never
+                // invoked because we short-circuit here.
+                if Self::Height::HEIGHT == 0 {
+                    self.item = Insert::Hash(item.hash());
+                    true
+                } else {
+                    item.forget(index)
+                }
+            }
             Insert::Hash(_) => false,
         }
     }

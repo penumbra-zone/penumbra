@@ -14,8 +14,6 @@ use crate::{
 #[derive(Debug, Clone, Copy, Derivative)]
 #[derivative(PartialEq, Eq)]
 pub struct Item {
-    #[derivative(PartialEq = "ignore")]
-    keep: bool,
     hash: Hash,
 }
 
@@ -30,7 +28,6 @@ impl Item {
     pub fn new(item: Commitment) -> Self {
         Self {
             hash: Hash::of(item),
-            keep: true,
         }
     }
 }
@@ -68,11 +65,7 @@ impl Focus for Item {
 
     #[inline]
     fn finalize(self) -> Insert<Self::Complete> {
-        if self.keep {
-            Insert::Keep(complete::Item::new(self.hash))
-        } else {
-            Insert::Hash(self.hash)
-        }
+        Insert::Keep(complete::Item::new(self.hash))
     }
 }
 
@@ -81,19 +74,12 @@ impl Witness for Item {
 
     fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Self::Item)> {
         debug_assert_eq!(index.into(), 0, "non-zero index when witnessing leaf");
-        if self.keep {
-            Some((path::Leaf, self.hash))
-        } else {
-            None
-        }
+        Some((path::Leaf, self.hash))
     }
 }
 
 impl Forget for Item {
-    fn forget(&mut self, index: impl Into<u64>) -> bool {
-        debug_assert_eq!(index.into(), 0, "non-zero index when witnessing leaf");
-        let was_keep = self.keep;
-        self.keep = false;
-        was_keep
+    fn forget(&mut self, _index: impl Into<u64>) -> bool {
+        unreachable!("active items can not be forgotten directly")
     }
 }

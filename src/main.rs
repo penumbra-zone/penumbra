@@ -44,5 +44,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .witness(Commitment::from_le_bytes_mod_order(&5000u64.to_le_bytes()))
         .is_none());
 
+    let forgotten = tree.forget(Commitment::from_le_bytes_mod_order(&1u64.to_le_bytes()));
+    assert!(forgotten);
+
     Ok(())
 }
