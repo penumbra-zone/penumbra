@@ -321,6 +321,6 @@ mod test {
 
     #[test]
     fn check_inner_size() {
-        static_assertions::assert_eq_size!(Inner<crate::Item>, [u8; 56]);
+        static_assertions::assert_eq_size!(Tier<Tier<Tier<crate::Item>>>, [u8; 64]);
     }
 }
