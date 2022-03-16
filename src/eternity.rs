@@ -29,6 +29,12 @@ pub struct Eternity {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Root(Hash);
 
+impl From<Root> for Hash {
+    fn from(root: Root) -> Self {
+        root.0
+    }
+}
+
 impl Height for Eternity {
     type Height = <Tier<Tier<Tier<Item>>> as Height>::Height;
 }

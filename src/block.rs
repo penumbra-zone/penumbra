@@ -22,6 +22,12 @@ pub struct Block {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Root(pub(in super::super) Hash);
 
+impl From<Root> for Hash {
+    fn from(root: Root) -> Self {
+        root.0
+    }
+}
+
 /// A mutable reference to a [`Block`].
 #[derive(Debug, PartialEq, Eq)]
 pub(in super::super) struct BlockMut<'a> {

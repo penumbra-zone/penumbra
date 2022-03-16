@@ -30,6 +30,12 @@ pub struct Epoch {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Root(pub(super) Hash);
 
+impl From<Root> for Hash {
+    fn from(root: Root) -> Self {
+        root.0
+    }
+}
+
 /// A mutable reference to an [`Epoch`].
 #[derive(Debug, PartialEq, Eq)]
 pub(super) struct EpochMut<'a> {
