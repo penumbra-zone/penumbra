@@ -146,8 +146,19 @@ impl Block {
     /// The position in this [`Block`] at which the next [`Commitment`] would be inserted.
     ///
     /// The maximum capacity of an [`Block`] is 65,536 [`Commitment`]s.
+    ///
+    /// Note that [`forget`](Block::forget)ting a commitment does not decrease this; it only
+    /// decreases the [`witnessed_count`](Block::witnessed_count).
     pub fn position(&self) -> u16 {
         self.inner.position()
+    }
+
+    /// The number of [`Commitment`]s currently witnessed in this [`Block`].
+    ///
+    /// Note that [`forget`](Block::forget)ting a commitment decreases this count, but does not
+    /// decrease the [`position`](Block::position) of the next inserted [`Commitment`].
+    pub fn witnessed_count(&self) -> usize {
+        self.index.len()
     }
 
     /// Check whether the underlying [`Block`] is empty.

@@ -183,6 +183,9 @@ impl Epoch {
     ///
     /// The maximum capacity of an [`Epoch`] is 4,294,967,296, = 65,536 [`Block`]s of 65,536
     /// [`Commitment`]s.
+    ///
+    /// Note that [`forget`](Epoch::forget)ting a commitment does not decrease this; it only
+    /// decreases the [`witnessed_count`](Epoch::witnessed_count).
     pub fn position(&self) -> u32 {
         ((self.inner.position() as u32) << 16)
             + match self.inner.focus() {
@@ -190,6 +193,14 @@ impl Epoch {
                 Some(Insert::Hash(_)) => u16::MAX,
                 Some(Insert::Keep(block)) => block.position(),
             } as u32
+    }
+
+    /// The number of [`Commitment`]s currently witnessed in this [`Epoch`].
+    ///
+    /// Note that [`forget`](Epoch::forget)ting a commitment decreases this count, but does not
+    /// decrease the [`position`](Epoch::position) of the next inserted [`Commitment`].
+    pub fn witnessed_count(&self) -> usize {
+        self.index.len()
     }
 
     /// Check whether this [`Epoch`] is empty.

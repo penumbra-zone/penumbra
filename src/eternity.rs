@@ -302,6 +302,9 @@ impl Eternity {
     ///
     /// The maximum capacity of an [`Eternity`] is 281,474,976,710,656 = 65,536 [`Epoch`]s of 65,536
     /// [`Block`]s of 65,536 [`Commitment`]s.
+    ///
+    /// Note that [`forget`](Eternity::forget)ting a commitment does not decrease this; it only
+    /// decreases the [`witnessed_count`](Eternity::witnessed_count).
     pub fn position(&self) -> u64 {
         ((self.inner.position() as u64) << 32)
             + (match self.inner.focus() {
@@ -315,6 +318,14 @@ impl Eternity {
                     }) as u32
                 }
             } << 16) as u64
+    }
+
+    /// The number of [`Commitment`]s currently witnessed in this [`Eternity`].
+    ///
+    /// Note that [`forget`](Eternity::forget)ting a commitment decreases this count, but does not
+    /// decrease the [`position`](Eternity::position) of the next inserted [`Commitment`].
+    pub fn witnessed_count(&self) -> usize {
+        self.index.len()
     }
 
     /// Check whether this [`Eternity`] is empty.
