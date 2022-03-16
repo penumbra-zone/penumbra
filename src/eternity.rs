@@ -217,6 +217,21 @@ impl Eternity {
         }
     }
 
+    /// Get the root hash of the most recent [`Block`] in the most recent [`Epoch`] of this
+    /// [`Eternity`].
+    ///
+    /// If the [`Eternity`] is empty or the most recent [`Epoch`] was inserted with
+    /// [`Eternity::insert_epoch_root`], returns `None`.
+    pub fn current_block_root(&self) -> Option<block::Root> {
+        self.inner.focus().and_then(|epoch| {
+            epoch
+                .as_ref()
+                .keep()?
+                .focus()
+                .map(|block| block::Root(block.hash()))
+        })
+    }
+
     /// Add a new [`Epoch`] all at once to this [`Eternity`].
     ///
     /// # Errors
@@ -296,6 +311,13 @@ impl Eternity {
 
             Ok(())
         }
+    }
+
+    /// Get the root hash of the most recent [`Epoch`] in this [`Eternity`].
+    ///
+    /// If the [`Eternity`] is empty, returns `None`.
+    pub fn current_epoch_root(&self) -> Option<epoch::Root> {
+        self.inner.focus().map(|epoch| epoch::Root(epoch.hash()))
     }
 
     /// The position in this [`Eternity`] at which the next [`Commitment`] would be inserted.
