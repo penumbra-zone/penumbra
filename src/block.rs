@@ -1,5 +1,3 @@
-//! [`Block`]s within [`Epoch`]s, and their [`Root`]s and [`Proof`]s of inclusion.
-
 use hash_hasher::HashedMap;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;

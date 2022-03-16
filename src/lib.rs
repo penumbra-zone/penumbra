@@ -30,7 +30,7 @@ use internal::{
 /// This is an element of the base field of the curve used by the Poseidon hash function
 /// instantiated for BLS12-377.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct Commitment(#[serde(with = "crate::serialize::fq")] poseidon377::Fq);
+pub struct Commitment(#[serde(with = "crate::serialize::fq")] pub poseidon377::Fq);
 
 impl From<Commitment> for poseidon377::Fq {
     fn from(commitment: Commitment) -> Self {
@@ -46,13 +46,19 @@ impl From<poseidon377::Fq> for Commitment {
 
 mod eternity;
 pub use eternity::{
-    epoch::{
-        self,
-        block::{self, Block},
-        Epoch,
-    },
+    epoch::{block::Block, Epoch},
     error, Eternity, Proof, Root, VerifyError,
 };
+
+pub mod epoch {
+    //! [`Epoch`]s within [`Eternity`](super::Eternity)s, and their [`Root`]s and [`Proof`]s of inclusion.
+    pub use crate::eternity::epoch::*;
+}
+
+pub mod block {
+    //! [`Block`]s within [`Epoch`](super::Epoch)s, and their [`Root`]s and [`Proof`]s of inclusion.
+    pub use crate::eternity::epoch::block::*;
+}
 
 /// When inserting a [`Commitment`] into an [`Eternity`], [`Epoch`], or [`Block`], should we
 /// [`Keep`] it to allow it to be witnessed later, or [`Forget`] about it after updating the root

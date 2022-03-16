@@ -5,7 +5,7 @@ use crate::internal::{active::Forget as _, path::Witness as _};
 use crate::*;
 
 #[path = "epoch.rs"]
-pub mod epoch;
+pub(crate) mod epoch;
 use epoch::EpochMut;
 use epoch::{block, block::Block, Epoch};
 

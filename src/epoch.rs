@@ -1,5 +1,3 @@
-//! [`Epoch`]s within [`Eternity`]s, and their [`Root`]s and [`Proof`]s of inclusion.
-
 use hash_hasher::HashedMap;
 use serde::{Deserialize, Serialize};
 
@@ -7,7 +5,7 @@ use crate::internal::{active::Forget as _, path::Witness as _};
 use crate::*;
 
 #[path = "block.rs"]
-pub mod block;
+pub(crate) mod block;
 use block::{Block, BlockMut};
 
 #[path = "epoch/proof.rs"]
