@@ -284,12 +284,7 @@ impl Writer {
         let nct_anchor = note_commitment_tree.root2();
         let (jmt_root, tree_update_batch) = jmt::JellyfishMerkleTree::new(&self.private_reader)
             .put_value_set(
-                // TODO: create a JmtKey enum, where each variant has
-                // a different domain-separated hash
-                vec![(
-                    jellyfish::Key::NoteCommitmentAnchor.hash(),
-                    nct_anchor.clone().to_bytes().to_vec(),
-                )],
+                vec![(b"nct_anchor".into(), nct_anchor.clone().to_bytes().to_vec())],
                 // height 0 for genesis
                 0,
             )
@@ -381,23 +376,9 @@ impl Writer {
         let epoch = block.epoch.unwrap();
         let height = block.height.expect("height must be set");
 
-        // The Jellyfish Merkle tree batches writes to its backing store, so we
-        // first need to write the JMT kv pairs...
-        let (jmt_root, tree_update_batch) = jmt::JellyfishMerkleTree::new(&self.private_reader)
-            .put_value_set(
-                // TODO: create a JmtKey enum, where each variant has
-                // a different domain-separated hash
-                vec![(
-                    jellyfish::Key::NoteCommitmentAnchor.hash(),
-                    nct_anchor.clone().to_bytes().to_vec(),
-                )],
-                height,
-            )
-            .await?;
-        // ... and then write the resulting batch update to the backing store:
-        jellyfish::DbTx(&mut dbtx)
-            .write_node_batch(&tree_update_batch.node_batch)
-            .await?;
+        let mut overlay = jmt::WriteOverlay::new(self.private_reader.clone(), height - 1);
+        overlay.put(b"nct_anchor".into(), nct_anchor.clone().to_bytes().to_vec());
+        let (jmt_root, _height) = overlay.commit(jellyfish::DbTx(&mut dbtx)).await?;
 
         // The app hash is the root of the Jellyfish Merkle Tree.  We save the
         // NCT anchor separately for convenience, but it's already included in
