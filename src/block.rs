@@ -89,7 +89,7 @@ impl Block {
         }
     }
 
-    /// Get the root [`struct@Hash`] of this [`Block`].
+    /// Get the root hash of this [`Block`].
     ///
     /// Internal hashing is performed lazily to prevent unnecessary intermediary hashes from being
     /// computed, so the first hash returned after a long sequence of insertions may take more time
@@ -97,8 +97,8 @@ impl Block {
     ///
     /// Computed hashes are cached so that subsequent calls without further modification are very
     /// fast.
-    pub fn root(&self) -> Hash {
-        self.inner.hash()
+    pub fn root(&self) -> Root {
+        Root(self.inner.hash())
     }
 
     /// Add a new [`Commitment`] to this [`Block`].
