@@ -909,6 +909,19 @@
       ]
     }
   },
+  "eca39471e16fffd8bd3d3a46f12b3396ef6a5825868d3b9d01df9e5367782d8c": {
+    "query": "UPDATE validators SET voting_power=$1 WHERE identity_key=$2",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Bytea"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "ee07e754a702a84da70bea0035c4a950779a6c1b9b77f1b2bcfeb46dc1e64b95": {
     "query": "UPDATE validator_rates SET validator_exchange_rate=$1 WHERE identity_key=$2 AND epoch=$3",
     "describe": {
