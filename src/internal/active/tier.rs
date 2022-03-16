@@ -1,5 +1,7 @@
 use std::{fmt::Debug, mem};
 
+use serde::{Deserialize, Serialize};
+
 use crate::{
     internal::{
         active::{Forget, Full},
@@ -11,7 +13,7 @@ use crate::{
 use super::super::{active, complete};
 
 /// An active tier of the tiered commitment tree, being an 8-deep quad-tree of items.
-#[derive(Derivative)]
+#[derive(Derivative, Serialize, Deserialize)]
 #[derivative(Default(bound = ""))]
 #[derivative(Debug(bound = "Item: Debug, Item::Complete: Debug"))]
 #[derivative(Clone(bound = "Item: Clone, Item::Complete: Clone"))]
@@ -19,6 +21,10 @@ use super::super::{active, complete};
     bound = "Item: PartialEq + PartialEq<Item::Complete>, Item::Complete: PartialEq"
 ))]
 #[derivative(Eq(bound = "Item: Eq + PartialEq<Item::Complete>, Item::Complete: Eq"))]
+#[serde(bound(
+    serialize = "Item: Serialize, Item::Complete: Serialize",
+    deserialize = "Item: Deserialize<'de>, Item::Complete: Deserialize<'de>"
+))]
 pub struct Tier<Item: Focus> {
     len: u16,
     inner: Inner<Item>,
@@ -32,7 +38,11 @@ pub type Nested<Item> = N<N<N<N<N<N<N<N<L<Item>>>>>>>>>;
 // Count the levels:    1 2 3 4 5 6 7 8
 
 /// The inside of an active level.
-#[derive(Debug, Clone, Derivative)]
+#[derive(Debug, Clone, Derivative, Serialize, Deserialize)]
+#[serde(bound(
+    serialize = "Item: Serialize, Item::Complete: Serialize",
+    deserialize = "Item: Deserialize<'de>, Item::Complete: Deserialize<'de>"
+))]
 #[derivative(Eq(bound = "Item: Eq + PartialEq<Item::Complete>, Item::Complete: Eq"))]
 pub enum Inner<Item: Focus> {
     /// Either an empty tree (`None`) or a tree with at least one element in it.

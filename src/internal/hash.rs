@@ -8,6 +8,8 @@ use std::fmt::Debug;
 
 use ark_ff::{fields::PrimeField, BigInteger256, Fp256, ToBytes};
 use once_cell::sync::Lazy;
+use poseidon377::Fq;
+use serde::{Deserialize, Serialize};
 
 use crate::Commitment;
 
@@ -61,11 +63,11 @@ impl<T: GetHash> GetHash for &mut T {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 /// The hash of an individual item, tree root, or intermediate node. Use
 /// [`Insert::Hash`](crate::Insert::Hash) with this type when you want to insert something into the
 /// tree that you don't want to witness later.
-pub struct Hash(Commitment);
+pub struct Hash(#[serde(with = "crate::serialize::fq")] Fq);
 
 impl Debug for Hash {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
@@ -78,16 +80,15 @@ impl Debug for Hash {
 /// The domain separator used for leaves in the tree, and used as a base index for the domain
 /// separators of nodes in the tree (nodes get a domain separator of the form `DOMAIN_SEPARATOR +
 /// HEIGHT`).
-pub static DOMAIN_SEPARATOR: Lazy<Commitment> = Lazy::new(|| {
-    Commitment::from_le_bytes_mod_order(blake2b_simd::blake2b(b"penumbra.tct").as_bytes())
-});
+pub static DOMAIN_SEPARATOR: Lazy<Fq> =
+    Lazy::new(|| Fq::from_le_bytes_mod_order(blake2b_simd::blake2b(b"penumbra.tct").as_bytes()));
 
 #[allow(unused)]
 impl Hash {
     /// Hash an individual item to be inserted into the tree.
     #[inline]
     pub fn of(item: Commitment) -> Hash {
-        Hash(poseidon377::hash_1(&DOMAIN_SEPARATOR, item))
+        Hash(poseidon377::hash_1(&DOMAIN_SEPARATOR, item.into()))
     }
 
     /// Get the underlying bytes for the hash
@@ -106,7 +107,7 @@ impl Hash {
     /// four children.
     #[inline]
     pub fn node(height: u8, Hash(a): Hash, Hash(b): Hash, Hash(c): Hash, Hash(d): Hash) -> Hash {
-        let height = Commitment::from_le_bytes_mod_order(&height.to_le_bytes());
+        let height = Fq::from_le_bytes_mod_order(&height.to_le_bytes());
         Hash(poseidon377::hash_4(
             &(*DOMAIN_SEPARATOR + height),
             (a, b, c, d),

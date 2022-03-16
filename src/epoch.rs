@@ -1,6 +1,7 @@
 //! [`Epoch`]s within [`Eternity`]s, and their [`Root`]s and [`Proof`]s of inclusion.
 
 use hash_hasher::HashedMap;
+use serde::{Deserialize, Serialize};
 
 use crate::internal::{active::Forget as _, path::Witness as _};
 use crate::*;
@@ -21,14 +22,14 @@ pub use error::{InsertBlockError, InsertBlockRootError, InsertError};
 /// [`Commitment`]s.
 ///
 /// This is one [`Epoch`] in an [`Eternity`].
-#[derive(Derivative, Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Derivative, Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct Epoch {
     pub(super) index: HashedMap<Commitment, index::within::Epoch>,
     pub(super) inner: Tier<Tier<Item>>,
 }
 
 /// The root hash of an [`Epoch`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Root(pub(super) Hash);
 
 /// A mutable reference to an [`Epoch`].

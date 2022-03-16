@@ -1,5 +1,7 @@
 use std::{cell::Cell, fmt::Debug};
 
+use serde::{Deserialize, Serialize};
+
 use crate::{
     internal::{
         active::{Forget, Full},
@@ -14,7 +16,9 @@ use crate::{
 use super::super::complete;
 
 /// An active node in a tree, into which items can be inserted.
-#[derive(Clone, Eq, Derivative)]
+#[derive(Clone, Eq, Derivative, Serialize, Deserialize)]
+#[serde(bound(serialize = "Child: Serialize, Child::Complete: Serialize"))]
+#[serde(bound(deserialize = "Child: Deserialize<'de>, Child::Complete: Deserialize<'de>"))]
 #[derivative(
     Debug(bound = "Child: Debug, Child::Complete: Debug"),
     PartialEq(bound = "Child: PartialEq, Child::Complete: PartialEq")

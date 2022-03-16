@@ -1,4 +1,5 @@
 use hash_hasher::HashedMap;
+use serde::{Deserialize, Serialize};
 
 use crate::internal::{active::Forget as _, path::Witness as _};
 use crate::*;
@@ -18,14 +19,14 @@ pub use error::{
 
 /// A sparse merkle tree to witness up to 65,536 [`Epoch`]s, each witnessing up to 65,536
 /// [`Block`]s, each witnessing up to 65,536 [`Commitment`]s.
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct Eternity {
     index: HashedMap<Commitment, index::within::Eternity>,
     inner: Tier<Tier<Tier<Item>>>,
 }
 
 /// The root hash of an [`Eternity`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Root(Hash);
 
 impl Height for Eternity {

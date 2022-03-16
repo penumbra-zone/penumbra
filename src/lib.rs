@@ -9,7 +9,10 @@ extern crate derivative;
 
 use std::fmt::Debug;
 
+use serde::{Deserialize, Serialize};
+
 pub mod internal;
+mod serialize;
 
 use internal::{
     active::{Active, Focus, Insert, Item, Tier},
@@ -26,7 +29,20 @@ use internal::{
 ///
 /// This is an element of the base field of the curve used by the Poseidon hash function
 /// instantiated for BLS12-377.
-pub use poseidon377::Fq as Commitment;
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct Commitment(#[serde(with = "crate::serialize::fq")] poseidon377::Fq);
+
+impl From<Commitment> for poseidon377::Fq {
+    fn from(commitment: Commitment) -> Self {
+        commitment.0
+    }
+}
+
+impl From<poseidon377::Fq> for Commitment {
+    fn from(commitment: poseidon377::Fq) -> Self {
+        Commitment(commitment)
+    }
+}
 
 mod eternity;
 pub use eternity::{

@@ -1,6 +1,7 @@
 //! [`Block`]s within [`Epoch`]s, and their [`Root`]s and [`Proof`]s of inclusion.
 
 use hash_hasher::HashedMap;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::internal::{active::Forget as _, path::Witness as _};
@@ -13,14 +14,14 @@ pub use proof::{Proof, VerifiedProof, VerifyError};
 /// A sparse merkle tree to witness up to 65,536 individual [`Commitment`]s.
 ///
 /// This is one [`Block`] in an [`Epoch`], which is one [`Epoch`] in an [`Eternity`].
-#[derive(Derivative, Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Derivative, Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct Block {
     pub(super) index: HashedMap<Commitment, index::within::Block>,
     pub(super) inner: Tier<Item>,
 }
 
 /// The root hash of a [`Block`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Root(pub(in super::super) Hash);
 
 /// A mutable reference to a [`Block`].

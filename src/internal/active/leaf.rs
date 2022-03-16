@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{
     internal::{
         active::{Forget, Full},
@@ -13,7 +15,7 @@ use super::super::complete;
 ///
 /// Insertion into a leaf always fails, causing the tree above it to insert a new leaf to contain
 /// the inserted item.
-#[derive(Clone, Copy, PartialEq, Eq, Derivative)]
+#[derive(Clone, Copy, PartialEq, Eq, Derivative, Serialize, Deserialize)]
 #[derivative(Debug = "transparent")]
 pub struct Leaf<Item> {
     item: Insert<Item>,

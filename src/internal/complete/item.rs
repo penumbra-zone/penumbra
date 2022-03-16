@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{
     internal::{
         active,
@@ -8,7 +10,7 @@ use crate::{
 };
 
 /// A witnessed hash of a commitment at the true leaf of a complete tree.
-#[derive(Clone, Copy, PartialEq, Eq, Derivative)]
+#[derive(Clone, Copy, PartialEq, Eq, Derivative, Serialize, Deserialize)]
 #[derivative(Debug = "transparent")]
 pub struct Item(Hash);
 

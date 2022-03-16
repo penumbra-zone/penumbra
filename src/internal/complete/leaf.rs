@@ -1,9 +1,11 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{internal::path::Witness, Complete, ForgetOwned, GetHash, Hash, Height, Insert};
 
 use super::super::active;
 
 /// A complete, witnessed leaf of a tree.
-#[derive(Clone, Copy, PartialEq, Eq, Derivative)]
+#[derive(Clone, Copy, PartialEq, Eq, Derivative, Serialize, Deserialize)]
 #[derivative(Debug = "transparent")]
 pub struct Leaf<Item>(pub(in super::super) Item);
 

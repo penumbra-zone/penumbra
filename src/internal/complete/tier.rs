@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{internal::path::Witness, AuthPath, Complete, ForgetOwned, GetHash, Hash, Height};
 
 use super::super::active;
@@ -10,7 +12,7 @@ pub type Nested<Item> = N<N<N<N<N<N<N<N<L<Item>>>>>>>>>;
 // Count the levels:    1 2 3 4 5 6 7 8
 
 /// A complete tier of the tiered commitment tree, being an 8-deep sparse quad-tree.
-#[derive(Debug, Clone, Derivative)]
+#[derive(Debug, Clone, Derivative, Serialize, Deserialize)]
 #[derivative(
     PartialEq(bound = "Item: Height + GetHash + PartialEq"),
     Eq(bound = "Item: Height + GetHash + Eq")

@@ -1,4 +1,4 @@
-use crate::Commitment;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     internal::{
@@ -7,11 +7,11 @@ use crate::{
         height::Zero,
         path::{self, Witness},
     },
-    AuthPath, Focus, GetHash, Hash, Height, Insert,
+    AuthPath, Commitment, Focus, GetHash, Hash, Height, Insert,
 };
 
 /// The hash of the most-recently-inserted item, stored at the tip of the active path.
-#[derive(Debug, Clone, Copy, Derivative)]
+#[derive(Debug, Clone, Copy, Derivative, Serialize, Deserialize)]
 #[derivative(PartialEq, Eq)]
 pub struct Item {
     hash: Hash,

@@ -1,12 +1,14 @@
 use std::mem;
 
+use serde::{Deserialize, Serialize};
+
 use crate::{internal::active::Forget, ForgetOwned, GetHash, Hash, Height};
 
 /// Either an item or just its hash, to be used when inserting into a tree.
 ///
 /// When inserting, only items inserted with [`Insert::Keep`] are retained as witnessed leaves of
 /// the tree; those inserted with [`Insert::Hash`] are pruned.
-#[derive(Clone, Copy, Eq, Derivative)]
+#[derive(Clone, Copy, Eq, Derivative, Serialize, Deserialize)]
 #[derivative(Debug)]
 pub enum Insert<T> {
     /// An item unto itself: when inserting, keep this witnessed in the tree.

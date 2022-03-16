@@ -7,13 +7,15 @@
 
 use std::fmt::Debug;
 
+use serde::{Deserialize, Serialize};
+
 mod shape;
 pub use shape::*;
 
 use crate::{Hash, Height, Insert};
 
 /// The children of a [`Node`](super::Node).
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Children<Child> {
     /// Children of a node having children in the positions: 3.
     ___C(Box<___C<Child>>),

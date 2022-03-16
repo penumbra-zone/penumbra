@@ -1,5 +1,7 @@
 use std::cell::Cell;
 
+use serde::{Deserialize, Serialize};
+
 use crate::{
     internal::{
         hash::OptionHash,
@@ -16,7 +18,7 @@ pub mod children;
 pub use children::Children;
 
 /// A complete sparse node in a tree, storing only the witnessed subtrees.
-#[derive(Clone, Eq, Derivative)]
+#[derive(Clone, Eq, Derivative, Serialize, Deserialize)]
 #[derivative(Debug, PartialEq(bound = "Child: PartialEq"))]
 pub struct Node<Child> {
     #[derivative(PartialEq = "ignore")]

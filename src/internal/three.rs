@@ -1,7 +1,11 @@
 //! Vectors capable of containing at most 3 elements.
 
+use std::marker::PhantomData;
+
+use serde::{de::Visitor, Deserialize, Serialize};
+
 /// A vector capable of storing at most 3 elements.
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Derivative)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Derivative, Serialize)]
 #[derivative(Debug = "transparent")]
 pub struct Three<T> {
     elems: Vec<T>,
@@ -91,6 +95,7 @@ impl<T> Default for Three<T> {
 }
 
 /// All the possible cases of the elements in a [`Three`], by reference.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Elems<'a, T> {
     /// Zero elements.
     _0([&'a T; 0]),
@@ -103,6 +108,7 @@ pub enum Elems<'a, T> {
 }
 
 /// All the possible cases of the elements in a [`Three`], by mutable reference.
+#[derive(Debug, PartialEq, Eq)]
 pub enum ElemsMut<'a, T> {
     /// Zero elements.
     _0([&'a mut T; 0]),
@@ -115,6 +121,7 @@ pub enum ElemsMut<'a, T> {
 }
 
 /// All the possible cases of the elements in a [`Three`], by value.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IntoElems<T> {
     /// Zero elements.
     _0([T; 0]),
@@ -124,4 +131,69 @@ pub enum IntoElems<T> {
     _2([T; 2]),
     /// Three elements.
     _3([T; 3]),
+}
+
+impl<T> From<IntoElems<T>> for Three<T> {
+    fn from(elems: IntoElems<T>) -> Self {
+        match elems {
+            IntoElems::_0(elems) => Self {
+                elems: elems.into(),
+            },
+            IntoElems::_1(elems) => Self {
+                elems: elems.into(),
+            },
+            IntoElems::_2(elems) => Self {
+                elems: elems.into(),
+            },
+            IntoElems::_3(elems) => Self {
+                elems: elems.into(),
+            },
+        }
+    }
+}
+
+impl<T> From<Three<T>> for IntoElems<T> {
+    fn from(three: Three<T>) -> Self {
+        three.into_elems()
+    }
+}
+
+struct ThreeVisitor<T>(PhantomData<T>);
+
+impl<'de, T: Deserialize<'de>> Visitor<'de> for ThreeVisitor<T> {
+    type Value = Three<T>;
+
+    fn expecting(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+    ) -> std::result::Result<(), std::fmt::Error> {
+        write!(f, "a vector of at most 3 elements")
+    }
+
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+    where
+        A: serde::de::SeqAccess<'de>,
+    {
+        let mut elems = Vec::with_capacity(4);
+        for _ in 0..=3 {
+            if let Some(elem) = seq.next_element()? {
+                elems.push(elem);
+            } else {
+                break;
+            }
+        }
+        if seq.next_element::<T>()?.is_some() {
+            return Err(serde::de::Error::invalid_length(3, &"at most 3 elements"));
+        }
+        Ok(Three { elems })
+    }
+}
+
+impl<'de, T: Deserialize<'de>> Deserialize<'de> for Three<T> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        deserializer.deserialize_seq(ThreeVisitor(PhantomData))
+    }
 }
