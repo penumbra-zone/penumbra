@@ -195,8 +195,9 @@ impl<Item: Focus> Tier<Item> {
         }
     }
 
-    /// Get the total number of insertions performed on this [`Tier`].
-    pub fn len(&self) -> u16 {
+    /// Get the total number of insertions performed on this [`Tier`], regardless of whether they
+    /// were retained or forgotten.
+    pub fn position(&self) -> u16 {
         self.len
     }
 

@@ -179,19 +179,16 @@ impl Epoch {
         })
     }
 
-    /// The total number of [`Commitment`]s or [`struct@Hash`]es represented in this [`Epoch`].
+    /// The position in this [`Epoch`] at which the next [`Commitment`] would be inserted.
     ///
-    /// This count includes those which were elided due to a partially filled [`Block`] or summary
-    /// root [`struct@Hash`] of a block being inserted.
-    ///
-    /// The maximum capacity of an [`Epoch`] is 4,294,967,296, i.e. 65,536 [`Block`]s of 65,536
+    /// The maximum capacity of an [`Epoch`] is 4,294,967,296, = 65,536 [`Block`]s of 65,536
     /// [`Commitment`]s.
-    pub fn len(&self) -> u32 {
-        ((self.inner.len() as u32) << 16)
+    pub fn position(&self) -> u32 {
+        ((self.inner.position() as u32) << 16)
             + match self.inner.focus() {
                 None => 0,
                 Some(Insert::Hash(_)) => u16::MAX,
-                Some(Insert::Keep(block)) => block.len(),
+                Some(Insert::Keep(block)) => block.position(),
             } as u32
     }
 
@@ -212,7 +209,7 @@ impl EpochMut<'_> {
         let mut replaced_indices = Vec::new();
 
         // If we successfully insert this block, here's what its index in the epoch will be:
-        let this_block = self.inner.len().into();
+        let this_block = self.inner.position().into();
 
         // Decompose the block into its components
         let (block, block_index) = match block {
@@ -358,7 +355,7 @@ impl EpochMut<'_> {
     /// Update the most recently inserted [`Block`] via methods on [`BlockMut`], and return the
     /// result of the function.
     pub(super) fn update<T>(&mut self, f: impl FnOnce(Option<&mut BlockMut<'_>>) -> T) -> T {
-        let this_block = self.inner.len().saturating_sub(1).into();
+        let this_block = self.inner.position().saturating_sub(1).into();
 
         let index = match self.index {
             IndexMut::Epoch { ref mut index } => block::IndexMut::Epoch { this_block, index },

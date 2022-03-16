@@ -142,9 +142,12 @@ impl Block {
     pub fn forget(&mut self, commitment: Commitment) -> bool {
         self.as_mut().forget(commitment)
     }
-    /// The total number of [`Commitment`]s or [`struct@Hash`]es represented in the underlying [`Block`].
-    pub fn len(&self) -> u16 {
-        self.inner.len()
+
+    /// The position in this [`Block`] at which the next [`Commitment`] would be inserted.
+    ///
+    /// The maximum capacity of an [`Block`] is 65,536 [`Commitment`]s.
+    pub fn position(&self) -> u16 {
+        self.inner.position()
     }
 
     /// Check whether the underlying [`Block`] is empty.
@@ -159,7 +162,7 @@ impl BlockMut<'_> {
         commitment: Insert<Commitment>,
     ) -> Result<Option<ReplacedIndex>, Insert<Commitment>> {
         // If we successfully insert this commitment, here's what its index in the block will be:
-        let this_commitment: index::Commitment = self.inner.len().into();
+        let this_commitment: index::Commitment = self.inner.position().into();
 
         // Try to insert the commitment into the inner tree, and if successful, track the index
         if self.inner.insert(commitment.map(Item::new)).is_err() {

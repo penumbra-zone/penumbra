@@ -257,7 +257,7 @@ impl Eternity {
     /// Insert an epoch or its root (helper function for [`insert_epoch`] and [`insert_epoch_root`]).
     fn insert_epoch_or_root(&mut self, epoch: Insert<Epoch>) -> Result<(), Insert<Epoch>> {
         // If we successfully insert this epoch, here's what its index in the epoch will be:
-        let this_epoch = self.inner.len().into();
+        let this_epoch = self.inner.position().into();
 
         // Decompose the block into its components
         let (epoch, epoch_index) = match epoch {
@@ -298,15 +298,12 @@ impl Eternity {
         }
     }
 
-    /// The total number of [`Commitment`]s or [`struct@Hash`]es represented in this [`Epoch`].
-    ///
-    /// This count includes those commitments which are elided due to a partially filled [`Block`] or
-    /// [`Epoch`], or summary root [`struct@Hash`] of a block or epoch being inserted.
+    /// The position in this [`Eternity`] at which the next [`Commitment`] would be inserted.
     ///
     /// The maximum capacity of an [`Eternity`] is 281,474,976,710,656 = 65,536 [`Epoch`]s of 65,536
     /// [`Block`]s of 65,536 [`Commitment`]s.
-    pub fn len(&self) -> u64 {
-        ((self.inner.len() as u64) << 32)
+    pub fn position(&self) -> u64 {
+        ((self.inner.position() as u64) << 32)
             + (match self.inner.focus() {
                 None => 0,
                 Some(Insert::Hash(_)) => u32::MAX,
@@ -314,7 +311,7 @@ impl Eternity {
                     (match epoch.focus() {
                         None => 0,
                         Some(Insert::Hash(_)) => u16::MAX,
-                        Some(Insert::Keep(block)) => block.len(),
+                        Some(Insert::Keep(block)) => block.position(),
                     }) as u32
                 }
             } << 16) as u64
@@ -328,7 +325,7 @@ impl Eternity {
     /// Update the most recently inserted [`Epoch`] via methods on [`EpochMut`], and return the
     /// result of the function.
     fn update<T>(&mut self, f: impl FnOnce(Option<&mut EpochMut<'_>>) -> T) -> T {
-        let this_epoch = self.inner.len().saturating_sub(1).into();
+        let this_epoch = self.inner.position().saturating_sub(1).into();
 
         let index = epoch::IndexMut::Eternity {
             this_epoch,
