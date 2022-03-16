@@ -336,10 +336,7 @@ impl Worker {
         );
 
         Ok(abci::response::EndBlock {
-            // TODO: the voting power calculations aren't working right and are knocking validators out of the tendermint
-            // consensus set, so we'll return an empty list of updates for now to prevent them from dropping out of tendermint.
-            // validator_updates,
-            validator_updates: vec![],
+            validator_updates,
             consensus_param_updates: None,
             events: Vec::new(),
         })
