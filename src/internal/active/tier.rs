@@ -15,7 +15,9 @@ use super::super::{active, complete};
 #[derivative(Default(bound = ""))]
 #[derivative(Debug(bound = "Item: Debug, Item::Complete: Debug"))]
 #[derivative(Clone(bound = "Item: Clone, Item::Complete: Clone"))]
-#[derivative(PartialEq(bound = "Item: Eq + PartialEq<Item::Complete>, Item::Complete: Eq"))]
+#[derivative(PartialEq(
+    bound = "Item: PartialEq + PartialEq<Item::Complete>, Item::Complete: PartialEq"
+))]
 #[derivative(Eq(bound = "Item: Eq + PartialEq<Item::Complete>, Item::Complete: Eq"))]
 pub struct Tier<Item: Focus> {
     len: u16,
