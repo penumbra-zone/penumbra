@@ -10,10 +10,7 @@ die () {
     exit 1
 }
 
-[ "$#" -eq 1 ] || die "build path argument required"
-
-
-build_path="$1"
+build_path="$HOME/scratch/testnet_build/"
 
 if [ -d "${build_path}" ] 
 then
