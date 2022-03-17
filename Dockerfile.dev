@@ -24,6 +24,7 @@ COPY proto ./proto
 COPY chain ./chain
 COPY crypto ./crypto
 COPY stake ./stake
+COPY tct ./tct
 COPY decaf377-fmd ./decaf377-fmd
 COPY decaf377-ka ./decaf377-ka
 COPY transaction ./transaction
