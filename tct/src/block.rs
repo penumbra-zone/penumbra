@@ -1,3 +1,4 @@
+use decaf377::Fq;
 use hash_hasher::HashedMap;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -22,9 +23,31 @@ pub struct Block {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Root(pub(in super::super) Hash);
 
-impl From<Root> for Hash {
+impl From<Root> for Fq {
     fn from(root: Root) -> Self {
-        root.0
+        root.0.into()
+    }
+}
+
+impl From<Fq> for Root {
+    fn from(root: Fq) -> Self {
+        Root(Hash(root))
+    }
+}
+
+/// The index of a [`Commitment`] within a [`Block`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Position(u16);
+
+impl From<Position> for u16 {
+    fn from(position: Position) -> Self {
+        position.0
+    }
+}
+
+impl From<u16> for Position {
+    fn from(position: u16) -> Self {
+        Position(position)
     }
 }
 
@@ -153,8 +176,8 @@ impl Block {
     ///
     /// Note that [`forget`](Block::forget)ting a commitment does not decrease this; it only
     /// decreases the [`witnessed_count`](Block::witnessed_count).
-    pub fn position(&self) -> u16 {
-        self.inner.position()
+    pub fn position(&self) -> Position {
+        Position(self.inner.position())
     }
 
     /// The number of [`Commitment`]s currently witnessed in this [`Block`].
