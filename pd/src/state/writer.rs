@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, VecDeque};
 use anyhow::Result;
 use ark_ff::PrimeField;
 use decaf377::{Fq, Fr};
-use jmt::TreeWriterAsync;
+use jmt::storage::TreeWriter;
 use penumbra_chain::params::ChainParams;
 use penumbra_crypto::{
     asset,
@@ -295,12 +295,7 @@ impl Writer {
         // ... and add its root to the public chain state ...
         let (jmt_root, tree_update_batch) = jmt::JellyfishMerkleTree::new(&self.private_reader)
             .put_value_set(
-                // TODO: create a JmtKey enum, where each variant has
-                // a different domain-separated hash
-                vec![(
-                    jellyfish::Key::NoteCommitmentAnchor.hash(),
-                    nct_anchor.clone(),
-                )],
+                vec![(b"nct_anchor".into(), nct_anchor.clone().to_bytes().to_vec())],
                 // height 0 for genesis
                 0,
             )
@@ -311,8 +306,8 @@ impl Writer {
             .write_node_batch(&tree_update_batch.node_batch)
             .await?;
 
-        // As the very last step, compute the JMT root and return it as the apphash.
-        let app_hash: [u8; 32] = jmt_root.to_vec().try_into().unwrap();
+        // The app hash needs to be returned to Tendermint
+        let app_hash: [u8; 32] = jmt_root.0.to_vec().try_into().unwrap();
 
         // Insert the block into the DB
         query!(
@@ -399,29 +394,15 @@ impl Writer {
         let epoch = block.epoch.unwrap();
         let height = block.height.expect("height must be set");
 
-        // The Jellyfish Merkle tree batches writes to its backing store, so we
-        // first need to write the JMT kv pairs...
-        let (jmt_root, tree_update_batch) = jmt::JellyfishMerkleTree::new(&self.private_reader)
-            .put_value_set(
-                // TODO: create a JmtKey enum, where each variant has
-                // a different domain-separated hash
-                vec![(
-                    jellyfish::Key::NoteCommitmentAnchor.hash(),
-                    nct_anchor.clone(),
-                )],
-                height,
-            )
-            .await?;
-        // ... and then write the resulting batch update to the backing store:
-        jellyfish::DbTx(&mut dbtx)
-            .write_node_batch(&tree_update_batch.node_batch)
-            .await?;
+        let mut overlay = jmt::WriteOverlay::new(self.private_reader.clone(), height - 1);
+        overlay.put(b"nct_anchor".into(), nct_anchor.clone().to_bytes().to_vec());
+        let (jmt_root, _height) = overlay.commit(jellyfish::DbTx(&mut dbtx)).await?;
 
         // The app hash is the root of the Jellyfish Merkle Tree.  We save the
         // NCT anchor separately for convenience, but it's already included in
         // the JMT root.
         // TODO: no way to access the Diem HashValue as array, even though it's stored that way?
-        let app_hash: [u8; 32] = jmt_root.to_vec().try_into().unwrap();
+        let app_hash: [u8; 32] = jmt_root.0.to_vec().try_into().unwrap();
 
         query!(
             "INSERT INTO blocks (height, nct_anchor, app_hash) VALUES ($1, $2, $3)",

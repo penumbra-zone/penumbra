@@ -1,4 +1,5 @@
 use decaf377_fmd as fmd;
+use fmd::ClueKey;
 use rand_core::OsRng;
 
 #[test]
@@ -28,4 +29,25 @@ fn detection_distribution_matches_expectation() {
 
     assert_eq!(alice_detections, NUM_CLUES);
     assert!((expected_rate - bobce_detection_rate).abs() < 0.04);
+}
+
+#[test]
+fn fails_to_expand_clue_key() {
+    let clue_key = ClueKey([1; 32]);
+
+    clue_key
+        .expand()
+        .err()
+        .expect("fails to generate an expanded clue key with invalid encoding");
+}
+
+#[test]
+fn fails_to_generate_clue() {
+    let detection_key = fmd::DetectionKey::new(OsRng);
+    let expanded_clue_key = detection_key.clue_key().expand().unwrap();
+
+    expanded_clue_key
+        .create_clue(fmd::MAX_PRECISION + 1, OsRng)
+        .err()
+        .expect("fails to generate clue with excessive precision");
 }

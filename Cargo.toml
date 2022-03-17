@@ -12,6 +12,7 @@ members = [
   "wallet",
   "pd",
   "pcli",
+  "tct",
 ]
 
 [patch.crates-io]
