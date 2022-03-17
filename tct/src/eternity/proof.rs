@@ -1,5 +1,7 @@
 pub use thiserror::Error;
 
+use penumbra_proto::transparent_proofs as pb;
+
 use crate::{Commitment, Hash};
 
 pub use super::{Eternity, Position, Root};
@@ -117,7 +119,7 @@ impl Proof {
         };
         Self(crate::proof::Proof {
             leaf: commitment,
-            index,
+            position: index,
             auth_path: path,
         })
     }
@@ -262,5 +264,19 @@ impl VerifyError {
     /// Extract the original proof from this error.
     pub fn into_proof(self) -> Proof {
         Proof(self.0.into_proof())
+    }
+}
+
+impl From<Proof> for pb::MerkleProof {
+    fn from(proof: Proof) -> Self {
+        proof.0.into()
+    }
+}
+
+impl TryFrom<pb::MerkleProof> for Proof {
+    type Error = crate::ProofDecodeError;
+
+    fn try_from(value: pb::MerkleProof) -> Result<Self, Self::Error> {
+        Ok(Proof(crate::internal::proof::Proof::try_from(value)?))
     }
 }

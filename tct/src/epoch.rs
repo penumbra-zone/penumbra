@@ -165,7 +165,7 @@ impl Epoch {
         debug_assert_eq!(leaf, Hash::of(commitment));
 
         Some(Proof(crate::proof::Proof {
-            index: index.into(),
+            position: index.into(),
             auth_path,
             leaf: commitment,
         }))
