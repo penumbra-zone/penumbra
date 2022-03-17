@@ -29,6 +29,7 @@ pub struct PositionedNoteData {
 
 /// `PendingTransaction` holds data after stateless checks have been applied.
 /// TODO this is a bad name
+#[derive(Debug)]
 pub struct PendingTransaction {
     /// Transaction ID.
     pub id: [u8; 32],
@@ -48,6 +49,7 @@ pub struct PendingTransaction {
 
 /// `VerifiedTransaction` represents a transaction after all checks have passed.
 /// TODO this is a bad name
+#[derive(Debug)]
 pub struct VerifiedTransaction {
     /// Transaction ID.
     pub id: [u8; 32],
