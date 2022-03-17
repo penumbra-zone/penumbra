@@ -1,6 +1,8 @@
-use decaf377::Fq;
+use decaf377::{FieldExt, Fq};
 use hash_hasher::HashedMap;
+use penumbra_proto::crypto as pb;
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 use crate::internal::{active::Forget as _, path::Witness as _};
 use crate::*;
@@ -28,6 +30,7 @@ pub struct Eternity {
 
 /// The root hash of an [`Eternity`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "pb::MerkleRoot", into = "pb::MerkleRoot")]
 pub struct Root(Hash);
 
 impl From<Root> for Fq {
@@ -36,9 +39,26 @@ impl From<Root> for Fq {
     }
 }
 
-impl From<Fq> for Root {
-    fn from(root: Fq) -> Self {
-        Root(Hash(root))
+/// An error occurred when decoding an eternity root from bytes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
+#[error("could not decode eternity root")]
+pub struct RootDecodeError;
+
+impl TryFrom<pb::MerkleRoot> for Root {
+    type Error = RootDecodeError;
+
+    fn try_from(root: pb::MerkleRoot) -> Result<Root, Self::Error> {
+        let bytes: [u8; 32] = (&root.inner[..]).try_into().map_err(|_| RootDecodeError)?;
+        let inner = Fq::from_bytes(bytes).map_err(|_| RootDecodeError)?;
+        Ok(Root(Hash(inner)))
+    }
+}
+
+impl From<Root> for pb::MerkleRoot {
+    fn from(root: Root) -> Self {
+        Self {
+            inner: root.0 .0.to_bytes().to_vec(),
+        }
     }
 }
 
@@ -407,5 +427,35 @@ impl Eternity {
                 f(None)
             }
         })
+    }
+}
+
+#[cfg(feature = "sqlx")]
+mod sqlx_impls {
+    use sqlx::{Database, Decode, Encode, Postgres, Type};
+
+    use super::*;
+
+    impl<'r> Decode<'r, Postgres> for Root {
+        fn decode(
+            value: <Postgres as sqlx::database::HasValueRef<'r>>::ValueRef,
+        ) -> Result<Self, sqlx::error::BoxDynError> {
+            Ok(Root(Hash::decode(value)?))
+        }
+    }
+
+    impl<'q> Encode<'q, Postgres> for Root {
+        fn encode_by_ref(
+            &self,
+            buf: &mut <Postgres as sqlx::database::HasArguments<'q>>::ArgumentBuffer,
+        ) -> sqlx::encode::IsNull {
+            self.0.encode_by_ref(buf)
+        }
+    }
+
+    impl Type<Postgres> for Root {
+        fn type_info() -> <Postgres as Database>::TypeInfo {
+            <[u8] as Type<Postgres>>::type_info()
+        }
     }
 }
