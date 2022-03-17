@@ -26,14 +26,14 @@ pub struct Proof<Tree: Height> {
 impl<Tree: Height> Proof<Tree> {
     /// Verify a [`Proof`] of inclusion against the root [`struct@Hash`] of a tree.
     ///
-    /// Returns a [`VerifiedProof`] if and only if this proof verified against the hash.
-    pub fn verify(self, root: Hash) -> Result<VerifiedProof<Tree>, VerifyError<Tree>> {
+    /// Returns [`VerifyError`] if the proof is invalid.
+    pub fn verify(&self, root: Hash) -> Result<(), VerifyError> {
         use path::Path;
 
         if root == Tree::Height::root(&self.auth_path, self.position, Hash::of(self.leaf)) {
-            Ok(VerifiedProof { proof: self, root })
+            Ok(())
         } else {
-            Err(VerifyError { proof: self, root })
+            Err(VerifyError { root })
         }
     }
 
@@ -55,65 +55,16 @@ impl<Tree: Height> Proof<Tree> {
 }
 
 /// A proof of inclusion did not verify against the provided root hash.
-#[derive(Derivative, Error)]
-#[derivative(
-    Debug(bound = "<Tree::Height as path::Path>::Path: Debug"),
-    Clone(bound = "<Tree::Height as path::Path>::Path: Clone"),
-    PartialEq(bound = "<Tree::Height as path::Path>::Path: PartialEq"),
-    Eq(bound = "<Tree::Height as path::Path>::Path: Eq")
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
 #[error("invalid inclusion proof for root hash {root:?}")]
-pub struct VerifyError<Tree: Height> {
-    proof: Proof<Tree>,
+pub struct VerifyError {
     root: Hash,
 }
 
-impl<Tree: Height> VerifyError<Tree> {
-    /// Get a reference to the proof that failed to verify.
-    pub fn proof(&self) -> &Proof<Tree> {
-        &self.proof
-    }
-
+impl VerifyError {
     /// Get the root hash against which the proof failed to verify.
     pub fn root(&self) -> Hash {
         self.root
-    }
-
-    /// Extract the original proof from this error.
-    pub fn into_proof(self) -> Proof<Tree> {
-        self.proof
-    }
-}
-
-/// A verified proof of inclusion in a tree, at a given root hash.
-///
-/// The only way to create this is to use [`Proof::verify`], and for it to succeed.
-#[derive(Derivative)]
-#[derivative(
-    Debug(bound = "<Tree::Height as path::Path>::Path: Debug"),
-    Clone(bound = "<Tree::Height as path::Path>::Path: Clone"),
-    PartialEq(bound = "<Tree::Height as path::Path>::Path: PartialEq"),
-    Eq(bound = "<Tree::Height as path::Path>::Path: Eq")
-)]
-pub struct VerifiedProof<Tree: Height> {
-    proof: Proof<Tree>,
-    root: Hash,
-}
-
-impl<Tree: Height> VerifiedProof<Tree> {
-    /// Get a reference to the proof that was verified.
-    pub fn proof(&self) -> &Proof<Tree> {
-        &self.proof
-    }
-
-    /// Get the root hash against which the proof was verified.
-    pub fn root(&self) -> Hash {
-        self.root
-    }
-
-    /// Extract the original (pre-verified) proof from this verified proof.
-    pub fn unverify(self) -> Proof<Tree> {
-        self.proof
     }
 }
 
