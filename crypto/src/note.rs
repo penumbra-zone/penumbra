@@ -345,6 +345,12 @@ impl From<Commitment> for penumbra_tct::Commitment {
     }
 }
 
+impl From<penumbra_tct::Commitment> for Commitment {
+    fn from(commitment: penumbra_tct::Commitment) -> Commitment {
+        Commitment(commitment.into())
+    }
+}
+
 #[cfg(test)]
 mod test_serde {
     use super::Commitment;

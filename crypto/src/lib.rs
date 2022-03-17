@@ -9,7 +9,6 @@ mod address;
 pub mod asset;
 pub mod keys;
 pub mod memo;
-pub mod merkle;
 pub mod note;
 mod nullifier;
 mod prf;
