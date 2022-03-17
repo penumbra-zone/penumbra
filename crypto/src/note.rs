@@ -333,6 +333,18 @@ pub struct Commitment(pub Fq);
 
 impl Protobuf<pb::NoteCommitment> for Commitment {}
 
+impl From<Commitment> for Fq {
+    fn from(commitment: Commitment) -> Fq {
+        commitment.0
+    }
+}
+
+impl From<Commitment> for penumbra_tct::Commitment {
+    fn from(commitment: Commitment) -> penumbra_tct::Commitment {
+        commitment.0.into()
+    }
+}
+
 #[cfg(test)]
 mod test_serde {
     use super::Commitment;

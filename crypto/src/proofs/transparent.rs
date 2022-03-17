@@ -7,7 +7,7 @@ use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_proto::{transparent_proofs, Message, Protobuf};
 use thiserror;
 
-use crate::{asset, ka, keys, merkle, merkle::Hashable, note, value, Fq, Fr, Nullifier, Value};
+use crate::{asset, ka, keys, merkle, note, value, Fq, Fr, Nullifier, Value};
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -93,34 +93,11 @@ impl SpendProof {
         }
 
         // Merkle path integrity.
-        // 1. Check the Merkle path is a depth of `merkle::DEPTH`.
-        if self.merkle_path.1.len() != merkle::DEPTH {
-            return Err(Error::MerklePathMismatch);
-        }
-
-        // 2. Check the Merkle path leads to the expected anchor (`merkle::Root`).
-        let mut cur = self.note_commitment;
-
-        // This logic is from `incrementalmerkletree`'s `compute_root_from_auth_path` function which is
-        // `pub(crate)` so is included below.
-        let mut lvl = merkle::Altitude::zero();
-        for (i, v) in self.merkle_path.1.iter().enumerate().map(|(i, v)| {
-            (
-                ((<usize>::try_from(self.position).unwrap() >> i) & 1) == 1,
-                v,
-            )
-        }) {
-            if i {
-                cur = note::Commitment::combine(lvl, v, &cur);
-            } else {
-                cur = note::Commitment::combine(lvl, &cur, v);
-            }
-            lvl = lvl + 1;
-        }
-        let expected_root = merkle::Root(cur.0);
-        if expected_root != anchor {
-            return Err(Error::MerkleRootMismatch);
-        }
+        let proof =
+            merkle::Proof::new(self.note_commitment.into(), self.position, self.merkle_path);
+        proof
+            .verify(&anchor.into())
+            .map_err(|_| Error::MerklePathMismatch)?;
 
         // Value commitment integrity.
         if self.value.commit(self.v_blinding) != value_commitment {
@@ -237,12 +214,18 @@ impl From<SpendProof> for transparent_proofs::SpendProof {
         let ak_bytes: [u8; 32] = msg.ak.into();
         let nk_bytes: [u8; 32] = msg.nk.0.to_bytes();
         transparent_proofs::SpendProof {
-            merkle_path_field_0: u64::from(msg.merkle_path.0) as u32,
-            merkle_path_field_1: msg
+            merkle_path: msg
                 .merkle_path
-                .1
                 .into_iter()
-                .map(|x| x.0.to_bytes().into())
+                .map(|siblings| {
+                    let [sibling_1, sibling_2, sibling_3] =
+                        siblings.map(|sibling| Fq::from(sibling).to_bytes().into());
+                    transparent_proofs::MerklePathChunk {
+                        sibling_1,
+                        sibling_2,
+                        sibling_3,
+                    }
+                })
                 .collect(),
             position: msg.position.into(),
             g_d: msg.g_d.compress().0.to_vec(),
@@ -275,18 +258,33 @@ impl TryFrom<transparent_proofs::SpendProof> for SpendProof {
             .map_err(|_| Error::ProtoMalformed)?;
         let ak = ak_bytes.try_into().map_err(|_| Error::ProtoMalformed)?;
 
-        let mut merkle_path_vec = Vec::<note::Commitment>::new();
-        for merkle_path_segment in proto.merkle_path_field_1 {
-            merkle_path_vec.push(
-                merkle_path_segment[..]
-                    .try_into()
-                    .map_err(|_| Error::ProtoMalformed)?,
-            );
+        let mut merkle_path = Vec::<[penumbra_tct::Hash; 3]>::new();
+        for transparent_proofs::MerklePathChunk {
+            sibling_1,
+            sibling_2,
+            sibling_3,
+        } in proto.merkle_path
+        {
+            merkle_path.push({
+                let sibling_1 =
+                    Fq::from_bytes(sibling_1.try_into().map_err(|_| Error::ProtoMalformed)?)
+                        .map_err(|_| Error::ProtoMalformed)?
+                        .into();
+                let sibling_2 =
+                    Fq::from_bytes(sibling_2.try_into().map_err(|_| Error::ProtoMalformed)?)
+                        .map_err(|_| Error::ProtoMalformed)?
+                        .into();
+                let sibling_3 =
+                    Fq::from_bytes(sibling_3.try_into().map_err(|_| Error::ProtoMalformed)?)
+                        .map_err(|_| Error::ProtoMalformed)?
+                        .into();
+                [sibling_1, sibling_2, sibling_3]
+            });
         }
 
         Ok(SpendProof {
-            merkle_path: ((proto.merkle_path_field_0 as usize).into(), merkle_path_vec),
-            position: (proto.position as usize).into(),
+            merkle_path: merkle_path.try_into().map_err(|_| Error::ProtoMalformed)?,
+            position: (proto.position as u64).into(),
             g_d: g_d_encoding
                 .decompress()
                 .map_err(|_| Error::ProtoMalformed)?,
@@ -437,9 +435,7 @@ mod tests {
     use super::*;
     use crate::{
         keys::{SeedPhrase, SpendKey, SpendSeed},
-        merkle,
-        merkle::{Frontier, Tree, TreeExt},
-        note, Note, Value,
+        merkle, note, Note, Value,
     };
 
     #[test]
@@ -652,11 +648,14 @@ mod tests {
         let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
         let nk = *sk_sender.nullifier_key();
         let ak = sk_sender.spend_auth_key().into();
-        let mut nct = merkle::BridgeTree::<note::Commitment, 32>::new(5);
-        nct.append(&note_commitment);
-        let anchor = nct.root2();
-        nct.witness();
-        let merkle_path = nct.authentication_path(&note_commitment).unwrap();
+        let mut nct = merkle::Tree::new();
+        nct.insert(merkle::Keep, note_commitment.into()).unwrap();
+        let anchor = merkle::Root(nct.root());
+        let merkle_path = nct
+            .witness(note_commitment.into())
+            .unwrap()
+            .auth_path()
+            .map(|e| e.clone());
 
         let proof = SpendProof {
             merkle_path,
@@ -701,11 +700,14 @@ mod tests {
         let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
         let nk = *sk_sender.nullifier_key();
         let ak = sk_sender.spend_auth_key().into();
-        let mut nct = merkle::BridgeTree::<note::Commitment, 32>::new(5);
-        let incorrect_anchor = nct.root2();
-        nct.append(&note_commitment);
-        nct.witness();
-        let merkle_path = nct.authentication_path(&note_commitment).unwrap();
+        let mut nct = merkle::Tree::new();
+        let incorrect_anchor = merkle::Root(nct.root());
+        nct.insert(merkle::Keep, note_commitment.into()).unwrap();
+        let merkle_path = nct
+            .witness(note_commitment.into())
+            .unwrap()
+            .auth_path()
+            .map(Clone::clone);
 
         let proof = SpendProof {
             merkle_path,
@@ -749,11 +751,14 @@ mod tests {
         let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
         let nk = *sk_sender.nullifier_key();
         let ak = sk_sender.spend_auth_key().into();
-        let mut nct = merkle::BridgeTree::<note::Commitment, 32>::new(5);
-        nct.append(&note_commitment);
-        nct.witness();
-        let anchor = nct.root2();
-        let merkle_path = nct.authentication_path(&note_commitment).unwrap();
+        let mut nct = merkle::Tree::new();
+        nct.insert(merkle::Keep, note_commitment.into()).unwrap();
+        let anchor = merkle::Root(nct.root());
+        let merkle_path = nct
+            .witness(note_commitment.into())
+            .unwrap()
+            .auth_path()
+            .map(Clone::clone);
 
         let proof = SpendProof {
             merkle_path,
@@ -797,11 +802,14 @@ mod tests {
         let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
         let nk = *sk_sender.nullifier_key();
         let ak = sk_sender.spend_auth_key().into();
-        let mut nct = merkle::BridgeTree::<note::Commitment, 32>::new(5);
-        nct.append(&note_commitment);
-        nct.witness();
-        let anchor = nct.root2();
-        let merkle_path = nct.authentication_path(&note_commitment).unwrap();
+        let mut nct = merkle::Tree::new();
+        nct.insert(merkle::Keep, note_commitment.into()).unwrap();
+        let anchor = merkle::Root(nct.root());
+        let merkle_path = nct
+            .witness(note_commitment.into())
+            .unwrap()
+            .auth_path()
+            .map(Clone::clone);
 
         let proof = SpendProof {
             merkle_path,

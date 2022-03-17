@@ -76,13 +76,6 @@ impl From<Hash> for Fq {
     }
 }
 
-impl From<Fq> for Hash {
-    #[inline]
-    fn from(hash: Fq) -> Self {
-        Hash(hash)
-    }
-}
-
 impl Debug for Hash {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
         let mut bytes = Vec::with_capacity(4 * 8);
@@ -126,5 +119,45 @@ impl Hash {
             &(*DOMAIN_SEPARATOR + height),
             (a, b, c, d),
         ))
+    }
+}
+
+#[cfg(feature = "sqlx")]
+mod sqlx_impls {
+    use decaf377::{FieldExt, Fq};
+    use sqlx::{Database, Decode, Encode, Postgres, Type};
+    use thiserror::Error;
+
+    use super::*;
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
+    #[error("expected exactly 32 bytes")]
+    struct IncorrectLength;
+
+    impl<'r> Decode<'r, Postgres> for Hash {
+        fn decode(
+            value: <Postgres as sqlx::database::HasValueRef<'r>>::ValueRef,
+        ) -> Result<Self, sqlx::error::BoxDynError> {
+            let bytes: [u8; 32] = Vec::<u8>::decode(value)?
+                .try_into()
+                .map_err(|_| IncorrectLength)?;
+            Ok(Hash(Fq::from_bytes(bytes)?))
+        }
+    }
+
+    impl<'q> Encode<'q, Postgres> for Hash {
+        fn encode_by_ref(
+            &self,
+            buf: &mut <Postgres as sqlx::database::HasArguments<'q>>::ArgumentBuffer,
+        ) -> sqlx::encode::IsNull {
+            let bytes = self.0.to_bytes();
+            (&bytes[..]).encode(buf)
+        }
+    }
+
+    impl Type<Postgres> for Hash {
+        fn type_info() -> <Postgres as Database>::TypeInfo {
+            <[u8] as Type<Postgres>>::type_info()
+        }
     }
 }
