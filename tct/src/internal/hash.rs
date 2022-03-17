@@ -67,7 +67,21 @@ impl<T: GetHash> GetHash for &mut T {
 /// The hash of an individual item, tree root, or intermediate node. Use
 /// [`Insert::Hash`](crate::Insert::Hash) with this type when you want to insert something into the
 /// tree that you don't want to witness later.
-pub struct Hash(#[serde(with = "crate::serialize::fq")] Fq);
+pub struct Hash(#[serde(with = "crate::serialize::fq")] pub(crate) Fq);
+
+impl From<Hash> for Fq {
+    #[inline]
+    fn from(hash: Hash) -> Self {
+        hash.0
+    }
+}
+
+impl From<Fq> for Hash {
+    #[inline]
+    fn from(hash: Fq) -> Self {
+        Hash(hash)
+    }
+}
 
 impl Debug for Hash {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
