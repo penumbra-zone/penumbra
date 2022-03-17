@@ -2,6 +2,8 @@
 
 use std::fmt::Debug;
 
+use decaf377::{FieldExt, Fq};
+use penumbra_proto::transparent_proofs as pb;
 use thiserror::Error;
 
 use super::path::{self, AuthPath};
@@ -16,7 +18,7 @@ use crate::{Commitment, Hash, Height};
     Eq(bound = "<Tree::Height as path::Path>::Path: Eq")
 )]
 pub struct Proof<Tree: Height> {
-    pub(crate) index: u64,
+    pub(crate) position: u64,
     pub(crate) auth_path: AuthPath<Tree>,
     pub(crate) leaf: Commitment,
 }
@@ -28,7 +30,7 @@ impl<Tree: Height> Proof<Tree> {
     pub fn verify(self, root: Hash) -> Result<VerifiedProof<Tree>, VerifyError<Tree>> {
         use path::Path;
 
-        if root == Tree::Height::root(&self.auth_path, self.index, Hash::of(self.leaf)) {
+        if root == Tree::Height::root(&self.auth_path, self.position, Hash::of(self.leaf)) {
             Ok(VerifiedProof { proof: self, root })
         } else {
             Err(VerifyError { proof: self, root })
@@ -37,7 +39,7 @@ impl<Tree: Height> Proof<Tree> {
 
     /// Get the index of the item this proof claims to witness.
     pub fn index(&self) -> u64 {
-        self.index
+        self.position
     }
 
     /// Get the [`AuthPath`] of this proof, representing the path from the root to the leaf of the
@@ -112,5 +114,50 @@ impl<Tree: Height> VerifiedProof<Tree> {
     /// Extract the original (pre-verified) proof from this verified proof.
     pub fn unverify(self) -> Proof<Tree> {
         self.proof
+    }
+}
+
+impl<Tree: Height> From<Proof<Tree>> for pb::MerkleProof
+where
+    Vec<pb::MerklePathChunk>: From<AuthPath<Tree>>,
+{
+    fn from(proof: Proof<Tree>) -> Self {
+        Self {
+            position: proof.position,
+            auth_path: proof.auth_path.into(),
+            note_commitment: proof.leaf.0.to_bytes().to_vec(),
+        }
+    }
+}
+
+/// When deserializing a proof, it was malformed.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Error)]
+#[error("could not decode proof")]
+pub struct ProofDecodeError;
+
+impl<Tree: Height> TryFrom<pb::MerkleProof> for Proof<Tree>
+where
+    AuthPath<Tree>: TryFrom<Vec<pb::MerklePathChunk>>,
+{
+    type Error = ProofDecodeError;
+
+    fn try_from(proof: pb::MerkleProof) -> Result<Self, Self::Error> {
+        let position = proof.position;
+        let auth_path = proof.auth_path.try_into().map_err(|_| ProofDecodeError)?;
+        let leaf = Fq::from_bytes(
+            proof
+                .note_commitment
+                .try_into()
+                .map_err(|_| ProofDecodeError)?,
+        )
+        .map_err(|_| ProofDecodeError)?
+        .try_into()
+        .map_err(|_| ProofDecodeError)?;
+
+        Ok(Self {
+            position,
+            auth_path,
+            leaf,
+        })
     }
 }
