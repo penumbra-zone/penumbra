@@ -4,8 +4,7 @@ package penumbra.transparent_proofs;
 // A Penumbra transparent Spend Proof.
 message SpendProof {
   // Auxiliary inputs
-  uint32 merkle_path_field_0 = 1;
-  repeated bytes merkle_path_field_1 = 2;
+  repeated MerklePathChunk merkle_path = 2;
   uint64 position = 3;
   bytes g_d = 4;
   bytes pk_d = 5;
@@ -17,6 +16,13 @@ message SpendProof {
   bytes spend_auth_randomizer = 11;
   bytes ak = 12;
   bytes nk = 13;
+}
+
+/// One chunk of a penumbra_tct merkle proof transparent authentication path.
+message MerklePathChunk {
+  bytes sibling_1 = 1;
+  bytes sibling_2 = 2;
+  bytes sibling_3 = 3;
 }
 
 // A Penumbra transparent output proof.

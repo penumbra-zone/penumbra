@@ -9,6 +9,7 @@ edition = "2021"
 # Workspace deps
 decaf377-ka = { path = "../decaf377-ka/" }
 decaf377-fmd = { path = "../decaf377-fmd/" }
+penumbra-tct = { path = "../tct/" }
 penumbra-proto = { path = "../proto/" }
 
 # Git deps
@@ -16,7 +17,6 @@ ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
 ark-serialize = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 decaf377-rdsa = { version = "0.5", git = "https://github.com/penumbra-zone/decaf377-rdsa" }
-incrementalmerkletree = { git = "https://github.com/penumbra-zone/incrementalmerkletree" }
 poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377" }
 jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "main" }
 f4jumble = { git = "https://github.com/zcash/librustzcash", rev="2425a0869098e3b0588ccd73c42716bcf418612c" }
