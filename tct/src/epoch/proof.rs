@@ -2,7 +2,7 @@ pub use thiserror::Error;
 
 use crate::{Commitment, Hash};
 
-pub use super::{Epoch, Root};
+pub use super::{Epoch, Position, Root};
 
 /// An as-yet-unverified proof of the inclusion of some [`Commitment`] in an [`Epoch`].
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -11,7 +11,11 @@ pub struct Proof(pub(super) crate::proof::Proof<Epoch>);
 impl Proof {
     /// Construct a new [`Proof`] of inclusion for a given [`Commitment`], index, and authentication
     /// path from root to leaf.
-    pub fn new(commitment: Commitment, index: u64, auth_path: [[Hash; 3]; 16]) -> Self {
+    pub fn new(
+        commitment: Commitment,
+        Position(index): Position,
+        auth_path: [[Hash; 3]; 16],
+    ) -> Self {
         use crate::internal::path::{Leaf, Node};
         let [a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p] = auth_path;
         let path = Leaf;
@@ -81,7 +85,7 @@ impl Proof {
         };
         Self(crate::proof::Proof {
             leaf: commitment,
-            index,
+            index: index as u64,
             auth_path: path,
         })
     }

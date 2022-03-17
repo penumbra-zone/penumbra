@@ -1,3 +1,4 @@
+use decaf377::Fq;
 use hash_hasher::HashedMap;
 use serde::{Deserialize, Serialize};
 
@@ -28,9 +29,31 @@ pub struct Eternity {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Root(Hash);
 
-impl From<Root> for Hash {
+impl From<Root> for Fq {
     fn from(root: Root) -> Self {
-        root.0
+        root.0.into()
+    }
+}
+
+impl From<Fq> for Root {
+    fn from(root: Fq) -> Self {
+        Root(Hash(root))
+    }
+}
+
+/// The index of a [`Commitment`] within an [`Eternity`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Position(u64);
+
+impl From<Position> for u64 {
+    fn from(position: Position) -> Self {
+        position.0
+    }
+}
+
+impl From<u64> for Position {
+    fn from(position: u64) -> Self {
+        Position(position)
     }
 }
 
@@ -332,19 +355,21 @@ impl Eternity {
     ///
     /// Note that [`forget`](Eternity::forget)ting a commitment does not decrease this; it only
     /// decreases the [`witnessed_count`](Eternity::witnessed_count).
-    pub fn position(&self) -> u64 {
-        ((self.inner.position() as u64) << 32)
-            + (match self.inner.focus() {
-                None => 0,
-                Some(Insert::Hash(_)) => u32::MAX,
-                Some(Insert::Keep(epoch)) => {
-                    (match epoch.focus() {
-                        None => 0,
-                        Some(Insert::Hash(_)) => u16::MAX,
-                        Some(Insert::Keep(block)) => block.position(),
-                    }) as u32
-                }
-            } << 16) as u64
+    pub fn position(&self) -> Position {
+        Position(
+            ((self.inner.position() as u64) << 32)
+                + (match self.inner.focus() {
+                    None => 0,
+                    Some(Insert::Hash(_)) => u32::MAX,
+                    Some(Insert::Keep(epoch)) => {
+                        (match epoch.focus() {
+                            None => 0,
+                            Some(Insert::Hash(_)) => u16::MAX,
+                            Some(Insert::Keep(block)) => block.position(),
+                        }) as u32
+                    }
+                } << 16) as u64,
+        )
     }
 
     /// The number of [`Commitment`]s currently witnessed in this [`Eternity`].
