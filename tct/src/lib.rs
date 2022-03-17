@@ -51,14 +51,17 @@ use internal::{
     active::{Active, Focus, Insert, Item, Tier},
     complete::{Complete, ForgetOwned},
     hash::GetHash,
+    hash::Hash,
     height::Height,
     index,
     path::AuthPath,
     proof,
 };
 
-pub use crate::internal::{path::PathDecodeError, proof::ProofDecodeError};
-pub use internal::hash::Hash;
+pub use crate::internal::{
+    path::PathDecodeError,
+    proof::{ProofDecodeError, VerifyError},
+};
 
 /// A commitment to be stored in a [`Block`].
 ///
@@ -82,7 +85,7 @@ impl From<poseidon377::Fq> for Commitment {
 mod eternity;
 pub use eternity::{
     epoch::{block::Block, Epoch},
-    error, Eternity, Position, Proof, Root, VerifyError,
+    error, Eternity, Position, Proof, Root,
 };
 
 pub mod epoch {

@@ -13,7 +13,7 @@ use epoch::EpochMut;
 use epoch::{block, block::Block, Epoch};
 
 mod proof;
-pub use proof::{Proof, VerifyError};
+pub use proof::Proof;
 
 pub mod error;
 pub use error::{
@@ -109,17 +109,23 @@ impl Eternity {
     /// is full or was inserted by [`insert_epoch_root`](Eternity::insert_epoch_root), or the most
     /// recently inserted [`Block`] is full or was inserted by
     /// [`insert_block_root`](Eternity::insert_block_root).
-    pub fn insert(&mut self, witness: Witness, commitment: Commitment) -> Result<(), InsertError> {
+    pub fn insert(
+        &mut self,
+        witness: Witness,
+        commitment: impl Into<Commitment>,
+    ) -> Result<(), InsertError> {
         self.insert_commitment_or_root(match witness {
-            Keep => Insert::Keep(commitment),
-            Forget => Insert::Hash(Hash::of(commitment)),
+            Keep => Insert::Keep(commitment.into()),
+            Forget => Insert::Hash(Hash::of(commitment.into())),
         })
     }
 
     /// Get a [`Proof`] of inclusion for the commitment at this index in the eternity.
     ///
     /// If the index is not witnessed in this eternity, return `None`.
-    pub fn witness(&self, commitment: Commitment) -> Option<Proof> {
+    pub fn witness(&self, commitment: impl Into<Commitment>) -> Option<Proof> {
+        let commitment = commitment.into();
+
         let index = *self.index.get(&commitment)?;
 
         let (auth_path, leaf) = self.inner.witness(index)?;
@@ -136,7 +142,9 @@ impl Eternity {
     ///
     /// Returns `true` if the commitment was previously witnessed (and now is forgotten), and `false` if
     /// it was not witnessed.
-    pub fn forget(&mut self, commitment: Commitment) -> bool {
+    pub fn forget(&mut self, commitment: impl Into<Commitment>) -> bool {
+        let commitment = commitment.into();
+
         let mut forgotten = false;
 
         if let Some(&within_epoch) = self.index.get(&commitment) {

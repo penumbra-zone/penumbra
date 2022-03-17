@@ -39,7 +39,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let root = tree.root();
     let proof = tree.witness(commit(1)).unwrap();
 
-    assert!(proof.verify(&root).is_ok());
+    assert!(proof.verify(root).is_ok());
     assert!(tree.witness(commit(2)).is_none());
     assert!(tree.witness(commit(5000)).is_none());
 
