@@ -10,7 +10,7 @@ services:
       [
         "bash",
         "-c",
-        "pd start --host 0.0.0.0 --database-uri $$(cat /run/secrets/db_connection_string) -r ./pd_rocksdb"
+        "pd start --host 0.0.0.0 --database-uri $$(cat /run/secrets/db_connection_string) -r /pd/rocksdb"
       ]
     logging:
       driver: "json-file"

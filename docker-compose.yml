@@ -7,8 +7,9 @@ services:
       context: .
     environment:
       - RUST_LOG=${RUST_LOG:-warn,pd=info,penumbra=info}
-    command: pd start --host 0.0.0.0 --database-uri
-      postgres://postgres:postgres@db/penumbra -r ./pd_rocksdb
+    volumes:
+      - ~/scratch/testnet_build/node0/pd:/pd
+    command: pd start --host 0.0.0.0 --database-uri postgres://postgres:postgres@db/penumbra -r /pd/rocksdb
     restart: on-failure
     networks:
       localnet:
@@ -26,7 +27,7 @@ services:
       - "26656:26656"
       - "26657:26657"
     volumes:
-      - ~/scratch/testnet_build/node0:/tendermint
+      - ~/scratch/testnet_build/node0/tendermint:/tendermint
     command: start --proxy-app=tcp://pd:26658
     environment:
       - ID=0
@@ -36,60 +37,6 @@ services:
     networks:
       localnet:
         ipv4_address: 192.167.10.2
-
-  # The Tendermint node
-  # tendermint-node1:
-  #   image: "tendermint/tendermint:latest"
-  #   container_name: tendermint-node1
-  #   ports:
-  #     - "26659-26660:26656-26657"
-  #   volumes:
-  #     - ~/scratch/testnet_build/node1:/tendermint:Z
-  #   command: start --proxy-app=tcp://pd:26658
-  #   environment:
-  #     - ID=1
-  #     - LOG=${LOG:-tendermint.log}
-  #   depends_on:
-  #     - pd
-  #   networks:
-  #     localnet:
-  #       ipv4_address: 192.167.10.3
-
-  # # The Tendermint node
-  # tendermint-node2:
-  #   image: "tendermint/tendermint:latest"
-  #   container_name: tendermint-node2
-  #   ports:
-  #     - "26661-26662:26656-26657"
-  #   volumes:
-  #     - ~/scratch/testnet_build/node2:/tendermint:Z
-  #   command: start --proxy-app=tcp://pd:26658
-  #   environment:
-  #     - ID=2
-  #     - LOG=${LOG:-tendermint.log}
-  #   depends_on:
-  #     - pd
-  #   networks:
-  #     localnet:
-  #       ipv4_address: 192.167.10.4
-
-  # # The Tendermint node
-  # tendermint-node3:
-  #   image: "tendermint/tendermint:latest"
-  #   container_name: tendermint-node3
-  #   ports:
-  #     - "26663-26664:26656-26657"
-  #   volumes:
-  #     - ~/scratch/testnet_build/node3:/tendermint:Z
-  #   command: start --proxy-app=tcp://pd:26658
-  #   environment:
-  #     - ID=3
-  #     - LOG=${LOG:-tendermint.log}
-  #   depends_on:
-  #     - pd
-  #   networks:
-  #     localnet:
-  #       ipv4_address: 192.167.10.5
 
 networks:
   localnet:
