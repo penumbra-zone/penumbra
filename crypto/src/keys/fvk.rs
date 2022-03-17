@@ -4,7 +4,7 @@ use once_cell::sync::Lazy;
 
 use super::{DiversifierKey, IncomingViewingKey, NullifierKey, OutgoingViewingKey};
 use crate::{
-    ka, merkle, note, prf,
+    ka, note, prf,
     rdsa::{SpendAuth, VerificationKey},
     Fq, Fr, Nullifier,
 };
@@ -66,7 +66,7 @@ impl FullViewingKey {
     /// [`note::Commitment`].
     pub fn derive_nullifier(
         &self,
-        pos: merkle::Position,
+        pos: penumbra_tct::Position,
         note_commitment: &note::Commitment,
     ) -> Nullifier {
         self.nk.derive_nullifier(pos, note_commitment)

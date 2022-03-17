@@ -4,7 +4,7 @@ package penumbra.transparent_proofs;
 // A Penumbra transparent Spend Proof.
 message SpendProof {
   // Auxiliary inputs
-  MerkleProof proof = 1;
+  MerkleProof note_commitment_proof = 1;
   bytes g_d = 2;
   bytes pk_d = 3;
   uint64 value_amount = 4;
