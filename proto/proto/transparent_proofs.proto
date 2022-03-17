@@ -6,7 +6,7 @@ message TransactionProof {
   repeated ProofAction proof_actions = 1;
 }
 
-// Constraints associated with a given action.
+// Witness data associated with a given action.
 message ProofAction {
   oneof proof_action {
     Spend spend = 1;
@@ -14,7 +14,7 @@ message ProofAction {
   }
 }
 
-// Constraints for a Penumbra transparent spend.
+// Witness data for a Penumbra transparent spend.
 message Spend {
   // Auxiliary inputs
   uint32 merkle_path_field_0 = 1;
@@ -32,7 +32,7 @@ message Spend {
   bytes nk = 13;
 }
 
-// Constraints for a Penumbra transparent output.
+// Witness data for a Penumbra transparent output.
 message Output {
   // Auxiliary inputs
   bytes g_d = 1;
