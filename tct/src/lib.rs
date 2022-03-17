@@ -1,4 +1,37 @@
 //! The tiered commitment tree for Penumbra.
+//!
+//! ```ascii,no_run
+//! Eternity┃           ╱╲ ◀───────────── Anchor           
+//!     Tree┃          ╱││╲               = Eternity Root    
+//!         ┃         * ** *           ╮                   
+//!         ┃      *   *  *   *        │ 8 levels          
+//!         ┃   *     *    *     *     ╯                   
+//!         ┃  ╱╲    ╱╲    ╱╲    ╱╲                        
+//!         ┃ ╱││╲  ╱││╲  ╱││╲  ╱││╲ ◀─── Eternity Leaf      
+//!                         ▲             = Epoch Root     
+//!                      ┌──┘                              
+//!                      │                                 
+//!                      │                                 
+//!    Epoch┃           ╱╲ ◀───────────── Epoch Root       
+//!     Tree┃          ╱││╲                                
+//!         ┃         * ** *           ╮                   
+//!         ┃      *   *  *   *        │ 8 levels          
+//!         ┃   *     *    *     *     ╯                   
+//!         ┃  ╱╲    ╱╲    ╱╲    ╱╲                        
+//!         ┃ ╱││╲  ╱││╲  ╱││╲  ╱││╲ ◀─── Epoch Leaf       
+//!                  ▲                    = Block Root     
+//!                  └───┐                                 
+//!                      │                                 
+//!                      │                                 
+//!    Block┃           ╱╲ ◀───────────── Block Root       
+//!     Tree┃          ╱││╲                                
+//!         ┃         * ** *           ╮                   
+//!         ┃      *   *  *   *        │ 8 levels          
+//!         ┃   *     *    *     *     ╯                   
+//!         ┃  ╱╲    ╱╲    ╱╲    ╱╲                        
+//!         ┃ ╱││╲  ╱││╲  ╱││╲  ╱││╲ ◀─── Block Leaf       
+//!                                       = Note Commitment
+//! ```
 
 // Cargo doc complains if the recursion limit isn't higher, even though cargo build succeeds:
 #![recursion_limit = "256"]
