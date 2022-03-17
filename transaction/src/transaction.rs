@@ -78,6 +78,10 @@ impl Transaction {
         }
     }
 
+    pub fn proof(&self) -> Option<TransactionProof> {
+        self.transaction_body.zkproof.clone()
+    }
+
     pub fn transaction_body(&self) -> TransactionBody {
         self.transaction_body.clone()
     }
