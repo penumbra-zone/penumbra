@@ -37,6 +37,9 @@ struct Opt {
 enum Command {
     /// Start running the ABCI and wallet services.
     Start {
+        /// The path used to store the Rocks database.
+        #[structopt(short, long)]
+        rocks_path: PathBuf,
         /// The URI used to connect to the Postgres database.
         #[structopt(short, long)]
         database_uri: String,
@@ -120,6 +123,7 @@ async fn main() -> anyhow::Result<()> {
             light_wallet_port,
             thin_wallet_port,
             metrics_port,
+            rocks_path,
         } => {
             tracing::info!(
                 ?host,
@@ -132,9 +136,11 @@ async fn main() -> anyhow::Result<()> {
             // Initialize state
             let (state_reader, state_writer) = pd::state::new(&database_uri).await?;
 
-            let consensus = pd::Consensus::new(state_writer).await?;
-            let mempool = pd::Mempool::new(state_reader.clone());
-            let info = pd::Info::new(state_reader.clone());
+            let storage = pd::Storage::load(rocks_path).await?;
+
+            let consensus = pd::Consensus::new(state_writer, storage.clone()).await?;
+            let mempool = pd::Mempool::new(state_reader.clone(), storage.clone());
+            let info = pd::Info::new(state_reader.clone(), storage.clone());
             let snapshot = pd::Snapshot {};
 
             let abci_server = tokio::spawn(

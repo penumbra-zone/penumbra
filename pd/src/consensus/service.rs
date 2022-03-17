@@ -11,7 +11,7 @@ use tokio_util::sync::PollSender;
 use tower_abci::BoxError;
 
 use super::{Message, Worker};
-use crate::{state, RequestExt};
+use crate::{state, RequestExt, Storage};
 
 #[derive(Clone)]
 pub struct Consensus {
@@ -19,10 +19,10 @@ pub struct Consensus {
 }
 
 impl Consensus {
-    pub async fn new(state: state::Writer) -> anyhow::Result<Self> {
+    pub async fn new(state: state::Writer, storage: Storage) -> anyhow::Result<Self> {
         let (queue_tx, queue_rx) = mpsc::channel(10);
 
-        tokio::spawn(Worker::new(state, queue_rx).await?.run());
+        tokio::spawn(Worker::new(state, storage, queue_rx).await?.run());
 
         Ok(Self {
             queue: PollSender::new(queue_tx),
