@@ -13,7 +13,7 @@ use block::{Block, BlockMut};
 
 #[path = "epoch/proof.rs"]
 mod proof;
-pub use proof::{Proof, VerifyError};
+pub use proof::Proof;
 
 #[path = "epoch/error.rs"]
 pub mod error;
@@ -142,11 +142,15 @@ impl Epoch {
     /// Returns `Err(commitment)` containing the inserted commitment without adding it to the [`Epoch`]
     /// if the [`Epoch`] is full, or if the most recent [`Block`] is full or was inserted by
     /// [`Insert::Hash`].
-    pub fn insert(&mut self, witness: Witness, commitment: Commitment) -> Result<(), InsertError> {
+    pub fn insert(
+        &mut self,
+        witness: Witness,
+        commitment: impl Into<Commitment>,
+    ) -> Result<(), InsertError> {
         self.as_mut()
             .insert(match witness {
-                Keep => Insert::Keep(commitment),
-                Forget => Insert::Hash(Hash::of(commitment)),
+                Keep => Insert::Keep(commitment.into()),
+                Forget => Insert::Hash(Hash::of(commitment.into())),
             })
             .map(|replaced| {
                 // When inserting into an epoch that's not part of a larger eternity, we should never return
@@ -158,7 +162,9 @@ impl Epoch {
     /// Get a [`Proof`] of inclusion for the commitment at this index in the epoch.
     ///
     /// If the index is not witnessed in this epoch, return `None`.
-    pub fn witness(&self, commitment: Commitment) -> Option<Proof> {
+    pub fn witness(&self, commitment: impl Into<Commitment>) -> Option<Proof> {
+        let commitment = commitment.into();
+
         let index = *self.index.get(&commitment)?;
 
         let (auth_path, leaf) = self.inner.witness(index)?;
@@ -175,7 +181,8 @@ impl Epoch {
     ///
     /// Returns `true` if the commitment was previously witnessed (and now is forgotten), and `false` if
     /// it was not witnessed.
-    pub fn forget(&mut self, commitment: Commitment) -> bool {
+    pub fn forget(&mut self, commitment: impl Into<Commitment>) -> bool {
+        let commitment = commitment.into();
         self.as_mut().forget(commitment)
     }
 
