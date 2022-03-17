@@ -98,8 +98,8 @@ impl Proof {
     /// # Errors
     ///
     /// Returns [`VerifyError`] if the proof is invalid for that [`Root`].
-    pub fn verify(self, root: &Root) -> Result<(), VerifyError> {
-        self.0.verify(root.0).map_err(VerifyError).map(|_| ())
+    pub fn verify(&self, root: Root) -> Result<(), crate::VerifyError> {
+        self.0.verify(root.0)
     }
 
     /// Get the commitment whose inclusion is witnessed by the proof.
@@ -107,9 +107,9 @@ impl Proof {
         self.0.leaf
     }
 
-    /// Get the index of the witnessed commitment.
-    pub fn index(&self) -> u64 {
-        self.0.index()
+    /// Get the position of the witnessed commitment.
+    pub fn position(&self) -> crate::epoch::Position {
+        crate::eternity::epoch::Position(self.0.index() as u32)
     }
 
     /// Get the authentication path for this proof, order from root to leaf.
@@ -182,23 +182,6 @@ impl Proof {
         } = path;
         let Leaf = path;
         [a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p]
-    }
-}
-
-/// A [`Proof`] of inclusion did not verify against the provided root of the [`Epoch`].
-#[derive(Debug, Clone, PartialEq, Eq, Error)]
-#[error("invalid inclusion proof for epoch root hash {0:?}")]
-pub struct VerifyError(crate::proof::VerifyError<Epoch>);
-
-impl VerifyError {
-    /// Get the root hash against which the proof failed to verify.
-    pub fn root(&self) -> Root {
-        Root(self.0.root())
-    }
-
-    /// Extract the original proof from this error.
-    pub fn into_proof(self) -> Proof {
-        Proof(self.0.into_proof())
     }
 }
 

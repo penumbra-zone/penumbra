@@ -9,7 +9,7 @@ use crate::*;
 
 #[path = "block/proof.rs"]
 mod proof;
-pub use proof::{Proof, VerifyError};
+pub use proof::Proof;
 
 /// A sparse merkle tree to witness up to 65,536 individual [`Commitment`]s.
 ///
@@ -152,11 +152,15 @@ impl Block {
     /// # Errors
     ///
     /// Returns [`InsertError`] if the block is full.
-    pub fn insert(&mut self, witness: Witness, commitment: Commitment) -> Result<(), InsertError> {
+    pub fn insert(
+        &mut self,
+        witness: Witness,
+        commitment: impl Into<Commitment>,
+    ) -> Result<(), InsertError> {
         self.as_mut()
             .insert(match witness {
-                Keep => Insert::Keep(commitment),
-                Forget => Insert::Hash(Hash::of(commitment)),
+                Keep => Insert::Keep(commitment.into()),
+                Forget => Insert::Hash(Hash::of(commitment.into())),
             })
             .map(|option|
                 // We shouldn't ever be handing back a replaced index here, because the index should
@@ -168,7 +172,9 @@ impl Block {
     /// Get a [`Proof`] of inclusion for this commitment in the block.
     ///
     /// If the index is not witnessed in this block, return `None`.
-    pub fn witness(&self, commitment: Commitment) -> Option<Proof> {
+    pub fn witness(&self, commitment: impl Into<Commitment>) -> Option<Proof> {
+        let commitment = commitment.into();
+
         let index = *self.index.get(&commitment)?;
 
         let (auth_path, leaf) = self.inner.witness(index)?;
@@ -185,7 +191,8 @@ impl Block {
     ///
     /// Returns `true` if the commitment was previously witnessed (and now is forgotten), and `false` if
     /// it was not witnessed.
-    pub fn forget(&mut self, commitment: Commitment) -> bool {
+    pub fn forget(&mut self, commitment: impl Into<Commitment>) -> bool {
+        let commitment = commitment.into();
         self.as_mut().forget(commitment)
     }
 
