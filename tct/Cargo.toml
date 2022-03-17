@@ -6,6 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+penumbra-proto = { path = "../proto/" }
+
 derivative = "2"
 once_cell = "1"
 blake2b_simd = "1"
@@ -17,6 +19,8 @@ ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
 ark-serialize = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
 poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377" }
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
+# this allows us to implement Decode for various types without orphan rule issues
+sqlx = { version = "0.5.9", features = ["postgres"], optional = true }
 
 [dev-dependencies]
 static_assertions = "1"

@@ -57,6 +57,7 @@ use internal::{
     proof,
 };
 
+pub use crate::internal::{path::PathDecodeError, proof::ProofDecodeError};
 pub use internal::hash::Hash;
 
 /// A commitment to be stored in a [`Block`].
