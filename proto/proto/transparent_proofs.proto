@@ -4,25 +4,30 @@ package penumbra.transparent_proofs;
 // A Penumbra transparent Spend Proof.
 message SpendProof {
   // Auxiliary inputs
-  repeated MerklePathChunk merkle_path = 2;
-  uint64 position = 3;
-  bytes g_d = 4;
-  bytes pk_d = 5;
-  uint64 value_amount = 6;
-  bytes value_asset_id = 7;
-  bytes v_blinding = 8;
-  bytes note_commitment = 9;
-  bytes note_blinding = 10;
-  bytes spend_auth_randomizer = 11;
-  bytes ak = 12;
-  bytes nk = 13;
+  MerkleProof proof = 1;
+  bytes g_d = 2;
+  bytes pk_d = 3;
+  uint64 value_amount = 4;
+  bytes value_asset_id = 5;
+  bytes v_blinding = 6;
+  bytes note_blinding = 7;
+  bytes spend_auth_randomizer = 8;
+  bytes ak = 9;
+  bytes nk = 10;
 }
 
-/// One chunk of a penumbra_tct merkle proof transparent authentication path.
+// One chunk of a penumbra_tct merkle proof transparent authentication path.
 message MerklePathChunk {
   bytes sibling_1 = 1;
   bytes sibling_2 = 2;
   bytes sibling_3 = 3;
+}
+
+// A transparent proof showing that the note commitment is located at the position.
+message MerkleProof {
+  uint64 position = 1; // Position of the note commitment in the tree.
+  repeated MerklePathChunk auth_path = 2; // The authentication path (always 24 elements for full tree).
+  bytes note_commitment = 3; // The note commitment.
 }
 
 // A Penumbra transparent output proof.

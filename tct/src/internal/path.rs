@@ -4,6 +4,12 @@
 //! The interpretation of an authentication path is dependent on an _index_ into the tree, stored
 //! separately, which indicates the position of the leaf witnessed by the authentication path.
 
+use std::collections::VecDeque;
+
+use decaf377::{FieldExt, Fq};
+use penumbra_proto::transparent_proofs as pb;
+use thiserror::Error;
+
 use crate::{
     internal::height::{IsHeight, Succ, Zero},
     Hash, Height,
@@ -182,5 +188,134 @@ mod test {
         ) {
             assert_eq!(index, index_of_directions(&directions_of_index(height, index)));
         }
+    }
+}
+
+// All the below is just for serialization to/from protobufs:
+
+/// When deserializing an authentication path, it was malformed.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Error)]
+#[error("could not decode authentication path")]
+pub struct PathDecodeError;
+
+impl From<Leaf> for VecDeque<pb::MerklePathChunk> {
+    fn from(Leaf: Leaf) -> VecDeque<pb::MerklePathChunk> {
+        VecDeque::new()
+    }
+}
+
+impl From<Leaf> for Vec<pb::MerklePathChunk> {
+    fn from(Leaf: Leaf) -> Vec<pb::MerklePathChunk> {
+        Vec::new()
+    }
+}
+
+impl TryFrom<VecDeque<pb::MerklePathChunk>> for Leaf {
+    type Error = PathDecodeError;
+
+    fn try_from(queue: VecDeque<pb::MerklePathChunk>) -> Result<Leaf, Self::Error> {
+        if queue.is_empty() {
+            Ok(Leaf)
+        } else {
+            Err(PathDecodeError)
+        }
+    }
+}
+
+impl TryFrom<Vec<pb::MerklePathChunk>> for Leaf {
+    type Error = PathDecodeError;
+
+    fn try_from(vec: Vec<pb::MerklePathChunk>) -> Result<Leaf, Self::Error> {
+        if vec.is_empty() {
+            Ok(Leaf)
+        } else {
+            Err(PathDecodeError)
+        }
+    }
+}
+
+// To create `Vec<pb::MerklePathChunk>`, we have a recursive impl for `VecDeque` which we delegate
+// to, then finally turn into a `Vec` at the end.
+impl<Child> From<Node<Child>> for VecDeque<pb::MerklePathChunk>
+where
+    VecDeque<pb::MerklePathChunk>: From<Child>,
+{
+    fn from(node: Node<Child>) -> VecDeque<pb::MerklePathChunk> {
+        let [sibling_1, sibling_2, sibling_3] =
+            node.siblings.map(|hash| Fq::from(hash).to_bytes().to_vec());
+        let mut path: VecDeque<pb::MerklePathChunk> = node.child.into();
+        path.push_front(pb::MerklePathChunk {
+            sibling_1,
+            sibling_2,
+            sibling_3,
+        });
+        path
+    }
+}
+
+impl<Child> From<Node<Child>> for Vec<pb::MerklePathChunk>
+where
+    VecDeque<pb::MerklePathChunk>: From<Child>,
+{
+    fn from(node: Node<Child>) -> Vec<pb::MerklePathChunk> {
+        let [sibling_1, sibling_2, sibling_3] =
+            node.siblings.map(|hash| Fq::from(hash).to_bytes().to_vec());
+        let mut path = VecDeque::from(node.child);
+        path.push_front(pb::MerklePathChunk {
+            sibling_1,
+            sibling_2,
+            sibling_3,
+        });
+        path.into()
+    }
+}
+
+// To create `Node<Child>`, we have a recursive impl for `VecDeque` which we delegate to, then
+// finally turn into a `Vec` at the end.
+impl<Child> TryFrom<VecDeque<pb::MerklePathChunk>> for Node<Child>
+where
+    Child: TryFrom<VecDeque<pb::MerklePathChunk>, Error = PathDecodeError>,
+{
+    type Error = PathDecodeError;
+
+    fn try_from(mut queue: VecDeque<pb::MerklePathChunk>) -> Result<Node<Child>, Self::Error> {
+        if let Some(pb::MerklePathChunk {
+            sibling_1,
+            sibling_2,
+            sibling_3,
+        }) = queue.pop_front()
+        {
+            let child = Child::try_from(queue)?;
+            Ok(Node {
+                siblings: [
+                    Hash(
+                        Fq::from_bytes(sibling_1.try_into().map_err(|_| PathDecodeError)?)
+                            .map_err(|_| PathDecodeError)?,
+                    ),
+                    Hash(
+                        Fq::from_bytes(sibling_2.try_into().map_err(|_| PathDecodeError)?)
+                            .map_err(|_| PathDecodeError)?,
+                    ),
+                    Hash(
+                        Fq::from_bytes(sibling_3.try_into().map_err(|_| PathDecodeError)?)
+                            .map_err(|_| PathDecodeError)?,
+                    ),
+                ],
+                child,
+            })
+        } else {
+            Err(PathDecodeError)
+        }
+    }
+}
+
+impl<Child> TryFrom<Vec<pb::MerklePathChunk>> for Node<Child>
+where
+    Node<Child>: TryFrom<VecDeque<pb::MerklePathChunk>>,
+{
+    type Error = <Node<Child> as TryFrom<VecDeque<pb::MerklePathChunk>>>::Error;
+
+    fn try_from(queue: Vec<pb::MerklePathChunk>) -> Result<Node<Child>, Self::Error> {
+        <Node<Child>>::try_from(VecDeque::from(queue))
     }
 }
