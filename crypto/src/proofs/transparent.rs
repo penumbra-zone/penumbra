@@ -1,5 +1,6 @@
 //! Transparent proofs for `MVP1` of the Penumbra system.
 
+use std::collections::VecDeque;
 use std::convert::{TryFrom, TryInto};
 
 use decaf377::FieldExt;
@@ -41,7 +42,7 @@ pub enum Error {
 /// inputs for each action in the transaction.
 #[derive(Clone, Debug, Default)]
 pub struct TransactionProof {
-    pub proof_actions: Vec<ProofAction>,
+    pub proof_actions: VecDeque<ProofAction>,
 }
 
 /// Supported actions in a Penumbra transaction proof.
@@ -53,11 +54,11 @@ pub enum ProofAction {
 
 impl TransactionProof {
     pub fn add_spend(&mut self, spend: SpendProof) {
-        self.proof_actions.push(ProofAction::Spend(spend))
+        self.proof_actions.push_back(ProofAction::Spend(spend))
     }
 
     pub fn add_output(&mut self, output: OutputProof) {
-        self.proof_actions.push(ProofAction::Output(output))
+        self.proof_actions.push_back(ProofAction::Output(output))
     }
 }
 
@@ -311,9 +312,9 @@ impl TryFrom<transparent_proofs::TransactionProof> for TransactionProof {
     type Error = anyhow::Error;
 
     fn try_from(proto: transparent_proofs::TransactionProof) -> anyhow::Result<Self, Self::Error> {
-        let mut proof_actions = Vec::new();
+        let mut proof_actions = VecDeque::new();
         for proof_action in proto.proof_actions {
-            proof_actions.push(proof_action.try_into()?)
+            proof_actions.push_back(proof_action.try_into()?)
         }
         Ok(TransactionProof { proof_actions })
     }

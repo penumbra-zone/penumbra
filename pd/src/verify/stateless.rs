@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::{Context, Error};
-use penumbra_crypto::{note, Nullifier};
+use penumbra_crypto::{note, proofs::transparent::ProofAction, Nullifier};
 use penumbra_proto::{stake::Validator as ProtoValidator, Message};
 use penumbra_stake::{Delegate, Undelegate, ValidatorDefinition};
 use penumbra_transaction::{Action, Transaction};
@@ -39,21 +39,38 @@ impl StatelessTransactionExt for Transaction {
         let mut undelegation = None::<Undelegate>;
         let mut validator_definitions = Vec::<ValidatorDefinition>::new();
 
+        let transaction_proof = self.proof();
+        let mut transaction_proof_constraints =
+            transaction_proof.clone().unwrap_or_default().proof_actions;
         for action in self.transaction_body().actions {
             match action {
                 Action::Output(output) => {
-                    if output
-                        .body
-                        .proof
-                        .verify(
-                            output.body.value_commitment,
-                            output.body.note_commitment,
-                            output.body.ephemeral_key,
-                        )
-                        .is_err()
-                    {
-                        // TODO should the verification error be bubbled up here?
-                        return Err(anyhow::anyhow!("An output proof did not verify"));
+                    if transaction_proof.clone().is_none() {
+                        return Err(anyhow::anyhow!("Proof not included in transaction"));
+                    }
+                    let constraints = transaction_proof_constraints.pop_front();
+                    if constraints.is_none() {
+                        return Err(anyhow::anyhow!("Constraints not found for an action"));
+                    }
+                    match constraints.unwrap() {
+                        ProofAction::Output(constraints) => {
+                            if constraints
+                                .verify(
+                                    output.body.value_commitment,
+                                    output.body.note_commitment,
+                                    output.body.ephemeral_key,
+                                )
+                                .is_err()
+                            {
+                                // TODO should the verification error be bubbled up here?
+                                return Err(anyhow::anyhow!("Output constraints did not verify"));
+                            }
+                        }
+                        _ => {
+                            return Err(anyhow::anyhow!(
+                                "Wrong proof constraints found for this action"
+                            ))
+                        }
                     }
 
                     new_notes.insert(
@@ -72,19 +89,33 @@ impl StatelessTransactionExt for Transaction {
                         .verify(&sighash, &spend.auth_sig)
                         .context("spend auth signature failed to verify")?;
 
-                    if spend
-                        .body
-                        .proof
-                        .verify(
-                            self.transaction_body().merkle_root,
-                            spend.body.value_commitment,
-                            spend.body.nullifier.clone(),
-                            spend.body.rk,
-                        )
-                        .is_err()
-                    {
-                        // TODO should the verification error be bubbled up here?
-                        return Err(anyhow::anyhow!("A spend proof did not verify"));
+                    if transaction_proof.clone().is_none() {
+                        return Err(anyhow::anyhow!("Proof not included in transaction"));
+                    }
+                    let constraints = transaction_proof_constraints.pop_front();
+                    if constraints.is_none() {
+                        return Err(anyhow::anyhow!("Constraints not found for an action"));
+                    }
+                    match constraints.unwrap() {
+                        ProofAction::Spend(constraints) => {
+                            if constraints
+                                .verify(
+                                    self.transaction_body().merkle_root,
+                                    spend.body.value_commitment,
+                                    spend.body.nullifier.clone(),
+                                    spend.body.rk,
+                                )
+                                .is_err()
+                            {
+                                // TODO should the verification error be bubbled up here?
+                                return Err(anyhow::anyhow!("Spend constraints did not verify"));
+                            }
+                        }
+                        _ => {
+                            return Err(anyhow::anyhow!(
+                                "Wrong proof constraints found for this action"
+                            ))
+                        }
                     }
 
                     // Check nullifier has not been revealed already in this transaction.
