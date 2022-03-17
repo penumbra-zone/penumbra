@@ -1,29 +1,9 @@
 use anyhow::Result;
 use futures::future::BoxFuture;
-use jmt::{
-    storage::{LeafNode, Node, NodeBatch, NodeKey, TreeReader, TreeWriter},
-    KeyHash,
-};
-use sha2::Digest;
+use jmt::storage::{LeafNode, Node, NodeBatch, NodeKey, TreeReader, TreeWriter};
 use sqlx::{query, Postgres};
 
 use crate::state;
-
-pub enum Key {
-    NoteCommitmentAnchor,
-}
-
-impl Key {
-    pub fn hash(self) -> KeyHash {
-        match self {
-            Key::NoteCommitmentAnchor => {
-                let mut state = sha2::Sha256::new();
-                state.update(b"nct");
-                KeyHash(*state.finalize().as_ref())
-            }
-        }
-    }
-}
 
 /// Wrapper struct used to implement [`jmt::TreeWriterAsync`] for a Postgres
 /// transaction, without violating the orphan rules.
