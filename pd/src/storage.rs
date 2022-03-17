@@ -32,7 +32,7 @@ impl TreeWriter for Storage {
                 for (node_key, node) in node_batch.clone() {
                     let key_bytes = &node_key.encode()?;
                     let value_bytes = &node.encode()?;
-
+                    tracing::info!(?key_bytes, ?value_bytes);
                     db.put(key_bytes, value_bytes)?;
                 }
 
@@ -65,6 +65,8 @@ impl TreeReader for Storage {
                     }
                     _ => None,
                 };
+
+                tracing::info!(?node_key, ?value);
 
                 Ok(value)
             })
