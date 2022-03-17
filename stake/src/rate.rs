@@ -32,6 +32,8 @@ impl RateData {
         funding_streams: &[FundingStream],
         validator_state: &ValidatorState,
     ) -> RateData {
+        let prev = self;
+
         let constant_rate =
             // Non-Active validator states result in a constant rate. This means
             // the next epoch's rate is set to the current rate.
@@ -80,9 +82,8 @@ impl RateData {
             / 1_0000_0000;
 
         // compute validator exchange rate
-        let validator_exchange_rate = (self.validator_exchange_rate
-            * (self.validator_reward_rate + 1_0000_0000))
-            / 1_0000_0000;
+        let validator_exchange_rate =
+            (prev.validator_exchange_rate * (validator_reward_rate + 1_0000_0000)) / 1_0000_0000;
 
         RateData {
             identity_key: self.identity_key.clone(),
