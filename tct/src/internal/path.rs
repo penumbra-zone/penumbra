@@ -55,23 +55,12 @@ impl<Child, N: Path<Path = Child>> Path for Succ<N> {
     type Path = Node<Child>;
 
     #[inline]
-    #[rustfmt::skip] // For reading clarity, this function is laid out very carefully
     fn root(Node { siblings, child }: &Node<Child>, index: u64, leaf: Hash) -> Hash {
-        use WhichWay::*;
-
         // Based on the index, place the root hash of the child in the correct position among its
         // sibling hashes, so that we can hash this node
-        let [leftmost, left, right, rightmost] = match (
-            WhichWay::at(Self::HEIGHT, index).0, // Which child is the child?
-            N::root(child, index, leaf),    // The root hash down to the leaf from the child
-            *siblings,                      // The hashes of the siblings of the child
-        ) {
-            (Leftmost,  leftmost,  [/* leftmost, */ left,    right,    rightmost   ]) |
-            (Left,      left,      [   leftmost, /* left, */ right,    rightmost   ]) |
-            (Right,     right,     [   leftmost,    left, /* right, */ rightmost   ]) |
-            (Rightmost, rightmost, [   leftmost,    left,    right, /* rightmost */])
-                                => [   leftmost,    left,    right,    rightmost   ],
-        };
+        let which_way = WhichWay::at(Self::HEIGHT, index).0;
+        let [leftmost, left, right, rightmost] =
+            which_way.insert(N::root(child, index, leaf), *siblings);
 
         // Get the hash of this node at its correct height
         Hash::node(Self::HEIGHT, leftmost, left, right, rightmost)
@@ -110,6 +99,21 @@ impl WhichWay {
         let index = index & !(0b11 << ((height - 1) * 2));
 
         (which_way, index)
+    }
+
+    /// Given a 3-element array, insert an item into the array in the place indicated by the [`WhichWay`].
+    #[inline]
+    pub fn insert<T>(&self, item: T, siblings: [T; 3]) -> [T; 4] {
+        use WhichWay::*;
+
+        let (
+            (Leftmost,  leftmost,  [/* leftmost, */ left,    right,    rightmost   ]) |
+            (Left,      left,      [   leftmost, /* left, */ right,    rightmost   ]) |
+            (Right,     right,     [   leftmost,    left, /* right, */ rightmost   ]) |
+            (Rightmost, rightmost, [   leftmost,    left,    right, /* rightmost */])
+        ) = (self, item, siblings);
+
+        [leftmost, left, right, rightmost]
     }
 }
 
