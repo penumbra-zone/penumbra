@@ -28,16 +28,6 @@ pub type Path = (Position, Vec<note::Commitment>);
 #[serde(try_from = "pb::MerkleRoot", into = "pb::MerkleRoot")]
 pub struct Root(pub Fq);
 
-impl jmt::Value for Root {}
-
-impl jmt::hash::CryptoHash for Root {
-    type Hasher = jmt::hash::TestOnlyHasher;
-
-    fn hash(&self) -> jmt::hash::HashValue {
-        jmt::hash::HashValue::sha3_256_of(&self.to_bytes())
-    }
-}
-
 impl TryFrom<pb::MerkleRoot> for Root {
     type Error = anyhow::Error;
 

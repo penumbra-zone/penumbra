@@ -24,7 +24,7 @@ body {
 
 code {
     /* Iosevka could be worth hosting but it's 800kb */
-    font-family: "Iosevka", "Source Code Pro", Consolas, "Ubuntu Mono", Menlo, "DejaVu Sans Mono", monospace, monospace !important;
+    font-family: "Iosevka Term", "Source Code Pro", Consolas, "Ubuntu Mono", Menlo, "DejaVu Sans Mono", monospace, monospace !important;
     /* this seems too small ? */
     font-size: 0.875em; /* please adjust the ace font size accordingly in editor.js */
 }
