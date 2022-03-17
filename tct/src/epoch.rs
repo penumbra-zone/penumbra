@@ -1,3 +1,4 @@
+use decaf377::Fq;
 use hash_hasher::HashedMap;
 use serde::{Deserialize, Serialize};
 
@@ -30,9 +31,15 @@ pub struct Epoch {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Root(pub(super) Hash);
 
-impl From<Root> for Hash {
+impl From<Root> for Fq {
     fn from(root: Root) -> Self {
-        root.0
+        root.0.into()
+    }
+}
+
+impl From<Fq> for Root {
+    fn from(root: Fq) -> Self {
+        Root(Hash(root))
     }
 }
 
@@ -43,6 +50,12 @@ pub struct Position(u32);
 impl From<Position> for u32 {
     fn from(position: Position) -> Self {
         position.0
+    }
+}
+
+impl From<u32> for Position {
+    fn from(position: u32) -> Self {
+        Position(position)
     }
 }
 

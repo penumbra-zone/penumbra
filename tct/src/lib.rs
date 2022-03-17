@@ -51,12 +51,13 @@ use internal::{
     active::{Active, Focus, Insert, Item, Tier},
     complete::{Complete, ForgetOwned},
     hash::GetHash,
-    hash::Hash,
     height::Height,
     index,
     path::AuthPath,
     proof,
 };
+
+pub use internal::hash::Hash;
 
 /// A commitment to be stored in a [`Block`].
 ///
