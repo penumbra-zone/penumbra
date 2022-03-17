@@ -799,26 +799,6 @@
       "nullable": []
     }
   },
-  "ba507b5c58a391df95f9bfac4985ab63e799383309e17717fbcb1f5e4f6ca936": {
-    "query": "SELECT value FROM jmt WHERE key = $1 LIMIT 1",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "value",
-          "type_info": "Bytea"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Bytea"
-        ]
-      },
-      "nullable": [
-        false
-      ]
-    }
-  },
   "c0838e2487bc88b229fe4b5ab786b11780d5196f3e88a5281e7a409171fe4734": {
     "query": "SELECT * from validator_fundingstreams WHERE identity_key = $1",
     "describe": {
@@ -849,19 +829,6 @@
         false,
         false
       ]
-    }
-  },
-  "c4883ef6ef60bb03503ea9f5f67c96cbc47afedcd6ba9aeb11b3e71173c62915": {
-    "query": "\n                    INSERT INTO jmt (key, value) VALUES ($1, $2)\n                    ",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea",
-          "Bytea"
-        ]
-      },
-      "nullable": []
     }
   },
   "d12d2e8c0c1d522212ea874d422f99e950fbd843afe73bac2b7de7a1ec31af3f": {
@@ -935,30 +902,6 @@
           "Bool",
           "ByteaArray"
         ]
-      },
-      "nullable": [
-        false,
-        false
-      ]
-    }
-  },
-  "ebeb8d290f5ee97174d57b70ea2898a0e259573fa3cad6158779158092e771a0": {
-    "query": "SELECT key, value FROM jmt ORDER BY key DESC LIMIT 1",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "key",
-          "type_info": "Bytea"
-        },
-        {
-          "ordinal": 1,
-          "name": "value",
-          "type_info": "Bytea"
-        }
-      ],
-      "parameters": {
-        "Left": []
       },
       "nullable": [
         false,
