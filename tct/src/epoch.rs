@@ -36,6 +36,16 @@ impl From<Root> for Hash {
     }
 }
 
+/// The index of a [`Commitment`] within an [`Epoch`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Position(u32);
+
+impl From<Position> for u32 {
+    fn from(position: Position) -> Self {
+        position.0
+    }
+}
+
 /// A mutable reference to an [`Epoch`].
 #[derive(Debug, PartialEq, Eq)]
 pub(super) struct EpochMut<'a> {
@@ -197,13 +207,15 @@ impl Epoch {
     ///
     /// Note that [`forget`](Epoch::forget)ting a commitment does not decrease this; it only
     /// decreases the [`witnessed_count`](Epoch::witnessed_count).
-    pub fn position(&self) -> u32 {
-        ((self.inner.position() as u32) << 16)
-            + match self.inner.focus() {
-                None => 0,
-                Some(Insert::Hash(_)) => u16::MAX,
-                Some(Insert::Keep(block)) => block.position(),
-            } as u32
+    pub fn position(&self) -> Position {
+        Position(
+            ((self.inner.position() as u32) << 16)
+                + match self.inner.focus() {
+                    None => 0,
+                    Some(Insert::Hash(_)) => u16::MAX,
+                    Some(Insert::Keep(block)) => block.position(),
+                } as u32,
+        )
     }
 
     /// The number of [`Commitment`]s currently witnessed in this [`Epoch`].

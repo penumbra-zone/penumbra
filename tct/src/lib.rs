@@ -1,35 +1,35 @@
 //! The tiered commitment tree for Penumbra.
 //!
 //! ```ascii,no_run
-//! Eternity┃           ╱╲ ◀───────────── Anchor           
-//!     Tree┃          ╱││╲               = Eternity Root    
-//!         ┃         * ** *           ╮                   
-//!         ┃      *   *  *   *        │ 8 levels          
-//!         ┃   *     *    *     *     ╯                   
-//!         ┃  ╱╲    ╱╲    ╱╲    ╱╲                        
-//!         ┃ ╱││╲  ╱││╲  ╱││╲  ╱││╲ ◀─── Eternity Leaf      
-//!                         ▲             = Epoch Root     
-//!                      ┌──┘                              
-//!                      │                                 
-//!                      │                                 
-//!    Epoch┃           ╱╲ ◀───────────── Epoch Root       
-//!     Tree┃          ╱││╲                                
-//!         ┃         * ** *           ╮                   
-//!         ┃      *   *  *   *        │ 8 levels          
-//!         ┃   *     *    *     *     ╯                   
-//!         ┃  ╱╲    ╱╲    ╱╲    ╱╲                        
-//!         ┃ ╱││╲  ╱││╲  ╱││╲  ╱││╲ ◀─── Epoch Leaf       
-//!                  ▲                    = Block Root     
-//!                  └───┐                                 
-//!                      │                                 
-//!                      │                                 
-//!    Block┃           ╱╲ ◀───────────── Block Root       
-//!     Tree┃          ╱││╲                                
-//!         ┃         * ** *           ╮                   
-//!         ┃      *   *  *   *        │ 8 levels          
-//!         ┃   *     *    *     *     ╯                   
-//!         ┃  ╱╲    ╱╲    ╱╲    ╱╲                        
-//!         ┃ ╱││╲  ╱││╲  ╱││╲  ╱││╲ ◀─── Block Leaf       
+//! Eternity┃           ╱╲ ◀───────────── Anchor
+//!     Tree┃          ╱││╲               = Eternity Root
+//!         ┃         * ** *           ╮
+//!         ┃      *   *  *   *        │ 8 levels
+//!         ┃   *     *    *     *     ╯
+//!         ┃  ╱╲    ╱╲    ╱╲    ╱╲
+//!         ┃ ╱││╲  ╱││╲  ╱││╲  ╱││╲ ◀─── Eternity Leaf
+//!                         ▲             = Epoch Root
+//!                      ┌──┘
+//!                      │
+//!                      │
+//!    Epoch┃           ╱╲ ◀───────────── Epoch Root
+//!     Tree┃          ╱││╲
+//!         ┃         * ** *           ╮
+//!         ┃      *   *  *   *        │ 8 levels
+//!         ┃   *     *    *     *     ╯
+//!         ┃  ╱╲    ╱╲    ╱╲    ╱╲
+//!         ┃ ╱││╲  ╱││╲  ╱││╲  ╱││╲ ◀─── Epoch Leaf
+//!                  ▲                    = Block Root
+//!                  └───┐
+//!                      │
+//!                      │
+//!    Block┃           ╱╲ ◀───────────── Block Root
+//!     Tree┃          ╱││╲
+//!         ┃         * ** *           ╮
+//!         ┃      *   *  *   *        │ 8 levels
+//!         ┃   *     *    *     *     ╯
+//!         ┃  ╱╲    ╱╲    ╱╲    ╱╲
+//!         ┃ ╱││╲  ╱││╲  ╱││╲  ╱││╲ ◀─── Block Leaf
 //!                                       = Note Commitment
 //! ```
 
@@ -80,7 +80,7 @@ impl From<poseidon377::Fq> for Commitment {
 mod eternity;
 pub use eternity::{
     epoch::{block::Block, Epoch},
-    error, Eternity, Proof, Root, VerifyError,
+    error, Eternity, Position, Proof, Root, VerifyError,
 };
 
 pub mod epoch {

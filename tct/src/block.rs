@@ -28,6 +28,16 @@ impl From<Root> for Hash {
     }
 }
 
+/// The index of a [`Commitment`] within a [`Block`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Position(u16);
+
+impl From<Position> for u16 {
+    fn from(position: Position) -> Self {
+        position.0
+    }
+}
+
 /// A mutable reference to a [`Block`].
 #[derive(Debug, PartialEq, Eq)]
 pub(in super::super) struct BlockMut<'a> {
@@ -153,8 +163,8 @@ impl Block {
     ///
     /// Note that [`forget`](Block::forget)ting a commitment does not decrease this; it only
     /// decreases the [`witnessed_count`](Block::witnessed_count).
-    pub fn position(&self) -> u16 {
-        self.inner.position()
+    pub fn position(&self) -> Position {
+        Position(self.inner.position())
     }
 
     /// The number of [`Commitment`]s currently witnessed in this [`Block`].
