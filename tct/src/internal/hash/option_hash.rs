@@ -14,6 +14,14 @@ pub struct OptionHash {
     inner: [u64; 4],
 }
 
+impl Default for OptionHash {
+    fn default() -> Self {
+        Self {
+            inner: [u64::MAX; 4],
+        }
+    }
+}
+
 impl From<Option<Hash>> for OptionHash {
     fn from(hash: Option<Hash>) -> Self {
         match hash {

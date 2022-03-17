@@ -23,6 +23,7 @@ pub use children::Children;
 pub struct Node<Child> {
     #[derivative(PartialEq = "ignore")]
     #[derivative(Debug(format_with = "fmt_cache"))]
+    #[serde(skip)]
     hash: Cell<OptionHash>,
     children: Children<Child>,
 }

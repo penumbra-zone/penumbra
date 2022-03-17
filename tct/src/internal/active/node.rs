@@ -28,6 +28,7 @@ pub struct Node<Child: Focus> {
         PartialEq = "ignore",
         Debug(format_with = "super::super::complete::node::fmt_cache")
     )]
+    #[serde(skip)]
     hash: Cell<OptionHash>,
     siblings: Three<Insert<Child::Complete>>,
     focus: Child,
