@@ -154,7 +154,10 @@ impl Worker {
             .expect("can parse app_state in genesis file");
 
         // Initialize the database with the app state.
-        let app_hash = self.state.commit_genesis(&app_state).await?;
+        let app_hash = self
+            .state
+            .commit_genesis(&app_state, self.storage.clone())
+            .await?;
 
         // Reload the worker data from the database.
         self.load().await?;
@@ -413,7 +416,7 @@ impl Worker {
 
         let app_hash = self
             .state
-            .commit_block(pending_block, &mut self.validator_set)
+            .commit_block(pending_block, &mut self.validator_set, self.storage.clone())
             .await?;
 
         tracing::info!(app_hash = ?hex::encode(&app_hash), "finished block commit");

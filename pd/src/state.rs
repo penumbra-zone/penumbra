@@ -2,8 +2,6 @@ use anyhow::Result;
 use sqlx::postgres::PgPoolOptions;
 use tokio::sync::watch;
 use tracing::instrument;
-
-mod jellyfish;
 mod reader;
 mod writer;
 

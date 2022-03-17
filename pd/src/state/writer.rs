@@ -18,13 +18,12 @@ use sqlx::{query, Pool, Postgres};
 use tendermint::block;
 use tokio::sync::watch;
 
-use super::jellyfish;
 use crate::{
     components::validator_set::ValidatorSet,
     genesis,
     pending_block::QuarantineGroup,
     verify::{NoteData, PositionedNoteData},
-    PendingBlock, NUM_RECENT_ANCHORS,
+    PendingBlock, Storage, NUM_RECENT_ANCHORS,
 };
 
 #[derive(Debug)]
@@ -79,7 +78,11 @@ impl Writer {
     /// The database queries here have quite a bit of overlap with the queries in
     /// commit_block(), but this is because the genesis setup is better treated
     /// as a simple special case rather than creating a fake pseudo-block.
-    pub async fn commit_genesis(&self, genesis_config: &genesis::AppState) -> Result<Vec<u8>> {
+    pub async fn commit_genesis(
+        &self,
+        genesis_config: &genesis::AppState,
+        mut storage: Storage,
+    ) -> Result<Vec<u8>> {
         let mut dbtx = self.pool.begin().await?;
 
         let genesis_bytes = serde_json::to_vec(&genesis_config)?;
@@ -282,7 +285,7 @@ impl Writer {
 
         // update the NCT
         let nct_anchor = note_commitment_tree.root2();
-        let (jmt_root, tree_update_batch) = jmt::JellyfishMerkleTree::new(&self.private_reader)
+        let (jmt_root, tree_update_batch) = jmt::JellyfishMerkleTree::new(&storage)
             .put_value_set(
                 vec![(b"nct_anchor".into(), nct_anchor.clone().to_bytes().to_vec())],
                 // height 0 for genesis
@@ -290,7 +293,7 @@ impl Writer {
             )
             .await?;
         // ... and then write the resulting batch update to the backing store:
-        jellyfish::DbTx(&mut dbtx)
+        storage
             .write_node_batch(&tree_update_batch.node_batch)
             .await?;
 
@@ -357,6 +360,7 @@ impl Writer {
         &self,
         block: PendingBlock,
         block_validator_set: &mut ValidatorSet,
+        storage: Storage,
     ) -> Result<Vec<u8>> {
         // TODO: batch these queries?
         let mut dbtx = self.pool.begin().await?;
@@ -376,9 +380,9 @@ impl Writer {
         let epoch = block.epoch.unwrap();
         let height = block.height.expect("height must be set");
 
-        let mut overlay = jmt::WriteOverlay::new(self.private_reader.clone(), height - 1);
+        let mut overlay = jmt::WriteOverlay::new(storage.clone(), height - 1);
         overlay.put(b"nct_anchor".into(), nct_anchor.clone().to_bytes().to_vec());
-        let (jmt_root, _height) = overlay.commit(jellyfish::DbTx(&mut dbtx)).await?;
+        let (jmt_root, _height) = overlay.commit(storage).await?;
 
         // The app hash is the root of the Jellyfish Merkle Tree.  We save the
         // NCT anchor separately for convenience, but it's already included in
