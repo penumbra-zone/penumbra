@@ -14,11 +14,12 @@ use tracing::Instrument;
 use super::Message;
 use crate::{
     components::validator_set::ValidatorSet, genesis, state, verify::StatelessTransactionExt,
-    PendingBlock,
+    PendingBlock, Storage,
 };
 
 pub struct Worker {
     state: state::Writer,
+    storage: Storage,
     queue: mpsc::Receiver<Message>,
     // todo: split up and modularize
     pending_block: Option<PendingBlock>,
@@ -27,7 +28,11 @@ pub struct Worker {
 }
 
 impl Worker {
-    pub async fn new(state: state::Writer, queue: mpsc::Receiver<Message>) -> Result<Self> {
+    pub async fn new(
+        state: state::Writer,
+        storage: Storage,
+        queue: mpsc::Receiver<Message>,
+    ) -> Result<Self> {
         // Because we want to be able to handle (re)loading the worker data after writing
         // the state snapshot in init_chain, we split out the real data loading into a single
         // Worker::load() method that can be called from both places. Since we need to initialize
@@ -38,6 +43,7 @@ impl Worker {
         let reader = state.private_reader().clone();
         let mut worker = Self {
             state,
+            storage,
             queue,
             pending_block: None,
             note_commitment_tree: NoteCommitmentTree::new(0),
@@ -148,7 +154,10 @@ impl Worker {
             .expect("can parse app_state in genesis file");
 
         // Initialize the database with the app state.
-        let app_hash = self.state.commit_genesis(&app_state).await?;
+        let app_hash = self
+            .state
+            .commit_genesis(&app_state, self.storage.clone())
+            .await?;
 
         // Reload the worker data from the database.
         self.load().await?;
@@ -407,7 +416,7 @@ impl Worker {
 
         let app_hash = self
             .state
-            .commit_block(pending_block, &mut self.validator_set)
+            .commit_block(pending_block, &mut self.validator_set, self.storage.clone())
             .await?;
 
         tracing::info!(app_hash = ?hex::encode(&app_hash), "finished block commit");

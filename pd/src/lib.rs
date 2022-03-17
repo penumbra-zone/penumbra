@@ -13,6 +13,7 @@ mod pd_metrics;
 mod pending_block;
 mod request_ext;
 mod snapshot;
+mod storage;
 mod verify;
 mod wallet;
 
@@ -27,6 +28,7 @@ pub use pd_metrics::register_all_metrics;
 use pending_block::PendingBlock;
 use request_ext::RequestExt;
 pub use snapshot::Snapshot;
+pub use storage::Storage;
 
 /// The age limit, in blocks, on anchors accepted in transaction verification.
 pub const NUM_RECENT_ANCHORS: usize = 256;

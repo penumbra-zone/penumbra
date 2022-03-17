@@ -9,18 +9,19 @@ use tendermint::abci::{self, response::Echo, InfoRequest, InfoResponse};
 use tower_abci::BoxError;
 use tracing::Instrument;
 
-use crate::{db::schema, state, RequestExt};
+use crate::{db::schema, state, RequestExt, Storage};
 
 const ABCI_INFO_VERSION: &str = env!("VERGEN_GIT_SEMVER");
 
 #[derive(Clone, Debug)]
 pub struct Info {
     state: state::Reader,
+    storage: Storage,
 }
 
 impl Info {
-    pub fn new(state: state::Reader) -> Self {
-        Self { state }
+    pub fn new(state: state::Reader, storage: Storage) -> Self {
+        Self { state, storage }
     }
 
     async fn info(&self, info: abci::request::Info) -> Result<abci::response::Info, anyhow::Error> {

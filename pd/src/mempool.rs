@@ -22,24 +22,26 @@ use tokio::sync::{watch, Mutex as AsyncMutex};
 use tower_abci::BoxError;
 use tracing::Instrument;
 
-use crate::{state, verify::StatelessTransactionExt, RequestExt};
+use crate::{state, verify::StatelessTransactionExt, RequestExt, Storage};
 
 #[derive(Clone, Debug)]
 pub struct Mempool {
     nullifiers: Arc<AsyncMutex<BTreeSet<Nullifier>>>,
     state: state::Reader,
+    storage: Storage,
     // We keep our own copy of the height watcher rather than borrowing from our
     // state::Reader so we can mutate it while tracking height updates.
     height_rx: watch::Receiver<block::Height>,
 }
 
 impl Mempool {
-    pub fn new(state: state::Reader) -> Self {
+    pub fn new(state: state::Reader, storage: Storage) -> Self {
         let nullifiers = Arc::new(AsyncMutex::new(Default::default()));
         let height_rx = state.height_rx().clone();
         Self {
             nullifiers,
             state,
+            storage,
             height_rx,
         }
     }
