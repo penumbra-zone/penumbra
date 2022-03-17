@@ -280,3 +280,5 @@ impl TryFrom<pb::MerkleProof> for Proof {
         Ok(Proof(crate::internal::proof::Proof::try_from(value)?))
     }
 }
+
+impl penumbra_proto::Protobuf<pb::MerkleProof> for Proof {}
