@@ -120,7 +120,7 @@ mod test {
 
     /// Get directions from the root (at the given height)
     fn directions_of_index(height: u8, index: u64) -> Vec<WhichWay> {
-        (1..=height + 1)
+        (1..=height)
             .rev() // iterate from the root to the leaf (height down to 1)
             .map(|height| WhichWay::at(height, index).0)
             .collect()
@@ -129,7 +129,7 @@ mod test {
     /// Get a sequence of indices representing the index of the originally specified leaf from the
     /// starting height down to zero.
     fn directions_via_indices(height: u8, index: u64) -> Vec<WhichWay> {
-        (1..=height + 1)
+        (1..=height)
             .rev() // iterate from the leaf to the root (height down to 1)
             .scan(index, |index, height| {
                 let (which_way, next_index) = WhichWay::at(height, *index);
