@@ -3,16 +3,22 @@ use futures::future::BoxFuture;
 use jmt::storage::{Node, NodeBatch, NodeKey, TreeReader, TreeWriter};
 use rocksdb::DB;
 use std::{path::PathBuf, sync::Arc};
-use tracing::instrument;
+use tracing::{instrument, Span};
 
 #[derive(Clone, Debug)]
 pub struct Storage(Arc<DB>);
 
 impl Storage {
     pub async fn load(path: PathBuf) -> Result<Self> {
-        tokio::task::spawn_blocking(|| Ok(Self(Arc::new(DB::open_default(path)?))))
-            .await
-            .unwrap()
+        let span = Span::current();
+        tokio::task::spawn_blocking(move || {
+            span.in_scope(|| {
+                tracing::info!(?path, "opening rocksdb");
+                Ok(Self(Arc::new(DB::open_default(path)?)))
+            })
+        })
+        .await
+        .unwrap()
     }
 }
 
@@ -27,16 +33,23 @@ impl TreeWriter for Storage {
         let db = self.0.clone();
         let node_batch = node_batch.clone();
 
+        // The writes have to happen on a separate spawn_blocking task, but we
+        // want tracing events to occur in the context of the current span, so
+        // propagate it explicitly:
+        let span = Span::current();
+
         Box::pin(async {
             tokio::task::spawn_blocking(move || {
-                for (node_key, node) in node_batch.clone() {
-                    let key_bytes = &node_key.encode()?;
-                    let value_bytes = &node.encode()?;
-                    tracing::info!(?key_bytes, ?value_bytes);
-                    db.put(key_bytes, value_bytes)?;
-                }
+                span.in_scope(|| {
+                    for (node_key, node) in node_batch.clone() {
+                        let key_bytes = &node_key.encode()?;
+                        let value_bytes = &node.encode()?;
+                        tracing::info!(?key_bytes, ?value_bytes);
+                        db.put(key_bytes, value_bytes)?;
+                    }
 
-                Ok(())
+                    Ok(())
+                })
             })
             .await
             .unwrap()
@@ -56,19 +69,19 @@ impl TreeReader for Storage {
         let db = self.0.clone();
         let node_key = node_key.clone();
 
+        let span = Span::current();
+
         Box::pin(async {
             tokio::task::spawn_blocking(move || {
-                let value = match db.get_pinned(&node_key.encode()?) {
-                    Ok(Some(value)) => {
-                        let node = Node::decode(&value)?;
-                        Some(node)
-                    }
-                    _ => None,
-                };
+                span.in_scope(|| {
+                    let value = db
+                        .get_pinned(&node_key.encode()?)?
+                        .map(|db_slice| Node::decode(&db_slice))
+                        .transpose()?;
 
-                tracing::info!(?node_key, ?value);
-
-                Ok(value)
+                    tracing::info!(?node_key, ?value);
+                    Ok(value)
+                })
             })
             .await
             .unwrap()
