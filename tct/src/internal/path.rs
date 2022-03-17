@@ -70,7 +70,7 @@ impl<Child, N: Path<Path = Child>> Path for Succ<N> {
             (Left,      left,      [   leftmost, /* left, */ right,    rightmost   ]) |
             (Right,     right,     [   leftmost,    left, /* right, */ rightmost   ]) |
             (Rightmost, rightmost, [   leftmost,    left,    right, /* rightmost */])
-	                        => [   leftmost,    left,    right,    rightmost   ],
+                                => [   leftmost,    left,    right,    rightmost   ],
         };
 
         // Get the hash of this node at its correct height
