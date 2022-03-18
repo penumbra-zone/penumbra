@@ -307,7 +307,7 @@ impl Writer {
             .await?;
 
         // As the very last step, compute the JMT root and return it as the apphash.
-        let app_hash: [u8; 32] = jmt_root.to_vec().try_into().unwrap();
+        let app_hash: [u8; 32] = jmt_root.0;
 
         // Insert the block into the DB
         query!(
