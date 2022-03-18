@@ -21,7 +21,7 @@ pub mod genesis;
 pub mod state;
 pub mod testnet;
 
-pub use components::App;
+pub use components::{App, Component};
 pub use consensus::Consensus;
 pub use info::Info;
 pub use mempool::Mempool;
