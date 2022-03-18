@@ -1,4 +1,8 @@
-on: [push, pull_request]
+name: Smoke Test
+on:
+  push:
+    branches:
+      - main
 
 jobs:
   smoke_test:
