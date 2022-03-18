@@ -77,8 +77,6 @@ impl ValidatorCmd {
                     auth_sig,
                 };
                 // Construct a new transaction and include the validator definition.
-                // TODO: is it possible to get rid of this clone? It's only used because we can't
-                // borrow state mutably & immutably.
                 let transaction =
                     state.build_validator_definition(&mut OsRng, vd, *fee, *source)?;
 
