@@ -93,7 +93,7 @@ async fn main() -> Result<()> {
         Command::Tx(tx_cmd) => tx_cmd.exec(&opt, &mut state).await?,
         Command::Addr(addr_cmd) => addr_cmd.exec(&mut state)?,
         Command::Balance(balance_cmd) => balance_cmd.exec(&state)?,
-        Command::Validator(cmd) => cmd.exec(&opt, &state).await?,
+        Command::Validator(cmd) => cmd.exec(&opt, &mut state).await?,
         Command::Stake(cmd) => cmd.exec(&opt, &mut state).await?,
         Command::Tmp(cmd) => cmd.exec().await?,
     }

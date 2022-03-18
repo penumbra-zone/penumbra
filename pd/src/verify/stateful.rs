@@ -165,6 +165,7 @@ impl state::Reader {
 
             if existing_v.is_empty() {
                 // This is a new validator definition.
+                validator_definitions.push(v.clone().into());
                 continue;
             } else {
                 // This is an existing validator definition. Ensure that the highest

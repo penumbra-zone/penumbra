@@ -193,7 +193,9 @@ impl Writer {
         // - add the note to the NCT
         // - insert the note into the database as appropriate (#374) https://github.com/penumbra-zone/penumbra/issues/374
         // - accumulate the value into a supply tracker
+        //
         // The blinding factor needs to be unique per genesis note
+        // so a monotonically increasing reward counter is used.
         let mut reward_counter: u64 = 0;
         let mut supply_updates: BTreeMap<Id, (Denom, u64)> = BTreeMap::new();
         let mut notes = Vec::new();
@@ -277,14 +279,23 @@ impl Writer {
             notes.push((commitment, positioned_note));
         }
 
-        // We might not have any allocations of some delegation tokens, but we should record the denoms.
-        for genesis::ValidatorPower { validator, .. } in genesis_config.validators.iter() {
-            let denom = validator.identity_key.delegation_token().denom();
-            supply_updates.entry(denom.id()).or_insert((denom, 0)).1 += 0;
-        }
-
-        // update the NCT
+        // Now that we've added all of the genesis notes, compute the resulting NCT anchor
+        // and save it in the database and in the JMT.
         let nct_anchor = note_commitment_tree.root2();
+        let nct_bytes = bincode::serialize(&note_commitment_tree)?;
+
+        // Save the NCT itself in the database ...
+        query!(
+            r#"
+            INSERT INTO blobs (id, data) VALUES ('nct', $1)
+            ON CONFLICT (id) DO UPDATE SET data = $1
+            "#,
+            &nct_bytes[..]
+        )
+        .execute(&mut dbtx)
+        .await?;
+
+        // ... and add its root to the public chain state ...
         let (jmt_root, tree_update_batch) = jmt::JellyfishMerkleTree::new(&storage)
             .put_value_set(
                 vec![(b"nct_anchor".into(), nct_anchor.clone().to_bytes().to_vec())],
@@ -297,8 +308,8 @@ impl Writer {
             .write_node_batch(&tree_update_batch.node_batch)
             .await?;
 
-        // The app hash needs to be returned to Tendermint
-        let app_hash: [u8; 32] = jmt_root.0.to_vec().try_into().unwrap();
+        // As the very last step, compute the JMT root and return it as the apphash.
+        let app_hash: [u8; 32] = jmt_root.0;
 
         // Insert the block into the DB
         query!(
@@ -309,6 +320,12 @@ impl Writer {
         )
         .execute(&mut dbtx)
         .await?;
+
+        // We might not have any allocations of some delegation tokens, but we should record the denoms.
+        for genesis::ValidatorPower { validator, .. } in genesis_config.validators.iter() {
+            let denom = validator.identity_key.delegation_token().denom();
+            supply_updates.entry(denom.id()).or_insert((denom, 0)).1 += 0;
+        }
 
         // write the token supplies to the database
         for (id, asset) in &supply_updates {

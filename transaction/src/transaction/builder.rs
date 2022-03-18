@@ -10,7 +10,8 @@ use penumbra_crypto::{
     rdsa::{Binding, Signature, SigningKey, SpendAuth},
     value, Address, Fr, Note, Value,
 };
-use penumbra_stake::{Delegate, RateData, Undelegate, STAKING_TOKEN_ASSET_ID};
+use penumbra_proto::{stake::Validator as ProtoValidator, Message};
+use penumbra_stake::{Delegate, RateData, Undelegate, ValidatorDefinition, STAKING_TOKEN_ASSET_ID};
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
 
@@ -30,6 +31,8 @@ pub struct Builder {
     pub delegations: Vec<Delegate>,
     /// List of undelegations in the transaction.
     pub undelegations: Vec<Undelegate>,
+    /// List of validator (re-)definitions in the transaction.
+    pub validator_definitions: Vec<ValidatorDefinition>,
     /// Transaction fee. None if unset.
     pub fee: Option<Fee>,
     /// Sum of blinding factors for each value commitment.
@@ -193,6 +196,11 @@ impl Builder {
         self
     }
 
+    pub fn add_validator_definition(&mut self, validator: ValidatorDefinition) -> &mut Self {
+        self.validator_definitions.push(validator);
+        self
+    }
+
     /// Set the transaction fee in PEN.
     ///
     /// Note that we're using the lower case `pen` in the code.
@@ -271,6 +279,7 @@ impl Builder {
         self.outputs.shuffle(rng);
         self.delegations.shuffle(rng);
         self.undelegations.shuffle(rng);
+        self.validator_definitions.shuffle(rng);
 
         // Fill in the spends using blank signatures, so we can build the sighash tx
         for (_, body) in &self.spends {
@@ -287,6 +296,19 @@ impl Builder {
         }
         for undelegation in self.undelegations.drain(..) {
             actions.push(Action::Undelegate(undelegation));
+        }
+        for vd in &self.validator_definitions {
+            // validate the validator signature is signed by the identity key within the validator
+            // for a client-side safety check
+            let protobuf_serialized: ProtoValidator = vd.validator.clone().into();
+            let v_bytes = protobuf_serialized.encode_to_vec();
+
+            vd.validator
+                .identity_key
+                .0
+                .verify(&v_bytes, &vd.auth_sig)
+                .expect("expected identity key within validator definition to have signed validator definition");
+            actions.push(Action::ValidatorDefinition(vd.clone()));
         }
 
         let mut transaction_body = TransactionBody {

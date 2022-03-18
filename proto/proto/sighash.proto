@@ -29,6 +29,6 @@ message SigHashAction {
     transaction.Output output = 2;
     stake.Delegate delegate = 3;
     stake.Undelegate undelegate = 4;
-    stake.ValidatorDefinition validator_definition = 16;
+    stake.ValidatorDefinition validator_definition = 5;
   }
 }

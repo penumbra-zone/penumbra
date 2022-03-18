@@ -9,7 +9,7 @@ use penumbra_crypto::{
 };
 use penumbra_proto::{transaction, Message, Protobuf};
 
-use super::error::ProtoError;
+use anyhow::Error;
 
 #[derive(Clone, Debug)]
 pub struct Spend {
@@ -30,18 +30,18 @@ impl From<Spend> for transaction::Spend {
 }
 
 impl TryFrom<transaction::Spend> for Spend {
-    type Error = ProtoError;
+    type Error = Error;
 
     fn try_from(proto: transaction::Spend) -> anyhow::Result<Self, Self::Error> {
         let body = proto
             .body
-            .ok_or(ProtoError::SpendBodyMalformed)?
+            .ok_or(anyhow::anyhow!("spend body malformed"))?
             .try_into()
-            .map_err(|_| ProtoError::SpendBodyMalformed)?;
+            .map_err(|_| anyhow::anyhow!("spend body malformed"))?;
 
         let sig_bytes: [u8; 64] = proto.auth_sig[..]
             .try_into()
-            .map_err(|_| ProtoError::SpendBodyMalformed)?;
+            .map_err(|_| anyhow::anyhow!("spend body malformed"))?;
 
         Ok(Spend {
             body,
@@ -122,27 +122,27 @@ impl From<Body> for transaction::SpendBody {
 }
 
 impl TryFrom<transaction::SpendBody> for Body {
-    type Error = ProtoError;
+    type Error = Error;
 
     fn try_from(proto: transaction::SpendBody) -> anyhow::Result<Self, Self::Error> {
         let value_commitment: value::Commitment = (proto.cv[..])
             .try_into()
-            .map_err(|_| ProtoError::SpendBodyMalformed)?;
+            .map_err(|_| anyhow::anyhow!("spend body malformed"))?;
 
         let nullifier = (proto.nullifier[..])
             .try_into()
-            .map_err(|_| ProtoError::SpendBodyMalformed)?;
+            .map_err(|_| anyhow::anyhow!("spend body malformed"))?;
 
         let rk_bytes: [u8; 32] = (proto.rk[..])
             .try_into()
-            .map_err(|_| ProtoError::SpendBodyMalformed)?;
+            .map_err(|_| anyhow::anyhow!("spend body malformed"))?;
         let rk = rk_bytes
             .try_into()
-            .map_err(|_| ProtoError::SpendBodyMalformed)?;
+            .map_err(|_| anyhow::anyhow!("spend body malformed"))?;
 
         let proof = (proto.zkproof[..])
             .try_into()
-            .map_err(|_| ProtoError::SpendBodyMalformed)?;
+            .map_err(|_| anyhow::anyhow!("spend body malformed"))?;
 
         Ok(Body {
             value_commitment,
