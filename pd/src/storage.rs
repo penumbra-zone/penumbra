@@ -1,9 +1,13 @@
+use std::{path::PathBuf, sync::Arc};
+
 use anyhow::Result;
 use futures::future::BoxFuture;
 use jmt::storage::{Node, NodeBatch, NodeKey, TreeReader, TreeWriter};
 use rocksdb::DB;
-use std::{path::PathBuf, sync::Arc};
 use tracing::{instrument, Span};
+
+mod write_overlay_ext;
+pub use write_overlay_ext::WriteOverlayExt;
 
 #[derive(Clone, Debug)]
 pub struct Storage(Arc<DB>);
