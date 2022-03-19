@@ -137,16 +137,23 @@ impl Epoch {
 
     /// Add a new [`Commitment`] to the most recent [`Block`] of this [`Epoch`].
     ///
+    /// If successful, returns the [`Position`] at which the commitment was inserted.
+    ///
     /// # Errors
     ///
-    /// Returns `Err(commitment)` containing the inserted commitment without adding it to the [`Epoch`]
-    /// if the [`Epoch`] is full, or if the most recent [`Block`] is full or was inserted by
-    /// [`Insert::Hash`].
+    /// Returns [`InsertError`] if any of:
+    ///
+    /// - the [`Epoch`] is full, or
+    /// - the most recent [`Block`] is full or was inserted by
+    ///   [`insert_block_root`](Epoch::insert_block_root).
     pub fn insert(
         &mut self,
         witness: Witness,
         commitment: impl Into<Commitment>,
-    ) -> Result<(), InsertError> {
+    ) -> Result<Position, InsertError> {
+        // The position at which we will insert the commitment
+        let position = self.position();
+
         self.as_mut()
             .insert(match witness {
                 Keep => Insert::Keep(commitment.into()),
@@ -156,7 +163,9 @@ impl Epoch {
                 // When inserting into an epoch that's not part of a larger eternity, we should never return
                 // further indices to be forgotten, because they should be forgotten internally
                 debug_assert!(replaced.is_none());
-            })
+            })?;
+
+        Ok(position)
     }
 
     /// Get a [`Proof`] of inclusion for the commitment at this index in the epoch.
