@@ -2,11 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use ark_ff::PrimeField;
 use decaf377::Fr;
-use penumbra_crypto::{
-    ka,
-    merkle::{Frontier, NoteCommitmentTree},
-    note, Address, Fq, Note, Nullifier, One, Value,
-};
+use penumbra_crypto::{ka, note, Address, Fq, Note, Nullifier, One, Value};
 use penumbra_stake::{Epoch, IdentityKey, STAKING_TOKEN_ASSET_ID};
 use tracing::instrument;
 
@@ -16,7 +12,7 @@ use crate::verify::{NoteData, PositionedNoteData, VerifiedTransaction};
 #[derive(Debug, Clone)]
 pub struct PendingBlock {
     pub height: Option<u64>,
-    pub note_commitment_tree: NoteCommitmentTree,
+    pub note_commitment_tree: penumbra_tct::Eternity,
     /// Stores note commitments for convienience when updating the NCT.
     pub notes: BTreeMap<note::Commitment, PositionedNoteData>,
     /// Nullifiers that were spent in this block.
@@ -50,7 +46,7 @@ pub struct QuarantineGroup {
 }
 
 impl PendingBlock {
-    pub fn new(note_commitment_tree: NoteCommitmentTree) -> Self {
+    pub fn new(note_commitment_tree: penumbra_tct::Eternity) -> Self {
         Self {
             height: None,
             note_commitment_tree,
@@ -120,15 +116,10 @@ impl PendingBlock {
 
     /// Adds a new note to this pending block.
     pub fn add_note(&mut self, commitment: note::Commitment, data: NoteData) {
-        self.note_commitment_tree.append(&commitment);
-
         let position = self
             .note_commitment_tree
-            .bridges()
-            .last()
-            .map(|b| b.frontier().position().into())
-            // If there are no bridges, the tree is empty
-            .unwrap_or(0u64);
+            .insert(penumbra_tct::Forget, commitment)
+            .expect("inserting to the note commitment tree should not fail");
 
         self.notes
             .insert(commitment, PositionedNoteData { position, data });

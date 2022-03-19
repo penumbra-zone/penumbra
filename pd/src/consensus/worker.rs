@@ -3,7 +3,6 @@ use std::borrow::Borrow;
 use anyhow::{anyhow, Result};
 use futures::StreamExt;
 use metrics::absolute_counter;
-use penumbra_crypto::merkle::NoteCommitmentTree;
 use penumbra_proto::Protobuf;
 use penumbra_stake::Epoch;
 use penumbra_transaction::Transaction;
@@ -23,7 +22,7 @@ pub struct Worker {
     // todo: split up and modularize
     pending_block: Option<PendingBlock>,
     validator_set: ValidatorSet,
-    note_commitment_tree: NoteCommitmentTree,
+    note_commitment_tree: penumbra_tct::Eternity,
 }
 
 impl Worker {
@@ -40,7 +39,7 @@ impl Worker {
             state,
             queue,
             pending_block: None,
-            note_commitment_tree: NoteCommitmentTree::new(0),
+            note_commitment_tree: penumbra_tct::Eternity::new(),
             validator_set: ValidatorSet::new(
                 reader,
                 Epoch {

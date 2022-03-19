@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use penumbra_crypto::{ka, merkle, note, Nullifier};
+use penumbra_crypto::{ka, note, Nullifier};
 use penumbra_stake::{
     Delegate, IdentityKey, Undelegate, ValidatorDefinition, VerifiedValidatorDefinition,
 };
@@ -23,7 +23,7 @@ pub struct NoteData {
 
 #[derive(Debug, Clone)]
 pub struct PositionedNoteData {
-    pub position: u64,
+    pub position: penumbra_tct::Position,
     pub data: NoteData,
 }
 
@@ -33,7 +33,7 @@ pub struct PendingTransaction {
     /// Transaction ID.
     pub id: [u8; 32],
     /// Root of the note commitment tree.
-    pub root: merkle::Root,
+    pub root: penumbra_tct::Root,
     /// Note data to add from outputs in this transaction.
     pub new_notes: BTreeMap<note::Commitment, NoteData>,
     /// List of spent nullifiers from spends in this transaction.

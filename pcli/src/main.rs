@@ -1,3 +1,6 @@
+// This is needed because otherwise Rust doesn't have enough oomph to infer the `Send` impls it
+// needs for some deeply nested TCT types:
+#![recursion_limit = "256"]
 #![allow(clippy::clone_on_copy)]
 use std::path::PathBuf;
 

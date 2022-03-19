@@ -8,9 +8,7 @@ use penumbra_chain::params::ChainParams;
 use penumbra_crypto::{
     asset,
     asset::{Denom, Id},
-    ka,
-    merkle::{self, Frontier, NoteCommitmentTree, TreeExt},
-    Note, One, Value,
+    ka, Note, One, Value,
 };
 use penumbra_proto::Protobuf;
 use penumbra_stake::{FundingStream, RateDataById, ValidatorStateName};
@@ -39,7 +37,7 @@ pub struct Writer {
     pub(super) chain_params_tx: watch::Sender<ChainParams>,
     pub(super) height_tx: watch::Sender<block::Height>,
     pub(super) next_rate_data_tx: watch::Sender<RateDataById>,
-    pub(super) valid_anchors_tx: watch::Sender<VecDeque<merkle::Root>>,
+    pub(super) valid_anchors_tx: watch::Sender<VecDeque<penumbra_tct::Root>>,
 }
 
 impl Writer {
@@ -183,7 +181,7 @@ impl Writer {
         }
 
         // build a note commitment tree
-        let mut note_commitment_tree = NoteCommitmentTree::new(0);
+        let mut note_commitment_tree = penumbra_tct::Eternity::new();
 
         // iterate over genesis allocations
         //
@@ -228,7 +226,9 @@ impl Writer {
             let commitment = note.commit();
 
             // append the note to the commitment tree
-            note_commitment_tree.append(&commitment);
+            let position = note_commitment_tree
+                .insert(penumbra_tct::Forget, commitment)
+                .expect("inserting into the note commitment tree shouldn't fail");
 
             tracing::debug!(?note, ?commitment);
 
@@ -260,12 +260,6 @@ impl Writer {
 
             // Keep track of the note so we can insert that as well for the sake of CompactBlock
             // it will need the position the note commitment tree
-            let position = note_commitment_tree
-                .bridges()
-                .last()
-                .map(|b| b.frontier().position().into())
-                // If there are no bridges, the tree is empty
-                .unwrap_or(0u64);
             let positioned_note = PositionedNoteData {
                 position,
                 data: note_data,
@@ -281,7 +275,7 @@ impl Writer {
         }
 
         // update the NCT
-        let nct_anchor = note_commitment_tree.root2();
+        let nct_anchor = note_commitment_tree.root();
         let (jmt_root, tree_update_batch) = jmt::JellyfishMerkleTree::new(&self.private_reader)
             .put_value_set(
                 vec![(b"nct_anchor".into(), nct_anchor.clone().to_bytes().to_vec())],
@@ -361,7 +355,7 @@ impl Writer {
         // TODO: batch these queries?
         let mut dbtx = self.pool.begin().await?;
 
-        let nct_anchor = block.note_commitment_tree.root2();
+        let nct_anchor = block.note_commitment_tree.root();
         let nct_bytes = bincode::serialize(&block.note_commitment_tree)?;
         query!(
             r#"
