@@ -8,9 +8,7 @@ use anyhow::anyhow;
 use penumbra_chain::{params::ChainParams, sync::CompactBlock};
 use penumbra_crypto::{
     asset::{self, Denom},
-    memo,
-    merkle::{Frontier, NoteCommitmentTree, Tree, TreeExt},
-    note, Address, FieldExt, Note, Nullifier, Value,
+    memo, note, Address, FieldExt, Note, Nullifier, Value,
 };
 use penumbra_stake::{RateData, ValidatorDefinition, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM};
 use penumbra_transaction::{action::output, Transaction};
@@ -20,8 +18,6 @@ use serde::{Deserialize, Serialize};
 use tracing::instrument;
 
 use crate::Wallet;
-
-const MAX_MERKLE_CHECKPOINTS_CLIENT: usize = 10;
 
 /// The time after which a locally cached submitted transaction is considered to have failed.
 const SUBMITTED_TRANSACTION_TIMEOUT: Duration = Duration::from_secs(60);
@@ -36,7 +32,7 @@ pub struct ClientState {
     /// The last block height we've scanned to, if any.
     last_block_height: Option<u64>,
     /// Note commitment tree.
-    note_commitment_tree: NoteCommitmentTree,
+    note_commitment_tree: penumbra_tct::Eternity,
     /// Our nullifiers and the notes they correspond to.
     nullifier_map: BTreeMap<Nullifier, note::Commitment>,
     /// Notes that we have received.
@@ -101,7 +97,7 @@ impl ClientState {
     pub fn new(wallet: Wallet) -> Self {
         Self {
             last_block_height: None,
-            note_commitment_tree: NoteCommitmentTree::new(MAX_MERKLE_CHECKPOINTS_CLIENT),
+            note_commitment_tree: penumbra_tct::Eternity::new(),
             nullifier_map: BTreeMap::new(),
             unspent_set: BTreeMap::new(),
             submitted_spend_set: BTreeMap::new(),
@@ -115,7 +111,7 @@ impl ClientState {
     }
 
     /// Returns a reference to the note commitment tree.
-    pub fn note_commitment_tree(&self) -> &NoteCommitmentTree {
+    pub fn note_commitment_tree(&self) -> &penumbra_tct::Eternity {
         &self.note_commitment_tree
     }
 
@@ -272,7 +268,7 @@ impl ClientState {
             .wallet()
             .address_by_index(source_address.unwrap_or(0) as usize)?;
 
-        let mut tx_builder = Transaction::build_with_root(self.note_commitment_tree.root2());
+        let mut tx_builder = Transaction::build_with_root(self.note_commitment_tree.root());
 
         tx_builder
             .set_fee(fee)
@@ -341,7 +337,7 @@ impl ClientState {
             .wallet()
             .address_by_index(source_address.unwrap_or(0) as usize)?;
 
-        let mut tx_builder = Transaction::build_with_root(self.note_commitment_tree.root2());
+        let mut tx_builder = Transaction::build_with_root(self.note_commitment_tree.root());
 
         tx_builder
             .set_fee(fee)
@@ -501,7 +497,7 @@ impl ClientState {
         source_address: Option<u64>,
         tx_memo: Option<String>,
     ) -> Result<Transaction, anyhow::Error> {
-        let mut tx_builder = Transaction::build_with_root(self.note_commitment_tree.root2());
+        let mut tx_builder = Transaction::build_with_root(self.note_commitment_tree.root());
 
         tx_builder
             .set_fee(fee)
@@ -759,9 +755,10 @@ impl ClientState {
             encrypted_note,
         } in outputs.into_iter()
         {
-            // Unconditionally insert the note commitment into the merkle tree
-            tracing::debug!(?note_commitment, "appending to note commitment tree");
-            self.note_commitment_tree.append(&note_commitment);
+            let note_commitment = note_commitment
+                .as_ref()
+                .try_into()
+                .context("invalid note commitment")?;
 
             // Try to decrypt the encrypted note using the ephemeral key and persistent incoming
             // viewing key -- if it doesn't decrypt, it wasn't meant for us.
@@ -771,19 +768,16 @@ impl ClientState {
                 &ephemeral_key,
             ) {
                 tracing::debug!(?note_commitment, ?note, "found note while scanning");
-                // Mark the most-recently-inserted note commitment (the one corresponding to this
-                // note) as worth keeping track of, because it's ours
-                self.note_commitment_tree.witness();
+                // Insert *and keep* the note in the commitment tree
+                let position = self
+                    .note_commitment_tree
+                    .insert(penumbra_tct::Keep, note_commitment)?;
 
                 // Insert the note associated with its computed nullifier into the nullifier map
-                let (pos, _auth_path) = self
-                    .note_commitment_tree
-                    .authentication_path(&note_commitment)
-                    .expect("we just witnessed this commitment");
                 self.nullifier_map.insert(
                     self.wallet
                         .full_viewing_key()
-                        .derive_nullifier(pos, &note_commitment),
+                        .derive_nullifier(position, &note_commitment),
                     note_commitment,
                 );
 
@@ -794,6 +788,10 @@ impl ClientState {
 
                 // Insert the note into the received set
                 self.unspent_set.insert(note_commitment, note.clone());
+            } else {
+                // Insert *and forget* the note in the commitment tree (it's not ours)
+                self.note_commitment_tree
+                    .insert(penumbra_tct::Forget, note_commitment)?;
             }
         }
 
@@ -811,7 +809,7 @@ impl ClientState {
                         "found nullifier for unspent note, marking it as spent"
                     );
                     self.spent_set.insert(note_commitment, note);
-                    self.note_commitment_tree.remove_witness(&note_commitment);
+                    self.note_commitment_tree.forget(note_commitment);
                 } else if let Some((_, note)) = self.submitted_spend_set.remove(&note_commitment) {
                     // Insert the note into the spent set
                     tracing::debug!(
@@ -820,7 +818,7 @@ impl ClientState {
                         "found nullifier for submitted spend note, marking it as spent"
                     );
                     self.spent_set.insert(note_commitment, note);
-                    self.note_commitment_tree.remove_witness(&note_commitment);
+                    self.note_commitment_tree.forget(note_commitment);
                 } else if let Some((_, note)) = self.submitted_change_set.remove(&note_commitment) {
                     // Insert the note into the spent set
                     tracing::debug!(
@@ -829,7 +827,7 @@ impl ClientState {
                         "found nullifier for submitted change note, marking it as spent"
                     );
                     self.spent_set.insert(note_commitment, note);
-                    self.note_commitment_tree.remove_witness(&note_commitment);
+                    self.note_commitment_tree.forget(note_commitment);
                 } else if self.spent_set.contains_key(&note_commitment) {
                     // If the nullifier is already in the spent set, it means we've already
                     // processed this note and it's spent. This should never happen
