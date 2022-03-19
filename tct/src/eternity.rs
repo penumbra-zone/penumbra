@@ -102,18 +102,23 @@ impl Eternity {
     /// Add a new [`Commitment`] to the most recent [`Block`] of the most recent [`Epoch`] of this
     /// [`Eternity`].
     ///
+    /// If successful, returns the [`Position`] at which the commitment was inserted.
+    ///
     /// # Errors
     ///
-    /// Returns [`InsertError`] if the [`Eternity`] is full, or the most recently inserted [`Epoch`]
-    /// is full or was inserted by [`insert_epoch_root`](Eternity::insert_epoch_root), or the most
-    /// recently inserted [`Block`] is full or was inserted by
+    /// Returns [`InsertError`] if any of:
+    ///
+    /// - the [`Eternity`] is full,
+    /// - the most recently inserted [`Epoch`] is full or was inserted by
+    /// [`insert_epoch_root`](Eternity::insert_epoch_root), or
+    /// - the most recently inserted [`Block`] is full or was inserted by
     /// [`insert_block_root`](Eternity::insert_block_root).
     pub fn insert(
         &mut self,
         witness: Witness,
         commitment: impl Into<Commitment>,
-    ) -> Result<(), InsertError> {
-        self.insert_commitment_or_root(match witness {
+    ) -> Result<Position, InsertError> {
+        self.insert_commitment_or_hash(match witness {
             Keep => Insert::Keep(commitment.into()),
             Forget => Insert::Hash(Hash::of(commitment.into())),
         })
@@ -160,10 +165,13 @@ impl Eternity {
     }
 
     /// Insert an commitment or its root (helper function for [`insert`].
-    fn insert_commitment_or_root(
+    fn insert_commitment_or_hash(
         &mut self,
         commitment: Insert<Commitment>,
-    ) -> Result<(), InsertError> {
+    ) -> Result<Position, InsertError> {
+        // The position at which we will insert the commitment
+        let position = self.position();
+
         // If the eternity is empty, we need to create a new epoch to insert the commitment into
         if self.inner.is_empty() && self.insert_epoch(Epoch::new()).is_err() {
             return Err(InsertError::Full);
@@ -181,12 +189,12 @@ impl Eternity {
             }
         }) {
             Err(err) => Err(err),
-            Ok(None) => Ok(()),
+            Ok(None) => Ok(position),
             Ok(Some(replaced)) => {
                 // If inserting this commitment replaced some other commitment, forget the replaced index
                 let forgotten = self.inner.forget(replaced);
                 debug_assert!(forgotten);
-                Ok(())
+                Ok(position)
             }
         }
     }
