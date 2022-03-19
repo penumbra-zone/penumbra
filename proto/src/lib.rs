@@ -94,7 +94,7 @@ pub mod sighash {
         fn from(body: super::transaction::TransactionBody) -> Self {
             Self {
                 actions: body.actions.into_iter().map(Into::into).collect(),
-                anchor: body.anchor.to_vec(),
+                anchor: body.anchor,
                 expiry_height: body.expiry_height,
                 chain_id: body.chain_id,
                 fee: body.fee,

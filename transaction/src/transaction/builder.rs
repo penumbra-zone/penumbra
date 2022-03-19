@@ -1,12 +1,10 @@
 use std::ops::Deref;
 
 use ark_ff::{UniformRand, Zero};
-use incrementalmerkletree::Tree;
 use penumbra_crypto::{
     ka,
     keys::{OutgoingViewingKey, SpendKey},
     memo::MemoPlaintext,
-    merkle::{self, NoteCommitmentTree},
     rdsa::{Binding, Signature, SigningKey, SpendAuth},
     value, Address, Fr, Note, Value,
 };
@@ -39,7 +37,7 @@ pub struct Builder {
     /// Value balance.
     pub value_balance: decaf377::Element,
     /// The root of the note commitment merkle tree.
-    pub merkle_root: merkle::Root,
+    pub merkle_root: penumbra_tct::Root,
     /// Expiry height. None if unset.
     pub expiry_height: Option<u32>,
     /// Chain ID. None if unset.
@@ -51,13 +49,12 @@ impl Builder {
     pub fn add_spend<R: RngCore + CryptoRng>(
         &mut self,
         rng: &mut R,
-        note_commitment_tree: &NoteCommitmentTree,
+        note_commitment_tree: &penumbra_tct::Eternity,
         spend_key: &SpendKey,
         note: Note,
     ) -> Result<&mut Self, anyhow::Error> {
-        let merkle_path = note_commitment_tree
-            .authentication_path(&note.commit())
-            .ok_or_else(|| {
+        let note_commitment_proof =
+            note_commitment_tree.witness(note.commit()).ok_or_else(|| {
                 anyhow::anyhow!(
                     "Note commitment tree cannot construct an auth path for note commitment {:?}",
                     note.commit()
@@ -80,7 +77,7 @@ impl Builder {
             value_commitment,
             *spend_key.spend_auth_key(),
             spend_auth_randomizer,
-            merkle_path,
+            note_commitment_proof,
             note,
             v_blinding,
             *spend_key.nullifier_key(),
