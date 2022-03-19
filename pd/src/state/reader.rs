@@ -9,11 +9,7 @@ use anyhow::{Context, Result};
 use async_stream::try_stream;
 use futures::stream::{Stream, StreamExt, TryStreamExt};
 use penumbra_chain::params::ChainParams;
-use penumbra_crypto::{
-    asset,
-    merkle::{self, NoteCommitmentTree},
-    note, Address, FieldExt, Fq, Nullifier,
-};
+use penumbra_crypto::{asset, note, Address, FieldExt, Fq, Nullifier};
 use penumbra_proto::{
     chain,
     light_wallet::{CompactBlock, StateFragment},
@@ -39,7 +35,7 @@ pub struct Reader {
     pub(super) chain_params_rx: watch::Receiver<ChainParams>,
     pub(super) height_rx: watch::Receiver<block::Height>,
     pub(super) next_rate_data_rx: watch::Receiver<RateDataById>,
-    pub(super) valid_anchors_rx: watch::Receiver<VecDeque<merkle::Root>>,
+    pub(super) valid_anchors_rx: watch::Receiver<VecDeque<penumbra_tct::Root>>,
 }
 
 impl Reader {
@@ -75,7 +71,7 @@ impl Reader {
     /// This receiver can be used to access an in-memory copy of the latest data
     /// without accessing the database, but note the warning on
     /// [`watch::Receiver::borrow`] about potential deadlocks.
-    pub fn valid_anchors_rx(&self) -> &watch::Receiver<VecDeque<merkle::Root>> {
+    pub fn valid_anchors_rx(&self) -> &watch::Receiver<VecDeque<penumbra_tct::Root>> {
         &self.valid_anchors_rx
     }
 
@@ -97,7 +93,7 @@ impl Reader {
     }
 
     /// Retrieve the current note commitment tree.
-    pub async fn note_commitment_tree(&self) -> Result<NoteCommitmentTree> {
+    pub async fn note_commitment_tree(&self) -> Result<penumbra_tct::Eternity> {
         let mut conn = self.pool.acquire().await?;
         let note_commitment_tree = if let Some(schema::BlobsRow { data, .. }) = query_as!(
             schema::BlobsRow,
@@ -108,7 +104,7 @@ impl Reader {
         {
             bincode::deserialize(&data).context("Could not parse saved note commitment tree")?
         } else {
-            NoteCommitmentTree::new(0)
+            penumbra_tct::Eternity::new()
         };
 
         Ok(note_commitment_tree)
@@ -193,7 +189,7 @@ impl Reader {
         let mut conn = self.pool.acquire().await?;
         let latest = query_as!(
             schema::BlocksRow,
-            r#"SELECT height, nct_anchor AS "nct_anchor: merkle::Root", app_hash FROM blocks ORDER BY height DESC LIMIT 1"#
+            r#"SELECT height, nct_anchor AS "nct_anchor: penumbra_tct::Root", app_hash FROM blocks ORDER BY height DESC LIMIT 1"#
         )
         .fetch_optional(&mut conn)
         .await?;
@@ -202,16 +198,16 @@ impl Reader {
     }
 
     // retrieve the `last` latest node commitment tree anchors from the database
-    pub async fn recent_anchors(&self, last: usize) -> Result<VecDeque<merkle::Root>> {
+    pub async fn recent_anchors(&self, last: usize) -> Result<VecDeque<penumbra_tct::Root>> {
         let mut conn = self.pool.acquire().await?;
         let anchor_rows = query!(
-            r#"SELECT nct_anchor AS "nct_anchor: merkle::Root" FROM blocks ORDER BY height DESC LIMIT $1"#,
+            r#"SELECT nct_anchor AS "nct_anchor: penumbra_tct::Root" FROM blocks ORDER BY height DESC LIMIT $1"#,
             last as i64,
         )
         .fetch_all(&mut conn)
         .await?;
 
-        let mut nct_vec: VecDeque<merkle::Root> = VecDeque::new();
+        let mut nct_vec: VecDeque<penumbra_tct::Root> = VecDeque::new();
         for block in anchor_rows {
             nct_vec.push_back(block.nct_anchor)
         }
@@ -264,12 +260,12 @@ impl Reader {
         let rows = query!(
             "
             SELECT DISTINCT ON (identity_key)
-            identity_key, 
-            epoch, 
-            validator_reward_rate, 
+            identity_key,
+            epoch,
+            validator_reward_rate,
             validator_exchange_rate
 
-            FROM validator_rates 
+            FROM validator_rates
             WHERE epoch <= $1
             ORDER BY identity_key, epoch DESC",
             epoch_index as i64,

@@ -1,4 +1,4 @@
-use penumbra_crypto::{merkle, note, Nullifier};
+use penumbra_crypto::{note, Nullifier};
 
 #[derive(Debug, sqlx::FromRow)]
 pub struct BlobsRow {
@@ -9,7 +9,7 @@ pub struct BlobsRow {
 #[derive(Debug, sqlx::FromRow)]
 pub struct BlocksRow {
     pub height: i64,
-    pub nct_anchor: merkle::Root,
+    pub nct_anchor: penumbra_tct::Root,
     pub app_hash: Vec<u8>,
 }
 

@@ -3,7 +3,6 @@ use penumbra_crypto::{
     asset,
     keys::{SeedPhrase, SpendKey, SpendSeed},
     memo::MemoPlaintext,
-    merkle::{Frontier, NoteCommitmentTree, Tree, TreeExt},
     Fq, Note, Value,
 };
 use penumbra_transaction::Transaction;
@@ -46,10 +45,9 @@ fn test_transaction_succeeds_if_values_balance() {
     .expect("transmission key is valid");
     let note_commitment = note.commit();
 
-    let mut nct = NoteCommitmentTree::new(1);
-    nct.append(&note_commitment);
-    nct.witness();
-    let anchor = nct.root2();
+    let mut nct = penumbra_tct::Eternity::new();
+    nct.insert(penumbra_tct::Keep, note_commitment);
+    let anchor = nct.root();
 
     let transaction = Transaction::build_with_root(anchor)
         .set_fee(10)
