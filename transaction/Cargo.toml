@@ -10,13 +10,13 @@ decaf377-fmd = { path = "../decaf377-fmd/" }
 penumbra-proto = { path = "../proto/" }
 penumbra-crypto = { path = "../crypto/" }
 penumbra-stake = { path = "../stake/" }
+penumbra-tct = { path = "../tct/" }
 
 # Git deps
 ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
 ark-serialize = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 decaf377-rdsa = { git = "https://github.com/penumbra-zone/decaf377-rdsa" }
-incrementalmerkletree = { git = "https://github.com/penumbra-zone/incrementalmerkletree" }
 poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377" }
 
 # Crates.io deps
