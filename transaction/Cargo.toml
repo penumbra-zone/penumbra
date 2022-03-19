@@ -11,6 +11,7 @@ penumbra-proto = { path = "../proto/" }
 penumbra-crypto = { path = "../crypto/" }
 penumbra-stake = { path = "../stake/" }
 penumbra-ibc = { path = "../ibc/" }
+penumbra-tct = { path = "../tct/" }
 
 # Git deps
 ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }

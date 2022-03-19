@@ -4,6 +4,7 @@ package penumbra.transaction;
 import "crypto.proto";
 import "stake.proto";
 import "ibc.proto";
+import "crypto.proto";
 
 // A Penumbra transaction.
 message Transaction {
@@ -17,7 +18,7 @@ message TransactionBody {
   // A list of actions (state changes) performed by this transaction.
   repeated Action actions = 1;
   // The root of some previous state of the note commitment tree.
-  bytes anchor = 2;
+  crypto.MerkleRoot anchor = 2;
   // The maximum height that this transaction can be included in the chain.
   uint32 expiry_height = 3;
   // The chain this transaction is intended for.  Including this prevents

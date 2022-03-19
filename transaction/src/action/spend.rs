@@ -3,7 +3,7 @@ use std::convert::{TryFrom, TryInto};
 use anyhow::Error;
 use bytes::Bytes;
 use penumbra_crypto::{
-    keys, merkle,
+    keys,
     proofs::transparent::SpendProof,
     rdsa::{Signature, SigningKey, SpendAuth, VerificationKey},
     value, Fr, Note, Nullifier,
@@ -63,7 +63,7 @@ impl Body {
         value_commitment: value::Commitment,
         ask: SigningKey<SpendAuth>,
         spend_auth_randomizer: Fr,
-        merkle_path: merkle::Path,
+        note_commitment_proof: penumbra_tct::Proof,
         note: Note,
         v_blinding: Fr,
         nk: keys::NullifierKey,
@@ -71,17 +71,13 @@ impl Body {
         let rsk = ask.randomize(&spend_auth_randomizer);
         let rk = rsk.into();
         let note_commitment = note.commit();
-        let position = merkle_path.0.clone();
+        let position = note_commitment_proof.position();
         let proof = SpendProof {
-            // XXX: the position field duplicates data from the merkle path
-            // probably not worth fixing before we just make them snarks...
-            position,
-            merkle_path,
             g_d: note.diversified_generator(),
             pk_d: note.transmission_key(),
             value: note.value(),
             v_blinding,
-            note_commitment,
+            note_commitment_proof,
             note_blinding: note.note_blinding(),
             spend_auth_randomizer,
             ak: ask.into(),

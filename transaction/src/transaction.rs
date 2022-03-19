@@ -3,9 +3,7 @@ use std::convert::{TryFrom, TryInto};
 use anyhow::Error;
 use ark_ff::Zero;
 use bytes::Bytes;
-use decaf377::FieldExt;
 use penumbra_crypto::{
-    merkle,
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
     Fr, Nullifier, Value,
 };
@@ -25,7 +23,7 @@ pub use builder::Builder;
 #[derive(Clone, Debug)]
 pub struct TransactionBody {
     pub actions: Vec<Action>,
-    pub merkle_root: merkle::Root,
+    pub merkle_root: penumbra_tct::Root,
     pub expiry_height: u32,
     pub chain_id: String,
     pub fee: Fee,
@@ -56,7 +54,7 @@ pub struct Transaction {
 
 impl Transaction {
     /// Start building a transaction relative to a given [`merkle::Root`].
-    pub fn build_with_root(merkle_root: merkle::Root) -> Builder {
+    pub fn build_with_root(merkle_root: penumbra_tct::Root) -> Builder {
         Builder {
             spends: Vec::new(),
             outputs: Vec::new(),
@@ -193,7 +191,7 @@ impl From<TransactionBody> for ProtoTransactionBody {
     fn from(msg: TransactionBody) -> Self {
         ProtoTransactionBody {
             actions: msg.actions.into_iter().map(|x| x.into()).collect(),
-            anchor: Bytes::copy_from_slice(&msg.merkle_root.0.to_bytes()),
+            anchor: Some(msg.merkle_root.into()),
             expiry_height: msg.expiry_height,
             chain_id: msg.chain_id,
             fee: Some(msg.fee.into()),
@@ -214,7 +212,9 @@ impl TryFrom<ProtoTransactionBody> for TransactionBody {
             );
         }
 
-        let merkle_root = proto.anchor[..]
+        let merkle_root = proto
+            .anchor
+            .ok_or(ProtoError::TransactionBodyMalformed)?
             .try_into()
             .map_err(|_| anyhow::anyhow!("transaction body malformed"))?;
 
@@ -351,7 +351,7 @@ mod tests {
         let ivk_recipient = fvk_recipient.incoming();
         let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
 
-        let merkle_root = merkle::Root(Fq::zero());
+        let merkle_root = penumbra_tct::Eternity::new().root();
         let transaction = Transaction::build_with_root(merkle_root)
             .set_fee(20)
             .set_chain_id("penumbra".to_string())
