@@ -149,6 +149,8 @@ impl Block {
 
     /// Add a new [`Commitment`] to this [`Block`].
     ///
+    /// If successful, returns the [`Position`] at which the commitment was inserted.
+    ///
     /// # Errors
     ///
     /// Returns [`InsertError`] if the block is full.
@@ -156,7 +158,10 @@ impl Block {
         &mut self,
         witness: Witness,
         commitment: impl Into<Commitment>,
-    ) -> Result<(), InsertError> {
+    ) -> Result<Position, InsertError> {
+        // The position at which we will insert the commitment
+        let position = self.position();
+
         self.as_mut()
             .insert(match witness {
                 Keep => Insert::Keep(commitment.into()),
@@ -166,7 +171,9 @@ impl Block {
                 // We shouldn't ever be handing back a replaced index here, because the index should
                 // be forgotten internally to the method when the block is not owned by a larger structure
                 debug_assert!(option.is_none()))
-            .map_err(|_| InsertError)
+            .map_err(|_| InsertError)?;
+
+        Ok(position)
     }
 
     /// Get a [`Proof`] of inclusion for this commitment in the block.
