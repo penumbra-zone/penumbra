@@ -2,7 +2,7 @@ version: "3.7"
 services:
   # The Penumbra daemon
   pd-node0:
-    container_name: penumbra
+    container_name: penumbra-node0
     build:
       context: .
     environment:
@@ -28,7 +28,7 @@ services:
       - "26657:26657"
     volumes:
       - ~/scratch/testnet_build/node0/tendermint:/tendermint
-    command: start --proxy-app=tcp://pd:26658
+    command: start --proxy-app=tcp://pd-node0:26658
     environment:
       - ID=0
       - LOG=${LOG:-tendermint.log}
@@ -40,7 +40,7 @@ services:
 
   # The Penumbra daemon
   pd-node1:
-    container_name: penumbra
+    container_name: penumbra-node1
     build:
       context: .
     environment:
@@ -52,20 +52,20 @@ services:
       localnet:
         ipv4_address: 192.167.10.20
     ports:
-      - "26658:26658"
-      - "26666:26666"
-      - "26667:26667"
+      - "27658:26658"
+      - "27666:26666"
+      - "27667:26667"
 
   # The Tendermint node
   tendermint-node1:
-    image: "tendermint/tendermint:latest"
+    image: "tendermint/tendermint:v0.35.0"
     container_name: tendermint-node1
     ports:
-      - "26656:26656"
-      - "26657:26657"
+      - "27656:26656"
+      - "27657:26657"
     volumes:
       - ~/scratch/testnet_build/node1:/tendermint
-    command: start --proxy-app=tcp://pd:26658
+    command: start --proxy-app=tcp://pd-node1:26658
     environment:
       - ID=1
       - LOG=${LOG:-tendermint.log}

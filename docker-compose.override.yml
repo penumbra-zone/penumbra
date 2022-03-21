@@ -25,7 +25,7 @@ services:
   # database - postgres - on prod we are using managed DB instances
   db-node0:
     image: postgres:13.0
-    container_name: db
+    container_name: db-node0
     volumes:
       - "db_node0_data:/var/lib/postgresql/data"
     environment:
@@ -57,7 +57,7 @@ services:
   # database - postgres - on prod we are using managed DB instances
   db-node1:
     image: postgres:13.0
-    container_name: db
+    container_name: db-node1
     volumes:
       - "db_node1_data:/var/lib/postgresql/data"
     environment:

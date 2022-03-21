@@ -207,7 +207,7 @@ async fn main() -> anyhow::Result<()> {
             // setting in the Go tendermint binary. Populating the persistent
             // peers will be useful in local setups until peer discovery via a seed
             // works.
-            starting_ip: _,
+            starting_ip,
             epoch_duration,
             unbonding_epochs,
             active_validator_limit,
