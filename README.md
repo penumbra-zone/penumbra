@@ -70,7 +70,7 @@ To build the version of `pcli` compatible with the current testnet, check out th
 the current test net:
 
 ```bash
-cd penumbra && git checkout 003-eupheme
+cd penumbra && git checkout 005-mneme
 ```
 
 #### Building the `pcli` wallet software
@@ -253,15 +253,15 @@ cargo run --bin pcli -- -w testnet_wallet.json addr new "Test Address 2"
 
 Next, produce a template with
 ```
-cargo run --bin pd -- create-genesis-template
+cargo run --bin pd -- generate-testnet
 ```
-and copy the output into the `genesis.json` as the `app_state` field.
+and copy the `app_state` field of one the genesis files. You'll need to
 edit it to match the key material you'll be using, which includes:
 
 * changing the validator public keys to match the one Tendermint generated;
 * editing the genesis allocations to use your testing addresses, or have other asset types, etc.
 
-You may wish to edit other parts of the testnet config.  Example `genesis.json`
+You may wish to edit other parts of the testnet config. Example `genesis.json`
 files can be found in the `testnets/` directory if you get stuck.
 
 ### Running `pd` without using Docker
@@ -329,12 +329,9 @@ To load genesis state for a fresh Docker configuration:
 for pd/postgres/tendermint!
 
 ```bash
-./scripts/docker_compose_freshstart.sh ~/scratch/testnet_build penumbra-thelxinoe testnets/004-thelxinoe/allocations.csv testnets/004-thelxinoe/validators.json 1
+./scripts/docker_compose_freshstart.sh ~/scratch/testnet_build
 # the ~/scratch/testnet_build directory should be the root of the volume mounted
 # to the tendermint node containers in docker-compose.yml
-#
-# the second argument is the name of the testnet chain ID
-# the last argument is the # of validators to create
 ```
 
 The script will handle generating genesis JSON data (but not editing it).

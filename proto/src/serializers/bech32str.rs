@@ -99,7 +99,7 @@ pub mod address {
     use super::*;
 
     /// The Bech32 prefix used for addresses.
-    pub const BECH32_PREFIX: &str = "penumbrav0t";
+    pub const BECH32_PREFIX: &str = "penumbrav1t";
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
     where

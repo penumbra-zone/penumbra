@@ -1,10 +1,14 @@
+use std::collections::BTreeMap;
+
 use penumbra_proto::{
     stake::{self as pb},
     Protobuf,
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{FundingStream, IdentityKey};
+use crate::{FundingStream, IdentityKey, ValidatorState};
+
+pub type RateDataById = BTreeMap<IdentityKey, RateData>;
 
 /// Describes a validator's reward rate and voting power in some epoch.
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
@@ -25,9 +29,41 @@ impl RateData {
     pub fn next(
         &self,
         base_rate_data: &BaseRateData,
-        funding_streams: Vec<FundingStream>,
+        funding_streams: &[FundingStream],
+        validator_state: &ValidatorState,
     ) -> RateData {
-        // compute the validator's total commissio
+        let prev = self;
+
+        let constant_rate =
+            // Non-Active validator states result in a constant rate. This means
+            // the next epoch's rate is set to the current rate.
+            RateData {
+                identity_key: self.identity_key.clone(),
+                epoch_index: self.epoch_index + 1,
+                validator_reward_rate: self.validator_reward_rate,
+                validator_exchange_rate: self.validator_exchange_rate,
+            };
+
+        match validator_state {
+            // if a validator is slashed, their rates are updated to include the slashing penalty
+            // and then held constant.
+            //
+            // if a validator is slashed during the epoch transition the current epoch's rate is set
+            // to the slashed value (during end_block) and in here, the next epoch's rate is held constant.
+            ValidatorState::Slashed => {
+                return constant_rate;
+            }
+            // if a validator isn't part of the consensus set, we do not update their rates
+            ValidatorState::Inactive => {
+                return constant_rate;
+            }
+            ValidatorState::Unbonding { unbonding_epoch: _ } => {
+                return constant_rate;
+            }
+            ValidatorState::Active => {}
+        };
+
+        // compute the validator's total commission
         let commission_rate_bps = funding_streams
             .iter()
             .fold(0u64, |total, stream| total + stream.rate_bps as u64);
@@ -46,9 +82,8 @@ impl RateData {
             / 1_0000_0000;
 
         // compute validator exchange rate
-        let validator_exchange_rate = (self.validator_exchange_rate
-            * (self.validator_reward_rate + 1_0000_0000))
-            / 1_0000_0000;
+        let validator_exchange_rate =
+            (prev.validator_exchange_rate * (validator_reward_rate + 1_0000_0000)) / 1_0000_0000;
 
         RateData {
             identity_key: self.identity_key.clone(),
@@ -57,6 +92,7 @@ impl RateData {
             validator_exchange_rate,
         }
     }
+
     /// Computes the amount of delegation tokens corresponding to the given amount of unbonded stake.
     ///
     /// # Warning
@@ -76,6 +112,17 @@ impl RateData {
         ((unbonded_amount as u128 * 1_0000_0000) / self.validator_exchange_rate as u128)
             .try_into()
             .unwrap()
+    }
+
+    pub fn slash(&self, slashing_penalty_bps: u64) -> Self {
+        let mut slashed = self.clone();
+        // (1 - penalty) * exchange_rate
+        slashed.validator_exchange_rate = self
+            .validator_exchange_rate
+            // Slashing penalty is in basis points, so we divide by 1e4
+            .saturating_sub((self.validator_exchange_rate * slashing_penalty_bps) / 1_0000);
+
+        slashed
     }
 
     /// Computes the amount of unbonded stake corresponding to the given amount of delegation tokens.

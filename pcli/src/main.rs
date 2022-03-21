@@ -24,7 +24,7 @@ use sync::sync;
 )]
 pub struct Opt {
     /// The address of the pd+tendermint node.
-    #[structopt(short, long, default_value = "eupheme.penumbra.zone")]
+    #[structopt(short, long, default_value = "testnet.penumbra.zone")]
     pub node: String,
     /// The port to use to speak to tendermint.
     #[structopt(short, long, default_value = "26657")]
@@ -93,8 +93,9 @@ async fn main() -> Result<()> {
         Command::Tx(tx_cmd) => tx_cmd.exec(&opt, &mut state).await?,
         Command::Addr(addr_cmd) => addr_cmd.exec(&mut state)?,
         Command::Balance(balance_cmd) => balance_cmd.exec(&state)?,
-        Command::Validator(cmd) => cmd.exec(&opt, &state).await?,
+        Command::Validator(cmd) => cmd.exec(&opt, &mut state).await?,
         Command::Stake(cmd) => cmd.exec(&opt, &mut state).await?,
+        Command::Tmp(cmd) => cmd.exec().await?,
     }
 
     Ok(())

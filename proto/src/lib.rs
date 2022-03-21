@@ -58,6 +58,11 @@ pub mod thin_wallet {
     tonic::include_proto!("penumbra.thin_wallet");
 }
 
+/// IBC protocol structures.
+pub mod ibc {
+    tonic::include_proto!("penumbra.ibc");
+}
+
 pub mod sighash {
     include!(concat!(env!("OUT_DIR"), "/penumbra.sighash.rs"));
 
@@ -72,7 +77,9 @@ pub mod sighash {
                 Some(TxAction::Output(o)) => Some(SHAction::Output(o)),
                 Some(TxAction::Delegate(d)) => Some(SHAction::Delegate(d)),
                 Some(TxAction::Undelegate(d)) => Some(SHAction::Undelegate(d)),
-                Some(TxAction::ValidatorDefinition(d)) => Some(SHAction::ValidatorDefinition(d)),
+                // The `ValidatorDefinition` contains sig bytes, but they're across the validator itself,
+                // not the transaction, therefore it's fine to include them in the sighash.
+                Some(TxAction::ValidatorDefinition(vd)) => Some(SHAction::ValidatorDefinition(vd)),
                 // Collapse spends to spend bodies
                 Some(TxAction::Spend(Spend { body: None, .. })) => None,
                 Some(TxAction::Spend(Spend {

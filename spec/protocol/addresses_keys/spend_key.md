@@ -1,7 +1,16 @@
 # Spending Keys
 
-The root key material for a particular spend authority is a 32-byte random
-`seed`.  The `seed` value is used to derive
+A [BIP39] 24-word seed phrase can be used to derive one or more spend
+authorities. From this mnemonic seed phrase, spend `seeds` can be derived using
+PBKDF2 with:
+
+* `HMAC-SHA512` as the PRF and an iteration count of 2048 (following [BIP39])
+* the seed phrase used as the password
+* `mnemonic` concatenated with an index used as the salt, i.e. the
+default spend authority is derived using the salt `mnemonic0`
+
+The root key material for a particular spend authority is the 32-byte
+`seed` derived as above from the seed phrase. The `seed` value is used to derive
 
 * $\mathsf{ask} \in \mathbb F_r$, the *spend authorization key*, and
 * $\mathsf{nk} \in \mathbb F_q$, the *nullifier key*,
@@ -31,3 +40,4 @@ significantly less often than malfunctions in the CPU instructions we'd use to
 check it.
 
 [agl_elligator]: https://www.imperialviolet.org/2013/12/25/elligator.html
+[BIP39]: https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki

@@ -45,14 +45,8 @@ impl TryFrom<pb::Value> for Value {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
 pub struct Commitment(pub decaf377::Element);
-
-impl Default for Commitment {
-    fn default() -> Self {
-        Self(decaf377::Element::default())
-    }
-}
 
 pub static VALUE_BLINDING_GENERATOR: Lazy<decaf377::Element> = Lazy::new(|| {
     let s = Fq::from_le_bytes_mod_order(blake2b_simd::blake2b(b"decaf377-rdsa-binding").as_bytes());
@@ -96,7 +90,7 @@ impl FromStr for Value {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let re = Regex::new(r"^([0-9.]+)(.+)$").unwrap();
+        let re = Regex::new(r"^([0-9.]+)([^0-9.].*)$").unwrap();
 
         if let Some(captures) = re.captures(s) {
             let numeric_str = captures.get(1).expect("matched regex").as_str();

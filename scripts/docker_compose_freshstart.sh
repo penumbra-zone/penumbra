@@ -10,10 +10,7 @@ die () {
     exit 1
 }
 
-[ "$#" -eq 1 ] || die "build path, testnet chain ID, allocations input file, validators input file, and num nodes arguments required"
-
-
-build_path="$1"
+build_path="$HOME/scratch/testnet_build/"
 
 if [ -d "${build_path}" ] 
 then
@@ -28,16 +25,15 @@ printf "Storing configs to ${build_path}/ ...\n\n\n"
 
 mkdir -p ${build_path}
 docker-compose stop
-docker container prune
-docker volume rm penumbra_tendermint_data || true
+docker container prune -f
 docker volume rm penumbra_prometheus_data || true
 docker volume rm penumbra_db_data || true
 
 # The db container must be running for pd build to succeed
 docker-compose up -d db-node0
 export DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/penumbra
-# sleep 1 second because postgres isn't immediately responsive
-sleep 1
+# sleep because postgres isn't immediately responsive
+sleep 2
 cd pd
 printf "Preparing DB\n"
 cargo sqlx database create
@@ -46,4 +42,4 @@ cargo sqlx prepare  -- --lib
 printf "Done\n"
 cd ..
 
-cargo run --bin pd -- generate-testnet --output-dir ${build_path} --epoch-duration 10
+cargo run --release --bin pd -- generate-testnet --output-dir ${build_path}

@@ -40,6 +40,12 @@ fn main() -> Result<()> {
     config.compile_protos(&["proto/chain.proto"], &["proto/"])?;
     config.compile_protos(&["proto/genesis.proto"], &["proto/"])?;
 
+    // NOTE: we need this because the rust module that defines the IBC types is external, and not
+    // part of this crate.
+    // See https://docs.rs/prost-build/0.5.0/prost_build/struct.Config.html#method.extern_path
+    config.extern_path(".ibc", "::ibc_proto::ibc");
+    config.compile_protos(&["proto/ibc.proto"], &["proto/", "ibc-go-vendor/"])?;
+
     // These should disappear, eventually.
     config.compile_protos(&["proto/transparent_proofs.proto"], &["proto/"])?;
     config.compile_protos(&["proto/sighash.proto"], &["proto/"])?;
@@ -70,6 +76,8 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.stake.FundingStream", SERIALIZE),
     (".penumbra.stake.ValidatorDefinition", SERIALIZE),
     (".penumbra.stake.ValidatorStatus", SERIALIZE),
+    (".penumbra.stake.ValidatorState", SERIALIZE),
+    (".penumbra.stake.ValidatorStateName", SERIALIZE),
     (".penumbra.stake.ValidatorInfo", SERIALIZE),
     (".penumbra.stake.RateData", SERIALIZE),
     (".penumbra.stake.BaseRateData", SERIALIZE),

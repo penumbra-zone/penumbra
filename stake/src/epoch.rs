@@ -2,7 +2,7 @@ use tendermint::block;
 
 /// Epoch represents a given epoch for Penumbra and is used
 /// for calculation of staking exchange rates.
-#[derive(Debug, Eq, PartialEq, Clone)]
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub struct Epoch {
     pub index: u64,
     pub duration: u64,
@@ -28,14 +28,22 @@ impl Epoch {
             .expect("able to parse block height")
     }
 
-    pub fn is_epoch_boundary(height: u64, epoch_duration: u64) -> bool {
-        height % epoch_duration == 0
+    pub fn is_epoch_boundary(&self, height: u64) -> bool {
+        height % self.duration == 0
     }
 
     /// Returns the epoch following this one.
     pub fn next(&self) -> Self {
         Epoch {
             index: self.index + 1,
+            duration: self.duration,
+        }
+    }
+
+    /// Returns the epoch preceding this one.
+    pub fn prev(&self) -> Self {
+        Epoch {
+            index: self.index - 1,
             duration: self.duration,
         }
     }

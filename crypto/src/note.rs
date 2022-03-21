@@ -474,13 +474,15 @@ mod tests {
     use rand_core::OsRng;
 
     use super::*;
-    use crate::keys::SpendKey;
+    use crate::keys::{SeedPhrase, SpendKey, SpendSeed};
 
     #[test]
     fn test_note_encryption_and_decryption() {
         let mut rng = OsRng;
 
-        let sk = SpendKey::generate(&mut rng);
+        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let spend_seed = SpendSeed::from_seed_phrase(seed_phrase, 0);
+        let sk = SpendKey::new(spend_seed);
         let fvk = sk.full_viewing_key();
         let ivk = fvk.incoming();
         let (dest, _dtk_d) = ivk.payment_address(0u64.into());
@@ -499,7 +501,9 @@ mod tests {
 
         assert_eq!(plaintext, note);
 
-        let sk2 = SpendKey::generate(&mut rng);
+        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let spend_seed = SpendSeed::from_seed_phrase(seed_phrase, 0);
+        let sk2 = SpendKey::new(spend_seed);
         let fvk2 = sk2.full_viewing_key();
         let ivk2 = fvk2.incoming();
 

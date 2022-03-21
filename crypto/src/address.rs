@@ -1,13 +1,15 @@
 use std::io::{Cursor, Read, Write};
 
 use ark_serialize::CanonicalDeserialize;
+use f4jumble::{f4jumble, f4jumble_inv};
 use penumbra_proto::{crypto as pb, serializers::bech32str};
 use serde::{Deserialize, Serialize};
 
 use crate::{fmd, ka, keys::Diversifier, Fq};
 
-pub const CURRENT_CHAIN_ID: &str = "penumbra-eupheme";
-/// Incrementing prefix for the address.
+// We pad addresses to 80 bytes (before jumbling and Bech32m encoding)
+// using this 5 byte padding.
+const ADDR_PADDING: &[u8] = "pen00".as_bytes();
 
 /// A valid payment address.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -84,9 +86,13 @@ impl From<Address> for pb::Address {
         bytes
             .write_all(&a.clue_key().0)
             .expect("can write clue key into vec");
+        bytes
+            .write_all(ADDR_PADDING)
+            .expect("can write padding into vec");
 
+        let jumbled_bytes = f4jumble(bytes.get_ref()).expect("can jumble");
         pb::Address {
-            inner: bytes.into_inner(),
+            inner: jumbled_bytes,
         }
     }
 }
@@ -94,7 +100,9 @@ impl From<Address> for pb::Address {
 impl TryFrom<pb::Address> for Address {
     type Error = anyhow::Error;
     fn try_from(value: pb::Address) -> Result<Self, Self::Error> {
-        let mut bytes = Cursor::new(value.inner);
+        let unjumbled_bytes =
+            f4jumble_inv(&value.inner).ok_or_else(|| anyhow::anyhow!("invalid address"))?;
+        let mut bytes = Cursor::new(unjumbled_bytes);
 
         let mut diversifier_bytes = [0u8; 11];
         bytes.read_exact(&mut diversifier_bytes)?;
@@ -104,6 +112,13 @@ impl TryFrom<pb::Address> for Address {
 
         let mut clue_key_bytes = [0; 32];
         bytes.read_exact(&mut clue_key_bytes)?;
+
+        let mut padding_bytes = [0; 5];
+        bytes.read_exact(&mut padding_bytes)?;
+
+        if padding_bytes != ADDR_PADDING {
+            return Err(anyhow::anyhow!("invalid address"));
+        }
 
         let diversifier = Diversifier(diversifier_bytes);
         Address::from_components(
@@ -138,6 +153,30 @@ impl std::str::FromStr for Address {
     }
 }
 
+/// Parse v0 testnet address string (temporary migration used in `pcli`)
+pub fn parse_v0_testnet_address(v0_address: String) -> Result<Address, anyhow::Error> {
+    let decoded_bytes = &bech32str::decode(&v0_address, "penumbrav0t", bech32str::Bech32m)?;
+
+    let mut bytes = Cursor::new(decoded_bytes);
+    let mut diversifier_bytes = [0u8; 11];
+    bytes.read_exact(&mut diversifier_bytes)?;
+    let mut pk_d_bytes = [0u8; 32];
+    bytes.read_exact(&mut pk_d_bytes)?;
+    let mut clue_key_bytes = [0; 32];
+    bytes.read_exact(&mut clue_key_bytes)?;
+
+    let diversifier = Diversifier(diversifier_bytes);
+    let addr = Address::from_components(
+        diversifier,
+        diversifier.diversified_generator(),
+        ka::Public(pk_d_bytes),
+        fmd::ClueKey(clue_key_bytes),
+    )
+    .ok_or_else(|| anyhow::anyhow!("invalid address"))?;
+
+    Ok(addr)
+}
+
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
@@ -145,11 +184,14 @@ mod tests {
     use rand_core::OsRng;
 
     use super::*;
-    use crate::keys::SpendKey;
+    use crate::keys::{SeedPhrase, SpendKey, SpendSeed};
 
     #[test]
     fn test_address_encoding() {
-        let sk = SpendKey::generate(OsRng);
+        let mut rng = OsRng;
+        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let spend_seed = SpendSeed::from_seed_phrase(seed_phrase, 0);
+        let sk = SpendKey::new(spend_seed);
         let fvk = sk.full_viewing_key();
         let ivk = fvk.incoming();
         let (dest, _dtk_d) = ivk.payment_address(0u64.into());

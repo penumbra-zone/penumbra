@@ -6,7 +6,7 @@ use penumbra_crypto::{
 };
 use penumbra_proto::{transaction, Protobuf};
 
-use super::error::ProtoError;
+use anyhow::Error;
 
 #[derive(Clone, Debug)]
 pub struct Output {
@@ -28,24 +28,24 @@ impl From<Output> for transaction::Output {
 }
 
 impl TryFrom<transaction::Output> for Output {
-    type Error = ProtoError;
+    type Error = Error;
 
     fn try_from(proto: transaction::Output) -> anyhow::Result<Self, Self::Error> {
         let body = proto
             .body
-            .ok_or(ProtoError::OutputBodyMalformed)?
+            .ok_or(anyhow::anyhow!("output body malformed"))?
             .try_into()
-            .map_err(|_| ProtoError::OutputBodyMalformed)?;
+            .map_err(|_| anyhow::anyhow!("output body malformed"))?;
 
         let encrypted_memo = MemoCiphertext(
             proto.encrypted_memo[..]
                 .try_into()
-                .map_err(|_| ProtoError::OutputMalformed)?,
+                .map_err(|_| anyhow::anyhow!("output malformed"))?,
         );
 
         let ovk_wrapped_key: [u8; note::OVK_WRAPPED_LEN_BYTES] = proto.ovk_wrapped_key[..]
             .try_into()
-            .map_err(|_| ProtoError::OutputMalformed)?;
+            .map_err(|_| anyhow::anyhow!("output malformed"))?;
 
         Ok(Output {
             body,
@@ -118,24 +118,24 @@ impl From<Body> for transaction::OutputBody {
 }
 
 impl TryFrom<transaction::OutputBody> for Body {
-    type Error = ProtoError;
+    type Error = Error;
 
     fn try_from(proto: transaction::OutputBody) -> anyhow::Result<Self, Self::Error> {
         Ok(Body {
             value_commitment: (proto.cv[..])
                 .try_into()
-                .map_err(|_| ProtoError::OutputBodyMalformed)?,
+                .map_err(|_| anyhow::anyhow!("output body malformed"))?,
             note_commitment: (proto.cm[..])
                 .try_into()
-                .map_err(|_| ProtoError::OutputBodyMalformed)?,
+                .map_err(|_| anyhow::anyhow!("output body malformed"))?,
             ephemeral_key: ka::Public::try_from(&proto.ephemeral_key[..])
-                .map_err(|_| ProtoError::OutputBodyMalformed)?,
+                .map_err(|_| anyhow::anyhow!("output body malformed"))?,
             encrypted_note: proto.encrypted_note[..]
                 .try_into()
-                .map_err(|_| ProtoError::OutputBodyMalformed)?,
+                .map_err(|_| anyhow::anyhow!("output body malformed"))?,
             proof: proto.zkproof[..]
                 .try_into()
-                .map_err(|_| ProtoError::OutputBodyMalformed)?,
+                .map_err(|_| anyhow::anyhow!("output body malformed"))?,
         })
     }
 }

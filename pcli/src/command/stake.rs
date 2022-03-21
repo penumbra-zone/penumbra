@@ -106,6 +106,9 @@ impl StakeCmd {
                     .validator_rate(tonic::Request::new(ValidatorRateRequest {
                         identity_key: Some(to.into()),
                         epoch_index: next_epoch.index,
+                        chain_id: state
+                            .chain_id()
+                            .ok_or_else(|| anyhow!("missing chain_id"))?,
                     }))
                     .await?
                     .into_inner()
@@ -151,6 +154,9 @@ impl StakeCmd {
                     .validator_rate(tonic::Request::new(ValidatorRateRequest {
                         identity_key: Some(from.into()),
                         epoch_index: next_epoch.index,
+                        chain_id: state
+                            .chain_id()
+                            .ok_or_else(|| anyhow!("missing chain_id"))?,
                     }))
                     .await?
                     .into_inner()
@@ -178,6 +184,7 @@ impl StakeCmd {
                 let validators = client
                     .validator_info(ValidatorInfoRequest {
                         show_inactive: true,
+                        chain_id: state.chain_id().unwrap_or_default(),
                     })
                     .await?
                     .into_inner()
@@ -276,6 +283,7 @@ impl StakeCmd {
                 let mut validators = client
                     .validator_info(ValidatorInfoRequest {
                         show_inactive: *show_inactive,
+                        chain_id: state.chain_id().unwrap_or_default(),
                     })
                     .await?
                     .into_inner()
@@ -302,6 +310,7 @@ impl StakeCmd {
                     let commission_bps = v
                         .validator
                         .funding_streams
+                        .as_ref()
                         .iter()
                         .map(|fs| fs.rate_bps)
                         .sum::<u16>();

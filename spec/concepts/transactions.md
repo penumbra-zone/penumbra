@@ -26,54 +26,54 @@ from the transaction's value balance, and producing an [ICS20]
 #### Staking
 
 - **Delegate** descriptions [deposit unbonded stake into a validator's delegation
-pool](./stake/delegation.md), consuming unbonded stake from the
+pool](../stake/delegation.md), consuming unbonded stake from the
 transaction's value balance and producing new notes recording delegation
 tokens representing the appropriate share of the validator's delegation pool;
 
 - **Undelegate** descriptions [withdraw from a validator's delegation
-pool](./stake/undelegation.md), consuming delegation tokens from the
+pool](../stake/undelegation.md), consuming delegation tokens from the
 transaction's value balance and producing new notes recording the appropriate
 amount of unbonded stake;
 
 - **Commission** descriptions are used by validators to [sweep commission on
-staking rewards](./stake/validator-rewards.md) into shielded notes,
+staking rewards](../stake/validator-rewards.md) into shielded notes,
 adding unbonded stake to the transaction's value balance;
 
 #### Governance
 
 - **CreateProposal** descriptions are used to [propose measures for on-chain
-governance](./concepts/governance.md) and supply a deposit, consuming
+governance](./governance.md#proposals) and supply a deposit, consuming
 bonded stake from the transaction's value balance and producing a new note that
 holds the deposit in escrow;
 
 - **WithdrawProposal** descriptions redeem an escrowed [proposal
-deposit](./concepts/governance.md), returning it to the transaction's value
+deposit](./governance.md#proposals), returning it to the transaction's value
 balance and immediately withdrawing the proposal.
 
 - **Vote** descriptions perform [private voting for on-chain
-governance](./concepts/governance/voting.md) and declare a vote.  This
+governance](./governance.md#voting) and declare a vote.  This
 description leaves the value balance unchanged.
 
 #### Trading
 
 - **Swap** descriptions perform the first phase of
-[ZSwap](./zswap/auction.md), consuming tokens of one type from a
+[ZSwap](../zswap/auction.md), consuming tokens of one type from a
 transaction's value balance, burning them, and producing a swap commitment for
 use in the second stage;
 
 - **Sweep** descriptions perform the second phase of
-[ZSwap](./zswap/auction.md), allowing a user who burned tokens of one
+[ZSwap](../zswap/auction.md), allowing a user who burned tokens of one
 type to mint tokens of the other type at the chain-specified clearing price, and
 adding the new tokens to a transaction's value balance;
 
 #### Market-making
 
 - **OpenPosition** descriptions open [concentrated liquidity
-positions](./zswap.md), consuming value of the traded types from the
+positions](../zswap.md#concentrated-liquidity), consuming value of the traded types from the
 transaction's value balance and adding the specified position to the AMM state;
 
 - **ClosePosition** descriptions close [concentrated liquidity
-positions](./zswap.md), removing the specified position to the AMM
+positions](../zswap.md#concentrated-liquidity), removing the specified position to the AMM
 state and adding the value of the position, plus any accumulated fees or
 liquidity rewards, to the transaction's value balance.
 

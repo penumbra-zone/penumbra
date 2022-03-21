@@ -3,6 +3,7 @@ use penumbra_proto::{
     thin_wallet::thin_wallet_client::ThinWalletClient, Protobuf,
 };
 use penumbra_transaction::Transaction;
+use rand::Rng;
 use tonic::transport::Channel;
 use tracing::instrument;
 
@@ -15,21 +16,26 @@ impl Opt {
     pub async fn submit_transaction(&self, transaction: &Transaction) -> Result<(), anyhow::Error> {
         tracing::info!("broadcasting transaction...");
 
-        let rsp: serde_json::Value = reqwest::get(format!(
-            r#"http://{}:{}/broadcast_tx_sync?tx=0x{}"#,
-            self.node,
-            self.rpc_port,
-            hex::encode(&transaction.encode_to_vec())
-        ))
-        .await?
-        .json()
-        .await?;
+        let client = reqwest::Client::new();
+        let req_id: u8 = rand::thread_rng().gen();
+        let rsp: serde_json::Value = client
+            .post(format!(r#"http://{}:{}"#, self.node, self.rpc_port))
+            .json(&serde_json::json!(
+                {
+                    "method": "broadcast_tx_sync",
+                    "params": [&transaction.encode_to_vec()],
+                    "id": req_id,
+                }
+            ))
+            .send()
+            .await?
+            .json()
+            .await?;
 
         tracing::info!("{}", rsp);
 
-        let result = rsp
-            .get("result")
-            .ok_or_else(|| anyhow::anyhow!("could not parse JSON response"))?;
+        // Sometimes the result is in a result key, and sometimes it's bare? (??)
+        let result = rsp.get("result").unwrap_or(&rsp);
 
         let code = result
             .get("code")
@@ -50,6 +56,37 @@ impl Opt {
                 log
             ))
         }
+    }
+
+    /// Submits a transaction to the network, returning `Ok` as soon as the
+    /// transaction has been submitted, rather than waiting to learn whether the
+    /// node accepted it.
+    #[instrument(skip(self, transaction))]
+    pub async fn submit_transaction_unconfirmed(
+        &self,
+        transaction: &Transaction,
+    ) -> Result<(), anyhow::Error> {
+        tracing::info!("broadcasting transaction...");
+
+        let client = reqwest::Client::new();
+        let req_id: u8 = rand::thread_rng().gen();
+        let rsp: serde_json::Value = client
+            .post(format!(r#"http://{}:{}"#, self.node, self.rpc_port))
+            .json(&serde_json::json!(
+                {
+                    "method": "broadcast_tx_async",
+                    "params": [&transaction.encode_to_vec()],
+                    "id": req_id,
+                }
+            ))
+            .send()
+            .await?
+            .json()
+            .await?;
+
+        tracing::info!("{}", rsp);
+
+        Ok(())
     }
 
     pub async fn thin_wallet_client(&self) -> Result<ThinWalletClient<Channel>, anyhow::Error> {

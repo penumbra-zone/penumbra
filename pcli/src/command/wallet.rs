@@ -1,14 +1,13 @@
-use std::{fs::File, io::Write, path::PathBuf};
+use std::{fs::File, io::BufReader, path::PathBuf, str::FromStr};
 
 use anyhow::{anyhow, Context as _, Result};
 use directories::ProjectDirs;
-use penumbra_crypto::{keys::SpendSeed, CURRENT_CHAIN_ID};
+use penumbra_crypto::keys::{SeedPhrase, SpendSeed};
 use penumbra_wallet::{ClientState, Wallet};
 use rand_core::OsRng;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use structopt::StructOpt;
-use tempfile::NamedTempFile;
 
 use crate::ClientStateFile;
 
@@ -19,9 +18,14 @@ pub enum WalletCmd {
         /// A 32-byte hex string encoding the spend seed.
         spend_seed: String,
     },
+    /// Import from an existing seed phrase.
+    ImportFromPhrase {
+        /// A 24 word phrase in quotes.
+        seed_phrase: String,
+    },
     /// Export the spend seed for the wallet.
     Export,
-    /// Generate a new spend seed.
+    /// Generate a new seed phrase.
     Generate,
     /// Keep the spend seed, but reset all other client state.
     Reset,
@@ -34,6 +38,7 @@ impl WalletCmd {
     pub fn needs_sync(&self) -> bool {
         match self {
             WalletCmd::Import { .. } => false,
+            WalletCmd::ImportFromPhrase { .. } => false,
             WalletCmd::Export => false,
             WalletCmd::Generate => false,
             WalletCmd::Reset => false,
@@ -46,12 +51,26 @@ impl WalletCmd {
         // wallet state to be saved to disk
         let state = match self {
             // These two commands return new wallets to be saved to disk:
-            WalletCmd::Generate => Some(ClientState::new(Wallet::generate(&mut OsRng))),
+            WalletCmd::Generate => {
+                let seed_phrase = SeedPhrase::generate(&mut OsRng);
+
+                // xxx: Something better should be done here, this is in danger of being
+                // shared by users accidentally in log output.
+                println!(
+                    "YOUR PRIVATE SEED PHRASE: {}\nDO NOT SHARE WITH ANYONE!",
+                    seed_phrase
+                );
+
+                Some(ClientState::new(Wallet::from_seed_phrase(seed_phrase)))
+            }
             WalletCmd::Import { spend_seed } => {
                 let seed = hex::decode(spend_seed)?;
                 let seed = SpendSeed::try_from(seed.as_slice())?;
                 Some(ClientState::new(Wallet::import(seed)))
             }
+            WalletCmd::ImportFromPhrase { seed_phrase } => Some(ClientState::new(
+                Wallet::from_seed_phrase(SeedPhrase::from_str(seed_phrase)?),
+            )),
             // The rest of these commands don't require a wallet state to be saved to disk:
             WalletCmd::Export => {
                 let state = ClientStateFile::load(wallet_path.clone())?;
@@ -79,24 +98,40 @@ impl WalletCmd {
             WalletCmd::Reset => {
                 tracing::info!("resetting client state");
 
+                tracing::debug!("reading existing client state from disk");
+
                 #[derive(Deserialize)]
                 struct MinimalState {
                     wallet: Wallet,
                 }
 
                 // Read the wallet field out of the state file, without fully deserializing the rest
-                let wallet =
-                    serde_json::from_reader::<_, MinimalState>(File::open(&wallet_path)?)?.wallet;
+                let wallet = serde_json::from_reader::<_, MinimalState>(BufReader::new(
+                    File::open(&wallet_path)?,
+                ))?
+                .wallet;
 
-                // Write the new wallet JSON to disk as a temporary file
-                let (mut tmp, tmp_path) = NamedTempFile::new()?.into_parts();
-                tmp.write_all(serde_json::to_string_pretty(&ClientState::new(wallet))?.as_bytes())?;
+                tracing::debug!("writing fresh client state");
+
+                // Write the new wallet JSON to disk as a temporary file in the wallet directory
+                let tmp_path = wallet_path.with_extension("tmp");
+                let mut tmp_file = std::fs::OpenOptions::new()
+                    .create(true)
+                    .write(true)
+                    .truncate(true)
+                    .open(&tmp_path)?;
+
+                serde_json::to_writer_pretty(&mut tmp_file, &ClientState::new(wallet))?;
+
+                tracing::debug!("checking that we can deserialize fresh client state");
 
                 // Check that we can successfully parse the result from disk
-                ClientStateFile::load(tmp_path.to_path_buf()).context("can't parse wallet after attempting to reset: refusing to overwrite existing wallet file")?;
+                ClientStateFile::load(tmp_path.clone()).context("can't parse wallet after attempting to reset: refusing to overwrite existing wallet file")?;
 
-                // Move the temporary file over the original wallet file
-                tmp_path.persist(&wallet_path)?;
+                tracing::debug!("overwriting previous client state");
+
+                // Overwrite the existing wallet state file, *atomically*
+                std::fs::rename(&tmp_path, &wallet_path)?;
 
                 None
             }
@@ -126,7 +161,10 @@ impl WalletCmd {
                 // TODO the chain ID should be synced from the server if
                 // `chain_params` is `None` (meaning a new wallet file),
                 // as it could have changed via consensus.
-                .join(CURRENT_CHAIN_ID)
+                // TODO: we can't currently get this without already having a
+                // clientstatefile (fetch::chain_params), restore this
+                // functionality by making a request, or drop it?
+                // .join(CURRENT_CHAIN_ID)
                 .join(hex::encode(&spend_key_hash[0..8]));
             std::fs::create_dir_all(&wallet_archive_dir)
                 .expect("can create penumbra wallet archive directory");

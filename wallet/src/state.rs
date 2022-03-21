@@ -4,7 +4,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use penumbra_chain::params::ChainParams;
 use penumbra_crypto::{
     asset::{self, Denom},
@@ -13,7 +13,7 @@ use penumbra_crypto::{
     note, Address, FieldExt, Note, Nullifier, Value,
 };
 use penumbra_proto::light_wallet::{CompactBlock, StateFragment};
-use penumbra_stake::{RateData, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM};
+use penumbra_stake::{RateData, ValidatorDefinition, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM};
 use penumbra_transaction::Transaction;
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
@@ -35,7 +35,7 @@ const SUBMITTED_TRANSACTION_TIMEOUT: Duration = Duration::from_secs(60);
 )]
 pub struct ClientState {
     /// The last block height we've scanned to, if any.
-    last_block_height: Option<u32>,
+    last_block_height: Option<u64>,
     /// Note commitment tree.
     note_commitment_tree: NoteCommitmentTree,
     /// Our nullifiers and the notes they correspond to.
@@ -78,6 +78,16 @@ pub enum UnspentNote<'a> {
     SubmittedChange(&'a Note),
 }
 
+impl<'a> UnspentNote<'a> {
+    /// Returns the underlying note if it is [`UnspentNote::Ready`].
+    pub fn as_ready(&self) -> Option<&'a Note> {
+        match self {
+            UnspentNote::Ready(note) => Some(note),
+            _ => None,
+        }
+    }
+}
+
 impl AsRef<Note> for UnspentNote<'_> {
     fn as_ref(&self) -> &Note {
         match self {
@@ -103,6 +113,11 @@ impl ClientState {
             wallet,
             chain_params: None,
         }
+    }
+
+    /// Returns a reference to the note commitment tree.
+    pub fn note_commitment_tree(&self) -> &NoteCommitmentTree {
+        &self.note_commitment_tree
     }
 
     /// Returns a reference to the client state's asset cache.
@@ -152,6 +167,23 @@ impl ClientState {
         tracing::debug!(?commitment, value = ?note.value(), "adding note to submitted change set");
         self.submitted_change_set
             .insert(commitment, (timeout, note));
+    }
+
+    /// Register a note as spent.
+    ///
+    /// This marks the note as having been spent (pending confirmation) by the
+    /// chain.  Tracking these notes allows the wallet to not accidentally
+    /// attempt to double-spend a note, just because the first transaction that
+    /// spent it hasn't been finalized yet.
+    ///
+    /// This registration is temporary; if the spend is not observed on-chain
+    /// before some timeout, it will be forgotten, and the note marked as unspent again.
+    pub fn register_spend(&mut self, note: &Note) {
+        let commitment = note.commit();
+        tracing::debug!(?commitment, value = ?note.value(), "moving note from unspent set to submitted spend set");
+        let note = self.unspent_set.remove(&commitment).unwrap();
+        let timeout = SystemTime::now() + SUBMITTED_TRANSACTION_TIMEOUT;
+        self.submitted_spend_set.insert(commitment, (timeout, note));
     }
 
     /// Returns a list of notes to spend to release (at least) the provided
@@ -208,15 +240,8 @@ impl ClientState {
             // Before returning the notes to the caller, mark them as having been
             // spent.  (If the caller does not spend them, or the tx fails, etc.,
             // this state will be erased after the timeout).
-            let timeout = SystemTime::now() + SUBMITTED_TRANSACTION_TIMEOUT;
-
             for note in &notes_to_spend {
-                let commitment = note.commit();
-
-                // Add the note to the submitted spend set
-                tracing::debug!(?commitment, value = ?note.value(), "moving note from unspent set to submitted spend set");
-                let note = self.unspent_set.remove(&commitment).unwrap();
-                self.submitted_spend_set.insert(commitment, (timeout, note));
+                self.register_spend(note);
             }
 
             Ok(notes_to_spend)
@@ -227,17 +252,13 @@ impl ClientState {
         }
     }
 
-    fn chain_id(&self) -> Result<String, anyhow::Error> {
-        let chain_params = self.chain_params();
-        if chain_params.is_none() {
-            return Err(anyhow::anyhow!("chain_params not set on state"));
-        }
-
-        Ok(chain_params.unwrap().chain_id.clone())
+    /// Returns the chain id, if the chain parameters are set.
+    pub fn chain_id(&self) -> Option<String> {
+        self.chain_params().map(|p| p.chain_id.clone())
     }
 
     /// Generate a new transaction delegating stake
-    #[instrument(skip(self, rng))]
+    #[instrument(skip(self, rng, rate_data))]
     pub fn build_delegate<R: RngCore + CryptoRng>(
         &mut self,
         rng: &mut R,
@@ -256,7 +277,7 @@ impl ClientState {
 
         tx_builder
             .set_fee(fee)
-            .set_chain_id(self.chain_id()?)
+            .set_chain_id(self.chain_id().ok_or_else(|| anyhow!("missing chain_id"))?)
             .add_delegation(&rate_data, unbonded_amount);
 
         let spend_amount = unbonded_amount + fee;
@@ -325,7 +346,7 @@ impl ClientState {
 
         tx_builder
             .set_fee(fee)
-            .set_chain_id(self.chain_id()?)
+            .set_chain_id(self.chain_id().ok_or_else(|| anyhow!("missing chain_id"))?)
             .add_undelegation(&rate_data, delegation_amount);
 
         // Because the outputs of an undelegation are quarantined, we want to
@@ -393,6 +414,83 @@ impl ClientState {
         tx_builder.finalize(rng).map_err(Into::into)
     }
 
+    /// Generate a new transaction uploading a validator definition.
+    #[instrument(skip(self, rng))]
+    pub fn build_validator_definition<R: RngCore + CryptoRng>(
+        &mut self,
+        rng: &mut R,
+        new_validator: ValidatorDefinition,
+        fee: u64,
+        source_address: Option<u64>,
+    ) -> Result<Transaction, anyhow::Error> {
+        let mut tx_builder = Transaction::build_with_root(self.note_commitment_tree.root2());
+
+        tx_builder
+            .set_fee(fee)
+            .set_chain_id(self.chain_id().ok_or_else(|| anyhow!("missing chain_id"))?);
+
+        // Add the Validator to the tx_builder.
+        tx_builder.add_validator_definition(new_validator);
+
+        // If there are any fees, they need to be spent.
+        let mut value_to_spend = HashMap::<Denom, u64>::new();
+        if fee > 0 {
+            *value_to_spend
+                .entry(STAKING_TOKEN_DENOM.clone())
+                .or_default() += fee;
+        }
+
+        for (denom, amount) in value_to_spend {
+            // Only produce an output if the amount is greater than zero
+            if amount == 0 {
+                continue;
+            }
+
+            // Select a list of notes that provides at least the required amount.
+            let notes: Vec<Note> = self.notes_to_spend(rng, amount, &denom, source_address)?;
+            let change_address = self
+                .wallet
+                .change_address(notes.last().expect("spent at least one note"))?;
+            let spent: u64 = notes.iter().map(|note| note.amount()).sum();
+
+            // Spend each of the notes we selected.
+            for note in notes {
+                tx_builder.add_spend(
+                    rng,
+                    &self.note_commitment_tree,
+                    // The active wallet pays the fees for all the validators it is defining.
+                    self.wallet.spend_key(),
+                    note,
+                )?;
+            }
+
+            // Find out how much change we have and whether to add a change output.
+            let change = spent - amount;
+            if change > 0 {
+                // xx: add memo handling
+                let memo = memo::MemoPlaintext([0u8; 512]);
+                let note = tx_builder.add_output_producing_note(
+                    rng,
+                    &change_address,
+                    Value {
+                        amount: change,
+                        asset_id: denom.id(),
+                    },
+                    memo,
+                    self.wallet.outgoing_viewing_key(),
+                );
+
+                self.register_change(note);
+            }
+        }
+
+        let transaction = tx_builder
+            .finalize(rng)
+            .map_err(|err| anyhow::anyhow!("error during transaction finalization: {}", err))?;
+
+        Ok(transaction)
+    }
+
     /// Generate a new transaction sending value to `dest_address`.
     #[instrument(skip(self, rng))]
     pub fn build_send<R: RngCore + CryptoRng>(
@@ -406,7 +504,9 @@ impl ClientState {
     ) -> Result<Transaction, anyhow::Error> {
         let mut tx_builder = Transaction::build_with_root(self.note_commitment_tree.root2());
 
-        tx_builder.set_fee(fee).set_chain_id(self.chain_id()?);
+        tx_builder
+            .set_fee(fee)
+            .set_chain_id(self.chain_id().ok_or_else(|| anyhow!("missing chain_id"))?);
 
         let mut output_value = HashMap::<Denom, u64>::new();
         for Value { amount, asset_id } in values {
@@ -438,7 +538,7 @@ impl ClientState {
         let mut value_to_spend = output_value;
         if fee > 0 {
             *value_to_spend
-                .entry(asset::REGISTRY.parse_denom("upenumbra").unwrap())
+                .entry(STAKING_TOKEN_DENOM.clone())
                 .or_default() += fee;
         }
 
@@ -567,7 +667,7 @@ impl ClientState {
     }
 
     /// Returns the last block height the client state has synced up to, if any.
-    pub fn last_block_height(&self) -> Option<u32> {
+    pub fn last_block_height(&self) -> Option<u64> {
         self.last_block_height
     }
 
@@ -722,6 +822,7 @@ impl ClientState {
                         "found nullifier for unspent note, marking it as spent"
                     );
                     self.spent_set.insert(note_commitment, note);
+                    self.note_commitment_tree.remove_witness(&note_commitment);
                 } else if let Some((_, note)) = self.submitted_spend_set.remove(&note_commitment) {
                     // Insert the note into the spent set
                     tracing::debug!(
@@ -730,6 +831,7 @@ impl ClientState {
                         "found nullifier for submitted spend note, marking it as spent"
                     );
                     self.spent_set.insert(note_commitment, note);
+                    self.note_commitment_tree.remove_witness(&note_commitment);
                 } else if let Some((_, note)) = self.submitted_change_set.remove(&note_commitment) {
                     // Insert the note into the spent set
                     tracing::debug!(
@@ -738,6 +840,7 @@ impl ClientState {
                         "found nullifier for submitted change note, marking it as spent"
                     );
                     self.spent_set.insert(note_commitment, note);
+                    self.note_commitment_tree.remove_witness(&note_commitment);
                 } else if self.spent_set.contains_key(&note_commitment) {
                     // If the nullifier is already in the spent set, it means we've already
                     // processed this note and it's spent. This should never happen
@@ -769,7 +872,8 @@ mod serde_helpers {
     #[serde_as]
     #[derive(Serialize, Deserialize)]
     pub struct ClientStateHelper {
-        last_block_height: Option<u32>,
+        wallet: Wallet, // this should be at the top to make `wallet reset` faster
+        last_block_height: Option<u64>,
         #[serde_as(as = "serde_with::hex::Hex")]
         note_commitment_tree: Vec<u8>,
         nullifier_map: Vec<(String, String)>,
@@ -781,7 +885,6 @@ mod serde_helpers {
         spent_set: Vec<(String, String)>,
         transactions: Vec<(String, String)>,
         asset_registry: Vec<(asset::Id, String)>,
-        wallet: Wallet,
         chain_params: Option<ChainParams>,
     }
 

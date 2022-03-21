@@ -2,6 +2,7 @@ FROM rust:1.56 as build
 
 RUN curl https://sh.rustup.rs -sSf | sh -s -- --no-modify-path --default-toolchain none -y
 RUN rustup component add rustfmt
+RUN apt-get update && apt-get install -y clang libclang-dev
 
 WORKDIR /usr/src
 
@@ -24,11 +25,14 @@ COPY proto ./proto
 COPY chain ./chain
 COPY crypto ./crypto
 COPY stake ./stake
+COPY tct ./tct
 COPY decaf377-fmd ./decaf377-fmd
 COPY decaf377-ka ./decaf377-ka
 COPY transaction ./transaction
 COPY wallet ./wallet
+COPY testnets ./testnets
 COPY .git ./.git
+COPY testnets ./testnets
 # Sorry about all that mess ^, but it's worth it during development.
 
 # Fetch dependencies in a separate layer, so that they can be cached.
@@ -59,4 +63,4 @@ ENV DATABASE_URL=$DATABASE_URL
 WORKDIR /penumbra
 COPY --from=build /out/pd /usr/bin/pd
 ENV RUST_LOG=warn,pd=info,penumbra=info
-CMD [ "/usr/bin/pd" ]
+CMD [ "RUST_BACKTRACE=1 /usr/bin/pd" ]

@@ -4,8 +4,7 @@ use ark_ff::Zero;
 use bytes::Bytes;
 use decaf377::FieldExt;
 use penumbra_crypto::{
-    asset,
-    merkle::{self, NoteCommitmentTree, TreeExt},
+    merkle,
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
     Fr, Value,
 };
@@ -15,9 +14,12 @@ use penumbra_proto::{
     },
     Message, Protobuf,
 };
+use penumbra_stake::STAKING_TOKEN_ASSET_ID;
+
+use anyhow::Error;
 
 // TODO: remove & replace with anyhow
-use crate::{action::error::ProtoError, Action, GenesisBuilder};
+use crate::Action;
 
 mod builder;
 pub use builder::Builder;
@@ -62,21 +64,7 @@ impl Transaction {
             outputs: Vec::new(),
             delegations: Vec::new(),
             undelegations: Vec::new(),
-            fee: None,
-            synthetic_blinding_factor: Fr::zero(),
-            value_balance: decaf377::Element::default(),
-            value_commitments: decaf377::Element::default(),
-            merkle_root,
-            expiry_height: None,
-            chain_id: None,
-        }
-    }
-
-    /// Build the genesis transactions.
-    pub fn genesis_builder() -> GenesisBuilder {
-        let merkle_root = NoteCommitmentTree::new(0).root2();
-        GenesisBuilder {
-            actions: Vec::new(),
+            validator_definitions: Vec::new(),
             fee: None,
             synthetic_blinding_factor: Fr::zero(),
             value_balance: decaf377::Element::default(),
@@ -115,7 +103,7 @@ impl Transaction {
         // Add fee into binding verification key computation.
         let fee_value = Value {
             amount: self.transaction_body.fee.0,
-            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            asset_id: *STAKING_TOKEN_ASSET_ID,
         };
         let fee_v_blinding = Fr::zero();
         let fee_value_commitment = fee_value.commit(fee_v_blinding);
@@ -152,7 +140,7 @@ impl From<TransactionBody> for ProtoTransactionBody {
 }
 
 impl TryFrom<ProtoTransactionBody> for TransactionBody {
-    type Error = ProtoError;
+    type Error = Error;
 
     fn try_from(proto: ProtoTransactionBody) -> anyhow::Result<Self, Self::Error> {
         let mut actions = Vec::<Action>::new();
@@ -160,13 +148,13 @@ impl TryFrom<ProtoTransactionBody> for TransactionBody {
             actions.push(
                 action
                     .try_into()
-                    .map_err(|_| ProtoError::TransactionBodyMalformed)?,
+                    .map_err(|_| anyhow::anyhow!("transaction body malformed"))?,
             );
         }
 
         let merkle_root = proto.anchor[..]
             .try_into()
-            .map_err(|_| ProtoError::TransactionBodyMalformed)?;
+            .map_err(|_| anyhow::anyhow!("transaction body malformed"))?;
 
         let expiry_height = proto.expiry_height;
 
@@ -174,7 +162,7 @@ impl TryFrom<ProtoTransactionBody> for TransactionBody {
 
         let fee: Fee = proto
             .fee
-            .ok_or(ProtoError::TransactionBodyMalformed)?
+            .ok_or(anyhow::anyhow!("transaction body malformed"))?
             .into();
 
         Ok(TransactionBody {
@@ -205,18 +193,18 @@ impl From<&Transaction> for ProtoTransaction {
 }
 
 impl TryFrom<ProtoTransaction> for Transaction {
-    type Error = ProtoError;
+    type Error = Error;
 
     fn try_from(proto: ProtoTransaction) -> anyhow::Result<Self, Self::Error> {
         let transaction_body = proto
             .body
-            .ok_or(ProtoError::TransactionMalformed)?
+            .ok_or(anyhow::anyhow!("transaction malformed"))?
             .try_into()
-            .map_err(|_| ProtoError::TransactionBodyMalformed)?;
+            .map_err(|_| anyhow::anyhow!("transaction body malformed"))?;
 
         let sig_bytes: [u8; 64] = proto.binding_sig[..]
             .try_into()
-            .map_err(|_| ProtoError::TransactionMalformed)?;
+            .map_err(|_| anyhow::anyhow!("transaction malformed"))?;
 
         Ok(Transaction {
             transaction_body,
@@ -226,19 +214,19 @@ impl TryFrom<ProtoTransaction> for Transaction {
 }
 
 impl TryFrom<&[u8]> for Transaction {
-    type Error = ProtoError;
+    type Error = Error;
 
     fn try_from(bytes: &[u8]) -> Result<Transaction, Self::Error> {
-        let protobuf_serialized_proof =
-            ProtoTransaction::decode(bytes).map_err(|_| ProtoError::TransactionMalformed)?;
+        let protobuf_serialized_proof = ProtoTransaction::decode(bytes)
+            .map_err(|_| anyhow::anyhow!("transaction malformed"))?;
         protobuf_serialized_proof
             .try_into()
-            .map_err(|_| ProtoError::TransactionMalformed)
+            .map_err(|_| anyhow::anyhow!("transaction malformed"))
     }
 }
 
 impl TryFrom<Vec<u8>> for Transaction {
-    type Error = ProtoError;
+    type Error = Error;
 
     fn try_from(bytes: Vec<u8>) -> Result<Transaction, Self::Error> {
         Self::try_from(&bytes[..])
@@ -275,7 +263,11 @@ impl From<ProtoFee> for Fee {
 
 #[cfg(test)]
 mod tests {
-    use penumbra_crypto::{keys::SpendKey, memo::MemoPlaintext, Fq, Value};
+    use penumbra_crypto::{
+        keys::{SeedPhrase, SpendKey, SpendSeed},
+        memo::MemoPlaintext,
+        Fq, Value,
+    };
     use rand_core::OsRng;
 
     use super::*;
@@ -284,11 +276,15 @@ mod tests {
     #[test]
     fn test_transaction_single_output_fails_due_to_nonzero_value_balance() {
         let mut rng = OsRng;
-        let sk_sender = SpendKey::generate(&mut rng);
+        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let spend_seed = SpendSeed::from_seed_phrase(seed_phrase, 0);
+        let sk_sender = SpendKey::new(spend_seed);
         let fvk_sender = sk_sender.full_viewing_key();
         let ovk_sender = fvk_sender.outgoing();
 
-        let sk_recipient = SpendKey::generate(&mut rng);
+        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let spend_seed = SpendSeed::from_seed_phrase(seed_phrase, 0);
+        let sk_recipient = SpendKey::new(spend_seed);
         let fvk_recipient = sk_recipient.full_viewing_key();
         let ivk_recipient = fvk_recipient.incoming();
         let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
@@ -302,7 +298,7 @@ mod tests {
                 &dest,
                 Value {
                     amount: 10,
-                    asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+                    asset_id: *STAKING_TOKEN_ASSET_ID,
                 },
                 MemoPlaintext::default(),
                 ovk_sender,

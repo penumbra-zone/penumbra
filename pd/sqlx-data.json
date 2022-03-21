@@ -1,5 +1,25 @@
 {
   "db": "PostgreSQL",
+  "0a6306cae406df1b23e52d503b22768210c72fb679fda34fa80d08cd2498fec4": {
+    "query": "INSERT INTO validators (\n                    identity_key,\n                    consensus_key,\n                    sequence_number,\n                    name,\n                    website,\n                    description,\n                    voting_power,\n                    validator_state,\n                    unbonding_epoch\n                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Bytea",
+          "Int8",
+          "Varchar",
+          "Varchar",
+          "Varchar",
+          "Int8",
+          "Varchar",
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "0c6a89db4de3642914e3cddf6e08a042eac9b140a03118943170433527ef5cc3": {
     "query": "INSERT INTO nullifiers VALUES ($1, $2)",
     "describe": {
@@ -13,8 +33,8 @@
       "nullable": []
     }
   },
-  "17f7371f353e0c856b2893d4d37bfe5be632e178eb71e31e62ef90f96c4a89e0": {
-    "query": "SELECT \n                    validators.identity_key, \n                    validators.voting_power, \n                    validator_rates.epoch, \n                    validator_rates.validator_reward_rate, \n                    validator_rates.validator_exchange_rate,\n                    validators.validator_data \n                FROM (\n                    validators INNER JOIN validator_rates ON validators.identity_key = validator_rates.identity_key\n                )\n                WHERE validator_rates.epoch = (SELECT MAX(epoch) FROM base_rates) AND NOT voting_power = $1",
+  "1329be38905d802df374dc416fd0ce36d0b556af2d3d07d6248722b7025bfe3d": {
+    "query": "SELECT identity_key, epoch, validator_reward_rate, validator_exchange_rate\n            FROM validator_rates\n            WHERE epoch = (SELECT MAX(epoch) from base_rates)",
     "describe": {
       "columns": [
         {
@@ -24,38 +44,24 @@
         },
         {
           "ordinal": 1,
-          "name": "voting_power",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 2,
           "name": "epoch",
           "type_info": "Int8"
         },
         {
-          "ordinal": 3,
+          "ordinal": 2,
           "name": "validator_reward_rate",
           "type_info": "Int8"
         },
         {
-          "ordinal": 4,
+          "ordinal": 3,
           "name": "validator_exchange_rate",
           "type_info": "Int8"
-        },
-        {
-          "ordinal": 5,
-          "name": "validator_data",
-          "type_info": "Bytea"
         }
       ],
       "parameters": {
-        "Left": [
-          "Int8"
-        ]
+        "Left": []
       },
       "nullable": [
-        false,
-        false,
         false,
         false,
         false,
@@ -63,17 +69,41 @@
       ]
     }
   },
-  "2bf593b7f2e93978cb0490ac7f1c64f55d16a2bb5823db241dfc0ed33ae8540f": {
-    "query": "INSERT INTO validators (\n                    identity_key,\n                    consensus_key,\n                    sequence_number,\n                    validator_data,\n                    voting_power\n                ) VALUES ($1, $2, $3, $4, $5)",
+  "272ef5d08c1b8ede54ce06099545f856aa55e9a78ddea8affe31003fea9dea1a": {
+    "query": "INSERT INTO assets (asset_id, denom, total_supply)\n            VALUES ($1, $2, $3)\n            ON CONFLICT (asset_id) DO UPDATE SET denom=$2, total_supply=$3",
     "describe": {
       "columns": [],
       "parameters": {
         "Left": [
           "Bytea",
-          "Bytea",
-          "Int8",
-          "Bytea",
+          "Varchar",
           "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "29dcd989de05e1b21acb226fe8598d3f207ded5114c2a6f5c0bdf599394fc35b": {
+    "query": "INSERT INTO validator_fundingstreams (\n                        identity_key,\n                        address,\n                        rate_bps\n                    ) VALUES ($1, $2, $3)\n                    ON CONFLICT (identity_key, address)\n                    DO UPDATE SET rate_bps = $3",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Varchar",
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "2b00fd7700707a635a3d5827f69f2a16a45737fe24797d9aae3874c95d640524": {
+    "query": "DELETE FROM nullifiers WHERE nullifier = $1",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea"
         ]
       },
       "nullable": []
@@ -115,6 +145,44 @@
         false,
         false,
         false
+      ]
+    }
+  },
+  "308588a01bb3ed66958ef26b636e2c344ac302749e3538f8a6698ed719fe3a73": {
+    "query": "\n                    INSERT INTO quarantined_nullifiers (nullifier, unbonding_height, validator_identity_key)\n                    VALUES ($1, $2, $3)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Int8",
+          "Bytea"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "321616ee11510c15f5ac2d1e6aa3c22c5f6601b926a5d41f8e0ce8410223b1bb": {
+    "query": "\n            WITH a AS\n            (SELECT COUNT(*) AS nullifier_count FROM nullifiers),\n            b AS\n            (SELECT COUNT(*) AS note_count FROM notes)\n            SELECT nullifier_count, note_count FROM a, b\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "nullifier_count",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "note_count",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": [
+        true,
+        null
       ]
     }
   },
@@ -170,6 +238,76 @@
       "nullable": []
     }
   },
+  "48bd02f574d69ac41b8814665572bac6b6b4943435dc22cd41a57af101b20bf2": {
+    "query": "INSERT INTO validator_rates VALUES ($1, $2, $3, $4) ON CONFLICT ON CONSTRAINT validator_rates_pkey\n                    DO UPDATE SET validator_reward_rate=$3, validator_exchange_rate=$4",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Int8",
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "4da4dd1b6328f4d9ca9f223cc8954d52eaa3b03231f63a6368701df9064683e8": {
+    "query": "UPDATE validators \n                SET\n                consensus_key=$2, \n                sequence_number=$3,\n                name=$4,\n                website=$5,\n                description=$6\n                WHERE\n                identity_key=$1 ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Bytea",
+          "Int8",
+          "Varchar",
+          "Varchar",
+          "Varchar"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "4e81d31b835953b15b3afce317f51732374cd7cbbf46f80407403bd1f3fd6248": {
+    "query": "\n            SELECT DISTINCT ON (identity_key)\n            identity_key, \n            epoch, \n            validator_reward_rate, \n            validator_exchange_rate\n\n            FROM validator_rates \n            WHERE epoch <= $1\n            ORDER BY identity_key, epoch DESC",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "identity_key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 1,
+          "name": "epoch",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 2,
+          "name": "validator_reward_rate",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 3,
+          "name": "validator_exchange_rate",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "4f9e6ca2890b779cf788f5993de20c8a2b80baa56966dac4c4f1e215171db0c8": {
     "query": "INSERT INTO validator_rates (\n                    identity_key,\n                    epoch,\n                    validator_reward_rate,\n                    validator_exchange_rate\n                ) VALUES ($1, $2, $3, $4)",
     "describe": {
@@ -183,6 +321,72 @@
         ]
       },
       "nullable": []
+    }
+  },
+  "5b21c8f02b71c8101743848e10e198ca4bf1b06fa0a703382354f241d8c86b0f": {
+    "query": "SELECT validator_identity_key, note_commitment, ephemeral_key, encrypted_note, transaction_id\n            FROM quarantined_notes\n            WHERE\n                unbonding_height <= $1 AND\n                ($2 OR validator_identity_key = ANY($3))",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "validator_identity_key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 1,
+          "name": "note_commitment",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 2,
+          "name": "ephemeral_key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 3,
+          "name": "encrypted_note",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 4,
+          "name": "transaction_id",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Bool",
+          "ByteaArray"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "5f0f6af5d9b30fbea0e33d478e61d311cd065dd0552bfc3988710b6655a3cd1c": {
+    "query": "SELECT nullifier FROM nullifiers WHERE nullifier = ANY($1)",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "nullifier",
+          "type_info": "Bytea"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "ByteaArray"
+        ]
+      },
+      "nullable": [
+        false
+      ]
     }
   },
   "68ecee6442fbca8293efe210d7b798e0a070f2be083b074583048ac513c3dc96": {
@@ -251,6 +455,35 @@
       ]
     }
   },
+  "71bf9cc82a3fd6ebbb72e56a7f19850e64cb41222a454582917da54aa21c914e": {
+    "query": "\n                    INSERT INTO quarantined_notes (\n                        note_commitment,\n                        ephemeral_key,\n                        encrypted_note,\n                        transaction_id,\n                        unbonding_height,\n                        validator_identity_key\n                    ) VALUES ($1, $2, $3, $4, $5, $6)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Bytea",
+          "Bytea",
+          "Bytea",
+          "Int8",
+          "Bytea"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "7274786d3be393b0c70c571dde279722f79b8654b771dfebd11f0653c4fec002": {
+    "query": "DELETE FROM quarantined_nullifiers WHERE nullifier = $1",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "73d0d102af9c9dbf753248c60bd967e744e909208ba53271f1f8238438da52b7": {
     "query": "SELECT height, nullifier\n                    FROM nullifiers\n                    WHERE height BETWEEN $1 AND $2\n                    ORDER BY height ASC",
     "describe": {
@@ -298,6 +531,92 @@
       ]
     }
   },
+  "75ac920aa295d3f8222873fc920fbbaba2663f0edad8f726da06bea85000acd9": {
+    "query": "SELECT\n                    validators.identity_key,\n                    validators.voting_power,\n                    validator_rates.epoch,\n                    validator_rates.validator_reward_rate,\n                    validator_rates.validator_exchange_rate,\n                    validators.validator_state,\n                    validators.unbonding_epoch,\n                    validators.name,\n                    validators.website,\n                    validators.description,\n                    validators.consensus_key,\n                    validators.sequence_number\n                FROM (\n                    validators INNER JOIN validator_rates ON validators.identity_key = validator_rates.identity_key\n                )\n                WHERE validator_rates.epoch = (SELECT MAX(epoch) FROM base_rates) AND NOT voting_power = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "identity_key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 1,
+          "name": "voting_power",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 2,
+          "name": "epoch",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 3,
+          "name": "validator_reward_rate",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 4,
+          "name": "validator_exchange_rate",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 5,
+          "name": "validator_state",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 6,
+          "name": "unbonding_epoch",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 7,
+          "name": "name",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 8,
+          "name": "website",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 9,
+          "name": "description",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 10,
+          "name": "consensus_key",
+          "type_info": "Bytea"
+        },
+        {
+          "ordinal": 11,
+          "name": "sequence_number",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "8195450f9f1cedf05eebd974adbdc42dc70a8e2abb7753d7b02cba03786bee0d": {
     "query": "SELECT denom, asset_id FROM assets",
     "describe": {
@@ -320,6 +639,18 @@
         false,
         false
       ]
+    }
+  },
+  "89bf53aa2587b0bdb4f4937cfa9954795e8dd5f319c860d6648ceaa3ee8c7f9d": {
+    "query": "DELETE FROM quarantined_notes WHERE note_commitment = $1",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea"
+        ]
+      },
+      "nullable": []
     }
   },
   "8c67c25c88aef9780fb468fde0efc219247511c20f13c9e1fc0545fddf7d485c": {
@@ -354,6 +685,21 @@
       ]
     }
   },
+  "8cebe8bcfaf7f95630c0051b5ddc3806c1ab6347f9d3ae83d54982df0318c0e0": {
+    "query": "UPDATE validators SET validator_state=$2, voting_power=$3, unbonding_epoch=$4 WHERE identity_key = $1",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bytea",
+          "Varchar",
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "9024aaa179b92038a276abd92a8f20b3a28133ea8435c1d4d9ae4bc3ec31158a": {
     "query": "SELECT height, nct_anchor AS \"nct_anchor: merkle::Root\", app_hash FROM blocks ORDER BY height DESC LIMIT 1",
     "describe": {
@@ -384,20 +730,6 @@
       ]
     }
   },
-  "93feb93510c2e7af67c6acca10977051fb38adf51f146f1fbc6c145fe41ecd0d": {
-    "query": "INSERT INTO assets (asset_id, denom, total_supply) VALUES ($1, $2, $3) ON CONFLICT (asset_id) DO UPDATE SET denom=$2, total_supply=$3",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea",
-          "Varchar",
-          "Int8"
-        ]
-      },
-      "nullable": []
-    }
-  },
   "9ab28d6b1cdbe8fd02e4382ab9cf5a2fa2914aaf460020977aeadfb8818c70af": {
     "query": "INSERT INTO base_rates VALUES ($1, $2, $3)",
     "describe": {
@@ -407,19 +739,6 @@
           "Int8",
           "Int8",
           "Int8"
-        ]
-      },
-      "nullable": []
-    }
-  },
-  "9e7ef6d0442bbacb5512b78c47e9bb222cecf14a4e3a3dd4530e2a6ad420b591": {
-    "query": "\n                INSERT INTO jmt (key, value) VALUES ($1, $2)\n                ",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea",
-          "Bytea"
         ]
       },
       "nullable": []
@@ -478,44 +797,6 @@
         ]
       },
       "nullable": []
-    }
-  },
-  "ba507b5c58a391df95f9bfac4985ab63e799383309e17717fbcb1f5e4f6ca936": {
-    "query": "SELECT value FROM jmt WHERE key = $1 LIMIT 1",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "value",
-          "type_info": "Bytea"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Bytea"
-        ]
-      },
-      "nullable": [
-        false
-      ]
-    }
-  },
-  "bf52f1b1ec94ff12c0d86fe2021370784dd9de97ad2bea79856aa624444fa142": {
-    "query": "SELECT true",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "bool",
-          "type_info": "Bool"
-        }
-      ],
-      "parameters": {
-        "Left": []
-      },
-      "nullable": [
-        null
-      ]
     }
   },
   "c0838e2487bc88b229fe4b5ab786b11780d5196f3e88a5281e7a409171fe4734": {
@@ -600,38 +881,27 @@
       "nullable": []
     }
   },
-  "e57d8617299261390fc7448d3bfda816a5b2bbdf7cb03c0f76af7da9f26743ba": {
-    "query": "INSERT INTO validator_rates VALUES ($1, $2, $3, $4)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Bytea",
-          "Int8",
-          "Int8",
-          "Int8"
-        ]
-      },
-      "nullable": []
-    }
-  },
-  "ebeb8d290f5ee97174d57b70ea2898a0e259573fa3cad6158779158092e771a0": {
-    "query": "SELECT key, value FROM jmt ORDER BY key DESC LIMIT 1",
+  "e4a933931ef751ddebcffc649efe21929b949c314284f8615b03086cd90d00e0": {
+    "query": "SELECT validator_identity_key, nullifier\n            FROM quarantined_nullifiers\n            WHERE\n                unbonding_height <= $1 AND\n                ($2 OR validator_identity_key = ANY($3))",
     "describe": {
       "columns": [
         {
           "ordinal": 0,
-          "name": "key",
+          "name": "validator_identity_key",
           "type_info": "Bytea"
         },
         {
           "ordinal": 1,
-          "name": "value",
+          "name": "nullifier",
           "type_info": "Bytea"
         }
       ],
       "parameters": {
-        "Left": []
+        "Left": [
+          "Int8",
+          "Bool",
+          "ByteaArray"
+        ]
       },
       "nullable": [
         false,
@@ -639,8 +909,8 @@
       ]
     }
   },
-  "f364b8966b90d430a23cf88f17589aa9120d5dfbb76c52755ad580436f95580a": {
-    "query": "UPDATE validators SET voting_power=$1 WHERE identity_key = $2",
+  "eca39471e16fffd8bd3d3a46f12b3396ef6a5825868d3b9d01df9e5367782d8c": {
+    "query": "UPDATE validators SET voting_power=$1 WHERE identity_key=$2",
     "describe": {
       "columns": [],
       "parameters": {
@@ -652,42 +922,18 @@
       "nullable": []
     }
   },
-  "f9bdaf15db286fffdd144af22f833b3adb6335c3174078e824182d8374a64f88": {
-    "query": "SELECT identity_key, epoch, validator_reward_rate, validator_exchange_rate\n            FROM validator_rates\n            WHERE epoch = $1",
+  "ee07e754a702a84da70bea0035c4a950779a6c1b9b77f1b2bcfeb46dc1e64b95": {
+    "query": "UPDATE validator_rates SET validator_exchange_rate=$1 WHERE identity_key=$2 AND epoch=$3",
     "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "identity_key",
-          "type_info": "Bytea"
-        },
-        {
-          "ordinal": 1,
-          "name": "epoch",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 2,
-          "name": "validator_reward_rate",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 3,
-          "name": "validator_exchange_rate",
-          "type_info": "Int8"
-        }
-      ],
+      "columns": [],
       "parameters": {
         "Left": [
+          "Int8",
+          "Bytea",
           "Int8"
         ]
       },
-      "nullable": [
-        false,
-        false,
-        false,
-        false
-      ]
+      "nullable": []
     }
   },
   "feb219cf82779306d199c5f733359b2cafd5ab51fca03922a9e73c3a4ff44bf7": {
