@@ -50,7 +50,7 @@ impl Tree {
             };
         }
 
-        for height in leaf_height + 1..=leaf_height + 8 + 1 {
+        for height in leaf_height + 1..=leaf_height + 8 {
             let mut new_forest =
                 Vec::with_capacity(forest.len() / 4 + if forest.len() % 4 == 0 { 0 } else { 1 });
             while !forest.is_empty() {
