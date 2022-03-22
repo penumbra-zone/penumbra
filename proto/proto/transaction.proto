@@ -2,6 +2,7 @@ syntax = "proto3";
 package penumbra.transaction;
 
 import "stake.proto";
+import "ibc.proto";
 
 // A Penumbra transaction.
 message Transaction {
@@ -33,6 +34,7 @@ message Action {
     stake.Delegate delegate = 3;
     stake.Undelegate undelegate = 4;
     stake.ValidatorDefinition validator_definition = 5;
+    ibc.IBCAction ibc_action = 6;
   }
 }
 

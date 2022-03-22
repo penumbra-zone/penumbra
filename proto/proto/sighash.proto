@@ -3,6 +3,7 @@ package penumbra.sighash;
 
 import "transaction.proto";
 import "stake.proto";
+import "ibc.proto";
 
 // The content of a transaction, except for authorization signatures, for use
 // as a sighash input.
@@ -30,5 +31,6 @@ message SigHashAction {
     stake.Delegate delegate = 3;
     stake.Undelegate undelegate = 4;
     stake.ValidatorDefinition validator_definition = 5;
+    ibc.IBCAction ibc_action = 6;
   }
 }

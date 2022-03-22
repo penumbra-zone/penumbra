@@ -13,6 +13,7 @@ members = [
   "pd",
   "pcli",
   "tct",
+  "ibc",
 ]
 
 [patch.crates-io]

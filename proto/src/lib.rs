@@ -86,6 +86,7 @@ pub mod sighash {
                     body: Some(spend_body),
                     ..
                 })) => Some(SHAction::Spend(spend_body)),
+                Some(TxAction::IbcAction(i)) => Some(SHAction::IbcAction(i)),
                 None => None,
             };
             Self { action }
