@@ -4,7 +4,7 @@ use jmt::{RootHash, Version};
 use penumbra_transaction::Transaction;
 use tendermint::abci;
 
-use super::{Component, Overlay, ShieldedPool};
+use super::{Component, IBCComponent, Overlay, ShieldedPool};
 use crate::{genesis, Storage};
 
 /// The Penumbra application, written as a bundle of [`Component`]s.
@@ -20,6 +20,7 @@ pub struct App {
     // leaves open the possibility of having component-specific
     // behavior and is simpler.
     shielded_pool: ShieldedPool,
+    ibc: IBCComponent,
 }
 
 impl App {
@@ -33,6 +34,7 @@ impl App {
         let (root_hash, version) = self.overlay.lock().unwrap().commit(storage).await?;
         // Now re-instantiate all of the components:
         self.shielded_pool = ShieldedPool::new(self.overlay.clone());
+        self.ibc = IBCComponent::new(self.overlay.clone());
 
         Ok((root_hash, version))
     }
@@ -42,37 +44,45 @@ impl App {
 impl Component for App {
     fn new(overlay: Overlay) -> Self {
         let shielded_pool = ShieldedPool::new(overlay.clone());
+        let ibc = IBCComponent::new(overlay.clone());
 
         Self {
             overlay,
             shielded_pool,
+            ibc,
         }
     }
 
     fn init_chain(&self, app_state: &genesis::AppState) {
         self.shielded_pool.init_chain(app_state);
+        self.ibc.init_chain(app_state);
     }
 
     async fn begin_block(&self, begin_block: &abci::request::BeginBlock) {
         self.shielded_pool.begin_block(begin_block).await;
+        self.ibc.begin_block(begin_block).await;
     }
 
     fn check_tx_stateless(tx: &Transaction) -> Result<()> {
         ShieldedPool::check_tx_stateless(tx)?;
+        IBCComponent::check_tx_stateless(tx)?;
         Ok(())
     }
 
     async fn check_tx_stateful(&self, tx: &Transaction) -> Result<()> {
         self.shielded_pool.check_tx_stateful(tx).await?;
+        self.ibc.check_tx_stateful(tx).await?;
         Ok(())
     }
 
     async fn execute_tx(&self, tx: &Transaction) {
         self.shielded_pool.execute_tx(tx).await;
+        self.ibc.execute_tx(tx).await;
     }
 
     async fn end_block(&self, end_block: &abci::request::EndBlock) {
         // TODO: should these calls be in reverse order from begin_block?
         self.shielded_pool.end_block(end_block).await;
+        self.ibc.end_block(end_block).await;
     }
 }

@@ -10,6 +10,7 @@ decaf377-fmd = { path = "../decaf377-fmd/" }
 penumbra-proto = { path = "../proto/" }
 penumbra-crypto = { path = "../crypto/" }
 penumbra-stake = { path = "../stake/" }
+penumbra-ibc = { path = "../ibc/" }
 
 # Git deps
 ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
