@@ -47,6 +47,8 @@ services:
       # Use the dev Dockerfile which has better cacheing and doesn't use the release
       # target
       dockerfile: Dockerfile.dev
+    volumes:
+      - ~/scratch/testnet_build/node1/pd:/pd
     command: pd start --host 0.0.0.0 --database-uri
       postgres://postgres:postgres@db-node1/penumbra -r /pd/rocksdb
     depends_on:

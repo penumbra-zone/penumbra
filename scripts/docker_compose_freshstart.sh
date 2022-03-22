@@ -27,7 +27,8 @@ mkdir -p ${build_path}
 docker-compose stop
 docker container prune -f
 docker volume rm penumbra_prometheus_data || true
-docker volume rm penumbra_db_data || true
+docker volume rm penumbra_db_node1_data || true
+docker volume rm penumbra_db_node0_data || true
 
 # The db container must be running for pd build to succeed
 docker-compose up -d db-node0

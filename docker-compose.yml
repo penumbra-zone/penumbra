@@ -45,6 +45,8 @@ services:
       context: .
     environment:
       - RUST_LOG=${RUST_LOG:-warn,pd=info,penumbra=info}
+    volumes:
+      - ~/scratch/testnet_build/node1/pd:/pd
     command: pd start --host 0.0.0.0 --database-uri
       postgres://postgres:postgres@db-node1/penumbra -r /pd/rocksdb
     restart: on-failure
@@ -64,7 +66,7 @@ services:
       - "27656:26656"
       - "27657:26657"
     volumes:
-      - ~/scratch/testnet_build/node1:/tendermint
+      - ~/scratch/testnet_build/node1/tendermint:/tendermint
     command: start --proxy-app=tcp://pd-node1:26658
     environment:
       - ID=1
