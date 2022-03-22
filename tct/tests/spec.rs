@@ -8,9 +8,6 @@ pub enum Tree {
     Leaf {
         hash: Hash,
     },
-    Subtree {
-        subtree: Box<Tree>,
-    },
 }
 
 impl Tree {
@@ -18,7 +15,6 @@ impl Tree {
         match self {
             Tree::Node { hash, .. } => *hash,
             Tree::Leaf { hash, .. } => *hash,
-            Tree::Subtree { subtree, .. } => subtree.hash(),
         }
     }
 
