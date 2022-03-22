@@ -64,7 +64,7 @@ enum Command {
     /// testnet based on input configuration.
     GenerateTestnet {
         /// How many validator nodes to create configuration for.
-        #[structopt(long, default_value = "4")]
+        #[structopt(long, default_value = "2")]
         num_validator_nodes: usize,
         /// Number of blocks per epoch.
         #[structopt(long, default_value = "40")]
@@ -283,7 +283,7 @@ async fn main() -> anyhow::Result<()> {
 
             // Parse validators from input file or default to latest testnet validators computed in
             // the build script
-            let validators = if let Some(validators_input_file) = validators_input_file {
+            let testnet_validators = if let Some(validators_input_file) = validators_input_file {
                 let validators_file = File::open(&validators_input_file)
                     .with_context(|| format!("cannot open file {:?}", validators_input_file))?;
                 parse_validators(validators_file).with_context(|| {
@@ -370,25 +370,11 @@ async fn main() -> anyhow::Result<()> {
                     Ipv4Addr::new(a[0], a[1], a[2], a[3] + (10 * i as u8))
                 })
                 .collect::<Vec<_>>();
-
-            for (n, vk) in validator_keys.iter().enumerate() {
-                let node_name = format!("node{}", n);
-
-                let app_state = genesis::AppState {
-                    allocations: allocations.clone(),
-                    chain_params: ChainParams {
-                        chain_id: chain_id.clone(),
-                        epoch_duration,
-                        unbonding_epochs,
-                        active_validator_limit,
-                        slashing_penalty,
-                        ibc_enabled: false,
-                        inbound_ics20_transfers_enabled: false,
-                        outbound_ics20_transfers_enabled: false,
-                    },
-                    validators: validators
+            let validators = testnet_validators
                         .iter()
-                        .map(|v| {
+                        .enumerate()
+                        .map(|(i, v)| {
+                            let vk = &validator_keys[i];
                             Ok(ValidatorPower {
                                 validator: Validator {
                                     // Currently there's no way to set validator keys beyond
@@ -420,7 +406,23 @@ async fn main() -> anyhow::Result<()> {
                                 power: v.voting_power.into(),
                             })
                         })
-                        .collect::<Result<Vec<ValidatorPower>,anyhow::Error>>()?,
+                        .collect::<Result<Vec<ValidatorPower>,anyhow::Error>>()?;
+            for (n, vk) in validator_keys.iter().enumerate() {
+                let node_name = format!("node{}", n);
+
+                let app_state = genesis::AppState {
+                    allocations: allocations.clone(),
+                    chain_params: ChainParams {
+                        chain_id: chain_id.clone(),
+                        epoch_duration,
+                        unbonding_epochs,
+                        active_validator_limit,
+                        slashing_penalty,
+                        ibc_enabled: false,
+                        inbound_ics20_transfers_enabled: false,
+                        outbound_ics20_transfers_enabled: false,
+                    },
+                    validators: validators.clone(),
                 };
 
                 // Create the directory for this node
