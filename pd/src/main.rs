@@ -499,7 +499,8 @@ async fn main() -> anyhow::Result<()> {
                 // Note that this isn't a re-implementation of the `Config` type from
                 // Tendermint (https://github.com/tendermint/tendermint/blob/6291d22f46f4c4f9121375af700dbdafa51577e7/config/config.go#L92)
                 // so if they change their defaults or the available fields, that won't be reflected in our template.
-                let tm_config = generate_tm_config(&node_name, &ip_addrs);
+                let pubkey = vk.validator_cons_pk;
+                let tm_config = generate_tm_config(&node_name, &ip_addrs, &pubkey);
                 let mut config_file_path = node_config_dir.clone();
                 config_file_path.push("config.toml");
                 println!(
