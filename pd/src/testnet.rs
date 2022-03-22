@@ -69,12 +69,14 @@ pub fn generate_tm_config(node_name: &str, persistent_peers: &[std::net::Ipv4Add
     let peers_string = persistent_peers
         .iter()
         .map(ToString::to_string)
+        // TODO: not sure what this "user" ID implies -- stole it from the tests
+        // the peer addresses need to match this impl: https://github.com/tendermint/tendermint/blob/f2a8f5e054cf99ebe246818bb6d71f41f9a30faa/internal/p2p/address.go#L43
+        .map(|s| format!("00112233445566778899aabbccddeeff00112233@{}", s))
         .collect::<Vec<String>>()
         .join(",");
     format!(
         include_str!("../../testnets/tm_config_template.toml"),
-        node_name,
-        peers_string,
+        node_name, peers_string,
     )
 }
 
