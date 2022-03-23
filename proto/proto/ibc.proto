@@ -2,6 +2,7 @@ syntax = "proto3";
 
 import "ibc/core/connection/v1/tx.proto";
 import "ibc/core/channel/v1/tx.proto";
+import "ibc/core/client/v1/tx.proto";
 
 package penumbra.ibc;
 
@@ -21,5 +22,10 @@ message IBCAction {
       .ibc.core.channel.v1.MsgRecvPacket recvPacket = 10;
       .ibc.core.channel.v1.MsgTimeout timeout = 11;
       .ibc.core.channel.v1.MsgAcknowledgement acknowledgement = 12;
+
+      .ibc.core.client.v1.MsgCreateClient createClient = 13;
+      .ibc.core.client.v1.MsgUpdateClient updateClient = 14;
+      .ibc.core.client.v1.MsgUpgradeClient upgradeClient = 15;
+      .ibc.core.client.v1.MsgSubmitMisbehaviour submitMisbehaviour = 16;
   }
 }
