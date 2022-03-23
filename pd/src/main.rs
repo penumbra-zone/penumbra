@@ -236,7 +236,7 @@ async fn main() -> anyhow::Result<()> {
             use pd::{genesis, genesis::ValidatorPower, testnet::*};
             use penumbra_crypto::Address;
             use penumbra_stake::IdentityKey;
-            use tendermint::{account::Id, public_key::Algorithm, Genesis, Time};
+            use tendermint::{account::Id, node, public_key::Algorithm, Genesis, Time};
             use tendermint_config::{NodeKey, PrivValidatorKey};
 
             assert!(
@@ -501,16 +501,21 @@ async fn main() -> anyhow::Result<()> {
                 // Note that this isn't a re-implementation of the `Config` type from
                 // Tendermint (https://github.com/tendermint/tendermint/blob/6291d22f46f4c4f9121375af700dbdafa51577e7/config/config.go#L92)
                 // so if they change their defaults or the available fields, that won't be reflected in our template.
-                let pubkey = vk.validator_cons_pk;
+                // TODO: grab all peer pubkeys instead of self pubkey
                 let my_ip = &ip_addrs[n];
                 // Each node should include only the IPs for *other* nodes in their peers list.
                 let ips_minus_mine = ip_addrs
                     .iter()
                     .enumerate()
                     .filter(|(_, p)| *p != my_ip)
-                    .map(|(_, ip)| *ip)
+                    .map(|(n, ip)| {
+                        (
+                            node::Id::from(validator_keys[n].node_key_pk.ed25519().unwrap()),
+                            *ip,
+                        )
+                    })
                     .collect::<Vec<_>>();
-                let tm_config = generate_tm_config(&node_name, &ips_minus_mine, &pubkey);
+                let tm_config = generate_tm_config(&node_name, &ips_minus_mine);
                 let mut config_file_path = node_config_dir.clone();
                 config_file_path.push("config.toml");
                 println!(

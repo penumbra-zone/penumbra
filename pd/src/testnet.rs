@@ -7,7 +7,7 @@ use rand::Rng;
 use rand_core::OsRng;
 use regex::{Captures, Regex};
 use serde::{de, Deserialize};
-use tendermint::{account::Id, PrivateKey, PublicKey};
+use tendermint::{node::Id, PrivateKey, PublicKey};
 
 use crate::genesis;
 
@@ -69,21 +69,18 @@ where
 /// this seemed more straightforward as only the moniker is changed right now.
 pub fn generate_tm_config(
     node_name: &str,
-    persistent_peers: &[std::net::Ipv4Addr],
-    pubkey: &PublicKey,
+    persistent_peers: &[(Id, std::net::Ipv4Addr)],
 ) -> String {
-    let id = Id::from(pubkey.ed25519().unwrap());
-
     let peers_string = persistent_peers
         .iter()
-        .map(ToString::to_string)
         // https://docs.tendermint.com/master/spec/p2p/peer.html#peer-identity
         // Tendermint peers are expected to maintain long-term persistent identities
         // in the form of a public key. Each peer has an ID defined as
         // peer.ID == peer.PubKey.Address(), where Address uses the scheme defined in
         // crypto package.
         // the peer addresses need to match this impl: https://github.com/tendermint/tendermint/blob/f2a8f5e054cf99ebe246818bb6d71f41f9a30faa/internal/p2p/address.go#L43
-        .map(|s| format!("{}@{}", id, s))
+        // The ID is for the node being connected to, *not* the connecting node's ID.
+        .map(|(id, ip)| format!("{}@{}:26656", id, ip))
         .collect::<Vec<String>>()
         .join(",");
     format!(
