@@ -502,7 +502,15 @@ async fn main() -> anyhow::Result<()> {
                 // Tendermint (https://github.com/tendermint/tendermint/blob/6291d22f46f4c4f9121375af700dbdafa51577e7/config/config.go#L92)
                 // so if they change their defaults or the available fields, that won't be reflected in our template.
                 let pubkey = vk.validator_cons_pk;
-                let tm_config = generate_tm_config(&node_name, &ip_addrs, &pubkey);
+                let my_ip = &ip_addrs[n];
+                // Each node should include only the IPs for *other* nodes in their peers list.
+                let ips_minus_mine = ip_addrs
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, p)| *p != my_ip)
+                    .map(|(_, ip)| *ip)
+                    .collect::<Vec<_>>();
+                let tm_config = generate_tm_config(&node_name, &ips_minus_mine, &pubkey);
                 let mut config_file_path = node_config_dir.clone();
                 config_file_path.push("config.toml");
                 println!(
