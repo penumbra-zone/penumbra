@@ -28,6 +28,12 @@ pub type Path = (Position, Vec<note::Commitment>);
 #[serde(try_from = "pb::MerkleRoot", into = "pb::MerkleRoot")]
 pub struct Root(pub Fq);
 
+impl std::fmt::Display for Root {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&hex::encode(&self.0.to_bytes()))
+    }
+}
+
 impl TryFrom<pb::MerkleRoot> for Root {
     type Error = anyhow::Error;
 

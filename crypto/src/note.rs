@@ -375,6 +375,12 @@ impl TryFrom<pb::NoteCommitment> for Commitment {
     }
 }
 
+impl std::fmt::Display for Commitment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&hex::encode(&self.0.to_bytes()[..]))
+    }
+}
+
 impl std::fmt::Debug for Commitment {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!(
