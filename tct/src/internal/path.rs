@@ -108,6 +108,8 @@ impl WhichWay {
     }
 
     /// Given a 3-element array, insert an item into the array in the place indicated by the [`WhichWay`].
+    ///
+    /// This is the inverse of [`WhichWay::pick`].
     #[inline]
     pub fn insert<T>(&self, item: T, siblings: [T; 3]) -> [T; 4] {
         use WhichWay::*;
@@ -120,6 +122,22 @@ impl WhichWay {
         ) = (self, item, siblings);
 
         [leftmost, left, right, rightmost]
+    }
+
+    /// Given a 4-element array, pick out the item in the array indicated by the [`WhichWay`], and
+    /// pair it with all the others, in the order they occurred.
+    ///
+    /// This is the inverse of [`WhichWay::insert`].
+    #[inline]
+    pub fn pick<T>(&self, siblings: [T; 4]) -> (T, [T; 3]) {
+        use WhichWay::*;
+
+        let ((Leftmost, [picked, a, b, c])
+        | (Left, [a, picked, b, c])
+        | (Right, [a, b, picked, c])
+        | (Rightmost, [a, b, c, picked])) = (self, siblings);
+
+        (picked, [a, b, c])
     }
 }
 
