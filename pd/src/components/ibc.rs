@@ -12,15 +12,15 @@ pub struct IBCComponent {
 
 #[async_trait]
 impl Component for IBCComponent {
-    fn new(overlay: Overlay) -> Self {
-        Self { overlay }
+    async fn new(overlay: Overlay) -> Result<Self> {
+        Ok(Self { overlay })
     }
 
-    fn init_chain(&self, _app_state: &genesis::AppState) {
+    fn init_chain(&mut self, _app_state: &genesis::AppState) -> Result<()> {
         todo!()
     }
 
-    async fn begin_block(&self, _begin_block: &abci::request::BeginBlock) {
+    async fn begin_block(&mut self, _begin_block: &abci::request::BeginBlock) -> Result<()> {
         todo!()
     }
 
@@ -32,11 +32,11 @@ impl Component for IBCComponent {
         todo!()
     }
 
-    async fn execute_tx(&self, _tx: &Transaction) {
+    async fn execute_tx(&mut self, _tx: &Transaction) -> Result<()> {
         todo!()
     }
 
-    async fn end_block(&self, _end_block: &abci::request::EndBlock) {
+    async fn end_block(&mut self, _end_block: &abci::request::EndBlock) -> Result<()> {
         todo!()
     }
 }
