@@ -6,8 +6,10 @@ use penumbra_tct::{
     Commitment, Position, Proof,
 };
 
+type Tier<T> = VecDeque<Insert<T>>;
+
 pub struct Builder {
-    tiers: VecDeque<Insert<VecDeque<Insert<VecDeque<Commitment>>>>>,
+    tiers: Tier<Tier<Tier<Commitment>>>,
 }
 
 pub struct Eternity {
@@ -32,8 +34,14 @@ impl Builder {
 }
 
 pub enum Tree {
-    Node { hash: Hash, children: Vec<Tree> },
-    Leaf { hash: Hash, commitment: Commitment },
+    Node {
+        hash: Hash,
+        children: Vec<Tree>,
+    },
+    Leaf {
+        hash: Hash,
+        commitment: Option<Commitment>,
+    },
 }
 
 impl Tree {
@@ -46,7 +54,7 @@ impl Tree {
     }
 
     /// Construct an entire tree from three nested tiers.
-    fn from_tiers(tiers: VecDeque<Insert<VecDeque<Insert<VecDeque<Commitment>>>>>) -> Tree {
+    fn from_tiers(tiers: Tier<Tier<Tier<Commitment>>>) -> Tree {
         use Tree::*;
 
         let forest = tiers
@@ -67,9 +75,15 @@ impl Tree {
                             Insert::Keep(block) => {
                                 let forest = block
                                     .into_iter()
-                                    .map(|commitment| Leaf {
-                                        hash: Hash::of(commitment),
-                                        commitment,
+                                    .map(|insert_commitment| match insert_commitment {
+                                        Insert::Hash(hash) => Leaf {
+                                            hash,
+                                            commitment: None,
+                                        },
+                                        Insert::Keep(commitment) => Leaf {
+                                            hash: Hash::of(commitment),
+                                            commitment: Some(commitment),
+                                        },
                                     })
                                     .collect();
                                 Tree::from_tier(0, forest)
@@ -151,13 +165,24 @@ impl Tree {
         fn index_onto(tree: &Tree, index_here: u64, index: &mut HashedMap<Commitment, Position>) {
             use Tree::*;
             match tree {
-                Leaf { commitment, .. } => {
+                Leaf {
+                    commitment: None, ..
+                } => {
+                    // Commitment was not witnessed, so we can't index it
+                }
+                Leaf {
+                    commitment: Some(commitment),
+                    ..
+                } => {
+                    // Commitment was witnessed, so index it
                     index.insert(*commitment, index_here.into());
                 }
                 Node { children, .. } => {
+                    // Index each child of the node
                     for (i, child) in children.iter().enumerate() {
                         // Index of child node is (4 * index of parent) + {0,1,2,3}
                         let index_here = (index_here << 2) | (i as u64);
+                        // Recursively index the child
                         index_onto(child, index_here, index);
                     }
                 }
