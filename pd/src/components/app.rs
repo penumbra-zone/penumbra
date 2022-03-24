@@ -5,7 +5,7 @@ use penumbra_transaction::Transaction;
 use tendermint::abci;
 
 use super::{Component, IBCComponent, Overlay, ShieldedPool};
-use crate::{genesis, Storage};
+use crate::{genesis, Storage, WriteOverlayExt};
 
 /// The Penumbra application, written as a bundle of [`Component`]s.
 ///
@@ -54,6 +54,9 @@ impl Component for App {
     }
 
     async fn init_chain(&mut self, app_state: &genesis::AppState) -> Result<()> {
+        self.overlay
+            .put_domain(b"genesis/app_state".into(), app_state.clone())
+            .await;
         self.shielded_pool.init_chain(app_state).await?;
         self.ibc.init_chain(app_state).await?;
         Ok(())
