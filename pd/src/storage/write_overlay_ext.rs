@@ -20,7 +20,7 @@ pub trait WriteOverlayExt {
         <D as TryFrom<P>>::Error: Into<anyhow::Error>;
 
     /// Puts a domain type into the overlay, using the proto encoding.
-    fn put_domain<D, P>(&self, key: KeyHash, value: D) -> Result<Option<D>>
+    fn put_domain<D, P>(&self, key: KeyHash, value: D)
     where
         D: Protobuf<P> + Send,
         // TODO: does this get less awful if P is an associated type of D?
@@ -41,7 +41,7 @@ pub trait WriteOverlayExt {
     ///
     /// It's probably preferable to use [`WriteOverlayExt::put_domain`] instead,
     /// but there are cases where it's convenient to use the proto directly.
-    fn put_proto<P>(&self, key: KeyHash, value: P) -> Result<Option<P>>
+    fn put_proto<P>(&self, key: KeyHash, value: P)
     where
         P: Message;
 }
@@ -60,7 +60,7 @@ impl<R: TreeReader + Sync> WriteOverlayExt for Arc<Mutex<WriteOverlay<R>>> {
         todo!()
     }
 
-    fn put_domain<D, P>(&self, _key: KeyHash, _value: D) -> Result<Option<D>>
+    fn put_domain<D, P>(&self, _key: KeyHash, _value: D)
     where
         D: Protobuf<P>,
         // TODO: does this get less awful if P is an associated type of D?
@@ -79,7 +79,7 @@ impl<R: TreeReader + Sync> WriteOverlayExt for Arc<Mutex<WriteOverlay<R>>> {
         todo!()
     }
 
-    fn put_proto<P>(&self, _key: KeyHash, _value: P) -> Result<Option<P>>
+    fn put_proto<P>(&self, _key: KeyHash, _value: P)
     where
         P: Message,
     {
