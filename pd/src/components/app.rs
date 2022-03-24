@@ -33,8 +33,8 @@ impl App {
         // Commit the pending writes, clearing the overlay.
         let (root_hash, version) = self.overlay.lock().unwrap().commit(storage).await?;
         // Now re-instantiate all of the components:
-        self.shielded_pool = ShieldedPool::new(self.overlay.clone());
-        self.ibc = IBCComponent::new(self.overlay.clone());
+        self.shielded_pool = ShieldedPool::new(self.overlay.clone()).await?;
+        self.ibc = IBCComponent::new(self.overlay.clone()).await?;
 
         Ok((root_hash, version))
     }
@@ -42,25 +42,27 @@ impl App {
 
 #[async_trait]
 impl Component for App {
-    fn new(overlay: Overlay) -> Self {
-        let shielded_pool = ShieldedPool::new(overlay.clone());
-        let ibc = IBCComponent::new(overlay.clone());
+    async fn new(overlay: Overlay) -> Result<Self> {
+        let shielded_pool = ShieldedPool::new(overlay.clone()).await?;
+        let ibc = IBCComponent::new(overlay.clone()).await?;
 
-        Self {
+        Ok(Self {
             overlay,
             shielded_pool,
             ibc,
-        }
+        })
     }
 
-    fn init_chain(&self, app_state: &genesis::AppState) {
-        self.shielded_pool.init_chain(app_state);
-        self.ibc.init_chain(app_state);
+    fn init_chain(&mut self, app_state: &genesis::AppState) -> Result<()> {
+        self.shielded_pool.init_chain(app_state)?;
+        self.ibc.init_chain(app_state)?;
+        Ok(())
     }
 
-    async fn begin_block(&self, begin_block: &abci::request::BeginBlock) {
-        self.shielded_pool.begin_block(begin_block).await;
-        self.ibc.begin_block(begin_block).await;
+    async fn begin_block(&mut self, begin_block: &abci::request::BeginBlock) -> Result<()> {
+        self.shielded_pool.begin_block(begin_block).await?;
+        self.ibc.begin_block(begin_block).await?;
+        Ok(())
     }
 
     fn check_tx_stateless(tx: &Transaction) -> Result<()> {
@@ -75,14 +77,16 @@ impl Component for App {
         Ok(())
     }
 
-    async fn execute_tx(&self, tx: &Transaction) {
-        self.shielded_pool.execute_tx(tx).await;
-        self.ibc.execute_tx(tx).await;
+    async fn execute_tx(&mut self, tx: &Transaction) -> Result<()> {
+        self.shielded_pool.execute_tx(tx).await?;
+        self.ibc.execute_tx(tx).await?;
+        Ok(())
     }
 
-    async fn end_block(&self, end_block: &abci::request::EndBlock) {
+    async fn end_block(&mut self, end_block: &abci::request::EndBlock) -> Result<()> {
         // TODO: should these calls be in reverse order from begin_block?
-        self.shielded_pool.end_block(end_block).await;
-        self.ibc.end_block(end_block).await;
+        self.shielded_pool.end_block(end_block).await?;
+        self.ibc.end_block(end_block).await?;
+        Ok(())
     }
 }

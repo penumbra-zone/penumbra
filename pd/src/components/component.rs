@@ -63,12 +63,12 @@ use crate::genesis;
 /// └────────────┘                                                  
 /// ```
 #[async_trait]
-pub trait Component {
+pub trait Component: Sized {
     /// Initializes the component relative to a shared state.
     ///
     /// This method should be called every time the [`WriteOverlay`] is
     /// re-initialized.
-    fn new(overlay: Overlay) -> Self;
+    async fn new(overlay: Overlay) -> Result<Self>;
 
     /// Performs initialization, given the genesis state.
     ///
@@ -80,7 +80,7 @@ pub trait Component {
     ///
     /// This method should only be called immediately after [`Component::new`].
     /// No methods should be called following this method.
-    fn init_chain(&self, app_state: &genesis::AppState);
+    fn init_chain(&mut self, app_state: &genesis::AppState) -> Result<()>;
 
     /// Begins a new block, optionally inspecting the ABCI
     /// [`BeginBlock`](abci::request::BeginBlock) request.
@@ -90,7 +90,7 @@ pub trait Component {
     /// This method should only be called immediately after [`Component::new`].
     /// This method need not be called before [`Component::execute_tx`] (e.g.,
     /// in order to simulate executing a transaction in the mempool).
-    async fn begin_block(&self, begin_block: &abci::request::BeginBlock);
+    async fn begin_block(&mut self, begin_block: &abci::request::BeginBlock) -> Result<()>;
 
     /// Performs all of this component's stateless validity checks on the given
     /// [`Transaction`].
@@ -113,7 +113,7 @@ pub trait Component {
     /// This method should only be called immediately following a successful
     /// invocation of [`Component::check_tx_stateful`] on the same transaction.
     /// This method can be called before [`Component::begin_block`].
-    async fn execute_tx(&self, tx: &Transaction);
+    async fn execute_tx(&mut self, tx: &Transaction) -> Result<()>;
 
     /// Ends the block, optionally inspecting the ABCI
     /// [`EndBlock`](abci::request::EndBlock) request, and performing any batch
@@ -123,5 +123,5 @@ pub trait Component {
     ///
     /// This method should only be called after [`Component::begin_block`].
     /// No methods should be called following this method.
-    async fn end_block(&self, end_block: &abci::request::EndBlock);
+    async fn end_block(&mut self, end_block: &abci::request::EndBlock) -> Result<()>;
 }
