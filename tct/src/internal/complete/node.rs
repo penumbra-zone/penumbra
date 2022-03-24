@@ -134,37 +134,17 @@ impl<Child: GetHash + Witness> Witness for Node<Child> {
     fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Self::Item)> {
         let index = index.into();
 
-        let [a, b, c, d] = self.children();
-
         // Which way to go down the tree from this node
         let (which_way, index) = WhichWay::at(Self::Height::HEIGHT, index);
 
-        let (siblings, (child, leaf)) = match which_way {
-            WhichWay::Leftmost => (
-                // Siblings are the left, right, and rightmost children
-                [b, c, d].map(|x| x.hash()),
-                // Authentication path to the leftmost child
-                a.keep()?.witness(index)?,
-            ),
-            WhichWay::Left => (
-                // Siblings are the leftmost, right, and rightmost children
-                [a, c, d].map(|x| x.hash()),
-                // Authentication path to the left child
-                b.keep()?.witness(index)?,
-            ),
-            WhichWay::Right => (
-                // Siblings are the leftmost, left, and rightmost children
-                [a, b, d].map(|x| x.hash()),
-                // Authentication path to the right child
-                c.keep()?.witness(index)?,
-            ),
-            WhichWay::Rightmost => (
-                // Siblings are the leftmost, left, and right children
-                [a, b, c].map(|x| x.hash()),
-                // Authentication path to the rightmost child
-                d.keep()?.witness(index)?,
-            ),
-        };
+        // Select the child we should be witnessing
+        let (child, siblings) = which_way.pick(self.children());
+
+        // Hash all the other siblings
+        let siblings = siblings.map(|sibling| sibling.hash());
+
+        // Witness the selected child
+        let (child, leaf) = child.keep()?.witness(index)?;
 
         Some((path::Node { siblings, child }, leaf))
     }
