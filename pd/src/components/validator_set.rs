@@ -14,6 +14,7 @@ use penumbra_stake::{
     ValidatorState, ValidatorStateName, ValidatorStatus, VerifiedValidatorDefinition,
     STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
 };
+use serde::{Deserialize, Serialize};
 use sqlx::{query, Postgres, Transaction};
 use tendermint::{
     abci::types::{Evidence, ValidatorUpdate},
@@ -47,7 +48,7 @@ impl Cache {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BlockChanges {
     /// New validators added during the block. Saved and available for staking when the block is committed.
     pub new_validators: BTreeMap<IdentityKey, Vec<VerifiedValidatorDefinition>>,
@@ -251,7 +252,7 @@ impl BlockChanges {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EpochChanges {
     /// Base rates for the next epoch go here.
     pub next_base_rate: BaseRateData,
