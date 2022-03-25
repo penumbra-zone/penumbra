@@ -1,5 +1,6 @@
-//! The executable reference spec: a *non*-incremental, *non*-sparse commitment tree. **Don't use this
-//! in production code: it is slower, less flexible, and less type-safe.**
+//! The executable reference spec: a *non*-incremental, *non*-sparse commitment tree.
+//!
+//! ⚠️ Don't use this in production code: it is slower, less flexible, and less type-safe.
 //!
 //! This specification implements an almost-identical interface to the tiered commitment tree in the
 //! main crate. However, unlike the main crate, it separates the *construction* of trees from their
@@ -13,14 +14,18 @@
 use std::collections::VecDeque;
 
 pub mod block;
-pub use block::Block;
 pub mod epoch;
-pub use epoch::Epoch;
 pub mod eternity;
-pub use eternity::Eternity;
+#[doc(inline)]
+pub use {block::Block, epoch::Epoch, eternity::Eternity};
+
 mod error;
+pub mod simulate;
 mod tree;
 pub use error::InsertError;
+
+#[doc(inline)]
+pub use crate::internal::hash::Hash;
 
 /// The maximum capacity for any tier of the tree: 4^8 = 65,536.
 pub const TIER_CAPACITY: usize = 4usize.pow(8);
