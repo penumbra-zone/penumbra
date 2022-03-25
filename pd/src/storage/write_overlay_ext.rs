@@ -35,7 +35,7 @@ pub trait WriteOverlayExt {
     /// but there are cases where it's convenient to use the proto directly.
     async fn get_proto<P>(&self, key: KeyHash) -> Result<Option<P>>
     where
-        P: Message;
+        P: Message + Default;
 
     /// Puts a proto type into the overlay.
     ///
@@ -74,9 +74,12 @@ impl<R: TreeReader + Sync> WriteOverlayExt for Arc<Mutex<WriteOverlay<R>>> {
 
     async fn get_proto<P>(&self, key: KeyHash) -> Result<Option<P>>
     where
-        P: Message,
+        P: Message + Default,
     {
-        let bytes = match self.lock().unwrap().get(key).await? {
+        let s = self.lock().unwrap();
+        let b = s.get(key).await?;
+        drop(s);
+        let bytes = match b {
             None => return Ok(None),
             Some(bytes) => bytes,
         };
