@@ -1,3 +1,5 @@
+//! A specification of the behavior of [`Block`](crate::Block).
+
 use hash_hasher::HashedMap;
 
 use crate::{
@@ -10,6 +12,7 @@ use super::{tree::Tree, InsertError, Tier, TIER_CAPACITY};
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Builder {
+    /// The inner tiers of the builder.
     pub block: Tier<Commitment>,
 }
 
