@@ -8,11 +8,11 @@ use penumbra_tct::{
 
 use crate::InsertError;
 
-use super::{block, epoch, Tier, Tree};
+use super::{block, epoch, tree::Tree, Tier};
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Builder {
-    pub tiers: Tier<Tier<Tier<Commitment>>>,
+    pub eternity: Tier<Tier<Tier<Commitment>>>,
 }
 
 impl Builder {
@@ -26,31 +26,31 @@ impl Builder {
             Witness::Forget => Insert::Hash(Hash::of(commitment)),
         };
 
+        // Fail if eternity is full
+        if self.eternity.len() >= 4usize.pow(8) {
+            return Err(InsertError::Full);
+        }
+
         // Ensure eternity is not empty
-        if self.tiers.is_empty() {
-            // Fail if eternity is full
-            if self.tiers.len() >= 4usize.pow(8) {
-                return Err(InsertError::Full);
-            } else {
-                self.tiers.push_back(Insert::Keep(VecDeque::new()))
-            }
+        if self.eternity.is_empty() {
+            self.eternity.push_back(Insert::Keep(VecDeque::new()))
         }
 
         match self
-            .tiers
+            .eternity
             .back_mut()
             .expect("a new epoch is added if tiers are empty")
         {
             Insert::Hash(_) => Err(InsertError::EpochForgotten),
             Insert::Keep(epoch) => {
+                // Fail if epoch is full
+                if epoch.len() >= 4usize.pow(8) {
+                    return Err(InsertError::EpochFull);
+                }
+
                 // Ensure epoch is not empty
                 if epoch.is_empty() {
-                    // Fail if epoch is full
-                    if epoch.len() >= 4usize.pow(8) {
-                        return Err(InsertError::EpochFull);
-                    } else {
-                        epoch.push_back(Insert::Keep(VecDeque::new()));
-                    }
+                    epoch.push_back(Insert::Keep(VecDeque::new()));
                 }
 
                 match epoch
@@ -61,17 +61,17 @@ impl Builder {
                     Insert::Keep(block) => {
                         // Fail if block is full
                         if block.len() >= 4usize.pow(8) {
-                            Err(InsertError::BlockFull)
-                        } else {
-                            // Insert the item into the block
-                            block.push_back(insert);
-                            // Calculate the item's position
-                            let position = (block.len() as u64 - 1)
-                                | ((epoch.len() as u64 - 1) << 16)
-                                | ((self.tiers.len() as u64 - 1) << 32);
-                            // Return the position
-                            Ok(position.into())
+                            return Err(InsertError::BlockFull);
                         }
+
+                        // Insert the item into the block
+                        block.push_back(insert);
+                        // Calculate the item's position
+                        let position = (block.len() as u64 - 1)
+                            | ((epoch.len() as u64 - 1) << 16)
+                            | ((self.eternity.len() as u64 - 1) << 32);
+                        // Return the position
+                        Ok(position.into())
                     }
                 }
             }
@@ -80,7 +80,7 @@ impl Builder {
 
     pub fn forget(&mut self, commitment: Commitment) -> bool {
         let mut forgotten = false;
-        for insert_epoch in self.tiers.iter_mut() {
+        for insert_epoch in self.eternity.iter_mut() {
             if let Insert::Keep(epoch) = insert_epoch {
                 for insert_block in epoch.iter_mut() {
                     if let Insert::Keep(block) = insert_block {
@@ -100,75 +100,44 @@ impl Builder {
     }
 
     pub fn insert_block(&mut self, block: block::Builder) -> Result<(), InsertError> {
-        // Ensure eternity is not empty
-        if self.tiers.is_empty() {
-            // Fail if eternity is full
-            if self.tiers.len() >= 4usize.pow(8) {
-                return Err(InsertError::Full);
-            } else {
-                self.tiers.push_back(Insert::Keep(VecDeque::new()))
-            }
-        }
-
-        match self
-            .tiers
-            .back_mut()
-            .expect("a new epoch is added if tiers are empty")
-        {
-            Insert::Hash(_) => Err(InsertError::EpochForgotten),
-            Insert::Keep(epoch) => {
-                // Ensure epoch is not empty
-                if epoch.is_empty() {
-                    // Fail if epoch is full
-                    if epoch.len() >= 4usize.pow(8) {
-                        return Err(InsertError::EpochFull);
-                    } else {
-                        epoch.push_back(Insert::Keep(VecDeque::new()));
-                    }
-                }
-
-                // Insert the block root
-                if epoch.len() < 4usize.pow(8) {
-                    epoch.push_back(Insert::Keep(block.tiers));
-                    Ok(())
-                } else {
-                    Err(InsertError::EpochFull)
-                }
-            }
-        }
+        self.insert_block_or_root(Insert::Keep(block))
     }
 
     pub fn insert_block_root(&mut self, block_root: Hash) -> Result<(), InsertError> {
+        self.insert_block_or_root(Insert::Hash(block_root))
+    }
+
+    fn insert_block_or_root(&mut self, insert: Insert<block::Builder>) -> Result<(), InsertError> {
+        // Fail if eternity is full
+        if self.eternity.len() >= 4usize.pow(8) {
+            return Err(InsertError::Full);
+        }
+
         // Ensure eternity is not empty
-        if self.tiers.is_empty() {
-            // Fail if eternity is full
-            if self.tiers.len() >= 4usize.pow(8) {
-                return Err(InsertError::Full);
-            } else {
-                self.tiers.push_back(Insert::Keep(VecDeque::new()))
-            }
+        if self.eternity.is_empty() {
+            self.eternity.push_back(Insert::Keep(VecDeque::new()))
         }
 
         match self
-            .tiers
+            .eternity
             .back_mut()
             .expect("a new epoch is added if tiers are empty")
         {
             Insert::Hash(_) => Err(InsertError::EpochForgotten),
             Insert::Keep(epoch) => {
-                // Ensure epoch is not empty
-                if epoch.is_empty() {
-                    // Fail if epoch is full
-                    if epoch.len() >= 4usize.pow(8) {
-                        return Err(InsertError::EpochFull);
-                    } else {
-                        epoch.push_back(Insert::Keep(VecDeque::new()));
-                    }
+                // Fail if epoch is full
+                if epoch.len() >= 4usize.pow(8) {
+                    return Err(InsertError::EpochFull);
                 }
 
-                // Insert the block root
+                // Ensure epoch is not empty
+                if epoch.is_empty() {
+                    epoch.push_back(Insert::Keep(VecDeque::new()));
+                }
+
+                // Insert whatever is to be inserted
                 if epoch.len() < 4usize.pow(8) {
-                    epoch.push_back(Insert::Hash(block_root));
+                    epoch.push_back(insert.map(|block| block.block));
                     Ok(())
                 } else {
                     Err(InsertError::EpochFull)
@@ -178,8 +147,8 @@ impl Builder {
     }
 
     pub fn insert_epoch(&mut self, epoch: epoch::Builder) -> Result<(), InsertError> {
-        if self.tiers.len() < 4usize.pow(8) {
-            self.tiers.push_back(Insert::Keep(epoch.tiers));
+        if self.eternity.len() < 4usize.pow(8) {
+            self.eternity.push_back(Insert::Keep(epoch.epoch));
             Ok(())
         } else {
             Err(InsertError::Full)
@@ -187,8 +156,8 @@ impl Builder {
     }
 
     pub fn insert_epoch_root(&mut self, epoch_root: Hash) -> Result<(), InsertError> {
-        if self.tiers.len() < 4usize.pow(8) {
-            self.tiers.push_back(Insert::Hash(epoch_root));
+        if self.eternity.len() < 4usize.pow(8) {
+            self.eternity.push_back(Insert::Hash(epoch_root));
             Ok(())
         } else {
             Err(InsertError::Full)
@@ -196,8 +165,11 @@ impl Builder {
     }
 
     pub fn build(self) -> Eternity {
-        let tree = Tree::from_eternity(self.tiers);
-        let index = tree.index();
+        let tree = Tree::from_eternity(self.eternity);
+        let mut index = HashedMap::default();
+        tree.index_with(|commitment, position| {
+            index.insert(commitment, position.into());
+        });
         Eternity { index, tree }
     }
 }

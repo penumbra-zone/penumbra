@@ -1,9 +1,8 @@
 use std::collections::VecDeque;
 
-use hash_hasher::HashedMap;
 use penumbra_tct::{
     internal::{active::Insert, hash::Hash, path::WhichWay},
-    Commitment, Position,
+    Commitment,
 };
 
 use super::Tier;
@@ -167,10 +166,13 @@ impl Tree {
         }
     }
 
-    /// Construct an index for all the commitments in the tree.
-    pub(crate) fn index(&self) -> HashedMap<Commitment, Position> {
+    /// Construct an index for all the commitments in the tree using the given function.
+    ///
+    /// This is an internally driven iterator that calls the function once for each witnessed leaf
+    /// of the tree, in order from left to right.
+    pub(crate) fn index_with(&self, mut f: impl FnMut(Commitment, u64)) {
         // Recursive function to build the hash map
-        fn index_onto(tree: &Tree, index_here: u64, index: &mut HashedMap<Commitment, Position>) {
+        fn index_with_at(tree: &Tree, index_here: u64, f: &mut impl FnMut(Commitment, u64)) {
             use Tree::*;
             match tree {
                 Leaf {
@@ -183,7 +185,7 @@ impl Tree {
                     ..
                 } => {
                     // Commitment was witnessed, so index it
-                    index.insert(*commitment, index_here.into());
+                    f(*commitment, index_here);
                 }
                 Node { children, .. } => {
                     // Index each child of the node
@@ -191,16 +193,14 @@ impl Tree {
                         // Index of child node is (4 * index of parent) + {0,1,2,3}
                         let index_here = (index_here << 2) | (i as u64);
                         // Recursively index the child
-                        index_onto(child, index_here, index);
+                        index_with_at(child, index_here, f);
                     }
                 }
             }
         }
 
         // Call the recursive hash map builder on an empty starting map, then return the result
-        let mut index = HashedMap::default();
-        index_onto(self, 0, &mut index);
-        index
+        index_with_at(self, 0, &mut f);
     }
 
     /// Get the auth path for a given position, assuming that the tree is of the given height.
