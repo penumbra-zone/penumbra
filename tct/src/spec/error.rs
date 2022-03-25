@@ -17,8 +17,8 @@ pub enum InsertError {
     BlockForgotten,
 }
 
-impl From<&crate::eternity::InsertError> for InsertError {
-    fn from(e: &crate::eternity::InsertError) -> Self {
+impl From<crate::eternity::InsertError> for InsertError {
+    fn from(e: crate::eternity::InsertError) -> Self {
         match e {
             crate::eternity::InsertError::Full => InsertError::EternityFull,
             crate::eternity::InsertError::EpochFull => InsertError::EpochFull,
@@ -29,8 +29,8 @@ impl From<&crate::eternity::InsertError> for InsertError {
     }
 }
 
-impl From<&crate::eternity::InsertBlockError> for InsertError {
-    fn from(e: &crate::eternity::InsertBlockError) -> Self {
+impl From<crate::eternity::InsertBlockError> for InsertError {
+    fn from(e: crate::eternity::InsertBlockError) -> Self {
         match e {
             crate::eternity::InsertBlockError::Full(_) => InsertError::EternityFull,
             crate::eternity::InsertBlockError::EpochFull(_) => InsertError::EpochFull,
@@ -39,8 +39,8 @@ impl From<&crate::eternity::InsertBlockError> for InsertError {
     }
 }
 
-impl From<&crate::eternity::InsertBlockRootError> for InsertError {
-    fn from(e: &crate::eternity::InsertBlockRootError) -> Self {
+impl From<crate::eternity::InsertBlockRootError> for InsertError {
+    fn from(e: crate::eternity::InsertBlockRootError) -> Self {
         match e {
             crate::eternity::InsertBlockRootError::Full => InsertError::EternityFull,
             crate::eternity::InsertBlockRootError::EpochFull => InsertError::EpochFull,
@@ -49,24 +49,24 @@ impl From<&crate::eternity::InsertBlockRootError> for InsertError {
     }
 }
 
-impl From<&crate::eternity::InsertEpochError> for InsertError {
-    fn from(e: &crate::eternity::InsertEpochError) -> Self {
+impl From<crate::eternity::InsertEpochError> for InsertError {
+    fn from(e: crate::eternity::InsertEpochError) -> Self {
         match e {
             crate::eternity::InsertEpochError(_) => InsertError::EternityFull,
         }
     }
 }
 
-impl From<&crate::eternity::InsertEpochRootError> for InsertError {
-    fn from(e: &crate::eternity::InsertEpochRootError) -> Self {
+impl From<crate::eternity::InsertEpochRootError> for InsertError {
+    fn from(e: crate::eternity::InsertEpochRootError) -> Self {
         match e {
             crate::eternity::InsertEpochRootError => InsertError::EternityFull,
         }
     }
 }
 
-impl From<&crate::epoch::InsertError> for InsertError {
-    fn from(e: &crate::epoch::InsertError) -> Self {
+impl From<crate::epoch::InsertError> for InsertError {
+    fn from(e: crate::epoch::InsertError) -> Self {
         match e {
             crate::epoch::InsertError::Full => InsertError::EpochFull,
             crate::epoch::InsertError::BlockFull => InsertError::BlockFull,
@@ -75,24 +75,24 @@ impl From<&crate::epoch::InsertError> for InsertError {
     }
 }
 
-impl From<&crate::epoch::InsertBlockError> for InsertError {
-    fn from(e: &crate::epoch::InsertBlockError) -> Self {
+impl From<crate::epoch::InsertBlockError> for InsertError {
+    fn from(e: crate::epoch::InsertBlockError) -> Self {
         match e {
             crate::epoch::InsertBlockError(_) => InsertError::EpochFull,
         }
     }
 }
 
-impl From<&crate::epoch::InsertBlockRootError> for InsertError {
-    fn from(e: &crate::epoch::InsertBlockRootError) -> Self {
+impl From<crate::epoch::InsertBlockRootError> for InsertError {
+    fn from(e: crate::epoch::InsertBlockRootError) -> Self {
         match e {
             crate::epoch::InsertBlockRootError => InsertError::EpochFull,
         }
     }
 }
 
-impl From<&crate::block::InsertError> for InsertError {
-    fn from(e: &crate::block::InsertError) -> Self {
+impl From<crate::block::InsertError> for InsertError {
+    fn from(e: crate::block::InsertError) -> Self {
         match e {
             crate::block::InsertError => InsertError::BlockFull,
         }
