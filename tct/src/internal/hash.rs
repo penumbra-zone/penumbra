@@ -160,7 +160,7 @@ mod sqlx_impls {
     }
 }
 
-#[cfg(feature = "proptest")]
+#[cfg(any(test, feature = "arbitrary"))]
 mod arbitrary {
     use super::Hash;
 
