@@ -46,6 +46,7 @@ use serde::{Deserialize, Serialize};
 
 pub mod internal;
 mod serialize;
+pub mod spec;
 
 use internal::{
     active::{Active, Focus, Insert, Item, Tier},

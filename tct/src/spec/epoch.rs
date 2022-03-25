@@ -1,7 +1,8 @@
 use std::collections::VecDeque;
 
 use hash_hasher::HashedMap;
-use penumbra_tct::{
+
+use crate::{
     epoch::{Position, Proof},
     internal::{active::Insert, hash::Hash},
     Commitment, Witness,
