@@ -31,6 +31,21 @@ impl<I: IntoIterator<Item = T>, T: Simulate> Simulate for I {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Params {
+    pub commitments: Vec<Commitment>,
+    pub max_tier_actions: usize,
+}
+
+impl Default for Params {
+    fn default() -> Self {
+        Self {
+            commitments: vec![],
+            max_tier_actions: 100,
+        }
+    }
+}
+
 pub mod block;
 pub mod epoch;
 pub mod eternity;
