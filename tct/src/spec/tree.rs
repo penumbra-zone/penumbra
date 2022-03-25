@@ -1,19 +1,26 @@
 use std::collections::VecDeque;
 
-use penumbra_tct::{
+use crate::{
     internal::{active::Insert, hash::Hash, path::WhichWay},
     Commitment,
 };
 
 use super::Tier;
 
+/// A dense, non-incrememntal merkle tree with commitments at its leaves.
 pub enum Tree {
+    /// An internal node, with a hash.
     Node {
+        /// The hash of this node.
         hash: Hash,
+        /// The children of this node (invariant: there are never more than 4).
         children: Vec<Tree>,
     },
+    /// A leaf node, with a hash.
     Leaf {
+        /// The hash of this leaf.
         hash: Hash,
+        /// The commitment witnessed by this leaf, if it was not forgotten.
         commitment: Option<Commitment>,
     },
 }
@@ -32,7 +39,7 @@ impl Tree {
     /// # Panics
     ///
     /// If the height given is not exactly the height of the tree.
-    pub fn position(&self, height: u8) -> u64 {
+    pub(super) fn position(&self, height: u8) -> u64 {
         match self {
             Tree::Leaf { .. } => {
                 if height == 0 {
@@ -53,7 +60,7 @@ impl Tree {
     }
 
     /// Construct an entire eternity tree from three nested tiers.
-    pub(crate) fn from_eternity(eternity: Tier<Tier<Tier<Commitment>>>) -> Tree {
+    pub(super) fn from_eternity(eternity: Tier<Tier<Tier<Commitment>>>) -> Tree {
         use Tree::*;
 
         let forest = eternity
@@ -70,7 +77,7 @@ impl Tree {
     }
 
     /// Construct an entire epoch tree from two nested tiers.
-    pub(crate) fn from_epoch(epoch: Tier<Tier<Commitment>>) -> Tree {
+    pub(super) fn from_epoch(epoch: Tier<Tier<Commitment>>) -> Tree {
         use Tree::*;
 
         let forest = epoch
@@ -87,7 +94,7 @@ impl Tree {
     }
 
     /// Construct an entire block tree from one tier.
-    pub(crate) fn from_block(block: Tier<Commitment>) -> Tree {
+    pub(super) fn from_block(block: Tier<Commitment>) -> Tree {
         use Tree::*;
 
         let forest = block
@@ -172,7 +179,7 @@ impl Tree {
     ///
     /// This is an internally driven iterator that calls the function once for each witnessed leaf
     /// of the tree, in order from left to right.
-    pub(crate) fn index_with(&self, mut f: impl FnMut(Commitment, u64)) {
+    pub(super) fn index_with(&self, mut f: impl FnMut(Commitment, u64)) {
         // Recursive function to build the hash map
         fn index_with_at(tree: &Tree, index_here: u64, f: &mut impl FnMut(Commitment, u64)) {
             use Tree::*;
@@ -211,7 +218,7 @@ impl Tree {
     ///
     /// If the index does not correspond to a leaf in the tree, or if the height is greater than
     /// `u8::MAX as usize` or if the height does not match the actual height of the tree.
-    pub(crate) fn witness<const HEIGHT: usize>(&self, index: u64) -> [[Hash; 3]; HEIGHT] {
+    pub(super) fn witness<const HEIGHT: usize>(&self, index: u64) -> [[Hash; 3]; HEIGHT] {
         // Recursive function to build the auth path
         fn witness_onto(tree: &Tree, height: u8, index: u64, auth_path: &mut Vec<[Hash; 3]>) {
             if let Tree::Node { children, .. } = tree {
