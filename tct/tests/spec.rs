@@ -19,6 +19,8 @@ pub enum InsertError {
     BlockForgotten,
 }
 
+pub const TIER_CAPACITY: usize = 4usize.pow(8);
+
 pub type Tier<T> = VecDeque<Insert<T>>;
 
 #[test]

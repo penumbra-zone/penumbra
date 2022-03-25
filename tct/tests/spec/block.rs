@@ -5,7 +5,7 @@ use penumbra_tct::{
     Commitment, Witness,
 };
 
-use super::{tree::Tree, InsertError, Tier};
+use super::{tree::Tree, InsertError, Tier, TIER_CAPACITY};
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Builder {
@@ -24,7 +24,7 @@ impl Builder {
         };
 
         // Fail if block is full
-        if self.block.len() >= 4usize.pow(8) {
+        if self.block.len() >= TIER_CAPACITY {
             return Err(InsertError::BlockFull);
         }
 
