@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use jmt::{storage::TreeReader, KeyHash, WriteOverlay};
 use penumbra_proto::{Message, Protobuf};
@@ -72,17 +72,26 @@ impl<R: TreeReader + Sync> WriteOverlayExt for Arc<Mutex<WriteOverlay<R>>> {
         todo!()
     }
 
-    async fn get_proto<P>(&self, _key: KeyHash) -> Result<Option<P>>
+    async fn get_proto<P>(&self, key: KeyHash) -> Result<Option<P>>
     where
         P: Message,
     {
-        todo!()
+        let bytes = match self.lock().unwrap().get(key).await? {
+            None => return Ok(None),
+            Some(bytes) => bytes,
+        };
+
+        // TODO: this isn't working because the impl for decode requires a
+        // Default impl for `P`
+        Message::decode(bytes.into())
+            .map_err(|e| anyhow!(e))
+            .map(|v| Some(v))
     }
 
-    fn put_proto<P>(&self, _key: KeyHash, _value: P)
+    fn put_proto<P>(&self, key: KeyHash, value: P)
     where
         P: Message,
     {
-        todo!()
+        self.lock().unwrap().put(key, value.encode_to_vec());
     }
 }
