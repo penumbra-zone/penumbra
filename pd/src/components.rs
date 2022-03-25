@@ -9,6 +9,7 @@ mod app;
 mod component;
 mod ibc;
 mod shielded_pool;
+mod staking;
 
 // TODO: demote this from `pub` at some point when that's
 // not likely to generate conflicts
@@ -18,5 +19,6 @@ pub use app::App;
 pub use component::Component;
 pub use ibc::IBCComponent;
 pub use shielded_pool::ShieldedPool;
+pub use staking::Staking;
 
 type Overlay = Arc<Mutex<WriteOverlay<Storage>>>;
