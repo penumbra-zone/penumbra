@@ -64,8 +64,7 @@ impl<T: GetHash> GetHash for &mut T {
 }
 
 /// The hash of an individual item, tree root, or intermediate node.
-#[derive(Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
-/// The hash of an individual item, tree root, or intermediate node.
+#[derive(Clone, Copy, PartialEq, Eq, Default, std::hash::Hash, Serialize, Deserialize)]
 pub struct Hash(#[serde(with = "crate::serialize::fq")] pub(crate) Fq);
 
 impl From<Hash> for Fq {
@@ -157,6 +156,47 @@ mod sqlx_impls {
     impl Type<Postgres> for Hash {
         fn type_info() -> <Postgres as Database>::TypeInfo {
             <[u8] as Type<Postgres>>::type_info()
+        }
+    }
+}
+
+#[cfg(feature = "proptest")]
+mod arbitrary {
+    use super::Hash;
+
+    impl proptest::arbitrary::Arbitrary for Hash {
+        type Parameters = ();
+
+        fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
+            HashStrategy
+        }
+
+        type Strategy = HashStrategy;
+    }
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+    pub struct HashStrategy;
+
+    impl proptest::strategy::Strategy for HashStrategy {
+        type Tree = proptest::strategy::Just<Hash>;
+
+        type Value = Hash;
+
+        fn new_tree(
+            &self,
+            runner: &mut proptest::test_runner::TestRunner,
+        ) -> proptest::strategy::NewTree<Self> {
+            use proptest::prelude::RngCore;
+            let rng = runner.rng();
+            let parts = [
+                rng.next_u64(),
+                rng.next_u64(),
+                rng.next_u64(),
+                rng.next_u64(),
+            ];
+            Ok(proptest::strategy::Just(Hash(decaf377::Fq::new(
+                ark_ff::BigInteger256(parts),
+            ))))
         }
     }
 }
