@@ -20,7 +20,6 @@ pub mod eternity;
 pub use {block::Block, epoch::Epoch, eternity::Eternity};
 
 mod error;
-pub mod simulate;
 mod tree;
 pub use error::InsertError;
 

@@ -28,8 +28,9 @@ pub struct Eternity {
 }
 
 /// The root hash of an [`Eternity`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(try_from = "pb::MerkleRoot", into = "pb::MerkleRoot")]
+#[cfg_attr(feature = "proptest", derive(proptest_derive::Arbitrary))]
 pub struct Root(pub(crate) Hash);
 
 impl From<Root> for Fq {
