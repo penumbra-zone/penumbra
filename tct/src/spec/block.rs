@@ -1,5 +1,6 @@
 use hash_hasher::HashedMap;
-use penumbra_tct::{
+
+use crate::{
     block::{Position, Proof},
     internal::{active::Insert, hash::Hash},
     Commitment, Witness,
