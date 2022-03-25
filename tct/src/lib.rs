@@ -78,16 +78,6 @@ pub use crate::internal::{
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Commitment(#[serde(with = "crate::serialize::fq")] pub poseidon377::Fq);
 
-#[cfg(feature = "arbitrary")]
-impl<'a> arbitrary::Arbitrary<'a> for Commitment {
-    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
-        let array = <[u64; 4]>::arbitrary(u)?;
-        Ok(Commitment(poseidon377::Fq::new(ark_ff::BigInteger256(
-            array,
-        ))))
-    }
-}
-
 impl From<Commitment> for poseidon377::Fq {
     fn from(commitment: Commitment) -> Self {
         commitment.0
@@ -120,7 +110,7 @@ pub mod block {
 /// [`Keep`] it to allow it to be witnessed later, or [`Forget`] about it after updating the root
 /// hash?
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[cfg_attr(feature = "proptest", derive(proptest_derive::Arbitrary))]
+#[cfg_attr(any(test, feature = "arbitrary"), derive(proptest_derive::Arbitrary))]
 pub enum Witness {
     /// Keep this commitment so it can be witnessed later.
     Keep,
@@ -152,7 +142,7 @@ mod test {
     }
 }
 
-#[cfg(feature = "proptest")]
+#[cfg(any(test, feature = "arbitrary"))]
 pub mod arbitrary {
     //! Arbitrary implementation for [`Commitment`]s.
 
