@@ -4,7 +4,6 @@ package penumbra.transaction;
 import "crypto.proto";
 import "stake.proto";
 import "ibc.proto";
-import "crypto.proto";
 
 // A Penumbra transaction.
 message Transaction {

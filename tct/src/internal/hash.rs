@@ -63,10 +63,9 @@ impl<T: GetHash> GetHash for &mut T {
     }
 }
 
+/// The hash of an individual item, tree root, or intermediate node.
 #[derive(Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
-/// The hash of an individual item, tree root, or intermediate node. Use
-/// [`Insert::Hash`](crate::Insert::Hash) with this type when you want to insert something into the
-/// tree that you don't want to witness later.
+/// The hash of an individual item, tree root, or intermediate node.
 pub struct Hash(#[serde(with = "crate::serialize::fq")] pub(crate) Fq);
 
 impl From<Hash> for Fq {

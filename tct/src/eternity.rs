@@ -30,7 +30,7 @@ pub struct Eternity {
 /// The root hash of an [`Eternity`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "pb::MerkleRoot", into = "pb::MerkleRoot")]
-pub struct Root(Hash);
+pub struct Root(pub(crate) Hash);
 
 impl From<Root> for Fq {
     fn from(root: Root) -> Self {

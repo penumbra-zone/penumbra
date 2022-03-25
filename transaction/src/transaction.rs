@@ -214,7 +214,7 @@ impl TryFrom<ProtoTransactionBody> for TransactionBody {
 
         let merkle_root = proto
             .anchor
-            .ok_or(ProtoError::TransactionBodyMalformed)?
+            .ok_or(anyhow::anyhow!("transaction body malformed"))?
             .try_into()
             .map_err(|_| anyhow::anyhow!("transaction body malformed"))?;
 
