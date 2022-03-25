@@ -78,6 +78,16 @@ pub use crate::internal::{
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Commitment(#[serde(with = "crate::serialize::fq")] pub poseidon377::Fq);
 
+#[cfg(feature = "arbitrary")]
+impl<'a> arbitrary::Arbitrary<'a> for Commitment {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        let array = <[u64; 4]>::arbitrary(u)?;
+        Ok(Commitment(poseidon377::Fq::new(ark_ff::BigInteger256(
+            array,
+        ))))
+    }
+}
+
 impl From<Commitment> for poseidon377::Fq {
     fn from(commitment: Commitment) -> Self {
         commitment.0
@@ -109,7 +119,8 @@ pub mod block {
 /// When inserting a [`Commitment`] into an [`Eternity`], [`Epoch`], or [`Block`], should we
 /// [`Keep`] it to allow it to be witnessed later, or [`Forget`] about it after updating the root
 /// hash?
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "proptest", derive(proptest_derive::Arbitrary))]
 pub enum Witness {
     /// Keep this commitment so it can be witnessed later.
     Keep,
@@ -138,5 +149,46 @@ mod test {
     #[test]
     fn check_eternity_proof_size() {
         static_assertions::assert_eq_size!(Proof, [u8; 2344]);
+    }
+}
+
+#[cfg(feature = "proptest")]
+mod arbitrary {
+    use super::Commitment;
+
+    impl proptest::arbitrary::Arbitrary for Commitment {
+        type Parameters = ();
+
+        fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
+            CommitmentStrategy
+        }
+
+        type Strategy = CommitmentStrategy;
+    }
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+    pub struct CommitmentStrategy;
+
+    impl proptest::strategy::Strategy for CommitmentStrategy {
+        type Tree = proptest::strategy::Just<Commitment>;
+
+        type Value = Commitment;
+
+        fn new_tree(
+            &self,
+            runner: &mut proptest::test_runner::TestRunner,
+        ) -> proptest::strategy::NewTree<Self> {
+            use proptest::prelude::RngCore;
+            let rng = runner.rng();
+            let parts = [
+                rng.next_u64(),
+                rng.next_u64(),
+                rng.next_u64(),
+                rng.next_u64(),
+            ];
+            Ok(proptest::strategy::Just(Commitment(decaf377::Fq::new(
+                ark_ff::BigInteger256(parts),
+            ))))
+        }
     }
 }
