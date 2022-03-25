@@ -12,38 +12,19 @@
 
 use std::collections::VecDeque;
 
-use crate::Insert;
-
 pub mod block;
 pub use block::Block;
 pub mod epoch;
 pub use epoch::Epoch;
 pub mod eternity;
 pub use eternity::Eternity;
+mod error;
 mod tree;
-
-/// An error when inserting into any builder.
-///
-/// Not all of these can be thrown by every builder. Unlike the very specific error types used in
-/// the main crate, this is a blanket summary of every possible insertion error, for simplicity of
-/// specification and testing.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum InsertError {
-    /// The eternity is full.
-    EternityFull,
-    /// The current epoch is full.
-    EpochFull,
-    /// The epoch was forgotten.
-    EpochForgotten,
-    /// The current block is full.
-    BlockFull,
-    /// The current block was forgotten.
-    BlockForgotten,
-}
+pub use error::InsertError;
 
 /// The maximum capacity for any tier of the tree: 4^8 = 65,536.
 pub const TIER_CAPACITY: usize = 4usize.pow(8);
 
 /// A single tier of a builder, being a sequence of insertions of the element of the tier (whether
 /// that's an individual commitment or a sub-tier).
-pub type Tier<T> = VecDeque<Insert<T>>;
+type Tier<T> = VecDeque<crate::Insert<T>>;

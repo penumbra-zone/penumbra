@@ -1,3 +1,5 @@
+//! A specification of the behavior of [`Epoch`](crate::Epoch).
+
 use std::collections::VecDeque;
 
 use hash_hasher::HashedMap;
@@ -12,6 +14,7 @@ use super::{block, tree::Tree, InsertError, Tier, TIER_CAPACITY};
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Builder {
+    /// The inner tiers of the builder.
     pub epoch: Tier<Tier<Commitment>>,
 }
 
