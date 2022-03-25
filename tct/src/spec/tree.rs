@@ -60,6 +60,10 @@ impl Tree {
     }
 
     /// Construct an entire eternity tree from three nested tiers.
+    ///
+    /// # Panics
+    ///
+    /// If the size of any tier is greater than 4^8.
     pub(super) fn from_eternity(eternity: Tier<Tier<Tier<Commitment>>>) -> Tree {
         use Tree::*;
 
@@ -77,6 +81,10 @@ impl Tree {
     }
 
     /// Construct an entire epoch tree from two nested tiers.
+    ///
+    /// # Panics
+    ///
+    /// If the size of either tier is greater than 4^8.
     pub(super) fn from_epoch(epoch: Tier<Tier<Commitment>>) -> Tree {
         use Tree::*;
 
@@ -94,6 +102,10 @@ impl Tree {
     }
 
     /// Construct an entire block tree from one tier.
+    ///
+    /// # Panics
+    ///
+    /// If the size of the tier is greater than 4^8.
     pub(super) fn from_block(block: Tier<Commitment>) -> Tree {
         use Tree::*;
 
@@ -117,7 +129,7 @@ impl Tree {
     ///
     /// # Panics
     ///
-    /// If the size of the forest is greater than 4^8.
+    /// If the size of the tier is greater than 4^8.
     fn from_tier(base_height: u8, mut forest: VecDeque<Tree>) -> Tree {
         use Tree::*;
 

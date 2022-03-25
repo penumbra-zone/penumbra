@@ -24,9 +24,6 @@ pub mod simulate;
 mod tree;
 pub use error::InsertError;
 
-#[doc(inline)]
-pub use crate::internal::hash::Hash;
-
 /// The maximum capacity for any tier of the tree: 4^8 = 65,536.
 pub const TIER_CAPACITY: usize = 4usize.pow(8);
 
