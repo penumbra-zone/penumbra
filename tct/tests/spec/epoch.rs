@@ -7,7 +7,7 @@ use penumbra_tct::{
     Commitment, Witness,
 };
 
-use super::{block, tree::Tree, InsertError, Tier};
+use super::{block, tree::Tree, InsertError, Tier, TIER_CAPACITY};
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Builder {
@@ -26,7 +26,7 @@ impl Builder {
         };
 
         // Fail if epoch is full
-        if self.epoch.len() >= 4usize.pow(8) {
+        if self.epoch.len() >= TIER_CAPACITY {
             return Err(InsertError::EpochFull);
         }
 
@@ -43,7 +43,7 @@ impl Builder {
             Insert::Hash(_) => Err(InsertError::BlockForgotten),
             Insert::Keep(block) => {
                 // Fail if block is full
-                if block.len() >= 4usize.pow(8) {
+                if block.len() >= TIER_CAPACITY {
                     return Err(InsertError::BlockFull);
                 }
 
@@ -75,7 +75,7 @@ impl Builder {
     }
 
     pub fn insert_block(&mut self, block: block::Builder) -> Result<(), InsertError> {
-        if self.epoch.len() < 4usize.pow(8) {
+        if self.epoch.len() < TIER_CAPACITY {
             self.epoch.push_back(Insert::Keep(block.block));
             Ok(())
         } else {
@@ -84,7 +84,7 @@ impl Builder {
     }
 
     pub fn insert_block_root(&mut self, block_root: Hash) -> Result<(), InsertError> {
-        if self.epoch.len() < 4usize.pow(8) {
+        if self.epoch.len() < TIER_CAPACITY {
             self.epoch.push_back(Insert::Hash(block_root));
             Ok(())
         } else {

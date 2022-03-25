@@ -8,7 +8,7 @@ use penumbra_tct::{
 
 use crate::InsertError;
 
-use super::{block, epoch, tree::Tree, Tier};
+use super::{block, epoch, tree::Tree, Tier, TIER_CAPACITY};
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Builder {
@@ -27,7 +27,7 @@ impl Builder {
         };
 
         // Fail if eternity is full
-        if self.eternity.len() >= 4usize.pow(8) {
+        if self.eternity.len() >= TIER_CAPACITY {
             return Err(InsertError::Full);
         }
 
@@ -44,7 +44,7 @@ impl Builder {
             Insert::Hash(_) => Err(InsertError::EpochForgotten),
             Insert::Keep(epoch) => {
                 // Fail if epoch is full
-                if epoch.len() >= 4usize.pow(8) {
+                if epoch.len() >= TIER_CAPACITY {
                     return Err(InsertError::EpochFull);
                 }
 
@@ -60,7 +60,7 @@ impl Builder {
                     Insert::Hash(_) => Err(InsertError::BlockForgotten),
                     Insert::Keep(block) => {
                         // Fail if block is full
-                        if block.len() >= 4usize.pow(8) {
+                        if block.len() >= TIER_CAPACITY {
                             return Err(InsertError::BlockFull);
                         }
 
@@ -109,7 +109,7 @@ impl Builder {
 
     fn insert_block_or_root(&mut self, insert: Insert<block::Builder>) -> Result<(), InsertError> {
         // Fail if eternity is full
-        if self.eternity.len() >= 4usize.pow(8) {
+        if self.eternity.len() >= TIER_CAPACITY {
             return Err(InsertError::Full);
         }
 
@@ -126,7 +126,7 @@ impl Builder {
             Insert::Hash(_) => Err(InsertError::EpochForgotten),
             Insert::Keep(epoch) => {
                 // Fail if epoch is full
-                if epoch.len() >= 4usize.pow(8) {
+                if epoch.len() >= TIER_CAPACITY {
                     return Err(InsertError::EpochFull);
                 }
 
@@ -136,7 +136,7 @@ impl Builder {
                 }
 
                 // Insert whatever is to be inserted
-                if epoch.len() < 4usize.pow(8) {
+                if epoch.len() < TIER_CAPACITY {
                     epoch.push_back(insert.map(|block| block.block));
                     Ok(())
                 } else {
@@ -147,7 +147,7 @@ impl Builder {
     }
 
     pub fn insert_epoch(&mut self, epoch: epoch::Builder) -> Result<(), InsertError> {
-        if self.eternity.len() < 4usize.pow(8) {
+        if self.eternity.len() < TIER_CAPACITY {
             self.eternity.push_back(Insert::Keep(epoch.epoch));
             Ok(())
         } else {
@@ -156,7 +156,7 @@ impl Builder {
     }
 
     pub fn insert_epoch_root(&mut self, epoch_root: Hash) -> Result<(), InsertError> {
-        if self.eternity.len() < 4usize.pow(8) {
+        if self.eternity.len() < TIER_CAPACITY {
             self.eternity.push_back(Insert::Hash(epoch_root));
             Ok(())
         } else {
