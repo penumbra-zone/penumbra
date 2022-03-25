@@ -11,7 +11,6 @@ use super::{Block, Epoch};
 pub enum InsertError {
     /// The [`Eternity`] was full.
     #[error("eternity is full")]
-    #[non_exhaustive]
     Full,
     /// The most recent [`Epoch`] of the [`Eternity`] was full.
     #[error("most recent epoch in eternity is full")]
