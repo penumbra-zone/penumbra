@@ -30,7 +30,7 @@ proptest! {
         let mut spec = spec::eternity::Builder::default();
         let mut real = real::Eternity::default();
         actions.simulate(&mut spec, &mut real);
-        let spec = spec.build();
-        // observations.simulate(&mut spec, &mut real);
+        let mut spec = spec.build();
+        observations.simulate(&mut spec, &mut real);
     }
 }
