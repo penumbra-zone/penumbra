@@ -21,6 +21,8 @@ poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377" }
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 # this allows us to implement Decode for various types without orphan rule issues
 sqlx = { version = "0.5.9", features = ["postgres"], optional = true }
+proptest = { version = "1", optional = true }
+proptest-derive = { version = "0.3", optional = true }
 
 [features]
 spec = []
