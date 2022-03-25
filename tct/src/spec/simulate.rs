@@ -37,9 +37,9 @@ pub mod eternity {
         Insert(Witness, Commitment),
         Forget(Commitment),
         InsertEpoch(Vec<super::epoch::Action>),
-        InsertEpochRoot(Hash),
+        InsertEpochRoot(crate::epoch::Root),
         InsertBlock(Vec<super::block::Action>),
-        InsertBlockRoot(Hash),
+        InsertBlockRoot(crate::block::Root),
     }
 }
 
@@ -51,7 +51,7 @@ pub mod epoch {
         Insert(Witness, Commitment),
         Forget(Commitment),
         InsertBlock(Vec<super::block::Action>),
-        InsertBlockRoot(Hash),
+        InsertBlockRoot(crate::block::Root),
     }
 }
 

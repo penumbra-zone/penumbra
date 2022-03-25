@@ -32,7 +32,7 @@ pub struct Epoch {
 /// The root hash of an [`Epoch`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "pb::MerkleRoot", into = "pb::MerkleRoot")]
-pub struct Root(pub(super) Hash);
+pub struct Root(pub(crate) Hash);
 
 impl From<Root> for Fq {
     fn from(root: Root) -> Self {
