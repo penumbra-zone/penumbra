@@ -44,8 +44,14 @@ use std::fmt::Debug;
 
 use serde::{Deserialize, Serialize};
 
-pub mod internal;
 mod serialize;
+
+#[cfg(any(doc, feature = "internal"))]
+pub mod internal;
+#[cfg(not(any(doc, feature = "internal")))]
+mod internal;
+
+#[cfg(any(doc, test, feature = "spec"))]
 pub mod spec;
 
 use internal::{
@@ -59,6 +65,7 @@ use internal::{
     proof,
 };
 
+#[doc(inline)]
 pub use crate::internal::{
     path::PathDecodeError,
     proof::{ProofDecodeError, VerifyError},
