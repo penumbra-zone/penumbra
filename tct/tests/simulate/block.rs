@@ -1,14 +1,21 @@
+use real::arbitrary::CommitmentStrategy;
+
 use super::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Arbitrary)]
+#[proptest(params("Vec<Commitment>"))]
 pub enum Action {
-    Insert(Witness, Commitment),
-    Forget(Commitment),
+    Insert(
+        Witness,
+        #[proptest(strategy = "CommitmentStrategy::one_of(params.clone())")] Commitment,
+    ),
+    Forget(#[proptest(strategy = "CommitmentStrategy::one_of(params)")] Commitment),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Arbitrary)]
+#[proptest(params("Vec<Commitment>"))]
 pub enum Observation {
-    Witness(Commitment),
+    Witness(#[proptest(strategy = "CommitmentStrategy::one_of(params)")] Commitment),
     Root,
     Position,
     WitnessedCount,
