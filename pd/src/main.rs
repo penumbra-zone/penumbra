@@ -64,7 +64,7 @@ enum Command {
     /// testnet based on input configuration.
     GenerateTestnet {
         /// How many validator nodes to create configuration for.
-        #[structopt(long, default_value = "4")]
+        #[structopt(long, default_value = "2")]
         num_validator_nodes: usize,
         /// Number of blocks per epoch.
         #[structopt(long, default_value = "40")]
@@ -92,7 +92,7 @@ enum Command {
         #[structopt(long)]
         chain_id: Option<String>,
         /// IP Address to start `tendermint` nodes on. Increments by three to make room for `pd` and `postgres` per node.
-        #[structopt(long, default_value = "192.167.10.2")]
+        #[structopt(long, default_value = "192.167.10.11")]
         starting_ip: Ipv4Addr,
     },
 }
@@ -207,7 +207,7 @@ async fn main() -> anyhow::Result<()> {
             // setting in the Go tendermint binary. Populating the persistent
             // peers will be useful in local setups until peer discovery via a seed
             // works.
-            starting_ip: _,
+            starting_ip,
             epoch_duration,
             unbonding_epochs,
             active_validator_limit,
@@ -236,7 +236,7 @@ async fn main() -> anyhow::Result<()> {
             use pd::{genesis, genesis::ValidatorPower, testnet::*};
             use penumbra_crypto::Address;
             use penumbra_stake::IdentityKey;
-            use tendermint::{account::Id, public_key::Algorithm, Genesis, Time};
+            use tendermint::{account::Id, node, public_key::Algorithm, Genesis, Time};
             use tendermint_config::{NodeKey, PrivValidatorKey};
 
             assert!(
@@ -283,7 +283,7 @@ async fn main() -> anyhow::Result<()> {
 
             // Parse validators from input file or default to latest testnet validators computed in
             // the build script
-            let validators = if let Some(validators_input_file) = validators_input_file {
+            let testnet_validators = if let Some(validators_input_file) = validators_input_file {
                 let validators_file = File::open(&validators_input_file)
                     .with_context(|| format!("cannot open file {:?}", validators_input_file))?;
                 parse_validators(validators_file).with_context(|| {
@@ -362,24 +362,19 @@ async fn main() -> anyhow::Result<()> {
                 validator_keys.push(vk);
             }
 
-            for (n, vk) in validator_keys.iter().enumerate() {
-                let node_name = format!("node{}", n);
-
-                let app_state = genesis::AppState {
-                    allocations: allocations.clone(),
-                    chain_params: ChainParams {
-                        chain_id: chain_id.clone(),
-                        epoch_duration,
-                        unbonding_epochs,
-                        active_validator_limit,
-                        slashing_penalty,
-                        ibc_enabled: false,
-                        inbound_ics20_transfers_enabled: false,
-                        outbound_ics20_transfers_enabled: false,
-                    },
-                    validators: validators
+            let ip_addrs = validator_keys
+                .iter()
+                .enumerate()
+                .map(|(i, _vk)| {
+                    let a = starting_ip.octets();
+                    Ipv4Addr::new(a[0], a[1], a[2], a[3] + (10 * i as u8))
+                })
+                .collect::<Vec<_>>();
+            let validators = testnet_validators
                         .iter()
-                        .map(|v| {
+                        .enumerate()
+                        .map(|(i, v)| {
+                            let vk = &validator_keys[i];
                             Ok(ValidatorPower {
                                 validator: Validator {
                                     // Currently there's no way to set validator keys beyond
@@ -411,7 +406,23 @@ async fn main() -> anyhow::Result<()> {
                                 power: v.voting_power.into(),
                             })
                         })
-                        .collect::<Result<Vec<ValidatorPower>,anyhow::Error>>()?,
+                        .collect::<Result<Vec<ValidatorPower>,anyhow::Error>>()?;
+            for (n, vk) in validator_keys.iter().enumerate() {
+                let node_name = format!("node{}", n);
+
+                let app_state = genesis::AppState {
+                    allocations: allocations.clone(),
+                    chain_params: ChainParams {
+                        chain_id: chain_id.clone(),
+                        epoch_duration,
+                        unbonding_epochs,
+                        active_validator_limit,
+                        slashing_penalty,
+                        ibc_enabled: false,
+                        inbound_ics20_transfers_enabled: false,
+                        outbound_ics20_transfers_enabled: false,
+                    },
+                    validators: validators.clone(),
                 };
 
                 // Create the directory for this node
@@ -490,7 +501,21 @@ async fn main() -> anyhow::Result<()> {
                 // Note that this isn't a re-implementation of the `Config` type from
                 // Tendermint (https://github.com/tendermint/tendermint/blob/6291d22f46f4c4f9121375af700dbdafa51577e7/config/config.go#L92)
                 // so if they change their defaults or the available fields, that won't be reflected in our template.
-                let tm_config = generate_tm_config(&node_name);
+                // TODO: grab all peer pubkeys instead of self pubkey
+                let my_ip = &ip_addrs[n];
+                // Each node should include only the IPs for *other* nodes in their peers list.
+                let ips_minus_mine = ip_addrs
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, p)| *p != my_ip)
+                    .map(|(n, ip)| {
+                        (
+                            node::Id::from(validator_keys[n].node_key_pk.ed25519().unwrap()),
+                            *ip,
+                        )
+                    })
+                    .collect::<Vec<_>>();
+                let tm_config = generate_tm_config(&node_name, &ips_minus_mine);
                 let mut config_file_path = node_config_dir.clone();
                 config_file_path.push("config.toml");
                 println!(

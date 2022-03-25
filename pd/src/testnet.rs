@@ -3,9 +3,11 @@ use std::{env::current_dir, fmt, io::Read, path::PathBuf, str::FromStr};
 use anyhow::{Context, Result};
 use directories::UserDirs;
 use penumbra_crypto::Address;
+use rand::Rng;
+use rand_core::OsRng;
 use regex::{Captures, Regex};
 use serde::{de, Deserialize};
-use tendermint::PrivateKey;
+use tendermint::{node::Id, PrivateKey, PublicKey};
 
 use crate::genesis;
 
@@ -65,10 +67,25 @@ where
 /// https://github.com/tendermint/tendermint/blob/6291d22f46f4c4f9121375af700dbdafa51577e7/cmd/tendermint/commands/init.go#L45
 /// There exists https://github.com/informalsystems/tendermint-rs/blob/a12118978f2ffea4042d6d38ebfb290d12611314/config/src/config.rs#L23 but
 /// this seemed more straightforward as only the moniker is changed right now.
-pub fn generate_tm_config(node_name: &str) -> String {
+pub fn generate_tm_config(
+    node_name: &str,
+    persistent_peers: &[(Id, std::net::Ipv4Addr)],
+) -> String {
+    let peers_string = persistent_peers
+        .iter()
+        // https://docs.tendermint.com/master/spec/p2p/peer.html#peer-identity
+        // Tendermint peers are expected to maintain long-term persistent identities
+        // in the form of a public key. Each peer has an ID defined as
+        // peer.ID == peer.PubKey.Address(), where Address uses the scheme defined in
+        // crypto package.
+        // the peer addresses need to match this impl: https://github.com/tendermint/tendermint/blob/f2a8f5e054cf99ebe246818bb6d71f41f9a30faa/internal/p2p/address.go#L43
+        // The ID is for the node being connected to, *not* the connecting node's ID.
+        .map(|(id, ip)| format!("{}@{}:26656", id, ip))
+        .collect::<Vec<String>>()
+        .join(",");
     format!(
         include_str!("../../testnets/tm_config_template.toml"),
-        node_name
+        node_name, peers_string,
     )
 }
 
