@@ -7,12 +7,12 @@ use simulate::{Params, Simulate};
 
 const MAX_TIER_ACTIONS: usize = 10;
 const MAX_USED_COMMITMENTS: usize = 10;
-const MAX_UNUSED_COMMITMENTS: usize = 2;
-const OBSERVATIONS: usize = 10;
+const MAX_UNUSED_COMMITMENTS: usize = 3;
+const MAX_OBSERVATIONS: usize = 10;
 
 proptest! {
     #[test]
-    fn test_simulate(
+    fn spec_vs_impl(
         (actions, observations) in (
             prop::collection::vec(any::<Commitment>(), 1..MAX_USED_COMMITMENTS),
             prop::collection::vec(any::<Commitment>(), 1..MAX_UNUSED_COMMITMENTS),
@@ -23,7 +23,7 @@ proptest! {
             ),
             prop::collection::vec(
                 any_with::<simulate::eternity::Observation>({used_commitments.clone().extend(unused_commitments); used_commitments}),
-                OBSERVATIONS
+                0..MAX_OBSERVATIONS
             )
         ))
     ) {
