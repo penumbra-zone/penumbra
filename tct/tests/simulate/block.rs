@@ -12,16 +12,6 @@ pub enum Action {
     Forget(#[proptest(strategy = "CommitmentStrategy::one_of(params)")] Commitment),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Arbitrary)]
-#[proptest(params("Vec<Commitment>"))]
-pub enum Observation {
-    Witness(#[proptest(strategy = "CommitmentStrategy::one_of(params)")] Commitment),
-    Root,
-    Position,
-    WitnessedCount,
-    IsEmpty,
-}
-
 impl Simulate for Action {
     type Spec = spec::block::Builder;
     type Real = real::Block;
@@ -35,6 +25,44 @@ impl Simulate for Action {
             Action::Forget(commitment) => {
                 assert_eq!(spec.forget(commitment), real.forget(commitment))
             }
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Arbitrary)]
+#[proptest(params("Vec<Commitment>"))]
+pub enum Observation {
+    Witness(#[proptest(strategy = "CommitmentStrategy::one_of(params)")] Commitment),
+    Root,
+    Position,
+    WitnessedCount,
+    IsEmpty,
+}
+
+impl Simulate for Observation {
+    type Spec = spec::Eternity;
+    type Real = real::Eternity;
+
+    fn simulate(self, spec: &mut Self::Spec, real: &mut Self::Real) {
+        use Observation::*;
+        match self {
+            Witness(commitment) => {
+                // Get a proof from the spec and the real implementation
+                let spec_proof = spec.witness(commitment);
+                let real_proof = real.witness(commitment);
+                // Assert that they are identical (or that they are both None)
+                assert_eq!(spec_proof, real_proof);
+                // If we got this far, any proof will do: check that it verifies against the real
+                // and spec roots (which should be the same but we check both just in case)
+                if let Some(proof) = real_proof {
+                    assert!(proof.verify(real.root()).is_ok());
+                    assert!(proof.verify(spec.root()).is_ok());
+                }
+            }
+            Root => assert_eq!(spec.root(), real.root()),
+            Position => assert_eq!(spec.position(), real.position()),
+            WitnessedCount => assert_eq!(spec.witnessed_count(), real.witnessed_count()),
+            IsEmpty => assert_eq!(spec.is_empty(), real.is_empty()),
         }
     }
 }
