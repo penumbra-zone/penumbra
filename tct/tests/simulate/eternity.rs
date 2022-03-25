@@ -1,18 +1,39 @@
+use proptest::prelude::*;
+
 use super::*;
 
+use real::arbitrary::CommitmentStrategy;
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Arbitrary)]
+#[proptest(params("Params"))]
 pub enum Action {
-    Insert(Witness, Commitment),
-    Forget(Commitment),
-    InsertEpoch(Vec<epoch::Action>),
+    Insert(
+        Witness,
+        #[proptest(strategy = "CommitmentStrategy::one_of(params.commitments.clone())")] Commitment,
+    ),
+    Forget(
+        #[proptest(strategy = "CommitmentStrategy::one_of(params.commitments.clone())")] Commitment,
+    ),
+    InsertEpoch(
+        #[proptest(
+            strategy = "prop::collection::vec(any_with::<epoch::Action>(params.clone()), 0..params.max_tier_actions)"
+        )]
+        Vec<epoch::Action>,
+    ),
     InsertEpochRoot(real::epoch::Root),
-    InsertBlock(Vec<block::Action>),
+    InsertBlock(
+        #[proptest(
+            strategy = "prop::collection::vec(any_with::<block::Action>(params.commitments), 0..params.max_tier_actions)"
+        )]
+        Vec<block::Action>,
+    ),
     InsertBlockRoot(real::block::Root),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Arbitrary)]
+#[proptest(params("Vec<Commitment>"))]
 pub enum Observation {
-    Witness(Commitment),
+    Witness(#[proptest(strategy = "CommitmentStrategy::one_of(params)")] Commitment),
     Root,
     CurrentEpochRoot,
     CurrentBlockRoot,
