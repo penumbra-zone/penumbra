@@ -2,7 +2,10 @@ use std::{path::PathBuf, sync::Arc};
 
 use anyhow::Result;
 use futures::future::BoxFuture;
-use jmt::storage::{Node, NodeBatch, NodeKey, TreeReader, TreeWriter};
+use jmt::{
+    storage::{Node, NodeBatch, NodeKey, TreeReader, TreeWriter},
+    WriteOverlay,
+};
 use rocksdb::DB;
 use tracing::{instrument, Span};
 
@@ -26,6 +29,16 @@ impl Storage {
         })
         .await
         .unwrap()
+    }
+
+    pub async fn latest_version(&self) -> Result<Option<jmt::Version>> {
+        match Storage::get_rightmost_leaf(self).await {
+            Ok(x) => match x {
+                Some(t) => Ok(Some(t.0.version())),
+                None => Ok(Some(WriteOverlay::<Storage>::PRE_GENESIS_VERSION)),
+            },
+            Err(e) => Err(e),
+        }
     }
 }
 
@@ -98,6 +111,31 @@ impl TreeReader for Storage {
     fn get_rightmost_leaf<'future, 'a: 'future>(
         &'a self,
     ) -> BoxFuture<'future, Result<Option<(NodeKey, jmt::storage::LeafNode)>>> {
-        todo!()
+        let span = Span::current();
+        let db = self.0.clone();
+
+        Box::pin(async {
+            tokio::task::spawn_blocking(move || {
+                span.in_scope(|| {
+                    let mut iter = db.raw_iterator();
+                    let mut ret = None;
+                    iter.seek_to_last();
+
+                    if iter.valid() {
+                        let node_key = NodeKey::decode(iter.key().unwrap())?;
+                        let node = Node::decode(iter.value().unwrap())?;
+
+                        if let Node::Leaf(leaf_node) = node {
+                            ret = Some((node_key, leaf_node));
+                        }
+                    } else {
+                        // There are no keys in the database
+                    }
+                    Ok(ret)
+                })
+            })
+            .await
+            .unwrap()
+        })
     }
 }
