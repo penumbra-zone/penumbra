@@ -96,6 +96,31 @@ impl TreeReader for Storage {
     fn get_rightmost_leaf<'future, 'a: 'future>(
         &'a self,
     ) -> BoxFuture<'future, Result<Option<(NodeKey, jmt::storage::LeafNode)>>> {
-        todo!()
+        let span = Span::current();
+        let db = self.0.clone();
+
+        Box::pin(async {
+            tokio::task::spawn_blocking(move || {
+                span.in_scope(|| {
+                    let mut iter = db.raw_iterator();
+                    let mut ret = None;
+                    iter.seek_to_last();
+
+                    if iter.valid() {
+                        let node_key = NodeKey::decode(iter.key().unwrap())?;
+                        let node = Node::decode(iter.value().unwrap())?;
+
+                        if let Node::Leaf(leaf_node) = node {
+                            ret = Some((node_key, leaf_node));
+                        }
+                    } else {
+                        // There are no keys in the database
+                    }
+                    Ok(ret)
+                })
+            })
+            .await
+            .unwrap()
+        })
     }
 }
