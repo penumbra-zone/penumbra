@@ -22,6 +22,7 @@ use crate::{genesis, WriteOverlayExt};
 pub struct ShieldedPool {
     overlay: Overlay,
     note_commitment_tree: NoteCommitmentTree,
+    supply_updates: BTreeMap<asset::Id, i64>,
 }
 
 #[async_trait]
@@ -32,6 +33,7 @@ impl Component for ShieldedPool {
         Ok(Self {
             overlay,
             note_commitment_tree,
+            supply_updates: Default::default(),
         })
     }
 
@@ -164,6 +166,26 @@ impl Component for ShieldedPool {
     }
 
     async fn end_block(&mut self, _end_block: &abci::request::EndBlock) -> Result<()> {
+        todo!()
+    }
+}
+
+impl ShieldedPool {
+    #[tracing::instrument(skip(self))]
+    fn mint_tokens(&mut self, value: Value, transaction_id: [u8; 32]) -> StateFragment {
+        // These notes are public, so we don't need a blinding factor for privacy,
+        // but since the note commitments are determined by the note contents, we
+        // need to have unique (deterministic) blinding factors for each note, so they
+        // cannot collide.
+        //
+        // Hashing the current NCT root is sufficient, since it will change every time
+        // we insert a new note.
+        let blinding_factor = blake2b_simd::Params::default()
+            .personal(b"PenumbraMint")
+            .to_state()
+            .update(&self.note_commitment_tree.root2().to_bytes())
+            .finalize();
+
         todo!()
     }
 }
