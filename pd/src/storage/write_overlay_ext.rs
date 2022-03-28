@@ -1,9 +1,10 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use jmt::{storage::TreeReader, KeyHash, WriteOverlay};
 use penumbra_proto::{Message, Protobuf};
+use tokio::sync::Mutex;
 
 /// An extension trait that allows writing proto-encoded domain types to
 /// a shared [`WriteOverlay`].
@@ -20,7 +21,7 @@ pub trait WriteOverlayExt {
         <D as TryFrom<P>>::Error: Into<anyhow::Error>;
 
     /// Puts a domain type into the overlay, using the proto encoding.
-    fn put_domain<D, P>(&self, key: KeyHash, value: D)
+    async fn put_domain<D, P>(&self, key: KeyHash, value: D)
     where
         D: Protobuf<P> + Send,
         // TODO: does this get less awful if P is an associated type of D?
@@ -41,7 +42,7 @@ pub trait WriteOverlayExt {
     ///
     /// It's probably preferable to use [`WriteOverlayExt::put_domain`] instead,
     /// but there are cases where it's convenient to use the proto directly.
-    fn put_proto<P>(&self, key: KeyHash, value: P)
+    async fn put_proto<P>(&self, key: KeyHash, value: P)
     where
         P: Message;
 }
@@ -60,7 +61,7 @@ impl<R: TreeReader + Sync> WriteOverlayExt for Arc<Mutex<WriteOverlay<R>>> {
         todo!()
     }
 
-    fn put_domain<D, P>(&self, _key: KeyHash, _value: D)
+    async fn put_domain<D, P>(&self, _key: KeyHash, _value: D)
     where
         D: Protobuf<P>,
         // TODO: does this get less awful if P is an associated type of D?
@@ -76,25 +77,20 @@ impl<R: TreeReader + Sync> WriteOverlayExt for Arc<Mutex<WriteOverlay<R>>> {
     where
         P: Message + Default,
     {
-        let s = self.lock().unwrap();
-        let b = s.get(key).await?;
-        drop(s);
-        let bytes = match b {
+        let bytes = match self.lock().await.get(key).await? {
             None => return Ok(None),
             Some(bytes) => bytes,
         };
 
-        // TODO: this isn't working because the impl for decode requires a
-        // Default impl for `P`
-        Message::decode(bytes.into())
+        Message::decode(bytes.as_slice())
             .map_err(|e| anyhow!(e))
             .map(|v| Some(v))
     }
 
-    fn put_proto<P>(&self, key: KeyHash, value: P)
+    async fn put_proto<P>(&self, key: KeyHash, value: P)
     where
         P: Message,
     {
-        self.lock().unwrap().put(key, value.encode_to_vec());
+        self.lock().await.put(key, value.encode_to_vec());
     }
 }

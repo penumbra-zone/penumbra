@@ -80,7 +80,7 @@ pub trait Component: Sized {
     ///
     /// This method should only be called immediately after [`Component::new`].
     /// No methods should be called following this method.
-    fn init_chain(&mut self, app_state: &genesis::AppState) -> Result<()>;
+    async fn init_chain(&mut self, app_state: &genesis::AppState) -> Result<()>;
 
     /// Begins a new block, optionally inspecting the ABCI
     /// [`BeginBlock`](abci::request::BeginBlock) request.
