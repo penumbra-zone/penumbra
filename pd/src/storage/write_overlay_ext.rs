@@ -68,6 +68,7 @@ impl<R: TreeReader + Sync> WriteOverlayExt for Arc<Mutex<WriteOverlay<R>>> {
         P: Message + Default,
         P: From<D>,
         D: TryFrom<P> + Clone,
+        D: std::marker::Send,
         <D as TryFrom<P>>::Error: Into<anyhow::Error>,
     {
         todo!()

@@ -17,7 +17,7 @@ impl Component for ShieldedPool {
         Ok(Self { overlay })
     }
 
-    fn init_chain(&mut self, _app_state: &genesis::AppState) -> Result<()> {
+    async fn init_chain(&mut self, _app_state: &genesis::AppState) -> Result<()> {
         todo!()
     }
 

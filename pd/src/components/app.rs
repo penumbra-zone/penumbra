@@ -31,7 +31,7 @@ impl App {
     /// as an empty overlay of the newly written state.
     pub async fn commit(&mut self, storage: Storage) -> Result<(RootHash, Version)> {
         // Commit the pending writes, clearing the overlay.
-        let (root_hash, version) = self.overlay.lock().unwrap().commit(storage).await?;
+        let (root_hash, version) = self.overlay.lock().await.commit(storage).await?;
         // Now re-instantiate all of the components:
         self.shielded_pool = ShieldedPool::new(self.overlay.clone()).await?;
         self.ibc = IBCComponent::new(self.overlay.clone()).await?;
@@ -53,9 +53,9 @@ impl Component for App {
         })
     }
 
-    fn init_chain(&mut self, app_state: &genesis::AppState) -> Result<()> {
-        self.shielded_pool.init_chain(app_state)?;
-        self.ibc.init_chain(app_state)?;
+    async fn init_chain(&mut self, app_state: &genesis::AppState) -> Result<()> {
+        self.shielded_pool.init_chain(app_state).await?;
+        self.ibc.init_chain(app_state).await?;
         Ok(())
     }
 
