@@ -100,6 +100,8 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.crypto.MerkleRoot", SERIALIZE),
     (".penumbra.crypto.MerkleRoot", SERDE_TRANSPARENT),
     (".penumbra.chain.ChainParams", SERIALIZE),
+    (".penumbra.chain.CompactBlock", SERIALIZE),
+    (".penumbra.chain.CompactOutput", SERIALIZE),
     (".penumbra.genesis.GenesisAppState", SERIALIZE),
     (".penumbra.genesis.Allocation", SERIALIZE),
     (".penumbra.genesis.ValidatorPower", SERIALIZE),
