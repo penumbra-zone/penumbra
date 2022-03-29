@@ -2,10 +2,10 @@ use std::pin::Pin;
 
 use futures::stream::{StreamExt, TryStreamExt};
 use penumbra_proto::{
-    chain::ChainParams,
+    chain::{ChainParams, CompactBlock},
     light_wallet::{
-        light_wallet_server::LightWallet, ChainParamsRequest, CompactBlock,
-        CompactBlockRangeRequest, ValidatorInfoRequest,
+        light_wallet_server::LightWallet, ChainParamsRequest, CompactBlockRangeRequest,
+        ValidatorInfoRequest,
     },
     stake::ValidatorInfo,
 };

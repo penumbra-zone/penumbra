@@ -12,7 +12,7 @@ use penumbra_crypto::{
     merkle::{Frontier, NoteCommitmentTree, Tree, TreeExt},
     note, Address, FieldExt, Note, Nullifier, Value,
 };
-use penumbra_proto::light_wallet::{CompactBlock, StateFragment};
+use penumbra_proto::chain::{CompactBlock, CompactOutput};
 use penumbra_stake::{RateData, ValidatorDefinition, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM};
 use penumbra_transaction::Transaction;
 use rand::seq::SliceRandom;
@@ -754,7 +754,7 @@ impl ClientState {
         }
         tracing::debug!(fragments_len = fragments.len(), "starting block scan");
 
-        for StateFragment {
+        for CompactOutput {
             note_commitment,
             ephemeral_key,
             encrypted_note,

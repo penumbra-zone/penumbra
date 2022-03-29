@@ -8,7 +8,7 @@ import "stake.proto";
 //
 // This protocol attempts to be trust-minimized, both in terms of integrity and privacy.
 service LightWallet {
-  rpc CompactBlockRange(CompactBlockRangeRequest) returns (stream CompactBlock);
+  rpc CompactBlockRange(CompactBlockRangeRequest) returns (stream chain.CompactBlock);
   rpc ChainParams(ChainParamsRequest) returns (chain.ChainParams);
   rpc ValidatorInfo(ValidatorInfoRequest) returns (stream stake.ValidatorInfo);
 }
@@ -21,26 +21,6 @@ message CompactBlockRangeRequest {
   uint64 start_height = 1;
   // The end height of the range.
   uint64 end_height = 2;
-}
-
-// Contains the minimum data needed to update client state.
-message CompactBlock {
-  uint64 height = 1;
-  // Fragments of new notes.
-  repeated StateFragment fragments = 2;
-  // Nullifiers identifying spent notes.
-  repeated bytes nullifiers = 3;
-}
-
-// The minimum data needed to identify a new note.
-message StateFragment {
-  // The note commitment for the output note. 32 bytes.
-  bytes note_commitment = 2;
-  // The encoding of an ephemeral public key. 32 bytes.
-  bytes ephemeral_key = 3;
-  // An encryption of the newly created note.
-  // 132 = 1(type) + 11(d) + 8(amount) + 32(asset_id) + 32(rcm) + 32(pk_d) + 16(MAC) bytes.
-  bytes encrypted_note = 4;
 }
 
 // Requests the global configuration data for the chain.

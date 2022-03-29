@@ -23,8 +23,8 @@ fn main() -> Result<()> {
         ".penumbra.transaction",
         // The byte fields in a compact block will also be converted to fixed-size
         // byte arrays and then discarded.
-        ".penumbra.light_wallet.StateFragment",
-        ".penumbra.light_wallet.CompactBlock",
+        ".penumbra.chain.CompactOutput",
+        ".penumbra.chain.CompactBlock",
     ]);
 
     for (path, attribute) in TYPE_ATTRIBUTES.iter() {
@@ -100,6 +100,8 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.crypto.MerkleRoot", SERIALIZE),
     (".penumbra.crypto.MerkleRoot", SERDE_TRANSPARENT),
     (".penumbra.chain.ChainParams", SERIALIZE),
+    (".penumbra.chain.CompactBlock", SERIALIZE),
+    (".penumbra.chain.CompactOutput", SERIALIZE),
     (".penumbra.genesis.GenesisAppState", SERIALIZE),
     (".penumbra.genesis.Allocation", SERIALIZE),
     (".penumbra.genesis.ValidatorPower", SERIALIZE),
