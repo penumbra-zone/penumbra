@@ -16,7 +16,7 @@ use penumbra_crypto::{
 };
 use penumbra_proto::{
     chain,
-    light_wallet::{CompactBlock, StateFragment},
+    chain::{CompactBlock, StateFragment},
     thin_wallet::{Asset, TransactionDetail},
     Protobuf,
 };
