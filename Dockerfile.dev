@@ -27,6 +27,7 @@ COPY pd/build.rs ./pd
 COPY proto ./proto
 COPY chain ./chain
 COPY crypto ./crypto
+COPY ibc ./ibc
 COPY stake ./stake
 COPY tct ./tct
 COPY decaf377-fmd ./decaf377-fmd
@@ -44,7 +45,7 @@ RUN cargo fetch
 RUN cargo build --release --bin pd
 
 # Remove the cached builds of internal packages.
-RUN rm -rf pcli pd crypto wallet config stake
+RUN rm -rf pcli pd crypto wallet config stake ibc
 
 # Copy the repo source now that dependencies have been built and cached.
 COPY . .
