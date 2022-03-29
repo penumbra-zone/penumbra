@@ -1,6 +1,7 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use jmt::WriteOverlay;
+use tokio::sync::Mutex;
 
 use crate::Storage;
 
