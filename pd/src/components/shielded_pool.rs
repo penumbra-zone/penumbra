@@ -12,7 +12,7 @@ use penumbra_crypto::{
     Address, Note, One, Value,
 };
 use penumbra_proto::light_wallet::{CompactBlock, StateFragment};
-use penumbra_transaction::Transaction;
+use penumbra_transaction::{Action, Transaction};
 use tendermint::abci;
 use tracing::instrument;
 
@@ -26,6 +26,7 @@ pub struct ShieldedPool {
     // TODO: change the on-chain registry to just store asset id -> amount
     // and asset id -> asset id separately
     supply_updates: BTreeMap<asset::Id, i64>,
+    new_denoms: BTreeMap<asset::Id, Denom>,
     /// The in-progress CompactBlock representation of the ShieldedPool changes
     compact_block: CompactBlock,
 }
@@ -33,12 +34,13 @@ pub struct ShieldedPool {
 #[async_trait]
 impl Component for ShieldedPool {
     async fn new(overlay: Overlay) -> Result<Self> {
-        // TODO: Component::new() needs to be async
-        let note_commitment_tree = NoteCommitmentTree::new(0);
+        let note_commitment_tree = Self::get_nct(&overlay).await?;
+
         Ok(Self {
             overlay,
             note_commitment_tree,
             supply_updates: Default::default(),
+            new_denoms: Default::default(),
             compact_block: Default::default(),
         })
     }
@@ -102,11 +104,48 @@ impl Component for ShieldedPool {
     }
 
     async fn check_tx_stateful(&self, tx: &Transaction) -> Result<()> {
+        // TODO: rename transaction_body.merkle_root now that we have 2 merkle trees
+        self.check_claimed_anchor(&tx.transaction_body.merkle_root)
+            .await?;
+
         todo!()
     }
 
-    async fn execute_tx(&mut self, _tx: &Transaction) -> Result<()> {
-        todo!()
+    async fn execute_tx(&mut self, tx: &Transaction) -> Result<()> {
+        let should_quarantine = tx
+            .transaction_body
+            .actions
+            .iter()
+            .any(|action| matches!(action, Action::Undelegate { .. }));
+
+        let id = tx.id();
+        let fragments = tx
+            .transaction_body
+            .actions
+            .iter()
+            .filter_map(|action| {
+                if let Action::Output(output) = action {
+                    // TODO: domain type, rename
+                    Some(StateFragment {
+                        note_commitment: output.body.note_commitment.0.to_bytes().to_vec().into(),
+                        ephemeral_key: output.body.ephemeral_key.0.to_vec().into(),
+                        encrypted_note: output.body.encrypted_note.to_vec().into(),
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+
+        if should_quarantine {
+            todo!();
+        } else {
+            self.add_note();
+
+            todo!();
+        }
+
+        Ok(())
     }
 
     async fn end_block(&mut self, _end_block: &abci::request::EndBlock) -> Result<()> {
@@ -176,8 +215,47 @@ impl ShieldedPool {
         Ok(())
     }
 
+    #[instrument(skip(self))]
+    fn write_block(&mut self) -> Result<()> {
+        // Write the CompactBlock:
+        self.overlay.put_proto(
+            format!("shielded_pool/compact_block/{}", self.compact_block.height).into(),
+            std::mem::take(&mut self.compact_block),
+        );
+        // and the note commitment tree data and anchor:
+        self.put_nct_anchor();
+        self.put_nct()?;
+
+        Ok(())
+    }
+
+    fn put_nct(&mut self) -> Result<()> {
+        let nct_data = bincode::serialize(&self.note_commitment_tree)?;
+        self.overlay
+            .lock()
+            .unwrap()
+            .put(b"shielded_pool/nct_data".into(), nct_data);
+        Ok(())
+    }
+
+    /// This is an associated function rather than a method,
+    /// so that we can call it in the constructor to get the NCT.
+    async fn get_nct(overlay: &Overlay) -> Result<NoteCommitmentTree> {
+        if let Some(bytes) = overlay
+            .lock()
+            .unwrap()
+            .get(b"shielded_pool/nct_data".into())
+            .await?
+        {
+            bincode::deserialize(&bytes).map_err(Into::into)
+        } else {
+            Ok(NoteCommitmentTree::new(0))
+        }
+    }
+
     fn put_nct_anchor(&mut self) {
         let nct_anchor = self.note_commitment_tree.root2();
+        // TODO: should we save a list of historical anchors?
         // Write the NCT anchor both as a value, so we can look it up,
         self.overlay.lock().unwrap().put(
             b"shielded_pool/current_anchor".into(),
@@ -195,7 +273,7 @@ impl ShieldedPool {
         );
     }
 
-    async fn check_nct_anchor(&self, anchor: &merkle::Root) -> Result<()> {
+    async fn check_claimed_anchor(&self, anchor: &merkle::Root) -> Result<()> {
         if self
             .overlay
             .lock()
@@ -215,24 +293,5 @@ impl ShieldedPool {
         } else {
             Err(anyhow!("provided anchor is not a valid NCT root"))
         }
-    }
-
-    // TODO individial methods
-    #[instrument(skip(self))]
-    fn write_block(&mut self) -> Result<()> {
-        // Write the CompactBlock:
-        self.overlay.put_proto(
-            format!("shielded_pool/compact_block/{}", self.compact_block.height).into(),
-            std::mem::take(&mut self.compact_block),
-        );
-        // and the note commitment tree data and anchor:
-        self.put_nct_anchor();
-        let nct_data = bincode::serialize(&self.note_commitment_tree)?;
-        self.overlay
-            .lock()
-            .unwrap()
-            .put(b"shielded_pool/nct_data".into(), nct_data);
-
-        Ok(())
     }
 }
