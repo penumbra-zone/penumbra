@@ -49,7 +49,7 @@ pub trait WriteOverlayExt {
 
 #[async_trait]
 impl<R: TreeReader + Sync> WriteOverlayExt for Arc<Mutex<WriteOverlay<R>>> {
-    async fn get_domain<D, P>(&self, _key: KeyHash) -> Result<Option<D>>
+    async fn get_domain<D, P>(&self, key: KeyHash) -> Result<Option<D>>
     where
         D: Protobuf<P>,
         // TODO: does this get less awful if P is an associated type of D?
@@ -58,10 +58,17 @@ impl<R: TreeReader + Sync> WriteOverlayExt for Arc<Mutex<WriteOverlay<R>>> {
         D: TryFrom<P> + Clone,
         <D as TryFrom<P>>::Error: Into<anyhow::Error>,
     {
-        todo!()
+        match self.get_proto(key).await {
+            Ok(Some(p)) => match D::try_from(p) {
+                Ok(d) => Ok(Some(d)),
+                Err(e) => Err(e.into()),
+            },
+            Ok(None) => Ok(None),
+            Err(e) => Err(e.into()),
+        }
     }
 
-    async fn put_domain<D, P>(&self, _key: KeyHash, _value: D)
+    async fn put_domain<D, P>(&self, key: KeyHash, value: D)
     where
         D: Protobuf<P>,
         // TODO: does this get less awful if P is an associated type of D?
@@ -71,7 +78,8 @@ impl<R: TreeReader + Sync> WriteOverlayExt for Arc<Mutex<WriteOverlay<R>>> {
         D: std::marker::Send,
         <D as TryFrom<P>>::Error: Into<anyhow::Error>,
     {
-        todo!()
+        let v: P = value.try_into().unwrap();
+        self.put_proto(key, v).await;
     }
 
     async fn get_proto<P>(&self, key: KeyHash) -> Result<Option<P>>
