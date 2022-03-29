@@ -16,7 +16,7 @@ use penumbra_crypto::{
 };
 use penumbra_proto::{
     chain,
-    chain::{CompactBlock, StateFragment},
+    chain::{CompactBlock, CompactOutput},
     thin_wallet::{Asset, TransactionDetail},
     Protobuf,
 };
@@ -480,7 +480,7 @@ impl Reader {
                         .next()
                         .await
                         .expect("we already peeked, so there is a next row")?;
-                    compact_block.fragments.push(StateFragment {
+                    compact_block.fragments.push(CompactOutput {
                         note_commitment: row.note_commitment.into(),
                         ephemeral_key: row.ephemeral_key.into(),
                         encrypted_note: row.encrypted_note.into(),

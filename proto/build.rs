@@ -23,7 +23,7 @@ fn main() -> Result<()> {
         ".penumbra.transaction",
         // The byte fields in a compact block will also be converted to fixed-size
         // byte arrays and then discarded.
-        ".penumbra.chain.StateFragment",
+        ".penumbra.chain.CompactOutput",
         ".penumbra.chain.CompactBlock",
     ]);
 
