@@ -3,11 +3,12 @@ use std::convert::{TryFrom, TryInto};
 use ark_ff::Zero;
 use bytes::Bytes;
 use decaf377::FieldExt;
+use penumbra_chain::sync::CompactOutput;
 use penumbra_crypto::{
     merkle,
     proofs::transparent::TransactionProof,
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
-    Fr, Value,
+    Fr, Nullifier, Value,
 };
 use penumbra_proto::{
     transaction::{
@@ -19,7 +20,6 @@ use penumbra_stake::STAKING_TOKEN_ASSET_ID;
 
 use anyhow::Error;
 
-// TODO: remove & replace with anyhow
 use crate::Action;
 
 mod builder;
@@ -80,6 +80,40 @@ impl Transaction {
 
     pub fn proof(&self) -> Option<TransactionProof> {
         self.transaction_body.zkproof.clone()
+    }
+
+    pub fn compact_outputs(&self) -> Vec<CompactOutput> {
+        self.transaction_body
+            .actions
+            .iter()
+            .filter_map(|action| {
+                if let Action::Output(output) = action {
+                    Some(CompactOutput {
+                        note_commitment: output.body.note_commitment,
+                        ephemeral_key: output.body.ephemeral_key,
+                        encrypted_note: output.body.encrypted_note.to_vec(),
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    pub fn spent_nullifiers(&self) -> Vec<Nullifier> {
+        self.transaction_body
+            .actions
+            .iter()
+            .filter_map(|action| {
+                // Note: adding future actions that include nullifiers
+                // will need to be matched here as well as Spends
+                if let Action::Spend(spend) = action {
+                    Some(spend.body.nullifier.clone())
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 
     pub fn transaction_body(&self) -> TransactionBody {
