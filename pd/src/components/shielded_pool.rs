@@ -246,11 +246,11 @@ impl ShieldedPool {
     /// This is an associated function rather than a method,
     /// so that we can call it in the constructor to get the NCT.
     async fn get_nct(overlay: &Overlay) -> Result<NoteCommitmentTree> {
-        if let Some(bytes) = overlay
+        if let Ok(Some(bytes)) = overlay
             .lock()
             .await
             .get(b"shielded_pool/nct_data".into())
-            .await?
+            .await
         {
             bincode::deserialize(&bytes).map_err(Into::into)
         } else {
