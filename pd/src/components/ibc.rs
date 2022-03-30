@@ -17,26 +17,26 @@ impl Component for IBCComponent {
     }
 
     async fn init_chain(&mut self, _app_state: &genesis::AppState) -> Result<()> {
-        todo!()
+        Ok(())
     }
 
     async fn begin_block(&mut self, _begin_block: &abci::request::BeginBlock) -> Result<()> {
-        todo!()
+        Ok(())
     }
 
     fn check_tx_stateless(_tx: &Transaction) -> Result<()> {
-        todo!()
+        Ok(())
     }
 
     async fn check_tx_stateful(&self, _tx: &Transaction) -> Result<()> {
-        todo!()
+        Ok(())
     }
 
     async fn execute_tx(&mut self, _tx: &Transaction) -> Result<()> {
-        todo!()
+        Ok(())
     }
 
     async fn end_block(&mut self, _end_block: &abci::request::EndBlock) -> Result<()> {
-        todo!()
+        Ok(())
     }
 }
