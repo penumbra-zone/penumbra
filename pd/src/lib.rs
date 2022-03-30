@@ -29,7 +29,7 @@ pub use pd_metrics::register_all_metrics;
 use pending_block::PendingBlock;
 use request_ext::RequestExt;
 pub use snapshot::Snapshot;
-pub use storage::{Storage, WriteOverlayExt};
+pub use storage::{PenumbraStore, Storage, WriteOverlayExt};
 
 /// The age limit, in blocks, on anchors accepted in transaction verification.
 pub const NUM_RECENT_ANCHORS: usize = 256;
