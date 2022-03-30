@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Result};
 
+#[derive(Clone, Copy, Debug)]
 pub enum NoteSource {
     Transaction { id: [u8; 32] },
     Genesis,
