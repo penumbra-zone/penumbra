@@ -39,7 +39,7 @@ impl Component for Staking {
         let block_height = begin_block.header.height;
         let epoch = Epoch::from_height(
             block_height.into(),
-            self.chain_params.unwrap().epoch_duration,
+            self.chain_params.as_ref().unwrap().epoch_duration,
         );
         // Reset all staking state in the JMT overlay
         let block_changes = BlockChanges {
