@@ -16,6 +16,12 @@ pub static NULLIFIER_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
     Fq::from_le_bytes_mod_order(blake2b_simd::blake2b(b"penumbra.nullifier").as_bytes())
 });
 
+impl std::fmt::Display for Nullifier {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&hex::encode(&self.to_bytes()))
+    }
+}
+
 impl Nullifier {
     pub fn to_bytes(&self) -> [u8; 32] {
         self.0.to_bytes()
