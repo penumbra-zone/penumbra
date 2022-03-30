@@ -1,9 +1,9 @@
-use std::sync::Arc;
-
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use jmt::{storage::TreeReader, KeyHash, WriteOverlay};
 use penumbra_proto::{Message, Protobuf};
+use std::fmt::Debug;
+use std::sync::Arc;
 use tokio::sync::Mutex;
 
 /// An extension trait that allows writing proto-encoded domain types to
@@ -18,6 +18,7 @@ pub trait WriteOverlayExt {
         P: Message + Default,
         P: From<D>,
         D: TryFrom<P> + Clone,
+        D: Debug,
         <D as TryFrom<P>>::Error: Into<anyhow::Error>;
 
     /// Puts a domain type into the overlay, using the proto encoding.
@@ -28,6 +29,7 @@ pub trait WriteOverlayExt {
         P: Message + Default,
         P: From<D>,
         D: TryFrom<P> + Clone,
+        D: Debug,
         <D as TryFrom<P>>::Error: Into<anyhow::Error>;
 
     /// Reads a proto type from the overlay.
@@ -56,11 +58,18 @@ impl<R: TreeReader + Sync> WriteOverlayExt for Arc<Mutex<WriteOverlay<R>>> {
         P: Message + Default,
         P: From<D>,
         D: TryFrom<P> + Clone,
+        D: Debug,
         <D as TryFrom<P>>::Error: Into<anyhow::Error>,
     {
+        tracing::debug!(keyhash = ?key, "Requested KeyHash");
+
         match self.get_proto(key).await {
             Ok(Some(p)) => match D::try_from(p) {
-                Ok(d) => Ok(Some(d)),
+                Ok(d) => {
+                    tracing::debug!(domain = ?d, "Retrieved domain");
+
+                    Ok(Some(d))
+                }
                 Err(e) => Err(e.into()),
             },
             Ok(None) => Ok(None),
@@ -78,7 +87,12 @@ impl<R: TreeReader + Sync> WriteOverlayExt for Arc<Mutex<WriteOverlay<R>>> {
         D: std::marker::Send,
         <D as TryFrom<P>>::Error: Into<anyhow::Error>,
     {
+        tracing::debug!(keyhash = ?key, "Inserted KeyHash");
+
         let v: P = value.try_into().unwrap();
+
+        tracing::debug!(val = ?v, "Inserted value");
+
         self.put_proto(key, v).await;
     }
 
@@ -86,6 +100,8 @@ impl<R: TreeReader + Sync> WriteOverlayExt for Arc<Mutex<WriteOverlay<R>>> {
     where
         P: Message + Default,
     {
+        tracing::debug!(keyhash = ?key, "Requested KeyHash");
+
         let bytes = match self.lock().await.get(key).await? {
             None => return Ok(None),
             Some(bytes) => bytes,
@@ -93,13 +109,20 @@ impl<R: TreeReader + Sync> WriteOverlayExt for Arc<Mutex<WriteOverlay<R>>> {
 
         Message::decode(bytes.as_slice())
             .map_err(|e| anyhow!(e))
-            .map(|v| Some(v))
+            .map(|v| {
+                tracing::debug!(val = ?v, "Retrieved proto");
+                Some(v)
+            })
     }
 
     async fn put_proto<P>(&self, key: KeyHash, value: P)
     where
         P: Message,
     {
+        tracing::debug!(keyhash = ?key, "Inserted KeyHash");
+
+        tracing::debug!(val = ?value, "Inserted value");
+
         self.lock().await.put(key, value.encode_to_vec());
     }
 }
