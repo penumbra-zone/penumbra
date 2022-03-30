@@ -1,7 +1,9 @@
 use anyhow::Result;
 use sqlx::postgres::PgPoolOptions;
+use tendermint::block;
 use tokio::sync::watch;
 use tracing::instrument;
+
 mod reader;
 mod writer;
 
@@ -40,7 +42,7 @@ pub async fn new(uri: &str) -> Result<(Reader, Writer)> {
     // objects that can do that yet, so we defer that to a Writer::init_caches
     // call below.
     let (chain_params_tx, chain_params_rx) = watch::channel(Default::default());
-    let (height_tx, height_rx) = watch::channel(Default::default());
+    let (height_tx, height_rx) = watch::channel(block::Height::from(0u8));
     let (next_rate_data_tx, next_rate_data_rx) = watch::channel(Default::default());
     let (valid_anchors_tx, valid_anchors_rx) = watch::channel(Default::default());
 
