@@ -1,27 +1,31 @@
 use std::borrow::Borrow;
+use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
 use futures::StreamExt;
+use jmt::WriteOverlay;
 use metrics::absolute_counter;
 use penumbra_crypto::merkle::NoteCommitmentTree;
 use penumbra_proto::Protobuf;
 use penumbra_stake::Epoch;
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, ConsensusRequest as Request, ConsensusResponse as Response};
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, Mutex};
 use tracing::Instrument;
 
 use super::Message;
 use crate::{
-    components::validator_set::ValidatorSet, genesis, state, verify::StatelessTransactionExt,
-    PendingBlock, Storage,
+    components::validator_set::ValidatorSet, genesis, state, verify::StatelessTransactionExt, App,
+    Component, PendingBlock, Storage,
 };
 
 pub struct Worker {
-    state: state::Writer,
-    storage: Storage,
     queue: mpsc::Receiver<Message>,
-    // todo: split up and modularize
+    // new app code
+    storage: Storage,
+    app: App,
+    // legacy app code below
+    state: state::Writer,
     pending_block: Option<PendingBlock>,
     validator_set: ValidatorSet,
     note_commitment_tree: NoteCommitmentTree,
@@ -40,11 +44,20 @@ impl Worker {
         // A more pedantically correct option would be to make everything Optional, but that
         // "contaminates" all of the other logic of the application to handle the initialization
         // special case.
+
+        let height = state.private_reader().height().into();
+        let app = App::new(Arc::new(Mutex::new(WriteOverlay::new(
+            storage.clone(),
+            height,
+        ))))
+        .await?;
+
         let reader = state.private_reader().clone();
         let mut worker = Self {
-            state,
-            storage,
             queue,
+            storage,
+            app,
+            state,
             pending_block: None,
             note_commitment_tree: NoteCommitmentTree::new(0),
             validator_set: ValidatorSet::new(
@@ -153,6 +166,10 @@ impl Worker {
         let app_state: genesis::AppState = serde_json::from_slice(&init_chain.app_state_bytes)
             .expect("can parse app_state in genesis file");
 
+        // Begin new sidecar code
+        self.app.init_chain(&app_state).await?;
+        // End new sidecar code
+
         // Initialize the database with the app state.
         let app_hash = self
             .state
@@ -193,6 +210,10 @@ impl Worker {
     ) -> Result<abci::response::BeginBlock> {
         tracing::debug!(?begin_block);
 
+        // Begin new sidecar code
+        self.app.begin_block(&begin_block).await?;
+        // End new sidecar code
+
         // TODO: fold into separate begin_block_metrics() function
         let block_metrics = self.state.private_reader().metrics().await?;
         absolute_counter!("node_spent_nullifiers_total", block_metrics.nullifier_count);
@@ -223,12 +244,19 @@ impl Worker {
     /// Byzantine node may propose a block containing double spends or other disallowed behavior,
     /// so it is not safe to assume all checks performed in `CheckTx` were done.
     async fn deliver_tx(&mut self, deliver_tx: abci::request::DeliverTx) -> Result<()> {
+        // Verify the transaction is well-formed...
+        let transaction = Transaction::decode(deliver_tx.tx)?;
+
+        // Begin new sidecar code
+        App::check_tx_stateless(&transaction)?;
+        self.app.check_tx_stateful(&transaction).await?;
+        self.app.execute_tx(&transaction).await?;
+        // End new sidecar code
+
         // Use the current state of the validators in the state machine, not the ones in the db.
         let block_validators = self.validator_set.validators_info();
-        // Verify the transaction is well-formed...
-        let transaction = Transaction::decode(deliver_tx.tx)?
-            // ... and that it is internally consistent ...
-            .verify_stateless()?;
+        // ... and that it is internally consistent ...
+        let transaction = transaction.verify_stateless()?;
         // ... and that it is consistent with the existing chain state.
         let transaction = self
             .state
@@ -279,6 +307,10 @@ impl Worker {
         end_block: abci::request::EndBlock,
     ) -> Result<abci::response::EndBlock> {
         tracing::debug!(?end_block);
+
+        // Begin sidecar code
+        self.app.end_block(&end_block).await?;
+        // End sidecar code
 
         let reader = self.state.private_reader();
 
@@ -403,6 +435,13 @@ impl Worker {
     }
 
     async fn commit(&mut self) -> Result<abci::response::Commit> {
+        // Begin sidecar code
+
+        // Note: App::commit resets internal components, so we don't need to do that ourselves.
+        self.app.commit(self.storage.clone()).await?;
+
+        // End sidecar code
+
         let pending_block = self
             .pending_block
             .take()
