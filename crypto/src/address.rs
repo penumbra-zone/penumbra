@@ -12,7 +12,7 @@ use crate::{fmd, ka, keys::Diversifier, Fq};
 const ADDR_PADDING: &[u8] = "pen00".as_bytes();
 
 /// A valid payment address.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "pb::Address", into = "pb::Address")]
 pub struct Address {
     d: Diversifier,
@@ -139,6 +139,12 @@ impl std::fmt::Display for Address {
             bech32str::address::BECH32_PREFIX,
             bech32str::Bech32m,
         ))
+    }
+}
+
+impl std::fmt::Debug for Address {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        <Self as std::fmt::Display>::fmt(self, f)
     }
 }
 
