@@ -6,7 +6,10 @@ use jmt::storage::{Node, NodeBatch, NodeKey, TreeReader, TreeWriter};
 use rocksdb::DB;
 use tracing::{instrument, Span};
 
+mod penumbra_store;
 mod write_overlay_ext;
+
+pub use penumbra_store::PenumbraStore;
 pub use write_overlay_ext::WriteOverlayExt;
 
 #[derive(Clone, Debug)]
