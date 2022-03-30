@@ -11,6 +11,8 @@ penumbra-proto = { path = "../proto/" }
 penumbra-crypto = { path = "../crypto/" }
 penumbra-stake = { path = "../stake/" }
 penumbra-ibc = { path = "../ibc/" }
+# Temporary dependency -- remove when aligning Output::Body and CompactOutput
+penumbra-chain = { path = "../chain" }
 
 # Git deps
 ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
