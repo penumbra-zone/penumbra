@@ -47,7 +47,7 @@ impl TryFrom<pb::CompactOutput> for CompactOutput {
 
 // Domain type for CompactBlock.
 // Contains the minimum data needed to update client state.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 #[serde(try_from = "pb::CompactBlock", into = "pb::CompactBlock")]
 pub struct CompactBlock {
     pub height: u64,
