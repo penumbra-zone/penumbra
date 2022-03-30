@@ -6,7 +6,7 @@ use penumbra_transaction::Transaction;
 use tendermint::abci;
 
 use super::{Component, Overlay};
-use crate::{components::validator_set::BlockChanges, genesis};
+use crate::{components::validator_set::BlockChanges, genesis, WriteOverlayExt};
 
 // Stub component
 pub struct Staking {
@@ -28,7 +28,7 @@ impl Component for Staking {
         })
     }
 
-    fn init_chain(&mut self, app_state: &genesis::AppState) -> Result<()> {
+    async fn init_chain(&mut self, app_state: &genesis::AppState) -> Result<()> {
         self.chain_params = Some(app_state.chain_params.clone());
 
         Ok(())
@@ -51,10 +51,11 @@ impl Component for Staking {
             tm_validator_updates: Default::default(),
             epoch_changes: Default::default(),
         };
-        self.overlay.lock().unwrap().put(
-            format!("staking/block_changes/{}", block_height).into(),
-            block_changes.to_bytes().to_vec(),
-        );
+        // TODO: need to write proto impl for BlockChanges
+        // self.overlay.put_domain(
+        //     format!("staking/block_changes/{}", block_height).into(),
+        //     block_changes,
+        // );
 
         Ok(())
     }

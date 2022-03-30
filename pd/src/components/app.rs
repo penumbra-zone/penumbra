@@ -67,7 +67,7 @@ impl Component for App {
             .await;
 
         self.shielded_pool.init_chain(app_state).await?;
-        self.staking.init_chain(app_state)?;
+        self.staking.init_chain(app_state).await?;
         self.ibc.init_chain(app_state).await?;
         Ok(())
     }

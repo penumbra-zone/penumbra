@@ -48,7 +48,8 @@ impl Cache {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
+// TODO: this struct should be dropped and the JMT used directly
 pub struct BlockChanges {
     /// New validators added during the block. Saved and available for staking when the block is committed.
     pub new_validators: BTreeMap<IdentityKey, Vec<VerifiedValidatorDefinition>>,
