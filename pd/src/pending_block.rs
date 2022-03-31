@@ -138,22 +138,23 @@ impl PendingBlock {
 
     /// Adds the state changes from a verified transaction.
     pub fn add_transaction(&mut self, transaction: VerifiedTransaction) {
-        if let Some(validator_identity_key) = transaction.undelegation_validator {
-            // If a transaction contains an undelegation, we *do not insert any of its outputs*
-            // into the NCT; instead we store them separately, to be inserted into the NCT only
-            // after the unbonding period occurs.
-            self.quarantine.push(QuarantineGroup {
-                validator_identity_key,
-                notes: transaction.new_notes.into_iter().collect(),
-                nullifiers: transaction.spent_nullifiers.iter().cloned().collect(),
-            });
-        } else {
-            // If a transaction does not contain any undelegations, we insert its outputs
-            // immediately into the NCT.
-            for (commitment, data) in transaction.new_notes {
-                self.add_note(commitment, data);
-            }
+        // Hack: skip quarantining, because we didn't implement the client-side logic.
+        // if let Some(validator_identity_key) = transaction.undelegation_validator {
+        //     // If a transaction contains an undelegation, we *do not insert any of its outputs*
+        //     // into the NCT; instead we store them separately, to be inserted into the NCT only
+        //     // after the unbonding period occurs.
+        //     self.quarantine.push(QuarantineGroup {
+        //         validator_identity_key,
+        //         notes: transaction.new_notes.into_iter().collect(),
+        //         nullifiers: transaction.spent_nullifiers.iter().cloned().collect(),
+        //     });
+        // } else {
+        // If a transaction does not contain any undelegations, we insert its outputs
+        // immediately into the NCT.
+        for (commitment, data) in transaction.new_notes {
+            self.add_note(commitment, data);
         }
+        // }
 
         // Unconditionally, insert all nullifiers spent in this transaction into the spent set to
         // prevent double-spends, regardless of quarantine status.
