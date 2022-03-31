@@ -24,8 +24,6 @@ message TransactionBody {
   string chain_id = 4;
   // The transaction fee.
   Fee fee = 5;
-  // The proof over all actions.
-  bytes zkproof = 6;
 }
 
 // A state change performed by a transaction.
@@ -60,6 +58,8 @@ message SpendBody {
   bytes nullifier = 3;
   // The randomized validating key for the spend authorization signature.
   bytes rk = 4;
+  // The spend proof.
+  bytes zkproof = 5;
 }
 
 // Creates a new shielded note.
@@ -85,4 +85,6 @@ message OutputBody {
   // An encryption of the newly created note.
   // 132 = 1(type) + 11(d) + 8(amount) + 32(asset_id) + 32(rcm) + 32(pk_d) + 16(MAC) bytes.
   bytes encrypted_note = 4;
+  // The output proof. 192 bytes.
+  bytes zkproof = 5;
 }
