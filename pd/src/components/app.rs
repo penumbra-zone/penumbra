@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use jmt::{RootHash, Version};
 use penumbra_transaction::Transaction;
 use tendermint::abci;
+use tracing::instrument;
 
 use super::{Component, IBCComponent, Overlay, ShieldedPool, Staking};
 use crate::{genesis, PenumbraStore, Storage, WriteOverlayExt};
@@ -30,9 +31,11 @@ impl App {
     ///
     /// This method also resets `self` as if it were constructed
     /// as an empty overlay of the newly written state.
+    #[instrument(skip(self, storage))]
     pub async fn commit(&mut self, storage: Storage) -> Result<(RootHash, Version)> {
         // Commit the pending writes, clearing the overlay.
         let (root_hash, version) = self.overlay.lock().await.commit(storage).await?;
+        tracing::debug!(?root_hash, version, "finished committing overlay");
         // Now re-instantiate all of the components:
         self.shielded_pool = ShieldedPool::new(self.overlay.clone()).await?;
         self.staking = Staking::new(self.overlay.clone()).await?;
