@@ -1,7 +1,9 @@
 use std::convert::{TryFrom, TryInto};
 
 use bytes::Bytes;
-use penumbra_crypto::{ka, memo::MemoCiphertext, note, value, Fr, Note};
+use penumbra_crypto::{
+    ka, memo::MemoCiphertext, note, proofs::transparent::OutputProof, value, Fr, Note,
+};
 use penumbra_proto::{transaction, Protobuf};
 
 use anyhow::Error;
@@ -59,10 +61,17 @@ pub struct Body {
     pub note_commitment: note::Commitment,
     pub ephemeral_key: ka::Public,
     pub encrypted_note: [u8; note::NOTE_CIPHERTEXT_BYTES],
+    pub proof: OutputProof,
 }
 
 impl Body {
-    pub fn new(note: Note, v_blinding: Fr, esk: &ka::Secret) -> Body {
+    pub fn new(
+        note: Note,
+        v_blinding: Fr,
+        diversified_generator: decaf377::Element,
+        transmission_key: ka::Public,
+        esk: &ka::Secret,
+    ) -> Body {
         // TODO: p. 43 Spec. Decide whether to do leadByte 0x01 method or 0x02 or other.
 
         // Outputs subtract from the transaction value balance, so commit to -value.
@@ -72,11 +81,21 @@ impl Body {
         let ephemeral_key = esk.diversified_public(&note.diversified_generator());
         let encrypted_note = note.encrypt(esk);
 
+        let proof = OutputProof {
+            g_d: diversified_generator,
+            pk_d: transmission_key,
+            value: note.value(),
+            v_blinding,
+            note_blinding: note.note_blinding(),
+            esk: esk.clone(),
+        };
+
         Self {
             value_commitment,
             note_commitment,
             ephemeral_key,
             encrypted_note,
+            proof,
         }
     }
 }
@@ -87,11 +106,13 @@ impl From<Body> for transaction::OutputBody {
     fn from(msg: Body) -> Self {
         let cv_bytes: [u8; 32] = msg.value_commitment.into();
         let cm_bytes: [u8; 32] = msg.note_commitment.into();
+        let proof: Vec<u8> = msg.proof.into();
         transaction::OutputBody {
             cv: Bytes::copy_from_slice(&cv_bytes),
             cm: Bytes::copy_from_slice(&cm_bytes),
             ephemeral_key: Bytes::copy_from_slice(&msg.ephemeral_key.0),
             encrypted_note: Bytes::copy_from_slice(&msg.encrypted_note),
+            zkproof: proof.into(),
         }
     }
 }
@@ -110,6 +131,9 @@ impl TryFrom<transaction::OutputBody> for Body {
             ephemeral_key: ka::Public::try_from(&proto.ephemeral_key[..])
                 .map_err(|_| anyhow::anyhow!("output body malformed"))?,
             encrypted_note: proto.encrypted_note[..]
+                .try_into()
+                .map_err(|_| anyhow::anyhow!("output body malformed"))?,
+            proof: proto.zkproof[..]
                 .try_into()
                 .map_err(|_| anyhow::anyhow!("output body malformed"))?,
         })

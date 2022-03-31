@@ -39,7 +39,7 @@ pub enum Error {
 ///
 /// This structure keeps track of the auxiliary (private)
 /// inputs for each action in the transaction.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct TransactionProof {
     pub proof_actions: Vec<ProofAction>,
 }
@@ -49,16 +49,6 @@ pub struct TransactionProof {
 pub enum ProofAction {
     Output(OutputProof),
     Spend(SpendProof),
-}
-
-impl TransactionProof {
-    pub fn add_spend(&mut self, spend: SpendProof) {
-        self.proof_actions.push(ProofAction::Spend(spend))
-    }
-
-    pub fn add_output(&mut self, output: OutputProof) {
-        self.proof_actions.push(ProofAction::Output(output))
-    }
 }
 
 impl Protobuf<transparent_proofs::ProofAction> for ProofAction {}
