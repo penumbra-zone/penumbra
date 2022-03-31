@@ -168,6 +168,8 @@ impl Worker {
 
         // Begin new sidecar code
         self.app.init_chain(&app_state).await?;
+        // Note: App::commit resets internal components, so we don't need to do that ourselves.
+        self.app.commit(self.storage.clone()).await?;
         // End new sidecar code
 
         // Initialize the database with the app state.
