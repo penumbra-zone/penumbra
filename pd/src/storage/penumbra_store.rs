@@ -1,6 +1,9 @@
+use std::str::FromStr;
+
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use penumbra_chain::params::ChainParams;
+use tendermint::Time;
 
 use crate::WriteOverlayExt;
 
@@ -31,6 +34,37 @@ pub trait PenumbraStore: WriteOverlayExt {
         self.get_chain_params()
             .await
             .map(|params| params.epoch_duration)
+    }
+
+    /// Gets the current block height from the JMT
+    async fn get_block_height(&self) -> Result<u64> {
+        let height_bytes: u64 = self
+            .get_proto(b"block_height".into())
+            .await?
+            .ok_or_else(|| anyhow!("Missing block_height"))?;
+
+        Ok(height_bytes)
+    }
+
+    /// Writes the block height to the JMT
+    async fn put_block_height(&self, height: u64) {
+        self.put_proto(b"block_height".into(), height).await
+    }
+
+    /// Gets the current block timestamp from the JMT
+    async fn get_block_timestamp(&self) -> Result<Time> {
+        let timestamp_string: String = self
+            .get_proto(b"block_timestamp".into())
+            .await?
+            .ok_or_else(|| anyhow!("Missing block_timestamp"))?;
+
+        Ok(Time::from_str(&timestamp_string).unwrap())
+    }
+
+    /// Writes the block timestamp to the JMT
+    async fn put_block_timestamp(&self, timestamp: Time) {
+        self.put_proto(b"block_timestamp".into(), timestamp.to_rfc3339())
+            .await
     }
 }
 

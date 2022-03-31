@@ -73,6 +73,15 @@ impl Component for App {
     }
 
     async fn begin_block(&mut self, begin_block: &abci::request::BeginBlock) -> Result<()> {
+        // store the block height
+        self.overlay
+            .put_block_height(begin_block.header.height.into())
+            .await;
+        // store the block time
+        self.overlay
+            .put_block_timestamp(begin_block.header.time)
+            .await;
+
         self.shielded_pool.begin_block(begin_block).await?;
         self.staking.begin_block(begin_block).await?;
         self.ibc.begin_block(begin_block).await?;
