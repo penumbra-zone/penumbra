@@ -1,17 +1,22 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_transaction::{Action, Transaction};
+use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use tendermint::abci;
 use tracing::instrument;
 
 use ibc::core::{
-    ics02_client::msgs::create_client::MsgCreateAnyClient, ics24_host::identifier::ClientId,
+    ics02_client::{
+        client_consensus::AnyConsensusState, client_state::AnyClientState,
+        msgs::create_client::MsgCreateAnyClient,
+    },
+    ics24_host::identifier::ClientId,
 };
 use penumbra_proto::ibc::ibc_action::Action::CreateClient;
 
 use super::{Component, Overlay};
-use crate::genesis;
+use crate::{genesis, PenumbraStore};
 
 pub struct IBCComponent {
     overlay: Overlay,
@@ -25,10 +30,10 @@ impl Component for IBCComponent {
 
     async fn init_chain(&mut self, _app_state: &genesis::AppState) -> Result<()> {
         // set the initial client count
-        self.overlay
-            .lock()
-            .await
-            .put(b"ibc/ics02-client/client_counter".into(), 0u64.to_le_bytes().to_vec());
+        self.overlay.lock().await.put(
+            b"ibc/ics02-client/client_counter".into(),
+            0u64.to_le_bytes().to_vec(),
+        );
 
         Ok(())
     }
@@ -57,6 +62,16 @@ impl Component for IBCComponent {
             }
 
             match &ibc_action.unwrap().action {
+                // Handle IBC CreateClient. Here we need to validate the following:
+                // - client type is one of the supported types (currently, only Tendermint light clients)
+                // - consensus state is valid (is of the same type as the client type, also currently only Tendermint consensus states are permitted)
+                //
+                // Then, we compute the client's ID (a concatenation of a monotonically increasing
+                // integer, the number of clients on Penumbra, and the client type) and commit the
+                // following to our state:
+                // - client type
+                // - consensus state
+                // - processed time and height
                 CreateClient(raw_msg_create_client) => {
                     // NOTE: MsgCreateAnyClient::try_from will validate that client_state and
                     // consensus_state are Tendermint client and consensus states only, as these
@@ -68,12 +83,12 @@ impl Component for IBCComponent {
                     let id_counter = self.client_counter().await?;
                     let client_id =
                         ClientId::new(msg_create_client.client_state.client_type(), id_counter)?;
-                    
+
                     tracing::info!("creating client {:?}", client_id);
 
                     self.store_new_client(client_id, msg_create_client).await?;
                 }
-                _ => todo!(),
+                _ => continue,
             }
         }
 
@@ -83,6 +98,15 @@ impl Component for IBCComponent {
     async fn end_block(&mut self, _end_block: &abci::request::EndBlock) -> Result<()> {
         Ok(())
     }
+}
+
+#[derive(Serialize)]
+struct ClientData {
+    pub client_id: ClientId,
+    pub client_state: AnyClientState,
+    pub consensus_state: AnyConsensusState,
+    pub processed_time: String,
+    pub processed_height: u64,
 }
 
 impl IBCComponent {
@@ -97,60 +121,27 @@ impl IBCComponent {
 
         Ok(u64::from_le_bytes(count_bytes.try_into().unwrap()))
     }
-    async fn store_new_client(&mut self, client_id: ClientId, msg: MsgCreateAnyClient) -> Result<()> {
-        let client_state = msg.client_state;
-        let consensus_state = msg.consensus_state;
+    async fn store_new_client(
+        &mut self,
+        client_id: ClientId,
+        msg: MsgCreateAnyClient,
+    ) -> Result<()> {
+        let height = self.overlay.get_block_height().await?;
+        let timestamp = self.overlay.get_block_timestamp().await?;
+        let data = ClientData {
+            client_id: client_id.clone(),
+            client_state: msg.client_state,
+            consensus_state: msg.consensus_state,
+            processed_time: timestamp.to_rfc3339(),
+            processed_height: height,
+        };
 
-        // store the client state
-        self.overlay
-            .lock()
-            .await
-            .put(format!("ibc/ics02-client/client_states/{}", hex::encode(client_id.as_bytes())).into(), serde_json::to_string(&client_state)?.into());
+        // store the client data
+        self.overlay.lock().await.put(
+            format!("ibc/clients/{}", hex::encode(client_id.as_bytes())).into(),
+            serde_json::to_vec(&data).unwrap(),
+        );
 
-        // increment the client counter
-        let next_counter = self.client_counter().await? + 1;
-        self
-            .overlay
-            .lock()
-            .await
-            .put(b"ibc/ics02-client/client_counter".into(), next_counter.to_le_bytes().to_vec());
-        
-        // store the consensus state
-        // TODO: should we store block height here as well?
-        self.overlay
-            .lock()
-            .await
-            .put(format!("ibc/ics02-client/consensus_states/{}", hex::encode(client_id.as_bytes())).into(), serde_json::to_string(&consensus_state)?.into());
-        
-        // TODO: store update time and update height
         Ok(())
     }
 }
-
-/*   // Construct this client's identifier
-let id_counter = ctx.client_counter()?;
-let client_id = ClientId::new(msg.client_state.client_type(), id_counter).map_err(|e| {
-    Error::client_identifier_constructor(msg.client_state.client_type(), id_counter, e)
-})?;
-
-output.log(format!(
-    "success: generated new client identifier: {}",
-    client_id
-));
-
-let result = ClientResult::Create(Result {
-    client_id: client_id.clone(),
-    client_type: msg.client_state.client_type(),
-    client_state: msg.client_state.clone(),
-    consensus_state: msg.consensus_state,
-    processed_time: ctx.host_timestamp(),
-    processed_height: ctx.host_height(),
-});
-
-let event_attributes = Attributes {
-    client_id,
-    ..Default::default()
-};
-output.emit(IbcEvent::CreateClient(event_attributes.into()));
-
-Ok(output.with_result(result)) */
