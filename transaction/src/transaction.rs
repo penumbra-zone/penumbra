@@ -32,7 +32,7 @@ pub struct TransactionBody {
     pub expiry_height: u32,
     pub chain_id: String,
     pub fee: Fee,
-    pub zkproof: Option<TransactionProof>,
+    pub zkproof: TransactionProof,
 }
 
 impl TransactionBody {
@@ -74,7 +74,6 @@ impl Transaction {
             merkle_root,
             expiry_height: None,
             chain_id: None,
-            zkproof: None,
         }
     }
 
@@ -166,14 +165,12 @@ impl Protobuf<ProtoTransactionBody> for TransactionBody {}
 
 impl From<TransactionBody> for ProtoTransactionBody {
     fn from(msg: TransactionBody) -> Self {
-        let zkproof: Option<Vec<u8>> = msg.zkproof.map(|proof| proof.into());
         ProtoTransactionBody {
             actions: msg.actions.into_iter().map(|x| x.into()).collect(),
             anchor: Bytes::copy_from_slice(&msg.merkle_root.0.to_bytes()),
             expiry_height: msg.expiry_height,
             chain_id: msg.chain_id,
             fee: Some(msg.fee.into()),
-            zkproof: zkproof.map(|proof| proof.into()),
         }
     }
 }
@@ -204,22 +201,12 @@ impl TryFrom<ProtoTransactionBody> for TransactionBody {
             .ok_or(anyhow::anyhow!("transaction body malformed"))?
             .into();
 
-        let zkproof = match proto.zkproof {
-            None => None,
-            Some(inner) => Some(
-                inner[..]
-                    .try_into()
-                    .map_err(|_| ProtoError::ProofMalformed)?,
-            ),
-        };
-
         Ok(TransactionBody {
             actions,
             merkle_root,
             expiry_height,
             chain_id,
             fee,
-            zkproof,
         })
     }
 }
