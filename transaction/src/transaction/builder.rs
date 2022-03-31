@@ -7,7 +7,7 @@ use penumbra_crypto::{
     keys::{OutgoingViewingKey, SpendKey},
     memo::MemoPlaintext,
     merkle::{self, NoteCommitmentTree},
-    proofs::transparent::{OutputProof, SpendProof, TransactionProof},
+    proofs::transparent::TransactionProof,
     rdsa::{Binding, Signature, SigningKey, SpendAuth},
     value, Address, Fr, Note, Value,
 };
@@ -69,11 +69,9 @@ impl Builder {
                     note.commit()
                 )
             })?;
-        let position = merkle_path.0.clone();
 
         let v_blinding = Fr::rand(rng);
         let value_commitment = note.value().commit(v_blinding);
-        let note_commitment = note.commit();
 
         // Spends add to the transaction's value balance.
         self.synthetic_blinding_factor += v_blinding;
@@ -82,39 +80,19 @@ impl Builder {
         self.value_commitments += value_commitment.0;
 
         let spend_auth_randomizer = Fr::rand(rng);
-        let ask = *spend_key.spend_auth_key();
         let rsk = spend_key.spend_auth_key().randomize(&spend_auth_randomizer);
 
-        let nk = *spend_key.nullifier_key();
         let body = spend::Body::new(
             value_commitment,
-            ask,
+            *spend_key.spend_auth_key(),
             spend_auth_randomizer,
-            merkle_path.clone(),
-            note.clone(),
-            nk,
+            merkle_path,
+            note,
+            v_blinding,
+            *spend_key.nullifier_key(),
         );
 
         self.spends.push((rsk, body));
-        // Add constraints to the `TransactionProof`.
-        let proof_constraints = SpendProof {
-            // XXX: the position field duplicates data from the merkle path
-            // probably not worth fixing before we just make them snarks...
-            position,
-            merkle_path,
-            g_d: note.diversified_generator(),
-            pk_d: note.transmission_key(),
-            value: note.value(),
-            v_blinding,
-            note_commitment,
-            note_blinding: note.note_blinding(),
-            spend_auth_randomizer,
-            ak: ask.into(),
-            nk,
-        };
-        let mut zkproof = self.zkproof.take().unwrap_or_default();
-        zkproof.add_spend(proof_constraints);
-        self.zkproof = Some(zkproof);
 
         Ok(self)
     }
@@ -161,7 +139,13 @@ impl Builder {
         self.value_balance -=
             Fr::from(value_to_send.amount) * value_to_send.asset_id.value_generator();
 
-        let body = output::Body::new(note.clone(), v_blinding, &esk);
+        let body = output::Body::new(
+            note.clone(),
+            v_blinding,
+            diversified_generator,
+            transmission_key,
+            &esk,
+        );
         self.value_commitments += body.value_commitment.0;
 
         let ovk_wrapped_key = note.encrypt_key(&esk, ovk, body.value_commitment);
@@ -171,19 +155,6 @@ impl Builder {
             encrypted_memo,
             ovk_wrapped_key,
         });
-
-        // Add constraints to the `TransactionProof`.
-        let proof_constraints = OutputProof {
-            g_d: diversified_generator,
-            pk_d: transmission_key,
-            value: note.value(),
-            v_blinding,
-            note_blinding: note.note_blinding(),
-            esk,
-        };
-        let mut zkproof = self.zkproof.take().unwrap_or_default();
-        zkproof.add_output(proof_constraints);
-        self.zkproof = Some(zkproof);
 
         note
     }
