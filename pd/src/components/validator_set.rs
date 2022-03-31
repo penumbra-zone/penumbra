@@ -14,6 +14,7 @@ use penumbra_stake::{
     ValidatorState, ValidatorStateName, ValidatorStatus, VerifiedValidatorDefinition,
     STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
 };
+use serde::{Deserialize, Serialize};
 use sqlx::{query, Postgres, Transaction};
 use tendermint::{
     abci::types::{Evidence, ValidatorUpdate},
@@ -48,6 +49,7 @@ impl Cache {
 }
 
 #[derive(Debug, Clone)]
+// TODO: this struct should be dropped and the JMT used directly
 pub struct BlockChanges {
     /// New validators added during the block. Saved and available for staking when the block is committed.
     pub new_validators: BTreeMap<IdentityKey, Vec<VerifiedValidatorDefinition>>,
