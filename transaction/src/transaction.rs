@@ -78,10 +78,6 @@ impl Transaction {
         }
     }
 
-    pub fn proof(&self) -> Option<TransactionProof> {
-        self.transaction_body.zkproof.clone()
-    }
-
     pub fn compact_outputs(&self) -> Vec<CompactOutput> {
         self.transaction_body
             .actions
