@@ -6,7 +6,6 @@ use decaf377::FieldExt;
 use penumbra_chain::sync::CompactOutput;
 use penumbra_crypto::{
     merkle,
-    proofs::transparent::TransactionProof,
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
     Fr, Nullifier, Value,
 };
@@ -32,7 +31,6 @@ pub struct TransactionBody {
     pub expiry_height: u32,
     pub chain_id: String,
     pub fee: Fee,
-    pub zkproof: TransactionProof,
 }
 
 impl TransactionBody {
