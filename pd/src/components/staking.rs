@@ -61,18 +61,18 @@ impl Component for Staking {
     }
 
     fn check_tx_stateless(_tx: &Transaction) -> Result<()> {
-        todo!()
+        Ok(())
     }
 
     async fn check_tx_stateful(&self, _tx: &Transaction) -> Result<()> {
-        todo!()
+        Ok(())
     }
 
     async fn execute_tx(&mut self, _tx: &Transaction) -> Result<()> {
-        todo!()
+        Ok(())
     }
 
     async fn end_block(&mut self, _end_block: &abci::request::EndBlock) -> Result<()> {
-        todo!()
+        Ok(())
     }
 }

@@ -253,7 +253,7 @@ impl BlockChanges {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct EpochChanges {
     /// Base rates for the next epoch go here.
     pub next_base_rate: BaseRateData,

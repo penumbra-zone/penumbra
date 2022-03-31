@@ -3,7 +3,7 @@ use tendermint::block;
 
 /// Epoch represents a given epoch for Penumbra and is used
 /// for calculation of staking exchange rates.
-#[derive(Debug, Eq, PartialEq, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub struct Epoch {
     pub index: u64,
     pub duration: u64,
