@@ -213,7 +213,7 @@ impl TryFrom<ProtoTransactionBody> for TransactionBody {
             Some(inner) => Some(
                 inner[..]
                     .try_into()
-                    .map_err(|_| anyhow::anyhow!("transaction body malformed"))?,
+                    .map_err(|_| ProtoError::ProofMalformed)?,
             ),
         };
 
