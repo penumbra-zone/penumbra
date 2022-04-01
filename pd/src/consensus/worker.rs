@@ -180,14 +180,13 @@ impl Worker {
         .await?;
         self.app.init_chain(&app_state).await?;
         // Note: App::commit resets internal components, so we don't need to do that ourselves.
-        self.app.commit(self.storage.clone()).await?;
+        let (jmt_root, _) = self.app.commit(self.storage.clone()).await?;
+
+        let app_hash = jmt_root.0.to_vec();
         // End new sidecar code
 
         // Initialize the database with the app state.
-        let app_hash = self
-            .state
-            .commit_genesis(&app_state, self.storage.clone())
-            .await?;
+        let _legacy_app_hash = self.state.commit_genesis(&app_state).await?;
 
         // Reload the worker data from the database.
         self.load().await?;
@@ -451,7 +450,8 @@ impl Worker {
         // Begin sidecar code
 
         // Note: App::commit resets internal components, so we don't need to do that ourselves.
-        self.app.commit(self.storage.clone()).await?;
+        let (jmt_root, _) = self.app.commit(self.storage.clone()).await?;
+        let app_hash = jmt_root.0.to_vec();
 
         // End sidecar code
 
@@ -463,9 +463,9 @@ impl Worker {
         // Pull the updated note commitment tree, for use in the next block.
         self.note_commitment_tree = pending_block.note_commitment_tree.clone();
 
-        let app_hash = self
+        let _legacy_app_hash = self
             .state
-            .commit_block(pending_block, &mut self.validator_set, self.storage.clone())
+            .commit_block(pending_block, &mut self.validator_set)
             .await?;
 
         tracing::info!(app_hash = ?hex::encode(&app_hash), "finished block commit");
