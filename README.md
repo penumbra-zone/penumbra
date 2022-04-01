@@ -159,6 +159,100 @@ the `#testnet-feedback` channel on our [Discord]. We would love to know about bu
 confusing error messages, or any of the many other things that inevitably won't quite work yet. Have
 fun! :)
 
+## Connecting a node to a testnet
+
+A fullnode can be joined to our testnet deployments and optionally behave as a validator.
+
+The node binary (`pd`) software is part of the same repository as `pcli`, so ensure that you've [cloned the repository](https://github.com/penumbra-zone/penumbra#cloning-the-repository).
+
+### Building the `pd` node binary
+
+Then, build the `pd` binary using `cargo`:
+
+```bash
+cargo build --release --bin pd
+```
+
+Because you are building a work-in-progress version of the node, you may see compilation warnings,
+which you can safely ignore.
+
+### Installing tendermint
+
+You'll need to have [tendermint installed](https://docs.tendermint.com/master/introduction/install.html) on your system to join your node to the testnet.
+
+### Setting up postgres
+
+Next, you'll need to set up a Postgres instance. Here is one way:
+```console
+$ docker volume create tmp_postgres_data
+$ docker run --name tmp_postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_USER=postgres -e POSTGRES_DB=penumbra -p 5432:5432 -v tmp_postgres_data:/var/lib/postgresql/data -d postgres
+$ # docker stop tmp_postgres
+$ # docker start tmp_postgres
+```
+
+There are three components to a Penumbra node: the Tendermint instance, the `pd`
+instance, and the Postgres instance.
+
+To create the database, run:
+```console
+$ # Edit as appropriate for your Postgres instance
+$ export DATABASE_URL="postgres://postgres:postgres@localhost:5432/penumbra"
+$ cargo sqlx database create
+```
+
+### Configuring your node
+
+Currently we only provide instructions for running a fullnode deployment. A fullnode will sync with the network but will not have any voting power,
+and will not be eligible for staking or funding stream rewards. For more information on what a fullnode is, see the [Tendermint documentation](https://docs.tendermint.com/v0.35/nodes/#full-node).
+
+Run the following:
+
+```console
+$ tendermint init full
+```
+
+and you will have the Tendermint files created necessary for your fullnode:
+
+```console
+$ ls $HOME/.tendermint
+config	data
+
+$ ls $HOME/.tendermint/config/
+config.toml	genesis.json	node_key.json
+```
+
+Next you'll need to modify the persistent peers list to specify our primary testnet node as a permanent peer for your node. Open `$HOME/.tendermint/config/config.toml` and find the `persistent-peers` line and make it look like so:
+
+```toml
+persistent-peers = "TODO_IDENTIFIER_GOES_HERE@192.167.10.21:26656"
+```
+
+Then you'll need to download our genesis JSON file and replace the automatically generated one:
+
+```console
+$ wget https://TODO_GENESIS_JSON_URL_HERE -o $HOME/.tendermint/config/genesis.json
+```
+
+### Starting your node
+
+After configuration is complete, you're ready to start your node.
+
+First, start the `pd` binary:
+
+```console
+$ cargo run --release --bin pd start -d "postgres://postgres:postgres@localhost:5432/penumbra" --rocks-path $HOME/.rocksdb &
+$ ps | grep pd
+52949 ttys001    0:00.32 target/release/pd start -d postgres://postgres:postgres@localhost:5432/penumbra --rocks-path $HOME/.rocksdb
+```
+
+Then start tendermint:
+
+```console
+$ tendermint start
+```
+
+You should now be participating in the network!
+
 ## Building the protocol spec
 
 The [protocol spec][protocol] is built using [mdBook] and auto-deployed on
