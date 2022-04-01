@@ -29,7 +29,7 @@ impl Epoch {
     }
 
     pub fn is_epoch_boundary(&self, height: u64) -> bool {
-        height % self.duration == 0
+        self.end_height().value() == height
     }
 
     /// Returns the epoch following this one.

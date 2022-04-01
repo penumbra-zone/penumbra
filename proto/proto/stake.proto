@@ -26,6 +26,11 @@ message Validator {
   uint32 sequence_number = 7;
 }
 
+// For storing the list of keys of known validators.
+message ValidatorJMTKeys {
+  repeated IdentityKey validator_keys = 1;
+}
+
 // A portion of a validator's commission.
 message FundingStream {
   // The destination address for the funding stream.
