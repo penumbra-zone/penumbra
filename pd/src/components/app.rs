@@ -2,7 +2,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use jmt::{RootHash, Version};
 use penumbra_transaction::Transaction;
-use tendermint::abci;
+use tendermint::abci::{self, types::ValidatorUpdate};
 use tracing::instrument;
 
 use super::{Component, IBCComponent, Overlay, ShieldedPool, Staking};
@@ -43,6 +43,11 @@ impl App {
 
         Ok((root_hash, version))
     }
+
+    // TODO: should this just be returned by `commit`? both are called during every `EndBlock`
+    pub async fn tm_validator_updates(&self) -> Result<Vec<ValidatorUpdate>> {
+        self.staking.tm_validator_updates().await
+    }
 }
 
 #[async_trait]
@@ -68,6 +73,8 @@ impl Component for App {
         self.overlay
             .put_domain(b"genesis/app_state".into(), app_state.clone())
             .await;
+        // The genesis block height is 0
+        self.overlay.put_block_height(0).await;
 
         self.shielded_pool.init_chain(app_state).await?;
         self.staking.init_chain(app_state).await?;

@@ -366,6 +366,12 @@ impl Worker {
         // data to commit.
         let (slashed_validators, validator_updates) = self.validator_set.end_block(height).await?;
 
+        // Set `tm_validator_updates` to the complete set of
+        // validators and voting power. This must be the last step performed,
+        // after all voting power calculations and validator state transitions have
+        // been completed.
+        let validator_updates_new = self.app.tm_validator_updates().await?;
+
         // Immediately revert notes and nullifiers immediately from slashed validators in this block
         let (mut slashed_notes, mut slashed_nullifiers) = (
             reader.quarantined_notes(
@@ -393,7 +399,7 @@ impl Worker {
 
         tracing::debug!(
             ?validator_updates,
-            "sending validator updates to tendermint (XXX not really, but this is what they _would_ be)"
+            "sending validator updates to tendermint"
         );
 
         Ok(abci::response::EndBlock {

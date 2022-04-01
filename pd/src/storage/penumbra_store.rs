@@ -3,6 +3,7 @@ use std::str::FromStr;
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use penumbra_chain::params::ChainParams;
+use penumbra_stake::Epoch;
 use tendermint::Time;
 
 use crate::WriteOverlayExt;
@@ -24,6 +25,15 @@ pub trait PenumbraStore: WriteOverlayExt {
     /// Writes the provided chain parameters to the JMT.
     async fn put_chain_params(&self, params: ChainParams) {
         self.put_domain(b"chain_params".into(), params).await
+    }
+
+    /// Gets the current epoch for the chain.
+    async fn get_current_epoch(&self) -> Result<Epoch> {
+        let block_height = self.get_block_height().await?;
+        Ok(Epoch::from_height(
+            block_height,
+            self.get_epoch_duration().await?,
+        ))
     }
 
     /// Gets the epoch duration for the chain.
