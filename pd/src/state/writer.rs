@@ -78,11 +78,7 @@ impl Writer {
     /// The database queries here have quite a bit of overlap with the queries in
     /// commit_block(), but this is because the genesis setup is better treated
     /// as a simple special case rather than creating a fake pseudo-block.
-    pub async fn commit_genesis(
-        &self,
-        genesis_config: &genesis::AppState,
-        mut storage: Storage,
-    ) -> Result<Vec<u8>> {
+    pub async fn commit_genesis(&self, genesis_config: &genesis::AppState) -> Result<Vec<u8>> {
         let mut dbtx = self.pool.begin().await?;
 
         let genesis_bytes = serde_json::to_vec(&genesis_config)?;
@@ -295,6 +291,7 @@ impl Writer {
         .execute(&mut dbtx)
         .await?;
 
+        /*
         // ... and add its root to the public chain state ...
         let (jmt_root, tree_update_batch) = jmt::JellyfishMerkleTree::new(&storage)
             .put_value_set(
@@ -310,6 +307,8 @@ impl Writer {
 
         // As the very last step, compute the JMT root and return it as the apphash.
         let app_hash: [u8; 32] = jmt_root.0;
+         */
+        let app_hash = [9; 32]; // value that is recognizable as not being 0
 
         // Insert the block into the DB
         query!(
@@ -377,7 +376,6 @@ impl Writer {
         &self,
         block: PendingBlock,
         block_validator_set: &mut ValidatorSet,
-        storage: Storage,
     ) -> Result<Vec<u8>> {
         // TODO: batch these queries?
         let mut dbtx = self.pool.begin().await?;
@@ -397,6 +395,7 @@ impl Writer {
         let epoch = block.epoch.unwrap();
         let height = block.height.expect("height must be set");
 
+        /*
         let mut overlay = jmt::WriteOverlay::new(storage.clone(), height - 1);
         overlay.put(b"nct_anchor".into(), nct_anchor.clone().to_bytes().to_vec());
         let (jmt_root, _height) = overlay.commit(storage).await?;
@@ -406,6 +405,8 @@ impl Writer {
         // the JMT root.
         // TODO: no way to access the Diem HashValue as array, even though it's stored that way?
         let app_hash: [u8; 32] = jmt_root.0.to_vec().try_into().unwrap();
+         */
+        let app_hash = [9; 32]; // recognizably not 0
 
         query!(
             "INSERT INTO blocks (height, nct_anchor, app_hash) VALUES ($1, $2, $3)",
