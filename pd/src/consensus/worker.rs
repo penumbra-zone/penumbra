@@ -167,6 +167,17 @@ impl Worker {
             .expect("can parse app_state in genesis file");
 
         // Begin new sidecar code
+
+        // We want to write the genesis state as version 0 of the tree, so we
+        // need to initialize the write overlay with the PRE_GENESIS_VERSION.
+        // To do this, it's easiest to just overwrite the app here.
+        self.app = App::new(Arc::new(Mutex::new(WriteOverlay::new(
+            self.storage.clone(),
+            // Some kind of visibility issue on associated consts?
+            //WriteOverlay::PRE_GENESIS_VERSION,
+            u64::MAX,
+        ))))
+        .await?;
         self.app.init_chain(&app_state).await?;
         // Note: App::commit resets internal components, so we don't need to do that ourselves.
         self.app.commit(self.storage.clone()).await?;
