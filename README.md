@@ -227,11 +227,10 @@ Next you'll need to modify the persistent peers list to specify our primary test
 persistent-peers = "TODO_IDENTIFIER_GOES_HERE@192.167.10.21:26656"
 ```
 
-Then you'll need to download our genesis JSON file and replace the automatically generated one:
+Then you'll need to download our genesis JSON file and replace the automatically generated one.
+You can find the genesis JSON files for all of our testnets [in our repository](https://github.com/penumbra-zone/penumbra/tree/main/testnets).
 
-```console
-$ wget https://TODO_GENESIS_JSON_URL_HERE -o $HOME/.tendermint/config/genesis.json
-```
+The testnet directories are numbered in increasing order, find and download the latest JSON file and copy it to `$HOME/.tendermint/config/genesis.json`.
 
 ### Starting your node
 
