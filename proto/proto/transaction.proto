@@ -1,6 +1,7 @@
 syntax = "proto3";
 package penumbra.transaction;
 
+import "crypto.proto";
 import "stake.proto";
 import "ibc.proto";
 
@@ -64,27 +65,27 @@ message SpendBody {
 
 // Creates a new shielded note.
 message Output {
+  // The minimal data required to scan and process the new output note.
   OutputBody body = 1;
+  // A commitment to the value of the output note. 32 bytes.
+  bytes cv = 2;
   // An encrypted memo. 528 bytes.
-  bytes encrypted_memo = 2;
+  bytes encrypted_memo = 3;
   // The key material used for note encryption, wrapped in encryption to the
   // sender's outgoing viewing key. 80 bytes.
-  bytes ovk_wrapped_key = 3;
-}
-
-// The body of an output description, not including a memo or ovk wrapping.
-// Splitting this data out allows its use where the memo / ovk wrapping is not
-// required (e.g., IBC).
-message OutputBody {
-  // A commitment to the value of the output note. 32 bytes.
-  bytes cv = 1;
-  // The note commitment for the output note. 32 bytes.
-  bytes cm = 2;
-  // The encoding of an ephemeral public key. 32 bytes.
-  bytes ephemeral_key = 3;
-  // An encryption of the newly created note.
-  // 132 = 1(type) + 11(d) + 8(amount) + 32(asset_id) + 32(rcm) + 32(pk_d) + 16(MAC) bytes.
-  bytes encrypted_note = 4;
+  bytes ovk_wrapped_key = 4;
   // The output proof. 192 bytes.
   bytes zkproof = 5;
+}
+
+// The body of an output description, including only the minimal
+// data required to scan and process the output.
+message OutputBody {
+  // The note commitment for the output note. 32 bytes.
+  crypto.NoteCommitment note_commitment = 1;
+  // The encoding of an ephemeral public key. 32 bytes.
+  bytes ephemeral_key = 2;
+  // An encryption of the newly created note.
+  // 132 = 1(type) + 11(d) + 8(amount) + 32(asset_id) + 32(rcm) + 32(pk_d) + 16(MAC) bytes.
+  bytes encrypted_note = 3;
 }

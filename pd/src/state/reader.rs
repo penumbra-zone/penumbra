@@ -16,8 +16,10 @@ use penumbra_crypto::{
 };
 use penumbra_proto::{
     chain,
-    chain::{CompactBlock, CompactOutput},
+    chain::CompactBlock,
+    crypto::NoteCommitment as ProtoNoteCommitment,
     thin_wallet::{Asset, TransactionDetail},
+    transaction::OutputBody,
     Protobuf,
 };
 use penumbra_stake::{
@@ -449,7 +451,7 @@ impl Reader {
             for height in start_height..=end_height {
                 let mut compact_block = CompactBlock {
                     height: height as u64,
-                    fragments: vec![],
+                    outputs: vec![],
                     nullifiers: vec![],
                 };
 
@@ -480,8 +482,8 @@ impl Reader {
                         .next()
                         .await
                         .expect("we already peeked, so there is a next row")?;
-                    compact_block.fragments.push(CompactOutput {
-                        note_commitment: row.note_commitment.into(),
+                    compact_block.outputs.push(OutputBody {
+                        note_commitment: Some( ProtoNoteCommitment { inner: row.note_commitment.into()}),
                         ephemeral_key: row.ephemeral_key.into(),
                         encrypted_note: row.encrypted_note.into(),
                     });
@@ -489,8 +491,8 @@ impl Reader {
 
                 tracing::debug!(
                     ?height,
-                    nullifiers_size = compact_block.nullifiers.len(),
-                    fragments_size = compact_block.fragments.len(),
+                    nullifiers_len = compact_block.nullifiers.len(),
+                    outputs_len = compact_block.outputs.len(),
                     "yielding compact block"
                 );
 

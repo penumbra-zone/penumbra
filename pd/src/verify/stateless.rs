@@ -43,10 +43,9 @@ impl StatelessTransactionExt for Transaction {
             match action {
                 Action::Output(output) => {
                     if output
-                        .body
                         .proof
                         .verify(
-                            output.body.value_commitment,
+                            output.value_commitment,
                             output.body.note_commitment,
                             output.body.ephemeral_key,
                         )

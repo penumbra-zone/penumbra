@@ -4,17 +4,16 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use anyhow::{anyhow, Context};
-use penumbra_chain::params::ChainParams;
+use anyhow::anyhow;
+use penumbra_chain::{params::ChainParams, sync::CompactBlock};
 use penumbra_crypto::{
     asset::{self, Denom},
     memo,
     merkle::{Frontier, NoteCommitmentTree, Tree, TreeExt},
     note, Address, FieldExt, Note, Nullifier, Value,
 };
-use penumbra_proto::chain::{CompactBlock, CompactOutput};
 use penumbra_stake::{RateData, ValidatorDefinition, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM};
-use penumbra_transaction::Transaction;
+use penumbra_transaction::{action::output, Transaction};
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
@@ -731,12 +730,12 @@ impl ClientState {
     /// Scan the provided block and update the client state.
     ///
     /// The provided block must be the one immediately following [`Self::last_block_height`].
-    #[instrument(skip(self, fragments, nullifiers))]
+    #[instrument(skip(self, outputs, nullifiers))]
     pub fn scan_block(
         &mut self,
         CompactBlock {
             height,
-            fragments,
+            outputs,
             nullifiers,
         }: CompactBlock,
     ) -> Result<(), anyhow::Error> {
@@ -752,19 +751,15 @@ impl ClientState {
                 ))
             }
         }
-        tracing::debug!(fragments_len = fragments.len(), "starting block scan");
+        tracing::debug!(outputs_len = outputs.len(), "starting block scan");
 
-        for CompactOutput {
+        for output::Body {
             note_commitment,
             ephemeral_key,
             encrypted_note,
-        } in fragments.into_iter()
+        } in outputs.into_iter()
         {
             // Unconditionally insert the note commitment into the merkle tree
-            let note_commitment = note_commitment
-                .as_ref()
-                .try_into()
-                .context("invalid note commitment")?;
             tracing::debug!(?note_commitment, "appending to note commitment tree");
             self.note_commitment_tree.append(&note_commitment);
 
@@ -773,10 +768,7 @@ impl ClientState {
             if let Ok(note) = Note::decrypt(
                 encrypted_note.as_ref(),
                 self.wallet.incoming_viewing_key(),
-                &ephemeral_key
-                    .as_ref()
-                    .try_into()
-                    .context("invalid ephemeral key")?,
+                &ephemeral_key,
             ) {
                 tracing::debug!(?note_commitment, ?note, "found note while scanning");
                 // Mark the most-recently-inserted note commitment (the one corresponding to this
@@ -808,9 +800,6 @@ impl ClientState {
         // Scan through the list of nullifiers to find those which refer to notes in our unspent
         // set, submitted change set, or submitted spend set and move them into the spent set.
         for nullifier in nullifiers {
-            // Try to decode the nullifier
-            let nullifier = nullifier.as_ref().try_into()?;
-
             // Try to find the corresponding note commitment in the nullifier map
             if let Some(&note_commitment) = self.nullifier_map.get(&nullifier) {
                 // Try to remove the nullifier from the unspent set

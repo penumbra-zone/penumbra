@@ -3,7 +3,6 @@ use std::ops::Deref;
 use ark_ff::{UniformRand, Zero};
 use incrementalmerkletree::Tree;
 use penumbra_crypto::{
-    ka,
     keys::{OutgoingViewingKey, SpendKey},
     memo::MemoPlaintext,
     merkle::{self, NoteCommitmentTree},
@@ -16,7 +15,7 @@ use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
 
 use crate::{
-    action::{output, spend, Action, Output, Spend},
+    action::{spend, Action, Output, Spend},
     Error, Fee, Transaction, TransactionBody,
 };
 
@@ -122,36 +121,17 @@ impl Builder {
         ovk: &OutgoingViewingKey,
     ) -> Note {
         let note = Note::generate(rng, dest, value_to_send);
-        let diversified_generator = note.diversified_generator();
-        let transmission_key = note.transmission_key();
-        let value_to_send = note.value();
 
         let v_blinding = Fr::rand(rng);
+        let output = Output::new(rng, note.clone(), memo, dest, ovk, v_blinding);
 
-        let esk = ka::Secret::new(rng);
-        let encrypted_memo = memo.encrypt(&esk, dest);
-
-        // We subtract from the transaction's value balance.
+        // Outputs subtract from the transaction's value balance.
         self.synthetic_blinding_factor -= v_blinding;
         self.value_balance -=
-            Fr::from(value_to_send.amount) * value_to_send.asset_id.value_generator();
+            Fr::from(note.value().amount) * note.value().asset_id.value_generator();
 
-        let body = output::Body::new(
-            note.clone(),
-            v_blinding,
-            diversified_generator,
-            transmission_key,
-            &esk,
-        );
-        self.value_commitments += body.value_commitment.0;
-
-        let ovk_wrapped_key = note.encrypt_key(&esk, ovk, body.value_commitment);
-
-        self.outputs.push(Output {
-            body,
-            encrypted_memo,
-            ovk_wrapped_key,
-        });
+        self.value_commitments += output.value_commitment.0;
+        self.outputs.push(output);
 
         note
     }
