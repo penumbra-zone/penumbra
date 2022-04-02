@@ -2,7 +2,10 @@ use std::{path::PathBuf, sync::Arc};
 
 use anyhow::Result;
 use futures::future::BoxFuture;
-use jmt::storage::{Node, NodeBatch, NodeKey, TreeReader, TreeWriter};
+use jmt::{
+    storage::{Node, NodeBatch, NodeKey, TreeReader, TreeWriter},
+    WriteOverlay,
+};
 use rocksdb::DB;
 use tracing::{instrument, Span};
 
@@ -26,6 +29,16 @@ impl Storage {
         })
         .await
         .unwrap()
+    }
+
+    pub async fn latest_version(&self) -> Result<Option<jmt::Version>> {
+        match Storage::get_rightmost_leaf(self).await {
+            Ok(x) => match x {
+                Some(t) => Ok(Some(t.0.version())),
+                None => Ok(Some(WriteOverlay::<Storage>::PRE_GENESIS_VERSION)),
+            },
+            Err(e) => Err(e),
+        }
     }
 }
 
