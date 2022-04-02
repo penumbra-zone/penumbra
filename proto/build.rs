@@ -39,25 +39,29 @@ fn main() -> Result<()> {
     // See https://docs.rs/prost-build/0.5.0/prost_build/struct.Config.html#method.extern_path
     config.extern_path(".ibc", "::ibc_proto::ibc");
 
-    config.compile_protos(&["proto/crypto.proto"], &["proto/", "ibc-go-vendor"])?;
-    config.compile_protos(&["proto/transaction.proto"], &["proto/", "ibc-go-vendor/"])?;
-    config.compile_protos(&["proto/stake.proto"], &["proto/", "ibc-go-vendor/"])?;
-    config.compile_protos(&["proto/chain.proto"], &["proto/", "ibc-go-vendor/"])?;
-    config.compile_protos(&["proto/genesis.proto"], &["proto/", "ibc-go-vendor/"])?;
-    config.compile_protos(&["proto/ibc.proto"], &["proto/", "ibc-go-vendor/"])?;
+    config.compile_protos(
+        &[
+            "proto/crypto.proto",
+            "proto/transaction.proto",
+            "proto/stake.proto",
+            "proto/chain.proto",
+            "proto/genesis.proto",
+            "proto/ibc.proto",
+        ],
+        &["proto/", "ibc-go-vendor/"],
+    )?;
 
     // These should disappear, eventually.
     config.compile_protos(
-        &["proto/transparent_proofs.proto"],
+        &["proto/transparent_proofs.proto", "proto/sighash.proto"],
         &["proto/", "ibc-go-vendor/"],
     )?;
-    config.compile_protos(&["proto/sighash.proto"], &["proto/", "ibc-go-vendor/"])?;
 
     // For the client code, we also want to generate RPC instances, so compile via tonic:
     tonic_build::configure().compile_with_config(
         config,
         &["proto/light_wallet.proto", "proto/thin_wallet.proto"],
-        &["proto/"],
+        &["proto/", "ibc-go-vendor/"],
     )?;
 
     Ok(())
