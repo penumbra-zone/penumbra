@@ -3,7 +3,6 @@ use std::convert::{TryFrom, TryInto};
 use ark_ff::Zero;
 use bytes::Bytes;
 use decaf377::FieldExt;
-use penumbra_chain::sync::CompactOutput;
 use penumbra_crypto::{
     merkle,
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
@@ -19,7 +18,7 @@ use penumbra_stake::STAKING_TOKEN_ASSET_ID;
 
 use anyhow::Error;
 
-use crate::Action;
+use crate::{action::output, Action};
 
 mod builder;
 pub use builder::Builder;
@@ -75,17 +74,13 @@ impl Transaction {
         }
     }
 
-    pub fn compact_outputs(&self) -> Vec<CompactOutput> {
+    pub fn output_bodies(&self) -> Vec<output::Body> {
         self.transaction_body
             .actions
             .iter()
             .filter_map(|action| {
                 if let Action::Output(output) = action {
-                    Some(CompactOutput {
-                        note_commitment: output.body.note_commitment,
-                        ephemeral_key: output.body.ephemeral_key,
-                        encrypted_note: output.body.encrypted_note.to_vec(),
-                    })
+                    Some(output.body.clone())
                 } else {
                     None
                 }

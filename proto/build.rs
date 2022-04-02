@@ -109,6 +109,7 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.genesis.GenesisAppState", SERIALIZE),
     (".penumbra.genesis.Allocation", SERIALIZE),
     (".penumbra.genesis.ValidatorPower", SERIALIZE),
+    (".penumbra.transaction.OutputBody", SERIALIZE),
 ];
 
 static FIELD_ATTRIBUTES: &[(&str, &str)] = &[

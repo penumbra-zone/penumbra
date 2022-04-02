@@ -2,6 +2,7 @@ syntax = "proto3";
 package penumbra.chain;
 
 import "crypto.proto";
+import "transaction.proto";
 
 // Global chain configuration data, such as chain ID, epoch duration, etc.
 message ChainParams {
@@ -35,19 +36,8 @@ message AssetInfo {
 // Contains the minimum data needed to update client state.
 message CompactBlock {
   uint64 height = 1;
-  // Fragments of new notes.
-  repeated CompactOutput fragments = 2;
+  // OutputBodies describing new notes.
+  repeated transaction.OutputBody outputs = 2;
   // Nullifiers identifying spent notes.
   repeated bytes nullifiers = 3;
-}
-
-// The minimum data needed to identify a new note.
-message CompactOutput {
-  // The note commitment for the output note. 32 bytes.
-  bytes note_commitment = 2;
-  // The encoding of an ephemeral public key. 32 bytes.
-  bytes ephemeral_key = 3;
-  // An encryption of the newly created note.
-  // 132 = 1(type) + 11(d) + 8(amount) + 32(asset_id) + 32(rcm) + 32(pk_d) + 16(MAC) bytes.
-  bytes encrypted_note = 4;
 }

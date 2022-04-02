@@ -4,10 +4,7 @@ use anyhow::{anyhow, Result};
 use ark_ff::PrimeField;
 use async_trait::async_trait;
 use decaf377::{FieldExt, Fq, Fr};
-use penumbra_chain::{
-    sync::{CompactBlock, CompactOutput},
-    NoteSource,
-};
+use penumbra_chain::{sync::CompactBlock, NoteSource};
 use penumbra_crypto::{
     asset,
     asset::{Denom, Id},
@@ -15,7 +12,7 @@ use penumbra_crypto::{
     merkle::{self, Frontier, NoteCommitmentTree, TreeExt},
     Address, Note, Nullifier, One, Value,
 };
-use penumbra_transaction::{Action, Transaction};
+use penumbra_transaction::{action::output, Action, Transaction};
 use tendermint::abci;
 use tracing::instrument;
 
@@ -124,7 +121,7 @@ impl Component for ShieldedPool {
         if should_quarantine {
             tracing::warn!("skipping processing, TODO: implement");
         } else {
-            for compact_output in tx.compact_outputs() {
+            for compact_output in tx.output_bodies() {
                 self.add_note(compact_output, source).await;
             }
             for spent_nullifier in tx.spent_nullifiers() {
@@ -180,16 +177,16 @@ impl ShieldedPool {
         // note ciphertexts, even if the plaintexts are known.  Use the key
         // "1" to ensure we have contributory behaviour in note encryption.
         let esk = ka::Secret::new_from_field(Fr::one());
-        let epk = esk.diversified_public(&note.diversified_generator());
+        let ephemeral_key = esk.diversified_public(&note.diversified_generator());
         let encrypted_note = note.encrypt(&esk);
 
         // Now record the note and update the total supply:
         *self.supply_updates.entry(value.asset_id).or_insert(0) += value.amount as i64;
         self.add_note(
-            CompactOutput {
+            output::Body {
                 note_commitment,
-                ephemeral_key: epk,
-                encrypted_note: encrypted_note.to_vec(),
+                ephemeral_key,
+                encrypted_note,
             },
             source,
         )
@@ -199,21 +196,17 @@ impl ShieldedPool {
     }
 
     #[instrument(skip(self))]
-    async fn add_note(&mut self, compact_output: CompactOutput, source: NoteSource) {
+    async fn add_note(&mut self, output_body: output::Body, source: NoteSource) {
         // 1. Insert it into the NCT
         self.note_commitment_tree
-            .append(&compact_output.note_commitment);
+            .append(&output_body.note_commitment);
         // 2. Record its source in the JMT
         self.overlay.lock().await.put(
-            format!(
-                "shielded_pool/note_source/{}",
-                &compact_output.note_commitment
-            )
-            .into(),
+            format!("shielded_pool/note_source/{}", &output_body.note_commitment).into(),
             source.to_bytes().to_vec(),
         );
         // 3. Finally, record it in the pending compact block.
-        self.compact_block.fragments.push(compact_output);
+        self.compact_block.outputs.push(output_body);
     }
 
     #[instrument(skip(self))]

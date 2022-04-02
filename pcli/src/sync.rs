@@ -23,7 +23,7 @@ pub async fn sync(opt: &Opt, state: &mut ClientStateFile) -> Result<()> {
 
     let mut count = 0;
     while let Some(block) = stream.message().await? {
-        state.scan_block(block)?;
+        state.scan_block(block.try_into()?)?;
         // very basic form of intermediate checkpointing
         count += 1;
         if count % 1000 == 1 {
