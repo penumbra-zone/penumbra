@@ -248,6 +248,15 @@ impl Worker {
         Ok(Default::default())
     }
 
+    /// Stub function; this code is broken out so that we can bubble up errors with ?
+    /// without interfering with the main consensus logic.
+    async fn deliver_tx_new(&mut self, transaction: &Transaction) -> Result<()> {
+        App::check_tx_stateless(&transaction)?;
+        self.app.check_tx_stateful(&transaction).await?;
+        self.app.execute_tx(&transaction).await?;
+        Ok(())
+    }
+
     /// Perform full transaction validation via `DeliverTx`.
     ///
     /// State changes are only applied for valid transactions. Invalid transaction are ignored.
@@ -260,9 +269,9 @@ impl Worker {
         let transaction = Transaction::decode(deliver_tx.tx)?;
 
         // Begin new sidecar code
-        App::check_tx_stateless(&transaction)?;
-        self.app.check_tx_stateful(&transaction).await?;
-        self.app.execute_tx(&transaction).await?;
+        // We *don't* use ? here, since we want to keep going if the sidecar code errors.
+        let new_rsp = self.deliver_tx_new(&transaction).await;
+        tracing::info!(?new_rsp);
         // End new sidecar code
 
         // Use the current state of the validators in the state machine, not the ones in the db.
