@@ -14,7 +14,6 @@ use penumbra_stake::{
     ValidatorState, ValidatorStateName, ValidatorStatus, VerifiedValidatorDefinition,
     STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
 };
-
 use sqlx::{query, Postgres, Transaction};
 use tendermint::{
     abci::types::{Evidence, ValidatorUpdate},

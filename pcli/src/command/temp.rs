@@ -1,7 +1,6 @@
 use anyhow::Result;
-use structopt::StructOpt;
-
 use penumbra_crypto::parse_v0_testnet_address;
+use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 pub enum TmpCmd {

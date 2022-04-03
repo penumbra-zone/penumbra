@@ -1,5 +1,6 @@
 use std::convert::{TryFrom, TryInto};
 
+use anyhow::Error;
 use bytes::Bytes;
 use penumbra_crypto::{
     keys, merkle,
@@ -8,8 +9,6 @@ use penumbra_crypto::{
     value, Fr, Note, Nullifier,
 };
 use penumbra_proto::{transaction, Message, Protobuf};
-
-use anyhow::Error;
 
 #[derive(Clone, Debug)]
 pub struct Spend {

@@ -1,9 +1,9 @@
+use std::{fmt::Debug, sync::Arc};
+
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use jmt::{storage::TreeReader, KeyHash, WriteOverlay};
 use penumbra_proto::{Message, Protobuf};
-use std::fmt::Debug;
-use std::sync::Arc;
 use tokio::sync::Mutex;
 use tracing::instrument;
 
