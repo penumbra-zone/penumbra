@@ -4,9 +4,9 @@ use anyhow::{anyhow, Context, Result};
 use comfy_table::{presets, Table};
 use futures::stream::TryStreamExt;
 use penumbra_crypto::Value;
-use penumbra_proto::{light_wallet::ValidatorInfoRequest, thin_wallet::ValidatorRateRequest};
+use penumbra_proto::light_wallet::ValidatorInfoRequest;
 use penumbra_stake::{
-    DelegationToken, Epoch, IdentityKey, RateData, ValidatorInfo, STAKING_TOKEN_ASSET_ID,
+    DelegationToken, IdentityKey, RateData, ValidatorInfo, STAKING_TOKEN_ASSET_ID,
     STAKING_TOKEN_DENOM,
 };
 use rand_core::OsRng;
@@ -94,22 +94,9 @@ impl StakeCmd {
 
                 let to = to.parse::<IdentityKey>()?;
 
-                let current_epoch = Epoch::from_height(
-                    state.last_block_height().unwrap() as u64,
-                    state.chain_params().unwrap().epoch_duration,
-                );
-                let next_epoch = current_epoch.next();
-
                 let mut client = opt.thin_wallet_client().await?;
-
                 let rate_data: RateData = client
-                    .validator_rate(tonic::Request::new(ValidatorRateRequest {
-                        identity_key: Some(to.into()),
-                        epoch_index: next_epoch.index,
-                        chain_id: state
-                            .chain_id()
-                            .ok_or_else(|| anyhow!("missing chain_id"))?,
-                    }))
+                    .next_validator_rate(tonic::Request::new(to.into()))
                     .await?
                     .into_inner()
                     .try_into()?;
@@ -142,22 +129,9 @@ impl StakeCmd {
 
                 let from = delegation_token.validator();
 
-                let current_epoch = Epoch::from_height(
-                    state.last_block_height().unwrap() as u64,
-                    state.chain_params().unwrap().epoch_duration,
-                );
-                let next_epoch = current_epoch.next();
-
                 let mut client = opt.thin_wallet_client().await?;
-
                 let rate_data: RateData = client
-                    .validator_rate(tonic::Request::new(ValidatorRateRequest {
-                        identity_key: Some(from.into()),
-                        epoch_index: next_epoch.index,
-                        chain_id: state
-                            .chain_id()
-                            .ok_or_else(|| anyhow!("missing chain_id"))?,
-                    }))
+                    .next_validator_rate(tonic::Request::new(from.into()))
                     .await?
                     .into_inner()
                     .try_into()?;
