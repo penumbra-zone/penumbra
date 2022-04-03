@@ -1,4 +1,3 @@
-use serde::{Deserialize, Serialize};
 use tendermint::block;
 
 /// Epoch represents a given epoch for Penumbra and is used

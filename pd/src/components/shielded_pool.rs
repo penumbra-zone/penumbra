@@ -7,7 +7,7 @@ use decaf377::{FieldExt, Fq, Fr};
 use penumbra_chain::{sync::CompactBlock, NoteSource};
 use penumbra_crypto::{
     asset,
-    asset::{Denom, Id},
+    asset::Denom,
     ka,
     merkle::{self, Frontier, NoteCommitmentTree, TreeExt},
     Address, Note, Nullifier, One, Value,
