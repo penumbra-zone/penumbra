@@ -8,7 +8,15 @@ where
 {
     /// Encode this domain type to a byte vector, via proto type `P`.
     fn encode_to_vec(&self) -> Vec<u8> {
-        P::from(self.clone()).encode_to_vec()
+        self.to_proto().encode_to_vec()
+    }
+
+    /// Convert this domain type to the associated proto type.
+    ///
+    /// This uses the `From` impl internally, so it works exactly
+    /// like `.into()`, but does not require type inference.
+    fn to_proto(&self) -> P {
+        P::from(self.clone())
     }
 
     /// Decode this domain type from a byte buffer, via proto type `P`.
