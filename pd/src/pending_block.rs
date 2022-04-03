@@ -4,7 +4,7 @@ use ark_ff::PrimeField;
 use decaf377::Fr;
 use penumbra_crypto::{
     ka,
-    merkle::{Frontier, NoteCommitmentTree},
+    merkle::{Frontier, NoteCommitmentTree, TreeExt},
     note, Address, Fq, Note, Nullifier, One, Value,
 };
 use penumbra_stake::{Epoch, IdentityKey, STAKING_TOKEN_ASSET_ID};
@@ -86,18 +86,30 @@ impl PendingBlock {
             asset_id: *STAKING_TOKEN_ASSET_ID,
         };
 
-        let blinding_factor_input = blake2b_simd::Params::default()
-            .personal(b"fundingstrm_note")
-            .to_state()
-            .update(&self.epoch.as_ref().unwrap().index.to_le_bytes())
-            .update(&self.reward_counter.to_le_bytes())
-            .finalize();
+        // Copied blinding factor construction from ShieldedPool::mint_note
+        // until we can delete this code
+
+        // These notes are public, so we don't need a blinding factor for privacy,
+        // but since the note commitments are determined by the note contents, we
+        // need to have unique (deterministic) blinding factors for each note, so they
+        // cannot collide.
+        //
+        // Hashing the current NCT root is sufficient, since it will change every time
+        // we insert a new note.
+        let blinding_factor = Fq::from_le_bytes_mod_order(
+            blake2b_simd::Params::default()
+                .personal(b"PenumbraMint")
+                .to_state()
+                .update(&self.note_commitment_tree.root2().to_bytes())
+                .finalize()
+                .as_bytes(),
+        );
 
         let note = Note::from_parts(
             *destination.diversifier(),
             *destination.transmission_key(),
             val,
-            Fq::from_le_bytes_mod_order(blinding_factor_input.as_bytes()),
+            blinding_factor,
         )
         .unwrap();
         let commitment = note.commit();
@@ -120,7 +132,7 @@ impl PendingBlock {
 
     /// Adds a new note to this pending block.
     pub fn add_note(&mut self, commitment: note::Commitment, data: NoteData) {
-        tracing::info!(?commitment, "adding note");
+        tracing::info!(?commitment, "appending to NCT in legacy");
 
         self.note_commitment_tree.append(&commitment);
 

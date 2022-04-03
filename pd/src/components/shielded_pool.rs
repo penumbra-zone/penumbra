@@ -195,8 +195,9 @@ impl ShieldedPool {
         Ok(())
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self, source, output_body))]
     async fn add_note(&mut self, output_body: output::Body, source: NoteSource) {
+        tracing::debug!(commitment = ?output_body.note_commitment, "appending to NCT in component");
         // 1. Insert it into the NCT
         self.note_commitment_tree
             .append(&output_body.note_commitment);
@@ -254,6 +255,7 @@ impl ShieldedPool {
     async fn put_nct_anchor(&mut self) {
         let height = self.compact_block.height;
         let nct_anchor = self.note_commitment_tree.root2();
+        tracing::debug!(anchor = %nct_anchor, "writing anchor to tree");
         // TODO: should we save a list of historical anchors?
         // Write the NCT anchor both as a value, so we can look it up,
         self.overlay.lock().await.put(
@@ -281,7 +283,10 @@ impl ShieldedPool {
         {
             Ok(())
         } else {
-            Err(anyhow!("provided anchor is not a valid NCT root"))
+            Err(anyhow!(
+                "provided anchor {} is not a valid NCT root",
+                anchor
+            ))
         }
     }
 
