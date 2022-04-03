@@ -209,12 +209,24 @@ impl Writer {
                 asset_id: validator_base_denom.into(),
             };
 
-            let blinding_factor_input = blake2b_simd::Params::default()
-                .personal(b"genesis_note")
-                .to_state()
-                .update(&reward_counter.to_le_bytes())
-                .finalize();
-            reward_counter += 1;
+            // Copied blinding factor construction from ShieldedPool::mint_note
+            // until we can delete this code
+
+            // These notes are public, so we don't need a blinding factor for privacy,
+            // but since the note commitments are determined by the note contents, we
+            // need to have unique (deterministic) blinding factors for each note, so they
+            // cannot collide.
+            //
+            // Hashing the current NCT root is sufficient, since it will change every time
+            // we insert a new note.
+            let blinding_factor = Fq::from_le_bytes_mod_order(
+                blake2b_simd::Params::default()
+                    .personal(b"PenumbraMint")
+                    .to_state()
+                    .update(&note_commitment_tree.root2().to_bytes())
+                    .finalize()
+                    .as_bytes(),
+            );
 
             let destination = allocation.address;
             // build the note
@@ -222,12 +234,13 @@ impl Writer {
                 *destination.diversifier(),
                 *destination.transmission_key(),
                 val,
-                Fq::from_le_bytes_mod_order(blinding_factor_input.as_bytes()),
+                blinding_factor,
             )
             .unwrap();
             let commitment = note.commit();
 
             // append the note to the commitment tree
+            tracing::debug!(?commitment, "appending to NCT in legacy");
             note_commitment_tree.append(&commitment);
 
             tracing::debug!(?note, ?commitment);
@@ -277,6 +290,7 @@ impl Writer {
         // Now that we've added all of the genesis notes, compute the resulting NCT anchor
         // and save it in the database and in the JMT.
         let nct_anchor = note_commitment_tree.root2();
+        tracing::debug!(anchor = %nct_anchor, "writing to NCT in commit_genesis");
         let nct_bytes = bincode::serialize(&note_commitment_tree)?;
 
         // Save the NCT itself in the database ...
@@ -380,6 +394,7 @@ impl Writer {
         let mut dbtx = self.pool.begin().await?;
 
         let nct_anchor = block.note_commitment_tree.root2();
+        tracing::debug!(anchor = %nct_anchor, "writing nct anchor");
         let nct_bytes = bincode::serialize(&block.note_commitment_tree)?;
         query!(
             r#"
