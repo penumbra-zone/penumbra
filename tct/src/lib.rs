@@ -50,8 +50,7 @@ mod serialize;
 use internal::{
     active::{Active, Focus, Insert, Item, Tier},
     complete::{Complete, ForgetOwned},
-    hash::GetHash,
-    hash::Hash,
+    hash::{GetHash, Hash},
     height::Height,
     index,
     path::AuthPath,

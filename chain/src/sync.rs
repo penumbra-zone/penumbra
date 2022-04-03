@@ -1,12 +1,11 @@
-use bytes::Bytes;
 use std::convert::TryFrom;
 
 use anyhow::Result;
-use serde::{Deserialize, Serialize};
-
+use bytes::Bytes;
 use penumbra_crypto::{FieldExt, Nullifier};
 use penumbra_proto::{chain as pb, Protobuf};
 use penumbra_transaction::action::output;
+use serde::{Deserialize, Serialize};
 
 // Domain type for CompactBlock.
 // Contains the minimum data needed to update client state.

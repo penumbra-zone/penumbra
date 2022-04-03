@@ -1,6 +1,5 @@
 use anyhow::Result;
 use async_trait::async_trait;
-
 use penumbra_stake::Epoch;
 use penumbra_transaction::Transaction;
 use tendermint::abci;

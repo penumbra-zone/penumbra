@@ -6,8 +6,7 @@ use crate::*;
 
 #[path = "epoch.rs"]
 pub(crate) mod epoch;
-use epoch::EpochMut;
-use epoch::{block, block::Block, Epoch};
+use epoch::{block, block::Block, Epoch, EpochMut};
 
 mod proof;
 pub use proof::{Proof, VerifyError};

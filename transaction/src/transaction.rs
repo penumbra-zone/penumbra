@@ -1,5 +1,6 @@
 use std::convert::{TryFrom, TryInto};
 
+use anyhow::Error;
 use ark_ff::Zero;
 use bytes::Bytes;
 use decaf377::FieldExt;
@@ -15,8 +16,6 @@ use penumbra_proto::{
     Message, Protobuf,
 };
 use penumbra_stake::STAKING_TOKEN_ASSET_ID;
-
-use anyhow::Error;
 
 use crate::{action::output, Action};
 

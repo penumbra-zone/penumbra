@@ -1,17 +1,12 @@
 use std::fs::File;
 
-use anyhow::Context;
-use anyhow::Result;
-use penumbra_stake::Validator;
-use penumbra_stake::ValidatorDefinition;
+use anyhow::{Context, Result};
+use penumbra_proto::{stake::Validator as ProtoValidator, Message};
+use penumbra_stake::{IdentityKey, Validator, ValidatorDefinition};
 use rand_core::OsRng;
 use structopt::StructOpt;
 
-use penumbra_proto::{stake::Validator as ProtoValidator, Message};
-use penumbra_stake::IdentityKey;
-
-use crate::state::ClientStateFile;
-use crate::Opt;
+use crate::{state::ClientStateFile, Opt};
 
 #[derive(Debug, StructOpt)]
 pub enum ValidatorCmd {

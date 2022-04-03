@@ -1,5 +1,4 @@
-use std::borrow::Borrow;
-use std::sync::Arc;
+use std::{borrow::Borrow, sync::Arc};
 
 use anyhow::{anyhow, Result};
 use futures::StreamExt;
