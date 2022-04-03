@@ -15,7 +15,7 @@ service ThinWallet {
   rpc AssetList(AssetListRequest) returns (stream Asset);
   // TODO: return ValidatorStatus?
   rpc ValidatorStatus(ValidatorStatusRequest) returns (stake.ValidatorStatus);
-  rpc ValidatorRate(ValidatorRateRequest) returns (stake.RateData);
+  rpc NextValidatorRate(stake.IdentityKey) returns (stake.RateData);
 }
 
 // Requests an asset denom given an asset ID
@@ -48,13 +48,6 @@ message TransactionByNoteRequest {
 
 message TransactionDetail {
   bytes id = 1;
-}
-
-message ValidatorRateRequest {
-  // The expected chain id (empty string if no expectation).
-  string chain_id = 3;
-  stake.IdentityKey identity_key = 1;
-  uint64 epoch_index = 2;
 }
 
 message ValidatorStatusRequest {

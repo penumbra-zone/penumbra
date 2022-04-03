@@ -3,7 +3,7 @@ use penumbra_proto::{
     chain::AssetInfo,
     thin_wallet::{
         thin_wallet_server::ThinWallet, Asset, AssetListRequest, AssetLookupRequest,
-        TransactionByNoteRequest, TransactionDetail, ValidatorRateRequest, ValidatorStatusRequest,
+        TransactionByNoteRequest, TransactionDetail, ValidatorStatusRequest,
     },
 };
 use penumbra_stake::IdentityKey;
@@ -100,29 +100,24 @@ tracing::debug!(asset_id = ?hex::encode(&asset.asset_id), asset_denom = ?asset.a
     }
 
     #[instrument(skip(self, request))]
-    async fn validator_rate(
+    async fn next_validator_rate(
         &self,
-        request: tonic::Request<ValidatorRateRequest>,
+        request: tonic::Request<proto::stake::IdentityKey>,
     ) -> Result<tonic::Response<proto::stake::RateData>, Status> {
-        self.check_chain_id(&request.get_ref().chain_id)?;
+        let identity_key = request
+            .into_inner()
+            .try_into()
+            .map_err(|_| tonic::Status::invalid_argument("invalid identity key"))?;
 
-        let request = request.into_inner();
         let rates = self
-            .rate_data(request.epoch_index)
+            .next_rate_data()
             .await
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
-        let identity_key = IdentityKey::try_from(
-            request
-                .identity_key
-                .ok_or_else(|| tonic::Status::invalid_argument("missing identity key"))?,
-        )
-        .map_err(|_| tonic::Status::invalid_argument("invalid identity key"))?;
-
         let rate = rates
-            .into_iter()
-            .find(|data| data.identity_key == identity_key)
-            .ok_or_else(|| tonic::Status::not_found("validator not found"))?;
+            .get(&identity_key)
+            .ok_or_else(|| tonic::Status::not_found("validator not found"))?
+            .clone();
 
         Ok(tonic::Response::new(rate.into()))
     }
