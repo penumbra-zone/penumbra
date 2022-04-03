@@ -14,7 +14,7 @@ use penumbra_stake::{
     ValidatorState, ValidatorStateName, ValidatorStatus, VerifiedValidatorDefinition,
     STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
 };
-use serde::{Deserialize, Serialize};
+
 use sqlx::{query, Postgres, Transaction};
 use tendermint::{
     abci::types::{Evidence, ValidatorUpdate},
@@ -99,7 +99,7 @@ impl BlockChanges {
         }
 
         // Handle updating validators, incorporating any rate updates during epoch transitions.
-        for (ik, mut defs) in self.updated_validators {
+        for (_ik, mut defs) in self.updated_validators {
             // Sort the validator definitions by sequence number + tiebreaker,
             // in case there are conflicts.
             defs.sort();
@@ -144,7 +144,7 @@ impl BlockChanges {
         }
 
         // Handle adding newly added validators with default rates
-        for (ik, mut defs) in self.new_validators {
+        for (_ik, mut defs) in self.new_validators {
             // Sort the validator definitions by sequence number + tiebreaker,
             // in case there are conflicts.
             defs.sort();

@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, VecDeque};
 use anyhow::Result;
 use ark_ff::PrimeField;
 use decaf377::{Fq, Fr};
-use jmt::storage::TreeWriter;
+
 use penumbra_chain::params::ChainParams;
 use penumbra_crypto::{
     asset,
@@ -23,7 +23,7 @@ use crate::{
     genesis,
     pending_block::QuarantineGroup,
     verify::{NoteData, PositionedNoteData},
-    PendingBlock, Storage, NUM_RECENT_ANCHORS,
+    PendingBlock, NUM_RECENT_ANCHORS,
 };
 
 #[derive(Debug)]

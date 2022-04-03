@@ -6,7 +6,7 @@ use penumbra_proto::{
         TransactionByNoteRequest, TransactionDetail, ValidatorStatusRequest,
     },
 };
-use penumbra_stake::IdentityKey;
+
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::Status;

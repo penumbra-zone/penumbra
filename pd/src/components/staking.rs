@@ -1,12 +1,12 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_chain::params::ChainParams;
+
 use penumbra_stake::Epoch;
 use penumbra_transaction::Transaction;
 use tendermint::abci;
 
 use super::{Component, Overlay};
-use crate::{components::validator_set::BlockChanges, genesis, PenumbraStore, WriteOverlayExt};
+use crate::{components::validator_set::BlockChanges, genesis, PenumbraStore};
 
 // Stub component
 pub struct Staking {
@@ -19,7 +19,7 @@ impl Component for Staking {
         Ok(Self { overlay })
     }
 
-    async fn init_chain(&mut self, app_state: &genesis::AppState) -> Result<()> {
+    async fn init_chain(&mut self, _app_state: &genesis::AppState) -> Result<()> {
         Ok(())
     }
 
@@ -31,7 +31,7 @@ impl Component for Staking {
             self.overlay.get_epoch_duration().await?,
         );
         // Reset all staking state in the JMT overlay
-        let block_changes = BlockChanges {
+        let _block_changes = BlockChanges {
             starting_epoch: epoch,
             new_validators: Default::default(),
             updated_validators: Default::default(),

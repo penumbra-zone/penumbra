@@ -3,11 +3,10 @@ use std::{env::current_dir, fmt, io::Read, path::PathBuf, str::FromStr};
 use anyhow::{Context, Result};
 use directories::UserDirs;
 use penumbra_crypto::Address;
-use rand::Rng;
-use rand_core::OsRng;
+
 use regex::{Captures, Regex};
 use serde::{de, Deserialize};
-use tendermint::{node::Id, PrivateKey, PublicKey};
+use tendermint::{node::Id, PrivateKey};
 
 use crate::genesis;
 

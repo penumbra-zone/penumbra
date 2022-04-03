@@ -1,11 +1,3 @@
-use ibc_proto::ibc::core::channel::v1::{
-    MsgAcknowledgement, MsgChannelCloseConfirm, MsgChannelCloseInit, MsgChannelOpenAck,
-    MsgChannelOpenConfirm, MsgChannelOpenTry, MsgRecvPacket, MsgTimeout,
-};
-use ibc_proto::ibc::core::connection::v1::{
-    MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit, MsgConnectionOpenTry,
-};
-use penumbra_crypto::{value, Fr, Value, Zero};
 use penumbra_proto::{ibc as pb, Protobuf};
 
 #[derive(Clone, Debug)]
