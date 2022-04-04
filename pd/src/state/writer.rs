@@ -191,7 +191,7 @@ impl Writer {
         //
         // The blinding factor needs to be unique per genesis note
         // so a monotonically increasing reward counter is used.
-        let mut reward_counter: u64 = 0;
+        let _reward_counter: u64 = 0;
         let mut supply_updates: BTreeMap<Id, (Denom, u64)> = BTreeMap::new();
         let mut notes = Vec::new();
         for allocation in &genesis_config.allocations {

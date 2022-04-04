@@ -2,13 +2,13 @@ use std::collections::BTreeSet;
 
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
-use penumbra_proto::{stake as pb, Protobuf};
+use penumbra_proto::{Protobuf};
 use penumbra_stake::{
     BaseRateData, DelegationChanges, Epoch, IdentityKey, RateData, Validator, ValidatorList,
     STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_transaction::{Action, Transaction};
-use serde::{Deserialize, Serialize};
+
 use tendermint::{
     abci::{
         self,
@@ -51,8 +51,8 @@ impl Staking {
         // TODO: now the delegations and undelegations need to be grouped by validator ?
 
         let chain_params = self.overlay.get_chain_params().await?;
-        let unbonding_epochs = chain_params.unbonding_epochs;
-        let active_validator_limit = chain_params.active_validator_limit;
+        let _unbonding_epochs = chain_params.unbonding_epochs;
+        let _active_validator_limit = chain_params.active_validator_limit;
 
         tracing::debug!("processing base rate");
         // We are transitioning to the next epoch, so set "cur_base_rate" to the previous "next_base_rate", and
@@ -73,7 +73,7 @@ impl Staking {
             .set_base_rates(current_base_rate, next_base_rate)
             .await;
 
-        let mut staking_token_supply = self
+        let _staking_token_supply = self
             .overlay
             .token_supply(&STAKING_TOKEN_ASSET_ID)
             .await?
@@ -86,8 +86,8 @@ impl Staking {
     /// on changes to voting power that occurred in this epoch.
     pub fn process_epoch_transitions(
         &mut self,
-        active_validator_limit: u64,
-        unbonding_epochs: u64,
+        _active_validator_limit: u64,
+        _unbonding_epochs: u64,
     ) -> Result<()> {
         Ok(())
     }
