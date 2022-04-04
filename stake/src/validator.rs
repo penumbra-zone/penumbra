@@ -91,6 +91,10 @@ impl FundingStreams {
             funding_streams: Vec::new(),
         }
     }
+
+    pub fn iter(&self) -> impl Iterator<Item = &FundingStream> {
+        self.funding_streams.iter()
+    }
 }
 
 impl TryFrom<Vec<FundingStream>> for FundingStreams {
