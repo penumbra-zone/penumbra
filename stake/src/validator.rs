@@ -44,6 +44,36 @@ pub struct Validator {
     pub sequence_number: u32,
 }
 
+/// A list of validators.
+///
+/// This is a newtype wrapper for a Vec that allows us to define a proto type.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(try_from = "pb::ValidatorList", into = "pb::ValidatorList")]
+pub struct ValidatorList(pub Vec<IdentityKey>);
+
+impl Protobuf<pb::ValidatorList> for ValidatorList {}
+
+impl TryFrom<pb::ValidatorList> for ValidatorList {
+    type Error = anyhow::Error;
+
+    fn try_from(msg: pb::ValidatorList) -> Result<Self, Self::Error> {
+        Ok(ValidatorList(
+            msg.validator_keys
+                .iter()
+                .map(|key| key.clone().try_into())
+                .collect::<anyhow::Result<Vec<_>>>()?,
+        ))
+    }
+}
+
+impl From<ValidatorList> for pb::ValidatorList {
+    fn from(vk: ValidatorList) -> Self {
+        pb::ValidatorList {
+            validator_keys: vk.0.iter().map(|v| v.clone().into()).collect(),
+        }
+    }
+}
+
 /// A set of funding streams to which validators send rewards.
 ///
 /// The total commission of a validator is the sum of the individual reward rate of the
