@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use anyhow::{anyhow, Result};
 use ark_ff::PrimeField;
 use async_trait::async_trait;
-use decaf377::{FieldExt, Fq, Fr};
+use decaf377::{Fq, Fr};
 use penumbra_chain::{sync::CompactBlock, NoteSource};
 use penumbra_crypto::{
     asset,
@@ -25,7 +25,6 @@ pub struct ShieldedPool {
     note_commitment_tree: NoteCommitmentTree,
     // TODO: change the on-chain registry to just store asset id -> amount
     // and asset id -> denom separately
-    supply_updates: BTreeMap<asset::Id, i64>,
     new_denoms: BTreeMap<asset::Id, Denom>,
     /// The in-progress CompactBlock representation of the ShieldedPool changes
     compact_block: CompactBlock,
@@ -39,7 +38,6 @@ impl Component for ShieldedPool {
         Ok(Self {
             overlay,
             note_commitment_tree,
-            supply_updates: Default::default(),
             new_denoms: Default::default(),
             compact_block: Default::default(),
         })
@@ -181,7 +179,9 @@ impl ShieldedPool {
         let encrypted_note = note.encrypt(&esk);
 
         // Now record the note and update the total supply:
-        *self.supply_updates.entry(value.asset_id).or_insert(0) += value.amount as i64;
+        self.overlay
+            .update_token_supply(&value.asset_id, value.amount as i64)
+            .await?;
         self.add_note(
             output::Body {
                 note_commitment,
@@ -321,3 +321,54 @@ impl ShieldedPool {
         }
     }
 }
+
+/// Extension trait providing read/write access to shielded pool data.
+///
+/// TODO: should this be split into Read and Write traits?
+#[async_trait]
+pub trait ShieldedPoolStore: WriteOverlayExt {
+    async fn token_supply(&self, asset_id: &asset::Id) -> Result<Option<u64>> {
+        self.get_proto(format!("shielded_pool/assets/{}/token_supply", asset_id).into())
+            .await
+    }
+
+    #[instrument(skip(self))]
+    async fn update_token_supply(&self, asset_id: &asset::Id, change: i64) -> Result<()> {
+        let key = format!("shielded_pool/assets/{}/token_supply", asset_id).into();
+        let current_supply = match self.get_proto(key).await {
+            Ok(Some(value)) => value,
+            Ok(None) => 0u64,
+            // We want to handle the MissingRootError specially here, so that we can
+            // use 0 as a default value if the tree is empty, without ignoring all errors.
+            Err(e) if e.downcast_ref::<jmt::MissingRootError>().is_some() => 0u64,
+            Err(e) => return Err(e),
+        };
+
+        // TODO: replace with a single checked_add_signed call when mixed_integer_ops lands in stable
+        let new_supply = if change < 0 {
+            current_supply
+                .checked_sub(change.abs() as u64)
+                .ok_or_else(|| {
+                    anyhow!(
+                        "underflow updating token supply {} with delta {}",
+                        current_supply,
+                        change
+                    )
+                })?
+        } else {
+            current_supply.checked_add(change as u64).ok_or_else(|| {
+                anyhow!(
+                    "overflow updating token supply {} with delta {}",
+                    current_supply,
+                    change
+                )
+            })?
+        };
+        tracing::debug!(?current_supply, ?new_supply);
+
+        self.put_proto(key, new_supply).await;
+        Ok(())
+    }
+}
+
+impl<T: WriteOverlayExt> ShieldedPoolStore for T {}
