@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
-use penumbra_proto::{Protobuf};
+use penumbra_proto::Protobuf;
 use penumbra_stake::{
     BaseRateData, DelegationChanges, Epoch, IdentityKey, RateData, Validator, ValidatorList,
     STAKING_TOKEN_ASSET_ID,
@@ -18,8 +18,8 @@ use tendermint::{
 };
 use tracing::instrument;
 
-use super::{Component, Overlay, ShieldedPoolStore};
-use crate::{genesis, PenumbraStore, WriteOverlayExt};
+use super::{app::View as _, shielded_pool::View as _, Component, Overlay};
+use crate::{genesis, WriteOverlayExt};
 
 // Staking component
 pub struct Staking {
