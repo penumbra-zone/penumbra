@@ -8,15 +8,18 @@ use penumbra_stake::{
 use penumbra_transaction::{Action, Transaction};
 use serde::{Deserialize, Serialize};
 use tendermint::{
-    abci::{self, types::ValidatorUpdate},
-    block,
+    abci::{
+        self,
+        types::{Evidence, ValidatorUpdate},
+    },
+    block, PublicKey,
 };
 use tracing::instrument;
 
 use super::{Component, Overlay, ShieldedPoolStore};
 use crate::{genesis, PenumbraStore, WriteOverlayExt};
 
-// Stub component
+// Staking component
 pub struct Staking {
     overlay: Overlay,
     /// Delegation changes accumulated over the course of this block, to be
@@ -367,12 +370,16 @@ impl Component for Staking {
 
     async fn begin_block(&mut self, begin_block: &abci::request::BeginBlock) -> Result<()> {
         tracing::debug!("Staking: begin_block");
-        let cur_epoch = self.overlay.get_current_epoch().await?;
-        // TODO: need to write proto impl for BlockChanges
-        // self.overlay.put_domain(
-        //     format!("staking/block_changes/{}", block_height).into(),
-        //     block_changes,
-        // );
+
+        let slashing_penalty = self.overlay.get_chain_params().await?.slashing_penalty;
+
+        // For each validator identified as byzantine by tendermint, update its
+        // status to be slashed.
+        for evidence in begin_block.byzantine_validators.iter() {
+            self.overlay
+                .slash_validator(evidence, slashing_penalty)
+                .await;
+        }
 
         Ok(())
     }
@@ -693,6 +700,71 @@ pub trait View: WriteOverlayExt + Send + Sync {
     async fn validator(&self, identity_key: &IdentityKey) -> Result<Option<Validator>> {
         self.get_domain(format!("staking/validators/{}", identity_key).into())
             .await
+    }
+
+    // Tendermint validators are referenced to us by their Tendermint consensus key,
+    // but we reference them by their Penumbra identity key.
+    async fn validator_by_consensus_key(&self, ck: &PublicKey) -> Result<Option<Validator>> {
+        // We maintain an internal mapping of consensus keys to identity keys to make this
+        // lookup more efficient.
+        let identity_key: Option<IdentityKey> = self
+            .get_domain(format!("staking/consensus_key/{}", ck.to_hex()).into())
+            .await?;
+
+        if identity_key.is_none() {
+            return Ok(None);
+        }
+
+        let identity_key = identity_key.unwrap();
+
+        self.validator(&identity_key).await
+    }
+
+    async fn slash_validator(&mut self, evidence: &Evidence, slashing_penalty: u64) -> Result<()> {
+        let ck = tendermint::PublicKey::from_raw_ed25519(&evidence.validator.address)
+            .ok_or_else(|| anyhow::anyhow!("invalid ed25519 consensus pubkey from tendermint"))
+            .unwrap();
+
+        let validator = self.validator_by_consensus_key(&ck).await?;
+
+        tracing::info!(?validator, ?slashing_penalty, "slashing validator");
+
+        // let current_info = self
+        //     .get_validator_info(&validator.identity_key)
+        //     .ok_or(anyhow::anyhow!("Validator not found in state machine"))?;
+        // let current_state = current_info.status.state;
+
+        // let mut mark_slashed = |validator: &Validator| -> Result<()> {
+        //     // It's safe to modify the cache here, as it will be reloaded from the db
+        //     // during begin_block. We need to access the updated state/rate data set here
+        //     // during end_block and commit.
+        //     let mut cv = self
+        //         .cache
+        //         .validator_set
+        //         .get_mut(&validator.identity_key)
+        //         .ok_or_else(|| anyhow::anyhow!("Validator not found"))?;
+
+        //     cv.status.state = ValidatorState::Slashed;
+        //     cv.rate_data = cv.rate_data.slash(slashing_penalty);
+
+        //     self.block_changes
+        //         .as_mut()
+        //         .expect("block_changes should be initialized during begin_block")
+        //         .slashed_validators
+        //         .push((validator.identity_key.clone(), cv.rate_data.clone()));
+
+        //     Ok(())
+        // };
+
+        // match current_state {
+        //     ValidatorState::Active => mark_slashed(&validator),
+        //     ValidatorState::Unbonding { unbonding_epoch: _ } => mark_slashed(&validator),
+        //     _ => Err(anyhow::anyhow!(
+        //         "only validators in the active or unbonding state may be slashed"
+        //     )),
+        // }
+
+        Ok(())
     }
 
     // TODO(zbuc): does this make sense? will we always be saving cur&next rate data when we save a validator definition?
