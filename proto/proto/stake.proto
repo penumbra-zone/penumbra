@@ -27,7 +27,7 @@ message Validator {
 }
 
 // For storing the list of keys of known validators.
-message ValidatorJMTKeys {
+message ValidatorList {
   repeated IdentityKey validator_keys = 1;
 }
 

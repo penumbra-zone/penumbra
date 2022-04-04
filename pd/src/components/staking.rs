@@ -1,7 +1,7 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_proto::{stake as pb, Protobuf};
-use penumbra_stake::{BaseRateData, Epoch, IdentityKey, RateData, Validator};
+use penumbra_stake::{BaseRateData, Epoch, IdentityKey, RateData, Validator, ValidatorList};
 use penumbra_transaction::{Action, Transaction};
 use serde::{Deserialize, Serialize};
 use tendermint::abci::{self, types::ValidatorUpdate};
@@ -14,40 +14,6 @@ const DOMAIN_PREFIX: &str = "staking";
 // Stub component
 pub struct Staking {
     overlay: Overlay,
-}
-
-// Used for storing the list of keys for known validators.
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(try_from = "pb::ValidatorJmtKeys", into = "pb::ValidatorJmtKeys")]
-struct ValidatorJmtKeys(Vec<IdentityKey>);
-
-impl ValidatorJmtKeys {
-    pub fn push(&mut self, value: IdentityKey) {
-        self.0.push(value);
-    }
-}
-
-impl Protobuf<pb::ValidatorJmtKeys> for ValidatorJmtKeys {}
-
-impl TryFrom<pb::ValidatorJmtKeys> for ValidatorJmtKeys {
-    type Error = anyhow::Error;
-
-    fn try_from(msg: pb::ValidatorJmtKeys) -> Result<Self, Self::Error> {
-        Ok(ValidatorJmtKeys(
-            msg.validator_keys
-                .iter()
-                .map(|key| key.clone().try_into())
-                .collect::<Result<Vec<_>>>()?,
-        ))
-    }
-}
-
-impl From<ValidatorJmtKeys> for pb::ValidatorJmtKeys {
-    fn from(vk: ValidatorJmtKeys) -> Self {
-        pb::ValidatorJmtKeys {
-            validator_keys: vk.0.iter().map(|v| v.clone().into()).collect(),
-        }
-    }
 }
 
 impl Staking {
@@ -401,7 +367,7 @@ impl Component for Staking {
         // Add initial validators to the JMT
         // Validators are indexed in the JMT by their public key,
         // and there is a separate key containing the list of all validator keys.
-        let mut validator_keys = ValidatorJmtKeys(Vec::new());
+        let mut validator_keys = Vec::new();
         for validator in &app_state.validators {
             let validator_key = validator.validator.identity_key.clone();
 
@@ -429,7 +395,7 @@ impl Component for Staking {
         self.overlay
             .put_domain(
                 format!("{}/validators/keys", DOMAIN_PREFIX).into(),
-                validator_keys,
+                ValidatorList(validator_keys),
             )
             .await;
 
