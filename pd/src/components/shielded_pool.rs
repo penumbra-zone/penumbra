@@ -1,5 +1,3 @@
-
-
 use anyhow::{anyhow, Result};
 use ark_ff::PrimeField;
 use async_trait::async_trait;
@@ -319,7 +317,7 @@ impl ShieldedPool {
 ///
 /// TODO: should this be split into Read and Write traits?
 #[async_trait]
-pub trait ShieldedPoolStore: WriteOverlayExt {
+pub trait View: WriteOverlayExt {
     async fn token_supply(&self, asset_id: &asset::Id) -> Result<Option<u64>> {
         self.get_proto(format!("shielded_pool/assets/{}/token_supply", asset_id).into())
             .await
@@ -386,4 +384,4 @@ pub trait ShieldedPoolStore: WriteOverlayExt {
     }
 }
 
-impl<T: WriteOverlayExt> ShieldedPoolStore for T {}
+impl<T: WriteOverlayExt> View for T {}
