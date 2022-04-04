@@ -15,7 +15,7 @@ use penumbra_proto::{
     },
     Message, Protobuf,
 };
-use penumbra_stake::STAKING_TOKEN_ASSET_ID;
+use penumbra_stake::{Delegate, Undelegate, ValidatorDefinition, STAKING_TOKEN_ASSET_ID};
 
 use crate::{action::output, Action};
 
@@ -71,6 +71,40 @@ impl Transaction {
             expiry_height: None,
             chain_id: None,
         }
+    }
+
+    pub fn actions(&self) -> impl Iterator<Item = &Action> {
+        self.transaction_body.actions.iter()
+    }
+
+    pub fn delegations(&self) -> impl Iterator<Item = &Delegate> {
+        self.actions().filter_map(|action| {
+            if let Action::Delegate(d) = action {
+                Some(d)
+            } else {
+                None
+            }
+        })
+    }
+
+    pub fn undelegations(&self) -> impl Iterator<Item = &Undelegate> {
+        self.actions().filter_map(|action| {
+            if let Action::Undelegate(d) = action {
+                Some(d)
+            } else {
+                None
+            }
+        })
+    }
+
+    pub fn validator_definitions(&self) -> impl Iterator<Item = &ValidatorDefinition> {
+        self.actions().filter_map(|action| {
+            if let Action::ValidatorDefinition(d) = action {
+                Some(d)
+            } else {
+                None
+            }
+        })
     }
 
     pub fn output_bodies(&self) -> Vec<output::Body> {
