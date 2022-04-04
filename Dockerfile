@@ -2,6 +2,7 @@ FROM rust:1.56 as build
 
 RUN curl https://sh.rustup.rs -sSf | sh -s -- --no-modify-path --default-toolchain none -y
 RUN rustup component add rustfmt
+RUN apt-get update && apt-get install -y clang libclang-dev
 
 WORKDIR /usr/src
 
