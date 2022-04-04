@@ -2,6 +2,7 @@
 use once_cell::sync::Lazy;
 use penumbra_crypto::asset;
 
+mod changes;
 mod delegate;
 mod epoch;
 mod funding_stream;
@@ -14,6 +15,7 @@ mod undelegate;
 mod validator;
 mod validator_state;
 
+pub use changes::DelegationChanges;
 pub use delegate::Delegate;
 pub use epoch::Epoch;
 pub use funding_stream::FundingStream;

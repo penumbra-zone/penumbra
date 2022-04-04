@@ -118,3 +118,9 @@ message Undelegate {
   // stateless verification that the transaction is internally consistent.
   uint64 delegation_amount = 4;
 }
+
+// A list of pending delegations and undelegations.
+message DelegationChanges {
+  repeated Delegate delegations = 1;
+  repeated Undelegate undelegations = 2;
+}
