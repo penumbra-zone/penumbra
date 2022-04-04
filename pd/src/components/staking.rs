@@ -68,12 +68,11 @@ impl Staking {
             .set_base_rates(current_base_rate, next_base_rate)
             .await;
 
-        // let mut staking_token_supply = self
-        //     .reader
-        //     .asset_lookup(*STAKING_TOKEN_ASSET_ID)
-        //     .await?
-        //     .map(|info| info.total_supply)
-        //     .unwrap();
+        let mut staking_token_supply = self
+            .overlay
+            .token_supply(&STAKING_TOKEN_ASSET_ID)
+            .await?
+            .expect("staking token should be known");
 
         // let mut next_rates = Vec::new();
         // let mut reward_notes = Vec::new();
