@@ -5,11 +5,10 @@ use penumbra_stake::{BaseRateData, Epoch, IdentityKey, RateData, Validator, Vali
 use penumbra_transaction::{Action, Transaction};
 use serde::{Deserialize, Serialize};
 use tendermint::abci::{self, types::ValidatorUpdate};
+use tracing::instrument;
 
 use super::{Component, Overlay};
 use crate::{genesis, PenumbraStore, WriteOverlayExt};
-
-const DOMAIN_PREFIX: &str = "staking";
 
 // Stub component
 pub struct Staking {
@@ -17,33 +16,6 @@ pub struct Staking {
 }
 
 impl Staking {
-    // TODO: does this make sense? will we always be saving cur&next rate data when we save a validator definition?
-    async fn save_validator(
-        &mut self,
-        validator: Validator,
-        cur_rate_data: RateData,
-        next_rate_data: RateData,
-    ) {
-        let validator_key = validator.identity_key.clone();
-        let def_key = format!("{}/validators/{}/definition", DOMAIN_PREFIX, validator_key);
-        let cur_rate_key = format!(
-            "{}/validators/{}/current_rate",
-            DOMAIN_PREFIX, validator_key
-        );
-        let next_rate_key = format!("{}/validators/{}/next_rate", DOMAIN_PREFIX, validator_key);
-
-        self.overlay
-            .put_domain(cur_rate_key.into(), cur_rate_data)
-            .await;
-        self.overlay
-            .put_domain(next_rate_key.into(), next_rate_data)
-            .await;
-
-        self.overlay
-            .put_domain(def_key.into(), validator.clone())
-            .await;
-    }
-
     async fn end_epoch(&mut self) -> Result<()> {
         // calculate rate data for next rate, move previous next rate to cur rate,
         // and save the next rate data. ensure that non-Active validators maintain constant rates.
@@ -71,11 +43,7 @@ impl Staking {
         tracing::debug!("processing base rate");
         // We are transitioning to the next epoch, so set "cur_base_rate" to the previous "next_base_rate", and
         // update "next_base_rate".
-        let current_base_rate: BaseRateData = self
-            .overlay
-            .get_domain(format!("{}/next_base_rate", DOMAIN_PREFIX).into())
-            .await?
-            .unwrap();
+        let current_base_rate = self.overlay.current_base_rate().await?;
         /// FIXME: set this less arbitrarily, and allow this to be set per-epoch
         /// 3bps -> 11% return over 365 epochs, why not
         const BASE_REWARD_RATE: u64 = 3_0000;
@@ -88,16 +56,7 @@ impl Staking {
 
         // Update these in the JMT:
         self.overlay
-            .put_domain(
-                format!("{}/cur_base_rate", DOMAIN_PREFIX).into(),
-                current_base_rate,
-            )
-            .await;
-        self.overlay
-            .put_domain(
-                format!("{}/next_base_rate", DOMAIN_PREFIX).into(),
-                next_base_rate,
-            )
+            .set_base_rates(current_base_rate, next_base_rate)
             .await;
 
         // let mut staking_token_supply = self
@@ -344,30 +303,21 @@ impl Component for Staking {
         let cur_base_rate = BaseRateData {
             epoch_index,
             base_reward_rate: 0,
-            base_exchange_rate: 1,
+            base_exchange_rate: 1_0000_0000,
         };
         let next_base_rate = BaseRateData {
             epoch_index: epoch_index + 1,
             base_reward_rate: 0,
-            base_exchange_rate: 1,
+            base_exchange_rate: 1_0000_0000,
         };
         self.overlay
-            .put_domain(
-                format!("{}/cur_base_rate", DOMAIN_PREFIX).into(),
-                cur_base_rate,
-            )
-            .await;
-        self.overlay
-            .put_domain(
-                format!("{}/next_base_rate", DOMAIN_PREFIX).into(),
-                next_base_rate,
-            )
+            .set_base_rates(cur_base_rate, next_base_rate)
             .await;
 
         // Add initial validators to the JMT
         // Validators are indexed in the JMT by their public key,
         // and there is a separate key containing the list of all validator keys.
-        let mut validator_keys = Vec::new();
+        let mut validator_list = Vec::new();
         for validator in &app_state.validators {
             let validator_key = validator.validator.identity_key.clone();
 
@@ -387,17 +337,13 @@ impl Component for Staking {
                 validator_exchange_rate: 1_0000_0000, // 1 represented as 1e8
             };
 
-            self.save_validator(validator.validator.clone(), cur_rate_data, next_rate_data)
+            self.overlay
+                .save_validator(validator.validator.clone(), cur_rate_data, next_rate_data)
                 .await;
-            validator_keys.push(validator_key);
+            validator_list.push(validator_key);
         }
 
-        self.overlay
-            .put_domain(
-                format!("{}/validators/keys", DOMAIN_PREFIX).into(),
-                ValidatorList(validator_keys),
-            )
-            .await;
+        self.overlay.set_validator_list(validator_list).await;
 
         Ok(())
     }
@@ -653,3 +599,94 @@ impl Component for Staking {
         Ok(())
     }
 }
+
+/// Extension trait providing read/write access to staking data.
+///
+/// TODO: should this be split into Read and Write traits?
+#[async_trait]
+pub trait View: WriteOverlayExt {
+    async fn current_base_rate(&self) -> Result<BaseRateData> {
+        self.get_domain("staking/base_rate/current".into())
+            .await
+            .map(|rate_data| rate_data.expect("rate data must be set after init_chain"))
+    }
+
+    async fn next_base_rate(&self) -> Result<BaseRateData> {
+        self.get_domain("staking/base_rate/next".into())
+            .await
+            .map(|rate_data| rate_data.expect("rate data must be set after init_chain"))
+    }
+
+    #[instrument(skip(self))]
+    async fn set_base_rates(&self, current: BaseRateData, next: BaseRateData) {
+        tracing::debug!("setting base rates");
+        self.put_domain("staking/base_rate/current".into(), current)
+            .await;
+        self.put_domain("staking/base_rate/next".into(), next).await;
+    }
+
+    async fn current_validator_rate(&self, identity_key: &IdentityKey) -> Result<Option<RateData>> {
+        self.get_domain(format!("staking/validators/{}/rate/current", identity_key).into())
+            .await
+    }
+
+    async fn next_validator_rate(&self, identity_key: &IdentityKey) -> Result<Option<RateData>> {
+        self.get_domain(format!("staking/validators/{}/rate/next", identity_key).into())
+            .await
+    }
+
+    #[instrument(skip(self))]
+    async fn set_validator_rates(
+        &self,
+        identity_key: &IdentityKey,
+        current_rates: RateData,
+        next_rates: RateData,
+    ) {
+        tracing::debug!("setting validator rates");
+        self.put_domain(
+            format!("staking/validators/{}/rate/current", identity_key).into(),
+            current_rates,
+        )
+        .await;
+        self.put_domain(
+            format!("staking/validators/{}/rate/next", identity_key).into(),
+            next_rates,
+        )
+        .await;
+    }
+
+    async fn validator(&self, identity_key: &IdentityKey) -> Result<Option<Validator>> {
+        self.get_domain(format!("staking/validators/{}", identity_key).into())
+            .await
+    }
+
+    // TODO(zbuc): does this make sense? will we always be saving cur&next rate data when we save a validator definition?
+    async fn save_validator(
+        &self,
+        validator: Validator,
+        current_rates: RateData,
+        next_rates: RateData,
+    ) {
+        tracing::debug!(?validator);
+        let id = validator.identity_key.clone();
+        self.put_domain(format!("staking/validators/{}", id).into(), validator)
+            .await;
+        self.set_validator_rates(&id, current_rates, next_rates)
+            .await
+    }
+
+    async fn validator_list(&self) -> Result<Vec<IdentityKey>> {
+        Ok(self
+            .get_domain("staking/validators/list".into())
+            .await?
+            .map(|list: ValidatorList| list.0)
+            .unwrap_or(Vec::new()))
+    }
+
+    async fn set_validator_list(&self, validators: Vec<IdentityKey>) {
+        self.put_domain("staking/validators/list".into(), ValidatorList(validators))
+            .await;
+    }
+}
+
+impl<T: WriteOverlayExt> View for T {}
