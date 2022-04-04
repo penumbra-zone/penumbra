@@ -52,16 +52,16 @@ impl Component for IBCComponent {
 
     async fn execute_tx(&mut self, tx: &Transaction) -> Result<()> {
         // handle client transactions
-        for action in tx.transaction_body.actions.iter() {
-            let ibc_action = match action {
+        for ibc_action in tx
+            .transaction_body
+            .actions
+            .iter()
+            .filter_map(|action| match action {
                 Action::IBCAction(ibc_action) => Some(ibc_action),
                 _ => None,
-            };
-            if ibc_action.is_none() {
-                continue;
-            }
-
-            match &ibc_action.unwrap().action {
+            })
+        {
+            match &ibc_action.action {
                 // Handle IBC CreateClient. Here we need to validate the following:
                 // - client type is one of the supported types (currently, only Tendermint light clients)
                 // - consensus state is valid (is of the same type as the client type, also currently only Tendermint consensus states are permitted)
