@@ -1,8 +1,5 @@
 name: Smoke Test
-on:
-  push:
-    branches:
-      - main
+on: [push]
 
 jobs:
   smoke_test:
