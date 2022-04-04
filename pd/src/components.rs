@@ -18,7 +18,7 @@ pub mod validator_set;
 pub use app::App;
 pub use component::Component;
 pub use ibc::IBCComponent;
-pub use shielded_pool::ShieldedPool;
+pub use shielded_pool::{ShieldedPool, ShieldedPoolStore};
 pub use staking::Staking;
 
 type Overlay = Arc<Mutex<WriteOverlay<Storage>>>;
