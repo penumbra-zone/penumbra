@@ -23,9 +23,6 @@ use crate::{genesis, WriteOverlayExt};
 pub struct ShieldedPool {
     overlay: Overlay,
     note_commitment_tree: NoteCommitmentTree,
-    // TODO: change the on-chain registry to just store asset id -> amount
-    // and asset id -> denom separately
-    new_denoms: BTreeMap<asset::Id, Denom>,
     /// The in-progress CompactBlock representation of the ShieldedPool changes
     compact_block: CompactBlock,
 }
@@ -38,7 +35,6 @@ impl Component for ShieldedPool {
         Ok(Self {
             overlay,
             note_commitment_tree,
-            new_denoms: Default::default(),
             compact_block: Default::default(),
         })
     }
@@ -54,7 +50,7 @@ impl Component for ShieldedPool {
                 ));
             }
 
-            let base_denom = asset::REGISTRY
+            let denom = asset::REGISTRY
                 .parse_denom(&allocation.denom)
                 .ok_or_else(|| {
                     anyhow!(
@@ -63,14 +59,11 @@ impl Component for ShieldedPool {
                     )
                 })?;
 
-            self.new_denoms
-                .entry(base_denom.id())
-                .or_insert_with(|| base_denom.clone());
-
+            self.overlay.register_denom(&denom).await;
             self.mint_note(
                 Value {
                     amount: allocation.amount,
-                    asset_id: base_denom.id(),
+                    asset_id: denom.id(),
                 },
                 &allocation.address,
                 NoteSource::Genesis,
@@ -368,6 +361,28 @@ pub trait ShieldedPoolStore: WriteOverlayExt {
 
         self.put_proto(key, new_supply).await;
         Ok(())
+    }
+
+    async fn denom_by_asset(&self, asset_id: &asset::Id) -> Result<Option<Denom>> {
+        Ok(self
+            .get_proto(format!("shielded_pool/assets/{}/denom", asset_id).into())
+            .await?
+            .map(|denom: String| {
+                asset::REGISTRY
+                    .parse_denom(&denom)
+                    .expect("tree only records valid denoms")
+            }))
+    }
+
+    #[instrument(skip(self))]
+    async fn register_denom(&self, denom: &Denom) {
+        let asset_id = denom.id();
+        tracing::debug!(?asset_id);
+        self.put_proto(
+            format!("shielded_pool/assets/{}/denom", asset_id).into(),
+            denom.to_string(),
+        )
+        .await
     }
 }
 
