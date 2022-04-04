@@ -1,5 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
+use penumbra_ibc::IBCAction;
 use penumbra_transaction::{Action, Transaction};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
@@ -61,38 +62,10 @@ impl Component for IBCComponent {
                 _ => None,
             })
         {
-            match &ibc_action.action {
-                // Handle IBC CreateClient. Here we need to validate the following:
-                // - client type is one of the supported types (currently, only Tendermint light clients)
-                // - consensus state is valid (is of the same type as the client type, also currently only Tendermint consensus states are permitted)
-                //
-                // Then, we compute the client's ID (a concatenation of a monotonically increasing
-                // integer, the number of clients on Penumbra, and the client type) and commit the
-                // following to our state:
-                // - client type
-                // - consensus state
-                // - processed time and height
-                CreateClient(raw_msg_create_client) => {
-                    // NOTE: MsgCreateAnyClient::try_from will validate that client_state and
-                    // consensus_state are Tendermint client and consensus states only, as these
-                    // are the only currently supported client types.
-                    let msg_create_client =
-                        MsgCreateAnyClient::try_from(raw_msg_create_client.clone())?;
-
-                    // get the current client counter
-                    let id_counter = self.client_counter().await?;
-                    let client_id =
-                        ClientId::new(msg_create_client.client_state.client_type(), id_counter)?;
-
-                    tracing::info!("creating client {:?}", client_id);
-
-                    self.store_new_client(client_id, msg_create_client).await?;
-                }
-                _ => continue,
-            }
+            self.handle_ibc_action(ibc_action).await?;
         }
 
-        todo!()
+        Ok(())
     }
 
     async fn end_block(&mut self, _end_block: &abci::request::EndBlock) -> Result<()> {
@@ -110,6 +83,39 @@ struct ClientData {
 }
 
 impl IBCComponent {
+    async fn handle_ibc_action(&mut self, ibc_action: &IBCAction) -> Result<()> {
+        match &ibc_action.action {
+            // Handle IBC CreateClient. Here we need to validate the following:
+            // - client type is one of the supported types (currently, only Tendermint light clients)
+            // - consensus state is valid (is of the same type as the client type, also currently only Tendermint consensus states are permitted)
+            //
+            // Then, we compute the client's ID (a concatenation of a monotonically increasing
+            // integer, the number of clients on Penumbra, and the client type) and commit the
+            // following to our state:
+            // - client type
+            // - consensus state
+            // - processed time and height
+            CreateClient(raw_msg_create_client) => {
+                // NOTE: MsgCreateAnyClient::try_from will validate that client_state and
+                // consensus_state are Tendermint client and consensus states only, as these
+                // are the only currently supported client types.
+                let msg_create_client =
+                    MsgCreateAnyClient::try_from(raw_msg_create_client.clone())?;
+
+                // get the current client counter
+                let id_counter = self.client_counter().await?;
+                let client_id =
+                    ClientId::new(msg_create_client.client_state.client_type(), id_counter)?;
+
+                tracing::info!("creating client {:?}", client_id);
+
+                self.store_new_client(client_id, msg_create_client).await?;
+            }
+            _ => return Ok(()),
+        }
+
+        Ok(())
+    }
     async fn client_counter(&mut self) -> Result<u64> {
         let count_bytes = self
             .overlay
