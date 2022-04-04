@@ -1,44 +1,53 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use penumbra_proto::{stake as pb, Protobuf};
-use penumbra_stake::{BaseRateData, Epoch, IdentityKey, RateData, Validator, ValidatorList};
+use penumbra_stake::{
+    BaseRateData, DelegationChanges, Epoch, IdentityKey, RateData, Validator, ValidatorList,
+    STAKING_TOKEN_ASSET_ID,
+};
 use penumbra_transaction::{Action, Transaction};
 use serde::{Deserialize, Serialize};
-use tendermint::abci::{self, types::ValidatorUpdate};
+use tendermint::{
+    abci::{self, types::ValidatorUpdate},
+    block,
+};
 use tracing::instrument;
 
-use super::{Component, Overlay};
+use super::{Component, Overlay, ShieldedPoolStore};
 use crate::{genesis, PenumbraStore, WriteOverlayExt};
 
 // Stub component
 pub struct Staking {
     overlay: Overlay,
+    /// Delegation changes accumulated over the course of this block, to be
+    /// persisted at the end of the block for processing at the end of the next
+    /// epoch.
+    delegation_changes: DelegationChanges,
 }
 
 impl Staking {
-    async fn end_epoch(&mut self) -> Result<()> {
+    #[instrument(skip(self))]
+    async fn end_epoch(&mut self, epoch_to_end: Epoch) -> Result<()> {
         // calculate rate data for next rate, move previous next rate to cur rate,
         // and save the next rate data. ensure that non-Active validators maintain constant rates.
+        let mut total_changes = DelegationChanges::default();
+        for height in epoch_to_end.start_height().value()..=epoch_to_end.end_height().value() {
+            let changes = self
+                .overlay
+                .delegation_changes(height.try_into().unwrap())
+                .await?;
+            total_changes.delegations.extend(changes.delegations);
+            total_changes.undelegations.extend(changes.undelegations);
+        }
+        tracing::debug!(
+            total_delegations = total_changes.delegations.len(),
+            total_undelegations = total_changes.undelegations.len(),
+        );
+        // TODO: now the delegations and undelegations need to be grouped by validator ?
 
-        // TODO: encapsulate the delegations logic
-        // let mut delegation_changes = self.reader.delegation_changes(prev_epoch.index).await?;
-        // for (id_key, delta) in &self
-        //     .block_changes
-        //     .as_ref()
-        //     .expect("block_changes should be initialized during begin_block")
-        //     .delegation_changes
-        // {
-        //     // TODO: does this need to be copied back to `self.block_changes.delegation_changes`
-        //     // at the end of this method, so that `commit_block` will be able to use any
-        //     // changes?
-        //     *delegation_changes.entry(id_key.clone()).or_insert(0) += delta;
-        // }
-        let unbonding_epochs = self.overlay.get_chain_params().await?.unbonding_epochs;
-        let active_validator_limit = self
-            .overlay
-            .get_chain_params()
-            .await?
-            .active_validator_limit;
+        let chain_params = self.overlay.get_chain_params().await?;
+        let unbonding_epochs = chain_params.unbonding_epochs;
+        let active_validator_limit = chain_params.active_validator_limit;
 
         tracing::debug!("processing base rate");
         // We are transitioning to the next epoch, so set "cur_base_rate" to the previous "next_base_rate", and
@@ -288,7 +297,10 @@ impl Staking {
 #[async_trait]
 impl Component for Staking {
     async fn new(overlay: Overlay) -> Result<Self> {
-        Ok(Self { overlay })
+        Ok(Self {
+            overlay,
+            delegation_changes: Default::default(),
+        })
     }
 
     async fn init_chain(&mut self, app_state: &genesis::AppState) -> Result<()> {
@@ -576,24 +588,42 @@ impl Component for Staking {
         Ok(())
     }
 
-    async fn execute_tx(&mut self, _tx: &Transaction) -> Result<()> {
-        // Any new validator definitions are added to the known validator set.
-        // for v in &transaction.validator_definitions {
-        //     self.validator_set.add_validator_definition(v.clone());
-        // }
-        // self.validator_set
-        //     .update_delegations(&transaction.delegation_changes);
+    async fn execute_tx(&mut self, tx: &Transaction) -> Result<()> {
+        // Queue any (un)delegations for processing at the next epoch boundary.
+        for action in &tx.transaction_body.actions {
+            match action {
+                Action::Delegate(d) => {
+                    tracing::debug!(?d, "queuing delegation for next epoch");
+                    self.delegation_changes.delegations.push(d.clone());
+                }
+                Action::Undelegate(u) => {
+                    tracing::debug!(?u, "queuing undelegation for next epoch");
+                    self.delegation_changes.undelegations.push(u.clone());
+                }
+                _ => {}
+            }
+        }
+
+        // TODO: process validator definitions
 
         Ok(())
     }
 
-    async fn end_block(&mut self, _end_block: &abci::request::EndBlock) -> Result<()> {
+    async fn end_block(&mut self, end_block: &abci::request::EndBlock) -> Result<()> {
+        // Write the delegation changes for this block.
+        self.overlay
+            .set_delegation_changes(
+                end_block.height.try_into().unwrap(),
+                std::mem::take(&mut self.delegation_changes),
+            )
+            .await;
+
         // If this is an epoch boundary, updated rates need to be calculated and set.
         let cur_epoch = self.overlay.get_current_epoch().await?;
         let cur_height = self.overlay.get_block_height().await?;
 
-        if cur_epoch.is_epoch_boundary(cur_height) {
-            self.end_epoch().await?;
+        if cur_epoch.is_epoch_end(cur_height) {
+            self.end_epoch(cur_epoch).await?;
         }
 
         Ok(())
@@ -686,6 +716,21 @@ pub trait View: WriteOverlayExt {
     async fn set_validator_list(&self, validators: Vec<IdentityKey>) {
         self.put_domain("staking/validators/list".into(), ValidatorList(validators))
             .await;
+    }
+
+    async fn delegation_changes(&self, height: block::Height) -> Result<DelegationChanges> {
+        Ok(self
+            .get_domain(format!("staking/delegation_changes/{}", height.value()).into())
+            .await?
+            .ok_or_else(|| anyhow!("missing delegation changes for block {}", height))?)
+    }
+
+    async fn set_delegation_changes(&self, height: block::Height, changes: DelegationChanges) {
+        self.put_domain(
+            format!("staking/delegation_changes/{}", height.value()).into(),
+            changes,
+        )
+        .await
     }
 }
 

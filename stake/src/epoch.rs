@@ -28,7 +28,7 @@ impl Epoch {
             .expect("able to parse block height")
     }
 
-    pub fn is_epoch_boundary(&self, height: u64) -> bool {
+    pub fn is_epoch_end(&self, height: u64) -> bool {
         self.end_height().value() == height
     }
 
