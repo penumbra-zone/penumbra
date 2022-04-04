@@ -356,6 +356,12 @@ impl Component for Staking {
 
         self.overlay.set_validator_list(validator_list).await;
 
+        // Finally, record that there were no delegations in this block, so the data
+        // isn't missing when we process the first epoch transition.
+        self.overlay
+            .set_delegation_changes(0u32.into(), Default::default())
+            .await;
+
         Ok(())
     }
 
