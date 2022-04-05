@@ -316,9 +316,11 @@ impl Worker {
         }
 
         // validator set changes
-        for v in &transaction.validator_definitions {
-            self.validator_set.add_validator_definition(v.clone());
-        }
+        // In the Orthosie testnet deployment, we had issues with the
+        // testnet stalling during validator creation, so disabling temporarily.
+        // for v in &transaction.validator_definitions {
+        //     self.validator_set.add_validator_definition(v.clone());
+        // }
         self.validator_set
             .update_delegations(&transaction.delegation_changes);
 
