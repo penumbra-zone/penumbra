@@ -1,13 +1,14 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_ibc::{ClientCounter, ClientData, IBCAction};
+use penumbra_ibc::{ClientCounter, ClientData, ConsensusState, IBCAction};
 use penumbra_transaction::{Action, Transaction};
 use std::convert::TryFrom;
 use tendermint::abci;
 use tracing::instrument;
 
 use ibc::core::{
-    ics02_client::msgs::create_client::MsgCreateAnyClient, ics24_host::identifier::ClientId,
+    ics02_client::{client_consensus::AnyConsensusState, msgs::create_client::MsgCreateAnyClient},
+    ics24_host::identifier::ClientId,
 };
 use penumbra_proto::ibc::ibc_action::Action::CreateClient;
 
@@ -108,15 +109,19 @@ impl IBCComponent {
         let timestamp = self.overlay.get_block_timestamp().await?;
 
         let data = ClientData::new(
-            client_id,
+            client_id.clone(),
             msg.client_state,
-            msg.consensus_state,
             timestamp.to_rfc3339(),
             height,
         );
 
         // store the client data
         self.overlay.put_client_data(data).await;
+
+        // store the genesis consensus state
+        self.overlay
+            .put_consensus_state(height, client_id, ConsensusState(msg.consensus_state))
+            .await;
 
         // increment client counter
         let counter = self
@@ -151,6 +156,23 @@ pub trait View: WriteOverlayExt + Send + Sync {
             )
             .into(),
             data,
+        )
+        .await;
+    }
+    async fn put_consensus_state(
+        &mut self,
+        height: u64,
+        client_id: ClientId,
+        consensus_state: ConsensusState,
+    ) {
+        self.put_domain(
+            format!(
+                "ibc/ics02-client/clients/{}/consensus_state/{}",
+                hex::encode(client_id.as_bytes()),
+                height
+            )
+            .into(),
+            consensus_state,
         )
         .await;
     }

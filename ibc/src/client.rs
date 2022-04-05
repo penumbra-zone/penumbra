@@ -67,18 +67,21 @@ impl From<ClientState> for prost_types::Any {
 }
 
 #[derive(Clone, Debug)]
-pub struct ConsensusState(AnyConsensusState);
+pub struct ConsensusState(pub AnyConsensusState);
 
-impl Protobuf<prost_types::Any> for ConsensusState {}
+impl Protobuf<pb::ConsensusState> for ConsensusState {}
 
-impl TryFrom<prost_types::Any> for ConsensusState {
+impl TryFrom<pb::ConsensusState> for ConsensusState {
     type Error = anyhow::Error;
 
-    fn try_from(raw: prost_types::Any) -> Result<Self, Self::Error> {
-        match raw.type_url.as_str() {
+    fn try_from(raw: pb::ConsensusState) -> Result<Self, Self::Error> {
+        let state = raw
+            .consensus_state
+            .ok_or_else(|| anyhow::anyhow!("missing consensus state"))?;
+        match state.type_url.as_str() {
             TENDERMINT_CONSENSUS_STATE_TYPE_URL => {
                 Ok(ConsensusState(AnyConsensusState::Tendermint(
-                    consensus_state::ConsensusState::decode_vec(&raw.value).map_err(|_| {
+                    consensus_state::ConsensusState::decode_vec(&state.value).map_err(|_| {
                         anyhow::anyhow!("could not decode tendermint consensus state")
                     })?,
                 )))
@@ -86,20 +89,22 @@ impl TryFrom<prost_types::Any> for ConsensusState {
 
             _ => Err(anyhow::anyhow!(
                 "unknown consensus state type: {}",
-                raw.type_url
+                state.type_url
             )),
         }
     }
 }
 
-impl From<ConsensusState> for prost_types::Any {
+impl From<ConsensusState> for pb::ConsensusState {
     fn from(value: ConsensusState) -> Self {
         match value {
-            ConsensusState(AnyConsensusState::Tendermint(value)) => prost_types::Any {
-                type_url: TENDERMINT_CONSENSUS_STATE_TYPE_URL.to_string(),
-                value: value
-                    .encode_vec()
-                    .expect("encoding to `Any` from `ConsensusState::Tendermint`"),
+            ConsensusState(AnyConsensusState::Tendermint(value)) => pb::ConsensusState {
+                consensus_state: Some(prost_types::Any {
+                    type_url: TENDERMINT_CONSENSUS_STATE_TYPE_URL.to_string(),
+                    value: value
+                        .encode_vec()
+                        .expect("encoding to `Any` from `ConsensusState::Tendermint`"),
+                }),
             },
         }
     }
@@ -111,7 +116,6 @@ impl From<ConsensusState> for prost_types::Any {
 pub struct ClientData {
     pub client_id: ClientId,
     pub client_state: ClientState,
-    pub consensus_state: ConsensusState,
     pub processed_time: String,
     pub processed_height: u64,
 }
@@ -120,14 +124,12 @@ impl ClientData {
     pub fn new(
         client_id: ClientId,
         client_state: AnyClientState,
-        consensus_state: AnyConsensusState,
         processed_time: String,
         processed_height: u64,
     ) -> Self {
         ClientData {
             client_id,
             client_state: ClientState(client_state),
-            consensus_state: ConsensusState(consensus_state),
             processed_time,
             processed_height,
         }
@@ -143,7 +145,6 @@ impl TryFrom<pb::ClientData> for ClientData {
         Ok(ClientData {
             client_id: ClientId::from_str(&msg.client_id)?,
             client_state: ClientState::try_from(msg.client_state.unwrap())?,
-            consensus_state: ConsensusState::try_from(msg.consensus_state.unwrap())?,
             processed_time: msg.processed_time,
             processed_height: msg.processed_height,
         })
@@ -155,7 +156,6 @@ impl From<ClientData> for pb::ClientData {
         Self {
             client_id: d.client_id.to_string(),
             client_state: Some(d.client_state.into()),
-            consensus_state: Some(d.consensus_state.into()),
             processed_time: d.processed_time,
             processed_height: d.processed_height,
         }

@@ -34,11 +34,14 @@ message IBCAction {
 message ClientData {
   string clientID = 1;
   google.protobuf.Any clientState = 2; // NOTE: left as Any to allow us to add more client types later
-  google.protobuf.Any consensusState = 3;  // NOTE: left as Any to allow us to add more consensus types later
-  string processedTime = 4;
-  uint64 processedHeight = 5;
+  string processedTime = 3;
+  uint64 processedHeight = 4;
 }
 
 message ClientCounter {
   uint64 counter = 1;
+}
+
+message ConsensusState {
+  google.protobuf.Any consensusState = 1;
 }
