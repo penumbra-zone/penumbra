@@ -173,14 +173,10 @@ impl Component for Staking {
     async fn begin_block(&mut self, begin_block: &abci::request::BeginBlock) -> Result<()> {
         tracing::debug!("Staking: begin_block");
 
-        let slashing_penalty = self.overlay.get_chain_params().await?.slashing_penalty;
-
         // For each validator identified as byzantine by tendermint, update its
         // status to be slashed.
         for evidence in begin_block.byzantine_validators.iter() {
-            self.overlay
-                .slash_validator(evidence, slashing_penalty)
-                .await;
+            self.overlay.slash_validator(evidence).await;
         }
 
         Ok(())
@@ -280,7 +276,7 @@ impl Component for Staking {
 ///
 /// TODO: should this be split into Read and Write traits?
 #[async_trait]
-pub trait View: WriteOverlayExt + Send + Sync {
+pub trait View: WriteOverlayExt + Send + Sync + Sized {
     async fn current_base_rate(&self) -> Result<BaseRateData> {
         self.get_domain("staking/base_rate/current".into())
             .await
@@ -354,16 +350,18 @@ pub trait View: WriteOverlayExt + Send + Sync {
         self.validator(&identity_key).await
     }
 
-    async fn slash_validator(&mut self, evidence: &Evidence, slashing_penalty: u64) -> Result<()> {
+    async fn slash_validator(&mut self, evidence: &Evidence) -> Result<()> {
         let ck = tendermint::PublicKey::from_raw_ed25519(&evidence.validator.address)
             .ok_or_else(|| anyhow::anyhow!("invalid ed25519 consensus pubkey from tendermint"))
             .unwrap();
 
         let validator = self.validator_by_consensus_key(&ck).await?;
 
+        let slashing_penalty = self.get_chain_params().await?.slashing_penalty;
+
         tracing::info!(?validator, ?slashing_penalty, "slashing validator");
 
-        // TOD: implement slashing
+        // TODO: implement slashing
 
         Ok(())
     }
