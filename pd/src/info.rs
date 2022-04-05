@@ -27,18 +27,26 @@ impl Info {
     async fn info(&self, info: abci::request::Info) -> Result<abci::response::Info, anyhow::Error> {
         tracing::info!(?info);
 
-        let (last_block_height, last_block_app_hash) = match self.state.latest_block_info().await? {
+        let last_block_height = match self.state.latest_block_info().await? {
             Some(schema::BlocksRow {
                 height, app_hash, ..
-            }) => (height.try_into().unwrap(), app_hash.into()),
-            None => (0u32.into(), vec![0; 32].into()),
+            }) => height.try_into().unwrap(),
+            None => 0,
         };
+
+        let last_block_app_hash = jmt::JellyfishMerkleTree::new(&self.storage)
+            .get_root_hash_option(last_block_height)
+            .await?
+            .map(|rh| rh.0)
+            .unwrap_or([0u8; 32])
+            .to_vec()
+            .into();
 
         Ok(abci::response::Info {
             data: "penumbra".to_string(),
             version: ABCI_INFO_VERSION.to_string(),
             app_version: 1,
-            last_block_height,
+            last_block_height: last_block_height.try_into().unwrap(),
             last_block_app_hash,
         })
     }

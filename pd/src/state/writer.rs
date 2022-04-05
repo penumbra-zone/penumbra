@@ -49,7 +49,16 @@ impl Writer {
             .genesis_configuration()
             .await?
             .chain_params;
-        let height = self.private_reader.height();
+        // This is incorrect, it just reads from the channel it's supposed to be updating
+        // let height = self.private_reader.height();
+        let height = self
+            .private_reader
+            .latest_block_info()
+            .await?
+            .map(|row| row.height)
+            .unwrap_or(0)
+            .try_into()
+            .unwrap();
         let next_rate_data = self.private_reader.next_rate_data().await?;
         let valid_anchors = self
             .private_reader
