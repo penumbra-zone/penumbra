@@ -63,9 +63,6 @@ enum Command {
     /// Generates a directory structure containing necessary files to run a
     /// testnet based on input configuration.
     GenerateTestnet {
-        /// How many validator nodes to create configuration for.
-        #[structopt(long, default_value = "2")]
-        num_validator_nodes: usize,
         /// Number of blocks per epoch.
         #[structopt(long, default_value = "40")]
         epoch_duration: u64,
@@ -202,7 +199,6 @@ async fn main() -> anyhow::Result<()> {
             };
         }
         Command::GenerateTestnet {
-            num_validator_nodes,
             // TODO this config is gated on a "populate persistent peers"
             // setting in the Go tendermint binary. Populating the persistent
             // peers will be useful in local setups until peer discovery via a seed
@@ -238,11 +234,6 @@ async fn main() -> anyhow::Result<()> {
             use penumbra_stake::IdentityKey;
             use tendermint::{account::Id, node, public_key::Algorithm, Genesis, Time};
             use tendermint_config::{NodeKey, PrivValidatorKey};
-
-            assert!(
-                num_validator_nodes > 0,
-                "must have at least one validator node"
-            );
 
             let genesis_time = Time::from_unix_timestamp(
                 SystemTime::now()
@@ -317,6 +308,11 @@ async fn main() -> anyhow::Result<()> {
             }
             let mut validator_keys = Vec::<ValidatorKeys>::new();
             // Generate a keypair for each validator
+            let num_validator_nodes = testnet_validators.len();
+            assert!(
+                num_validator_nodes > 0,
+                "must have at least one validator node"
+            );
             for _ in 0..num_validator_nodes {
                 // Create the spend key for this node.
                 let seed = SpendSeed(OsRng.gen());
