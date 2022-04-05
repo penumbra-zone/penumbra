@@ -24,7 +24,7 @@ pub mod testnet;
 pub use components::{App, Component};
 pub use consensus::Consensus;
 pub use info::Info;
-pub use mempool::Mempool;
+pub use mempool::OldMempool;
 pub use pd_metrics::register_all_metrics;
 use pending_block::PendingBlock;
 use request_ext::RequestExt;

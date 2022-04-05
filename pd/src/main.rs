@@ -136,7 +136,7 @@ async fn main() -> anyhow::Result<()> {
             let storage = pd::Storage::load(rocks_path).await?;
 
             let consensus = pd::Consensus::new(state_writer, storage.clone()).await?;
-            let mempool = pd::Mempool::new(state_reader.clone(), storage.clone());
+            let mempool = pd::OldMempool::new(state_reader.clone(), storage.clone());
             let info = pd::Info::new(state_reader.clone(), storage.clone());
             let snapshot = pd::Snapshot {};
 

@@ -25,7 +25,7 @@ use tracing::Instrument;
 use crate::{state, verify::StatelessTransactionExt, RequestExt, Storage};
 
 #[derive(Clone, Debug)]
-pub struct Mempool {
+pub struct OldMempool {
     nullifiers: Arc<AsyncMutex<BTreeSet<Nullifier>>>,
     state: state::Reader,
     storage: Storage,
@@ -34,7 +34,7 @@ pub struct Mempool {
     height_rx: watch::Receiver<block::Height>,
 }
 
-impl Mempool {
+impl OldMempool {
     pub fn new(state: state::Reader, storage: Storage) -> Self {
         let nullifiers = Arc::new(AsyncMutex::new(Default::default()));
         let height_rx = state.height_rx().clone();
@@ -104,7 +104,7 @@ impl Mempool {
     }
 }
 
-impl tower::Service<MempoolRequest> for Mempool {
+impl tower::Service<MempoolRequest> for OldMempool {
     type Response = MempoolResponse;
     type Error = BoxError;
     type Future = Pin<Box<dyn Future<Output = Result<MempoolResponse, BoxError>> + Send + 'static>>;
