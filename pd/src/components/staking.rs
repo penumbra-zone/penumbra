@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use penumbra_proto::Protobuf;
 use penumbra_stake::{
     BaseRateData, DelegationChanges, Epoch, IdentityKey, RateData, Validator, ValidatorList,
-    STAKING_TOKEN_ASSET_ID,
+    ValidatorState, ValidatorStatus, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_transaction::{Action, Transaction};
 
@@ -130,6 +130,9 @@ impl Component for Staking {
             .set_base_rates(cur_base_rate, next_base_rate)
             .await;
 
+        // All genesis validators start in the "Active" state:
+        let state = ValidatorState::Active;
+
         // Add initial validators to the JMT
         // Validators are indexed in the JMT by their public key,
         // and there is a separate key containing the list of all validator keys.
@@ -154,7 +157,12 @@ impl Component for Staking {
             };
 
             self.overlay
-                .save_validator(validator.validator.clone(), cur_rate_data, next_rate_data)
+                .save_validator(
+                    validator.validator.clone(),
+                    cur_rate_data,
+                    next_rate_data,
+                    state,
+                )
                 .await;
             validator_list.push(validator_key);
         }
@@ -174,7 +182,7 @@ impl Component for Staking {
         tracing::debug!("Staking: begin_block");
 
         // For each validator identified as byzantine by tendermint, update its
-        // status to be slashed.
+        // state to be slashed.
         for evidence in begin_block.byzantine_validators.iter() {
             self.overlay.slash_validator(evidence).await;
         }
@@ -327,6 +335,16 @@ pub trait View: WriteOverlayExt + Send + Sync + Sized {
         .await;
     }
 
+    #[instrument(skip(self))]
+    async fn set_validator_state(&self, identity_key: &IdentityKey, state: ValidatorState) {
+        tracing::debug!("setting validator state");
+        self.put_domain(
+            format!("staking/validators/{}/state", identity_key).into(),
+            state,
+        )
+        .await;
+    }
+
     async fn validator(&self, identity_key: &IdentityKey) -> Result<Option<Validator>> {
         self.get_domain(format!("staking/validators/{}", identity_key).into())
             .await
@@ -372,12 +390,19 @@ pub trait View: WriteOverlayExt + Send + Sync + Sized {
         validator: Validator,
         current_rates: RateData,
         next_rates: RateData,
+        state: ValidatorState,
     ) {
         tracing::debug!(?validator);
         let id = validator.identity_key.clone();
         self.put_domain(format!("staking/validators/{}", id).into(), validator)
             .await;
         self.set_validator_rates(&id, current_rates, next_rates)
+            .await;
+        self.set_validator_state(&id, state).await;
+    }
+
+    async fn validator_state(&self, identity_key: &IdentityKey) -> Result<Option<ValidatorState>> {
+        self.get_domain(format!("staking/validators/{}/state", identity_key).into())
             .await
     }
 

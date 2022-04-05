@@ -85,6 +85,7 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.stake.ValidatorInfo", SERIALIZE),
     (".penumbra.stake.ValidatorList", SERIALIZE),
     (".penumbra.stake.ValidatorState", SERIALIZE),
+    (".penumbra.stake.ValidatorStateEnum", SERIALIZE),
     (".penumbra.stake.ValidatorStateName", SERIALIZE),
     (".penumbra.stake.ValidatorStatus", SERIALIZE),
     (".penumbra.stake.RateData", SERIALIZE),
