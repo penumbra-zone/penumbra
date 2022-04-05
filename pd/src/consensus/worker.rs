@@ -316,11 +316,9 @@ impl Worker {
         }
 
         // validator set changes
-        // In the Orthosie testnet deployment, we had issues with the
-        // testnet stalling during validator creation, so disabling temporarily.
-        // for v in &transaction.validator_definitions {
-        //     self.validator_set.add_validator_definition(v.clone());
-        // }
+        for v in &transaction.validator_definitions {
+            self.validator_set.add_validator_definition(v.clone());
+        }
         self.validator_set
             .update_delegations(&transaction.delegation_changes);
 
@@ -413,8 +411,10 @@ impl Worker {
             "sending validator updates to tendermint"
         );
 
+        // We discovered issues during Orthosie testnet deployment with new validators
+        // causing consensus failures, temporarily disabling validator updates (see #558)
         Ok(abci::response::EndBlock {
-            validator_updates,
+            validator_updates: vec![],
             consensus_param_updates: None,
             events: Vec::new(),
         })
