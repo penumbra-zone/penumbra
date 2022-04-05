@@ -15,6 +15,25 @@ pub const TENDERMINT_CONSENSUS_STATE_TYPE_URL: &str =
     "/ibc.lightclients.tendermint.v1.ConsensusState";
 
 #[derive(Clone, Debug)]
+pub struct ClientCounter(pub u64);
+
+impl Protobuf<pb::ClientCounter> for ClientCounter {}
+
+impl TryFrom<pb::ClientCounter> for ClientCounter {
+    type Error = anyhow::Error;
+
+    fn try_from(p: pb::ClientCounter) -> Result<Self, Self::Error> {
+        Ok(ClientCounter(p.counter))
+    }
+}
+
+impl From<ClientCounter> for pb::ClientCounter {
+    fn from(c: ClientCounter) -> Self {
+        pb::ClientCounter { counter: c.0 }
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct ClientState(AnyClientState);
 
 impl Protobuf<prost_types::Any> for ClientState {}
@@ -95,6 +114,24 @@ pub struct ClientData {
     pub consensus_state: ConsensusState,
     pub processed_time: String,
     pub processed_height: u64,
+}
+
+impl ClientData {
+    pub fn new(
+        client_id: ClientId,
+        client_state: AnyClientState,
+        consensus_state: AnyConsensusState,
+        processed_time: String,
+        processed_height: u64,
+    ) -> Self {
+        ClientData {
+            client_id,
+            client_state: ClientState(client_state),
+            consensus_state: ConsensusState(consensus_state),
+            processed_time,
+            processed_height,
+        }
+    }
 }
 
 impl Protobuf<pb::ClientData> for ClientData {}

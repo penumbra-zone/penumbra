@@ -38,3 +38,7 @@ message ClientData {
   string processedTime = 4;
   uint64 processedHeight = 5;
 }
+
+message ClientCounter {
+  uint64 counter = 1;
+}

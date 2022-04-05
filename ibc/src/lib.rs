@@ -1,5 +1,5 @@
 mod client;
 mod ibcaction;
 
-pub use client::ClientData;
+pub use client::{ClientCounter, ClientData};
 pub use ibcaction::IBCAction;

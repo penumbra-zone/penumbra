@@ -1,23 +1,18 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_ibc::IBCAction;
+use penumbra_ibc::{ClientCounter, ClientData, IBCAction};
 use penumbra_transaction::{Action, Transaction};
-use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use tendermint::abci;
 use tracing::instrument;
 
 use ibc::core::{
-    ics02_client::{
-        client_consensus::AnyConsensusState, client_state::AnyClientState,
-        msgs::create_client::MsgCreateAnyClient,
-    },
-    ics24_host::identifier::ClientId,
+    ics02_client::msgs::create_client::MsgCreateAnyClient, ics24_host::identifier::ClientId,
 };
 use penumbra_proto::ibc::ibc_action::Action::CreateClient;
 
-use super::{Component, Overlay};
-use crate::{genesis, PenumbraStore};
+use super::{app::View as _, Component, Overlay};
+use crate::{genesis, WriteOverlayExt};
 
 pub struct IBCComponent {
     overlay: Overlay,
@@ -31,10 +26,7 @@ impl Component for IBCComponent {
 
     async fn init_chain(&mut self, _app_state: &genesis::AppState) -> Result<()> {
         // set the initial client count
-        self.overlay.lock().await.put(
-            b"ibc/ics02-client/client_counter".into(),
-            0u64.to_le_bytes().to_vec(),
-        );
+        self.overlay.put_client_counter(ClientCounter(0)).await;
 
         Ok(())
     }
@@ -73,15 +65,6 @@ impl Component for IBCComponent {
     }
 }
 
-#[derive(Serialize)]
-struct ClientData {
-    pub client_id: ClientId,
-    pub client_state: AnyClientState,
-    pub consensus_state: AnyConsensusState,
-    pub processed_time: String,
-    pub processed_height: u64,
-}
-
 impl IBCComponent {
     async fn handle_ibc_action(&mut self, ibc_action: &IBCAction) -> Result<()> {
         match &ibc_action.action {
@@ -103,9 +86,9 @@ impl IBCComponent {
                     MsgCreateAnyClient::try_from(raw_msg_create_client.clone())?;
 
                 // get the current client counter
-                let id_counter = self.client_counter().await?;
+                let id_counter = self.overlay.client_counter().await?;
                 let client_id =
-                    ClientId::new(msg_create_client.client_state.client_type(), id_counter)?;
+                    ClientId::new(msg_create_client.client_state.client_type(), id_counter.0)?;
 
                 tracing::info!("creating client {:?}", client_id);
 
@@ -116,17 +99,6 @@ impl IBCComponent {
 
         Ok(())
     }
-    async fn client_counter(&mut self) -> Result<u64> {
-        let count_bytes = self
-            .overlay
-            .lock()
-            .await
-            .get(b"ibc/client_counter".into())
-            .await?
-            .ok_or(anyhow::anyhow!("no client count"))?;
-
-        Ok(u64::from_le_bytes(count_bytes.try_into().unwrap()))
-    }
     async fn store_new_client(
         &mut self,
         client_id: ClientId,
@@ -134,20 +106,44 @@ impl IBCComponent {
     ) -> Result<()> {
         let height = self.overlay.get_block_height().await?;
         let timestamp = self.overlay.get_block_timestamp().await?;
-        let data = ClientData {
-            client_id: client_id.clone(),
-            client_state: msg.client_state,
-            consensus_state: msg.consensus_state,
-            processed_time: timestamp.to_rfc3339(),
-            processed_height: height,
-        };
+
+        let data = ClientData::new(
+            client_id,
+            msg.client_state,
+            msg.consensus_state,
+            timestamp.to_rfc3339(),
+            height,
+        );
 
         // store the client data
-        self.overlay.lock().await.put(
-            format!("ibc/clients/{}", hex::encode(client_id.as_bytes())).into(),
-            serde_json::to_vec(&data).unwrap(),
-        );
+        self.overlay.put_client_data(data).await;
 
         Ok(())
     }
 }
+
+#[async_trait]
+pub trait View: WriteOverlayExt + Send + Sync {
+    async fn put_client_counter(&mut self, counter: ClientCounter) {
+        self.put_domain("ibc/ics02-client/client_counter".into(), counter)
+            .await;
+    }
+    async fn client_counter(&self) -> Result<ClientCounter> {
+        self.get_domain("ibc/ics02-client/client_counter".into())
+            .await
+            .map(|counter| counter.unwrap_or(ClientCounter(0)))
+    }
+    async fn put_client_data(&mut self, data: ClientData) {
+        self.put_domain(
+            format!(
+                "ibc/ics02-client/clients/{}",
+                hex::encode(data.client_id.as_bytes())
+            )
+            .into(),
+            data,
+        )
+        .await;
+    }
+}
+
+impl<T: WriteOverlayExt + Send + Sync> View for T {}
