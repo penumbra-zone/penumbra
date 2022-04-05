@@ -411,8 +411,10 @@ impl Worker {
             "sending validator updates to tendermint"
         );
 
+        // We discovered issues during Orthosie testnet deployment with new validators
+        // causing consensus failures, temporarily disabling validator updates (see #558)
         Ok(abci::response::EndBlock {
-            validator_updates,
+            validator_updates: vec![],
             consensus_param_updates: None,
             events: Vec::new(),
         })
