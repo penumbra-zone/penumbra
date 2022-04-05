@@ -7,7 +7,10 @@ use tendermint::abci;
 use tracing::instrument;
 
 use ibc::core::{
-    ics02_client::{client_consensus::AnyConsensusState, msgs::create_client::MsgCreateAnyClient},
+    ics02_client::{
+        client_consensus::AnyConsensusState, height::Height,
+        msgs::create_client::MsgCreateAnyClient,
+    },
     ics24_host::identifier::ClientId,
 };
 use penumbra_proto::ibc::ibc_action::Action::CreateClient;
@@ -116,11 +119,15 @@ impl IBCComponent {
         );
 
         // store the client data
-        self.overlay.put_client_data(data).await;
+        self.overlay.put_client_data(data.clone()).await;
 
         // store the genesis consensus state
         self.overlay
-            .put_consensus_state(height, client_id, ConsensusState(msg.consensus_state))
+            .put_consensus_state(
+                data.client_state.0.latest_height(),
+                client_id,
+                ConsensusState(msg.consensus_state),
+            )
             .await;
 
         // increment client counter
@@ -161,7 +168,7 @@ pub trait View: WriteOverlayExt + Send + Sync {
     }
     async fn put_consensus_state(
         &mut self,
-        height: u64,
+        height: Height,
         client_id: ClientId,
         consensus_state: ConsensusState,
     ) {

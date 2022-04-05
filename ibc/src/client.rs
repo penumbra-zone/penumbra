@@ -34,7 +34,7 @@ impl From<ClientCounter> for pb::ClientCounter {
 }
 
 #[derive(Clone, Debug)]
-pub struct ClientState(AnyClientState);
+pub struct ClientState(pub AnyClientState);
 
 impl Protobuf<prost_types::Any> for ClientState {}
 
