@@ -45,6 +45,7 @@ impl Worker {
         // special case.
 
         let height = state.private_reader().height().into();
+        tracing::warn!(?height);
         let app = App::new(Arc::new(Mutex::new(WriteOverlay::new(
             storage.clone(),
             height,
@@ -94,6 +95,14 @@ impl Worker {
 
         // Now (re)load the caches from the state writer:
         self.state.init_caches().await?;
+
+        let height = self.state.private_reader().height().into();
+        tracing::warn!(?height);
+        self.app = App::new(Arc::new(Mutex::new(WriteOverlay::new(
+            self.storage.clone(),
+            height,
+        ))))
+        .await?;
 
         Ok(())
     }
