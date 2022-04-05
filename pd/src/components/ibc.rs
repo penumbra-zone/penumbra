@@ -118,6 +118,16 @@ impl IBCComponent {
         // store the client data
         self.overlay.put_client_data(data).await;
 
+        // increment client counter
+        let counter = self
+            .overlay
+            .client_counter()
+            .await
+            .unwrap_or(ClientCounter(0));
+        self.overlay
+            .put_client_counter(ClientCounter(counter.0 + 1))
+            .await;
+
         Ok(())
     }
 }
