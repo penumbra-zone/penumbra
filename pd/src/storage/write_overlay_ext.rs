@@ -10,7 +10,7 @@ use tracing::instrument;
 /// An extension trait that allows writing proto-encoded domain types to
 /// a shared [`WriteOverlay`].
 #[async_trait]
-pub trait WriteOverlayExt {
+pub trait WriteOverlayExt: Send + Sync + Sized {
     /// Reads a domain type from the overlay, using the proto encoding.
     async fn get_domain<D, P>(&self, key: KeyHash) -> Result<Option<D>>
     where

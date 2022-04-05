@@ -27,8 +27,6 @@ impl From<ValidatorStatus> for pb::ValidatorStatus {
         pb::ValidatorStatus {
             identity_key: Some(v.identity_key.into()),
             voting_power: v.voting_power,
-            // TODO: Why is this becoming an Option type? the protobuf type
-            // doesn't define it as optional, and it should always be present.
             state: Some(match v.state {
                 ValidatorState::Inactive => pb::ValidatorState {
                     state: pb::validator_state::ValidatorStateEnum::Inactive as i32,

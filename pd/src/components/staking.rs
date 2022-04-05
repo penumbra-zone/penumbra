@@ -131,9 +131,6 @@ impl Component for Staking {
             .set_base_rates(cur_base_rate, next_base_rate)
             .await;
 
-        // All genesis validators start in the "Active" state:
-        let state = ValidatorState::Active;
-
         // Add initial validators to the JMT
         // Validators are indexed in the JMT by their public key,
         // and there is a separate key containing the list of all validator keys.
@@ -162,7 +159,8 @@ impl Component for Staking {
                     validator.validator.clone(),
                     cur_rate_data,
                     next_rate_data,
-                    state,
+                    // All genesis validators start in the "Active" state:
+                    ValidatorState::Active,
                 )
                 .await;
             validator_list.push(validator_key);
@@ -285,7 +283,7 @@ impl Component for Staking {
 ///
 /// TODO: should this be split into Read and Write traits?
 #[async_trait]
-pub trait View: WriteOverlayExt + Send + Sync + Sized {
+pub trait View: WriteOverlayExt {
     async fn current_base_rate(&self) -> Result<BaseRateData> {
         self.get_domain("staking/base_rate/current".into())
             .await
