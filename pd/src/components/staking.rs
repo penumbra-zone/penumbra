@@ -388,7 +388,7 @@ pub trait View: WriteOverlayExt + Send + Sync {
             .get_domain("staking/validators/list".into())
             .await?
             .map(|list: ValidatorList| list.0)
-            .unwrap_or(Vec::new()))
+            .unwrap_or_default())
     }
 
     async fn set_validator_list(&self, validators: Vec<IdentityKey>) {
