@@ -2,6 +2,7 @@ use std::collections::BTreeSet;
 
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
+use futures::Future;
 use penumbra_proto::Protobuf;
 use penumbra_stake::{
     BaseRateData, DelegationChanges, Epoch, IdentityKey, RateData, Validator, ValidatorList,
@@ -184,7 +185,7 @@ impl Component for Staking {
         // For each validator identified as byzantine by tendermint, update its
         // state to be slashed.
         for evidence in begin_block.byzantine_validators.iter() {
-            self.overlay.slash_validator(evidence).await;
+            self.overlay.slash_validator(evidence).await?;
         }
 
         Ok(())
@@ -373,13 +374,54 @@ pub trait View: WriteOverlayExt + Send + Sync + Sized {
             .ok_or_else(|| anyhow::anyhow!("invalid ed25519 consensus pubkey from tendermint"))
             .unwrap();
 
-        let validator = self.validator_by_consensus_key(&ck).await?;
+        let validator = self
+            .validator_by_consensus_key(&ck)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("attempted to slash validator not found in JMT"))?;
 
         let slashing_penalty = self.get_chain_params().await?.slashing_penalty;
 
         tracing::info!(?validator, ?slashing_penalty, "slashing validator");
 
-        // TODO: implement slashing
+        let cur_state = self
+            .validator_state(&validator.identity_key)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("validator to be slashed did not have state in JMT"))?;
+
+        // Ensure that the state transitions are valid.
+        match cur_state {
+            ValidatorState::Active => {}
+            ValidatorState::Unbonding { unbonding_epoch: _ } => {}
+            _ => {
+                return Err(anyhow::anyhow!(
+                    "only validators in the active or unbonding state may be slashed"
+                ))
+            }
+        };
+
+        // Mark the state as "slashed" in the JMT, and apply the slashing penalty.
+        self.set_validator_state(&validator.identity_key, ValidatorState::Slashed);
+
+        let mut cur_rate = self
+            .current_validator_rate(&validator.identity_key)
+            .await?
+            .ok_or_else(|| {
+                anyhow::anyhow!("validator to be slashed did not have current rate in JMT")
+            })?;
+
+        cur_rate = cur_rate.slash(slashing_penalty);
+
+        // TODO: would it be better to call `current_base_rate.next`? the same logic exists
+        // within there, but it requires passing in the current base rates & funding streams,
+        // which aren't actually used because the rate is held constant. So, doing it this way
+        // avoids a couple unnecessary JMT reads that the `current_base_rate.next` API would require.
+        //
+        // At any rate, the next rate is held constant for slashed validators.
+        let mut next_rate = cur_rate.clone();
+        next_rate.epoch_index += 1;
+
+        self.set_validator_rates(&validator.identity_key, cur_rate, next_rate)
+            .await;
 
         Ok(())
     }
