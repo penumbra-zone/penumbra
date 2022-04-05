@@ -2,10 +2,11 @@ use std::collections::BTreeSet;
 
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
+use futures::Future;
 use penumbra_proto::Protobuf;
 use penumbra_stake::{
     BaseRateData, DelegationChanges, Epoch, IdentityKey, RateData, Validator, ValidatorList,
-    STAKING_TOKEN_ASSET_ID,
+    ValidatorState, ValidatorStatus, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_transaction::{Action, Transaction};
 
@@ -154,7 +155,13 @@ impl Component for Staking {
             };
 
             self.overlay
-                .save_validator(validator.validator.clone(), cur_rate_data, next_rate_data)
+                .save_validator(
+                    validator.validator.clone(),
+                    cur_rate_data,
+                    next_rate_data,
+                    // All genesis validators start in the "Active" state:
+                    ValidatorState::Active,
+                )
                 .await;
             validator_list.push(validator_key);
         }
@@ -173,14 +180,10 @@ impl Component for Staking {
     async fn begin_block(&mut self, begin_block: &abci::request::BeginBlock) -> Result<()> {
         tracing::debug!("Staking: begin_block");
 
-        let slashing_penalty = self.overlay.get_chain_params().await?.slashing_penalty;
-
         // For each validator identified as byzantine by tendermint, update its
-        // status to be slashed.
+        // state to be slashed.
         for evidence in begin_block.byzantine_validators.iter() {
-            self.overlay
-                .slash_validator(evidence, slashing_penalty)
-                .await;
+            self.overlay.slash_validator(evidence).await?;
         }
 
         Ok(())
@@ -280,7 +283,7 @@ impl Component for Staking {
 ///
 /// TODO: should this be split into Read and Write traits?
 #[async_trait]
-pub trait View: WriteOverlayExt + Send + Sync {
+pub trait View: WriteOverlayExt {
     async fn current_base_rate(&self) -> Result<BaseRateData> {
         self.get_domain("staking/base_rate/current".into())
             .await
@@ -331,6 +334,16 @@ pub trait View: WriteOverlayExt + Send + Sync {
         .await;
     }
 
+    #[instrument(skip(self))]
+    async fn set_validator_state(&self, identity_key: &IdentityKey, state: ValidatorState) {
+        tracing::debug!("setting validator state");
+        self.put_domain(
+            format!("staking/validators/{}/state", identity_key).into(),
+            state,
+        )
+        .await;
+    }
+
     async fn validator(&self, identity_key: &IdentityKey) -> Result<Option<Validator>> {
         self.get_domain(format!("staking/validators/{}", identity_key).into())
             .await
@@ -354,16 +367,59 @@ pub trait View: WriteOverlayExt + Send + Sync {
         self.validator(&identity_key).await
     }
 
-    async fn slash_validator(&mut self, evidence: &Evidence, slashing_penalty: u64) -> Result<()> {
+    async fn slash_validator(&mut self, evidence: &Evidence) -> Result<()> {
         let ck = tendermint::PublicKey::from_raw_ed25519(&evidence.validator.address)
             .ok_or_else(|| anyhow::anyhow!("invalid ed25519 consensus pubkey from tendermint"))
             .unwrap();
 
-        let validator = self.validator_by_consensus_key(&ck).await?;
+        let validator = self
+            .validator_by_consensus_key(&ck)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("attempted to slash validator not found in JMT"))?;
+
+        let slashing_penalty = self.get_chain_params().await?.slashing_penalty;
 
         tracing::info!(?validator, ?slashing_penalty, "slashing validator");
 
-        // TOD: implement slashing
+        let cur_state = self
+            .validator_state(&validator.identity_key)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("validator to be slashed did not have state in JMT"))?;
+
+        // Ensure that the state transitions are valid.
+        match cur_state {
+            ValidatorState::Active => {}
+            ValidatorState::Unbonding { unbonding_epoch: _ } => {}
+            _ => {
+                return Err(anyhow::anyhow!(
+                    "only validators in the active or unbonding state may be slashed"
+                ))
+            }
+        };
+
+        // Mark the state as "slashed" in the JMT, and apply the slashing penalty.
+        self.set_validator_state(&validator.identity_key, ValidatorState::Slashed);
+
+        let mut cur_rate = self
+            .current_validator_rate(&validator.identity_key)
+            .await?
+            .ok_or_else(|| {
+                anyhow::anyhow!("validator to be slashed did not have current rate in JMT")
+            })?;
+
+        cur_rate = cur_rate.slash(slashing_penalty);
+
+        // TODO: would it be better to call `current_base_rate.next`? the same logic exists
+        // within there, but it requires passing in the current base rates & funding streams,
+        // which aren't actually used because the rate is held constant. So, doing it this way
+        // avoids a couple unnecessary JMT reads that the `current_base_rate.next` API would require.
+        //
+        // At any rate, the next rate is held constant for slashed validators.
+        let mut next_rate = cur_rate.clone();
+        next_rate.epoch_index += 1;
+
+        self.set_validator_rates(&validator.identity_key, cur_rate, next_rate)
+            .await;
 
         Ok(())
     }
@@ -374,12 +430,19 @@ pub trait View: WriteOverlayExt + Send + Sync {
         validator: Validator,
         current_rates: RateData,
         next_rates: RateData,
+        state: ValidatorState,
     ) {
         tracing::debug!(?validator);
         let id = validator.identity_key.clone();
         self.put_domain(format!("staking/validators/{}", id).into(), validator)
             .await;
         self.set_validator_rates(&id, current_rates, next_rates)
+            .await;
+        self.set_validator_state(&id, state).await;
+    }
+
+    async fn validator_state(&self, identity_key: &IdentityKey) -> Result<Option<ValidatorState>> {
+        self.get_domain(format!("staking/validators/{}/state", identity_key).into())
             .await
     }
 
@@ -388,7 +451,7 @@ pub trait View: WriteOverlayExt + Send + Sync {
             .get_domain("staking/validators/list".into())
             .await?
             .map(|list: ValidatorList| list.0)
-            .unwrap_or(Vec::new()))
+            .unwrap_or_default())
     }
 
     async fn set_validator_list(&self, validators: Vec<IdentityKey>) {

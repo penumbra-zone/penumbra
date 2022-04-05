@@ -58,15 +58,20 @@ message BaseRateData {
 // Describes the current state of a validator on-chain
 message ValidatorStatus {
   IdentityKey identity_key = 1;
-  enum ValidatorState {
+  ValidatorState state = 2;
+  uint64 voting_power = 3;
+}
+
+// Describes the state of a validator
+message ValidatorState {
+  enum ValidatorStateEnum {
     INACTIVE = 0;
     ACTIVE = 1;
     UNBONDING = 2;
     SLASHED = 3;
   }
-  ValidatorState state = 2;
-  uint64 voting_power = 3;
-  optional uint64 unbonding_epoch = 4;
+  ValidatorStateEnum state = 1;
+  optional uint64 unbonding_epoch = 2;
 }
 
 

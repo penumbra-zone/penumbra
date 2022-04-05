@@ -27,16 +27,24 @@ impl From<ValidatorStatus> for pb::ValidatorStatus {
         pb::ValidatorStatus {
             identity_key: Some(v.identity_key.into()),
             voting_power: v.voting_power,
-            state: match v.state {
-                ValidatorState::Inactive => pb::validator_status::ValidatorState::Inactive,
-                ValidatorState::Active => pb::validator_status::ValidatorState::Active,
-                ValidatorState::Unbonding { .. } => pb::validator_status::ValidatorState::Unbonding,
-                ValidatorState::Slashed => pb::validator_status::ValidatorState::Slashed,
-            } as i32,
-            unbonding_epoch: match v.state {
-                ValidatorState::Unbonding { unbonding_epoch } => Some(unbonding_epoch),
-                _ => None,
-            },
+            state: Some(match v.state {
+                ValidatorState::Inactive => pb::ValidatorState {
+                    state: pb::validator_state::ValidatorStateEnum::Inactive as i32,
+                    unbonding_epoch: None,
+                },
+                ValidatorState::Active => pb::ValidatorState {
+                    state: pb::validator_state::ValidatorStateEnum::Active as i32,
+                    unbonding_epoch: None,
+                },
+                ValidatorState::Unbonding { unbonding_epoch } => pb::ValidatorState {
+                    state: pb::validator_state::ValidatorStateEnum::Unbonding as i32,
+                    unbonding_epoch: Some(unbonding_epoch),
+                },
+                ValidatorState::Slashed => pb::ValidatorState {
+                    state: pb::validator_state::ValidatorStateEnum::Slashed as i32,
+                    unbonding_epoch: None,
+                },
+            }),
         }
     }
 }
@@ -44,17 +52,21 @@ impl From<ValidatorStatus> for pb::ValidatorStatus {
 impl TryFrom<pb::ValidatorStatus> for ValidatorStatus {
     type Error = anyhow::Error;
     fn try_from(v: pb::ValidatorStatus) -> Result<Self, Self::Error> {
-        let state = match pb::validator_status::ValidatorState::from_i32(v.state)
-            .ok_or_else(|| anyhow::anyhow!("missing validator state"))?
+        let state = match pb::validator_state::ValidatorStateEnum::from_i32(
+            v.state.as_ref().unwrap().state,
+        )
+        .ok_or_else(|| anyhow::anyhow!("missing validator state"))?
         {
-            pb::validator_status::ValidatorState::Inactive => ValidatorState::Inactive,
-            pb::validator_status::ValidatorState::Active => ValidatorState::Active,
-            pb::validator_status::ValidatorState::Unbonding => ValidatorState::Unbonding {
+            pb::validator_state::ValidatorStateEnum::Inactive => ValidatorState::Inactive,
+            pb::validator_state::ValidatorStateEnum::Active => ValidatorState::Active,
+            pb::validator_state::ValidatorStateEnum::Unbonding => ValidatorState::Unbonding {
                 unbonding_epoch: v
+                    .state
+                    .unwrap()
                     .unbonding_epoch
                     .ok_or_else(|| anyhow::anyhow!("missing unbonding epoch"))?,
             },
-            pb::validator_status::ValidatorState::Slashed => ValidatorState::Slashed,
+            pb::validator_state::ValidatorStateEnum::Slashed => ValidatorState::Slashed,
         };
 
         Ok(ValidatorStatus {
