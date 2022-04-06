@@ -2,7 +2,6 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
-use itertools::Itertools;
 use penumbra_proto::Protobuf;
 use penumbra_stake::{
     BaseRateData, Delegate, DelegationChanges, Epoch, IdentityKey, RateData, Undelegate, Validator,
@@ -45,35 +44,36 @@ impl Staking {
     async fn end_epoch(&mut self, epoch_to_end: Epoch) -> Result<()> {
         // calculate rate data for next rate, move previous next rate to cur rate,
         // and save the next rate data. ensure that non-Active validators maintain constant rates.
-        let mut total_changes = DelegationChanges::default();
+        let mut delegations_by_validator = BTreeMap::<IdentityKey, Vec<Delegate>>::new();
+        let mut undelegations_by_validator = BTreeMap::<IdentityKey, Vec<Undelegate>>::new();
         for height in epoch_to_end.start_height().value()..=epoch_to_end.end_height().value() {
             let changes = self
                 .overlay
                 .delegation_changes(height.try_into().unwrap())
                 .await?;
-            total_changes.delegations.extend(changes.delegations);
-            total_changes.undelegations.extend(changes.undelegations);
+            for d in changes.delegations {
+                delegations_by_validator
+                    .entry(d.validator_identity.clone())
+                    .or_insert_with(Vec::new)
+                    .push(d);
+            }
+            for u in changes.undelegations {
+                undelegations_by_validator
+                    .entry(u.validator_identity.clone())
+                    .or_insert_with(Vec::new)
+                    .push(u);
+            }
         }
         tracing::debug!(
-            total_delegations = total_changes.delegations.len(),
-            total_undelegations = total_changes.undelegations.len(),
+            total_delegations = ?delegations_by_validator
+                .iter()
+                .map(|(_, v)| v.len())
+                .sum::<usize>(),
+            total_undelegations = ?undelegations_by_validator
+                .iter()
+                .map(|(_, v)| v.len())
+                .sum::<usize>(),
         );
-
-        // now the delegations and undelegations need to be grouped by validator
-        let delegations_by_validator: BTreeMap<IdentityKey, Vec<Delegate>> = total_changes
-            .delegations
-            .into_iter()
-            .group_by(|d| d.validator_identity.clone())
-            .into_iter()
-            .map(|(k, v)| (k, v.collect()))
-            .collect();
-        let undelegations_by_validator: BTreeMap<IdentityKey, Vec<Undelegate>> = total_changes
-            .undelegations
-            .into_iter()
-            .group_by(|u| u.validator_identity.clone())
-            .into_iter()
-            .map(|(k, v)| (k, v.collect()))
-            .collect();
 
         let chain_params = self.overlay.get_chain_params().await?;
         let unbonding_epochs = chain_params.unbonding_epochs;
