@@ -182,7 +182,7 @@ impl Staking {
             if validator_state == ValidatorState::Active {
                 // distribute validator commission
                 for stream in funding_streams {
-                    let commission_reward_amount = stream.reward_amount(
+                    let _commission_reward_amount = stream.reward_amount(
                         delegation_token_supply,
                         &next_base_rate,
                         &current_base_rate,
