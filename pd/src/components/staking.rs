@@ -305,7 +305,28 @@ impl Staking {
 
     // Returns the list of validator updates formatted for inclusion in the Tendermint `EndBlockResponse`
     pub async fn tm_validator_updates(&self) -> Result<Vec<ValidatorUpdate>> {
-        Ok(Vec::new())
+        // Return the voting power for all known validators.
+        // This isn't strictly necessary because tendermint technically expects
+        // an update, however it is useful for debugging.
+        let mut updates = Vec::new();
+        for v in self.overlay.validator_list().await?.iter() {
+            let power = self
+                .overlay
+                .validator_power(v)
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("validator missing power"))?;
+            let validator = self
+                .overlay
+                .validator(&v)
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("validator missing"))?;
+            updates.push(ValidatorUpdate {
+                pub_key: validator.consensus_key.clone(),
+                power: power.try_into()?,
+            });
+        }
+
+        Ok(updates)
     }
 }
 
