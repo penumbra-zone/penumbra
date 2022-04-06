@@ -103,15 +103,7 @@ impl Staking {
             let validator = self.overlay.validator(v).await?.ok_or_else(|| {
                 anyhow::anyhow!("validator had ID in validator_list but not found in JMT")
             })?;
-            // The old epoch's "current rate" is going to become the "previous rate".
-            let prev_rate = self
-                .overlay
-                .current_validator_rate(v)
-                .await?
-                .ok_or_else(|| {
-                    anyhow::anyhow!("validator had ID in validator_list but rate not found in JMT")
-                })?;
-            // And the old epoch's "next rate" is going to become the "current rate".
+            // The old epoch's "next rate" is now the "current rate".
             let current_rate = self.overlay.next_validator_rate(v).await?.ok_or_else(|| {
                 anyhow::anyhow!("validator had ID in validator_list but rate not found in JMT")
             })?;
@@ -120,9 +112,6 @@ impl Staking {
                 anyhow::anyhow!("validator had ID in validator_list but state not found in JMT")
             })?;
             tracing::debug!(?validator, "processing validator rate updates");
-
-            // The "prev rate" for the validator should be for the ending epoch
-            assert!(prev_rate.epoch_index == epoch_to_end.index);
 
             let funding_streams = validator.funding_streams;
 
