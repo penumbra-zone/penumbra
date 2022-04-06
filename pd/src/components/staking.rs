@@ -2,13 +2,11 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
-use futures::future::try_join_all;
-use futures::Future;
 use itertools::Itertools;
 use penumbra_proto::Protobuf;
 use penumbra_stake::{
     BaseRateData, Delegate, DelegationChanges, Epoch, IdentityKey, RateData, Undelegate, Validator,
-    ValidatorList, ValidatorState, ValidatorStatus, STAKING_TOKEN_ASSET_ID,
+    ValidatorList, ValidatorState, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_transaction::{Action, Transaction};
 
@@ -17,9 +15,7 @@ use tendermint::{
         self,
         types::{Evidence, ValidatorUpdate},
     },
-    block,
-    vote::Power,
-    PublicKey,
+    block, PublicKey,
 };
 use tracing::instrument;
 
@@ -227,16 +223,6 @@ impl Staking {
         unbonding_epochs: u64,
     ) -> Result<()> {
         // Sort the next validator states by voting power.
-        // FIXME: can't get the type checker happy on this one-liner, so we have to iterate instead
-        // let validator_power_list: Vec<_> =
-        //     try_join_all(self.overlay.validator_list().await?.iter().map(|v| async {
-        //         Ok((
-        //             v,
-        //             self.overlay.validator_power(v).await?,
-        //             self.overlay.validator_state(v).await?,
-        //         ))
-        //     }))
-        //     .await?;
         struct VPower {
             identity_key: IdentityKey,
             power: u64,
