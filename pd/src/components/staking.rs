@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
+use futures::future::try_join_all;
 use futures::Future;
 use itertools::Itertools;
 use penumbra_proto::Protobuf;
@@ -211,18 +212,108 @@ impl Staking {
 
         // Now that all the voting power has been calculated for the upcoming epoch,
         // we can determine which validators are Active for the next epoch.
-        self.process_epoch_transitions(active_validator_limit, unbonding_epochs);
+        self.process_epoch_transitions(epoch_to_end, active_validator_limit, unbonding_epochs)
+            .await?;
 
         Ok(())
     }
 
     /// Called during `end_epoch`. Will perform state transitions to validators based
     /// on changes to voting power that occurred in this epoch.
-    pub fn process_epoch_transitions(
+    pub async fn process_epoch_transitions(
         &mut self,
-        _active_validator_limit: u64,
-        _unbonding_epochs: u64,
+        epoch_to_end: Epoch,
+        active_validator_limit: u64,
+        unbonding_epochs: u64,
     ) -> Result<()> {
+        // Sort the next validator states by voting power.
+        // FIXME: can't get the type checker happy on this one-liner, so we have to iterate instead
+        // let validator_power_list: Vec<_> =
+        //     try_join_all(self.overlay.validator_list().await?.iter().map(|v| async {
+        //         Ok((
+        //             v,
+        //             self.overlay.validator_power(v).await?,
+        //             self.overlay.validator_state(v).await?,
+        //         ))
+        //     }))
+        //     .await?;
+        struct VPower {
+            identity_key: IdentityKey,
+            power: u64,
+            state: ValidatorState,
+        };
+
+        let mut validator_power_list = Vec::new();
+        for v in self.overlay.validator_list().await?.iter() {
+            let power = self
+                .overlay
+                .validator_power(v)
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("validator missing power"))?;
+            let state = self
+                .overlay
+                .validator_state(v)
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("validator missing state"))?;
+            validator_power_list.push(VPower {
+                identity_key: v.clone(),
+                power,
+                state,
+            });
+        }
+
+        // Sort by voting power
+        validator_power_list.sort_by(|a, b| a.power.cmp(&b.power));
+
+        // Grab the top `active_validator_limit` validators
+        let top_validators = validator_power_list
+            .iter()
+            .take(active_validator_limit as usize)
+            .map(|v| v.identity_key.clone())
+            .collect::<Vec<_>>();
+
+        // Iterate every validator and update according to their state and voting power.
+        for vp in &validator_power_list {
+            if vp.state == ValidatorState::Inactive
+                || matches!(vp.state, ValidatorState::Unbonding { unbonding_epoch: _ })
+            {
+                // If an Inactive or Unbonding validator is in the top `active_validator_limit` based
+                // on voting power and the delegation pool has a nonzero balance (meaning non-zero voting power),
+                // then the validator should be moved to the Active state.
+                if top_validators.contains(&vp.identity_key) && vp.power > 0 {
+                    self.overlay
+                        .set_validator_state(&vp.identity_key, ValidatorState::Active)
+                        .await;
+                }
+            } else if vp.state == ValidatorState::Active {
+                // An Active validator could also be displaced and move to the
+                // Unbonding state.
+                if !top_validators.contains(&vp.identity_key) {
+                    // Unbonding the validator means that it can no longer participate
+                    // in consensus, so its voting power is set to 0.
+                    self.overlay.set_validator_power(&vp.identity_key, 0).await;
+                    self.overlay
+                        .set_validator_state(
+                            &vp.identity_key,
+                            ValidatorState::Unbonding {
+                                unbonding_epoch: unbonding_epochs,
+                            },
+                        )
+                        .await;
+                }
+            }
+
+            // An Unbonding validator can become Inactive if the unbonding period expires
+            // and the validator is still in Unbonding state
+            if let ValidatorState::Unbonding { unbonding_epoch } = vp.state {
+                if unbonding_epoch <= epoch_to_end.index {
+                    self.overlay
+                        .set_validator_state(&vp.identity_key, ValidatorState::Inactive)
+                        .await;
+                }
+            };
+        }
+
         Ok(())
     }
 
