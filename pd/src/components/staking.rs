@@ -128,7 +128,7 @@ impl Staking {
 
             let next_rate =
                 current_rate.next(&next_base_rate, funding_streams.as_ref(), &validator_state);
-            assert!(next_rate.epoch_index == epoch_to_end.index + 1);
+            assert!(next_rate.epoch_index == epoch_to_end.index + 2);
 
             let validator_delegations = delegations_by_validator
                 .get(&validator.identity_key)
@@ -405,6 +405,7 @@ impl Component for Staking {
                     next_rate_data,
                     // All genesis validators start in the "Active" state:
                     ValidatorState::Active,
+                    validator.power.into(),
                 )
                 .await?;
         }
@@ -708,10 +709,10 @@ impl Component for Staking {
                     next_rate_data,
                     // All validator from definitions start in the "Inactive" state:
                     ValidatorState::Inactive,
+                    // All validator from definitions start with 0 power:
+                    0,
                 )
                 .await?;
-            // Newly added validators have 0 power
-            self.overlay.set_validator_power(&validator_key, 0).await;
         }
 
         Ok(())
@@ -903,6 +904,7 @@ pub trait View: WriteOverlayExt {
         current_rates: RateData,
         next_rates: RateData,
         state: ValidatorState,
+        power: u64,
     ) -> Result<()> {
         tracing::debug!(?validator);
         let id = validator.identity_key.clone();
@@ -911,6 +913,7 @@ pub trait View: WriteOverlayExt {
         self.set_validator_rates(&id, current_rates, next_rates)
             .await;
         self.set_validator_state(&id, state).await;
+        self.set_validator_power(&id, power).await;
 
         let mut validator_list = self.validator_list().await?;
         validator_list.push(id);
