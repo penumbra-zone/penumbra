@@ -239,7 +239,7 @@ impl Staking {
             identity_key: IdentityKey,
             power: u64,
             state: ValidatorState,
-        };
+        }
 
         let mut validator_power_list = Vec::new();
         for v in self.overlay.validator_list().await?.iter() {
@@ -329,7 +329,7 @@ impl Staking {
                 .ok_or_else(|| anyhow::anyhow!("validator missing power"))?;
             let validator = self
                 .overlay
-                .validator(&v)
+                .validator(v)
                 .await?
                 .ok_or_else(|| anyhow::anyhow!("validator missing"))?;
             updates.push(ValidatorUpdate {
@@ -406,7 +406,7 @@ impl Component for Staking {
                     // All genesis validators start in the "Active" state:
                     ValidatorState::Active,
                 )
-                .await;
+                .await?;
         }
 
         // Finally, record that there were no delegations in this block, so the data
@@ -606,14 +606,9 @@ impl Component for Staking {
         for v in tx.validator_definitions() {
             let existing_v = self.overlay.validator(&v.validator.identity_key).await?;
 
-            if existing_v.is_none() {
-                // This is a new validator definition.
-                validator_definitions.push(v.clone().into());
-                continue;
-            } else {
+            if let Some(existing_v) = existing_v {
                 // This is an existing validator definition. Ensure that the highest
                 // existing sequence number is less than the new sequence number.
-                let existing_v = existing_v.unwrap();
                 let current_seq = existing_v.sequence_number;
                 if v.validator.sequence_number <= current_seq {
                     return Err(anyhow::anyhow!(
@@ -621,10 +616,14 @@ impl Component for Staking {
                         current_seq
                     ));
                 }
+            } else {
+                // This is a new validator definition.
+                validator_definitions.push(v.clone());
+                continue;
             }
 
             // the validator definition has now passed all verification checks, so add it to the list
-            validator_definitions.push(v.clone().into());
+            validator_definitions.push(v.clone());
         }
 
         Ok(())
@@ -710,7 +709,7 @@ impl Component for Staking {
                     // All validator from definitions start in the "Inactive" state:
                     ValidatorState::Inactive,
                 )
-                .await;
+                .await?;
             // Newly added validators have 0 power
             self.overlay.set_validator_power(&validator_key, 0).await;
         }
@@ -855,7 +854,8 @@ pub trait View: WriteOverlayExt {
         };
 
         // Mark the state as "slashed" in the JMT, and apply the slashing penalty.
-        self.set_validator_state(&validator.identity_key, ValidatorState::Slashed);
+        self.set_validator_state(&validator.identity_key, ValidatorState::Slashed)
+            .await;
 
         let mut cur_rate = self
             .current_validator_rate(&validator.identity_key)
@@ -888,7 +888,7 @@ pub trait View: WriteOverlayExt {
         // If the validator isn't already in the JMT, we can't update it.
         self.validator(&id)
             .await?
-            .ok_or_else(|| anyhow::anyhow!("updated validator not found in JMT"));
+            .ok_or_else(|| anyhow::anyhow!("updated validator not found in JMT"))?;
 
         self.put_domain(format!("staking/validators/{}", id).into(), validator)
             .await;
