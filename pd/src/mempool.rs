@@ -1,3 +1,13 @@
+mod message;
+mod service;
+mod worker;
+
+use message::Message;
+pub use service::Mempool;
+use worker::Worker;
+
+// Old code below
+
 use std::{
     collections::BTreeSet,
     future::Future,
@@ -22,26 +32,28 @@ use tokio::sync::{watch, Mutex as AsyncMutex};
 use tower_abci::BoxError;
 use tracing::Instrument;
 
-use crate::{state, verify::StatelessTransactionExt, RequestExt, Storage};
+use crate::{state, verify::StatelessTransactionExt, RequestExt};
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct OldMempool {
+    // sidecar
+    new_mempool: Mempool,
+    // old code
     nullifiers: Arc<AsyncMutex<BTreeSet<Nullifier>>>,
     state: state::Reader,
-    storage: Storage,
     // We keep our own copy of the height watcher rather than borrowing from our
     // state::Reader so we can mutate it while tracking height updates.
     height_rx: watch::Receiver<block::Height>,
 }
 
 impl OldMempool {
-    pub fn new(state: state::Reader, storage: Storage) -> Self {
+    pub fn new(state: state::Reader, new_mempool: Mempool) -> Self {
         let nullifiers = Arc::new(AsyncMutex::new(Default::default()));
         let height_rx = state.height_rx().clone();
         Self {
             nullifiers,
             state,
-            storage,
+            new_mempool,
             height_rx,
         }
     }
@@ -109,7 +121,7 @@ impl tower::Service<MempoolRequest> for OldMempool {
     type Error = BoxError;
     type Future = Pin<Box<dyn Future<Output = Result<MempoolResponse, BoxError>> + Send + 'static>>;
 
-    fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         // Check whether a new block has arrived since our last CheckTx request.
         if self.height_rx.has_changed()? {
             // Wipe our mempool nullifier set.  Notice that this leaves any
@@ -123,13 +135,24 @@ impl tower::Service<MempoolRequest> for OldMempool {
             // Finally, mark the new height as having been seen.
             self.height_rx.borrow_and_update();
         }
-        Poll::Ready(Ok(()))
+        self.new_mempool.poll_ready(cx)
     }
 
     fn call(&mut self, req: MempoolRequest) -> Self::Future {
+        let req2 = req.clone();
         let span = req.create_span();
         let MempoolRequest::CheckTx(check_tx) = req;
         let mempool = self.clone();
+
+        let rsp2 = self.new_mempool.call(req2);
+
+        tokio::spawn(
+            async {
+                let rsp2 = rsp2.await;
+                tracing::info!(?rsp2, "new mempool response");
+            }
+            .instrument(span.clone()),
+        );
 
         async move {
             match mempool.check_tx(check_tx).await {

@@ -135,8 +135,10 @@ async fn main() -> anyhow::Result<()> {
 
             let storage = pd::Storage::load(rocks_path).await?;
 
-            let consensus = pd::Consensus::new(state_writer, storage.clone()).await?;
-            let mempool = pd::OldMempool::new(state_reader.clone(), storage.clone());
+            let (consensus, height_rx) = pd::Consensus::new(state_writer, storage.clone()).await?;
+            // Hack: thread the new mempool inside the old mempool as a sidecar
+            let new_mempool = pd::Mempool::new(storage.clone(), height_rx).await?;
+            let mempool = pd::OldMempool::new(state_reader.clone(), new_mempool);
             let info = pd::Info::new(state_reader.clone(), storage.clone());
             let snapshot = pd::Snapshot {};
 
