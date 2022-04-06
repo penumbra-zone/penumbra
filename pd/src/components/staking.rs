@@ -6,7 +6,7 @@ use itertools::Itertools;
 use penumbra_proto::Protobuf;
 use penumbra_stake::{
     BaseRateData, Delegate, DelegationChanges, Epoch, IdentityKey, RateData, Undelegate, Validator,
-    ValidatorList, ValidatorState, STAKING_TOKEN_ASSET_ID,
+    ValidatorDefinitions, ValidatorList, ValidatorState, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_transaction::{Action, Transaction};
 
@@ -29,6 +29,10 @@ pub struct Staking {
     /// persisted at the end of the block for processing at the end of the next
     /// epoch.
     delegation_changes: DelegationChanges,
+    /// Validator definitions accumulated over the course of this block, to be
+    /// persisted at the end of the block for processing at the end of the next
+    /// epoch.
+    validator_definitions: ValidatorDefinitions,
 }
 
 impl Staking {
@@ -211,6 +215,9 @@ impl Staking {
         self.process_epoch_transitions(epoch_to_end, active_validator_limit, unbonding_epochs)
             .await?;
 
+        // The pending delegation changes should be empty at the beginning of the next epoch.
+        self.delegation_changes = Default::default();
+
         Ok(())
     }
 
@@ -336,6 +343,7 @@ impl Component for Staking {
         Ok(Self {
             overlay,
             delegation_changes: Default::default(),
+            validator_definitions: Default::default(),
         })
     }
 
@@ -417,6 +425,9 @@ impl Component for Staking {
             self.overlay.slash_validator(evidence).await?;
         }
 
+        // The validator definitions should be empty at the beginning of each block.
+        self.validator_definitions = Default::default();
+
         Ok(())
     }
 
@@ -464,7 +475,154 @@ impl Component for Staking {
         Ok(())
     }
 
-    async fn check_tx_stateful(&self, _tx: &Transaction) -> Result<()> {
+    async fn check_tx_stateful(&self, tx: &Transaction) -> Result<()> {
+        // Tally the delegations and undelegations
+        let mut delegation_changes = BTreeMap::new();
+        for d in tx.delegations() {
+            let next_rate_data = self
+                .overlay
+                .next_validator_rate(&d.validator_identity)
+                .await?
+                .ok_or_else(|| {
+                    anyhow::anyhow!("Unknown validator identity {}", d.validator_identity)
+                })?
+                .clone();
+
+            // Check whether the epoch is correct first, to give a more helpful
+            // error message if it's wrong.
+            if d.epoch_index != next_rate_data.epoch_index {
+                return Err(anyhow::anyhow!(
+                    "Delegation was prepared for epoch {} but the next epoch is {}",
+                    d.epoch_index,
+                    next_rate_data.epoch_index
+                ));
+            }
+
+            // Check whether the delegation is for a slashed validator
+            let validator_state = self
+                .overlay
+                .validator_state(&d.validator_identity)
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("missing state for validator"))?;
+            if validator_state == ValidatorState::Slashed {
+                return Err(anyhow::anyhow!(
+                    "Delegation to slashed validator {}",
+                    d.validator_identity
+                ));
+            };
+
+            // For delegations, we enforce correct computation (with rounding)
+            // of the *delegation amount based on the unbonded amount*, because
+            // users (should be) starting with the amount of unbonded stake they
+            // wish to delegate, and computing the amount of delegation tokens
+            // they receive.
+            //
+            // The direction of the computation matters because the computation
+            // involves rounding, so while both
+            //
+            // (unbonded amount, rates) -> delegation amount
+            // (delegation amount, rates) -> unbonded amount
+            //
+            // should give approximately the same results, they may not give
+            // exactly the same results.
+            let expected_delegation_amount = next_rate_data.delegation_amount(d.unbonded_amount);
+
+            if expected_delegation_amount == d.delegation_amount {
+                // The delegation amount is added to the delegation token supply.
+                *delegation_changes
+                    .entry(d.validator_identity.clone())
+                    .or_insert(0) += i64::try_from(d.delegation_amount).unwrap();
+            } else {
+                return Err(anyhow::anyhow!(
+                    "Given {} unbonded stake, expected {} delegation tokens but description produces {}",
+                    d.unbonded_amount,
+                    expected_delegation_amount,
+                    d.delegation_amount
+                ));
+            }
+        }
+        for u in tx.undelegations() {
+            let rate_data = self
+                .overlay
+                .next_validator_rate(&u.validator_identity)
+                .await?
+                .ok_or_else(|| {
+                    anyhow::anyhow!("Unknown validator identity {}", u.validator_identity)
+                })?;
+
+            // Check whether the epoch is correct first, to give a more helpful
+            // error message if it's wrong.
+            if u.epoch_index != rate_data.epoch_index {
+                return Err(anyhow::anyhow!(
+                    "Undelegation was prepared for next epoch {} but the next epoch is {}",
+                    u.epoch_index,
+                    rate_data.epoch_index
+                ));
+            }
+
+            // For undelegations, we enforce correct computation (with rounding)
+            // of the *unbonded amount based on the delegation amount*, because
+            // users (should be) starting with the amount of delegation tokens they
+            // wish to undelegate, and computing the amount of unbonded stake
+            // they receive.
+            //
+            // The direction of the computation matters because the computation
+            // involves rounding, so while both
+            //
+            // (unbonded amount, rates) -> delegation amount
+            // (delegation amount, rates) -> unbonded amount
+            //
+            // should give approximately the same results, they may not give
+            // exactly the same results.
+            let expected_unbonded_amount = rate_data.unbonded_amount(u.delegation_amount);
+
+            if expected_unbonded_amount == u.unbonded_amount {
+                // TODO: in order to have exact tracking of the token supply, we probably
+                // need to change this to record the changes to the unbonded stake and
+                // the delegation token separately
+
+                // The undelegation amount is subtracted from the delegation token supply.
+                *delegation_changes
+                    .entry(u.validator_identity.clone())
+                    .or_insert(0) -= i64::try_from(u.delegation_amount).unwrap();
+            } else {
+                return Err(anyhow::anyhow!(
+                    "Given {} delegation tokens, expected {} unbonded stake but description produces {}",
+                    u.delegation_amount,
+                    expected_unbonded_amount,
+                    u.unbonded_amount,
+                ));
+            }
+        }
+
+        // Check that the sequence numbers of newly added validators are correct.
+        //
+        // Resolution of conflicting validator definitions is performed later in `end_block` after
+        // they've all been received.
+        let mut validator_definitions = Vec::new();
+        for v in tx.validator_definitions() {
+            let existing_v = self.overlay.validator(&v.validator.identity_key).await?;
+
+            if existing_v.is_none() {
+                // This is a new validator definition.
+                validator_definitions.push(v.clone().into());
+                continue;
+            } else {
+                // This is an existing validator definition. Ensure that the highest
+                // existing sequence number is less than the new sequence number.
+                let current_seq = existing_v.iter().map(|z| z.validator.sequence_number).max().ok_or_else(|| {anyhow::anyhow!("Validator with this ID key existed but had no existing sequence numbers")})?;
+                if v.validator.sequence_number <= current_seq {
+                    return Err(anyhow::anyhow!(
+                        "Expected sequence numbers to be increasing. Current sequence number is {}",
+                        current_seq
+                    ));
+                }
+            }
+
+            // the validator definition has now passed all verification checks, so add it to the list
+            validator_definitions.push(v.clone().into());
+        }
+
         Ok(())
     }
 
@@ -484,7 +642,12 @@ impl Component for Staking {
             }
         }
 
-        // TODO: process validator definitions
+        // process validator definitions
+        let definitions = tx
+            .transaction_body
+            .actions
+            .iter()
+            .any(|action| matches!(action, Action::ValidatorDefinition { .. }));
 
         Ok(())
     }
