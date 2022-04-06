@@ -129,3 +129,8 @@ message DelegationChanges {
   repeated Delegate delegations = 1;
   repeated Undelegate undelegations = 2;
 }
+
+// A list of pending validator definitions.
+message ValidatorDefinitions {
+  repeated ValidatorDefinition definitions = 1;
+}

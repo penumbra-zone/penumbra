@@ -1,12 +1,12 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
-use futures::Future;
 use penumbra_proto::Protobuf;
 use penumbra_stake::{
-    BaseRateData, DelegationChanges, Epoch, IdentityKey, RateData, Validator, ValidatorList,
-    ValidatorState, ValidatorStatus, STAKING_TOKEN_ASSET_ID,
+    BaseRateData, Delegate, DelegationChanges, Epoch, IdentityKey, RateData, Undelegate, Validator,
+    ValidatorDefinition, ValidatorDefinitions, ValidatorList, ValidatorState,
+    STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_transaction::{Action, Transaction};
 
@@ -29,6 +29,14 @@ pub struct Staking {
     /// persisted at the end of the block for processing at the end of the next
     /// epoch.
     delegation_changes: DelegationChanges,
+    /// New validator definitions accumulated over the course of this block, to be
+    /// persisted at the end of the block for processing at the end of the next
+    /// epoch.
+    new_validator_definitions: ValidatorDefinitions,
+    /// Updates to existing validator definitions accumulated over the course of this block, to be
+    /// persisted at the end of the block for processing at the end of the next
+    /// epoch.
+    updated_validator_definitions: ValidatorDefinitions,
 }
 
 impl Staking {
@@ -36,29 +44,45 @@ impl Staking {
     async fn end_epoch(&mut self, epoch_to_end: Epoch) -> Result<()> {
         // calculate rate data for next rate, move previous next rate to cur rate,
         // and save the next rate data. ensure that non-Active validators maintain constant rates.
-        let mut total_changes = DelegationChanges::default();
+        let mut delegations_by_validator = BTreeMap::<IdentityKey, Vec<Delegate>>::new();
+        let mut undelegations_by_validator = BTreeMap::<IdentityKey, Vec<Undelegate>>::new();
         for height in epoch_to_end.start_height().value()..=epoch_to_end.end_height().value() {
             let changes = self
                 .overlay
                 .delegation_changes(height.try_into().unwrap())
                 .await?;
-            total_changes.delegations.extend(changes.delegations);
-            total_changes.undelegations.extend(changes.undelegations);
+            for d in changes.delegations {
+                delegations_by_validator
+                    .entry(d.validator_identity.clone())
+                    .or_insert_with(Vec::new)
+                    .push(d);
+            }
+            for u in changes.undelegations {
+                undelegations_by_validator
+                    .entry(u.validator_identity.clone())
+                    .or_insert_with(Vec::new)
+                    .push(u);
+            }
         }
         tracing::debug!(
-            total_delegations = total_changes.delegations.len(),
-            total_undelegations = total_changes.undelegations.len(),
+            total_delegations = ?delegations_by_validator
+                .iter()
+                .map(|(_, v)| v.len())
+                .sum::<usize>(),
+            total_undelegations = ?undelegations_by_validator
+                .iter()
+                .map(|(_, v)| v.len())
+                .sum::<usize>(),
         );
-        // TODO: now the delegations and undelegations need to be grouped by validator ?
 
         let chain_params = self.overlay.get_chain_params().await?;
-        let _unbonding_epochs = chain_params.unbonding_epochs;
-        let _active_validator_limit = chain_params.active_validator_limit;
+        let unbonding_epochs = chain_params.unbonding_epochs;
+        let active_validator_limit = chain_params.active_validator_limit;
 
         tracing::debug!("processing base rate");
         // We are transitioning to the next epoch, so set "cur_base_rate" to the previous "next_base_rate", and
         // update "next_base_rate".
-        let current_base_rate = self.overlay.current_base_rate().await?;
+        let current_base_rate = self.overlay.next_base_rate().await?;
         /// FIXME: set this less arbitrarily, and allow this to be set per-epoch
         /// 3bps -> 11% return over 365 epochs, why not
         const BASE_REWARD_RATE: u64 = 3_0000;
@@ -69,33 +93,240 @@ impl Staking {
         tracing::debug!(curr_base_rate = ?current_base_rate);
         tracing::debug!(?next_base_rate);
 
-        // Update these in the JMT:
+        // Update the base rates in the JMT:
         self.overlay
-            .set_base_rates(current_base_rate, next_base_rate)
+            .set_base_rates(current_base_rate.clone(), next_base_rate.clone())
             .await;
 
-        let _staking_token_supply = self
-            .overlay
-            .token_supply(&STAKING_TOKEN_ASSET_ID)
-            .await?
-            .expect("staking token should be known");
+        let validator_list = self.overlay.validator_list().await?;
+        for v in &validator_list {
+            let validator = self.overlay.validator(v).await?.ok_or_else(|| {
+                anyhow::anyhow!("validator had ID in validator_list but not found in JMT")
+            })?;
+            // The old epoch's "next rate" is now the "current rate".
+            let current_rate = self.overlay.next_validator_rate(v).await?.ok_or_else(|| {
+                anyhow::anyhow!("validator had ID in validator_list but rate not found in JMT")
+            })?;
+
+            let validator_state = self.overlay.validator_state(v).await?.ok_or_else(|| {
+                anyhow::anyhow!("validator had ID in validator_list but state not found in JMT")
+            })?;
+            tracing::debug!(?validator, "processing validator rate updates");
+
+            let funding_streams = validator.funding_streams;
+
+            let next_rate =
+                current_rate.next(&next_base_rate, funding_streams.as_ref(), &validator_state);
+            assert!(next_rate.epoch_index == epoch_to_end.index + 2);
+
+            let total_delegations = delegations_by_validator
+                .get(&validator.identity_key)
+                .into_iter()
+                .flat_map(|ds| ds.iter().map(|d| d.delegation_amount))
+                .sum::<u64>();
+            let total_undelegations = undelegations_by_validator
+                .get(&validator.identity_key)
+                .into_iter()
+                .flat_map(|us| us.iter().map(|u| u.delegation_amount))
+                .sum::<u64>();
+            let delegation_delta = (total_delegations as i64) - (total_undelegations as i64);
+
+            tracing::debug!(
+                validator = ?validator.identity_key,
+                total_delegations,
+                total_undelegations,
+                delegation_delta
+            );
+
+            let abs_unbonded_amount =
+                current_rate.unbonded_amount(delegation_delta.abs() as u64) as i64;
+            let staking_delta = if delegation_delta >= 0 {
+                // Net delegation: subtract the unbonded amount from the staking token supply
+                -abs_unbonded_amount
+            } else {
+                // Net undelegation: add the unbonded amount to the staking token supply
+                abs_unbonded_amount
+            };
+
+            // update the delegation token supply in the JMT
+            self.overlay
+                .update_token_supply(&v.delegation_token().id(), delegation_delta)
+                .await?;
+            // update the staking token supply in the JMT
+            self.overlay
+                .update_token_supply(&STAKING_TOKEN_ASSET_ID, staking_delta)
+                .await?;
+
+            let delegation_token_supply = self
+                .overlay
+                .token_supply(&v.delegation_token().id())
+                .await?
+                .expect("delegation token should be known");
+
+            // Calculate the voting power in the newly beginning epoch
+            let voting_power =
+                current_rate.voting_power(delegation_token_supply, &current_base_rate);
+            tracing::debug!(?voting_power);
+
+            // Update the status of the validator within the validator set
+            // with the newly starting epoch's calculated voting rate and power.
+            self.overlay
+                .set_validator_rates(v, current_rate.clone(), next_rate.clone())
+                .await;
+            self.overlay.set_validator_power(v, voting_power).await;
+
+            // Only Active validators produce commission rewards
+            // The validator *may* drop out of Active state during the next epoch,
+            // but the commission rewards for the ending epoch in which it was Active
+            // should still be rewarded.
+            if validator_state == ValidatorState::Active {
+                // distribute validator commission
+                for stream in funding_streams {
+                    let _commission_reward_amount = stream.reward_amount(
+                        delegation_token_supply,
+                        &next_base_rate,
+                        &current_base_rate,
+                    );
+
+                    // TODO: Unclear how to tell the shielded pool we need to mint
+                    // a note here. Maybe set it on the JMT and deal with it over there?
+                    // reward_notes.push((commission_reward_amount, stream.address));
+                }
+            }
+
+            // rename to curr_rate so it lines up with next_rate (same # chars)
+            let delegation_denom = v.delegation_token().denom();
+            tracing::debug!(curr_rate = ?current_rate);
+            tracing::debug!(?next_rate);
+            tracing::debug!(?delegation_delta);
+            tracing::debug!(?delegation_token_supply);
+            tracing::debug!(?delegation_denom);
+        }
+
+        // Now that all the voting power has been calculated for the upcoming epoch,
+        // we can determine which validators are Active for the next epoch.
+        self.process_epoch_transitions(epoch_to_end, active_validator_limit, unbonding_epochs)
+            .await?;
+
+        // The pending delegation changes should be empty at the beginning of the next epoch.
+        self.delegation_changes = Default::default();
 
         Ok(())
     }
 
     /// Called during `end_epoch`. Will perform state transitions to validators based
     /// on changes to voting power that occurred in this epoch.
-    pub fn process_epoch_transitions(
+    pub async fn process_epoch_transitions(
         &mut self,
-        _active_validator_limit: u64,
-        _unbonding_epochs: u64,
+        epoch_to_end: Epoch,
+        active_validator_limit: u64,
+        unbonding_epochs: u64,
     ) -> Result<()> {
+        // Sort the next validator states by voting power.
+        struct VPower {
+            identity_key: IdentityKey,
+            power: u64,
+            state: ValidatorState,
+        }
+
+        let mut validator_power_list = Vec::new();
+        for v in self.overlay.validator_list().await?.iter() {
+            let power = self
+                .overlay
+                .validator_power(v)
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("validator missing power"))?;
+            let state = self
+                .overlay
+                .validator_state(v)
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("validator missing state"))?;
+            validator_power_list.push(VPower {
+                identity_key: v.clone(),
+                power,
+                state,
+            });
+        }
+
+        // Sort by voting power
+        validator_power_list.sort_by(|a, b| a.power.cmp(&b.power));
+
+        // Grab the top `active_validator_limit` validators
+        let top_validators = validator_power_list
+            .iter()
+            .take(active_validator_limit as usize)
+            .map(|v| v.identity_key.clone())
+            .collect::<Vec<_>>();
+
+        // Iterate every validator and update according to their state and voting power.
+        for vp in &validator_power_list {
+            if vp.state == ValidatorState::Inactive
+                || matches!(vp.state, ValidatorState::Unbonding { unbonding_epoch: _ })
+            {
+                // If an Inactive or Unbonding validator is in the top `active_validator_limit` based
+                // on voting power and the delegation pool has a nonzero balance (meaning non-zero voting power),
+                // then the validator should be moved to the Active state.
+                if top_validators.contains(&vp.identity_key) && vp.power > 0 {
+                    self.overlay
+                        .set_validator_state(&vp.identity_key, ValidatorState::Active)
+                        .await;
+                }
+            } else if vp.state == ValidatorState::Active {
+                // An Active validator could also be displaced and move to the
+                // Unbonding state.
+                if !top_validators.contains(&vp.identity_key) {
+                    // Unbonding the validator means that it can no longer participate
+                    // in consensus, so its voting power is set to 0.
+                    self.overlay.set_validator_power(&vp.identity_key, 0).await;
+                    self.overlay
+                        .set_validator_state(
+                            &vp.identity_key,
+                            ValidatorState::Unbonding {
+                                unbonding_epoch: unbonding_epochs,
+                            },
+                        )
+                        .await;
+                }
+            }
+
+            // An Unbonding validator can become Inactive if the unbonding period expires
+            // and the validator is still in Unbonding state
+            if let ValidatorState::Unbonding { unbonding_epoch } = vp.state {
+                if unbonding_epoch <= epoch_to_end.index {
+                    self.overlay
+                        .set_validator_state(&vp.identity_key, ValidatorState::Inactive)
+                        .await;
+                }
+            };
+        }
+
         Ok(())
     }
 
     // Returns the list of validator updates formatted for inclusion in the Tendermint `EndBlockResponse`
     pub async fn tm_validator_updates(&self) -> Result<Vec<ValidatorUpdate>> {
-        Ok(Vec::new())
+        // Return the voting power for all known validators.
+        // This isn't strictly necessary because tendermint technically expects
+        // an update, however it is useful for debugging.
+        let mut updates = Vec::new();
+        for v in self.overlay.validator_list().await?.iter() {
+            let power = self
+                .overlay
+                .validator_power(v)
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("validator missing power"))?;
+            let validator = self
+                .overlay
+                .validator(v)
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("validator missing"))?;
+            updates.push(ValidatorUpdate {
+                pub_key: validator.consensus_key.clone(),
+                power: power.try_into()?,
+            });
+        }
+
+        Ok(updates)
     }
 }
 
@@ -105,6 +336,8 @@ impl Component for Staking {
         Ok(Self {
             overlay,
             delegation_changes: Default::default(),
+            new_validator_definitions: Default::default(),
+            updated_validator_definitions: Default::default(),
         })
     }
 
@@ -134,7 +367,6 @@ impl Component for Staking {
         // Add initial validators to the JMT
         // Validators are indexed in the JMT by their public key,
         // and there is a separate key containing the list of all validator keys.
-        let mut validator_list = Vec::new();
         for validator in &app_state.validators {
             let validator_key = validator.validator.identity_key.clone();
 
@@ -155,18 +387,16 @@ impl Component for Staking {
             };
 
             self.overlay
-                .save_validator(
+                .add_validator(
                     validator.validator.clone(),
                     cur_rate_data,
                     next_rate_data,
                     // All genesis validators start in the "Active" state:
                     ValidatorState::Active,
+                    validator.power.into(),
                 )
-                .await;
-            validator_list.push(validator_key);
+                .await?;
         }
-
-        self.overlay.set_validator_list(validator_list).await;
 
         // Finally, record that there were no delegations in this block, so the data
         // isn't missing when we process the first epoch transition.
@@ -185,6 +415,10 @@ impl Component for Staking {
         for evidence in begin_block.byzantine_validators.iter() {
             self.overlay.slash_validator(evidence).await?;
         }
+
+        // The validator definitions should be empty at the beginning of each block.
+        self.new_validator_definitions = Default::default();
+        self.updated_validator_definitions = Default::default();
 
         Ok(())
     }
@@ -233,7 +467,154 @@ impl Component for Staking {
         Ok(())
     }
 
-    async fn check_tx_stateful(&self, _tx: &Transaction) -> Result<()> {
+    async fn check_tx_stateful(&self, tx: &Transaction) -> Result<()> {
+        // Tally the delegations and undelegations
+        let mut delegation_changes = BTreeMap::new();
+        for d in tx.delegations() {
+            let next_rate_data = self
+                .overlay
+                .next_validator_rate(&d.validator_identity)
+                .await?
+                .ok_or_else(|| {
+                    anyhow::anyhow!("Unknown validator identity {}", d.validator_identity)
+                })?
+                .clone();
+
+            // Check whether the epoch is correct first, to give a more helpful
+            // error message if it's wrong.
+            if d.epoch_index != next_rate_data.epoch_index {
+                return Err(anyhow::anyhow!(
+                    "Delegation was prepared for epoch {} but the next epoch is {}",
+                    d.epoch_index,
+                    next_rate_data.epoch_index
+                ));
+            }
+
+            // Check whether the delegation is for a slashed validator
+            let validator_state = self
+                .overlay
+                .validator_state(&d.validator_identity)
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("missing state for validator"))?;
+            if validator_state == ValidatorState::Slashed {
+                return Err(anyhow::anyhow!(
+                    "Delegation to slashed validator {}",
+                    d.validator_identity
+                ));
+            };
+
+            // For delegations, we enforce correct computation (with rounding)
+            // of the *delegation amount based on the unbonded amount*, because
+            // users (should be) starting with the amount of unbonded stake they
+            // wish to delegate, and computing the amount of delegation tokens
+            // they receive.
+            //
+            // The direction of the computation matters because the computation
+            // involves rounding, so while both
+            //
+            // (unbonded amount, rates) -> delegation amount
+            // (delegation amount, rates) -> unbonded amount
+            //
+            // should give approximately the same results, they may not give
+            // exactly the same results.
+            let expected_delegation_amount = next_rate_data.delegation_amount(d.unbonded_amount);
+
+            if expected_delegation_amount == d.delegation_amount {
+                // The delegation amount is added to the delegation token supply.
+                *delegation_changes
+                    .entry(d.validator_identity.clone())
+                    .or_insert(0) += i64::try_from(d.delegation_amount).unwrap();
+            } else {
+                return Err(anyhow::anyhow!(
+                    "Given {} unbonded stake, expected {} delegation tokens but description produces {}",
+                    d.unbonded_amount,
+                    expected_delegation_amount,
+                    d.delegation_amount
+                ));
+            }
+        }
+        for u in tx.undelegations() {
+            let rate_data = self
+                .overlay
+                .next_validator_rate(&u.validator_identity)
+                .await?
+                .ok_or_else(|| {
+                    anyhow::anyhow!("Unknown validator identity {}", u.validator_identity)
+                })?;
+
+            // Check whether the epoch is correct first, to give a more helpful
+            // error message if it's wrong.
+            if u.epoch_index != rate_data.epoch_index {
+                return Err(anyhow::anyhow!(
+                    "Undelegation was prepared for next epoch {} but the next epoch is {}",
+                    u.epoch_index,
+                    rate_data.epoch_index
+                ));
+            }
+
+            // For undelegations, we enforce correct computation (with rounding)
+            // of the *unbonded amount based on the delegation amount*, because
+            // users (should be) starting with the amount of delegation tokens they
+            // wish to undelegate, and computing the amount of unbonded stake
+            // they receive.
+            //
+            // The direction of the computation matters because the computation
+            // involves rounding, so while both
+            //
+            // (unbonded amount, rates) -> delegation amount
+            // (delegation amount, rates) -> unbonded amount
+            //
+            // should give approximately the same results, they may not give
+            // exactly the same results.
+            let expected_unbonded_amount = rate_data.unbonded_amount(u.delegation_amount);
+
+            if expected_unbonded_amount == u.unbonded_amount {
+                // TODO: in order to have exact tracking of the token supply, we probably
+                // need to change this to record the changes to the unbonded stake and
+                // the delegation token separately
+
+                // The undelegation amount is subtracted from the delegation token supply.
+                *delegation_changes
+                    .entry(u.validator_identity.clone())
+                    .or_insert(0) -= i64::try_from(u.delegation_amount).unwrap();
+            } else {
+                return Err(anyhow::anyhow!(
+                    "Given {} delegation tokens, expected {} unbonded stake but description produces {}",
+                    u.delegation_amount,
+                    expected_unbonded_amount,
+                    u.unbonded_amount,
+                ));
+            }
+        }
+
+        // Check that the sequence numbers of newly added validators are correct.
+        //
+        // Resolution of conflicting validator definitions is performed later in `end_block` after
+        // they've all been received.
+        let mut validator_definitions: Vec<ValidatorDefinition> = Vec::new();
+        for v in tx.validator_definitions() {
+            let existing_v = self.overlay.validator(&v.validator.identity_key).await?;
+
+            if let Some(existing_v) = existing_v {
+                // This is an existing validator definition. Ensure that the highest
+                // existing sequence number is less than the new sequence number.
+                let current_seq = existing_v.sequence_number;
+                if v.validator.sequence_number <= current_seq {
+                    return Err(anyhow::anyhow!(
+                        "Expected sequence numbers to be increasing. Current sequence number is {}",
+                        current_seq
+                    ));
+                }
+            } else {
+                // This is a new validator definition.
+                validator_definitions.push(v.clone());
+                continue;
+            }
+
+            // the validator definition has now passed all verification checks, so add it to the list
+            validator_definitions.push(v.clone());
+        }
+
         Ok(())
     }
 
@@ -253,7 +634,11 @@ impl Component for Staking {
             }
         }
 
-        // TODO: process validator definitions
+        // The validator definitions have been completely verified, so we can add them to the pending list:
+        let mut definitions = tx.validator_definitions().map(|v| v.to_owned()).collect();
+        self.new_validator_definitions
+            .definitions
+            .append(&mut definitions);
 
         Ok(())
     }
@@ -267,12 +652,55 @@ impl Component for Staking {
             )
             .await;
 
+        // Process updated validator definitions prior to end_epoch, so any
+        // funding stream changes are accounted for.
+        for validator in self.updated_validator_definitions.definitions.drain(..) {
+            self.overlay.update_validator(validator.validator).await?;
+        }
+
         // If this is an epoch boundary, updated rates need to be calculated and set.
         let cur_epoch = self.overlay.get_current_epoch().await?;
         let cur_height = self.overlay.get_block_height().await?;
 
         if cur_epoch.is_epoch_end(cur_height) {
             self.end_epoch(cur_epoch).await?;
+        }
+
+        // The epoch has now transitioned, if necessary
+        let cur_epoch = self.overlay.get_current_epoch().await?;
+
+        // The new validator definitions can be applied now. We didn't apply them earlier because
+        // we don't want rate calculations to apply to newly defined validators.
+        for validator in self.new_validator_definitions.definitions.drain(..) {
+            let validator_key = validator.validator.identity_key.clone();
+
+            // Delegations require knowing the rates for the
+            // next epoch, so pre-populate with 0 reward => exchange rate 1 for
+            // the current and next epochs.
+            let cur_rate_data = RateData {
+                identity_key: validator_key.clone(),
+                epoch_index: cur_epoch.index,
+                validator_reward_rate: 0,
+                validator_exchange_rate: 1_0000_0000, // 1 represented as 1e8
+            };
+            let next_rate_data = RateData {
+                identity_key: validator_key.clone(),
+                epoch_index: cur_epoch.index + 1,
+                validator_reward_rate: 0,
+                validator_exchange_rate: 1_0000_0000, // 1 represented as 1e8
+            };
+
+            self.overlay
+                .add_validator(
+                    validator.validator.clone(),
+                    cur_rate_data,
+                    next_rate_data,
+                    // All validator from definitions start in the "Inactive" state:
+                    ValidatorState::Inactive,
+                    // All validator from definitions start with 0 power:
+                    0,
+                )
+                .await?;
         }
 
         Ok(())
@@ -311,6 +739,23 @@ pub trait View: WriteOverlayExt {
 
     async fn next_validator_rate(&self, identity_key: &IdentityKey) -> Result<Option<RateData>> {
         self.get_domain(format!("staking/validators/{}/rate/next", identity_key).into())
+            .await
+    }
+
+    #[instrument(skip(self))]
+    async fn set_validator_power(&self, identity_key: &IdentityKey, voting_power: u64) {
+        tracing::debug!("setting validator power");
+        self.put_proto(
+            format!("staking/validators/{}/power", identity_key).into(),
+            voting_power,
+        )
+        .await;
+    }
+
+    #[instrument(skip(self))]
+    async fn validator_power(&self, identity_key: &IdentityKey) -> Result<Option<u64>> {
+        tracing::debug!("getting validator power");
+        self.get_proto(format!("staking/validators/{}/power", identity_key).into())
             .await
     }
 
@@ -398,7 +843,8 @@ pub trait View: WriteOverlayExt {
         };
 
         // Mark the state as "slashed" in the JMT, and apply the slashing penalty.
-        self.set_validator_state(&validator.identity_key, ValidatorState::Slashed);
+        self.set_validator_state(&validator.identity_key, ValidatorState::Slashed)
+            .await;
 
         let mut cur_rate = self
             .current_validator_rate(&validator.identity_key)
@@ -424,14 +870,30 @@ pub trait View: WriteOverlayExt {
         Ok(())
     }
 
-    // TODO(zbuc): does this make sense? will we always be saving cur&next rate data when we save a validator definition?
-    async fn save_validator(
+    // Used for updating an existing validator's definition.
+    async fn update_validator(&self, validator: Validator) -> Result<()> {
+        tracing::debug!(?validator);
+        let id = validator.identity_key.clone();
+        // If the validator isn't already in the JMT, we can't update it.
+        self.validator(&id)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("updated validator not found in JMT"))?;
+
+        self.put_domain(format!("staking/validators/{}", id).into(), validator)
+            .await;
+
+        Ok(())
+    }
+
+    // Used for adding a new validator to the JMT.
+    async fn add_validator(
         &self,
         validator: Validator,
         current_rates: RateData,
         next_rates: RateData,
         state: ValidatorState,
-    ) {
+        power: u64,
+    ) -> Result<()> {
         tracing::debug!(?validator);
         let id = validator.identity_key.clone();
         self.put_domain(format!("staking/validators/{}", id).into(), validator)
@@ -439,6 +901,13 @@ pub trait View: WriteOverlayExt {
         self.set_validator_rates(&id, current_rates, next_rates)
             .await;
         self.set_validator_state(&id, state).await;
+        self.set_validator_power(&id, power).await;
+
+        let mut validator_list = self.validator_list().await?;
+        validator_list.push(id);
+        self.set_validator_list(validator_list).await;
+
+        Ok(())
     }
 
     async fn validator_state(&self, identity_key: &IdentityKey) -> Result<Option<ValidatorState>> {
