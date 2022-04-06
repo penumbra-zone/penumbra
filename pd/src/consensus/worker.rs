@@ -8,8 +8,11 @@ use penumbra_crypto::merkle::NoteCommitmentTree;
 use penumbra_proto::Protobuf;
 use penumbra_stake::Epoch;
 use penumbra_transaction::Transaction;
-use tendermint::abci::{self, ConsensusRequest as Request, ConsensusResponse as Response};
-use tokio::sync::{mpsc, Mutex};
+use tendermint::{
+    abci::{self, ConsensusRequest as Request, ConsensusResponse as Response},
+    block,
+};
+use tokio::sync::{mpsc, watch, Mutex};
 use tracing::Instrument;
 
 use super::Message;
@@ -20,6 +23,7 @@ use crate::{
 
 pub struct Worker {
     queue: mpsc::Receiver<Message>,
+    height_tx: watch::Sender<block::Height>,
     // new app code
     storage: Storage,
     app: App,
@@ -35,6 +39,7 @@ impl Worker {
         state: state::Writer,
         storage: Storage,
         queue: mpsc::Receiver<Message>,
+        height_tx: watch::Sender<block::Height>,
     ) -> Result<Self> {
         // Because we want to be able to handle (re)loading the worker data after writing
         // the state snapshot in init_chain, we split out the real data loading into a single
@@ -55,6 +60,7 @@ impl Worker {
         let reader = state.private_reader().clone();
         let mut worker = Self {
             queue,
+            height_tx,
             storage,
             app,
             state,
@@ -477,6 +483,14 @@ impl Worker {
         // Note: App::commit resets internal components, so we don't need to do that ourselves.
         let (jmt_root, _) = self.app.commit(self.storage.clone()).await?;
         let app_hash = jmt_root.0.to_vec();
+        let _ = self.height_tx.send(
+            self.storage
+                .latest_version()
+                .await?
+                .expect("just committed version")
+                .try_into()
+                .unwrap(),
+        );
 
         // End sidecar code
 
