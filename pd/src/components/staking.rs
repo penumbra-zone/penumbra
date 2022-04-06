@@ -130,22 +130,24 @@ impl Staking {
                 current_rate.next(&next_base_rate, funding_streams.as_ref(), &validator_state);
             assert!(next_rate.epoch_index == epoch_to_end.index + 2);
 
-            let validator_delegations = delegations_by_validator
+            let total_delegations = delegations_by_validator
                 .get(&validator.identity_key)
-                .cloned()
-                .unwrap_or_default();
-            let validator_undelegations = undelegations_by_validator
+                .into_iter()
+                .flat_map(|ds| ds.iter().map(|d| d.delegation_amount))
+                .sum::<u64>();
+            let total_undelegations = undelegations_by_validator
                 .get(&validator.identity_key)
-                .cloned()
-                .unwrap_or_default();
-            let delegation_delta: i64 = validator_delegations
-                .iter()
-                .map(|d| d.delegation_amount)
-                .sum::<u64>() as i64
-                - validator_undelegations
-                    .iter()
-                    .map(|u| u.delegation_amount)
-                    .sum::<u64>() as i64;
+                .into_iter()
+                .flat_map(|us| us.iter().map(|u| u.delegation_amount))
+                .sum::<u64>();
+            let delegation_delta = (total_delegations as i64) - (total_undelegations as i64);
+
+            tracing::debug!(
+                validator = ?validator.identity_key,
+                total_delegations,
+                total_undelegations,
+                delegation_delta
+            );
 
             let delegation_amount = delegation_delta.abs() as u64;
             let mut unbonded_amount: i64 =
