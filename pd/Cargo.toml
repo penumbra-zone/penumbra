@@ -38,6 +38,7 @@ bytes = "1"
 chrono = { version = "0.4", default-features = false, features = ["serde"] }
 csv = "1.1"
 directories = "4.0"
+itertools = "0.10"
 tokio = { version = "1.16", features = ["full"]}
 tokio-stream = "0.1"
 tokio-util = "0.7"

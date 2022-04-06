@@ -1,12 +1,13 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
 use futures::Future;
+use itertools::Itertools;
 use penumbra_proto::Protobuf;
 use penumbra_stake::{
-    BaseRateData, DelegationChanges, Epoch, IdentityKey, RateData, Validator, ValidatorList,
-    ValidatorState, ValidatorStatus, STAKING_TOKEN_ASSET_ID,
+    BaseRateData, Delegate, DelegationChanges, Epoch, IdentityKey, RateData, Undelegate, Validator,
+    ValidatorList, ValidatorState, ValidatorStatus, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_transaction::{Action, Transaction};
 
@@ -15,7 +16,9 @@ use tendermint::{
         self,
         types::{Evidence, ValidatorUpdate},
     },
-    block, PublicKey,
+    block,
+    vote::Power,
+    PublicKey,
 };
 use tracing::instrument;
 
@@ -49,16 +52,31 @@ impl Staking {
             total_delegations = total_changes.delegations.len(),
             total_undelegations = total_changes.undelegations.len(),
         );
-        // TODO: now the delegations and undelegations need to be grouped by validator ?
+
+        // now the delegations and undelegations need to be grouped by validator
+        let delegations_by_validator: BTreeMap<IdentityKey, Vec<Delegate>> = total_changes
+            .delegations
+            .into_iter()
+            .group_by(|d| d.validator_identity)
+            .into_iter()
+            .map(|(k, v)| (k, v.collect()))
+            .collect();
+        let undelegations_by_validator: BTreeMap<IdentityKey, Vec<Undelegate>> = total_changes
+            .undelegations
+            .into_iter()
+            .group_by(|u| u.validator_identity)
+            .into_iter()
+            .map(|(k, v)| (k, v.collect()))
+            .collect();
 
         let chain_params = self.overlay.get_chain_params().await?;
-        let _unbonding_epochs = chain_params.unbonding_epochs;
-        let _active_validator_limit = chain_params.active_validator_limit;
+        let unbonding_epochs = chain_params.unbonding_epochs;
+        let active_validator_limit = chain_params.active_validator_limit;
 
         tracing::debug!("processing base rate");
         // We are transitioning to the next epoch, so set "cur_base_rate" to the previous "next_base_rate", and
         // update "next_base_rate".
-        let current_base_rate = self.overlay.current_base_rate().await?;
+        let current_base_rate = self.overlay.next_base_rate().await?;
         /// FIXME: set this less arbitrarily, and allow this to be set per-epoch
         /// 3bps -> 11% return over 365 epochs, why not
         const BASE_REWARD_RATE: u64 = 3_0000;
@@ -69,16 +87,133 @@ impl Staking {
         tracing::debug!(curr_base_rate = ?current_base_rate);
         tracing::debug!(?next_base_rate);
 
-        // Update these in the JMT:
+        // Update the base rates in the JMT:
         self.overlay
             .set_base_rates(current_base_rate, next_base_rate)
             .await;
 
-        let _staking_token_supply = self
+        let staking_token_supply = self
             .overlay
             .token_supply(&STAKING_TOKEN_ASSET_ID)
             .await?
             .expect("staking token should be known");
+
+        let validator_list = self.overlay.validator_list().await?;
+        for v in &validator_list {
+            let validator = self.overlay.validator(v).await?.ok_or_else(|| {
+                anyhow::anyhow!("validator had ID in validator_list but not found in JMT")
+            })?;
+            // The old epoch's "current rate" is going to become the "previous rate".
+            let prev_rate = self
+                .overlay
+                .current_validator_rate(v)
+                .await?
+                .ok_or_else(|| {
+                    anyhow::anyhow!("validator had ID in validator_list but rate not found in JMT")
+                })?;
+            // And the old epoch's "next rate" is going to become the "current rate".
+            let current_rate = self.overlay.next_validator_rate(v).await?.ok_or_else(|| {
+                anyhow::anyhow!("validator had ID in validator_list but rate not found in JMT")
+            })?;
+
+            let validator_state = self.overlay.validator_state(v).await?.ok_or_else(|| {
+                anyhow::anyhow!("validator had ID in validator_list but state not found in JMT")
+            })?;
+            tracing::debug!(?validator, "processing validator rate updates");
+
+            // The "prev rate" for the validator should be for the ending epoch
+            assert!(prev_rate.epoch_index == epoch_to_end.index);
+
+            let funding_streams = validator.funding_streams;
+
+            let next_rate =
+                current_rate.next(&next_base_rate, funding_streams.as_ref(), &validator_state);
+            assert!(next_rate.epoch_index == epoch_to_end.index + 1);
+
+            let validator_delegations = delegations_by_validator
+                .get(&validator.identity_key)
+                .cloned()
+                .unwrap_or_default();
+            let validator_undelegations = undelegations_by_validator
+                .get(&validator.identity_key)
+                .cloned()
+                .unwrap_or_default();
+            let delegation_delta: i64 = validator_delegations
+                .iter()
+                .map(|d| d.delegation_amount)
+                .sum()
+                - validator_undelegations
+                    .iter()
+                    .map(|u| u.delegation_amount)
+                    .sum();
+
+            let delegation_amount = delegation_delta.abs() as u64;
+            let mut unbonded_amount: i64 =
+                i64::try_from(current_rate.unbonded_amount(delegation_amount))?;
+
+            // TODO: not sure if this is implemented correctly, it's quite a bit different
+            // from the old implementation
+            if delegation_delta > 0 {
+                // net delegation: subtract the unbonded amount from the staking token supply
+                unbonded_amount *= -1;
+            } else {
+                // net undelegation: add the unbonded amount to the staking token supply
+            }
+
+            // update the delegation token supply in the JMT
+            self.overlay
+                .update_token_supply(&v.delegation_token().id(), delegation_delta)
+                .await?;
+            // update the staking token supply in the JMT
+            self.overlay
+                .update_token_supply(&STAKING_TOKEN_ASSET_ID, unbonded_amount)
+                .await?;
+
+            let delegation_token_supply = self
+                .overlay
+                .token_supply(&v.delegation_token().id())
+                .await?
+                .expect("delegation token should be known");
+
+            // Calculate the voting power in the newly beginning epoch
+            let voting_power =
+                current_rate.voting_power(delegation_token_supply, &current_base_rate);
+            tracing::debug!(?voting_power);
+
+            // Update the status of the validator within the validator set
+            // with the newly starting epoch's calculated voting rate and power.
+            self.overlay
+                .set_validator_rates(v, current_rate, next_rate)
+                .await;
+            self.overlay.set_validator_power(v, voting_power).await;
+
+            // Only Active validators produce commission rewards
+            // The validator *may* drop out of Active state during the next epoch,
+            // but the commission rewards for the ending epoch in which it was Active
+            // should still be rewarded.
+            if validator_state == ValidatorState::Active {
+                // distribute validator commission
+                for stream in funding_streams {
+                    let commission_reward_amount = stream.reward_amount(
+                        delegation_token_supply,
+                        &next_base_rate,
+                        &current_base_rate,
+                    );
+
+                    // TODO: Unclear how to tell the shielded pool we need to mint
+                    // a note here. Maybe set it on the JMT and deal with it over there?
+                    // reward_notes.push((commission_reward_amount, stream.address));
+                }
+            }
+
+            // rename to curr_rate so it lines up with next_rate (same # chars)
+            let delegation_denom = v.delegation_token().denom();
+            tracing::debug!(curr_rate = ?current_rate);
+            tracing::debug!(?next_rate);
+            tracing::debug!(?delegation_delta);
+            tracing::debug!(?delegation_token_supply);
+            tracing::debug!(?delegation_denom);
+        }
 
         Ok(())
     }
@@ -311,6 +446,23 @@ pub trait View: WriteOverlayExt {
 
     async fn next_validator_rate(&self, identity_key: &IdentityKey) -> Result<Option<RateData>> {
         self.get_domain(format!("staking/validators/{}/rate/next", identity_key).into())
+            .await
+    }
+
+    #[instrument(skip(self))]
+    async fn set_validator_power(&self, identity_key: &IdentityKey, voting_power: u64) {
+        tracing::debug!("setting validator power");
+        self.put_proto(
+            format!("staking/validators/{}/power", identity_key).into(),
+            voting_power,
+        )
+        .await;
+    }
+
+    #[instrument(skip(self))]
+    async fn validator_power(&self, identity_key: &IdentityKey) -> Result<Option<u64>> {
+        tracing::debug!("getting validator power");
+        self.get_proto(format!("staking/validators/{}/power", identity_key).into())
             .await
     }
 
