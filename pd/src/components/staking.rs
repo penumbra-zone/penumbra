@@ -57,14 +57,14 @@ impl Staking {
         let delegations_by_validator: BTreeMap<IdentityKey, Vec<Delegate>> = total_changes
             .delegations
             .into_iter()
-            .group_by(|d| d.validator_identity)
+            .group_by(|d| d.validator_identity.clone())
             .into_iter()
             .map(|(k, v)| (k, v.collect()))
             .collect();
         let undelegations_by_validator: BTreeMap<IdentityKey, Vec<Undelegate>> = total_changes
             .undelegations
             .into_iter()
-            .group_by(|u| u.validator_identity)
+            .group_by(|u| u.validator_identity.clone())
             .into_iter()
             .map(|(k, v)| (k, v.collect()))
             .collect();
@@ -89,14 +89,8 @@ impl Staking {
 
         // Update the base rates in the JMT:
         self.overlay
-            .set_base_rates(current_base_rate, next_base_rate)
+            .set_base_rates(current_base_rate.clone(), next_base_rate.clone())
             .await;
-
-        let staking_token_supply = self
-            .overlay
-            .token_supply(&STAKING_TOKEN_ASSET_ID)
-            .await?
-            .expect("staking token should be known");
 
         let validator_list = self.overlay.validator_list().await?;
         for v in &validator_list {
@@ -141,11 +135,11 @@ impl Staking {
             let delegation_delta: i64 = validator_delegations
                 .iter()
                 .map(|d| d.delegation_amount)
-                .sum()
+                .sum::<u64>() as i64
                 - validator_undelegations
                     .iter()
                     .map(|u| u.delegation_amount)
-                    .sum();
+                    .sum::<u64>() as i64;
 
             let delegation_amount = delegation_delta.abs() as u64;
             let mut unbonded_amount: i64 =
@@ -183,7 +177,7 @@ impl Staking {
             // Update the status of the validator within the validator set
             // with the newly starting epoch's calculated voting rate and power.
             self.overlay
-                .set_validator_rates(v, current_rate, next_rate)
+                .set_validator_rates(v, current_rate.clone(), next_rate.clone())
                 .await;
             self.overlay.set_validator_power(v, voting_power).await;
 
@@ -214,6 +208,10 @@ impl Staking {
             tracing::debug!(?delegation_token_supply);
             tracing::debug!(?delegation_denom);
         }
+
+        // Now that all the voting power has been calculated for the upcoming epoch,
+        // we can determine which validators are Active for the next epoch.
+        self.process_epoch_transitions(active_validator_limit, unbonding_epochs);
 
         Ok(())
     }
