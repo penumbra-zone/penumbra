@@ -138,18 +138,15 @@ impl Staking {
                 delegation_delta
             );
 
-            let delegation_amount = delegation_delta.abs() as u64;
-            let mut unbonded_amount: i64 =
-                i64::try_from(current_rate.unbonded_amount(delegation_amount))?;
-
-            // TODO: not sure if this is implemented correctly, it's quite a bit different
-            // from the old implementation
-            if delegation_delta > 0 {
-                // net delegation: subtract the unbonded amount from the staking token supply
-                unbonded_amount *= -1;
+            let abs_unbonded_amount =
+                current_rate.unbonded_amount(delegation_delta.abs() as u64) as i64;
+            let staking_delta = if delegation_delta >= 0 {
+                // Net delegation: subtract the unbonded amount from the staking token supply
+                -abs_unbonded_amount
             } else {
-                // net undelegation: add the unbonded amount to the staking token supply
-            }
+                // Net undelegation: add the unbonded amount to the staking token supply
+                abs_unbonded_amount
+            };
 
             // update the delegation token supply in the JMT
             self.overlay
@@ -157,7 +154,7 @@ impl Staking {
                 .await?;
             // update the staking token supply in the JMT
             self.overlay
-                .update_token_supply(&STAKING_TOKEN_ASSET_ID, unbonded_amount)
+                .update_token_supply(&STAKING_TOKEN_ASSET_ID, staking_delta)
                 .await?;
 
             let delegation_token_supply = self
