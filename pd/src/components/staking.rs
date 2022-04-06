@@ -6,7 +6,8 @@ use itertools::Itertools;
 use penumbra_proto::Protobuf;
 use penumbra_stake::{
     BaseRateData, Delegate, DelegationChanges, Epoch, IdentityKey, RateData, Undelegate, Validator,
-    ValidatorDefinitions, ValidatorList, ValidatorState, STAKING_TOKEN_ASSET_ID,
+    ValidatorDefinition, ValidatorDefinitions, ValidatorList, ValidatorState,
+    STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_transaction::{Action, Transaction};
 
@@ -29,10 +30,14 @@ pub struct Staking {
     /// persisted at the end of the block for processing at the end of the next
     /// epoch.
     delegation_changes: DelegationChanges,
-    /// Validator definitions accumulated over the course of this block, to be
+    /// New validator definitions accumulated over the course of this block, to be
     /// persisted at the end of the block for processing at the end of the next
     /// epoch.
-    validator_definitions: ValidatorDefinitions,
+    new_validator_definitions: ValidatorDefinitions,
+    /// Updates to existing validator definitions accumulated over the course of this block, to be
+    /// persisted at the end of the block for processing at the end of the next
+    /// epoch.
+    updated_validator_definitions: ValidatorDefinitions,
 }
 
 impl Staking {
@@ -343,7 +348,8 @@ impl Component for Staking {
         Ok(Self {
             overlay,
             delegation_changes: Default::default(),
-            validator_definitions: Default::default(),
+            new_validator_definitions: Default::default(),
+            updated_validator_definitions: Default::default(),
         })
     }
 
@@ -373,7 +379,6 @@ impl Component for Staking {
         // Add initial validators to the JMT
         // Validators are indexed in the JMT by their public key,
         // and there is a separate key containing the list of all validator keys.
-        let mut validator_list = Vec::new();
         for validator in &app_state.validators {
             let validator_key = validator.validator.identity_key.clone();
 
@@ -394,7 +399,7 @@ impl Component for Staking {
             };
 
             self.overlay
-                .save_validator(
+                .add_validator(
                     validator.validator.clone(),
                     cur_rate_data,
                     next_rate_data,
@@ -402,10 +407,7 @@ impl Component for Staking {
                     ValidatorState::Active,
                 )
                 .await;
-            validator_list.push(validator_key);
         }
-
-        self.overlay.set_validator_list(validator_list).await;
 
         // Finally, record that there were no delegations in this block, so the data
         // isn't missing when we process the first epoch transition.
@@ -426,7 +428,8 @@ impl Component for Staking {
         }
 
         // The validator definitions should be empty at the beginning of each block.
-        self.validator_definitions = Default::default();
+        self.new_validator_definitions = Default::default();
+        self.updated_validator_definitions = Default::default();
 
         Ok(())
     }
@@ -599,7 +602,7 @@ impl Component for Staking {
         //
         // Resolution of conflicting validator definitions is performed later in `end_block` after
         // they've all been received.
-        let mut validator_definitions = Vec::new();
+        let mut validator_definitions: Vec<ValidatorDefinition> = Vec::new();
         for v in tx.validator_definitions() {
             let existing_v = self.overlay.validator(&v.validator.identity_key).await?;
 
@@ -610,7 +613,8 @@ impl Component for Staking {
             } else {
                 // This is an existing validator definition. Ensure that the highest
                 // existing sequence number is less than the new sequence number.
-                let current_seq = existing_v.iter().map(|z| z.validator.sequence_number).max().ok_or_else(|| {anyhow::anyhow!("Validator with this ID key existed but had no existing sequence numbers")})?;
+                let existing_v = existing_v.unwrap();
+                let current_seq = existing_v.sequence_number;
                 if v.validator.sequence_number <= current_seq {
                     return Err(anyhow::anyhow!(
                         "Expected sequence numbers to be increasing. Current sequence number is {}",
@@ -642,12 +646,11 @@ impl Component for Staking {
             }
         }
 
-        // process validator definitions
-        let definitions = tx
-            .transaction_body
-            .actions
-            .iter()
-            .any(|action| matches!(action, Action::ValidatorDefinition { .. }));
+        // The validator definitions have been completely verified, so we can add them to the pending list:
+        let mut definitions = tx.validator_definitions().map(|v| v.to_owned()).collect();
+        self.new_validator_definitions
+            .definitions
+            .append(&mut definitions);
 
         Ok(())
     }
@@ -661,12 +664,55 @@ impl Component for Staking {
             )
             .await;
 
+        // Process updated validator definitions prior to end_epoch, so any
+        // funding stream changes are accounted for.
+        for validator in self.updated_validator_definitions.definitions.drain(..) {
+            self.overlay.update_validator(validator.validator).await?;
+        }
+
         // If this is an epoch boundary, updated rates need to be calculated and set.
         let cur_epoch = self.overlay.get_current_epoch().await?;
         let cur_height = self.overlay.get_block_height().await?;
 
         if cur_epoch.is_epoch_end(cur_height) {
             self.end_epoch(cur_epoch).await?;
+        }
+
+        // The epoch has now transitioned, if necessary
+        let cur_epoch = self.overlay.get_current_epoch().await?;
+
+        // The new validator definitions can be applied now. We didn't apply them earlier because
+        // we don't want rate calculations to apply to newly defined validators.
+        for validator in self.new_validator_definitions.definitions.drain(..) {
+            let validator_key = validator.validator.identity_key.clone();
+
+            // Delegations require knowing the rates for the
+            // next epoch, so pre-populate with 0 reward => exchange rate 1 for
+            // the current and next epochs.
+            let cur_rate_data = RateData {
+                identity_key: validator_key.clone(),
+                epoch_index: cur_epoch.index,
+                validator_reward_rate: 0,
+                validator_exchange_rate: 1_0000_0000, // 1 represented as 1e8
+            };
+            let next_rate_data = RateData {
+                identity_key: validator_key.clone(),
+                epoch_index: cur_epoch.index + 1,
+                validator_reward_rate: 0,
+                validator_exchange_rate: 1_0000_0000, // 1 represented as 1e8
+            };
+
+            self.overlay
+                .add_validator(
+                    validator.validator.clone(),
+                    cur_rate_data,
+                    next_rate_data,
+                    // All validator from definitions start in the "Inactive" state:
+                    ValidatorState::Inactive,
+                )
+                .await;
+            // Newly added validators have 0 power
+            self.overlay.set_validator_power(&validator_key, 0).await;
         }
 
         Ok(())
@@ -835,14 +881,29 @@ pub trait View: WriteOverlayExt {
         Ok(())
     }
 
-    // TODO(zbuc): does this make sense? will we always be saving cur&next rate data when we save a validator definition?
-    async fn save_validator(
+    // Used for updating an existing validator's definition.
+    async fn update_validator(&self, validator: Validator) -> Result<()> {
+        tracing::debug!(?validator);
+        let id = validator.identity_key.clone();
+        // If the validator isn't already in the JMT, we can't update it.
+        self.validator(&id)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("updated validator not found in JMT"));
+
+        self.put_domain(format!("staking/validators/{}", id).into(), validator)
+            .await;
+
+        Ok(())
+    }
+
+    // Used for adding a new validator to the JMT.
+    async fn add_validator(
         &self,
         validator: Validator,
         current_rates: RateData,
         next_rates: RateData,
         state: ValidatorState,
-    ) {
+    ) -> Result<()> {
         tracing::debug!(?validator);
         let id = validator.identity_key.clone();
         self.put_domain(format!("staking/validators/{}", id).into(), validator)
@@ -850,6 +911,12 @@ pub trait View: WriteOverlayExt {
         self.set_validator_rates(&id, current_rates, next_rates)
             .await;
         self.set_validator_state(&id, state).await;
+
+        let mut validator_list = self.validator_list().await?;
+        validator_list.push(id);
+        self.set_validator_list(validator_list).await;
+
+        Ok(())
     }
 
     async fn validator_state(&self, identity_key: &IdentityKey) -> Result<Option<ValidatorState>> {
