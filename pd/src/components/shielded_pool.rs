@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
 use anyhow::{anyhow, Context, Result};
 use ark_ff::PrimeField;
@@ -10,14 +10,14 @@ use penumbra_crypto::{
     asset::Denom,
     ka,
     merkle::{self, Frontier, NoteCommitmentTree, TreeExt},
-    note, Address, Note, Nullifier, One, Value,
+    Address, Note, Nullifier, One, Value,
 };
 use penumbra_transaction::{action::output, Action, Transaction};
 use tendermint::abci;
 use tracing::instrument;
 
 use super::{Component, Overlay};
-use crate::{genesis, verify::NoteData, WriteOverlayExt};
+use crate::{genesis, WriteOverlayExt};
 
 // Stub component
 pub struct ShieldedPool {
@@ -83,7 +83,6 @@ impl Component for ShieldedPool {
 
     fn check_tx_stateless(tx: &Transaction) -> Result<()> {
         // TODO: add a check that ephemeral_key is not identity to prevent scanning dos attack ?
-        let id = tx.id();
         let sighash = tx.transaction_body().sighash();
 
         // 1. Check binding signature.
@@ -95,7 +94,6 @@ impl Component for ShieldedPool {
         // and check all proofs verify. If any action does not verify, the entire
         // transaction has failed.
         let mut spent_nullifiers = BTreeSet::<Nullifier>::new();
-        let mut new_notes = BTreeMap::<note::Commitment, NoteData>::new();
 
         for action in tx.transaction_body().actions {
             match action {
@@ -112,15 +110,6 @@ impl Component for ShieldedPool {
                         // TODO should the verification error be bubbled up here?
                         return Err(anyhow::anyhow!("An output proof did not verify"));
                     }
-
-                    new_notes.insert(
-                        output.body.note_commitment,
-                        NoteData {
-                            ephemeral_key: output.body.ephemeral_key,
-                            encrypted_note: output.body.encrypted_note,
-                            transaction_id: id,
-                        },
-                    );
                 }
                 Action::Spend(spend) => {
                     spend
