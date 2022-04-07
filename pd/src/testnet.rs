@@ -111,7 +111,6 @@ pub struct TestnetValidator {
     pub description: String,
     pub funding_streams: Vec<TestnetFundingStream>,
     pub sequence_number: u32,
-    pub voting_power: u32,
 }
 
 impl TryFrom<TestnetAllocation> for genesis::Allocation {

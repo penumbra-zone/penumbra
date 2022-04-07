@@ -110,7 +110,6 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.chain.CompactOutput", SERIALIZE),
     (".penumbra.genesis.GenesisAppState", SERIALIZE),
     (".penumbra.genesis.Allocation", SERIALIZE),
-    (".penumbra.genesis.ValidatorPower", SERIALIZE),
     (".penumbra.transaction.OutputBody", SERIALIZE),
 ];
 

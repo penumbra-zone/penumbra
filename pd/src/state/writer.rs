@@ -125,7 +125,7 @@ impl Writer {
             .await?;
         }
 
-        for genesis::ValidatorPower { validator, power } in &genesis_config.validators {
+        for validator in &genesis_config.validators {
             query!(
                 "INSERT INTO validators (
                     identity_key,
@@ -144,7 +144,9 @@ impl Writer {
                 validator.name,
                 validator.website,
                 validator.description,
-                i64::try_from(power.value())?,
+                // This is going away, so let's just set genesis validators to power 100
+                // for now so we can trash the ValidatorPower struct
+                100,
                 ValidatorStateName::Active.to_str().to_string(),
                 Option::<i64>::None,
             )
@@ -343,7 +345,7 @@ impl Writer {
         .await?;
 
         // We might not have any allocations of some delegation tokens, but we should record the denoms.
-        for genesis::ValidatorPower { validator, .. } in genesis_config.validators.iter() {
+        for validator in genesis_config.validators.iter() {
             let denom = validator.identity_key.delegation_token().denom();
             supply_updates.entry(denom.id()).or_insert((denom, 0)).1 += 0;
         }

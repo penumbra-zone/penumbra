@@ -1,8 +1,9 @@
 use penumbra_chain::params::ChainParams;
 use penumbra_proto::{genesis as pb, Protobuf};
+use penumbra_stake::Validator;
 use serde::{Deserialize, Serialize};
 
-use super::{Allocation, ValidatorPower};
+use super::Allocation;
 
 /// The application state at genesis.
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
@@ -11,7 +12,7 @@ pub struct AppState {
     /// Global configuration for the chain, such as chain ID and epoch duration.
     pub chain_params: ChainParams,
     /// The initial validator set.
-    pub validators: Vec<ValidatorPower>,
+    pub validators: Vec<Validator>,
     /// The initial token allocations.
     pub allocations: Vec<Allocation>,
 }

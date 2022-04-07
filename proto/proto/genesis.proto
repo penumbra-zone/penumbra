@@ -12,13 +12,7 @@ message GenesisAppState {
         crypto.Address address = 3;
     }
 
-    // This should maybe be moved to stake.proto
-    message ValidatorPower {
-        stake.Validator validator = 1;
-        uint64 power = 2;
-    }
-
     chain.ChainParams chain_params = 1;
-    repeated ValidatorPower validators = 2;
+    repeated stake.Validator validators = 2;
     repeated Allocation allocations = 3;
 }
