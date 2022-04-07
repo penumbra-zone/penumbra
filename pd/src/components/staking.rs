@@ -573,7 +573,6 @@ impl Component for Staking {
         }
 
         // Check that the sequence numbers of updated validators are correct.
-        let mut validator_definitions: Vec<ValidatorDefinition> = Vec::new();
         for v in tx.validator_definitions() {
             let existing_v = self.overlay.validator(&v.validator.identity_key).await?;
 
@@ -619,9 +618,12 @@ impl Component for Staking {
         let cur_epoch = self.overlay.get_current_epoch().await?;
 
         for v in definitions {
-            let existing_v = self.overlay.validator(&v.validator.identity_key).await?;
-
-            if let Some(_existing_v) = existing_v {
+            if self
+                .overlay
+                .validator(&v.validator.identity_key)
+                .await?
+                .is_some()
+            {
                 // This is an existing validator definition.
                 // This means that only the Validator struct itself needs updating, not any rates/power/state.
                 self.overlay.update_validator(v.validator).await?;
@@ -679,9 +681,6 @@ impl Component for Staking {
         if cur_epoch.is_epoch_end(cur_height) {
             self.end_epoch(cur_epoch).await?;
         }
-
-        // The epoch has now transitioned, if necessary
-        let cur_epoch = self.overlay.get_current_epoch().await?;
 
         Ok(())
     }
