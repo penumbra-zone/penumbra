@@ -5,8 +5,7 @@ use async_trait::async_trait;
 use penumbra_proto::Protobuf;
 use penumbra_stake::{
     BaseRateData, Delegate, DelegationChanges, Epoch, IdentityKey, RateData, Undelegate, Validator,
-    ValidatorDefinition, ValidatorDefinitions, ValidatorList, ValidatorState,
-    STAKING_TOKEN_ASSET_ID,
+    ValidatorDefinition, ValidatorList, ValidatorState, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_transaction::{Action, Transaction};
 
@@ -29,14 +28,6 @@ pub struct Staking {
     /// persisted at the end of the block for processing at the end of the next
     /// epoch.
     delegation_changes: DelegationChanges,
-    /// New validator definitions accumulated over the course of this block, to be
-    /// persisted at the end of the block for processing at the end of the next
-    /// epoch.
-    new_validator_definitions: ValidatorDefinitions,
-    /// Updates to existing validator definitions accumulated over the course of this block, to be
-    /// persisted at the end of the block for processing at the end of the next
-    /// epoch.
-    updated_validator_definitions: ValidatorDefinitions,
 }
 
 impl Staking {
@@ -336,8 +327,6 @@ impl Component for Staking {
         Ok(Self {
             overlay,
             delegation_changes: Default::default(),
-            new_validator_definitions: Default::default(),
-            updated_validator_definitions: Default::default(),
         })
     }
 
@@ -415,10 +404,6 @@ impl Component for Staking {
         for evidence in begin_block.byzantine_validators.iter() {
             self.overlay.slash_validator(evidence).await?;
         }
-
-        // The validator definitions should be empty at the beginning of each block.
-        self.new_validator_definitions = Default::default();
-        self.updated_validator_definitions = Default::default();
 
         Ok(())
     }
@@ -587,10 +572,7 @@ impl Component for Staking {
             }
         }
 
-        // Check that the sequence numbers of newly added validators are correct.
-        //
-        // Resolution of conflicting validator definitions is performed later in `end_block` after
-        // they've all been received.
+        // Check that the sequence numbers of updated validators are correct.
         let mut validator_definitions: Vec<ValidatorDefinition> = Vec::new();
         for v in tx.validator_definitions() {
             let existing_v = self.overlay.validator(&v.validator.identity_key).await?;
@@ -607,12 +589,10 @@ impl Component for Staking {
                 }
             } else {
                 // This is a new validator definition.
-                validator_definitions.push(v.clone());
                 continue;
             }
 
-            // the validator definition has now passed all verification checks, so add it to the list
-            validator_definitions.push(v.clone());
+            // the validator definition has now passed all verification checks
         }
 
         Ok(())
@@ -634,11 +614,51 @@ impl Component for Staking {
             }
         }
 
-        // The validator definitions have been completely verified, so we can add them to the pending list:
-        let mut definitions = tx.validator_definitions().map(|v| v.to_owned()).collect();
-        self.new_validator_definitions
-            .definitions
-            .append(&mut definitions);
+        // The validator definitions have been completely verified, so we can add them to the JMT
+        let definitions = tx.validator_definitions().map(|v| v.to_owned());
+        let cur_epoch = self.overlay.get_current_epoch().await?;
+
+        for v in definitions {
+            let existing_v = self.overlay.validator(&v.validator.identity_key).await?;
+
+            if let Some(_existing_v) = existing_v {
+                // This is an existing validator definition.
+                // This means that only the Validator struct itself needs updating, not any rates/power/state.
+                self.overlay.update_validator(v.validator).await?;
+            } else {
+                // This is a new validator definition.
+                // Set the default rates and state.
+                let validator_key = v.validator.identity_key.clone();
+
+                // Delegations require knowing the rates for the
+                // next epoch, so pre-populate with 0 reward => exchange rate 1 for
+                // the current and next epochs.
+                let cur_rate_data = RateData {
+                    identity_key: validator_key.clone(),
+                    epoch_index: cur_epoch.index,
+                    validator_reward_rate: 0,
+                    validator_exchange_rate: 1_0000_0000, // 1 represented as 1e8
+                };
+                let next_rate_data = RateData {
+                    identity_key: validator_key.clone(),
+                    epoch_index: cur_epoch.index + 1,
+                    validator_reward_rate: 0,
+                    validator_exchange_rate: 1_0000_0000, // 1 represented as 1e8
+                };
+
+                self.overlay
+                    .add_validator(
+                        v.validator.clone(),
+                        cur_rate_data,
+                        next_rate_data,
+                        // All validator from definitions start in the "Inactive" state:
+                        ValidatorState::Inactive,
+                        // All validator from definitions start with 0 power:
+                        0,
+                    )
+                    .await?;
+            }
+        }
 
         Ok(())
     }
@@ -652,12 +672,6 @@ impl Component for Staking {
             )
             .await;
 
-        // Process updated validator definitions prior to end_epoch, so any
-        // funding stream changes are accounted for.
-        for validator in self.updated_validator_definitions.definitions.drain(..) {
-            self.overlay.update_validator(validator.validator).await?;
-        }
-
         // If this is an epoch boundary, updated rates need to be calculated and set.
         let cur_epoch = self.overlay.get_current_epoch().await?;
         let cur_height = self.overlay.get_block_height().await?;
@@ -668,40 +682,6 @@ impl Component for Staking {
 
         // The epoch has now transitioned, if necessary
         let cur_epoch = self.overlay.get_current_epoch().await?;
-
-        // The new validator definitions can be applied now. We didn't apply them earlier because
-        // we don't want rate calculations to apply to newly defined validators.
-        for validator in self.new_validator_definitions.definitions.drain(..) {
-            let validator_key = validator.validator.identity_key.clone();
-
-            // Delegations require knowing the rates for the
-            // next epoch, so pre-populate with 0 reward => exchange rate 1 for
-            // the current and next epochs.
-            let cur_rate_data = RateData {
-                identity_key: validator_key.clone(),
-                epoch_index: cur_epoch.index,
-                validator_reward_rate: 0,
-                validator_exchange_rate: 1_0000_0000, // 1 represented as 1e8
-            };
-            let next_rate_data = RateData {
-                identity_key: validator_key.clone(),
-                epoch_index: cur_epoch.index + 1,
-                validator_reward_rate: 0,
-                validator_exchange_rate: 1_0000_0000, // 1 represented as 1e8
-            };
-
-            self.overlay
-                .add_validator(
-                    validator.validator.clone(),
-                    cur_rate_data,
-                    next_rate_data,
-                    // All validator from definitions start in the "Inactive" state:
-                    ValidatorState::Inactive,
-                    // All validator from definitions start with 0 power:
-                    0,
-                )
-                .await?;
-        }
 
         Ok(())
     }
