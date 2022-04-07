@@ -144,7 +144,7 @@ send them any amount of any asset you have. For example, if I wanted to send 10 
 to my friend, I could do that like this (filling in their full address at the end):
 
 ```bash
-cargo run --quiet --release --bin pcli tx send 10penumbra --to penumbrav0t...
+cargo run --quiet --release --bin pcli tx send 10penumbra --to penumbrav1t...
 ```
 
 Notice that asset amounts are typed amounts, specified without a space between the amount (`10`)
