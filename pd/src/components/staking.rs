@@ -461,6 +461,17 @@ impl Component for Staking {
             ));
         }
 
+        // We prohibit actions other than `Spend`, `Delegate`, `Output` and `Undelegate` in
+        // transactions that contain `Undelegate`, to avoid having to quarantine them.
+        if undelegation_identities.len() == 1 {
+            use Action::*;
+            for action in tx.transaction_body().actions {
+                if !matches!(action, Undelegate(_) | Delegate(_) | Spend(_) | Output(_)) {
+                    return Err(anyhow::anyhow!("transaction contains an undelegation, but also contains an action other than Spend, Delegate, Output or Undelegate"));
+                }
+            }
+        }
+
         // Check that validator definitions are correctly signed and well-formed:
         for definition in tx.validator_definitions() {
             // First, check the signature:

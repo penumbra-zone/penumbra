@@ -1,4 +1,6 @@
-use anyhow::{anyhow, Result};
+use std::collections::{BTreeMap, BTreeSet};
+
+use anyhow::{anyhow, Context, Result};
 use ark_ff::PrimeField;
 use async_trait::async_trait;
 use decaf377::{Fq, Fr};
@@ -8,14 +10,14 @@ use penumbra_crypto::{
     asset::Denom,
     ka,
     merkle::{self, Frontier, NoteCommitmentTree, TreeExt},
-    Address, Note, Nullifier, One, Value,
+    note, Address, Note, Nullifier, One, Value,
 };
 use penumbra_transaction::{action::output, Action, Transaction};
 use tendermint::abci;
 use tracing::instrument;
 
 use super::{Component, Overlay};
-use crate::{genesis, WriteOverlayExt};
+use crate::{genesis, verify::NoteData, WriteOverlayExt};
 
 // Stub component
 pub struct ShieldedPool {
@@ -79,9 +81,92 @@ impl Component for ShieldedPool {
         Ok(())
     }
 
-    fn check_tx_stateless(_tx: &Transaction) -> Result<()> {
+    fn check_tx_stateless(tx: &Transaction) -> Result<()> {
         // TODO: add a check that ephemeral_key is not identity to prevent scanning dos attack ?
-        tracing::debug!("skipping stateless verification in ShieldedPool component");
+        let id = tx.id();
+        let sighash = tx.transaction_body().sighash();
+
+        // 1. Check binding signature.
+        tx.binding_verification_key()
+            .verify(&sighash, tx.binding_sig())
+            .context("binding signature failed to verify")?;
+
+        // 2. Check all spend auth signatures using provided spend auth keys
+        // and check all proofs verify. If any action does not verify, the entire
+        // transaction has failed.
+        let mut spent_nullifiers = BTreeSet::<Nullifier>::new();
+        let mut new_notes = BTreeMap::<note::Commitment, NoteData>::new();
+
+        for action in tx.transaction_body().actions {
+            match action {
+                Action::Output(output) => {
+                    if output
+                        .proof
+                        .verify(
+                            output.value_commitment,
+                            output.body.note_commitment,
+                            output.body.ephemeral_key,
+                        )
+                        .is_err()
+                    {
+                        // TODO should the verification error be bubbled up here?
+                        return Err(anyhow::anyhow!("An output proof did not verify"));
+                    }
+
+                    new_notes.insert(
+                        output.body.note_commitment,
+                        NoteData {
+                            ephemeral_key: output.body.ephemeral_key,
+                            encrypted_note: output.body.encrypted_note,
+                            transaction_id: id,
+                        },
+                    );
+                }
+                Action::Spend(spend) => {
+                    spend
+                        .body
+                        .rk
+                        .verify(&sighash, &spend.auth_sig)
+                        .context("spend auth signature failed to verify")?;
+
+                    if spend
+                        .body
+                        .proof
+                        .verify(
+                            tx.transaction_body().merkle_root,
+                            spend.body.value_commitment,
+                            spend.body.nullifier.clone(),
+                            spend.body.rk,
+                        )
+                        .is_err()
+                    {
+                        // TODO should the verification error be bubbled up here?
+                        return Err(anyhow::anyhow!("A spend proof did not verify"));
+                    }
+
+                    // Check nullifier has not been revealed already in this transaction.
+                    if spent_nullifiers.contains(&spend.body.nullifier.clone()) {
+                        return Err(anyhow::anyhow!("Double spend"));
+                    }
+
+                    spent_nullifiers.insert(spend.body.nullifier.clone());
+                }
+                Action::Delegate(_delegate) => {
+                    // Handled in the `Staking` component.
+                }
+                Action::Undelegate(_undelegate) => {
+                    // Handled in the `Staking` component.
+                }
+                Action::ValidatorDefinition(_validator) => {
+                    // Handled in the `Staking` component.
+                }
+                #[allow(unreachable_patterns)]
+                _ => {
+                    return Err(anyhow::anyhow!("unsupported action"));
+                }
+            }
+        }
+
         Ok(())
     }
 
