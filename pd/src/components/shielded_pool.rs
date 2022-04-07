@@ -10,7 +10,7 @@ use penumbra_crypto::{
     asset::Denom,
     ka,
     merkle::{self, Frontier, NoteCommitmentTree, TreeExt},
-    Address, Note, Nullifier, One, Value,
+    note, Address, Note, Nullifier, One, Value,
 };
 use penumbra_transaction::{action::output, Action, Transaction};
 use tendermint::abci;
@@ -161,11 +161,14 @@ impl Component for ShieldedPool {
 
     async fn check_tx_stateful(&self, tx: &Transaction) -> Result<()> {
         // TODO: rename transaction_body.merkle_root now that we have 2 merkle trees
-        self.check_claimed_anchor(&tx.transaction_body.merkle_root)
+        self.overlay
+            .check_claimed_anchor(&tx.transaction_body.merkle_root)
             .await?;
 
         for spent_nullifier in tx.spent_nullifiers() {
-            self.check_nullifier_unspent(spent_nullifier).await?;
+            self.overlay
+                .check_nullifier_unspent(spent_nullifier)
+                .await?;
         }
 
         // TODO: handle quarantine
@@ -188,7 +191,7 @@ impl Component for ShieldedPool {
                 self.add_note(compact_output, source).await;
             }
             for spent_nullifier in tx.spent_nullifiers() {
-                self.spend_nullifier(spent_nullifier, source).await;
+                self.overlay.spend_nullifier(spent_nullifier, source).await;
             }
         }
 
@@ -267,10 +270,9 @@ impl ShieldedPool {
         self.note_commitment_tree
             .append(&output_body.note_commitment);
         // 2. Record its source in the JMT
-        self.overlay.lock().await.put(
-            format!("shielded_pool/note_source/{}", &output_body.note_commitment).into(),
-            source.to_bytes().to_vec(),
-        );
+        self.overlay
+            .set_note_source(&output_body.note_commitment, source)
+            .await;
         // 3. Finally, record it in the pending compact block.
         self.compact_block.outputs.push(output_body);
     }
@@ -279,20 +281,20 @@ impl ShieldedPool {
     async fn write_block(&mut self) -> Result<()> {
         // Write the CompactBlock:
         self.overlay
-            .put_domain(
-                format!("shielded_pool/compact_block/{}", self.compact_block.height).into(),
-                self.compact_block.clone(),
-            )
+            .set_compact_block(std::mem::take(&mut self.compact_block))
             .await;
         // and the note commitment tree data and anchor:
-        self.put_nct_anchor().await;
+        self.overlay
+            .set_nct_anchor(self.compact_block.height, self.note_commitment_tree.root2())
+            .await;
         self.put_nct().await?;
-
-        // TODO: write out the updated supply and denoms ?
 
         Ok(())
     }
 
+    /// This is not part of the View trait because the NCT isn't a domain
+    /// type, and we'll be replacing it anyways, so there's not much point
+    /// implementing one now.  When switching to the TCT we should revisit.
     async fn put_nct(&mut self) -> Result<()> {
         let nct_data = bincode::serialize(&self.note_commitment_tree)?;
         self.overlay
@@ -304,6 +306,8 @@ impl ShieldedPool {
 
     /// This is an associated function rather than a method,
     /// so that we can call it in the constructor to get the NCT.
+    /// NOTE: we may not need that any more now that we can use an
+    /// Overlay on an empty database.
     async fn get_nct(overlay: &Overlay) -> Result<NoteCommitmentTree> {
         if let Ok(Some(bytes)) = overlay
             .lock()
@@ -314,75 +318,6 @@ impl ShieldedPool {
             bincode::deserialize(&bytes).map_err(Into::into)
         } else {
             Ok(NoteCommitmentTree::new(0))
-        }
-    }
-
-    async fn put_nct_anchor(&mut self) {
-        let height = self.compact_block.height;
-        let nct_anchor = self.note_commitment_tree.root2();
-        tracing::debug!(anchor = %nct_anchor, "writing anchor to tree");
-        // TODO: should we save a list of historical anchors?
-        // Write the NCT anchor both as a value, so we can look it up,
-        self.overlay.lock().await.put(
-            format!("shielded_pool/nct_anchor/{}", height).into(),
-            nct_anchor.to_bytes().to_vec(),
-        );
-        // and as a key, so we can query for it.
-        self.overlay.lock().await.put(
-            format!("shielded_pool/valid_anchors/{}", nct_anchor).into(),
-            // We don't use the value for validity checks, but writing the height
-            // here lets us find out what height the anchor was for.
-            height.to_le_bytes().to_vec(),
-        );
-    }
-
-    /// Checks whether a claimed NCT anchor is a previous valid state root.
-    async fn check_claimed_anchor(&self, anchor: &merkle::Root) -> Result<()> {
-        if self
-            .overlay
-            .lock()
-            .await
-            .get(format!("shielded_pool/valid_anchors/{}", anchor).into())
-            .await?
-            .is_some()
-        {
-            Ok(())
-        } else {
-            Err(anyhow!(
-                "provided anchor {} is not a valid NCT root",
-                anchor
-            ))
-        }
-    }
-
-    #[instrument(skip(self))]
-    async fn spend_nullifier(&mut self, nullifier: Nullifier, source: NoteSource) {
-        self.overlay.lock().await.put(
-            format!("shielded_pool/spent_nullifiers/{}", nullifier).into(),
-            // We don't use the value for validity checks, but writing the source
-            // here lets us find out what transaction spent the nullifier.
-            source.to_bytes().to_vec(),
-        );
-    }
-
-    #[instrument(skip(self))]
-    async fn check_nullifier_unspent(&self, nullifier: Nullifier) -> Result<()> {
-        if let Some(source_bytes) = self
-            .overlay
-            .lock()
-            .await
-            .get(format!("shielded_pool/spent_nullifiers/{}", nullifier).into())
-            .await?
-        {
-            let source_bytes: [u8; 32] = source_bytes.try_into().unwrap();
-            let source = NoteSource::try_from(source_bytes).expect("source is validly encoded");
-            Err(anyhow!(
-                "Nullifier {} was already spent in {:?}",
-                nullifier,
-                source
-            ))
-        } else {
-            Ok(())
         }
     }
 }
@@ -455,6 +390,108 @@ pub trait View: WriteOverlayExt {
             denom.to_string(),
         )
         .await
+    }
+
+    async fn set_note_source(&self, note_commitment: &note::Commitment, source: NoteSource) {
+        self.put_proto(
+            format!("shielded_pool/note_source/{}", note_commitment).into(),
+            // TODO: NoteSource proto?
+            source.to_bytes().to_vec(),
+        )
+        .await
+    }
+
+    async fn note_source(&self, note_commitment: &note::Commitment) -> Result<Option<NoteSource>> {
+        Ok(self
+            .get_proto(format!("shielded_pool/note_source/{}", note_commitment).into())
+            .await?
+            // TODO: NoteSource proto?
+            .map(|source_bytes: Vec<u8>| {
+                <[u8; 32]>::try_from(source_bytes.as_slice())
+                    .expect("source is 32 bytes")
+                    .try_into()
+                    .expect("source is validly encoded")
+            }))
+    }
+
+    async fn set_compact_block(&self, compact_block: CompactBlock) {
+        self.put_domain(
+            format!("shielded_pool/compact_block/{}", compact_block.height).into(),
+            compact_block,
+        )
+        .await
+    }
+
+    async fn compact_block(&self, height: u64) -> Result<Option<CompactBlock>> {
+        self.get_domain(format!("shielded_pool/compact_block/{}", height).into())
+            .await
+    }
+
+    #[instrument(skip(self))]
+    async fn set_nct_anchor(&self, height: u64, anchor: merkle::Root) {
+        tracing::debug!("writing anchor to tree");
+
+        // Write the NCT anchor both as a value, so we can look it up,
+        self.put_domain(
+            format!("shielded_pool/nct_anchor/{}", height).into(),
+            anchor.clone(),
+        )
+        .await;
+        // and as a key, so we can query for it.
+        self.put_proto(
+            format!("shielded_pool/valid_anchors/{}", anchor).into(),
+            // We don't use the value for validity checks, but writing the height
+            // here lets us find out what height the anchor was for.
+            height,
+        )
+        .await;
+    }
+
+    /// Checks whether a claimed NCT anchor is a previous valid state root.
+    async fn check_claimed_anchor(&self, anchor: &merkle::Root) -> Result<()> {
+        if let Some(anchor_height) = self
+            .get_proto::<u64>(format!("shielded_pool/valid_anchors/{}", anchor).into())
+            .await?
+        {
+            tracing::debug!(?anchor, ?anchor_height, "anchor is valid");
+            Ok(())
+        } else {
+            Err(anyhow!(
+                "provided anchor {} is not a valid NCT root",
+                anchor
+            ))
+        }
+    }
+
+    #[instrument(skip(self))]
+    async fn spend_nullifier(&self, nullifier: Nullifier, source: NoteSource) {
+        self.put_proto(
+            format!("shielded_pool/spent_nullifiers/{}", nullifier).into(),
+            // We don't use the value for validity checks, but writing the source
+            // here lets us find out what transaction spent the nullifier.
+            // TODO: NoteSource proto?
+            source.to_bytes().to_vec(),
+        )
+        .await;
+    }
+
+    #[instrument(skip(self))]
+    async fn check_nullifier_unspent(&self, nullifier: Nullifier) -> Result<()> {
+        if let Some(source_bytes) = self
+            .get_proto::<Vec<u8>>(format!("shielded_pool/spent_nullifiers/{}", nullifier).into())
+            .await?
+        {
+            // TODO: NoteSource proto?
+            let source_bytes: [u8; 32] = source_bytes.try_into().unwrap();
+            let source = NoteSource::try_from(source_bytes).expect("source is validly encoded");
+            Err(anyhow!(
+                "Nullifier {} was already spent in {:?}",
+                nullifier,
+                source
+            ))
+        } else {
+            Ok(())
+        }
     }
 }
 

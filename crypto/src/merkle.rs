@@ -8,7 +8,7 @@ pub use incrementalmerkletree::{
     Altitude, Frontier, Hashable, Position, Recording, Tree,
 };
 use once_cell::sync::Lazy;
-use penumbra_proto::crypto as pb;
+use penumbra_proto::{crypto as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
 use crate::note;
@@ -27,6 +27,8 @@ pub type Path = (Position, Vec<note::Commitment>);
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "pb::MerkleRoot", into = "pb::MerkleRoot")]
 pub struct Root(pub Fq);
+
+impl Protobuf<pb::MerkleRoot> for Root {}
 
 impl std::fmt::Display for Root {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

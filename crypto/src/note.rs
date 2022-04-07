@@ -8,7 +8,7 @@ use chacha20poly1305::{
 };
 use decaf377::FieldExt;
 use once_cell::sync::Lazy;
-use penumbra_proto::crypto as pb;
+use penumbra_proto::{crypto as pb, Protobuf};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use thiserror;
@@ -330,6 +330,8 @@ impl TryFrom<[u8; NOTE_LEN_BYTES]> for Note {
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(into = "pb::NoteCommitment", try_from = "pb::NoteCommitment")]
 pub struct Commitment(pub Fq);
+
+impl Protobuf<pb::NoteCommitment> for Commitment {}
 
 #[cfg(test)]
 mod test_serde {
