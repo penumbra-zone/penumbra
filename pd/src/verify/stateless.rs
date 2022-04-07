@@ -21,6 +21,8 @@ pub trait StatelessTransactionExt {
 impl StatelessTransactionExt for Transaction {
     // TODO: use tokio's blocking code when we do work here -- internally to verify_stateless?
     fn verify_stateless(&self) -> Result<PendingTransaction, Error> {
+        // TODO: This method and trait can be removed once the `Component` refactor is
+        // complete (issue #488).
         let id = self.id();
 
         let sighash = self.transaction_body().sighash();
