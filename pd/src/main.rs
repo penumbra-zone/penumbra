@@ -231,7 +231,7 @@ async fn main() -> anyhow::Result<()> {
             let randomizer = OsRng.gen::<u32>();
             let chain_id = format!("{}-{}", chain_id, hex::encode(&randomizer.to_le_bytes()));
 
-            use pd::{genesis, genesis::ValidatorPower, testnet::*};
+            use pd::{genesis, testnet::*};
             use penumbra_crypto::Address;
             use penumbra_stake::IdentityKey;
             use tendermint::{account::Id, node, public_key::Algorithm, Genesis, Time};
@@ -369,42 +369,43 @@ async fn main() -> anyhow::Result<()> {
                 })
                 .collect::<Vec<_>>();
             let validators = testnet_validators
-                        .iter()
-                        .enumerate()
-                        .map(|(i, v)| {
-                            let vk = &validator_keys[i];
-                            Ok(ValidatorPower {
-                                validator: Validator {
-                                    // Currently there's no way to set validator keys beyond
-                                    // manually editing the genesis.json. Otherwise they
-                                    // will be randomly generated keys.
-                                    identity_key: IdentityKey(vk.validator_id_vk),
-                                    consensus_key: vk.validator_cons_pk,
-                                    name: v.name.clone(),
-                                    website: v.website.clone(),
-                                    description: v.description.clone(),
-                                    funding_streams: FundingStreams::try_from(
-                                        v.funding_streams
-                                            .iter()
-                                            .map(|fs| {
-                                                Ok(FundingStream {
-                                            address: Address::from_str(&fs.address).map_err(|_|
-                                                anyhow::anyhow!("invalid funding stream address in validators.json"),
-                                            )?,
-                                            rate_bps: fs.rate_bps,
-                                        })
-                                            })
-                                            .collect::<Result<Vec<FundingStream>, anyhow::Error>>()?,
-                                    )
-                                    .map_err(|_|
-                                        anyhow::anyhow!("unable to construct funding streams from validators.json"),
-                                    )?,
-                                    sequence_number: v.sequence_number,
-                                },
-                                power: v.voting_power.into(),
-                            })
-                        })
-                        .collect::<Result<Vec<ValidatorPower>,anyhow::Error>>()?;
+                .iter()
+                .enumerate()
+                .map(|(i, v)| {
+                    let vk = &validator_keys[i];
+                    Ok(Validator {
+                        // Currently there's no way to set validator keys beyond
+                        // manually editing the genesis.json. Otherwise they
+                        // will be randomly generated keys.
+                        identity_key: IdentityKey(vk.validator_id_vk),
+                        consensus_key: vk.validator_cons_pk,
+                        name: v.name.clone(),
+                        website: v.website.clone(),
+                        description: v.description.clone(),
+                        funding_streams: FundingStreams::try_from(
+                            v.funding_streams
+                                .iter()
+                                .map(|fs| {
+                                    Ok(FundingStream {
+                                        address: Address::from_str(&fs.address).map_err(|_| {
+                                            anyhow::anyhow!(
+                                                "invalid funding stream address in validators.json"
+                                            )
+                                        })?,
+                                        rate_bps: fs.rate_bps,
+                                    })
+                                })
+                                .collect::<Result<Vec<FundingStream>, anyhow::Error>>()?,
+                        )
+                        .map_err(|_| {
+                            anyhow::anyhow!(
+                                "unable to construct funding streams from validators.json"
+                            )
+                        })?,
+                        sequence_number: v.sequence_number,
+                    })
+                })
+                .collect::<Result<Vec<Validator>, anyhow::Error>>()?;
             for (n, vk) in validator_keys.iter().enumerate() {
                 let node_name = format!("node{}", n);
 

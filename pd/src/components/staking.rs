@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
@@ -361,14 +361,26 @@ impl Component for Staking {
             base_exchange_rate: 1_0000_0000,
         };
         self.overlay
-            .set_base_rates(cur_base_rate, next_base_rate)
+            .set_base_rates(cur_base_rate.clone(), next_base_rate)
             .await;
+
+        let mut allocations_by_validator = HashMap::new();
+        for allocation in &app_state.allocations {
+            if allocation.amount == 0 {
+                continue;
+            }
+
+            let amount = allocations_by_validator
+                .entry(&allocation.denom)
+                .or_insert(0);
+            *amount += allocation.amount;
+        }
 
         // Add initial validators to the JMT
         // Validators are indexed in the JMT by their public key,
         // and there is a separate key containing the list of all validator keys.
         for validator in &app_state.validators {
-            let validator_key = validator.validator.identity_key.clone();
+            let validator_key = validator.identity_key.clone();
 
             // Delegations require knowing the rates for the
             // next epoch, so pre-populate with 0 reward => exchange rate 1 for
@@ -386,14 +398,26 @@ impl Component for Staking {
                 validator_exchange_rate: 1_0000_0000, // 1 represented as 1e8
             };
 
+            // The initial allocations to the validator are not available on the JMT yet,
+            // because the ShieldedPool component executes last.
+            //
+            // This means that we need to iterate the app_state to calculate the initial
+            // delegation token allocations for the genesis validators, to determine voting power.
+            let delegation_denom = validator_key.delegation_token().denom().to_string();
+            let total_delegation_tokens = allocations_by_validator
+                .get(&delegation_denom)
+                .copied()
+                .unwrap_or(0);
+            let power = cur_rate_data.voting_power(total_delegation_tokens, &cur_base_rate);
+
             self.overlay
                 .add_validator(
-                    validator.validator.clone(),
+                    validator.clone(),
                     cur_rate_data,
                     next_rate_data,
                     // All genesis validators start in the "Active" state:
                     ValidatorState::Active,
-                    validator.power.into(),
+                    power,
                 )
                 .await?;
         }

@@ -43,9 +43,9 @@ impl App {
         let (root_hash, version) = self.overlay.lock().await.commit(storage).await?;
         tracing::debug!(?root_hash, version, "finished committing overlay");
         // Now re-instantiate all of the components:
-        self.shielded_pool = ShieldedPool::new(self.overlay.clone()).await?;
         self.staking = Staking::new(self.overlay.clone()).await?;
         self.ibc = IBCComponent::new(self.overlay.clone()).await?;
+        self.shielded_pool = ShieldedPool::new(self.overlay.clone()).await?;
 
         Ok((root_hash, version))
     }
@@ -59,9 +59,9 @@ impl App {
 #[async_trait]
 impl Component for App {
     async fn new(overlay: Overlay) -> Result<Self> {
-        let shielded_pool = ShieldedPool::new(overlay.clone()).await?;
         let staking = Staking::new(overlay.clone()).await?;
         let ibc = IBCComponent::new(overlay.clone()).await?;
+        let shielded_pool = ShieldedPool::new(overlay.clone()).await?;
 
         Ok(Self {
             overlay,
@@ -82,9 +82,11 @@ impl Component for App {
         // The genesis block height is 0
         self.overlay.put_block_height(0).await;
 
-        self.shielded_pool.init_chain(app_state).await?;
         self.staking.init_chain(app_state).await?;
         self.ibc.init_chain(app_state).await?;
+
+        // Shielded pool always executes last.
+        self.shielded_pool.init_chain(app_state).await?;
         Ok(())
     }
 
@@ -98,38 +100,46 @@ impl Component for App {
             .put_block_timestamp(begin_block.header.time)
             .await;
 
-        self.shielded_pool.begin_block(begin_block).await?;
         self.staking.begin_block(begin_block).await?;
         self.ibc.begin_block(begin_block).await?;
+
+        // Shielded pool always executes last.
+        self.shielded_pool.begin_block(begin_block).await?;
+
         Ok(())
     }
 
     fn check_tx_stateless(tx: &Transaction) -> Result<()> {
-        ShieldedPool::check_tx_stateless(tx)?;
         Staking::check_tx_stateless(tx)?;
         IBCComponent::check_tx_stateless(tx)?;
+        ShieldedPool::check_tx_stateless(tx)?;
         Ok(())
     }
 
     async fn check_tx_stateful(&self, tx: &Transaction) -> Result<()> {
-        self.shielded_pool.check_tx_stateful(tx).await?;
         self.staking.check_tx_stateful(tx).await?;
         self.ibc.check_tx_stateful(tx).await?;
+
+        // Shielded pool always executes last.
+        self.shielded_pool.check_tx_stateful(tx).await?;
         Ok(())
     }
 
     async fn execute_tx(&mut self, tx: &Transaction) -> Result<()> {
-        self.shielded_pool.execute_tx(tx).await?;
         self.staking.execute_tx(tx).await?;
         self.ibc.execute_tx(tx).await?;
+
+        // Shielded pool always executes last.
+        self.shielded_pool.execute_tx(tx).await?;
         Ok(())
     }
 
     async fn end_block(&mut self, end_block: &abci::request::EndBlock) -> Result<()> {
-        // TODO: should these calls be in reverse order from begin_block?
-        self.shielded_pool.end_block(end_block).await?;
         self.staking.end_block(end_block).await?;
         self.ibc.end_block(end_block).await?;
+
+        // Shielded pool always executes last.
+        self.shielded_pool.end_block(end_block).await?;
         Ok(())
     }
 }
