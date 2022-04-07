@@ -385,7 +385,8 @@ impl Worker {
         // validators and voting power. This must be the last step performed,
         // after all voting power calculations and validator state transitions have
         // been completed.
-        let _validator_updates_new = self.app.tm_validator_updates().await?;
+        let validator_updates_new = self.app.tm_validator_updates().await?;
+        tracing::debug!(?validator_updates_new);
 
         // Immediately revert notes and nullifiers immediately from slashed validators in this block
         let (mut slashed_notes, mut slashed_nullifiers) = (
