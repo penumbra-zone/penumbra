@@ -5,7 +5,8 @@ use async_trait::async_trait;
 use penumbra_proto::Protobuf;
 use penumbra_stake::{
     BaseRateData, Delegate, DelegationChanges, Epoch, IdentityKey, PendingRewardNote, RateData,
-    RewardNotes, Undelegate, Validator, ValidatorList, ValidatorState, STAKING_TOKEN_ASSET_ID,
+    RewardNotes, Undelegate, Validator, ValidatorInfo, ValidatorList, ValidatorState,
+    ValidatorStatus, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_transaction::{Action, Transaction};
 
@@ -848,6 +849,7 @@ pub trait View: WriteOverlayExt {
         self.validator(&identity_key).await
     }
 
+    // TODO: move out of view? this seems more like business logic
     async fn slash_validator(&mut self, evidence: &Evidence) -> Result<()> {
         let ck = tendermint::PublicKey::from_raw_ed25519(&evidence.validator.address)
             .ok_or_else(|| anyhow::anyhow!("invalid ed25519 consensus pubkey from tendermint"))
@@ -946,9 +948,41 @@ pub trait View: WriteOverlayExt {
         Ok(())
     }
 
+    async fn validator_info(&self, identity_key: &IdentityKey) -> Result<Option<ValidatorInfo>> {
+        let validator = self.validator(identity_key).await?;
+        let status = self.validator_status(identity_key).await?;
+        let rate_data = self.next_validator_rate(identity_key).await?;
+        match (validator, status, rate_data) {
+            (Some(validator), Some(status), Some(rate_data)) => Ok(Some(ValidatorInfo {
+                validator,
+                status,
+                rate_data,
+            })),
+            _ => Ok(None),
+        }
+    }
+
     async fn validator_state(&self, identity_key: &IdentityKey) -> Result<Option<ValidatorState>> {
         self.get_domain(format!("staking/validators/{}/state", identity_key).into())
             .await
+    }
+
+    /// Convenience method to assemble a [`ValidatorStatus`].
+    async fn validator_status(
+        &self,
+        identity_key: &IdentityKey,
+    ) -> Result<Option<ValidatorStatus>> {
+        let state = self.validator_state(identity_key).await?;
+        let power = self.validator_power(identity_key).await?;
+        let identity_key = identity_key.clone();
+        match (state, power) {
+            (Some(state), Some(voting_power)) => Ok(Some(ValidatorStatus {
+                identity_key,
+                state,
+                voting_power,
+            })),
+            _ => Ok(None),
+        }
     }
 
     async fn validator_list(&self) -> Result<Vec<IdentityKey>> {

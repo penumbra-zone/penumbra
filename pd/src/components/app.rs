@@ -184,6 +184,14 @@ pub trait View: WriteOverlayExt {
             .map(|params| params.epoch_duration)
     }
 
+    /// Gets the chain ID.
+    async fn get_chain_id(&self) -> Result<String> {
+        // this might be a bit wasteful -- does it matter?  who knows, at this
+        // point. but having it be a separate method means we can do a narrower
+        // load later if we want
+        self.get_chain_params().await.map(|params| params.chain_id)
+    }
+
     /// Gets the current block height from the JMT
     async fn get_block_height(&self) -> Result<u64> {
         let height_bytes: u64 = self
@@ -213,6 +221,25 @@ pub trait View: WriteOverlayExt {
     async fn put_block_timestamp(&self, timestamp: Time) {
         self.put_proto(b"block_timestamp".into(), timestamp.to_rfc3339())
             .await
+    }
+
+    /// Checks a provided chain_id against the chain state.
+    ///
+    /// Passes through if the provided chain_id is empty or matches, and
+    /// otherwise errors.
+    async fn check_chain_id(&self, provided: &str) -> Result<(), tonic::Status> {
+        let chain_id = self
+            .get_chain_id()
+            .await
+            .map_err(|_| tonic::Status::unavailable("database error"))?;
+        if provided.is_empty() || provided == chain_id {
+            Ok(())
+        } else {
+            Err(tonic::Status::failed_precondition(format!(
+                "provided chain_id {} does not match chain_id {}",
+                provided, chain_id
+            )))
+        }
     }
 }
 

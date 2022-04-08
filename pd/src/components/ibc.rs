@@ -7,10 +7,7 @@ use tendermint::abci;
 use tracing::instrument;
 
 use ibc::core::{
-    ics02_client::{
-        client_consensus::AnyConsensusState, height::Height,
-        msgs::create_client::MsgCreateAnyClient,
-    },
+    ics02_client::{height::Height, msgs::create_client::MsgCreateAnyClient},
     ics24_host::identifier::ClientId,
 };
 use penumbra_proto::ibc::ibc_action::Action::CreateClient;

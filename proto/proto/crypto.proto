@@ -25,3 +25,8 @@ message Value {
 message MerkleRoot {
     bytes inner = 1;
 }
+
+message Asset {
+  AssetId id = 1;
+  Denom denom = 2;
+}

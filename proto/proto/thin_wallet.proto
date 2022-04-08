@@ -10,48 +10,13 @@ import "stake.proto";
 // Unlike the "light wallet" service, this protocol does not attempt to be
 // trust-minimized, either in terms of integrity or privacy.
 service ThinWallet {
-  rpc TransactionByNote(TransactionByNoteRequest) returns (TransactionDetail);
-  rpc AssetLookup(AssetLookupRequest) returns (chain.AssetInfo);
-  rpc AssetList(AssetListRequest) returns (stream Asset);
-  // TODO: return ValidatorStatus?
+  rpc TransactionByNote(crypto.NoteCommitment) returns (chain.NoteSource);
   rpc ValidatorStatus(ValidatorStatusRequest) returns (stake.ValidatorStatus);
   rpc NextValidatorRate(stake.IdentityKey) returns (stake.RateData);
 }
 
-// Requests an asset denom given an asset ID
-message AssetLookupRequest {
-  // The expected chain id (empty string if no expectation).
-  string chain_id = 2;
-  // The asset ID
-  crypto.AssetId asset_id = 1;
-}
-
-// Lists all assets in Asset Registry
-message AssetListRequest {
-  // The expected chain id (empty string if no expectation).
-  string chain_id = 1;
-}
-
-message Asset {
-  bytes asset_id = 1;
-  string asset_denom = 2;
-}
-
-// Requests the transaction containing a given output note commitment.
-// Note: this is bad for privacy, address private fetching later.
-message TransactionByNoteRequest {
-  // The expected chain id (empty string if no expectation).
-  string chain_id = 2;
-  // The note commitment we're interested in.
-  bytes cm = 1;
-}
-
-message TransactionDetail {
-  bytes id = 1;
-}
-
 message ValidatorStatusRequest {
   // The expected chain id (empty string if no expectation).
-  string chain_id = 2;
-  stake.IdentityKey identity_key = 1;
+  string chain_id = 1;
+  stake.IdentityKey identity_key = 2;
 }

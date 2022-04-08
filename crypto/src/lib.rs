@@ -17,6 +17,7 @@ pub mod proofs;
 pub mod value;
 
 pub use address::Address;
+pub use asset::Asset;
 pub use note::Note;
 pub use nullifier::Nullifier;
 pub use value::Value;

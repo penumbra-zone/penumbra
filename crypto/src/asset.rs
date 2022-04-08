@@ -1,5 +1,8 @@
 //! Asset types and identifiers.
 
+use penumbra_proto::{crypto as pb, Protobuf};
+use serde::{Deserialize, Serialize};
+
 mod cache;
 mod denom;
 mod id;
@@ -9,6 +12,40 @@ pub use cache::Cache;
 pub use denom::{Denom, Unit};
 pub use id::Id;
 pub use registry::{Registry, REGISTRY};
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(try_from = "pb::Asset", into = "pb::Asset")]
+pub struct Asset {
+    pub id: Id,
+    pub denom: Denom,
+}
+
+impl Protobuf<pb::Asset> for Asset {}
+
+impl TryFrom<pb::Asset> for Asset {
+    type Error = anyhow::Error;
+    fn try_from(asset: pb::Asset) -> anyhow::Result<Self> {
+        Ok(Self {
+            id: asset
+                .id
+                .ok_or_else(|| anyhow::anyhow!("missing id field in proto"))?
+                .try_into()?,
+            denom: asset
+                .denom
+                .ok_or_else(|| anyhow::anyhow!("missing denom field in proto"))?
+                .try_into()?,
+        })
+    }
+}
+
+impl From<Asset> for pb::Asset {
+    fn from(asset: Asset) -> Self {
+        Self {
+            id: Some(asset.id.into()),
+            denom: Some(asset.denom.into()),
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
