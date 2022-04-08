@@ -12,12 +12,12 @@ use penumbra_crypto::{
     merkle::{self, Frontier, NoteCommitmentTree, TreeExt},
     note, Address, Note, Nullifier, One, Value,
 };
-use penumbra_stake::{Epoch, RewardNotes, STAKING_TOKEN_ASSET_ID};
+use penumbra_stake::{Epoch, STAKING_TOKEN_ASSET_ID};
 use penumbra_transaction::{action::output, Action, Transaction};
 use tendermint::abci;
 use tracing::instrument;
 
-use super::app::View as _;
+use super::{app::View as _, staking::View as _};
 use super::{Component, Overlay};
 use crate::{genesis, WriteOverlayExt};
 
@@ -282,19 +282,21 @@ impl ShieldedPool {
     #[instrument(skip(self))]
     async fn write_block(&mut self) -> Result<()> {
         // Handle any pending reward notes from the Staking component
-        let notes: RewardNotes = self
+        let notes = self
             .overlay
-            .get_domain(format!("reward_notes/{}", self.compact_block.height).into())
+            .reward_notes(self.compact_block.height)
             .await?
             .unwrap_or_default();
 
         // TODO: should we calculate this here or include it directly within the PendingRewardNote
         // to prevent a potential mismatch between Staking and ShieldedPool?
-        let epoch_index = Epoch::from_height(
-            self.compact_block.height,
-            self.overlay.get_epoch_duration().await?,
-        )
-        .index;
+        let source = NoteSource::FundingStreamReward {
+            epoch_index: Epoch::from_height(
+                self.compact_block.height,
+                self.overlay.get_epoch_duration().await?,
+            )
+            .index,
+        };
 
         for note in notes.notes {
             self.mint_note(
@@ -303,7 +305,7 @@ impl ShieldedPool {
                     asset_id: *STAKING_TOKEN_ASSET_ID,
                 },
                 &note.destination,
-                NoteSource::FundingStreamReward { epoch_index },
+                source,
             )
             .await?;
         }

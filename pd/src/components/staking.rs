@@ -208,10 +208,9 @@ impl Staking {
 
         // Set the pending reward notes on the JMT for the current block height
         // so they can be processed by the ShieldedPool.
-        let height = self.overlay.get_block_height().await?;
         self.overlay
-            .put_domain(
-                format!("reward_notes/{}", height).into(),
+            .set_reward_notes(
+                self.overlay.get_block_height().await?,
                 RewardNotes {
                     notes: reward_notes,
                 },
@@ -971,6 +970,16 @@ pub trait View: WriteOverlayExt {
             changes,
         )
         .await
+    }
+
+    async fn reward_notes(&self, height: u64) -> Result<Option<RewardNotes>> {
+        self.get_domain(format!("staking/reward_notes/{}", height).into())
+            .await
+    }
+
+    async fn set_reward_notes(&self, height: u64, notes: RewardNotes) {
+        self.put_domain(format!("staking/reward_notes/{}", height).into(), notes)
+            .await
     }
 }
 
