@@ -29,14 +29,13 @@ impl Storage {
         .unwrap()
     }
 
+    /// Returns the latest version (block height) of the tree recorded by the
+    /// `Storage`, or `None` if the tree is empty.
     pub async fn latest_version(&self) -> Result<Option<jmt::Version>> {
-        match Storage::get_rightmost_leaf(self).await {
-            Ok(x) => match x {
-                Some(t) => Ok(Some(t.0.version())),
-                None => Ok(Some(WriteOverlay::<Storage>::PRE_GENESIS_VERSION)),
-            },
-            Err(e) => Err(e),
-        }
+        Ok(self
+            .get_rightmost_leaf()
+            .await?
+            .map(|(node_key, _)| node_key.version()))
     }
 }
 
