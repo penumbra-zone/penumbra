@@ -21,11 +21,6 @@ use super::{Component, IBCComponent, Overlay, ShieldedPool, Staking};
 /// commits the changes to the persistent storage and resets its subcomponents.
 pub struct App {
     overlay: Overlay,
-    // list of components goes here
-    // having all the components explicitly is a bit repetitive
-    // to invoke compared to Vec of dyn Component or w/e, but
-    // leaves open the possibility of having component-specific
-    // behavior and is simpler.
     shielded_pool: ShieldedPool,
     ibc: IBCComponent,
     staking: Staking,
