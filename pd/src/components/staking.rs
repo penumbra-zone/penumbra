@@ -4,8 +4,8 @@ use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
 use penumbra_proto::Protobuf;
 use penumbra_stake::{
-    BaseRateData, Delegate, DelegationChanges, Epoch, IdentityKey, RateData, Undelegate, Validator,
-    ValidatorList, ValidatorState, STAKING_TOKEN_ASSET_ID,
+    BaseRateData, Delegate, DelegationChanges, Epoch, IdentityKey, PendingRewardNote, RateData,
+    RewardNotes, Undelegate, Validator, ValidatorList, ValidatorState, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_transaction::{Action, Transaction};
 
@@ -89,6 +89,7 @@ impl Staking {
             .set_base_rates(current_base_rate.clone(), next_base_rate.clone())
             .await;
 
+        let mut reward_notes = Vec::new();
         let validator_list = self.overlay.validator_list().await?;
         for v in &validator_list {
             let validator = self.overlay.validator(v).await?.ok_or_else(|| {
@@ -173,15 +174,18 @@ impl Staking {
             if validator_state == ValidatorState::Active {
                 // distribute validator commission
                 for stream in funding_streams {
-                    let _commission_reward_amount = stream.reward_amount(
+                    let commission_reward_amount = stream.reward_amount(
                         delegation_token_supply,
                         &next_base_rate,
                         &current_base_rate,
                     );
 
-                    // TODO: Unclear how to tell the shielded pool we need to mint
-                    // a note here. Maybe set it on the JMT and deal with it over there?
-                    // reward_notes.push((commission_reward_amount, stream.address));
+                    // A note needs to be minted by the ShieldedPool component. Add it to the
+                    // JMT here so it can be processed during the ShieldedPool's end_block phase.
+                    reward_notes.push(PendingRewardNote {
+                        amount: commission_reward_amount,
+                        destination: stream.address,
+                    });
                 }
             }
 
@@ -201,6 +205,18 @@ impl Staking {
 
         // The pending delegation changes should be empty at the beginning of the next epoch.
         self.delegation_changes = Default::default();
+
+        // Set the pending reward notes on the JMT for the current block height
+        // so they can be processed by the ShieldedPool.
+        let height = self.overlay.get_block_height().await?;
+        self.overlay
+            .put_domain(
+                format!("reward_notes/{}", height).into(),
+                RewardNotes {
+                    notes: reward_notes,
+                },
+            )
+            .await;
 
         Ok(())
     }
