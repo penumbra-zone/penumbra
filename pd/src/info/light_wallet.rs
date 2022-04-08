@@ -24,10 +24,10 @@ use tracing::instrument;
 use crate::components::{app::View as _, shielded_pool::View as _, staking::View as _};
 use crate::WriteOverlayExt;
 
-struct WalletOverlay<T: WriteOverlayExt>(T);
+use super::RpcOverlay;
 
 #[tonic::async_trait]
-impl<T: WriteOverlayExt> LightWallet for WalletOverlay<T> {
+impl<T: WriteOverlayExt> LightWallet for RpcOverlay<T> {
     type CompactBlockRangeStream =
         Pin<Box<dyn futures::Stream<Item = Result<CompactBlock, tonic::Status>> + Send>>;
 

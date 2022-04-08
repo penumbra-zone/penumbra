@@ -14,6 +14,9 @@ use crate::{db::schema, state, RequestExt, Storage};
 mod light_wallet;
 mod thin_wallet;
 
+/// Wrapper struct that circumvents the orphan rules for Tonic impls.
+pub struct RpcOverlay<T: WriteOverlayExt>(pub T);
+
 const ABCI_INFO_VERSION: &str = env!("VERGEN_GIT_SEMVER");
 
 #[derive(Clone, Debug)]
