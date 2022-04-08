@@ -338,6 +338,7 @@ impl Staking {
 
 #[async_trait]
 impl Component for Staking {
+    #[instrument(name = "staking", skip(overlay))]
     async fn new(overlay: Overlay) -> Result<Self> {
         Ok(Self {
             overlay,
@@ -345,6 +346,7 @@ impl Component for Staking {
         })
     }
 
+    #[instrument(name = "staking", skip(self, app_state))]
     async fn init_chain(&mut self, app_state: &genesis::AppState) -> Result<()> {
         let starting_height = self.overlay.get_block_height().await?;
         let starting_epoch =
@@ -435,6 +437,7 @@ impl Component for Staking {
         Ok(())
     }
 
+    #[instrument(name = "staking", skip(self, begin_block))]
     async fn begin_block(&mut self, begin_block: &abci::request::BeginBlock) -> Result<()> {
         tracing::debug!("Staking: begin_block");
 
@@ -447,6 +450,7 @@ impl Component for Staking {
         Ok(())
     }
 
+    #[instrument(name = "staking", skip(tx))]
     fn check_tx_stateless(tx: &Transaction) -> Result<()> {
         // Check that the transaction undelegates from at most one validator.
         let undelegation_identities = tx
@@ -502,6 +506,7 @@ impl Component for Staking {
         Ok(())
     }
 
+    #[instrument(name = "staking", skip(self, tx))]
     async fn check_tx_stateful(&self, tx: &Transaction) -> Result<()> {
         // Tally the delegations and undelegations
         let mut delegation_changes = BTreeMap::new();
@@ -647,6 +652,7 @@ impl Component for Staking {
         Ok(())
     }
 
+    #[instrument(name = "staking", skip(self, tx))]
     async fn execute_tx(&mut self, tx: &Transaction) -> Result<()> {
         // Queue any (un)delegations for processing at the next epoch boundary.
         for action in &tx.transaction_body.actions {
@@ -715,6 +721,7 @@ impl Component for Staking {
         Ok(())
     }
 
+    #[instrument(name = "staking", skip(self, end_block))]
     async fn end_block(&mut self, end_block: &abci::request::EndBlock) -> Result<()> {
         // Write the delegation changes for this block.
         self.overlay

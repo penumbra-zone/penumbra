@@ -24,10 +24,12 @@ pub struct IBCComponent {
 
 #[async_trait]
 impl Component for IBCComponent {
+    #[instrument(name = "ibc", skip(overlay))]
     async fn new(overlay: Overlay) -> Result<Self> {
         Ok(Self { overlay })
     }
 
+    #[instrument(name = "ibc", skip(self, _app_state))]
     async fn init_chain(&mut self, _app_state: &genesis::AppState) -> Result<()> {
         // set the initial client count
         self.overlay.put_client_counter(ClientCounter(0)).await;
@@ -35,18 +37,22 @@ impl Component for IBCComponent {
         Ok(())
     }
 
+    #[instrument(name = "ibc", skip(self, _begin_block))]
     async fn begin_block(&mut self, _begin_block: &abci::request::BeginBlock) -> Result<()> {
         Ok(())
     }
 
+    #[instrument(name = "ibc", skip(_tx))]
     fn check_tx_stateless(_tx: &Transaction) -> Result<()> {
         Ok(())
     }
 
+    #[instrument(name = "ibc", skip(self, _tx))]
     async fn check_tx_stateful(&self, _tx: &Transaction) -> Result<()> {
         Ok(())
     }
 
+    #[instrument(name = "ibc", skip(self, tx))]
     async fn execute_tx(&mut self, tx: &Transaction) -> Result<()> {
         // handle client transactions
         for ibc_action in tx
@@ -64,6 +70,7 @@ impl Component for IBCComponent {
         Ok(())
     }
 
+    #[instrument(name = "ibc", skip(self, _end_block))]
     async fn end_block(&mut self, _end_block: &abci::request::EndBlock) -> Result<()> {
         Ok(())
     }
