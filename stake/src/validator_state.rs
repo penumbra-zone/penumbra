@@ -33,7 +33,7 @@ impl From<ValidatorState> for pb::ValidatorState {
             state: match v {
                 ValidatorState::Inactive => pb::validator_state::ValidatorStateEnum::Inactive,
                 ValidatorState::Active => pb::validator_state::ValidatorStateEnum::Active,
-                ValidatorState::Unbonding { unbonding_epoch } => {
+                ValidatorState::Unbonding { .. } => {
                     pb::validator_state::ValidatorStateEnum::Unbonding
                 }
                 ValidatorState::Slashed => pb::validator_state::ValidatorStateEnum::Slashed,
