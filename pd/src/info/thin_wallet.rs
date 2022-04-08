@@ -17,10 +17,10 @@ use tracing::instrument;
 use crate::components::{app::View as _, shielded_pool::View as _, staking::View as _};
 use crate::WriteOverlayExt;
 
-struct WalletOverlay<T: WriteOverlayExt>(T);
+use super::RpcOverlay;
 
 #[tonic::async_trait]
-impl<T: 'static + WriteOverlayExt> ThinWallet for WalletOverlay<T> {
+impl<T: 'static + WriteOverlayExt> ThinWallet for RpcOverlay<T> {
     #[instrument(skip(self, request))]
     async fn transaction_by_note(
         &self,
