@@ -9,7 +9,7 @@ use tendermint::abci::{self, response::Echo, InfoRequest, InfoResponse};
 use tower_abci::BoxError;
 use tracing::Instrument;
 
-use crate::{db::schema, state, RequestExt, Storage};
+use crate::{RequestExt, Storage};
 
 mod light_wallet;
 mod thin_wallet;
@@ -18,27 +18,18 @@ const ABCI_INFO_VERSION: &str = env!("VERGEN_GIT_SEMVER");
 
 #[derive(Clone, Debug)]
 pub struct Info {
-    state: state::Reader,
     storage: Storage,
 }
 
 impl Info {
-    pub fn new(state: state::Reader, storage: Storage) -> Self {
-        Self { state, storage }
+    pub fn new(storage: Storage) -> Self {
+        Self { storage }
     }
 
     async fn info(&self, info: abci::request::Info) -> Result<abci::response::Info, anyhow::Error> {
         tracing::info!(?info);
 
-        let last_block_height = match self.state.latest_block_info().await? {
-            Some(schema::BlocksRow {
-                height,
-                app_hash: _,
-                ..
-            }) => height.try_into().unwrap(),
-            None => 0,
-        };
-
+        let last_block_height = self.storage.latest_version().await?.unwrap_or(0);
         let last_block_app_hash = jmt::JellyfishMerkleTree::new(&self.storage)
             .get_root_hash_option(last_block_height)
             .await?
