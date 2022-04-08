@@ -28,9 +28,6 @@ impl Consensus {
     ) -> anyhow::Result<(Self, watch::Receiver<block::Height>)> {
         let (queue_tx, queue_rx) = mpsc::channel(10);
         let initial_height = match storage.latest_version().await? {
-            // The storage might report PRE_GENESIS_VERSION, which
-            // we should map to 0.
-            Some(u64::MAX) => 0u32.into(),
             Some(version) => version.try_into().unwrap(),
             _ => 0u32.into(),
         };
