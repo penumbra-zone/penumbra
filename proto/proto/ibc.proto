@@ -3,6 +3,7 @@ syntax = "proto3";
 import "ibc/core/connection/v1/tx.proto";
 import "ibc/core/channel/v1/tx.proto";
 import "ibc/core/client/v1/tx.proto";
+import "google/protobuf/any.proto";
 
 package penumbra.ibc;
 
@@ -28,4 +29,19 @@ message IBCAction {
       .ibc.core.client.v1.MsgUpgradeClient upgradeClient = 15;
       .ibc.core.client.v1.MsgSubmitMisbehaviour submitMisbehaviour = 16;
   }
+}
+
+message ClientData {
+  string clientID = 1;
+  google.protobuf.Any clientState = 2; // NOTE: left as Any to allow us to add more client types later
+  string processedTime = 3;
+  uint64 processedHeight = 4;
+}
+
+message ClientCounter {
+  uint64 counter = 1;
+}
+
+message ConsensusState {
+  google.protobuf.Any consensusState = 1;
 }
