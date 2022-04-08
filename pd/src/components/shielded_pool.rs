@@ -31,6 +31,7 @@ pub struct ShieldedPool {
 
 #[async_trait]
 impl Component for ShieldedPool {
+    #[instrument(name = "shielded_pool", skip(overlay))]
     async fn new(overlay: Overlay) -> Result<Self> {
         let note_commitment_tree = Self::get_nct(&overlay).await?;
 
@@ -41,6 +42,7 @@ impl Component for ShieldedPool {
         })
     }
 
+    #[instrument(name = "shielded_pool", skip(self, app_state))]
     async fn init_chain(&mut self, app_state: &genesis::AppState) -> Result<()> {
         for allocation in &app_state.allocations {
             tracing::info!(?allocation, "processing allocation");
@@ -79,10 +81,12 @@ impl Component for ShieldedPool {
         Ok(())
     }
 
+    #[instrument(name = "shielded_pool", skip(self, _begin_block))]
     async fn begin_block(&mut self, _begin_block: &abci::request::BeginBlock) -> Result<()> {
         Ok(())
     }
 
+    #[instrument(name = "shielded_pool", skip(tx))]
     fn check_tx_stateless(tx: &Transaction) -> Result<()> {
         // TODO: add a check that ephemeral_key is not identity to prevent scanning dos attack ?
         let sighash = tx.transaction_body().sighash();
@@ -161,6 +165,7 @@ impl Component for ShieldedPool {
         Ok(())
     }
 
+    #[instrument(name = "shielded_pool", skip(self, tx))]
     async fn check_tx_stateful(&self, tx: &Transaction) -> Result<()> {
         // TODO: rename transaction_body.merkle_root now that we have 2 merkle trees
         self.overlay
@@ -177,6 +182,7 @@ impl Component for ShieldedPool {
         Ok(())
     }
 
+    #[instrument(name = "shielded_pool", skip(self, tx))]
     async fn execute_tx(&mut self, tx: &Transaction) -> Result<()> {
         let should_quarantine = tx
             .transaction_body
@@ -200,6 +206,7 @@ impl Component for ShieldedPool {
         Ok(())
     }
 
+    #[instrument(name = "shielded_pool", skip(self, end_block))]
     async fn end_block(&mut self, end_block: &abci::request::EndBlock) -> Result<()> {
         self.compact_block.height = end_block.height as u64;
         self.write_block().await?;

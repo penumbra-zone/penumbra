@@ -53,6 +53,7 @@ impl App {
 
 #[async_trait]
 impl Component for App {
+    #[instrument(skip(overlay))]
     async fn new(overlay: Overlay) -> Result<Self> {
         let staking = Staking::new(overlay.clone()).await?;
         let ibc = IBCComponent::new(overlay.clone()).await?;
@@ -66,6 +67,7 @@ impl Component for App {
         })
     }
 
+    #[instrument(skip(self, app_state))]
     async fn init_chain(&mut self, app_state: &genesis::AppState) -> Result<()> {
         self.overlay
             .put_chain_params(app_state.chain_params.clone())
@@ -85,6 +87,7 @@ impl Component for App {
         Ok(())
     }
 
+    #[instrument(skip(self, begin_block))]
     async fn begin_block(&mut self, begin_block: &abci::request::BeginBlock) -> Result<()> {
         // store the block height
         self.overlay
@@ -104,6 +107,7 @@ impl Component for App {
         Ok(())
     }
 
+    #[instrument(skip(tx))]
     fn check_tx_stateless(tx: &Transaction) -> Result<()> {
         Staking::check_tx_stateless(tx)?;
         IBCComponent::check_tx_stateless(tx)?;
@@ -111,6 +115,7 @@ impl Component for App {
         Ok(())
     }
 
+    #[instrument(skip(self, tx))]
     async fn check_tx_stateful(&self, tx: &Transaction) -> Result<()> {
         self.staking.check_tx_stateful(tx).await?;
         self.ibc.check_tx_stateful(tx).await?;
@@ -120,6 +125,7 @@ impl Component for App {
         Ok(())
     }
 
+    #[instrument(skip(self, tx))]
     async fn execute_tx(&mut self, tx: &Transaction) -> Result<()> {
         self.staking.execute_tx(tx).await?;
         self.ibc.execute_tx(tx).await?;
@@ -129,6 +135,7 @@ impl Component for App {
         Ok(())
     }
 
+    #[instrument(skip(self, end_block))]
     async fn end_block(&mut self, end_block: &abci::request::EndBlock) -> Result<()> {
         self.staking.end_block(end_block).await?;
         self.ibc.end_block(end_block).await?;
