@@ -14,7 +14,7 @@ use tokio_util::sync::PollSender;
 use tower_abci::BoxError;
 
 use super::{Message, Worker};
-use crate::{state, RequestExt, Storage};
+use crate::{RequestExt, Storage};
 
 #[derive(Clone)]
 pub struct Consensus {
@@ -22,10 +22,7 @@ pub struct Consensus {
 }
 
 impl Consensus {
-    pub async fn new(
-        state: state::Writer,
-        storage: Storage,
-    ) -> anyhow::Result<(Self, watch::Receiver<block::Height>)> {
+    pub async fn new(storage: Storage) -> anyhow::Result<(Self, watch::Receiver<block::Height>)> {
         let (queue_tx, queue_rx) = mpsc::channel(10);
         let initial_height = match storage.latest_version().await? {
             Some(version) => version.try_into().unwrap(),
@@ -33,11 +30,7 @@ impl Consensus {
         };
         let (height_tx, height_rx) = watch::channel(initial_height);
 
-        tokio::spawn(
-            Worker::new(state, storage, queue_rx, height_tx)
-                .await?
-                .run(),
-        );
+        tokio::spawn(Worker::new(storage, queue_rx, height_tx).await?.run());
 
         Ok((
             Self {

@@ -131,15 +131,13 @@ async fn main() -> anyhow::Result<()> {
                 "starting pd"
             );
             // Initialize state
-            let (state_reader, state_writer) = pd::state::new(&database_uri).await?;
+            //let (state_reader, state_writer) = pd::state::new(&database_uri).await?;
 
             let storage = pd::Storage::load(rocks_path).await?;
 
-            let (consensus, height_rx) = pd::Consensus::new(state_writer, storage.clone()).await?;
-            // Hack: thread the new mempool inside the old mempool as a sidecar
-            let new_mempool = pd::Mempool::new(storage.clone(), height_rx).await?;
-            let mempool = pd::OldMempool::new(state_reader.clone(), new_mempool);
-            let info = pd::Info::new(state_reader.clone(), storage.clone());
+            let (consensus, height_rx) = pd::Consensus::new(storage.clone()).await?;
+            let mempool = pd::Mempool::new(storage.clone(), height_rx).await?;
+            let info = pd::Info::new(storage.clone());
             let snapshot = pd::Snapshot {};
 
             let abci_server = tokio::spawn(
@@ -159,7 +157,7 @@ async fn main() -> anyhow::Result<()> {
                         Some(remote_addr) => tracing::error_span!("light_wallet", ?remote_addr),
                         None => tracing::error_span!("light_wallet"),
                     })
-                    .add_service(LightWalletServer::new(state_reader.clone()))
+                    .add_service(LightWalletServer::new(storage.clone()))
                     .serve(
                         format!("{}:{}", host, light_wallet_port)
                             .parse()
@@ -172,7 +170,7 @@ async fn main() -> anyhow::Result<()> {
                         Some(remote_addr) => tracing::error_span!("thin_wallet", ?remote_addr),
                         None => tracing::error_span!("thin_wallet"),
                     })
-                    .add_service(ThinWalletServer::new(state_reader.clone()))
+                    .add_service(ThinWalletServer::new(storage.clone()))
                     .serve(
                         format!("{}:{}", host, thin_wallet_port)
                             .parse()
