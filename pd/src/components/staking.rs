@@ -31,7 +31,7 @@ pub struct Staking {
 }
 
 impl Staking {
-    #[instrument(skip(self))]
+    #[instrument(skip(self, epoch_to_end), fields(index = epoch_to_end.index))]
     async fn end_epoch(&mut self, epoch_to_end: Epoch) -> Result<()> {
         // calculate rate data for next rate, move previous next rate to cur rate,
         // and save the next rate data. ensure that non-Active validators maintain constant rates.
