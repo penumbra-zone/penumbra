@@ -15,7 +15,7 @@ mod undelegate;
 mod validator;
 mod validator_state;
 
-pub use changes::DelegationChanges;
+pub use changes::{DelegationChanges, PendingRewardNote, RewardNotes};
 pub use delegate::Delegate;
 pub use epoch::Epoch;
 pub use funding_stream::FundingStream;
