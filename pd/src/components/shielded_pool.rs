@@ -465,9 +465,8 @@ pub trait View: WriteOverlayExt {
             .await
     }
 
-    #[instrument(skip(self))]
     async fn set_nct_anchor(&self, height: u64, anchor: merkle::Root) {
-        tracing::debug!("writing anchor to tree");
+        tracing::debug!(?height, ?anchor, "writing anchor");
 
         // Write the NCT anchor both as a value, so we can look it up,
         self.put_domain(
