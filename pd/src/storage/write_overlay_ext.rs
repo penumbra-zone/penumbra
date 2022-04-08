@@ -10,7 +10,7 @@ use tracing::instrument;
 /// An extension trait that allows writing proto-encoded domain types to
 /// a shared [`WriteOverlay`].
 #[async_trait]
-pub trait WriteOverlayExt: Send + Sync + Sized {
+pub trait WriteOverlayExt: Send + Sync + Sized + Clone + 'static {
     /// Reads a domain type from the overlay, using the proto encoding.
     async fn get_domain<D, P>(&self, key: KeyHash) -> Result<Option<D>>
     where
@@ -45,7 +45,7 @@ pub trait WriteOverlayExt: Send + Sync + Sized {
 }
 
 #[async_trait]
-impl<R: TreeReader + Sync> WriteOverlayExt for Arc<Mutex<WriteOverlay<R>>> {
+impl<R: TreeReader + Sync + 'static> WriteOverlayExt for Arc<Mutex<WriteOverlay<R>>> {
     #[instrument(skip(self, key))]
     async fn get_domain<D, P>(&self, key: KeyHash) -> Result<Option<D>>
     where

@@ -1,27 +1,21 @@
 use anyhow::Result;
-use penumbra_crypto::asset;
-use penumbra_proto::{light_wallet::ChainParamsRequest, thin_wallet::AssetListRequest};
+use penumbra_chain::KnownAssets;
+use penumbra_proto::light_wallet::{AssetListRequest, ChainParamsRequest};
 use tracing::instrument;
 
 use crate::{ClientStateFile, Opt};
 
 #[instrument(skip(opt, state))]
 pub async fn assets(opt: &Opt, state: &mut ClientStateFile) -> Result<()> {
-    let mut client = opt.thin_wallet_client().await?;
+    let mut client = opt.light_wallet_client().await?;
 
     // Update asset registry.
     let request = tonic::Request::new(AssetListRequest {
         chain_id: state.chain_id().unwrap_or_default(),
     });
-    let mut stream = client.asset_list(request).await?.into_inner();
-    while let Some(asset) = stream.message().await? {
-        state.asset_cache_mut().extend(std::iter::once(
-            asset::REGISTRY
-                .parse_denom(&asset.asset_denom)
-                .ok_or_else(|| {
-                    anyhow::anyhow!("invalid asset denomination: {}", asset.asset_denom)
-                })?,
-        ));
+    let assets: KnownAssets = client.asset_list(request).await?.into_inner().try_into()?;
+    for asset in assets.0 {
+        state.asset_cache_mut().extend(std::iter::once(asset.denom));
     }
 
     state.commit()?;

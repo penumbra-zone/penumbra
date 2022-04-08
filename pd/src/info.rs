@@ -32,7 +32,9 @@ impl Info {
 
         let last_block_height = match self.state.latest_block_info().await? {
             Some(schema::BlocksRow {
-                height, app_hash, ..
+                height,
+                app_hash: _,
+                ..
             }) => height.try_into().unwrap(),
             None => 0,
         };

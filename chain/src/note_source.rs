@@ -1,6 +1,9 @@
 use anyhow::{anyhow, Result};
+use penumbra_proto::{chain as pb, Protobuf};
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(try_from = "pb::NoteSource", into = "pb::NoteSource")]
 pub enum NoteSource {
     Transaction { id: [u8; 32] },
     Genesis,
@@ -47,6 +50,25 @@ impl TryFrom<[u8; 32]> for NoteSource {
                     data
                 )),
             }
+        }
+    }
+}
+
+impl Protobuf<pb::NoteSource> for NoteSource {}
+
+impl TryFrom<pb::NoteSource> for NoteSource {
+    type Error = anyhow::Error;
+    fn try_from(note_source: pb::NoteSource) -> Result<Self> {
+        Ok(<[u8; 32]>::try_from(note_source.inner)
+            .map_err(|_| anyhow!("expected 32 bytes"))?
+            .try_into()?)
+    }
+}
+
+impl From<NoteSource> for pb::NoteSource {
+    fn from(note_source: NoteSource) -> Self {
+        pb::NoteSource {
+            inner: note_source.to_bytes().to_vec(),
         }
     }
 }

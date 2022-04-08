@@ -4,10 +4,9 @@ use anyhow::{anyhow, Context, Result};
 use ark_ff::PrimeField;
 use async_trait::async_trait;
 use decaf377::{Fq, Fr};
-use penumbra_chain::{sync::CompactBlock, NoteSource};
+use penumbra_chain::{sync::CompactBlock, KnownAssets, NoteSource};
 use penumbra_crypto::{
-    asset,
-    asset::Denom,
+    asset::{self, Asset, Denom},
     ka,
     merkle::{self, Frontier, NoteCommitmentTree, TreeExt},
     note, Address, Note, Nullifier, One, Value,
@@ -63,7 +62,7 @@ impl Component for ShieldedPool {
                     )
                 })?;
 
-            self.overlay.register_denom(&denom).await;
+            self.overlay.register_denom(&denom).await?;
             self.mint_note(
                 Value {
                     amount: allocation.amount,
@@ -408,48 +407,57 @@ pub trait View: WriteOverlayExt {
         Ok(())
     }
 
-    async fn denom_by_asset(&self, asset_id: &asset::Id) -> Result<Option<Denom>> {
+    async fn known_assets(&self) -> Result<KnownAssets> {
         Ok(self
-            .get_proto(format!("shielded_pool/assets/{}/denom", asset_id).into())
+            .get_domain("shielded_pool/known_assets".into())
             .await?
-            .map(|denom: String| {
-                asset::REGISTRY
-                    .parse_denom(&denom)
-                    .expect("tree only records valid denoms")
-            }))
+            .unwrap_or_default())
+    }
+
+    async fn denom_by_asset(&self, asset_id: &asset::Id) -> Result<Option<Denom>> {
+        self.get_domain(format!("shielded_pool/assets/{}/denom", asset_id).into())
+            .await
     }
 
     #[instrument(skip(self))]
-    async fn register_denom(&self, denom: &Denom) {
-        let asset_id = denom.id();
-        tracing::debug!(?asset_id);
-        self.put_proto(
-            format!("shielded_pool/assets/{}/denom", asset_id).into(),
-            denom.to_string(),
-        )
-        .await
+    async fn register_denom(&self, denom: &Denom) -> Result<()> {
+        let id = denom.id();
+        if self.denom_by_asset(&id).await?.is_some() {
+            tracing::debug!(?denom, ?id, "skipping existing denom");
+            Ok(())
+        } else {
+            tracing::debug!(?denom, ?id, "registering new denom");
+            // We want to be able to query for the denom by asset ID...
+            self.put_domain(
+                format!("shielded_pool/assets/{}/denom", id).into(),
+                denom.clone(),
+            )
+            .await;
+            // ... and we want to record it in the list of known asset IDs
+            // (this requires reading the whole list, which is sad, but hopefully
+            // we don't do this often).
+            let mut known_assets = self.known_assets().await?;
+            known_assets.0.push(Asset {
+                id,
+                denom: denom.clone(),
+            });
+            self.put_domain("shielded_pool/known_assets".into(), known_assets)
+                .await;
+            Ok(())
+        }
     }
 
     async fn set_note_source(&self, note_commitment: &note::Commitment, source: NoteSource) {
-        self.put_proto(
+        self.put_domain(
             format!("shielded_pool/note_source/{}", note_commitment).into(),
-            // TODO: NoteSource proto?
-            source.to_bytes().to_vec(),
+            source,
         )
         .await
     }
 
     async fn note_source(&self, note_commitment: &note::Commitment) -> Result<Option<NoteSource>> {
-        Ok(self
-            .get_proto(format!("shielded_pool/note_source/{}", note_commitment).into())
-            .await?
-            // TODO: NoteSource proto?
-            .map(|source_bytes: Vec<u8>| {
-                <[u8; 32]>::try_from(source_bytes.as_slice())
-                    .expect("source is 32 bytes")
-                    .try_into()
-                    .expect("source is validly encoded")
-            }))
+        self.get_domain(format!("shielded_pool/note_source/{}", note_commitment).into())
+            .await
     }
 
     async fn set_compact_block(&self, compact_block: CompactBlock) {

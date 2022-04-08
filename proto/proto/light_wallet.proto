@@ -1,6 +1,7 @@
 syntax = "proto3";
 package penumbra.light_wallet;
 
+import "crypto.proto";
 import "chain.proto";
 import "stake.proto";
 
@@ -11,16 +12,23 @@ service LightWallet {
   rpc CompactBlockRange(CompactBlockRangeRequest) returns (stream chain.CompactBlock);
   rpc ChainParams(ChainParamsRequest) returns (chain.ChainParams);
   rpc ValidatorInfo(ValidatorInfoRequest) returns (stream stake.ValidatorInfo);
+  rpc AssetList(AssetListRequest) returns (chain.KnownAssets);
+}
+
+// Lists all assets in Asset Registry
+message AssetListRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
 }
 
 // Requests a range of compact block data.
 message CompactBlockRangeRequest {
   // The expected chain id (empty string if no expectation).
-  string chain_id = 3;
+  string chain_id = 1;
   // The start height of the range.
-  uint64 start_height = 1;
+  uint64 start_height = 2;
   // The end height of the range.
-  uint64 end_height = 2;
+  uint64 end_height = 3;
 }
 
 // Requests the global configuration data for the chain.
@@ -32,7 +40,7 @@ message ChainParamsRequest {
 // Requests information on the chain's validators.
 message ValidatorInfoRequest {
   // The expected chain id (empty string if no expectation).
-  string chain_id = 2;
+  string chain_id = 1;
   // Whether or not to return inactive validators
-  bool show_inactive = 1;
+  bool show_inactive = 2;
 }

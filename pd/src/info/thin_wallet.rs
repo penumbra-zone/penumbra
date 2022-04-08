@@ -1,15 +1,18 @@
 use penumbra_proto::{
     self as proto,
-    chain::AssetInfo,
-    thin_wallet::{
-        thin_wallet_server::ThinWallet, Asset, AssetListRequest, AssetLookupRequest,
-        TransactionByNoteRequest, TransactionDetail, ValidatorStatusRequest,
-    },
+    chain::NoteSource,
+    crypto::NoteCommitment,
+    thin_wallet::{thin_wallet_server::ThinWallet, ValidatorStatusRequest},
 };
 
-use tokio_stream::wrappers::ReceiverStream;
 use tonic::Status;
 use tracing::instrument;
+
+// We need to use the tracing-futures version of Instrument,
+// because we want to instrument a Stream, and the Stream trait
+// isn't in std, and the tracing::Instrument trait only works with
+// (stable) std types.
+//use tracing_futures::Instrument;
 
 use crate::components::{app::View as _, shielded_pool::View as _, staking::View as _};
 use crate::WriteOverlayExt;
@@ -18,42 +21,24 @@ struct WalletOverlay<T: WriteOverlayExt>(T);
 
 #[tonic::async_trait]
 impl<T: 'static + WriteOverlayExt> ThinWallet for WalletOverlay<T> {
-    type AssetListStream = ReceiverStream<Result<Asset, Status>>;
-
     #[instrument(skip(self, request))]
     async fn transaction_by_note(
         &self,
-        request: tonic::Request<TransactionByNoteRequest>,
-    ) -> Result<tonic::Response<TransactionDetail>, Status> {
-        Ok(self
+        request: tonic::Request<NoteCommitment>,
+    ) -> Result<tonic::Response<NoteSource>, Status> {
+        let cm = request
+            .into_inner()
+            .try_into()
+            .map_err(|_| Status::invalid_argument("invalid commitment"))?;
+        let source = self
             .0
-            .get_transaction_by_note(request)
+            .note_source(&cm)
             .await
-            .map_err(|_| tonic::Status::not_found("transaction not found"))?)
-    }
+            .map_err(|_| Status::unavailable("database error"))?
+            .ok_or_else(|| Status::not_found("note commitment not found"))?;
+        tracing::debug!(?cm, ?source);
 
-    #[instrument(skip(self, request))]
-    async fn asset_lookup(
-        &self,
-        request: tonic::Request<AssetLookupRequest>,
-    ) -> Result<tonic::Response<AssetInfo>, Status> {
-        Ok(self
-            .0
-            .get_asset_info(request)
-            .await
-            .map_err(|_| tonic::Status::not_found("asset not found"))?)
-    }
-
-    #[instrument(skip(self, request))]
-    async fn asset_list(
-        &self,
-        request: tonic::Request<AssetListRequest>,
-    ) -> Result<tonic::Response<Self::AssetListStream>, Status> {
-        Ok(self
-            .0
-            .get_asset_list(request)
-            .await
-            .map_err(|_| tonic::Status::unavailable("database error"))?)
+        Ok(tonic::Response::new(source.into()))
     }
 
     #[instrument(skip(self, request))]
@@ -61,14 +46,23 @@ impl<T: 'static + WriteOverlayExt> ThinWallet for WalletOverlay<T> {
         &self,
         request: tonic::Request<ValidatorStatusRequest>,
     ) -> Result<tonic::Response<proto::stake::ValidatorStatus>, Status> {
-        let x = self
-            .0
-            .get_validator_status(request)
-            .await
-            .map_err(|e| tonic::Status::internal(e.to_string()))?
-            .unwrap();
+        self.0.check_chain_id(&request.get_ref().chain_id).await?;
 
-        Ok(tonic::Response::new(x.into()))
+        let id = request
+            .into_inner()
+            .identity_key
+            .ok_or_else(|| Status::invalid_argument("missing identity key"))?
+            .try_into()
+            .map_err(|_| Status::invalid_argument("invalid identity key"))?;
+
+        let status = self
+            .0
+            .validator_status(&id)
+            .await
+            .map_err(|_| Status::unavailable("database error"))?
+            .ok_or_else(|| Status::not_found("validator not found"))?;
+
+        Ok(tonic::Response::new(status.into()))
     }
 
     #[instrument(skip(self, request))]

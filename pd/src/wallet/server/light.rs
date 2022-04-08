@@ -2,13 +2,14 @@ use std::pin::Pin;
 
 use futures::stream::{StreamExt, TryStreamExt};
 use penumbra_proto::{
-    chain::{ChainParams, CompactBlock},
+    chain::{ChainParams, CompactBlock, KnownAssets},
     light_wallet::{
-        light_wallet_server::LightWallet, ChainParamsRequest, CompactBlockRangeRequest,
-        ValidatorInfoRequest,
+        light_wallet_server::LightWallet, AssetListRequest, ChainParamsRequest,
+        CompactBlockRangeRequest, ValidatorInfoRequest,
     },
     stake::ValidatorInfo,
 };
+
 use tonic::Status;
 use tracing::instrument;
 
@@ -54,6 +55,24 @@ impl LightWallet for state::Reader {
         Ok(tonic::Response::new(
             futures::stream::iter(validator_info.into_iter().map(|info| Ok(info.into()))).boxed(),
         ))
+    }
+
+    #[instrument(skip(self, request))]
+    async fn asset_list(
+        &self,
+        request: tonic::Request<AssetListRequest>,
+    ) -> Result<tonic::Response<KnownAssets>, Status> {
+        self.check_chain_id(&request.get_ref().chain_id)?;
+
+        tracing::debug!("processing request");
+
+        let assets = self
+            .asset_list()
+            .await
+            .map_err(|_| tonic::Status::unavailable("database error"))
+            .unwrap();
+
+        Ok(tonic::Response::new(KnownAssets { assets }))
     }
 
     #[instrument(

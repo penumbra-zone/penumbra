@@ -17,8 +17,9 @@ use penumbra_crypto::{
 use penumbra_proto::{
     chain,
     chain::CompactBlock,
+    chain::NoteSource,
     crypto::NoteCommitment as ProtoNoteCommitment,
-    thin_wallet::{Asset, TransactionDetail},
+    crypto::{Asset, AssetId, Denom},
     transaction::OutputBody,
     Protobuf,
 };
@@ -604,7 +605,7 @@ impl Reader {
     }
 
     /// Retrieve the [`TransactionDetail`] for a given note commitment.
-    pub async fn transaction_by_note(&self, note_commitment: Vec<u8>) -> Result<TransactionDetail> {
+    pub async fn transaction_by_note(&self, note_commitment: Vec<u8>) -> Result<NoteSource> {
         let mut conn = self.pool.acquire().await?;
 
         let row = query!(
@@ -613,8 +614,8 @@ impl Reader {
         )
         .fetch_one(&mut conn)
         .await?;
-        Ok(TransactionDetail {
-            id: row.transaction_id,
+        Ok(NoteSource {
+            inner: row.transaction_id,
         })
     }
 
@@ -659,8 +660,10 @@ impl Reader {
             .await?
             .into_iter()
             .map(|row| Asset {
-                asset_denom: row.denom,
-                asset_id: row.asset_id,
+                denom: Some(Denom { denom: row.denom }),
+                id: Some(AssetId {
+                    inner: row.asset_id,
+                }),
             })
             .collect())
     }

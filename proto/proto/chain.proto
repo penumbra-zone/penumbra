@@ -24,6 +24,7 @@ message ChainParams {
   bool outbound_ics20_transfers_enabled = 8;
 }
 
+// TODO: delete with legacy code
 // Information about a given asset at a given time (as specified by block
 // height). Currently this only contains the total supply.
 message AssetInfo {
@@ -40,4 +41,13 @@ message CompactBlock {
   repeated transaction.OutputBody outputs = 2;
   // Nullifiers identifying spent notes.
   repeated bytes nullifiers = 3;
+}
+
+message KnownAssets {
+  repeated crypto.Asset assets = 1;
+}
+
+// A spicy transaction ID
+message NoteSource {
+  bytes inner = 1;
 }
