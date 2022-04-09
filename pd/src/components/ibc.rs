@@ -12,8 +12,8 @@ use ibc::core::{
 };
 use penumbra_proto::ibc::ibc_action::Action::CreateClient;
 
-use super::{app::View as _, Component, Overlay};
-use crate::{genesis, WriteOverlayExt};
+use super::{app::View as _, Component};
+use crate::{genesis, Overlay, WriteOverlayExt};
 
 pub struct IBCComponent {
     overlay: Overlay,

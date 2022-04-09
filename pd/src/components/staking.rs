@@ -19,8 +19,8 @@ use tendermint::{
 };
 use tracing::instrument;
 
-use super::{app::View as _, shielded_pool::View as _, Component, Overlay};
-use crate::{genesis, WriteOverlayExt};
+use super::{app::View as _, shielded_pool::View as _, Component};
+use crate::{genesis, Overlay, WriteOverlayExt};
 
 // Staking component
 pub struct Staking {

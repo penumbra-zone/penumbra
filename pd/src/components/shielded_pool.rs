@@ -16,9 +16,8 @@ use penumbra_transaction::{action::output, Action, Transaction};
 use tendermint::abci;
 use tracing::instrument;
 
-use super::{app::View as _, staking::View as _};
-use super::{Component, Overlay};
-use crate::{genesis, WriteOverlayExt};
+use super::{app::View as _, staking::View as _, Component};
+use crate::{genesis, Overlay, WriteOverlayExt};
 
 // Stub component
 pub struct ShieldedPool {

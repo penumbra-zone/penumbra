@@ -7,11 +7,14 @@ use jmt::{
     WriteOverlay,
 };
 use rocksdb::DB;
+use tokio::sync::Mutex;
 use tracing::{instrument, Span};
 
 mod write_overlay_ext;
 
 pub use write_overlay_ext::WriteOverlayExt;
+
+pub type Overlay = Arc<Mutex<WriteOverlay<Storage>>>;
 
 #[derive(Clone, Debug)]
 pub struct Storage(Arc<DB>);
