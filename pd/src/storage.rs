@@ -40,6 +40,22 @@ impl Storage {
             .await?
             .map(|(node_key, _)| node_key.version()))
     }
+
+    /// Returns a new [`Overlay`] on top of the latest version of the tree.
+    pub async fn overlay(&self) -> Result<Overlay> {
+        // If the tree is empty, use PRE_GENESIS_VERSION as the version,
+        // so that the first commit will be at version 0.
+        let version = self
+            .latest_version()
+            .await?
+            .unwrap_or(WriteOverlay::<Storage>::PRE_GENESIS_VERSION);
+
+        tracing::debug!("creating overlay for version {}", version);
+        Ok(Arc::new(Mutex::new(WriteOverlay::new(
+            self.clone(),
+            version,
+        ))))
+    }
 }
 
 impl TreeWriter for Storage {

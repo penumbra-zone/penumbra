@@ -1,12 +1,10 @@
-use std::sync::Arc;
-
 use anyhow::Result;
 use bytes::Bytes;
-use jmt::WriteOverlay;
+
 use penumbra_proto::Protobuf;
 use penumbra_transaction::Transaction;
 use tendermint::block;
-use tokio::sync::{mpsc, watch, Mutex};
+use tokio::sync::{mpsc, watch};
 use tracing::Instrument;
 
 use super::Message;
@@ -23,13 +21,9 @@ impl Worker {
     pub async fn new(
         storage: Storage,
         queue: mpsc::Receiver<Message>,
-        mut height_rx: watch::Receiver<block::Height>,
+        height_rx: watch::Receiver<block::Height>,
     ) -> Result<Self> {
-        let app = App::new(Arc::new(Mutex::new(WriteOverlay::new(
-            storage.clone(),
-            height_rx.borrow_and_update().value(),
-        ))))
-        .await?;
+        let app = App::new(storage.overlay().await?).await?;
 
         Ok(Self {
             queue,
@@ -63,11 +57,7 @@ impl Worker {
                     if let Ok(()) = change {
                         let height = self.height_rx.borrow().value();
                         tracing::info!(?height, "resetting ephemeral mempool state");
-                        self.app = App::new(Arc::new(Mutex::new(WriteOverlay::new(
-                            self.storage.clone(),
-                            height,
-                        ))))
-                        .await?;
+                        self.app = App::new(self.storage.overlay().await?).await?;
                     } else {
                         tracing::info!("consensus worker shut down, shutting down mempool worker");
                         // The consensus worker shut down, we should too.
