@@ -182,7 +182,7 @@ impl Component for ShieldedPool {
 
     #[instrument(name = "shielded_pool", skip(self, tx))]
     async fn execute_tx(&mut self, tx: &Transaction) -> Result<()> {
-        let should_quarantine = tx
+        let _should_quarantine = tx
             .transaction_body
             .actions
             .iter()
@@ -190,16 +190,22 @@ impl Component for ShieldedPool {
 
         let source = NoteSource::Transaction { id: tx.id() };
 
+        /*
         if should_quarantine {
             tracing::warn!("skipping processing, TODO: implement");
         } else {
-            for compact_output in tx.output_bodies() {
-                self.add_note(compact_output, source).await;
-            }
-            for spent_nullifier in tx.spent_nullifiers() {
-                self.overlay.spend_nullifier(spent_nullifier, source).await;
-            }
+         */
+        for compact_output in tx.output_bodies() {
+            self.add_note(compact_output, source).await;
         }
+        for spent_nullifier in tx.spent_nullifiers() {
+            // We need to record the nullifier as spent in the JMT (to prevent
+            // double spends), as well as in the CompactBlock (so that clients
+            // can learn that their note was spent).
+            self.overlay.spend_nullifier(spent_nullifier, source).await;
+            self.compact_block.nullifiers.push(spent_nullifier);
+        }
+        //}
 
         Ok(())
     }
