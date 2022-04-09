@@ -15,12 +15,12 @@ use tracing::instrument;
 //use tracing_futures::Instrument;
 
 use crate::components::{app::View as _, shielded_pool::View as _, staking::View as _};
-use crate::WriteOverlayExt;
+use crate::OverlayExt;
 
 use super::RpcOverlay;
 
 #[tonic::async_trait]
-impl<T: 'static + WriteOverlayExt> ThinWallet for RpcOverlay<T> {
+impl<T: 'static + OverlayExt> ThinWallet for RpcOverlay<T> {
     #[instrument(skip(self, request))]
     async fn transaction_by_note(
         &self,
