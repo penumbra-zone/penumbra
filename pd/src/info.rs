@@ -9,7 +9,7 @@ use tendermint::abci::{self, response::Echo, InfoRequest, InfoResponse};
 use tower_abci::BoxError;
 use tracing::Instrument;
 
-use crate::{db::schema, state, RequestExt, OverlayExt, Storage};
+use crate::{db::schema, state, OverlayExt, RequestExt, Storage};
 
 mod light_wallet;
 mod thin_wallet;

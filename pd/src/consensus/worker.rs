@@ -1,8 +1,7 @@
-use std::{borrow::Borrow, sync::Arc};
+use std::borrow::Borrow;
 
 use anyhow::{anyhow, Result};
 use futures::StreamExt;
-use jmt::WriteOverlay;
 use metrics::absolute_counter;
 use penumbra_crypto::merkle::NoteCommitmentTree;
 use penumbra_proto::Protobuf;
@@ -12,7 +11,7 @@ use tendermint::{
     abci::{self, ConsensusRequest as Request, ConsensusResponse as Response},
     block,
 };
-use tokio::sync::{mpsc, watch, Mutex};
+use tokio::sync::{mpsc, watch};
 use tracing::Instrument;
 
 use super::Message;
@@ -49,13 +48,7 @@ impl Worker {
         // "contaminates" all of the other logic of the application to handle the initialization
         // special case.
 
-        let height = state.private_reader().height().into();
-        tracing::warn!(?height);
-        let app = App::new(Arc::new(Mutex::new(WriteOverlay::new(
-            storage.clone(),
-            height,
-        ))))
-        .await?;
+        let app = App::new(storage.overlay().await?).await?;
 
         let reader = state.private_reader().clone();
         let mut worker = Self {
@@ -102,13 +95,7 @@ impl Worker {
         // Now (re)load the caches from the state writer:
         self.state.init_caches().await?;
 
-        let height = self.state.private_reader().height().into();
-        tracing::warn!(?height);
-        self.app = App::new(Arc::new(Mutex::new(WriteOverlay::new(
-            self.storage.clone(),
-            height,
-        ))))
-        .await?;
+        self.app = App::new(self.storage.overlay().await?).await?;
 
         Ok(())
     }
@@ -182,16 +169,10 @@ impl Worker {
 
         // Begin new sidecar code
 
-        // We want to write the genesis state as version 0 of the tree, so we
-        // need to initialize the write overlay with the PRE_GENESIS_VERSION.
-        // To do this, it's easiest to just overwrite the app here.
-        self.app = App::new(Arc::new(Mutex::new(WriteOverlay::new(
-            self.storage.clone(),
-            // Some kind of visibility issue on associated consts?
-            //WriteOverlay::PRE_GENESIS_VERSION,
-            u64::MAX,
-        ))))
-        .await?;
+        // Check that we haven't got a duplicated InitChain message for some reason:
+        if self.storage.latest_version().await?.is_some() {
+            return Err(anyhow!("database already initialized"));
+        }
         self.app.init_chain(&app_state).await?;
         // Note: App::commit resets internal components, so we don't need to do that ourselves.
         let (jmt_root, _) = self.app.commit(self.storage.clone()).await?;
