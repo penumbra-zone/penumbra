@@ -22,12 +22,10 @@ use tracing::instrument;
 // use tracing_futures::Instrument;
 
 use crate::components::{app::View as _, shielded_pool::View as _, staking::View as _};
-use crate::OverlayExt;
-
-use super::RpcOverlay;
+use crate::Storage;
 
 #[tonic::async_trait]
-impl<T: OverlayExt> LightWallet for RpcOverlay<T> {
+impl LightWallet for Storage {
     type CompactBlockRangeStream =
         Pin<Box<dyn futures::Stream<Item = Result<CompactBlock, tonic::Status>> + Send>>;
 
@@ -39,10 +37,10 @@ impl<T: OverlayExt> LightWallet for RpcOverlay<T> {
         &self,
         request: tonic::Request<ChainParamsRequest>,
     ) -> Result<tonic::Response<ChainParams>, Status> {
-        self.0.check_chain_id(&request.get_ref().chain_id).await?;
+        let overlay = self.overlay_tonic().await?;
+        overlay.check_chain_id(&request.get_ref().chain_id).await?;
 
-        let chain_params = self
-            .0
+        let chain_params = overlay
             .get_chain_params()
             .await
             .map_err(|_| tonic::Status::unavailable("database error"))?;
@@ -55,10 +53,10 @@ impl<T: OverlayExt> LightWallet for RpcOverlay<T> {
         &self,
         request: tonic::Request<AssetListRequest>,
     ) -> Result<tonic::Response<KnownAssets>, Status> {
-        self.0.check_chain_id(&request.get_ref().chain_id).await?;
+        let overlay = self.overlay_tonic().await?;
+        overlay.check_chain_id(&request.get_ref().chain_id).await?;
 
-        let known_assets = self
-            .0
+        let known_assets = overlay
             .known_assets()
             .await
             .map_err(|_| tonic::Status::unavailable("database error"))?;
@@ -70,19 +68,18 @@ impl<T: OverlayExt> LightWallet for RpcOverlay<T> {
         &self,
         request: tonic::Request<ValidatorInfoRequest>,
     ) -> Result<tonic::Response<Self::ValidatorInfoStream>, Status> {
-        self.0.check_chain_id(&request.get_ref().chain_id).await?;
+        let overlay = self.overlay_tonic().await?;
+        overlay.check_chain_id(&request.get_ref().chain_id).await?;
 
-        let validators = self
-            .0
+        let validators = overlay
             .validator_list()
             .await
             .map_err(|_| tonic::Status::unavailable("database error"))?;
 
         let _show_inactive = request.get_ref().show_inactive;
-        let store = self.0.clone();
         let s = try_stream! {
             for validator in validators {
-                let info = store.validator_info(&validator)
+                let info = overlay.validator_info(&validator)
                     .await?
                     .expect("known validator must be present");
                 // TODO: filter by show_inactive
@@ -109,7 +106,8 @@ impl<T: OverlayExt> LightWallet for RpcOverlay<T> {
         &self,
         request: tonic::Request<CompactBlockRangeRequest>,
     ) -> Result<tonic::Response<Self::CompactBlockRangeStream>, Status> {
-        self.0.check_chain_id(&request.get_ref().chain_id).await?;
+        let overlay = self.overlay_tonic().await?;
+        overlay.check_chain_id(&request.get_ref().chain_id).await?;
 
         let CompactBlockRangeRequest {
             start_height,
@@ -117,8 +115,7 @@ impl<T: OverlayExt> LightWallet for RpcOverlay<T> {
             ..
         } = request.into_inner();
 
-        let current_height = self
-            .0
+        let current_height = overlay
             .get_block_height()
             .await
             .map_err(|_| tonic::Status::unavailable("database error"))?;
@@ -132,7 +129,6 @@ impl<T: OverlayExt> LightWallet for RpcOverlay<T> {
             std::cmp::min(end_height, current_height)
         };
 
-        let store = self.0.clone();
         let block_range = try_stream! {
             // It's useful to record the end height since we adjusted it,
             // but the start height is already recorded in the span.
@@ -142,7 +138,7 @@ impl<T: OverlayExt> LightWallet for RpcOverlay<T> {
                 "starting compact_block_range response"
             );
             for height in start_height..end_height {
-                let block = store.compact_block(height)
+                let block = overlay.compact_block(height)
                     .await?
                     .expect("compact block for in-range height must be present");
                 yield block.to_proto();

@@ -56,6 +56,18 @@ impl Storage {
             version,
         ))))
     }
+
+    /// Like [`Self::overlay`], but bundles in a [`tonic`] error conversion.
+    ///
+    /// This is useful for implementing gRPC services that query the storage:
+    /// each gRPC request can create an ephemeral [`Overlay`] pinning the current
+    /// version at the time the request was received, and then query it using
+    /// component `View`s to handle the request.
+    pub async fn overlay_tonic(&self) -> std::result::Result<Overlay, tonic::Status> {
+        self.overlay()
+            .await
+            .map_err(|e| tonic::Status::internal(e.to_string()))
+    }
 }
 
 impl TreeWriter for Storage {
