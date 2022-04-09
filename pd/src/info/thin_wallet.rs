@@ -15,23 +15,21 @@ use tracing::instrument;
 //use tracing_futures::Instrument;
 
 use crate::components::{app::View as _, shielded_pool::View as _, staking::View as _};
-use crate::OverlayExt;
-
-use super::RpcOverlay;
+use crate::Storage;
 
 #[tonic::async_trait]
-impl<T: 'static + OverlayExt> ThinWallet for RpcOverlay<T> {
+impl ThinWallet for Storage {
     #[instrument(skip(self, request))]
     async fn transaction_by_note(
         &self,
         request: tonic::Request<NoteCommitment>,
     ) -> Result<tonic::Response<NoteSource>, Status> {
+        let overlay = self.overlay_tonic().await?;
         let cm = request
             .into_inner()
             .try_into()
             .map_err(|_| Status::invalid_argument("invalid commitment"))?;
-        let source = self
-            .0
+        let source = overlay
             .note_source(&cm)
             .await
             .map_err(|_| Status::unavailable("database error"))?
@@ -46,7 +44,8 @@ impl<T: 'static + OverlayExt> ThinWallet for RpcOverlay<T> {
         &self,
         request: tonic::Request<ValidatorStatusRequest>,
     ) -> Result<tonic::Response<proto::stake::ValidatorStatus>, Status> {
-        self.0.check_chain_id(&request.get_ref().chain_id).await?;
+        let overlay = self.overlay_tonic().await?;
+        overlay.check_chain_id(&request.get_ref().chain_id).await?;
 
         let id = request
             .into_inner()
@@ -55,8 +54,7 @@ impl<T: 'static + OverlayExt> ThinWallet for RpcOverlay<T> {
             .try_into()
             .map_err(|_| Status::invalid_argument("invalid identity key"))?;
 
-        let status = self
-            .0
+        let status = overlay
             .validator_status(&id)
             .await
             .map_err(|_| Status::unavailable("database error"))?
@@ -70,13 +68,13 @@ impl<T: 'static + OverlayExt> ThinWallet for RpcOverlay<T> {
         &self,
         request: tonic::Request<proto::stake::IdentityKey>,
     ) -> Result<tonic::Response<proto::stake::RateData>, Status> {
+        let overlay = self.overlay_tonic().await?;
         let identity_key = request
             .into_inner()
             .try_into()
             .map_err(|_| tonic::Status::invalid_argument("invalid identity key"))?;
 
-        let rate_data = self
-            .0
+        let rate_data = overlay
             .next_validator_rate(&identity_key)
             .await
             .map_err(|e| tonic::Status::internal(e.to_string()))?
