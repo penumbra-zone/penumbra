@@ -134,6 +134,19 @@ impl ClientData {
             processed_height,
         }
     }
+    pub fn with_new_client_state(
+        &self,
+        new_client_state: AnyClientState,
+        new_processed_time: String,
+        new_processed_height: u64,
+    ) -> Self {
+        ClientData {
+            client_id: self.client_id.clone(),
+            client_state: ClientState(new_client_state),
+            processed_time: new_processed_time,
+            processed_height: new_processed_height,
+        }
+    }
 }
 
 impl Protobuf<pb::ClientData> for ClientData {}

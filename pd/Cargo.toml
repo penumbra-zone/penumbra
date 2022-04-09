@@ -24,7 +24,6 @@ penumbra-transaction = { path = "../transaction" }
 ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 tower-abci = { git = "https://github.com/penumbra-zone/tower-abci/" }
-tendermint-config = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "master" }
 #tendermint-proto = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "master" }
 tendermint-proto = "0.23.5" 
 tendermint = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "master" }
@@ -71,6 +70,7 @@ rocksdb = "0.18.0"
 #ibc = { path = "../../ibc-rs/modules" }
 ibc = "0.13.0"
 ibc-proto = "0.17.0"
+tendermint-light-client-verifier = "0.23.5"
 
 [build-dependencies]
 vergen = "5"
