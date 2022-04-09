@@ -10,7 +10,7 @@ use tendermint::abci::{self, types::ValidatorUpdate};
 use tendermint::Time;
 use tracing::instrument;
 
-use crate::{genesis, Overlay, Storage, WriteOverlayExt};
+use crate::{genesis, Overlay, OverlayExt, Storage};
 
 use super::{Component, IBCComponent, ShieldedPool, Staking};
 
@@ -152,7 +152,7 @@ impl Component for App {
 /// Note: the `get_` methods in this trait assume that the state store has been
 /// initialized, so they will error on an empty state.
 #[async_trait]
-pub trait View: WriteOverlayExt {
+pub trait View: OverlayExt {
     /// Gets the chain parameters from the JMT.
     async fn get_chain_params(&self) -> Result<ChainParams> {
         self.get_domain(b"chain_params".into())
@@ -243,4 +243,4 @@ pub trait View: WriteOverlayExt {
     }
 }
 
-impl<T: WriteOverlayExt> View for T {}
+impl<T: OverlayExt> View for T {}

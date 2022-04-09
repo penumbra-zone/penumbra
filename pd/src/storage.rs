@@ -10,9 +10,9 @@ use rocksdb::DB;
 use tokio::sync::Mutex;
 use tracing::{instrument, Span};
 
-mod write_overlay_ext;
+mod overlay_ext;
 
-pub use write_overlay_ext::WriteOverlayExt;
+pub use overlay_ext::OverlayExt;
 
 pub type Overlay = Arc<Mutex<WriteOverlay<Storage>>>;
 

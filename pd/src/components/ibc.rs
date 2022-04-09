@@ -13,7 +13,7 @@ use ibc::core::{
 use penumbra_proto::ibc::ibc_action::Action::CreateClient;
 
 use super::{app::View as _, Component};
-use crate::{genesis, Overlay, WriteOverlayExt};
+use crate::{genesis, Overlay, OverlayExt};
 
 pub struct IBCComponent {
     overlay: Overlay,
@@ -149,7 +149,7 @@ impl IBCComponent {
 }
 
 #[async_trait]
-pub trait View: WriteOverlayExt + Send + Sync {
+pub trait View: OverlayExt + Send + Sync {
     async fn put_client_counter(&mut self, counter: ClientCounter) {
         self.put_domain("ibc/ics02-client/client_counter".into(), counter)
             .await;
@@ -189,4 +189,4 @@ pub trait View: WriteOverlayExt + Send + Sync {
     }
 }
 
-impl<T: WriteOverlayExt + Send + Sync> View for T {}
+impl<T: OverlayExt + Send + Sync> View for T {}

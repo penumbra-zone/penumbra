@@ -17,7 +17,7 @@ use tendermint::abci;
 use tracing::instrument;
 
 use super::{app::View as _, staking::View as _, Component};
-use crate::{genesis, Overlay, WriteOverlayExt};
+use crate::{genesis, Overlay, OverlayExt};
 
 // Stub component
 pub struct ShieldedPool {
@@ -362,7 +362,7 @@ impl ShieldedPool {
 ///
 /// TODO: should this be split into Read and Write traits?
 #[async_trait]
-pub trait View: WriteOverlayExt {
+pub trait View: OverlayExt {
     async fn token_supply(&self, asset_id: &asset::Id) -> Result<Option<u64>> {
         self.get_proto(format!("shielded_pool/assets/{}/token_supply", asset_id).into())
             .await
@@ -539,4 +539,4 @@ pub trait View: WriteOverlayExt {
     }
 }
 
-impl<T: WriteOverlayExt> View for T {}
+impl<T: OverlayExt> View for T {}

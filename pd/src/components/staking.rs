@@ -20,7 +20,7 @@ use tendermint::{
 use tracing::instrument;
 
 use super::{app::View as _, shielded_pool::View as _, Component};
-use crate::{genesis, Overlay, WriteOverlayExt};
+use crate::{genesis, Overlay, OverlayExt};
 
 // Staking component
 pub struct Staking {
@@ -748,7 +748,7 @@ impl Component for Staking {
 ///
 /// TODO: should this be split into Read and Write traits?
 #[async_trait]
-pub trait View: WriteOverlayExt {
+pub trait View: OverlayExt {
     async fn current_base_rate(&self) -> Result<BaseRateData> {
         self.get_domain("staking/base_rate/current".into())
             .await
@@ -1024,4 +1024,4 @@ pub trait View: WriteOverlayExt {
     }
 }
 
-impl<T: WriteOverlayExt + Send + Sync> View for T {}
+impl<T: OverlayExt + Send + Sync> View for T {}
