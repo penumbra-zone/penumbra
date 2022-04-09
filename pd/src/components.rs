@@ -5,11 +5,12 @@ use tokio::sync::Mutex;
 
 use crate::Storage;
 
-pub(crate) mod app;
 mod component;
-mod ibc;
-pub(crate) mod shielded_pool;
-pub(crate) mod staking;
+
+pub mod app;
+pub mod ibc;
+pub mod shielded_pool;
+pub mod staking;
 
 // TODO: demote this from `pub` at some point when that's
 // not likely to generate conflicts
@@ -20,5 +21,3 @@ pub use app::App;
 pub use component::Component;
 pub use shielded_pool::ShieldedPool;
 pub use staking::Staking;
-
-pub type Overlay = Arc<Mutex<WriteOverlay<Storage>>>;

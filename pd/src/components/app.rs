@@ -10,9 +10,9 @@ use tendermint::abci::{self, types::ValidatorUpdate};
 use tendermint::Time;
 use tracing::instrument;
 
-use crate::{genesis, Storage, WriteOverlayExt};
+use crate::{genesis, Overlay, Storage, WriteOverlayExt};
 
-use super::{Component, IBCComponent, Overlay, ShieldedPool, Staking};
+use super::{Component, IBCComponent, ShieldedPool, Staking};
 
 /// The Penumbra application, written as a bundle of [`Component`]s.
 ///
