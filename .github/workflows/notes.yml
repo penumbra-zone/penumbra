@@ -44,7 +44,6 @@ jobs:
           cargo doc --no-deps \
             -p tendermint:0.23.5 \
             -p tower-abci \
-            -p incrementalmerkletree \
             -p jmt \
             -p ark-ff \
             -p ark-serialize \
