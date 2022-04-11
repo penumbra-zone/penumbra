@@ -1,4 +1,4 @@
-FROM rust:1.56 as build
+FROM rust:latest as build
 
 # Specify the cargo cache dir as a volume to improve build speed
 VOLUME ["/root/.cargo"]
