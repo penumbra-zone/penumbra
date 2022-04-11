@@ -1,4 +1,4 @@
-FROM rust:1.56 as build
+FROM rust:latest as build
 
 RUN curl https://sh.rustup.rs -sSf | sh -s -- --no-modify-path --default-toolchain none -y
 RUN rustup component add rustfmt
