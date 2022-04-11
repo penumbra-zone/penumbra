@@ -259,7 +259,7 @@ impl Epoch {
     /// decreases the [`witnessed_count`](Epoch::witnessed_count).
     pub fn position(&self) -> Position {
         Position(
-            ((self.inner.position() as u32) << 16)
+            ((self.inner.position().saturating_sub(1) as u32) << 16)
                 + match self.inner.focus() {
                     None => 0,
                     Some(Insert::Hash(_)) => u16::MAX,
