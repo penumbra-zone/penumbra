@@ -4,13 +4,11 @@ services:
   pd-node0:
     build:
       dockerfile: Dockerfile
-    secrets:
-      - db_connection_string
     command:
       [
         "bash",
         "-c",
-        "pd start --host 0.0.0.0 --database-uri $$(cat /run/secrets/db_connection_string) -r /pd/rocksdb"
+        "pd start --host 0.0.0.0 -r /pd/rocksdb"
       ]
     logging:
       driver: "json-file"
@@ -70,7 +68,3 @@ volumes:
 networks:
   # add a separate network for grafana and prometheus to talk to each other.
   monitoring: {}
-
-secrets:
-  db_connection_string:
-    file: /root/secretz/db_connection_string

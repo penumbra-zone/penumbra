@@ -16,28 +16,7 @@ services:
       dockerfile: Dockerfile.dev
     volumes:
       - ~/scratch/testnet_build/node0/pd:/pd
-    command: pd start --host 0.0.0.0 --database-uri postgres://postgres:postgres@db-node0/penumbra -r /pd/rocksdb
-    depends_on:
-      - db-node0
-    #links:
-    #  - db:db
-
-  # database - postgres - on prod we are using managed DB instances
-  db-node0:
-    image: postgres:13.0
-    container_name: db-node0
-    volumes:
-      - "db_node0_data:/var/lib/postgresql/data"
-    environment:
-      - POSTGRES_DB=penumbra
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-    networks:
-      localnet:
-        ipv4_address: 192.167.10.12
-    # expose database on a port so it is easy to play with
-    ports:
-      - "5432:5432"
+    command: pd start --host 0.0.0.0 -r /pd/rocksdb
 
   # for local development, configure the penumbra daemon with more logging.
   pd-node1:
@@ -51,12 +30,7 @@ services:
       context: .
     volumes:
       - ~/scratch/testnet_build/node1/pd:/pd
-    command: pd start --host 0.0.0.0 --database-uri
-      postgres://postgres:postgres@db-node1/penumbra -r /pd/rocksdb
-    depends_on:
-      - db-node1
-    #links:
-    #  - db:db
+    command: pd start --host 0.0.0.0 -r /pd/rocksdb
     restart: on-failure
     networks:
       localnet:
@@ -65,23 +39,6 @@ services:
       - "27658:26658"
       - "27666:26666"
       - "27667:26667"
-
-  # database - postgres - on prod we are using managed DB instances
-  db-node1:
-    image: postgres:13.0
-    container_name: db-node1
-    volumes:
-      - "db_node1_data:/var/lib/postgresql/data"
-    environment:
-      - POSTGRES_DB=penumbra
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-    networks:
-      localnet:
-        ipv4_address: 192.167.10.22
-    # expose database on a port so it is easy to play with
-    #ports:
-    #  - "5432:5432"
 
   # The Tendermint node
   tendermint-node1:
@@ -140,14 +97,7 @@ services:
 
 volumes:
   prometheus_data: {}
-  db_node0_data: {}
-  db_node1_data: {}
 
 networks:
   # add a separate network for grafana and prometheus to talk to each other.
   monitoring: {}
-
-secrets:
-  db_connection_string:
-    # this isn't used in dev but needs to be set because it was defined in the parent
-    file: Dockerfile

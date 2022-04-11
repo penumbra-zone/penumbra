@@ -40,9 +40,6 @@ enum Command {
         /// The path used to store the Rocks database.
         #[structopt(short, long)]
         rocks_path: PathBuf,
-        /// The URI used to connect to the Postgres database.
-        #[structopt(short, long)]
-        database_uri: String,
         /// Bind the services to this host.
         #[structopt(short, long, default_value = "127.0.0.1")]
         host: String,
@@ -115,7 +112,6 @@ async fn main() -> anyhow::Result<()> {
     match opt.cmd {
         Command::Start {
             host,
-            database_uri,
             abci_port,
             light_wallet_port,
             thin_wallet_port,
@@ -124,15 +120,13 @@ async fn main() -> anyhow::Result<()> {
         } => {
             tracing::info!(
                 ?host,
-                ?database_uri,
                 ?abci_port,
                 ?light_wallet_port,
                 ?thin_wallet_port,
                 "starting pd"
             );
-            // Initialize state
-            //let (state_reader, state_writer) = pd::state::new(&database_uri).await?;
 
+            // Initialize state
             let storage = pd::Storage::load(rocks_path).await?;
 
             let (consensus, height_rx) = pd::Consensus::new(storage.clone()).await?;
