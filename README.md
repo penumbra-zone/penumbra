@@ -180,25 +180,6 @@ which you can safely ignore.
 
 You'll need to have [tendermint installed](https://docs.tendermint.com/master/introduction/install.html) on your system to join your node to the testnet.
 
-### Setting up postgres
-
-Next, you'll need to set up a Postgres instance. Here is one way:
-```console
-$ docker volume create tmp_postgres_data
-$ docker run --name tmp_postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_USER=postgres -e POSTGRES_DB=penumbra -p 5432:5432 -v tmp_postgres_data:/var/lib/postgresql/data -d postgres
-$ # docker stop tmp_postgres
-$ # docker start tmp_postgres
-```
-
-There are three components to a Penumbra node: the Tendermint instance, the `pd`
-instance, and the Postgres instance.
-
-To create the database, run:
-```console
-$ # Edit as appropriate for your Postgres instance
-$ export DATABASE_URL="postgres://postgres:postgres@localhost:5432/penumbra"
-$ cargo sqlx database create
-```
 
 ### Configuring your node
 
@@ -239,9 +220,9 @@ After configuration is complete, you're ready to start your node.
 First, start the `pd` binary:
 
 ```console
-$ cargo run --release --bin pd start -d "postgres://postgres:postgres@localhost:5432/penumbra" --rocks-path $HOME/.rocksdb &
+$ cargo run --release --bin pd start --rocks-path $HOME/.rocksdb &
 $ ps | grep pd
-52949 ttys001    0:00.32 target/release/pd start -d postgres://postgres:postgres@localhost:5432/penumbra --rocks-path $HOME/.rocksdb
+52949 ttys001    0:00.32 target/release/pd start --rocks-path $HOME/.rocksdb
 ```
 
 Then start tendermint:
@@ -270,48 +251,7 @@ change.
 Penumbra has two binaries, the command-line light wallet interface `pcli` and
 the daemon `pd`.  However, the daemon cannot be run alone; it requires both
 Tendermint (to handle network communication and drive the consensus state) and
-Postgres (to act as a data store).
-
-### Compiling queries in `pd` against a local Postgres instance
-
-We use `sqlx` to interact with the database and do compile-time query checks.
-This means that some kinds of development require a local database instance.
-For clean checkouts, or changes to the workspace that do not affect the database
-queries, running `cargo build` as usual should work.
-
-However, changes to the database queries or schema require regenerating the
-`sqlx-data.json` file that's checked into git, and this requires a local
-Postgres instance and the `sqlx` command-line tooling.
-
-Install the command-line tooling with:
-```
-cargo install sqlx-cli
-```
-
-Running a local postgres instance can be done with:
-```
-docker volume create tmp_postgres_data
-docker run --name tmp_postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_USER=postgres -e POSTGRES_DB=penumbra -p 5432:5432 -v tmp_postgres_data:/var/lib/postgresql/data -d postgres
-# docker stop tmp_postgres
-# docker start tmp_postgres
-```
-
-Managing the database can be done with `cargo sqlx`:
-```
-export DATABASE_URL="postgres://postgres:postgres@localhost:5432/penumbra"
-cargo sqlx database create  # Creates the database
-# cargo sqlx database drop  # Drops the database
-cargo sqlx migrate run      # Updates the database schema
-```
-
-Regenerate the `sqlx-data.json` file by running the following from inside the `pd` directory:
-```
-cargo sqlx prepare -- --lib
-```
-This command checks the queries in the source
-code against the current database state, so it's important that the database
-exists and has the current schema (which can be accomplished with the commands
-above).
+RocksDB (to act as a data store).
 
 ### Creating a genesis file
 
@@ -361,27 +301,12 @@ files can be found in the `testnets/` directory if you get stuck.
 
 You'll need to create a `genesis.json` file as described above.
 
-Next, you'll need to set up a Postgres instance. Here is one way:
-```bash
-docker volume create tmp_postgres_data
-docker run --name tmp_postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_USER=postgres -e POSTGRES_DB=penumbra -p 5432:5432 -v tmp_postgres_data:/var/lib/postgresql/data -d postgres
-# docker stop tmp_postgres
-# docker start tmp_postgres
-```
-
 There are three components to a Penumbra node: the Tendermint instance, the `pd`
-instance, and the Postgres instance.
-
-To create the database, run:
-```
-# Edit as appropriate for your Postgres instance
-export DATABASE_URL="postgres://postgres:postgres@localhost:5432/penumbra"
-cargo sqlx database create
-```
+instance, and the RocksDB instance.
 
 Start the Penumbra instance (you probably want to set `RUST_LOG` to `debug`):
 ```bash
-cargo run --bin pd start -d "postgres://postgres:postgres@localhost:5432/penumbra"
+cargo run --bin pd start --rocks-path $HOME/.rocksdb
 ```
 Start the Tendermint node:
 ```bash
@@ -390,19 +315,13 @@ tendermint start
 
 You should be running!
 
-To inspect the Postgres state, use:
-```bash
-psql -h localhost -U postgres penumbra
-```
-In this database terminal, you can run queries to inspect `pd`'s state.
-
 To stop the node, shut down either `pd` or `tendermint`.
 
 Resetting the state requires multiple steps:
 
 * To reset the Tendermint state, use `tendermint unsafe-reset-all`.
-* To reset the Postgres state, use `cargo sqlx database drop`.
 * To reset your wallet state (without deleting keys), use `pcli wallet reset`.
+* To reset RocksDB state, delete the RocksDB state file: `$HOME/.rocksdb`
 
 You need to do **all of these** to fully reset the node, and doing only one will
 result in mysterious errors.
@@ -419,7 +338,7 @@ docker-compose up --build -d
 To load genesis state for a fresh Docker configuration:
 
 **NOTE:** this will **destroy** any existing data you have stored in the Docker volumes
-for pd/postgres/tendermint!
+for pd/rocksDB/tendermint!
 
 ```bash
 ./scripts/docker_compose_freshstart.sh ~/scratch/testnet_build
@@ -447,7 +366,6 @@ CONTAINER ID   IMAGE                          COMMAND                  CREATED  
 b7fce1d0ffd9   tendermint/tendermint:latest   "docker-entrypoint.s…"   4 minutes ago   Up 4 minutes   0.0.0.0:6060->6060/tcp, 0.0.0.0:26656-26657->26656-26657/tcp, 0.0.0.0:27000->26660/tcp   tendermint
 5a6bd39bb6f7   grafana/grafana:latest         "/run.sh"                4 minutes ago   Up 4 minutes   0.0.0.0:3000->3000/tcp                                                                   penumbra-grafana-1
 b8f599963ebc   penumbra_pd                    "pd start --host 0.0…"   4 minutes ago   Up 4 minutes   0.0.0.0:26658->26658/tcp                                                                 penumbra
-b4f694a238cb   postgres:13.0                  "docker-entrypoint.s…"   4 minutes ago   Up 4 minutes   0.0.0.0:5432->5432/tcp                                                                   db
 9e82aa33b4ff   prom/prometheus:latest         "/bin/prometheus --c…"   4 minutes ago   Up 4 minutes   0.0.0.0:9090->9090/tcp                                                                   penumbra-prometheus-1
 ```
 

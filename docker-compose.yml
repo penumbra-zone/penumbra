@@ -9,7 +9,7 @@ services:
       - RUST_LOG=${RUST_LOG:-warn,pd=info,penumbra=info}
     volumes:
       - ~/scratch/testnet_build/node0/pd:/pd
-    command: pd start --host 0.0.0.0 --database-uri postgres://postgres:postgres@db-node0/penumbra -r /pd/rocksdb
+    command: pd start --host 0.0.0.0 -r /pd/rocksdb
     restart: on-failure
     networks:
       localnet:

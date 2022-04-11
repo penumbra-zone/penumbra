@@ -16,28 +16,7 @@ services:
       dockerfile: Dockerfile.dev
     volumes:
       - ~/scratch/testnet_build/node0/pd:/pd
-    command: pd start --host 0.0.0.0 --database-uri postgres://postgres:postgres@db-node0/penumbra -r /pd/rocksdb
-    depends_on:
-      - db-node0
-    #links:
-    #  - db:db
-
-  # database - postgres - on prod we are using managed DB instances
-  db-node0:
-    image: postgres:13.0
-    container_name: db-node0
-    volumes:
-      - "db_node0_data:/var/lib/postgresql/data"
-    environment:
-      - POSTGRES_DB=penumbra
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-    networks:
-      localnet:
-        ipv4_address: 192.167.10.12
-    # expose database on a port so it is easy to play with
-    ports:
-      - "5432:5432"
+    command: pd start --host 0.0.0.0 -r /pd/rocksdb
 
   # add prometheus and grafana
   #
@@ -77,13 +56,7 @@ services:
 
 volumes:
   prometheus_data: {}
-  db_node0_data: {}
 
 networks:
   # add a separate network for grafana and prometheus to talk to each other.
   monitoring: {}
-
-secrets:
-  db_connection_string:
-    # this isn't used in dev but needs to be set because it was defined in the parent
-    file: Dockerfile

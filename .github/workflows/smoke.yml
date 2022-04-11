@@ -14,9 +14,6 @@ jobs:
           profile: minimal
           toolchain: stable
 
-      - name: Install sqlx.
-        run: cargo install sqlx-cli
-
       - name: Build the testnet.
         run: |
           mkdir ~/scratch

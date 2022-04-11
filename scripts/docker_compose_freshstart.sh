@@ -27,20 +27,5 @@ mkdir -p ${build_path}
 docker-compose stop
 docker container prune -f
 docker volume rm penumbra_prometheus_data || true
-docker volume rm penumbra_db_node1_data || true
-docker volume rm penumbra_db_node0_data || true
-
-# The db container must be running for pd build to succeed
-docker-compose up -d db-node0
-export DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/penumbra
-# sleep because postgres isn't immediately responsive
-sleep 2
-cd pd
-printf "Preparing DB\n"
-cargo sqlx database create
-cargo sqlx migrate run
-cargo sqlx prepare  -- --lib
-printf "Done\n"
-cd ..
 
 cargo run --release --bin pd -- generate-testnet --output-dir ${build_path}
