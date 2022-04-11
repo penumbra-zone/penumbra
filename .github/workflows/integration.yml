@@ -29,13 +29,3 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
-
-      - name: Check sqlx configuration
-        run: |
-          cargo install sqlx-cli
-          cd pd
-          cargo sqlx database create
-          cargo sqlx migrate run
-          cargo sqlx prepare --check -- --lib
-        env:
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/penumbra
