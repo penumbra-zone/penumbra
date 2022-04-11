@@ -394,16 +394,17 @@ impl Eternity {
     /// decreases the [`witnessed_count`](Eternity::witnessed_count).
     pub fn position(&self) -> Position {
         Position(
-            ((self.inner.position() as u64) << 32)
+            ((self.inner.position().saturating_sub(1) as u64) << 32)
                 + (match self.inner.focus() {
                     None => 0,
                     Some(Insert::Hash(_)) => u32::MAX,
                     Some(Insert::Keep(epoch)) => {
-                        (match epoch.focus() {
-                            None => 0,
-                            Some(Insert::Hash(_)) => u16::MAX,
-                            Some(Insert::Keep(block)) => block.position(),
-                        }) as u32
+                        ((epoch.position() as u32).saturating_sub(1) << 16)
+                            + (match epoch.focus() {
+                                None => 0,
+                                Some(Insert::Hash(_)) => u16::MAX,
+                                Some(Insert::Keep(block)) => block.position(),
+                            }) as u32
                     }
                 } << 16) as u64,
         )
