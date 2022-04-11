@@ -42,7 +42,7 @@ jobs:
           # (The version specifier for tendermint avoids ambiguity from multiple
           # package versions but will break in the future).
           cargo doc --no-deps \
-            -p tendermint:0.23.5 \ 
+            -p tendermint:0.23.5 \
             -p tower-abci \
             -p incrementalmerkletree \
             -p jmt \
