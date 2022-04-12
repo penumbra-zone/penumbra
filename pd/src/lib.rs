@@ -6,7 +6,6 @@
 
 mod components;
 mod consensus;
-mod db;
 mod info;
 mod mempool;
 mod pd_metrics;

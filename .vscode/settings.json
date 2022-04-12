@@ -1,6 +1,5 @@
 {
     "rust-analyzer.server.extraEnv": {
-        "DATABASE_URL": "postgres://postgres:postgres@0.0.0.0:5432/penumbra"
-    },
-    "python.formatting.provider": "black",
+        "DATABASE_URL": "sqlite:///tmp/pwalletd.bin"
+    }
 }
