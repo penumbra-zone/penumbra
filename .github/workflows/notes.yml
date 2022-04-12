@@ -61,8 +61,10 @@ jobs:
             -p penumbra-tct \
             -p penumbra-transaction \
             -p penumbra-wallet \
+            -p penumbra-wallet-next \
             -p pd \
-            -p pcli
+            -p pcli \
+            -p pcli-next
       - name: Move API docs to subdirectory
         run: |
           if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
