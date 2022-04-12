@@ -31,10 +31,10 @@ pub struct Opt {
     pub rpc_port: u16,
     /// The port to use to speak to pd's light wallet server.
     #[structopt(short, long, default_value = "26666")]
-    pub light_wallet_port: u16,
+    pub light_client_port: u16,
     /// The port to use to speak to pd's thin wallet server.
     #[structopt(short, long, default_value = "26667")]
-    pub thin_wallet_port: u16,
+    pub thin_client_port: u16,
     #[structopt(subcommand)]
     pub cmd: Command,
     /// The location of the wallet file [default: platform appdata directory]

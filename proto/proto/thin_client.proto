@@ -1,15 +1,15 @@
 syntax = "proto3";
-package penumbra.thin_wallet;
+package penumbra.thin_client;
 
 import "crypto.proto";
 import "chain.proto";
 import "stake.proto";
 
-// A thin wallet service.
+// A thin client service.
 //
-// Unlike the "light wallet" service, this protocol does not attempt to be
+// Unlike the "light client" service, this protocol does not attempt to be
 // trust-minimized, either in terms of integrity or privacy.
-service ThinWallet {
+service ThinProtocol {
   rpc TransactionByNote(crypto.NoteCommitment) returns (chain.NoteSource);
   rpc ValidatorStatus(ValidatorStatusRequest) returns (stake.ValidatorStatus);
   rpc NextValidatorRate(stake.IdentityKey) returns (stake.RateData);

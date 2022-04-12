@@ -48,14 +48,14 @@ pub mod genesis {
     tonic::include_proto!("penumbra.genesis");
 }
 
-/// Light wallet protocol structures.
-pub mod light_wallet {
-    tonic::include_proto!("penumbra.light_wallet");
+/// Light client protocol structures.
+pub mod light_client {
+    tonic::include_proto!("penumbra.light_client");
 }
 
-/// Thin wallet protocol structures.
-pub mod thin_wallet {
-    tonic::include_proto!("penumbra.thin_wallet");
+/// Thin client protocol structures.
+pub mod thin_client {
+    tonic::include_proto!("penumbra.thin_client");
 }
 
 /// IBC protocol structures.

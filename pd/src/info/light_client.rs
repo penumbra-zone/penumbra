@@ -4,8 +4,8 @@ use async_stream::try_stream;
 use futures::stream::{StreamExt, TryStreamExt};
 use penumbra_proto::{
     chain::{ChainParams, CompactBlock, KnownAssets},
-    light_wallet::{
-        light_wallet_server::LightWallet, AssetListRequest, ChainParamsRequest,
+    light_client::{
+        light_protocol_server::LightProtocol, AssetListRequest, ChainParamsRequest,
         CompactBlockRangeRequest, ValidatorInfoRequest,
     },
     stake::ValidatorInfo,
@@ -25,7 +25,7 @@ use crate::components::{app::View as _, shielded_pool::View as _, staking::View 
 use crate::Storage;
 
 #[tonic::async_trait]
-impl LightWallet for Storage {
+impl LightProtocol for Storage {
     type CompactBlockRangeStream =
         Pin<Box<dyn futures::Stream<Item = Result<CompactBlock, tonic::Status>> + Send>>;
 
