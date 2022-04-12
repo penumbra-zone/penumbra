@@ -1,6 +1,7 @@
 mod light;
 mod thin;
 
+// TODO: implement for WriteOverlay
 // impl state::Reader {
 //     /// Checks a provided chain_id against the chain state.
 //     ///

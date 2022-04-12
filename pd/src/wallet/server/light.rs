@@ -13,6 +13,7 @@ use penumbra_proto::{
 use tonic::Status;
 use tracing::instrument;
 
+// TODO: implement for WriteOverlay
 // #[tonic::async_trait]
 // impl LightProtocol for state::Reader {
 //     type CompactBlockRangeStream =
