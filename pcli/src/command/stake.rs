@@ -4,7 +4,7 @@ use anyhow::{anyhow, Context, Result};
 use comfy_table::{presets, Table};
 use futures::stream::TryStreamExt;
 use penumbra_crypto::Value;
-use penumbra_proto::light_wallet::ValidatorInfoRequest;
+use penumbra_proto::light_client::ValidatorInfoRequest;
 use penumbra_stake::{
     DelegationToken, IdentityKey, RateData, ValidatorInfo, STAKING_TOKEN_ASSET_ID,
     STAKING_TOKEN_DENOM,
@@ -94,7 +94,7 @@ impl StakeCmd {
 
                 let to = to.parse::<IdentityKey>()?;
 
-                let mut client = opt.thin_wallet_client().await?;
+                let mut client = opt.thin_protocol_client().await?;
                 let rate_data: RateData = client
                     .next_validator_rate(tonic::Request::new(to.into()))
                     .await?
@@ -129,7 +129,7 @@ impl StakeCmd {
 
                 let from = delegation_token.validator();
 
-                let mut client = opt.thin_wallet_client().await?;
+                let mut client = opt.thin_protocol_client().await?;
                 let rate_data: RateData = client
                     .next_validator_rate(tonic::Request::new(from.into()))
                     .await?
@@ -153,7 +153,7 @@ impl StakeCmd {
                 todo!()
             }
             StakeCmd::Show => {
-                let mut client = opt.light_wallet_client().await?;
+                let mut client = opt.light_protocol_client().await?;
 
                 let validators = client
                     .validator_info(ValidatorInfoRequest {
@@ -252,7 +252,7 @@ impl StakeCmd {
                 show_inactive,
                 detailed,
             } => {
-                let mut client = opt.light_wallet_client().await?;
+                let mut client = opt.light_protocol_client().await?;
 
                 let mut validators = client
                     .validator_info(ValidatorInfoRequest {

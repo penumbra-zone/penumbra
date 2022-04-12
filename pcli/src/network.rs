@@ -1,6 +1,6 @@
 use penumbra_proto::{
-    light_wallet::light_wallet_client::LightWalletClient,
-    thin_wallet::thin_wallet_client::ThinWalletClient, Protobuf,
+    light_client::light_protocol_client::LightProtocolClient,
+    thin_client::thin_protocol_client::ThinProtocolClient, Protobuf,
 };
 use penumbra_transaction::Transaction;
 use rand::Rng;
@@ -89,14 +89,16 @@ impl Opt {
         Ok(())
     }
 
-    pub async fn thin_wallet_client(&self) -> Result<ThinWalletClient<Channel>, anyhow::Error> {
-        ThinWalletClient::connect(format!("http://{}:{}", self.node, self.thin_wallet_port))
+    pub async fn thin_protocol_client(&self) -> Result<ThinProtocolClient<Channel>, anyhow::Error> {
+        ThinProtocolClient::connect(format!("http://{}:{}", self.node, self.thin_client_port))
             .await
             .map_err(Into::into)
     }
 
-    pub async fn light_wallet_client(&self) -> Result<LightWalletClient<Channel>, anyhow::Error> {
-        LightWalletClient::connect(format!("http://{}:{}", self.node, self.light_wallet_port))
+    pub async fn light_protocol_client(
+        &self,
+    ) -> Result<LightProtocolClient<Channel>, anyhow::Error> {
+        LightProtocolClient::connect(format!("http://{}:{}", self.node, self.light_client_port))
             .await
             .map_err(Into::into)
     }

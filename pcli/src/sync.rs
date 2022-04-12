@@ -1,5 +1,5 @@
 use anyhow::Result;
-use penumbra_proto::light_wallet::CompactBlockRangeRequest;
+use penumbra_proto::light_client::CompactBlockRangeRequest;
 use tracing::instrument;
 
 use crate::{ClientStateFile, Opt};
@@ -7,7 +7,7 @@ use crate::{ClientStateFile, Opt};
 #[instrument(skip(opt, state), fields(start_height = state.last_block_height()))]
 pub async fn sync(opt: &Opt, state: &mut ClientStateFile) -> Result<()> {
     tracing::info!("starting client sync");
-    let mut client = opt.light_wallet_client().await?;
+    let mut client = opt.light_protocol_client().await?;
 
     let start_height = state.last_block_height().map(|h| h + 1).unwrap_or(0);
     let mut stream = client

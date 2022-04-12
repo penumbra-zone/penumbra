@@ -3,8 +3,8 @@ use std::pin::Pin;
 use futures::stream::{StreamExt, TryStreamExt};
 use penumbra_proto::{
     chain::{ChainParams, CompactBlock, KnownAssets},
-    light_wallet::{
-        light_wallet_server::LightWallet, AssetListRequest, ChainParamsRequest,
+    light_client::{
+        light_protocol_server::LightProtocol, AssetListRequest, ChainParamsRequest,
         CompactBlockRangeRequest, ValidatorInfoRequest,
     },
     stake::ValidatorInfo,
@@ -16,7 +16,7 @@ use tracing::instrument;
 use crate::state;
 
 #[tonic::async_trait]
-impl LightWallet for state::Reader {
+impl LightProtocol for state::Reader {
     type CompactBlockRangeStream =
         Pin<Box<dyn futures::Stream<Item = Result<CompactBlock, tonic::Status>> + Send>>;
 

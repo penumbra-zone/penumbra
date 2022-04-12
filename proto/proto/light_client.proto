@@ -1,14 +1,14 @@
 syntax = "proto3";
-package penumbra.light_wallet;
+package penumbra.light_client;
 
 import "crypto.proto";
 import "chain.proto";
 import "stake.proto";
 
-// A light wallet service.
+// A light client service.
 //
 // This protocol attempts to be trust-minimized, both in terms of integrity and privacy.
-service LightWallet {
+service LightProtocol {
   rpc CompactBlockRange(CompactBlockRangeRequest) returns (stream chain.CompactBlock);
   rpc ChainParams(ChainParamsRequest) returns (chain.ChainParams);
   rpc ValidatorInfo(ValidatorInfoRequest) returns (stream stake.ValidatorInfo);

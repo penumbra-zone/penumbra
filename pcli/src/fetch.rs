@@ -1,13 +1,13 @@
 use anyhow::Result;
 use penumbra_chain::KnownAssets;
-use penumbra_proto::light_wallet::{AssetListRequest, ChainParamsRequest};
+use penumbra_proto::light_client::{AssetListRequest, ChainParamsRequest};
 use tracing::instrument;
 
 use crate::{ClientStateFile, Opt};
 
 #[instrument(skip(opt, state))]
 pub async fn assets(opt: &Opt, state: &mut ClientStateFile) -> Result<()> {
-    let mut client = opt.light_wallet_client().await?;
+    let mut client = opt.light_protocol_client().await?;
 
     // Update asset registry.
     let request = tonic::Request::new(AssetListRequest {
@@ -26,7 +26,7 @@ pub async fn assets(opt: &Opt, state: &mut ClientStateFile) -> Result<()> {
 /// Fetches the global chain parameters and stores them on `ClientState`.
 #[instrument(skip(opt, state))]
 pub async fn chain_params(opt: &Opt, state: &mut ClientStateFile) -> Result<()> {
-    let mut client = opt.light_wallet_client().await?;
+    let mut client = opt.light_protocol_client().await?;
 
     let params = client
         .chain_params(tonic::Request::new(ChainParamsRequest {

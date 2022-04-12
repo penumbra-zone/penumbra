@@ -13,8 +13,8 @@ use penumbra_crypto::{
     rdsa::{SigningKey, SpendAuth, VerificationKey},
 };
 use penumbra_proto::{
-    light_wallet::light_wallet_server::LightWalletServer,
-    thin_wallet::thin_wallet_server::ThinWalletServer,
+    light_client::light_protocol_server::LightProtocolServer,
+    thin_client::thin_protocol_server::ThinProtocolServer,
 };
 use penumbra_stake::{FundingStream, FundingStreams, Validator};
 use rand_core::OsRng;
@@ -48,10 +48,10 @@ enum Command {
         abci_port: u16,
         /// Bind the light wallet service to this port.
         #[structopt(short, long, default_value = "26666")]
-        light_wallet_port: u16,
+        light_client_port: u16,
         /// Bind the thin wallet service to this port.
         #[structopt(short, long, default_value = "26667")]
-        thin_wallet_port: u16,
+        thin_client_port: u16,
         /// Bind the metrics endpoint to this port.
         #[structopt(short, long, default_value = "9000")]
         metrics_port: u16,
@@ -113,16 +113,16 @@ async fn main() -> anyhow::Result<()> {
         Command::Start {
             host,
             abci_port,
-            light_wallet_port,
-            thin_wallet_port,
+            light_client_port,
+            thin_client_port,
             metrics_port,
             rocks_path,
         } => {
             tracing::info!(
                 ?host,
                 ?abci_port,
-                ?light_wallet_port,
-                ?thin_wallet_port,
+                ?light_client_port,
+                ?thin_client_port,
                 "starting pd"
             );
 
@@ -145,28 +145,28 @@ async fn main() -> anyhow::Result<()> {
                     .listen(format!("{}:{}", host, abci_port)),
             );
 
-            let light_wallet_server = tokio::spawn(
+            let light_protocol_server = tokio::spawn(
                 Server::builder()
                     .trace_fn(|req| match remote_addr(req) {
-                        Some(remote_addr) => tracing::error_span!("light_wallet", ?remote_addr),
-                        None => tracing::error_span!("light_wallet"),
+                        Some(remote_addr) => tracing::error_span!("light_client", ?remote_addr),
+                        None => tracing::error_span!("light_client"),
                     })
-                    .add_service(LightWalletServer::new(storage.clone()))
+                    .add_service(LightProtocolServer::new(storage.clone()))
                     .serve(
-                        format!("{}:{}", host, light_wallet_port)
+                        format!("{}:{}", host, light_client_port)
                             .parse()
                             .expect("this is a valid address"),
                     ),
             );
-            let thin_wallet_server = tokio::spawn(
+            let thin_protocol_server = tokio::spawn(
                 Server::builder()
                     .trace_fn(|req| match remote_addr(req) {
-                        Some(remote_addr) => tracing::error_span!("thin_wallet", ?remote_addr),
-                        None => tracing::error_span!("thin_wallet"),
+                        Some(remote_addr) => tracing::error_span!("thin_client", ?remote_addr),
+                        None => tracing::error_span!("thin_client"),
                     })
-                    .add_service(ThinWalletServer::new(storage.clone()))
+                    .add_service(ThinProtocolServer::new(storage.clone()))
                     .serve(
-                        format!("{}:{}", host, thin_wallet_port)
+                        format!("{}:{}", host, thin_client_port)
                             .parse()
                             .expect("this is a valid address"),
                     ),
@@ -188,8 +188,8 @@ async fn main() -> anyhow::Result<()> {
             // We error out if either service errors, rather than keep running
             tokio::select! {
                 x = abci_server => x?.map_err(|e| anyhow::anyhow!(e))?,
-                x = light_wallet_server => x?.map_err(|e| anyhow::anyhow!(e))?,
-                x = thin_wallet_server => x?.map_err(|e| anyhow::anyhow!(e))?,
+                x = light_protocol_server => x?.map_err(|e| anyhow::anyhow!(e))?,
+                x = thin_protocol_server => x?.map_err(|e| anyhow::anyhow!(e))?,
             };
         }
         Command::GenerateTestnet {

@@ -2,7 +2,7 @@ use penumbra_proto::{
     self as proto,
     chain::NoteSource,
     crypto::NoteCommitment,
-    thin_wallet::{thin_wallet_server::ThinWallet, ValidatorStatusRequest},
+    thin_client::{thin_protocol_server::ThinProtocol, ValidatorStatusRequest},
 };
 
 use tonic::Status;
@@ -11,7 +11,7 @@ use tracing::instrument;
 use crate::state;
 
 #[tonic::async_trait]
-impl ThinWallet for state::Reader {
+impl ThinProtocol for state::Reader {
     #[instrument(skip(self, _request))]
     async fn transaction_by_note(
         &self,
