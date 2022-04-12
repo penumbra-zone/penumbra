@@ -20,6 +20,8 @@ RUN mkdir -p pcli/src pd/src &&\
     echo "fn main() {}" > pd/src/main.rs
 COPY pcli/build.rs ./pcli
 COPY pcli/Cargo.toml ./pcli
+COPY pcli-next/build.rs ./pcli-next
+COPY pcli-next/Cargo.toml ./pcli-next
 COPY pd/Cargo.toml ./pd
 COPY pd/build.rs ./pd
 # TODO If the protobuf definitions, crypto, or wallet implementations change,
@@ -34,6 +36,7 @@ COPY decaf377-fmd ./decaf377-fmd
 COPY decaf377-ka ./decaf377-ka
 COPY transaction ./transaction
 COPY wallet ./wallet
+COPY wallet-next ./wallet-next
 COPY testnets ./testnets
 COPY .git ./.git
 COPY testnets ./testnets
