@@ -445,38 +445,6 @@ impl TryFrom<&[u8]> for Commitment {
     }
 }
 
-#[cfg(feature = "sqlx")]
-mod sqlx_impls {
-    use sqlx::{Database, Decode, Encode, Postgres, Type};
-
-    use super::*;
-
-    impl<'r> Decode<'r, Postgres> for Commitment {
-        fn decode(
-            value: <Postgres as sqlx::database::HasValueRef<'r>>::ValueRef,
-        ) -> Result<Self, sqlx::error::BoxDynError> {
-            let bytes = Vec::<u8>::decode(value)?;
-            Commitment::try_from(&bytes[..]).map_err(Into::into)
-        }
-    }
-
-    impl<'q> Encode<'q, Postgres> for Commitment {
-        fn encode_by_ref(
-            &self,
-            buf: &mut <Postgres as sqlx::database::HasArguments<'q>>::ArgumentBuffer,
-        ) -> sqlx::encode::IsNull {
-            let bytes = self.0.to_bytes();
-            (&bytes[..]).encode(buf)
-        }
-    }
-
-    impl Type<Postgres> for Commitment {
-        fn type_info() -> <Postgres as Database>::TypeInfo {
-            <[u8] as Type<Postgres>>::type_info()
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use rand_core::OsRng;

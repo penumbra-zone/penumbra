@@ -18,7 +18,6 @@ mod verify;
 mod wallet;
 
 pub mod genesis;
-pub mod state;
 pub mod testnet;
 
 pub use components::{App, Component};

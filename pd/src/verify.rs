@@ -5,15 +5,6 @@ use penumbra_stake::{
     Delegate, IdentityKey, Undelegate, ValidatorDefinition, VerifiedValidatorDefinition,
 };
 
-mod stateful;
-mod stateless;
-
-// TODO: eliminate (#374)
-pub use stateless::StatelessTransactionExt;
-
-#[cfg(test)]
-mod tests;
-
 #[derive(Debug, Clone)]
 pub struct NoteData {
     pub ephemeral_key: ka::Public,
