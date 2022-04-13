@@ -13,14 +13,13 @@ publish = false
 
 [dependencies]
 # Workspace dependencies
-# penumbra-proto = { path = "../proto" }
-# penumbra-chain = { path = "../chain" }
-# penumbra-crypto = { path = "../crypto" }
-# penumbra-stake = { path = "../stake" }
-# penumbra-transaction = { path = "../transaction" }
+penumbra-proto = { path = "../proto" }
+penumbra-chain = { path = "../chain" }
+penumbra-crypto = { path = "../crypto" }
+penumbra-stake = { path = "../stake" }
+penumbra-transaction = { path = "../transaction" }
 
 # External dependencies
-sqlx = { version = "0.5", features = [ "runtime-tokio-rustls", "sqlite" ] }
 bytes = "1"
 bincode = "1.3.3"
 tokio = { version = "1", features = ["full"]}
@@ -35,6 +34,3 @@ anyhow = "1"
 hex = "0.4"
 rand_core = { version = "0.6.3", features = ["getrandom"] }
 rand = "0.8"
-
-[[bin]]
-name = "pwalletd"

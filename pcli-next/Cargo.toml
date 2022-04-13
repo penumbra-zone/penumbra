@@ -15,7 +15,7 @@ publish = false
 # Workspace dependencies
 penumbra-proto = { path = "../proto" }
 penumbra-chain = { path = "../chain" }
-penumbra-crypto = { path = "../crypto" }
+penumbra-crypto = { path = "../crypto", features = ["sqlx"]}
 penumbra-stake = { path = "../stake" }
 penumbra-transaction = { path = "../transaction" }
 penumbra-wallet = { path = "../wallet" }
@@ -51,6 +51,7 @@ hex = "0.4"
 rand = "0.8"
 rand_chacha = "0.3.1"
 rand_core = { version = "0.6.3", features = ["getrandom"] }
+sqlx = { version = "0.5", features = [ "runtime-tokio-rustls", "postgres" ] }
 
 [build-dependencies]
 vergen = "5"
