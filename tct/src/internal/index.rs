@@ -10,9 +10,19 @@ use serde::{Deserialize, Serialize};
 /// The index of an individual item in a block.
 ///
 /// Create this using `From<u16>`.
-#[derive(Copy, Clone, PartialEq, Eq, Derivative, Serialize, Deserialize)]
+#[derive(Copy, Clone, PartialEq, Eq, Default, Derivative, Serialize, Deserialize)]
 #[derivative(Debug = "transparent")]
 pub struct Commitment(u16);
+
+impl Commitment {
+    /// Increment the commitment.
+    pub fn increment(&mut self) {
+        self.0 += 1;
+    }
+
+    /// The maximum representable commitment index.
+    pub const MAX: Self = Self(u16::MAX);
+}
 
 impl From<u16> for Commitment {
     fn from(index: u16) -> Self {
@@ -20,10 +30,16 @@ impl From<u16> for Commitment {
     }
 }
 
+impl From<Commitment> for u16 {
+    fn from(commitment: Commitment) -> Self {
+        commitment.0
+    }
+}
+
 /// The index of an individual block in an epoch.
 ///
 /// Create this using `From<u16>`.
-#[derive(Copy, Clone, PartialEq, Eq, Derivative, Serialize, Deserialize)]
+#[derive(Copy, Clone, PartialEq, Eq, Default, Derivative, Serialize, Deserialize)]
 #[derivative(Debug = "transparent")]
 pub struct Block(u16);
 
@@ -33,10 +49,26 @@ impl From<u16> for Block {
     }
 }
 
+impl From<Block> for u16 {
+    fn from(block: Block) -> Self {
+        block.0
+    }
+}
+
+impl Block {
+    /// Increment the block.
+    pub fn increment(&mut self) {
+        self.0 += 1;
+    }
+
+    /// The maximum representable block index.
+    pub const MAX: Self = Self(u16::MAX);
+}
+
 /// The index of an individual epoch in an eternity.
 ///
 /// Create this using `From<u16>`.
-#[derive(Copy, Clone, PartialEq, Eq, Derivative, Serialize, Deserialize)]
+#[derive(Copy, Clone, PartialEq, Eq, Default, Derivative, Serialize, Deserialize)]
 #[derivative(Debug = "transparent")]
 pub struct Epoch(u16);
 
@@ -46,29 +78,66 @@ impl From<u16> for Epoch {
     }
 }
 
+impl From<Epoch> for u16 {
+    fn from(epoch: Epoch) -> Self {
+        epoch.0
+    }
+}
+
+impl Epoch {
+    /// Increment the epoch.
+    pub fn increment(&mut self) {
+        self.0 += 1;
+    }
+
+    /// The maximum epoch index representable.
+    pub const MAX: Self = Self(u16::MAX);
+}
+
 /// Indices of individual items within larger structures.
 pub mod within {
     use super::*;
 
     /// The index of an individual item within a block.
-    #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
+    #[derive(Debug, Copy, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
     pub struct Block {
         /// The index of the item within its block.
         pub commitment: super::Commitment,
     }
 
-    impl From<Block> for u64 {
+    impl Block {
+        /// The maximum representable index within a block.
+        pub const MAX: Self = Self {
+            commitment: Commitment::MAX,
+        };
+    }
+
+    impl From<Block> for u16 {
         fn from(
             Block {
                 commitment: Commitment(item),
             }: Block,
         ) -> Self {
-            item as u64
+            item as u16
+        }
+    }
+
+    impl From<u16> for Block {
+        fn from(position: u16) -> Self {
+            Self {
+                commitment: Commitment(position),
+            }
+        }
+    }
+
+    impl From<Block> for u64 {
+        fn from(block: Block) -> Self {
+            u16::from(block) as u64
         }
     }
 
     /// The index of an individual item within an epoch.
-    #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
+    #[derive(Debug, Copy, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
     pub struct Epoch {
         /// The index of the block within its epoch.
         pub block: super::Block,
@@ -76,19 +145,44 @@ pub mod within {
         pub commitment: super::Commitment,
     }
 
-    impl From<Epoch> for u64 {
+    impl Epoch {
+        /// The maximum representable index within an epoch.
+        pub const MAX: Self = Self {
+            block: super::Block::MAX,
+            commitment: Commitment::MAX,
+        };
+    }
+
+    impl From<Epoch> for u32 {
         fn from(
             Epoch {
                 block: super::Block(block),
                 commitment: Commitment(item),
             }: Epoch,
         ) -> Self {
-            ((block as u64) << 16) | item as u64
+            ((block as u32) << 16) | item as u32
+        }
+    }
+
+    impl From<u32> for Epoch {
+        fn from(position: u32) -> Self {
+            let block = (position >> 16) as u16;
+            let commitment = position as u16;
+            Self {
+                block: super::Block(block),
+                commitment: Commitment(commitment),
+            }
+        }
+    }
+
+    impl From<Epoch> for u64 {
+        fn from(epoch: Epoch) -> Self {
+            u32::from(epoch) as u64
         }
     }
 
     /// The index of an individual item within an eternity.
-    #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
+    #[derive(Debug, Copy, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
     pub struct Eternity {
         /// The index of the epoch within its eternity.
         pub epoch: super::Epoch,
@@ -96,6 +190,15 @@ pub mod within {
         pub block: super::Block,
         /// The index of the item within its block.
         pub commitment: super::Commitment,
+    }
+
+    impl Eternity {
+        /// The maximum representable index within an eternity.
+        pub const MAX: Self = Self {
+            epoch: super::Epoch::MAX,
+            block: super::Block::MAX,
+            commitment: Commitment::MAX,
+        };
     }
 
     impl From<Eternity> for u64 {
@@ -107,6 +210,51 @@ pub mod within {
             }: Eternity,
         ) -> Self {
             ((epoch as u64) << 32) | ((block as u64) << 16) | item as u64
+        }
+    }
+
+    impl From<u64> for Eternity {
+        fn from(position: u64) -> Self {
+            let epoch = (position >> 32) as u16;
+            let block = (position >> 16) as u16;
+            let commitment = position as u16;
+            Self {
+                epoch: super::Epoch(epoch),
+                block: super::Block(block),
+                commitment: super::Commitment(commitment),
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use proptest::prelude::*;
+
+    proptest! {
+        #[test]
+        fn u64_convert_eternity_inverse(e in 0u16..u16::MAX, b in 0u16..u16::MAX, c in 0u16..u16::MAX) {
+            let eternity = within::Eternity { epoch: e.into(), block: b.into(), commitment: c.into() };
+            let position: u64 = eternity.into();
+            let back_again = position.into();
+            assert_eq!(eternity, back_again);
+        }
+
+        #[test]
+        fn u32_convert_epoch_inverse(b in 0u16..u16::MAX, c in 0u16..u16::MAX) {
+            let epoch = within::Epoch { block: b.into(), commitment: c.into() };
+            let position: u32 = epoch.into();
+            let back_again = position.into();
+            assert_eq!(epoch, back_again);
+        }
+
+        #[test]
+        fn u16_convert_block_inverse(c in 0u16..u16::MAX) {
+            let block = within::Block { commitment: c.into() };
+            let position: u16 = block.into();
+            let back_again = position.into();
+            assert_eq!(block, back_again);
         }
     }
 }
