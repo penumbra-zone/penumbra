@@ -77,18 +77,17 @@ where
     // `v_blinding` is over `P::ScalarField`, lift to `P::BaseField`.
     // This also causes a `WrongQuotientPolyDegree` error:
     //let v_blinding_fq = fr_to_fq::<_, EmbedCurve>(&v_blinding);
-    // let v_blinding_fq =
-    //     EmbedCurve::BaseField::from_le_bytes_mod_order(&v_blinding.into_repr().to_bytes_le());
-    // let v_blinding_var = circuit.create_variable(v_blinding_fq)?;
-    // let H_jf: Point<EmbedCurve::BaseField> = value::VALUE_BLINDING_GENERATOR.deref().clone().into();
-    // let H_var = circuit.create_public_point_variable(H_jf)?;
-    // let b_var = circuit.variable_base_scalar_mul::<EmbedCurve>(v_blinding_var, &H_var)?;
-    // let b_var = circuit.variable_base_scalar_mul::<EmbedCurve>(value_var, &H_var)?;
+    let v_blinding_fq =
+        EmbedCurve::BaseField::from_le_bytes_mod_order(&v_blinding.into_repr().to_bytes_le());
+    let v_blinding_var = circuit.create_variable(v_blinding_fq)?;
+    let H_jf: Point<EmbedCurve::BaseField> = value::VALUE_BLINDING_GENERATOR.deref().clone().into();
+    let H_var = circuit.create_public_point_variable(H_jf)?;
+    let b_var = circuit.variable_base_scalar_mul::<EmbedCurve>(v_blinding_var, &H_var)?;
 
-    // let inv_value_commitment_computed = circuit.ecc_add::<EmbedCurve>(&a_var, &b_var)?;
-    // let value_commitment_computed = circuit.inverse_point(&inv_value_commitment_computed)?;
-    // let value_commitment_jf: Point<EmbedCurve::BaseField> = value_commitment.0.into();
-    // let value_commitment_var = circuit.create_public_point_variable(value_commitment_jf)?;
+    let inv_value_commitment_computed = circuit.ecc_add::<EmbedCurve>(&a_var, &b_var)?;
+    let value_commitment_computed = circuit.inverse_point(&inv_value_commitment_computed)?;
+    let value_commitment_jf: Point<EmbedCurve::BaseField> = value_commitment.0.into();
+    let value_commitment_var = circuit.create_public_point_variable(value_commitment_jf)?;
     // Connect wires for value commitment integrity check.
     // The below blows up also with `WrongQuotientPolyDegree` error.
     // circuit.point_equal_gate(&value_commitment_computed, &value_commitment_var)?;
