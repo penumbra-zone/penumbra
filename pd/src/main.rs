@@ -73,6 +73,9 @@ enum Command {
         /// Expressed in basis points.
         #[structopt(long, default_value = "1000")]
         slashing_penalty: u64,
+        /// Whether to preserve the chain ID (useful for public testnets) or append a random suffix (useful for dev/testing).
+        #[structopt(long)]
+        preserve_chain_id: bool,
         /// Path to CSV file containing initial allocations [default: latest testnet].
         #[structopt(long, parse(from_os_str))]
         allocations_input_file: Option<PathBuf>,
@@ -206,6 +209,7 @@ async fn main() -> anyhow::Result<()> {
             output_dir,
             chain_id,
             slashing_penalty,
+            preserve_chain_id,
         } => {
             use std::{
                 fs,
@@ -218,10 +222,16 @@ async fn main() -> anyhow::Result<()> {
             use rand::Rng;
 
             // Build script computes the latest testnet name and sets it as an env variable
-            let chain_id = chain_id.unwrap_or_else(|| env!("PD_LATEST_TESTNET_NAME").to_string());
-
-            let randomizer = OsRng.gen::<u32>();
-            let chain_id = format!("{}-{}", chain_id, hex::encode(&randomizer.to_le_bytes()));
+            let chain_id = match preserve_chain_id {
+                true => chain_id.unwrap_or_else(|| env!("PD_LATEST_TESTNET_NAME").to_string()),
+                false => {
+                    // If preserve_chain_id is false, we append a random suffix to avoid collisions
+                    let randomizer = OsRng.gen::<u32>();
+                    let chain_id =
+                        chain_id.unwrap_or_else(|| env!("PD_LATEST_TESTNET_NAME").to_string());
+                    format!("{}-{}", chain_id, hex::encode(&randomizer.to_le_bytes()))
+                }
+            };
 
             use pd::{genesis, testnet::*};
             use penumbra_crypto::Address;
