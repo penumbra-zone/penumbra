@@ -11,6 +11,14 @@ use once_cell::sync::Lazy;
 use poseidon377::Fq;
 use serde::{Deserialize, Serialize};
 
+#[cfg(not(feature = "fast_hash"))]
+use poseidon377::{hash_1, hash_4};
+
+#[cfg(feature = "fast_hash")]
+mod fast_hash;
+#[cfg(feature = "fast_hash")]
+use fast_hash::{hash_1, hash_4};
+
 use crate::Commitment;
 
 mod option_hash;
@@ -95,12 +103,6 @@ impl Hash {
         Self(fq)
     }
 
-    /// Hash an individual item to be inserted into the tree.
-    #[inline]
-    pub fn of(item: Commitment) -> Hash {
-        Self(poseidon377::hash_1(&DOMAIN_SEPARATOR, item.into()))
-    }
-
     /// Get the underlying bytes for the hash
     pub(crate) fn into_bytes(self) -> [u64; 4] {
         self.0 .0 .0
@@ -113,15 +115,18 @@ impl Hash {
         Self(Fp256::new(BigInteger256(bytes)))
     }
 
+    /// Hash an individual item to be inserted into the tree.
+    #[inline]
+    pub fn of(item: Commitment) -> Hash {
+        Self(hash_1(&DOMAIN_SEPARATOR, item.into()))
+    }
+
     /// Construct a hash for an internal node of the tree, given its height and the hashes of its
     /// four children.
     #[inline]
     pub fn node(height: u8, Hash(a): Hash, Hash(b): Hash, Hash(c): Hash, Hash(d): Hash) -> Hash {
         let height = Fq::from_le_bytes_mod_order(&height.to_le_bytes());
-        Hash(poseidon377::hash_4(
-            &(*DOMAIN_SEPARATOR + height),
-            (a, b, c, d),
-        ))
+        Hash(hash_4(&(*DOMAIN_SEPARATOR + height), (a, b, c, d)))
     }
 }
 
