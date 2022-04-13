@@ -52,14 +52,14 @@ impl TryFrom<pb::MerkleRoot> for Root {
     fn try_from(root: pb::MerkleRoot) -> Result<Root, Self::Error> {
         let bytes: [u8; 32] = (&root.inner[..]).try_into().map_err(|_| RootDecodeError)?;
         let inner = Fq::from_bytes(bytes).map_err(|_| RootDecodeError)?;
-        Ok(Root(Hash(inner)))
+        Ok(Root(Hash::new(inner)))
     }
 }
 
 impl From<Root> for pb::MerkleRoot {
     fn from(root: Root) -> Self {
         Self {
-            inner: root.0 .0.to_bytes().to_vec(),
+            inner: Fq::from(root.0).to_bytes().to_vec(),
         }
     }
 }
