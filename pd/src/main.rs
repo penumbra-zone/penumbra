@@ -129,8 +129,9 @@ async fn main() -> anyhow::Result<()> {
                 "starting pd"
             );
 
-            // Initialize state
-            let storage = pd::Storage::load(rocks_path).await?;
+            let storage = pd::Storage::load(rocks_path)
+                .await
+                .context("Unable to initialize RocksDB storage")?;
 
             let (consensus, height_rx) = pd::Consensus::new(storage.clone()).await?;
             let mempool = pd::Mempool::new(storage.clone(), height_rx).await?;
