@@ -306,15 +306,15 @@ where
             let child = Child::try_from(queue)?;
             Ok(Node {
                 siblings: [
-                    Hash(
+                    Hash::new(
                         Fq::from_bytes(sibling_1.try_into().map_err(|_| PathDecodeError)?)
                             .map_err(|_| PathDecodeError)?,
                     ),
-                    Hash(
+                    Hash::new(
                         Fq::from_bytes(sibling_2.try_into().map_err(|_| PathDecodeError)?)
                             .map_err(|_| PathDecodeError)?,
                     ),
-                    Hash(
+                    Hash::new(
                         Fq::from_bytes(sibling_3.try_into().map_err(|_| PathDecodeError)?)
                             .map_err(|_| PathDecodeError)?,
                     ),
