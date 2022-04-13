@@ -23,6 +23,7 @@ pub use error::{
 /// [`Block`]s, each witnessing up to 65,536 [`Commitment`]s.
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct Eternity {
+    position: index::within::Eternity,
     index: HashedMap<Commitment, index::within::Eternity>,
     inner: Tier<Tier<Tier<Item>>>,
 }
@@ -64,17 +65,17 @@ impl From<Root> for pb::MerkleRoot {
 
 /// The index of a [`Commitment`] within an [`Eternity`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Position(u64);
+pub struct Position(index::within::Eternity);
 
 impl From<Position> for u64 {
     fn from(position: Position) -> Self {
-        position.0
+        position.0.into()
     }
 }
 
 impl From<u64> for Position {
     fn from(position: u64) -> Self {
-        Position(position)
+        Position(position.into())
     }
 }
 
@@ -133,7 +134,13 @@ impl Eternity {
 
         let index = *self.index.get(&commitment)?;
 
-        let (auth_path, leaf) = self.inner.witness(index)?;
+        let (auth_path, leaf) = match self.inner.witness(index) {
+            Some(witness) => witness,
+            None => panic!(
+                "commitment `{:?}` indexed with position `{:?}` must be witnessed",
+                commitment, index
+            ),
+        };
         debug_assert_eq!(leaf, Hash::of(commitment));
 
         Some(Proof(crate::proof::Proof {
@@ -336,23 +343,44 @@ impl Eternity {
 
     /// Insert an epoch or its root (helper function for [`insert_epoch`] and [`insert_epoch_root`]).
     fn insert_epoch_or_root(&mut self, epoch: Insert<Epoch>) -> Result<(), Insert<Epoch>> {
-        // If we successfully insert this epoch, here's what its index in the epoch will be:
-        let this_epoch = self.inner.position().into();
+        let was_empty = self.inner.is_empty();
 
         // Decompose the block into its components
-        let (epoch, epoch_index) = match epoch {
-            Insert::Hash(hash) => (Insert::Hash(hash), Default::default()),
-            Insert::Keep(Epoch { index, inner }) => (Insert::Keep(inner), index),
+        let (position, epoch, epoch_index) = match epoch {
+            Insert::Hash(hash) => (
+                index::within::Epoch::MAX,
+                Insert::Hash(hash),
+                Default::default(),
+            ),
+            Insert::Keep(Epoch {
+                position,
+                index,
+                inner,
+            }) => (position, Insert::Keep(inner), index),
         };
 
         // Try to insert the block into the tree, and if successful, track the commitment, block, and
         // epoch indices of each inserted commitment
         if let Err(epoch) = self.inner.insert(epoch) {
             Err(epoch.map(|inner| Epoch {
+                position,
                 index: epoch_index,
                 inner,
             }))
         } else {
+            // Copy out the block and commitment indices from the just-inserted epoch
+            self.position = index::within::Eternity {
+                epoch: self.position.epoch,
+                block: position.block,
+                commitment: position.commitment,
+            };
+
+            // Increment the epoch
+            if !was_empty {
+                self.position.epoch.increment();
+            }
+            let this_epoch = self.position.epoch;
+
             for (
                 commitment,
                 index::within::Epoch {
@@ -393,21 +421,7 @@ impl Eternity {
     /// Note that [`forget`](Eternity::forget)ting a commitment does not decrease this; it only
     /// decreases the [`witnessed_count`](Eternity::witnessed_count).
     pub fn position(&self) -> Position {
-        Position(
-            ((self.inner.position().saturating_sub(1) as u64) << 32)
-                + (match self.inner.focus() {
-                    None => 0,
-                    Some(Insert::Hash(_)) => u32::MAX,
-                    Some(Insert::Keep(epoch)) => {
-                        ((epoch.position() as u32).saturating_sub(1) << 16)
-                            + (match epoch.focus() {
-                                None => 0,
-                                Some(Insert::Hash(_)) => u16::MAX,
-                                Some(Insert::Keep(block)) => block.position(),
-                            }) as u32
-                    }
-                } << 16) as u64,
-        )
+        Position(self.position)
     }
 
     /// The number of [`Commitment`]s currently witnessed in this [`Eternity`].
@@ -426,17 +440,26 @@ impl Eternity {
     /// Update the most recently inserted [`Epoch`] via methods on [`EpochMut`], and return the
     /// result of the function.
     fn update<T>(&mut self, f: impl FnOnce(Option<&mut EpochMut<'_>>) -> T) -> T {
-        let this_epoch = self.inner.position().saturating_sub(1).into();
+        let index::within::Eternity {
+            epoch,
+            commitment,
+            block,
+        } = &mut self.position;
 
         let index = epoch::IndexMut::Eternity {
-            this_epoch,
+            this_epoch: *epoch,
             index: &mut self.index,
         };
 
         self.inner.update(|inner| {
             if let Some(inner) = inner {
                 if let Insert::Keep(inner) = inner.as_mut() {
-                    f(Some(&mut EpochMut { inner, index }))
+                    f(Some(&mut EpochMut {
+                        block,
+                        commitment,
+                        inner,
+                        index,
+                    }))
                 } else {
                     f(None)
                 }
