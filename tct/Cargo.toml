@@ -28,6 +28,7 @@ rand = { version = "0.8", optional = true }
 [features]
 spec = []
 internal = []
+fast_hash = []
 arbitrary = ["proptest", "proptest-derive", "rand"]
 
 [dev-dependencies]
@@ -35,4 +36,4 @@ sqlx = { version = "0.5.9", features = ["postgres", "runtime-tokio-rustls"] }
 static_assertions = "1"
 proptest = "1"
 proptest-derive = "0.3"
-penumbra-tct = { path = ".", features = ["spec", "arbitrary"] }
+penumbra-tct = { path = ".", features = ["spec", "arbitrary", "fast_hash"] }
