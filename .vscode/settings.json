@@ -1,5 +1,1 @@
-{
-    "rust-analyzer.server.extraEnv": {
-        "DATABASE_URL": "sqlite:///tmp/pwalletd.bin"
-    }
-}
+{}
