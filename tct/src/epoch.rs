@@ -293,6 +293,8 @@ impl EpochMut<'_> {
         &mut self,
         block: Insert<Block>,
     ) -> Result<Vec<index::within::Eternity>, Insert<Block>> {
+        // We have a special case when the starting eternity was empty, because then we don't
+        // increment the block index
         let was_empty = self.inner.is_empty();
 
         // All the indices that we've replaced while inserting this block

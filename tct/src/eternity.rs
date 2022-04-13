@@ -343,6 +343,8 @@ impl Eternity {
 
     /// Insert an epoch or its root (helper function for [`insert_epoch`] and [`insert_epoch_root`]).
     fn insert_epoch_or_root(&mut self, epoch: Insert<Epoch>) -> Result<(), Insert<Epoch>> {
+        // We have a special case when the starting eternity was empty, because then we don't
+        // increment the epoch index
         let was_empty = self.inner.is_empty();
 
         // Decompose the block into its components
