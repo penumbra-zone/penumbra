@@ -5,7 +5,7 @@ use std::collections::VecDeque;
 use hash_hasher::HashedMap;
 
 use crate::{
-    internal::{active::Insert, hash::Hash},
+    internal::{active::Insert, hash::Hash, index},
     Commitment, Position, Proof, Witness,
 };
 
@@ -43,6 +43,9 @@ impl Builder {
             self.eternity.push_back(Insert::Keep(VecDeque::new()))
         }
 
+        // Calculate the position for the insertion
+        let position = self.position();
+
         match self
             .eternity
             .back_mut()
@@ -73,12 +76,9 @@ impl Builder {
 
                         // Insert the item into the block
                         block.push_back(insert);
-                        // Calculate the item's position
-                        let position = (block.len() as u64 - 1)
-                            | ((epoch.len() as u64 - 1) << 16)
-                            | ((self.eternity.len() as u64 - 1) << 32);
+
                         // Return the position
-                        Ok(position.into())
+                        Ok(position)
                     }
                 }
             }
@@ -154,20 +154,40 @@ impl Builder {
                     return Err(InsertError::EpochFull);
                 }
 
-                // Ensure epoch is not empty
-                if epoch.is_empty() {
-                    epoch.push_back(Insert::Keep(VecDeque::new()));
-                }
-
                 // Insert whatever is to be inserted
-                if epoch.len() < TIER_CAPACITY {
-                    epoch.push_back(insert.map(|block| block.block));
-                    Ok(())
-                } else {
-                    Err(InsertError::EpochFull)
-                }
+                epoch.push_back(insert.map(|block| block.block));
+                Ok(())
             }
         }
+    }
+
+    /// Calculate the position of the next insertion into this eternity.
+    fn position(&self) -> Position {
+        let (epoch, block, commitment) = if self.eternity.is_empty() {
+            (0.into(), 0.into(), 0.into())
+        } else {
+            let (block, commitment) = match self.eternity.back().unwrap() {
+                Insert::Hash(_) => (index::Block::MAX, index::Commitment::MAX),
+                Insert::Keep(epoch) => {
+                    if epoch.is_empty() {
+                        (0.into(), 0.into())
+                    } else {
+                        let commitment = match epoch.back().unwrap() {
+                            Insert::Hash(_) => index::Commitment::MAX,
+                            Insert::Keep(block) => (block.len() as u16).into(),
+                        };
+                        (((epoch.len() - 1) as u16).into(), commitment)
+                    }
+                }
+            };
+            (((self.eternity.len() - 1) as u16).into(), block, commitment)
+        };
+
+        Position::from(u64::from(crate::internal::index::within::Eternity {
+            epoch,
+            block,
+            commitment,
+        }))
     }
 
     /// Insert an epoch builder's contents as a new epoch in this [`eternity::Builder`](Builder).
@@ -201,12 +221,17 @@ impl Builder {
     /// This is not a mirror of any method on [`crate::Eternity`], because the main crate interface
     /// is incremental, not split into a builder phase and a finalized phase.
     pub fn build(self) -> Eternity {
+        let position = self.position();
         let tree = Tree::from_eternity(self.eternity);
         let mut index = HashedMap::default();
         tree.index_with(|commitment, position| {
             index.insert(commitment, position.into());
         });
-        Eternity { index, tree }
+        Eternity {
+            position,
+            index,
+            tree,
+        }
     }
 }
 
@@ -215,6 +240,7 @@ impl Builder {
 /// This supports all the immutable methods of [`crate::Eternity`].
 pub struct Eternity {
     index: HashedMap<Commitment, Position>,
+    position: Position,
     tree: Tree,
 }
 
@@ -269,7 +295,7 @@ impl Eternity {
     ///
     /// See [`crate::Eternity::position`].
     pub fn position(&self) -> Position {
-        self.tree.position(24).into()
+        self.position
     }
 
     /// Get the number of [`Commitment`]s witnessed in this [`Eternity`].

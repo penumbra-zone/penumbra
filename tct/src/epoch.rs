@@ -25,6 +25,7 @@ pub use error::{InsertBlockError, InsertBlockRootError, InsertError};
 /// This is one [`Epoch`] in an [`Eternity`].
 #[derive(Derivative, Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct Epoch {
+    pub(super) position: index::within::Epoch,
     pub(super) index: HashedMap<Commitment, index::within::Epoch>,
     pub(super) inner: Tier<Tier<Item>>,
 }
@@ -83,6 +84,8 @@ impl From<u32> for Position {
 /// A mutable reference to an [`Epoch`].
 #[derive(Debug, PartialEq, Eq)]
 pub(super) struct EpochMut<'a> {
+    pub(super) commitment: &'a mut index::Commitment,
+    pub(super) block: &'a mut index::Block,
     pub(super) index: IndexMut<'a>,
     pub(super) inner: &'a mut Tier<Tier<Item>>,
 }
@@ -117,6 +120,8 @@ impl Epoch {
     /// Get an [`EpochMut`] referring to this [`Epoch`].
     pub(super) fn as_mut(&mut self) -> EpochMut {
         EpochMut {
+            commitment: &mut self.position.commitment,
+            block: &mut self.position.block,
             index: IndexMut::Epoch {
                 index: &mut self.index,
             },
@@ -177,7 +182,13 @@ impl Epoch {
 
         let index = *self.index.get(&commitment)?;
 
-        let (auth_path, leaf) = self.inner.witness(index)?;
+        let (auth_path, leaf) = match self.inner.witness(index) {
+            Some(witness) => witness,
+            None => panic!(
+                "commitment `{:?}` indexed with position `{:?}` must be witnessed",
+                commitment, index
+            ),
+        };
         debug_assert_eq!(leaf, Hash::of(commitment));
 
         Some(Proof(crate::proof::Proof {
@@ -258,14 +269,7 @@ impl Epoch {
     /// Note that [`forget`](Epoch::forget)ting a commitment does not decrease this; it only
     /// decreases the [`witnessed_count`](Epoch::witnessed_count).
     pub fn position(&self) -> Position {
-        Position(
-            ((self.inner.position().saturating_sub(1) as u32) << 16)
-                + match self.inner.focus() {
-                    None => 0,
-                    Some(Insert::Hash(_)) => u16::MAX,
-                    Some(Insert::Keep(block)) => block.position(),
-                } as u32,
-        )
+        Position(self.position.into())
     }
 
     /// The number of [`Commitment`]s currently witnessed in this [`Epoch`].
@@ -289,26 +293,43 @@ impl EpochMut<'_> {
         &mut self,
         block: Insert<Block>,
     ) -> Result<Vec<index::within::Eternity>, Insert<Block>> {
+        let was_empty = self.inner.is_empty();
+
         // All the indices that we've replaced while inserting this block
         let mut replaced_indices = Vec::new();
 
-        // If we successfully insert this block, here's what its index in the epoch will be:
-        let this_block = self.inner.position().into();
-
         // Decompose the block into its components
-        let (block, block_index) = match block {
-            Insert::Hash(hash) => (Insert::Hash(hash), Default::default()),
-            Insert::Keep(Block { index, inner }) => (Insert::Keep(inner), index),
+        let (position, block, block_index) = match block {
+            Insert::Hash(hash) => (
+                index::within::Block::MAX,
+                Insert::Hash(hash),
+                Default::default(),
+            ),
+            Insert::Keep(Block {
+                position,
+                index,
+                inner,
+            }) => (position, Insert::Keep(inner), index),
         };
 
         // Try to insert the block into the tree, and if successful, track the commitment and block
         // indices of each commitment in the inserted block
         if let Err(block) = self.inner.insert(block) {
             Err(block.map(|inner| Block {
+                position,
                 index: block_index,
                 inner,
             }))
         } else {
+            // Copy out the commitment index from the just-inserted block
+            *self.commitment = position.commitment;
+
+            // Increment the block
+            if !was_empty {
+                self.block.increment();
+            }
+            let this_block = *self.block;
+
             match self.index {
                 IndexMut::Epoch { ref mut index } => {
                     for (
@@ -439,7 +460,7 @@ impl EpochMut<'_> {
     /// Update the most recently inserted [`Block`] via methods on [`BlockMut`], and return the
     /// result of the function.
     pub(super) fn update<T>(&mut self, f: impl FnOnce(Option<&mut BlockMut<'_>>) -> T) -> T {
-        let this_block = self.inner.position().saturating_sub(1).into();
+        let this_block = *self.block;
 
         let index = match self.index {
             IndexMut::Epoch { ref mut index } => block::IndexMut::Epoch { this_block, index },
@@ -456,7 +477,11 @@ impl EpochMut<'_> {
         self.inner.update(|inner| {
             if let Some(inner) = inner {
                 if let Insert::Keep(inner) = inner.as_mut() {
-                    f(Some(&mut BlockMut { inner, index }))
+                    f(Some(&mut BlockMut {
+                        commitment: self.commitment,
+                        inner,
+                        index,
+                    }))
                 } else {
                     f(None)
                 }

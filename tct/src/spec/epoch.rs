@@ -6,7 +6,7 @@ use hash_hasher::HashedMap;
 
 use crate::{
     epoch::{Position, Proof},
-    internal::{active::Insert, hash::Hash},
+    internal::{active::Insert, hash::Hash, index},
     Commitment, Witness,
 };
 
@@ -44,6 +44,9 @@ impl Builder {
             self.epoch.push_back(Insert::Keep(VecDeque::new()))
         }
 
+        // Calculate position
+        let position = self.position();
+
         match self
             .epoch
             .back_mut()
@@ -58,10 +61,9 @@ impl Builder {
 
                 // Insert the item into the block
                 block.push_back(insert);
-                // Calculate the item's position
-                let position = (block.len() as u32 - 1) | ((self.epoch.len() as u32 - 1) << 16);
+
                 // Return the position
-                Ok(position.into())
+                Ok(position)
             }
         }
     }
@@ -88,6 +90,24 @@ impl Builder {
             }
         }
         forgotten
+    }
+
+    /// Calculate the position of the next insertion into this epoch.
+    fn position(&self) -> Position {
+        let (block, commitment) = if self.epoch.is_empty() {
+            (0.into(), 0.into())
+        } else {
+            let commitment = match self.epoch.back().unwrap() {
+                Insert::Hash(_) => index::Commitment::MAX,
+                Insert::Keep(block) => (block.len() as u16).into(),
+            };
+            (((self.epoch.len() - 1) as u16).into(), commitment)
+        };
+
+        Position::from(u32::from(crate::internal::index::within::Epoch {
+            block,
+            commitment,
+        }))
     }
 
     /// Insert a block builder's contents as a new block in this [`epoch::Builder`](Builder).
@@ -122,12 +142,17 @@ impl Builder {
     /// This is not a mirror of any method on [`crate::Epoch`], because the main crate interface
     /// is incremental, not split into a builder phase and a finalized phase.
     pub fn build(self) -> Epoch {
+        let position = self.position();
         let tree = Tree::from_epoch(self.epoch);
         let mut index = HashedMap::default();
         tree.index_with(|commitment, position| {
             index.insert(commitment, (position as u32).into());
         });
-        Epoch { index, tree }
+        Epoch {
+            position,
+            index,
+            tree,
+        }
     }
 }
 
@@ -136,6 +161,7 @@ impl Builder {
 /// This supports all the immutable methods of [`crate::Epoch`].
 pub struct Epoch {
     index: HashedMap<Commitment, Position>,
+    position: Position,
     tree: Tree,
 }
 
@@ -175,7 +201,7 @@ impl Epoch {
     ///
     /// See [`crate::Epoch::position`].
     pub fn position(&self) -> Position {
-        (self.tree.position(16) as u32).into()
+        self.position
     }
 
     /// Get the number of [`Commitment`]s witnessed in this [`Epoch`].
