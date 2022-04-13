@@ -120,11 +120,12 @@ mod tests {
         proof_system::{PlonkKzgSnark, Snark},
         transcript::StandardTranscript,
     };
-    use rand_core::OsRng;
+    use rand::SeedableRng;
+    use rand_chacha::ChaChaRng;
 
     #[test]
     fn zk_output_proof_run() {
-        let mut rng = OsRng;
+        let mut rng = ChaChaRng::seed_from_u64(666);
 
         let seed_phrase = SeedPhrase::generate(&mut rng);
         let spend_seed = SpendSeed::from_seed_phrase(seed_phrase, 0);
