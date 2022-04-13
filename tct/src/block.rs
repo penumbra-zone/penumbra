@@ -16,6 +16,7 @@ pub use proof::Proof;
 /// This is one [`Block`] in an [`Epoch`], which is one [`Epoch`] in an [`Eternity`].
 #[derive(Derivative, Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct Block {
+    pub(super) position: index::within::Block,
     pub(super) index: HashedMap<Commitment, index::within::Block>,
     pub(super) inner: Tier<Item>,
 }
@@ -57,23 +58,24 @@ impl From<Root> for pb::MerkleRoot {
 
 /// The index of a [`Commitment`] within a [`Block`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Position(u16);
+pub struct Position(index::within::Block);
 
 impl From<Position> for u16 {
     fn from(position: Position) -> Self {
-        position.0
+        position.0.into()
     }
 }
 
 impl From<u16> for Position {
     fn from(position: u16) -> Self {
-        Position(position)
+        Position(position.into())
     }
 }
 
 /// A mutable reference to a [`Block`].
 #[derive(Debug, PartialEq, Eq)]
 pub(in super::super) struct BlockMut<'a> {
+    pub(super) commitment: &'a mut index::Commitment,
     pub(super) index: IndexMut<'a>,
     pub(super) inner: &'a mut Tier<Item>,
 }
@@ -129,6 +131,7 @@ impl Block {
     /// Get a [`BlockMut`] from this [`Block`].
     pub(super) fn as_mut(&mut self) -> BlockMut {
         BlockMut {
+            commitment: &mut self.position.commitment,
             index: IndexMut::Block {
                 index: &mut self.index,
             },
@@ -185,7 +188,13 @@ impl Block {
 
         let index = *self.index.get(&commitment)?;
 
-        let (auth_path, leaf) = self.inner.witness(index)?;
+        let (auth_path, leaf) = match self.inner.witness(index) {
+            Some(witness) => witness,
+            None => panic!(
+                "commitment `{:?}` indexed with position `{:?}` must be witnessed",
+                commitment, index
+            ),
+        };
         debug_assert_eq!(leaf, Hash::of(commitment));
 
         Some(Proof(crate::proof::Proof {
@@ -211,7 +220,7 @@ impl Block {
     /// Note that [`forget`](Block::forget)ting a commitment does not decrease this; it only
     /// decreases the [`witnessed_count`](Block::witnessed_count).
     pub fn position(&self) -> Position {
-        Position(self.inner.position())
+        Position(self.position)
     }
 
     /// The number of [`Commitment`]s currently witnessed in this [`Block`].
@@ -233,13 +242,14 @@ impl BlockMut<'_> {
         &mut self,
         commitment: Insert<Commitment>,
     ) -> Result<Option<ReplacedIndex>, Insert<Commitment>> {
-        // If we successfully insert this commitment, here's what its index in the block will be:
-        let this_commitment: index::Commitment = self.inner.position().into();
-
         // Try to insert the commitment into the inner tree, and if successful, track the index
         if self.inner.insert(commitment.map(Item::new)).is_err() {
             Err(commitment)
         } else {
+            // Increment the position
+            let this_commitment = *self.commitment;
+            self.commitment.increment();
+
             // Keep track of the commitment's index in the block, and if applicable, the block's index
             // within its epoch, and if applicable, the epoch's index in the eternity
             if let Insert::Keep(commitment) = commitment {

@@ -26,7 +26,6 @@ use super::super::{active, complete};
     deserialize = "Item: Deserialize<'de>, Item::Complete: Deserialize<'de>"
 ))]
 pub struct Tier<Item: Focus> {
-    len: u16,
     inner: Inner<Item>,
 }
 
@@ -142,14 +141,12 @@ impl<Item: Focus> Tier<Item> {
                 None => {
                     // The tier is empty, so insert the item
                     **incomplete = Some(Nested::singleton(item));
-                    self.len += 1;
                     Ok(())
                 }
                 Some(active) => match active.insert(item) {
                     // The insertion succeeded, so we're still active
                     Ok(active) => {
                         **incomplete = Some(active);
-                        self.len += 1;
                         Ok(())
                     }
                     // The insertion failed, so we need to become complete
@@ -193,12 +190,6 @@ impl<Item: Focus> Tier<Item> {
         } else {
             None
         }
-    }
-
-    /// Get the total number of insertions performed on this [`Tier`], regardless of whether they
-    /// were retained or forgotten.
-    pub fn position(&self) -> u16 {
-        self.len
     }
 
     /// Check if this [`Tier`] is empty.
@@ -332,6 +323,6 @@ mod test {
 
     #[test]
     fn check_inner_size() {
-        static_assertions::assert_eq_size!(Tier<Tier<Tier<crate::Item>>>, [u8; 64]);
+        static_assertions::assert_eq_size!(Tier<Tier<Tier<crate::Item>>>, [u8; 56]);
     }
 }

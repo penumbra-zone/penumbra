@@ -75,8 +75,17 @@ pub use crate::internal::{
 ///
 /// This is an element of the base field of the curve used by the Poseidon hash function
 /// instantiated for BLS12-377.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Commitment(#[serde(with = "crate::serialize::fq")] pub poseidon377::Fq);
+
+impl Debug for Commitment {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        use ark_ff::ToBytes;
+        let mut bytes = Vec::with_capacity(4 * 8);
+        self.0.write(&mut bytes).unwrap();
+        write!(f, "Commitment({})", hex::encode(&bytes[3 * 8 + 4..]))
+    }
+}
 
 impl From<Commitment> for poseidon377::Fq {
     fn from(commitment: Commitment) -> Self {

@@ -34,31 +34,6 @@ impl Tree {
         }
     }
 
-    /// Get the position of the rightmost leaf of the tree.
-    ///
-    /// # Panics
-    ///
-    /// If the height given is not exactly the height of the tree.
-    pub(super) fn position(&self, height: u8) -> u64 {
-        match self {
-            Tree::Leaf { .. } => {
-                if height == 0 {
-                    0
-                } else {
-                    panic!("incorrect height given to Tree::position")
-                }
-            }
-            Tree::Node { children, .. } => {
-                if let Some(last) = children.last() {
-                    (children.len() as u64) * 4u64.pow(height as u32 - 1)
-                        + last.position(height - 1)
-                } else {
-                    4u64.pow(height as u32)
-                }
-            }
-        }
-    }
-
     /// Construct an entire eternity tree from three nested tiers.
     ///
     /// # Panics
