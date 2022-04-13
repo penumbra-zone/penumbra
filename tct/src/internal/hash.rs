@@ -65,7 +65,7 @@ impl<T: GetHash> GetHash for &mut T {
 
 /// The hash of an individual item, tree root, or intermediate node.
 #[derive(Clone, Copy, PartialEq, Eq, Default, std::hash::Hash, Serialize, Deserialize)]
-pub struct Hash(#[serde(with = "crate::serialize::fq")] pub(crate) Fq);
+pub struct Hash(#[serde(with = "crate::serialize::fq")] Fq);
 
 impl From<Hash> for Fq {
     #[inline]
@@ -90,10 +90,15 @@ pub static DOMAIN_SEPARATOR: Lazy<Fq> =
 
 #[allow(unused)]
 impl Hash {
+    /// Create a hash from an arbitrary [`Fq`].
+    pub(crate) fn new(fq: Fq) -> Self {
+        Self(fq)
+    }
+
     /// Hash an individual item to be inserted into the tree.
     #[inline]
     pub fn of(item: Commitment) -> Hash {
-        Hash(poseidon377::hash_1(&DOMAIN_SEPARATOR, item.into()))
+        Self(poseidon377::hash_1(&DOMAIN_SEPARATOR, item.into()))
     }
 
     /// Get the underlying bytes for the hash
