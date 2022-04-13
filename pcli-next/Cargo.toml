@@ -15,7 +15,7 @@ publish = false
 # Workspace dependencies
 penumbra-proto = { path = "../proto" }
 penumbra-chain = { path = "../chain" }
-penumbra-crypto = { path = "../crypto", features = ["sqlx"]}
+penumbra-crypto = { path = "../crypto"}
 penumbra-stake = { path = "../stake" }
 penumbra-transaction = { path = "../transaction" }
 penumbra-wallet = { path = "../wallet" }
