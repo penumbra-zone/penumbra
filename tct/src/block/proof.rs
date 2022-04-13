@@ -2,7 +2,7 @@ use penumbra_proto::transparent_proofs as pb;
 
 pub use thiserror::Error;
 
-use crate::{Commitment, Hash};
+use crate::{internal::index, Commitment, Hash};
 
 pub use super::{Block, Position, Root};
 
@@ -55,7 +55,7 @@ impl Proof {
         };
         Self(crate::proof::Proof {
             leaf: commitment,
-            position: index as u64,
+            position: u16::from(index) as u64,
             auth_path: path,
         })
     }
@@ -76,7 +76,7 @@ impl Proof {
 
     /// Get the position of the witnessed commitment.
     pub fn position(&self) -> crate::block::Position {
-        crate::epoch::block::Position(self.0.index() as u16)
+        crate::epoch::block::Position(index::within::Block::from(self.0.index() as u16))
     }
 
     /// Get the authentication path for this proof, order from root to leaf.

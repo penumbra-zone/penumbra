@@ -119,7 +119,7 @@ impl Proof {
         };
         Self(crate::proof::Proof {
             leaf: commitment,
-            position: index,
+            position: index.into(),
             auth_path: path,
         })
     }
@@ -140,7 +140,7 @@ impl Proof {
 
     /// Get the position of the witnessed commitment.
     pub fn position(&self) -> crate::Position {
-        crate::eternity::Position(self.0.index())
+        crate::eternity::Position(self.0.index().into())
     }
 
     /// Get the authentication path for this proof, order from root to leaf.

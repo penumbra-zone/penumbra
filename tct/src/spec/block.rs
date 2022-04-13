@@ -70,12 +70,19 @@ impl Builder {
     /// This is not a mirror of any method on [`crate::Block`], because the main crate interface
     /// is incremental, not split into a builder phase and a finalized phase.
     pub fn build(self) -> Block {
+        // Calculate position
+        let position = (self.block.len() as u16).into();
+
         let tree = Tree::from_block(self.block);
         let mut index = HashedMap::default();
         tree.index_with(|commitment, position| {
             index.insert(commitment, (position as u16).into());
         });
-        Block { index, tree }
+        Block {
+            position,
+            index,
+            tree,
+        }
     }
 }
 
@@ -84,6 +91,7 @@ impl Builder {
 /// This supports all the immutable methods of [`crate::Block`].
 pub struct Block {
     index: HashedMap<Commitment, Position>,
+    position: Position,
     tree: Tree,
 }
 
@@ -108,7 +116,7 @@ impl Block {
     ///
     /// See [`crate::Block::position`].
     pub fn position(&self) -> Position {
-        (self.tree.position(8) as u16).into()
+        self.position
     }
 
     /// Get the number of [`Commitment`]s witnessed in this [`Block`].
