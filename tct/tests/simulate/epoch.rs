@@ -74,8 +74,8 @@ pub enum Observation {
 }
 
 impl Simulate for Observation {
-    type Spec = spec::Eternity;
-    type Real = real::Eternity;
+    type Spec = spec::Epoch;
+    type Real = real::Epoch;
 
     fn simulate(self, spec: &mut Self::Spec, real: &mut Self::Real) {
         use Observation::*;
