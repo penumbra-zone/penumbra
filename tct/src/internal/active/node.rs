@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     internal::{
         active::{Forget, Full},
-        hash::OptionHash,
+        hash::{self, OptionHash},
         height::{IsHeight, Succ},
         path::{self, WhichWay, Witness},
         three::{Elems, ElemsMut, Three},
@@ -23,23 +23,24 @@ use super::super::complete;
     Debug(bound = "Child: Debug, Child::Complete: Debug"),
     PartialEq(bound = "Child: PartialEq, Child::Complete: PartialEq")
 )]
-pub struct Node<Child: Focus> {
+pub struct Node<Child: Focus<Hasher>, Hasher> {
     #[derivative(
         PartialEq = "ignore",
         Debug(format_with = "super::super::complete::node::fmt_cache")
     )]
     #[serde(skip)]
-    hash: Cell<OptionHash>,
-    siblings: Three<Insert<Child::Complete>>,
+    hash: Cell<OptionHash<Hasher>>,
+    siblings: Three<Insert<Child::Complete, Hasher>>,
     focus: Child,
 }
 
-impl<Child: Focus> PartialEq<complete::Node<Child::Complete>> for Node<Child>
+impl<Child: Focus<Hasher>, Hasher> PartialEq<complete::Node<Child::Complete, Hasher>>
+    for Node<Child, Hasher>
 where
     Child::Complete: PartialEq<Child> + PartialEq,
 {
-    fn eq(&self, other: &complete::Node<Child::Complete>) -> bool {
-        let zero = || -> Insert<&Child> { Insert::Hash(Hash::default()) };
+    fn eq(&self, other: &complete::Node<Child::Complete, Hasher>) -> bool {
+        let zero = || -> Insert<&Child, Hasher> { Insert::Hash(Hash::default()) };
 
         let children = other.children();
 
@@ -72,10 +73,13 @@ where
     }
 }
 
-impl<Child: Focus> Node<Child> {
-    pub(crate) fn from_parts(siblings: Three<Insert<Child::Complete>>, focus: Child) -> Self
+impl<Child: Focus<Hasher>, Hasher> Node<Child, Hasher> {
+    pub(crate) fn from_parts(
+        siblings: Three<Insert<<Child as Focus<Hasher>>::Complete, Hasher>>,
+        focus: Child,
+    ) -> Self
     where
-        Child: Active + GetHash,
+        Child: Active<Hasher> + GetHash<Hasher>,
     {
         Self {
             hash: Cell::new(None.into()),
@@ -85,14 +89,16 @@ impl<Child: Focus> Node<Child> {
     }
 }
 
-impl<Child: Focus> Height for Node<Child> {
+impl<Child: Focus<Hasher>, Hasher> Height for Node<Child, Hasher> {
     type Height = Succ<Child::Height>;
 }
 
-impl<Child: Focus> GetHash for Node<Child> {
-    fn hash(&self) -> Hash {
+impl<Child: Focus<Hasher>, Hasher: hash::Hasher> GetHash<Hasher> for Node<Child, Hasher> {
+    fn hash(&self) -> Hash<Hasher> {
         // Extract the hashes of an array of `Insert<T>`s.
-        fn hashes_of_all<T: GetHash, const N: usize>(full: [&Insert<T>; N]) -> [Hash; N] {
+        fn hashes_of_all<T: GetHash<Hasher>, Hasher, const N: usize>(
+            full: [&Insert<T, Hasher>; N],
+        ) -> [Hash<Hasher>; N] {
             full.map(|hash_or_t| match hash_or_t {
                 Insert::Hash(hash) => *hash,
                 Insert::Keep(t) => t.hash(),
@@ -136,35 +142,35 @@ impl<Child: Focus> GetHash for Node<Child> {
     }
 
     #[inline]
-    fn cached_hash(&self) -> Option<Hash> {
+    fn cached_hash(&self) -> Option<Hash<Hasher>> {
         self.hash.get().into()
     }
 }
 
-impl<Child: Focus> Focus for Node<Child> {
-    type Complete = complete::Node<Child::Complete>;
+impl<Child: Focus<Hasher>, Hasher: hash::Hasher> Focus<Hasher> for Node<Child, Hasher> {
+    type Complete = complete::Node<Child::Complete, Hasher>;
 
     #[inline]
-    fn finalize(self) -> Insert<Self::Complete> {
+    fn finalize(self) -> Insert<Self::Complete, Hasher> {
         complete::Node::from_siblings_and_focus_or_else_hash(self.siblings, self.focus.finalize())
     }
 }
 
-impl<Focus> Active for Node<Focus>
+impl<Focus, Hasher: hash::Hasher> Active<Hasher> for Node<Focus, Hasher>
 where
-    Focus: Active + GetHash,
+    Focus: Active<Hasher> + GetHash<Hasher>,
 {
     type Item = Focus::Item;
 
     #[inline]
-    fn singleton(item: Insert<Self::Item>) -> Self {
+    fn singleton(item: Insert<Self::Item, Hasher>) -> Self {
         let focus = Focus::singleton(item);
         let siblings = Three::new();
         Self::from_parts(siblings, focus)
     }
 
     #[inline]
-    fn update<T>(&mut self, f: impl FnOnce(&mut Insert<Self::Item>) -> T) -> T {
+    fn update<T>(&mut self, f: impl FnOnce(&mut Insert<Self::Item, Hasher>) -> T) -> T {
         let before_hash = self.focus.cached_hash();
         let output = self.focus.update(f);
         let after_hash = self.focus.cached_hash();
@@ -179,12 +185,12 @@ where
     }
 
     #[inline]
-    fn focus(&self) -> &Insert<Self::Item> {
+    fn focus(&self) -> &Insert<Self::Item, Hasher> {
         self.focus.focus()
     }
 
     #[inline]
-    fn insert(self, item: Insert<Self::Item>) -> Result<Self, Full<Self>> {
+    fn insert(self, item: Insert<Self::Item, Hasher>) -> Result<Self, Full<Self, Hasher>> {
         match self.focus.insert(item) {
             // We successfully inserted at the focus, so siblings don't need to be changed
             Ok(focus) => Ok(Self::from_parts(self.siblings, focus)),
@@ -227,13 +233,15 @@ where
     }
 }
 
-impl<Child: Focus + Witness> Witness for Node<Child>
+impl<Child: Focus<Hasher> + Witness<Hasher>, Hasher: hash::Hasher> Witness<Hasher>
+    for Node<Child, Hasher>
 where
-    Child::Complete: Witness<Item = Child::Item>,
+    Child::Complete: Witness<Hasher, Item = Child::Item>,
+    Child::Height: path::Path<Hasher>,
 {
     type Item = Child::Item;
 
-    fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Self::Item)> {
+    fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self, Hasher>, Self::Item)> {
         use Elems::*;
         use WhichWay::*;
 
@@ -327,9 +335,9 @@ where
     }
 }
 
-impl<Child: Focus + Forget> Forget for Node<Child>
+impl<Child: Focus<Hasher> + Forget, Hasher> Forget for Node<Child, Hasher>
 where
-    Child::Complete: ForgetOwned,
+    Child::Complete: ForgetOwned<Hasher>,
 {
     fn forget(&mut self, index: impl Into<u64>) -> bool {
         use ElemsMut::*;

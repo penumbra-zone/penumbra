@@ -1,11 +1,15 @@
 //! A specification of the behavior of [`Eternity`](crate::Eternity).
 
-use std::collections::VecDeque;
+use std::{collections::VecDeque, marker::PhantomData};
 
 use hash_hasher::HashedMap;
 
 use crate::{
-    internal::{active::Insert, hash::Hash, index},
+    internal::{
+        active::Insert,
+        hash::{self, Hash},
+        index,
+    },
     Commitment, Position, Proof, Witness,
 };
 
@@ -14,12 +18,14 @@ use super::{block, epoch, tree::Tree, InsertError, Tier, TIER_CAPACITY};
 /// A builder for an [`Eternity`]: a sequence of epochs, each of which is a sequence of blocks, each
 /// of which is a sequence of [`Commitment`]s.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct Builder {
+pub struct Builder<Hasher> {
     /// The inner tiers of the builder.
-    pub eternity: Tier<Tier<Tier<Commitment>>>,
+    pub eternity: Tier<Tier<Tier<Commitment, Hasher>, Hasher>, Hasher>,
+    /// Hasher to use.
+    hasher: PhantomData<Hasher>,
 }
 
-impl Builder {
+impl<Hasher: hash::Hasher> Builder<Hasher> {
     /// Insert a new [`Commitment`] into the [`eternity::Builder`](Builder), returning its [`Position`] if successful.
     ///
     /// See [`crate::Eternity::insert`].
@@ -116,7 +122,7 @@ impl Builder {
     /// Insert a block builder's contents as a new block in the current epoch of this [`eternity::Builder`](Builder).
     ///
     /// See [`crate::Eternity::insert_block`].
-    pub fn insert_block(&mut self, block: block::Builder) -> Result<(), InsertError> {
+    pub fn insert_block(&mut self, block: block::Builder<Hasher>) -> Result<(), InsertError> {
         self.insert_block_or_root(Insert::Keep(block))
     }
 
@@ -125,13 +131,16 @@ impl Builder {
     /// See [`crate::Eternity::insert_block_root`].
     pub fn insert_block_root(
         &mut self,
-        crate::block::Root(block_root): crate::block::Root,
+        crate::block::Root(block_root): crate::block::Root<Hasher>,
     ) -> Result<(), InsertError> {
         self.insert_block_or_root(Insert::Hash(block_root))
     }
 
     /// Helper function for inserting a block or block root.
-    fn insert_block_or_root(&mut self, insert: Insert<block::Builder>) -> Result<(), InsertError> {
+    fn insert_block_or_root(
+        &mut self,
+        insert: Insert<block::Builder<Hasher>, Hasher>,
+    ) -> Result<(), InsertError> {
         // Fail if eternity is full
         if self.eternity.len() >= TIER_CAPACITY {
             return Err(InsertError::EternityFull);
@@ -193,7 +202,7 @@ impl Builder {
     /// Insert an epoch builder's contents as a new epoch in this [`eternity::Builder`](Builder).
     ///
     /// See [`crate::Eternity::insert_epoch`].
-    pub fn insert_epoch(&mut self, epoch: epoch::Builder) -> Result<(), InsertError> {
+    pub fn insert_epoch(&mut self, epoch: epoch::Builder<Hasher>) -> Result<(), InsertError> {
         if self.eternity.len() < TIER_CAPACITY {
             self.eternity.push_back(Insert::Keep(epoch.epoch));
             Ok(())
@@ -206,7 +215,7 @@ impl Builder {
     /// [`crate::Eternity::insert_epoch_root`].
     pub fn insert_epoch_root(
         &mut self,
-        crate::epoch::Root(epoch_root): crate::epoch::Root,
+        crate::epoch::Root(epoch_root): crate::epoch::Root<Hasher>,
     ) -> Result<(), InsertError> {
         if self.eternity.len() < TIER_CAPACITY {
             self.eternity.push_back(Insert::Hash(epoch_root));
@@ -220,7 +229,7 @@ impl Builder {
     ///
     /// This is not a mirror of any method on [`crate::Eternity`], because the main crate interface
     /// is incremental, not split into a builder phase and a finalized phase.
-    pub fn build(self) -> Eternity {
+    pub fn build(self) -> Eternity<Hasher> {
         let position = self.position();
         let tree = Tree::from_eternity(self.eternity);
         let mut index = HashedMap::default();
@@ -238,24 +247,24 @@ impl Builder {
 /// An immutable, dense, indexed commitment tree.
 ///
 /// This supports all the immutable methods of [`crate::Eternity`].
-pub struct Eternity {
+pub struct Eternity<Hasher> {
     index: HashedMap<Commitment, Position>,
     position: Position,
-    tree: Tree,
+    tree: Tree<Hasher>,
 }
 
-impl Eternity {
+impl<Hasher: hash::Hasher> Eternity<Hasher> {
     /// Get the root hash of this [`Eternity`].
     ///
     /// See [`crate::Eternity::root`].
-    pub fn root(&self) -> crate::Root {
+    pub fn root(&self) -> crate::Root<Hasher> {
         crate::Root(self.tree.root())
     }
 
     /// Get a [`Proof`] of inclusion for the given [`Commitment`], if it was witnessed.
     ///
     /// See [`crate::Eternity::witness`].
-    pub fn witness(&self, commitment: Commitment) -> Option<Proof> {
+    pub fn witness(&self, commitment: Commitment) -> Option<Proof<Hasher>> {
         let position = *self.index.get(&commitment)?;
         let auth_path = self.tree.witness(position.into());
         Some(Proof::new(commitment, position, auth_path))
@@ -264,7 +273,7 @@ impl Eternity {
     /// Get the block root of the current block of this [`Eternity`], if any.
     ///
     /// See [`crate::Eternity::current_block_root`].
-    pub fn current_block_root(&self) -> Option<crate::block::Root> {
+    pub fn current_block_root(&self) -> Option<crate::block::Root<Hasher>> {
         let mut tree = &self.tree;
         for _ in 0..16 {
             if let Tree::Node { children, .. } = tree {
@@ -279,7 +288,7 @@ impl Eternity {
     /// Get the epoch root of the current epoch of this [`Eternity`], if any.
     ///
     /// See [`crate::Eternity::current_epoch_root`].
-    pub fn current_epoch_root(&self) -> Option<crate::epoch::Root> {
+    pub fn current_epoch_root(&self) -> Option<crate::epoch::Root<Hasher>> {
         let mut tree = &self.tree;
         for _ in 0..8 {
             if let Tree::Node { children, .. } = tree {

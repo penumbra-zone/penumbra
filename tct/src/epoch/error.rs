@@ -2,6 +2,8 @@
 
 use thiserror::Error;
 
+use crate::internal::hash;
+
 use super::Block;
 #[cfg(doc)]
 use super::{Commitment, Epoch};
@@ -27,10 +29,10 @@ pub enum InsertError {
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 #[error("epoch is full")]
 #[non_exhaustive]
-pub struct InsertBlockError(pub Block);
+pub struct InsertBlockError<Hasher: hash::Hasher>(pub Block<Hasher>);
 
-impl From<InsertBlockError> for Block {
-    fn from(error: InsertBlockError) -> Self {
+impl<Hasher: hash::Hasher> From<InsertBlockError<Hasher>> for Block<Hasher> {
+    fn from(error: InsertBlockError<Hasher>) -> Self {
         error.0
     }
 }

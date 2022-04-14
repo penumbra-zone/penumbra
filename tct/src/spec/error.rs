@@ -1,3 +1,5 @@
+use crate::internal::hash;
+
 /// An error when inserting into any builder.
 ///
 /// Not all of these can be thrown by every builder. Unlike the very specific error types used in
@@ -29,8 +31,8 @@ impl From<crate::eternity::InsertError> for InsertError {
     }
 }
 
-impl From<crate::eternity::InsertBlockError> for InsertError {
-    fn from(e: crate::eternity::InsertBlockError) -> Self {
+impl<Hasher: hash::Hasher> From<crate::eternity::InsertBlockError<Hasher>> for InsertError {
+    fn from(e: crate::eternity::InsertBlockError<Hasher>) -> Self {
         match e {
             crate::eternity::InsertBlockError::Full(_) => InsertError::EternityFull,
             crate::eternity::InsertBlockError::EpochFull(_) => InsertError::EpochFull,
@@ -49,8 +51,8 @@ impl From<crate::eternity::InsertBlockRootError> for InsertError {
     }
 }
 
-impl From<crate::eternity::InsertEpochError> for InsertError {
-    fn from(e: crate::eternity::InsertEpochError) -> Self {
+impl<Hasher: hash::Hasher> From<crate::eternity::InsertEpochError<Hasher>> for InsertError {
+    fn from(e: crate::eternity::InsertEpochError<Hasher>) -> Self {
         match e {
             crate::eternity::InsertEpochError(_) => InsertError::EternityFull,
         }
@@ -75,8 +77,8 @@ impl From<crate::epoch::InsertError> for InsertError {
     }
 }
 
-impl From<crate::epoch::InsertBlockError> for InsertError {
-    fn from(e: crate::epoch::InsertBlockError) -> Self {
+impl<Hasher: hash::Hasher> From<crate::epoch::InsertBlockError<Hasher>> for InsertError {
+    fn from(e: crate::epoch::InsertBlockError<Hasher>) -> Self {
         match e {
             crate::epoch::InsertBlockError(_) => InsertError::EpochFull,
         }

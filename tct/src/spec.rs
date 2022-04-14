@@ -28,4 +28,4 @@ pub const TIER_CAPACITY: usize = 4usize.pow(8);
 
 /// A single tier of a builder, being a sequence of insertions of the element of the tier (whether
 /// that's an individual commitment or a sub-tier).
-type Tier<T> = VecDeque<crate::Insert<T>>;
+type Tier<T, Hasher> = VecDeque<crate::Insert<T, Hasher>>;

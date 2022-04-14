@@ -16,52 +16,52 @@ use crate::{Hash, Height, Insert};
 
 /// The children of a [`Node`](super::Node).
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub enum Children<Child> {
+pub enum Children<Child, Hasher> {
     /// Children of a node having children in the positions: 3.
-    ___C(Box<___C<Child>>),
+    ___C(Box<___C<Child, Hasher>>),
     /// Children of a node having children in the positions: 2.
-    __C_(Box<__C_<Child>>),
+    __C_(Box<__C_<Child, Hasher>>),
     /// Children of a node having children in the positions: 2, 3.
-    __CC(Box<__CC<Child>>),
+    __CC(Box<__CC<Child, Hasher>>),
     /// Children of a node having children in the positions: 1.
-    _C__(Box<_C__<Child>>),
+    _C__(Box<_C__<Child, Hasher>>),
     /// Children of a node having children in the positions: 1, 3.
-    _C_C(Box<_C_C<Child>>),
+    _C_C(Box<_C_C<Child, Hasher>>),
     /// Children of a node having children in the positions: 1, 2.
-    _CC_(Box<_CC_<Child>>),
+    _CC_(Box<_CC_<Child, Hasher>>),
     /// Children of a node having children in the positions: 1, 2, 3.
-    _CCC(Box<_CCC<Child>>),
+    _CCC(Box<_CCC<Child, Hasher>>),
     /// Children of a node having children in the positions: 0.
-    C___(Box<C___<Child>>),
+    C___(Box<C___<Child, Hasher>>),
     /// Children of a node having children in the positions: 0, 3.
-    C__C(Box<C__C<Child>>),
+    C__C(Box<C__C<Child, Hasher>>),
     /// Children of a node having children in the positions: 0, 2.
-    C_C_(Box<C_C_<Child>>),
+    C_C_(Box<C_C_<Child, Hasher>>),
     /// Children of a node having children in the positions: 0, 2, 3.
-    C_CC(Box<C_CC<Child>>),
+    C_CC(Box<C_CC<Child, Hasher>>),
     /// Children of a node having children in the positions: 0, 1.
-    CC__(Box<CC__<Child>>),
+    CC__(Box<CC__<Child, Hasher>>),
     /// Children of a node having children in the positions: 0, 1, 3.
-    CC_C(Box<CC_C<Child>>),
+    CC_C(Box<CC_C<Child, Hasher>>),
     /// Children of a node having children in the positions: 0, 1, 2.
-    CCC_(Box<CCC_<Child>>),
+    CCC_(Box<CCC_<Child, Hasher>>),
     /// Children of a node having children in the positions: 0, 1, 2, 3.
     CCCC(Box<CCCC<Child>>),
 }
 
-impl<Child: Debug> Debug for Children<Child> {
+impl<Child: Debug, Hasher> Debug for Children<Child, Hasher> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.children().fmt(f)
     }
 }
 
-impl<Child> TryFrom<[Insert<Child>; 4]> for Children<Child>
+impl<Child, Hasher> TryFrom<[Insert<Child, Hasher>; 4]> for Children<Child, Hasher>
 where
     Child: Height,
 {
-    type Error = [Hash; 4];
+    type Error = [Hash<Hasher>; 4];
 
-    fn try_from(children: [Insert<Child>; 4]) -> Result<Self, Self::Error> {
+    fn try_from(children: [Insert<Child, Hasher>; 4]) -> Result<Self, Self::Error> {
         use shape::*;
         use Insert::*;
 
@@ -91,9 +91,9 @@ where
     }
 }
 
-impl<Child> Children<Child> {
+impl<Child, Hasher> Children<Child, Hasher> {
     /// Get an array of references to the children or hashes stored in this [`Children`].
-    pub fn children(&self) -> [Insert<&Child>; 4] {
+    pub fn children(&self) -> [Insert<&Child, Hasher>; 4] {
         use Children::*;
         use Insert::*;
 
@@ -117,9 +117,9 @@ impl<Child> Children<Child> {
     }
 }
 
-impl<Child> From<Children<Child>> for [Insert<Child>; 4] {
+impl<Child, Hasher> From<Children<Child, Hasher>> for [Insert<Child, Hasher>; 4] {
     /// Get an array of references to the children or hashes stored in this [`Children`].
-    fn from(children: Children<Child>) -> [Insert<Child>; 4] {
+    fn from(children: Children<Child, Hasher>) -> [Insert<Child, Hasher>; 4] {
         use Children::*;
         use Insert::*;
 

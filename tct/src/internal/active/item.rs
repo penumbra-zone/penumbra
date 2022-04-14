@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     internal::{
         active::Forget,
-        complete,
+        complete, hash,
         height::Zero,
         path::{self, Witness},
     },
@@ -13,17 +13,17 @@ use crate::{
 /// The hash of the most-recently-inserted item, stored at the tip of the active path.
 #[derive(Debug, Clone, Copy, Derivative, Serialize, Deserialize)]
 #[derivative(PartialEq, Eq)]
-pub struct Item {
-    hash: Hash,
+pub struct Item<Hasher> {
+    hash: Hash<Hasher>,
 }
 
-impl PartialEq<complete::Item> for Item {
-    fn eq(&self, other: &complete::Item) -> bool {
+impl<Hasher> PartialEq<complete::Item<Hasher>> for Item<Hasher> {
+    fn eq(&self, other: &complete::Item<Hasher>) -> bool {
         self.hash == other.hash()
     }
 }
 
-impl Item {
+impl<Hasher: hash::Hasher> Item<Hasher> {
     /// Create a new [`Item`] from the given value.
     pub fn new(item: Commitment) -> Self {
         Self {
@@ -32,53 +32,53 @@ impl Item {
     }
 }
 
-impl From<Commitment> for Item {
+impl<Hasher: hash::Hasher> From<Commitment> for Item<Hasher> {
     fn from(item: Commitment) -> Self {
         Self::new(item)
     }
 }
 
-impl From<Item> for Hash {
-    fn from(item: Item) -> Self {
+impl<Hasher> From<Item<Hasher>> for Hash<Hasher> {
+    fn from(item: Item<Hasher>) -> Self {
         item.hash
     }
 }
 
-impl GetHash for Item {
+impl<Hasher> GetHash<Hasher> for Item<Hasher> {
     #[inline]
-    fn hash(&self) -> Hash {
+    fn hash(&self) -> Hash<Hasher> {
         self.hash
     }
 
     #[inline]
-    fn cached_hash(&self) -> Option<Hash> {
+    fn cached_hash(&self) -> Option<Hash<Hasher>> {
         Some(self.hash)
     }
 }
 
-impl Height for Item {
+impl<Hasher> Height for Item<Hasher> {
     type Height = Zero;
 }
 
-impl Focus for Item {
-    type Complete = complete::Item;
+impl<Hasher> Focus<Hasher> for Item<Hasher> {
+    type Complete = complete::Item<Hasher>;
 
     #[inline]
-    fn finalize(self) -> Insert<Self::Complete> {
+    fn finalize(self) -> Insert<Self::Complete, Hasher> {
         Insert::Keep(complete::Item::new(self.hash))
     }
 }
 
-impl Witness for Item {
-    type Item = Hash;
+impl<Hasher> Witness<Hasher> for Item<Hasher> {
+    type Item = Hash<Hasher>;
 
-    fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Self::Item)> {
+    fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self, Hasher>, Self::Item)> {
         debug_assert_eq!(index.into(), 0, "non-zero index when witnessing leaf");
         Some((path::Leaf, self.hash))
     }
 }
 
-impl Forget for Item {
+impl<Hasher> Forget for Item<Hasher> {
     fn forget(&mut self, _index: impl Into<u64>) -> bool {
         unreachable!("active items can not be forgotten directly")
     }

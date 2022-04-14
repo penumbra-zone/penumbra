@@ -4,6 +4,7 @@ use penumbra_proto::crypto as pb;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+use crate::internal::hash;
 use crate::internal::{active::Forget as _, path::Witness as _};
 use crate::*;
 
@@ -23,20 +24,20 @@ pub use error::{
 /// A sparse merkle tree to witness up to 65,536 [`Epoch`]s, each witnessing up to 65,536
 /// [`Block`]s, each witnessing up to 65,536 [`Commitment`]s.
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
-pub struct Eternity {
+pub struct Eternity<Hasher: hash::Hasher> {
     position: index::within::Eternity,
     index: HashedMap<Commitment, index::within::Eternity>,
-    inner: Tier<Tier<Tier<Item>>>,
+    inner: Tier<Tier<Tier<Item<Hasher>, Hasher>, Hasher>, Hasher>,
 }
 
 /// The root hash of an [`Eternity`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(try_from = "pb::MerkleRoot", into = "pb::MerkleRoot")]
 #[cfg_attr(any(test, feature = "arbitrary"), derive(proptest_derive::Arbitrary))]
-pub struct Root(pub(crate) Hash);
+pub struct Root<Hasher>(pub(crate) Hash<Hasher>);
 
-impl From<Root> for Fq {
-    fn from(root: Root) -> Self {
+impl<Hasher> From<Root<Hasher>> for Fq {
+    fn from(root: Root<Hasher>) -> Self {
         root.0.into()
     }
 }
@@ -46,18 +47,18 @@ impl From<Root> for Fq {
 #[error("could not decode eternity root")]
 pub struct RootDecodeError;
 
-impl TryFrom<pb::MerkleRoot> for Root {
+impl<Hasher> TryFrom<pb::MerkleRoot> for Root<Hasher> {
     type Error = RootDecodeError;
 
-    fn try_from(root: pb::MerkleRoot) -> Result<Root, Self::Error> {
+    fn try_from(root: pb::MerkleRoot) -> Result<Root<Hasher>, Self::Error> {
         let bytes: [u8; 32] = (&root.inner[..]).try_into().map_err(|_| RootDecodeError)?;
         let inner = Fq::from_bytes(bytes).map_err(|_| RootDecodeError)?;
         Ok(Root(Hash::new(inner)))
     }
 }
 
-impl From<Root> for pb::MerkleRoot {
-    fn from(root: Root) -> Self {
+impl<Hasher> From<Root<Hasher>> for pb::MerkleRoot {
+    fn from(root: Root<Hasher>) -> Self {
         Self {
             inner: Fq::from(root.0).to_bytes().to_vec(),
         }
@@ -80,11 +81,11 @@ impl From<u64> for Position {
     }
 }
 
-impl Height for Eternity {
-    type Height = <Tier<Tier<Tier<Item>>> as Height>::Height;
+impl<Hasher: hash::Hasher> Height for Eternity<Hasher> {
+    type Height = <Tier<Tier<Tier<Item<Hasher>, Hasher>, Hasher>, Hasher> as Height>::Height;
 }
 
-impl Eternity {
+impl<Hasher: hash::Hasher> Eternity<Hasher> {
     /// Create a new empty [`Eternity`] for storing all commitments to the end of time.
     pub fn new() -> Self {
         Self::default()
@@ -98,7 +99,7 @@ impl Eternity {
     ///
     /// Computed hashes are cached so that subsequent calls without further modification are very
     /// fast.
-    pub fn root(&self) -> Root {
+    pub fn root(&self) -> Root<Hasher> {
         Root(self.inner.hash())
     }
 
@@ -130,7 +131,7 @@ impl Eternity {
     /// Get a [`Proof`] of inclusion for the commitment at this index in the eternity.
     ///
     /// If the index is not witnessed in this eternity, return `None`.
-    pub fn witness(&self, commitment: impl Into<Commitment>) -> Option<Proof> {
+    pub fn witness(&self, commitment: impl Into<Commitment>) -> Option<Proof<Hasher>> {
         let commitment = commitment.into();
 
         let index = *self.index.get(&commitment)?;
@@ -176,7 +177,7 @@ impl Eternity {
     /// Insert an commitment or its root (helper function for [`insert`].
     fn insert_commitment_or_hash(
         &mut self,
-        commitment: Insert<Commitment>,
+        commitment: Insert<Commitment, Hasher>,
     ) -> Result<Position, InsertError> {
         // The position at which we will insert the commitment
         let position = self.position();
@@ -216,7 +217,7 @@ impl Eternity {
     /// Returns [`InsertBlockError`] containing the inserted block without adding it to the
     /// [`Eternity`] if the [`Eternity`] is full, or the most recently inserted [`Epoch`] is full or
     /// was inserted by [`Insert::Hash`].
-    pub fn insert_block(&mut self, block: Block) -> Result<(), InsertBlockError> {
+    pub fn insert_block(&mut self, block: Block<Hasher>) -> Result<(), InsertBlockError<Hasher>> {
         // If the eternity is empty, we need to create a new epoch to insert the block into
         if self.inner.is_empty() && self.insert_epoch(Epoch::new()).is_err() {
             return Err(InsertBlockError::Full(block));
@@ -261,7 +262,7 @@ impl Eternity {
     /// [`Epoch`] is full or was inserted by [`insert_epoch_root`](Eternity::insert_epoch_root).
     pub fn insert_block_root(
         &mut self,
-        block_root: block::Root,
+        block_root: block::Root<Hasher>,
     ) -> Result<(), InsertBlockRootError> {
         // If the eternity is empty, we need to create a new epoch to insert the block into
         if self.inner.is_empty() && self.insert_epoch(Epoch::new()).is_err() {
@@ -295,7 +296,7 @@ impl Eternity {
     ///
     /// If the [`Eternity`] is empty or the most recent [`Epoch`] was inserted with
     /// [`Eternity::insert_epoch_root`], returns `None`.
-    pub fn current_block_root(&self) -> Option<block::Root> {
+    pub fn current_block_root(&self) -> Option<block::Root<Hasher>> {
         self.inner.focus().and_then(|epoch| {
             epoch
                 .as_ref()
@@ -311,7 +312,7 @@ impl Eternity {
     ///
     /// Returns [`InsertEpochError`] containing the epoch without adding it to the [`Eternity`] if
     /// the [`Eternity`] is full.
-    pub fn insert_epoch(&mut self, epoch: Epoch) -> Result<(), InsertEpochError> {
+    pub fn insert_epoch(&mut self, epoch: Epoch<Hasher>) -> Result<(), InsertEpochError<Hasher>> {
         self.insert_epoch_or_root(Insert::Keep(epoch))
             .map_err(|insert| {
                 if let Insert::Keep(epoch) = insert {
@@ -330,7 +331,7 @@ impl Eternity {
     /// Returns [`InsertEpochRootError`] if the [`Eternity`] is full.
     pub fn insert_epoch_root(
         &mut self,
-        epoch_root: epoch::Root,
+        epoch_root: epoch::Root<Hasher>,
     ) -> Result<(), InsertEpochRootError> {
         self.insert_epoch_or_root(Insert::Hash(epoch_root.0))
             .map_err(|insert| {
@@ -343,7 +344,10 @@ impl Eternity {
     }
 
     /// Insert an epoch or its root (helper function for [`insert_epoch`] and [`insert_epoch_root`]).
-    fn insert_epoch_or_root(&mut self, epoch: Insert<Epoch>) -> Result<(), Insert<Epoch>> {
+    fn insert_epoch_or_root(
+        &mut self,
+        epoch: Insert<Epoch<Hasher>, Hasher>,
+    ) -> Result<(), Insert<Epoch<Hasher>, Hasher>> {
         // We have a special case when the starting eternity was empty, because then we don't
         // increment the epoch index
         let was_empty = self.inner.is_empty();
@@ -412,7 +416,7 @@ impl Eternity {
     /// Get the root hash of the most recent [`Epoch`] in this [`Eternity`].
     ///
     /// If the [`Eternity`] is empty, returns `None`.
-    pub fn current_epoch_root(&self) -> Option<epoch::Root> {
+    pub fn current_epoch_root(&self) -> Option<epoch::Root<Hasher>> {
         self.inner.focus().map(|epoch| epoch::Root(epoch.hash()))
     }
 
@@ -442,7 +446,7 @@ impl Eternity {
 
     /// Update the most recently inserted [`Epoch`] via methods on [`EpochMut`], and return the
     /// result of the function.
-    fn update<T>(&mut self, f: impl FnOnce(Option<&mut EpochMut<'_>>) -> T) -> T {
+    fn update<T>(&mut self, f: impl FnOnce(Option<&mut EpochMut<'_, Hasher>>) -> T) -> T {
         let index::within::Eternity {
             epoch,
             commitment,
@@ -479,7 +483,7 @@ mod sqlx_impls {
 
     use super::*;
 
-    impl<'r> Decode<'r, Postgres> for Root {
+    impl<'r, Hasher> Decode<'r, Postgres> for Root<Hasher> {
         fn decode(
             value: <Postgres as sqlx::database::HasValueRef<'r>>::ValueRef,
         ) -> Result<Self, sqlx::error::BoxDynError> {
@@ -487,7 +491,7 @@ mod sqlx_impls {
         }
     }
 
-    impl<'q> Encode<'q, Postgres> for Root {
+    impl<'q, Hasher> Encode<'q, Postgres> for Root<Hasher> {
         fn encode_by_ref(
             &self,
             buf: &mut <Postgres as sqlx::database::HasArguments<'q>>::ArgumentBuffer,
@@ -496,7 +500,7 @@ mod sqlx_impls {
         }
     }
 
-    impl Type<Postgres> for Root {
+    impl<Hasher> Type<Postgres> for Root<Hasher> {
         fn type_info() -> <Postgres as Database>::TypeInfo {
             <[u8] as Type<Postgres>>::type_info()
         }

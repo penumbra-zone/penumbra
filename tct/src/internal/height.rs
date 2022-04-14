@@ -10,7 +10,7 @@
 /// This is used to differentiate the hashes at each level of the tree.
 pub trait Height {
     /// The height of this type above the leaves of the tree.
-    type Height: crate::internal::path::Path;
+    type Height: IsHeight;
 }
 
 /// The constant `u64` associated with each unary height.

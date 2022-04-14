@@ -1,12 +1,16 @@
 //! A specification of the behavior of [`Epoch`](crate::Epoch).
 
-use std::collections::VecDeque;
+use std::{collections::VecDeque, marker::PhantomData};
 
 use hash_hasher::HashedMap;
 
 use crate::{
     epoch::{Position, Proof},
-    internal::{active::Insert, hash::Hash, index},
+    internal::{
+        active::Insert,
+        hash::{self, Hash},
+        index,
+    },
     Commitment, Witness,
 };
 
@@ -14,12 +18,14 @@ use super::{block, tree::Tree, InsertError, Tier, TIER_CAPACITY};
 
 /// A builder for an [`Epoch`]: a sequence of blocks, each of which is a sequence of [`Commitment`]s.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct Builder {
+pub struct Builder<Hasher> {
     /// The inner tiers of the builder.
-    pub epoch: Tier<Tier<Commitment>>,
+    pub epoch: Tier<Tier<Commitment, Hasher>, Hasher>,
+    /// Hasher to use.
+    hasher: PhantomData<Hasher>,
 }
 
-impl Builder {
+impl<Hasher: hash::Hasher> Builder<Hasher> {
     /// Insert a new [`Commitment`] into the [`epoch::Builder`](Builder), returning its [`Position`] if
     /// successful.
     ///
@@ -110,7 +116,7 @@ impl Builder {
     /// Insert a block builder's contents as a new block in this [`epoch::Builder`](Builder).
     ///
     /// See [`crate::Epoch::insert_block`].
-    pub fn insert_block(&mut self, block: block::Builder) -> Result<(), InsertError> {
+    pub fn insert_block(&mut self, block: block::Builder<Hasher>) -> Result<(), InsertError> {
         if self.epoch.len() < TIER_CAPACITY {
             self.epoch.push_back(Insert::Keep(block.block));
             Ok(())
@@ -124,7 +130,7 @@ impl Builder {
     /// See [`crate::Epoch::insert_block_root`].
     pub fn insert_block_root(
         &mut self,
-        crate::block::Root(block_root): crate::block::Root,
+        crate::block::Root(block_root): crate::block::Root<Hasher>,
     ) -> Result<(), InsertError> {
         if self.epoch.len() < TIER_CAPACITY {
             self.epoch.push_back(Insert::Hash(block_root));
@@ -138,7 +144,7 @@ impl Builder {
     ///
     /// This is not a mirror of any method on [`crate::Epoch`], because the main crate interface
     /// is incremental, not split into a builder phase and a finalized phase.
-    pub fn build(self) -> Epoch {
+    pub fn build(self) -> Epoch<Hasher> {
         let position = self.position();
         let tree = Tree::from_epoch(self.epoch);
         let mut index = HashedMap::default();
@@ -156,24 +162,24 @@ impl Builder {
 /// An immutable, dense, indexed commitment tree.
 ///
 /// This supports all the immutable methods of [`crate::Epoch`].
-pub struct Epoch {
+pub struct Epoch<Hasher> {
     index: HashedMap<Commitment, Position>,
     position: Position,
-    tree: Tree,
+    tree: Tree<Hasher>,
 }
 
-impl Epoch {
+impl<Hasher: hash::Hasher> Epoch<Hasher> {
     /// Get the root hash of this [`Epoch`].
     ///
     /// See [`crate::Epoch::root`].
-    pub fn root(&self) -> crate::epoch::Root {
+    pub fn root(&self) -> crate::epoch::Root<Hasher> {
         crate::epoch::Root(self.tree.root())
     }
 
     /// Get a [`Proof`] of inclusion for the given [`Commitment`], if it was witnessed.
     ///
     /// See [`crate::Epoch::witness`].
-    pub fn witness(&self, commitment: Commitment) -> Option<Proof> {
+    pub fn witness(&self, commitment: Commitment) -> Option<Proof<Hasher>> {
         let position = *self.index.get(&commitment)?;
         let auth_path = self.tree.witness(u32::from(position) as u64);
         Some(Proof::new(commitment, position, auth_path))
@@ -182,7 +188,7 @@ impl Epoch {
     /// Get the block root of the current block of this [`Epoch`], if any.
     ///
     /// See [`crate::Epoch::current_block_root`].
-    pub fn current_block_root(&self) -> Option<crate::block::Root> {
+    pub fn current_block_root(&self) -> Option<crate::block::Root<Hasher>> {
         let mut tree = &self.tree;
         for _ in 0..8 {
             if let Tree::Node { children, .. } = tree {

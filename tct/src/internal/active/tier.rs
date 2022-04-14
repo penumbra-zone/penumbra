@@ -5,7 +5,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     internal::{
         active::{Forget, Full},
-        path::Witness,
+        hash,
+        path::{self, Witness},
     },
     Active, AuthPath, Focus, ForgetOwned, GetHash, Hash, Height, Insert,
 };
@@ -25,16 +26,16 @@ use super::super::{active, complete};
     serialize = "Item: Serialize, Item::Complete: Serialize",
     deserialize = "Item: Deserialize<'de>, Item::Complete: Deserialize<'de>"
 ))]
-pub struct Tier<Item: Focus> {
-    inner: Inner<Item>,
+pub struct Tier<Item: Focus<Hasher>, Hasher: hash::Hasher> {
+    inner: Inner<Item, Hasher>,
 }
 
-type N<Focus> = active::Node<Focus>;
-type L<Item> = active::Leaf<Item>;
+type N<Focus, Hasher> = active::Node<Focus, Hasher>;
+type L<Item, Hasher> = active::Leaf<Item, Hasher>;
 
 /// An eight-deep active tree with the given item stored in each leaf.
-pub type Nested<Item> = N<N<N<N<N<N<N<N<L<Item>>>>>>>>>;
-// Count the levels:    1 2 3 4 5 6 7 8
+pub type Nested<Item, H> = N<N<N<N<N<N<N<N<L<Item, H>, H>, H>, H>, H>, H>, H>, H>, H>;
+// Count the levels:       1 2 3 4 5 6 7 8
 
 /// The inside of an active level.
 #[derive(Debug, Clone, Derivative, Serialize, Deserialize)]
@@ -43,26 +44,26 @@ pub type Nested<Item> = N<N<N<N<N<N<N<N<L<Item>>>>>>>>>;
     deserialize = "Item: Deserialize<'de>, Item::Complete: Deserialize<'de>"
 ))]
 #[derivative(Eq(bound = "Item: Eq + PartialEq<Item::Complete>, Item::Complete: Eq"))]
-pub enum Inner<Item: Focus> {
+pub enum Inner<Item: Focus<Hasher>, Hasher: hash::Hasher> {
     /// Either an empty tree (`None`) or a tree with at least one element in it.
-    Active(Box<Option<Nested<Item>>>),
+    Active(Box<Option<Nested<Item, Hasher>>>),
     /// A tree which has been filled, so no more elements can be inserted.
     ///
     /// This is one of two final states; the other is [`Inner::Hash`].
-    Complete(complete::tier::Nested<Item::Complete>),
+    Complete(complete::tier::Nested<Item::Complete, Hasher>),
     /// A tree which has been filled, but which witnessed no elements, so it is represented by a
     /// single hash.
     ///
     /// This is one of two final states: the other is [`Inner::Complete`].
-    Hash(Hash),
+    Hash(Hash<Hasher>),
 }
 
-impl<Item: Focus> PartialEq for Inner<Item>
+impl<Item: Focus<Hasher>, Hasher: hash::Hasher> PartialEq for Inner<Item, Hasher>
 where
     Item: PartialEq + PartialEq<Item::Complete>,
     Item::Complete: PartialEq,
 {
-    fn eq(&self, other: &Inner<Item>) -> bool {
+    fn eq(&self, other: &Inner<Item, Hasher>) -> bool {
         match (self, other) {
             // A non-empty, non-hash tier is never equal to a hash tier (because one has witnesses
             // and the other does not)
@@ -91,12 +92,16 @@ where
     }
 }
 
-impl<Item: Focus> PartialEq<complete::Tier<Item::Complete>> for Tier<Item>
+impl<Item: Focus<Hasher>, Hasher: hash::Hasher> PartialEq<complete::Tier<Item::Complete, Hasher>>
+    for Tier<Item, Hasher>
 where
     Item: PartialEq + PartialEq<Item::Complete>,
     Item::Complete: PartialEq,
 {
-    fn eq(&self, complete::Tier { inner: complete }: &complete::Tier<Item::Complete>) -> bool {
+    fn eq(
+        &self,
+        complete::Tier { inner: complete }: &complete::Tier<Item::Complete, Hasher>,
+    ) -> bool {
         match self.inner {
             // Complete tiers are never empty, an empty or hash-only tier is never equal to one,
             // because they don't have witnesses
@@ -117,13 +122,13 @@ where
     }
 }
 
-impl<Item: Focus> Default for Inner<Item> {
+impl<Item: Focus<Hasher>, Hasher: hash::Hasher> Default for Inner<Item, Hasher> {
     fn default() -> Self {
         Inner::Active(Box::new(None))
     }
 }
 
-impl<Item: Focus> Tier<Item> {
+impl<Item: Focus<Hasher>, Hasher: hash::Hasher> Tier<Item, Hasher> {
     /// Create a new active tier.
     pub fn new() -> Self {
         Self::default()
@@ -132,7 +137,7 @@ impl<Item: Focus> Tier<Item> {
     /// Insert an item or its hash into this active tier.
     ///
     /// If the tier is full, return the input item without inserting it.
-    pub fn insert(&mut self, item: Insert<Item>) -> Result<(), Insert<Item>> {
+    pub fn insert(&mut self, item: Insert<Item, Hasher>) -> Result<(), Insert<Item, Hasher>> {
         match &mut self.inner {
             // The tier is full or is a single hash, so return the item without inserting it
             Inner::Complete(_) | Inner::Hash(_) => Err(item),
@@ -168,7 +173,7 @@ impl<Item: Focus> Tier<Item> {
     /// most-recently-[`insert`](Self::insert)ed one), returning the result of the function.
     ///
     /// If there is no currently active `Insert<Item>`, the function is called on `None`.
-    pub fn update<T>(&mut self, f: impl FnOnce(Option<&mut Insert<Item>>) -> T) -> T {
+    pub fn update<T>(&mut self, f: impl FnOnce(Option<&mut Insert<Item, Hasher>>) -> T) -> T {
         if let Inner::Active(active) = &mut self.inner {
             if let Some(ref mut active) = **active {
                 active.update(|item| f(Some(item)))
@@ -184,7 +189,7 @@ impl<Item: Focus> Tier<Item> {
     ///
     /// If there is no focused `Insert<Item>` (in the case that the tier is empty or full), `None`
     /// is returned.
-    pub fn focus(&self) -> Option<&Insert<Item>> {
+    pub fn focus(&self) -> Option<&Insert<Item, Hasher>> {
         if let Inner::Active(active) = &self.inner {
             active.as_ref().as_ref().map(|active| active.focus())
         } else {
@@ -202,13 +207,13 @@ impl<Item: Focus> Tier<Item> {
     }
 }
 
-impl<Item: Focus> Height for Tier<Item> {
-    type Height = <Nested<Item> as Height>::Height;
+impl<Item: Focus<Hasher>, Hasher: hash::Hasher> Height for Tier<Item, Hasher> {
+    type Height = <Nested<Item, Hasher> as Height>::Height;
 }
 
-impl<Item: Focus> GetHash for Tier<Item> {
+impl<Item: Focus<Hasher>, Hasher: hash::Hasher> GetHash<Hasher> for Tier<Item, Hasher> {
     #[inline]
-    fn hash(&self) -> Hash {
+    fn hash(&self) -> Hash<Hasher> {
         match &self.inner {
             Inner::Active(active) => active
                 .as_ref()
@@ -221,7 +226,7 @@ impl<Item: Focus> GetHash for Tier<Item> {
     }
 
     #[inline]
-    fn cached_hash(&self) -> Option<Hash> {
+    fn cached_hash(&self) -> Option<Hash<Hasher>> {
         match &self.inner {
             Inner::Active(active) => active
                 .as_ref()
@@ -234,11 +239,11 @@ impl<Item: Focus> GetHash for Tier<Item> {
     }
 }
 
-impl<Item: Focus> Focus for Tier<Item> {
-    type Complete = complete::Tier<Item::Complete>;
+impl<Item: Focus<Hasher>, Hasher: hash::Hasher> Focus<Hasher> for Tier<Item, Hasher> {
+    type Complete = complete::Tier<Item::Complete, Hasher>;
 
     #[inline]
-    fn finalize(self) -> Insert<Self::Complete> {
+    fn finalize(self) -> Insert<Self::Complete, Hasher> {
         match self.inner {
             Inner::Active(active) => {
                 if let Some(active) = *active {
@@ -256,13 +261,15 @@ impl<Item: Focus> Focus for Tier<Item> {
     }
 }
 
-impl<Item: Focus + Witness> Witness for Tier<Item>
+impl<Item: Focus<Hasher> + Witness<Hasher>, Hasher: hash::Hasher> Witness<Hasher>
+    for Tier<Item, Hasher>
 where
-    Item::Complete: Witness<Item = Item::Item>,
+    Item::Complete: Witness<Hasher, Item = Item::Item>,
+    Item::Height: path::Path<Hasher>,
 {
     type Item = Item::Item;
 
-    fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Self::Item)> {
+    fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self, Hasher>, Self::Item)> {
         match &self.inner {
             Inner::Active(active) => active
                 .as_ref()
@@ -274,9 +281,9 @@ where
     }
 }
 
-impl<Item: Focus + Forget> Forget for Tier<Item>
+impl<Item: Focus<Hasher> + Forget, Hasher: hash::Hasher> Forget for Tier<Item, Hasher>
 where
-    Item::Complete: ForgetOwned,
+    Item::Complete: ForgetOwned<Hasher>,
 {
     fn forget(&mut self, index: impl Into<u64>) -> bool {
         // Replace `self.inner` temporarily with an empty hash, so we can move out of it

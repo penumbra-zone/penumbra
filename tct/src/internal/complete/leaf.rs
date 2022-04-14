@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{internal::path::Witness, Complete, ForgetOwned, GetHash, Hash, Height, Insert};
+use crate::{
+    internal::path::{self, Witness},
+    Complete, ForgetOwned, GetHash, Hash, Height, Insert,
+};
 
 use super::super::active;
 
@@ -16,23 +19,23 @@ impl<Item> Leaf<Item> {
     }
 }
 
-impl<Item: Complete> PartialEq<active::Leaf<Item::Focus>> for Leaf<Item>
+impl<Item: Complete<Hasher>, Hasher> PartialEq<active::Leaf<Item::Focus, Hasher>> for Leaf<Item>
 where
     Item::Focus: PartialEq<Item>,
 {
-    fn eq(&self, other: &active::Leaf<Item::Focus>) -> bool {
+    fn eq(&self, other: &active::Leaf<Item::Focus, Hasher>) -> bool {
         other == self
     }
 }
 
-impl<Item: GetHash> GetHash for Leaf<Item> {
+impl<Item: GetHash<Hasher>, Hasher> GetHash<Hasher> for Leaf<Item> {
     #[inline]
-    fn hash(&self) -> Hash {
+    fn hash(&self) -> Hash<Hasher> {
         self.0.hash()
     }
 
     #[inline]
-    fn cached_hash(&self) -> Option<Hash> {
+    fn cached_hash(&self) -> Option<Hash<Hasher>> {
         self.0.cached_hash()
     }
 }
@@ -41,20 +44,26 @@ impl<Item: Height> Height for Leaf<Item> {
     type Height = Item::Height;
 }
 
-impl<Item: Complete> Complete for Leaf<Item> {
-    type Focus = active::Leaf<<Item as crate::Complete>::Focus>;
+impl<Item: Complete<Hasher>, Hasher> Complete<Hasher> for Leaf<Item> {
+    type Focus = active::Leaf<<Item as crate::Complete<Hasher>>::Focus, Hasher>;
 }
 
-impl<Item: Witness> Witness for Leaf<Item> {
+impl<Item: Witness<Hasher>, Hasher> Witness<Hasher> for Leaf<Item>
+where
+    Item::Height: path::Path<Hasher>,
+{
     type Item = Item::Item;
 
-    fn witness(&self, index: impl Into<u64>) -> Option<(crate::AuthPath<Self>, Self::Item)> {
+    fn witness(
+        &self,
+        index: impl Into<u64>,
+    ) -> Option<(crate::AuthPath<Self, Hasher>, Self::Item)> {
         self.0.witness(index)
     }
 }
 
-impl<Item: ForgetOwned> ForgetOwned for Leaf<Item> {
-    fn forget_owned(self, index: impl Into<u64>) -> (Insert<Self>, bool) {
+impl<Item: ForgetOwned<Hasher> + GetHash<Hasher>, Hasher> ForgetOwned<Hasher> for Leaf<Item> {
+    fn forget_owned(self, index: impl Into<u64>) -> (Insert<Self, Hasher>, bool) {
         let (item, forgotten) = self.0.forget_owned(index);
         (item.map(Leaf), forgotten)
     }

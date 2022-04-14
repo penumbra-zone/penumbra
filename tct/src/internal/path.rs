@@ -17,51 +17,57 @@ use crate::{
 
 pub use crate::internal::interface::Witness;
 
+use super::hash;
+
 /// An authentication path into a `Tree`.
 ///
 /// This is statically guaranteed to have the same length as the height of the tree.
-pub type AuthPath<Tree> = <<Tree as Height>::Height as Path>::Path;
+pub type AuthPath<Tree, Hasher> = <<Tree as Height>::Height as Path<Hasher>>::Path;
 
 /// Identifies the unique type representing an authentication path for the given height.
-pub trait Path: IsHeight + Sized {
+pub trait Path<Hasher>: IsHeight + Sized {
     /// The authentication path for this height.
     type Path;
 
     /// Calculate the root hash for a path leading to a leaf with the given index and hash.
-    fn root(path: &Self::Path, index: u64, leaf: Hash) -> Hash;
+    fn root(path: &Self::Path, index: u64, leaf: Hash<Hasher>) -> Hash<Hasher>;
 }
 
 /// The empty authentication path, for the zero-height tree.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
 pub struct Leaf;
 
-impl Path for Zero {
+impl<Hasher> Path<Hasher> for Zero {
     type Path = Leaf;
 
     #[inline]
-    fn root(Leaf: &Leaf, _index: u64, leaf: Hash) -> Hash {
+    fn root(Leaf: &Leaf, _index: u64, leaf: Hash<Hasher>) -> Hash<Hasher> {
         leaf
     }
 }
 
 /// The authentication path for a node, whose height is always at least 1.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
-pub struct Node<Child> {
+pub struct Node<Child, Hasher> {
     /// The sibling hashes of the child.
     ///
     /// Note that this does not record which child is witnessed; that information lies in the index
     /// of the leaf.
-    pub siblings: [Hash; 3],
+    pub siblings: [Hash<Hasher>; 3],
 
     /// The authentication path for the witnessed child.
     pub child: Child,
 }
 
-impl<Child, N: Path<Path = Child>> Path for Succ<N> {
-    type Path = Node<Child>;
+impl<Child, Hasher: hash::Hasher, N: Path<Hasher, Path = Child>> Path<Hasher> for Succ<N> {
+    type Path = Node<Child, Hasher>;
 
     #[inline]
-    fn root(Node { siblings, child }: &Node<Child>, index: u64, leaf: Hash) -> Hash {
+    fn root(
+        Node { siblings, child }: &Node<Child, Hasher>,
+        index: u64,
+        leaf: Hash<Hasher>,
+    ) -> Hash<Hasher> {
         // Based on the index, place the root hash of the child in the correct position among its
         // sibling hashes, so that we can hash this node
         let which_way = WhichWay::at(Self::HEIGHT, index).0;
@@ -254,11 +260,11 @@ impl TryFrom<Vec<pb::MerklePathChunk>> for Leaf {
 
 // To create `Vec<pb::MerklePathChunk>`, we have a recursive impl for `VecDeque` which we delegate
 // to, then finally turn into a `Vec` at the end.
-impl<Child> From<Node<Child>> for VecDeque<pb::MerklePathChunk>
+impl<Child, Hasher> From<Node<Child, Hasher>> for VecDeque<pb::MerklePathChunk>
 where
     VecDeque<pb::MerklePathChunk>: From<Child>,
 {
-    fn from(node: Node<Child>) -> VecDeque<pb::MerklePathChunk> {
+    fn from(node: Node<Child, Hasher>) -> VecDeque<pb::MerklePathChunk> {
         let [sibling_1, sibling_2, sibling_3] =
             node.siblings.map(|hash| Fq::from(hash).to_bytes().to_vec());
         let mut path: VecDeque<pb::MerklePathChunk> = node.child.into();
@@ -271,11 +277,11 @@ where
     }
 }
 
-impl<Child> From<Node<Child>> for Vec<pb::MerklePathChunk>
+impl<Child, Hasher> From<Node<Child, Hasher>> for Vec<pb::MerklePathChunk>
 where
     VecDeque<pb::MerklePathChunk>: From<Child>,
 {
-    fn from(node: Node<Child>) -> Vec<pb::MerklePathChunk> {
+    fn from(node: Node<Child, Hasher>) -> Vec<pb::MerklePathChunk> {
         let [sibling_1, sibling_2, sibling_3] =
             node.siblings.map(|hash| Fq::from(hash).to_bytes().to_vec());
         let mut path = VecDeque::from(node.child);
@@ -290,13 +296,15 @@ where
 
 // To create `Node<Child>`, we have a recursive impl for `VecDeque` which we delegate to, then
 // finally turn into a `Vec` at the end.
-impl<Child> TryFrom<VecDeque<pb::MerklePathChunk>> for Node<Child>
+impl<Child, Hasher> TryFrom<VecDeque<pb::MerklePathChunk>> for Node<Child, Hasher>
 where
     Child: TryFrom<VecDeque<pb::MerklePathChunk>, Error = PathDecodeError>,
 {
     type Error = PathDecodeError;
 
-    fn try_from(mut queue: VecDeque<pb::MerklePathChunk>) -> Result<Node<Child>, Self::Error> {
+    fn try_from(
+        mut queue: VecDeque<pb::MerklePathChunk>,
+    ) -> Result<Node<Child, Hasher>, Self::Error> {
         if let Some(pb::MerklePathChunk {
             sibling_1,
             sibling_2,
@@ -327,13 +335,13 @@ where
     }
 }
 
-impl<Child> TryFrom<Vec<pb::MerklePathChunk>> for Node<Child>
+impl<Child, Hasher> TryFrom<Vec<pb::MerklePathChunk>> for Node<Child, Hasher>
 where
-    Node<Child>: TryFrom<VecDeque<pb::MerklePathChunk>>,
+    Node<Child, Hasher>: TryFrom<VecDeque<pb::MerklePathChunk>>,
 {
-    type Error = <Node<Child> as TryFrom<VecDeque<pb::MerklePathChunk>>>::Error;
+    type Error = <Node<Child, Hasher> as TryFrom<VecDeque<pb::MerklePathChunk>>>::Error;
 
-    fn try_from(queue: Vec<pb::MerklePathChunk>) -> Result<Node<Child>, Self::Error> {
-        <Node<Child>>::try_from(VecDeque::from(queue))
+    fn try_from(queue: Vec<pb::MerklePathChunk>) -> Result<Node<Child, Hasher>, Self::Error> {
+        <Node<Child, Hasher>>::try_from(VecDeque::from(queue))
     }
 }

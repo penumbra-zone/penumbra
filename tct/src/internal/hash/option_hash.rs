@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use serde::{Deserialize, Serialize};
 
 use crate::Hash;
@@ -8,35 +10,47 @@ use crate::Hash;
 ///
 /// This type is inter-convertible via [`From`] and [`Into`] with `Option<Hash>`, and that is
 /// its only purpose.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Derivative, Serialize, Deserialize)]
 #[serde(from = "Option<Hash>", into = "Option<Hash>")]
-pub struct OptionHash {
+#[derivative(
+    Debug(bound = ""),
+    Clone(bound = ""),
+    Copy(bound = ""),
+    PartialEq(bound = ""),
+    Eq(bound = "")
+)]
+pub struct OptionHash<Hasher> {
     inner: [u64; 4],
+    #[derivative(Debug = "ignore")]
+    hasher: PhantomData<Hasher>,
 }
 
-impl Default for OptionHash {
+impl<Hasher> Default for OptionHash<Hasher> {
     fn default() -> Self {
         Self {
             inner: [u64::MAX; 4],
+            hasher: PhantomData,
         }
     }
 }
 
-impl From<Option<Hash>> for OptionHash {
-    fn from(hash: Option<Hash>) -> Self {
+impl<Hasher> From<Option<Hash<Hasher>>> for OptionHash<Hasher> {
+    fn from(hash: Option<Hash<Hasher>>) -> Self {
         match hash {
             Some(hash) => Self {
                 inner: hash.into_bytes(),
+                hasher: PhantomData,
             },
             None => Self {
                 inner: [u64::MAX; 4],
+                hasher: PhantomData,
             },
         }
     }
 }
 
-impl From<OptionHash> for Option<Hash> {
-    fn from(hash: OptionHash) -> Self {
+impl<Hasher> From<OptionHash<Hasher>> for Option<Hash<Hasher>> {
+    fn from(hash: OptionHash<Hasher>) -> Self {
         if hash.inner == [u64::MAX; 4] {
             None
         } else {

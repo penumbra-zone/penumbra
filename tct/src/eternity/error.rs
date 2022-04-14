@@ -2,6 +2,8 @@
 
 use thiserror::Error;
 
+use crate::internal::hash;
+
 #[cfg(doc)]
 use super::Eternity;
 use super::{Block, Epoch};
@@ -28,23 +30,23 @@ pub enum InsertError {
 
 /// An error occurred when trying to insert a [`Block`] root into the [`Eternity`].
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
-pub enum InsertBlockError {
+pub enum InsertBlockError<Hasher: hash::Hasher> {
     /// The [`Eternity`] was full.
     #[error("eternity is full")]
     #[non_exhaustive]
-    Full(Block),
+    Full(Block<Hasher>),
     /// The most recent [`Epoch`] of the [`Eternity`] was full.
     #[error("most recent epoch is full")]
     #[non_exhaustive]
-    EpochFull(Block),
+    EpochFull(Block<Hasher>),
     /// The most recent [`Epoch`] of the [`Eternity`] was forgotten.
     #[error("most recent epoch was forgotten")]
     #[non_exhaustive]
-    EpochForgotten(Block),
+    EpochForgotten(Block<Hasher>),
 }
 
-impl From<InsertBlockError> for Block {
-    fn from(error: InsertBlockError) -> Self {
+impl<Hasher: hash::Hasher> From<InsertBlockError<Hasher>> for Block<Hasher> {
+    fn from(error: InsertBlockError<Hasher>) -> Self {
         match error {
             InsertBlockError::Full(block) => block,
             InsertBlockError::EpochFull(block) => block,
@@ -74,10 +76,10 @@ pub enum InsertBlockRootError {
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 #[error("eternity is full")]
 #[non_exhaustive]
-pub struct InsertEpochError(pub Epoch);
+pub struct InsertEpochError<Hasher: hash::Hasher>(pub Epoch<Hasher>);
 
-impl From<InsertEpochError> for Epoch {
-    fn from(error: InsertEpochError) -> Self {
+impl<Hasher: hash::Hasher> From<InsertEpochError<Hasher>> for Epoch<Hasher> {
+    fn from(error: InsertEpochError<Hasher>) -> Self {
         error.0
     }
 }

@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     internal::{
-        hash::OptionHash,
+        hash::{self, OptionHash},
         height::{IsHeight, Succ},
         path::{self, AuthPath, WhichWay, Witness},
         three::{IntoElems, Three},
@@ -20,51 +20,55 @@ pub use children::Children;
 /// A complete sparse node in a tree, storing only the witnessed subtrees.
 #[derive(Clone, Eq, Derivative, Serialize, Deserialize)]
 #[derivative(Debug, PartialEq(bound = "Child: PartialEq"))]
-pub struct Node<Child> {
+pub struct Node<Child, Hasher> {
     #[derivative(PartialEq = "ignore")]
     #[derivative(Debug(format_with = "fmt_cache"))]
     #[serde(skip)]
-    hash: Cell<OptionHash>,
-    children: Children<Child>,
+    hash: Cell<OptionHash<Hasher>>,
+    children: Children<Child, Hasher>,
 }
 
 /// Concisely format `OptionHash` for debug output.
-pub(crate) fn fmt_cache(
-    cell: &Cell<OptionHash>,
+pub(crate) fn fmt_cache<Hasher>(
+    cell: &Cell<OptionHash<Hasher>>,
     f: &mut std::fmt::Formatter,
 ) -> Result<(), std::fmt::Error> {
-    if let Some(hash) = <Option<Hash>>::from(cell.get()) {
+    if let Some(hash) = <Option<Hash<Hasher>>>::from(cell.get()) {
         write!(f, "{:?}", hash)
     } else {
         write!(f, "_")
     }
 }
 
-impl<Child: Complete> PartialEq<active::Node<Child::Focus>> for Node<Child>
+impl<Child: Complete<Hasher>, Hasher> PartialEq<active::Node<Child::Focus, Hasher>>
+    for Node<Child, Hasher>
 where
     Child: PartialEq + PartialEq<Child::Focus>,
 {
-    fn eq(&self, other: &active::Node<Child::Focus>) -> bool {
+    fn eq(&self, other: &active::Node<Child::Focus, Hasher>) -> bool {
         other == self
     }
 }
 
-impl<Child: Height> Node<Child> {
+impl<Child: Height + GetHash<Hasher>, Hasher> Node<Child, Hasher> {
     /// Set the hash of this node without checking to see whether the hash is correct.
     ///
     /// # Correctness
     ///
     /// This should only be called when the hash is already known (i.e. after construction from
     /// children with a known node hash).
-    pub(in super::super) fn set_hash_unchecked(&self, hash: Hash) {
+    pub(in super::super) fn set_hash_unchecked(&self, hash: Hash<Hasher>) {
         self.hash.set(Some(hash).into());
     }
 
     pub(in super::super) fn from_siblings_and_focus_or_else_hash(
-        siblings: Three<Insert<Child>>,
-        focus: Insert<Child>,
-    ) -> Insert<Self> {
-        fn zero<T>() -> Insert<T> {
+        siblings: Three<Insert<Child, Hasher>>,
+        focus: Insert<Child, Hasher>,
+    ) -> Insert<Self, Hasher>
+    where
+        Hasher: hash::Hasher,
+    {
+        fn zero<T: GetHash<Hasher>, Hasher>() -> Insert<T, Hasher> {
             Insert::Hash(Hash::default())
         }
 
@@ -81,8 +85,11 @@ impl<Child: Height> Node<Child> {
     }
 
     pub(in super::super) fn from_children_or_else_hash(
-        children: [Insert<Child>; 4],
-    ) -> Insert<Self> {
+        children: [Insert<Child, Hasher>; 4],
+    ) -> Insert<Self, Hasher>
+    where
+        Hasher: hash::Hasher,
+    {
         match Children::try_from(children) {
             Ok(children) => Insert::Keep(Self {
                 hash: Cell::new(None.into()),
@@ -97,22 +104,24 @@ impl<Child: Height> Node<Child> {
     }
 
     /// Get the children of this node as an array of either children or hashes.
-    pub fn children(&self) -> [Insert<&Child>; 4] {
+    pub fn children(&self) -> [Insert<&Child, Hasher>; 4] {
         self.children.children()
     }
 }
 
-impl<Child: Height> Height for Node<Child> {
+impl<Child: Height, Hasher> Height for Node<Child, Hasher> {
     type Height = Succ<Child::Height>;
 }
 
-impl<Child: Complete> Complete for Node<Child> {
-    type Focus = active::Node<Child::Focus>;
+impl<Child: Complete<Hasher>, Hasher: hash::Hasher> Complete<Hasher> for Node<Child, Hasher> {
+    type Focus = active::Node<Child::Focus, Hasher>;
 }
 
-impl<Child: Height + GetHash> GetHash for Node<Child> {
+impl<Child: Height + GetHash<Hasher>, Hasher: hash::Hasher> GetHash<Hasher>
+    for Node<Child, Hasher>
+{
     #[inline]
-    fn hash(&self) -> Hash {
+    fn hash(&self) -> Hash<Hasher> {
         self.cached_hash().unwrap_or_else(|| {
             let [a, b, c, d] = self.children.children().map(|x| x.hash());
             let hash = Hash::node(<Self as Height>::Height::HEIGHT, a, b, c, d);
@@ -122,16 +131,20 @@ impl<Child: Height + GetHash> GetHash for Node<Child> {
     }
 
     #[inline]
-    fn cached_hash(&self) -> Option<Hash> {
+    fn cached_hash(&self) -> Option<Hash<Hasher>> {
         self.hash.get().into()
     }
 }
 
-impl<Child: GetHash + Witness> Witness for Node<Child> {
+impl<Child: GetHash<Hasher> + Witness<Hasher>, Hasher: hash::Hasher> Witness<Hasher>
+    for Node<Child, Hasher>
+where
+    Child::Height: path::Path<Hasher>,
+{
     type Item = Child::Item;
 
     #[inline]
-    fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Self::Item)> {
+    fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self, Hasher>, Self::Item)> {
         let index = index.into();
 
         // Which way to go down the tree from this node
@@ -150,12 +163,12 @@ impl<Child: GetHash + Witness> Witness for Node<Child> {
     }
 }
 
-impl<Child: GetHash + ForgetOwned> ForgetOwned for Node<Child> {
+impl<Child: ForgetOwned<Hasher>, Hasher: hash::Hasher> ForgetOwned<Hasher> for Node<Child, Hasher> {
     #[inline]
-    fn forget_owned(self, index: impl Into<u64>) -> (Insert<Self>, bool) {
+    fn forget_owned(self, index: impl Into<u64>) -> (Insert<Self, Hasher>, bool) {
         let index = index.into();
 
-        let [a, b, c, d]: [Insert<Child>; 4] = self.children.into();
+        let [a, b, c, d]: [Insert<Child, Hasher>; 4] = self.children.into();
 
         // Which child should we be forgetting?
         let (which_way, index) = WhichWay::at(Self::Height::HEIGHT, index);

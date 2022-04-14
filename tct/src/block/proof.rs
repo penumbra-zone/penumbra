@@ -2,21 +2,30 @@ use penumbra_proto::transparent_proofs as pb;
 
 pub use thiserror::Error;
 
-use crate::{internal::index, Commitment, Hash};
+use crate::{
+    internal::{hash, index},
+    Commitment, Hash,
+};
 
 pub use super::{Block, Position, Root};
 
 /// An as-yet-unverified proof of the inclusion of some [`Commitment`] in a [`Block`].
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Proof(pub(super) crate::proof::Proof<Block>);
+#[derive(Derivative)]
+#[derivative(
+    Debug(bound = ""),
+    Clone(bound = ""),
+    PartialEq(bound = ""),
+    Eq(bound = "")
+)]
+pub struct Proof<Hasher: hash::Hasher>(pub(super) crate::proof::Proof<Block<Hasher>, Hasher>);
 
-impl Proof {
+impl<Hasher: hash::Hasher> Proof<Hasher> {
     /// Construct a new [`Proof`] of inclusion for a given [`Commitment`], index, and authentication
     /// path from root to leaf.
     pub fn new(
         commitment: Commitment,
         Position(index): Position,
-        auth_path: [[Hash; 3]; 8],
+        auth_path: [[Hash<Hasher>; 3]; 8],
     ) -> Self {
         use crate::internal::path::{Leaf, Node};
         let [a, b, c, d, e, f, g, h] = auth_path;
@@ -65,7 +74,7 @@ impl Proof {
     /// # Errors
     ///
     /// Returns [`VerifyError`] if the proof is invalid for that [`Root`].
-    pub fn verify(&self, root: Root) -> Result<(), crate::VerifyError> {
+    pub fn verify(&self, root: Root<Hasher>) -> Result<(), crate::VerifyError<Hasher>> {
         self.0.verify(root.0)
     }
 
@@ -80,7 +89,7 @@ impl Proof {
     }
 
     /// Get the authentication path for this proof, order from root to leaf.
-    pub fn auth_path(&self) -> [&[Hash; 3]; 8] {
+    pub fn auth_path(&self) -> [&[Hash<Hasher>; 3]; 8] {
         use crate::internal::path::{Leaf, Node};
         let path = self.0.auth_path();
         let Node {
@@ -120,13 +129,13 @@ impl Proof {
     }
 }
 
-impl From<Proof> for pb::MerkleProof {
-    fn from(proof: Proof) -> Self {
+impl<Hasher: hash::Hasher> From<Proof<Hasher>> for pb::MerkleProof {
+    fn from(proof: Proof<Hasher>) -> Self {
         proof.0.into()
     }
 }
 
-impl TryFrom<pb::MerkleProof> for Proof {
+impl<Hasher: hash::Hasher> TryFrom<pb::MerkleProof> for Proof<Hasher> {
     type Error = crate::ProofDecodeError;
 
     fn try_from(value: pb::MerkleProof) -> Result<Self, Self::Error> {
@@ -134,4 +143,4 @@ impl TryFrom<pb::MerkleProof> for Proof {
     }
 }
 
-impl penumbra_proto::Protobuf<pb::MerkleProof> for Proof {}
+impl<Hasher: hash::Hasher> penumbra_proto::Protobuf<pb::MerkleProof> for Proof<Hasher> {}

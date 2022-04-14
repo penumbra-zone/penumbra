@@ -1,10 +1,15 @@
 //! A specification of the behavior of [`Block`](crate::Block).
 
+use std::marker::PhantomData;
+
 use hash_hasher::HashedMap;
 
 use crate::{
     block::{Position, Proof},
-    internal::{active::Insert, hash::Hash},
+    internal::{
+        active::Insert,
+        hash::{self, Hash},
+    },
     Commitment, Witness,
 };
 
@@ -12,12 +17,14 @@ use super::{tree::Tree, InsertError, Tier, TIER_CAPACITY};
 
 /// A builder for a [`Block`]: a sequence of [`Commitment`]s.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct Builder {
+pub struct Builder<Hasher> {
     /// The inner tiers of the builder.
-    pub block: Tier<Commitment>,
+    pub block: Tier<Commitment, Hasher>,
+    /// Hasher to use.
+    hasher: PhantomData<Hasher>,
 }
 
-impl Builder {
+impl<Hasher: hash::Hasher> Builder<Hasher> {
     /// Insert a new [`Commitment`] into the [`block::Builder`](Builder), returning its [`Position`] if
     /// successful.
     ///
@@ -69,7 +76,7 @@ impl Builder {
     ///
     /// This is not a mirror of any method on [`crate::Block`], because the main crate interface
     /// is incremental, not split into a builder phase and a finalized phase.
-    pub fn build(self) -> Block {
+    pub fn build(self) -> Block<Hasher> {
         // Calculate position
         let position = (self.block.len() as u16).into();
 
@@ -89,24 +96,24 @@ impl Builder {
 /// An immutable, dense, indexed commitment tree.
 ///
 /// This supports all the immutable methods of [`crate::Block`].
-pub struct Block {
+pub struct Block<Hasher> {
     index: HashedMap<Commitment, Position>,
     position: Position,
-    tree: Tree,
+    tree: Tree<Hasher>,
 }
 
-impl Block {
+impl<Hasher: hash::Hasher> Block<Hasher> {
     /// Get the root hash of this [`Block`].
     ///
     /// See [`crate::Block::root`].
-    pub fn root(&self) -> crate::block::Root {
+    pub fn root(&self) -> crate::block::Root<Hasher> {
         crate::block::Root(self.tree.root())
     }
 
     /// Get a [`Proof`] of inclusion for the given [`Commitment`], if it was witnessed.
     ///
     /// See [`crate::Block::witness`].
-    pub fn witness(&self, commitment: Commitment) -> Option<Proof> {
+    pub fn witness(&self, commitment: Commitment) -> Option<Proof<Hasher>> {
         let position = *self.index.get(&commitment)?;
         let auth_path = self.tree.witness(u16::from(position) as u64);
         Some(Proof::new(commitment, position, auth_path))

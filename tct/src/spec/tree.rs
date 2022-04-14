@@ -1,33 +1,37 @@
 use std::collections::VecDeque;
 
 use crate::{
-    internal::{active::Insert, hash::Hash, path::WhichWay},
+    internal::{
+        active::Insert,
+        hash::{self, Hash},
+        path::WhichWay,
+    },
     Commitment,
 };
 
 use super::Tier;
 
 /// A dense, non-incrememntal merkle tree with commitments at its leaves.
-pub enum Tree {
+pub enum Tree<Hasher> {
     /// An internal node, with a hash.
     Node {
         /// The hash of this node.
-        hash: Hash,
+        hash: Hash<Hasher>,
         /// The children of this node (invariant: there are never more than 4).
-        children: Vec<Tree>,
+        children: Vec<Tree<Hasher>>,
     },
     /// A leaf node, with a hash.
     Leaf {
         /// The hash of this leaf.
-        hash: Hash,
+        hash: Hash<Hasher>,
         /// The commitment witnessed by this leaf, if it was not forgotten.
         commitment: Option<Commitment>,
     },
 }
 
-impl Tree {
+impl<Hasher: hash::Hasher> Tree<Hasher> {
     /// Get the root hash of this tree.
-    pub fn root(&self) -> Hash {
+    pub fn root(&self) -> Hash<Hasher> {
         match self {
             Tree::Node { hash, .. } => *hash,
             Tree::Leaf { hash, .. } => *hash,
@@ -39,7 +43,9 @@ impl Tree {
     /// # Panics
     ///
     /// If the size of any tier is greater than 4^8.
-    pub(super) fn from_eternity(eternity: Tier<Tier<Tier<Commitment>>>) -> Tree {
+    pub(super) fn from_eternity(
+        eternity: Tier<Tier<Tier<Commitment, Hasher>, Hasher>, Hasher>,
+    ) -> Tree<Hasher> {
         use Tree::*;
 
         let forest = eternity
@@ -60,7 +66,7 @@ impl Tree {
     /// # Panics
     ///
     /// If the size of either tier is greater than 4^8.
-    pub(super) fn from_epoch(epoch: Tier<Tier<Commitment>>) -> Tree {
+    pub(super) fn from_epoch(epoch: Tier<Tier<Commitment, Hasher>, Hasher>) -> Tree<Hasher> {
         use Tree::*;
 
         let forest = epoch
@@ -81,7 +87,7 @@ impl Tree {
     /// # Panics
     ///
     /// If the size of the tier is greater than 4^8.
-    pub(super) fn from_block(block: Tier<Commitment>) -> Tree {
+    pub(super) fn from_block(block: Tier<Commitment, Hasher>) -> Tree<Hasher> {
         use Tree::*;
 
         let forest = block
@@ -105,7 +111,7 @@ impl Tree {
     /// # Panics
     ///
     /// If the size of the tier is greater than 4^8.
-    fn from_tier(base_height: u8, mut forest: VecDeque<Tree>) -> Tree {
+    fn from_tier(base_height: u8, mut forest: VecDeque<Tree<Hasher>>) -> Tree<Hasher> {
         use Tree::*;
 
         // An empty tier should result in a node with the default hash
@@ -168,7 +174,11 @@ impl Tree {
     /// of the tree, in order from left to right.
     pub(super) fn index_with(&self, mut f: impl FnMut(Commitment, u64)) {
         // Recursive function to build the hash map
-        fn index_with_at(tree: &Tree, index_here: u64, f: &mut impl FnMut(Commitment, u64)) {
+        fn index_with_at<Hasher>(
+            tree: &Tree<Hasher>,
+            index_here: u64,
+            f: &mut impl FnMut(Commitment, u64),
+        ) {
             use Tree::*;
             match tree {
                 Leaf {
@@ -205,12 +215,17 @@ impl Tree {
     ///
     /// If the index does not correspond to a leaf in the tree, or if the height is greater than
     /// `u8::MAX as usize` or if the height does not match the actual height of the tree.
-    pub(super) fn witness<const HEIGHT: usize>(&self, index: u64) -> [[Hash; 3]; HEIGHT] {
+    pub(super) fn witness<const HEIGHT: usize>(&self, index: u64) -> [[Hash<Hasher>; 3]; HEIGHT] {
         // Recursive function to build the auth path
-        fn witness_onto(tree: &Tree, height: u8, index: u64, auth_path: &mut Vec<[Hash; 3]>) {
+        fn witness_onto<Hasher: hash::Hasher>(
+            tree: &Tree<Hasher>,
+            height: u8,
+            index: u64,
+            auth_path: &mut Vec<[Hash<Hasher>; 3]>,
+        ) {
             if let Tree::Node { children, .. } = tree {
                 // Collect the children into an array of references of exactly size 4
-                let mut child_refs: [Option<&Tree>; 4] = [None; 4];
+                let mut child_refs: [Option<&Tree<Hasher>>; 4] = [None; 4];
                 for (child_ref, child) in child_refs.as_mut_slice().iter_mut().zip(children.iter())
                 {
                     *child_ref = Some(child);
