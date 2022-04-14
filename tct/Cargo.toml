@@ -24,12 +24,11 @@ sqlx = { version = "0.5.9", features = ["postgres"], optional = true }
 proptest = { version = "1", optional = true }
 proptest-derive = { version = "0.3", optional = true }
 rand = { version = "0.8", optional = true }
-dashmap = { version = "5", optional = true }
 
 [features]
 spec = []
 internal = []
-fast_hash = [ "dashmap" ]
+fast_hash = []
 arbitrary = ["proptest", "proptest-derive", "rand"]
 
 [dev-dependencies]
