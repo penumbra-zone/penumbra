@@ -183,7 +183,7 @@ impl Builder {
             (((self.eternity.len() - 1) as u16).into(), block, commitment)
         };
 
-        Position::from(u64::from(crate::internal::index::within::Eternity {
+        Position::from(u64::from(index::within::Eternity {
             epoch,
             block,
             commitment,
