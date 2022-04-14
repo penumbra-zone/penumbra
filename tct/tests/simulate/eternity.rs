@@ -23,7 +23,7 @@ pub enum Action {
     InsertEpochRoot(real::epoch::Root),
     InsertBlock(
         #[proptest(
-            strategy = "prop::collection::vec(any_with::<block::Action>(params.commitments), 0..params.max_tier_actions)"
+            strategy = "prop::collection::vec(any_with::<block::Action>(params.clone()), 0..params.max_tier_actions)"
         )]
         Vec<block::Action>,
     ),
