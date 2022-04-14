@@ -1,12 +1,19 @@
 use anyhow::Result;
 use sqlx::sqlite::SqlitePool;
 use std::env;
+use std::fs::OpenOptions;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let pool = SqlitePool::connect(&env::var("DATABASE_URL")?).await?;
 
     // TODO: weird chicken & egg problem w/ database existing or not
+    // create database file if it doesn't exist
+    OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&env::var("DATABASE_URL")?.replace("sqlite://", ""));
+
     create_table(&pool).await?;
     let row = insert_table(&pool).await?;
     let x = read_table(&pool).await?;
@@ -19,16 +26,16 @@ async fn main() -> Result<()> {
 }
 
 async fn create_table(pool: &SqlitePool) -> anyhow::Result<()> {
-    //     let mut conn = pool.acquire().await?;
+    let mut conn = pool.acquire().await?;
 
-    //     // Create the table
-    //     sqlx::query!(
-    //         r#"
-    // CREATE TABLE penumbra (id INTEGER PRIMARY KEY, value TEXT NOT NULL);
-    //         "#
-    //     )
-    //     .execute(&mut conn)
-    //     .await?;
+    // Create the table
+    sqlx::query!(
+        r#"
+    CREATE TABLE penumbra (id INTEGER PRIMARY KEY, value TEXT NOT NULL);
+            "#
+    )
+    .execute(&mut conn)
+    .await?;
 
     Ok(())
 }
