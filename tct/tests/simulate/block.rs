@@ -3,13 +3,13 @@ use real::arbitrary::CommitmentStrategy;
 use super::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Arbitrary)]
-#[proptest(params("Vec<Commitment>"))]
+#[proptest(params("Params"))]
 pub enum Action {
     Insert(
         Witness,
-        #[proptest(strategy = "CommitmentStrategy::one_of(params.clone())")] Commitment,
+        #[proptest(strategy = "CommitmentStrategy::one_of(params.commitments.clone())")] Commitment,
     ),
-    Forget(#[proptest(strategy = "CommitmentStrategy::one_of(params)")] Commitment),
+    Forget(#[proptest(strategy = "CommitmentStrategy::one_of(params.commitments)")] Commitment),
 }
 
 impl Simulate for Action {

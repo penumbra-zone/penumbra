@@ -104,10 +104,7 @@ impl Builder {
             (((self.epoch.len() - 1) as u16).into(), commitment)
         };
 
-        Position::from(u32::from(crate::internal::index::within::Epoch {
-            block,
-            commitment,
-        }))
+        Position::from(u32::from(index::within::Epoch { block, commitment }))
     }
 
     /// Insert a block builder's contents as a new block in this [`epoch::Builder`](Builder).
