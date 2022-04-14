@@ -5,6 +5,10 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[profile.test]
+# Maximum optimization level for tests, so that they are fast
+opt-level = 3
+
 [dev-dependencies]
 sqlx = { version = "0.5.9", features = ["postgres", "runtime-tokio-rustls"] }
 static_assertions = "1"
