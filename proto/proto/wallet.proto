@@ -1,0 +1,157 @@
+syntax = "proto3";
+package penumbra.wallet;
+
+import "transaction.proto";
+import "crypto.proto";
+
+service WalletProtocol {
+    // TODO: do we want to include auth/signatures in all requests here?
+    /// Get current status of chain sync
+    rpc Status() returns (StatusResult);
+
+    // Addresses
+    /// List wallet addresses
+    rpc ListAddresses() returns (TransactionResult);
+    /// Show address and label by index
+    rpc ShowAddress(ShowAddress) returns (TransactionResult);
+    /// Create new address with the provided label
+    rpc CreateNewAddress(CreateNewAddress) returns (TransactionResult);
+
+    // Staking
+    /// Deposit stake into a validator's delegation pool.
+    rpc Delegate(Delegate) returns (TransactionResult);
+    /// Withdraw stake from a validator's delegation pool.
+    rpc Undelegate(Undelegate) returns (TransactionResult);
+    /// Redelegate stake from one validator's delegation pool to another.
+    rpc Redelegate(Redelegate) returns (TransactionResult);
+    /// Display this wallet's delegations and their value.
+    rpc ShowDelegations() returns (TransactionResult);
+    /// Display all of the validators participating in the chain.
+    rpc ListValidators(ListValidators) returns (TransactionResult);
+
+    // Transactions
+    /// Send transaction to the node.
+    rpc SendTransaction(SendTransaction) returns (TransactionResult);
+    /// Sweeps small notes of the same denomination into a few larger notes.
+    rpc SweepTransactions() returns (TransactionResult);
+
+    // Validators
+    /// Display the validator identity key derived from this wallet's spend seed.
+    rpc DisplayValidatorIdentity() returns (TransactionResult);
+    /// Create a ValidatorDefinition transaction to create or update a validator.
+    rpc CreateValidatorDefinition(CreateValidatorDefinition) returns (TransactionResult);
+
+    // Wallet
+    /// Show current wallet balance
+    rpc ShowWalletBalance() returns (TransactionResult);
+    /// Import an existing spend seed.
+    rpc ImportSpendSeed(ImportSpendSeed) returns (TransactionResult);
+    /// Import from an existing seed phrase.
+    rpc ImportFromSeedPhrase(ImportFromSeedPhrase) returns (TransactionResult);
+    /// Export the spend seed for the wallet.
+    rpc ExportSpendSeed() returns (TransactionResult);
+    /// Generate a new seed phrase.
+    rpc GenerateSeedPhrase() returns (TransactionResult);
+    /// Keep the spend seed, but reset all other client state.
+    rpc ResetClientState() returns (TransactionResult);
+    /// Delete the entire wallet permanently.
+    rpc DeleteWallet() returns (TransactionResult);
+}
+
+// Returns the status of the wallet server and whether it is synchronized with the chain state.
+message StatusResult {
+    /// Whether the wallet service is synchronized with the chain state.
+    bool synchronized = 1;
+    // The height reported by the full node
+    uint64 chain_height = 2;
+    // The height the wallet has synchronized to so far
+    uint64 sync_height = 3;
+}
+
+// TODO: Placeholder transaction response, replace as needed
+message TransactionResult {}
+
+// Addresses
+message ShowAddress {        
+    // The index of the address to show.
+    u32 index = 1;
+    // If true, emits only the address and not the (local) label for it.
+    bool addr_only = 2;
+}
+message CreateNewAddress {
+    // A freeform label for the address, stored only locally.
+    string label = 1;
+}
+
+// Staking
+message Delegate {
+    /// The identity key of the validator to delegate to.
+    string to = 1;
+    /// The amount of stake to delegate.
+    string amount = 2;
+    /// The transaction fee (paid in upenumbra).
+    u64 fee = 3;
+    /// Optional. Only spend funds originally received by the given address index.
+    u64 source = 4;
+}
+message Undelegate {
+    /// The amount of delegation tokens to undelegate.
+    string amount = 1;
+    /// The transaction fee (paid in upenumbra).
+    u64 fee = 2;
+    /// Optional. Only spend funds originally received by the given address index.
+    u64 source = 3;
+}
+message Redelegate {
+    /// The identity key of the validator to withdraw delegation from.
+    string from = 1;
+    /// The identity key of the validator to delegate to.
+    string to = 2;
+    /// The amount of stake to delegate.
+    string amount = 3;
+    /// The transaction fee (paid in upenumbra).
+    u64 fee = 4;
+    /// Optional. Only spend funds originally received by the given address index.
+    u64 source = 5;
+}
+message ListValidators {
+    /// Whether to show validators that are not currently part of the consensus set.
+    bool show_inactive = 1;
+    /// Whether to show detailed validator info.
+    bool detailed = 2;
+}
+
+// Transactions
+message SendTransaction {
+    /// The destination address to send funds to.
+    string to = 1;
+    /// The amounts to send, written as typed values 1.87penumbra, 12cubes, etc.
+    repeated string values = 2;
+    /// The transaction fee (paid in upenumbra).
+    u64 fee = 3;
+    /// Optional. Only spend funds originally received by the given address index.
+    u64 source = 4;
+    /// Optional. Set the transaction's memo field to the provided text.
+    string memo = 5;
+}
+
+// Validators
+message CreateValidatorDefinition {
+    /// The JSON file containing the ValidatorDefinition to upload
+    string file = 1;
+    /// The transaction fee (paid in upenumbra).
+    u64 fee = 2;
+    /// Optional. Only spend funds originally received by the given address index.
+    u64 source = 3;
+}
+
+// Wallet
+message ImportSpendSeed {
+    // A 32-byte hex string encoding the spend seed.
+    string spend_seed = 1;
+}
+// Import from an existing seed phrase.
+message ImportFromSeedPhrase {
+    // A 24 word phrase in quotes.
+    string seed_phrase  = 1;
+}
