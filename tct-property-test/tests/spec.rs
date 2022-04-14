@@ -14,6 +14,10 @@ const MAX_OBSERVATIONS: usize = 10;
 macro_rules! spec_vs_impl {
     ($name:ident : $module:ident) => {
         proptest! {
+            #![proptest_config(ProptestConfig {
+                cases: 10_000, .. ProptestConfig::default()
+            })]
+
             #[test]
             fn $name(
                 (actions, observations) in (
