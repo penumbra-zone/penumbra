@@ -15,8 +15,13 @@ members = [
   "pcli",
   "pcli-next",
   "tct",
+  "tct-property-test",
   "ibc",
 ]
+
+[profile.test]
+# Maximum optimization level for tests, so that they are fast (especially the proptest ones)
+opt-level = 3
 
 [patch.crates-io]
 # The "ours" branch is based off of v0.3.0
