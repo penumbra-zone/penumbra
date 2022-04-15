@@ -142,11 +142,7 @@ mod test {
 
     #[test]
     fn check_eternity_size() {
-        #[cfg(not(feature = "sync"))]
-        static_assertions::assert_eq_size!(Eternity, [u8; 96]);
-
-        #[cfg(feature = "sync")]
-        static_assertions::assert_eq_size!(Eternity, [u8; 112]);
+        static_assertions::assert_eq_size!(Eternity, [u8; 104]);
     }
 
     #[test]
