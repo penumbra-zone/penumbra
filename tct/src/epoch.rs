@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use decaf377::{FieldExt, Fq};
 use hash_hasher::HashedMap;
 use penumbra_proto::{crypto as pb, Protobuf};
@@ -66,6 +68,12 @@ impl From<Root> for pb::MerkleRoot {
 }
 
 impl Protobuf<pb::MerkleRoot> for Root {}
+
+impl Display for Root {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", hex::encode(&Fq::from(self.0).to_bytes()))
+    }
+}
 
 /// The index of a [`Commitment`] within an [`Epoch`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
