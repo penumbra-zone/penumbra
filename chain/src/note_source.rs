@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use penumbra_proto::{chain as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(try_from = "pb::NoteSource", into = "pb::NoteSource")]
 pub enum NoteSource {
     Transaction { id: [u8; 32] },
@@ -69,6 +69,21 @@ impl From<NoteSource> for pb::NoteSource {
     fn from(note_source: NoteSource) -> Self {
         pb::NoteSource {
             inner: note_source.to_bytes().to_vec(),
+        }
+    }
+}
+
+impl std::fmt::Debug for NoteSource {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            NoteSource::Transaction { id } => {
+                f.write_fmt(format_args!("NoteSource::Transaction({})", hex::encode(id)))
+            }
+            NoteSource::Genesis => f.write_fmt(format_args!("NoteSource::Genesis")),
+            NoteSource::FundingStreamReward { epoch_index } => f.write_fmt(format_args!(
+                "NoteSource::FundingStreamReward({})",
+                epoch_index
+            )),
         }
     }
 }
