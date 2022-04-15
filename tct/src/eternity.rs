@@ -1,6 +1,6 @@
 use decaf377::{FieldExt, Fq};
 use hash_hasher::HashedMap;
-use penumbra_proto::crypto as pb;
+use penumbra_proto::{crypto as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -62,6 +62,8 @@ impl From<Root> for pb::MerkleRoot {
         }
     }
 }
+
+impl Protobuf<pb::MerkleRoot> for Root {}
 
 /// The index of a [`Commitment`] within an [`Eternity`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
