@@ -4,7 +4,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use penumbra_chain::{params::ChainParams, sync::CompactBlock};
 use penumbra_crypto::{
     asset::{self, Denom},
@@ -418,7 +418,7 @@ impl ClientState {
         fee: u64,
         source_address: Option<u64>,
     ) -> Result<Transaction, anyhow::Error> {
-        let mut tx_builder = Transaction::build_with_root(self.note_commitment_tree.root2());
+        let mut tx_builder = Transaction::build_with_root(self.note_commitment_tree.root());
 
         tx_builder
             .set_fee(fee)
@@ -756,7 +756,6 @@ impl ClientState {
         } in outputs.into_iter()
         {
             let note_commitment = note_commitment
-                .as_ref()
                 .try_into()
                 .context("invalid note commitment")?;
 
