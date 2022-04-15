@@ -60,6 +60,13 @@ impl From<Root> for pb::MerkleRoot {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Position(index::within::Block);
 
+impl Position {
+    /// The index of the [`Commitment`] to which this [`Position`] refers within its [`Block`].
+    pub fn commitment(&self) -> u16 {
+        self.0.commitment.into()
+    }
+}
+
 impl From<Position> for u16 {
     fn from(position: Position) -> Self {
         position.0.into()

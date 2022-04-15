@@ -65,10 +65,11 @@ impl Simulate for Action {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Arbitrary)]
 #[proptest(params("Vec<Commitment>"))]
 pub enum Observation {
-    Witness(#[proptest(strategy = "CommitmentStrategy::one_of(params)")] Commitment),
+    Witness(#[proptest(strategy = "CommitmentStrategy::one_of(params.clone())")] Commitment),
     Root,
     CurrentBlockRoot,
     Position,
+    PositionOf(#[proptest(strategy = "CommitmentStrategy::one_of(params)")] Commitment),
     WitnessedCount,
     IsEmpty,
 }
@@ -116,6 +117,11 @@ impl Simulate for Observation {
                 spec.position(),
                 real.position(),
                 "result mismatch from `Epoch::position`"
+            ),
+            PositionOf(commitment) => assert_eq!(
+                spec.position_of(commitment),
+                real.position_of(commitment),
+                "result mismatch from `Epoch::position_of`"
             ),
             WitnessedCount => assert_eq!(
                 spec.witnessed_count(),
