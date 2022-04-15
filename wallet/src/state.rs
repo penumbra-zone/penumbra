@@ -749,9 +749,11 @@ impl ClientState {
         }
         tracing::debug!(outputs_len = outputs.len(), "starting block scan");
 
-        // TODO: insert a new epoch if we're beginning a new epoch
+        // The block of note commitments, to be inserted into the note commitment tree
+        let mut block = penumbra_tct::Block::new();
 
-        // TODO: build a block all at once, then insert it
+        // Notes found while scanning this block which belong to us
+        let mut our_notes = Vec::new();
 
         for output::Body {
             note_commitment,
@@ -771,18 +773,12 @@ impl ClientState {
                 &ephemeral_key,
             ) {
                 tracing::debug!(?note_commitment, ?note, "found note while scanning");
-                // Insert *and keep* the note in the commitment tree
-                let position = self
-                    .note_commitment_tree
-                    .insert(penumbra_tct::Keep, note_commitment)?;
 
-                // Insert the note associated with its computed nullifier into the nullifier map
-                self.nullifier_map.insert(
-                    self.wallet
-                        .full_viewing_key()
-                        .derive_nullifier(position, &note_commitment),
-                    note_commitment,
-                );
+                // Remember this note commitment, to insert it into the nullifier map
+                our_notes.push(note_commitment);
+
+                // Insert *and keep* the note in the block commitment tree
+                block.insert(penumbra_tct::Keep, note_commitment)?;
 
                 // If the note was a submitted change note, remove it from the submitted change set
                 if self.submitted_change_set.remove(&note_commitment).is_some() {
@@ -792,10 +788,31 @@ impl ClientState {
                 // Insert the note into the received set
                 self.unspent_set.insert(note_commitment, note.clone());
             } else {
-                // Insert *and forget* the note in the commitment tree (it's not ours)
-                self.note_commitment_tree
-                    .insert(penumbra_tct::Forget, note_commitment)?;
+                // Insert *and forget* the note in the block commitment tree (it's not ours)
+                block.insert(penumbra_tct::Forget, note_commitment)?;
             }
+        }
+
+        // TODO: insert a new epoch if we're beginning a new epoch
+
+        // Insert the block into the full commitment tree
+        self.note_commitment_tree
+            .insert_block(block)
+            // Errors returned by `insert_block` are not `Sync` because they contain a `Block`,
+            // which is not `Sync`, so we can't return them directly
+            .map_err(|e| anyhow::anyhow!(format!("{}", e)))?;
+
+        // Insert each note that is ours associated paired with its computed nullifier into the nullifier map
+        for note_commitment in our_notes {
+            self.nullifier_map.insert(
+                self.wallet.full_viewing_key().derive_nullifier(
+                    self.note_commitment_tree
+                        .position_of(note_commitment)
+                        .unwrap(),
+                    &note_commitment,
+                ),
+                note_commitment,
+            );
         }
 
         // Scan through the list of nullifiers to find those which refer to notes in our unspent
