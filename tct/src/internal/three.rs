@@ -24,16 +24,6 @@ impl<T> Three<T> {
         }
     }
 
-    /// Get the number of elements in this [`Three`].
-    pub fn len(&self) -> u8 {
-        self.elems.len() as u8
-    }
-
-    /// Check if the [`Three`] is empty.
-    pub fn is_empty(&self) -> bool {
-        self.elems.is_empty()
-    }
-
     /// Push a new item into this [`Three`], or return exactly four items (including the pushed
     /// item) if the [`Three`] is already full.
     ///
