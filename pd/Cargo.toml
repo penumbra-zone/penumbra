@@ -19,6 +19,7 @@ penumbra-chain = { path = "../chain" }
 penumbra-crypto = { path = "../crypto" }
 penumbra-stake = { path = "../stake" }
 penumbra-transaction = { path = "../transaction" }
+penumbra-tct = { path = "../tct" }
 
 # Penumbra dependencies
 ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
@@ -26,7 +27,7 @@ decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 tower-abci = { git = "https://github.com/penumbra-zone/tower-abci/" }
 tendermint-config = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "master" }
 #tendermint-proto = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "master" }
-tendermint-proto = "0.23.5" 
+tendermint-proto = "0.23.5"
 tendermint = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "master" }
 jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "main" }
 

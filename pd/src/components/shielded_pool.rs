@@ -3,13 +3,11 @@ use std::collections::BTreeSet;
 use anyhow::{anyhow, Context, Result};
 use ark_ff::PrimeField;
 use async_trait::async_trait;
-use decaf377::{Fq, Fr};
+use decaf377::{FieldExt, Fq, Fr};
 use penumbra_chain::{sync::CompactBlock, KnownAssets, NoteSource};
 use penumbra_crypto::{
     asset::{self, Asset, Denom},
-    ka,
-    merkle::{self, Frontier, NoteCommitmentTree, TreeExt},
-    note, Address, Note, Nullifier, One, Value,
+    ka, note, Address, Note, Nullifier, One, Value,
 };
 use penumbra_stake::{Epoch, STAKING_TOKEN_ASSET_ID};
 use penumbra_transaction::{action::output, Action, Transaction};
@@ -22,7 +20,7 @@ use crate::{genesis, Overlay, OverlayExt};
 // Stub component
 pub struct ShieldedPool {
     overlay: Overlay,
-    note_commitment_tree: NoteCommitmentTree,
+    note_commitment_tree: penumbra_tct::Eternity,
     /// The in-progress CompactBlock representation of the ShieldedPool changes
     compact_block: CompactBlock,
 }
@@ -167,7 +165,7 @@ impl Component for ShieldedPool {
     async fn check_tx_stateful(&self, tx: &Transaction) -> Result<()> {
         // TODO: rename transaction_body.merkle_root now that we have 2 merkle trees
         self.overlay
-            .check_claimed_anchor(&tx.transaction_body.merkle_root)
+            .check_claimed_anchor(tx.transaction_body.merkle_root)
             .await?;
 
         for spent_nullifier in tx.spent_nullifiers() {
@@ -196,7 +194,7 @@ impl Component for ShieldedPool {
         } else {
          */
         for compact_output in tx.output_bodies() {
-            self.add_note(compact_output, source).await;
+            self.add_note(compact_output, source).await?;
         }
         for spent_nullifier in tx.spent_nullifiers() {
             // We need to record the nullifier as spent in the JMT (to prevent
@@ -237,7 +235,7 @@ impl ShieldedPool {
             blake2b_simd::Params::default()
                 .personal(b"PenumbraMint")
                 .to_state()
-                .update(&self.note_commitment_tree.root2().to_bytes())
+                .update(&Fq::from(self.note_commitment_tree.root()).to_bytes())
                 .finalize()
                 .as_bytes(),
         );
@@ -271,23 +269,24 @@ impl ShieldedPool {
             },
             source,
         )
-        .await;
+        .await?;
 
         Ok(())
     }
 
     #[instrument(skip(self, source, output_body))]
-    async fn add_note(&mut self, output_body: output::Body, source: NoteSource) {
+    async fn add_note(&mut self, output_body: output::Body, source: NoteSource) -> Result<()> {
         tracing::debug!(commitment = ?output_body.note_commitment, "appending to NCT in component");
         // 1. Insert it into the NCT
         self.note_commitment_tree
-            .append(&output_body.note_commitment);
+            .insert(penumbra_tct::Forget, output_body.note_commitment)?;
         // 2. Record its source in the JMT
         self.overlay
             .set_note_source(&output_body.note_commitment, source)
             .await;
         // 3. Finally, record it in the pending compact block.
         self.compact_block.outputs.push(output_body);
+        Ok(())
     }
 
     #[instrument(skip(self))]
@@ -327,7 +326,7 @@ impl ShieldedPool {
             .await;
         // and the note commitment tree data and anchor:
         self.overlay
-            .set_nct_anchor(self.compact_block.height, self.note_commitment_tree.root2())
+            .set_nct_anchor(self.compact_block.height, self.note_commitment_tree.root())
             .await;
         self.put_nct().await?;
 
@@ -350,7 +349,7 @@ impl ShieldedPool {
     /// so that we can call it in the constructor to get the NCT.
     /// NOTE: we may not need that any more now that we can use an
     /// Overlay on an empty database.
-    async fn get_nct(overlay: &Overlay) -> Result<NoteCommitmentTree> {
+    async fn get_nct(overlay: &Overlay) -> Result<penumbra_tct::Eternity> {
         if let Ok(Some(bytes)) = overlay
             .lock()
             .await
@@ -359,7 +358,7 @@ impl ShieldedPool {
         {
             bincode::deserialize(&bytes).map_err(Into::into)
         } else {
-            Ok(NoteCommitmentTree::new(0))
+            Ok(penumbra_tct::Eternity::new())
         }
     }
 }
@@ -478,7 +477,7 @@ pub trait View: OverlayExt {
             .await
     }
 
-    async fn set_nct_anchor(&self, height: u64, anchor: merkle::Root) {
+    async fn set_nct_anchor(&self, height: u64, anchor: penumbra_tct::Root) {
         tracing::debug!(?height, ?anchor, "writing anchor");
 
         // Write the NCT anchor both as a value, so we can look it up,
@@ -498,7 +497,7 @@ pub trait View: OverlayExt {
     }
 
     /// Checks whether a claimed NCT anchor is a previous valid state root.
-    async fn check_claimed_anchor(&self, anchor: &merkle::Root) -> Result<()> {
+    async fn check_claimed_anchor(&self, anchor: penumbra_tct::Root) -> Result<()> {
         if let Some(anchor_height) = self
             .get_proto::<u64>(format!("shielded_pool/valid_anchors/{}", anchor).into())
             .await?
