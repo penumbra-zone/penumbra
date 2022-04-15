@@ -12,7 +12,6 @@ mod pd_metrics;
 mod request_ext;
 mod snapshot;
 mod storage;
-mod verify;
 
 pub mod genesis;
 pub mod testnet;
