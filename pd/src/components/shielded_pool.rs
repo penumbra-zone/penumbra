@@ -291,6 +291,26 @@ impl ShieldedPool {
 
     #[instrument(skip(self))]
     async fn write_block(&mut self) -> Result<()> {
+        // Determine if we are at an epoch boundary, and create a new epoch in the commitment tree
+        // if so; otherwise, just create a new block
+        let epoch_duration = self.overlay.get_epoch_duration().await?;
+        let height = self.compact_block.height;
+        if height != 0 {
+            if height % epoch_duration == 0 {
+                self.note_commitment_tree
+                    .insert_epoch(penumbra_tct::Epoch::new())?;
+            } else {
+                self.note_commitment_tree
+                    .insert_block(penumbra_tct::Block::new())?;
+            }
+        }
+
+        // Check that the position we're starting at matches the height of the block
+        assert_eq!(
+            u64::from(self.note_commitment_tree.position()) >> 16,
+            height
+        );
+
         // Handle any pending reward notes from the Staking component
         let notes = self
             .overlay
