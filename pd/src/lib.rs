@@ -9,12 +9,10 @@ mod consensus;
 mod info;
 mod mempool;
 mod pd_metrics;
-mod pending_block;
 mod request_ext;
 mod snapshot;
 mod storage;
 mod verify;
-mod wallet;
 
 pub mod genesis;
 pub mod testnet;
@@ -22,7 +20,7 @@ pub mod testnet;
 pub use components::{App, Component};
 pub use consensus::Consensus;
 pub use info::Info;
-pub use mempool::{Mempool, OldMempool};
+pub use mempool::Mempool;
 pub use pd_metrics::register_all_metrics;
 
 use request_ext::RequestExt;
