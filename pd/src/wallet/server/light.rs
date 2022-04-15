@@ -1,18 +1,3 @@
-use std::pin::Pin;
-
-use futures::stream::{StreamExt, TryStreamExt};
-use penumbra_proto::{
-    chain::{ChainParams, CompactBlock, KnownAssets},
-    light_client::{
-        light_protocol_server::LightProtocol, AssetListRequest, ChainParamsRequest,
-        CompactBlockRangeRequest, ValidatorInfoRequest,
-    },
-    stake::ValidatorInfo,
-};
-
-use tonic::Status;
-use tracing::instrument;
-
 // TODO: implement for WriteOverlay
 // #[tonic::async_trait]
 // impl LightProtocol for state::Reader {

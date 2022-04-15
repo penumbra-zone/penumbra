@@ -24,7 +24,7 @@ pub use consensus::Consensus;
 pub use info::Info;
 pub use mempool::{Mempool, OldMempool};
 pub use pd_metrics::register_all_metrics;
-use pending_block::PendingBlock;
+
 use request_ext::RequestExt;
 pub use snapshot::Snapshot;
 pub use storage::{Overlay, OverlayExt, Storage};

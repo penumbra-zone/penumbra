@@ -1,13 +1,3 @@
-use penumbra_proto::{
-    self as proto,
-    chain::NoteSource,
-    crypto::NoteCommitment,
-    thin_client::{thin_protocol_server::ThinProtocol, ValidatorStatusRequest},
-};
-
-use tonic::Status;
-use tracing::instrument;
-
 // TODO: implement for WriteOverlay
 // #[tonic::async_trait]
 // impl ThinProtocol for state::Reader {

@@ -16,19 +16,14 @@ use std::{
     task::{Context, Poll},
 };
 
-use anyhow::anyhow;
 use futures::FutureExt;
 use penumbra_crypto::Nullifier;
-use penumbra_proto::Protobuf;
-use penumbra_transaction::Transaction;
-use tendermint::{
-    abci::{
-        request::CheckTx as CheckTxRequest, response::CheckTx as CheckTxResponse, MempoolRequest,
-        MempoolResponse,
-    },
-    block,
+
+use tendermint::abci::{
+    request::CheckTx as CheckTxRequest, response::CheckTx as CheckTxResponse, MempoolRequest,
+    MempoolResponse,
 };
-use tokio::sync::{watch, Mutex as AsyncMutex};
+use tokio::sync::Mutex as AsyncMutex;
 use tower_abci::BoxError;
 use tracing::Instrument;
 
@@ -66,7 +61,7 @@ impl OldMempool {
     ///
     /// We do not queue up any state changes into `PendingBlock` until `DeliverTx` where these
     /// checks are repeated.
-    async fn check_tx(&self, check_tx: CheckTxRequest) -> Result<(), anyhow::Error> {
+    async fn check_tx(&self, _check_tx: CheckTxRequest) -> Result<(), anyhow::Error> {
         Err(anyhow::anyhow!("deprecated"))
     }
 }
