@@ -119,6 +119,13 @@ impl Block {
         self.position
     }
 
+    /// Get the position of the given [`Commitment`], if it is witnessed.
+    ///
+    /// See [`crate::Block::position_of`].
+    pub fn position_of(&self, commitment: Commitment) -> Option<Position> {
+        self.index.get(&commitment).map(|p| *p)
+    }
+
     /// Get the number of [`Commitment`]s witnessed in this [`Block`].
     ///
     /// See [`crate::Block::witnessed_count`].
