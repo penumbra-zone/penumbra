@@ -207,6 +207,12 @@ impl Eternity {
         }
     }
 
+    /// Get the position in this [`Eternity`] of the given [`Commitment`], if it is currently witnessed.
+    pub fn position_of(&self, commitment: impl Into<Commitment>) -> Option<Position> {
+        let commitment = commitment.into();
+        self.index.get(&commitment).map(|index| Position(*index))
+    }
+
     /// Add a new [`Block`] all at once to the most recently inserted [`Epoch`] of this
     /// [`Eternity`].
     ///
