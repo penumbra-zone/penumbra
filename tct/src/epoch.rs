@@ -67,17 +67,17 @@ impl From<Root> for pb::MerkleRoot {
 
 /// The index of a [`Commitment`] within an [`Epoch`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Position(u32);
+pub struct Position(index::within::Epoch);
 
 impl From<Position> for u32 {
     fn from(position: Position) -> Self {
-        position.0
+        position.0.into()
     }
 }
 
 impl From<u32> for Position {
     fn from(position: u32) -> Self {
-        Position(position)
+        Position(position.into())
     }
 }
 
@@ -205,6 +205,12 @@ impl Epoch {
     pub fn forget(&mut self, commitment: impl Into<Commitment>) -> bool {
         let commitment = commitment.into();
         self.as_mut().forget(commitment)
+    }
+
+    /// Get the position in this [`Epoch`] of the given [`Commitment`], if it is currently witnessed.
+    pub fn position_of(&self, commitment: impl Into<Commitment>) -> Option<Position> {
+        let commitment = commitment.into();
+        self.index.get(&commitment).map(|index| Position(*index))
     }
 
     /// Add a new [`Block`] all at once to this [`Epoch`].

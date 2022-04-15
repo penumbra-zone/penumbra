@@ -223,6 +223,12 @@ impl Block {
         Position(self.position)
     }
 
+    /// Get the position in this [`Block`] of the given [`Commitment`], if it is currently witnessed.
+    pub fn position_of(&self, commitment: impl Into<Commitment>) -> Option<Position> {
+        let commitment = commitment.into();
+        self.index.get(&commitment).map(|index| Position(*index))
+    }
+
     /// The number of [`Commitment`]s currently witnessed in this [`Block`].
     ///
     /// Note that [`forget`](Block::forget)ting a commitment decreases this count, but does not
