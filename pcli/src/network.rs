@@ -1,6 +1,9 @@
 use penumbra_proto::{
-    light_client::light_protocol_client::LightProtocolClient,
-    thin_client::thin_protocol_client::ThinProtocolClient, Protobuf,
+    client::{
+        oblivious::oblivious_query_client::ObliviousQueryClient,
+        specific::specific_query_client::SpecificQueryClient,
+    },
+    Protobuf,
 };
 use penumbra_transaction::Transaction;
 use rand::Rng;
@@ -89,17 +92,18 @@ impl Opt {
         Ok(())
     }
 
-    pub async fn thin_protocol_client(&self) -> Result<ThinProtocolClient<Channel>, anyhow::Error> {
-        ThinProtocolClient::connect(format!("http://{}:{}", self.node, self.thin_client_port))
+    pub async fn specific_client(&self) -> Result<SpecificQueryClient<Channel>, anyhow::Error> {
+        SpecificQueryClient::connect(format!("http://{}:{}", self.node, self.specific_query_port))
             .await
             .map_err(Into::into)
     }
 
-    pub async fn light_protocol_client(
-        &self,
-    ) -> Result<LightProtocolClient<Channel>, anyhow::Error> {
-        LightProtocolClient::connect(format!("http://{}:{}", self.node, self.light_client_port))
-            .await
-            .map_err(Into::into)
+    pub async fn oblivious_client(&self) -> Result<ObliviousQueryClient<Channel>, anyhow::Error> {
+        ObliviousQueryClient::connect(format!(
+            "http://{}:{}",
+            self.node, self.oblivious_query_port
+        ))
+        .await
+        .map_err(Into::into)
     }
 }

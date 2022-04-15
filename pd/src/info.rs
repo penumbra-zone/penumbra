@@ -11,8 +11,8 @@ use tracing::Instrument;
 
 use crate::{RequestExt, Storage};
 
-mod light_client;
-mod thin_client;
+mod oblivious;
+mod specific;
 
 const ABCI_INFO_VERSION: &str = env!("VERGEN_GIT_SEMVER");
 

@@ -1,14 +1,16 @@
 syntax = "proto3";
-package penumbra.light_client;
+package penumbra.client.oblivious;
 
 import "crypto.proto";
 import "chain.proto";
 import "stake.proto";
 
-// A light client service.
-//
-// This protocol attempts to be trust-minimized, both in terms of integrity and privacy.
-service LightProtocol {
+// Methods for accessing chain state that are "oblivious" in the sense that they
+// do not request specific portions of the chain state that could reveal private
+// client data.  For instance, requesting all asset denominations is oblivious,
+// but requesting the asset denomination for a specific asset id is not, because
+// it reveals that the client has an interest in that asset specifically.
+service ObliviousQuery {
   rpc CompactBlockRange(CompactBlockRangeRequest) returns (stream chain.CompactBlock);
   rpc ChainParams(ChainParamsRequest) returns (chain.ChainParams);
   rpc ValidatorInfo(ValidatorInfoRequest) returns (stream stake.ValidatorInfo);
