@@ -4,8 +4,8 @@ use async_stream::try_stream;
 use futures::stream::{StreamExt, TryStreamExt};
 use penumbra_proto::{
     chain::{ChainParams, CompactBlock, KnownAssets},
-    light_client::{
-        light_protocol_server::LightProtocol, AssetListRequest, ChainParamsRequest,
+    client::oblivious::{
+        oblivious_query_server::ObliviousQuery, AssetListRequest, ChainParamsRequest,
         CompactBlockRangeRequest, ValidatorInfoRequest,
     },
     stake::ValidatorInfo,
@@ -25,7 +25,7 @@ use crate::components::{app::View as _, shielded_pool::View as _, staking::View 
 use crate::Storage;
 
 #[tonic::async_trait]
-impl LightProtocol for Storage {
+impl ObliviousQuery for Storage {
     type CompactBlockRangeStream =
         Pin<Box<dyn futures::Stream<Item = Result<CompactBlock, tonic::Status>> + Send>>;
 

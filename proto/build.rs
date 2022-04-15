@@ -60,7 +60,10 @@ fn main() -> Result<()> {
     // For the client code, we also want to generate RPC instances, so compile via tonic:
     tonic_build::configure().compile_with_config(
         config,
-        &["proto/light_client.proto", "proto/thin_client.proto"],
+        &[
+            "proto/client/oblivious.proto",
+            "proto/client/specific.proto",
+        ],
         &["proto/", "ibc-go-vendor/"],
     )?;
 

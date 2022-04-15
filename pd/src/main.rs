@@ -12,9 +12,9 @@ use penumbra_crypto::{
     keys::{SpendKey, SpendSeed},
     rdsa::{SigningKey, SpendAuth, VerificationKey},
 };
-use penumbra_proto::{
-    light_client::light_protocol_server::LightProtocolServer,
-    thin_client::thin_protocol_server::ThinProtocolServer,
+use penumbra_proto::client::{
+    oblivious::oblivious_query_server::ObliviousQueryServer,
+    specific::specific_query_server::SpecificQueryServer,
 };
 use penumbra_stake::{FundingStream, FundingStreams, Validator};
 use rand_core::OsRng;
@@ -46,12 +46,12 @@ enum Command {
         /// Bind the ABCI server to this port.
         #[structopt(short, long, default_value = "26658")]
         abci_port: u16,
-        /// Bind the light wallet service to this port.
+        /// Bind the oblivious query service to this port.
         #[structopt(short, long, default_value = "26666")]
-        light_client_port: u16,
-        /// Bind the thin wallet service to this port.
+        oblivious_query_port: u16,
+        /// Bind the specific query service to this port.
         #[structopt(short, long, default_value = "26667")]
-        thin_client_port: u16,
+        specific_query_port: u16,
         /// Bind the metrics endpoint to this port.
         #[structopt(short, long, default_value = "9000")]
         metrics_port: u16,
@@ -116,16 +116,16 @@ async fn main() -> anyhow::Result<()> {
         Command::Start {
             host,
             abci_port,
-            light_client_port,
-            thin_client_port,
+            oblivious_query_port,
+            specific_query_port,
             metrics_port,
             rocks_path,
         } => {
             tracing::info!(
                 ?host,
                 ?abci_port,
-                ?light_client_port,
-                ?thin_client_port,
+                ?oblivious_query_port,
+                ?specific_query_port,
                 "starting pd"
             );
 
@@ -149,28 +149,28 @@ async fn main() -> anyhow::Result<()> {
                     .listen(format!("{}:{}", host, abci_port)),
             );
 
-            let light_protocol_server = tokio::spawn(
+            let oblivious_server = tokio::spawn(
                 Server::builder()
                     .trace_fn(|req| match remote_addr(req) {
-                        Some(remote_addr) => tracing::error_span!("light_client", ?remote_addr),
-                        None => tracing::error_span!("light_client"),
+                        Some(remote_addr) => tracing::error_span!("oblivious_query", ?remote_addr),
+                        None => tracing::error_span!("oblivious_query"),
                     })
-                    .add_service(LightProtocolServer::new(storage.clone()))
+                    .add_service(ObliviousQueryServer::new(storage.clone()))
                     .serve(
-                        format!("{}:{}", host, light_client_port)
+                        format!("{}:{}", host, oblivious_query_port)
                             .parse()
                             .expect("this is a valid address"),
                     ),
             );
-            let thin_protocol_server = tokio::spawn(
+            let specific_server = tokio::spawn(
                 Server::builder()
                     .trace_fn(|req| match remote_addr(req) {
-                        Some(remote_addr) => tracing::error_span!("thin_client", ?remote_addr),
-                        None => tracing::error_span!("thin_client"),
+                        Some(remote_addr) => tracing::error_span!("specific_query", ?remote_addr),
+                        None => tracing::error_span!("specific_query"),
                     })
-                    .add_service(ThinProtocolServer::new(storage.clone()))
+                    .add_service(SpecificQueryServer::new(storage.clone()))
                     .serve(
-                        format!("{}:{}", host, thin_client_port)
+                        format!("{}:{}", host, specific_query_port)
                             .parse()
                             .expect("this is a valid address"),
                     ),
@@ -192,8 +192,8 @@ async fn main() -> anyhow::Result<()> {
             // We error out if either service errors, rather than keep running
             tokio::select! {
                 x = abci_server => x?.map_err(|e| anyhow::anyhow!(e))?,
-                x = light_protocol_server => x?.map_err(|e| anyhow::anyhow!(e))?,
-                x = thin_protocol_server => x?.map_err(|e| anyhow::anyhow!(e))?,
+                x = oblivious_server => x?.map_err(|e| anyhow::anyhow!(e))?,
+                x = specific_server => x?.map_err(|e| anyhow::anyhow!(e))?,
             };
         }
         Command::GenerateTestnet {

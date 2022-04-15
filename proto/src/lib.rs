@@ -48,14 +48,14 @@ pub mod genesis {
     tonic::include_proto!("penumbra.genesis");
 }
 
-/// Light client protocol structures.
-pub mod light_client {
-    tonic::include_proto!("penumbra.light_client");
-}
-
-/// Thin client protocol structures.
-pub mod thin_client {
-    tonic::include_proto!("penumbra.thin_client");
+/// Client protocol structures.
+pub mod client {
+    pub mod oblivious {
+        tonic::include_proto!("penumbra.client.oblivious");
+    }
+    pub mod specific {
+        tonic::include_proto!("penumbra.client.specific");
+    }
 }
 
 /// IBC protocol structures.
