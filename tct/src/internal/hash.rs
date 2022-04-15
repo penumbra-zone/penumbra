@@ -146,7 +146,7 @@ mod sqlx_impls {
         fn decode(
             value: <Postgres as sqlx::database::HasValueRef<'r>>::ValueRef,
         ) -> Result<Self, sqlx::error::BoxDynError> {
-            let bytes: [u8; 32] = Vec::<u8>::decode(value)?
+            let bytes: [u8; 32] = <Vec<u8> as sqlx::Decode<Postgres>>::decode(value)?
                 .try_into()
                 .map_err(|_| IncorrectLength)?;
             Ok(Hash(Fq::from_bytes(bytes)?))
@@ -159,7 +159,7 @@ mod sqlx_impls {
             buf: &mut <Postgres as sqlx::database::HasArguments<'q>>::ArgumentBuffer,
         ) -> sqlx::encode::IsNull {
             let bytes = self.0.to_bytes();
-            (&bytes[..]).encode(buf)
+            <&[u8] as sqlx::Encode<Postgres>>::encode(&bytes[..], buf)
         }
     }
 
