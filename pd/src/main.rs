@@ -88,7 +88,7 @@ enum Command {
         /// Testnet name [default: latest testnet].
         #[structopt(long)]
         chain_id: Option<String>,
-        /// IP Address to start `tendermint` nodes on. Increments by three to make room for `pd` and `postgres` per node.
+        /// IP Address to start `tendermint` nodes on. Increments by three to make room for `pd` per node.
         #[structopt(long, default_value = "192.167.10.11")]
         starting_ip: Ipv4Addr,
     },

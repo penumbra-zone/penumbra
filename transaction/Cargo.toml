@@ -40,8 +40,6 @@ rand = "0.8"
 chacha20poly1305 = "0.9.0"
 # only needed because ark-ff doesn't display correctly
 num-bigint = "0.4"
-# this allows us to implement Decode for crypto types without orphan rule issues
-sqlx = { version = "0.5.9", features = ["postgres"], optional = true }
 
 [dev-dependencies]
 proptest = "1"

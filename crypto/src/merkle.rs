@@ -107,35 +107,3 @@ impl Hashable for note::Commitment {
         note::Commitment(poseidon377::hash_2(&level_domain_sep, (a.0, b.0)))
     }
 }
-
-#[cfg(feature = "sqlx")]
-mod sqlx_impls {
-    use sqlx::{Database, Decode, Encode, Postgres, Type};
-
-    use super::*;
-
-    impl<'r> Decode<'r, Postgres> for Root {
-        fn decode(
-            value: <Postgres as sqlx::database::HasValueRef<'r>>::ValueRef,
-        ) -> Result<Self, sqlx::error::BoxDynError> {
-            let bytes = Vec::<u8>::decode(value)?;
-            Root::try_from(&bytes[..]).map_err(Into::into)
-        }
-    }
-
-    impl<'q> Encode<'q, Postgres> for Root {
-        fn encode_by_ref(
-            &self,
-            buf: &mut <Postgres as sqlx::database::HasArguments<'q>>::ArgumentBuffer,
-        ) -> sqlx::encode::IsNull {
-            let bytes = self.to_bytes();
-            (&bytes[..]).encode(buf)
-        }
-    }
-
-    impl Type<Postgres> for Root {
-        fn type_info() -> <Postgres as Database>::TypeInfo {
-            <[u8] as Type<Postgres>>::type_info()
-        }
-    }
-}
