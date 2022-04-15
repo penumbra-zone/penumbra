@@ -1,10 +1,11 @@
-use std::{cell::Cell, fmt::Debug};
+use std::fmt::Debug;
 
 use serde::{Deserialize, Serialize};
 
 use crate::{
     internal::{
         active::{Forget, Full},
+        cache::Cache,
         hash::OptionHash,
         height::{IsHeight, Succ},
         path::{self, WhichWay, Witness},
@@ -16,12 +17,13 @@ use crate::{
 use super::super::complete;
 
 /// An active node in a tree, into which items can be inserted.
-#[derive(Clone, Eq, Derivative, Serialize, Deserialize)]
+#[derive(Clone, Derivative, Serialize, Deserialize)]
 #[serde(bound(serialize = "Child: Serialize, Child::Complete: Serialize"))]
 #[serde(bound(deserialize = "Child: Deserialize<'de>, Child::Complete: Deserialize<'de>"))]
 #[derivative(
     Debug(bound = "Child: Debug, Child::Complete: Debug"),
-    PartialEq(bound = "Child: PartialEq, Child::Complete: PartialEq")
+    PartialEq(bound = "Child: PartialEq, Child::Complete: PartialEq"),
+    Eq(bound = "Child: Eq, Child::Complete: Eq")
 )]
 pub struct Node<Child: Focus> {
     #[derivative(
@@ -29,7 +31,7 @@ pub struct Node<Child: Focus> {
         Debug(format_with = "super::super::complete::node::fmt_cache")
     )]
     #[serde(skip)]
-    hash: Cell<OptionHash>,
+    hash: Cache<OptionHash>,
     siblings: Three<Insert<Child::Complete>>,
     focus: Child,
 }
@@ -78,7 +80,7 @@ impl<Child: Focus> Node<Child> {
         Child: Active + GetHash,
     {
         Self {
-            hash: Cell::new(None.into()),
+            hash: Cache::new(None),
             siblings,
             focus,
         }
@@ -99,45 +101,37 @@ impl<Child: Focus> GetHash for Node<Child> {
             })
         }
 
-        match self.hash.get().into() {
-            // If the hash was already cached, return that without doing any more work
-            Some(hash) => hash,
+        self.hash.set_if_empty(|| {
+            // Get the four hashes of the node's siblings + focus, *in that order*, adding
+            // zero-padding when there are less than four elements
+            let zero = Hash::default();
+            let focus = self.focus.hash();
 
-            // If the hash was not already cached, compute and cache it
-            None => {
-                // Get the four hashes of the node's siblings + focus, *in that order*, adding
-                // zero-padding when there are less than four elements
-                let zero = Hash::default();
-                let focus = self.focus.hash();
+            let (a, b, c, d) = match self.siblings.elems() {
+                Elems::_0([]) => (focus, zero, zero, zero),
+                Elems::_1(full) => {
+                    let [a] = hashes_of_all(full);
+                    (a, focus, zero, zero)
+                }
+                Elems::_2(full) => {
+                    let [a, b] = hashes_of_all(full);
+                    (a, b, focus, zero)
+                }
+                Elems::_3(full) => {
+                    let [a, b, c] = hashes_of_all(full);
+                    (a, b, c, focus)
+                }
+            };
 
-                let (a, b, c, d) = match self.siblings.elems() {
-                    Elems::_0([]) => (focus, zero, zero, zero),
-                    Elems::_1(full) => {
-                        let [a] = hashes_of_all(full);
-                        (a, focus, zero, zero)
-                    }
-                    Elems::_2(full) => {
-                        let [a, b] = hashes_of_all(full);
-                        (a, b, focus, zero)
-                    }
-                    Elems::_3(full) => {
-                        let [a, b, c] = hashes_of_all(full);
-                        (a, b, c, focus)
-                    }
-                };
-
-                // Compute the hash of the node based on its height and the height of its children,
-                // and cache it in the node
-                let hash = Hash::node(Child::Height::HEIGHT + 1, a, b, c, d);
-                self.hash.set(Some(hash).into());
-                hash
-            }
-        }
+            // Compute the hash of the node based on its height and the height of its children,
+            // and cache it in the node
+            Hash::node(Child::Height::HEIGHT + 1, a, b, c, d)
+        })
     }
 
     #[inline]
     fn cached_hash(&self) -> Option<Hash> {
-        self.hash.get().into()
+        self.hash.get()
     }
 }
 
@@ -172,7 +166,7 @@ where
         // If the cached hash of the focus changed, clear the cached hash here, because it is now
         // invalid and needs to be recalculated
         if before_hash != after_hash {
-            self.hash.set(None.into());
+            self.hash.set(None);
         }
 
         output
@@ -212,7 +206,7 @@ where
                         complete: match complete::Node::from_children_or_else_hash(children) {
                             Insert::Hash(hash) => Insert::Hash(hash),
                             Insert::Keep(node) => {
-                                if let Some(hash) = self.hash.get().into() {
+                                if let Some(hash) = self.hash.get() {
                                     // This is okay because `complete` is guaranteed to have the same elements in
                                     // the same order as `siblings + [focus]`:
                                     node.set_hash_unchecked(hash);

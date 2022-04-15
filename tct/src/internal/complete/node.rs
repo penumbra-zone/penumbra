@@ -1,9 +1,8 @@
-use std::cell::Cell;
-
 use serde::{Deserialize, Serialize};
 
 use crate::{
     internal::{
+        cache::Cache,
         hash::OptionHash,
         height::{IsHeight, Succ},
         path::{self, AuthPath, WhichWay, Witness},
@@ -18,19 +17,19 @@ pub mod children;
 pub use children::Children;
 
 /// A complete sparse node in a tree, storing only the witnessed subtrees.
-#[derive(Clone, Eq, Derivative, Serialize, Deserialize)]
-#[derivative(Debug, PartialEq(bound = "Child: PartialEq"))]
+#[derive(Clone, Derivative, Serialize, Deserialize)]
+#[derivative(Debug, PartialEq(bound = "Child: PartialEq"), Eq(bound = "Child: Eq"))]
 pub struct Node<Child> {
     #[derivative(PartialEq = "ignore")]
     #[derivative(Debug(format_with = "fmt_cache"))]
     #[serde(skip)]
-    hash: Cell<OptionHash>,
+    hash: Cache<OptionHash>,
     children: Children<Child>,
 }
 
 /// Concisely format `OptionHash` for debug output.
 pub(crate) fn fmt_cache(
-    cell: &Cell<OptionHash>,
+    cell: &Cache<OptionHash>,
     f: &mut std::fmt::Formatter,
 ) -> Result<(), std::fmt::Error> {
     if let Some(hash) = <Option<Hash>>::from(cell.get()) {
@@ -57,7 +56,7 @@ impl<Child: Height> Node<Child> {
     /// This should only be called when the hash is already known (i.e. after construction from
     /// children with a known node hash).
     pub(in super::super) fn set_hash_unchecked(&self, hash: Hash) {
-        self.hash.set(Some(hash).into());
+        self.hash.set(Some(hash));
     }
 
     pub(in super::super) fn from_siblings_and_focus_or_else_hash(
@@ -85,7 +84,7 @@ impl<Child: Height> Node<Child> {
     ) -> Insert<Self> {
         match Children::try_from(children) {
             Ok(children) => Insert::Keep(Self {
-                hash: Cell::new(None.into()),
+                hash: Cache::new(None),
                 children,
             }),
             Err([a, b, c, d]) => {
@@ -113,17 +112,15 @@ impl<Child: Complete> Complete for Node<Child> {
 impl<Child: Height + GetHash> GetHash for Node<Child> {
     #[inline]
     fn hash(&self) -> Hash {
-        self.cached_hash().unwrap_or_else(|| {
+        self.hash.set_if_empty(|| {
             let [a, b, c, d] = self.children.children().map(|x| x.hash());
-            let hash = Hash::node(<Self as Height>::Height::HEIGHT, a, b, c, d);
-            self.hash.set(Some(hash).into());
-            hash
+            Hash::node(<Self as Height>::Height::HEIGHT, a, b, c, d)
         })
     }
 
     #[inline]
     fn cached_hash(&self) -> Option<Hash> {
-        self.hash.get().into()
+        self.hash.get()
     }
 }
 
@@ -199,7 +196,7 @@ impl<Child: GetHash + ForgetOwned> ForgetOwned for Node<Child> {
         // If the node was reconstructed, we know that its hash should not have changed, so carry
         // over the old cached hash, if any existed, to prevent recomputation
         let reconstructed = reconstructed.map(|node| {
-            if let Some(hash) = self.hash.get().into() {
+            if let Some(hash) = self.hash.get() {
                 node.set_hash_unchecked(hash);
             }
             node
@@ -215,6 +212,6 @@ mod test {
 
     #[test]
     fn check_node_size() {
-        static_assertions::assert_eq_size!(Node<()>, [u8; 48]);
+        static_assertions::assert_eq_size!(Node<()>, [u8; 56]);
     }
 }
