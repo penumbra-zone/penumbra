@@ -2,6 +2,8 @@ use anyhow::Result;
 use sqlx::sqlite::SqlitePool;
 use std::env;
 
+use penumbra_wallet_next::{insert_table, read_table};
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let pool = SqlitePool::connect(&env::var("DATABASE_URL")?).await?;
@@ -16,37 +18,4 @@ async fn main() -> Result<()> {
         row, x
     );
     Ok(())
-}
-
-async fn insert_table(pool: &SqlitePool) -> anyhow::Result<i64> {
-    let mut conn = pool.acquire().await?;
-
-    // Insert the task, then obtain the ID of this row
-    let id = sqlx::query!(
-        r#"
-INSERT INTO penumbra ( value )
-VALUES ( ?1 )
-        "#,
-        "Hello, world"
-    )
-    .execute(&mut conn)
-    .await?
-    .last_insert_rowid();
-
-    Ok(id)
-}
-
-async fn read_table(pool: &SqlitePool) -> anyhow::Result<String> {
-    let recs = sqlx::query!(
-        r#"
-SELECT id, value
-FROM penumbra
-ORDER BY id
-LIMIT 1
-        "#
-    )
-    .fetch_all(pool)
-    .await?;
-
-    Ok(recs[0].value.clone())
 }
