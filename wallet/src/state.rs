@@ -749,6 +749,10 @@ impl ClientState {
         }
         tracing::debug!(outputs_len = outputs.len(), "starting block scan");
 
+        // TODO: insert a new epoch if we're beginning a new epoch
+
+        // TODO: build a block all at once, then insert it
+
         for output::Body {
             note_commitment,
             ephemeral_key,
