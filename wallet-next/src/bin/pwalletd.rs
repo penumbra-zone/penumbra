@@ -7,7 +7,7 @@ async fn main() -> Result<()> {
     let pool = SqlitePool::connect(&env::var("DATABASE_URL")?).await?;
 
     // TODO: weird chicken & egg problem w/ database existing or not
-    create_table(&pool).await?;
+    sqlx::migrate!().run(&pool).await?;
     let row = insert_table(&pool).await?;
     let x = read_table(&pool).await?;
 
@@ -15,21 +15,6 @@ async fn main() -> Result<()> {
         "Hello, pwalletd! I got stuff from sqlite: row {} value {}",
         row, x
     );
-    Ok(())
-}
-
-async fn create_table(pool: &SqlitePool) -> anyhow::Result<()> {
-    let mut conn = pool.acquire().await?;
-
-    // Create the table
-    sqlx::query!(
-        r#"
-    CREATE TABLE penumbra (id INTEGER PRIMARY KEY, value TEXT NOT NULL);
-            "#
-    )
-    .execute(&mut conn)
-    .await?;
-
     Ok(())
 }
 
