@@ -72,6 +72,9 @@ impl Component for ShieldedPool {
         }
 
         self.compact_block.height = 0;
+        // Finish the initial block in the note commitment tree.
+        self.note_commitment_tree
+            .insert_block(penumbra_tct::Block::new())?;
         self.write_block().await?;
 
         Ok(())
@@ -211,6 +214,48 @@ impl Component for ShieldedPool {
     #[instrument(name = "shielded_pool", skip(self, end_block))]
     async fn end_block(&mut self, end_block: &abci::request::EndBlock) -> Result<()> {
         self.compact_block.height = end_block.height as u64;
+
+        // Determine if we are at an epoch boundary, and create a new epoch in the commitment tree
+        // if so; otherwise, just create a new block
+        let epoch_duration = self.overlay.get_epoch_duration().await?;
+
+        if self.compact_block.height % epoch_duration == 0 {
+            self.note_commitment_tree
+                .insert_epoch(penumbra_tct::Epoch::new())?;
+        } else {
+            self.note_commitment_tree
+                .insert_block(penumbra_tct::Block::new())?;
+        }
+
+        // Handle any pending reward notes from the Staking component
+        let notes = self
+            .overlay
+            .reward_notes(self.compact_block.height)
+            .await?
+            .unwrap_or_default();
+
+        // TODO: should we calculate this here or include it directly within the PendingRewardNote
+        // to prevent a potential mismatch between Staking and ShieldedPool?
+        let source = NoteSource::FundingStreamReward {
+            epoch_index: Epoch::from_height(
+                self.compact_block.height,
+                self.overlay.get_epoch_duration().await?,
+            )
+            .index,
+        };
+
+        for note in notes.notes {
+            self.mint_note(
+                Value {
+                    amount: note.amount,
+                    asset_id: *STAKING_TOKEN_ASSET_ID,
+                },
+                &note.destination,
+                source,
+            )
+            .await?;
+        }
+
         self.write_block().await?;
         Ok(())
     }
@@ -291,55 +336,6 @@ impl ShieldedPool {
 
     #[instrument(skip(self))]
     async fn write_block(&mut self) -> Result<()> {
-        // Determine if we are at an epoch boundary, and create a new epoch in the commitment tree
-        // if so; otherwise, just create a new block
-        let epoch_duration = self.overlay.get_epoch_duration().await?;
-        let height = self.compact_block.height;
-        if height != 0 {
-            if height % epoch_duration == 0 {
-                self.note_commitment_tree
-                    .insert_epoch(penumbra_tct::Epoch::new())?;
-            } else {
-                self.note_commitment_tree
-                    .insert_block(penumbra_tct::Block::new())?;
-            }
-        }
-
-        // Check that the position we're starting at matches the height of the block
-        assert_eq!(
-            u64::from(self.note_commitment_tree.position()) >> 16,
-            height
-        );
-
-        // Handle any pending reward notes from the Staking component
-        let notes = self
-            .overlay
-            .reward_notes(self.compact_block.height)
-            .await?
-            .unwrap_or_default();
-
-        // TODO: should we calculate this here or include it directly within the PendingRewardNote
-        // to prevent a potential mismatch between Staking and ShieldedPool?
-        let source = NoteSource::FundingStreamReward {
-            epoch_index: Epoch::from_height(
-                self.compact_block.height,
-                self.overlay.get_epoch_duration().await?,
-            )
-            .index,
-        };
-
-        for note in notes.notes {
-            self.mint_note(
-                Value {
-                    amount: note.amount,
-                    asset_id: *STAKING_TOKEN_ASSET_ID,
-                },
-                &note.destination,
-                source,
-            )
-            .await?;
-        }
-
         // Write the CompactBlock:
         self.overlay
             .set_compact_block(std::mem::take(&mut self.compact_block))
