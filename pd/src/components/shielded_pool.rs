@@ -73,6 +73,7 @@ impl Component for ShieldedPool {
 
         self.compact_block.height = 0;
         // Finish the initial block in the note commitment tree.
+        tracing::debug!("inserting block tree");
         self.note_commitment_tree
             .insert_block(penumbra_tct::Block::new())?;
         self.write_block().await?;
@@ -217,12 +218,13 @@ impl Component for ShieldedPool {
 
         // Determine if we are at an epoch boundary, and create a new epoch in the commitment tree
         // if so; otherwise, just create a new block
-        let epoch_duration = self.overlay.get_epoch_duration().await?;
-
-        if self.compact_block.height % epoch_duration == 0 {
+        let cur_epoch = self.overlay.get_current_epoch().await?;
+        if cur_epoch.is_epoch_end(self.compact_block.height) {
+            tracing::debug!("inserting epoch tree for next epoch");
             self.note_commitment_tree
                 .insert_epoch(penumbra_tct::Epoch::new())?;
         } else {
+            tracing::debug!("inserting block tree for next block");
             self.note_commitment_tree
                 .insert_block(penumbra_tct::Block::new())?;
         }

@@ -10,7 +10,9 @@ use penumbra_crypto::{
     asset::{self, Denom},
     memo, note, Address, FieldExt, Note, Nullifier, Value,
 };
-use penumbra_stake::{RateData, ValidatorDefinition, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM};
+use penumbra_stake::{
+    Epoch, RateData, ValidatorDefinition, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
+};
 use penumbra_transaction::{action::output, Transaction};
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
@@ -793,28 +795,29 @@ impl ClientState {
             }
         }
 
-        // If we are at a turnover point for a new epoch, insert a new epoch into the global note
-        // commitment tree before inserting this block into the tree
-        let epoch_duration = self
-            .chain_params
-            .as_ref()
-            .expect("chain params must be fetched before scanning blocks")
-            .epoch_duration;
-        // A new epoch should be inserted if we're not at height zero and also if the height is a
-        // multiple of the epoch duration
-        let new_epoch = (height != 0) && (height % epoch_duration == 0);
-        if new_epoch {
-            self.note_commitment_tree
-                .insert_epoch(penumbra_tct::Epoch::new())
-                .map_err(|e| anyhow!(e.to_string()))?;
-        }
-
+        tracing::debug!("inserting block tree");
         // Insert the block into the full commitment tree
         self.note_commitment_tree
             .insert_block(block)
             // Errors returned by `insert_block` are not `Sync` because they contain a `Block`,
             // which is not `Sync`, so we can't return them directly
             .map_err(|e| anyhow!(e.to_string()))?;
+
+        // If we are at a turnover point for a new epoch, insert a new epoch into the global note
+        // commitment tree after inserting this block into the tree
+        let current_epoch = Epoch::from_height(
+            height,
+            self.chain_params
+                .as_ref()
+                .expect("chain params must be fetched before scanning blocks")
+                .epoch_duration,
+        );
+        if current_epoch.is_epoch_end(height) {
+            tracing::debug!("inserting epoch tree for next epoch");
+            self.note_commitment_tree
+                .insert_epoch(penumbra_tct::Epoch::new())
+                .map_err(|e| anyhow!(e.to_string()))?;
+        }
 
         // Insert each note that is ours associated paired with its computed nullifier into the nullifier map
         for note_commitment in our_notes {
