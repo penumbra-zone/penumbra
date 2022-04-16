@@ -5,8 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     internal::{
         active::{Forget, Full},
-        cache::Cache,
-        hash::OptionHash,
+        hash::CachedHash,
         height::{IsHeight, Succ},
         path::{self, WhichWay, Witness},
         three::{Elems, ElemsMut, Three},
@@ -31,7 +30,7 @@ pub struct Node<Child: Focus> {
         Debug(format_with = "super::super::complete::node::fmt_cache")
     )]
     #[serde(skip)]
-    hash: Cache<OptionHash>,
+    hash: CachedHash,
     siblings: Three<Insert<Child::Complete>>,
     focus: Child,
 }
@@ -80,7 +79,7 @@ impl<Child: Focus> Node<Child> {
         Child: Active + GetHash,
     {
         Self {
-            hash: Cache::new(None),
+            hash: CachedHash::default(),
             siblings,
             focus,
         }
@@ -166,7 +165,7 @@ where
         // If the cached hash of the focus changed, clear the cached hash here, because it is now
         // invalid and needs to be recalculated
         if before_hash != after_hash {
-            self.hash.set(None);
+            self.hash = CachedHash::default();
         }
 
         output

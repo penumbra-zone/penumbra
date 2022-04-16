@@ -2,7 +2,6 @@
 //!
 //! This module and its submodules should not be expected to follow semantic versioning.
 
-pub mod cache;
 pub mod hash;
 pub mod height;
 pub mod index;
