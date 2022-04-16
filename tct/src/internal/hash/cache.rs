@@ -45,14 +45,14 @@ impl Clone for CachedHash {
         // meaningful, because it hasn't been set yet, so we need to **not** mark the cloned
         // `CachedHash` as completed, which will mean that there may be repeated computation if
         // one thread clones the `CachedHash` during the execution of `set_if_empty`.
-        if self.once.state().done() {
+        let cell = if self.once.state().done() {
             once.call_once(|| {});
-        }
+            self.cell.clone() // Only clone the internal cell if its value is meaningful
+        } else {
+            Cell::new(Hash::default())
+        };
 
-        CachedHash {
-            once,
-            cell: self.cell.clone(),
-        }
+        CachedHash { once, cell }
     }
 }
 
