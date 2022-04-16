@@ -35,8 +35,22 @@ unsafe impl Sync for CachedHash {}
 // computation.
 impl Clone for CachedHash {
     fn clone(&self) -> Self {
+        let once = Once::new();
+
+        // If, at the time of cloning, the `Once` has already completed, then we can "mark" the
+        // newly created `Once` as also completed, so that calling `set_if_empty` on the cloned
+        // `CachedHash` will immediately succeed, rather than running the closure.
+        //
+        // If on the other hand the state is in-progress, the value of the `Cell` is not yet
+        // meaningful, because it hasn't been set yet, so we need to **not** mark the cloned
+        // `CachedHash` as completed, which will mean that there may be repeated computation if
+        // one thread clones the `CachedHash` during the execution of `set_if_empty`.
+        if self.once.state().done() {
+            once.call_once(|| {});
+        }
+
         CachedHash {
-            once: Once::new(),
+            once,
             cell: self.cell.clone(),
         }
     }
