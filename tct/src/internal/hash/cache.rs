@@ -29,10 +29,8 @@ pub struct CachedHash {
 unsafe impl Sync for CachedHash {}
 
 // Because `Once` cannot be cloned, we need to clone the `CachedHash` manually, creating a new
-// `Once` for the clone. This could mean that some repeated effort is performed, except that if the
-// cache has already been populated, we don't bother to call the closure that recomputes the hash,
-// which means we aren't relying on the `Once` synchronization guard to prevent repeated heavy
-// computation.
+// `Once` for the clone. To prevent repeated computation, we pre-call the `Once` in the clone if the
+// `Once` in `self` has already been completed.
 impl Clone for CachedHash {
     fn clone(&self) -> Self {
         let once = Once::new();
