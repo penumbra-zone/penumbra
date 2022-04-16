@@ -337,12 +337,13 @@ impl ShieldedPool {
     #[instrument(skip(self))]
     async fn write_block(&mut self) -> Result<()> {
         // Write the CompactBlock:
+        let height = self.compact_block.height;
         self.overlay
             .set_compact_block(std::mem::take(&mut self.compact_block))
             .await;
         // and the note commitment tree data and anchor:
         self.overlay
-            .set_nct_anchor(self.compact_block.height, self.note_commitment_tree.root())
+            .set_nct_anchor(height, self.note_commitment_tree.root())
             .await;
         self.put_nct().await?;
 
