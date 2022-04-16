@@ -2,8 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     internal::{
-        cache::Cache,
-        hash::OptionHash,
+        hash::CachedHash,
         height::{IsHeight, Succ},
         path::{self, AuthPath, WhichWay, Witness},
         three::{IntoElems, Three},
@@ -23,13 +22,13 @@ pub struct Node<Child> {
     #[derivative(PartialEq = "ignore")]
     #[derivative(Debug(format_with = "fmt_cache"))]
     #[serde(skip)]
-    hash: Cache<OptionHash>,
+    hash: CachedHash,
     children: Children<Child>,
 }
 
 /// Concisely format `OptionHash` for debug output.
 pub(crate) fn fmt_cache(
-    cell: &Cache<OptionHash>,
+    cell: &CachedHash,
     f: &mut std::fmt::Formatter,
 ) -> Result<(), std::fmt::Error> {
     if let Some(hash) = <Option<Hash>>::from(cell.get()) {
@@ -56,7 +55,7 @@ impl<Child: Height> Node<Child> {
     /// This should only be called when the hash is already known (i.e. after construction from
     /// children with a known node hash).
     pub(in super::super) fn set_hash_unchecked(&self, hash: Hash) {
-        self.hash.set(Some(hash));
+        self.hash.set_if_empty(|| hash);
     }
 
     pub(in super::super) fn from_siblings_and_focus_or_else_hash(
@@ -84,7 +83,7 @@ impl<Child: Height> Node<Child> {
     ) -> Insert<Self> {
         match Children::try_from(children) {
             Ok(children) => Insert::Keep(Self {
-                hash: Cache::new(None),
+                hash: CachedHash::default(),
                 children,
             }),
             Err([a, b, c, d]) => {
