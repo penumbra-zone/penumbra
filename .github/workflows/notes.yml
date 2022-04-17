@@ -19,9 +19,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          # Use nightly rust for docs, so that we can use the unstable
-          # --enable-index-page option to generate a list of the workspace crates.
-          toolchain: nightly
+          toolchain: stable
           override: true
       - name: Load Rust caching
         uses: Swatinem/rust-cache@v1
@@ -33,8 +31,6 @@ jobs:
           cargo install mdbook mdbook-katex mdbook-mermaid
 
       - name: Build API docs
-        env:
-          RUSTDOCFLAGS: "--enable-index-page -Zunstable-options"
         run: |
           # Explicitly specify which crates should be included.
           # Guidelines:
@@ -74,6 +70,7 @@ jobs:
           cd docs/rustdoc
           if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
           mkdir firebase-tmp
+          cp index.html firebase-tmp/${{ steps.get_version.outputs.version }}
           mv ../../target/doc firebase-tmp/${{ steps.get_version.outputs.version }}
       - name: Deploy API docs to firebase
         uses: w9jds/firebase-action@v2.0.0
@@ -93,7 +90,7 @@ jobs:
           if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
           mkdir firebase-tmp
           mv book firebase-tmp/${{ steps.get_version.outputs.version }}
-      - name: Deploy notes to firebase
+      - name: Deploy protocol spec to firebase
         uses: w9jds/firebase-action@v2.0.0
         with:
           args: deploy
@@ -105,13 +102,13 @@ jobs:
       - name: Build software guide
         run: |
           cd docs/guide && mdbook build
-      - name: Move software  to subdirectory
+      - name: Move software guide to subdirectory
         run: |
           cd docs/guide
           if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
           mkdir firebase-tmp
           mv book firebase-tmp/${{ steps.get_version.outputs.version }}
-      - name: Deploy notes to firebase
+      - name: Deploy software guide to firebase
         uses: w9jds/firebase-action@v2.0.0
         with:
           args: deploy
