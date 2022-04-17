@@ -67,9 +67,10 @@ jobs:
             -p pcli-next
       - name: Move API docs to subdirectory
         run: |
+          cd docs/rustdoc
           if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
           mkdir firebase-tmp
-          mv target/doc firebase-tmp/${{ steps.get_version.outputs.version }}
+          mv ../../target/doc firebase-tmp/${{ steps.get_version.outputs.version }}
       - name: Deploy API docs to firebase
         uses: w9jds/firebase-action@v2.0.0
         with:
@@ -77,11 +78,12 @@ jobs:
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
           PROJECT_ID: penumbra-doc
+          PROJECT_PATH: docs/rustdoc
 
-      - name: Build protocol docs
+      - name: Build protocol spec
         run: |
-          mdbook build
-      - name: Move protocol docs to subdirectory
+          cd docs/protocol && mdbook build
+      - name: Move protocol spec to subdirectory
         run: |
           if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
           mkdir firebase-tmp
@@ -93,3 +95,4 @@ jobs:
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
           PROJECT_ID: penumbra-protocol
+          PROJECT_PATH: docs/protocol

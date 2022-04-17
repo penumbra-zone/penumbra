@@ -1,5 +1,5 @@
-![Penumbra logo](images/penumbra-dark.svg#gh-dark-mode-only)
-![Penumbra logo](images/penumbra-light-bw.svg#gh-light-mode-only)
+![Penumbra logo](docs/images/penumbra-dark.svg#gh-dark-mode-only)
+![Penumbra logo](docs/images/penumbra-light-bw.svg#gh-light-mode-only)
 
 [Penumbra] is a fully shielded zone for the Cosmos ecosystem, allowing anyone to securely transact,
 stake, swap, or marketmake without broadcasting their personal information to the world.
@@ -239,7 +239,7 @@ The [protocol spec][protocol] is built using [mdBook] and auto-deployed on
 pushes to `main`.  To build it locally:
 
 1. Install the requirements: `cargo install mdbook mdbook-katex mdbook-mermaid`
-2. To continuously build and serve the documentation: `mdbook serve`
+2. To continuously build and serve the documentation: run `mdbook serve` from `docs/protocol`.
 
 ## Development
 

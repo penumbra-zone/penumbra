@@ -1,9 +1,9 @@
 [book]
-authors = ["Henry de Valence"]
+authors = ["Penumbra Team"]
 language = "en"
 multilingual = false
-src = "spec"
-title = "Penumbra"
+src = "src"
+title = "The Penumbra Protocol"
 
 [preprocessor.katex]
 
