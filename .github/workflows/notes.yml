@@ -19,7 +19,9 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: stable
+          # Use nightly rust for docs, so that we can use the unstable
+          # --enable-index-page option to generate a list of the workspace crates.
+          toolchain: nightly
           override: true
       - name: Load Rust caching
         uses: Swatinem/rust-cache@v1
@@ -31,6 +33,8 @@ jobs:
           cargo install mdbook mdbook-katex mdbook-mermaid
 
       - name: Build API docs
+        env:
+          RUSTDOCFLAGS: "--enable-index-page -Zunstable-options"
         run: |
           # Explicitly specify which crates should be included.
           # Guidelines:
