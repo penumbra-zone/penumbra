@@ -737,6 +737,7 @@ impl ClientState {
             nullifiers,
         }: CompactBlock,
     ) -> Result<(), anyhow::Error> {
+        tracing::debug!(position = ?self.note_commitment_tree.position());
         // We have to do a bit of a dance to use None as "-1" and handle genesis notes.
         match (height, self.last_block_height()) {
             (0, None) => {}
@@ -774,7 +775,12 @@ impl ClientState {
                 self.wallet.incoming_viewing_key(),
                 &ephemeral_key,
             ) {
-                tracing::debug!(?note_commitment, ?note, "found note while scanning");
+                tracing::debug!(
+                    ?note_commitment,
+                    position = ?self.note_commitment_tree.position(),
+                    ?note,
+                    "found note while scanning"
+                );
 
                 // Remember this note commitment, to insert it into the nullifier map
                 our_notes.push(note_commitment);
@@ -790,7 +796,11 @@ impl ClientState {
                 // Insert the note into the received set
                 self.unspent_set.insert(note_commitment, note.clone());
             } else {
-                // Insert *and forget* the note in the block commitment tree (it's not ours)
+                tracing::trace!(
+                    ?note_commitment,
+                    position = ?self.note_commitment_tree.position(),
+                    "inserting and forgetting unknown note"
+                );
                 block.insert(penumbra_tct::Forget, note_commitment)?;
             }
         }
@@ -882,7 +892,12 @@ impl ClientState {
 
         // Remember that we've scanned this block & we're ready for the next one.
         self.last_block_height = Some(height);
-        tracing::debug!(self.last_block_height, "finished scanning block");
+        tracing::debug!(
+            self.last_block_height,
+            root = ?self.note_commitment_tree.root(),
+            position = ?self.note_commitment_tree.position(),
+            "finished scanning block"
+        );
 
         Ok(())
     }

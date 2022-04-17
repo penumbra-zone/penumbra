@@ -323,7 +323,11 @@ impl ShieldedPool {
 
     #[instrument(skip(self, source, output_body))]
     async fn add_note(&mut self, output_body: output::Body, source: NoteSource) -> Result<()> {
-        tracing::debug!(commitment = ?output_body.note_commitment, "appending to NCT in component");
+        tracing::debug!(
+            commitment = ?output_body.note_commitment,
+            position = ?self.note_commitment_tree.position(),
+            "appending to NCT in component"
+        );
         // 1. Insert it into the NCT
         self.note_commitment_tree
             .insert(penumbra_tct::Forget, output_body.note_commitment)?;
@@ -344,6 +348,7 @@ impl ShieldedPool {
             .set_compact_block(std::mem::take(&mut self.compact_block))
             .await;
         // and the note commitment tree data and anchor:
+        tracing::debug!(position = ?self.note_commitment_tree.position());
         self.overlay
             .set_nct_anchor(height, self.note_commitment_tree.root())
             .await;
