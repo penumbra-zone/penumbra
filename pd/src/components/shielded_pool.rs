@@ -245,17 +245,21 @@ impl Component for ShieldedPool {
             .await?;
         }
 
-        // Determine if we are at an epoch boundary, and create a new epoch in the commitment tree
-        // if so; otherwise, just create a new block
+        // Determine if we are at an epoch boundary, and create a new, empty
+        // epoch in the commitment tree if so.
         let cur_epoch = self.overlay.get_current_epoch().await?;
         if cur_epoch.is_epoch_end(self.compact_block.height) {
+            tracing::debug!(position = ?self.note_commitment_tree.position());
             tracing::debug!("inserting epoch tree for next epoch");
             self.note_commitment_tree
                 .insert_epoch(penumbra_tct::Epoch::new())?;
+            tracing::debug!(position = ?self.note_commitment_tree.position());
         } else {
+            tracing::debug!(position = ?self.note_commitment_tree.position());
             tracing::debug!("inserting block tree for next block");
             self.note_commitment_tree
                 .insert_block(penumbra_tct::Block::new())?;
+            tracing::debug!(position = ?self.note_commitment_tree.position());
         }
 
         self.write_block().await?;
