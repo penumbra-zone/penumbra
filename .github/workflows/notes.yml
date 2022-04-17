@@ -85,6 +85,7 @@ jobs:
           cd docs/protocol && mdbook build
       - name: Move protocol spec to subdirectory
         run: |
+          cd docs/protocol
           if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
           mkdir firebase-tmp
           mv book firebase-tmp/${{ steps.get_version.outputs.version }}
