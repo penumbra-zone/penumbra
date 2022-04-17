@@ -216,19 +216,6 @@ impl Component for ShieldedPool {
     async fn end_block(&mut self, end_block: &abci::request::EndBlock) -> Result<()> {
         self.compact_block.height = end_block.height as u64;
 
-        // Determine if we are at an epoch boundary, and create a new epoch in the commitment tree
-        // if so; otherwise, just create a new block
-        let cur_epoch = self.overlay.get_current_epoch().await?;
-        if cur_epoch.is_epoch_end(self.compact_block.height) {
-            tracing::debug!("inserting epoch tree for next epoch");
-            self.note_commitment_tree
-                .insert_epoch(penumbra_tct::Epoch::new())?;
-        } else {
-            tracing::debug!("inserting block tree for next block");
-            self.note_commitment_tree
-                .insert_block(penumbra_tct::Block::new())?;
-        }
-
         // Handle any pending reward notes from the Staking component
         let notes = self
             .overlay
@@ -256,6 +243,19 @@ impl Component for ShieldedPool {
                 source,
             )
             .await?;
+        }
+
+        // Determine if we are at an epoch boundary, and create a new epoch in the commitment tree
+        // if so; otherwise, just create a new block
+        let cur_epoch = self.overlay.get_current_epoch().await?;
+        if cur_epoch.is_epoch_end(self.compact_block.height) {
+            tracing::debug!("inserting epoch tree for next epoch");
+            self.note_commitment_tree
+                .insert_epoch(penumbra_tct::Epoch::new())?;
+        } else {
+            tracing::debug!("inserting block tree for next block");
+            self.note_commitment_tree
+                .insert_block(penumbra_tct::Block::new())?;
         }
 
         self.write_block().await?;
