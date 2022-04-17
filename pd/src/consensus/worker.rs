@@ -178,13 +178,11 @@ impl Worker {
 
         tracing::debug!(
             ?validator_updates,
-            "SKIPPING sending validator updates to tendermint"
+            "sending validator updates to tendermint"
         );
 
-        // We discovered issues during Orthosie testnet deployment with new validators
-        // causing consensus failures, temporarily disabling validator updates (see #558)
         Ok(abci::response::EndBlock {
-            validator_updates: vec![],
+            validator_updates,
             consensus_param_updates: None,
             events: Vec::new(),
         })
