@@ -70,8 +70,9 @@ jobs:
           cd docs/rustdoc
           if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
           mkdir firebase-tmp
-          cp index.html firebase-tmp/${{ steps.get_version.outputs.version }}
           mv ../../target/doc firebase-tmp/${{ steps.get_version.outputs.version }}
+          # Copy in the static index file
+          cp index.html firebase-tmp/${{ steps.get_version.outputs.version }}
       - name: Deploy API docs to firebase
         uses: w9jds/firebase-action@v2.0.0
         with:
