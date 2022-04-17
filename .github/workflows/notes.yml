@@ -97,3 +97,21 @@ jobs:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
           PROJECT_ID: penumbra-protocol
           PROJECT_PATH: docs/protocol
+
+      - name: Build software guide
+        run: |
+          cd docs/guide && mdbook build
+      - name: Move software  to subdirectory
+        run: |
+          cd docs/guide
+          if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
+          mkdir firebase-tmp
+          mv book firebase-tmp/${{ steps.get_version.outputs.version }}
+      - name: Deploy notes to firebase
+        uses: w9jds/firebase-action@v2.0.0
+        with:
+          args: deploy
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          PROJECT_ID: penumbra-guide
+          PROJECT_PATH: docs/guide
