@@ -9,6 +9,8 @@ stake, swap, or marketmake without broadcasting their personal information to th
 The primary communication hub is our [Discord]; click the link to join the
 discussion there.
 
+The guide to using the Penumbra software and interacting with the testnets can be found at [guide.penumbra.zone][guide].
+
 The (evolving) protocol spec is rendered at [protocol.penumbra.zone][protocol].
 
 The (evolving) API documentation is rendered at [rustdoc.penumbra.zone][rustdoc].
@@ -16,148 +18,6 @@ The (evolving) API documentation is rendered at [rustdoc.penumbra.zone][rustdoc]
 To participate in our test network, [keep reading below](#getting-started-on-the-test-network).
 
 For instructions on how to set up a node, [jump down and read on](#running-a-penumbra-node).
-
-## Getting started on the test network
-
-[Penumbra Labs][Penumbra] runs a test network for the latest version of the Penumbra protocol, and
-we would be delighted for you to try it out! [Per our development plan, we'll be launching (and
-crashing) lots of testnets](https://penumbra.zone/blog/how-were-building-penumbra), and users should
-expect data loss at this early stage. Keep in mind that the tokens on the test network have no
-monetary value whatsoever, and we'll be shutting down the testnet when we reach our next milestone
-(or before). If (which is to say, _when_) you encounter bugs or wish for features to exist, we'd
-love for you to reach out to us on our [Discord server][Discord].
-
-At the moment the testnet is a single node, and running testnet nodes won't be possible until our
-next milestone (MVP2), implementing [staking and
-delegation](https://penumbra.zone/technology/stake).
-
-### Building `pcli`
-
-To get started with the Penumbra test network, you will first need to download and build the
-Penumbra command line light wallet, `pcli`.
-
-#### Installing the Rust toolchain
-
-This requires that you install a recent stable version
-of the Rust compiler, installation instructions for which you can find
-[here](https://www.rust-lang.org/learn/get-started). Don't forget to reload your shell so that
-`cargo` is available in your `$PATH`!
-
-#### Installing build prerequisites
-
-**On Linux:** you may need to install some additional packages in order to build `pcli`,
-depending on your distribution. For a bare-bones Ubuntu installation, you can run:
-
-```bash
-sudo apt-get install build-essential pkg-config libssl-dev
-```
-
-**On macOS:** you may need to install the command-line developer tools if you have never done so:
-
-```bash
-xcode-select --install
-```
-
-#### Cloning the repository
-
-Once you have installed the above tools, you can clone the repository:
-
-```bash
-git clone https://github.com/penumbra-zone/penumbra
-```
-
-To build the version of `pcli` compatible with the current testnet, check out the latest tag for
-the current test net:
-
-```bash
-cd penumbra && git checkout 007-herse && cargo update
-```
-
-#### Building the `pcli` wallet software
-
-Then, build the `pcli` tool using `cargo`:
-
-```bash
-cargo build --release --bin pcli
-```
-
-Because you are building a work-in-progress version of the client, you may see compilation warnings,
-which you can safely ignore.
-
-### Generating your wallet
-
-**Hint:** When working with `pcli`, the level of diagnostic information printed is dependent on the `RUST_LOG`
-environment variable. To see progress updates and other logged information while running `pcli`, we
-recommend you set `export RUST_LOG=info` in your terminal.
-
-On first installation of `pcli`, you will need to generate a fresh wallet to use with Penumbra. You
-should see something like this:
-
-```bash
-$ cargo run --quiet --release --bin pcli wallet generate
-Saving wallet to /home/$USER/.local/share/pcli/penumbra_wallet.json
-Saving backup wallet to /home/$USER/.local/share/penumbra-testnet-archive/penumbra-euporie/.../penumbra_wallet.json
-```
-
-Penumbra's design allows you to create arbitrarily many publicly unlinkable addresses which all
-correspond to your own wallet. When you first created your wallet above, `pcli` created your first
-address, labeled `Default`. When you list your addresses, you should see something like this:
-
-```bash
-$ cargo run --quiet --release --bin pcli addr list
- Index  Label    Address
- 0      Default  penumbrav0t1...
-```
-
-### Getting testnet tokens on the [Discord] in the `#testnet-faucet` channel
-
-In order to use the testnet, it's first necessary for you to get some testnet tokens. The current
-way to do this is to join our [Discord] and post your address in the `#testnet-faucet` channel.
-We'll send your address some tokens on the testnet for you to send to your friends! :)
-
-Just keep in mind: **testnet tokens do not have monetary value**, and in order to keep the
-signal-to-noise ratio high on the server, requests for tokens in other channels will be deleted
-without response. Please do not DM Penumbra Labs employees asking for testnet tokens; the correct
-venue is the dedicated channel.
-
-### Synchronizing your wallet
-
-Once you've received your first tokens, you can scan the chain to import them into your local
-wallet (this may take a few minutes the first time you run it):
-
-```bash
-cargo run --quiet --release --bin pcli sync
-```
-
-If someone sent you testnet assets, you should be able to see them now by running:
-
-```bash
-cargo run --quiet --release --bin pcli balance
-```
-
-This will print a table of assets by balance in each.
-
-### Sending transactions
-
-Now, for the fun part: sending transactions. If you have someone else's testnet address, you can
-send them any amount of any asset you have. For example, if I wanted to send 10 penumbra tokens
-to my friend, I could do that like this (filling in their full address at the end):
-
-```bash
-cargo run --quiet --release --bin pcli tx send 10penumbra --to penumbrav1t...
-```
-
-Notice that asset amounts are typed amounts, specified without a space between the amount (`10`)
-and the asset name (`penumbra`).
-
-If you have the asset in your wallet to send, then so it shall be done!
-
-### Please submit any feedback and bug reports
-
-Thank you for helping us test the Penumbra network! If you have any feedback, please let us know in
-the `#testnet-feedback` channel on our [Discord]. We would love to know about bugs, crashes,
-confusing error messages, or any of the many other things that inevitably won't quite work yet. Have
-fun! :)
 
 ## Connecting a node to a testnet
 
@@ -411,6 +271,7 @@ application prefix part of the name, use `node` for the Penumbra node.
 [Discord]: https://discord.gg/hKvkrqa3zC
 [Penumbra]: https://penumbra.zone
 [protocol]: https://protocol.penumbra.zone
+[guide]: https://guide.penumbra.zone
 [mdBook]: https://github.com/rust-lang/mdBook
 [rustdoc]: https://rustdoc.penumbra.zone
 [tm-install]: https://github.com/tendermint/tendermint/blob/master/docs/introduction/install.md#from-source
