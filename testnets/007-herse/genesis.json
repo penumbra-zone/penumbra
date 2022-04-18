@@ -1,8 +1,4 @@
 {
-  "jsonrpc": "2.0",
-  "id": -1,
-  "result": {
-    "genesis": {
       "genesis_time": "2022-04-11T21:57:22Z",
       "chain_id": "penumbra-herse",
       "initial_height": "1",
@@ -30950,6 +30946,4 @@
           }
         ]
       }
-    }
-  }
 }
