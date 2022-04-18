@@ -15,7 +15,7 @@ use thiserror;
 
 use crate::{asset, Fq, Fr};
 
-#[derive(Deserialize, Serialize, Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Deserialize, Serialize, Copy, Clone, Debug, Default, PartialEq, Eq)]
 #[serde(try_from = "pb::Value", into = "pb::Value")]
 pub struct Value {
     pub amount: u64,

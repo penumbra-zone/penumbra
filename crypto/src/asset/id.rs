@@ -24,7 +24,7 @@ use crate::Fq;
 ///
 /// [ADR001]:
 /// https://github.com/cosmos/ibc-go/blob/main/docs/architecture/adr-001-coin-source-tracing.md
-#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Serialize, Deserialize, Copy, Clone, Default, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(try_from = "pb::AssetId", into = "pb::AssetId")]
 pub struct Id(pub Fq);
 

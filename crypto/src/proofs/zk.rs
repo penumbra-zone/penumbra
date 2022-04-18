@@ -1,6 +1,8 @@
+use std::ops::Deref;
+
 use ark_bls12_377::{Bls12_377, Fr as BlsScalar};
 use ark_ec::TEModelParameters;
-use ark_ff::PrimeField;
+use ark_ff::{BigInteger, PrimeField};
 use ark_poly::univariate::DensePolynomial;
 use ark_poly_commit::sonic_pc::SonicKZG10;
 use ark_poly_commit::PolynomialCommitment;
@@ -10,13 +12,15 @@ use ark_ec::models::twisted_edwards_extended::GroupAffine;
 use ark_ec::{AffineCurve, ProjectiveCurve};
 
 use ark_ed_on_bls12_377::EdwardsParameters as DecafParameters;
-use decaf377::{proof::ComposerExt, Element, Fr as DecafScalar};
+use decaf377::{proof::ComposerExt, Element, Fq, Fr};
 use decaf377_ka as ka;
 
 use plonk_core::circuit::{verify_proof, Circuit, PublicInputBuilder};
 use plonk_core::constraint_system::StandardComposer;
 use plonk_core::error::Error;
 use plonk_core::prelude::*;
+
+use crate::{value, Value};
 
 // Public:
 // * vcm (value commitment)
@@ -33,7 +37,7 @@ use plonk_core::prelude::*;
 //
 // Output circuits check:
 // 1. Diversified base is not identity (implemented).
-// 2. Ephemeral public key integrity (implemented).
+// 2. Ephemeral public key integrity (partially implemented).
 // 3. Value commitment integrity (not implemented).
 // 4. Note commitment integrity (not implemented).
 #[derive(derivative::Derivative)]
@@ -47,8 +51,14 @@ where
     g_d: GroupAffine<P>,
     // Private: The ephemeral secret key that corresponds to the public key.
     esk: F,
+    // Private: blinding factor for value commitment.
+    v_blinding: Fr,
+    // Private: value.
+    value: Value,
     // Public: The ephemeral public key.
     epk: GroupAffine<P>,
+    // Public: Value commitment.
+    value_commitment: value::Commitment,
 }
 
 impl<F, P> Circuit<F, P> for OutputCircuit<F, P>
@@ -80,12 +90,45 @@ where
         // Apply the ephemeral public key integrity check constraint.
         composer.assert_equal_public_point(epk_var_computed, self.epk);
 
+        // Value commitment integrity.
+        // This checks that: value_commitment == -self.value.commit(self.v_blinding)
+        // We do this by computing the inverse of the value commitment as:
+        // P = a + b = [v] G_v + [v_blinding] H
+        // then taking the inverse of P.
+        let value_fq = F::from(self.value.amount);
+        let value_var = composer.add_input(value_fq);
+        let g_v_element = self.value.asset_id.value_generator().into();
+        let g_v_var = composer.add_affine(g_v_element);
+        let a_var = composer.variable_base_scalar_mul(value_var, g_v_var);
+
+        let v_blinding_fq = F::from_le_bytes_mod_order(&self.v_blinding.into_repr().to_bytes_le());
+        let v_blinding_var = composer.add_input(v_blinding_fq);
+        let H_affine = value::VALUE_BLINDING_GENERATOR.deref().clone().into();
+        let H_var = composer.add_affine(H_affine);
+        let b_var = composer.variable_base_scalar_mul(v_blinding_var, H_var);
+
+        let inv_value_commitment_computed = composer.point_addition_gate(a_var, b_var);
+
+        // Would be nicer to have a `point_inverse` method here like jellyfish PLONK
+        let one_var = composer.add_input(F::one());
+        let value_commitment_computed =
+            composer.conditional_point_neg(one_var, inv_value_commitment_computed);
+        let value_commitment_point = composer.add_affine(self.value_commitment.0.into());
+        // Instead of adding the point to the circuit, we should use `StandardComposer::assert_equal_public_point`
+        // let value_commitment_var = composer.add_input(value_commitment_point);
+
+        // TODO: Add constraint to circuit for value commitment integrity (not added now for comparative
+        // benchmarking with jellyfish PLONK)
+
+        // Note commitment integrity.
+
+        dbg!(composer.circuit_size());
+
         Ok(())
     }
 
     fn padded_circuit_size(&self) -> usize {
-        // TODO
-        1 << 11
+        1 << 13
     }
 }
 
@@ -142,31 +185,40 @@ mod tests {
         //type PC = KZG10::<Bls12_381>; //Use a different polynomial commitment
         // scheme
 
-        let pp = PC::setup(1 << 12, None, &mut OsRng).expect("Unable to sample public parameters.");
+        let pp = PC::setup(1 << 13, None, &mut OsRng).expect("Unable to sample public parameters.");
 
         let mut circuit = OutputCircuit::<BlsScalar, DecafParameters>::default();
         // Compile the circuit
+        let start = Instant::now();
         let (pk_p, verifier_data) = circuit.compile::<PC>(&pp).expect("circuit preprocessing");
+        let duration = start.elapsed();
+        println!("Time elapsed in proof preprocessing: {:?}", duration);
 
         let epk_ark_point: GroupAffine<EdwardsParameters> = epk_element.into();
 
         // Prover POV
+        let start = Instant::now();
         let proof = {
             let mut circuit: OutputCircuit<BlsScalar, DecafParameters> = OutputCircuit {
                 g_d: g_d.into(),
                 esk: esk_fq,
                 epk: epk_ark_point,
+                v_blinding,
+                value: value_to_send,
+                value_commitment,
             };
             circuit.gen_proof::<PC>(&pp, pk_p, b"penumbra_OutputProof")
         }
         .expect("can create proof");
+        let duration = start.elapsed();
+        println!("Time elapsed in proof creation: {:?}", duration);
 
         // Verifier POV
+        let start = Instant::now();
         let public_inputs = PublicInputBuilder::new()
             .add_input(&epk_ark_point)
             .unwrap()
             .finish();
-
         let VerifierData { key, pi_pos } = verifier_data;
         verify_proof::<BlsScalar, DecafParameters, PC>(
             &pp,
@@ -177,5 +229,7 @@ mod tests {
             b"penumbra_OutputProof",
         )
         .expect("proof should verify");
+        let duration = start.elapsed();
+        println!("Time elapsed in proof verification: {:?}", duration);
     }
 }
