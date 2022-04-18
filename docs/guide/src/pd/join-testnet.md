@@ -24,16 +24,28 @@ $ ls $HOME/.tendermint/config/
 config.toml	genesis.json	node_key.json
 ```
 
-Next you'll need to modify the persistent peers list to specify our primary testnet node as a permanent peer for your node. Open `$HOME/.tendermint/config/config.toml` and find the `persistent-peers` line and make it look like so:
+Next you'll need to modify the persistent peers list to specify our primary
+testnet node as a permanent peer for your node. Open
+`$HOME/.tendermint/config/config.toml` and find the `persistent-peers` line and
+add the testnet node:
 
 ```toml
-persistent-peers = "TODO_IDENTIFIER_GOES_HERE@192.167.10.21:26656"
+persistent-peers = "20eb3596354699d5b1952311f7cb4e133ad0b6c1@testnet.penumbra.zone:26656"
 ```
 
-Then you'll need to download our genesis JSON file and replace the automatically generated one.
-You can find the genesis JSON files for all of our testnets [in our repository](https://github.com/penumbra-zone/penumbra/tree/main/testnets).
+The format is `NODE_ID@ADDRESS`.  The node ID of the primary testnet node may
+change, but the current node ID can be found with:
+```console
+curl http://testnet.penumbra.zone:26657/status | jq ".result.node_info.id"
+```
+If you don't have `jq` installed, you can just look for that entry in the returned JSON.
 
-The testnet directories are numbered in increasing order, find and download the latest JSON file and copy it to `$HOME/.tendermint/config/genesis.json`.
+Then you'll need to download our genesis JSON file and replace the automatically
+generated one.  You can find the genesis JSON files for all of our testnets [in
+our repository](https://github.com/penumbra-zone/penumbra/tree/main/testnets).
+
+The testnet directories are numbered in increasing order, find and download the
+latest JSON file and copy it to `$HOME/.tendermint/config/genesis.json`.
 
 ## Starting your node
 
