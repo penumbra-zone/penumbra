@@ -22,6 +22,10 @@ use tracing::instrument;
 use super::{app::View as _, shielded_pool::View as _, Component};
 use crate::{genesis, Overlay, OverlayExt};
 
+// Max validator power is 1152921504606846975 (i64::MAX / 8)
+// https://github.com/tendermint/tendermint/blob/master/types/validator_set.go#L25
+const MAX_VOTING_POWER: i64 = 1152921504606846975;
+
 // Staking component
 pub struct Staking {
     overlay: Overlay,
@@ -166,7 +170,7 @@ impl Staking {
             self.overlay
                 .set_validator_rates(v, current_rate.clone(), next_rate.clone())
                 .await;
-            self.overlay.set_validator_power(v, voting_power).await;
+            self.overlay.set_validator_power(v, voting_power).await?;
 
             // Only Active validators produce commission rewards
             // The validator *may* drop out of Active state during the next epoch,
@@ -284,7 +288,9 @@ impl Staking {
                 if !top_validators.contains(&vp.identity_key) {
                     // Unbonding the validator means that it can no longer participate
                     // in consensus, so its voting power is set to 0.
-                    self.overlay.set_validator_power(&vp.identity_key, 0).await;
+                    self.overlay
+                        .set_validator_power(&vp.identity_key, 0)
+                        .await?;
                     self.overlay
                         .set_validator_state(
                             &vp.identity_key,
@@ -317,6 +323,19 @@ impl Staking {
         // an update, however it is useful for debugging.
         let mut updates = Vec::new();
         for v in self.overlay.validator_list().await?.iter() {
+            let validator_state = self
+                .overlay
+                .validator_state(v)
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("validator state missing"))?;
+
+            // Only active validators report power to tendermint.
+            // TODO: actually this isn't quite right because Slashed validators
+            // need to report a 0 to Tendermint.
+            if validator_state != ValidatorState::Active {
+                continue;
+            }
+
             let power = self
                 .overlay
                 .validator_power(v)
@@ -327,6 +346,7 @@ impl Staking {
                 .validator(v)
                 .await?
                 .ok_or_else(|| anyhow::anyhow!("validator missing"))?;
+
             updates.push(ValidatorUpdate {
                 pub_key: validator.consensus_key.clone(),
                 power: power.try_into()?,
@@ -780,13 +800,23 @@ pub trait View: OverlayExt {
     }
 
     #[instrument(skip(self))]
-    async fn set_validator_power(&self, identity_key: &IdentityKey, voting_power: u64) {
+    async fn set_validator_power(
+        &self,
+        identity_key: &IdentityKey,
+        voting_power: u64,
+    ) -> Result<()> {
         tracing::debug!("setting validator power");
+        if voting_power as i64 > MAX_VOTING_POWER || (voting_power as i64) < 0 {
+            return Err(anyhow::anyhow!("invalid voting power"));
+        }
+
         self.put_proto(
             format!("staking/validators/{}/power", identity_key).into(),
             voting_power,
         )
         .await;
+
+        Ok(())
     }
 
     #[instrument(skip(self))]
@@ -939,10 +969,11 @@ pub trait View: OverlayExt {
         self.set_validator_rates(&id, current_rates, next_rates)
             .await;
         self.set_validator_state(&id, state).await;
-        self.set_validator_power(&id, power).await;
+        self.set_validator_power(&id, power).await?;
 
         let mut validator_list = self.validator_list().await?;
         validator_list.push(id);
+        tracing::debug!(?validator_list);
         self.set_validator_list(validator_list).await;
 
         Ok(())
