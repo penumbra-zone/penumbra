@@ -74,7 +74,7 @@ impl Component for ShieldedPool {
         }
 
         self.compact_block.height = 0;
-        self.write_block().await?;
+        self.write_compactblock_and_nct().await?;
 
         Ok(())
     }
@@ -212,8 +212,39 @@ impl Component for ShieldedPool {
 
     #[instrument(name = "shielded_pool", skip(self, end_block))]
     async fn end_block(&mut self, end_block: &abci::request::EndBlock) -> Result<()> {
+        // Set the height of the compact block, now that we got it in end_block
         self.compact_block.height = end_block.height as u64;
-        self.write_block().await?;
+
+        // Handle any pending reward notes from the Staking component
+        let notes = self
+            .overlay
+            .reward_notes(self.compact_block.height)
+            .await?
+            .unwrap_or_default();
+
+        // TODO: should we calculate this here or include it directly within the PendingRewardNote
+        // to prevent a potential mismatch between Staking and ShieldedPool?
+        let source = NoteSource::FundingStreamReward {
+            epoch_index: Epoch::from_height(
+                self.compact_block.height,
+                self.overlay.get_epoch_duration().await?,
+            )
+            .index,
+        };
+
+        for note in notes.notes {
+            self.mint_note(
+                Value {
+                    amount: note.amount,
+                    asset_id: *STAKING_TOKEN_ASSET_ID,
+                },
+                &note.destination,
+                source,
+            )
+            .await?;
+        }
+
+        self.write_compactblock_and_nct().await?;
         Ok(())
     }
 }
@@ -291,36 +322,7 @@ impl ShieldedPool {
     }
 
     #[instrument(skip(self))]
-    async fn write_block(&mut self) -> Result<()> {
-        // Handle any pending reward notes from the Staking component
-        let notes = self
-            .overlay
-            .reward_notes(self.compact_block.height)
-            .await?
-            .unwrap_or_default();
-
-        // TODO: should we calculate this here or include it directly within the PendingRewardNote
-        // to prevent a potential mismatch between Staking and ShieldedPool?
-        let source = NoteSource::FundingStreamReward {
-            epoch_index: Epoch::from_height(
-                self.compact_block.height,
-                self.overlay.get_epoch_duration().await?,
-            )
-            .index,
-        };
-
-        for note in notes.notes {
-            self.mint_note(
-                Value {
-                    amount: note.amount,
-                    asset_id: *STAKING_TOKEN_ASSET_ID,
-                },
-                &note.destination,
-                source,
-            )
-            .await?;
-        }
-
+    async fn write_compactblock_and_nct(&mut self) -> Result<()> {
         // Write the CompactBlock:
         self.overlay
             .set_compact_block(std::mem::take(&mut self.compact_block))
