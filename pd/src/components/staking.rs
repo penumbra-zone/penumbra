@@ -288,7 +288,9 @@ impl Staking {
                 if !top_validators.contains(&vp.identity_key) {
                     // Unbonding the validator means that it can no longer participate
                     // in consensus, so its voting power is set to 0.
-                    self.overlay.set_validator_power(&vp.identity_key, 0).await?;
+                    self.overlay
+                        .set_validator_power(&vp.identity_key, 0)
+                        .await?;
                     self.overlay
                         .set_validator_state(
                             &vp.identity_key,
@@ -328,6 +330,8 @@ impl Staking {
                 .ok_or_else(|| anyhow::anyhow!("validator state missing"))?;
 
             // Only active validators report power to tendermint.
+            // TODO: actually this isn't quite right because Slashed validators
+            // need to report a 0 to Tendermint.
             if validator_state != ValidatorState::Active {
                 continue;
             }
@@ -796,7 +800,11 @@ pub trait View: OverlayExt {
     }
 
     #[instrument(skip(self))]
-    async fn set_validator_power(&self, identity_key: &IdentityKey, voting_power: u64) -> Result<()> {
+    async fn set_validator_power(
+        &self,
+        identity_key: &IdentityKey,
+        voting_power: u64,
+    ) -> Result<()> {
         tracing::debug!("setting validator power");
         if voting_power as i64 > MAX_VOTING_POWER || (voting_power as i64) < 0 {
             return Err(anyhow::anyhow!("invalid voting power"));

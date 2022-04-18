@@ -398,7 +398,7 @@ impl ValidatorSet {
             .map(|v| {
                 let v = v.borrow();
                 // if the validator is non-Active, set their voting power as
-                // returned to Tendermint to 0. Only Active validators report
+                // returned to Tendermint to 0. Only non-Inactive validators report
                 // voting power to Tendermint.
                 tracing::debug!(?v, "calculating validator power in end_block");
                 let power = if v.status.state == ValidatorState::Active {
