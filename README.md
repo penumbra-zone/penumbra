@@ -15,15 +15,17 @@ The (evolving) protocol spec is rendered at [protocol.penumbra.zone][protocol].
 
 The (evolving) API documentation is rendered at [rustdoc.penumbra.zone][rustdoc].
 
-To participate in our test network, [keep reading below](#getting-started-on-the-test-network).
+To participate in our test network, use Penumbra command line client [`pcli`][pcli].
 
-For instructions on how to set up a node, [jump down and read on](#running-a-penumbra-node).
+To join the test network as a full node, follow setup instructions for Penumbra node implementation [`pd`][pd].
 
 
 [Discord]: https://discord.gg/hKvkrqa3zC
 [Penumbra]: https://penumbra.zone
 [protocol]: https://protocol.penumbra.zone
 [guide]: https://guide.penumbra.zone
+[pcli]: https://guide.penumbra.zone/main/pcli.html
+[pd]: https://guide.penumbra.zone/main/pd.html
 [mdBook]: https://github.com/rust-lang/mdBook
 [rustdoc]: https://rustdoc.penumbra.zone
 [tm-install]: https://github.com/tendermint/tendermint/blob/master/docs/introduction/install.md#from-source
