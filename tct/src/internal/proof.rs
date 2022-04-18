@@ -2,8 +2,6 @@
 
 use std::fmt::Debug;
 
-use decaf377::{FieldExt, Fq};
-use penumbra_proto::transparent_proofs as pb;
 use thiserror::Error;
 
 use super::path::{self, AuthPath};
@@ -68,6 +66,17 @@ impl VerifyError {
     }
 }
 
+/// When deserializing a proof, it was malformed.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Error)]
+#[error("could not decode proof")]
+pub struct ProofDecodeError;
+
+// TODO: re-enable these protobuf impls once we adapt the protobuf crate to these types:
+
+/*
+use decaf377::{FieldExt, Fq};
+use penumbra_proto::transparent_proofs as pb;
+
 impl<Tree: Height> From<Proof<Tree>> for pb::MerkleProof
 where
     Vec<pb::MerklePathChunk>: From<AuthPath<Tree>>,
@@ -80,11 +89,6 @@ where
         }
     }
 }
-
-/// When deserializing a proof, it was malformed.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Error)]
-#[error("could not decode proof")]
-pub struct ProofDecodeError;
 
 impl<Tree: Height> TryFrom<pb::MerkleProof> for Proof<Tree>
 where
@@ -112,3 +116,4 @@ where
         })
     }
 }
+*/
