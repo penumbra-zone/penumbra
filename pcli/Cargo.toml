@@ -22,7 +22,7 @@ penumbra-wallet = { path = "../wallet" }
 
 # Penumbra dependencies
 ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
-decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
+decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "ark-proof" }
 # External dependencies
 futures = "0.3"
 async-stream = "0.2"

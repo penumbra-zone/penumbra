@@ -9,7 +9,6 @@ penumbra-proto = { path = "../proto" }
 penumbra-crypto = { path = "../crypto" }
 penumbra-transaction = { path = "../transaction" }
 
-
 # Crates.io deps
 anyhow = "1"
 bytes = "1"

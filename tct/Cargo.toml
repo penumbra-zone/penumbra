@@ -16,7 +16,7 @@ serde = { version = "1.0", features = ["derive"] }
 ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
 ark-serialize = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
 poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377" }
-decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
+decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "ark-proof" }
 
 [dev-dependencies]
 static_assertions = "1"

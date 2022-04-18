@@ -22,7 +22,7 @@ penumbra-transaction = { path = "../transaction" }
 
 # Penumbra dependencies
 ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
-decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
+decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "ark-proof" }
 tower-abci = { git = "https://github.com/penumbra-zone/tower-abci/" }
 tendermint-config = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "master" }
 #tendermint-proto = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "master" }
