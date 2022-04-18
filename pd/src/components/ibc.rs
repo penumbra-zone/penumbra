@@ -24,7 +24,8 @@ use ibc::{
         ics24_host::identifier::ClientId,
     },
 };
-use tendermint_light_client_verifier::types::Time;
+use tendermint::Time;
+use tendermint_light_client_verifier::types::Time as LightClientTime;
 use tendermint_light_client_verifier::types::{TrustedBlockState, UntrustedBlockState};
 use tendermint_light_client_verifier::{ProdVerifier, Verdict, Verifier};
 
@@ -153,9 +154,18 @@ impl IBCComponent {
                     )
                     .await?;
 
+                let latest_consensus_state_tm = match latest_consensus_state.0 {
+                    AnyConsensusState::Tendermint(consensus_state) => consensus_state,
+                    _ => {
+                        return Err(anyhow::anyhow!(
+                            "consensus state is not a Tendermint client"
+                        ))
+                    }
+                };
+
                 let now = self.overlay.get_block_timestamp().await?;
-                let stamp: Time = latest_consensus_state.0.timestamp().into();
-                let duration = now.duration_since(stamp)?;
+                let stamp = latest_consensus_state_tm.timestamp.to_rfc3339();
+                let duration = now.duration_since(Time::parse_from_rfc3339(&stamp).unwrap())?;
                 if client_data.client_state.0.expired(duration) {
                     return Err(anyhow::anyhow!("client is expired"));
                 }
@@ -163,7 +173,7 @@ impl IBCComponent {
                 // todo : check that the header timestamp is not past the current timestamp
 
                 // verify the clientupdate's header
-                let tm_client_state = match client_data.client_state.0 {
+                let tm_client_state = match client_data.clone().client_state.0 {
                     AnyClientState::Tendermint(tm_state) => tm_state,
                     _ => return Err(anyhow::anyhow!("unsupported client type")),
                 };
@@ -309,11 +319,15 @@ impl IBCComponent {
         let options = trusted_client_state.as_light_client_options()?;
 
         let verifier = ProdVerifier::default();
+        let current_block_timestamp = LightClientTime::parse_from_rfc3339(
+            &self.overlay.get_block_timestamp().await?.to_rfc3339(),
+        )
+        .unwrap();
         let verdict = verifier.verify(
             untrusted_state,
             trusted_state,
             &options,
-            self.overlay.get_block_timestamp().await?,
+            current_block_timestamp,
         );
         match verdict {
             Verdict::Success => {}
