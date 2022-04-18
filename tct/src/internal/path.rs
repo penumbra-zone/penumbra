@@ -4,10 +4,6 @@
 //! The interpretation of an authentication path is dependent on an _index_ into the tree, stored
 //! separately, which indicates the position of the leaf witnessed by the authentication path.
 
-use std::collections::VecDeque;
-
-use decaf377::{FieldExt, Fq};
-use penumbra_proto::transparent_proofs as pb;
 use thiserror::Error;
 
 use crate::{
@@ -216,6 +212,13 @@ mod test {
 #[error("could not decode authentication path")]
 pub struct PathDecodeError;
 
+// TODO: re-enable these protobuf impls once we adapt the protobuf crate to this crate:
+
+/*
+use std::collections::VecDeque;
+use decaf377::{FieldExt, Fq};
+use penumbra_proto::transparent_proofs as pb;
+
 impl From<Leaf> for VecDeque<pb::MerklePathChunk> {
     fn from(Leaf: Leaf) -> VecDeque<pb::MerklePathChunk> {
         VecDeque::new()
@@ -337,3 +340,4 @@ where
         <Node<Child>>::try_from(VecDeque::from(queue))
     }
 }
+*/

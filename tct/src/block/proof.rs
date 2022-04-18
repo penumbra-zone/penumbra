@@ -1,5 +1,3 @@
-use penumbra_proto::transparent_proofs as pb;
-
 pub use thiserror::Error;
 
 use crate::{internal::index, Commitment, Hash};
@@ -120,6 +118,11 @@ impl Proof {
     }
 }
 
+// TODO: re-enable these impls once we adapt the protobuf crate:
+
+/*
+use penumbra_proto::transparent_proofs as pb;
+
 impl From<Proof> for pb::MerkleProof {
     fn from(proof: Proof) -> Self {
         proof.0.into()
@@ -135,3 +138,4 @@ impl TryFrom<pb::MerkleProof> for Proof {
 }
 
 impl penumbra_proto::Protobuf<pb::MerkleProof> for Proof {}
+*/
