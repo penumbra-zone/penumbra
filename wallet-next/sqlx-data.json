@@ -1,37 +1,75 @@
 {
   "db": "SQLite",
-  "8ed88f7e13296591bb66565a9c752f1b5d4d9ea99444f29ef2a53642f428ee6d": {
-    "query": "\nSELECT id, value\nFROM penumbra\nORDER BY id\nLIMIT 1\n        ",
+  "63aad4faac1ffefd5525595f9ca5a82186181368251da9fbacf65a4d48671a01": {
+    "query": "\n            SELECT bytes\n            FROM full_viewing_key\n            LIMIT 1\n            ",
     "describe": {
       "columns": [
         {
-          "name": "id",
+          "name": "bytes",
           "ordinal": 0,
-          "type_info": "Int64"
-        },
-        {
-          "name": "value",
-          "ordinal": 1,
-          "type_info": "Text"
+          "type_info": "Blob"
         }
       ],
       "parameters": {
         "Right": 0
       },
       "nullable": [
-        false,
-        false
+        true
       ]
     }
   },
-  "b5f8e3b3b99cbf00b3d0320f846aaeff05f0a610a6a388e78b1f5315bacfa6f0": {
-    "query": "\nINSERT INTO penumbra ( value )\nVALUES ( ?1 )\n        ",
+  "6684105462e0bba65abb19049c13836941421a0ed4ac59c6355dccdcab50dca7": {
+    "query": "\n            SELECT height\n            FROM sync_height\n            ORDER BY height DESC\n            LIMIT 1\n        ",
     "describe": {
-      "columns": [],
+      "columns": [
+        {
+          "name": "height",
+          "ordinal": 0,
+          "type_info": "Int64"
+        }
+      ],
       "parameters": {
-        "Right": 1
+        "Right": 0
       },
-      "nullable": []
+      "nullable": [
+        true
+      ]
+    }
+  },
+  "d437ce2946cba91cd0e4fa750f14d227c2caa78e6bd69ed475f7b0679914c897": {
+    "query": "\n            SELECT bytes\n            FROM note_commitment_tree\n            LIMIT 1\n            ",
+    "describe": {
+      "columns": [
+        {
+          "name": "bytes",
+          "ordinal": 0,
+          "type_info": "Blob"
+        }
+      ],
+      "parameters": {
+        "Right": 0
+      },
+      "nullable": [
+        true
+      ]
+    }
+  },
+  "efb5f4932197a38ca134b63d8ea5d2fad9145fb56d03a60351f15b5302905402": {
+    "query": "\n            SELECT bytes\n            FROM chain_params\n            LIMIT 1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "name": "bytes",
+          "ordinal": 0,
+          "type_info": "Blob"
+        }
+      ],
+      "parameters": {
+        "Right": 0
+      },
+      "nullable": [
+        true
+      ]
     }
   }
 }

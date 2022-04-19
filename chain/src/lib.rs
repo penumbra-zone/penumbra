@@ -10,4 +10,5 @@ pub mod sync;
 pub use epoch::Epoch;
 pub use known_assets::KnownAssets;
 pub use note_source::NoteSource;
+pub use sync::CompactBlock;
 pub use view::View;
