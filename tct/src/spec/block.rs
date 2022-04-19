@@ -40,7 +40,7 @@ impl Builder {
         // Insert the item into the block
         self.block.push_back(insert);
         // Calculate the item's position
-        let position = self.block.len() as u16 - 1;
+        let position = self.position();
         // Return the position
         Ok(position.into())
     }
@@ -63,6 +63,12 @@ impl Builder {
             }
         }
         forgotten
+    }
+
+    /// Calculate the position of the next insertion into this epoch.
+    pub fn position(&self) -> Position {
+        let position = self.block.len() as u16 - 1;
+        position.into()
     }
 
     /// Build an immutable, dense commitment tree, finalizing this builder.

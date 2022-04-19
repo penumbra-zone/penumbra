@@ -162,7 +162,7 @@ impl Builder {
     }
 
     /// Calculate the position of the next insertion into this eternity.
-    fn position(&self) -> Position {
+    pub fn position(&self) -> Position {
         let (epoch, block, commitment) = if self.eternity.is_empty() {
             (0.into(), 0.into(), 0.into())
         } else {
