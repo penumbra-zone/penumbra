@@ -264,11 +264,36 @@ impl ShieldedPool {
         //
         // Hashing the current NCT root is sufficient, since it will change every time
         // we insert a new note.
+
+        // However, in our current implementation, computing the NCT root is very slow...
+        /*
         let blinding_factor = Fq::from_le_bytes_mod_order(
             blake2b_simd::Params::default()
                 .personal(b"PenumbraMint")
                 .to_state()
                 .update(&self.note_commitment_tree.root2().to_bytes())
+                .finalize()
+                .as_bytes(),
+        );
+        */
+
+        // ... so just hash the current position instead.
+        let position = self
+            .note_commitment_tree
+            .bridges()
+            .last()
+            .map(|b| b.frontier().position().into())
+            // If there are no bridges, the tree is empty
+            .unwrap_or(0u64);
+        tracing::debug!(
+            ?position,
+            "using NCT position for uniqueness in minted note"
+        );
+        let blinding_factor = Fq::from_le_bytes_mod_order(
+            blake2b_simd::Params::default()
+                .personal(b"PenumbraMint")
+                .to_state()
+                .update(&position.to_le_bytes())
                 .finalize()
                 .as_bytes(),
         );
