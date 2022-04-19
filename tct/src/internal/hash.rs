@@ -88,7 +88,7 @@ impl Debug for Hash {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
         let mut bytes = Vec::with_capacity(4 * 8);
         self.0.write(&mut bytes).unwrap();
-        write!(f, "{}", hex::encode(&bytes[3 * 8 + 4..]))
+        write!(f, "{}", hex::encode(&bytes))
     }
 }
 
