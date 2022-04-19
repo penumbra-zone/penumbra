@@ -961,8 +961,11 @@ pub trait View: OverlayExt {
     ) -> Result<()> {
         tracing::debug!(?validator);
         let id = validator.identity_key.clone();
+
         self.put_domain(format!("staking/validators/{}", id).into(), validator)
             .await;
+        self.register_denom(&id.delegation_token().denom()).await?;
+
         self.set_validator_rates(&id, current_rates, next_rates)
             .await;
         self.set_validator_state(&id, state).await;
