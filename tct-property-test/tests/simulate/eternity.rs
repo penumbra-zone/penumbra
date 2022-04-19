@@ -7,6 +7,7 @@ use real::arbitrary::CommitmentStrategy;
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Arbitrary)]
 #[proptest(params("Params"))]
 pub enum Action {
+    ForceRoot,
     Insert(
         Witness,
         #[proptest(strategy = "CommitmentStrategy::one_of(params.commitments.clone())")] Commitment,
@@ -36,6 +37,11 @@ impl Simulate for Action {
 
     fn simulate(self, spec: &mut Self::Spec, real: &mut Self::Real) {
         match self {
+            Action::ForceRoot => {
+                // There is no equivalent action to forcing the root of the specification, because
+                // the root is not known when it is a `Builder`.
+                real.root();
+            }
             Action::Insert(witness, commitment) => assert_eq!(
                 spec.insert(witness, commitment),
                 real.insert(witness, commitment).map_err(Into::into),
