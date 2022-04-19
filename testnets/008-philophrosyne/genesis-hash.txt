@@ -1,0 +1,3 @@
+jq -S -c -M '' genesis.json | shasum -a 256
+d633ab70baba38c26f0942b48426c5715b6a948a20fddcb9182eb206a4b56e3c  -
+
