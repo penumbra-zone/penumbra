@@ -135,16 +135,16 @@ impl IBCComponent {
                 let msg_update_client =
                     MsgUpdateAnyClient::try_from(raw_msg_update_client.clone())?;
 
+                // get the latest client state
                 let client_data = self
                     .overlay
                     .get_client_data(&msg_update_client.client_id)
                     .await?;
 
-                // check if client is frozen
+                // check that the client is not frozen or expired
                 if client_data.client_state.0.is_frozen() {
-                    return Err(anyhow::anyhow!("client is frozen"));
+                    return Err(anyhow::anyhow!("client is frozen or expired"));
                 }
-
                 // check if client is expired
                 let latest_consensus_state = self
                     .overlay
@@ -162,15 +162,12 @@ impl IBCComponent {
                         ))
                     }
                 };
-
                 let now = self.overlay.get_block_timestamp().await?;
                 let stamp = latest_consensus_state_tm.timestamp.to_rfc3339();
                 let duration = now.duration_since(Time::parse_from_rfc3339(&stamp).unwrap())?;
                 if client_data.client_state.0.expired(duration) {
                     return Err(anyhow::anyhow!("client is expired"));
                 }
-
-                // todo : check that the header timestamp is not past the current timestamp
 
                 // verify the clientupdate's header
                 let tm_client_state = match client_data.clone().client_state.0 {
@@ -261,7 +258,10 @@ impl IBCComponent {
         }
 
         // check if we already have a consensus state for this height, if we do, check that it is
-        // the same as this update, if it is, return early
+        // the same as this update, if it is, return early. If we already have a consensus state
+        // for this height, but it doesn't match the one provided in this update, verify the one in
+        // this update and freeze the client.
+        let mut conflicting_header: bool = false;
         let untrusted_consensus_state = TendermintConsensusState::from(untrusted_header.clone());
         match self
             .overlay
@@ -274,11 +274,7 @@ impl IBCComponent {
                         return Ok((trusted_client_state, stored_tm_consensus_state));
                     }
                 }
-                _ => {
-                    return Err(anyhow::anyhow!(
-                        "stored consensus state doesn't match client type"
-                    ))
-                }
+                _ => conflicting_header = true,
             },
             _ => {}
         }
@@ -317,7 +313,6 @@ impl IBCComponent {
         };
 
         let options = trusted_client_state.as_light_client_options()?;
-
         let verifier = ProdVerifier::default();
         let current_block_timestamp = LightClientTime::parse_from_rfc3339(
             &self.overlay.get_block_timestamp().await?.to_rfc3339(),
@@ -346,8 +341,45 @@ impl IBCComponent {
         }
 
         // consensus state is verified
+        if conflicting_header {
+            return Ok((
+                trusted_client_state
+                    .with_header(untrusted_header.clone())
+                    .with_frozen_height(untrusted_header.height())?,
+                untrusted_consensus_state,
+            ));
+        }
+        
+        // check that updates are monotonic
+        if untrusted_header.height() < trusted_client_state.latest_height() {
+            if let Some(next_consensus_state) = self.overlay.next_consensus_state(&client_id, untrusted_header.height()).await? {
+                if untrusted_header.signed_header.header().time > next_consensus_state.timestamp {
+                    return Err(anyhow::anyhow!(
+                        "client update timestamp is too high"
+                    ));
+                }
+            }
+        }
+        // (cs-trusted, cs-prev, cs-new)
+        if header.trusted_height < header.height() {
+            let maybe_prev_cs = ctx
+                .prev_consensus_state(&client_id, header.height())?
+                .map(downcast_consensus_state)
+                .transpose()?;
 
-        // TODO: monotonicity checks for timestamps
+            if let Some(prev_cs) = maybe_prev_cs {
+                // New (untrusted) header timestamp cannot occur before the
+                // previous consensus state's height
+                if header.signed_header.header().time < prev_cs.timestamp {
+                    return Err(Ics02Error::tendermint_handler_error(
+                        Error::header_timestamp_too_low(
+                            header.signed_header.header().time.to_string(),
+                            prev_cs.timestamp.to_string(),
+                        ),
+                    ));
+                }
+            }
+        if untrusted_header.hei
 
         return Ok((
             trusted_client_state.with_header(untrusted_header.clone()),
@@ -425,6 +457,20 @@ pub trait View: OverlayExt + Send + Sync {
             consensus_state,
         )
         .await;
+    }
+    
+    // return the lowest consensus state that is larger than the given height
+    async fn next_consensus_state(&self, client_id: &ClientId, height: Height) -> Result<Option<ConsensusState>> {
+        self.get_domain(
+            format!(
+                "ibc/ics02-client/clients/{}/consensus_state/{}",
+                hex::encode(client_id.as_bytes()),
+                height
+            )
+            .into(),
+        )
+        .await
+        .map(|cs| cs.map(downcast_consensus_state))
     }
 }
 
