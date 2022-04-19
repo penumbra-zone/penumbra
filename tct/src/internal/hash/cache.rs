@@ -1,31 +1,25 @@
 //! A thread-safe cache intended hold lazily evaluated hashes.
 
-use std::{cell::Cell, fmt::Debug};
+use std::cell::Cell;
 
 use parking_lot::Once;
 
-use crate::Hash;
+use crate::{internal::hash::OptionHash, Hash};
 
-/// A write-once cache for `Hash`es, allowing lazy evaluation of hashes inside the tree.
-#[derive(Default)]
+/// An `RwLock`-based cache for things isomorphic to `Option<Hash>`.
+///
+/// In our use case, `T` is `OptionHash`, but this is written generically for ease of
+/// implementation.
+#[derive(Debug, Default)]
 pub struct CachedHash {
-    /// A cell containing a cached hash value, which may not yet be set.
-    ///
-    /// IMPORTANT: It is **unsafe** to **read** or **write** this cell without synchronizing on the
-    /// `Once` within this struct.
-    cell: Cell<Hash>,
-    /// A synchronization variable which we will use to ensure that it is set at most once, ever, in
-    /// the lifetime of this `CachedHash` (thus allowing this struct to be marked `Sync`), and that
-    /// the value of the `Cell` is only ever observed after it has been set.
+    cell: Cell<OptionHash>,
     once: Once,
 }
 
 // This is safe because the restricted API of `CachedHash` only sets the internal hash *at most
 // once*, from only one thread, using a `Once` to ensure multiple threads do not race on setting the
 // hash. The only way to do interior mutability is via `set_if_empty`, which mutates the inner
-// `Cell` exactly once. Additionally, the value of the inner `Cell` cannot be observed until after
-// it has been fully set, which means it is impossible to observe partial writes, regardless of
-// whether this would be possible in practice on any supported architecture.
+// `Cell` exactly once.
 unsafe impl Sync for CachedHash {}
 
 // Because `Once` cannot be cloned, we need to clone the `CachedHash` manually, creating a new
@@ -54,51 +48,21 @@ impl Clone for CachedHash {
     }
 }
 
-// A derived `Debug` implementation won't do, because the generated code would access the `Cell`
-// without going through the `Once` synchronization barrier. Our manual implementation, in addition
-// to ensuring that torn reads cannot be observed (by using the safe method `get`), gives a succinct
-// representation of the cached hash, using `_` to denote a hash that hasn't yet been populated.
-impl Debug for CachedHash {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if let Some(hash) = self.get() {
-            write!(f, "{:?}", hash)
-        } else {
-            write!(f, "_")
-        }
-    }
-}
-
 impl CachedHash {
-    /// Get the cached hash, if any has yet been set.
+    /// Get the value in the cache, given that the value is `Copy`.
     pub fn get(&self) -> Option<Hash> {
-        // IMPORTANT: we prevent ourselves from observing partial writes to the hash state by only
-        // reading the contents of the cell if the `Once` has executed; otherwise, we just return
-        // `None` without examining the `Cell` at all.
-        //
-        // Even this conservative approach does not allow accidental duplicate computation of
-        // hashes, because even if a thread observes via `get` that a `CachedHash` is currently
-        // `None`, its only way to set the hash is to use `set_if_empty`, which will not duplicate
-        // computation if another thread is already in-progress computing the hash.
-        //
-        // A consequence of this very limited API is that it is impossible to observe the initial
-        // value given to the `Hash` stored in the `Cell`: we only ever observe it once it has been
-        // overwritten with a stored value. The initial value is `Hash::default()` because the only
-        // way to construct a `CachedHash` is by the derived `CachedHash::default()`, but this value
-        // is a convenience, not a meaningful choice.
-        if self.once.state().done() {
-            Some(self.cell.get())
-        } else {
-            None
-        }
+        self.cell.get().into()
     }
 
     /// If the cache is empty, set its value using the closure, then return its contents regardless.
     pub fn set_if_empty(&self, new: impl FnOnce() -> Hash) -> Hash {
-        // IMPORTANT: here is the **ONLY** place where we mutate the inner `Cell`, and it's
-        // guarded by the `Once`:
-        self.once.call_once(|| self.cell.set(new()));
-        // Since we know that *some* initialization closure (not necessarily the one in this
-        // thread!) has run, we can safely get the hash that is now in the cell and return it:
-        self.cell.get()
+        self.once.call_once(|| {
+            if <Option<Hash>>::from(self.cell.get()).is_none() {
+                // IMPORTANT: here is the **ONLY** place where we mutate the inner `Cell`, and it's
+                // guarded by the `Once`:
+                self.cell.set(Some(new()).into());
+            }
+        });
+        self.get().unwrap()
     }
 }

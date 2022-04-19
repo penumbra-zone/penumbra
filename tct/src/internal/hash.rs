@@ -22,7 +22,9 @@ use fast_hash::{hash_1, hash_4};
 use crate::Commitment;
 
 mod cache;
+mod option_hash;
 pub use cache::CachedHash;
+pub use option_hash::OptionHash;
 
 /// A type which can be transformed into a [`struct@Hash`], either by retrieving a cached hash, computing a
 /// hash for it, or some combination of both.
