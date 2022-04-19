@@ -20,22 +20,9 @@ pub use children::Children;
 #[derivative(Debug, PartialEq(bound = "Child: PartialEq"), Eq(bound = "Child: Eq"))]
 pub struct Node<Child> {
     #[derivative(PartialEq = "ignore")]
-    #[derivative(Debug(format_with = "fmt_cache"))]
     #[serde(skip)]
     hash: CachedHash,
     children: Children<Child>,
-}
-
-/// Concisely format `OptionHash` for debug output.
-pub(crate) fn fmt_cache(
-    cell: &CachedHash,
-    f: &mut std::fmt::Formatter,
-) -> Result<(), std::fmt::Error> {
-    if let Some(hash) = <Option<Hash>>::from(cell.get()) {
-        write!(f, "{:?}", hash)
-    } else {
-        write!(f, "_")
-    }
 }
 
 impl<Child: Complete> PartialEq<active::Node<Child::Focus>> for Node<Child>

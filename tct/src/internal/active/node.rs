@@ -25,10 +25,7 @@ use super::super::complete;
     Eq(bound = "Child: Eq, Child::Complete: Eq")
 )]
 pub struct Node<Child: Focus> {
-    #[derivative(
-        PartialEq = "ignore",
-        Debug(format_with = "super::super::complete::node::fmt_cache")
-    )]
+    #[derivative(PartialEq = "ignore", Debug)]
     #[serde(skip)]
     hash: CachedHash,
     siblings: Three<Insert<Child::Complete>>,
