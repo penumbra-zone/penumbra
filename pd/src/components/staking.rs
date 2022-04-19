@@ -79,11 +79,8 @@ impl Staking {
         // We are transitioning to the next epoch, so set "cur_base_rate" to the previous "next_base_rate", and
         // update "next_base_rate".
         let current_base_rate = self.overlay.next_base_rate().await?;
-        /// FIXME: set this less arbitrarily, and allow this to be set per-epoch
-        /// 3bps -> 11% return over 365 epochs, why not
-        const BASE_REWARD_RATE: u64 = 3_0000;
 
-        let next_base_rate = current_base_rate.next(BASE_REWARD_RATE);
+        let next_base_rate = current_base_rate.next(chain_params.base_reward_rate);
 
         // rename to curr_rate so it lines up with next_rate (same # chars)
         tracing::debug!(curr_base_rate = ?current_base_rate);

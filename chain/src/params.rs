@@ -46,7 +46,8 @@ pub struct ChainParams {
     pub active_validator_limit: u64,
     /// Slashing penalty in basis points
     pub slashing_penalty: u64,
-
+    /// The base reward rate, expressed in basis points of basis points
+    pub base_reward_rate: u64,
     /// Whether IBC (forming connections, processing IBC packets) is enabled.
     pub ibc_enabled: bool,
     /// Whether inbound ICS-20 transfers are enabled
@@ -65,6 +66,7 @@ impl From<pb::ChainParams> for ChainParams {
             unbonding_epochs: msg.unbonding_epochs,
             active_validator_limit: msg.active_validator_limit,
             slashing_penalty: msg.slashing_penalty,
+            base_reward_rate: msg.base_reward_rate,
             ibc_enabled: msg.ibc_enabled,
             inbound_ics20_transfers_enabled: msg.inbound_ics20_transfers_enabled,
             outbound_ics20_transfers_enabled: msg.outbound_ics20_transfers_enabled,
@@ -80,6 +82,7 @@ impl From<ChainParams> for pb::ChainParams {
             unbonding_epochs: params.unbonding_epochs,
             active_validator_limit: params.active_validator_limit,
             slashing_penalty: params.slashing_penalty,
+            base_reward_rate: params.base_reward_rate,
             ibc_enabled: params.ibc_enabled,
             inbound_ics20_transfers_enabled: params.inbound_ics20_transfers_enabled,
             outbound_ics20_transfers_enabled: params.outbound_ics20_transfers_enabled,
@@ -98,6 +101,8 @@ impl Default for ChainParams {
             active_validator_limit: 10,
             // 1000 basis points = 10%
             slashing_penalty: 1000,
+            // 3bps -> 11% return over 365 epochs
+            base_reward_rate: 3_0000,
             ibc_enabled: false,
             inbound_ics20_transfers_enabled: false,
             outbound_ics20_transfers_enabled: false,
