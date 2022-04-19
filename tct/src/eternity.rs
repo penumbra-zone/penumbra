@@ -504,33 +504,3 @@ impl Eternity {
         })
     }
 }
-
-#[cfg(feature = "sqlx")]
-mod sqlx_impls {
-    use sqlx::{Database, Decode, Encode, Postgres, Type};
-
-    use super::*;
-
-    impl<'r> Decode<'r, Postgres> for Root {
-        fn decode(
-            value: <Postgres as sqlx::database::HasValueRef<'r>>::ValueRef,
-        ) -> Result<Self, sqlx::error::BoxDynError> {
-            Ok(Root(Hash::decode(value)?))
-        }
-    }
-
-    impl<'q> Encode<'q, Postgres> for Root {
-        fn encode_by_ref(
-            &self,
-            buf: &mut <Postgres as sqlx::database::HasArguments<'q>>::ArgumentBuffer,
-        ) -> sqlx::encode::IsNull {
-            self.0.encode_by_ref(buf)
-        }
-    }
-
-    impl Type<Postgres> for Root {
-        fn type_info() -> <Postgres as Database>::TypeInfo {
-            <[u8] as Type<Postgres>>::type_info()
-        }
-    }
-}

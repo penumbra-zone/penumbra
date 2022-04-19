@@ -20,8 +20,6 @@ ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
 ark-serialize = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
 poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377" }
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
-# this allows us to implement Decode for various types without orphan rule issues
-sqlx = { version = "0.5.9", features = ["postgres"], optional = true }
 proptest = { version = "1", optional = true }
 proptest-derive = { version = "0.3", optional = true }
 rand = { version = "0.8", optional = true }
@@ -33,7 +31,6 @@ fast_hash = []
 arbitrary = ["proptest", "proptest-derive", "rand"]
 
 [dev-dependencies]
-sqlx = { version = "0.5.9", features = ["postgres", "runtime-tokio-rustls"] }
 static_assertions = "1"
 proptest = "1"
 proptest-derive = "0.3"
