@@ -136,6 +136,7 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.chain.GenesisAppState", SERIALIZE),
     (".penumbra.chain.GenesisAllocation", SERIALIZE),
     (".penumbra.transaction.OutputBody", SERIALIZE),
+    (".penumbra.wallet.NoteRecord", SERIALIZE),
 ];
 
 static FIELD_ATTRIBUTES: &[(&str, &str)] = &[

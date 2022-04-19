@@ -1,4 +1,7 @@
-use sqlx::{Pool, Sqlite};
+use penumbra_chain::params::ChainParams;
+use penumbra_crypto::merkle::NoteCommitmentTree;
+use penumbra_proto::{crypto::FullViewingKey, Message, Protobuf};
+use sqlx::{query, Pool, Sqlite};
 
 pub struct Storage {
     pub(super) pool: Pool<Sqlite>,
@@ -13,36 +16,64 @@ impl Storage {
         sqlx::migrate!().run(&self.pool).await.map_err(Into::into)
     }
 
-    pub async fn insert_table(self: &Storage) -> anyhow::Result<i64> {
-        let mut conn = self.pool.acquire().await?;
-
-        // Insert the task, then obtain the ID of this row
-        let id = sqlx::query!(
+    /// The last block height we've scanned to, if any.
+    pub async fn last_sync_height(&self) -> anyhow::Result<Option<u64>> {
+        let result = sqlx::query!(
             r#"
-INSERT INTO penumbra ( value )
-VALUES ( ?1 )
-        "#,
-            "Hello, world"
-        )
-        .execute(&mut conn)
-        .await?
-        .last_insert_rowid();
-
-        Ok(id)
-    }
-
-    pub async fn read_table(self: &Storage) -> anyhow::Result<String> {
-        let recs = sqlx::query!(
-            r#"
-SELECT id, value
-FROM penumbra
-ORDER BY id
-LIMIT 1
+            SELECT height
+            FROM sync_height
+            ORDER BY height DESC
+            LIMIT 1
         "#
         )
         .fetch_all(&self.pool)
         .await?;
 
-        Ok(recs[0].value.clone())
+        Ok(result[0].height.map(|h| h as u64))
+    }
+    pub async fn chain_params(&self) -> anyhow::Result<ChainParams> {
+        let result = query!(
+            r#"
+            SELECT bytes
+            FROM chain_params
+            LIMIT 1
+        "#
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        ChainParams::decode(result[0].bytes.as_ref().unwrap().as_slice())
+    }
+    pub async fn full_viewing_key(&self) -> anyhow::Result<FullViewingKey> {
+        let result = query!(
+            r#"
+            SELECT bytes
+            FROM full_viewing_key
+            LIMIT 1
+            "#
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(FullViewingKey::decode(
+            result[0].bytes.as_ref().unwrap().as_slice(),
+        )?)
+    }
+    pub async fn note_commitment_tree(&self) -> anyhow::Result<NoteCommitmentTree> {
+        let result = query!(
+            r#"
+            SELECT bytes
+            FROM note_commitment_tree
+            LIMIT 1
+            "#
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        //let nct_data = bincode::serialize(&result)?;
+
+        Ok(bincode::deserialize(
+            result[0].bytes.as_ref().unwrap().as_slice(),
+        )?)
     }
 }

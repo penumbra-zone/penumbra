@@ -56,3 +56,4 @@ rand_core = { version = "0.6.3", features = ["getrandom"] }
 
 [build-dependencies]
 vergen = "5"
+anyhow = "1"
