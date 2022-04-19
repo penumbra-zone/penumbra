@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use serde::{Deserialize, Serialize};
 
 use crate::Hash;
@@ -8,10 +10,16 @@ use crate::Hash;
 ///
 /// This type is inter-convertible via [`From`] and [`Into`] with `Option<Hash>`, and that is
 /// its only purpose.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(from = "Option<Hash>", into = "Option<Hash>")]
 pub struct OptionHash {
     inner: [u64; 4],
+}
+
+impl Debug for OptionHash {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        <Option<Hash>>::from(*self).fmt(f)
+    }
 }
 
 impl Default for OptionHash {
