@@ -93,7 +93,7 @@ impl Builder {
     }
 
     /// Calculate the position of the next insertion into this epoch.
-    fn position(&self) -> Position {
+    pub fn position(&self) -> Position {
         let (block, commitment) = if self.epoch.is_empty() {
             (0.into(), 0.into())
         } else {
