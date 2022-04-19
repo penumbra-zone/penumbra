@@ -87,3 +87,17 @@ impl From<InsertEpochError> for Epoch {
 #[error("eternity is full")]
 #[non_exhaustive]
 pub struct InsertEpochRootError;
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn insert_errors_sync_send() {
+        static_assertions::assert_impl_all!(InsertError: Sync, Send);
+        static_assertions::assert_impl_all!(InsertBlockError: Sync, Send);
+        static_assertions::assert_impl_all!(InsertBlockRootError: Sync, Send);
+        static_assertions::assert_impl_all!(InsertEpochError: Sync, Send);
+        static_assertions::assert_impl_all!(InsertEpochRootError: Sync, Send);
+    }
+}

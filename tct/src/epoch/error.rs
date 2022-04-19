@@ -40,3 +40,15 @@ impl From<InsertBlockError> for Block {
 #[error("epoch is full")]
 #[non_exhaustive]
 pub struct InsertBlockRootError;
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn insert_errors_sync_send() {
+        static_assertions::assert_impl_all!(InsertError: Sync, Send);
+        static_assertions::assert_impl_all!(InsertBlockError: Sync, Send);
+        static_assertions::assert_impl_all!(InsertBlockRootError: Sync, Send);
+    }
+}
