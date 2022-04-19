@@ -377,3 +377,13 @@ impl BlockMut<'_> {
         forgotten
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn insert_error_sync_send() {
+        static_assertions::assert_impl_all!(InsertError: Sync, Send);
+    }
+}
