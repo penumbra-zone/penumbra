@@ -23,7 +23,9 @@ penumbra-wallet = { path = "../wallet" }
 # Penumbra dependencies
 ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
+tendermint = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "master" }
 # External dependencies
+ed25519-consensus = "2"
 futures = "0.3"
 async-stream = "0.2"
 bincode = "1.3.3"
