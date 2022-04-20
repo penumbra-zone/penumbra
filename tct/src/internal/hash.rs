@@ -172,3 +172,19 @@ mod arbitrary {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use ark_ff::PrimeField;
+    use decaf377::{FieldExt, Fq};
+
+    use super::*;
+
+    #[test]
+    fn value_of_base_domain_separator() {
+        assert_eq!(
+            (*DOMAIN_SEPARATOR).to_bytes(),
+            Fq::from_le_bytes_mod_order(&hex::decode("197e501077d94b004b29e91196b9da397b8acbc98ac2d13d9099ad99f5215e490f171a0406f223ed25bafe4bc0451b649ba4b3fe0374d4a0b1ffd2ead37f531e").unwrap()).to_bytes()
+        );
+    }
+}
