@@ -178,11 +178,11 @@ impl Worker {
 
         tracing::debug!(
             ?validator_updates,
-            "SKIPPING sending validator updates to tendermint"
+            "sending validator updates to tendermint"
         );
 
         Ok(abci::response::EndBlock {
-            validator_updates: Vec::new(),
+            validator_updates,
             consensus_param_updates: None,
             events: Vec::new(),
         })
