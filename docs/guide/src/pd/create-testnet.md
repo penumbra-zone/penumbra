@@ -15,7 +15,7 @@ Next, create the Tendermint config data with
 ```bash
 tendermint init validator
 ```
-This will create a default genesis file stored in `$TMHOME/config` (if set, else
+This will create a default genesis file stored in `\$TMHOME/config` (if set, else
 `~/.tendermint/config`) named `genesis.json`, as well as a validator private key
 named `priv_validator_key.json`.
 
@@ -53,7 +53,7 @@ instance, and the RocksDB instance.
 
 Start the Penumbra instance (you probably want to set `RUST_LOG` to `debug`):
 ```bash
-cargo run --bin pd start --rocks-path $HOME/.rocksdb
+cargo run --bin pd start --rocks-path \$HOME/.rocksdb
 ```
 Start the Tendermint node:
 ```bash
@@ -68,7 +68,7 @@ Resetting the state requires multiple steps:
 
 * To reset the Tendermint state, use `tendermint unsafe-reset-all`.
 * To reset your wallet state (without deleting keys), use `pcli wallet reset`.
-* To reset RocksDB state, delete the RocksDB state file: `$HOME/.rocksdb`
+* To reset RocksDB state, delete the RocksDB state file: `\$HOME/.rocksdb`
 
 You need to do **all of these** to fully reset the node, and doing only one will
 result in mysterious errors.
@@ -108,7 +108,7 @@ You should have a working setup with all containers running
 after running the script:
 
 ```console
-$ docker ps
+\$ docker ps
 CONTAINER ID   IMAGE                          COMMAND                  CREATED         STATUS         PORTS                                                                                    NAMES
 b7fce1d0ffd9   tendermint/tendermint:latest   "docker-entrypoint.s…"   4 minutes ago   Up 4 minutes   0.0.0.0:6060->6060/tcp, 0.0.0.0:26656-26657->26656-26657/tcp, 0.0.0.0:27000->26660/tcp   tendermint
 5a6bd39bb6f7   grafana/grafana:latest         "/run.sh"                4 minutes ago   Up 4 minutes   0.0.0.0:3000->3000/tcp                                                                   penumbra-grafana-1

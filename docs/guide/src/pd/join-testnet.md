@@ -11,22 +11,22 @@ documentation](https://docs.tendermint.com/v0.35/nodes/#full-node).
 Run the following:
 
 ```console
-$ tendermint init full
+tendermint init full
 ```
 
 and you will have the Tendermint files created necessary for your fullnode:
 
 ```console
-$ ls $HOME/.tendermint
+\$ ls $HOME/.tendermint
 config	data
 
-$ ls $HOME/.tendermint/config/
+\$ ls $HOME/.tendermint/config/
 config.toml	genesis.json	node_key.json
 ```
 
 Next you'll need to modify the persistent peers list to specify our primary
 testnet node as a permanent peer for your node. Open
-`$HOME/.tendermint/config/config.toml` and find the `persistent-peers` line and
+`\$HOME/.tendermint/config/config.toml` and find the `persistent-peers` line and
 add the testnet node:
 
 ```toml
@@ -54,14 +54,14 @@ After configuration is complete, you're ready to start your node.
 First, start the `pd` binary:
 
 ```console
-$ export RUST_LOG="warn,pd=debug,penumbra=debug,jmt=info" # or some other logging level
-$ cargo run --release --bin pd start --rocks-path $HOME/.rocksdb 
+export RUST_LOG="warn,pd=debug,penumbra=debug,jmt=info" && \ # or some other logging level
+cargo run --release --bin pd start --rocks-path $HOME/.rocksdb 
 ```
 
 Then (perhaps in another terminal) start Tendermint:
 
 ```console
-$ tendermint start
+tendermint start
 ```
 
 You should now be participating in the network!
