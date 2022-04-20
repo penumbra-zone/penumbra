@@ -11,6 +11,7 @@ use penumbra_proto::{
     stake::ValidatorInfo,
     Protobuf,
 };
+use penumbra_stake::ValidatorState;
 use tonic::Status;
 use tracing::instrument;
 
@@ -76,13 +77,16 @@ impl ObliviousQuery for Storage {
             .await
             .map_err(|_| tonic::Status::unavailable("database error"))?;
 
-        let _show_inactive = request.get_ref().show_inactive;
+        let show_inactive = request.get_ref().show_inactive;
         let s = try_stream! {
-            for validator in validators {
-                let info = overlay.validator_info(&validator)
+            for identity_key in validators {
+                let info = overlay.validator_info(&identity_key)
                     .await?
                     .expect("known validator must be present");
-                // TODO: filter by show_inactive
+                // Slashed and inactive validators are not shown by default.
+                if !show_inactive && info.status.state != ValidatorState::Active {
+                    continue;
+                }
                 yield info.to_proto();
             }
         };

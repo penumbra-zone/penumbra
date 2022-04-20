@@ -277,7 +277,12 @@ impl StakeCmd {
 
                 let mut table = Table::new();
                 table.load_preset(presets::NOTHING);
-                table.set_header(vec!["Voting Power", "Commission", "Validator Info"]);
+                table.set_header(vec![
+                    "Voting Power",
+                    "Commission",
+                    "State",
+                    "Validator Info",
+                ]);
 
                 for v in validators {
                     let power_percent = 100.0 * (v.status.voting_power as f64) / total_voting_power;
@@ -292,6 +297,7 @@ impl StakeCmd {
                     table.add_row(vec![
                         format!("{:.2}%", power_percent),
                         format!("{}bps", commission_bps),
+                        v.status.state.to_string(),
                         v.validator.name,
                     ]);
                     table.add_row(vec![
