@@ -303,15 +303,18 @@ impl StakeCmd {
                     table.add_row(vec![
                         "".into(),
                         "".into(),
+                        "".into(),
                         format!("  {}", v.validator.identity_key),
                     ]);
                     if *detailed {
                         table.add_row(vec![
                             "".into(),
                             "".into(),
+                            "".into(),
                             format!("  {}", v.validator.website),
                         ]);
                         table.add_row(vec![
+                            "".into(),
                             "".into(),
                             "".into(),
                             format!("  {}", v.validator.description),
