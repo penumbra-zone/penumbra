@@ -21,6 +21,19 @@ pub enum ValidatorState {
     Slashed,
 }
 
+impl std::fmt::Display for ValidatorState {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            ValidatorState::Inactive => write!(f, "Inactive"),
+            ValidatorState::Active => write!(f, "Active"),
+            ValidatorState::Unbonding { unbonding_epoch } => {
+                write!(f, "Unbonding (unbonding epoch: {})", unbonding_epoch)
+            }
+            ValidatorState::Slashed => write!(f, "Slashed"),
+        }
+    }
+}
+
 impl Protobuf<pb::ValidatorState> for ValidatorState {}
 
 impl From<ValidatorState> for pb::ValidatorState {
