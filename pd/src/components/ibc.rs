@@ -1,6 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_ibc::{ClientCounter, ClientData, ConsensusState, IBCAction};
+use penumbra_ibc::{ClientCounter, ClientData, ConsensusState, IBCAction, VerifiedHeights};
 use penumbra_transaction::{Action, Transaction};
 use std::convert::TryFrom;
 use tendermint::abci;
@@ -148,7 +148,7 @@ impl IBCComponent {
                 // check if client is expired
                 let latest_consensus_state = self
                     .overlay
-                    .get_consensus_state(
+                    .get_verified_consensus_state(
                         client_data.client_state.0.latest_height(),
                         client_data.client_id.clone(),
                     )
@@ -185,19 +185,25 @@ impl IBCComponent {
                     .verify_tendermint_update(
                         msg_update_client.client_id.clone(),
                         tm_client_state,
-                        tm_header,
+                        tm_header.clone(),
                     )
                     .await?;
 
+                // store the updated client and consensus states
                 let height = self.overlay.get_block_height().await?;
                 let next_client_data = client_data.with_new_client_state(
                     AnyClientState::Tendermint(next_tm_client_state),
                     now.to_rfc3339(),
                     height,
                 );
-
-                // store the updated client and consensus states
                 self.overlay.put_client_data(next_client_data).await;
+                self.overlay
+                    .put_verified_consensus_state(
+                        tm_header.height(),
+                        msg_update_client.client_id.clone(),
+                        ConsensusState(AnyConsensusState::Tendermint(next_tm_consensus_state)),
+                    )
+                    .await?;
             }
             _ => return Ok(()),
         }
@@ -224,12 +230,12 @@ impl IBCComponent {
 
         // store the genesis consensus state
         self.overlay
-            .put_consensus_state(
+            .put_verified_consensus_state(
                 data.client_state.0.latest_height(),
                 client_id,
                 ConsensusState(msg.consensus_state),
             )
-            .await;
+            .await?;
 
         // increment client counter
         let counter = self
@@ -265,7 +271,7 @@ impl IBCComponent {
         let untrusted_consensus_state = TendermintConsensusState::from(untrusted_header.clone());
         match self
             .overlay
-            .get_consensus_state(untrusted_header.height(), client_id.clone())
+            .get_verified_consensus_state(untrusted_header.height(), client_id.clone())
             .await
         {
             Ok(stored_consensus_state) => match stored_consensus_state.0 {
@@ -281,7 +287,7 @@ impl IBCComponent {
 
         let last_trusted_consensus_state = match self
             .overlay
-            .get_consensus_state(untrusted_header.trusted_height, client_id.clone())
+            .get_verified_consensus_state(untrusted_header.trusted_height, client_id.clone())
             .await?
             .0
         {
@@ -341,6 +347,12 @@ impl IBCComponent {
         }
 
         // consensus state is verified
+
+        // if this header is verified, and conflicts with a past header that was previously
+        // verified, we need to freeze the client.
+        //
+        // NOTE (divergence): we use the height of the header as the FrozenHeight. The Cosmos SDK
+        // uses a static height, (0, 1), for all frozen clients.
         if conflicting_header {
             return Ok((
                 trusted_client_state
@@ -349,37 +361,61 @@ impl IBCComponent {
                 untrusted_consensus_state,
             ));
         }
-        
-        // check that updates are monotonic
-        if untrusted_header.height() < trusted_client_state.latest_height() {
-            if let Some(next_consensus_state) = self.overlay.next_consensus_state(&client_id, untrusted_header.height()).await? {
-                if untrusted_header.signed_header.header().time > next_consensus_state.timestamp {
-                    return Err(anyhow::anyhow!(
-                        "client update timestamp is too high"
-                    ));
+
+        let verified_header = untrusted_header.clone();
+
+        // check that updates have monotonic timestamps. we may receive client updates that are
+        // disjoint: the header we received and validated may be older than the newest header we
+        // have. In that case, we need to verify that the timestamp is correct.
+        let mut timestamp_monotonicity_violation = false;
+
+        let next_consensus_state = self
+            .overlay
+            .next_consensus_state(&client_id, verified_header.height())
+            .await?;
+        let prev_consensus_state = self
+            .overlay
+            .prev_consensus_state(&client_id, verified_header.height())
+            .await?;
+
+        // case 1: if we have a verified consensus state previous to this header, verify that this
+        // header's timestamp is greater than or equal to the stored consensus state's timestamp
+        if let Some(prev_state) = prev_consensus_state {
+            match prev_state.0 {
+                AnyConsensusState::Tendermint(prev_state_tm) => {
+                    if !(verified_header.signed_header.header().time >= prev_state_tm.timestamp) {
+                        timestamp_monotonicity_violation = true;
+                    }
                 }
+                _ => return Err(anyhow::anyhow!("unsupported consensus state type")),
             }
         }
-        // (cs-trusted, cs-prev, cs-new)
-        if header.trusted_height < header.height() {
-            let maybe_prev_cs = ctx
-                .prev_consensus_state(&client_id, header.height())?
-                .map(downcast_consensus_state)
-                .transpose()?;
 
-            if let Some(prev_cs) = maybe_prev_cs {
-                // New (untrusted) header timestamp cannot occur before the
-                // previous consensus state's height
-                if header.signed_header.header().time < prev_cs.timestamp {
-                    return Err(Ics02Error::tendermint_handler_error(
-                        Error::header_timestamp_too_low(
-                            header.signed_header.header().time.to_string(),
-                            prev_cs.timestamp.to_string(),
-                        ),
-                    ));
+        // case 2: if we have a verified consensus state with higher block height than this header,
+        // verify that this header's timestamp is less than or equal to this header's timestamp.
+        if let Some(next_state) = next_consensus_state {
+            match next_state.0 {
+                AnyConsensusState::Tendermint(next_state_tm) => {
+                    if !(verified_header.signed_header.header().time <= next_state_tm.timestamp) {
+                        timestamp_monotonicity_violation = true;
+                    }
                 }
+                _ => return Err(anyhow::anyhow!("unsupported consensus state type")),
             }
-        if untrusted_header.hei
+        }
+
+        // if we receive a verified header that has non-monotonic timestamps, we freeze the client
+        // (following Cosmos SDK behavior here.)
+        if timestamp_monotonicity_violation {
+            return Ok((
+                trusted_client_state
+                    .with_header(verified_header.clone())
+                    .with_frozen_height(verified_header.height())?,
+                untrusted_consensus_state,
+            ));
+        }
+
+        // TODO: pruning headers is possible here to improve performance.
 
         return Ok((
             trusted_client_state.with_header(untrusted_header.clone()),
@@ -424,7 +460,34 @@ pub trait View: OverlayExt + Send + Sync {
         client_data.ok_or(anyhow::anyhow!("client not found"))
     }
 
-    async fn get_consensus_state(
+    async fn get_verified_heights(&self, client_id: &ClientId) -> Result<Option<VerifiedHeights>> {
+        self.get_domain(
+            format!(
+                "ibc/ics02-client/clients/{}/verified_heights",
+                hex::encode(client_id.as_bytes())
+            )
+            .into(),
+        )
+        .await
+    }
+
+    async fn put_verified_heights(
+        &mut self,
+        client_id: &ClientId,
+        verified_heights: VerifiedHeights,
+    ) {
+        self.put_domain(
+            format!(
+                "ibc/ics02-client/clients/{}/verified_heights",
+                hex::encode(client_id.as_bytes())
+            )
+            .into(),
+            verified_heights,
+        )
+        .await;
+    }
+
+    async fn get_verified_consensus_state(
         &self,
         height: Height,
         client_id: ClientId,
@@ -441,12 +504,12 @@ pub trait View: OverlayExt + Send + Sync {
         .ok_or(anyhow::anyhow!("consensus state not found"))
     }
 
-    async fn put_consensus_state(
+    async fn put_verified_consensus_state(
         &mut self,
         height: Height,
         client_id: ClientId,
         consensus_state: ConsensusState,
-    ) {
+    ) -> Result<()> {
         self.put_domain(
             format!(
                 "ibc/ics02-client/clients/{}/consensus_state/{}",
@@ -457,20 +520,99 @@ pub trait View: OverlayExt + Send + Sync {
             consensus_state,
         )
         .await;
+
+        // update verified heights
+        let mut verified_heights =
+            self.get_verified_heights(&client_id)
+                .await?
+                .unwrap_or(VerifiedHeights {
+                    heights: Vec::new(),
+                });
+
+        verified_heights.heights.push(height.clone());
+
+        self.put_verified_heights(&client_id, verified_heights)
+            .await;
+
+        Ok(())
     }
-    
-    // return the lowest consensus state that is larger than the given height
-    async fn next_consensus_state(&self, client_id: &ClientId, height: Height) -> Result<Option<ConsensusState>> {
-        self.get_domain(
-            format!(
-                "ibc/ics02-client/clients/{}/consensus_state/{}",
-                hex::encode(client_id.as_bytes()),
-                height
+
+    // next_consensus_state returns the lowest consensus state that is higher than the given
+    // height, if it exists.
+    async fn next_consensus_state(
+        &self,
+        client_id: &ClientId,
+        height: Height,
+    ) -> Result<Option<ConsensusState>> {
+        let maybe_verified_heights: Option<VerifiedHeights> = self
+            .get_domain(
+                format!(
+                    "ibc/ics02-client/clients/{}/verified_heights",
+                    hex::encode(client_id.as_bytes())
+                )
+                .into(),
             )
-            .into(),
-        )
-        .await
-        .map(|cs| cs.map(downcast_consensus_state))
+            .await?;
+
+        if maybe_verified_heights.is_none() {
+            return Ok(None);
+        }
+
+        let mut verified_heights = maybe_verified_heights.unwrap();
+        // WARNING: load-bearing sort
+        verified_heights.heights.sort();
+
+        if let Some(next_height) = verified_heights
+            .heights
+            .iter()
+            .find(|&verified_height| verified_height > &height)
+        {
+            let next_cons_state = self
+                .get_verified_consensus_state(*next_height, client_id.clone())
+                .await?;
+            return Ok(Some(next_cons_state));
+        } else {
+            return Ok(None);
+        }
+    }
+
+    // prev_consensus_state returns the highest consensus state that is lower than the given
+    // height, if it exists.
+    async fn prev_consensus_state(
+        &self,
+        client_id: &ClientId,
+        height: Height,
+    ) -> Result<Option<ConsensusState>> {
+        let maybe_verified_heights: Option<VerifiedHeights> = self
+            .get_domain(
+                format!(
+                    "ibc/ics02-client/clients/{}/verified_heights",
+                    hex::encode(client_id.as_bytes())
+                )
+                .into(),
+            )
+            .await?;
+
+        if maybe_verified_heights.is_none() {
+            return Ok(None);
+        }
+
+        let mut verified_heights = maybe_verified_heights.unwrap();
+        // WARNING: load-bearing sort
+        verified_heights.heights.sort();
+
+        if let Some(prev_height) = verified_heights
+            .heights
+            .iter()
+            .find(|&verified_height| verified_height < &height)
+        {
+            let prev_cons_state = self
+                .get_verified_consensus_state(*prev_height, client_id.clone())
+                .await?;
+            return Ok(Some(prev_cons_state));
+        } else {
+            return Ok(None);
+        }
     }
 }
 

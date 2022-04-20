@@ -3,6 +3,7 @@ syntax = "proto3";
 import "ibc/core/connection/v1/tx.proto";
 import "ibc/core/channel/v1/tx.proto";
 import "ibc/core/client/v1/tx.proto";
+import "ibc/core/client/v1/client.proto";
 import "google/protobuf/any.proto";
 
 package penumbra.ibc;
@@ -44,4 +45,8 @@ message ClientCounter {
 
 message ConsensusState {
   google.protobuf.Any consensusState = 1;
+}
+
+message VerifiedHeights {
+  repeated .ibc.core.client.v1.Height heights = 1; 
 }
