@@ -3,7 +3,9 @@ use std::str::FromStr;
 use ibc::{
     clients::ics07_tendermint::{client_state, consensus_state},
     core::{
-        ics02_client::{client_consensus::AnyConsensusState, client_state::AnyClientState},
+        ics02_client::{
+            client_consensus::AnyConsensusState, client_state::AnyClientState, height::Height,
+        },
         ics24_host::identifier::ClientId,
     },
 };
@@ -171,6 +173,31 @@ impl From<ClientData> for pb::ClientData {
             client_state: Some(d.client_state.into()),
             processed_time: d.processed_time,
             processed_height: d.processed_height,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct VerifiedHeights {
+    pub heights: Vec<Height>,
+}
+
+impl Protobuf<pb::VerifiedHeights> for VerifiedHeights {}
+
+impl TryFrom<pb::VerifiedHeights> for VerifiedHeights {
+    type Error = anyhow::Error;
+
+    fn try_from(msg: pb::VerifiedHeights) -> Result<Self, Self::Error> {
+        Ok(VerifiedHeights {
+            heights: msg.heights.into_iter().map(|h| h.into()).collect(),
+        })
+    }
+}
+
+impl From<VerifiedHeights> for pb::VerifiedHeights {
+    fn from(d: VerifiedHeights) -> Self {
+        Self {
+            heights: d.heights.into_iter().map(|h| h.into()).collect(),
         }
     }
 }
