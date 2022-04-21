@@ -9,6 +9,7 @@ use penumbra_crypto::{
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
     Fr, Nullifier, Value,
 };
+use penumbra_ibc::IBCAction;
 use penumbra_proto::{
     transaction::{
         Fee as ProtoFee, Transaction as ProtoTransaction, TransactionBody as ProtoTransactionBody,
@@ -91,6 +92,16 @@ impl Transaction {
         self.actions().filter_map(|action| {
             if let Action::Undelegate(d) = action {
                 Some(d)
+            } else {
+                None
+            }
+        })
+    }
+
+    pub fn ibc_actions(&self) -> impl Iterator<Item = &IBCAction> {
+        self.actions().filter_map(|action| {
+            if let Action::IBCAction(ibc_action) = action {
+                Some(ibc_action)
             } else {
                 None
             }

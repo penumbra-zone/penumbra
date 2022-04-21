@@ -68,16 +68,8 @@ impl Component for IBCComponent {
 
     #[instrument(name = "ibc", skip(self, tx))]
     async fn execute_tx(&mut self, tx: &Transaction) -> Result<()> {
-        // handle client transactions
-        for ibc_action in tx
-            .transaction_body
-            .actions
-            .iter()
-            .filter_map(|action| match action {
-                Action::IBCAction(ibc_action) => Some(ibc_action),
-                _ => None,
-            })
-        {
+        // Handle any IBC actions found in the transaction.
+        for ibc_action in tx.ibc_actions() {
             self.handle_ibc_action(ibc_action).await?;
         }
 
