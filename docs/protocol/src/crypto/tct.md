@@ -55,7 +55,7 @@ chain can be thought of as a triply-nested sequence (an _eternity_) of sequences
 sequences (_blocks_) of note commitments. The tiered commitment tree represents these triply-nested
 sequences as triply-nested tiers.
 
-The entire commitment tree consists of three tiers, each of which is 8 levels tall:
+The entire commitment tree consists of three tiers, each of which is 8 levels tall.
 
 - The entire commitment tree consists of a top-level [_tier_](#tiers) (which we call an _eternity_),
 which contains 8 nested levels of [_nodes_](#nodes);
@@ -109,28 +109,21 @@ A tier is either _empty_ or it is a [_node_](#nodes).
 
 #### Nodes
 
-A node in a tree contains a _non-empty_ list of up to four _children_, all of whom must be the same
-type of thing (either a [tier](#tiers) or a [leaf](#leaves)). If a node has an $n$th child (for $n > 0$), it must
-have an $(n - 1)$th child (there cannot be gaps in the list of children).
+A node in a tree contains a _non-empty_ list of up to four _children_.
 
-Every node must be _left-to-right filled_:
+If a node has an $n$th child (for $n > 0$), it must have an $(n - 1)$th child (there cannot be gaps
+in the list of children).
 
-- a leaf is always left-to-right filled;
-- a node is left-to-right filled if all of its children except its rightmost child are _full_ and
-  its rightmost child is left-to-right filled; and
-- a tier is left-to-right filled if it is not empty and the node it contains is left-to-right filled.
+Each node must be _left-to-right filled_:
 
-Where _full_ is defined as:
-
-- a leaf is always full;
-- a node is full if it has exactly four children and all its children are full; and
-- a tier is full if it is not empty and the node it contains is full.
-
-Note that _full_ subsumes _left-to-right filled_: everything that is full is also left-to-right filled.
+- if its children are nodes, all its children but its rightmost child are _perfect_, and its
+  rightmost child is left-to-right filled (where a _perfect_ node has exactly four children and if its
+  children are nodes, they are also perfect) or
+- if its children are leaves or tiers, the node is left-to-right filled.
 
 #### Leaves
 
-A leaf of a tree contains a single commitment.
+A leaf of a tree is a single commitment.
 
 ## Construction
 
@@ -141,8 +134,29 @@ commitment tree from this triply nested sequence of commitments by iterating an 
 construct a single tier from a single sequence of items three times, to reduce a triply-nested
 sequence of commitments to a triply-nested tiered tree.
 
-We define a function $\mathtt{tier}_\tau : [\tau] \to \mathtt{Tier}_\tau$ which converts a sequence of items of
-type $\tau$ to a tier whose bottom-most nodes have children of type $\tau$:
+We define a function $\mathtt{tier}$ which converts a sequence of items (of length less than $4^8$)
+to a tier whose bottom-most nodes' children are those items:
+
+$$
+\begin{align}
+\mathtt{tier}([]) & = \mathtt{Tier}(\emptyset) \\
+\mathtt{tier}(items) & =
+\mathtt{Tier}\big(\underset{1}{\mathtt{chunk}}(\underset{2}{\mathtt{chunk}}(\underset{3}{\mathtt{chunk}}(\underset{4}{\mathtt{chunk}}(\underset{5}{\mathtt{chunk}}(\underset{6}{\mathtt{chunk}}(\underset{7}{\mathtt{chunk}}(\underset{8}{\mathtt{chunk}}(items))))))))[0]\big)
+\end{align}
+$$
+
+where the function $\mathtt{chunk}$ is defined on non-empty sequences as:
+
+$$
+\begin{align}
+\mathtt{chunk}([a, b, c, d, \dots rest]) & = [\mathtt{Node}(a, b, c, d), \dots \mathtt{chunk}(rest)] \\
+\mathtt{chunk}([a, b, c]) & = [\mathtt{Node}(a, b, c)] \\
+\mathtt{chunk}([a, b]) & = [\mathtt{Node}(a, b)] \\
+\mathtt{chunk}([a]) & = [\mathtt{Node}(a)] \\
+\end{align}
+$$
+
+In English, this algorithm is:
 
 - if the sequence is empty, return the empty tier;
 - otherwise, do the following exactly 8 times:
@@ -152,22 +166,20 @@ type $\tau$ to a tier whose bottom-most nodes have children of type $\tau$:
   - unless done with the 8 iterations, repeat again, starting with this sequence of nodes (which is
     now shorter by about a factor of 4)
 - if the input sequence was less than $4^8$ items long, the resultant sequence will now contain
-  exactly one element: return that element.
+  exactly one node; return it as the top-most node contained in a tier.
 
 Constructing the entire tree requires mapping the $\mathtt{tier}$ function over the triply-nested
 sequence:
 
 $$
 \begin{align}
-& \mathtt{tree} : [[[\mathbb{F}_q]]] \to
-\mathtt{Tier}_{\left(\mathtt{Tier}_{\left(\mathtt{Tier}_{(\mathbb{F}_q)}\right)}\right)} \\
-& \mathtt{tree}(\mathtt{eternity}) =\\
-& \ \ \ \ \mathtt{tier}_{\left(\mathtt{Tier}_{\left(\mathtt{Tier}_{(\mathbb{F}_q)}\right)}\right)}\left(\mathtt{eternity.map}(\lambda \mathtt{epoch} \to \mathtt{tier}_{\left(\mathtt{Tier}_{(\mathbb{F}_q)}\right)}(\mathtt{epoch.map}(\lambda \mathtt{block} \to
-\mathtt{tier}_{(\mathbb{F}_q)}(\mathtt{block})))))\right)
+& \mathtt{tree}(eternity) =\\
+& \ \ \ \ \mathtt{tier}\left(eternity\mathtt{.map}(epoch \Rightarrow \mathtt{tier}(epoch\mathtt{.map}(block \Rightarrow
+\mathtt{tier}(block)))))\right)
 \end{align}
 $$
 
-where the $map$ function applies a function to each element of a sequence.
+where the $\mathtt{map}$ function applies a function to each element of a sequence.
 
 ## Hashing Nodes
 
@@ -199,22 +211,18 @@ $\mathbb{F}_q$.
 In terms of this base domain separator, we construct a separate domain separator to use for each
 _height_ of node or leaf in the tree.
 
-$$\mathbf{D}_\mathtt{height} = \mathbf{D}_0 + \mathtt{height}$$
+$$\mathbf{D}_{height} = \mathbf{D}_0 + height$$
 
 We then define the hash functions for leaves and nodes in terms of the original $\mathtt{hash_1}$ and
 $\mathtt{hash_4}$ functions from Poseidon:
 
-- $\mathtt{hash_{leaf}}(\mathtt{commitment} : \mathbb{F}_q) = \mathtt{hash_1}(\mathbf{D}_0,
-\mathtt{commitment})$
-- $\mathtt{hash_{node}}(\mathtt{height} : \mathbb{N}, \mathtt{children} : \mathbb{F}_q \times
-\mathbb{F}_q \times \mathbb{F}_q \times \mathbb{F}_q) = \mathtt{hash_4}(\mathbf{D}_\mathtt{height},
-\mathtt{children})$
+- $\mathtt{hash_{leaf}}(commitment : \mathbb{F}_q) = \mathtt{hash_1}(\mathbf{D}_0,
+commitment)$
+- $\mathtt{hash_{node}}(height : \mathbb{N}, children : \mathbb{F}_q \times
+\mathbb{F}_q \times \mathbb{F}_q \times \mathbb{F}_q) = \mathtt{hash_4}(\mathbf{D}_{height},
+children)$
 
 Having defined them, we will now exclusively use $\mathtt{hash_{leaf}}$ and $\mathtt{hash_{node}}$.
-
-### Hashes of Leaves
-
-Leaves are easy to hash; every leaf's hash is the $\mathtt{hash_{leaf}}$ of its contained commitment.
 
 ### Hashes of Nodes
 
@@ -267,22 +275,21 @@ The hash of a node with more than zero children is parameterized by a padding el
 which will be used to pad the frontier of the subtree of this node:
 
 $$
-\mathtt{node.hash}(\mathbf{P}) = \mathtt{hash_{node}}\left(\mathtt{node.height},
-\mathtt{pad}_4(\mathbf{P}, \mathtt{node.hash_{children}(\mathbf{P})})\right)
+node\mathtt{.hash}(\mathbf{P} : \mathbb{F}_q) = \mathtt{hash_{node}}\left(node\mathtt{.height},
+\mathtt{pad}_4(\mathbf{P}, node\mathtt{.hash_{children}(\mathbf{P})})\right)
 $$
 
 where the method $\mathtt{node.hash_{children}}$ is defined as:
 
 $$
 \begin{align}
-& \mathtt{node.hash_{children}}(\mathbf{P} : \mathbb{F}_q) =\ \mathbf{match}\ \mathtt{node.children}\ \{\newline
-& \ \ \ [a] \Rightarrow [\mathtt{a.hash(\mathbf{P})}]\newline
-& \ \ \ [a, b] \Rightarrow [\mathtt{a.hash({\mathbf{P}_\mathtt{complete})}}, \mathtt{b.hash(\mathbf{P})}]\newline
-& \ \ \ [a, b, c] \Rightarrow [\mathtt{a.hash({\mathbf{P}_\mathtt{complete})}},
-\mathtt{b.hash({\mathbf{P}_\mathtt{complete})}}, \mathtt{c.hash(\mathbf{P})}]\newline
-& \ \ \ [a, b, c, d] \Rightarrow [\mathtt{a.hash({\mathbf{P}_\mathtt{complete})}},
-\mathtt{b.hash({\mathbf{P}_\mathtt{complete})}}, \mathtt{c.hash({\mathbf{P}_\mathtt{complete})}}, \mathtt{d.hash(\mathbf{P})}]\newline
-& \}
+& node\mathtt{.hash_{children}}(\mathbf{P} : \mathbb{F}_q) =\ \mathbf{case}\ node\mathtt{.children}\ \mathbf{of}\newline
+& \ \ \ \ \ [a] \Rightarrow [a\mathtt{.hash(\mathbf{P})}]\newline
+& \ \ \ \ \ [a, b] \Rightarrow [a\mathtt{.hash({\mathbf{P}_\mathtt{complete})}}, b\mathtt{.hash(\mathbf{P})}]\newline
+& \ \ \ \ \ [a, b, c] \Rightarrow [a\mathtt{.hash({\mathbf{P}_\mathtt{complete})}},
+b\mathtt{.hash({\mathbf{P}_\mathtt{complete})}}, c\mathtt{.hash(\mathbf{P})}]\newline
+& \ \ \ \ \ [a, b, c, d] \Rightarrow [a\mathtt{.hash({\mathbf{P}_\mathtt{complete})}},
+b\mathtt{.hash({\mathbf{P}_\mathtt{complete})}}, c\mathtt{.hash({\mathbf{P}_\mathtt{complete})}}, d\mathtt{.hash(\mathbf{P})}]
 \end{align}
 $$
 
@@ -291,6 +298,86 @@ padding](#frontier-dependent-padding) as described above.
 
 ### Hashes of Tiers
 
+The hash of a tier also depends on whether it is on the frontier.
 
+$$
+\begin{align}
+& tier\mathtt{.hash}(\mathbf{P} : \mathbb{F}_q) =\ \mathbf{case}\ tier\ \mathbf{of}\newline
+& \ \ \ \ \ \mathtt{Tier}(\emptyset) \Rightarrow \mathbf{P}\newline
+& \ \ \ \ \ \mathtt{Tier}(node) \Rightarrow node\mathtt{.hash(\mathbf{P})}
+\end{align}
+$$
+
+### Hashes of Leaves
+
+Leaves are easy to hash; every leaf's hash is the $\mathtt{hash_{leaf}}$ of its contained
+commitment.
+
+$$
+\mathit{leaf}\mathtt{.hash}(\_ : \mathbb{F}_q) = \mathtt{hash_{leaf}}(\mathit{leaf})
+$$
+
+The hash of a leaf does not depend on whether it is on the frontier or not, so the padding is
+ignored.
+
+### Hashes of Trees
+
+The root hash of an entire tree is the hash of its topmost tier using the padding hash
+$\mathbf{P}_\mathtt{frontier}$:
+
+$$
+\mathit{tree}\mathtt{.root()} = \mathit{tree}\mathtt{.hash(\mathbf{P}_\mathtt{frontier})}
+$$
 
 ## Sparsity
+
+A client of the tree does not usually ever need to produce proofs for the vast majority of
+commitments which have been bound into it. In the case of a full node, proofs need never be
+produced; only the root hash need be updated. In the case of a client, only proofs of inclusion for
+commitments relevant to that clients fragment of the global state need ever be produced.
+
+The construction above represents every commitment explicitly, which means that if interpreted
+literally, it would result in a large amount of storage usage. Instead, we would like to make the
+tree _sparse_, by summarizing nodes which contain information that is considered irrelevant to a
+particular user.
+
+This can be done via a modification to the construction of nodes: specifically, a new kind of node
+can be introduced which holds a _hash value_ rather that a list of children. The hash of such a node
+is defined to be exactly the contained hash value.
+
+Given a set $R$ of commitments which are desired to be remembered, we can prune the tree to
+summarize irrelevant parts of it.
+
+Pruning a leaf replaces the leaf by its hash if the leaf is not in the remembered set $R$:
+
+$$
+\begin{align}
+\mathit{leaf}\mathtt{.prune}(R)\ & \mathbf{if}\ \mathit{leaf} \in R = \mathit{leaf}\\
+\mathit{leaf}\mathtt{.prune}(R)\ & \mathbf{if}\ \mathit{leaf} \notin R = \mathit{leaf}\mathtt{.hash()}\\
+\end{align}
+$$
+
+Pruning a node replaces the node by its hash if, when pruning all of its children, those children
+are all hashes rather than nodes. Otherwise, it merely prunes its children, but preserves itself,
+because there is at least one child of interest.
+
+$$
+\begin{align}
+\mathit{node}\mathtt{.prune}(R)\ & \mathbf{if}\ (\exists \mathit{child} \in
+\mathit{pruned}, \mathit{child} \notin \mathbb{F}_q) =
+\mathtt{Node}(\mathit{pruned})\\
+\mathit{node}\mathtt{.prune}(R)\ & \mathbf{if}\ (\forall \mathit{child} \in
+\mathit{pruned}, \mathit{child} \in \mathbb{F}_q) = \mathit{node}\mathtt{.hash}()\\
+& \mathbf{where}\ \mathit{pruned} = \mathit{node}\mathtt{.children.map}(\mathit{child} \Rightarrow \mathit{child}\mathtt{.prune(R)})
+\end{align}
+$$
+
+Pruning a tier consists of pruning the underlying node, and if it results in a hash, returning that
+hash instead of the original tier.
+
+In the above presentation, the padding hash necessary to calculate hashes has been elided for
+simplicity of illustration, but when calculating hashes the correct padding hash must be used as
+described above.
+
+This strategy of summarization will not change any of the hash values of any node in the tree that
+remains in the tree, because nodes are only ever replaced with their own hash values.
