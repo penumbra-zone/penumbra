@@ -32,19 +32,11 @@ efficient note commitment tree used in Penumbra is:
 
 - __tiered__, allowing the root hash of a block or an epoch to be added at the same cost as an
   individual commitment, which means the client can skip over blocks or epochs containing nothing of
-  interest to them while computing many orders of magnitude fewer hashes;
+  interest to them while computing many orders of magnitude fewer hashes; and
 - __sparse__, representing only the information necessary to construct the proofs for the client (or
   in the case of the node, the minimum information necessary to compute new root hashes, because
   nodes never need to create proofs themselves), and not information pertaining to note commitments
-  unrelated to a given client;
-- __incremental__, so that new note commitments can be added in amortized constant time, regardless of
-  the size of the tree; and
-- __lazy__, computing expensive hash operations only when absolutely necessary, and caching their
-  results as much as possible.
-
-Of these important attributes, only the first two (_tiered_ and _sparse_) are in scope for this
-section. The abstract tree described here is meant to precisely specify how the tree structure is
-generated and hashed, but is not meant to describe how the implementation is optimized beyond that.
+  unrelated to a given client.
 
 ## The Rest Of This Section
 
@@ -60,8 +52,122 @@ any nodes which remain in the tree.
 
 At any given moment in time, the aggregate of all note commitments produced in the history of the
 chain can be thought of as a triply-nested sequence (an _eternity_) of sequences (_epochs_) of
-sequences (_blocks_) of note commitments (hereafter: _commitments_). The specific representation of
-a commitment is discussed in [hashing nodes](#hashing-nodes); it is not relevant to this subsection.
+sequences (_blocks_) of note commitments. The tiered commitment tree represents these triply-nested
+sequences as triply-nested tiers.
+
+The entire commitment tree consists of three tiers, each of which is 8 levels tall:
+
+- The entire commitment tree consists of a top-level [_tier_](#tiers) (which we call an _eternity_),
+which contains 8 nested levels of [_nodes_](#nodes);
+- The children of the bottom-most [_nodes_](#nodes) in an eternity are [_tiers_](#tiers) (which we
+  call _epochs_), which each contain 8 nested levels of [_nodes_](#nodes).
+- The children of the bottom-most [_nodes_](#nodes) in an epoch are [_tiers_](#tiers) (which we call
+  _blocks_), which each contain 8 nested levels of [_nodes_](#nodes).
+- The children of the bottom-most [_nodes_](#nodes) in a block are [_leaves_](#leaves) that contain
+  one commitment each.
+
+```text
+Eternity┃           ╱╲ ◀───────────── Eternity Root
+    Tree┃          ╱││╲
+        ┃         * ** *           ╮
+        ┃      *   *  *   *        │ 8 levels
+        ┃   *     *    *     *     ╯
+        ┃  ╱╲    ╱╲    ╱╲    ╱╲
+        ┃ ╱││╲  ╱││╲  ╱││╲  ╱││╲ ◀─── Epoch Root
+                     ┌──┘
+                     │
+                     │
+   Epoch┃           ╱╲ ◀───────────── Epoch Root
+    Tree┃          ╱││╲
+        ┃         * ** *           ╮
+        ┃      *   *  *   *        │ 8 levels
+        ┃   *     *    *     *     ╯
+        ┃  ╱╲    ╱╲    ╱╲    ╱╲
+        ┃ ╱││╲  ╱││╲  ╱││╲  ╱││╲ ◀─── Block Root
+                 ▲
+                 └───┐
+                     │
+                     │
+   Block┃           ╱╲ ◀───────────── Block Root
+    Tree┃          ╱││╲
+        ┃         * ** *           ╮
+        ┃      *   *  *   *        │ 8 levels
+        ┃   *     *    *     *     ╯
+        ┃  ╱╲    ╱╲    ╱╲    ╱╲
+        ┃ ╱││╲  ╱││╲  ╱││╲  ╱││╲ ◀─── Block Leaf
+                                      = Note Commitment
+```
+
+As a consequence of this structure, the maximum capacity of a tier is $4^8 = 65,536$, and the
+maximum capacity of the entire tree is $4^{3 \cdot 8} = 281,474,976,710,656$.
+
+### Structural Definitions
+
+#### Tiers
+
+A tier is either _empty_ or it is a [_node_](#nodes).
+
+#### Nodes
+
+A node in a tree contains a _non-empty_ list of up to four _children_, all of whom must be the same
+type of thing (either a [tier](#tiers) or a [leaf](#leaves)). If a node has an $n$th child (for $n > 0$), it must
+have an $(n - 1)$th child (there cannot be gaps in the list of children).
+
+Every node must be _left-to-right filled_:
+
+- a leaf is always left-to-right filled;
+- a node is left-to-right filled if all of its children except its rightmost child are _full_ and
+  its rightmost child is left-to-right filled; and
+- a tier is left-to-right filled if it is not empty and the node it contains is left-to-right filled.
+
+Where _full_ is defined as:
+
+- a leaf is always full;
+- a node is full if it has exactly four children and all its children are full; and
+- a tier is full if it is not empty and the node it contains is full.
+
+Note that _full_ subsumes _left-to-right filled_: everything that is full is also left-to-right filled.
+
+#### Leaves
+
+A leaf of a tree contains a single commitment.
+
+## Construction
+
+As noted above, the history of all commitments at any point in time is a triply-nested sequence of
+commitments, representing epochs, each of which has some number of blocks, each of which has
+some number of commitments, each ordered at every level chronologically. We can construct a tiered
+commitment tree from this triply nested sequence of commitments by iterating an algorithm to
+construct a single tier from a single sequence of items three times, to reduce a triply-nested
+sequence of commitments to a triply-nested tiered tree.
+
+We define a function $\mathtt{tier}_\tau : [\tau] \to \mathtt{Tier}_\tau$ which converts a sequence of items of
+type $\tau$ to a tier whose bottom-most nodes have children of type $\tau$:
+
+- if the sequence is empty, return the empty tier;
+- otherwise, do the following exactly 8 times:
+  - in left to right order, greedily partition the sequence into chunks of at most 4 items, so
+    that all but the last chunk has exactly 4 items, and the last chunk has at most 4 items;
+  - for each chunk, construct a single node from it; and
+  - unless done with the 8 iterations, repeat again, starting with this sequence of nodes (which is
+    now shorter by about a factor of 4)
+- if the input sequence was less than $4^8$ items long, the resultant sequence will now contain
+  exactly one element: return that element.
+
+Constructing the entire tree requires mapping the $\mathtt{tier}$ function over the triply-nested
+sequence:
+
+$$
+\begin{align}
+& \mathtt{tree} : [[[\mathbb{F}_q]]] \to
+\mathtt{Tier}_{\left(\mathtt{Tier}_{\left(\mathtt{Tier}_{(\mathbb{F}_q)}\right)}\right)} \\
+& \mathtt{tree}(\mathtt{eternity}) =\\
+& \ \ \ \ \mathtt{tier}_{\left(\mathtt{Tier}_{\left(\mathtt{Tier}_{(\mathbb{F}_q)}\right)}\right)}\left(\mathtt{eternity.map}(\lambda \mathtt{epoch} \to \mathtt{tier}_{\left(\mathtt{Tier}_{(\mathbb{F}_q)}\right)}(\mathtt{epoch.map}(\lambda \mathtt{block} \to
+\mathtt{tier}_{(\mathbb{F}_q)}(\mathtt{block})))))\right)
+\end{align}
+$$
+
+where the $map$ function applies a function to each element of a sequence.
 
 ## Hashing Nodes
 
@@ -91,9 +197,7 @@ $\mathbb{F}_q$, i.e. the following hash output from
 $\mathbb{F}_q$.
 
 In terms of this base domain separator, we construct a separate domain separator to use for each
-_height_ of node or leaf in the tree. The height of a leaf is defined as zero, and the height of a
-node is defined as one greater than the height of its children (therefore the lowest node in the
-tree has height 1).
+_height_ of node or leaf in the tree.
 
 $$\mathbf{D}_\mathtt{height} = \mathbf{D}_0 + \mathtt{height}$$
 
@@ -120,9 +224,15 @@ The hash of a node is dependent on three things:
 2. whether it is on the _frontier_ of the tree, and
 3. the hashes of its children.
 
+#### The Height of a Node
+
+The height of a leaf is defined as zero, and the height of a node is defined as one greater than the
+height of its children, all of whom will always have the same height. As a consequence, the lowest
+node in the tree has height 1.
+
 #### Frontier-Dependent Padding
 
-Recall that each node may have any of $\{0 \dots 4\}$ children, inclusive. However, recall the node
+Recall that each node may have any of $\{1 \dots 4\}$ children, inclusive. However, recall the node
 hash function $\mathtt{hash_{node}} : \mathbb{N} \times (\mathbb{F}_q \times \mathbb{F}_q \times
 \mathbb{F}_q \times \mathbb{F}_q) \to \mathbb{F}_q$ is of fixed arity: it requires precisely a node height and 4
 child hashes. In order to take the hash of a node, we need to _pad_ its list of children with some
@@ -130,7 +240,6 @@ padding element $\mathbf{P}$:
 
 $$
 \begin{align}
-\mathtt{pad}_4(\mathbf{P}, & []) & =\ \ & (\mathbf{P}, \mathbf{P}, \mathbf{P}, \mathbf{P}) \newline
 \mathtt{pad}_4(\mathbf{P}, & [a]) & =\ \ & (a, \mathbf{P}, \mathbf{P}, \mathbf{P}) \newline
 \mathtt{pad}_4(\mathbf{P}, & [a, b]) & =\ \ & (a, b, \mathbf{P}, \mathbf{P}) \newline
 \mathtt{pad}_4(\mathbf{P}, & [a, b, c]) & =\ \ & (a, b, c, \mathbf{P}) \newline
@@ -149,21 +258,39 @@ If a node is on the frontier, we use the padding element $\mathbf{P}_\mathtt{fro
 \mathbb{F}_q = 0$. Otherwise, we use the padding element $\mathbf{P}_\mathtt{complete} :
 \mathbb{F}_q = 1$.
 
-#### Hashes of Empty Nodes
+#### Computing Node Hashes
 
-The hash of the empty node is defined as $\mathbf{P}_\mathtt{frontier}$ if the node is on the
-frontier, and $\mathbf{P}_\mathtt{complete}$ if it is not on the frontier.
+As noted [above](#tiered-structure), every node has at least 1 child, so the hash of an empty node
+is undefined.
 
-#### Hashes of Nodes With Children
-
-The hash of a node with more than zero children is defined as:
+The hash of a node with more than zero children is parameterized by a padding element $\mathbf{P}$
+which will be used to pad the frontier of the subtree of this node:
 
 $$
-\mathtt{node.hash} = \mathtt{hash_{node}}\left(\mathtt{node.height},
-\mathtt{pad}_4(\mathbf{P}_{\mathtt{place}(\mathtt{node})}, \mathtt{map}(\lambda \mathtt{c} \to \mathtt{c.hash}, \mathtt{node.children}))\right)
+\mathtt{node.hash}(\mathbf{P}) = \mathtt{hash_{node}}\left(\mathtt{node.height},
+\mathtt{pad}_4(\mathbf{P}, \mathtt{node.hash_{children}(\mathbf{P})})\right)
 $$
 
-where $\mathtt{place}(\mathtt{node})$ is $\mathtt{frontier}$ or $\mathtt{complete}$, depending on whether the node is on the
-frontier or not, and $\mathtt{map}$ maps a function over a list.
+where the method $\mathtt{node.hash_{children}}$ is defined as:
+
+$$
+\begin{align}
+& \mathtt{node.hash_{children}}(\mathbf{P} : \mathbb{F}_q) =\ \mathbf{match}\ \mathtt{node.children}\ \{\newline
+& \ \ \ [a] \Rightarrow [\mathtt{a.hash(\mathbf{P})}]\newline
+& \ \ \ [a, b] \Rightarrow [\mathtt{a.hash({\mathbf{P}_\mathtt{complete})}}, \mathtt{b.hash(\mathbf{P})}]\newline
+& \ \ \ [a, b, c] \Rightarrow [\mathtt{a.hash({\mathbf{P}_\mathtt{complete})}},
+\mathtt{b.hash({\mathbf{P}_\mathtt{complete})}}, \mathtt{c.hash(\mathbf{P})}]\newline
+& \ \ \ [a, b, c, d] \Rightarrow [\mathtt{a.hash({\mathbf{P}_\mathtt{complete})}},
+\mathtt{b.hash({\mathbf{P}_\mathtt{complete})}}, \mathtt{c.hash({\mathbf{P}_\mathtt{complete})}}, \mathtt{d.hash(\mathbf{P})}]\newline
+& \}
+\end{align}
+$$
+
+That is to say, $\mathtt{node.hash_{children}}$ implements the [frontier-dependent
+padding](#frontier-dependent-padding) as described above.
+
+### Hashes of Tiers
+
+
 
 ## Sparsity
