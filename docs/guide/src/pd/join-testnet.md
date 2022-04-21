@@ -47,6 +47,13 @@ our repository](https://github.com/penumbra-zone/penumbra/tree/main/testnets).
 The testnet directories are numbered in increasing order, find and download the
 latest JSON file and copy it to `\$HOME/.tendermint/config/genesis.json`.
 
+You can also download the genesis JSON directly from the testnet server, though it is nested
+so you need to grab a specific key:
+
+```console
+curl -X GET "http://testnet.penumbra.zone:26657/genesis" -H "accept: application/json" | jq '.result.genesis' > \$HOME/.tendermint/config/genesis.json
+```
+
 ## Starting your node
 
 After configuration is complete, you're ready to start your node.
