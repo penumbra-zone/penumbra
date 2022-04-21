@@ -196,11 +196,9 @@ impl OutputProof {
     ) -> anyhow::Result<(), Error> {
         // Note commitment integrity.
         let s_component_transmission_key = Fq::from_bytes(self.pk_d.0);
-        // replace pk_d with s_component in private input?
         if let Ok(transmission_key_s) = s_component_transmission_key {
             let note_commitment_test =
                 note::Commitment::new(self.note_blinding, self.value, self.g_d, transmission_key_s);
-            // unpack commitment step
 
             if note_commitment != note_commitment_test {
                 return Err(Error::NoteCommitmentMismatch);
@@ -211,7 +209,6 @@ impl OutputProof {
 
         // Value commitment integrity.
         if value_commitment != -self.value.commit(self.v_blinding) {
-            // unpack
             return Err(Error::ValueCommitmentMismatch);
         }
 

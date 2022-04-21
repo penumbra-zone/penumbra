@@ -37,8 +37,8 @@ use crate::{value, Value};
 //
 // Output circuits check:
 // 1. Diversified base is not identity (implemented).
-// 2. Ephemeral public key integrity (partially implemented).
-// 3. Value commitment integrity (not implemented).
+// 2. Ephemeral public key integrity (implemented).
+// 3. Value commitment integrity (partially implemented).
 // 4. Note commitment integrity (not implemented).
 #[derive(derivative::Derivative)]
 #[derivative(Debug(bound = ""), Default(bound = ""))]
