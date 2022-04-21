@@ -1,11 +1,7 @@
+use std::convert::TryFrom;
+
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_ibc::{ClientCounter, ClientData, ConsensusState, IBCAction, VerifiedHeights};
-use penumbra_transaction::{Action, Transaction};
-use std::convert::TryFrom;
-use tendermint::abci;
-use tracing::instrument;
-
 use ibc::{
     clients::ics07_tendermint::{
         client_state::ClientState as TendermintClientState,
@@ -18,18 +14,20 @@ use ibc::{
             client_state::{AnyClientState, ClientState},
             header::AnyHeader,
             height::Height,
-            msgs::create_client::MsgCreateAnyClient,
-            msgs::update_client::MsgUpdateAnyClient,
+            msgs::{create_client::MsgCreateAnyClient, update_client::MsgUpdateAnyClient},
         },
         ics24_host::identifier::ClientId,
     },
 };
-use tendermint::Time;
-use tendermint_light_client_verifier::types::Time as LightClientTime;
-use tendermint_light_client_verifier::types::{TrustedBlockState, UntrustedBlockState};
-use tendermint_light_client_verifier::{ProdVerifier, Verdict, Verifier};
-
+use penumbra_ibc::{ClientCounter, ClientData, ConsensusState, IBCAction, VerifiedHeights};
 use penumbra_proto::ibc::ibc_action::Action::{CreateClient, UpdateClient};
+use penumbra_transaction::{Action, Transaction};
+use tendermint::{abci, Time};
+use tendermint_light_client_verifier::{
+    types::{Time as LightClientTime, TrustedBlockState, UntrustedBlockState},
+    ProdVerifier, Verdict, Verifier,
+};
+use tracing::instrument;
 
 use super::{app::View as _, Component};
 use crate::{genesis, Overlay, OverlayExt};
