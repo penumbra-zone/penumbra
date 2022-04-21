@@ -143,7 +143,7 @@ impl IBCComponent {
 
                 // check that the client is not frozen or expired
                 if client_data.client_state.0.is_frozen() {
-                    return Err(anyhow::anyhow!("client is frozen or expired"));
+                    return Err(anyhow::anyhow!("client is frozen"));
                 }
                 // check if client is expired
                 let latest_consensus_state = self
