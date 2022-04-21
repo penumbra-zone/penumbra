@@ -257,6 +257,8 @@ impl IBCComponent {
         trusted_client_state: TendermintClientState,
         untrusted_header: TendermintHeader,
     ) -> Result<(TendermintClientState, TendermintConsensusState), anyhow::Error> {
+        let untrusted_consensus_state = TendermintConsensusState::from(untrusted_header.clone());
+
         if untrusted_header.height().revision_number != trusted_client_state.chain_id.version() {
             return Err(anyhow::anyhow!(
                 "client update revision number does not match client state"
@@ -268,7 +270,6 @@ impl IBCComponent {
         // for this height, but it doesn't match the one provided in this update, verify the one in
         // this update and freeze the client.
         let mut conflicting_header: bool = false;
-        let untrusted_consensus_state = TendermintConsensusState::from(untrusted_header.clone());
         match self
             .overlay
             .get_verified_consensus_state(untrusted_header.height(), client_id.clone())
@@ -278,9 +279,15 @@ impl IBCComponent {
                 AnyConsensusState::Tendermint(stored_tm_consensus_state) => {
                     if stored_tm_consensus_state == untrusted_consensus_state {
                         return Ok((trusted_client_state, stored_tm_consensus_state));
+                    } else {
+                        conflicting_header = true;
                     }
                 }
-                _ => conflicting_header = true,
+                _ => {
+                    return Err(anyhow::anyhow!(
+                        "stored consensus state is not a Tendermint state"
+                    ));
+                }
             },
             _ => {}
         }
@@ -360,7 +367,7 @@ impl IBCComponent {
                 trusted_client_state
                     .with_header(untrusted_header.clone())
                     .with_frozen_height(untrusted_header.height())?,
-                untrusted_consensus_state,
+                verified_consensus_state,
             ));
         }
 
