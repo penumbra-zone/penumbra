@@ -1,7 +1,9 @@
 use std::str::FromStr;
 
 use ibc::{
-    clients::ics07_tendermint::{client_state, consensus_state},
+    clients::ics07_tendermint::{
+        client_state, consensus_state, consensus_state::ConsensusState as TendermintConsensusState,
+    },
     core::{
         ics02_client::{
             client_consensus::AnyConsensusState, client_state::AnyClientState, height::Height,
@@ -70,6 +72,15 @@ impl From<ClientState> for prost_types::Any {
 
 #[derive(Clone, Debug)]
 pub struct ConsensusState(pub AnyConsensusState);
+
+impl ConsensusState {
+    pub fn as_tendermint(&self) -> Result<TendermintConsensusState, anyhow::Error> {
+        match &self.0 {
+            AnyConsensusState::Tendermint(state) => Ok(state.clone()),
+            _ => return Err(anyhow::anyhow!("not a tendermint consensus state")),
+        }
+    }
+}
 
 impl Protobuf<pb::ConsensusState> for ConsensusState {}
 
