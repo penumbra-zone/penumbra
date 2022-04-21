@@ -41,7 +41,7 @@ where
     let g_d_var = circuit.create_public_point_variable(g_d_jf)?;
 
     // Connect wires for diversified basepoint identity check.
-    let equality_check_computed = circuit.is_equal_point(&identity_var, &g_d_var)?;
+    let equality_check_computed = circuit.check_equal_point(&identity_var, &g_d_var)?;
     circuit.enforce_false(equality_check_computed)?;
 
     // Ephemeral public key integrity.
