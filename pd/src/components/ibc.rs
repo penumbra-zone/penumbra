@@ -95,16 +95,6 @@ impl Component for IBCComponent {
 impl IBCComponent {
     async fn handle_ibc_action(&mut self, ibc_action: &IBCAction) -> Result<()> {
         match &ibc_action.action {
-            // Handle IBC CreateClient. Here we need to validate the following:
-            // - client type is one of the supported types (currently, only Tendermint light clients)
-            // - consensus state is valid (is of the same type as the client type, also currently only Tendermint consensus states are permitted)
-            //
-            // Then, we compute the client's ID (a concatenation of a monotonically increasing
-            // integer, the number of clients on Penumbra, and the client type) and commit the
-            // following to our state:
-            // - client type
-            // - consensus state
-            // - processed time and height
             CreateClient(raw_msg_create_client) => {
                 // NOTE: MsgCreateAnyClient::try_from will validate that client_state and
                 // consensus_state are Tendermint client and consensus states only, as these
@@ -112,115 +102,126 @@ impl IBCComponent {
                 let msg_create_client =
                     MsgCreateAnyClient::try_from(raw_msg_create_client.clone())?;
 
-                // get the current client counter
-                let id_counter = self.overlay.client_counter().await?;
-                let client_id =
-                    ClientId::new(msg_create_client.client_state.client_type(), id_counter.0)?;
-
-                tracing::info!("creating client {:?}", client_id);
-
-                self.store_new_client(client_id, msg_create_client).await?;
+                self.handle_create_client(msg_create_client).await?;
             }
-
-            // Handle IBC UpdateClient. This is one of the most important IBC messages, as it has
-            // the responsibility of verifying consensus state updates (through the semantics of
-            // the light client's verification fn).
-            //
-            // verify:
-            // - we have a client corresponding to the UpdateClient's client_id
-            // - the stored client is not frozen
-            // - the stored client is not expired
-            // - the supplied update verifies using the semantics of the light client's header verification fn
             UpdateClient(raw_msg_update_client) => {
                 let msg_update_client =
                     MsgUpdateAnyClient::try_from(raw_msg_update_client.clone())?;
 
-                // get the latest client state
-                let client_data = self
-                    .overlay
-                    .get_client_data(&msg_update_client.client_id)
-                    .await?;
-
-                // check that the client is not frozen or expired
-                if client_data.client_state.0.is_frozen() {
-                    return Err(anyhow::anyhow!("client is frozen"));
-                }
-                // check if client is expired
-                let latest_consensus_state = self
-                    .overlay
-                    .get_verified_consensus_state(
-                        client_data.client_state.0.latest_height(),
-                        client_data.client_id.clone(),
-                    )
-                    .await?;
-
-                let latest_consensus_state_tm = match latest_consensus_state.0 {
-                    AnyConsensusState::Tendermint(consensus_state) => consensus_state,
-                    _ => {
-                        return Err(anyhow::anyhow!(
-                            "consensus state is not a Tendermint client"
-                        ))
-                    }
-                };
-                let now = self.overlay.get_block_timestamp().await?;
-                let stamp = latest_consensus_state_tm.timestamp.to_rfc3339();
-                let duration = now.duration_since(Time::parse_from_rfc3339(&stamp).unwrap())?;
-                if client_data.client_state.0.expired(duration) {
-                    return Err(anyhow::anyhow!("client is expired"));
-                }
-
-                // verify the clientupdate's header
-                let tm_client_state = match client_data.clone().client_state.0 {
-                    AnyClientState::Tendermint(tm_state) => tm_state,
-                    _ => return Err(anyhow::anyhow!("unsupported client type")),
-                };
-                let tm_header = match msg_update_client.header {
-                    AnyHeader::Tendermint(tm_header) => tm_header,
-                    _ => {
-                        return Err(anyhow::anyhow!("client update is not a Tendermint header"));
-                    }
-                };
-
-                let (next_tm_client_state, next_tm_consensus_state) = self
-                    .verify_tendermint_update(
-                        msg_update_client.client_id.clone(),
-                        tm_client_state,
-                        tm_header.clone(),
-                    )
-                    .await?;
-
-                // store the updated client and consensus states
-                let height = self.overlay.get_block_height().await?;
-                let next_client_data = client_data.with_new_client_state(
-                    AnyClientState::Tendermint(next_tm_client_state),
-                    now.to_rfc3339(),
-                    height,
-                );
-                self.overlay.put_client_data(next_client_data).await;
-                self.overlay
-                    .put_verified_consensus_state(
-                        tm_header.height(),
-                        msg_update_client.client_id.clone(),
-                        ConsensusState(AnyConsensusState::Tendermint(next_tm_consensus_state)),
-                    )
-                    .await?;
+                self.handle_update_client(msg_update_client).await?;
             }
             _ => return Ok(()),
         }
 
         Ok(())
     }
-    async fn store_new_client(
-        &mut self,
-        client_id: ClientId,
-        msg: MsgCreateAnyClient,
-    ) -> Result<()> {
+
+    // Handle IBC UpdateClient. This is one of the most important IBC messages, as it has
+    // the responsibility of verifying consensus state updates (through the semantics of
+    // the light client's verification fn).
+    //
+    // verify:
+    // - we have a client corresponding to the UpdateClient's client_id
+    // - the stored client is not frozen
+    // - the stored client is not expired
+    // - the supplied update verifies using the semantics of the light client's header verification fn
+    async fn handle_update_client(&mut self, msg_update_client: MsgUpdateAnyClient) -> Result<()> {
+        // get the latest client state
+        let client_data = self
+            .overlay
+            .get_client_data(&msg_update_client.client_id)
+            .await?;
+
+        // check that the client is not frozen or expired
+        if client_data.client_state.0.is_frozen() {
+            return Err(anyhow::anyhow!("client is frozen"));
+        }
+        // check if client is expired
+        let latest_consensus_state = self
+            .overlay
+            .get_verified_consensus_state(
+                client_data.client_state.0.latest_height(),
+                client_data.client_id.clone(),
+            )
+            .await?;
+
+        let latest_consensus_state_tm = match latest_consensus_state.0 {
+            AnyConsensusState::Tendermint(consensus_state) => consensus_state,
+            _ => {
+                return Err(anyhow::anyhow!(
+                    "consensus state is not a Tendermint client"
+                ))
+            }
+        };
+        let now = self.overlay.get_block_timestamp().await?;
+        let stamp = latest_consensus_state_tm.timestamp.to_rfc3339();
+        let duration = now.duration_since(Time::parse_from_rfc3339(&stamp).unwrap())?;
+        if client_data.client_state.0.expired(duration) {
+            return Err(anyhow::anyhow!("client is expired"));
+        }
+
+        // verify the clientupdate's header
+        let tm_client_state = match client_data.clone().client_state.0 {
+            AnyClientState::Tendermint(tm_state) => tm_state,
+            _ => return Err(anyhow::anyhow!("unsupported client type")),
+        };
+        let tm_header = match msg_update_client.header {
+            AnyHeader::Tendermint(tm_header) => tm_header,
+            _ => {
+                return Err(anyhow::anyhow!("client update is not a Tendermint header"));
+            }
+        };
+
+        let (next_tm_client_state, next_tm_consensus_state) = self
+            .verify_tendermint_update(
+                msg_update_client.client_id.clone(),
+                tm_client_state,
+                tm_header.clone(),
+            )
+            .await?;
+
+        // store the updated client and consensus states
+        let height = self.overlay.get_block_height().await?;
+        let next_client_data = client_data.with_new_client_state(
+            AnyClientState::Tendermint(next_tm_client_state),
+            now.to_rfc3339(),
+            height,
+        );
+        self.overlay.put_client_data(next_client_data).await;
+        self.overlay
+            .put_verified_consensus_state(
+                tm_header.height(),
+                msg_update_client.client_id.clone(),
+                ConsensusState(AnyConsensusState::Tendermint(next_tm_consensus_state)),
+            )
+            .await?;
+
+        Ok(())
+    }
+
+    // Handle IBC CreateClient. Here we need to validate the following:
+    // - client type is one of the supported types (currently, only Tendermint light clients)
+    // - consensus state is valid (is of the same type as the client type, also currently only Tendermint consensus states are permitted)
+    //
+    // Then, we compute the client's ID (a concatenation of a monotonically increasing
+    // integer, the number of clients on Penumbra, and the client type) and commit the
+    // following to our state:
+    // - client type
+    // - consensus state
+    // - processed time and height
+    async fn handle_create_client(&mut self, msg_create_client: MsgCreateAnyClient) -> Result<()> {
+        // get the current client counter
+        let id_counter = self.overlay.client_counter().await?;
+        let client_id = ClientId::new(msg_create_client.client_state.client_type(), id_counter.0)?;
+
+        tracing::info!("creating client {:?}", client_id);
+
         let height = self.overlay.get_block_height().await?;
         let timestamp = self.overlay.get_block_timestamp().await?;
 
         let data = ClientData::new(
             client_id.clone(),
-            msg.client_state,
+            msg_create_client.client_state,
             timestamp.to_rfc3339(),
             height,
         );
@@ -233,7 +234,7 @@ impl IBCComponent {
             .put_verified_consensus_state(
                 data.client_state.0.latest_height(),
                 client_id,
-                ConsensusState(msg.consensus_state),
+                ConsensusState(msg_create_client.consensus_state),
             )
             .await?;
 
