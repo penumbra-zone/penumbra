@@ -4,7 +4,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use ibc::{
     clients::ics07_tendermint::{
-        client_state::ClientState as TendermintClientState,
+        client_def::TendermintClient, client_state::ClientState as TendermintClientState,
         consensus_state::ConsensusState as TendermintConsensusState,
         header::Header as TendermintHeader,
     },
@@ -56,13 +56,19 @@ impl Component for IBCComponent {
         Ok(())
     }
 
-    #[instrument(name = "ibc", skip(_tx))]
-    fn check_tx_stateless(_tx: &Transaction) -> Result<()> {
+    #[instrument(name = "ibc", skip(tx))]
+    fn check_tx_stateless(tx: &Transaction) -> Result<()> {
+        for ibc_action in tx.ibc_actions() {
+            validate_ibc_action_stateless(ibc_action)?;
+        }
         Ok(())
     }
 
-    #[instrument(name = "ibc", skip(self, _tx))]
-    async fn check_tx_stateful(&self, _tx: &Transaction) -> Result<()> {
+    #[instrument(name = "ibc", skip(self, tx))]
+    async fn check_tx_stateful(&self, tx: &Transaction) -> Result<()> {
+        for ibc_action in tx.ibc_actions() {
+            self.validate_ibc_action_stateful(ibc_action).await?;
+        }
         Ok(())
     }
 
@@ -70,7 +76,7 @@ impl Component for IBCComponent {
     async fn execute_tx(&mut self, tx: &Transaction) -> Result<()> {
         // Handle any IBC actions found in the transaction.
         for ibc_action in tx.ibc_actions() {
-            self.handle_ibc_action(ibc_action).await?;
+            self.execute_ibc_action(ibc_action).await;
         }
 
         Ok(())
@@ -82,23 +88,79 @@ impl Component for IBCComponent {
     }
 }
 
+// validates the given ibc action statelessly
+fn validate_ibc_action_stateless(ibc_action: &IBCAction) -> Result<(), anyhow::Error> {
+    match &ibc_action.action {
+        CreateClient(msg) => {
+            let msg_create_client = MsgCreateAnyClient::try_from(msg.clone())?;
+
+            validate_create_client_stateless(&msg_create_client)?;
+        }
+        UpdateClient(msg) => {
+            let msg_update_client = MsgUpdateAnyClient::try_from(msg.clone())?;
+
+            validate_update_client_stateless(&msg_update_client)?;
+        }
+        _ => return Ok(()),
+    }
+
+    Ok(())
+}
+
+// check that the client is Tendermint
+fn validate_create_client_stateless(
+    create_client: &MsgCreateAnyClient,
+) -> Result<(), anyhow::Error> {
+    match create_client.client_state {
+        AnyClientState::Tendermint(_) => {}
+        _ => {
+            return Err(anyhow::anyhow!(
+                "only Tendermint clients are supported at this time"
+            ))
+        }
+    }
+    match create_client.consensus_state {
+        AnyConsensusState::Tendermint(_) => {}
+        _ => {
+            return Err(anyhow::anyhow!(
+                "only Tendermint consensus is supported at this time"
+            ))
+        }
+    }
+
+    Ok(())
+}
+
+fn validate_update_client_stateless(
+    update_client: &MsgUpdateAnyClient,
+) -> Result<(), anyhow::Error> {
+    match update_client.header {
+        AnyHeader::Tendermint(_) => {}
+        _ => {
+            return Err(anyhow::anyhow!(
+                "only Tendermint clients are supported at this time"
+            ))
+        }
+    }
+
+    Ok(())
+}
+
 impl IBCComponent {
-    async fn handle_ibc_action(&mut self, ibc_action: &IBCAction) -> Result<()> {
+    // validates the given IBC action statefully.
+    async fn validate_ibc_action_stateful(&self, ibc_action: &IBCAction) -> Result<()> {
         match &ibc_action.action {
-            CreateClient(raw_msg_create_client) => {
-                // NOTE: MsgCreateAnyClient::try_from will validate that client_state and
-                // consensus_state are Tendermint client and consensus states only, as these
-                // are the only currently supported client types.
-                let msg_create_client =
-                    MsgCreateAnyClient::try_from(raw_msg_create_client.clone())?;
+            CreateClient(msg) => {
+                let msg_create_client = MsgCreateAnyClient::try_from(msg.clone())?;
 
-                self.handle_create_client(msg_create_client).await?;
+                self.validate_create_client_stateful(msg_create_client)
+                    .await?;
             }
-            UpdateClient(raw_msg_update_client) => {
-                let msg_update_client =
-                    MsgUpdateAnyClient::try_from(raw_msg_update_client.clone())?;
+            UpdateClient(msg) => {
+                let msg_update_client = MsgUpdateAnyClient::try_from(msg.clone())?;
 
-                self.handle_update_client(msg_update_client).await?;
+                self.validate_update_client_stateful(msg_update_client)
+                    .await?;
             }
             _ => return Ok(()),
         }
@@ -106,7 +168,26 @@ impl IBCComponent {
         Ok(())
     }
 
-    // Handle IBC UpdateClient. This is one of the most important IBC messages, as it has
+    // executes the given IBC action, assuming that it has already been validated.
+    async fn execute_ibc_action(&mut self, ibc_action: &IBCAction) {
+        match &ibc_action.action {
+            CreateClient(raw_msg_create_client) => {
+                let msg_create_client =
+                    MsgCreateAnyClient::try_from(raw_msg_create_client.clone()).unwrap();
+
+                self.execute_create_client(msg_create_client).await;
+            }
+            UpdateClient(raw_msg_update_client) => {
+                let msg_update_client =
+                    MsgUpdateAnyClient::try_from(raw_msg_update_client.clone()).unwrap();
+
+                self.execute_update_client(msg_update_client).await;
+            }
+            _ => {}
+        }
+    }
+
+    // validate IBC UpdateClient. This is one of the most important IBC messages, as it has
     // the responsibility of verifying consensus state updates (through the semantics of
     // the light client's verification fn).
     //
@@ -115,7 +196,10 @@ impl IBCComponent {
     // - the stored client is not frozen
     // - the stored client is not expired
     // - the supplied update verifies using the semantics of the light client's header verification fn
-    async fn handle_update_client(&mut self, msg_update_client: MsgUpdateAnyClient) -> Result<()> {
+    async fn validate_update_client_stateful(
+        &self,
+        msg_update_client: MsgUpdateAnyClient,
+    ) -> Result<()> {
         // get the latest client state
         let client_data = self
             .overlay
@@ -126,6 +210,7 @@ impl IBCComponent {
         if client_data.client_state.0.is_frozen() {
             return Err(anyhow::anyhow!("client is frozen"));
         }
+
         // check if client is expired
         let latest_consensus_state = self
             .overlay
@@ -162,16 +247,58 @@ impl IBCComponent {
             }
         };
 
+        self.verify_tendermint_update(
+            msg_update_client.client_id.clone(),
+            tm_client_state,
+            tm_header.clone(),
+        )
+        .await?;
+
+        Ok(())
+    }
+
+    async fn validate_create_client_stateful(
+        &self,
+        msg_create_client: MsgCreateAnyClient,
+    ) -> Result<()> {
+        let id_counter = self.overlay.client_counter().await?;
+        ClientId::new(msg_create_client.client_state.client_type(), id_counter.0)?;
+
+        Ok(())
+    }
+
+    // execute a UpdateClient IBC action. this assumes that the UpdateClient has already been
+    // validated, including header verification.
+    async fn execute_update_client(&mut self, msg_update_client: MsgUpdateAnyClient) {
+        // get the latest client state
+        let client_data = self
+            .overlay
+            .get_client_data(&msg_update_client.client_id)
+            .await
+            .unwrap();
+
+        let tm_client_state = match client_data.clone().client_state.0 {
+            AnyClientState::Tendermint(tm_state) => tm_state,
+            _ => panic!("unsupported client type"),
+        };
+        let tm_header = match msg_update_client.header {
+            AnyHeader::Tendermint(tm_header) => tm_header,
+            _ => {
+                panic!("update header is not a Tendermint header");
+            }
+        };
+
         let (next_tm_client_state, next_tm_consensus_state) = self
-            .verify_tendermint_update(
+            .next_tendermint_state(
                 msg_update_client.client_id.clone(),
                 tm_client_state,
                 tm_header.clone(),
             )
-            .await?;
+            .await;
 
         // store the updated client and consensus states
-        let height = self.overlay.get_block_height().await?;
+        let height = self.overlay.get_block_height().await.unwrap();
+        let now = self.overlay.get_block_timestamp().await.unwrap();
         let next_client_data = client_data.with_new_client_state(
             AnyClientState::Tendermint(next_tm_client_state),
             now.to_rfc3339(),
@@ -184,30 +311,27 @@ impl IBCComponent {
                 msg_update_client.client_id.clone(),
                 ConsensusState(AnyConsensusState::Tendermint(next_tm_consensus_state)),
             )
-            .await?;
-
-        Ok(())
+            .await
+            .unwrap();
     }
 
-    // Handle IBC CreateClient. Here we need to validate the following:
-    // - client type is one of the supported types (currently, only Tendermint light clients)
-    // - consensus state is valid (is of the same type as the client type, also currently only Tendermint consensus states are permitted)
+    // execute IBC CreateClient.
     //
-    // Then, we compute the client's ID (a concatenation of a monotonically increasing
-    // integer, the number of clients on Penumbra, and the client type) and commit the
-    // following to our state:
+    //  we compute the client's ID (a concatenation of a monotonically increasing integer, the
+    //  number of clients on Penumbra, and the client type) and commit the following to our state:
     // - client type
     // - consensus state
     // - processed time and height
-    async fn handle_create_client(&mut self, msg_create_client: MsgCreateAnyClient) -> Result<()> {
+    async fn execute_create_client(&mut self, msg_create_client: MsgCreateAnyClient) {
         // get the current client counter
-        let id_counter = self.overlay.client_counter().await?;
-        let client_id = ClientId::new(msg_create_client.client_state.client_type(), id_counter.0)?;
+        let id_counter = self.overlay.client_counter().await.unwrap();
+        let client_id =
+            ClientId::new(msg_create_client.client_state.client_type(), id_counter.0).unwrap();
 
         tracing::info!("creating client {:?}", client_id);
 
-        let height = self.overlay.get_block_height().await?;
-        let timestamp = self.overlay.get_block_timestamp().await?;
+        let height = self.overlay.get_block_height().await.unwrap();
+        let timestamp = self.overlay.get_block_timestamp().await.unwrap();
 
         let data = ClientData::new(
             client_id.clone(),
@@ -226,7 +350,8 @@ impl IBCComponent {
                 client_id,
                 ConsensusState(msg_create_client.consensus_state),
             )
-            .await?;
+            .await
+            .unwrap();
 
         // increment client counter
         let counter = self
@@ -237,17 +362,97 @@ impl IBCComponent {
         self.overlay
             .put_client_counter(ClientCounter(counter.0 + 1))
             .await;
-
-        Ok(())
     }
 
-    // verify a ClientUpdate for a Tendermint client
+    // given an already verified tendermint header, and a trusted tendermint client state, compute
+    // the next client and consensus states.
+    async fn next_tendermint_state(
+        &self,
+        client_id: ClientId,
+        trusted_client_state: TendermintClientState,
+        verified_header: TendermintHeader,
+    ) -> (TendermintClientState, TendermintConsensusState) {
+        let verified_consensus_state = TendermintConsensusState::from(verified_header.clone());
+
+        // if we have a stored consensus state for this height that conflicts, we need to freeze
+        // the client. if it doesn't conflict, we can return early
+        if let Some(stored_cs_state) = self
+            .overlay
+            .get_verified_consensus_state(verified_header.height(), client_id.clone())
+            .await
+            .ok()
+        {
+            let stored_cs_state_tm = stored_cs_state.as_tendermint().unwrap();
+            if stored_cs_state_tm == verified_consensus_state {
+                return (trusted_client_state, verified_consensus_state);
+            } else {
+                return (
+                    trusted_client_state
+                        .with_header(verified_header.clone())
+                        .with_frozen_height(verified_header.height())
+                        .unwrap(),
+                    verified_consensus_state,
+                );
+            }
+        }
+
+        // check that updates have monotonic timestamps. we may receive client updates that are
+        // disjoint: the header we received and validated may be older than the newest header we
+        // have. In that case, we need to verify that the timestamp is correct. if it isn't, freeze
+        // the client.
+        let next_consensus_state = self
+            .overlay
+            .next_verified_consensus_state(&client_id, verified_header.height())
+            .await
+            .unwrap();
+        let prev_consensus_state = self
+            .overlay
+            .prev_verified_consensus_state(&client_id, verified_header.height())
+            .await
+            .unwrap();
+
+        // case 1: if we have a verified consensus state previous to this header, verify that this
+        // header's timestamp is greater than or equal to the stored consensus state's timestamp
+        if let Some(prev_state) = prev_consensus_state {
+            let prev_state_tm = prev_state.as_tendermint().unwrap();
+            if !(verified_header.signed_header.header().time >= prev_state_tm.timestamp) {
+                return (
+                    trusted_client_state
+                        .with_header(verified_header.clone())
+                        .with_frozen_height(verified_header.height())
+                        .unwrap(),
+                    verified_consensus_state,
+                );
+            }
+        }
+        // case 2: if we have a verified consensus state with higher block height than this header,
+        // verify that this header's timestamp is less than or equal to this header's timestamp.
+        if let Some(next_state) = next_consensus_state {
+            let next_state_tm = next_state.as_tendermint().unwrap();
+            if !(verified_header.signed_header.header().time <= next_state_tm.timestamp) {
+                return (
+                    trusted_client_state
+                        .with_header(verified_header.clone())
+                        .with_frozen_height(verified_header.height())
+                        .unwrap(),
+                    verified_consensus_state,
+                );
+            }
+        }
+
+        return (
+            trusted_client_state.with_header(verified_header.clone()),
+            verified_consensus_state,
+        );
+    }
+
+    // verify a new header for a tendermint client, given a trusted client state.
     async fn verify_tendermint_update(
         &self,
         client_id: ClientId,
         trusted_client_state: TendermintClientState,
         untrusted_header: TendermintHeader,
-    ) -> Result<(TendermintClientState, TendermintConsensusState), anyhow::Error> {
+    ) -> Result<()> {
         let untrusted_consensus_state = TendermintConsensusState::from(untrusted_header.clone());
 
         if untrusted_header.height().revision_number != trusted_client_state.chain_id.version() {
@@ -257,45 +462,24 @@ impl IBCComponent {
         }
 
         // check if we already have a consensus state for this height, if we do, check that it is
-        // the same as this update, if it is, return early. If we already have a consensus state
-        // for this height, but it doesn't match the one provided in this update, verify the one in
-        // this update and freeze the client.
-        let mut conflicting_header: bool = false;
-        match self
+        // the same as this update, if it is, return early.
+        if let Some(stored_consensus_state) = self
             .overlay
             .get_verified_consensus_state(untrusted_header.height(), client_id.clone())
             .await
+            .ok()
         {
-            Ok(stored_consensus_state) => match stored_consensus_state.0 {
-                AnyConsensusState::Tendermint(stored_tm_consensus_state) => {
-                    if stored_tm_consensus_state == untrusted_consensus_state {
-                        return Ok((trusted_client_state, stored_tm_consensus_state));
-                    } else {
-                        conflicting_header = true;
-                    }
-                }
-                _ => {
-                    return Err(anyhow::anyhow!(
-                        "stored consensus state is not a Tendermint state"
-                    ));
-                }
-            },
-            _ => {}
+            let stored_tm_consensus_state = stored_consensus_state.as_tendermint()?;
+            if stored_tm_consensus_state == untrusted_consensus_state {
+                return Ok(());
+            }
         }
 
-        let last_trusted_consensus_state = match self
+        let last_trusted_consensus_state = self
             .overlay
             .get_verified_consensus_state(untrusted_header.trusted_height, client_id.clone())
             .await?
-            .0
-        {
-            AnyConsensusState::Tendermint(stored_tm_consensus_state) => stored_tm_consensus_state,
-            _ => {
-                return Err(anyhow::anyhow!(
-                    "stored consensus state doesn't match client type"
-                ))
-            }
-        };
+            .as_tendermint()?;
 
         let trusted_state = TrustedBlockState {
             header_time: last_trusted_consensus_state.timestamp,
@@ -312,7 +496,7 @@ impl IBCComponent {
             signed_header: &untrusted_header.signed_header,
             validators: &untrusted_header.validator_set,
 
-            // TODO: how to we verify  next validator state?
+            // TODO: do we need this?
             next_validators: None,
         };
 
@@ -322,6 +506,7 @@ impl IBCComponent {
             &self.overlay.get_block_timestamp().await?.to_rfc3339(),
         )
         .unwrap();
+
         let verdict = verifier.verify(
             untrusted_state,
             trusted_state,
@@ -345,80 +530,7 @@ impl IBCComponent {
         }
 
         // consensus state is verified
-        let verified_header = untrusted_header.clone();
-        let verified_consensus_state = untrusted_consensus_state.clone();
-
-        // if this header is verified, and conflicts with a past header that was previously
-        // verified, we need to freeze the client.
-        //
-        // NOTE (divergence): we use the height of the header as the FrozenHeight. The Cosmos SDK
-        // uses a static height, (0, 1), for all frozen clients.
-        if conflicting_header {
-            return Ok((
-                trusted_client_state
-                    .with_header(untrusted_header.clone())
-                    .with_frozen_height(untrusted_header.height())?,
-                verified_consensus_state,
-            ));
-        }
-
-        // check that updates have monotonic timestamps. we may receive client updates that are
-        // disjoint: the header we received and validated may be older than the newest header we
-        // have. In that case, we need to verify that the timestamp is correct.
-        let mut timestamp_monotonicity_violation = false;
-
-        let next_consensus_state = self
-            .overlay
-            .next_verified_consensus_state(&client_id, verified_header.height())
-            .await?;
-        let prev_consensus_state = self
-            .overlay
-            .prev_verified_consensus_state(&client_id, verified_header.height())
-            .await?;
-
-        // case 1: if we have a verified consensus state previous to this header, verify that this
-        // header's timestamp is greater than or equal to the stored consensus state's timestamp
-        if let Some(prev_state) = prev_consensus_state {
-            match prev_state.0 {
-                AnyConsensusState::Tendermint(prev_state_tm) => {
-                    if !(verified_header.signed_header.header().time >= prev_state_tm.timestamp) {
-                        timestamp_monotonicity_violation = true;
-                    }
-                }
-                _ => return Err(anyhow::anyhow!("unsupported consensus state type")),
-            }
-        }
-
-        // case 2: if we have a verified consensus state with higher block height than this header,
-        // verify that this header's timestamp is less than or equal to this header's timestamp.
-        if let Some(next_state) = next_consensus_state {
-            match next_state.0 {
-                AnyConsensusState::Tendermint(next_state_tm) => {
-                    if !(verified_header.signed_header.header().time <= next_state_tm.timestamp) {
-                        timestamp_monotonicity_violation = true;
-                    }
-                }
-                _ => return Err(anyhow::anyhow!("unsupported consensus state type")),
-            }
-        }
-
-        // if we receive a verified header that has non-monotonic timestamps, we freeze the client
-        // (following Cosmos SDK behavior here.)
-        if timestamp_monotonicity_violation {
-            return Ok((
-                trusted_client_state
-                    .with_header(verified_header.clone())
-                    .with_frozen_height(verified_header.height())?,
-                verified_consensus_state,
-            ));
-        }
-
-        // TODO: pruning headers is possible here to improve performance.
-
-        return Ok((
-            trusted_client_state.with_header(untrusted_header.clone()),
-            verified_consensus_state,
-        ));
+        Ok(())
     }
 }
 
