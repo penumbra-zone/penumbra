@@ -347,6 +347,8 @@ impl IBCComponent {
         }
 
         // consensus state is verified
+        let verified_header = untrusted_header.clone();
+        let verified_consensus_state = untrusted_consensus_state.clone();
 
         // if this header is verified, and conflicts with a past header that was previously
         // verified, we need to freeze the client.
@@ -362,8 +364,6 @@ impl IBCComponent {
             ));
         }
 
-        let verified_header = untrusted_header.clone();
-
         // check that updates have monotonic timestamps. we may receive client updates that are
         // disjoint: the header we received and validated may be older than the newest header we
         // have. In that case, we need to verify that the timestamp is correct.
@@ -371,11 +371,11 @@ impl IBCComponent {
 
         let next_consensus_state = self
             .overlay
-            .next_consensus_state(&client_id, verified_header.height())
+            .next_verified_consensus_state(&client_id, verified_header.height())
             .await?;
         let prev_consensus_state = self
             .overlay
-            .prev_consensus_state(&client_id, verified_header.height())
+            .prev_verified_consensus_state(&client_id, verified_header.height())
             .await?;
 
         // case 1: if we have a verified consensus state previous to this header, verify that this
@@ -411,7 +411,7 @@ impl IBCComponent {
                 trusted_client_state
                     .with_header(verified_header.clone())
                     .with_frozen_height(verified_header.height())?,
-                untrusted_consensus_state,
+                verified_consensus_state,
             ));
         }
 
@@ -419,7 +419,7 @@ impl IBCComponent {
 
         return Ok((
             trusted_client_state.with_header(untrusted_header.clone()),
-            untrusted_consensus_state,
+            verified_consensus_state,
         ));
     }
 }
@@ -537,28 +537,20 @@ pub trait View: OverlayExt + Send + Sync {
         Ok(())
     }
 
-    // next_consensus_state returns the lowest consensus state that is higher than the given
-    // height, if it exists.
-    async fn next_consensus_state(
+    // returns the lowest verified consensus state that is higher than the given height, if it
+    // exists.
+    async fn next_verified_consensus_state(
         &self,
         client_id: &ClientId,
         height: Height,
     ) -> Result<Option<ConsensusState>> {
-        let maybe_verified_heights: Option<VerifiedHeights> = self
-            .get_domain(
-                format!(
-                    "ibc/ics02-client/clients/{}/verified_heights",
-                    hex::encode(client_id.as_bytes())
-                )
-                .into(),
-            )
-            .await?;
+        let mut verified_heights =
+            self.get_verified_heights(client_id)
+                .await?
+                .unwrap_or(VerifiedHeights {
+                    heights: Vec::new(),
+                });
 
-        if maybe_verified_heights.is_none() {
-            return Ok(None);
-        }
-
-        let mut verified_heights = maybe_verified_heights.unwrap();
         // WARNING: load-bearing sort
         verified_heights.heights.sort();
 
@@ -576,28 +568,20 @@ pub trait View: OverlayExt + Send + Sync {
         }
     }
 
-    // prev_consensus_state returns the highest consensus state that is lower than the given
-    // height, if it exists.
-    async fn prev_consensus_state(
+    // returns the highest verified consensus state that is lower than the given height, if it
+    // exists.
+    async fn prev_verified_consensus_state(
         &self,
         client_id: &ClientId,
         height: Height,
     ) -> Result<Option<ConsensusState>> {
-        let maybe_verified_heights: Option<VerifiedHeights> = self
-            .get_domain(
-                format!(
-                    "ibc/ics02-client/clients/{}/verified_heights",
-                    hex::encode(client_id.as_bytes())
-                )
-                .into(),
-            )
-            .await?;
+        let mut verified_heights =
+            self.get_verified_heights(client_id)
+                .await?
+                .unwrap_or(VerifiedHeights {
+                    heights: Vec::new(),
+                });
 
-        if maybe_verified_heights.is_none() {
-            return Ok(None);
-        }
-
-        let mut verified_heights = maybe_verified_heights.unwrap();
         // WARNING: load-bearing sort
         verified_heights.heights.sort();
 
