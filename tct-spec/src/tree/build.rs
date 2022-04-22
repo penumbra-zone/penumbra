@@ -24,7 +24,7 @@ fn leaf(commitment: Insert<Commitment>) -> impl Builder {
 }
 
 /// Make a node builder.
-fn node(height: u8, children: impl IntoIterator<Item = impl Builder>) -> impl Builder {
+fn node(height: u8, children: Vec<impl Builder>) -> impl Builder {
     move |parent| Tree {
         inner: Arc::new_cyclic(|this| {
             let children: Vec<_> = children
@@ -84,17 +84,10 @@ fn tier(base_height: u8, level_0: Insert<impl IntoIterator<Item = impl Builder>>
         let mut next_level = List::new();
 
         while !level.is_empty() {
-            let mut children = List::new();
-
-            for _ in 0..4 {
-                if let Some(child) = level.pop_front() {
-                    children.push_back(child);
-                }
-            }
-
-            // We always keep nodes during construction; pruning unneeded nodes is only possible
-            // after hashes are computed, but this can't be done until the full tree is constructed.
-            next_level.push_back(node(height + 1, children));
+            // Make a node whose children are the front 4 elements of the level, or whatever remains
+            // if there are fewer than 4 elements
+            let children = (0..4).map_while(|_| level.pop_front());
+            next_level.push_back(node(height + 1, children.collect()));
         }
 
         next_level
