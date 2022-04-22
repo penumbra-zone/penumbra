@@ -1,6 +1,6 @@
 # One day, this would be better handled via pushing Docker images up
 # and using Kubernetes or similar, but this will work for now.
-name: Deploy to testnet-next
+name: Deploy to testnet-preview
 on:
   workflow_dispatch:
   push:
@@ -12,12 +12,12 @@ jobs:
   deploy:
     name: Trigger Deployment
     runs-on: ubuntu-latest
-    environment: testnet-next
+    environment: testnet-preview
     steps:
     - name: Update git repository
       uses: appleboy/ssh-action@master
       with:
-        host: ${{ secrets.TESTNET_NEXT_HOST }}
+        host: ${{ secrets.TESTNET_PREVIEW_HOST }}
         username: ${{ secrets.TUNNEL_USERNAME }}
         key: ${{ secrets.ID_ED25519 }}
         port: ${{ secrets.TUNNEL_PORT }}
@@ -28,7 +28,7 @@ jobs:
     - name: Delete existing state
       uses: appleboy/ssh-action@master
       with:
-        host: ${{ secrets.TESTNET_NEXT_HOST }}
+        host: ${{ secrets.TESTNET_PREVIEW_HOST }}
         username: ${{ secrets.TUNNEL_USERNAME }}
         key: ${{ secrets.ID_ED25519 }}
         port: ${{ secrets.TUNNEL_PORT }}
@@ -43,7 +43,7 @@ jobs:
     - name: Generate testnet
       uses: appleboy/ssh-action@master
       with:
-        host: ${{ secrets.TESTNET_NEXT_HOST }}
+        host: ${{ secrets.TESTNET_PREVIEW_HOST }}
         username: ${{ secrets.TUNNEL_USERNAME }}
         key: ${{ secrets.ID_ED25519 }}
         port: ${{ secrets.TUNNEL_PORT }}
@@ -53,7 +53,7 @@ jobs:
     - name: Restart deployment
       uses: appleboy/ssh-action@master
       with:
-        host: ${{ secrets.TESTNET_NEXT_HOST }}
+        host: ${{ secrets.TESTNET_PREVIEW_HOST }}
         username: ${{ secrets.TUNNEL_USERNAME }}
         key: ${{ secrets.ID_ED25519 }}
         port: ${{ secrets.TUNNEL_PORT }}
