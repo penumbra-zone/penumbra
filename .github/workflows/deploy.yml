@@ -33,6 +33,7 @@ jobs:
         key: ${{ secrets.ID_ED25519 }}
         port: ${{ secrets.TUNNEL_PORT }}
         script: |
+          cd ~/penumbra
           docker-compose stop
           rm -rf ~/scratch/testnet_build/node0/tendermint/data/
           rm -rf ~/scratch/testnet_build/node0/pd/rocksdb
@@ -48,7 +49,7 @@ jobs:
         port: ${{ secrets.TUNNEL_PORT }}
         script: |
           cd ~/penumbra
-          cargo run --release --bin pd -- generate-testnet
+          /root/.cargo/bin/cargo run --release --bin pd -- generate-testnet
     - name: Restart deployment
       uses: appleboy/ssh-action@master
       with:
