@@ -4,7 +4,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use ibc::{
     clients::ics07_tendermint::{
-        client_def::TendermintClient, client_state::ClientState as TendermintClientState,
+        client_state::ClientState as TendermintClientState,
         consensus_state::ConsensusState as TendermintConsensusState,
         header::Header as TendermintHeader,
     },
@@ -21,7 +21,7 @@ use ibc::{
 };
 use penumbra_ibc::{ClientCounter, ClientData, ConsensusState, IBCAction, VerifiedHeights};
 use penumbra_proto::ibc::ibc_action::Action::{CreateClient, UpdateClient};
-use penumbra_transaction::{Action, Transaction};
+use penumbra_transaction::Transaction;
 use tendermint::{abci, Time};
 use tendermint_light_client_verifier::{
     types::{Time as LightClientTime, TrustedBlockState, UntrustedBlockState},
@@ -711,3 +711,152 @@ pub trait View: OverlayExt + Send + Sync {
 }
 
 impl<T: OverlayExt + Send + Sync> View for T {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::Storage;
+    use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
+    use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
+    use penumbra_crypto::merkle;
+    use penumbra_crypto::{Fq, Zero};
+    use penumbra_proto::ibc::ibc_action::Action as IBCActionInner;
+    use penumbra_proto::Message;
+    use penumbra_transaction::{Fee, Transaction, TransactionBody, Action};
+    use std::fs;
+    use tempfile::tempdir;
+
+    // test that we can create and update a light client.
+    #[tokio::test]
+    async fn test_create_and_update_light_client() {
+        // create a storage backend for testing
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("ibc-testing.db");
+
+        let storage = Storage::load(file_path).await.unwrap();
+        let overlay = storage.overlay().await.unwrap();
+
+        let mut ibc_component = IBCComponent::new(overlay).await.unwrap();
+
+        // init chain should result in client counter = 0
+        let genesis_state = genesis::AppState::default();
+        let timestamp = Time::parse_from_rfc3339("2022-02-11T17:30:50.425417198Z").unwrap();
+        ibc_component.overlay.put_block_timestamp(timestamp).await;
+        ibc_component.overlay.put_block_height(0).await;
+        ibc_component.init_chain(&genesis_state).await.unwrap();
+
+        assert_eq!(ibc_component.overlay.client_counter().await.unwrap().0, 0);
+
+        // base64 encoded MsgCreateClient that was used to create the currently in-use Stargaze
+        // light client on the cosmos hub:
+        // https://cosmos.bigdipper.live/transactions/13C1ECC54F088473E2925AD497DDCC092101ADE420BC64BADE67D34A75769CE9
+        //
+        //
+        let msg_create_client_stargaze_raw = base64::decode(
+            fs::read_to_string("../ibc/test/create_client.msg")
+                .unwrap()
+                .replace('\n', ""),
+        )
+        .unwrap();
+        let msg_create_stargaze_client =
+            RawMsgCreateClient::decode(msg_create_client_stargaze_raw.as_slice()).unwrap();
+
+        // base64 encoded MsgUpdateClient that was used to issue the first update to the in-use stargaze light client on the cosmos hub:
+        // https://cosmos.bigdipper.live/transactions/24F1E19F218CAF5CA41D6E0B653E85EB965843B1F3615A6CD7BCF336E6B0E707
+        let msg_update_client_stargaze_raw = base64::decode(
+            fs::read_to_string("../ibc/test/update_client_1.msg")
+                .unwrap()
+                .replace('\n', ""),
+        )
+        .unwrap();
+        let mut msg_update_stargaze_client =
+            RawMsgUpdateClient::decode(msg_update_client_stargaze_raw.as_slice()).unwrap();
+        msg_update_stargaze_client.client_id = "07-tendermint-0".to_string();
+
+        let create_client_action = IBCAction {
+            action: IBCActionInner::CreateClient(msg_create_stargaze_client),
+        };
+        let create_client_tx = Transaction {
+            transaction_body: TransactionBody {
+                actions: vec![Action::IBCAction(create_client_action)],
+                merkle_root: merkle::Root(Fq::zero()),
+                expiry_height: 0,
+                chain_id: "".to_string(),
+                fee: Fee(0),
+            },
+            binding_sig: [0u8; 64].into(),
+        };
+
+        let update_client_action = IBCAction {
+            action: IBCActionInner::UpdateClient(msg_update_stargaze_client),
+        };
+        let update_client_tx = Transaction {
+            transaction_body: TransactionBody {
+                actions: vec![Action::IBCAction(update_client_action)],
+                merkle_root: merkle::Root(Fq::zero()),
+                expiry_height: 0,
+                chain_id: "".to_string(),
+                fee: Fee(0),
+            },
+            binding_sig: [0u8; 64].into(),
+        };
+
+        IBCComponent::check_tx_stateless(&create_client_tx).unwrap();
+        ibc_component
+            .check_tx_stateful(&create_client_tx)
+            .await
+            .unwrap();
+        // execute (save client)
+        ibc_component.execute_tx(&create_client_tx).await.unwrap();
+
+        assert_eq!(ibc_component.overlay.client_counter().await.unwrap().0, 1);
+
+        // now try update client
+
+        IBCComponent::check_tx_stateless(&update_client_tx).unwrap();
+        // verify the ClientUpdate proof
+        ibc_component
+            .check_tx_stateful(&update_client_tx)
+            .await
+            .unwrap();
+        // save the next tm state
+        ibc_component.execute_tx(&update_client_tx).await.unwrap();
+
+        // try one more client update
+        // https://cosmos.bigdipper.live/transactions/ED217D360F51E622859F7B783FEF98BDE3544AA32BBD13C6C77D8D0D57A19FFD
+        let msg_update_second = base64::decode(
+            fs::read_to_string("../ibc/test/update_client_2.msg")
+                .unwrap()
+                .replace('\n', ""),
+        )
+        .unwrap();
+
+        let mut second_update = RawMsgUpdateClient::decode(msg_update_second.as_slice()).unwrap();
+        second_update.client_id = "07-tendermint-0".to_string();
+        let second_update_client_action = IBCAction {
+            action: IBCActionInner::UpdateClient(second_update),
+        };
+        let second_update_client_tx = Transaction {
+            transaction_body: TransactionBody {
+                actions: vec![Action::IBCAction(second_update_client_action)],
+                merkle_root: merkle::Root(Fq::zero()),
+                expiry_height: 0,
+                chain_id: "".to_string(),
+                fee: Fee(0),
+            },
+            binding_sig: [0u8; 64].into(),
+        };
+
+        IBCComponent::check_tx_stateless(&second_update_client_tx).unwrap();
+        // verify the ClientUpdate proof
+        ibc_component
+            .check_tx_stateful(&second_update_client_tx)
+            .await
+            .unwrap();
+        // save the next tm state
+        ibc_component
+            .execute_tx(&second_update_client_tx)
+            .await
+            .unwrap()
+    }
+}
