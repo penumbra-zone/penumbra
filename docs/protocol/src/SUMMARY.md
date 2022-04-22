@@ -1,6 +1,6 @@
 [Penumbra](./penumbra.md)
 - [Concepts and Mechanisms](./concepts.md)
-  - [Validators]()
+  - [Validators](./concepts/validators.md)
   - [Batching Flows](./concepts/batching_flows.md)
   - [Addresses and Keys](./concepts/addresses_keys.md)
   - [Assets and Amounts](./concepts/assets_amounts.md)
