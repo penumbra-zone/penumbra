@@ -1,0 +1,52 @@
+# One day, this would be better handled via pushing Docker images up
+# and using Kubernetes or similar, but this will work for now.
+name: Deploy to testnet-next
+on:
+  workflow_dispatch:
+  push:
+    branches:    
+      - main
+
+jobs:
+
+  deploy:
+    name: Trigger Deployment
+    runs-on: ubuntu-latest
+    environment: testnet-next
+    steps:
+    - name: Update git repository
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.TESTNET_NEXT_HOST }}
+        username: ${{ secrets.TUNNEL_USERNAME }}
+        key: ${{ secrets.ID_ED25519 }}
+        port: ${{ secrets.TUNNEL_PORT }}
+        script: |
+          cd ~/penumbra
+          git checkout main
+          git pull
+    - name: Delete existing state
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.TESTNET_NEXT_HOST }}
+        username: ${{ secrets.TUNNEL_USERNAME }}
+        key: ${{ secrets.ID_ED25519 }}
+        port: ${{ secrets.TUNNEL_PORT }}
+        script: |
+          docker-compose stop
+          rm -rf ~/scratch/testnet_build/node0/tendermint/data/
+          rm -rf ~/scratch/testnet_build/node0/pd/rocksdb
+          mkdir ~/scratch/testnet_build/node0/tendermint/data/
+          echo -n '{}' > ~/scratch/testnet_build/node0/tendermint/data/priv_validator_state.json
+          chmod -R 777 ~/scratch/testnet_build
+    - name: Restart deployment
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.TESTNET_NEXT_HOST }}
+        username: ${{ secrets.TUNNEL_USERNAME }}
+        key: ${{ secrets.ID_ED25519 }}
+        port: ${{ secrets.TUNNEL_PORT }}
+        script: |
+          cd ~/penumbra
+          docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+
