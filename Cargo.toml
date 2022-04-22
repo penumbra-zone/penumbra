@@ -15,10 +15,12 @@ members = [
   "storage",
   "tct",
   "tct-property-test",
+  "tct-spec",
   "transaction",
   "wallet",
   "wallet-next",
   "pd",
   "pcli",
   "pcli-next",
+  "ibc",
 ]
