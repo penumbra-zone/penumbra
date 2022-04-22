@@ -71,6 +71,8 @@ rocksdb = "0.18.0"
 ibc = "0.13.0"
 ibc-proto = "0.17.0"
 tendermint-light-client-verifier = "0.23.5"
+tempfile = "3.3.0"
+base64 = "0.13.0"
 
 [build-dependencies]
 vergen = "5"
