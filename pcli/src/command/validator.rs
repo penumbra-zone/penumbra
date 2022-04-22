@@ -115,6 +115,7 @@ impl ValidatorCmd {
                         .clone(),
                 );
                 // Generate a random consensus key.
+                // TODO: not great because the private key is discarded here and this isn't obvious to the user
                 let consensus_key =
                     tendermint::PrivateKey::Ed25519(ed25519_consensus::SigningKey::new(OsRng))
                         .public_key();
