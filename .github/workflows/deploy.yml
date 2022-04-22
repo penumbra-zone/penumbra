@@ -39,6 +39,16 @@ jobs:
           mkdir ~/scratch/testnet_build/node0/tendermint/data/
           echo -n '{}' > ~/scratch/testnet_build/node0/tendermint/data/priv_validator_state.json
           chmod -R 777 ~/scratch/testnet_build
+    - name: Generate testnet
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.TESTNET_NEXT_HOST }}
+        username: ${{ secrets.TUNNEL_USERNAME }}
+        key: ${{ secrets.ID_ED25519 }}
+        port: ${{ secrets.TUNNEL_PORT }}
+        script: |
+          cd ~/penumbra
+          cargo run --release --bin pd -- generate-testnet
     - name: Restart deployment
       uses: appleboy/ssh-action@master
       with:
