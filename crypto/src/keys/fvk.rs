@@ -1,6 +1,10 @@
+use anyhow::Context;
 use ark_ff::PrimeField;
+use ark_serialize::CanonicalDeserialize;
 use decaf377::FieldExt;
 use once_cell::sync::Lazy;
+use penumbra_proto::{crypto as pb, serializers::bech32str, Protobuf};
+use serde::{Deserialize, Serialize};
 
 use super::{DiversifierKey, IncomingViewingKey, NullifierKey, OutgoingViewingKey};
 use crate::{
@@ -12,7 +16,8 @@ use crate::{
 static IVK_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| Fq::from_le_bytes_mod_order(b"penumbra.derive.ivk"));
 
 /// The `FullViewingKey` allows one to identify incoming and outgoing notes only.
-#[derive(Clone, Debug)]
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(try_from = "pb::FullViewingKey", into = "pb::FullViewingKey")]
 pub struct FullViewingKey {
     ak: VerificationKey<SpendAuth>,
     nk: NullifierKey,
@@ -75,5 +80,71 @@ impl FullViewingKey {
     /// Returns the spend verification key contained in this full viewing key.
     pub fn spend_verification_key(&self) -> &VerificationKey<SpendAuth> {
         &self.ak
+    }
+}
+
+impl Protobuf<pb::FullViewingKey> for FullViewingKey {}
+
+impl TryFrom<pb::FullViewingKey> for FullViewingKey {
+    type Error = anyhow::Error;
+
+    fn try_from(value: pb::FullViewingKey) -> Result<Self, Self::Error> {
+        if value.inner.len() != 64 {
+            return Err(anyhow::anyhow!(
+                "Wrong byte length, expected 64 but found {}",
+                value.inner.len()
+            ));
+        }
+
+        let ak_bytes: [u8; 32] = value.inner[0..32].try_into().unwrap();
+        let nk_bytes: [u8; 32] = value.inner[32..64].try_into().unwrap();
+
+        let ak = ak_bytes.try_into()?;
+        let nk = NullifierKey(
+            Fq::deserialize(&nk_bytes[..]).context("could not deserialize nullifier key")?,
+        );
+
+        Ok(FullViewingKey::from_components(ak, nk))
+    }
+}
+
+impl From<FullViewingKey> for pb::FullViewingKey {
+    fn from(value: FullViewingKey) -> pb::FullViewingKey {
+        let mut inner = Vec::with_capacity(64);
+        inner.extend_from_slice(&value.ak.to_bytes());
+        inner.extend_from_slice(&value.nk.0.to_bytes());
+        pb::FullViewingKey { inner }
+    }
+}
+
+impl std::fmt::Display for FullViewingKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let proto = pb::FullViewingKey::from(self.clone());
+        f.write_str(&bech32str::encode(
+            &proto.inner,
+            bech32str::full_viewing_key::BECH32_PREFIX,
+            bech32str::Bech32m,
+        ))
+    }
+}
+
+impl std::fmt::Debug for FullViewingKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        <Self as std::fmt::Display>::fmt(self, f)
+    }
+}
+
+impl std::str::FromStr for FullViewingKey {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        pb::FullViewingKey {
+            inner: bech32str::decode(
+                s,
+                bech32str::full_viewing_key::BECH32_PREFIX,
+                bech32str::Bech32m,
+            )?,
+        }
+        .try_into()
     }
 }

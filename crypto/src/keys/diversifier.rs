@@ -5,13 +5,16 @@ use anyhow::anyhow;
 use ark_ff::PrimeField;
 use derivative::Derivative;
 use fpe::ff1;
+use penumbra_proto::{crypto as pb, Protobuf};
+use serde::{Deserialize, Serialize};
 
 use crate::Fq;
 
 pub const DIVERSIFIER_LEN_BYTES: usize = 11;
 
-#[derive(Copy, Clone, PartialEq, Eq, Derivative)]
+#[derive(Copy, Clone, PartialEq, Eq, Derivative, Serialize, Deserialize)]
 #[derivative(Debug)]
+#[serde(try_from = "pb::Diversifier", into = "pb::Diversifier")]
 pub struct Diversifier(
     #[derivative(Debug(bound = "", format_with = "crate::fmt_hex"))] pub [u8; DIVERSIFIER_LEN_BYTES],
 );
@@ -50,6 +53,24 @@ impl TryFrom<&[u8]> for Diversifier {
     }
 }
 
+impl Protobuf<pb::Diversifier> for Diversifier {}
+
+impl From<Diversifier> for pb::Diversifier {
+    fn from(d: Diversifier) -> pb::Diversifier {
+        pb::Diversifier {
+            inner: d.as_ref().to_vec(),
+        }
+    }
+}
+
+impl TryFrom<pb::Diversifier> for Diversifier {
+    type Error = anyhow::Error;
+
+    fn try_from(d: pb::Diversifier) -> Result<Diversifier, Self::Error> {
+        d.inner.as_slice().try_into()
+    }
+}
+
 #[derive(Clone, Derivative)]
 #[derivative(Debug)]
 pub struct DiversifierKey(
@@ -83,7 +104,8 @@ impl DiversifierKey {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Derivative)]
+#[derive(Copy, Clone, PartialEq, Eq, Derivative, Serialize, Deserialize)]
+#[serde(try_from = "pb::DiversifierIndex", into = "pb::DiversifierIndex")]
 #[derivative(Debug)]
 pub struct DiversifierIndex(
     #[derivative(Debug(bound = "", format_with = "crate::fmt_hex"))] pub [u8; 11],
@@ -140,6 +162,24 @@ impl TryFrom<DiversifierIndex> for u64 {
         } else {
             Err(anyhow::anyhow!("diversifier index out of range"))
         }
+    }
+}
+
+impl Protobuf<pb::DiversifierIndex> for DiversifierIndex {}
+
+impl From<DiversifierIndex> for pb::DiversifierIndex {
+    fn from(d: DiversifierIndex) -> pb::DiversifierIndex {
+        pb::DiversifierIndex {
+            inner: d.0.to_vec(),
+        }
+    }
+}
+
+impl TryFrom<pb::DiversifierIndex> for DiversifierIndex {
+    type Error = anyhow::Error;
+
+    fn try_from(d: pb::DiversifierIndex) -> Result<DiversifierIndex, Self::Error> {
+        Ok(DiversifierIndex(d.inner.as_slice().try_into()?))
     }
 }
 
