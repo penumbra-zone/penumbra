@@ -79,7 +79,7 @@ mod tier {
 }
 
 /// Starting at some base height, consolidate the builders in the iterator into an 8-node-deep tier.
-fn tier(base_height: u8, level_0: Insert<impl IntoIterator<Item = impl Builder>>) -> impl Builder {
+fn tier(base_height: u8, level_0: Insert<List<impl Builder>>) -> impl Builder {
     fn level(height: u8, mut level: List<impl Builder>) -> List<impl Builder> {
         let mut next_level = List::new();
 
@@ -98,8 +98,6 @@ fn tier(base_height: u8, level_0: Insert<impl IntoIterator<Item = impl Builder>>
             Insert::Hash(hash) => return tier::hashed(parent, base_height + 8, hash),
             Insert::Keep(level_0) => level_0,
         };
-
-        let level_0: List<_> = level_0.into_iter().collect();
 
         if level_0.is_empty() {
             return tier::empty(parent, base_height + 8);
@@ -127,24 +125,27 @@ fn tier(base_height: u8, level_0: Insert<impl IntoIterator<Item = impl Builder>>
 }
 
 /// Build a block from an iterator of commitments.
-pub(super) fn block(block: Insert<impl IntoIterator<Item = Insert<Commitment>>>) -> impl Builder {
-    tier(0, block.map(|leaves| leaves.into_iter().map(self::leaf)))
+pub(super) fn block(block: Insert<List<Insert<Commitment>>>) -> impl Builder {
+    tier(
+        0,
+        block.map(|leaves| leaves.into_iter().map(self::leaf).collect()),
+    )
 }
 
 /// Build an epoch from an iterator of blocks.
-pub(super) fn epoch(
-    epoch: Insert<impl IntoIterator<Item = Insert<impl IntoIterator<Item = Insert<Commitment>>>>>,
-) -> impl Builder {
-    tier(8, epoch.map(|blocks| blocks.into_iter().map(self::block)))
+pub(super) fn epoch(epoch: Insert<List<Insert<List<Insert<Commitment>>>>>) -> impl Builder {
+    tier(
+        8,
+        epoch.map(|blocks| blocks.into_iter().map(self::block).collect()),
+    )
 }
 
 /// Build an eternity from an iterator of epochs.
 pub(super) fn eternity(
-    eternity: impl IntoIterator<
-        Item = Insert<
-            impl IntoIterator<Item = Insert<impl IntoIterator<Item = Insert<Commitment>>>>,
-        >,
-    >,
+    eternity: List<Insert<List<Insert<List<Insert<Commitment>>>>>>,
 ) -> impl Builder {
-    tier(16, Insert::Keep(eternity.into_iter().map(self::epoch)))
+    tier(
+        16,
+        Insert::Keep(eternity.into_iter().map(self::epoch).collect()),
+    )
 }

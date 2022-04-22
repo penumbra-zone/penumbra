@@ -10,7 +10,7 @@ use crate::*;
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Builder {
     /// The inner tiers of the builder.
-    pub block: Vec<Insert<Commitment>>,
+    pub block: List<Insert<Commitment>>,
 }
 
 impl Builder {
@@ -37,7 +37,7 @@ impl Builder {
         let position = self.position();
 
         // Insert the item into the block
-        self.block.push(insert);
+        self.block.push_back(insert);
 
         // Return the position
         Ok(position)

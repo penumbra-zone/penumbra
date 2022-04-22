@@ -1,9 +1,6 @@
 //! The definitions of the core tree structure.
 
-use std::{
-    collections::VecDeque as List,
-    sync::{Arc, Weak},
-};
+use std::sync::{Arc, Weak};
 
 use crate::*;
 
@@ -90,27 +87,19 @@ impl Tree {
     }
 
     /// Construct a one-tiered tree from an iterable sequence representing commitments in the block.
-    pub fn from_block(block: impl IntoIterator<Item = Insert<Commitment>>) -> Tree {
+    pub fn from_block(block: List<Insert<Commitment>>) -> Tree {
         build::block(Insert::Keep(block)).with_parent(Parent::new())
     }
 
     /// Construct a two-tiered tree from a doubly-nested iterable sequence representing commitments
     /// within blocks.
-    pub fn from_epoch(
-        epoch: impl IntoIterator<Item = Insert<impl IntoIterator<Item = Insert<Commitment>>>>,
-    ) -> Tree {
+    pub fn from_epoch(epoch: List<Insert<List<Insert<Commitment>>>>) -> Tree {
         build::epoch(Insert::Keep(epoch)).with_parent(Parent::new())
     }
 
     /// Construct a three-tiered tree from a triply-nested iterable sequence representing commitments within
     /// blocks within epochs.
-    pub fn from_eternity(
-        eternity: impl IntoIterator<
-            Item = Insert<
-                impl IntoIterator<Item = Insert<impl IntoIterator<Item = Insert<Commitment>>>>,
-            >,
-        >,
-    ) -> Tree {
+    pub fn from_eternity(eternity: List<Insert<List<Insert<List<Insert<Commitment>>>>>>) -> Tree {
         build::eternity(eternity).with_parent(Parent::new())
     }
 

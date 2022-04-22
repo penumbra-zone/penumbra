@@ -6,7 +6,7 @@ use hash_hasher::HashedMap;
 use penumbra_tct::{self as eternity, block, epoch};
 
 /// Index a block, producing a mapping from witnessed commitments to their position in the block.
-pub fn block(block: &[Insert<Commitment>]) -> HashedMap<Commitment, block::Position> {
+pub fn block(block: &List<Insert<Commitment>>) -> HashedMap<Commitment, block::Position> {
     let mut index = HashedMap::default();
     for (within_block, insert) in block.iter().enumerate() {
         if let Some(commitment) = insert.keep() {
@@ -17,7 +17,9 @@ pub fn block(block: &[Insert<Commitment>]) -> HashedMap<Commitment, block::Posit
 }
 
 /// Index an epoch, producing a mapping from witnessed commitments to their position in the epoch.
-pub fn epoch(epoch: &[Insert<Vec<Insert<Commitment>>>]) -> HashedMap<Commitment, epoch::Position> {
+pub fn epoch(
+    epoch: &List<Insert<List<Insert<Commitment>>>>,
+) -> HashedMap<Commitment, epoch::Position> {
     let mut index = HashedMap::default();
     for (within_epoch, insert) in epoch.iter().enumerate() {
         if let Some(block) = insert.as_ref().keep() {
@@ -40,7 +42,7 @@ pub fn epoch(epoch: &[Insert<Vec<Insert<Commitment>>>]) -> HashedMap<Commitment,
 
 /// Index an eternity, producing a mapping from witnessed commitments to their position in the eternity.
 pub fn eternity(
-    eternity: &[Insert<Vec<Insert<Vec<Insert<Commitment>>>>>],
+    eternity: &List<Insert<List<Insert<List<Insert<Commitment>>>>>>,
 ) -> HashedMap<Commitment, eternity::Position> {
     let mut index = HashedMap::default();
     for (within_eternity, insert) in eternity.iter().enumerate() {
