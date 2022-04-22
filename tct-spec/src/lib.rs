@@ -3,6 +3,9 @@
 pub mod index;
 pub mod tree;
 
+mod error;
+pub use error::InsertError;
+
 use penumbra_tct::{
     block, epoch,
     internal::{
