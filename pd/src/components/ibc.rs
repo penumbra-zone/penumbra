@@ -461,6 +461,12 @@ impl IBCComponent {
             ));
         }
 
+        if untrusted_header.height() <= untrusted_header.trusted_height {
+            return Err(anyhow::anyhow!(
+                "client update height is not greater than trusted height"
+            ));
+        }
+
         // check if we already have a consensus state for this height, if we do, check that it is
         // the same as this update, if it is, return early.
         if let Some(stored_consensus_state) = self
