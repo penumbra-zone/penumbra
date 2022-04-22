@@ -7,5 +7,4 @@ edition = "2021"
 
 [dependencies]
 penumbra-tct = { path = "../tct", features = ["internal"] }
-parking_lot = "0.12"
 hash_hasher = "2"

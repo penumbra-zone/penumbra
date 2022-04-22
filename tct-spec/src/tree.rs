@@ -3,8 +3,6 @@ use std::{
     sync::{Arc, Weak},
 };
 
-use parking_lot::Mutex;
-
 use crate::*;
 
 pub struct Tree {
@@ -31,22 +29,22 @@ impl Wrapped {
     }
 }
 
-pub enum Inner {
+enum Inner {
     Leaf(Leaf),
     Node(Node),
     Tier(Tier),
 }
 
 pub struct Leaf {
-    pub commitment: Commitment,
+    pub commitment: Insert<Commitment>,
 }
 
 pub struct Node {
-    pub children: Vec<Mutex<Insert<Tree>>>,
+    pub children: Vec<Tree>,
 }
 
 pub struct Tier {
-    pub root: Option<Mutex<Insert<Tree>>>,
+    pub root: Option<Insert<Tree>>,
 }
 
 mod build;
@@ -61,18 +59,18 @@ impl Tree {
         self.inner.parent.upgrade().map(|inner| Tree { inner })
     }
 
+    fn inner(&self) -> &Inner {
+        &self.inner.inner
+    }
+
     pub fn from_block(block: impl IntoIterator<Item = Insert<Commitment>>) -> Tree {
-        let mut block = build::block(block).with_parent(Parent::new());
-        block.prune();
-        block
+        build::block(Insert::Keep(block)).with_parent(Parent::new())
     }
 
     pub fn from_epoch(
         epoch: impl IntoIterator<Item = Insert<impl IntoIterator<Item = Insert<Commitment>>>>,
     ) -> Tree {
-        let mut epoch = build::epoch(epoch).with_parent(Parent::new());
-        epoch.prune();
-        epoch
+        build::epoch(Insert::Keep(epoch)).with_parent(Parent::new())
     }
 
     pub fn from_eternity(
@@ -82,13 +80,7 @@ impl Tree {
             >,
         >,
     ) -> Tree {
-        let mut eternity = build::eternity(eternity).with_parent(Parent::new());
-        eternity.prune();
-        eternity
-    }
-
-    fn inner(&self) -> &Inner {
-        &self.inner.inner
+        build::eternity(eternity).with_parent(Parent::new())
     }
 
     pub fn as_leaf(&self) -> &Leaf {
@@ -115,14 +107,11 @@ impl Tree {
         }
     }
 
-    pub fn is_frontier(&self) -> bool {
+    fn is_frontier(&self) -> bool {
         if let Some(parent) = self.parent() {
             match parent.inner() {
                 Inner::Tier(_) => parent.is_frontier(),
-                Inner::Node(node) => match &*node.children.last().unwrap().lock() {
-                    Insert::Keep(last_child) => last_child.is(self) && parent.is_frontier(),
-                    Insert::Hash(_) => false,
-                },
+                Inner::Node(node) => node.children.last().unwrap().is(self) && parent.is_frontier(),
                 Inner::Leaf(_) => unreachable!("the parent of a tree can never be a leaf"),
             }
         } else {
@@ -130,7 +119,7 @@ impl Tree {
         }
     }
 
-    pub fn height(&self) -> u8 {
+    fn height(&self) -> u8 {
         self.inner.height
     }
 
@@ -143,10 +132,13 @@ impl Tree {
             };
 
             let hash = match self.inner() {
-                Inner::Leaf(Leaf { commitment }) => Hash::of(*commitment),
+                Inner::Leaf(Leaf { commitment }) => match commitment {
+                    Insert::Keep(commitment) => Hash::of(*commitment),
+                    Insert::Hash(hash) => *hash,
+                },
                 Inner::Node(Node { children }) => {
                     let children_hashes: Vec<Hash> =
-                        children.iter().map(|child| child.lock().hash()).collect();
+                        children.iter().map(|child| child.hash()).collect();
 
                     match children_hashes.as_slice() {
                         [] => unreachable!("nodes never have zero children"),
@@ -159,49 +151,13 @@ impl Tree {
                 }
                 Inner::Tier(Tier { root }) => match root {
                     None => padding,
-                    Some(root) => match &*root.lock() {
-                        Insert::Keep(root) => root.hash(),
-                        Insert::Hash(hash) => *hash,
-                    },
+                    Some(Insert::Keep(root)) => root.hash(),
+                    Some(Insert::Hash(hash)) => *hash,
                 },
             };
 
             hash
         })
-    }
-
-    fn prune(&mut self) -> bool {
-        fn prune_insert(insert: &mut Insert<Tree>) -> bool {
-            match insert {
-                Insert::Keep(tree) => {
-                    // Determine whether to keep the tree, in the process pruning everything beneath
-                    // its topmost level
-                    let keep = tree.prune();
-                    if !keep {
-                        // If the tree should not be kept, replace it with its hash
-                        *insert = Insert::Hash(tree.hash());
-                    }
-                    keep
-                }
-                // A hashed tree should not be kept
-                Insert::Hash(_) => false,
-            }
-        }
-
-        match self.inner() {
-            // A leaf containing a commitment is witnessed, so should be kept:
-            Inner::Leaf(_) => true,
-            // A node should be kept if any of its children are kept:
-            Inner::Node(node) => node
-                .children
-                .iter()
-                .any(|child| prune_insert(&mut child.lock())),
-            // A tier should be kept if it is not empty and its root is kept:
-            Inner::Tier(tier) => match tier.root {
-                None => false,
-                Some(ref root) => prune_insert(&mut root.lock()),
-            },
-        }
     }
 }
 

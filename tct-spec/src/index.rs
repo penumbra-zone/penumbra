@@ -1,7 +1,7 @@
 use crate::*;
 
 use hash_hasher::HashedMap;
-use penumbra_tct as eternity;
+use penumbra_tct::{self as eternity, block, epoch};
 
 pub fn block(block: &[Insert<Commitment>]) -> HashedMap<Commitment, block::Position> {
     let mut index = HashedMap::default();

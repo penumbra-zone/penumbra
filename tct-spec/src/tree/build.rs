@@ -10,7 +10,7 @@ impl<T: FnOnce(Parent) -> Tree> Builder for T {
     }
 }
 
-fn leaf(commitment: Commitment) -> impl Builder {
+fn leaf(commitment: Insert<Commitment>) -> impl Builder {
     move |parent| Tree {
         inner: Arc::new(Wrapped::with_parent_and_height(
             parent,
@@ -20,12 +20,12 @@ fn leaf(commitment: Commitment) -> impl Builder {
     }
 }
 
-fn node(height: u8, children: impl IntoIterator<Item = Insert<impl Builder>>) -> impl Builder {
+fn node(height: u8, children: impl IntoIterator<Item = impl Builder>) -> impl Builder {
     move |parent| Tree {
         inner: Arc::new_cyclic(|this| {
             let children: Vec<_> = children
                 .into_iter()
-                .map(|child| Mutex::new(child.map(|child| child.with_parent(this.clone()))))
+                .map(|child| child.with_parent(this.clone()))
                 .collect();
             assert!(
                 !children.is_empty() && children.len() <= 4,
@@ -50,25 +50,31 @@ mod tier {
         }
     }
 
-    pub(super) fn non_empty(parent: Parent, height: u8, contents: Insert<impl Builder>) -> Tree {
+    fn non_empty(parent: Parent, height: u8, contents: Insert<impl Builder>) -> Tree {
         Tree {
             inner: Arc::new_cyclic(|this| {
                 Wrapped::with_parent_and_height(
                     parent,
                     height,
                     Inner::Tier(Tier {
-                        root: Some(Mutex::new(
-                            contents.map(|contents| contents.with_parent(this.clone())),
-                        )),
+                        root: Some(contents.map(|contents| contents.with_parent(this.clone()))),
                     }),
                 )
             }),
         }
     }
+
+    pub(super) fn containing(parent: Parent, height: u8, contents: impl Builder) -> Tree {
+        non_empty(parent, height, Insert::Keep(contents))
+    }
+
+    pub(super) fn hashed(parent: Parent, height: u8, hash: Hash) -> Tree {
+        non_empty(parent, height, Insert::Hash::<fn(Parent) -> Tree>(hash))
+    }
 }
 
-fn tier(base_height: u8, level_0: impl IntoIterator<Item = Insert<impl Builder>>) -> impl Builder {
-    fn level(height: u8, mut level: List<Insert<impl Builder>>) -> List<Insert<impl Builder>> {
+fn tier(base_height: u8, level_0: Insert<impl IntoIterator<Item = impl Builder>>) -> impl Builder {
+    fn level(height: u8, mut level: List<impl Builder>) -> List<impl Builder> {
         let mut next_level = List::new();
 
         while !level.is_empty() {
@@ -82,13 +88,18 @@ fn tier(base_height: u8, level_0: impl IntoIterator<Item = Insert<impl Builder>>
 
             // We always keep nodes during construction; pruning unneeded nodes is only possible
             // after hashes are computed, but this can't be done until the full tree is constructed.
-            next_level.push_back(Insert::Keep(node(height + 1, children)));
+            next_level.push_back(node(height + 1, children));
         }
 
         next_level
     }
 
     move |parent| {
+        let level_0 = match level_0 {
+            Insert::Hash(hash) => return tier::hashed(parent, base_height + 8, hash),
+            Insert::Keep(level_0) => level_0,
+        };
+
         let level_0: List<_> = level_0.into_iter().collect();
 
         if level_0.is_empty() {
@@ -112,18 +123,18 @@ fn tier(base_height: u8, level_0: impl IntoIterator<Item = Insert<impl Builder>>
 
         let root = level_8.into_iter().next().unwrap();
 
-        tier::non_empty(parent, base_height + 8, root)
+        tier::containing(parent, base_height + 8, root)
     }
 }
 
-pub(super) fn block(block: impl IntoIterator<Item = Insert<Commitment>>) -> impl Builder {
-    tier(0, block.into_iter().map(|leaf| leaf.map(self::leaf)))
+pub(super) fn block(block: Insert<impl IntoIterator<Item = Insert<Commitment>>>) -> impl Builder {
+    tier(0, block.map(|leaves| leaves.into_iter().map(self::leaf)))
 }
 
 pub(super) fn epoch(
-    epoch: impl IntoIterator<Item = Insert<impl IntoIterator<Item = Insert<Commitment>>>>,
+    epoch: Insert<impl IntoIterator<Item = Insert<impl IntoIterator<Item = Insert<Commitment>>>>>,
 ) -> impl Builder {
-    tier(8, epoch.into_iter().map(|block| block.map(self::block)))
+    tier(8, epoch.map(|blocks| blocks.into_iter().map(self::block)))
 }
 
 pub(super) fn eternity(
@@ -133,5 +144,5 @@ pub(super) fn eternity(
         >,
     >,
 ) -> impl Builder {
-    tier(16, eternity.into_iter().map(|epoch| epoch.map(self::epoch)))
+    tier(16, Insert::Keep(eternity.into_iter().map(self::epoch)))
 }
