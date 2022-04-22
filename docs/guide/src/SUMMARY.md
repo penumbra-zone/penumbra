@@ -7,6 +7,8 @@
 - [Using `pd`](./pd.md)
   - [Building `pd`](./pd/build.md)
   - [Joining a Testnet](./pd/join-testnet.md)
+    - [As a Fullnode](./pd/join-testnet/fullnode.md)
+    - [As a Validator](./pd/join-testnet/validator.md)
   - [Creating a Testnet](./pd/create-testnet.md)
 - [Development](./dev.md)
   - [SQLite compilation setup](./dev/sqlx.md)
