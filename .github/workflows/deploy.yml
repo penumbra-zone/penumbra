@@ -12,6 +12,7 @@ jobs:
   deploy:
     name: Trigger Deployment
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: testnet-preview
     steps:
     - name: Update git repository
