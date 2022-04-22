@@ -5,7 +5,7 @@
 This requires that you install a recent stable version
 of the Rust compiler, installation instructions for which you can find
 [here](https://www.rust-lang.org/learn/get-started). Don't forget to reload your shell so that
-`cargo` is available in your `$PATH`!
+`cargo` is available in your `\$PATH`!
 
 ### Installing build prerequisites
 

@@ -4,9 +4,9 @@ On first installation of `pcli`, you will need to generate a fresh wallet to use
 should see something like this:
 
 ```bash
-$ cargo run --quiet --release --bin pcli wallet generate
-Saving wallet to /home/$USER/.local/share/pcli/penumbra_wallet.json
-Saving backup wallet to /home/$USER/.local/share/penumbra-testnet-archive/penumbra-euporie/.../penumbra_wallet.json
+\$ cargo run --quiet --release --bin pcli wallet generate
+Saving wallet to /home/\$USER/.local/share/pcli/penumbra_wallet.json
+Saving backup wallet to /home/\$USER/.local/share/penumbra-testnet-archive/penumbra-euporie/.../penumbra_wallet.json
 ```
 
 Penumbra's design allows you to create arbitrarily many publicly unlinkable addresses which all
@@ -14,7 +14,7 @@ correspond to your own wallet. When you first created your wallet above, `pcli` 
 address, labeled `Default`. When you list your addresses, you should see something like this:
 
 ```bash
-$ cargo run --quiet --release --bin pcli addr list
+\$ cargo run --quiet --release --bin pcli addr list
  Index  Label    Address
  0      Default  penumbrav0t1...
 ```
