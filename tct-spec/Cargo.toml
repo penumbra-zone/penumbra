@@ -8,5 +8,4 @@ edition = "2021"
 [dependencies]
 penumbra-tct = { path = "../tct", features = ["internal"] }
 parking_lot = "0.12"
-decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
-poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377" }
+hash_hasher = "2"

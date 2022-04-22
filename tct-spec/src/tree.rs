@@ -5,13 +5,7 @@ use std::{
 
 use parking_lot::Mutex;
 
-use penumbra_tct::{
-    internal::{
-        active::Insert,
-        hash::{CachedHash, GetHash, Hash},
-    },
-    Commitment,
-};
+use crate::*;
 
 pub struct Tree {
     inner: Arc<Wrapped>,
