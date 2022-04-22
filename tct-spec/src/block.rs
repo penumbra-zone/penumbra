@@ -33,11 +33,11 @@ impl Builder {
             return Err(InsertError::BlockFull);
         }
 
-        // Insert the item into the block
-        self.block.push(insert);
-
         // Calculate the item's position
         let position = self.position();
+
+        // Insert the item into the block
+        self.block.push(insert);
 
         // Return the position
         Ok(position)
