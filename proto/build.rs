@@ -80,6 +80,8 @@ static AS_BECH32_IDENTITY_KEY: &str =
     r#"#[serde(with = "crate::serializers::bech32str::validator_identity_key")]"#;
 static AS_BECH32_ADDRESS: &str = r#"#[serde(with = "crate::serializers::bech32str::address")]"#;
 static AS_BECH32_ASSET_ID: &str = r#"#[serde(with = "crate::serializers::bech32str::asset_id")]"#;
+static AS_BECH32_FULL_VIEWING_KEY: &str =
+    r#"#[serde(with = "crate::serializers::bech32str::full_viewing_key")]"#;
 
 static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.stake.Validator", SERIALIZE),
@@ -108,6 +110,12 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.crypto.Asset", SERIALIZE),
     (".penumbra.crypto.MerkleRoot", SERIALIZE),
     (".penumbra.crypto.MerkleRoot", SERDE_TRANSPARENT),
+    (".penumbra.crypto.FullViewingKey", SERIALIZE),
+    (".penumbra.crypto.FullViewingKey", SERDE_TRANSPARENT),
+    (".penumbra.crypto.Diversifier", SERIALIZE),
+    (".penumbra.crypto.Diversifier", SERDE_TRANSPARENT),
+    (".penumbra.crypto.DiversifierIndex", SERIALIZE),
+    (".penumbra.crypto.DiversifierIndex", SERDE_TRANSPARENT),
     (".penumbra.chain.ChainParams", SERIALIZE),
     (".penumbra.chain.CompactBlock", SERIALIZE),
     (".penumbra.chain.KnownAssets", SERIALIZE),
@@ -129,5 +137,11 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.crypto.AssetId.inner", AS_BECH32_ASSET_ID),
     (".penumbra.crypto.NoteCommitment.inner", AS_HEX),
     (".penumbra.crypto.MerkleRoot.inner", AS_HEX),
+    (
+        ".penumbra.crypto.FullViewingKey.inner",
+        AS_BECH32_FULL_VIEWING_KEY,
+    ),
+    (".penumbra.crypto.Diversifier.inner", AS_HEX),
+    (".penumbra.crypto.DiversifierIndex.inner", AS_HEX),
     (".penumbra.chain.NoteSource.inner", AS_HEX),
 ];

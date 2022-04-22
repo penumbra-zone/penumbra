@@ -5,6 +5,18 @@ message Address {
     bytes inner = 1;
 }
 
+message FullViewingKey {
+    bytes inner = 1;
+}
+
+message Diversifier {
+    bytes inner = 1;
+}
+
+message DiversifierIndex {
+    bytes inner = 1;
+}
+
 message NoteCommitment {
     bytes inner = 1;
 }
