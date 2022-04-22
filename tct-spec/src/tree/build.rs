@@ -68,24 +68,24 @@ mod tier {
 }
 
 fn tier(base_height: u8, level_0: impl IntoIterator<Item = Insert<impl Builder>>) -> impl Builder {
-    fn chunk(height: u8, mut level: List<Insert<impl Builder>>) -> List<Insert<impl Builder>> {
-        let mut chunked = List::new();
+    fn level(height: u8, mut level: List<Insert<impl Builder>>) -> List<Insert<impl Builder>> {
+        let mut next_level = List::new();
 
         while !level.is_empty() {
             let mut children = List::new();
 
             for _ in 0..4 {
-                if let Some(item) = level.pop_front() {
-                    children.push_back(item);
+                if let Some(child) = level.pop_front() {
+                    children.push_back(child);
                 }
             }
 
             // We always keep nodes during construction; pruning unneeded nodes is only possible
             // after hashes are computed, but this can't be done until the full tree is constructed.
-            chunked.push_back(Insert::Keep(node(height + 1, children)));
+            next_level.push_back(Insert::Keep(node(height + 1, children)));
         }
 
-        chunked
+        next_level
     }
 
     move |parent| {
@@ -95,14 +95,14 @@ fn tier(base_height: u8, level_0: impl IntoIterator<Item = Insert<impl Builder>>
             return tier::empty(parent, base_height + 8);
         }
 
-        let level_1 = chunk(base_height, level_0);
-        let level_2 = chunk(base_height + 1, level_1);
-        let level_3 = chunk(base_height + 2, level_2);
-        let level_4 = chunk(base_height + 3, level_3);
-        let level_5 = chunk(base_height + 4, level_4);
-        let level_6 = chunk(base_height + 5, level_5);
-        let level_7 = chunk(base_height + 6, level_6);
-        let level_8 = chunk(base_height + 7, level_7);
+        let level_1 = level(base_height, level_0);
+        let level_2 = level(base_height + 1, level_1);
+        let level_3 = level(base_height + 2, level_2);
+        let level_4 = level(base_height + 3, level_3);
+        let level_5 = level(base_height + 4, level_4);
+        let level_6 = level(base_height + 5, level_5);
+        let level_7 = level(base_height + 6, level_6);
+        let level_8 = level(base_height + 7, level_7);
 
         assert_eq!(
             level_8.len(),
