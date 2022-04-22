@@ -481,6 +481,14 @@ impl IBCComponent {
             .await?
             .as_tendermint()?;
 
+        if untrusted_header.trusted_validator_set.hash()
+            != last_trusted_consensus_state.next_validators_hash
+        {
+            return Err(anyhow::anyhow!(
+                "client update validator set hash does not match trusted consensus state"
+            ));
+        }
+
         let trusted_state = TrustedBlockState {
             header_time: last_trusted_consensus_state.timestamp,
             height: untrusted_header
@@ -722,7 +730,7 @@ mod tests {
     use penumbra_crypto::{Fq, Zero};
     use penumbra_proto::ibc::ibc_action::Action as IBCActionInner;
     use penumbra_proto::Message;
-    use penumbra_transaction::{Fee, Transaction, TransactionBody, Action};
+    use penumbra_transaction::{Action, Fee, Transaction, TransactionBody};
     use std::fs;
     use tempfile::tempdir;
 
