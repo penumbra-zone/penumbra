@@ -1,7 +1,8 @@
 use tendermint::block;
 
-/// Epoch represents a given epoch for Penumbra and is used
-/// for calculation of staking exchange rates.
+/// Penumbra groups blocks into epochs and restricts validator changes to epoch boundaries.
+///
+/// The epoch duration is a chain parameter and cannot be changed after initialization.
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub struct Epoch {
     pub index: u64,
