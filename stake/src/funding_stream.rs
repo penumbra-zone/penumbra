@@ -68,7 +68,7 @@ impl TryFrom<pb::FundingStream> for FundingStream {
     }
 }
 
-/// A set of funding streams to which validators send rewards.
+/// A list of funding streams whose total commission is less than 100%.
 ///
 /// The total commission of a validator is the sum of the individual reward rate of the
 /// [`FundingStream`]s, and cannot exceed 10000bps (100%). This property is guaranteed by the
