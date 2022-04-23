@@ -69,14 +69,6 @@ enum Command {
         /// Maximum number of validators in the consensus set.
         #[structopt(long, default_value = "10")]
         active_validator_limit: u64,
-        /// Penalty to be applied to slashed validators' rates.
-        /// Expressed in basis points.
-        #[structopt(long, default_value = "1000")]
-        slashing_penalty: u64,
-        /// Base reward rate per epoch.
-        /// Expressed in basis points of basis points (1e8 denominator)
-        #[structopt(long, default_value = "30000")]
-        base_reward_rate: u64,
         /// Whether to preserve the chain ID (useful for public testnets) or append a random suffix (useful for dev/testing).
         #[structopt(long)]
         preserve_chain_id: bool,
@@ -213,8 +205,6 @@ async fn main() -> anyhow::Result<()> {
             validators_input_file,
             output_dir,
             chain_id,
-            slashing_penalty,
-            base_reward_rate,
             preserve_chain_id,
         } => {
             use std::{
@@ -424,11 +414,7 @@ async fn main() -> anyhow::Result<()> {
                         epoch_duration,
                         unbonding_epochs,
                         active_validator_limit,
-                        slashing_penalty,
-                        base_reward_rate,
-                        ibc_enabled: false,
-                        inbound_ics20_transfers_enabled: false,
-                        outbound_ics20_transfers_enabled: false,
+                        ..Default::default()
                     },
                     validators: validators.clone(),
                 };
