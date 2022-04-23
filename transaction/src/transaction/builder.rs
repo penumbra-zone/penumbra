@@ -10,7 +10,10 @@ use penumbra_crypto::{
     value, Address, Fr, Note, Value,
 };
 use penumbra_proto::{stake::Validator as ProtoValidator, Message};
-use penumbra_stake::{Delegate, RateData, Undelegate, ValidatorDefinition, STAKING_TOKEN_ASSET_ID};
+use penumbra_stake::{
+    action::{Delegate, Undelegate, ValidatorDefinition},
+    RateData, STAKING_TOKEN_ASSET_ID,
+};
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
 

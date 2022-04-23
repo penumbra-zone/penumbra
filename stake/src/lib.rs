@@ -3,7 +3,6 @@ use once_cell::sync::Lazy;
 use penumbra_crypto::asset;
 
 mod changes;
-mod delegate;
 mod epoch;
 mod funding_stream;
 mod identity_key;
@@ -11,24 +10,21 @@ mod info;
 mod rate;
 mod status;
 mod token;
-mod undelegate;
 mod validator;
 mod validator_state;
 
 pub use changes::{DelegationChanges, PendingRewardNote, RewardNotes};
-pub use delegate::Delegate;
 pub use epoch::Epoch;
-pub use funding_stream::FundingStream;
+pub use funding_stream::{FundingStream, FundingStreams};
 pub use identity_key::IdentityKey;
 pub use info::ValidatorInfo;
-pub use rate::{BaseRateData, RateData, RateDataById};
+pub use rate::{BaseRateData, RateData};
 pub use status::ValidatorStatus;
 pub use token::DelegationToken;
-pub use undelegate::Undelegate;
-pub use validator::{
-    FundingStreams, Validator, ValidatorDefinition, ValidatorList, VerifiedValidatorDefinition,
-};
+pub use validator::{Validator, ValidatorList};
 pub use validator_state::ValidatorState;
+
+pub mod action;
 
 /// The Bech32 prefix used for validator consensus pubkeys.
 pub const VALIDATOR_CONSENSUS_BECH32_PREFIX: &str = "penumbravalconspub";

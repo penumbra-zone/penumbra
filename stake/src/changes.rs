@@ -3,7 +3,7 @@ use penumbra_crypto::Address;
 use penumbra_proto::{stake as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
-use crate::{Delegate, Undelegate};
+use crate::action::{Delegate, Undelegate};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PendingRewardNote {

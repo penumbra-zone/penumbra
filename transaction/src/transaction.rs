@@ -16,7 +16,10 @@ use penumbra_proto::{
     },
     Message, Protobuf,
 };
-use penumbra_stake::{Delegate, Undelegate, ValidatorDefinition, STAKING_TOKEN_ASSET_ID};
+use penumbra_stake::{
+    action::{Delegate, Undelegate, ValidatorDefinition},
+    STAKING_TOKEN_ASSET_ID,
+};
 
 use crate::{action::output, Action};
 

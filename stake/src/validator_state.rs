@@ -1,8 +1,5 @@
-use std::str::FromStr;
-
-use serde::{Deserialize, Serialize};
-
 use penumbra_proto::{stake as pb, Protobuf};
+use serde::{Deserialize, Serialize};
 
 /// The state of a validator in the validator state machine.
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Serialize, Deserialize)]
