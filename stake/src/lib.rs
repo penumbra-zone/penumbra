@@ -6,16 +6,18 @@ mod changes;
 mod epoch;
 mod funding_stream;
 mod identity_key;
+mod reward;
 mod token;
 
 pub mod action;
 pub mod rate;
 pub mod validator;
 
-pub use changes::{DelegationChanges, PendingRewardNote, RewardNotes};
+pub use changes::DelegationChanges;
 pub use epoch::Epoch;
 pub use funding_stream::{FundingStream, FundingStreams};
 pub use identity_key::IdentityKey;
+pub use reward::{PendingRewardNote, RewardNotes};
 pub use token::DelegationToken;
 
 /// The Bech32 prefix used for validator consensus pubkeys.
