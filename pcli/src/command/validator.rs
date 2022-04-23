@@ -4,7 +4,8 @@ use anyhow::{Context, Result};
 use futures::TryStreamExt;
 use penumbra_proto::{stake::Validator as ProtoValidator, Message};
 use penumbra_stake::{
-    FundingStream, FundingStreams, IdentityKey, Validator, ValidatorDefinition, ValidatorInfo,
+    action::ValidatorDefinition, FundingStream, FundingStreams, IdentityKey, Validator,
+    ValidatorInfo,
 };
 use rand_core::OsRng;
 use structopt::StructOpt;

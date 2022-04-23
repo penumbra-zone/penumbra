@@ -3,7 +3,7 @@ use std::convert::{TryFrom, TryInto};
 use penumbra_crypto::value;
 use penumbra_ibc as ibc;
 use penumbra_proto::{transaction as pb, Protobuf};
-use penumbra_stake as stake;
+use penumbra_stake::action as stake;
 
 pub mod output;
 pub mod spend;

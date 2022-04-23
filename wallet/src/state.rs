@@ -12,7 +12,9 @@ use penumbra_crypto::{
     merkle::{Frontier, NoteCommitmentTree, Tree, TreeExt},
     note, Address, FieldExt, Note, Nullifier, Value,
 };
-use penumbra_stake::{RateData, ValidatorDefinition, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM};
+use penumbra_stake::{
+    action::ValidatorDefinition, RateData, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
+};
 use penumbra_transaction::{action::output, Transaction};
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
