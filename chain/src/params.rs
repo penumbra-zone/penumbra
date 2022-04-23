@@ -41,13 +41,21 @@ impl From<AssetInfo> for pb::AssetInfo {
 pub struct ChainParams {
     pub chain_id: String,
     pub epoch_duration: u64,
+
     pub unbonding_epochs: u64,
     /// The number of validators allowed in the consensus set (Active state).
     pub active_validator_limit: u64,
-    /// Slashing penalty in basis points
-    pub slashing_penalty: u64,
     /// The base reward rate, expressed in basis points of basis points
     pub base_reward_rate: u64,
+    /// The penalty for slashing due to misbehavior, expressed in basis points.
+    pub slashing_penalty_misbehavior_bps: u64,
+    // The penalty for slashing due to downtime, expressed in basis points.
+    pub slashing_penalty_downtime_bps: u64,
+    // The number of blocks in the window to check for downtime.
+    pub signed_blocks_window_len: u64,
+    // The minimum number of blocks in the window each validator must have signed.
+    pub signed_blocks_minimum: u64,
+
     /// Whether IBC (forming connections, processing IBC packets) is enabled.
     pub ibc_enabled: bool,
     /// Whether inbound ICS-20 transfers are enabled
@@ -65,8 +73,11 @@ impl From<pb::ChainParams> for ChainParams {
             epoch_duration: msg.epoch_duration,
             unbonding_epochs: msg.unbonding_epochs,
             active_validator_limit: msg.active_validator_limit,
-            slashing_penalty: msg.slashing_penalty,
+            slashing_penalty_downtime_bps: msg.slashing_penalty_downtime_bps,
+            slashing_penalty_misbehavior_bps: msg.slashing_penalty_misbehavior_bps,
             base_reward_rate: msg.base_reward_rate,
+            signed_blocks_minimum: msg.signed_blocks_minimum,
+            signed_blocks_window_len: msg.signed_blocks_window_len,
             ibc_enabled: msg.ibc_enabled,
             inbound_ics20_transfers_enabled: msg.inbound_ics20_transfers_enabled,
             outbound_ics20_transfers_enabled: msg.outbound_ics20_transfers_enabled,
@@ -81,7 +92,10 @@ impl From<ChainParams> for pb::ChainParams {
             epoch_duration: params.epoch_duration,
             unbonding_epochs: params.unbonding_epochs,
             active_validator_limit: params.active_validator_limit,
-            slashing_penalty: params.slashing_penalty,
+            signed_blocks_window_len: params.signed_blocks_window_len,
+            signed_blocks_minimum: params.signed_blocks_minimum,
+            slashing_penalty_downtime_bps: params.slashing_penalty_downtime_bps,
+            slashing_penalty_misbehavior_bps: params.slashing_penalty_misbehavior_bps,
             base_reward_rate: params.base_reward_rate,
             ibc_enabled: params.ibc_enabled,
             inbound_ics20_transfers_enabled: params.inbound_ics20_transfers_enabled,
@@ -99,8 +113,13 @@ impl Default for ChainParams {
             epoch_duration: 8640,
             unbonding_epochs: 30,
             active_validator_limit: 10,
+            // copied from cosmos hub
+            signed_blocks_window_len: 10000,
+            signed_blocks_minimum: 9500,
             // 1000 basis points = 10%
-            slashing_penalty: 1000,
+            slashing_penalty_misbehavior_bps: 1000,
+            // 1 basis point = 0.01%
+            slashing_penalty_downtime_bps: 1,
             // 3bps -> 11% return over 365 epochs
             base_reward_rate: 3_0000,
             ibc_enabled: false,

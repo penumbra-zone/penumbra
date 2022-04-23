@@ -882,7 +882,10 @@ pub trait View: OverlayExt {
             .await?
             .ok_or_else(|| anyhow::anyhow!("attempted to slash validator not found in JMT"))?;
 
-        let slashing_penalty = self.get_chain_params().await?.slashing_penalty;
+        let slashing_penalty = self
+            .get_chain_params()
+            .await?
+            .slashing_penalty_misbehavior_bps;
 
         tracing::info!(?validator, ?slashing_penalty, "slashing validator");
 
