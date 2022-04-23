@@ -4,7 +4,15 @@ use serde::{Deserialize, Serialize};
 
 use crate::DelegationToken;
 
-/// A [`SpendAuth`] [`VerificationKey`] used as a validator's identity key.
+/// The root of a validator's identity.
+///
+/// This key is a [`SpendAuth`] [`VerificationKey`]; currently, the wallet
+/// software reuses an account's spend authorization key as the validator
+/// identity, but there is no real requirement that it must be generated that
+/// way.
+///
+/// Using a [`SpendAuth`] key means that validators can reuse code and processes
+/// designed for custodying funds to protect their identity.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(try_from = "pb::IdentityKey", into = "pb::IdentityKey")]
 pub struct IdentityKey(pub VerificationKey<SpendAuth>);
