@@ -142,3 +142,10 @@ message DelegationChanges {
   repeated Delegate delegations = 1;
   repeated Undelegate undelegations = 2;
 }
+
+// Track's a validator's uptime.
+message Uptime {
+  uint64 as_of_block_height = 1;
+  uint32 window_len = 2;
+  bytes bitvec = 3;
+}
