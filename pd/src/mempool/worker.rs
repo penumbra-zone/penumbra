@@ -23,7 +23,7 @@ impl Worker {
         queue: mpsc::Receiver<Message>,
         height_rx: watch::Receiver<block::Height>,
     ) -> Result<Self> {
-        let app = App::new(storage.overlay().await?).await?;
+        let app = App::new(storage.overlay().await?).await;
 
         Ok(Self {
             queue,
@@ -42,7 +42,7 @@ impl Worker {
         let tx = Transaction::decode(tx_bytes.as_ref())?;
         App::check_tx_stateless(&tx)?;
         self.app.check_tx_stateful(&tx).await?;
-        self.app.execute_tx(&tx).await?;
+        self.app.execute_tx(&tx).await;
         Ok(())
     }
 
@@ -57,7 +57,7 @@ impl Worker {
                     if let Ok(()) = change {
                         let height = self.height_rx.borrow().value();
                         tracing::info!(?height, "resetting ephemeral mempool state");
-                        self.app = App::new(self.storage.overlay().await?).await?;
+                        self.app = App::new(self.storage.overlay().await?).await;
                     } else {
                         tracing::info!("consensus worker shut down, shutting down mempool worker");
                         // The consensus worker shut down, we should too.

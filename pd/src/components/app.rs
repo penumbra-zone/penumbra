@@ -38,9 +38,9 @@ impl App {
         let (root_hash, version) = self.overlay.lock().await.commit(storage).await?;
         tracing::debug!(?root_hash, version, "finished committing overlay");
         // Now re-instantiate all of the components:
-        self.staking = Staking::new(self.overlay.clone()).await?;
-        self.ibc = IBCComponent::new(self.overlay.clone()).await?;
-        self.shielded_pool = ShieldedPool::new(self.overlay.clone()).await?;
+        self.staking = Staking::new(self.overlay.clone()).await;
+        self.ibc = IBCComponent::new(self.overlay.clone()).await;
+        self.shielded_pool = ShieldedPool::new(self.overlay.clone()).await;
 
         Ok((root_hash, version))
     }
@@ -54,21 +54,21 @@ impl App {
 #[async_trait]
 impl Component for App {
     #[instrument(skip(overlay))]
-    async fn new(overlay: Overlay) -> Result<Self> {
-        let staking = Staking::new(overlay.clone()).await?;
-        let ibc = IBCComponent::new(overlay.clone()).await?;
-        let shielded_pool = ShieldedPool::new(overlay.clone()).await?;
+    async fn new(overlay: Overlay) -> Self {
+        let staking = Staking::new(overlay.clone()).await;
+        let ibc = IBCComponent::new(overlay.clone()).await;
+        let shielded_pool = ShieldedPool::new(overlay.clone()).await;
 
-        Ok(Self {
+        Self {
             overlay,
             shielded_pool,
             staking,
             ibc,
-        })
+        }
     }
 
     #[instrument(skip(self, app_state))]
-    async fn init_chain(&mut self, app_state: &genesis::AppState) -> Result<()> {
+    async fn init_chain(&mut self, app_state: &genesis::AppState) {
         self.overlay
             .put_chain_params(app_state.chain_params.clone())
             .await;
@@ -79,16 +79,15 @@ impl Component for App {
         // The genesis block height is 0
         self.overlay.put_block_height(0).await;
 
-        self.staking.init_chain(app_state).await?;
-        self.ibc.init_chain(app_state).await?;
+        self.staking.init_chain(app_state).await;
+        self.ibc.init_chain(app_state).await;
 
         // Shielded pool always executes last.
-        self.shielded_pool.init_chain(app_state).await?;
-        Ok(())
+        self.shielded_pool.init_chain(app_state).await;
     }
 
     #[instrument(skip(self, begin_block))]
-    async fn begin_block(&mut self, begin_block: &abci::request::BeginBlock) -> Result<()> {
+    async fn begin_block(&mut self, begin_block: &abci::request::BeginBlock) {
         // store the block height
         self.overlay
             .put_block_height(begin_block.header.height.into())
@@ -98,13 +97,10 @@ impl Component for App {
             .put_block_timestamp(begin_block.header.time)
             .await;
 
-        self.staking.begin_block(begin_block).await?;
-        self.ibc.begin_block(begin_block).await?;
-
+        self.staking.begin_block(begin_block).await;
+        self.ibc.begin_block(begin_block).await;
         // Shielded pool always executes last.
-        self.shielded_pool.begin_block(begin_block).await?;
-
-        Ok(())
+        self.shielded_pool.begin_block(begin_block).await;
     }
 
     #[instrument(skip(tx))]
@@ -126,23 +122,20 @@ impl Component for App {
     }
 
     #[instrument(skip(self, tx))]
-    async fn execute_tx(&mut self, tx: &Transaction) -> Result<()> {
-        self.staking.execute_tx(tx).await?;
-        self.ibc.execute_tx(tx).await?;
-
+    async fn execute_tx(&mut self, tx: &Transaction) {
+        self.staking.execute_tx(tx).await;
+        self.ibc.execute_tx(tx).await;
         // Shielded pool always executes last.
-        self.shielded_pool.execute_tx(tx).await?;
-        Ok(())
+        self.shielded_pool.execute_tx(tx).await;
     }
 
     #[instrument(skip(self, end_block))]
-    async fn end_block(&mut self, end_block: &abci::request::EndBlock) -> Result<()> {
-        self.staking.end_block(end_block).await?;
-        self.ibc.end_block(end_block).await?;
+    async fn end_block(&mut self, end_block: &abci::request::EndBlock) {
+        self.staking.end_block(end_block).await;
+        self.ibc.end_block(end_block).await;
 
         // Shielded pool always executes last.
-        self.shielded_pool.end_block(end_block).await?;
-        Ok(())
+        self.shielded_pool.end_block(end_block).await;
     }
 }
 

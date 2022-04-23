@@ -30,27 +30,25 @@ pub struct ShieldedPool {
 #[async_trait]
 impl Component for ShieldedPool {
     #[instrument(name = "shielded_pool", skip(overlay))]
-    async fn new(overlay: Overlay) -> Result<Self> {
-        let note_commitment_tree = Self::get_nct(&overlay).await?;
+    async fn new(overlay: Overlay) -> Self {
+        let note_commitment_tree = Self::get_nct(&overlay).await.unwrap();
 
-        Ok(Self {
+        Self {
             overlay,
             note_commitment_tree,
             compact_block: Default::default(),
-        })
+        }
     }
 
     #[instrument(name = "shielded_pool", skip(self, app_state))]
-    async fn init_chain(&mut self, app_state: &genesis::AppState) -> Result<()> {
+    async fn init_chain(&mut self, app_state: &genesis::AppState) {
         for allocation in &app_state.allocations {
             tracing::info!(?allocation, "processing allocation");
 
-            if allocation.amount == 0 {
-                return Err(anyhow!(
-                    "Genesis allocations contain empty note: {:?}",
-                    allocation
-                ));
-            }
+            assert_eq!(
+                allocation.amount, 0,
+                "Genesis allocations contain empty note",
+            );
 
             let denom = asset::REGISTRY
                 .parse_denom(&allocation.denom)
@@ -59,9 +57,10 @@ impl Component for ShieldedPool {
                         "Genesis denomination {} is not a base denom",
                         allocation.denom
                     )
-                })?;
+                })
+                .unwrap();
 
-            self.overlay.register_denom(&denom).await?;
+            self.overlay.register_denom(&denom).await.unwrap();
             self.mint_note(
                 Value {
                     amount: allocation.amount,
@@ -70,19 +69,16 @@ impl Component for ShieldedPool {
                 &allocation.address,
                 NoteSource::Genesis,
             )
-            .await?;
+            .await
+            .unwrap();
         }
 
         self.compact_block.height = 0;
-        self.write_compactblock_and_nct().await?;
-
-        Ok(())
+        self.write_compactblock_and_nct().await.unwrap();
     }
 
     #[instrument(name = "shielded_pool", skip(self, _begin_block))]
-    async fn begin_block(&mut self, _begin_block: &abci::request::BeginBlock) -> Result<()> {
-        Ok(())
-    }
+    async fn begin_block(&mut self, _begin_block: &abci::request::BeginBlock) {}
 
     #[instrument(name = "shielded_pool", skip(tx))]
     fn check_tx_stateless(tx: &Transaction) -> Result<()> {
@@ -181,7 +177,7 @@ impl Component for ShieldedPool {
     }
 
     #[instrument(name = "shielded_pool", skip(self, tx))]
-    async fn execute_tx(&mut self, tx: &Transaction) -> Result<()> {
+    async fn execute_tx(&mut self, tx: &Transaction) {
         let _should_quarantine = tx
             .transaction_body
             .actions
@@ -206,12 +202,10 @@ impl Component for ShieldedPool {
             self.compact_block.nullifiers.push(spent_nullifier);
         }
         //}
-
-        Ok(())
     }
 
     #[instrument(name = "shielded_pool", skip(self, end_block))]
-    async fn end_block(&mut self, end_block: &abci::request::EndBlock) -> Result<()> {
+    async fn end_block(&mut self, end_block: &abci::request::EndBlock) {
         // Set the height of the compact block, now that we got it in end_block
         self.compact_block.height = end_block.height as u64;
 
@@ -219,7 +213,8 @@ impl Component for ShieldedPool {
         let notes = self
             .overlay
             .reward_notes(self.compact_block.height)
-            .await?
+            .await
+            .unwrap()
             .unwrap_or_default();
 
         // TODO: should we calculate this here or include it directly within the PendingRewardNote
@@ -227,7 +222,7 @@ impl Component for ShieldedPool {
         let source = NoteSource::FundingStreamReward {
             epoch_index: Epoch::from_height(
                 self.compact_block.height,
-                self.overlay.get_epoch_duration().await?,
+                self.overlay.get_epoch_duration().await.unwrap(),
             )
             .index,
         };
@@ -241,11 +236,11 @@ impl Component for ShieldedPool {
                 &note.destination,
                 source,
             )
-            .await?;
+            .await
+            .unwrap();
         }
 
-        self.write_compactblock_and_nct().await?;
-        Ok(())
+        self.write_compactblock_and_nct().await.unwrap();
     }
 }
 

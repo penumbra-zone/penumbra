@@ -357,18 +357,20 @@ impl Staking {
 #[async_trait]
 impl Component for Staking {
     #[instrument(name = "staking", skip(overlay))]
-    async fn new(overlay: Overlay) -> Result<Self> {
-        Ok(Self {
+    async fn new(overlay: Overlay) -> Self {
+        Self {
             overlay,
             delegation_changes: Default::default(),
-        })
+        }
     }
 
     #[instrument(name = "staking", skip(self, app_state))]
-    async fn init_chain(&mut self, app_state: &genesis::AppState) -> Result<()> {
-        let starting_height = self.overlay.get_block_height().await?;
-        let starting_epoch =
-            Epoch::from_height(starting_height, self.overlay.get_epoch_duration().await?);
+    async fn init_chain(&mut self, app_state: &genesis::AppState) {
+        let starting_height = self.overlay.get_block_height().await.unwrap();
+        let starting_epoch = Epoch::from_height(
+            starting_height,
+            self.overlay.get_epoch_duration().await.unwrap(),
+        );
         let epoch_index = starting_epoch.index;
 
         // Delegations require knowing the rates for the next epoch, so
@@ -443,7 +445,8 @@ impl Component for Staking {
                     ValidatorState::Active,
                     power,
                 )
-                .await?;
+                .await
+                .unwrap();
         }
 
         // Finally, record that there were no delegations in this block, so the data
@@ -451,21 +454,15 @@ impl Component for Staking {
         self.overlay
             .set_delegation_changes(0u32.into(), Default::default())
             .await;
-
-        Ok(())
     }
 
     #[instrument(name = "staking", skip(self, begin_block))]
-    async fn begin_block(&mut self, begin_block: &abci::request::BeginBlock) -> Result<()> {
-        tracing::debug!("Staking: begin_block");
-
+    async fn begin_block(&mut self, begin_block: &abci::request::BeginBlock) {
         // For each validator identified as byzantine by tendermint, update its
         // state to be slashed.
         for evidence in begin_block.byzantine_validators.iter() {
-            self.overlay.slash_validator(evidence).await?;
+            self.overlay.slash_validator(evidence).await.unwrap();
         }
-
-        Ok(())
     }
 
     #[instrument(name = "staking", skip(tx))]
@@ -671,7 +668,7 @@ impl Component for Staking {
     }
 
     #[instrument(name = "staking", skip(self, tx))]
-    async fn execute_tx(&mut self, tx: &Transaction) -> Result<()> {
+    async fn execute_tx(&mut self, tx: &Transaction) {
         // Queue any (un)delegations for processing at the next epoch boundary.
         for action in &tx.transaction_body.actions {
             match action {
@@ -689,18 +686,19 @@ impl Component for Staking {
 
         // The validator definitions have been completely verified, so we can add them to the JMT
         let definitions = tx.validator_definitions().map(|v| v.to_owned());
-        let cur_epoch = self.overlay.get_current_epoch().await?;
+        let cur_epoch = self.overlay.get_current_epoch().await.unwrap();
 
         for v in definitions {
             if self
                 .overlay
                 .validator(&v.validator.identity_key)
-                .await?
+                .await
+                .unwrap()
                 .is_some()
             {
                 // This is an existing validator definition.
                 // This means that only the Validator struct itself needs updating, not any rates/power/state.
-                self.overlay.update_validator(v.validator).await?;
+                self.overlay.update_validator(v.validator).await.unwrap();
             } else {
                 // This is a new validator definition.
                 // Set the default rates and state.
@@ -732,15 +730,14 @@ impl Component for Staking {
                         // All validator from definitions start with 0 power:
                         0,
                     )
-                    .await?;
+                    .await
+                    .unwrap();
             }
         }
-
-        Ok(())
     }
 
     #[instrument(name = "staking", skip(self, end_block))]
-    async fn end_block(&mut self, end_block: &abci::request::EndBlock) -> Result<()> {
+    async fn end_block(&mut self, end_block: &abci::request::EndBlock) {
         // Write the delegation changes for this block.
         self.overlay
             .set_delegation_changes(
@@ -750,14 +747,12 @@ impl Component for Staking {
             .await;
 
         // If this is an epoch boundary, updated rates need to be calculated and set.
-        let cur_epoch = self.overlay.get_current_epoch().await?;
-        let cur_height = self.overlay.get_block_height().await?;
+        let cur_epoch = self.overlay.get_current_epoch().await.unwrap();
+        let cur_height = self.overlay.get_block_height().await.unwrap();
 
         if cur_epoch.is_epoch_end(cur_height) {
-            self.end_epoch(cur_epoch).await?;
+            self.end_epoch(cur_epoch).await.unwrap();
         }
-
-        Ok(())
     }
 }
 
