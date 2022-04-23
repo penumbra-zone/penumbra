@@ -8,12 +8,12 @@ use crate::Overlay;
 
 /// A component of the Penumbra application.
 ///
-/// Each component is a thin wrapper around a shared [`WriteOverlay`], over a
+/// Each component is a thin wrapper around a shared [`Overlay`], over a
 /// Jellyfish tree held in persistent [`Storage`].  The Jellyfish tree is a
 /// generic, byte-oriented key/value store.  Components can read from and write
 /// to the tree, and all components in the same [`Application`] instance will
 /// see each others' writes when they perform reads.  However, those writes are
-/// buffered in the [`WriteOverlay`] until it commits a batch of changes to the
+/// buffered in the [`Overlay`] until it commits a batch of changes to the
 /// persistent [`Storage`], making it possible to maintain and evolve multiple
 /// copies of the application state, as each [`Application`] is effectively its
 /// own copy-on-write instance of the chain state.
@@ -66,9 +66,9 @@ use crate::Overlay;
 pub trait Component: Sized {
     /// Initializes the component relative to a shared state.
     ///
-    /// This method should be called every time the [`WriteOverlay`] is
+    /// This method should be called every time the [`Overlay`] is
     /// re-initialized.
-    async fn new(overlay: Overlay) -> Result<Self>;
+    async fn new(overlay: Overlay) -> Self;
 
     /// Performs initialization, given the genesis state.
     ///
@@ -80,7 +80,7 @@ pub trait Component: Sized {
     ///
     /// This method should only be called immediately after [`Component::new`].
     /// No methods should be called following this method.
-    async fn init_chain(&mut self, app_state: &genesis::AppState) -> Result<()>;
+    async fn init_chain(&mut self, app_state: &genesis::AppState);
 
     /// Begins a new block, optionally inspecting the ABCI
     /// [`BeginBlock`](abci::request::BeginBlock) request.
@@ -90,7 +90,7 @@ pub trait Component: Sized {
     /// This method should only be called immediately after [`Component::new`].
     /// This method need not be called before [`Component::execute_tx`] (e.g.,
     /// in order to simulate executing a transaction in the mempool).
-    async fn begin_block(&mut self, begin_block: &abci::request::BeginBlock) -> Result<()>;
+    async fn begin_block(&mut self, begin_block: &abci::request::BeginBlock);
 
     /// Performs all of this component's stateless validity checks on the given
     /// [`Transaction`].
@@ -113,7 +113,7 @@ pub trait Component: Sized {
     /// This method should only be called immediately following a successful
     /// invocation of [`Component::check_tx_stateful`] on the same transaction.
     /// This method can be called before [`Component::begin_block`].
-    async fn execute_tx(&mut self, tx: &Transaction) -> Result<()>;
+    async fn execute_tx(&mut self, tx: &Transaction);
 
     /// Ends the block, optionally inspecting the ABCI
     /// [`EndBlock`](abci::request::EndBlock) request, and performing any batch
@@ -123,5 +123,5 @@ pub trait Component: Sized {
     ///
     /// This method should only be called after [`Component::begin_block`].
     /// No methods should be called following this method.
-    async fn end_block(&mut self, end_block: &abci::request::EndBlock) -> Result<()>;
+    async fn end_block(&mut self, end_block: &abci::request::EndBlock);
 }

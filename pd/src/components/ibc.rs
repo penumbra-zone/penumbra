@@ -16,24 +16,20 @@ pub struct IBCComponent {
 #[async_trait]
 impl Component for IBCComponent {
     #[instrument(name = "ibc", skip(overlay))]
-    async fn new(overlay: Overlay) -> Result<Self> {
-        let client = ClientComponent::new(overlay.clone()).await?;
+    async fn new(overlay: Overlay) -> Self {
+        let client = ClientComponent::new(overlay.clone()).await;
 
-        Ok(Self { client })
+        Self { client }
     }
 
     #[instrument(name = "ibc", skip(self, app_state))]
-    async fn init_chain(&mut self, app_state: &genesis::AppState) -> Result<()> {
-        self.client.init_chain(app_state).await?;
-
-        Ok(())
+    async fn init_chain(&mut self, app_state: &genesis::AppState) {
+        self.client.init_chain(app_state).await;
     }
 
     #[instrument(name = "ibc", skip(self, begin_block))]
-    async fn begin_block(&mut self, begin_block: &abci::request::BeginBlock) -> Result<()> {
-        self.client.begin_block(begin_block).await?;
-
-        Ok(())
+    async fn begin_block(&mut self, begin_block: &abci::request::BeginBlock) {
+        self.client.begin_block(begin_block).await;
     }
 
     #[instrument(name = "ibc", skip(tx))]
@@ -51,16 +47,12 @@ impl Component for IBCComponent {
     }
 
     #[instrument(name = "ibc", skip(self, tx))]
-    async fn execute_tx(&mut self, tx: &Transaction) -> Result<()> {
-        self.client.execute_tx(tx).await?;
-
-        Ok(())
+    async fn execute_tx(&mut self, tx: &Transaction) {
+        self.client.execute_tx(tx).await;
     }
 
     #[instrument(name = "ibc", skip(self, end_block))]
-    async fn end_block(&mut self, end_block: &abci::request::EndBlock) -> Result<()> {
-        self.client.end_block(end_block).await?;
-
-        Ok(())
+    async fn end_block(&mut self, end_block: &abci::request::EndBlock) {
+        self.client.end_block(end_block).await;
     }
 }

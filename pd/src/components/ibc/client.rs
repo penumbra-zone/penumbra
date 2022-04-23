@@ -42,23 +42,19 @@ pub struct ClientComponent {
 
 #[async_trait]
 impl Component for ClientComponent {
-    #[instrument(name = "ibc", skip(overlay))]
-    async fn new(overlay: Overlay) -> Result<Self> {
-        Ok(Self { overlay })
+    #[instrument(name = "ics2_client", skip(overlay))]
+    async fn new(overlay: Overlay) -> Self {
+        Self { overlay }
     }
 
     #[instrument(name = "ics2_client", skip(self, _app_state))]
-    async fn init_chain(&mut self, _app_state: &genesis::AppState) -> Result<()> {
+    async fn init_chain(&mut self, _app_state: &genesis::AppState) {
         // set the initial client count
         self.overlay.put_client_counter(ClientCounter(0)).await;
-
-        Ok(())
     }
 
     #[instrument(name = "ics2_client", skip(self, _begin_block))]
-    async fn begin_block(&mut self, _begin_block: &abci::request::BeginBlock) -> Result<()> {
-        Ok(())
-    }
+    async fn begin_block(&mut self, _begin_block: &abci::request::BeginBlock) {}
 
     #[instrument(name = "ics2_client", skip(tx))]
     fn check_tx_stateless(tx: &Transaction) -> Result<()> {
@@ -77,19 +73,15 @@ impl Component for ClientComponent {
     }
 
     #[instrument(name = "ics2_client", skip(self, tx))]
-    async fn execute_tx(&mut self, tx: &Transaction) -> Result<()> {
+    async fn execute_tx(&mut self, tx: &Transaction) {
         // Handle any IBC actions found in the transaction.
         for ibc_action in tx.ibc_actions() {
             self.execute_ibc_action(ibc_action).await;
         }
-
-        Ok(())
     }
 
-    #[instrument(name = "ibc", skip(self, _end_block))]
-    async fn end_block(&mut self, _end_block: &abci::request::EndBlock) -> Result<()> {
-        Ok(())
-    }
+    #[instrument(name = "ics2_client", skip(self, _end_block))]
+    async fn end_block(&mut self, _end_block: &abci::request::EndBlock) {}
 }
 
 // validates the given ibc action statelessly
@@ -754,7 +746,7 @@ mod tests {
         let storage = Storage::load(file_path).await.unwrap();
         let overlay = storage.overlay().await.unwrap();
 
-        let mut client_component = ClientComponent::new(overlay).await.unwrap();
+        let mut client_component = ClientComponent::new(overlay).await;
 
         // init chain should result in client counter = 0
         let genesis_state = genesis::AppState::default();
@@ -764,7 +756,7 @@ mod tests {
             .put_block_timestamp(timestamp)
             .await;
         client_component.overlay.put_block_height(0).await;
-        client_component.init_chain(&genesis_state).await.unwrap();
+        client_component.init_chain(&genesis_state).await;
 
         assert_eq!(
             client_component.overlay.client_counter().await.unwrap().0,
@@ -831,10 +823,7 @@ mod tests {
             .await
             .unwrap();
         // execute (save client)
-        client_component
-            .execute_tx(&create_client_tx)
-            .await
-            .unwrap();
+        client_component.execute_tx(&create_client_tx).await;
 
         assert_eq!(
             client_component.overlay.client_counter().await.unwrap().0,
@@ -850,10 +839,7 @@ mod tests {
             .await
             .unwrap();
         // save the next tm state
-        client_component
-            .execute_tx(&update_client_tx)
-            .await
-            .unwrap();
+        client_component.execute_tx(&update_client_tx).await;
 
         // try one more client update
         // https://cosmos.bigdipper.live/transactions/ED217D360F51E622859F7B783FEF98BDE3544AA32BBD13C6C77D8D0D57A19FFD
@@ -887,9 +873,6 @@ mod tests {
             .await
             .unwrap();
         // save the next tm state
-        client_component
-            .execute_tx(&second_update_client_tx)
-            .await
-            .unwrap()
+        client_component.execute_tx(&second_update_client_tx).await;
     }
 }

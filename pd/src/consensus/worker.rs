@@ -26,7 +26,7 @@ impl Worker {
         queue: mpsc::Receiver<Message>,
         height_tx: watch::Sender<block::Height>,
     ) -> Result<Self> {
-        let app = App::new(storage.overlay().await?).await?;
+        let app = App::new(storage.overlay().await?).await;
 
         Ok(Self {
             queue,
@@ -103,7 +103,7 @@ impl Worker {
         if self.storage.latest_version().await?.is_some() {
             return Err(anyhow!("database already initialized"));
         }
-        self.app.init_chain(&app_state).await?;
+        self.app.init_chain(&app_state).await;
         // Note: App::commit resets internal components, so we don't need to do that ourselves.
         let (jmt_root, _) = self.app.commit(self.storage.clone()).await?;
 
@@ -135,7 +135,7 @@ impl Worker {
         &mut self,
         begin_block: abci::request::BeginBlock,
     ) -> Result<abci::response::BeginBlock> {
-        self.app.begin_block(&begin_block).await?;
+        self.app.begin_block(&begin_block).await;
         // TODO(events): consider creating + returning Events to Tendermint here.
         Ok(Default::default())
     }
@@ -157,10 +157,7 @@ impl Worker {
         // Now execute the transaction. It's important to panic on error here, since if
         // we fail to execute the transaction here, it's because of an internal
         // error and we may have left the chain in an inconsistent state.
-        self.app
-            .execute_tx(&transaction)
-            .await
-            .expect("execution of valid tx must succeed, up to internal errors");
+        self.app.execute_tx(&transaction).await;
         Ok(())
     }
 
@@ -168,7 +165,7 @@ impl Worker {
         &mut self,
         end_block: abci::request::EndBlock,
     ) -> Result<abci::response::EndBlock> {
-        self.app.end_block(&end_block).await?;
+        self.app.end_block(&end_block).await;
 
         // Set `tm_validator_updates` to the complete set of
         // validators and voting power. This must be the last step performed,
