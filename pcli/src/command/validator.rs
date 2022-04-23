@@ -4,8 +4,8 @@ use anyhow::{Context, Result};
 use futures::TryStreamExt;
 use penumbra_proto::{stake::Validator as ProtoValidator, Message};
 use penumbra_stake::{
-    action::ValidatorDefinition, FundingStream, FundingStreams, IdentityKey, Validator,
-    ValidatorInfo,
+    action::ValidatorDefinition, validator, validator::Validator, FundingStream, FundingStreams,
+    IdentityKey,
 };
 use rand_core::OsRng;
 use structopt::StructOpt;
@@ -174,7 +174,7 @@ impl ValidatorCmd {
                     .await?
                     .into_iter()
                     .map(TryInto::try_into)
-                    .collect::<Result<Vec<ValidatorInfo>, _>>()?;
+                    .collect::<Result<Vec<validator::Info>, _>>()?;
 
                 let validator = validators
                     .iter()

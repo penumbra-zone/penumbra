@@ -6,7 +6,7 @@ use futures::stream::TryStreamExt;
 use penumbra_crypto::Value;
 use penumbra_proto::client::oblivious::ValidatorInfoRequest;
 use penumbra_stake::{
-    rate::RateData, DelegationToken, IdentityKey, ValidatorInfo, STAKING_TOKEN_ASSET_ID,
+    rate::RateData, validator, DelegationToken, IdentityKey, STAKING_TOKEN_ASSET_ID,
     STAKING_TOKEN_DENOM,
 };
 use rand_core::OsRng;
@@ -166,7 +166,7 @@ impl StakeCmd {
                     .await?
                     .into_iter()
                     .map(TryInto::try_into)
-                    .collect::<Result<Vec<ValidatorInfo>, _>>()?;
+                    .collect::<Result<Vec<validator::Info>, _>>()?;
 
                 let notes = state.unspent_notes_by_denom_and_address();
                 let mut total = 0;
@@ -265,7 +265,7 @@ impl StakeCmd {
                     .await?
                     .into_iter()
                     .map(TryInto::try_into)
-                    .collect::<Result<Vec<ValidatorInfo>, _>>()?;
+                    .collect::<Result<Vec<validator::Info>, _>>()?;
 
                 // Sort by voting power (descending)
                 validators.sort_by(|a, b| b.status.voting_power.cmp(&a.status.voting_power));

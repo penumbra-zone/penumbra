@@ -16,7 +16,7 @@ use penumbra_proto::client::{
     oblivious::oblivious_query_server::ObliviousQueryServer,
     specific::specific_query_server::SpecificQueryServer,
 };
-use penumbra_stake::{FundingStream, FundingStreams, Validator};
+use penumbra_stake::{validator::Validator, FundingStream, FundingStreams};
 use rand_core::OsRng;
 use structopt::StructOpt;
 use tonic::transport::Server;

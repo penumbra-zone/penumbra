@@ -1,6 +1,6 @@
 use penumbra_chain::params::ChainParams;
 use penumbra_proto::{genesis as pb, Protobuf};
-use penumbra_stake::Validator;
+use penumbra_stake::validator::Validator;
 use serde::{Deserialize, Serialize};
 
 use super::Allocation;

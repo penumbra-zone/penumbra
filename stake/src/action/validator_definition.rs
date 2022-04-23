@@ -2,7 +2,7 @@ use penumbra_crypto::rdsa::{Signature, SpendAuth};
 use penumbra_proto::{stake as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
-use crate::Validator;
+use crate::validator::Validator;
 
 /// Authenticated configuration data for a validator.
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
@@ -11,14 +11,6 @@ pub struct ValidatorDefinition {
     pub validator: Validator,
     pub auth_sig: Signature<SpendAuth>,
 }
-
-/*
-impl From<ValidatorDefinition> for Validator {
-    fn from(v: ValidatorDefinition) -> Self {
-        v.validator
-    }
-}
-*/
 
 impl Protobuf<pb::ValidatorDefinition> for ValidatorDefinition {}
 

@@ -1,13 +1,13 @@
 use penumbra_proto::{stake as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
-use crate::{IdentityKey, ValidatorState};
+use crate::{validator::State, IdentityKey};
 
 /// The current status of a validator, including its identity, voting power, and state in the
 /// validator state machine.
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::ValidatorStatus", into = "pb::ValidatorStatus")]
-pub struct ValidatorStatus {
+pub struct Status {
     /// The validator's identity.
     pub identity_key: IdentityKey,
     /// The validator's voting power. Note that only `Active` validators are part of the consensus set
@@ -17,30 +17,30 @@ pub struct ValidatorStatus {
     /// potential voting power pushes them into the consensus set.
     pub voting_power: u64,
     /// The validator's current state.
-    pub state: ValidatorState,
+    pub state: State,
 }
 
-impl Protobuf<pb::ValidatorStatus> for ValidatorStatus {}
+impl Protobuf<pb::ValidatorStatus> for Status {}
 
-impl From<ValidatorStatus> for pb::ValidatorStatus {
-    fn from(v: ValidatorStatus) -> Self {
+impl From<Status> for pb::ValidatorStatus {
+    fn from(v: Status) -> Self {
         pb::ValidatorStatus {
             identity_key: Some(v.identity_key.into()),
             voting_power: v.voting_power,
             state: Some(match v.state {
-                ValidatorState::Inactive => pb::ValidatorState {
+                State::Inactive => pb::ValidatorState {
                     state: pb::validator_state::ValidatorStateEnum::Inactive as i32,
                     unbonding_epoch: None,
                 },
-                ValidatorState::Active => pb::ValidatorState {
+                State::Active => pb::ValidatorState {
                     state: pb::validator_state::ValidatorStateEnum::Active as i32,
                     unbonding_epoch: None,
                 },
-                ValidatorState::Unbonding { unbonding_epoch } => pb::ValidatorState {
+                State::Unbonding { unbonding_epoch } => pb::ValidatorState {
                     state: pb::validator_state::ValidatorStateEnum::Unbonding as i32,
                     unbonding_epoch: Some(unbonding_epoch),
                 },
-                ValidatorState::Slashed => pb::ValidatorState {
+                State::Slashed => pb::ValidatorState {
                     state: pb::validator_state::ValidatorStateEnum::Slashed as i32,
                     unbonding_epoch: None,
                 },
@@ -49,7 +49,7 @@ impl From<ValidatorStatus> for pb::ValidatorStatus {
     }
 }
 
-impl TryFrom<pb::ValidatorStatus> for ValidatorStatus {
+impl TryFrom<pb::ValidatorStatus> for Status {
     type Error = anyhow::Error;
     fn try_from(v: pb::ValidatorStatus) -> Result<Self, Self::Error> {
         let state = match pb::validator_state::ValidatorStateEnum::from_i32(
@@ -57,19 +57,19 @@ impl TryFrom<pb::ValidatorStatus> for ValidatorStatus {
         )
         .ok_or_else(|| anyhow::anyhow!("missing validator state"))?
         {
-            pb::validator_state::ValidatorStateEnum::Inactive => ValidatorState::Inactive,
-            pb::validator_state::ValidatorStateEnum::Active => ValidatorState::Active,
-            pb::validator_state::ValidatorStateEnum::Unbonding => ValidatorState::Unbonding {
+            pb::validator_state::ValidatorStateEnum::Inactive => State::Inactive,
+            pb::validator_state::ValidatorStateEnum::Active => State::Active,
+            pb::validator_state::ValidatorStateEnum::Unbonding => State::Unbonding {
                 unbonding_epoch: v
                     .state
                     .unwrap()
                     .unbonding_epoch
                     .ok_or_else(|| anyhow::anyhow!("missing unbonding epoch"))?,
             },
-            pb::validator_state::ValidatorStateEnum::Slashed => ValidatorState::Slashed,
+            pb::validator_state::ValidatorStateEnum::Slashed => State::Slashed,
         };
 
-        Ok(ValidatorStatus {
+        Ok(Status {
             identity_key: v
                 .identity_key
                 .ok_or_else(|| anyhow::anyhow!("missing identity key field in proto"))?
