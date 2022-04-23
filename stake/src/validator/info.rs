@@ -1,20 +1,21 @@
 use penumbra_proto::{stake as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
-use crate::{rate::RateData, Validator, ValidatorStatus};
+use super::{Status, Validator};
+use crate::rate::RateData;
 
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::ValidatorInfo", into = "pb::ValidatorInfo")]
-pub struct ValidatorInfo {
+pub struct Info {
     pub validator: Validator,
-    pub status: ValidatorStatus,
+    pub status: Status,
     pub rate_data: RateData,
 }
 
-impl Protobuf<pb::ValidatorInfo> for ValidatorInfo {}
+impl Protobuf<pb::ValidatorInfo> for Info {}
 
-impl From<ValidatorInfo> for pb::ValidatorInfo {
-    fn from(v: ValidatorInfo) -> Self {
+impl From<Info> for pb::ValidatorInfo {
+    fn from(v: Info) -> Self {
         pb::ValidatorInfo {
             validator: Some(v.validator.into()),
             status: Some(v.status.into()),
@@ -23,10 +24,10 @@ impl From<ValidatorInfo> for pb::ValidatorInfo {
     }
 }
 
-impl TryFrom<pb::ValidatorInfo> for ValidatorInfo {
+impl TryFrom<pb::ValidatorInfo> for Info {
     type Error = anyhow::Error;
     fn try_from(v: pb::ValidatorInfo) -> Result<Self, Self::Error> {
-        Ok(ValidatorInfo {
+        Ok(Info {
             validator: v
                 .validator
                 .ok_or_else(|| anyhow::anyhow!("missing validator field in proto"))?

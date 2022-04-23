@@ -6,8 +6,8 @@ use penumbra_proto::Protobuf;
 use penumbra_stake::{
     action::{Delegate, Undelegate},
     rate::{BaseRateData, RateData},
-    DelegationChanges, Epoch, IdentityKey, PendingRewardNote, RewardNotes, Validator,
-    ValidatorInfo, ValidatorList, ValidatorState, ValidatorStatus, STAKING_TOKEN_ASSET_ID,
+    validator::{self, Validator},
+    DelegationChanges, Epoch, IdentityKey, PendingRewardNote, RewardNotes, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_transaction::{Action, Transaction};
 
@@ -174,7 +174,7 @@ impl Staking {
             // The validator *may* drop out of Active state during the next epoch,
             // but the commission rewards for the ending epoch in which it was Active
             // should still be rewarded.
-            if validator_state == ValidatorState::Active {
+            if validator_state == validator::State::Active {
                 // distribute validator commission
                 for stream in funding_streams {
                     let commission_reward_amount = stream.reward_amount(
@@ -235,7 +235,7 @@ impl Staking {
         struct VPower {
             identity_key: IdentityKey,
             power: u64,
-            state: ValidatorState,
+            state: validator::State,
         }
 
         let mut validator_power_list = Vec::new();
@@ -269,18 +269,18 @@ impl Staking {
 
         // Iterate every validator and update according to their state and voting power.
         for vp in &validator_power_list {
-            if vp.state == ValidatorState::Inactive
-                || matches!(vp.state, ValidatorState::Unbonding { unbonding_epoch: _ })
+            if vp.state == validator::State::Inactive
+                || matches!(vp.state, validator::State::Unbonding { unbonding_epoch: _ })
             {
                 // If an Inactive or Unbonding validator is in the top `active_validator_limit` based
                 // on voting power and the delegation pool has a nonzero balance (meaning non-zero voting power),
                 // then the validator should be moved to the Active state.
                 if top_validators.contains(&vp.identity_key) && vp.power > 0 {
                     self.overlay
-                        .set_validator_state(&vp.identity_key, ValidatorState::Active)
+                        .set_validator_state(&vp.identity_key, validator::State::Active)
                         .await;
                 }
-            } else if vp.state == ValidatorState::Active {
+            } else if vp.state == validator::State::Active {
                 // An Active validator could also be displaced and move to the
                 // Unbonding state.
                 if !top_validators.contains(&vp.identity_key) {
@@ -292,7 +292,7 @@ impl Staking {
                     self.overlay
                         .set_validator_state(
                             &vp.identity_key,
-                            ValidatorState::Unbonding {
+                            validator::State::Unbonding {
                                 unbonding_epoch: unbonding_epochs,
                             },
                         )
@@ -302,10 +302,10 @@ impl Staking {
 
             // An Unbonding validator can become Inactive if the unbonding period expires
             // and the validator is still in Unbonding state
-            if let ValidatorState::Unbonding { unbonding_epoch } = vp.state {
+            if let validator::State::Unbonding { unbonding_epoch } = vp.state {
                 if unbonding_epoch <= epoch_to_end.index {
                     self.overlay
-                        .set_validator_state(&vp.identity_key, ValidatorState::Inactive)
+                        .set_validator_state(&vp.identity_key, validator::State::Inactive)
                         .await;
                 }
             };
@@ -330,7 +330,7 @@ impl Staking {
             // Only active validators report power to tendermint.
             // TODO: actually this isn't quite right because Slashed validators
             // need to report a 0 to Tendermint.
-            if validator_state != ValidatorState::Active {
+            if validator_state != validator::State::Active {
                 continue;
             }
 
@@ -443,7 +443,7 @@ impl Component for Staking {
                     cur_rate_data,
                     next_rate_data,
                     // All genesis validators start in the "Active" state:
-                    ValidatorState::Active,
+                    validator::State::Active,
                     power,
                 )
                 .await
@@ -552,7 +552,7 @@ impl Component for Staking {
                 .validator_state(&d.validator_identity)
                 .await?
                 .ok_or_else(|| anyhow::anyhow!("missing state for validator"))?;
-            if validator_state == ValidatorState::Slashed {
+            if validator_state == validator::State::Slashed {
                 return Err(anyhow::anyhow!(
                     "Delegation to slashed validator {}",
                     d.validator_identity
@@ -727,7 +727,7 @@ impl Component for Staking {
                         cur_rate_data,
                         next_rate_data,
                         // All validator from definitions start in the "Inactive" state:
-                        ValidatorState::Inactive,
+                        validator::State::Inactive,
                         // All validator from definitions start with 0 power:
                         0,
                     )
@@ -840,7 +840,7 @@ pub trait View: OverlayExt {
     }
 
     #[instrument(skip(self))]
-    async fn set_validator_state(&self, identity_key: &IdentityKey, state: ValidatorState) {
+    async fn set_validator_state(&self, identity_key: &IdentityKey, state: validator::State) {
         tracing::debug!("setting validator state");
         self.put_domain(
             format!("staking/validators/{}/state", identity_key).into(),
@@ -897,8 +897,8 @@ pub trait View: OverlayExt {
 
         // Ensure that the state transitions are valid.
         match cur_state {
-            ValidatorState::Active => {}
-            ValidatorState::Unbonding { unbonding_epoch: _ } => {}
+            validator::State::Active => {}
+            validator::State::Unbonding { unbonding_epoch: _ } => {}
             _ => {
                 return Err(anyhow::anyhow!(
                     "only validators in the active or unbonding state may be slashed"
@@ -907,7 +907,7 @@ pub trait View: OverlayExt {
         };
 
         // Mark the state as "slashed" in the JMT, and apply the slashing penalty.
-        self.set_validator_state(&validator.identity_key, ValidatorState::Slashed)
+        self.set_validator_state(&validator.identity_key, validator::State::Slashed)
             .await;
 
         let mut cur_rate = self
@@ -955,7 +955,7 @@ pub trait View: OverlayExt {
         validator: Validator,
         current_rates: RateData,
         next_rates: RateData,
-        state: ValidatorState,
+        state: validator::State,
         power: u64,
     ) -> Result<()> {
         tracing::debug!(?validator);
@@ -978,12 +978,12 @@ pub trait View: OverlayExt {
         Ok(())
     }
 
-    async fn validator_info(&self, identity_key: &IdentityKey) -> Result<Option<ValidatorInfo>> {
+    async fn validator_info(&self, identity_key: &IdentityKey) -> Result<Option<validator::Info>> {
         let validator = self.validator(identity_key).await?;
         let status = self.validator_status(identity_key).await?;
         let rate_data = self.next_validator_rate(identity_key).await?;
         match (validator, status, rate_data) {
-            (Some(validator), Some(status), Some(rate_data)) => Ok(Some(ValidatorInfo {
+            (Some(validator), Some(status), Some(rate_data)) => Ok(Some(validator::Info {
                 validator,
                 status,
                 rate_data,
@@ -992,7 +992,10 @@ pub trait View: OverlayExt {
         }
     }
 
-    async fn validator_state(&self, identity_key: &IdentityKey) -> Result<Option<ValidatorState>> {
+    async fn validator_state(
+        &self,
+        identity_key: &IdentityKey,
+    ) -> Result<Option<validator::State>> {
         self.get_domain(format!("staking/validators/{}/state", identity_key).into())
             .await
     }
@@ -1001,12 +1004,12 @@ pub trait View: OverlayExt {
     async fn validator_status(
         &self,
         identity_key: &IdentityKey,
-    ) -> Result<Option<ValidatorStatus>> {
+    ) -> Result<Option<validator::Status>> {
         let state = self.validator_state(identity_key).await?;
         let power = self.validator_power(identity_key).await?;
         let identity_key = identity_key.clone();
         match (state, power) {
-            (Some(state), Some(voting_power)) => Ok(Some(ValidatorStatus {
+            (Some(state), Some(voting_power)) => Ok(Some(validator::Status {
                 identity_key,
                 state,
                 voting_power,
@@ -1019,13 +1022,16 @@ pub trait View: OverlayExt {
         Ok(self
             .get_domain("staking/validators/list".into())
             .await?
-            .map(|list: ValidatorList| list.0)
+            .map(|list: validator::List| list.0)
             .unwrap_or_default())
     }
 
     async fn set_validator_list(&self, validators: Vec<IdentityKey>) {
-        self.put_domain("staking/validators/list".into(), ValidatorList(validators))
-            .await;
+        self.put_domain(
+            "staking/validators/list".into(),
+            validator::List(validators),
+        )
+        .await;
     }
 
     async fn delegation_changes(&self, height: block::Height) -> Result<DelegationChanges> {

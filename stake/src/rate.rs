@@ -6,7 +6,7 @@ use penumbra_proto::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{FundingStream, IdentityKey, ValidatorState};
+use crate::{validator::State, FundingStream, IdentityKey};
 
 /// Describes a validator's reward rate and voting power in some epoch.
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
@@ -28,7 +28,7 @@ impl RateData {
         &self,
         base_rate_data: &BaseRateData,
         funding_streams: &[FundingStream],
-        validator_state: &ValidatorState,
+        validator_state: &State,
     ) -> RateData {
         let prev = self;
 
@@ -48,17 +48,17 @@ impl RateData {
             //
             // if a validator is slashed during the epoch transition the current epoch's rate is set
             // to the slashed value (during end_block) and in here, the next epoch's rate is held constant.
-            ValidatorState::Slashed => {
+            State::Slashed => {
                 return constant_rate;
             }
             // if a validator isn't part of the consensus set, we do not update their rates
-            ValidatorState::Inactive => {
+            State::Inactive => {
                 return constant_rate;
             }
-            ValidatorState::Unbonding { unbonding_epoch: _ } => {
+            State::Unbonding { unbonding_epoch: _ } => {
                 return constant_rate;
             }
-            ValidatorState::Active => {}
+            State::Active => {}
         };
 
         // compute the validator's total commission
