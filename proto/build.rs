@@ -98,6 +98,7 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.stake.IdentityKey", SERDE_TRANSPARENT),
     (".penumbra.stake.Delegate", SERIALIZE),
     (".penumbra.stake.Undelegate", SERIALIZE),
+    (".penumbra.stake.DelegationChanges", SERIALIZE),
     (".penumbra.crypto.Address", SERIALIZE),
     (".penumbra.crypto.Address", SERDE_TRANSPARENT),
     (".penumbra.crypto.NoteCommitment", SERIALIZE),
