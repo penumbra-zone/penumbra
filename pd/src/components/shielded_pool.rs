@@ -212,7 +212,7 @@ impl Component for ShieldedPool {
         // Handle any pending reward notes from the Staking component
         let notes = self
             .overlay
-            .reward_notes(self.compact_block.height)
+            .commission_amounts(self.compact_block.height)
             .await
             .unwrap()
             .unwrap_or_default();

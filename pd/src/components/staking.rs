@@ -7,7 +7,8 @@ use penumbra_stake::{
     action::{Delegate, Undelegate},
     rate::{BaseRateData, RateData},
     validator::{self, Validator},
-    DelegationChanges, Epoch, IdentityKey, PendingRewardNote, RewardNotes, STAKING_TOKEN_ASSET_ID,
+    CommissionAmount, CommissionAmounts, DelegationChanges, Epoch, IdentityKey,
+    STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_transaction::{Action, Transaction};
 
@@ -92,7 +93,7 @@ impl Staking {
             .set_base_rates(current_base_rate.clone(), next_base_rate.clone())
             .await;
 
-        let mut reward_notes = Vec::new();
+        let mut commission_amounts = Vec::new();
         let validator_list = self.overlay.validator_list().await?;
         for v in &validator_list {
             let validator = self.overlay.validator(v).await?.ok_or_else(|| {
@@ -185,7 +186,7 @@ impl Staking {
 
                     // A note needs to be minted by the ShieldedPool component. Add it to the
                     // JMT here so it can be processed during the ShieldedPool's end_block phase.
-                    reward_notes.push(PendingRewardNote {
+                    commission_amounts.push(CommissionAmount {
                         amount: commission_reward_amount,
                         destination: stream.address,
                     });
@@ -212,10 +213,10 @@ impl Staking {
         // Set the pending reward notes on the JMT for the current block height
         // so they can be processed by the ShieldedPool.
         self.overlay
-            .set_reward_notes(
+            .set_commission_amounts(
                 self.overlay.get_block_height().await?,
-                RewardNotes {
-                    notes: reward_notes,
+                CommissionAmounts {
+                    notes: commission_amounts,
                 },
             )
             .await;
@@ -1049,14 +1050,17 @@ pub trait View: OverlayExt {
         .await
     }
 
-    async fn reward_notes(&self, height: u64) -> Result<Option<RewardNotes>> {
-        self.get_domain(format!("staking/reward_notes/{}", height).into())
+    async fn commission_amounts(&self, height: u64) -> Result<Option<CommissionAmounts>> {
+        self.get_domain(format!("staking/commission_amounts/{}", height).into())
             .await
     }
 
-    async fn set_reward_notes(&self, height: u64, notes: RewardNotes) {
-        self.put_domain(format!("staking/reward_notes/{}", height).into(), notes)
-            .await
+    async fn set_commission_amounts(&self, height: u64, notes: CommissionAmounts) {
+        self.put_domain(
+            format!("staking/commission_amounts/{}", height).into(),
+            notes,
+        )
+        .await
     }
 }
 
