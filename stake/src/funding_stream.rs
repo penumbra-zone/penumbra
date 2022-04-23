@@ -2,6 +2,8 @@ use penumbra_crypto::Address;
 use penumbra_proto::{stake as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
+use crate::rate::BaseRateData;
+
 /// A destination for a portion of a validator's commission of staking rewards.
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone, Copy)]
 #[serde(try_from = "pb::FundingStream", into = "pb::FundingStream")]
@@ -19,8 +21,8 @@ impl FundingStream {
     pub fn reward_amount(
         &self,
         total_delegation_tokens: u64,
-        base_rate_data: &crate::BaseRateData,
-        prev_epoch_rate_data: &crate::BaseRateData,
+        base_rate_data: &BaseRateData,
+        prev_epoch_rate_data: &BaseRateData,
     ) -> u64 {
         if prev_epoch_rate_data.epoch_index != base_rate_data.epoch_index - 1 {
             panic!("wrong base rate data for previous epoch")
