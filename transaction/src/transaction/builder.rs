@@ -12,7 +12,8 @@ use penumbra_crypto::{
 use penumbra_proto::{stake::Validator as ProtoValidator, Message};
 use penumbra_stake::{
     action::{Delegate, Undelegate, ValidatorDefinition},
-    RateData, STAKING_TOKEN_ASSET_ID,
+    rate::RateData,
+    STAKING_TOKEN_ASSET_ID,
 };
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};

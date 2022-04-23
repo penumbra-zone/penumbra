@@ -13,7 +13,7 @@ use penumbra_crypto::{
     note, Address, FieldExt, Note, Nullifier, Value,
 };
 use penumbra_stake::{
-    action::ValidatorDefinition, RateData, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
+    action::ValidatorDefinition, rate::RateData, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
 };
 use penumbra_transaction::{action::output, Transaction};
 use rand::seq::SliceRandom;

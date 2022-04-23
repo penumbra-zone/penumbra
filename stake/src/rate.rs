@@ -1,3 +1,5 @@
+//! Staking reward and delegation token exchange rates.
+
 use penumbra_proto::{
     stake::{self as pb},
     Protobuf,

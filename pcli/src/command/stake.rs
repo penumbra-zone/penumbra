@@ -6,7 +6,7 @@ use futures::stream::TryStreamExt;
 use penumbra_crypto::Value;
 use penumbra_proto::client::oblivious::ValidatorInfoRequest;
 use penumbra_stake::{
-    DelegationToken, IdentityKey, RateData, ValidatorInfo, STAKING_TOKEN_ASSET_ID,
+    rate::RateData, DelegationToken, IdentityKey, ValidatorInfo, STAKING_TOKEN_ASSET_ID,
     STAKING_TOKEN_DENOM,
 };
 use rand_core::OsRng;

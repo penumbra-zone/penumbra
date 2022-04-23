@@ -5,9 +5,9 @@ use async_trait::async_trait;
 use penumbra_proto::Protobuf;
 use penumbra_stake::{
     action::{Delegate, Undelegate},
-    BaseRateData, DelegationChanges, Epoch, IdentityKey, PendingRewardNote, RateData, RewardNotes,
-    Validator, ValidatorInfo, ValidatorList, ValidatorState, ValidatorStatus,
-    STAKING_TOKEN_ASSET_ID,
+    rate::{BaseRateData, RateData},
+    DelegationChanges, Epoch, IdentityKey, PendingRewardNote, RewardNotes, Validator,
+    ValidatorInfo, ValidatorList, ValidatorState, ValidatorStatus, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_transaction::{Action, Transaction};
 
