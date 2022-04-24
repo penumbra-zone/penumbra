@@ -405,9 +405,9 @@ impl Staking {
                     .ok_or_else(|| anyhow!("missing uptime for active validator {}", v))?;
 
                 tracing::debug!(
-                    ?v,
                     ?voted,
                     num_missed_blocks = ?uptime.num_missed_blocks(),
+                    ?v,
                     ?params.missed_blocks_maximum,
                     "recorded vote info"
                 );
