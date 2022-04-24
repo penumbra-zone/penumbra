@@ -50,7 +50,7 @@ jobs:
         port: ${{ secrets.TUNNEL_PORT }}
         script: |
           cd ~/penumbra
-          /root/.cargo/bin/cargo run --release --bin pd -- generate-testnet
+          /root/.cargo/bin/cargo run --release --bin pd -- generate-testnet --output-dir ~/scratch/testnet_build
     - name: Restart deployment
       uses: appleboy/ssh-action@master
       timeout-minutes: 30
@@ -62,4 +62,3 @@ jobs:
         script: |
           cd ~/penumbra
           docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
-
