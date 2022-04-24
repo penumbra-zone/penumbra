@@ -22,14 +22,16 @@ pub struct Storage(Arc<DB>);
 impl Storage {
     pub async fn load(path: PathBuf) -> Result<Self> {
         let span = Span::current();
-        tokio::task::spawn_blocking(move || {
-            span.in_scope(|| {
-                tracing::info!(?path, "opening rocksdb");
-                Ok(Self(Arc::new(DB::open_default(path)?)))
+        tokio::task::Builder::new()
+            .name("open_rocksdb")
+            .spawn_blocking(move || {
+                span.in_scope(|| {
+                    tracing::info!(?path, "opening rocksdb");
+                    Ok(Self(Arc::new(DB::open_default(path)?)))
+                })
             })
-        })
-        .await
-        .unwrap()
+            .await
+            .unwrap()
     }
 
     /// Returns the latest version (block height) of the tree recorded by the
@@ -87,20 +89,22 @@ impl TreeWriter for Storage {
         let span = Span::current();
 
         Box::pin(async {
-            tokio::task::spawn_blocking(move || {
-                span.in_scope(|| {
-                    for (node_key, node) in node_batch.clone() {
-                        let key_bytes = &node_key.encode()?;
-                        let value_bytes = &node.encode()?;
-                        tracing::trace!(?key_bytes, value_bytes = ?hex::encode(&value_bytes));
-                        db.put(key_bytes, value_bytes)?;
-                    }
+            tokio::task::Builder::new()
+                .name("Storage::write_node_batch")
+                .spawn_blocking(move || {
+                    span.in_scope(|| {
+                        for (node_key, node) in node_batch.clone() {
+                            let key_bytes = &node_key.encode()?;
+                            let value_bytes = &node.encode()?;
+                            tracing::trace!(?key_bytes, value_bytes = ?hex::encode(&value_bytes));
+                            db.put(key_bytes, value_bytes)?;
+                        }
 
-                    Ok(())
+                        Ok(())
+                    })
                 })
-            })
-            .await
-            .unwrap()
+                .await
+                .unwrap()
         })
     }
 }
@@ -120,19 +124,21 @@ impl TreeReader for Storage {
         let span = Span::current();
 
         Box::pin(async {
-            tokio::task::spawn_blocking(move || {
-                span.in_scope(|| {
-                    let value = db
-                        .get_pinned(&node_key.encode()?)?
-                        .map(|db_slice| Node::decode(&db_slice))
-                        .transpose()?;
+            tokio::task::Builder::new()
+                .name("Storage::get_node_option")
+                .spawn_blocking(move || {
+                    span.in_scope(|| {
+                        let value = db
+                            .get_pinned(&node_key.encode()?)?
+                            .map(|db_slice| Node::decode(&db_slice))
+                            .transpose()?;
 
-                    tracing::trace!(?node_key, ?value);
-                    Ok(value)
+                        tracing::trace!(?node_key, ?value);
+                        Ok(value)
+                    })
                 })
-            })
-            .await
-            .unwrap()
+                .await
+                .unwrap()
         })
     }
 
@@ -143,27 +149,29 @@ impl TreeReader for Storage {
         let db = self.0.clone();
 
         Box::pin(async {
-            tokio::task::spawn_blocking(move || {
-                span.in_scope(|| {
-                    let mut iter = db.raw_iterator();
-                    let mut ret = None;
-                    iter.seek_to_last();
+            tokio::task::Builder::new()
+                .name("Storage::get_rightmost_leaf")
+                .spawn_blocking(move || {
+                    span.in_scope(|| {
+                        let mut iter = db.raw_iterator();
+                        let mut ret = None;
+                        iter.seek_to_last();
 
-                    if iter.valid() {
-                        let node_key = NodeKey::decode(iter.key().unwrap())?;
-                        let node = Node::decode(iter.value().unwrap())?;
+                        if iter.valid() {
+                            let node_key = NodeKey::decode(iter.key().unwrap())?;
+                            let node = Node::decode(iter.value().unwrap())?;
 
-                        if let Node::Leaf(leaf_node) = node {
-                            ret = Some((node_key, leaf_node));
+                            if let Node::Leaf(leaf_node) = node {
+                                ret = Some((node_key, leaf_node));
+                            }
+                        } else {
+                            // There are no keys in the database
                         }
-                    } else {
-                        // There are no keys in the database
-                    }
-                    Ok(ret)
+                        Ok(ret)
+                    })
                 })
-            })
-            .await
-            .unwrap()
+                .await
+                .unwrap()
         })
     }
 }

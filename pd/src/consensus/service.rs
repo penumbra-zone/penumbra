@@ -30,7 +30,9 @@ impl Consensus {
         };
         let (height_tx, height_rx) = watch::channel(initial_height);
 
-        tokio::spawn(Worker::new(storage, queue_rx, height_tx).await?.run());
+        tokio::task::Builder::new()
+            .name("consensus::Worker")
+            .spawn(Worker::new(storage, queue_rx, height_tx).await?.run());
 
         Ok((
             Self {
