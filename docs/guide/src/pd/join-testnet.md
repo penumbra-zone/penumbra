@@ -6,7 +6,7 @@ not be eligible for staking or funding stream rewards. For more information on
 what a fullnode is, see the [Tendermint
 documentation](https://docs.tendermint.com/v0.35/nodes/#full-node).
 
-A regular validator will participate in voting and rewards.
+A regular validator will participate in voting and rewards. (Of course, these rewards, like all of the other testnet tokens, have no value). 
 
 - [Joining as a fullnode](./join-testnet/fullnode.md) describes how to join the current testnet as a fullnode;
 - [Joining as a validator](./join-testnet/validator.md) describes how to join the current testnet as a validator;
