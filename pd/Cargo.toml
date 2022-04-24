@@ -48,7 +48,7 @@ regex = "1.5"
 prost-types = "0.9"
 structopt = "0.3"
 tonic = "0.6.1"
-tracing-subscriber = "0.2"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "ansi"] }
 pin-project = "1"
 futures = "0.3"
 serde_json = "1"
@@ -73,6 +73,7 @@ ibc-proto = "0.17.0"
 tendermint-light-client-verifier = "0.23.5"
 tempfile = "3.3.0"
 base64 = "0.13.0"
+console-subscriber = "0.1.4"
 
 [build-dependencies]
 vergen = "5"
