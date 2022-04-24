@@ -105,7 +105,7 @@ fn remote_addr(req: &http::Request<()>) -> Option<SocketAddr> {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt::init();
+    console_subscriber::init();
     let opt = Opt::from_args();
 
     match opt.cmd {
