@@ -9,7 +9,7 @@ services:
   # for local development, configure the penumbra daemon with more logging.
   pd-node0:
     environment:
-      - RUST_LOG=${RUST_LOG:-warn,pd=debug,penumbra=debug,jmt=debug}
+      - RUST_LOG=${RUST_LOG:-warn,pd=debug,penumbra=debug,jmt=info}
     build:
       # Use the dev Dockerfile which has better cacheing and doesn't use the release
       # target
