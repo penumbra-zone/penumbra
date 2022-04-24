@@ -49,6 +49,15 @@ impl tower::Service<MempoolRequest> for Mempool {
     }
 
     fn call(&mut self, req: MempoolRequest) -> Self::Future {
+        // Check if the worker has terminated. We do this again in `call`
+        // because the worker may have terminated *after* `poll_ready` reserved
+        // a send permit.
+        if self.queue.is_closed() {
+            return async move {
+                Err(anyhow::anyhow!("mempool worker terminated or panicked").into())
+            }
+            .boxed();
+        }
         let span = req.create_span();
         let (tx, rx) = oneshot::channel();
 
@@ -63,7 +72,10 @@ impl tower::Service<MempoolRequest> for Mempool {
             .expect("called without `poll_ready`");
 
         async move {
-            match rx.await.expect("worker error??") {
+            match rx
+                .await
+                .map_err(|_| anyhow::anyhow!("mempool worker terminated or panicked"))?
+            {
                 Ok(()) => Ok(MempoolResponse::CheckTx(CheckTxRsp::default())),
                 Err(e) => Ok(MempoolResponse::CheckTx(CheckTxRsp {
                     code: 1,
