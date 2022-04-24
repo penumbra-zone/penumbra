@@ -1075,6 +1075,14 @@ pub trait View: OverlayExt {
         )
         .await
     }
+
+    async fn signed_blocks_window_len(&self) -> Result<u64> {
+        Ok(self.get_chain_params().await?.signed_blocks_window_len)
+    }
+
+    async fn signed_blocks_minimum(&self) -> Result<u64> {
+        Ok(self.get_chain_params().await?.signed_blocks_minimum)
+    }
 }
 
 impl<T: OverlayExt + Send + Sync> View for T {}
