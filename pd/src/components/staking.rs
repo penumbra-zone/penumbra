@@ -7,7 +7,7 @@ use penumbra_stake::{
     action::{Delegate, Undelegate},
     rate::{BaseRateData, RateData},
     validator::{self, Validator},
-    CommissionAmount, CommissionAmounts, DelegationChanges, Epoch, IdentityKey,
+    CommissionAmount, CommissionAmounts, DelegationChanges, Epoch, IdentityKey, Uptime,
     STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_transaction::{Action, Transaction};
@@ -1059,6 +1059,19 @@ pub trait View: OverlayExt {
         self.put_domain(
             format!("staking/commission_amounts/{}", height).into(),
             notes,
+        )
+        .await
+    }
+
+    async fn validator_uptime(&self, identity_key: &IdentityKey) -> Result<Option<Uptime>> {
+        self.get_domain(format!("staking/validator_uptime/{}", identity_key).into())
+            .await
+    }
+
+    async fn set_validator_uptime(&self, identity_key: &IdentityKey, uptime: Uptime) {
+        self.put_domain(
+            format!("staking/validator_uptime/{}", identity_key).into(),
+            uptime,
         )
         .await
     }
