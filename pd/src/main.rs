@@ -134,7 +134,7 @@ async fn main() -> anyhow::Result<()> {
             let info = pd::Info::new(storage.clone());
             let snapshot = pd::Snapshot {};
 
-            let abci_server = tokio::spawn(
+            let abci_server = tokio::task::Builder::new().name("abci_server").spawn(
                 tower_abci::Server::builder()
                     .consensus(consensus)
                     .snapshot(snapshot)
@@ -145,32 +145,40 @@ async fn main() -> anyhow::Result<()> {
                     .listen(format!("{}:{}", host, abci_port)),
             );
 
-            let oblivious_server = tokio::spawn(
-                Server::builder()
-                    .trace_fn(|req| match remote_addr(req) {
-                        Some(remote_addr) => tracing::error_span!("oblivious_query", ?remote_addr),
-                        None => tracing::error_span!("oblivious_query"),
-                    })
-                    .add_service(ObliviousQueryServer::new(storage.clone()))
-                    .serve(
-                        format!("{}:{}", host, oblivious_query_port)
-                            .parse()
-                            .expect("this is a valid address"),
-                    ),
-            );
-            let specific_server = tokio::spawn(
-                Server::builder()
-                    .trace_fn(|req| match remote_addr(req) {
-                        Some(remote_addr) => tracing::error_span!("specific_query", ?remote_addr),
-                        None => tracing::error_span!("specific_query"),
-                    })
-                    .add_service(SpecificQueryServer::new(storage.clone()))
-                    .serve(
-                        format!("{}:{}", host, specific_query_port)
-                            .parse()
-                            .expect("this is a valid address"),
-                    ),
-            );
+            let oblivious_server = tokio::task::Builder::new()
+                .name("oblivious_query_server")
+                .spawn(
+                    Server::builder()
+                        .trace_fn(|req| match remote_addr(req) {
+                            Some(remote_addr) => {
+                                tracing::error_span!("oblivious_query", ?remote_addr)
+                            }
+                            None => tracing::error_span!("oblivious_query"),
+                        })
+                        .add_service(ObliviousQueryServer::new(storage.clone()))
+                        .serve(
+                            format!("{}:{}", host, oblivious_query_port)
+                                .parse()
+                                .expect("this is a valid address"),
+                        ),
+                );
+            let specific_server = tokio::task::Builder::new()
+                .name("specific_query_server")
+                .spawn(
+                    Server::builder()
+                        .trace_fn(|req| match remote_addr(req) {
+                            Some(remote_addr) => {
+                                tracing::error_span!("specific_query", ?remote_addr)
+                            }
+                            None => tracing::error_span!("specific_query"),
+                        })
+                        .add_service(SpecificQueryServer::new(storage.clone()))
+                        .serve(
+                            format!("{}:{}", host, specific_query_port)
+                                .parse()
+                                .expect("this is a valid address"),
+                        ),
+                );
 
             // This service lets Prometheus pull metrics from `pd`
             PrometheusBuilder::new()

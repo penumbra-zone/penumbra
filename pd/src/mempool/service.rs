@@ -31,7 +31,9 @@ impl Mempool {
     ) -> anyhow::Result<Self> {
         let (queue_tx, queue_rx) = mpsc::channel(10);
 
-        tokio::spawn(Worker::new(storage, queue_rx, height_rx).await?.run());
+        tokio::task::Builder::new()
+            .name("mempool::Worker")
+            .spawn(Worker::new(storage, queue_rx, height_rx).await?.run());
 
         Ok(Self {
             queue: PollSender::new(queue_tx),
