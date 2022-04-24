@@ -23,8 +23,8 @@ message ChainParams {
   uint64 slashing_penalty_downtime_bps = 10;
   // The number of blocks in the window to check for downtime.
   uint64 signed_blocks_window_len = 11;
-  // The minimum number of blocks in the window each validator must have signed.
-  uint64 signed_blocks_minimum = 12;
+  // The maximum number of blocks in the window each validator can miss signing without slashing.
+  uint64 missed_blocks_maximum = 12;
 
   /// Whether IBC (forming connections, processing IBC packets) is enabled.
   bool ibc_enabled = 6;

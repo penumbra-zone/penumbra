@@ -12,10 +12,11 @@ use penumbra_stake::{
 };
 use penumbra_transaction::{Action, Transaction};
 
+use sha2::{Digest, Sha256};
 use tendermint::{
     abci::{
         self,
-        types::{Evidence, ValidatorUpdate},
+        types::{Evidence, LastCommitInfo, ValidatorUpdate},
     },
     block, PublicKey,
 };
@@ -280,6 +281,14 @@ impl Staking {
                     self.overlay
                         .set_validator_state(&vp.identity_key, validator::State::Active)
                         .await;
+                    // Start tracking the validator's uptime as it becomes active
+                    let uptime = Uptime::new(
+                        self.overlay.get_block_height().await?,
+                        self.overlay.signed_blocks_window_len().await? as usize,
+                    );
+                    self.overlay
+                        .set_validator_uptime(&vp.identity_key, uptime)
+                        .await;
                 }
             } else if vp.state == validator::State::Active {
                 // An Active validator could also be displaced and move to the
@@ -353,6 +362,61 @@ impl Staking {
         }
 
         Ok(updates)
+    }
+
+    async fn track_uptime(&self, last_commit_info: &LastCommitInfo) -> Result<()> {
+        let voters = last_commit_info
+            .votes
+            .iter()
+            .map(|vote| vote.validator.address)
+            .collect::<BTreeSet<[u8; 20]>>();
+
+        // Note: this probably isn't the correct height for the LastCommitInfo,
+        // which is about the *last* commit, but at least it'll be consistent,
+        // which is all we need to count signatures.
+        let height = self.overlay.get_block_height().await?;
+        let missed_blocks_maximum = self.overlay.missed_blocks_maximum().await?;
+
+        for v in self.overlay.validator_list().await?.iter() {
+            let info = self
+                .overlay
+                .validator_info(v)
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("validator missing status"))?;
+
+            if info.status.state == validator::State::Active {
+                // for some reason last_commit_info has truncated sha256 hashes
+                let ck_bytes = info.validator.consensus_key.to_bytes();
+                let addr: [u8; 20] = Sha256::digest(&ck_bytes).as_slice()[0..20]
+                    .try_into()
+                    .unwrap();
+
+                let voted = voters.contains(&addr);
+                let mut uptime = self
+                    .overlay
+                    .validator_uptime(v)
+                    .await?
+                    .ok_or_else(|| anyhow!("missing uptime for active validator {}", v))?;
+
+                uptime.mark_height_as_signed(height, voted).unwrap();
+                if uptime.num_missed_blocks() as u64 >= missed_blocks_maximum {
+                    let slashing_penalty = self
+                        .overlay
+                        .get_chain_params()
+                        .await?
+                        .slashing_penalty_downtime_bps;
+                    tracing::info!(num_missed_blocks = ?uptime.num_missed_blocks(), missed_blocks_maximum, "slashing for downtime");
+                    self.overlay
+                        .slash_validator(info.validator, slashing_penalty)
+                        .await?;
+                } else {
+                    tracing::debug!(?v, ?voted, num_missed_blocks = ?uptime.num_missed_blocks(), missed_blocks_maximum);
+                    self.overlay.set_validator_uptime(v, uptime).await;
+                }
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -449,6 +513,13 @@ impl Component for Staking {
                 )
                 .await
                 .unwrap();
+            // We also need to start tracking uptime of the genesis validators:
+            self.overlay
+                .set_validator_uptime(
+                    &validator.identity_key,
+                    Uptime::new(0, app_state.chain_params.signed_blocks_window_len as usize),
+                )
+                .await;
         }
 
         // Finally, record that there were no delegations in this block, so the data
@@ -463,8 +534,15 @@ impl Component for Staking {
         // For each validator identified as byzantine by tendermint, update its
         // state to be slashed.
         for evidence in begin_block.byzantine_validators.iter() {
-            self.overlay.slash_validator(evidence).await.unwrap();
+            self.overlay
+                .slash_validator_by_evidence(evidence)
+                .await
+                .unwrap();
         }
+
+        self.track_uptime(&begin_block.last_commit_info)
+            .await
+            .unwrap();
     }
 
     #[instrument(name = "staking", skip(tx))]
@@ -874,7 +952,8 @@ pub trait View: OverlayExt {
     }
 
     // TODO: move out of view? this seems more like business logic
-    async fn slash_validator(&mut self, evidence: &Evidence) -> Result<()> {
+    // TODO: sort of messy, clean up slashing logic?
+    async fn slash_validator_by_evidence(&self, evidence: &Evidence) -> Result<()> {
         let ck = tendermint::PublicKey::from_raw_ed25519(&evidence.validator.address)
             .ok_or_else(|| anyhow::anyhow!("invalid ed25519 consensus pubkey from tendermint"))
             .unwrap();
@@ -889,6 +968,10 @@ pub trait View: OverlayExt {
             .await?
             .slashing_penalty_misbehavior_bps;
 
+        self.slash_validator(validator, slashing_penalty).await
+    }
+
+    async fn slash_validator(&self, validator: Validator, slashing_penalty: u64) -> Result<()> {
         tracing::info!(?validator, ?slashing_penalty, "slashing validator");
 
         let cur_state = self
@@ -1080,8 +1163,8 @@ pub trait View: OverlayExt {
         Ok(self.get_chain_params().await?.signed_blocks_window_len)
     }
 
-    async fn signed_blocks_minimum(&self) -> Result<u64> {
-        Ok(self.get_chain_params().await?.signed_blocks_minimum)
+    async fn missed_blocks_maximum(&self) -> Result<u64> {
+        Ok(self.get_chain_params().await?.missed_blocks_maximum)
     }
 }
 

@@ -49,12 +49,12 @@ pub struct ChainParams {
     pub base_reward_rate: u64,
     /// The penalty for slashing due to misbehavior, expressed in basis points.
     pub slashing_penalty_misbehavior_bps: u64,
-    // The penalty for slashing due to downtime, expressed in basis points.
+    /// The penalty for slashing due to downtime, expressed in basis points.
     pub slashing_penalty_downtime_bps: u64,
-    // The number of blocks in the window to check for downtime.
+    /// The number of blocks in the window to check for downtime.
     pub signed_blocks_window_len: u64,
-    // The minimum number of blocks in the window each validator must have signed.
-    pub signed_blocks_minimum: u64,
+    /// The maximum number of blocks in the window each validator can miss signing without slashing.
+    pub missed_blocks_maximum: u64,
 
     /// Whether IBC (forming connections, processing IBC packets) is enabled.
     pub ibc_enabled: bool,
@@ -76,7 +76,7 @@ impl From<pb::ChainParams> for ChainParams {
             slashing_penalty_downtime_bps: msg.slashing_penalty_downtime_bps,
             slashing_penalty_misbehavior_bps: msg.slashing_penalty_misbehavior_bps,
             base_reward_rate: msg.base_reward_rate,
-            signed_blocks_minimum: msg.signed_blocks_minimum,
+            missed_blocks_maximum: msg.missed_blocks_maximum,
             signed_blocks_window_len: msg.signed_blocks_window_len,
             ibc_enabled: msg.ibc_enabled,
             inbound_ics20_transfers_enabled: msg.inbound_ics20_transfers_enabled,
@@ -93,7 +93,7 @@ impl From<ChainParams> for pb::ChainParams {
             unbonding_epochs: params.unbonding_epochs,
             active_validator_limit: params.active_validator_limit,
             signed_blocks_window_len: params.signed_blocks_window_len,
-            signed_blocks_minimum: params.signed_blocks_minimum,
+            missed_blocks_maximum: params.missed_blocks_maximum,
             slashing_penalty_downtime_bps: params.slashing_penalty_downtime_bps,
             slashing_penalty_misbehavior_bps: params.slashing_penalty_misbehavior_bps,
             base_reward_rate: params.base_reward_rate,
@@ -115,7 +115,7 @@ impl Default for ChainParams {
             active_validator_limit: 10,
             // copied from cosmos hub
             signed_blocks_window_len: 10000,
-            signed_blocks_minimum: 9500,
+            missed_blocks_maximum: 500,
             // 1000 basis points = 10%
             slashing_penalty_misbehavior_bps: 1000,
             // 1 basis point = 0.01%
