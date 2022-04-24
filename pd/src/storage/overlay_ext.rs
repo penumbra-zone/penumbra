@@ -59,13 +59,13 @@ impl<R: TreeReader + Sync + 'static> OverlayExt for Arc<Mutex<WriteOverlay<R>>> 
         match self.get_proto(key).await {
             Ok(Some(p)) => match D::try_from(p) {
                 Ok(d) => {
-                    tracing::debug!(?key, value = ?d);
+                    tracing::trace!(?key, value = ?d);
                     Ok(Some(d))
                 }
                 Err(e) => Err(e.into()),
             },
             Ok(None) => {
-                tracing::debug!(?key, "no entry in tree");
+                tracing::trace!(?key, "no entry in tree");
                 Ok(None)
             }
             Err(e) => Err(e.into()),
@@ -82,7 +82,7 @@ impl<R: TreeReader + Sync + 'static> OverlayExt for Arc<Mutex<WriteOverlay<R>>> 
         D: TryFrom<P> + Clone + Send + Debug,
         <D as TryFrom<P>>::Error: Into<anyhow::Error>,
     {
-        tracing::debug!(?key, ?value);
+        tracing::trace!(?key, ?value);
         self.put_proto(key, P::from(value)).await;
     }
 
