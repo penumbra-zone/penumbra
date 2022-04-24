@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 /// didn't.  For a new validator, the [`Uptime::new`] method initializes the bit
 /// vector with all `1`s as a grace period to ensure that we don't need to
 /// special-case genesis states, new validators, etc.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(try_from = "pb::Uptime", into = "pb::Uptime")]
 pub struct Uptime {
     // Note: tracking this means we *could* in principle answer queries by
@@ -26,6 +26,12 @@ pub struct Uptime {
     // get to that
     as_of_block_height: u64,
     signatures: BitVec<u8, Lsb0>,
+}
+
+impl std::fmt::Debug for Uptime {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Uptime").finish()
+    }
 }
 
 impl Uptime {
