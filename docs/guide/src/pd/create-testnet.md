@@ -88,17 +88,15 @@ To load genesis state for a fresh Docker configuration:
 for pd/rocksDB/tendermint!
 
 ```bash
-./scripts/docker_compose_freshstart.sh ~/scratch/testnet_build
-# the ~/scratch/testnet_build directory should be the root of the volume mounted
-# to the tendermint node containers in docker-compose.yml
+./scripts/docker_compose_freshstart.sh
 ```
 
 The script will handle generating genesis JSON data (but not editing it).
 
-After running the script, the data directory provided to the script will contain the initial configuration and state of the tendermint nodes.
+After running the script, `$HOME/.penumbra/testnet_data/` will contain the initial configuration and state of the tendermint nodes.
 
 **You should go in and edit the genesis JSON for `node0` (we currently only run one tendermint
-node in our testnet: `~/scratch/testnet_build/node0/config/genesis.json`)
+node in our testnet: `~/.penumbra/testnet_data/node0/config/genesis.json`)
 
 After configuring the genesis JSON, you can start the testnet:
 

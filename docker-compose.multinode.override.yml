@@ -15,7 +15,7 @@ services:
       # target
       dockerfile: Dockerfile.dev
     volumes:
-      - ~/scratch/testnet_build/node0/pd:/pd
+      - ~/.penumbra/testnet_data/node0/pd:/pd
     command: pd start --host 0.0.0.0 -r /pd/rocksdb
 
   # for local development, configure the penumbra daemon with more logging.
@@ -29,7 +29,7 @@ services:
       dockerfile: Dockerfile.dev
       context: .
     volumes:
-      - ~/scratch/testnet_build/node1/pd:/pd
+      - ~/.penumbra/testnet_data/node1/pd:/pd
     command: pd start --host 0.0.0.0 -r /pd/rocksdb
     restart: on-failure
     networks:
@@ -48,7 +48,7 @@ services:
       - "27656:26656"
       - "27657:26657"
     volumes:
-      - ~/scratch/testnet_build/node1/tendermint:/tendermint
+      - ~/.penumbra/testnet_data/node1/tendermint:/tendermint
     command: start --proxy-app=tcp://pd-node1:26658
     environment:
       - ID=1

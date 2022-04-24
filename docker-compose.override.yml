@@ -15,7 +15,7 @@ services:
       # target
       dockerfile: Dockerfile.dev
     volumes:
-      - ~/scratch/testnet_build/node0/pd:/pd
+      - ~/.penumbra/testnet_data/node0/pd:/pd
     command: pd start --host 0.0.0.0 -r /pd/rocksdb
 
   # add prometheus and grafana
