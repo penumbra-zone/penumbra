@@ -54,6 +54,16 @@ impl tower::Service<ConsensusRequest> for Consensus {
     }
 
     fn call(&mut self, req: ConsensusRequest) -> Self::Future {
+        // Check if the worker has terminated. We do this again in `call`
+        // because the worker may have terminated *after* `poll_ready` reserved
+        // a send permit.
+        if self.queue.is_closed() {
+            return async move {
+                Err(anyhow::anyhow!("consensus worker terminated or panicked").into())
+            }
+            .boxed();
+        }
+
         let span = req.create_span();
         let (tx, rx) = oneshot::channel();
 
@@ -65,6 +75,10 @@ impl tower::Service<ConsensusRequest> for Consensus {
             })
             .expect("called without `poll_ready`");
 
-        async move { Ok(rx.await.expect("worker error??")) }.boxed()
+        async move {
+            rx.await
+                .map_err(|_| anyhow::anyhow!("consensus worker terminated or panicked").into())
+        }
+        .boxed()
     }
 }
