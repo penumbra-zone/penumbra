@@ -45,7 +45,7 @@ impl Component for ShieldedPool {
         for allocation in &app_state.allocations {
             tracing::info!(?allocation, "processing allocation");
 
-            assert_eq!(
+            assert_ne!(
                 allocation.amount, 0,
                 "Genesis allocations contain empty note",
             );
