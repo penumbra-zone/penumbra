@@ -119,11 +119,21 @@ impl TryFrom<pb::Output> for Output {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Body {
     pub note_commitment: note::Commitment,
     pub ephemeral_key: ka::Public,
     pub encrypted_note: [u8; note::NOTE_CIPHERTEXT_BYTES],
+}
+
+impl std::fmt::Debug for Body {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("output::Body")
+            .field("note_commitment", &self.note_commitment)
+            .field("ephemeral_key", &self.ephemeral_key)
+            .field("encrypted_note", &"...")
+            .finish()
+    }
 }
 
 impl Body {}
