@@ -37,11 +37,7 @@ jobs:
         script: |
           cd ~/penumbra
           docker-compose stop
-          rm -rf ~/scratch/testnet_build/node0/tendermint/data/
-          rm -rf ~/scratch/testnet_build/node0/pd/rocksdb
-          mkdir ~/scratch/testnet_build/node0/tendermint/data/
-          echo -n '{}' > ~/scratch/testnet_build/node0/tendermint/data/priv_validator_state.json
-          chmod -R 777 ~/scratch/testnet_build
+          rm -rf ~/.penumbra/testnet_data/
     - name: Generate testnet
       uses: appleboy/ssh-action@master
       with:
@@ -51,7 +47,8 @@ jobs:
         port: ${{ secrets.TUNNEL_PORT }}
         script: |
           cd ~/penumbra
-          /root/.cargo/bin/cargo run --release --bin pd -- generate-testnet --output-dir ~/scratch/testnet_build
+          /root/.cargo/bin/cargo run --release --bin pd -- generate-testnet
+          chmod -R 777 ~/.penumbra/testnet_data
     - name: Restart deployment
       uses: appleboy/ssh-action@master
       timeout-minutes: 30
