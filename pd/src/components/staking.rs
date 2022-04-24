@@ -364,19 +364,25 @@ impl Staking {
         Ok(updates)
     }
 
+    #[instrument(skip(self, last_commit_info))]
     async fn track_uptime(&self, last_commit_info: &LastCommitInfo) -> Result<()> {
-        let voters = last_commit_info
-            .votes
-            .iter()
-            .map(|vote| vote.validator.address)
-            .collect::<BTreeSet<[u8; 20]>>();
+        tracing::debug!(?last_commit_info);
 
         // Note: this probably isn't the correct height for the LastCommitInfo,
         // which is about the *last* commit, but at least it'll be consistent,
         // which is all we need to count signatures.
         let height = self.overlay.get_block_height().await?;
-        let missed_blocks_maximum = self.overlay.missed_blocks_maximum().await?;
+        let params = self.overlay.get_chain_params().await?;
 
+        // Build a mapping from addresses (20-byte truncated SHA256(pubkey)) to vote statuses.
+        let did_address_vote = last_commit_info
+            .votes
+            .iter()
+            .map(|vote| (vote.validator.address, vote.signed_last_block))
+            .collect::<BTreeMap<[u8; 20], bool>>();
+
+        // Since we don't have a lookup from "addresses" to identity keys,
+        // iterate over our app's validators, and match them up with the vote data.
         for v in self.overlay.validator_list().await?.iter() {
             let info = self
                 .overlay
@@ -391,26 +397,28 @@ impl Staking {
                     .try_into()
                     .unwrap();
 
-                let voted = voters.contains(&addr);
+                let voted = did_address_vote.get(&addr).cloned().unwrap_or(false);
                 let mut uptime = self
                     .overlay
                     .validator_uptime(v)
                     .await?
                     .ok_or_else(|| anyhow!("missing uptime for active validator {}", v))?;
 
+                tracing::debug!(
+                    ?v,
+                    ?voted,
+                    num_missed_blocks = ?uptime.num_missed_blocks(),
+                    ?params.missed_blocks_maximum,
+                    "recorded vote info"
+                );
+
                 uptime.mark_height_as_signed(height, voted).unwrap();
-                if uptime.num_missed_blocks() as u64 >= missed_blocks_maximum {
-                    let slashing_penalty = self
-                        .overlay
-                        .get_chain_params()
-                        .await?
-                        .slashing_penalty_downtime_bps;
-                    tracing::info!(num_missed_blocks = ?uptime.num_missed_blocks(), missed_blocks_maximum, "slashing for downtime");
+                if uptime.num_missed_blocks() as u64 >= params.missed_blocks_maximum {
+                    tracing::info!(?v, "slashing for downtime");
                     self.overlay
-                        .slash_validator(info.validator, slashing_penalty)
+                        .slash_validator(info.validator, params.slashing_penalty_downtime_bps)
                         .await?;
                 } else {
-                    tracing::debug!(?v, ?voted, num_missed_blocks = ?uptime.num_missed_blocks(), missed_blocks_maximum);
                     self.overlay.set_validator_uptime(v, uptime).await;
                 }
             }
@@ -893,7 +901,6 @@ pub trait View: OverlayExt {
 
     #[instrument(skip(self))]
     async fn validator_power(&self, identity_key: &IdentityKey) -> Result<Option<u64>> {
-        tracing::debug!("getting validator power");
         self.get_proto(format!("staking/validators/{}/power", identity_key).into())
             .await
     }
