@@ -8,7 +8,7 @@ services:
     environment:
       - RUST_LOG=${RUST_LOG:-warn,pd=info,penumbra=info}
     volumes:
-      - ~/scratch/testnet_build/node0/pd:/pd
+      - ~/.penumbra/testnet_data/node0/pd:/pd
     command: pd start --host 0.0.0.0 -r /pd/rocksdb
     restart: on-failure
     networks:
@@ -27,7 +27,7 @@ services:
       - "26656:26656"
       - "26657:26657"
     volumes:
-      - ~/scratch/testnet_build/node0/tendermint:/tendermint
+      - ~/.penumbra/testnet_data/node0/tendermint:/tendermint
     command: start --proxy-app=tcp://pd-node0:26658
     environment:
       - ID=0

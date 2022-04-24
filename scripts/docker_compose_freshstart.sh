@@ -10,7 +10,7 @@ die () {
     exit 1
 }
 
-build_path="$HOME/scratch/testnet_build/"
+build_path="$HOME/.penumbra/testnet_data/"
 
 if [ -d "${build_path}" ] 
 then
