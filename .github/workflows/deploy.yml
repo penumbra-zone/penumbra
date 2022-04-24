@@ -26,6 +26,7 @@ jobs:
           cd ~/penumbra
           git checkout main
           git pull
+          cargo update
     - name: Delete existing state
       uses: appleboy/ssh-action@master
       with:
