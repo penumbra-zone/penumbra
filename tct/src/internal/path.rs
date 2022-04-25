@@ -1,8 +1,13 @@
+//! Authentication paths into the tree, generically for trees of any height.
+//!
 //! An authentication path of a tree is a sequence of triples of hashes equal in length to the
 //! height of the tree.
 //!
 //! The interpretation of an authentication path is dependent on an _index_ into the tree, stored
 //! separately, which indicates the position of the leaf witnessed by the authentication path.
+//!
+//! These are wrapped in more specific domain types by the exposed crate API to make it more
+//! comprehensible.
 
 use thiserror::Error;
 

@@ -2,6 +2,11 @@
 //!
 //! Each complete node must have at least one child, but some other children may be missing because
 //! they have been pruned from the sparse tree.
+//!
+//! The reason for this enumeration is to save heap space in the case of many nodes: because
+//! different nodes can have different sizes, we save on average a few words of memory by placing
+//! the box inside each enum variant rather than outside the whole enum (which would end up
+//! occupying the space of its largest variant).
 
 #![allow(non_camel_case_types, clippy::upper_case_acronyms)]
 

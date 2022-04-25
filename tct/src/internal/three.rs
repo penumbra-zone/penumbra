@@ -1,4 +1,8 @@
-//! Vectors capable of containing at most 3 elements.
+//! A wrapper around [`Vec`] for vectors whose length is at most 3 elements.
+//!
+//! This is used in the implementation of [`frontier::Node`](crate::internal::frontier::Node)s to
+//! store the lefthand siblings of the frontier's rightmost child, which must number at most 3
+//! (because nodes must have at most 4 children total).
 
 use std::marker::PhantomData;
 

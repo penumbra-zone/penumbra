@@ -25,18 +25,24 @@
 //!
 //! This structural guarantee is achieved by defining these tree structures as _nested generic
 //! types_, and defining their methods as _recursive trait implementations_ (rather than as
-//! inductive non-generic enumeration types with recursive methods). It's worth keeping this in mind
-//! while reading the code, because it will help to clarify the interplay of various traits.
+//! inductive non-generic enumeration types with recursive methods). These traits are all defined in
+//! [`interface`], but they are re-exported from [`frontier`] and [`complete`] as relevant.
 //!
 //! ## Tiers of Nodes of Leaves of Items: Frontier and Complete
 //!
-//! The primary exports of this module is the type [`frontier::Tier`]. This type is a quadtree where
-//! every internal node is annotated with the hash of its children, into which leaves (all at depth
-//! 8) are inserted in left to right order. The "frontier" represents the path from the root to the
-//! rightmost leaf, at every level containing any leftward siblings of a given frontier node, each
-//! of which is a [`complete`] tree which stores the finalized bulk of the items inserted into the
-//! tree. As new leaves are created, the frontier zig-zags rightwards, pushing finalized portions of
-//! itself into the leftward complete tree.
+//! The primary exports of this module is the type [`frontier::Tier`]. It is in terms of this type
+//! that the [`Eternity`](crate::Eternity), [`Epoch`](crate::Epoch), and [`Block`](crate::Block)
+//! structs are defined: an `Eternity` is a `Tier<Tier<Tier<Item>>>`, an `Epoch` is a
+//! `Tier<Tier<Item>>`, and a `Block` is a `Tier<Item>` (each with a managed index of commitments
+//! alongside).
+//!
+//! Internally, a [`Tier`](frontier::Tier) is a quadtree where every internal node is annotated with
+//! the hash of its children, into which leaves (all at depth 8) are inserted in left to right
+//! order. The "frontier" represents the path from the root to the rightmost leaf, at every level
+//! containing any leftward siblings of a given frontier node, each of which is a [`complete`] tree
+//! which stores the finalized bulk of the items inserted into the tree. As new leaves are created,
+//! the frontier zig-zags rightwards, pushing finalized portions of itself into the leftward
+//! complete tree.
 //!
 //! As described above, a variety of recursively defined traits are used to define the behavior of
 //! trees. The [`Frontier`](frontier::Frontier) trait defines the operations possible on a frontier
@@ -51,32 +57,6 @@
 //! [`Frontier`](frontier::Frontier) type is paired with a unique corresponding type of complete
 //! tree, and the [`ForgetOwned`](complete::ForgetOwned) trait, which defines an equivalent to
 //! [`frontier::Forget`] that is applicable to the by-value usage pattern of complete trees.
-//!
-//! ## Utilities Used Across The Implementation
-//!
-//! The [`hash`] module defines the core [`Hash`](hash::Hash) type, which is used internally to
-//! represent hashes, as well as the [`GetHash`](hash::GetHash) trait, which is defined on most
-//! structures within this crate and describes how to compute their hash (caching the result if
-//! required). It also defines a [`CachedHash`](hash::CachedHash) type, which is used for lazy
-//! evaluation of the hashes of internal nodes.
-//!
-//! The [`height`] module defines the [`Height`](height::Height) trait and several associated pieces
-//! of type-level machinery, used to statically determine the height of a tree. Because the height
-//! of a tree is inferred by the type system, this means that bugs where the wrong height is used to
-//! compute a subtree's hashing domain separator are greatly reduced.
-//!
-//! The [`path`] module defines the type of authentication paths into the tree, generically for
-//! trees of any height. These are wrapped in more specific domain types by the exposed crate API to
-//! make it more comprehensible.
-//!
-//! The [`proof`] module defines (transparent) merkle inclusion proofs generically for trees of any
-//! height. These are wrapped in mode specific domain types by the exposed crate API to make it more
-//! comprehensible.
-//!
-//! The [`three`] module defines a wrapper around [`Vec`] for vectors whose length is at most 3
-//! elements. This is used in the implementation of [`frontier::Node`]s to store the lefthand
-//! siblings of the frontier's rightmost child, which must number at most 3 (because nodes must have
-//! at most 4 children total).
 
 pub mod hash;
 pub mod height;
@@ -88,13 +68,32 @@ mod insert;
 pub mod interface;
 
 pub mod frontier {
-    //! [`Frontier`] things can be inserted into and updated, always representing the rightmost (most
-    //! recently inserted) element of a tree.
+    //! [`Frontier`] things can be inserted into and updated, always representing the rightmost
+    //! (most recently inserted) element of a tree.
     //!
-    //! The structure of a single [`Tier`] contains eight [`Node`]s, the bottom-most of which
-    //! contains a [`Leaf`].
-    use super::interface;
-    pub use interface::{Focus, Forget, Frontier, Full};
+    //! In sketch: the structure of a single [`Tier`] contains eight [`Node`]s, the bottom-most of
+    //! which contains a [`Leaf`]. Alternatively, a tier can be a summarized [`Hash`] of what its
+    //! contents _would be_, and contain nothing at all besides this hash.
+    //!
+    //! At every level of a [`frontier::Tier`](Tier), the rightmost child of a
+    //! [`frontier::Node`](Node) is a [`frontier::Node`](Node); all leftward siblings are
+    //! [`complete::Node`](super::complete::Node)s. When the child of a [`frontier::Node`](Node)
+    //! becomes entirely full (all its possible leaves are inserted), it is transformed into a
+    //! [`complete::Node`](super::complete::Node) and appended to the list of complete siblings of
+    //! its parent, thus shifting the frontier rightwards.
+    //!
+    //! At any given time, the frontier is always fully materialized; no node within it is ever
+    //! summarized as a hash. It is at the point when a [`frontier::Node`](Node) becomes full and is
+    //! then finalized into a [`complete::Node`](super::complete::Node) that it is pruned, if it
+    //! contains no witnessed children.
+    //!
+    //! At the tip of the frontier, however deeply nested (perhaps within muliple [`Tier`]s), there
+    //! is a single [`Item`], which is either a [`Commitment`](crate::Commitment) or a hash of one.
+    //! Commitments can be inserted either with the intent to remember them, or with the intent to
+    //! immediately forget them; this determines whether the [`Item`] is a commitment or merely its
+    //! hash.
+    #[doc(inline)]
+    pub use super::interface::{Focus, Forget, Frontier, Full};
     pub(super) mod item;
     pub(super) mod leaf;
     pub(super) mod node;
@@ -112,9 +111,21 @@ pub mod complete {
     //! [`Insert::Hash`](crate::Insert::Hash) being pruned eagerly.
     //!
     //! The structure of a single [`Tier`] contains eight levels of [`Node`]s, the bottom-most level
-    //! of which contains [`Leaf`]s.
-    use super::interface;
-    pub use interface::{Complete, ForgetOwned};
+    //! of which contains [`Leaf`]s. Alternatively, a tier can be a summarized [`Hash`] of what its
+    //! contents _would be_, and contain nothing at all besides this hash.
+    //!
+    //! In the internal levels of a [`complete::Tier`](Tier) are eight levels of
+    //! [`complete::Node`](Node)s, each of which may have between one and four children. If a node
+    //! does not have a given child, then it instead stores the hash that child used to have, when
+    //! it existed. Empty nodes (all of whose children would be hashes) are unrepresentable, and
+    //! instead their own hash is immediately stored in their parent node when their last child is
+    //! forgotten.
+    //!
+    //! At the bottom of the bottom-most tier (perhaps at the bottom of multiple [`Tier`]s), there
+    //! are [`Item`]s, each of which is merely a wrapper for a single
+    //! [`Commitment`](crate::Commitment).
+    #[doc(inline)]
+    pub use super::interface::{Complete, ForgetOwned};
     pub(super) mod item;
     pub(super) mod leaf;
     pub(super) mod node;
