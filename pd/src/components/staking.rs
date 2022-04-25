@@ -6,9 +6,8 @@ use penumbra_proto::Protobuf;
 use penumbra_stake::{
     action::{Delegate, Undelegate},
     rate::{BaseRateData, RateData},
-    validator::{self, Validator},
+    validator::{self, State, Validator},
     CommissionAmount, CommissionAmounts, DelegationChanges, Epoch, IdentityKey, Uptime,
-    Validator::State,
     STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_transaction::{Action, Transaction};
