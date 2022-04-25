@@ -123,7 +123,7 @@ deployment.  You can find the values in use for the current chain in its
 First fetch your existing validator definition from the chain:
 
 ```console
-cargo run --release --bin pcli -- -n testnet-preview.penumbra.zone validator fetch-definition penumbravalid1dj3mgmje7z9mwu6rl9rplue2neqlc4zwls9a7w88vscwv88ltyqs8v6g9x --file validator.json
+cargo run --release --bin pcli -- validator fetch-definition penumbravalid1dj3mgmje7z9mwu6rl9rplue2neqlc4zwls9a7w88vscwv88ltyqs8v6g9x --file validator.json
 ```
 
 Then make any changes desired and **make sure to increase by `sequence_number` by at least 1!**
