@@ -2,16 +2,16 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     internal::{
-        active::{Forget, Full},
+        frontier::{Forget, Full},
         height::IsHeight,
         path::Witness,
     },
-    Active, AuthPath, Focus, GetHash, Hash, Height, Insert,
+    AuthPath, Focus, Frontier, GetHash, Hash, Height, Insert,
 };
 
 use super::super::complete;
 
-/// The active (rightmost) leaf in an active tree.
+/// The frontier (rightmost) leaf in a frontier of a tree.
 ///
 /// Insertion into a leaf always fails, causing the tree above it to insert a new leaf to contain
 /// the inserted item.
@@ -55,7 +55,7 @@ impl<Item: Height> Height for Leaf<Item> {
     type Height = Item::Height;
 }
 
-impl<Item: Focus> Active for Leaf<Item> {
+impl<Item: Focus> Frontier for Leaf<Item> {
     type Item = Item;
 
     #[inline]

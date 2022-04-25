@@ -4,15 +4,15 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     internal::{
-        active::{Forget, Full},
+        frontier::{Forget, Full},
         path::Witness,
     },
-    Active, AuthPath, Focus, ForgetOwned, GetHash, Hash, Height, Insert,
+    AuthPath, Focus, ForgetOwned, Frontier, GetHash, Hash, Height, Insert,
 };
 
-use super::super::{active, complete};
+use super::super::{complete, frontier};
 
-/// An active tier of the tiered commitment tree, being an 8-deep quad-tree of items.
+/// A frontier of a tier of the tiered commitment tree, being an 8-deep quad-tree of items.
 #[derive(Derivative, Serialize, Deserialize)]
 #[derivative(Default(bound = ""))]
 #[derivative(Debug(bound = "Item: Debug, Item::Complete: Debug"))]
@@ -29,14 +29,14 @@ pub struct Tier<Item: Focus> {
     inner: Inner<Item>,
 }
 
-type N<Focus> = active::Node<Focus>;
-type L<Item> = active::Leaf<Item>;
+type N<Focus> = frontier::Node<Focus>;
+type L<Item> = frontier::Leaf<Item>;
 
-/// An eight-deep active tree with the given item stored in each leaf.
+/// An eight-deep frontier tree with the given item stored in each leaf.
 pub type Nested<Item> = N<N<N<N<N<N<N<N<L<Item>>>>>>>>>;
 // Count the levels:    1 2 3 4 5 6 7 8
 
-/// The inside of an active level.
+/// The inside of a frontier of a tier.
 #[derive(Debug, Clone, Derivative, Serialize, Deserialize)]
 #[serde(bound(
     serialize = "Item: Serialize, Item::Complete: Serialize",
@@ -45,7 +45,7 @@ pub type Nested<Item> = N<N<N<N<N<N<N<N<L<Item>>>>>>>>>;
 #[derivative(Eq(bound = "Item: Eq + PartialEq<Item::Complete>, Item::Complete: Eq"))]
 pub enum Inner<Item: Focus> {
     /// Either an empty tree (`None`) or a tree with at least one element in it.
-    Active(Box<Option<Nested<Item>>>),
+    Frontier(Box<Option<Nested<Item>>>),
     /// A tree which has been filled, so no more elements can be inserted.
     ///
     /// This is one of two final states; the other is [`Inner::Hash`].
@@ -66,19 +66,19 @@ where
         match (self, other) {
             // A non-empty, non-hash tier is never equal to a hash tier (because one has witnesses
             // and the other does not)
-            (Inner::Active(_), Inner::Hash(_))
+            (Inner::Frontier(_), Inner::Hash(_))
             | (Inner::Complete(_), Inner::Hash(_))
-            | (Inner::Hash(_), Inner::Active(_))
+            | (Inner::Hash(_), Inner::Frontier(_))
             | (Inner::Hash(_), Inner::Complete(_)) => false,
             // Two non-empty, non-hash tiers are equal if their trees are equal (this relies on the
             // `==` implementation between the two inner trees, which is heterogeneous in the case
-            // between `Active` and `Complete`)
-            (Inner::Active(l), Inner::Active(r)) => l == r,
+            // between `Frontier` and `Complete`)
+            (Inner::Frontier(l), Inner::Frontier(r)) => l == r,
             (Inner::Complete(l), Inner::Complete(r)) => l == r,
-            (Inner::Active(active), Inner::Complete(complete))
-            | (Inner::Complete(complete), Inner::Active(active)) => {
-                if let Some(active) = &**active {
-                    active == complete
+            (Inner::Frontier(frontier), Inner::Complete(complete))
+            | (Inner::Complete(complete), Inner::Frontier(frontier)) => {
+                if let Some(frontier) = &**frontier {
+                    frontier == complete
                 } else {
                     // Empty tiers are never equal to complete tiers, because complete tiers are
                     // never empty
@@ -101,11 +101,11 @@ where
             // Complete tiers are never empty, an empty or hash-only tier is never equal to one,
             // because they don't have witnesses
             Inner::Hash(_) => false,
-            // Active tiers are equal to complete tiers if their trees are equal (relying on
-            // heterogeneous equality between `Active` and `Complete`)
-            Inner::Active(ref active) => {
-                if let Some(active) = &**active {
-                    active == complete
+            // Frontier tiers are equal to complete tiers if their trees are equal (relying on
+            // heterogeneous equality between `Frontier` and `Complete`)
+            Inner::Frontier(ref frontier) => {
+                if let Some(frontier) = &**frontier {
+                    frontier == complete
                 } else {
                     // Empty tiers are never equal to complete tiers, because complete tiers are never
                     // empty
@@ -119,34 +119,34 @@ where
 
 impl<Item: Focus> Default for Inner<Item> {
     fn default() -> Self {
-        Inner::Active(Box::new(None))
+        Inner::Frontier(Box::new(None))
     }
 }
 
 impl<Item: Focus> Tier<Item> {
-    /// Create a new active tier.
+    /// Create a new frontier tier.
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Insert an item or its hash into this active tier.
+    /// Insert an item or its hash into this frontier tier.
     ///
     /// If the tier is full, return the input item without inserting it.
     pub fn insert(&mut self, item: Insert<Item>) -> Result<(), Insert<Item>> {
         match &mut self.inner {
             // The tier is full or is a single hash, so return the item without inserting it
             Inner::Complete(_) | Inner::Hash(_) => Err(item),
-            // The tier is active, so try inserting into it
-            Inner::Active(incomplete) => match mem::take(&mut **incomplete) {
+            // The tier is a frontier, so try inserting into it
+            Inner::Frontier(incomplete) => match mem::take(&mut **incomplete) {
                 None => {
                     // The tier is empty, so insert the item
                     **incomplete = Some(Nested::singleton(item));
                     Ok(())
                 }
-                Some(active) => match active.insert(item) {
-                    // The insertion succeeded, so we're still active
-                    Ok(active) => {
-                        **incomplete = Some(active);
+                Some(frontier) => match frontier.insert(item) {
+                    // The insertion succeeded, so we're still frontier
+                    Ok(frontier) => {
+                        **incomplete = Some(frontier);
                         Ok(())
                     }
                     // The insertion failed, so we need to become complete
@@ -164,14 +164,14 @@ impl<Item: Focus> Tier<Item> {
         }
     }
 
-    /// Update the currently active `Insert<Item>` (i.e. the
+    /// Update the currently focused `Insert<Item>` (i.e. the
     /// most-recently-[`insert`](Self::insert)ed one), returning the result of the function.
     ///
-    /// If there is no currently active `Insert<Item>`, the function is called on `None`.
+    /// If there is no currently focused `Insert<Item>`, the function is called on `None`.
     pub fn update<T>(&mut self, f: impl FnOnce(Option<&mut Insert<Item>>) -> T) -> T {
-        if let Inner::Active(active) = &mut self.inner {
-            if let Some(ref mut active) = **active {
-                active.update(|item| f(Some(item)))
+        if let Inner::Frontier(frontier) = &mut self.inner {
+            if let Some(ref mut frontier) = **frontier {
+                frontier.update(|item| f(Some(item)))
             } else {
                 f(None)
             }
@@ -185,8 +185,8 @@ impl<Item: Focus> Tier<Item> {
     /// If there is no focused `Insert<Item>` (in the case that the tier is empty or full), `None`
     /// is returned.
     pub fn focus(&self) -> Option<&Insert<Item>> {
-        if let Inner::Active(active) = &self.inner {
-            active.as_ref().as_ref().map(|active| active.focus())
+        if let Inner::Frontier(frontier) = &self.inner {
+            frontier.as_ref().as_ref().map(|frontier| frontier.focus())
         } else {
             None
         }
@@ -194,8 +194,8 @@ impl<Item: Focus> Tier<Item> {
 
     /// Check if this [`Tier`] is empty.
     pub fn is_empty(&self) -> bool {
-        if let Inner::Active(active) = &self.inner {
-            active.is_none()
+        if let Inner::Frontier(frontier) = &self.inner {
+            frontier.is_none()
         } else {
             false
         }
@@ -210,10 +210,10 @@ impl<Item: Focus> GetHash for Tier<Item> {
     #[inline]
     fn hash(&self) -> Hash {
         match &self.inner {
-            Inner::Active(active) => active
+            Inner::Frontier(frontier) => frontier
                 .as_ref()
                 .as_ref()
-                .map(|active| active.hash())
+                .map(|frontier| frontier.hash())
                 .unwrap_or_else(Hash::default),
             Inner::Complete(complete) => complete.hash(),
             Inner::Hash(hash) => *hash,
@@ -223,10 +223,10 @@ impl<Item: Focus> GetHash for Tier<Item> {
     #[inline]
     fn cached_hash(&self) -> Option<Hash> {
         match &self.inner {
-            Inner::Active(active) => active
+            Inner::Frontier(frontier) => frontier
                 .as_ref()
                 .as_ref()
-                .map(|active| active.cached_hash())
+                .map(|frontier| frontier.cached_hash())
                 .unwrap_or_else(|| Some(Hash::default())),
             Inner::Complete(complete) => complete.cached_hash(),
             Inner::Hash(hash) => Some(*hash),
@@ -240,9 +240,9 @@ impl<Item: Focus> Focus for Tier<Item> {
     #[inline]
     fn finalize(self) -> Insert<Self::Complete> {
         match self.inner {
-            Inner::Active(active) => {
-                if let Some(active) = *active {
-                    match active.finalize() {
+            Inner::Frontier(frontier) => {
+                if let Some(frontier) = *frontier {
+                    match frontier.finalize() {
                         Insert::Hash(hash) => Insert::Hash(hash),
                         Insert::Keep(inner) => Insert::Keep(complete::Tier { inner }),
                     }
@@ -264,10 +264,10 @@ where
 
     fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Self::Item)> {
         match &self.inner {
-            Inner::Active(active) => active
+            Inner::Frontier(frontier) => frontier
                 .as_ref()
                 .as_ref()
-                .and_then(|active| active.witness(index)),
+                .and_then(|frontier| frontier.witness(index)),
             Inner::Complete(complete) => complete.witness(index),
             Inner::Hash(_) => None,
         }
@@ -288,14 +288,14 @@ where
         // No matter which branch we take, we always put something valid back into `self.inner` before
         // returning from this function
         (forgotten, self.inner) = match inner {
-            // If the tier is active, try to forget from the active path, if it's not empty
-            Inner::Active(mut active) => (
-                if let Some(ref mut active) = *active {
-                    active.forget(index)
+            // If the tier is a frontier, try to forget from the frontier path, if it's not empty
+            Inner::Frontier(mut frontier) => (
+                if let Some(ref mut frontier) = *frontier {
+                    frontier.forget(index)
                 } else {
                     false
                 },
-                Inner::Active(active),
+                Inner::Frontier(frontier),
             ),
             // If the tier is complete, forget from the complete tier and if it resulted in a hash,
             // set the self to that hash

@@ -12,14 +12,14 @@ pub mod three;
 mod insert;
 mod interface;
 
-pub mod active {
-    //! [`Active`] things can be inserted into and updated, always representing the rightmost (most
+pub mod frontier {
+    //! [`Frontier`] things can be inserted into and updated, always representing the rightmost (most
     //! recently inserted) element of a tree.
     //!
     //! The structure of a single [`Tier`] contains eight [`Node`]s, the bottom-most of which
     //! contains a [`Leaf`].
     use super::interface;
-    pub use interface::{Active, Focus, Forget, Full};
+    pub use interface::{Focus, Forget, Frontier, Full};
     pub(super) mod item;
     pub(super) mod leaf;
     pub(super) mod node;

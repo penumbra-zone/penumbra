@@ -4,18 +4,18 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     internal::{
-        active::{Forget, Full},
+        frontier::{Forget, Full},
         hash::CachedHash,
         height::{IsHeight, Succ},
         path::{self, WhichWay, Witness},
         three::{Elems, ElemsMut, Three},
     },
-    Active, AuthPath, Focus, ForgetOwned, GetHash, Hash, Height, Insert,
+    AuthPath, Focus, ForgetOwned, Frontier, GetHash, Hash, Height, Insert,
 };
 
 use super::super::complete;
 
-/// An active node in a tree, into which items can be inserted.
+/// A frontier of a node in a tree, into which items can be inserted.
 #[derive(Clone, Derivative, Serialize, Deserialize)]
 #[serde(bound(serialize = "Child: Serialize, Child::Complete: Serialize"))]
 #[serde(bound(deserialize = "Child: Deserialize<'de>, Child::Complete: Deserialize<'de>"))]
@@ -73,7 +73,7 @@ where
 impl<Child: Focus> Node<Child> {
     pub(crate) fn from_parts(siblings: Three<Insert<Child::Complete>>, focus: Child) -> Self
     where
-        Child: Active + GetHash,
+        Child: Frontier + GetHash,
     {
         Self {
             hash: CachedHash::default(),
@@ -140,9 +140,9 @@ impl<Child: Focus> Focus for Node<Child> {
     }
 }
 
-impl<Focus> Active for Node<Focus>
+impl<Focus> Frontier for Node<Focus>
 where
-    Focus: Active + GetHash,
+    Focus: Frontier + GetHash,
 {
     type Item = Focus::Item;
 

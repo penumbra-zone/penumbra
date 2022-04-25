@@ -6,7 +6,7 @@ use penumbra_proto::{crypto as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::internal::{active::Forget as _, path::Witness as _};
+use crate::internal::{frontier::Forget as _, path::Witness as _};
 use crate::*;
 
 #[path = "block.rs"]

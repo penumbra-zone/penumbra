@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 
 use crate::{
-    internal::{active::Insert, hash::Hash, path::WhichWay},
+    internal::{frontier::Insert, hash::Hash, path::WhichWay},
     Commitment,
 };
 

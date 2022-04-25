@@ -2,15 +2,15 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     internal::{
-        active::Forget,
         complete,
+        frontier::Forget,
         height::Zero,
         path::{self, Witness},
     },
     AuthPath, Commitment, Focus, GetHash, Hash, Height, Insert,
 };
 
-/// The hash of the most-recently-inserted item, stored at the tip of the active path.
+/// The hash of the most-recently-inserted item, stored at the tip of the frontier.
 #[derive(Debug, Clone, Copy, Derivative, Serialize, Deserialize)]
 #[derivative(PartialEq, Eq)]
 pub struct Item {
@@ -80,6 +80,6 @@ impl Witness for Item {
 
 impl Forget for Item {
     fn forget(&mut self, _index: impl Into<u64>) -> bool {
-        unreachable!("active items can not be forgotten directly")
+        unreachable!("frontier items can not be forgotten directly")
     }
 }

@@ -4,7 +4,7 @@ use hash_hasher::HashedMap;
 
 use crate::{
     block::{Position, Proof},
-    internal::{active::Insert, hash::Hash},
+    internal::{frontier::Insert, hash::Hash},
     Commitment, Witness,
 };
 
