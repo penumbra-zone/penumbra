@@ -5,7 +5,7 @@ use std::collections::VecDeque;
 use hash_hasher::HashedMap;
 
 use crate::{
-    internal::{active::Insert, hash::Hash, index},
+    internal::{frontier::Insert, hash::Hash, index},
     Commitment, Position, Proof, Witness,
 };
 

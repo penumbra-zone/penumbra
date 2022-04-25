@@ -2,7 +2,7 @@ use std::mem;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{internal::active::Forget, ForgetOwned, GetHash, Hash, Height};
+use crate::{internal::frontier::Forget, ForgetOwned, GetHash, Hash, Height};
 
 /// Either an item or just its hash, to be used when inserting into a tree.
 ///

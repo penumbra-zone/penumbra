@@ -10,7 +10,7 @@ use crate::{
     Complete, ForgetOwned, GetHash, Hash, Height, Insert,
 };
 
-use super::super::active;
+use super::super::frontier;
 
 pub mod children;
 pub use children::Children;
@@ -25,11 +25,11 @@ pub struct Node<Child> {
     children: Children<Child>,
 }
 
-impl<Child: Complete> PartialEq<active::Node<Child::Focus>> for Node<Child>
+impl<Child: Complete> PartialEq<frontier::Node<Child::Focus>> for Node<Child>
 where
     Child: PartialEq + PartialEq<Child::Focus>,
 {
-    fn eq(&self, other: &active::Node<Child::Focus>) -> bool {
+    fn eq(&self, other: &frontier::Node<Child::Focus>) -> bool {
         other == self
     }
 }
@@ -92,7 +92,7 @@ impl<Child: Height> Height for Node<Child> {
 }
 
 impl<Child: Complete> Complete for Node<Child> {
-    type Focus = active::Node<Child::Focus>;
+    type Focus = frontier::Node<Child::Focus>;
 }
 
 impl<Child: Height + GetHash> GetHash for Node<Child> {

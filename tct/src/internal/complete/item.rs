@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     internal::{
-        active,
+        frontier,
         height::Zero,
         path::{self, Witness},
     },
@@ -38,7 +38,7 @@ impl Height for Item {
 }
 
 impl Complete for Item {
-    type Focus = active::Item;
+    type Focus = frontier::Item;
 }
 
 impl Witness for Item {

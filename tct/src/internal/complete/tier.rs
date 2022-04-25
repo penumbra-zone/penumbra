@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{internal::path::Witness, AuthPath, Complete, ForgetOwned, GetHash, Hash, Height};
 
-use super::super::active;
+use super::super::frontier;
 
 type N<Child> = super::super::complete::Node<Child>;
 type L<Item> = super::super::complete::Leaf<Item>;
@@ -38,7 +38,7 @@ impl<Item: Height + GetHash> GetHash for Tier<Item> {
 }
 
 impl<Item: Complete> Complete for Tier<Item> {
-    type Focus = active::Tier<Item::Focus>;
+    type Focus = frontier::Tier<Item::Focus>;
 }
 
 impl<Item: GetHash + Witness> Witness for Tier<Item> {

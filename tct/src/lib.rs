@@ -55,8 +55,8 @@ mod internal;
 pub mod spec;
 
 use internal::{
-    active::{Active, Focus, Insert, Item, Tier},
     complete::{Complete, ForgetOwned},
+    frontier::{Focus, Frontier, Insert, Item, Tier},
     hash::GetHash,
     hash::Hash,
     height::Height,
