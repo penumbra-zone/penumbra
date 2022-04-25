@@ -1,3 +1,8 @@
+//! This module contains trait definitions for the entire interface of the internal tree. All of
+//! them are exported from either [`frontier`](crate::internal::frontier) or
+//! [`complete`](crate::internal::complete), but they are also exported from here for ease of
+//! reading.
+
 use crate::{AuthPath, GetHash, Height, Insert};
 
 /// A frontier of a tree supporting the insertion of new elements and the updating of the
@@ -14,7 +19,7 @@ pub trait Frontier: Focus + Sized {
     /// [`Frontier`].
     fn insert(self, item: Insert<Self::Item>) -> Result<Self, Full<Self>>;
 
-    /// Update the currently active `Insert<Self::Item>` (i.e. the most-recently
+    /// Update the currently focused `Insert<Self::Item>` (i.e. the most-recently
     /// [`insert`](Frontier::insert)ed one), returning the result of the function.
     fn update<T>(&mut self, f: impl FnOnce(&mut Insert<Self::Item>) -> T) -> T;
 
