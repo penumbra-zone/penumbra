@@ -18,7 +18,9 @@ use tendermint::{
         self,
         types::{Evidence, LastCommitInfo, ValidatorUpdate},
     },
-    block, PublicKey,
+    block,
+    vote::Power,
+    PublicKey,
 };
 use tracing::instrument;
 
@@ -336,11 +338,19 @@ impl Staking {
                 .validator_state(v)
                 .await?
                 .ok_or_else(|| anyhow::anyhow!("validator state missing"))?;
+            let validator = self
+                .overlay
+                .validator(v)
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("validator missing"))?;
 
-            // Only active validators report power to tendermint.
-            // TODO: actually this isn't quite right because Slashed validators
-            // need to report a 0 to Tendermint.
-            if validator_state != validator::State::Active {
+            // Only active validators report power to tendermint. Other states
+            // report a 0 power.
+            if validator_state != ValidatorState::Active {
+                updates.push(ValidatorUpdate {
+                    pub_key: validator.consensus_key.clone(),
+                    power: 0u32.into(),
+                });
                 continue;
             }
 
@@ -349,11 +359,6 @@ impl Staking {
                 .validator_power(v)
                 .await?
                 .ok_or_else(|| anyhow::anyhow!("validator missing power"))?;
-            let validator = self
-                .overlay
-                .validator(v)
-                .await?
-                .ok_or_else(|| anyhow::anyhow!("validator missing"))?;
 
             updates.push(ValidatorUpdate {
                 pub_key: validator.consensus_key.clone(),
