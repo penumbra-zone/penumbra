@@ -44,6 +44,7 @@ use std::fmt::Debug;
 
 use serde::{Deserialize, Serialize};
 
+mod index;
 mod serialize;
 
 #[cfg(any(doc, feature = "internal"))]
@@ -60,7 +61,6 @@ use internal::{
     hash::GetHash,
     hash::Hash,
     height::Height,
-    index,
     path::AuthPath,
     proof,
 };

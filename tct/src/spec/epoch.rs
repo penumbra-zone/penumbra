@@ -6,7 +6,8 @@ use hash_hasher::HashedMap;
 
 use crate::{
     epoch::{Position, Proof},
-    internal::{frontier::Insert, hash::Hash, index},
+    index,
+    internal::{frontier::Insert, hash::Hash},
     Commitment, Witness,
 };
 
