@@ -1,8 +1,11 @@
-//! All structures in this crate have a statically known height, which is used to compute hashes
-//! that vary by height.
+//! Type level machinery used to statically determine the height of a tree, to ensure the correct
+//! domain separator is used when hashing at any height.
 //!
-//! This module contains type-level machinery for computing the height of structures and translating
-//! an unary representation good for type-level constraints ([`Succ`] and [`Zero`]) into constant
+//! Because the height of a tree is inferred by the type system, this means that bugs where the
+//! wrong height is used to compute a subtree's hashing domain separator are greatly reduced.
+//!
+//! This module contains type-level code for computing the height of structures and translating an
+//! unary representation good for type-level constraints ([`Succ`] and [`Zero`]) into constant
 //! `u64`s suitable for value-level computation.
 
 /// Trait identifying the statically-known height of a given tree element.

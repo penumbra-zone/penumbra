@@ -1,8 +1,6 @@
-//! Every structure in this crate can be hashed, and many use interior mutation to cache their
-//! hashes lazily.
-//!
-//! This module defines the trait [`GetHash`] for these operations, as well as the [`struct@Hash`] type
-//! used throughout.
+//! The core [`Hash`](struct@Hash) type, which is used internally to represent hashes, the
+//! [`GetHash`] trait for computing and caching hashes of things, and the [`CachedHash`] type, which
+//! is used internally for lazy evaluation of hashes.
 
 use std::fmt::Debug;
 
