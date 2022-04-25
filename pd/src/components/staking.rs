@@ -8,7 +8,8 @@ use penumbra_stake::{
     rate::{BaseRateData, RateData},
     validator::{self, Validator},
     CommissionAmount, CommissionAmounts, DelegationChanges, Epoch, IdentityKey, Uptime,
-    ValidatorState, STAKING_TOKEN_ASSET_ID,
+    Validator::State,
+    STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_transaction::{Action, Transaction};
 
@@ -346,7 +347,7 @@ impl Staking {
 
             // Only active validators report power to tendermint. Other states
             // report a 0 power.
-            if validator_state != ValidatorState::Active {
+            if validator_state != State::Active {
                 updates.push(ValidatorUpdate {
                     pub_key: validator.consensus_key.clone(),
                     power: 0u32.into(),
