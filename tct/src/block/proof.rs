@@ -1,6 +1,6 @@
 pub use thiserror::Error;
 
-use crate::{internal::index, Commitment, Hash};
+use crate::{index, Commitment, Hash};
 
 pub use super::{Block, Position, Root};
 

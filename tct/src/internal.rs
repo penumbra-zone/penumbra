@@ -4,7 +4,6 @@
 
 pub mod hash;
 pub mod height;
-pub mod index;
 pub mod path;
 pub mod proof;
 pub mod three;
