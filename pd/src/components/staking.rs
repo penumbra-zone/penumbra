@@ -8,7 +8,7 @@ use penumbra_stake::{
     rate::{BaseRateData, RateData},
     validator::{self, Validator},
     CommissionAmount, CommissionAmounts, DelegationChanges, Epoch, IdentityKey, Uptime,
-    STAKING_TOKEN_ASSET_ID,
+    ValidatorState, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_transaction::{Action, Transaction};
 
