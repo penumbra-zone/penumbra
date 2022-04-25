@@ -1,6 +1,6 @@
 pub use thiserror::Error;
 
-use crate::{Commitment, Hash};
+use crate::{Commitment, Hash, VerifyError};
 
 pub use super::{Epoch, Position, Root};
 
@@ -96,7 +96,7 @@ impl Proof {
     /// # Errors
     ///
     /// Returns [`VerifyError`] if the proof is invalid for that [`Root`].
-    pub fn verify(&self, root: Root) -> Result<(), crate::VerifyError> {
+    pub fn verify(&self, root: Root) -> Result<(), VerifyError> {
         self.0.verify(root.0)
     }
 
