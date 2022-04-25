@@ -167,7 +167,7 @@ pub mod arbitrary {
         type Strategy = CommitmentStrategy;
     }
 
-    /// A [`proptest`] [`Strategy`] for generating [`Commitment`]s.
+    /// A [`proptest`] [`Strategy`](proptest::strategy::Strategy) for generating [`Commitment`]s.
     #[derive(Clone, Debug, PartialEq, Eq, Default)]
     pub struct CommitmentStrategy(Vec<Commitment>);
 
