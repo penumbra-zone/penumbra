@@ -64,6 +64,10 @@ By default `template-definition` will use a random consensus key that you won't 
   },
 ```
 
+Note: if you can't find `priv_validator_key.json`, assure that you have set
+`validator = true` in the Tendermint `config.toml`, as described above, and
+restarted Tendermint after doing so.
+
 #### Configuring funding streams
 
 Unlike the Cosmos SDK, which has validators specify a commission percentage that
