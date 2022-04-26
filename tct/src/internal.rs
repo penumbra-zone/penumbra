@@ -5,7 +5,7 @@
 //! ## Structure of Implementation
 //!
 //! The tiered commitment tree is not accessed directly _as a tree_; rather, the
-//! [`Eternity`](crate::Eternity), [`Epoch`](crate::Epoch), and [`Block`](crate::Block) structs from
+//! [`Tree`](crate::Tree), [`Epoch`](crate::Epoch), and [`Block`](crate::Block) structs from
 //! the top level of the crate contain a tree together with a hashmap which maps commitments to
 //! their corresponding index within the tree. This `internal` module and all its submodules concern
 //! themselves solely with the implementation of the tree itself, wherein commitments and their
@@ -31,8 +31,8 @@
 //! ## Tiers of Nodes of Leaves of Items: Frontier and Complete
 //!
 //! The primary exports of this module is the type [`frontier::Tier`]. It is in terms of this type
-//! that the [`Eternity`](crate::Eternity), [`Epoch`](crate::Epoch), and [`Block`](crate::Block)
-//! structs are defined: an `Eternity` is a `Tier<Tier<Tier<Item>>>`, an `Epoch` is a
+//! that the [`Tree`](crate::Tree), [`Epoch`](crate::Epoch), and [`Block`](crate::Block)
+//! structs are defined: an `Tree` is a `Tier<Tier<Tier<Item>>>`, an `Epoch` is a
 //! `Tier<Tier<Item>>`, and a `Block` is a `Tier<Item>` (each with a managed index of commitments
 //! alongside).
 //!

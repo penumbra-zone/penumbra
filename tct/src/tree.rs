@@ -23,14 +23,14 @@ pub use error::{
 
 /// A sparse merkle tree to witness up to 65,536 [`Epoch`]s, each witnessing up to 65,536
 /// [`Block`]s, each witnessing up to 65,536 [`Commitment`]s.
-#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
-pub struct Eternity {
-    position: index::within::Eternity,
-    index: HashedMap<Commitment, index::within::Eternity>,
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct Tree {
+    position: index::within::Tree,
+    index: HashedMap<Commitment, index::within::Tree>,
     inner: Tier<Tier<Tier<Item>>>,
 }
 
-/// The root hash of an [`Eternity`].
+/// The root hash of a [`Tree`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(try_from = "pb::MerkleRoot", into = "pb::MerkleRoot")]
 #[cfg_attr(any(test, feature = "arbitrary"), derive(proptest_derive::Arbitrary))]
@@ -73,9 +73,9 @@ impl Display for Root {
     }
 }
 
-/// The index of a [`Commitment`] within an [`Eternity`].
+/// The index of a [`Commitment`] within a [`Tree`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Position(index::within::Eternity);
+pub struct Position(index::within::Tree);
 
 impl Position {
     /// The index of the [`Commitment`] to which this [`Position`] refers within its [`Block`].
@@ -88,7 +88,7 @@ impl Position {
         self.0.block.into()
     }
 
-    /// The index of the [`Epoch`] to which this [`Position`] refers within its [`Eternity`].
+    /// The index of the [`Epoch`] to which this [`Position`] refers within its [`Tree`].
     pub fn epoch(&self) -> u16 {
         self.0.epoch.into()
     }
@@ -106,17 +106,17 @@ impl From<u64> for Position {
     }
 }
 
-impl Height for Eternity {
+impl Height for Tree {
     type Height = <Tier<Tier<Tier<Item>>> as Height>::Height;
 }
 
-impl Eternity {
-    /// Create a new empty [`Eternity`] for storing all commitments to the end of time.
+impl Tree {
+    /// Create a new empty [`Tree`] for storing all commitments to the end of time.
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Get the root hash of this [`Eternity`].
+    /// Get the root hash of this [`Tree`].
     ///
     /// Internal hashing is performed lazily to prevent unnecessary intermediary hashes from being
     /// computed, so the first hash returned after a long sequence of insertions may take more time
@@ -129,7 +129,7 @@ impl Eternity {
     }
 
     /// Add a new [`Commitment`] to the most recent [`Block`] of the most recent [`Epoch`] of this
-    /// [`Eternity`].
+    /// [`Tree`].
     ///
     /// If successful, returns the [`Position`] at which the commitment was inserted.
     ///
@@ -137,11 +137,11 @@ impl Eternity {
     ///
     /// Returns [`InsertError`] if any of:
     ///
-    /// - the [`Eternity`] is full,
+    /// - the [`Tree`] is full,
     /// - the most recently inserted [`Epoch`] is full or was inserted by
-    /// [`insert_epoch_root`](Eternity::insert_epoch_root), or
+    /// [`insert_epoch_root`](Tree::insert_epoch_root), or
     /// - the most recently inserted [`Block`] is full or was inserted by
-    /// [`insert_block_root`](Eternity::insert_block_root).
+    /// [`insert_block_root`](Tree::insert_block_root).
     pub fn insert(
         &mut self,
         witness: Witness,
@@ -234,19 +234,19 @@ impl Eternity {
         }
     }
 
-    /// Get the position in this [`Eternity`] of the given [`Commitment`], if it is currently witnessed.
+    /// Get the position in this [`Tree`] of the given [`Commitment`], if it is currently witnessed.
     pub fn position_of(&self, commitment: impl Into<Commitment>) -> Option<Position> {
         let commitment = commitment.into();
         self.index.get(&commitment).map(|index| Position(*index))
     }
 
     /// Add a new [`Block`] all at once to the most recently inserted [`Epoch`] of this
-    /// [`Eternity`].
+    /// [`Tree`].
     ///
     /// # Errors
     ///
     /// Returns [`InsertBlockError`] containing the inserted block without adding it to the
-    /// [`Eternity`] if the [`Eternity`] is full, or the most recently inserted [`Epoch`] is full or
+    /// [`Tree`] if the [`Tree`] is full, or the most recently inserted [`Epoch`] is full or
     /// was inserted by [`Insert::Hash`].
     pub fn insert_block(&mut self, block: Block) -> Result<(), InsertBlockError> {
         // If the eternity is empty, we need to create a new epoch to insert the block into
@@ -284,13 +284,13 @@ impl Eternity {
         }
     }
 
-    /// Add the root hash of an [`Block`] to this [`Eternity`], without inserting any of the
+    /// Add the root hash of an [`Block`] to this [`Tree`], without inserting any of the
     /// witnessed commitments in that [`Block`].
     ///
     /// # Errors
     ///
-    /// Returns [`InsertBlockRootError`] if the [`Eternity`] is full, or the most recently inserted
-    /// [`Epoch`] is full or was inserted by [`insert_epoch_root`](Eternity::insert_epoch_root).
+    /// Returns [`InsertBlockRootError`] if the [`Tree`] is full, or the most recently inserted
+    /// [`Epoch`] is full or was inserted by [`insert_epoch_root`](Tree::insert_epoch_root).
     pub fn insert_block_root(
         &mut self,
         block_root: block::Root,
@@ -323,10 +323,10 @@ impl Eternity {
     }
 
     /// Get the root hash of the most recent [`Block`] in the most recent [`Epoch`] of this
-    /// [`Eternity`].
+    /// [`Tree`].
     ///
-    /// If the [`Eternity`] is empty or the most recent [`Epoch`] was inserted with
-    /// [`Eternity::insert_epoch_root`], returns `None`.
+    /// If the [`Tree`] is empty or the most recent [`Epoch`] was inserted with
+    /// [`Tree::insert_epoch_root`], returns `None`.
     pub fn current_block_root(&self) -> Option<block::Root> {
         self.inner.focus().and_then(|epoch| {
             epoch
@@ -337,12 +337,12 @@ impl Eternity {
         })
     }
 
-    /// Add a new [`Epoch`] all at once to this [`Eternity`].
+    /// Add a new [`Epoch`] all at once to this [`Tree`].
     ///
     /// # Errors
     ///
-    /// Returns [`InsertEpochError`] containing the epoch without adding it to the [`Eternity`] if
-    /// the [`Eternity`] is full.
+    /// Returns [`InsertEpochError`] containing the epoch without adding it to the [`Tree`] if
+    /// the [`Tree`] is full.
     pub fn insert_epoch(&mut self, epoch: Epoch) -> Result<(), InsertEpochError> {
         self.insert_epoch_or_root(Insert::Keep(epoch))
             .map_err(|insert| {
@@ -354,12 +354,12 @@ impl Eternity {
             })
     }
 
-    /// Add the root hash of an [`Epoch`] to this [`Eternity`], without inserting any of the
+    /// Add the root hash of an [`Epoch`] to this [`Tree`], without inserting any of the
     /// witnessed commitments in that [`Epoch`].
     ///
     /// # Errors
     ///
-    /// Returns [`InsertEpochRootError`] if the [`Eternity`] is full.
+    /// Returns [`InsertEpochRootError`] if the [`Tree`] is full.
     pub fn insert_epoch_root(
         &mut self,
         epoch_root: epoch::Root,
@@ -404,7 +404,7 @@ impl Eternity {
             }))
         } else {
             // Copy out the block and commitment indices from the just-inserted epoch
-            self.position = index::within::Eternity {
+            self.position = index::within::Tree {
                 epoch: self.position.epoch,
                 block: position.block,
                 commitment: position.commitment,
@@ -426,7 +426,7 @@ impl Eternity {
             {
                 if let Some(replaced) = self.index.insert(
                     commitment,
-                    index::within::Eternity {
+                    index::within::Tree {
                         epoch: this_epoch,
                         block: this_block,
                         commitment: this_commitment,
@@ -441,33 +441,33 @@ impl Eternity {
         }
     }
 
-    /// Get the root hash of the most recent [`Epoch`] in this [`Eternity`].
+    /// Get the root hash of the most recent [`Epoch`] in this [`Tree`].
     ///
-    /// If the [`Eternity`] is empty, returns `None`.
+    /// If the [`Tree`] is empty, returns `None`.
     pub fn current_epoch_root(&self) -> Option<epoch::Root> {
         self.inner.focus().map(|epoch| epoch::Root(epoch.hash()))
     }
 
-    /// The position in this [`Eternity`] at which the next [`Commitment`] would be inserted.
+    /// The position in this [`Tree`] at which the next [`Commitment`] would be inserted.
     ///
-    /// The maximum capacity of an [`Eternity`] is 281,474,976,710,656 = 65,536 [`Epoch`]s of 65,536
+    /// The maximum capacity of a [`Tree`] is 281,474,976,710,656 = 65,536 [`Epoch`]s of 65,536
     /// [`Block`]s of 65,536 [`Commitment`]s.
     ///
-    /// Note that [`forget`](Eternity::forget)ting a commitment does not decrease this; it only
-    /// decreases the [`witnessed_count`](Eternity::witnessed_count).
+    /// Note that [`forget`](Tree::forget)ting a commitment does not decrease this; it only
+    /// decreases the [`witnessed_count`](Tree::witnessed_count).
     pub fn position(&self) -> Position {
         Position(self.position)
     }
 
-    /// The number of [`Commitment`]s currently witnessed in this [`Eternity`].
+    /// The number of [`Commitment`]s currently witnessed in this [`Tree`].
     ///
-    /// Note that [`forget`](Eternity::forget)ting a commitment decreases this count, but does not
-    /// decrease the [`position`](Eternity::position) of the next inserted [`Commitment`].
+    /// Note that [`forget`](Tree::forget)ting a commitment decreases this count, but does not
+    /// decrease the [`position`](Tree::position) of the next inserted [`Commitment`].
     pub fn witnessed_count(&self) -> usize {
         self.index.len()
     }
 
-    /// Check whether this [`Eternity`] is empty.
+    /// Check whether this [`Tree`] is empty.
     pub fn is_empty(&self) -> bool {
         self.inner.is_empty()
     }
@@ -475,13 +475,13 @@ impl Eternity {
     /// Update the most recently inserted [`Epoch`] via methods on [`EpochMut`], and return the
     /// result of the function.
     fn update<T>(&mut self, f: impl FnOnce(Option<&mut EpochMut<'_>>) -> T) -> T {
-        let index::within::Eternity {
+        let index::within::Tree {
             epoch,
             commitment,
             block,
         } = &mut self.position;
 
-        let index = epoch::IndexMut::Eternity {
+        let index = epoch::IndexMut::Tree {
             this_epoch: *epoch,
             index: &mut self.index,
         };

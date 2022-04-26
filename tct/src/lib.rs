@@ -2,12 +2,12 @@
 //!
 //! ```ascii,no_run
 //! Eternity┃           ╱╲ ◀───────────── Anchor
-//!     Tree┃          ╱││╲               = Eternity Root
+//!     Tree┃          ╱││╲               = Global Tree Root
 //!         ┃         * ** *           ╮
 //!         ┃      *   *  *   *        │ 8 levels
 //!         ┃   *     *    *     *     ╯
 //!         ┃  ╱╲    ╱╲    ╱╲    ╱╲
-//!         ┃ ╱││╲  ╱││╲  ╱││╲  ╱││╲ ◀─── Eternity Leaf
+//!         ┃ ╱││╲  ╱││╲  ╱││╲  ╱││╲ ◀─── Global Tree Leaf
 //!                         ▲             = Epoch Root
 //!                      ┌──┘
 //!                      │
@@ -52,9 +52,8 @@ pub mod internal;
 #[cfg(not(any(doc, feature = "internal")))]
 mod internal;
 
-#[cfg(any(doc, test, feature = "spec"))]
-pub mod spec;
-
+#[cfg(doc)]
+use builder::{block::Block, epoch::Epoch};
 use internal::{
     complete::{Complete, ForgetOwned},
     frontier::{Focus, Frontier, Insert, Item, Tier},
@@ -99,23 +98,27 @@ impl From<poseidon377::Fq> for Commitment {
     }
 }
 
-mod eternity;
-pub use eternity::{
-    epoch::{block::Block, Epoch},
-    error, Eternity, Position, Proof, Root,
-};
+mod tree;
+pub use tree::{error, Position, Proof, Root, Tree};
 
-pub mod epoch {
-    //! [`Epoch`]s within [`Eternity`](super::Eternity)s, and their [`Root`]s and [`Proof`]s of inclusion.
-    pub use crate::eternity::epoch::*;
+pub mod builder {
+    //! Builders for individual epochs and blocks within a tree.
+    //!
+    //! This module is only necessary for constructing trees in parallel; in a single-threaded
+    //! context, the methods on [`Tree`](super::Tree) suffice.
+
+    pub mod epoch {
+        //! [`Epoch`]s within [`Tree`](super::super::Tree)s, and their [`Root`]s.
+        pub use crate::tree::epoch::*;
+    }
+
+    pub mod block {
+        //! [`Block`]s within [`Epoch`](super::epoch::Epoch)s, and their [`Root`]s.
+        pub use crate::tree::epoch::block::*;
+    }
 }
 
-pub mod block {
-    //! [`Block`]s within [`Epoch`](super::Epoch)s, and their [`Root`]s and [`Proof`]s of inclusion.
-    pub use crate::eternity::epoch::block::*;
-}
-
-/// When inserting a [`Commitment`] into an [`Eternity`], [`Epoch`], or [`Block`], should we
+/// When inserting a [`Commitment`] into a [`Tree`], [`Epoch`], or [`Block`], should we
 /// [`Keep`] it to allow it to be witnessed later, or [`Forget`] about it after updating the root
 /// hash?
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -127,12 +130,12 @@ pub enum Witness {
     Forget,
 }
 
-/// When inserting a [`Commitment`] into an [`Eternity`], [`Epoch`], or [`Block`], this flag
+/// When inserting a [`Commitment`] into a [`Tree`], [`Epoch`], or [`Block`], this flag
 /// indicates that we should immediately forget about it to save space, because we will not want to
 /// witness its presence later.
 pub use Witness::Forget;
 
-/// When inserting a [`Commitment`] into an [`Eternity`], [`Epoch`], or [`Block`], this flag
+/// When inserting a [`Commitment`] into a [`Tree`], [`Epoch`], or [`Block`], this flag
 /// indicates that we should keep this commitment to allow it to be witnessed later.
 pub use Witness::Keep;
 
@@ -142,7 +145,7 @@ mod test {
 
     #[test]
     fn check_eternity_size() {
-        static_assertions::assert_eq_size!(Eternity, [u8; 104]);
+        static_assertions::assert_eq_size!(Tree, [u8; 104]);
     }
 
     #[test]

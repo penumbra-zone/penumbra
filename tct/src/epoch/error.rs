@@ -24,7 +24,7 @@ pub enum InsertError {
 }
 
 /// The [`Epoch`] was full when attempting to insert a block.
-#[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[derive(Debug, Clone, Error)]
 #[error("epoch is full")]
 #[non_exhaustive]
 pub struct InsertBlockError(pub Block);

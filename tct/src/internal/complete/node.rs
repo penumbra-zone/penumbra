@@ -16,22 +16,11 @@ pub mod children;
 pub use children::Children;
 
 /// A complete sparse node in a tree, storing only the witnessed subtrees.
-#[derive(Clone, Derivative, Serialize, Deserialize)]
-#[derivative(Debug, PartialEq(bound = "Child: PartialEq"), Eq(bound = "Child: Eq"))]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Node<Child> {
-    #[derivative(PartialEq = "ignore")]
     #[serde(skip)]
     hash: CachedHash,
     children: Children<Child>,
-}
-
-impl<Child: Complete> PartialEq<frontier::Node<Child::Focus>> for Node<Child>
-where
-    Child: PartialEq + PartialEq<Child::Focus>,
-{
-    fn eq(&self, other: &frontier::Node<Child::Focus>) -> bool {
-        other == self
-    }
 }
 
 impl<Child: Height> Node<Child> {

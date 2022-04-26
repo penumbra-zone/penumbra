@@ -183,7 +183,7 @@ pub mod within {
 
     /// The index of an individual item within an eternity.
     #[derive(Debug, Copy, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
-    pub struct Eternity {
+    pub struct Tree {
         /// The index of the epoch within its eternity.
         pub epoch: super::Epoch,
         /// The index of the block within its epoch.
@@ -192,7 +192,7 @@ pub mod within {
         pub commitment: super::Commitment,
     }
 
-    impl Eternity {
+    impl Tree {
         /// The maximum representable index within an eternity.
         pub const MAX: Self = Self {
             epoch: super::Epoch::MAX,
@@ -201,19 +201,19 @@ pub mod within {
         };
     }
 
-    impl From<Eternity> for u64 {
+    impl From<Tree> for u64 {
         fn from(
-            Eternity {
+            Tree {
                 epoch: super::Epoch(epoch),
                 block: super::Block(block),
                 commitment: super::Commitment(item),
-            }: Eternity,
+            }: Tree,
         ) -> Self {
             ((epoch as u64) << 32) | ((block as u64) << 16) | item as u64
         }
     }
 
-    impl From<u64> for Eternity {
+    impl From<u64> for Tree {
         fn from(position: u64) -> Self {
             let epoch = (position >> 32) as u16;
             let block = (position >> 16) as u16;
@@ -235,7 +235,7 @@ mod test {
     proptest! {
         #[test]
         fn u64_convert_eternity_inverse(e in 0u16..u16::MAX, b in 0u16..u16::MAX, c in 0u16..u16::MAX) {
-            let eternity = within::Eternity { epoch: e.into(), block: b.into(), commitment: c.into() };
+            let eternity = within::Tree { epoch: e.into(), block: b.into(), commitment: c.into() };
             let position: u64 = eternity.into();
             let back_again = position.into();
             assert_eq!(eternity, back_again);
