@@ -2,6 +2,7 @@ use std::convert::TryFrom;
 
 use anyhow::Result;
 use async_trait::async_trait;
+use ibc::core::ics24_host::identifier::ConnectionId;
 use ibc::{
     clients::ics07_tendermint::{
         client_state::ClientState as TendermintClientState,
@@ -19,7 +20,9 @@ use ibc::{
         ics24_host::identifier::ClientId,
     },
 };
-use penumbra_ibc::{ClientCounter, ClientData, ConsensusState, IBCAction, VerifiedHeights};
+use penumbra_ibc::{
+    ClientConnections, ClientCounter, ClientData, ConsensusState, IBCAction, VerifiedHeights,
+};
 use penumbra_proto::ibc::ibc_action::Action::{CreateClient, UpdateClient};
 use penumbra_transaction::Transaction;
 use tendermint::{abci, Time};
@@ -717,6 +720,41 @@ pub trait View: OverlayExt + Send + Sync {
         } else {
             return Ok(None);
         }
+    }
+
+    // adds the provided connection ID to the client identified by client_id. returns an error if
+    // the client does not exist.
+    async fn add_connection_to_client(
+        &mut self,
+        client_id: &ClientId,
+        connection_id: &ConnectionId,
+    ) -> Result<()> {
+        self.get_client_data(client_id).await?;
+
+        let mut connections = self
+            .get_domain(
+                format!(
+                    "ibc/ics02-client/clients/{}/connections",
+                    hex::encode(client_id.as_bytes())
+                )
+                .into(),
+            )
+            .await?
+            .unwrap_or(ClientConnections::default());
+
+        connections.connection_ids.push(connection_id.clone());
+
+        self.put_domain(
+            format!(
+                "ibc/ics02-client/clients/{}/connections",
+                hex::encode(client_id.as_bytes())
+            )
+            .into(),
+            connections,
+        )
+        .await;
+
+        Ok(())
     }
 }
 
