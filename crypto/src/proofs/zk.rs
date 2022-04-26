@@ -15,6 +15,13 @@ use jf_utils::fr_to_fq;
 use crate::{value, Value};
 use decaf377_ka as ka;
 
+/// Creates a `PlonkCircuit` for the `OutputProof`.
+///
+/// Output proofs check:
+/// 1. Diversified base is not identity (implemented).
+/// 2. Ephemeral public key integrity (implemented).
+/// 3. Value commitment integrity (implemented).
+/// 4. Note commitment integrity (not implemented).
 fn output_proof_circuit<EmbedCurve, PairingCurve>(
     esk: ka::Secret,
     epk: decaf377::Element,
@@ -59,38 +66,26 @@ where
     circuit.point_equal_gate(&epk_var_computed, &epk_var)?;
 
     // Value commitment integrity.
-    // This checks that: value_commitment == -self.value.commit(self.v_blinding)
-    // We do this by computing the inverse of the value commitment as:
+    // This checks that the value commitment was computed correctly as:
     // P = a + b = [v] G_v + [v_blinding] H
-    // then taking the inverse of P.
-    //
-    // Creating `value_fq` as below causes a `WrongQuotientPolyDegree` error when creating the proof,
-    // unclear why:
-    // `let value_fq = fr_to_fq::<_, EmbedCurve>(&EmbedCurve::Scalar::from(value.amount));`
-    // Creating `value_fq` as follows does not cause a `WrongQuotientPolyDegree` error:
-    let value_fq = EmbedCurve::BaseField::from(value.amount);
+    let value_fq = fr_to_fq::<_, EmbedCurve>(&EmbedCurve::ScalarField::from(value.amount));
     let value_var = circuit.create_variable(value_fq)?;
     let g_v_element = value.asset_id.value_generator().into();
     let g_v_var = circuit.create_public_point_variable(g_v_element)?;
     let a_var = circuit.variable_base_scalar_mul::<EmbedCurve>(value_var, &g_v_var)?;
 
     // `v_blinding` is over `P::ScalarField`, lift to `P::BaseField`.
-    // This also causes a `WrongQuotientPolyDegree` error:
-    //let v_blinding_fq = fr_to_fq::<_, EmbedCurve>(&v_blinding);
-    let v_blinding_fq =
-        EmbedCurve::BaseField::from_le_bytes_mod_order(&v_blinding.into_repr().to_bytes_le());
+    let v_blinding_fq = fr_to_fq::<_, EmbedCurve>(&v_blinding);
     let v_blinding_var = circuit.create_variable(v_blinding_fq)?;
     let H_jf: Point<EmbedCurve::BaseField> = value::VALUE_BLINDING_GENERATOR.deref().clone().into();
     let H_var = circuit.create_public_point_variable(H_jf)?;
     let b_var = circuit.variable_base_scalar_mul::<EmbedCurve>(v_blinding_var, &H_var)?;
 
-    let inv_value_commitment_computed = circuit.ecc_add::<EmbedCurve>(&a_var, &b_var)?;
-    let value_commitment_computed = circuit.inverse_point(&inv_value_commitment_computed)?;
+    let value_commitment_computed = circuit.ecc_add::<EmbedCurve>(&a_var, &b_var)?;
     let value_commitment_jf: Point<EmbedCurve::BaseField> = value_commitment.0.into();
     let value_commitment_var = circuit.create_public_point_variable(value_commitment_jf)?;
     // Connect wires for value commitment integrity check.
-    // The below blows up also with `WrongQuotientPolyDegree` error.
-    // circuit.point_equal_gate(&value_commitment_computed, &value_commitment_var)?;
+    circuit.point_equal_gate(&value_commitment_computed, &value_commitment_var)?;
 
     // TODO: Note commitment integrity.
     // Requires Poseidon377 gadget
@@ -199,5 +194,6 @@ mod tests {
         .is_ok());
         let duration = start.elapsed();
         println!("Time elapsed in proof verification: {:?}", duration);
+        println!("size of circuit: {:?}", circuit.num_gates());
     }
 }
