@@ -16,7 +16,7 @@ depending on your distribution. For a bare-bones Ubuntu installation, you can
 run:
 
 ```bash
-sudo apt-get install build-essential pkg-config libssl-dev clang
+sudo apt-get install build-essential pkg-config libssl-dev
 ```
 
 #### macOS
