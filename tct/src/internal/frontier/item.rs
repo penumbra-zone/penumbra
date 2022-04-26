@@ -12,15 +12,8 @@ use crate::{
 
 /// The hash of the most-recently-inserted item, stored at the tip of the frontier.
 #[derive(Debug, Clone, Copy, Derivative, Serialize, Deserialize)]
-#[derivative(PartialEq, Eq)]
 pub struct Item {
     hash: Hash,
-}
-
-impl PartialEq<complete::Item> for Item {
-    fn eq(&self, other: &complete::Item) -> bool {
-        self.hash == other.hash()
-    }
 }
 
 impl Item {

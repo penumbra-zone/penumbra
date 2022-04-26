@@ -1,43 +1,43 @@
-//! Errors that can occur when inserting into an [`Eternity`].
+//! Errors that can occur when inserting into a [`Tree`].
 
 use thiserror::Error;
 
 #[cfg(doc)]
-use super::Eternity;
+use super::Tree;
 use super::{Block, Epoch};
 
-/// An error occurred when trying to insert an commitment into an [`Eternity`].
+/// An error occurred when trying to insert an commitment into a [`Tree`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
 pub enum InsertError {
-    /// The [`Eternity`] was full.
+    /// The [`Tree`] was full.
     #[error("eternity is full")]
     Full,
-    /// The most recent [`Epoch`] of the [`Eternity`] was full.
+    /// The most recent [`Epoch`] of the [`Tree`] was full.
     #[error("most recent epoch in eternity is full")]
     EpochFull,
-    /// The most recent [`Epoch`] of the [`Eternity`] was forgotten.
+    /// The most recent [`Epoch`] of the [`Tree`] was forgotten.
     #[error("most recent epoch in eternity was forgotten")]
     EpochForgotten,
-    /// The most recent [`Block`] of the most recent [`Epoch`] of the [`Eternity`] was full.
+    /// The most recent [`Block`] of the most recent [`Epoch`] of the [`Tree`] was full.
     #[error("most recent block in most recent epoch of eternity is full")]
     BlockFull,
-    /// The most recent [`Block`] of the most recent [`Epoch`] of the [`Eternity`] was forgotten.
+    /// The most recent [`Block`] of the most recent [`Epoch`] of the [`Tree`] was forgotten.
     #[error("most recent block in most recent epoch of eternity was forgotten")]
     BlockForgotten,
 }
 
-/// An error occurred when trying to insert a [`Block`] root into the [`Eternity`].
-#[derive(Debug, Clone, PartialEq, Eq, Error)]
+/// An error occurred when trying to insert a [`Block`] root into the [`Tree`].
+#[derive(Debug, Clone, Error)]
 pub enum InsertBlockError {
-    /// The [`Eternity`] was full.
+    /// The [`Tree`] was full.
     #[error("eternity is full")]
     #[non_exhaustive]
     Full(Block),
-    /// The most recent [`Epoch`] of the [`Eternity`] was full.
+    /// The most recent [`Epoch`] of the [`Tree`] was full.
     #[error("most recent epoch is full")]
     #[non_exhaustive]
     EpochFull(Block),
-    /// The most recent [`Epoch`] of the [`Eternity`] was forgotten.
+    /// The most recent [`Epoch`] of the [`Tree`] was forgotten.
     #[error("most recent epoch was forgotten")]
     #[non_exhaustive]
     EpochForgotten(Block),
@@ -53,25 +53,25 @@ impl From<InsertBlockError> for Block {
     }
 }
 
-/// An error occurred when trying to insert a [`Block`] root into the [`Eternity`].
+/// An error occurred when trying to insert a [`Block`] root into the [`Tree`].
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 pub enum InsertBlockRootError {
-    /// The [`Eternity`] was full.
+    /// The [`Tree`] was full.
     #[error("eternity is full")]
     #[non_exhaustive]
     Full,
-    /// The most recent [`Epoch`] of the [`Eternity`] was full.
+    /// The most recent [`Epoch`] of the [`Tree`] was full.
     #[error("most recent epoch is full")]
     #[non_exhaustive]
     EpochFull,
-    /// The most recent [`Epoch`] of the [`Eternity`] was forgotten.
+    /// The most recent [`Epoch`] of the [`Tree`] was forgotten.
     #[error("most recent epoch was forgotten")]
     #[non_exhaustive]
     EpochForgotten,
 }
 
-/// The [`Eternity`] was full when trying to insert an [`Epoch`].
-#[derive(Debug, Clone, PartialEq, Eq, Error)]
+/// The [`Tree`] was full when trying to insert an [`Epoch`].
+#[derive(Debug, Clone, Error)]
 #[error("eternity is full")]
 #[non_exhaustive]
 pub struct InsertEpochError(pub Epoch);
@@ -82,7 +82,7 @@ impl From<InsertEpochError> for Epoch {
     }
 }
 
-/// The [`Eternity`] was full when trying to insert an [`Epoch`] root.
+/// The [`Tree`] was full when trying to insert an [`Epoch`] root.
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 #[error("eternity is full")]
 #[non_exhaustive]

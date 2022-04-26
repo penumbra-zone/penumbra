@@ -19,55 +19,13 @@ use super::super::complete;
 #[derive(Clone, Derivative, Serialize, Deserialize)]
 #[serde(bound(serialize = "Child: Serialize, Child::Complete: Serialize"))]
 #[serde(bound(deserialize = "Child: Deserialize<'de>, Child::Complete: Deserialize<'de>"))]
-#[derivative(
-    Debug(bound = "Child: Debug, Child::Complete: Debug"),
-    PartialEq(bound = "Child: PartialEq, Child::Complete: PartialEq"),
-    Eq(bound = "Child: Eq, Child::Complete: Eq")
-)]
+#[derivative(Debug(bound = "Child: Debug, Child::Complete: Debug"))]
 pub struct Node<Child: Focus> {
     #[derivative(PartialEq = "ignore", Debug)]
     #[serde(skip)]
     hash: CachedHash,
     siblings: Three<Insert<Child::Complete>>,
     focus: Child,
-}
-
-impl<Child: Focus> PartialEq<complete::Node<Child::Complete>> for Node<Child>
-where
-    Child::Complete: PartialEq<Child> + PartialEq,
-{
-    fn eq(&self, other: &complete::Node<Child::Complete>) -> bool {
-        let zero = || -> Insert<&Child> { Insert::Hash(Hash::default()) };
-
-        let children = other.children();
-
-        match (self.siblings.elems(), &self.focus) {
-            (Elems::_0([]), a) => {
-                children[0] == Insert::Keep(a)
-                    && children[1] == zero()
-                    && children[2] == zero()
-                    && children[3] == zero()
-            }
-            (Elems::_1([a]), b) => {
-                children[0] == a.as_ref()
-                    && children[1] == Insert::Keep(b)
-                    && children[2] == zero()
-                    && children[3] == zero()
-            }
-            (Elems::_2([a, b]), c) => {
-                children[0] == a.as_ref()
-                    && children[1] == b.as_ref()
-                    && children[2] == Insert::Keep(c)
-                    && children[3] == zero()
-            }
-            (Elems::_3([a, b, c]), d) => {
-                children[0] == a.as_ref()
-                    && children[1] == b.as_ref()
-                    && children[2] == c.as_ref()
-                    && children[3] == Insert::Keep(d)
-            }
-        }
-    }
 }
 
 impl<Child: Focus> Node<Child> {

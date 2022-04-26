@@ -5,7 +5,7 @@ use crate::{internal::path::Witness, Complete, ForgetOwned, GetHash, Hash, Heigh
 use super::super::frontier;
 
 /// A complete, witnessed leaf of a tree.
-#[derive(Clone, Copy, PartialEq, Eq, Derivative, Serialize, Deserialize)]
+#[derive(Clone, Copy, Derivative, Serialize, Deserialize)]
 #[derivative(Debug = "transparent")]
 pub struct Leaf<Item>(pub(in super::super) Item);
 
@@ -13,15 +13,6 @@ impl<Item> Leaf<Item> {
     /// Create a new complete leaf from the item stored in the tree.
     pub fn new(item: Item) -> Self {
         Self(item)
-    }
-}
-
-impl<Item: Complete> PartialEq<frontier::Leaf<Item::Focus>> for Leaf<Item>
-where
-    Item::Focus: PartialEq<Item>,
-{
-    fn eq(&self, other: &frontier::Leaf<Item::Focus>) -> bool {
-        other == self
     }
 }
 

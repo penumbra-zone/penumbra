@@ -2,11 +2,11 @@ pub use thiserror::Error;
 
 use crate::{Commitment, Hash, VerifyError};
 
-pub use super::{Eternity, Position, Root};
+pub use super::{Position, Root, Tree};
 
-/// An as-yet-unverified proof of the inclusion of some [`Commitment`] in an [`Eternity`].
+/// An as-yet-unverified proof of the inclusion of some [`Commitment`] in a [`Tree`].
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Proof(pub(super) crate::proof::Proof<Eternity>);
+pub struct Proof(pub(super) crate::proof::Proof<Tree>);
 
 impl Proof {
     /// Construct a new [`Proof`] of inclusion for a given [`Commitment`], index, and authentication
@@ -122,7 +122,7 @@ impl Proof {
         })
     }
 
-    /// Verify a [`Proof`] of inclusion against the [`Root`] of an [`Eternity`].
+    /// Verify a [`Proof`] of inclusion against the [`Root`] of a [`Tree`].
     ///
     /// # Errors
     ///
@@ -138,7 +138,7 @@ impl Proof {
 
     /// Get the position of the witnessed commitment.
     pub fn position(&self) -> crate::Position {
-        crate::eternity::Position(self.0.index().into())
+        crate::tree::Position(self.0.index().into())
     }
 
     /// Get the authentication path for this proof, order from root to leaf.

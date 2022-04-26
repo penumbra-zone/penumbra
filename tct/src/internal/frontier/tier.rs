@@ -14,13 +14,11 @@ use super::super::{complete, frontier};
 
 /// A frontier of a tier of the tiered commitment tree, being an 8-deep quad-tree of items.
 #[derive(Derivative, Serialize, Deserialize)]
-#[derivative(Default(bound = ""))]
-#[derivative(Debug(bound = "Item: Debug, Item::Complete: Debug"))]
-#[derivative(Clone(bound = "Item: Clone, Item::Complete: Clone"))]
-#[derivative(PartialEq(
-    bound = "Item: PartialEq + PartialEq<Item::Complete>, Item::Complete: PartialEq"
-))]
-#[derivative(Eq(bound = "Item: Eq + PartialEq<Item::Complete>, Item::Complete: Eq"))]
+#[derivative(
+    Default(bound = ""),
+    Debug(bound = "Item: Debug, Item::Complete: Debug"),
+    Clone(bound = "Item: Clone, Item::Complete: Clone")
+)]
 #[serde(bound(
     serialize = "Item: Serialize, Item::Complete: Serialize",
     deserialize = "Item: Deserialize<'de>, Item::Complete: Deserialize<'de>"
@@ -42,7 +40,6 @@ pub type Nested<Item> = N<N<N<N<N<N<N<N<L<Item>>>>>>>>>;
     serialize = "Item: Serialize, Item::Complete: Serialize",
     deserialize = "Item: Deserialize<'de>, Item::Complete: Deserialize<'de>"
 ))]
-#[derivative(Eq(bound = "Item: Eq + PartialEq<Item::Complete>, Item::Complete: Eq"))]
 pub enum Inner<Item: Focus> {
     /// Either an empty tree (`None`) or a tree with at least one element in it.
     Frontier(Box<Option<Nested<Item>>>),
@@ -55,66 +52,6 @@ pub enum Inner<Item: Focus> {
     ///
     /// This is one of two final states: the other is [`Inner::Complete`].
     Hash(Hash),
-}
-
-impl<Item: Focus> PartialEq for Inner<Item>
-where
-    Item: PartialEq + PartialEq<Item::Complete>,
-    Item::Complete: PartialEq,
-{
-    fn eq(&self, other: &Inner<Item>) -> bool {
-        match (self, other) {
-            // A non-empty, non-hash tier is never equal to a hash tier (because one has witnesses
-            // and the other does not)
-            (Inner::Frontier(_), Inner::Hash(_))
-            | (Inner::Complete(_), Inner::Hash(_))
-            | (Inner::Hash(_), Inner::Frontier(_))
-            | (Inner::Hash(_), Inner::Complete(_)) => false,
-            // Two non-empty, non-hash tiers are equal if their trees are equal (this relies on the
-            // `==` implementation between the two inner trees, which is heterogeneous in the case
-            // between `Frontier` and `Complete`)
-            (Inner::Frontier(l), Inner::Frontier(r)) => l == r,
-            (Inner::Complete(l), Inner::Complete(r)) => l == r,
-            (Inner::Frontier(frontier), Inner::Complete(complete))
-            | (Inner::Complete(complete), Inner::Frontier(frontier)) => {
-                if let Some(frontier) = &**frontier {
-                    frontier == complete
-                } else {
-                    // Empty tiers are never equal to complete tiers, because complete tiers are
-                    // never empty
-                    false
-                }
-            }
-            // Two tiers with no witnesses are equal if their hashes are equal
-            (Inner::Hash(l), Inner::Hash(r)) => l == r,
-        }
-    }
-}
-
-impl<Item: Focus> PartialEq<complete::Tier<Item::Complete>> for Tier<Item>
-where
-    Item: PartialEq + PartialEq<Item::Complete>,
-    Item::Complete: PartialEq,
-{
-    fn eq(&self, complete::Tier { inner: complete }: &complete::Tier<Item::Complete>) -> bool {
-        match self.inner {
-            // Complete tiers are never empty, an empty or hash-only tier is never equal to one,
-            // because they don't have witnesses
-            Inner::Hash(_) => false,
-            // Frontier tiers are equal to complete tiers if their trees are equal (relying on
-            // heterogeneous equality between `Frontier` and `Complete`)
-            Inner::Frontier(ref frontier) => {
-                if let Some(frontier) = &**frontier {
-                    frontier == complete
-                } else {
-                    // Empty tiers are never equal to complete tiers, because complete tiers are never
-                    // empty
-                    false
-                }
-            }
-            Inner::Complete(ref rhs) => complete == rhs,
-        }
-    }
 }
 
 impl<Item: Focus> Default for Inner<Item> {
@@ -315,11 +252,6 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-
-    #[test]
-    fn check_eq_impl() {
-        static_assertions::assert_impl_all!(Tier<Tier<Tier<crate::Item>>>: Eq);
-    }
 
     #[test]
     fn check_inner_size() {

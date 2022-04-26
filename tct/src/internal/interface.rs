@@ -42,7 +42,8 @@ pub trait Focus: Height<Height = <Self::Complete as Height>::Height> + GetHash {
 ///
 /// It is enforced by the type system that [`Complete`] and [`Focus`] are dual to one another.
 pub trait Complete: Height + GetHash {
-    /// The [`Focus`] of this [`Complete`].
+    /// The corresponding [`Focus`] of this [`Complete`] (i.e. the type which will become this type
+    /// when it is [`finalize`](Focus::finalize)d).
     type Focus: Focus<Complete = Self>;
 }
 

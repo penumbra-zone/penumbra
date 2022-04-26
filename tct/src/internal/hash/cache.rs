@@ -25,7 +25,7 @@ impl Debug for CachedHash {
 impl Clone for CachedHash {
     fn clone(&self) -> Self {
         Self {
-            mutex: Mutex::new(self.mutex.lock().clone()),
+            mutex: Mutex::new(*self.mutex.lock()),
         }
     }
 }
