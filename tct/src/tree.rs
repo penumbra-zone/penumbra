@@ -11,7 +11,7 @@ use crate::*;
 
 #[path = "epoch.rs"]
 pub(crate) mod epoch;
-use epoch::{block, block::Block, Epoch, EpochMut};
+use epoch::block;
 
 mod proof;
 pub use proof::Proof;
@@ -27,7 +27,7 @@ pub use error::{
 pub struct Tree {
     position: index::within::Tree,
     index: HashedMap<Commitment, index::within::Tree>,
-    inner: Tier<Tier<Tier<Item>>>,
+    inner: Top<Tier<Tier<Item>>>,
 }
 
 /// The root hash of a [`Tree`].
@@ -107,7 +107,7 @@ impl From<u64> for Position {
 }
 
 impl Height for Tree {
-    type Height = <Tier<Tier<Tier<Item>>> as Height>::Height;
+    type Height = <Top<Tier<Tier<Item>>> as Height>::Height;
 }
 
 impl Tree {
@@ -147,10 +147,7 @@ impl Tree {
         witness: Witness,
         commitment: impl Into<Commitment>,
     ) -> Result<Position, InsertError> {
-        self.insert_commitment_or_hash(match witness {
-            Keep => Insert::Keep(commitment.into()),
-            Forget => Insert::Hash(Hash::of(commitment.into())),
-        })
+        todo!()
     }
 
     /// Get a [`Proof`] of inclusion for the commitment at this index in the eternity.
@@ -199,127 +196,33 @@ impl Tree {
         forgotten
     }
 
-    /// Insert an commitment or its root (helper function for [`insert`].
-    fn insert_commitment_or_hash(
-        &mut self,
-        commitment: Insert<Commitment>,
-    ) -> Result<Position, InsertError> {
-        // The position at which we will insert the commitment
-        let position = self.position();
-
-        // If the eternity is empty, we need to create a new epoch to insert the commitment into
-        if self.inner.is_empty() && self.insert_epoch(Epoch::new()).is_err() {
-            return Err(InsertError::Full);
-        }
-
-        match self.update(|epoch| {
-            if let Some(epoch) = epoch {
-                epoch.insert(commitment).map_err(|err| match err {
-                    epoch::InsertError::Full => InsertError::EpochFull,
-                    epoch::InsertError::BlockFull => InsertError::BlockFull,
-                    epoch::InsertError::BlockForgotten => InsertError::BlockForgotten,
-                })
-            } else {
-                Err(InsertError::EpochForgotten)
-            }
-        }) {
-            Err(err) => Err(err),
-            Ok(None) => Ok(position),
-            Ok(Some(replaced)) => {
-                // If inserting this commitment replaced some other commitment, forget the replaced index
-                let forgotten = self.inner.forget(replaced);
-                debug_assert!(forgotten);
-                Ok(position)
-            }
-        }
-    }
-
     /// Get the position in this [`Tree`] of the given [`Commitment`], if it is currently witnessed.
     pub fn position_of(&self, commitment: impl Into<Commitment>) -> Option<Position> {
         let commitment = commitment.into();
         self.index.get(&commitment).map(|index| Position(*index))
     }
 
-    /// Add a new [`Block`] all at once to the most recently inserted [`Epoch`] of this
-    /// [`Tree`].
+    /// Add a new [`Block`] all at once to the most recently inserted [`Epoch`] of this [`Tree`].
+    ///
+    /// This function can be called on anything that implements `Into<block::Finalized>`; in
+    /// particular, on [`block::Builder`], [`block::Finalized`], and [`block::Root`].
     ///
     /// # Errors
     ///
-    /// Returns [`InsertBlockError`] containing the inserted block without adding it to the
-    /// [`Tree`] if the [`Tree`] is full, or the most recently inserted [`Epoch`] is full or
-    /// was inserted by [`Insert::Hash`].
-    pub fn insert_block(&mut self, block: Block) -> Result<(), InsertBlockError> {
-        // If the eternity is empty, we need to create a new epoch to insert the block into
-        if self.inner.is_empty() && self.insert_epoch(Epoch::new()).is_err() {
-            return Err(InsertBlockError::Full(block));
-        }
-
-        match self.update(|epoch| {
-            if let Some(epoch) = epoch {
-                epoch
-                    .insert_block_or_root(Insert::Keep(block))
-                    .map_err(|insert| {
-                        if let Insert::Keep(block) = insert {
-                            InsertBlockError::EpochFull(block)
-                        } else {
-                            unreachable!(
-                                "failing to insert a block always returns the original block"
-                            )
-                        }
-                    })
-            } else {
-                Err(InsertBlockError::EpochForgotten(block))
-            }
-        }) {
-            Err(err) => Err(err),
-            Ok(replaced) => {
-                // When inserting the block, some indices in the block may overwrite existing
-                // indices; we now can forget those indices because they're inaccessible
-                for replaced in replaced {
-                    let forgotten = self.inner.forget(replaced);
-                    debug_assert!(forgotten);
-                }
-                Ok(())
-            }
-        }
+    /// Returns [`InsertBlockError`] containing the inserted block without adding it to the [`Tree`]
+    /// if the [`Tree`] is full, or the most recently inserted [`Epoch`] is full or was inserted by
+    /// [`Insert::Hash`].
+    pub fn insert_block(
+        &mut self,
+        block: impl Into<block::Finalized>,
+    ) -> Result<(), InsertBlockError> {
+        todo!()
     }
 
-    /// Add the root hash of an [`Block`] to this [`Tree`], without inserting any of the
-    /// witnessed commitments in that [`Block`].
-    ///
-    /// # Errors
-    ///
-    /// Returns [`InsertBlockRootError`] if the [`Tree`] is full, or the most recently inserted
-    /// [`Epoch`] is full or was inserted by [`insert_epoch_root`](Tree::insert_epoch_root).
-    pub fn insert_block_root(
-        &mut self,
-        block_root: block::Root,
-    ) -> Result<(), InsertBlockRootError> {
-        // If the eternity is empty, we need to create a new epoch to insert the block into
-        if self.inner.is_empty() && self.insert_epoch(Epoch::new()).is_err() {
-            return Err(InsertBlockRootError::Full);
-        }
-
-        match self.update(|epoch| {
-            if let Some(epoch) = epoch {
-                epoch
-                    .insert_block_or_root(Insert::Hash(block_root.0))
-                    .map_err(|_| InsertBlockRootError::EpochFull)
-            } else {
-                Err(InsertBlockRootError::EpochForgotten)
-            }
-        }) {
-            Err(err) => Err(err),
-            Ok(replaced) => {
-                // When inserting the block, some indices in the block may overwrite existing
-                // indices; we now can forget those indices because they're inaccessible
-                for replaced in replaced {
-                    let forgotten = self.inner.forget(replaced);
-                    debug_assert!(forgotten);
-                }
-                Ok(())
-            }
-        }
+    /// Explicitly mark the end of the current block in this tree, advancing the position to the
+    /// next block.
+    pub fn end_block(&mut self) -> Result<(), InsertBlockError> {
+        todo!()
     }
 
     /// Get the root hash of the most recent [`Block`] in the most recent [`Epoch`] of this
@@ -339,106 +242,24 @@ impl Tree {
 
     /// Add a new [`Epoch`] all at once to this [`Tree`].
     ///
+    /// This function can be called on anything that implements `Into<epoch::Finalized>`; in
+    /// particular, on [`epoch::Builder`], [`epoch::Finalized`], and [`epoch::Root`].
+    ///
     /// # Errors
     ///
     /// Returns [`InsertEpochError`] containing the epoch without adding it to the [`Tree`] if
     /// the [`Tree`] is full.
-    pub fn insert_epoch(&mut self, epoch: Epoch) -> Result<(), InsertEpochError> {
-        self.insert_epoch_or_root(Insert::Keep(epoch))
-            .map_err(|insert| {
-                if let Insert::Keep(epoch) = insert {
-                    InsertEpochError(epoch)
-                } else {
-                    unreachable!("failing to insert an epoch always returns the original epoch")
-                }
-            })
-    }
-
-    /// Add the root hash of an [`Epoch`] to this [`Tree`], without inserting any of the
-    /// witnessed commitments in that [`Epoch`].
-    ///
-    /// # Errors
-    ///
-    /// Returns [`InsertEpochRootError`] if the [`Tree`] is full.
-    pub fn insert_epoch_root(
+    pub fn insert_epoch(
         &mut self,
-        epoch_root: epoch::Root,
-    ) -> Result<(), InsertEpochRootError> {
-        self.insert_epoch_or_root(Insert::Hash(epoch_root.0))
-            .map_err(|insert| {
-                if let Insert::Hash(_) = insert {
-                    InsertEpochRootError
-                } else {
-                    unreachable!("failing to insert an epoch root always returns the original root")
-                }
-            })
+        epoch: impl Into<epoch::Finalized>,
+    ) -> Result<(), InsertEpochError> {
+        todo!()
     }
 
-    /// Insert an epoch or its root (helper function for [`insert_epoch`] and [`insert_epoch_root`]).
-    fn insert_epoch_or_root(&mut self, epoch: Insert<Epoch>) -> Result<(), Insert<Epoch>> {
-        // We have a special case when the starting eternity was empty, because then we don't
-        // increment the epoch index
-        let was_empty = self.inner.is_empty();
-
-        // Decompose the block into its components
-        let (position, epoch, epoch_index) = match epoch {
-            Insert::Hash(hash) => (
-                index::within::Epoch::MAX,
-                Insert::Hash(hash),
-                Default::default(),
-            ),
-            Insert::Keep(Epoch {
-                position,
-                index,
-                inner,
-            }) => (position, Insert::Keep(inner), index),
-        };
-
-        // Try to insert the block into the tree, and if successful, track the commitment, block, and
-        // epoch indices of each inserted commitment
-        if let Err(epoch) = self.inner.insert(epoch) {
-            Err(epoch.map(|inner| Epoch {
-                position,
-                index: epoch_index,
-                inner,
-            }))
-        } else {
-            // Copy out the block and commitment indices from the just-inserted epoch
-            self.position = index::within::Tree {
-                epoch: self.position.epoch,
-                block: position.block,
-                commitment: position.commitment,
-            };
-
-            // Increment the epoch
-            if !was_empty {
-                self.position.epoch.increment();
-            }
-            let this_epoch = self.position.epoch;
-
-            for (
-                commitment,
-                index::within::Epoch {
-                    block: this_block,
-                    commitment: this_commitment,
-                },
-            ) in epoch_index.into_iter()
-            {
-                if let Some(replaced) = self.index.insert(
-                    commitment,
-                    index::within::Tree {
-                        epoch: this_epoch,
-                        block: this_block,
-                        commitment: this_commitment,
-                    },
-                ) {
-                    // Forget the previous index of this inserted epoch, if there was one
-                    self.inner.forget(replaced);
-                }
-            }
-
-            Ok(())
-        }
+    /// Explicitly mark the end of the current epoch in this tree, advancing the position to the
+    /// next epoch.
+    pub fn end_epoch(&mut self) -> Result<(), InsertBlockError> {
+        todo!()
     }
 
     /// Get the root hash of the most recent [`Epoch`] in this [`Tree`].
@@ -470,37 +291,5 @@ impl Tree {
     /// Check whether this [`Tree`] is empty.
     pub fn is_empty(&self) -> bool {
         self.inner.is_empty()
-    }
-
-    /// Update the most recently inserted [`Epoch`] via methods on [`EpochMut`], and return the
-    /// result of the function.
-    fn update<T>(&mut self, f: impl FnOnce(Option<&mut EpochMut<'_>>) -> T) -> T {
-        let index::within::Tree {
-            epoch,
-            commitment,
-            block,
-        } = &mut self.position;
-
-        let index = epoch::IndexMut::Tree {
-            this_epoch: *epoch,
-            index: &mut self.index,
-        };
-
-        self.inner.update(|inner| {
-            if let Some(inner) = inner {
-                if let Insert::Keep(inner) = inner.as_mut() {
-                    f(Some(&mut EpochMut {
-                        block,
-                        commitment,
-                        inner,
-                        index,
-                    }))
-                } else {
-                    f(None)
-                }
-            } else {
-                f(None)
-            }
-        })
     }
 }

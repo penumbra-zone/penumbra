@@ -98,11 +98,13 @@ pub mod frontier {
     pub(super) mod leaf;
     pub(super) mod node;
     pub(super) mod tier;
+    pub(super) mod top;
     pub use super::insert::Insert;
     pub use item::Item;
     pub use leaf::Leaf;
     pub use node::Node;
     pub use tier::{Nested, Tier};
+    pub use top::Top;
 }
 
 pub mod complete {
@@ -130,9 +132,11 @@ pub mod complete {
     pub(super) mod leaf;
     pub(super) mod node;
     pub(super) mod tier;
+    pub(super) mod top;
     pub use item::Item;
     pub use leaf::Leaf;
     pub use node::children;
     pub use node::Node;
     pub use tier::{Nested, Tier};
+    pub use top::Top;
 }

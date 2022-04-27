@@ -46,6 +46,15 @@ impl<T> Three<T> {
         }
     }
 
+    /// Determine if this [`Three`] is full.
+    ///
+    /// If this returns `true`, then [`Self::push`] will return `Err`; otherwise, [`Self::push`]
+    /// will return `Ok`.
+    #[inline]
+    pub fn is_full(&self) -> bool {
+        self.elems.len() == 3
+    }
+
     /// Get an enumeration of the elements of this [`Three`] by reference.
     pub fn elems(&self) -> Elems<T> {
         match self.elems.len() {

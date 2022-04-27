@@ -53,10 +53,10 @@ pub mod internal;
 mod internal;
 
 #[cfg(doc)]
-use builder::{block::Block, epoch::Epoch};
+use builder::{block::Builder, epoch::Builder};
 use internal::{
     complete::{Complete, ForgetOwned},
-    frontier::{Focus, Frontier, Insert, Item, Tier},
+    frontier::{Focus, Frontier, Insert, Item, Tier, Top},
     hash::GetHash,
     hash::Hash,
     height::Height,
@@ -145,7 +145,7 @@ mod test {
 
     #[test]
     fn check_eternity_size() {
-        static_assertions::assert_eq_size!(Tree, [u8; 104]);
+        static_assertions::assert_eq_size!(Tree, [u8; 624]);
     }
 
     #[test]

@@ -26,6 +26,12 @@ pub trait Frontier: Focus + Sized {
     /// Get a reference to the focused `Insert<Self::Item>` (i.e. the most-recently
     /// [`insert`](Frontier::insert)ed one).
     fn focus(&self) -> &Insert<Self::Item>;
+
+    /// Determine if this [`Frontier`] is full.
+    ///
+    /// If this returns `true`, then [`insert`](Frontier::insert) will always return `Err`; if this
+    /// returns `false`, then [`insert`](Frontier::insert) will always return `Ok`.
+    fn is_full(&self) -> bool;
 }
 
 /// A type which can be the focus of an [`Frontier`] tree: it can be finalized to make a [`Complete`]
@@ -35,7 +41,7 @@ pub trait Focus: Height<Height = <Self::Complete as Height>::Height> + GetHash {
     type Complete: Complete<Focus = Self>;
 
     /// Transition from an [`Frontier`] to being [`Complete`].
-    fn finalize(self) -> Insert<Self::Complete>;
+    fn finalize_owned(self) -> Insert<Self::Complete>;
 }
 
 /// Marker trait for a type which is the frozen completion of some [`Focus`]ed insertion point.
@@ -48,6 +54,7 @@ pub trait Complete: Height + GetHash {
 }
 
 /// The result of [`Frontier::insert`] when the [`Frontier`] is full.
+#[derive(Debug)]
 pub struct Full<T: Frontier> {
     /// The original hash or item that could not be inserted.
     pub item: Insert<T::Item>,

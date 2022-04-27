@@ -4,7 +4,7 @@
 
 use std::fmt::Debug;
 
-use ark_ff::{fields::PrimeField, BigInteger256, Fp256, ToBytes};
+use ark_ff::{fields::PrimeField, BigInteger256, Fp256, One, ToBytes, Zero};
 use once_cell::sync::Lazy;
 use poseidon377::Fq;
 use serde::{Deserialize, Serialize};
@@ -72,7 +72,7 @@ impl<T: GetHash> GetHash for &mut T {
 }
 
 /// The hash of an individual item, tree root, or intermediate node.
-#[derive(Clone, Copy, PartialEq, Eq, Default, std::hash::Hash, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, std::hash::Hash, Serialize, Deserialize)]
 pub struct Hash(#[serde(with = "crate::serialize::fq")] Fq);
 
 impl From<Hash> for Fq {
@@ -113,6 +113,16 @@ impl Hash {
     /// This should only be called when you know that the bytes are valid.
     pub(crate) fn from_bytes_unchecked(bytes: [u64; 4]) -> Hash {
         Self(Fp256::new(BigInteger256(bytes)))
+    }
+
+    /// The zero hash, used for padding of frontier nodes.
+    pub(crate) fn zero() -> Hash {
+        Self(Fq::zero())
+    }
+
+    /// The one hash, used for padding of complete nodes.
+    pub(crate) fn one() -> Hash {
+        Self(Fq::one())
     }
 
     /// Hash an individual item to be inserted into the tree.

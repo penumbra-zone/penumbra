@@ -58,7 +58,7 @@ impl<Child: Focus> GetHash for Node<Child> {
         self.hash.set_if_empty(|| {
             // Get the four hashes of the node's siblings + focus, *in that order*, adding
             // zero-padding when there are less than four elements
-            let zero = Hash::default();
+            let zero = Hash::zero();
             let focus = self.focus.hash();
 
             let (a, b, c, d) = match self.siblings.elems() {
@@ -93,8 +93,11 @@ impl<Child: Focus> Focus for Node<Child> {
     type Complete = complete::Node<Child::Complete>;
 
     #[inline]
-    fn finalize(self) -> Insert<Self::Complete> {
-        complete::Node::from_siblings_and_focus_or_else_hash(self.siblings, self.focus.finalize())
+    fn finalize_owned(self) -> Insert<Self::Complete> {
+        complete::Node::from_siblings_and_focus_or_else_hash(
+            self.siblings,
+            self.focus.finalize_owned(),
+        )
     }
 }
 
@@ -157,21 +160,16 @@ where
                         // (because otherwise we would lose that informtion); if at least one child
                         // and its sibling hashes/subtrees is preserved in a `Complete` node, then
                         // we defer calculating the node hash until looking up an authentication path
-                        complete: match complete::Node::from_children_or_else_hash(children) {
-                            Insert::Hash(hash) => Insert::Hash(hash),
-                            Insert::Keep(node) => {
-                                if let Some(hash) = self.hash.get() {
-                                    // This is okay because `complete` is guaranteed to have the same elements in
-                                    // the same order as `siblings + [focus]`:
-                                    node.set_hash_unchecked(hash);
-                                }
-                                Insert::Keep(node)
-                            }
-                        },
+                        complete: complete::Node::from_children_or_else_hash(children),
                     })
                 }
             },
         }
+    }
+
+    #[inline]
+    fn is_full(&self) -> bool {
+        self.siblings.is_full() && self.focus.is_full()
     }
 }
 
@@ -195,7 +193,7 @@ where
             (_0([]), a) => match which_way {
                 Leftmost => (
                     // All sibling hashes are default for the left, right, and rightmost
-                    [Hash::default(); 3],
+                    [Hash::zero(); 3],
                     // Authentication path is to the leftmost child
                     a.witness(index)?,
                 ),
@@ -206,13 +204,13 @@ where
             (_1([a]), b) => match which_way {
                 Leftmost => (
                     // Sibling hashes are the left child and default for right and rightmost
-                    [b.hash(), Hash::default(), Hash::default()],
+                    [b.hash(), Hash::zero(), Hash::zero()],
                     // Authentication path is to the leftmost child
                     a.as_ref().keep()?.witness(index)?,
                 ),
                 Left => (
                     // Sibling hashes are the leftmost child and default for right and rightmost
-                    [a.hash(), Hash::default(), Hash::default()],
+                    [a.hash(), Hash::zero(), Hash::zero()],
                     // Authentication path is to the left child
                     b.witness(index)?,
                 ),
@@ -223,19 +221,19 @@ where
             (_2([a, b]), c) => match which_way {
                 Leftmost => (
                     // Sibling hashes are the left child and right child and default for rightmost
-                    [b.hash(), c.hash(), Hash::default()],
+                    [b.hash(), c.hash(), Hash::zero()],
                     // Authentication path is to the leftmost child
                     a.as_ref().keep()?.witness(index)?,
                 ),
                 Left => (
                     // Sibling hashes are the leftmost child and right child and default for rightmost
-                    [a.hash(), c.hash(), Hash::default()],
+                    [a.hash(), c.hash(), Hash::zero()],
                     // Authentication path is to the left child
                     b.as_ref().keep()?.witness(index)?,
                 ),
                 Right => (
                     // Sibling hashes are the leftmost child and left child and default for rightmost
-                    [a.hash(), b.hash(), Hash::default()],
+                    [a.hash(), b.hash(), Hash::zero()],
                     // Authentication path is to the right child
                     c.witness(index)?,
                 ),

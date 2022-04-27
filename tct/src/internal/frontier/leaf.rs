@@ -67,8 +67,13 @@ impl<Item: Focus> Frontier for Leaf<Item> {
     fn insert(self, item: Insert<Self::Item>) -> Result<Self, Full<Self>> {
         Err(Full {
             item,
-            complete: self.finalize(),
+            complete: self.finalize_owned(),
         })
+    }
+
+    #[inline]
+    fn is_full(&self) -> bool {
+        true
     }
 }
 
@@ -76,10 +81,10 @@ impl<Item: Focus> Focus for Leaf<Item> {
     type Complete = complete::Leaf<<Item as Focus>::Complete>;
 
     #[inline]
-    fn finalize(self) -> Insert<Self::Complete> {
+    fn finalize_owned(self) -> Insert<Self::Complete> {
         match self.item {
             Insert::Hash(hash) => Insert::Hash(hash),
-            Insert::Keep(item) => match item.finalize() {
+            Insert::Keep(item) => match item.finalize_owned() {
                 Insert::Hash(hash) => Insert::Hash(hash),
                 Insert::Keep(item) => Insert::Keep(complete::Leaf::new(item)),
             },
