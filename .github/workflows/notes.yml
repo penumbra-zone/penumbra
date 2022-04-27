@@ -61,6 +61,8 @@ jobs:
             -p penumbra-chain \
             -p penumbra-tct \
             -p penumbra-transaction \
+            -p penumbra-component \
+            -p penumbra-storage \
             -p penumbra-wallet \
             -p penumbra-wallet-next \
             -p pd \
