@@ -27,10 +27,7 @@ pub trait Frontier: Focus + Sized {
     /// [`insert`](Frontier::insert)ed one).
     fn focus(&self) -> &Insert<Self::Item>;
 
-    /// Determine if this [`Frontier`] is full.
-    ///
-    /// If this returns `true`, then [`insert`](Frontier::insert) will always return `Err`; if this
-    /// returns `false`, then [`insert`](Frontier::insert) will always return `Ok`.
+    /// Check whether this frontier is full.
     fn is_full(&self) -> bool;
 }
 
@@ -72,6 +69,14 @@ pub trait Witness: Height + Sized {
     /// The input mutable slice should be at least the height of the tree, and is overwritten by
     /// this function.
     fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Self::Item)>;
+}
+
+/// Get the position of the next insertion into the tree.
+pub trait GetPosition: Height {
+    /// The position of the next insertion into the tree.
+    ///
+    /// Returns `None` if the tree is full.
+    fn position(&self) -> Option<u64>;
 }
 
 /// Forget about the authentication path to a given index.

@@ -56,7 +56,7 @@ mod internal;
 use builder::{block::Builder, epoch::Builder};
 use internal::{
     complete::{Complete, ForgetOwned},
-    frontier::{Focus, Frontier, Insert, Item, Tier, Top},
+    frontier::{Focus, Frontier, GetPosition, Insert, Item, Tier, Top},
     hash::GetHash,
     hash::Hash,
     height::Height,

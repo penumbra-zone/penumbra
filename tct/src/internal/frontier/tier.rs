@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     internal::{frontier::Forget, path::Witness},
-    AuthPath, Focus, ForgetOwned, Frontier, GetHash, Hash, Height, Insert,
+    AuthPath, Focus, ForgetOwned, Frontier, GetHash, GetPosition, Hash, Height, Insert,
 };
 
 use super::super::{complete, frontier};
@@ -52,6 +52,7 @@ pub enum Inner<Item: Focus> {
 
 impl<Item: Focus> Tier<Item> {
     /// Create a new frontier tier.
+    #[inline]
     pub fn singleton(item: Insert<Item>) -> Self {
         Self {
             inner: Inner::Frontier(Box::new(Nested::singleton(item))),
@@ -61,6 +62,7 @@ impl<Item: Focus> Tier<Item> {
     /// Insert an item or its hash into this frontier tier.
     ///
     /// If the tier is full, return the input item without inserting it.
+    #[inline]
     pub fn insert(&mut self, item: Insert<Item>) -> Result<(), Insert<Item>> {
         // Temporarily replace the inside with the zero hash (it will get put back right away, this
         // is just to satisfy the borrow checker)
@@ -95,6 +97,7 @@ impl<Item: Focus> Tier<Item> {
     ///
     /// If there is no currently focused item (either because the tier is empty, complete, or the
     /// most recently inserted item is a hash), return `None`.
+    #[inline]
     pub fn update<T>(&mut self, f: impl FnOnce(&mut Item) -> T) -> Option<T> {
         if let Inner::Frontier(frontier) = &mut self.inner {
             frontier.update(|focus| focus.as_mut().keep().map(f))
@@ -107,6 +110,7 @@ impl<Item: Focus> Tier<Item> {
     ///
     /// If there is no focused `Insert<Item>` (in the case that the tier is finalized), `None` is
     /// returned.
+    #[inline]
     pub fn focus(&self) -> Option<&Item> {
         if let Inner::Frontier(frontier) = &self.inner {
             frontier.focus().as_ref().keep()
@@ -116,6 +120,7 @@ impl<Item: Focus> Tier<Item> {
     }
 
     /// Finalize this tier so that it is internally marked as complete.
+    #[inline]
     pub fn finalize(&mut self) {
         // Temporarily replace the inside with the zero hash (it will get put back right away, this
         // is just to satisfy the borrow checker)
@@ -131,6 +136,7 @@ impl<Item: Focus> Tier<Item> {
     }
 
     /// Check whether this tier has been finalized.
+    #[inline]
     pub fn is_finalized(&self) -> bool {
         match self.inner {
             Inner::Frontier(_) => false,
@@ -194,10 +200,21 @@ where
     }
 }
 
+impl<Item: Focus + GetPosition> GetPosition for Tier<Item> {
+    #[inline]
+    fn position(&self) -> Option<u64> {
+        match &self.inner {
+            Inner::Frontier(frontier) => frontier.position(),
+            Inner::Complete(_) | Inner::Hash(_) => None,
+        }
+    }
+}
+
 impl<Item: Focus + Forget> Forget for Tier<Item>
 where
     Item::Complete: ForgetOwned,
 {
+    #[inline]
     fn forget(&mut self, index: impl Into<u64>) -> bool {
         // Whether something was actually forgotten
         let forgotten;

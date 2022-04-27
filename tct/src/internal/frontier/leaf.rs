@@ -6,7 +6,7 @@ use crate::{
         height::IsHeight,
         path::Witness,
     },
-    AuthPath, Focus, Frontier, GetHash, Hash, Height, Insert,
+    AuthPath, Focus, Frontier, GetHash, GetPosition, Hash, Height, Insert,
 };
 
 use super::super::complete;
@@ -95,12 +95,21 @@ impl<Item: Focus> Focus for Leaf<Item> {
 impl<Item: Witness> Witness for Leaf<Item> {
     type Item = Item::Item;
 
+    #[inline]
     fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Self::Item)> {
         self.item.as_ref().keep()?.witness(index)
     }
 }
 
+impl<Item: GetPosition> GetPosition for Leaf<Item> {
+    #[inline]
+    fn position(&self) -> Option<u64> {
+        self.item.as_ref().keep()?.position()
+    }
+}
+
 impl<Item: GetHash + Forget> Forget for Leaf<Item> {
+    #[inline]
     fn forget(&mut self, index: impl Into<u64>) -> bool {
         match self.item {
             Insert::Keep(ref mut item) => {

@@ -7,7 +7,7 @@ use crate::{
         height::Zero,
         path::{self, Witness},
     },
-    AuthPath, Commitment, Focus, GetHash, Hash, Height, Insert,
+    AuthPath, Commitment, Focus, GetHash, GetPosition, Hash, Height, Insert,
 };
 
 /// The hash of the most-recently-inserted item, stored at the tip of the frontier.
@@ -65,13 +65,22 @@ impl Focus for Item {
 impl Witness for Item {
     type Item = Hash;
 
+    #[inline]
     fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Self::Item)> {
         debug_assert_eq!(index.into(), 0, "non-zero index when witnessing leaf");
         Some((path::Leaf, self.hash))
     }
 }
 
+impl GetPosition for Item {
+    #[inline]
+    fn position(&self) -> Option<u64> {
+        None
+    }
+}
+
 impl Forget for Item {
+    #[inline]
     fn forget(&mut self, _index: impl Into<u64>) -> bool {
         unreachable!("frontier items can not be forgotten directly")
     }

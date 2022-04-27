@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     internal::{frontier::Forget, path::Witness},
-    AuthPath, Focus, ForgetOwned, Frontier, GetHash, Hash, Height, Insert,
+    AuthPath, Focus, ForgetOwned, Frontier, GetHash, GetPosition, Hash, Height, Insert,
 };
 
 use super::super::{complete, frontier::tier::Nested};
@@ -34,6 +34,7 @@ impl<Item: Focus> Top<Item> {
     /// Insert an item or its hash into this frontier tier.
     ///
     /// If the tier is full, return the input item without inserting it.
+    #[inline]
     pub fn insert(&mut self, item: Insert<Item>) -> Result<(), Insert<Item>> {
         // Temporarily replace the inside with `None` (it will get put back right away, this is just
         // to satisfy the borrow checker)
@@ -68,6 +69,7 @@ impl<Item: Focus> Top<Item> {
     ///
     /// If this top-level tier is empty or the most recently inserted item is a hash, returns
     /// `None`.
+    #[inline]
     pub fn update<T>(&mut self, f: impl FnOnce(&mut Item) -> T) -> Option<T> {
         self.inner
             .as_mut()
@@ -77,6 +79,7 @@ impl<Item: Focus> Top<Item> {
     /// Get a reference to the focused `Insert<Item>`, if there is one.
     ///
     /// If this top-level tier is empty or the focus is a hash, returns `None`.
+    #[inline]
     pub fn focus(&self) -> Option<&Item> {
         if let Some(ref inner) = self.inner {
             inner.focus().as_ref().keep()
@@ -86,6 +89,7 @@ impl<Item: Focus> Top<Item> {
     }
 
     /// Finalize the top tier into either a summary root hash or a complete tier.
+    #[inline]
     pub fn finalize(self) -> Insert<complete::Top<Item::Complete>> {
         if let Some(inner) = self.inner {
             inner.finalize_owned().map(|inner| complete::Top { inner })
@@ -96,6 +100,7 @@ impl<Item: Focus> Top<Item> {
     }
 
     /// Check whether this top-level tier is full.
+    #[inline]
     pub fn is_full(&self) -> bool {
         if let Some(ref inner) = self.inner {
             inner.is_full()
@@ -105,6 +110,7 @@ impl<Item: Focus> Top<Item> {
     }
 
     /// Check whether this top-level tier is empty.
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.inner.is_none()
     }
@@ -112,6 +118,17 @@ impl<Item: Focus> Top<Item> {
 
 impl<Item: Focus> Height for Top<Item> {
     type Height = <Nested<Item> as Height>::Height;
+}
+
+impl<Item: Focus + GetPosition> GetPosition for Top<Item> {
+    #[inline]
+    fn position(&self) -> Option<u64> {
+        if let Some(ref frontier) = self.inner {
+            frontier.position()
+        } else {
+            Some(0)
+        }
+    }
 }
 
 impl<Item: Focus> GetHash for Top<Item> {

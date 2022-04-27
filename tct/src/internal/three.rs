@@ -55,6 +55,18 @@ impl<T> Three<T> {
         self.elems.len() == 3
     }
 
+    /// Determine if this [`Three`] is empty.
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.elems.is_empty()
+    }
+
+    /// Get the number of elements in this [`Three`].
+    #[inline]
+    pub fn len(&self) -> u8 {
+        self.elems.len() as u8
+    }
+
     /// Get an enumeration of the elements of this [`Three`] by reference.
     pub fn elems(&self) -> Elems<T> {
         match self.elems.len() {

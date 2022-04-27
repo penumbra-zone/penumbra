@@ -93,7 +93,7 @@ pub mod frontier {
     //! immediately forget them; this determines whether the [`Item`] is a commitment or merely its
     //! hash.
     #[doc(inline)]
-    pub use super::interface::{Focus, Forget, Frontier, Full};
+    pub use super::interface::{Focus, Forget, Frontier, Full, GetPosition};
     pub(super) mod item;
     pub(super) mod leaf;
     pub(super) mod node;
