@@ -94,6 +94,11 @@ cargo run --release --bin pcli -- stake list-validators -i
 However your validator doesn't have anything delegated to it and will remain in an `Inactive` state until it receives enough delegations
 to place it in the active set of validators.
 
+**NOTE**: you should make sure your validator is *already running* and
+*synchronized with the chain* before uploading your definition and delegating
+to it.  Otherwise, your validator could become active too early, and be slashed
+for inactivity before it comes online.
+
 ## Delegating to your validator
 
 First find your validator's identity key:
