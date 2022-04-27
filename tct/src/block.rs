@@ -14,7 +14,6 @@ use crate::*;
 /// This is one [`Block`] in an [`Epoch`], which is one [`Epoch`] in a [`Tree`].
 #[derive(Derivative, Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Builder {
-    position: index::within::Block,
     index: HashedMap<Commitment, index::within::Block>,
     inner: Top<Item>,
 }
@@ -128,13 +127,16 @@ impl Builder {
     ) -> Result<&mut Self, InsertError> {
         let commitment = commitment.into();
 
+        // Get the position of the insertion, if it would succeed
+        let position = (self.inner.position().ok_or(InsertError)? as u16).into();
+
         // Insert the commitment into the inner tree
         self.inner
             .insert(match witness {
                 Keep => Insert::Keep(Item::new(commitment)),
                 Forget => Insert::Hash(Hash::of(commitment)),
             })
-            .map_err(|_| InsertError)?;
+            .expect("inserting a commitment must succeed when block has a position");
 
         // Keep track of the position of this just-inserted commitment in the index, if it was
         // slated to be kept
@@ -142,7 +144,7 @@ impl Builder {
             if let Some(replaced) = self.index.insert(
                 commitment,
                 index::within::Block {
-                    commitment: self.position.commitment,
+                    commitment: position,
                 },
             ) {
                 // This case is handled for completeness, but should not happen in
@@ -151,9 +153,6 @@ impl Builder {
                 debug_assert!(forgotten);
             }
         }
-
-        // Increment the position
-        self.position.commitment.increment();
 
         Ok(self)
     }

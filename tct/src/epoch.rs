@@ -22,7 +22,6 @@ pub use error::{InsertBlockError, InsertError};
 /// This is one [`Epoch`] in a [`Tree`].
 #[derive(Derivative, Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Builder {
-    position: index::within::Epoch,
     index: HashedMap<Commitment, index::within::Epoch>,
     inner: Top<Tier<Item>>,
 }
@@ -138,6 +137,9 @@ impl Builder {
             Forget => Insert::Hash(Hash::of(commitment)),
         };
 
+        // Get the position of the insertion, if it would succeed
+        let position = (self.inner.position().ok_or(InsertError::Full)? as u32).into();
+
         // Try to insert the commitment into the latest block
         self.inner
             .update(|block| {
@@ -158,16 +160,13 @@ impl Builder {
         // Keep track of the position of this just-inserted commitment in the index, if it was
         // slated to be kept
         if let Insert::Keep(commitment) = commitment {
-            if let Some(replaced) = self.index.insert(commitment, self.position) {
+            if let Some(replaced) = self.index.insert(commitment, position) {
                 // This case is handled for completeness, but should not happen in
                 // practice because commitments should be unique
                 let forgotten = self.inner.forget(replaced);
                 debug_assert!(forgotten);
             }
         }
-
-        // Increment the commitment index of the position
-        self.position.commitment.increment();
 
         Ok(self)
     }
@@ -182,6 +181,13 @@ impl Builder {
     ) -> Result<&mut Self, InsertBlockError> {
         let block::Finalized { inner, index } = block.into();
 
+        // Get the block index of the next insertion, if it would succeed
+        let mut block = if let Some(position) = self.inner.position() {
+            index::within::Epoch::from(position as u32).block
+        } else {
+            return Err(InsertBlockError(block::Finalized { inner, index }));
+        };
+
         // Determine if the latest-inserted block has yet been finalized (it will implicitly be
         // finalized by the insertion of the block, so we need to know to accurately record the new
         // position)
@@ -192,50 +198,32 @@ impl Builder {
             // Epoch is empty or latest block is finalized, so there's nothing to finalize
             .unwrap_or(true);
 
-        // Insert the inner tree of the block into the epoch
-        match self.inner.insert(inner.map(Into::into)) {
-            // Inserting the block succeeded
-            Ok(()) => {}
-            // Inserting the block failed because the epoch was full
-            Err(inner) => {
-                // If the insertion failed, map the result back into the input block
-                return Err(InsertBlockError(block::Finalized {
-                    inner: inner.and_then(|tier| tier.finalize_owned().map(Into::into)),
-                    index,
-                }));
-            }
+        // If the latest block was not finalized, then inserting a new block will implicitly
+        // finalize the latest block, so the block index to use for indexing new commitments should
+        // be one higher than the current block index
+        if !latest_block_finalized {
+            block.increment();
         }
+
+        // Insert the inner tree of the block into the epoch
+        self.inner
+            .insert(inner.map(Into::into))
+            .expect("inserting a block must succeed when epoch has a position");
 
         // Add the index of all commitments in the block to the epoch index
         for (c, index::within::Block { commitment }) in index {
             // If any commitment is repeated, forget the previous one within the tree, since it is
             // now inaccessible
-            if let Some(replaced) = self.index.insert(
-                c,
-                index::within::Epoch {
-                    block: self.position.block,
-                    commitment,
-                },
-            ) {
+            if let Some(replaced) = self
+                .index
+                .insert(c, index::within::Epoch { block, commitment })
+            {
                 // This case is handled for completeness, but should not happen in practice because
                 // commitments should be unique
                 let forgotten = self.inner.forget(replaced);
                 debug_assert!(forgotten);
             }
         }
-
-        // Increment the block position if the latest block wasn't already finalized, to track the
-        // implicit finalization of that block
-        if !latest_block_finalized {
-            self.position.block.increment();
-        }
-
-        // Increment the block index, potentially again, to track the insertion of this block
-        self.position.block.increment();
-
-        // Reset the commitment index to zero, because the next insertion will be at the start of
-        // the next block
-        self.position.commitment = index::Commitment::default();
 
         Ok(self)
     }
