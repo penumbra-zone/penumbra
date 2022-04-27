@@ -79,7 +79,6 @@ mod test {
     fn insert_errors_sync_send() {
         static_assertions::assert_impl_all!(InsertError: Sync, Send);
         static_assertions::assert_impl_all!(InsertBlockError: Sync, Send);
-        static_assertions::assert_impl_all!(InsertBlockRootError: Sync, Send);
         static_assertions::assert_impl_all!(InsertEpochError: Sync, Send);
         static_assertions::assert_impl_all!(InsertEpochRootError: Sync, Send);
     }
