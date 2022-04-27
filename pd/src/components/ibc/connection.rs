@@ -9,9 +9,12 @@ use ibc::core::ics03_connection::version::Version;
 use ibc::core::ics24_host::identifier::ConnectionId;
 use penumbra_chain::genesis;
 use penumbra_component::Component;
-use penumbra_ibc::{Connection, ConnectionCounter, IBCAction};
-use penumbra_proto::ibc::ibc_action::Action::{
-    ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
+use penumbra_ibc::{Connection, ConnectionCounter};
+use penumbra_proto::ibc::{
+    ibc_action::Action::{
+        ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
+    },
+    IbcAction,
 };
 use penumbra_storage::{State, StateExt};
 use penumbra_transaction::Transaction;
@@ -65,9 +68,9 @@ impl Component for ConnectionComponent {
     async fn end_block(&mut self, _end_block: &abci::request::EndBlock) {}
 }
 
-fn validate_ibc_action_stateless(ibc_action: &IBCAction) -> Result<(), anyhow::Error> {
+fn validate_ibc_action_stateless(ibc_action: &IbcAction) -> Result<(), anyhow::Error> {
     match &ibc_action.action {
-        ConnectionOpenInit(msg) => {
+        Some(ConnectionOpenInit(msg)) => {
             let msg_connection_open_init = MsgConnectionOpenInit::try_from(msg.clone())?;
 
             // check if the version is supported (we use the same versions as the cosmos SDK)
@@ -83,15 +86,15 @@ fn validate_ibc_action_stateless(ibc_action: &IBCAction) -> Result<(), anyhow::E
             return Ok(());
         }
 
-        ConnectionOpenTry(msg) => {
+        Some(ConnectionOpenTry(msg)) => {
             let _msg_connection_open_try = MsgConnectionOpenTry::try_from(msg.clone())?;
         }
 
-        ConnectionOpenAck(msg) => {
+        Some(ConnectionOpenAck(msg)) => {
             let _msg_connection_open_ack = MsgConnectionOpenAck::try_from(msg.clone())?;
         }
 
-        ConnectionOpenConfirm(msg) => {
+        Some(ConnectionOpenConfirm(msg)) => {
             let _msg_connection_open_confirm = MsgConnectionOpenConfirm::try_from(msg.clone())?;
         }
 
@@ -102,24 +105,24 @@ fn validate_ibc_action_stateless(ibc_action: &IBCAction) -> Result<(), anyhow::E
 }
 
 impl ConnectionComponent {
-    async fn execute_ibc_action(&mut self, ibc_action: &IBCAction) {
+    async fn execute_ibc_action(&mut self, ibc_action: &IbcAction) {
         match &ibc_action.action {
-            ConnectionOpenInit(msg) => {
+            Some(ConnectionOpenInit(msg)) => {
                 let msg_connection_open_init =
                     MsgConnectionOpenInit::try_from(msg.clone()).unwrap();
                 self.execute_connection_open_init(&msg_connection_open_init)
                     .await;
             }
 
-            ConnectionOpenTry(msg) => {
+            Some(ConnectionOpenTry(msg)) => {
                 let _msg_connection_open_try = MsgConnectionOpenTry::try_from(msg.clone()).unwrap();
             }
 
-            ConnectionOpenAck(msg) => {
+            Some(ConnectionOpenAck(msg)) => {
                 let _msg_connection_open_ack = MsgConnectionOpenAck::try_from(msg.clone()).unwrap();
             }
 
-            ConnectionOpenConfirm(msg) => {
+            Some(ConnectionOpenConfirm(msg)) => {
                 let _msg_connection_open_confirm =
                     MsgConnectionOpenConfirm::try_from(msg.clone()).unwrap();
             }
@@ -148,9 +151,9 @@ impl ConnectionComponent {
             .unwrap();
     }
 
-    async fn validate_ibc_action_stateful(&self, ibc_action: &IBCAction) -> Result<()> {
+    async fn validate_ibc_action_stateful(&self, ibc_action: &IbcAction) -> Result<()> {
         match &ibc_action.action {
-            ConnectionOpenInit(raw_msg) => {
+            Some(ConnectionOpenInit(raw_msg)) => {
                 // check that the client id exists
                 let msg = MsgConnectionOpenInit::try_from(raw_msg.clone())?;
                 self.state.get_client_data(&msg.client_id).await?;
@@ -158,15 +161,15 @@ impl ConnectionComponent {
                 return Ok(());
             }
 
-            ConnectionOpenTry(msg) => {
+            Some(ConnectionOpenTry(msg)) => {
                 let _msg_connection_open_try = MsgConnectionOpenTry::try_from(msg.clone())?;
             }
 
-            ConnectionOpenAck(msg) => {
+            Some(ConnectionOpenAck(msg)) => {
                 let _msg_connection_open_ack = MsgConnectionOpenAck::try_from(msg.clone())?;
             }
 
-            ConnectionOpenConfirm(msg) => {
+            Some(ConnectionOpenConfirm(msg)) => {
                 let _msg_connection_open_confirm = MsgConnectionOpenConfirm::try_from(msg.clone())?;
             }
 
