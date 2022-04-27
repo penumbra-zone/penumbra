@@ -10,19 +10,19 @@ use super::{block, epoch};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
 pub enum InsertError {
     /// The [`Tree`] was full.
-    #[error("eternity is full")]
+    #[error("tree is full")]
     Full,
     /// The most recent [`Epoch`] of the [`Tree`] was full.
-    #[error("most recent epoch in eternity is full")]
+    #[error("most recent epoch in tree is full")]
     EpochFull,
     /// The most recent [`Epoch`] of the [`Tree`] was forgotten.
-    #[error("most recent epoch in eternity was forgotten")]
+    #[error("most recent epoch in tree was forgotten")]
     EpochForgotten,
     /// The most recent [`Block`] of the most recent [`Epoch`] of the [`Tree`] was full.
-    #[error("most recent block in most recent epoch of eternity is full")]
+    #[error("most recent block in most recent epoch of tree is full")]
     BlockFull,
     /// The most recent [`Block`] of the most recent [`Epoch`] of the [`Tree`] was forgotten.
-    #[error("most recent block in most recent epoch of eternity was forgotten")]
+    #[error("most recent block in most recent epoch of tree was forgotten")]
     BlockForgotten,
 }
 
@@ -30,7 +30,7 @@ pub enum InsertError {
 #[derive(Debug, Clone, Error)]
 pub enum InsertBlockError {
     /// The [`Tree`] was full.
-    #[error("eternity is full")]
+    #[error("tree is full")]
     #[non_exhaustive]
     Full(block::Finalized),
     /// The most recent [`Epoch`] of the [`Tree`] was full.
@@ -53,26 +53,9 @@ impl From<InsertBlockError> for block::Finalized {
     }
 }
 
-/// An error occurred when trying to insert a [`Block`] root into the [`Tree`].
-#[derive(Debug, Clone, PartialEq, Eq, Error)]
-pub enum InsertBlockRootError {
-    /// The [`Tree`] was full.
-    #[error("eternity is full")]
-    #[non_exhaustive]
-    Full,
-    /// The most recent [`Epoch`] of the [`Tree`] was full.
-    #[error("most recent epoch is full")]
-    #[non_exhaustive]
-    EpochFull,
-    /// The most recent [`Epoch`] of the [`Tree`] was forgotten.
-    #[error("most recent epoch was forgotten")]
-    #[non_exhaustive]
-    EpochForgotten,
-}
-
 /// The [`Tree`] was full when trying to insert an [`Epoch`].
 #[derive(Debug, Clone, Error)]
-#[error("eternity is full")]
+#[error("tree is full")]
 #[non_exhaustive]
 pub struct InsertEpochError(pub epoch::Finalized);
 
@@ -84,7 +67,7 @@ impl From<InsertEpochError> for epoch::Finalized {
 
 /// The [`Tree`] was full when trying to insert an [`Epoch`] root.
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
-#[error("eternity is full")]
+#[error("tree is full")]
 #[non_exhaustive]
 pub struct InsertEpochRootError;
 
