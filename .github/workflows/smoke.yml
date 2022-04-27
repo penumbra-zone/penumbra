@@ -17,8 +17,8 @@ jobs:
       - name: Build the testnet.
         run: |
           mkdir ~/scratch
-          ./scripts/docker_compose_freshstart.sh ~/scratch/testnet_build
-          chmod -R 777 ~/scratch/testnet_build
+          ./scripts/docker_compose_freshstart.sh
+          chmod -R 777 ~/.penumbra/testnet_build
           docker-compose build
 
       - name: Run testnet for smoke test duration.
