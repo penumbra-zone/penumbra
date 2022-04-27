@@ -9,8 +9,7 @@ use penumbra_crypto::{
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
     Fr, Nullifier, Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_ibc::IBCAction;
-use penumbra_proto::{stake as pbs, transaction as pbt, Message, Protobuf};
+use penumbra_proto::{ibc as pb_ibc, stake as pbs, transaction as pbt, Message, Protobuf};
 
 use crate::{
     action::{output, Delegate, Undelegate},
@@ -95,7 +94,7 @@ impl Transaction {
         })
     }
 
-    pub fn ibc_actions(&self) -> impl Iterator<Item = &IBCAction> {
+    pub fn ibc_actions(&self) -> impl Iterator<Item = &pb_ibc::IbcAction> {
         self.actions().filter_map(|action| {
             if let Action::IBCAction(ibc_action) = action {
                 Some(ibc_action)

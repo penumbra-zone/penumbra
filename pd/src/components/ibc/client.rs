@@ -22,10 +22,11 @@ use ibc::{
 };
 use penumbra_chain::genesis;
 use penumbra_component::Component;
-use penumbra_ibc::{
-    ClientConnections, ClientCounter, ClientData, ConsensusState, IBCAction, VerifiedHeights,
+use penumbra_ibc::{ClientConnections, ClientCounter, ClientData, ConsensusState, VerifiedHeights};
+use penumbra_proto::ibc::{
+    ibc_action::Action::{CreateClient, UpdateClient},
+    IbcAction,
 };
-use penumbra_proto::ibc::ibc_action::Action::{CreateClient, UpdateClient};
 use penumbra_storage::{State, StateExt};
 use penumbra_transaction::Transaction;
 use tendermint::{abci, Time};
@@ -90,14 +91,14 @@ impl Component for ClientComponent {
 }
 
 // validates the given ibc action statelessly
-fn validate_ibc_action_stateless(ibc_action: &IBCAction) -> Result<(), anyhow::Error> {
+fn validate_ibc_action_stateless(ibc_action: &IbcAction) -> Result<(), anyhow::Error> {
     match &ibc_action.action {
-        CreateClient(msg) => {
+        Some(CreateClient(msg)) => {
             let msg_create_client = MsgCreateAnyClient::try_from(msg.clone())?;
 
             validate_create_client_stateless(&msg_create_client)?;
         }
-        UpdateClient(msg) => {
+        Some(UpdateClient(msg)) => {
             let msg_update_client = MsgUpdateAnyClient::try_from(msg.clone())?;
 
             validate_update_client_stateless(&msg_update_client)?;
@@ -149,15 +150,15 @@ fn validate_update_client_stateless(
 
 impl ClientComponent {
     // validates the given IBC action statefully.
-    async fn validate_ibc_action_stateful(&self, ibc_action: &IBCAction) -> Result<()> {
+    async fn validate_ibc_action_stateful(&self, ibc_action: &IbcAction) -> Result<()> {
         match &ibc_action.action {
-            CreateClient(msg) => {
+            Some(CreateClient(msg)) => {
                 let msg_create_client = MsgCreateAnyClient::try_from(msg.clone())?;
 
                 self.validate_create_client_stateful(msg_create_client)
                     .await?;
             }
-            UpdateClient(msg) => {
+            Some(UpdateClient(msg)) => {
                 let msg_update_client = MsgUpdateAnyClient::try_from(msg.clone())?;
 
                 self.validate_update_client_stateful(msg_update_client)
@@ -170,15 +171,15 @@ impl ClientComponent {
     }
 
     // executes the given IBC action, assuming that it has already been validated.
-    async fn execute_ibc_action(&mut self, ibc_action: &IBCAction) {
+    async fn execute_ibc_action(&mut self, ibc_action: &IbcAction) {
         match &ibc_action.action {
-            CreateClient(raw_msg_create_client) => {
+            Some(CreateClient(raw_msg_create_client)) => {
                 let msg_create_client =
                     MsgCreateAnyClient::try_from(raw_msg_create_client.clone()).unwrap();
 
                 self.execute_create_client(msg_create_client).await;
             }
-            UpdateClient(raw_msg_update_client) => {
+            Some(UpdateClient(raw_msg_update_client)) => {
                 let msg_update_client =
                     MsgUpdateAnyClient::try_from(raw_msg_update_client.clone()).unwrap();
 
@@ -769,7 +770,7 @@ mod tests {
     use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
     use penumbra_crypto::merkle;
     use penumbra_crypto::{Fq, Zero};
-    use penumbra_proto::ibc::ibc_action::Action as IBCActionInner;
+    use penumbra_proto::ibc::ibc_action::Action as IbcActionInner;
     use penumbra_proto::Message;
     use penumbra_storage::Storage;
     use penumbra_transaction::{Action, Fee, Transaction, TransactionBody};
@@ -823,8 +824,8 @@ mod tests {
             RawMsgUpdateClient::decode(msg_update_client_stargaze_raw.as_slice()).unwrap();
         msg_update_stargaze_client.client_id = "07-tendermint-0".to_string();
 
-        let create_client_action = IBCAction {
-            action: IBCActionInner::CreateClient(msg_create_stargaze_client),
+        let create_client_action = IbcAction {
+            action: Some(IbcActionInner::CreateClient(msg_create_stargaze_client)),
         };
         let create_client_tx = Transaction {
             transaction_body: TransactionBody {
@@ -837,8 +838,8 @@ mod tests {
             binding_sig: [0u8; 64].into(),
         };
 
-        let update_client_action = IBCAction {
-            action: IBCActionInner::UpdateClient(msg_update_stargaze_client),
+        let update_client_action = IbcAction {
+            action: Some(IbcActionInner::UpdateClient(msg_update_stargaze_client)),
         };
         let update_client_tx = Transaction {
             transaction_body: TransactionBody {
@@ -883,8 +884,8 @@ mod tests {
 
         let mut second_update = RawMsgUpdateClient::decode(msg_update_second.as_slice()).unwrap();
         second_update.client_id = "07-tendermint-0".to_string();
-        let second_update_client_action = IBCAction {
-            action: IBCActionInner::UpdateClient(second_update),
+        let second_update_client_action = IbcAction {
+            action: Some(IbcActionInner::UpdateClient(second_update)),
         };
         let second_update_client_tx = Transaction {
             transaction_body: TransactionBody {

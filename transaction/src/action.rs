@@ -1,8 +1,7 @@
 use std::convert::{TryFrom, TryInto};
 
 use penumbra_crypto::value;
-use penumbra_ibc as ibc;
-use penumbra_proto::{stake as pbs, transaction as pb, Protobuf};
+use penumbra_proto::{ibc as pb_ibc, stake as pbs, transaction as pb, Protobuf};
 
 mod delegate;
 pub mod output;
@@ -22,7 +21,7 @@ pub enum Action {
     Delegate(Delegate),
     Undelegate(Undelegate),
     ValidatorDefinition(pbs::ValidatorDefinition),
-    IBCAction(ibc::IBCAction),
+    IBCAction(pb_ibc::IbcAction),
 }
 
 impl Action {
