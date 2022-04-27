@@ -1,18 +1,18 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::genesis;
-use penumbra_storage::Overlay;
+use penumbra_storage::State;
 use penumbra_transaction::Transaction;
 use tendermint::abci;
 
 /// A component of the Penumbra application.
 ///
-/// Each component is a thin wrapper around a shared [`Overlay`], over a
+/// Each component is a thin wrapper around a shared [`State`], over a
 /// Jellyfish tree held in persistent [`Storage`].  The Jellyfish tree is a
 /// generic, byte-oriented key/value store.  Components can read from and write
 /// to the tree, and all components in the same [`Application`] instance will
 /// see each others' writes when they perform reads.  However, those writes are
-/// buffered in the [`Overlay`] until it commits a batch of changes to the
+/// buffered in the [`State`] until it commits a batch of changes to the
 /// persistent [`Storage`], making it possible to maintain and evolve multiple
 /// copies of the application state, as each [`Application`] is effectively its
 /// own copy-on-write instance of the chain state.
@@ -20,7 +20,7 @@ use tendermint::abci;
 /// The data and execution flow looks like:
 /// ```ascii,no_run
 /// ┌────────────┐          ┌───────────┐                           
-/// │WriteOverlay│          │ Component │                           
+/// │State       │          │ Component │                           
 /// │  ::new()   │═════════▶│  ::new()  │      ═══▶ Execution Flow  
 /// └────────────┘          └───────────┘           (Approximate)   
 ///        │                      ║            ───▶ Data Flow       
@@ -39,7 +39,7 @@ use tendermint::abci;
 /// │            │         ║    ║  ┌───────────┐   ┌───────────────┐
 /// │            │         ║    ║  │check_tx   │ ┌─│  Transaction  │
 /// │            │         ║    ║  │_stateless │◀┤ └───────────────┘
-/// │WriteOverlay│         ║    ║  └───────────┘ │                  
+/// │State       │         ║    ║  └───────────┘ │                  
 /// │            │         ║    ║  ┌───────────┐ │                  
 /// │            │         ║    ║  │check_tx   │ │                  
 /// │            │─────────╬────╬─▶│_stateful  │◀┤                  
@@ -57,7 +57,7 @@ use tendermint::abci;
 ///        │               ║             ║                          
 ///        ▼               ║             ║                          
 /// ┌────────────┐         ║             ║                          
-/// │WriteOverlay│         ║             ║                          
+/// │State       │         ║             ║                          
 /// │ ::commit() │◀════════╩═════════════╝                          
 /// └────────────┘                                                  
 /// ```
@@ -65,14 +65,14 @@ use tendermint::abci;
 pub trait Component: Sized {
     /// Initializes the component relative to a shared state.
     ///
-    /// This method should be called every time the [`Overlay`] is
+    /// This method should be called every time the [`State`] is
     /// re-initialized.
-    async fn new(overlay: Overlay) -> Self;
+    async fn new(state: State) -> Self;
 
     /// Performs initialization, given the genesis state.
     ///
     /// This method is called once per chain, and should only perform
-    /// writes, since the backing tree for the [`WriteOverlay`] will
+    /// writes, since the backing tree for the [`State`] will
     /// be empty.
     ///
     /// # Invariants

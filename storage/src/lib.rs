@@ -6,7 +6,7 @@ use tokio::sync::Mutex;
 mod overlay_ext;
 mod storage;
 
-pub use overlay_ext::OverlayExt;
+pub use overlay_ext::StateExt;
 pub use storage::Storage;
 
-pub type Overlay = Arc<Mutex<WriteOverlay<Storage>>>;
+pub type State = Arc<Mutex<WriteOverlay<Storage>>>;

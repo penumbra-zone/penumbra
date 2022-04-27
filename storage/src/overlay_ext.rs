@@ -8,10 +8,10 @@ use tokio::sync::Mutex;
 use tracing::instrument;
 
 /// An extension trait that allows writing proto-encoded domain types to
-/// a shared [`WriteOverlay`].
+/// a shared [`State`].
 #[async_trait]
-pub trait OverlayExt: Send + Sync + Sized + Clone + 'static {
-    /// Reads a domain type from the overlay, using the proto encoding.
+pub trait StateExt: Send + Sync + Sized + Clone + 'static {
+    /// Reads a domain type from the state, using the proto encoding.
     async fn get_domain<D, P>(&self, key: KeyHash) -> Result<Option<D>>
     where
         D: Protobuf<P> + TryFrom<P> + Clone + Debug,
@@ -19,7 +19,7 @@ pub trait OverlayExt: Send + Sync + Sized + Clone + 'static {
         P: Message + Default + From<D>,
         <D as TryFrom<P>>::Error: Into<anyhow::Error>;
 
-    /// Puts a domain type into the overlay, using the proto encoding.
+    /// Puts a domain type into the state, using the proto encoding.
     async fn put_domain<D, P>(&self, key: KeyHash, value: D)
     where
         D: Protobuf<P> + Send + TryFrom<P> + Clone + Debug,
@@ -27,17 +27,17 @@ pub trait OverlayExt: Send + Sync + Sized + Clone + 'static {
         P: Message + Default + From<D>,
         <D as TryFrom<P>>::Error: Into<anyhow::Error>;
 
-    /// Reads a proto type from the overlay.
+    /// Reads a proto type from the state.
     ///
-    /// It's probably preferable to use [`WriteOverlayExt::get_domain`] instead,
+    /// It's probably preferable to use [`StateExt::get_domain`] instead,
     /// but there are cases where it's convenient to use the proto directly.
     async fn get_proto<P>(&self, key: KeyHash) -> Result<Option<P>>
     where
         P: Message + Default + Debug;
 
-    /// Puts a proto type into the overlay.
+    /// Puts a proto type into the state.
     ///
-    /// It's probably preferable to use [`WriteOverlayExt::put_domain`] instead,
+    /// It's probably preferable to use [`StateExt::put_domain`] instead,
     /// but there are cases where it's convenient to use the proto directly.
     async fn put_proto<P>(&self, key: KeyHash, value: P)
     where
@@ -45,7 +45,7 @@ pub trait OverlayExt: Send + Sync + Sized + Clone + 'static {
 }
 
 #[async_trait]
-impl<R: TreeReader + Sync + 'static> OverlayExt for Arc<Mutex<WriteOverlay<R>>> {
+impl<R: TreeReader + Sync + 'static> StateExt for Arc<Mutex<WriteOverlay<R>>> {
     #[instrument(skip(self, key))]
     async fn get_domain<D, P>(&self, key: KeyHash) -> Result<Option<D>>
     where

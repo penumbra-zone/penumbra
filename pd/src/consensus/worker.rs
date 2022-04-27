@@ -29,7 +29,7 @@ impl Worker {
         queue: mpsc::Receiver<Message>,
         height_tx: watch::Sender<block::Height>,
     ) -> Result<Self> {
-        let app = App::new(storage.overlay().await?).await;
+        let app = App::new(storage.state().await?).await;
 
         Ok(Self {
             queue,
