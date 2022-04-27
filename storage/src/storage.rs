@@ -10,7 +10,7 @@ use rocksdb::DB;
 use tokio::sync::Mutex;
 use tracing::{instrument, Span};
 
-use crate::Overlay;
+use crate::State;
 
 #[derive(Clone, Debug)]
 pub struct Storage(Arc<DB>);
@@ -39,8 +39,8 @@ impl Storage {
             .map(|(node_key, _)| node_key.version()))
     }
 
-    /// Returns a new [`Overlay`] on top of the latest version of the tree.
-    pub async fn overlay(&self) -> Result<Overlay> {
+    /// Returns a new [`State`] on top of the latest version of the tree.
+    pub async fn state(&self) -> Result<State> {
         // If the tree is empty, use PRE_GENESIS_VERSION as the version,
         // so that the first commit will be at version 0.
         let version = self
@@ -48,21 +48,21 @@ impl Storage {
             .await?
             .unwrap_or(WriteOverlay::<Storage>::PRE_GENESIS_VERSION);
 
-        tracing::debug!("creating overlay for version {}", version);
+        tracing::debug!("creating state for version {}", version);
         Ok(Arc::new(Mutex::new(WriteOverlay::new(
             self.clone(),
             version,
         ))))
     }
 
-    /// Like [`Self::overlay`], but bundles in a [`tonic`] error conversion.
+    /// Like [`Self::state`], but bundles in a [`tonic`] error conversion.
     ///
     /// This is useful for implementing gRPC services that query the storage:
-    /// each gRPC request can create an ephemeral [`Overlay`] pinning the current
+    /// each gRPC request can create an ephemeral [`State`] pinning the current
     /// version at the time the request was received, and then query it using
     /// component `View`s to handle the request.
-    pub async fn overlay_tonic(&self) -> std::result::Result<Overlay, tonic::Status> {
-        self.overlay()
+    pub async fn state_tonic(&self) -> std::result::Result<State, tonic::Status> {
+        self.state()
             .await
             .map_err(|e| tonic::Status::internal(e.to_string()))
     }

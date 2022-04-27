@@ -11,7 +11,7 @@ use async_trait::async_trait;
 use client::ClientComponent;
 use penumbra_chain::genesis;
 use penumbra_component::Component;
-use penumbra_storage::Overlay;
+use penumbra_storage::State;
 use penumbra_transaction::Transaction;
 use tendermint::abci;
 use tracing::instrument;
@@ -23,10 +23,10 @@ pub struct IBCComponent {
 
 #[async_trait]
 impl Component for IBCComponent {
-    #[instrument(name = "ibc", skip(overlay))]
-    async fn new(overlay: Overlay) -> Self {
-        let client = ClientComponent::new(overlay.clone()).await;
-        let connection = connection::ConnectionComponent::new(overlay.clone()).await;
+    #[instrument(name = "ibc", skip(state))]
+    async fn new(state: State) -> Self {
+        let client = ClientComponent::new(state.clone()).await;
+        let connection = connection::ConnectionComponent::new(state.clone()).await;
 
         Self { client, connection }
     }

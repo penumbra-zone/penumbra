@@ -38,10 +38,10 @@ impl ObliviousQuery for Info {
         &self,
         request: tonic::Request<ChainParamsRequest>,
     ) -> Result<tonic::Response<ChainParams>, Status> {
-        let overlay = self.overlay_tonic().await?;
-        overlay.check_chain_id(&request.get_ref().chain_id).await?;
+        let state = self.state_tonic().await?;
+        state.check_chain_id(&request.get_ref().chain_id).await?;
 
-        let chain_params = overlay
+        let chain_params = state
             .get_chain_params()
             .await
             .map_err(|_| tonic::Status::unavailable("database error"))?;
@@ -54,10 +54,10 @@ impl ObliviousQuery for Info {
         &self,
         request: tonic::Request<AssetListRequest>,
     ) -> Result<tonic::Response<KnownAssets>, Status> {
-        let overlay = self.overlay_tonic().await?;
-        overlay.check_chain_id(&request.get_ref().chain_id).await?;
+        let state = self.state_tonic().await?;
+        state.check_chain_id(&request.get_ref().chain_id).await?;
 
-        let known_assets = overlay
+        let known_assets = state
             .known_assets()
             .await
             .map_err(|_| tonic::Status::unavailable("database error"))?;
@@ -69,10 +69,10 @@ impl ObliviousQuery for Info {
         &self,
         request: tonic::Request<ValidatorInfoRequest>,
     ) -> Result<tonic::Response<Self::ValidatorInfoStream>, Status> {
-        let overlay = self.overlay_tonic().await?;
-        overlay.check_chain_id(&request.get_ref().chain_id).await?;
+        let state = self.state_tonic().await?;
+        state.check_chain_id(&request.get_ref().chain_id).await?;
 
-        let validators = overlay
+        let validators = state
             .validator_list()
             .await
             .map_err(|_| tonic::Status::unavailable("database error"))?;
@@ -80,7 +80,7 @@ impl ObliviousQuery for Info {
         let show_inactive = request.get_ref().show_inactive;
         let s = try_stream! {
             for identity_key in validators {
-                let info = overlay.validator_info(&identity_key)
+                let info = state.validator_info(&identity_key)
                     .await?
                     .expect("known validator must be present");
                 // Slashed and inactive validators are not shown by default.
@@ -110,8 +110,8 @@ impl ObliviousQuery for Info {
         &self,
         request: tonic::Request<CompactBlockRangeRequest>,
     ) -> Result<tonic::Response<Self::CompactBlockRangeStream>, Status> {
-        let overlay = self.overlay_tonic().await?;
-        overlay.check_chain_id(&request.get_ref().chain_id).await?;
+        let state = self.state_tonic().await?;
+        state.check_chain_id(&request.get_ref().chain_id).await?;
 
         let CompactBlockRangeRequest {
             start_height,
@@ -119,7 +119,7 @@ impl ObliviousQuery for Info {
             ..
         } = request.into_inner();
 
-        let current_height = overlay
+        let current_height = state
             .get_block_height()
             .await
             .map_err(|_| tonic::Status::unavailable("database error"))?;
@@ -142,7 +142,7 @@ impl ObliviousQuery for Info {
                 "starting compact_block_range response"
             );
             for height in start_height..end_height {
-                let block = overlay.compact_block(height)
+                let block = state.compact_block(height)
                     .await?
                     .expect("compact block for in-range height must be present");
                 yield block.to_proto();

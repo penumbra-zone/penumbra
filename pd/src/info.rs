@@ -5,7 +5,7 @@ use std::{
 };
 
 use futures::FutureExt;
-use penumbra_storage::{Overlay, Storage};
+use penumbra_storage::{State, Storage};
 use tendermint::abci::{self, response::Echo, InfoRequest, InfoResponse};
 use tower_abci::BoxError;
 use tracing::Instrument;
@@ -27,8 +27,8 @@ impl Info {
         Self { storage }
     }
 
-    async fn overlay_tonic(&self) -> Result<Overlay, tonic::Status> {
-        self.storage.overlay_tonic().await
+    async fn state_tonic(&self) -> Result<State, tonic::Status> {
+        self.storage.state_tonic().await
     }
 
     async fn info(&self, info: abci::request::Info) -> Result<abci::response::Info, anyhow::Error> {

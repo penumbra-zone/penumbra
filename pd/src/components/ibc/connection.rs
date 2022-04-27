@@ -1,6 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc::core::ics03_connection::connection::{ConnectionEnd, State};
+use ibc::core::ics03_connection::connection::{self, ConnectionEnd};
 use ibc::core::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
 use ibc::core::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
 use ibc::core::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
@@ -13,7 +13,7 @@ use penumbra_ibc::{Connection, ConnectionCounter, IBCAction};
 use penumbra_proto::ibc::ibc_action::Action::{
     ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
 };
-use penumbra_storage::{Overlay, OverlayExt};
+use penumbra_storage::{State, StateExt};
 use penumbra_transaction::Transaction;
 use tendermint::abci;
 use tracing::instrument;
@@ -21,14 +21,14 @@ use tracing::instrument;
 use crate::components::ibc::client::View as _;
 
 pub struct ConnectionComponent {
-    overlay: Overlay,
+    state: State,
 }
 
 #[async_trait]
 impl Component for ConnectionComponent {
-    #[instrument(name = "ibc_connection", skip(overlay))]
-    async fn new(overlay: Overlay) -> Self {
-        Self { overlay }
+    #[instrument(name = "ibc_connection", skip(state))]
+    async fn new(state: State) -> Self {
+        Self { state }
     }
 
     #[instrument(name = "ibc_connection", skip(self, _app_state))]
@@ -129,13 +129,12 @@ impl ConnectionComponent {
     }
 
     async fn execute_connection_open_init(&mut self, msg: &MsgConnectionOpenInit) {
-        let connection_id =
-            ConnectionId::new(self.overlay.get_connection_counter().await.unwrap().0);
+        let connection_id = ConnectionId::new(self.state.get_connection_counter().await.unwrap().0);
 
         let compatible_versions = vec![Version::default()];
 
         let new_connection_end = ConnectionEnd::new(
-            State::Init,
+            connection::State::Init,
             msg.client_id.clone(),
             msg.counterparty.clone(),
             compatible_versions,
@@ -143,7 +142,7 @@ impl ConnectionComponent {
         );
 
         // commit the connection, this also increments the connection counter
-        self.overlay
+        self.state
             .put_new_connection(&connection_id, new_connection_end.into())
             .await
             .unwrap();
@@ -154,7 +153,7 @@ impl ConnectionComponent {
             ConnectionOpenInit(raw_msg) => {
                 // check that the client id exists
                 let msg = MsgConnectionOpenInit::try_from(raw_msg.clone())?;
-                self.overlay.get_client_data(&msg.client_id).await?;
+                self.state.get_client_data(&msg.client_id).await?;
 
                 return Ok(());
             }
@@ -179,7 +178,7 @@ impl ConnectionComponent {
 }
 
 #[async_trait]
-pub trait View: OverlayExt + Send + Sync {
+pub trait View: StateExt + Send + Sync {
     async fn get_connection_counter(&self) -> Result<ConnectionCounter> {
         self.get_domain("ibc/ics03-connection/connection_counter".into())
             .await
@@ -221,4 +220,4 @@ pub trait View: OverlayExt + Send + Sync {
     }
 }
 
-impl<T: OverlayExt + Send + Sync> View for T {}
+impl<T: StateExt + Send + Sync> View for T {}
