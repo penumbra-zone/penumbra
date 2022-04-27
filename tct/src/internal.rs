@@ -11,7 +11,7 @@
 //! themselves solely with the implementation of the tree itself, wherein commitments and their
 //! authentication paths are accessed by index. The surrounding pieces of the crate make use of the
 //! internal-facing API exposed by this module to implement an external API specific to the
-//! three-tiered eternity/epoch/block commitment tree required by Penumbra.
+//! three-tiered tree/epoch/block commitment tree required by Penumbra.
 //!
 //! The tiered commitment tree has a very specific structure, and in this implementation we make
 //! strong Rust's type system to enforce that structure. In particular, we ensure that internal

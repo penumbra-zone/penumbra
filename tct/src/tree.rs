@@ -17,9 +17,7 @@ mod proof;
 pub use proof::Proof;
 
 pub mod error;
-pub use error::{
-    InsertBlockError, InsertBlockRootError, InsertEpochError, InsertEpochRootError, InsertError,
-};
+pub use error::{InsertBlockError, InsertEpochError, InsertEpochRootError, InsertError};
 
 /// A sparse merkle tree to witness up to 65,536 [`Epoch`]s, each witnessing up to 65,536
 /// [`Block`]s, each witnessing up to 65,536 [`Commitment`]s.
@@ -42,9 +40,9 @@ impl From<Root> for Fq {
     }
 }
 
-/// An error occurred when decoding an eternity root from bytes.
+/// An error occurred when decoding a tree root from bytes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
-#[error("could not decode eternity root")]
+#[error("could not decode tree root")]
 pub struct RootDecodeError;
 
 impl TryFrom<pb::MerkleRoot> for Root {
@@ -150,9 +148,9 @@ impl Tree {
         todo!()
     }
 
-    /// Get a [`Proof`] of inclusion for the commitment at this index in the eternity.
+    /// Get a [`Proof`] of inclusion for the commitment at this index in the tree.
     ///
-    /// If the index is not witnessed in this eternity, return `None`.
+    /// If the index is not witnessed in this tree, return `None`.
     pub fn witness(&self, commitment: impl Into<Commitment>) -> Option<Proof> {
         let commitment = commitment.into();
 
@@ -227,17 +225,28 @@ impl Tree {
 
     /// Get the root hash of the most recent [`Block`] in the most recent [`Epoch`] of this
     /// [`Tree`].
-    ///
-    /// If the [`Tree`] is empty or the most recent [`Epoch`] was inserted with
-    /// [`Tree::insert_epoch_root`], returns `None`.
-    pub fn current_block_root(&self) -> Option<block::Root> {
-        self.inner.focus().and_then(|epoch| {
-            epoch
-                .as_ref()
-                .keep()?
-                .focus()
-                .map(|block| block::Root(block.hash()))
-        })
+    pub fn current_block_root(&self) -> block::Root {
+        self.inner
+            .focus()
+            .and_then(|epoch| {
+                let block = epoch
+                    .as_ref()
+                    .keep()? // If the epoch was hashed, consider the current epoch to be the upcoming one
+                    .focus()? // If the epoch was already finalized, consider the current epoch to be the upcoming one
+                    .as_ref()
+                    .keep()?; // If the block was hashed, consider the current epoch to be the upcoming one
+
+                // If the epoch has already been finalized, consider the current epoch to be the
+                // upcoming one
+                if block.is_finalized() {
+                    None
+                } else {
+                    Some(block::Root(block.hash()))
+                }
+            })
+            // In the case where the tree is empty, the current block root is the zero hash, because
+            // the block is empty and unfinalized
+            .unwrap_or_else(|| block::Root(Hash::zero()))
     }
 
     /// Add a new [`Epoch`] all at once to this [`Tree`].
@@ -265,8 +274,24 @@ impl Tree {
     /// Get the root hash of the most recent [`Epoch`] in this [`Tree`].
     ///
     /// If the [`Tree`] is empty, returns `None`.
-    pub fn current_epoch_root(&self) -> Option<epoch::Root> {
-        self.inner.focus().map(|epoch| epoch::Root(epoch.hash()))
+    pub fn current_epoch_root(&self) -> epoch::Root {
+        self.inner
+            .focus()
+            .and_then(|epoch| {
+                // If the epoch was hashed, consider the current epoch to be the upcoming one
+                let epoch = epoch.as_ref().keep()?;
+
+                // If the epoch has already been finalized, consider the current epoch to be the
+                // upcoming one
+                if epoch.is_finalized() {
+                    None
+                } else {
+                    Some(epoch::Root(epoch.hash()))
+                }
+            })
+            // In the case where the tree is empty, the current epoch root is the zero hash, because
+            // the epoch is empty and unfinalized
+            .unwrap_or_else(|| epoch::Root(Hash::zero()))
     }
 
     /// The position in this [`Tree`] at which the next [`Commitment`] would be inserted.
