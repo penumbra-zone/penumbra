@@ -1,5 +1,3 @@
-use std::mem;
-
 use serde::{Deserialize, Serialize};
 
 use crate::{internal::frontier::Forget, ForgetOwned, GetHash, Hash, Height};
@@ -105,7 +103,7 @@ impl<T: Height> Height for Insert<T> {
 impl<T: Height + ForgetOwned> Forget for Insert<T> {
     fn forget(&mut self, index: impl Into<u64>) -> bool {
         // Replace `self` temporarily with an empty hash, so we can move out of it
-        let this = mem::replace(self, Insert::Hash(Hash::zero()));
+        let this = std::mem::replace(self, Insert::Hash(Hash::zero()));
 
         // Whether something was actually forgotten
         let forgotten;

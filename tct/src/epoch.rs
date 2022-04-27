@@ -166,7 +166,8 @@ impl Builder {
             if let Some(replaced) = self.index.insert(commitment, self.position) {
                 // This case is handled for completeness, but should not happen in
                 // practice because commitments should be unique
-                self.inner.forget(replaced);
+                let forgotten = self.inner.forget(replaced);
+                debug_assert!(forgotten);
             }
         }
 
@@ -204,12 +205,31 @@ impl Builder {
             .unwrap_or(true);
 
         // Insert the inner tree of the block into the epoch
-        self.inner.insert(inner.map(Into::into)).map_err(|inner| {
-            InsertBlockError(block::Finalized {
+        if let Err(inner) = self.inner.insert(inner.map(Into::into)) {
+            // If the insertion failed, map the result back into the input block
+            return Err(InsertBlockError(block::Finalized {
                 inner: inner.and_then(|tier| tier.finalize_owned().map(Into::into)),
                 index,
-            })
-        })?;
+            }));
+        }
+
+        // Add the index of all commitments in the block to the epoch index
+        for (c, index::within::Block { commitment }) in index {
+            // If any commitment is repeated, forget the previous one within the tree, since it is
+            // now inaccessible
+            if let Some(replaced) = self.index.insert(
+                c,
+                index::within::Epoch {
+                    block: self.position.block,
+                    commitment,
+                },
+            ) {
+                // This case is handled for completeness, but should not happen in practice because
+                // commitments should be unique
+                let forgotten = self.inner.forget(replaced);
+                debug_assert!(forgotten);
+            }
+        }
 
         // Increment the position if the latest block wasn't already finalized, to track the
         // implicit finalization of that block

@@ -185,6 +185,9 @@ where
 
         let index = index.into();
 
+        // The zero padding hash for frontier nodes
+        let zero = Hash::zero();
+
         // Which direction should we go from this node?
         let (which_way, index) = WhichWay::at(Self::Height::HEIGHT, index);
 
@@ -193,7 +196,7 @@ where
             (_0([]), a) => match which_way {
                 Leftmost => (
                     // All sibling hashes are default for the left, right, and rightmost
-                    [Hash::zero(); 3],
+                    [zero; 3],
                     // Authentication path is to the leftmost child
                     a.witness(index)?,
                 ),
@@ -204,13 +207,13 @@ where
             (_1([a]), b) => match which_way {
                 Leftmost => (
                     // Sibling hashes are the left child and default for right and rightmost
-                    [b.hash(), Hash::zero(), Hash::zero()],
+                    [b.hash(), zero, zero],
                     // Authentication path is to the leftmost child
                     a.as_ref().keep()?.witness(index)?,
                 ),
                 Left => (
                     // Sibling hashes are the leftmost child and default for right and rightmost
-                    [a.hash(), Hash::zero(), Hash::zero()],
+                    [a.hash(), zero, zero],
                     // Authentication path is to the left child
                     b.witness(index)?,
                 ),
@@ -221,19 +224,19 @@ where
             (_2([a, b]), c) => match which_way {
                 Leftmost => (
                     // Sibling hashes are the left child and right child and default for rightmost
-                    [b.hash(), c.hash(), Hash::zero()],
+                    [b.hash(), c.hash(), zero],
                     // Authentication path is to the leftmost child
                     a.as_ref().keep()?.witness(index)?,
                 ),
                 Left => (
                     // Sibling hashes are the leftmost child and right child and default for rightmost
-                    [a.hash(), c.hash(), Hash::zero()],
+                    [a.hash(), c.hash(), zero],
                     // Authentication path is to the left child
                     b.as_ref().keep()?.witness(index)?,
                 ),
                 Right => (
                     // Sibling hashes are the leftmost child and left child and default for rightmost
-                    [a.hash(), b.hash(), Hash::zero()],
+                    [a.hash(), b.hash(), zero],
                     // Authentication path is to the right child
                     c.witness(index)?,
                 ),

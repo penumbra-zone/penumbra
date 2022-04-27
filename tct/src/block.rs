@@ -147,7 +147,8 @@ impl Builder {
             ) {
                 // This case is handled for completeness, but should not happen in
                 // practice because commitments should be unique
-                self.inner.forget(replaced);
+                let forgotten = self.inner.forget(replaced);
+                debug_assert!(forgotten);
             }
         }
 
