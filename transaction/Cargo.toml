@@ -11,14 +11,14 @@ penumbra-proto = { path = "../proto/" }
 penumbra-crypto = { path = "../crypto/" }
 
 # Git deps
-ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
-ark-serialize = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 decaf377-rdsa = { git = "https://github.com/penumbra-zone/decaf377-rdsa" }
 incrementalmerkletree = { git = "https://github.com/penumbra-zone/incrementalmerkletree" }
 poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377" }
 
 # Crates.io deps
+ark-ff = "0.3"
+ark-serialize = "0.3"
 regex = "1.5"
 sha2 = "0.9"
 bech32 = "0.8.1"
