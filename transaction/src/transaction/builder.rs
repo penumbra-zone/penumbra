@@ -7,19 +7,14 @@ use penumbra_crypto::{
     memo::MemoPlaintext,
     merkle::{self, NoteCommitmentTree},
     rdsa::{Binding, Signature, SigningKey, SpendAuth},
-    value, Address, Fr, Note, Value,
+    value, Address, Fr, IdentityKey, Note, Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_proto::{stake::Validator as ProtoValidator, Message};
-use penumbra_stake::{
-    action::{Delegate, Undelegate, ValidatorDefinition},
-    rate::RateData,
-    STAKING_TOKEN_ASSET_ID,
-};
+use penumbra_proto::{stake as pbs, Message};
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
 
 use crate::{
-    action::{spend, Action, Output, Spend},
+    action::{spend, Action, Delegate, Output, Spend, Undelegate},
     Error, Fee, Transaction, TransactionBody,
 };
 
@@ -35,7 +30,7 @@ pub struct Builder {
     /// List of undelegations in the transaction.
     pub undelegations: Vec<Undelegate>,
     /// List of validator (re-)definitions in the transaction.
-    pub validator_definitions: Vec<ValidatorDefinition>,
+    pub validator_definitions: Vec<pbs::ValidatorDefinition>,
     /// Transaction fee. None if unset.
     pub fee: Option<Fee>,
     /// Sum of blinding factors for each value commitment.
@@ -140,15 +135,8 @@ impl Builder {
         note
     }
 
-    /// Create a new `Delegate` description for the transaction.
-    pub fn add_delegation(&mut self, rate_data: &RateData, unbonded_amount: u64) -> &mut Self {
-        let delegate = Delegate {
-            delegation_amount: rate_data.delegation_amount(unbonded_amount),
-            epoch_index: rate_data.epoch_index,
-            unbonded_amount,
-            validator_identity: rate_data.identity_key.clone(),
-        };
-
+    /// Adds a `Delegate` description to the transaction.
+    pub fn add_delegation(&mut self, delegate: Delegate) -> &mut Self {
         let value_commitment = delegate.value_commitment();
         // The value commitment has 0 blinding factor, so we skip
         // accumulating a blinding term into the synthetic blinding factor.
@@ -160,15 +148,8 @@ impl Builder {
         self
     }
 
-    /// Create a new `Undelegate` description for the transaction.
-    pub fn add_undelegation(&mut self, rate_data: &RateData, delegation_amount: u64) -> &mut Self {
-        let undelegate = Undelegate {
-            epoch_index: rate_data.epoch_index,
-            delegation_amount,
-            unbonded_amount: rate_data.unbonded_amount(delegation_amount),
-            validator_identity: rate_data.identity_key.clone(),
-        };
-
+    /// Adds an `Undelegate` description to the transaction.
+    pub fn add_undelegation(&mut self, undelegate: Undelegate) -> &mut Self {
         let value_commitment = undelegate.value_commitment();
         // The value commitment has 0 blinding factor, so we skip
         // accumulating a blinding term into the synthetic blinding factor.
@@ -180,7 +161,7 @@ impl Builder {
         self
     }
 
-    pub fn add_validator_definition(&mut self, validator: ValidatorDefinition) -> &mut Self {
+    pub fn add_validator_definition(&mut self, validator: pbs::ValidatorDefinition) -> &mut Self {
         self.validator_definitions.push(validator);
         self
     }
@@ -284,13 +265,26 @@ impl Builder {
         for vd in &self.validator_definitions {
             // validate the validator signature is signed by the identity key within the validator
             // for a client-side safety check
-            let protobuf_serialized: ProtoValidator = vd.validator.clone().into();
+            // TODO: fix this and other unwraps, by switching from an enumerated error
+            // type to anyhow::Error so we don't have to add an extra error variant for
+            // everything that can fail.
+            let protobuf_serialized: pbs::Validator = vd.validator.clone().unwrap();
             let v_bytes = protobuf_serialized.encode_to_vec();
 
-            vd.validator
+            // Deserialize the IdentityKey to check the signature.
+            let ik: IdentityKey = vd
+                .validator
+                .clone()
+                .unwrap()
                 .identity_key
+                .unwrap()
+                .try_into()
+                .unwrap();
+            let auth_sig: Signature<SpendAuth> = vd.auth_sig.as_slice().try_into().unwrap();
+
+            ik
                 .0
-                .verify(&v_bytes, &vd.auth_sig)
+                .verify(&v_bytes, &auth_sig)
                 .expect("expected identity key within validator definition to have signed validator definition");
             actions.push(Action::ValidatorDefinition(vd.clone()));
         }

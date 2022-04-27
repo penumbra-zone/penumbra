@@ -4,9 +4,7 @@ use anyhow::{Context, Result};
 use futures::TryStreamExt;
 use penumbra_crypto::IdentityKey;
 use penumbra_proto::{stake::Validator as ProtoValidator, Message};
-use penumbra_stake::{
-    action::ValidatorDefinition, validator, validator::Validator, FundingStream, FundingStreams,
-};
+use penumbra_stake::{validator, validator::Validator, FundingStream, FundingStreams};
 use rand_core::OsRng;
 use structopt::StructOpt;
 
@@ -90,7 +88,7 @@ impl ValidatorCmd {
                 let v_bytes = protobuf_serialized.encode_to_vec();
                 let signing_key = state.wallet().spend_key().spend_auth_key().clone();
                 let auth_sig = signing_key.sign(&mut OsRng, &v_bytes);
-                let vd = ValidatorDefinition {
+                let vd = validator::Definition {
                     validator: new_validator,
                     auth_sig,
                 };

@@ -4,6 +4,7 @@ use penumbra_proto::{
     stake::{self as pb},
     Protobuf,
 };
+use penumbra_transaction::action::{Delegate, Undelegate};
 use serde::{Deserialize, Serialize};
 
 use crate::{validator::State, FundingStream, IdentityKey};
@@ -151,6 +152,28 @@ impl RateData {
             / base_rate_data.base_exchange_rate as u128)
             .try_into()
             .unwrap()
+    }
+
+    /// Uses this `RateData` to build a `Delegate` transaction action that
+    /// delegates `unbonded_amount` of the staking token.
+    pub fn build_delegate(&self, unbonded_amount: u64) -> Delegate {
+        Delegate {
+            delegation_amount: self.delegation_amount(unbonded_amount),
+            epoch_index: self.epoch_index,
+            unbonded_amount,
+            validator_identity: self.identity_key.clone(),
+        }
+    }
+
+    /// Uses this `RateData` to build an `Undelegate` transaction action that
+    /// undelegates `delegation_amount` of the validator's delegation tokens.
+    pub fn build_undelegate(&self, delegation_amount: u64) -> Undelegate {
+        Undelegate {
+            epoch_index: self.epoch_index,
+            delegation_amount,
+            unbonded_amount: self.unbonded_amount(delegation_amount),
+            validator_identity: self.identity_key.clone(),
+        }
     }
 }
 

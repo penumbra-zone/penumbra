@@ -10,12 +10,13 @@ use penumbra_chain::{genesis::Allocation, params::ChainParams};
 use penumbra_crypto::{
     keys::{SpendKey, SpendSeed},
     rdsa::{SigningKey, SpendAuth, VerificationKey},
+    DelegationToken,
 };
 use penumbra_proto::client::{
     oblivious::oblivious_query_server::ObliviousQueryServer,
     specific::specific_query_server::SpecificQueryServer,
 };
-use penumbra_stake::{validator::Validator, DelegationToken, FundingStream, FundingStreams};
+use penumbra_stake::{validator::Validator, FundingStream, FundingStreams};
 use penumbra_storage::Storage;
 use rand_core::OsRng;
 use structopt::StructOpt;

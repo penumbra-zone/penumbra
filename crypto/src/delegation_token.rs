@@ -1,9 +1,8 @@
 use std::str::FromStr;
 
-use penumbra_crypto::asset;
 use regex::Regex;
 
-use crate::IdentityKey;
+use crate::{asset, IdentityKey};
 
 /// Delegation tokens represent a share of a particular validator's delegation pool.
 pub struct DelegationToken {
@@ -121,7 +120,7 @@ impl std::hash::Hash for DelegationToken {
 
 #[cfg(test)]
 mod tests {
-    use penumbra_crypto::rdsa::{SigningKey, SpendAuth};
+    use crate::rdsa::{SigningKey, SpendAuth};
 
     use super::*;
 

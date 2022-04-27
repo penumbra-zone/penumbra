@@ -15,6 +15,7 @@ publish = false
 # Workspace dependencies
 penumbra-crypto = { path = "../crypto" }
 penumbra-proto = { path = "../proto" }
+penumbra-transaction = { path = "../transaction" }
 
 # Penumbra dependencies
 tendermint = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "master" }
