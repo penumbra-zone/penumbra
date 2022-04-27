@@ -16,8 +16,8 @@ hash_hasher = "2"
 thiserror = "1"
 serde = { version = "1.0", features = ["derive"] }
 parking_lot = "0.12"
-ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
-ark-serialize = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
+ark-ff = "0.3"
+ark-serialize = "0.3"
 poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377" }
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 proptest = { version = "1", optional = true }

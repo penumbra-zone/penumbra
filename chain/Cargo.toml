@@ -11,10 +11,10 @@ penumbra-transaction = { path = "../transaction" }
 penumbra-stake = { path = "../stake" }
 
 # Penumbra dependencies
-ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 
 # Crates.io deps
+ark-ff = "0.3"
 anyhow = "1"
 bytes = "1"
 hex = "0.4"

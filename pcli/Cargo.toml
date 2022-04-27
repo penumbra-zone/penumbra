@@ -21,10 +21,10 @@ penumbra-transaction = { path = "../transaction" }
 penumbra-wallet = { path = "../wallet" }
 
 # Penumbra dependencies
-ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 tendermint = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "master" }
 # External dependencies
+ark-ff = "0.3"
 ed25519-consensus = "2"
 futures = "0.3"
 async-stream = "0.2"
