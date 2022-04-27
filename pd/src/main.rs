@@ -17,6 +17,7 @@ use penumbra_proto::client::{
     specific::specific_query_server::SpecificQueryServer,
 };
 use penumbra_stake::{validator::Validator, FundingStream, FundingStreams};
+use penumbra_storage::Storage;
 use rand_core::OsRng;
 use structopt::StructOpt;
 use tonic::transport::Server;
@@ -125,7 +126,7 @@ async fn main() -> anyhow::Result<()> {
                 "starting pd"
             );
 
-            let storage = pd::Storage::load(rocks_path)
+            let storage = Storage::load(rocks_path)
                 .await
                 .context("Unable to initialize RocksDB storage")?;
 
@@ -139,7 +140,7 @@ async fn main() -> anyhow::Result<()> {
                     .consensus(consensus)
                     .snapshot(snapshot)
                     .mempool(mempool)
-                    .info(info)
+                    .info(info.clone())
                     .finish()
                     .unwrap()
                     .listen(format!("{}:{}", host, abci_port)),
@@ -155,7 +156,7 @@ async fn main() -> anyhow::Result<()> {
                             }
                             None => tracing::error_span!("oblivious_query"),
                         })
-                        .add_service(ObliviousQueryServer::new(storage.clone()))
+                        .add_service(ObliviousQueryServer::new(info.clone()))
                         .serve(
                             format!("{}:{}", host, oblivious_query_port)
                                 .parse()
@@ -172,7 +173,7 @@ async fn main() -> anyhow::Result<()> {
                             }
                             None => tracing::error_span!("specific_query"),
                         })
-                        .add_service(SpecificQueryServer::new(storage.clone()))
+                        .add_service(SpecificQueryServer::new(info.clone()))
                         .serve(
                             format!("{}:{}", host, specific_query_port)
                                 .parse()

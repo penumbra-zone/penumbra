@@ -12,12 +12,13 @@ use penumbra_crypto::{
     note, Address, Note, Nullifier, One, Value,
 };
 use penumbra_stake::{Epoch, STAKING_TOKEN_ASSET_ID};
+use penumbra_storage::{Overlay, OverlayExt};
 use penumbra_transaction::{action::output, Action, Transaction};
 use tendermint::abci;
 use tracing::instrument;
 
 use super::{app::View as _, staking::View as _, Component};
-use crate::{genesis, Overlay, OverlayExt};
+use crate::genesis;
 
 // Stub component
 pub struct ShieldedPool {

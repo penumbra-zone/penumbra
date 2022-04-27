@@ -6,9 +6,10 @@ use penumbra_transaction::Transaction;
 use tendermint::block;
 use tokio::sync::{mpsc, watch};
 use tracing::Instrument;
+use penumbra_storage::Storage;
 
 use super::Message;
-use crate::{App, Component, Storage};
+use crate::{App, Component};
 
 pub struct Worker {
     queue: mpsc::Receiver<Message>,

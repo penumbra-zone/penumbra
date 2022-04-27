@@ -10,11 +10,7 @@ use rocksdb::DB;
 use tokio::sync::Mutex;
 use tracing::{instrument, Span};
 
-mod overlay_ext;
-
-pub use overlay_ext::OverlayExt;
-
-pub type Overlay = Arc<Mutex<WriteOverlay<Storage>>>;
+use crate::Overlay;
 
 #[derive(Clone, Debug)]
 pub struct Storage(Arc<DB>);

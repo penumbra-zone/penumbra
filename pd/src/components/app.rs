@@ -5,12 +5,13 @@ use async_trait::async_trait;
 use jmt::{RootHash, Version};
 use penumbra_chain::params::ChainParams;
 use penumbra_stake::Epoch;
+use penumbra_storage::{Overlay, OverlayExt, Storage};
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, types::ValidatorUpdate};
 use tendermint::Time;
 use tracing::instrument;
 
-use crate::{genesis, Overlay, OverlayExt, Storage};
+use crate::genesis;
 
 use super::{Component, IBCComponent, ShieldedPool, Staking};
 

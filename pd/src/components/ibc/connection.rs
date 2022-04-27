@@ -1,5 +1,3 @@
-use crate::{components::ibc::client::View as _, components::Component};
-use crate::{genesis, Overlay, OverlayExt};
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc::core::ics03_connection::connection::{ConnectionEnd, State};
@@ -13,9 +11,12 @@ use penumbra_ibc::{Connection, ConnectionCounter, IBCAction};
 use penumbra_proto::ibc::ibc_action::Action::{
     ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
 };
+use penumbra_storage::{Overlay, OverlayExt};
 use penumbra_transaction::Transaction;
 use tendermint::abci;
 use tracing::instrument;
+
+use crate::{components::ibc::client::View as _, components::Component, genesis};
 
 pub struct ConnectionComponent {
     overlay: Overlay,

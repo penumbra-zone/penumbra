@@ -1,0 +1,19 @@
+[package]
+name = "penumbra-storage"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+penumbra-proto = { path = "../proto" }
+
+tokio = { version = "1.16", features = ["full"]}
+jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "main" }
+anyhow = "1"
+async-trait = "0.1.52"
+tracing = "0.1"
+rocksdb = "0.18.0"
+futures = "0.3"
+tonic = "0.6.1"
+hex = "0.4"

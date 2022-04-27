@@ -22,11 +22,11 @@ use tracing::instrument;
 // (stable) std types.
 // use tracing_futures::Instrument;
 
+use super::Info;
 use crate::components::{app::View as _, shielded_pool::View as _, staking::View as _};
-use crate::Storage;
 
 #[tonic::async_trait]
-impl ObliviousQuery for Storage {
+impl ObliviousQuery for Info {
     type CompactBlockRangeStream =
         Pin<Box<dyn futures::Stream<Item = Result<CompactBlock, tonic::Status>> + Send>>;
 

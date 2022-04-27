@@ -6,6 +6,7 @@ members = [
   "decaf377-ka",
   "proto",
   "crypto",
+  "storage",
   "chain",
   "stake",
   "transaction",
