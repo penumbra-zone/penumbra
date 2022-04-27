@@ -7,6 +7,7 @@ pub use decaf377_rdsa as rdsa;
 
 mod address;
 pub mod asset;
+mod identity_key;
 pub mod keys;
 pub mod memo;
 pub mod merkle;
@@ -18,6 +19,7 @@ pub mod value;
 
 pub use address::Address;
 pub use asset::Asset;
+pub use identity_key::IdentityKey;
 pub use note::Note;
 pub use nullifier::Nullifier;
 pub use value::Value;

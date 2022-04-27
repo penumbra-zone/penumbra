@@ -13,7 +13,8 @@ use penumbra_crypto::{
     note, Address, FieldExt, Note, Nullifier, Value,
 };
 use penumbra_stake::{
-    action::ValidatorDefinition, rate::RateData, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
+    action::ValidatorDefinition, rate::RateData, DelegationToken, STAKING_TOKEN_ASSET_ID,
+    STAKING_TOKEN_DENOM,
 };
 use penumbra_transaction::{action::output, Transaction};
 use rand::seq::SliceRandom;
@@ -299,7 +300,7 @@ impl ClientState {
             &self_address,
             Value {
                 amount: rate_data.delegation_amount(unbonded_amount),
-                asset_id: rate_data.identity_key.delegation_token().id(),
+                asset_id: DelegationToken::new(rate_data.identity_key).id(),
             },
             memo::MemoPlaintext([0u8; memo::MEMO_LEN_BYTES]),
             self.wallet.outgoing_viewing_key(),
@@ -363,7 +364,7 @@ impl ClientState {
             )
         })?;
 
-        let delegation_denom = rate_data.identity_key.delegation_token().denom();
+        let delegation_denom = DelegationToken::new(rate_data.identity_key).denom();
 
         // XXX if the undelegation is for less than their total amount of delegation tokens,
         // all of their remaining delegation tokens will also be quarantined.

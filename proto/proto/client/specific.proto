@@ -13,11 +13,11 @@ import "stake.proto";
 service SpecificQuery {
   rpc TransactionByNote(crypto.NoteCommitment) returns (chain.NoteSource);
   rpc ValidatorStatus(ValidatorStatusRequest) returns (stake.ValidatorStatus);
-  rpc NextValidatorRate(stake.IdentityKey) returns (stake.RateData);
+  rpc NextValidatorRate(crypto.IdentityKey) returns (stake.RateData);
 }
 
 message ValidatorStatusRequest {
   // The expected chain id (empty string if no expectation).
   string chain_id = 1;
-  stake.IdentityKey identity_key = 2;
+  crypto.IdentityKey identity_key = 2;
 }

@@ -2,10 +2,10 @@ use std::{fs::File, io::Write};
 
 use anyhow::{Context, Result};
 use futures::TryStreamExt;
+use penumbra_crypto::IdentityKey;
 use penumbra_proto::{stake::Validator as ProtoValidator, Message};
 use penumbra_stake::{
     action::ValidatorDefinition, validator, validator::Validator, FundingStream, FundingStreams,
-    IdentityKey,
 };
 use rand_core::OsRng;
 use structopt::StructOpt;
