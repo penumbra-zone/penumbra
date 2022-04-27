@@ -14,11 +14,11 @@ use tracing::instrument;
 // (stable) std types.
 //use tracing_futures::Instrument;
 
+use super::Info;
 use crate::components::{app::View as _, shielded_pool::View as _, staking::View as _};
-use crate::Storage;
 
 #[tonic::async_trait]
-impl SpecificQuery for Storage {
+impl SpecificQuery for Info {
     #[instrument(skip(self, request))]
     async fn transaction_by_note(
         &self,

@@ -2,9 +2,9 @@ use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_transaction::Transaction;
 use tendermint::abci;
+use penumbra_storage::Overlay;
 
 use crate::genesis;
-use crate::Overlay;
 
 /// A component of the Penumbra application.
 ///

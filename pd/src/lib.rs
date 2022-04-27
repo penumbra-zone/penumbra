@@ -10,7 +10,6 @@ mod mempool;
 mod pd_metrics;
 mod request_ext;
 mod snapshot;
-mod storage;
 
 pub mod components;
 pub mod genesis;
@@ -24,4 +23,3 @@ pub use info::Info;
 pub use mempool::Mempool;
 pub use pd_metrics::register_all_metrics;
 pub use snapshot::Snapshot;
-pub use storage::{Overlay, OverlayExt, Storage};

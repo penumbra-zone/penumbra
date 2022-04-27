@@ -2,6 +2,7 @@ use anyhow::{anyhow, Result};
 
 use penumbra_proto::Protobuf;
 
+use penumbra_storage::Storage;
 use penumbra_transaction::Transaction;
 use tendermint::{
     abci::{self, ConsensusRequest as Request, ConsensusResponse as Response},
@@ -11,7 +12,7 @@ use tokio::sync::{mpsc, watch};
 use tracing::Instrument;
 
 use super::Message;
-use crate::{genesis, App, Component, Storage};
+use crate::{genesis, App, Component};
 
 pub struct Worker {
     queue: mpsc::Receiver<Message>,

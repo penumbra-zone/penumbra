@@ -10,22 +10,20 @@ use penumbra_stake::{
     CommissionAmount, CommissionAmounts, DelegationChanges, Epoch, IdentityKey, Uptime,
     STAKING_TOKEN_ASSET_ID,
 };
+use penumbra_storage::{Overlay, OverlayExt};
 use penumbra_transaction::{Action, Transaction};
-
 use sha2::{Digest, Sha256};
 use tendermint::{
     abci::{
         self,
         types::{Evidence, LastCommitInfo, ValidatorUpdate},
     },
-    block,
-    vote::Power,
-    PublicKey,
+    block, PublicKey,
 };
 use tracing::instrument;
 
 use super::{app::View as _, shielded_pool::View as _, Component};
-use crate::{genesis, Overlay, OverlayExt};
+use crate::genesis;
 
 // Max validator power is 1152921504606846975 (i64::MAX / 8)
 // https://github.com/tendermint/tendermint/blob/master/types/validator_set.go#L25

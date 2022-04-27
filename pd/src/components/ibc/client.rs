@@ -24,6 +24,7 @@ use penumbra_ibc::{
     ClientConnections, ClientCounter, ClientData, ConsensusState, IBCAction, VerifiedHeights,
 };
 use penumbra_proto::ibc::ibc_action::Action::{CreateClient, UpdateClient};
+use penumbra_storage::{Overlay, OverlayExt};
 use penumbra_transaction::Transaction;
 use tendermint::{abci, Time};
 use tendermint_light_client_verifier::{
@@ -32,8 +33,8 @@ use tendermint_light_client_verifier::{
 };
 use tracing::instrument;
 
+use crate::genesis;
 use crate::{components::app::View as _, components::Component};
-use crate::{genesis, Overlay, OverlayExt};
 
 /// The Penumbra IBC client component. Handles all client-related IBC actions: MsgCreateClient,
 /// MsgUpdateClient, MsgUpgradeClient, and MsgSubmitMisbehaviour. The core responsibility of the
@@ -763,13 +764,13 @@ impl<T: OverlayExt + Send + Sync> View for T {}
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Storage;
     use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
     use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
     use penumbra_crypto::merkle;
     use penumbra_crypto::{Fq, Zero};
     use penumbra_proto::ibc::ibc_action::Action as IBCActionInner;
     use penumbra_proto::Message;
+    use penumbra_storage::Storage;
     use penumbra_transaction::{Action, Fee, Transaction, TransactionBody};
     use std::fs;
     use tempfile::tempdir;
