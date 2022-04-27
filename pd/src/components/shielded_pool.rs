@@ -11,9 +11,9 @@ use penumbra_crypto::{
     asset::{self, Asset, Denom},
     ka,
     merkle::{self, Frontier, NoteCommitmentTree, TreeExt},
-    note, Address, Note, Nullifier, One, Value,
+    note, Address, Note, Nullifier, One, Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_stake::{Epoch, STAKING_TOKEN_ASSET_ID};
+use penumbra_stake::Epoch;
 use penumbra_storage::{State, StateExt};
 use penumbra_transaction::{action::output, Action, Transaction};
 use tendermint::abci;

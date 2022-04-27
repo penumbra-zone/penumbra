@@ -9,7 +9,6 @@ decaf377-ka = { path = "../decaf377-ka/" }
 decaf377-fmd = { path = "../decaf377-fmd/" }
 penumbra-proto = { path = "../proto/" }
 penumbra-crypto = { path = "../crypto/" }
-penumbra-stake = { path = "../stake/" }
 penumbra-ibc = { path = "../ibc/" }
 
 # Git deps

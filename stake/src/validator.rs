@@ -5,11 +5,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::{FundingStream, FundingStreams, IdentityKey};
 
+mod definition;
 mod info;
 mod list;
 mod state;
 mod status;
 
+pub use definition::Definition;
 pub use info::Info;
 pub use list::List;
 pub use state::State;

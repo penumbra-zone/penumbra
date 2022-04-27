@@ -4,17 +4,18 @@ use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
 use penumbra_chain::genesis;
 use penumbra_component::Component;
-use penumbra_crypto::IdentityKey;
+use penumbra_crypto::{DelegationToken, IdentityKey, STAKING_TOKEN_ASSET_ID};
 use penumbra_proto::Protobuf;
 use penumbra_stake::{
-    action::{Delegate, Undelegate},
     rate::{BaseRateData, RateData},
     validator::{self, Validator},
-    CommissionAmount, CommissionAmounts, DelegationChanges, DelegationToken, Epoch, Uptime,
-    STAKING_TOKEN_ASSET_ID,
+    CommissionAmount, CommissionAmounts, DelegationChanges, Epoch, Uptime,
 };
 use penumbra_storage::{State, StateExt};
-use penumbra_transaction::{Action, Transaction};
+use penumbra_transaction::{
+    action::{Delegate, Undelegate},
+    Action, Transaction,
+};
 use sha2::{Digest, Sha256};
 use tendermint::{
     abci::{
@@ -584,6 +585,8 @@ impl Component for Staking {
 
         // Check that validator definitions are correctly signed and well-formed:
         for definition in tx.validator_definitions() {
+            let definition = validator::Definition::try_from(definition.clone())
+                .context("Supplied proto is not a valid definition")?;
             // First, check the signature:
             let definition_bytes = definition.validator.encode_to_vec();
             definition
@@ -593,6 +596,7 @@ impl Component for Staking {
                 .verify(&definition_bytes, &definition.auth_sig)
                 .context("Validator definition signature failed to verify")?;
 
+            // TODO(hdevalence) -- is this duplicated by the check during parsing?
             // Check that the funding streams do not exceed 100% commission (10000bps)
             let total_funding_bps = definition
                 .validator
@@ -735,6 +739,8 @@ impl Component for Staking {
 
         // Check that the sequence numbers of updated validators are correct.
         for v in tx.validator_definitions() {
+            let v = validator::Definition::try_from(v.clone())
+                .context("Supplied proto is not a valid definition")?;
             let existing_v = self.state.validator(&v.validator.identity_key).await?;
 
             if let Some(existing_v) = existing_v {
@@ -780,6 +786,8 @@ impl Component for Staking {
         let cur_epoch = self.state.get_current_epoch().await.unwrap();
 
         for v in definitions {
+            let v = validator::Definition::try_from(v.clone())
+                .expect("we already checked that this was a valid proto");
             if self
                 .state
                 .validator(&v.validator.identity_key)

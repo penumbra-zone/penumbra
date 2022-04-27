@@ -2,23 +2,26 @@ use std::convert::{TryFrom, TryInto};
 
 use penumbra_crypto::value;
 use penumbra_ibc as ibc;
-use penumbra_proto::{transaction as pb, Protobuf};
-use penumbra_stake::action as stake;
+use penumbra_proto::{stake as pbs, transaction as pb, Protobuf};
 
+mod delegate;
 pub mod output;
 pub mod spend;
+mod undelegate;
 
+pub use delegate::Delegate;
 pub use output::Output;
 pub use spend::Spend;
+pub use undelegate::Undelegate;
 
 /// Supported actions in a Penumbra transaction.
 #[derive(Clone, Debug)]
 pub enum Action {
     Output(output::Output),
     Spend(spend::Spend),
-    Delegate(stake::Delegate),
-    Undelegate(stake::Undelegate),
-    ValidatorDefinition(stake::ValidatorDefinition),
+    Delegate(Delegate),
+    Undelegate(Undelegate),
+    ValidatorDefinition(pbs::ValidatorDefinition),
     IBCAction(ibc::IBCAction),
 }
 
@@ -31,8 +34,9 @@ impl Action {
             Action::Spend(spend) => spend.body.value_commitment,
             Action::Delegate(delegate) => delegate.value_commitment(),
             Action::Undelegate(undelegate) => undelegate.value_commitment(),
+            // These actions just post data to the chain, and leave the value balance
+            // unchanged.
             Action::ValidatorDefinition(_) => value::Commitment::default(),
-            // TODO: should IBC actions have value commitments?
             Action::IBCAction(_) => value::Commitment::default(),
         }
     }

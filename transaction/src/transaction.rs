@@ -7,21 +7,15 @@ use decaf377::FieldExt;
 use penumbra_crypto::{
     merkle,
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
-    Fr, Nullifier, Value,
+    Fr, Nullifier, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_ibc::IBCAction;
-use penumbra_proto::{
-    transaction::{
-        Fee as ProtoFee, Transaction as ProtoTransaction, TransactionBody as ProtoTransactionBody,
-    },
-    Message, Protobuf,
-};
-use penumbra_stake::{
-    action::{Delegate, Undelegate, ValidatorDefinition},
-    STAKING_TOKEN_ASSET_ID,
-};
+use penumbra_proto::{stake as pbs, transaction as pbt, Message, Protobuf};
 
-use crate::{action::output, Action};
+use crate::{
+    action::{output, Delegate, Undelegate},
+    Action,
+};
 
 mod builder;
 pub use builder::Builder;
@@ -39,7 +33,7 @@ impl TransactionBody {
     pub fn sighash(&self) -> [u8; 64] {
         use penumbra_proto::sighash::SigHashTransaction;
 
-        let sighash_tx = SigHashTransaction::from(ProtoTransactionBody::from(self.clone()));
+        let sighash_tx = SigHashTransaction::from(pbt::TransactionBody::from(self.clone()));
         let sighash_tx_bytes: Vec<u8> = sighash_tx.encode_to_vec();
 
         *blake2b_simd::Params::default()
@@ -111,7 +105,7 @@ impl Transaction {
         })
     }
 
-    pub fn validator_definitions(&self) -> impl Iterator<Item = &ValidatorDefinition> {
+    pub fn validator_definitions(&self) -> impl Iterator<Item = &pbs::ValidatorDefinition> {
         self.actions().filter_map(|action| {
             if let Action::ValidatorDefinition(d) = action {
                 Some(d)
@@ -196,16 +190,16 @@ impl Transaction {
 
 impl From<TransactionBody> for Vec<u8> {
     fn from(transaction_body: TransactionBody) -> Vec<u8> {
-        let protobuf_serialized: ProtoTransactionBody = transaction_body.into();
+        let protobuf_serialized: pbt::TransactionBody = transaction_body.into();
         protobuf_serialized.encode_to_vec()
     }
 }
 
-impl Protobuf<ProtoTransactionBody> for TransactionBody {}
+impl Protobuf<pbt::TransactionBody> for TransactionBody {}
 
-impl From<TransactionBody> for ProtoTransactionBody {
+impl From<TransactionBody> for pbt::TransactionBody {
     fn from(msg: TransactionBody) -> Self {
-        ProtoTransactionBody {
+        pbt::TransactionBody {
             actions: msg.actions.into_iter().map(|x| x.into()).collect(),
             anchor: Bytes::copy_from_slice(&msg.merkle_root.0.to_bytes()),
             expiry_height: msg.expiry_height,
@@ -215,10 +209,10 @@ impl From<TransactionBody> for ProtoTransactionBody {
     }
 }
 
-impl TryFrom<ProtoTransactionBody> for TransactionBody {
+impl TryFrom<pbt::TransactionBody> for TransactionBody {
     type Error = Error;
 
-    fn try_from(proto: ProtoTransactionBody) -> anyhow::Result<Self, Self::Error> {
+    fn try_from(proto: pbt::TransactionBody) -> anyhow::Result<Self, Self::Error> {
         let mut actions = Vec::<Action>::new();
         for action in proto.actions {
             actions.push(
@@ -250,28 +244,28 @@ impl TryFrom<ProtoTransactionBody> for TransactionBody {
         })
     }
 }
-impl Protobuf<ProtoTransaction> for Transaction {}
+impl Protobuf<pbt::Transaction> for Transaction {}
 
-impl From<Transaction> for ProtoTransaction {
+impl From<Transaction> for pbt::Transaction {
     fn from(msg: Transaction) -> Self {
         let sig_bytes: [u8; 64] = msg.binding_sig.into();
-        ProtoTransaction {
+        pbt::Transaction {
             body: Some(msg.transaction_body.into()),
             binding_sig: Bytes::copy_from_slice(&sig_bytes),
         }
     }
 }
 
-impl From<&Transaction> for ProtoTransaction {
+impl From<&Transaction> for pbt::Transaction {
     fn from(msg: &Transaction) -> Self {
         msg.into()
     }
 }
 
-impl TryFrom<ProtoTransaction> for Transaction {
+impl TryFrom<pbt::Transaction> for Transaction {
     type Error = Error;
 
-    fn try_from(proto: ProtoTransaction) -> anyhow::Result<Self, Self::Error> {
+    fn try_from(proto: pbt::Transaction) -> anyhow::Result<Self, Self::Error> {
         let transaction_body = proto
             .body
             .ok_or(anyhow::anyhow!("transaction malformed"))?
@@ -293,7 +287,7 @@ impl TryFrom<&[u8]> for Transaction {
     type Error = Error;
 
     fn try_from(bytes: &[u8]) -> Result<Transaction, Self::Error> {
-        let protobuf_serialized_proof = ProtoTransaction::decode(bytes)
+        let protobuf_serialized_proof = pbt::Transaction::decode(bytes)
             .map_err(|_| anyhow::anyhow!("transaction malformed"))?;
         protobuf_serialized_proof
             .try_into()
@@ -311,28 +305,28 @@ impl TryFrom<Vec<u8>> for Transaction {
 
 impl From<Transaction> for Vec<u8> {
     fn from(transaction: Transaction) -> Vec<u8> {
-        let protobuf_serialized: ProtoTransaction = transaction.into();
+        let protobuf_serialized: pbt::Transaction = transaction.into();
         protobuf_serialized.encode_to_vec()
     }
 }
 
 impl From<&Transaction> for Vec<u8> {
     fn from(transaction: &Transaction) -> Vec<u8> {
-        let protobuf_serialized: ProtoTransaction = transaction.into();
+        let protobuf_serialized: pbt::Transaction = transaction.into();
         protobuf_serialized.encode_to_vec()
     }
 }
 
-impl Protobuf<ProtoFee> for Fee {}
+impl Protobuf<pbt::Fee> for Fee {}
 
-impl From<Fee> for ProtoFee {
+impl From<Fee> for pbt::Fee {
     fn from(fee: Fee) -> Self {
-        ProtoFee { amount: fee.0 }
+        pbt::Fee { amount: fee.0 }
     }
 }
 
-impl From<ProtoFee> for Fee {
-    fn from(proto: ProtoFee) -> Self {
+impl From<pbt::Fee> for Fee {
+    fn from(proto: pbt::Fee) -> Self {
         Fee(proto.amount)
     }
 }
