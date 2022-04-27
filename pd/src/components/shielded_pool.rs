@@ -4,7 +4,9 @@ use anyhow::{anyhow, Context, Result};
 use ark_ff::PrimeField;
 use async_trait::async_trait;
 use decaf377::{Fq, Fr};
+use penumbra_chain::genesis;
 use penumbra_chain::{sync::CompactBlock, KnownAssets, NoteSource};
+use penumbra_component::Component;
 use penumbra_crypto::{
     asset::{self, Asset, Denom},
     ka,
@@ -17,8 +19,7 @@ use penumbra_transaction::{action::output, Action, Transaction};
 use tendermint::abci;
 use tracing::instrument;
 
-use super::{app::View as _, staking::View as _, Component};
-use crate::genesis;
+use super::{app::View as _, staking::View as _};
 
 // Stub component
 pub struct ShieldedPool {

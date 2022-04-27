@@ -1,15 +1,16 @@
 use anyhow::Result;
 use bytes::Bytes;
 
+use penumbra_component::Component;
 use penumbra_proto::Protobuf;
+use penumbra_storage::Storage;
 use penumbra_transaction::Transaction;
 use tendermint::block;
 use tokio::sync::{mpsc, watch};
 use tracing::Instrument;
-use penumbra_storage::Storage;
 
 use super::Message;
-use crate::{App, Component};
+use crate::App;
 
 pub struct Worker {
     queue: mpsc::Receiver<Message>,

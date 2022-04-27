@@ -3,6 +3,7 @@ package penumbra.chain;
 
 import "crypto.proto";
 import "transaction.proto";
+import "stake.proto";
 
 // Global chain configuration data, such as chain ID, epoch duration, etc.
 message ChainParams {
@@ -60,4 +61,16 @@ message KnownAssets {
 // A spicy transaction ID
 message NoteSource {
   bytes inner = 1;
+}
+
+message GenesisAppState {
+    message Allocation {
+        uint64 amount = 1;
+        string denom = 2;
+        crypto.Address address = 3;
+    }
+
+    chain.ChainParams chain_params = 1;
+    repeated stake.Validator validators = 2;
+    repeated Allocation allocations = 3;
 }

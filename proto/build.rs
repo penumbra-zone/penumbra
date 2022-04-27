@@ -45,7 +45,6 @@ fn main() -> Result<()> {
             "proto/transaction.proto",
             "proto/stake.proto",
             "proto/chain.proto",
-            "proto/genesis.proto",
             "proto/ibc.proto",
         ],
         &["proto/", "ibc-go-vendor/"],
@@ -126,8 +125,8 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.chain.KnownAssets", SERDE_TRANSPARENT),
     (".penumbra.chain.NoteSource", SERIALIZE),
     (".penumbra.chain.NoteSource", SERDE_TRANSPARENT),
-    (".penumbra.genesis.GenesisAppState", SERIALIZE),
-    (".penumbra.genesis.Allocation", SERIALIZE),
+    (".penumbra.chain.GenesisAppState", SERIALIZE),
+    (".penumbra.chain.GenesisAllocation", SERIALIZE),
     (".penumbra.transaction.OutputBody", SERIALIZE),
 ];
 

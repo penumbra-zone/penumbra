@@ -9,12 +9,12 @@ mod connection;
 use anyhow::Result;
 use async_trait::async_trait;
 use client::ClientComponent;
+use penumbra_chain::genesis;
+use penumbra_component::Component;
 use penumbra_storage::Overlay;
 use penumbra_transaction::Transaction;
 use tendermint::abci;
 use tracing::instrument;
-
-use crate::{components::Component, genesis};
 
 pub struct IBCComponent {
     client: client::ClientComponent,
