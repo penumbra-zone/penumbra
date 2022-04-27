@@ -90,13 +90,14 @@ impl<Item: Focus> Tier<Item> {
         result
     }
 
-    /// Update the currently focused `Insert<Item>` (i.e. the
-    /// most-recently-[`insert`](Self::insert)ed one), returning the result of the function.
+    /// Update the currently focused `Item` (i.e. the most-recently-[`insert`](Self::insert)ed one),
+    /// returning the result of the function.
     ///
-    /// If there is no currently focused `Insert<Item>`, returns `None`.
-    pub fn update<T>(&mut self, f: impl FnOnce(&mut Insert<Item>) -> T) -> Option<T> {
+    /// If there is no currently focused item (either because the tier is empty, complete, or the
+    /// most recently inserted item is a hash), return `None`.
+    pub fn update<T>(&mut self, f: impl FnOnce(&mut Item) -> T) -> Option<T> {
         if let Inner::Frontier(frontier) = &mut self.inner {
-            Some(frontier.update(f))
+            frontier.update(|focus| focus.as_mut().keep().map(f))
         } else {
             None
         }
@@ -106,9 +107,9 @@ impl<Item: Focus> Tier<Item> {
     ///
     /// If there is no focused `Insert<Item>` (in the case that the tier is finalized), `None` is
     /// returned.
-    pub fn focus(&self) -> Option<&Insert<Item>> {
+    pub fn focus(&self) -> Option<&Item> {
         if let Inner::Frontier(frontier) = &self.inner {
-            Some(frontier.focus())
+            frontier.focus().as_ref().keep()
         } else {
             None
         }

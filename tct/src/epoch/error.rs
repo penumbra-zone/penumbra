@@ -17,10 +17,6 @@ pub enum InsertError {
     #[error("most recent block in epoch is full")]
     #[non_exhaustive]
     BlockFull,
-    /// The most recent [`Block`] in the [`Epoch`] was forgotten.
-    #[error("most recent block in epoch was forgotten")]
-    #[non_exhaustive]
-    BlockForgotten,
 }
 
 /// The [`Epoch`] was full when attempting to insert a block.

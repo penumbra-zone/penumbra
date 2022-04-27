@@ -63,20 +63,23 @@ impl<Item: Focus> Top<Item> {
         result
     }
 
-    /// Update the currently focused `Insert<Item>` (i.e. the
-    /// most-recently-[`insert`](Self::insert)ed one), returning the result of the function.
+    /// Update the currently focused `Item` (i.e. the most-recently-[`insert`](Self::insert)ed one),
+    /// returning the result of the function.
     ///
-    /// If this top-level tier is empty, returns `None`.
-    pub fn update<T>(&mut self, f: impl FnOnce(&mut Insert<Item>) -> T) -> Option<T> {
-        self.inner.as_mut().map(|inner| inner.update(f))
+    /// If this top-level tier is empty or the most recently inserted item is a hash, returns
+    /// `None`.
+    pub fn update<T>(&mut self, f: impl FnOnce(&mut Item) -> T) -> Option<T> {
+        self.inner
+            .as_mut()
+            .and_then(|inner| inner.update(|inner| inner.as_mut().keep().map(f)))
     }
 
     /// Get a reference to the focused `Insert<Item>`, if there is one.
     ///
-    /// If this top-level tier is empty, returns `None`.
-    pub fn focus(&self) -> Option<&Insert<Item>> {
+    /// If this top-level tier is empty or the focus is a hash, returns `None`.
+    pub fn focus(&self) -> Option<&Item> {
         if let Some(ref inner) = self.inner {
-            Some(inner.focus())
+            inner.focus().as_ref().keep()
         } else {
             None
         }
