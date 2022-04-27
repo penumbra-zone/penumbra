@@ -2,6 +2,8 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
+use penumbra_chain::genesis;
+use penumbra_component::Component;
 use penumbra_proto::Protobuf;
 use penumbra_stake::{
     action::{Delegate, Undelegate},
@@ -22,8 +24,7 @@ use tendermint::{
 };
 use tracing::instrument;
 
-use super::{app::View as _, shielded_pool::View as _, Component};
-use crate::genesis;
+use super::{app::View as _, shielded_pool::View as _};
 
 // Max validator power is 1152921504606846975 (i64::MAX / 8)
 // https://github.com/tendermint/tendermint/blob/master/types/validator_set.go#L25

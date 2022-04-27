@@ -12,12 +12,11 @@ mod request_ext;
 mod snapshot;
 
 pub mod components;
-pub mod genesis;
 pub mod testnet;
 
 use request_ext::RequestExt;
 
-pub use components::{App, Component};
+pub use components::App;
 pub use consensus::Consensus;
 pub use info::Info;
 pub use mempool::Mempool;

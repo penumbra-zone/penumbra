@@ -1,9 +1,9 @@
-use penumbra_chain::params::ChainParams;
-use penumbra_proto::{genesis as pb, Protobuf};
+use penumbra_proto::{chain as pb, Protobuf};
 use penumbra_stake::validator::Validator;
 use serde::{Deserialize, Serialize};
 
 use super::Allocation;
+use crate::params::ChainParams;
 
 /// The application state at genesis.
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]

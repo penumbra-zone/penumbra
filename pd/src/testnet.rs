@@ -2,12 +2,11 @@ use std::{env::current_dir, fmt, io::Read, path::PathBuf, str::FromStr};
 
 use anyhow::{Context, Result};
 use directories::UserDirs;
+use penumbra_chain::genesis;
 use penumbra_crypto::Address;
 use regex::{Captures, Regex};
 use serde::{de, Deserialize};
 use tendermint::{node::Id, PrivateKey};
-
-use crate::genesis;
 
 /// Methods and types used for generating testnet configurations.
 

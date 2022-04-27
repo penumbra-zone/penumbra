@@ -6,8 +6,7 @@ use std::{
 
 use anyhow::Context;
 use metrics_exporter_prometheus::PrometheusBuilder;
-use pd::genesis::Allocation;
-use penumbra_chain::params::ChainParams;
+use penumbra_chain::{genesis::Allocation, params::ChainParams};
 use penumbra_crypto::{
     keys::{SpendKey, SpendSeed},
     rdsa::{SigningKey, SpendAuth, VerificationKey},
@@ -238,7 +237,8 @@ async fn main() -> anyhow::Result<()> {
                 }
             };
 
-            use pd::{genesis, testnet::*};
+            use pd::testnet::*;
+            use penumbra_chain::genesis;
             use penumbra_crypto::Address;
             use penumbra_stake::IdentityKey;
             use tendermint::{account::Id, node, public_key::Algorithm, Genesis, Time};

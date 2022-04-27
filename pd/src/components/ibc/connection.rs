@@ -7,6 +7,8 @@ use ibc::core::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use ibc::core::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 use ibc::core::ics03_connection::version::Version;
 use ibc::core::ics24_host::identifier::ConnectionId;
+use penumbra_chain::genesis;
+use penumbra_component::Component;
 use penumbra_ibc::{Connection, ConnectionCounter, IBCAction};
 use penumbra_proto::ibc::ibc_action::Action::{
     ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
@@ -16,7 +18,7 @@ use penumbra_transaction::Transaction;
 use tendermint::abci;
 use tracing::instrument;
 
-use crate::{components::ibc::client::View as _, components::Component, genesis};
+use crate::components::ibc::client::View as _;
 
 pub struct ConnectionComponent {
     overlay: Overlay,

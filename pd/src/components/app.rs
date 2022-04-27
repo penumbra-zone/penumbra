@@ -3,7 +3,8 @@ use std::str::FromStr;
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use jmt::{RootHash, Version};
-use penumbra_chain::params::ChainParams;
+use penumbra_chain::{genesis, params::ChainParams};
+use penumbra_component::Component;
 use penumbra_stake::Epoch;
 use penumbra_storage::{Overlay, OverlayExt, Storage};
 use penumbra_transaction::Transaction;
@@ -11,9 +12,7 @@ use tendermint::abci::{self, types::ValidatorUpdate};
 use tendermint::Time;
 use tracing::instrument;
 
-use crate::genesis;
-
-use super::{Component, IBCComponent, ShieldedPool, Staking};
+use super::{IBCComponent, ShieldedPool, Staking};
 
 /// The Penumbra application, written as a bundle of [`Component`]s.
 ///

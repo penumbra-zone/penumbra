@@ -43,11 +43,6 @@ pub mod chain {
     tonic::include_proto!("penumbra.chain");
 }
 
-/// Genesis-related structures.
-pub mod genesis {
-    tonic::include_proto!("penumbra.genesis");
-}
-
 /// Client protocol structures.
 pub mod client {
     pub mod oblivious {

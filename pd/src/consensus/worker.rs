@@ -2,6 +2,8 @@ use anyhow::{anyhow, Result};
 
 use penumbra_proto::Protobuf;
 
+use penumbra_chain::genesis;
+use penumbra_component::Component;
 use penumbra_storage::Storage;
 use penumbra_transaction::Transaction;
 use tendermint::{
@@ -12,7 +14,7 @@ use tokio::sync::{mpsc, watch};
 use tracing::Instrument;
 
 use super::Message;
-use crate::{genesis, App, Component};
+use crate::App;
 
 pub struct Worker {
     queue: mpsc::Receiver<Message>,

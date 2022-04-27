@@ -20,6 +20,8 @@ use ibc::{
         ics24_host::identifier::ClientId,
     },
 };
+use penumbra_chain::genesis;
+use penumbra_component::Component;
 use penumbra_ibc::{
     ClientConnections, ClientCounter, ClientData, ConsensusState, IBCAction, VerifiedHeights,
 };
@@ -33,8 +35,7 @@ use tendermint_light_client_verifier::{
 };
 use tracing::instrument;
 
-use crate::genesis;
-use crate::{components::app::View as _, components::Component};
+use crate::components::app::View as _;
 
 /// The Penumbra IBC client component. Handles all client-related IBC actions: MsgCreateClient,
 /// MsgUpdateClient, MsgUpgradeClient, and MsgSubmitMisbehaviour. The core responsibility of the
