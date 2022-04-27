@@ -66,7 +66,7 @@ impl SpecificQuery for Info {
     #[instrument(skip(self, request))]
     async fn next_validator_rate(
         &self,
-        request: tonic::Request<proto::stake::IdentityKey>,
+        request: tonic::Request<proto::crypto::IdentityKey>,
     ) -> Result<tonic::Response<proto::stake::RateData>, Status> {
         let state = self.state_tonic().await?;
         let identity_key = request

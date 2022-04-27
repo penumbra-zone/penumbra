@@ -3,15 +3,10 @@ package penumbra.stake;
 
 import "crypto.proto";
 
-// A validator's identity key (decaf377-rdsa spendauth verification key).
-message IdentityKey {
-  bytes ik = 1;
-}
-
 // Describes a validator's configuration data.
 message Validator {
   // The validator's identity verification key.
-  IdentityKey identity_key = 1;
+  crypto.IdentityKey identity_key = 1;
   // The validator's consensus pubkey for use in Tendermint (Ed25519).
   bytes consensus_key = 2;
   // The validator's (human-readable) name.
@@ -30,7 +25,7 @@ message Validator {
 
 // For storing the list of keys of known validators.
 message ValidatorList {
-  repeated IdentityKey validator_keys = 1;
+  repeated crypto.IdentityKey validator_keys = 1;
 }
 
 // A portion of a validator's commission.
@@ -44,7 +39,7 @@ message FundingStream {
 
 // Describes the reward and exchange rates and voting power for a validator in some epoch.
 message RateData {
-  IdentityKey identity_key = 1;
+  crypto.IdentityKey identity_key = 1;
   uint64 epoch_index = 2;
   uint64 validator_reward_rate = 4;
   uint64 validator_exchange_rate = 5;
@@ -59,7 +54,7 @@ message BaseRateData {
 
 // Describes the current state of a validator on-chain
 message ValidatorStatus {
-  IdentityKey identity_key = 1;
+  crypto.IdentityKey identity_key = 1;
   ValidatorState state = 2;
   uint64 voting_power = 3;
 }
@@ -95,7 +90,7 @@ message ValidatorDefinition {
 // A transaction action adding stake to a validator's delegation pool.
 message Delegate {
   // The identity key of the validator to delegate to.
-  IdentityKey validator_identity = 1;
+  crypto.IdentityKey validator_identity = 1;
   // The index of the epoch in which this delegation was performed.
   // The delegation takes effect in the next epoch.
   uint64 epoch_index = 2;
@@ -113,7 +108,7 @@ message Delegate {
 // A transaction action withdrawing stake from a validator's delegation pool.
 message Undelegate {
   // The identity key of the validator to undelegate from.
-  IdentityKey validator_identity = 1;
+  crypto.IdentityKey validator_identity = 1;
   // The index of the epoch in which this undelegation was performed.
   uint64 epoch_index = 2;
   // The amount to undelegate, in units of unbonded stake.

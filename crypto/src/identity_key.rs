@@ -1,8 +1,11 @@
-use penumbra_crypto::rdsa::{SpendAuth, VerificationKey};
-use penumbra_proto::{serializers::bech32str, stake as pb, Protobuf};
+use penumbra_proto::{
+    crypto as pb,
+    serializers::bech32str::{self, validator_identity_key::BECH32_PREFIX},
+    Protobuf,
+};
 use serde::{Deserialize, Serialize};
 
-use crate::DelegationToken;
+use crate::rdsa::{SpendAuth, VerificationKey};
 
 /// The root of a validator's identity.
 ///
@@ -17,21 +20,11 @@ use crate::DelegationToken;
 #[serde(try_from = "pb::IdentityKey", into = "pb::IdentityKey")]
 pub struct IdentityKey(pub VerificationKey<SpendAuth>);
 
-impl IdentityKey {
-    pub fn delegation_token(&self) -> DelegationToken {
-        DelegationToken::new(self.clone())
-    }
-}
-
 impl std::str::FromStr for IdentityKey {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         pb::IdentityKey {
-            ik: bech32str::decode(
-                s,
-                crate::VALIDATOR_IDENTITY_BECH32_PREFIX,
-                bech32str::Bech32m,
-            )?,
+            ik: bech32str::decode(s, BECH32_PREFIX, bech32str::Bech32m)?,
         }
         .try_into()
     }
@@ -41,7 +34,7 @@ impl std::fmt::Display for IdentityKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&bech32str::encode(
             &self.0.to_bytes(),
-            crate::VALIDATOR_IDENTITY_BECH32_PREFIX,
+            BECH32_PREFIX,
             bech32str::Bech32m,
         ))
     }

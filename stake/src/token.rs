@@ -11,6 +11,18 @@ pub struct DelegationToken {
     base_denom: asset::Denom,
 }
 
+impl From<IdentityKey> for DelegationToken {
+    fn from(v: IdentityKey) -> Self {
+        DelegationToken::new(v)
+    }
+}
+
+impl From<&IdentityKey> for DelegationToken {
+    fn from(v: &IdentityKey) -> Self {
+        DelegationToken::new(v.clone())
+    }
+}
+
 impl DelegationToken {
     pub fn new(validator_identity: IdentityKey) -> Self {
         // This format string needs to be in sync with the asset registry

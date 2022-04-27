@@ -15,7 +15,7 @@ use penumbra_proto::client::{
     oblivious::oblivious_query_server::ObliviousQueryServer,
     specific::specific_query_server::SpecificQueryServer,
 };
-use penumbra_stake::{validator::Validator, FundingStream, FundingStreams};
+use penumbra_stake::{validator::Validator, DelegationToken, FundingStream, FundingStreams};
 use penumbra_storage::Storage;
 use rand_core::OsRng;
 use structopt::StructOpt;
@@ -239,8 +239,7 @@ async fn main() -> anyhow::Result<()> {
 
             use pd::testnet::*;
             use penumbra_chain::genesis;
-            use penumbra_crypto::Address;
-            use penumbra_stake::IdentityKey;
+            use penumbra_crypto::{Address, IdentityKey};
             use tendermint::{account::Id, node, public_key::Algorithm, Genesis, Time};
             use tendermint_config::{NodeKey, PrivValidatorKey};
 
@@ -357,7 +356,7 @@ async fn main() -> anyhow::Result<()> {
 
                 // Add a default 1 upenumbra allocation to the validator.
                 let identity_key: IdentityKey = IdentityKey(fvk.spend_verification_key().clone());
-                let delegation_denom = identity_key.delegation_token().denom();
+                let delegation_denom = DelegationToken::from(&identity_key).denom();
                 allocations.push(Allocation {
                     address: dest,
                     amount: 1_000_000, // 1e6 udelegation tokens

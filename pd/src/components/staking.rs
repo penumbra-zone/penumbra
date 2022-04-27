@@ -4,12 +4,13 @@ use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
 use penumbra_chain::genesis;
 use penumbra_component::Component;
+use penumbra_crypto::IdentityKey;
 use penumbra_proto::Protobuf;
 use penumbra_stake::{
     action::{Delegate, Undelegate},
     rate::{BaseRateData, RateData},
     validator::{self, Validator},
-    CommissionAmount, CommissionAmounts, DelegationChanges, Epoch, IdentityKey, Uptime,
+    CommissionAmount, CommissionAmounts, DelegationChanges, DelegationToken, Epoch, Uptime,
     STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_storage::{State, StateExt};
@@ -148,7 +149,7 @@ impl Staking {
 
             // update the delegation token supply in the JMT
             self.state
-                .update_token_supply(&v.delegation_token().id(), delegation_delta)
+                .update_token_supply(&DelegationToken::from(v).id(), delegation_delta)
                 .await?;
             // update the staking token supply in the JMT
             self.state
@@ -157,7 +158,7 @@ impl Staking {
 
             let delegation_token_supply = self
                 .state
-                .token_supply(&v.delegation_token().id())
+                .token_supply(&DelegationToken::from(v).id())
                 .await?
                 .expect("delegation token should be known");
 
@@ -196,7 +197,7 @@ impl Staking {
             }
 
             // rename to curr_rate so it lines up with next_rate (same # chars)
-            let delegation_denom = v.delegation_token().denom();
+            let delegation_denom = DelegationToken::from(v).denom();
             tracing::debug!(curr_rate = ?current_rate);
             tracing::debug!(?next_rate);
             tracing::debug!(?delegation_delta);
@@ -505,7 +506,7 @@ impl Component for Staking {
             //
             // This means that we need to iterate the app_state to calculate the initial
             // delegation token allocations for the genesis validators, to determine voting power.
-            let delegation_denom = validator_key.delegation_token().denom().to_string();
+            let delegation_denom = DelegationToken::from(validator_key).denom().to_string();
             let total_delegation_tokens = allocations_by_validator
                 .get(&delegation_denom)
                 .copied()
@@ -1056,7 +1057,8 @@ pub trait View: StateExt {
 
         self.put_domain(format!("staking/validators/{}", id).into(), validator)
             .await;
-        self.register_denom(&id.delegation_token().denom()).await?;
+        self.register_denom(&DelegationToken::from(&id).denom())
+            .await?;
 
         self.set_validator_rates(&id, current_rates, next_rates)
             .await;
