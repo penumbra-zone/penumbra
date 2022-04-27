@@ -57,7 +57,7 @@ impl Focus for Item {
     type Complete = complete::Item;
 
     #[inline]
-    fn finalize(self) -> Insert<Self::Complete> {
+    fn finalize_owned(self) -> Insert<Self::Complete> {
         Insert::Keep(complete::Item::new(self.hash))
     }
 }

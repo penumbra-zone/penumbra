@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{internal::path::Witness, AuthPath, Complete, ForgetOwned, GetHash, Hash, Height};
+use crate::{
+    internal::path::Witness, AuthPath, Complete, Focus, ForgetOwned, GetHash, Hash, Height, Insert,
+};
 
 use super::super::frontier;
 
@@ -49,5 +51,11 @@ impl<Item: GetHash + ForgetOwned> ForgetOwned for Tier<Item> {
     fn forget_owned(self, index: impl Into<u64>) -> (crate::Insert<Self>, bool) {
         let (inner, forgotten) = self.inner.forget_owned(index);
         (inner.map(|inner| Tier { inner }), forgotten)
+    }
+}
+
+impl<Item: Complete> From<frontier::Tier<Item::Focus>> for Insert<Tier<Item>> {
+    fn from(frontier: frontier::Tier<Item::Focus>) -> Self {
+        frontier.finalize_owned()
     }
 }

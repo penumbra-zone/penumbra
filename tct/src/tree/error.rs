@@ -4,7 +4,7 @@ use thiserror::Error;
 
 #[cfg(doc)]
 use super::Tree;
-use super::{Block, Epoch};
+use super::{block, epoch};
 
 /// An error occurred when trying to insert an commitment into a [`Tree`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
@@ -32,18 +32,18 @@ pub enum InsertBlockError {
     /// The [`Tree`] was full.
     #[error("eternity is full")]
     #[non_exhaustive]
-    Full(Block),
+    Full(block::Finalized),
     /// The most recent [`Epoch`] of the [`Tree`] was full.
     #[error("most recent epoch is full")]
     #[non_exhaustive]
-    EpochFull(Block),
+    EpochFull(block::Finalized),
     /// The most recent [`Epoch`] of the [`Tree`] was forgotten.
     #[error("most recent epoch was forgotten")]
     #[non_exhaustive]
-    EpochForgotten(Block),
+    EpochForgotten(block::Finalized),
 }
 
-impl From<InsertBlockError> for Block {
+impl From<InsertBlockError> for block::Finalized {
     fn from(error: InsertBlockError) -> Self {
         match error {
             InsertBlockError::Full(block) => block,
@@ -74,9 +74,9 @@ pub enum InsertBlockRootError {
 #[derive(Debug, Clone, Error)]
 #[error("eternity is full")]
 #[non_exhaustive]
-pub struct InsertEpochError(pub Epoch);
+pub struct InsertEpochError(pub epoch::Finalized);
 
-impl From<InsertEpochError> for Epoch {
+impl From<InsertEpochError> for epoch::Finalized {
     fn from(error: InsertEpochError) -> Self {
         error.0
     }

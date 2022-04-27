@@ -17,7 +17,9 @@ pub struct Commitment(u16);
 impl Commitment {
     /// Increment the commitment.
     pub fn increment(&mut self) {
-        self.0 += 1;
+        self.0
+            .checked_add(1)
+            .expect("block index should never overflow");
     }
 
     /// The maximum representable commitment index.
@@ -58,7 +60,9 @@ impl From<Block> for u16 {
 impl Block {
     /// Increment the block.
     pub fn increment(&mut self) {
-        self.0 += 1;
+        self.0
+            .checked_add(1)
+            .expect("block index should never overflow");
     }
 
     /// The maximum representable block index.
@@ -87,7 +91,9 @@ impl From<Epoch> for u16 {
 impl Epoch {
     /// Increment the epoch.
     pub fn increment(&mut self) {
-        self.0 += 1;
+        self.0
+            .checked_add(1)
+            .expect("block index should never overflow");
     }
 
     /// The maximum epoch index representable.

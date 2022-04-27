@@ -30,7 +30,7 @@ impl<Child: Height> Node<Child> {
     ///
     /// This should only be called when the hash is already known (i.e. after construction from
     /// children with a known node hash).
-    pub(in super::super) fn set_hash_unchecked(&self, hash: Hash) {
+    pub fn set_hash_unchecked(&self, hash: Hash) {
         self.hash.set_if_empty(|| hash);
     }
 
@@ -38,18 +38,18 @@ impl<Child: Height> Node<Child> {
         siblings: Three<Insert<Child>>,
         focus: Insert<Child>,
     ) -> Insert<Self> {
-        fn zero<T>() -> Insert<T> {
-            Insert::Hash(Hash::default())
-        }
+        let one = || Insert::Hash(Hash::one());
 
-        // Push the focus into the siblings, and fill any empty children with the zero hash
+        // Push the focus into the siblings, and fill any empty children with the *ONE* hash, which
+        // causes the hash of a complete node to deliberately differ from that of a frontier node,
+        // which uses *ZERO* padding
         Self::from_children_or_else_hash(match siblings.push(focus) {
             Err([a, b, c, d]) => [a, b, c, d],
             Ok(siblings) => match siblings.into_elems() {
-                IntoElems::_3([a, b, c]) => [a, b, c, zero()],
-                IntoElems::_2([a, b]) => [a, b, zero(), zero()],
-                IntoElems::_1([a]) => [a, zero(), zero(), zero()],
-                IntoElems::_0([]) => [zero(), zero(), zero(), zero()],
+                IntoElems::_3([a, b, c]) => [a, b, c, one()],
+                IntoElems::_2([a, b]) => [a, b, one(), one()],
+                IntoElems::_1([a]) => [a, one(), one(), one()],
+                IntoElems::_0([]) => [one(), one(), one(), one()],
             },
         })
     }

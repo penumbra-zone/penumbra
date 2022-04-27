@@ -2,9 +2,9 @@
 
 use thiserror::Error;
 
-use super::Block;
+use super::block::Finalized;
 #[cfg(doc)]
-use super::{Commitment, Epoch};
+use super::{Builder, Commitment};
 
 /// A [`Commitment`] could not be inserted into the [`Epoch`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
@@ -27,19 +27,13 @@ pub enum InsertError {
 #[derive(Debug, Clone, Error)]
 #[error("epoch is full")]
 #[non_exhaustive]
-pub struct InsertBlockError(pub Block);
+pub struct InsertBlockError(pub Finalized);
 
-impl From<InsertBlockError> for Block {
+impl From<InsertBlockError> for Finalized {
     fn from(error: InsertBlockError) -> Self {
         error.0
     }
 }
-
-/// The [`Epoch`] was full when attempting to insert a block root.
-#[derive(Debug, Clone, PartialEq, Eq, Error)]
-#[error("epoch is full")]
-#[non_exhaustive]
-pub struct InsertBlockRootError;
 
 #[cfg(test)]
 mod test {
@@ -49,6 +43,5 @@ mod test {
     fn insert_errors_sync_send() {
         static_assertions::assert_impl_all!(InsertError: Sync, Send);
         static_assertions::assert_impl_all!(InsertBlockError: Sync, Send);
-        static_assertions::assert_impl_all!(InsertBlockRootError: Sync, Send);
     }
 }

@@ -53,6 +53,14 @@ impl<T> Insert<T> {
         }
     }
 
+    /// Map a function returning an `Insert<U>` over the [`Insert::Keep`] part of an `Insert<T>`.
+    pub fn and_then<U, F: FnOnce(T) -> Insert<U>>(self, f: F) -> Insert<U> {
+        match self {
+            Insert::Keep(item) => f(item),
+            Insert::Hash(hash) => Insert::Hash(hash),
+        }
+    }
+
     /// Get the kept `T` out of this [`Insert<T>`] or return `None`.
     pub fn keep(self) -> Option<T> {
         match self {
@@ -97,7 +105,7 @@ impl<T: Height> Height for Insert<T> {
 impl<T: Height + ForgetOwned> Forget for Insert<T> {
     fn forget(&mut self, index: impl Into<u64>) -> bool {
         // Replace `self` temporarily with an empty hash, so we can move out of it
-        let this = mem::replace(self, Insert::Hash(Hash::default()));
+        let this = mem::replace(self, Insert::Hash(Hash::zero()));
 
         // Whether something was actually forgotten
         let forgotten;

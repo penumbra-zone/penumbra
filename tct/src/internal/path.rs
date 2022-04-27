@@ -46,7 +46,7 @@ impl Path for Zero {
 }
 
 /// The authentication path for a node, whose height is always at least 1.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct Node<Child> {
     /// The sibling hashes of the child.
     ///
