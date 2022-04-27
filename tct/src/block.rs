@@ -14,16 +14,16 @@ use crate::*;
 /// This is one [`Block`] in an [`Epoch`], which is one [`Epoch`] in a [`Tree`].
 #[derive(Derivative, Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Builder {
-    pub(super) position: index::within::Block,
-    pub(super) index: HashedMap<Commitment, index::within::Block>,
-    pub(super) inner: Top<Item>,
+    position: index::within::Block,
+    index: HashedMap<Commitment, index::within::Block>,
+    inner: Top<Item>,
 }
 
 /// A finalized block builder, ready to be inserted into an [`Epoch`](super::epoch).
 #[derive(Derivative, Debug, Clone, Serialize, Deserialize)]
 pub struct Finalized {
-    pub(super) index: HashedMap<Commitment, index::within::Block>,
-    pub(super) inner: Insert<complete::Top<complete::Item>>,
+    pub(in super::super) index: HashedMap<Commitment, index::within::Block>,
+    pub(in super::super) inner: Insert<complete::Top<complete::Item>>,
 }
 
 impl Default for Finalized {
@@ -56,7 +56,7 @@ impl From<Root> for Finalized {
 }
 
 impl From<Builder> for Finalized {
-    fn from(builder: Builder) -> Self {
+    fn from(mut builder: Builder) -> Self {
         builder.finalize()
     }
 }
@@ -125,7 +125,7 @@ impl Builder {
         &mut self,
         witness: Witness,
         commitment: impl Into<Commitment>,
-    ) -> Result<(), InsertError> {
+    ) -> Result<&mut Self, InsertError> {
         let commitment = commitment.into();
 
         // Insert the commitment into the inner tree
@@ -155,13 +155,22 @@ impl Builder {
         // Increment the position
         self.position.commitment.increment();
 
-        Ok(())
+        Ok(self)
     }
 
-    /// Finalize this block builder.
-    pub fn finalize(self) -> Finalized {
-        let inner = self.inner.finalize();
-        let index = self.index;
+    /// Get the root hash of this block builder.
+    ///
+    /// Note that this root hash will differ from the root hash of the finalized block.
+    pub fn root(&self) -> Root {
+        Root(self.inner.hash())
+    }
+
+    /// Finalize this block builder returning a finalized block and resetting the underlying builder
+    /// to the initial empty state.
+    pub fn finalize(&mut self) -> Finalized {
+        let this = std::mem::take(self);
+        let inner = this.inner.finalize();
+        let index = this.index;
         Finalized { index, inner }
     }
 }

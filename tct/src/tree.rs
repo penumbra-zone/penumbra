@@ -144,8 +144,58 @@ impl Tree {
         &mut self,
         witness: Witness,
         commitment: impl Into<Commitment>,
-    ) -> Result<Position, InsertError> {
-        todo!()
+    ) -> Result<&mut Self, InsertError> {
+        let commitment = commitment.into();
+        let commitment = match witness {
+            Keep => Insert::Keep(commitment),
+            Forget => Insert::Hash(Hash::of(commitment)),
+        };
+
+        // Try to insert the commitment into the latest block
+        self.inner
+            .update(|epoch| {
+                epoch
+                    .update(|block| {
+                        block
+                            .insert(commitment.map(Item::new))
+                            .map_err(|_| InsertError::BlockFull)?;
+                        Ok(())
+                    })
+                    // If the latest block was finalized already or doesn't exist, create a new block and
+                    // insert into that block
+                    .unwrap_or_else(|| {
+                        epoch
+                            .insert(Insert::Keep(Tier::singleton(commitment.map(Item::new))))
+                            .map_err(|_| InsertError::EpochFull)?;
+                        Ok(())
+                    })
+            })
+            // If the latest epoch was finalized already or doesn't exist, create a new epoch and
+            // insert into that epoch
+            .unwrap_or_else(|| {
+                self.inner
+                    .insert(Insert::Keep(Tier::singleton(Insert::Keep(
+                        Tier::singleton(commitment.map(Item::new)),
+                    ))))
+                    .map_err(|_| InsertError::Full)?;
+                Ok(())
+            })?;
+
+        // Keep track of the position of this just-inserted commitment in the index, if it was
+        // slated to be kept
+        if let Insert::Keep(commitment) = commitment {
+            if let Some(replaced) = self.index.insert(commitment, self.position) {
+                // This case is handled for completeness, but should not happen in
+                // practice because commitments should be unique
+                let forgotten = self.inner.forget(replaced);
+                debug_assert!(forgotten);
+            }
+        }
+
+        // Increment the commitment index of the position
+        self.position.commitment.increment();
+
+        Ok(self)
     }
 
     /// Get a [`Proof`] of inclusion for the commitment at this index in the tree.
@@ -213,14 +263,117 @@ impl Tree {
     pub fn insert_block(
         &mut self,
         block: impl Into<block::Finalized>,
-    ) -> Result<(), InsertBlockError> {
-        todo!()
+    ) -> Result<&mut Self, InsertBlockError> {
+        let block::Finalized { inner, index } = block.into();
+
+        // Determine if the latest-inserted block has yet been finalized (it will implicitly be
+        // finalized by the insertion of the block, so we need to know to accurately record the new
+        // position)
+        let latest_block_finalized = self
+            .inner
+            .focus()
+            .and_then(|epoch| epoch.focus().map(|block| block.is_finalized()))
+            // Epoch is empty or latest block is complete, so there's nothing to finalize
+            .unwrap_or(true);
+
+        // Put the inner tree into an `Option` container so that we can yank it out inside a closure
+        // (if the closure is never called, then we can take it *back*)
+        let mut inner = Some(inner);
+
+        // Insert the inner tree of the block into the epoch
+        match self
+            .inner
+            .update(|epoch| epoch.insert(inner.take().unwrap().map(Into::into)))
+        {
+            // Inserting the block into the current epoch succeeded
+            Some(Ok(())) => {}
+            // Inserting the block into the current epoch failed because the epoch was full but not finalized
+            Some(Err(inner)) => {
+                // If the insertion failed, map the result back into the input block
+                return Err(InsertBlockError::EpochFull(block::Finalized {
+                    inner: inner.and_then(|tier| tier.finalize_owned().map(Into::into)),
+                    index,
+                }));
+            }
+            None => {
+                // Take back the inner thing, which was never inserted, because the closure was
+                // never invoked
+                let inner = inner.take().unwrap();
+
+                if self.inner.is_full() {
+                    // The current epoch was finalized and there is no more room for additional epochs
+                    return Err(InsertBlockError::Full(block::Finalized { inner, index }));
+                } else {
+                    // The current epoch was finalized and there is room to insert a new epoch containing
+                    // this block
+                    self
+                    .inner
+                    .insert(Insert::Keep(Tier::singleton(inner.map(Into::into)))).expect("inserting an epoch cannot fail because we already checked the fullness of the tree");
+                }
+            }
+        }
+
+        // Add the index of all commitments in the block to the global index
+        for (c, index::within::Block { commitment }) in index {
+            // If any commitment is repeated, forget the previous one within the tree, since it is
+            // now inaccessible
+            if let Some(replaced) = self.index.insert(
+                c,
+                index::within::Tree {
+                    epoch: self.position.epoch,
+                    block: self.position.block,
+                    commitment,
+                },
+            ) {
+                // This case is handled for completeness, but should not happen in practice because
+                // commitments should be unique
+                let forgotten = self.inner.forget(replaced);
+                debug_assert!(forgotten);
+            }
+        }
+
+        // Increment the position if the latest block wasn't already finalized, to track the
+        // implicit finalization of that block
+        if !latest_block_finalized {
+            self.position.block.increment();
+        }
+
+        // Increment the block index, potentially again, to track the insertion of this block
+        self.position.block.increment();
+
+        // Reset the commitment index to zero, because the next insertion will be at the start of
+        // the next block
+        self.position.commitment = index::Commitment::default();
+
+        Ok(self)
     }
 
     /// Explicitly mark the end of the current block in this tree, advancing the position to the
     /// next block.
-    pub fn end_block(&mut self) -> Result<(), InsertBlockError> {
-        todo!()
+    pub fn end_block(&mut self) -> Result<&mut Self, InsertBlockError> {
+        // Check to see if the latest block is already finalized, and finalize it if
+        // it is not
+        let already_finalized = self
+            .inner
+            .update(|epoch| {
+                epoch.update(|block| {
+                    let already_finalized = block.is_finalized();
+                    block.finalize();
+                    already_finalized
+                })
+            })
+            .flatten()
+            // If the entire tree or the latest epoch is empty or finalized, the latest block is
+            // considered already finalized
+            .unwrap_or(true);
+
+        // If the latest block was already finalized (i.e. we are at the start of an unfinalized
+        // empty block), insert an empty finalized block
+        if already_finalized {
+            self.insert_block(block::Finalized::default())?;
+        };
+
+        Ok(self)
     }
 
     /// Get the root hash of the most recent [`Block`] in the most recent [`Epoch`] of this
@@ -229,24 +382,15 @@ impl Tree {
         self.inner
             .focus()
             .and_then(|epoch| {
-                let block = epoch
-                    .as_ref()
-                    .keep()? // If the epoch was hashed, consider the current epoch to be the upcoming one
-                    .focus()? // If the epoch was already finalized, consider the current epoch to be the upcoming one
-                    .as_ref()
-                    .keep()?; // If the block was hashed, consider the current epoch to be the upcoming one
-
-                // If the epoch has already been finalized, consider the current epoch to be the
-                // upcoming one
+                let block = epoch.focus()?;
                 if block.is_finalized() {
                     None
                 } else {
                     Some(block::Root(block.hash()))
                 }
             })
-            // In the case where the tree is empty, the current block root is the zero hash, because
-            // the block is empty and unfinalized
-            .unwrap_or_else(|| block::Root(Hash::zero()))
+            // If there is no latest unfinalized block, we return the hash of the empty unfinalized block
+            .unwrap_or_else(|| block::Builder::default().root())
     }
 
     /// Add a new [`Epoch`] all at once to this [`Tree`].
@@ -261,14 +405,91 @@ impl Tree {
     pub fn insert_epoch(
         &mut self,
         epoch: impl Into<epoch::Finalized>,
-    ) -> Result<(), InsertEpochError> {
-        todo!()
+    ) -> Result<&mut Self, InsertEpochError> {
+        let epoch::Finalized { inner, index } = epoch.into();
+
+        // Determine if the latest-inserted epoch has yet been finalized (it will implicitly be
+        // finalized by the insertion of the epoch, so we need to know to accurately record the new
+        // position)
+        let latest_epoch_finalized = self
+            .inner
+            .focus()
+            .map(|block| block.is_finalized())
+            // Tree is empty or latest epoch is finalized, so there's nothing to finalize
+            .unwrap_or(true);
+
+        // Insert the inner tree of the eooch into the global tree
+        match self.inner.insert(inner.map(Into::into)) {
+            // Inserting the epoch succeeded
+            Ok(()) => {}
+            // Inserting the block failed because the epoch was full
+            Err(inner) => {
+                // If the insertion failed, map the result back into the input block
+                return Err(InsertEpochError(epoch::Finalized {
+                    inner: inner.and_then(|tier| tier.finalize_owned().map(Into::into)),
+                    index,
+                }));
+            }
+        }
+
+        // Add the index of all commitments in the epoch to the global tree index
+        for (c, index::within::Epoch { block, commitment }) in index {
+            // If any commitment is repeated, forget the previous one within the tree, since it is
+            // now inaccessible
+            if let Some(replaced) = self.index.insert(
+                c,
+                index::within::Tree {
+                    epoch: self.position.epoch,
+                    block,
+                    commitment,
+                },
+            ) {
+                // This case is handled for completeness, but should not happen in practice because
+                // commitments should be unique
+                let forgotten = self.inner.forget(replaced);
+                debug_assert!(forgotten);
+            }
+        }
+
+        // Increment the epoch position if the latest epoch wasn't already finalized, to track the
+        // implicit finalization of that epoch
+        if !latest_epoch_finalized {
+            self.position.epoch.increment();
+        }
+
+        // Increment the epoch index, potentially again, to track the insertion of this epoch
+        self.position.epoch.increment();
+
+        // Reset the block and commitment indices to zero, because the next insertion will be at the
+        // start of the next epoch
+        self.position.block = index::Block::default();
+        self.position.commitment = index::Commitment::default();
+
+        Ok(self)
     }
 
     /// Explicitly mark the end of the current epoch in this tree, advancing the position to the
     /// next epoch.
-    pub fn end_epoch(&mut self) -> Result<(), InsertBlockError> {
-        todo!()
+    pub fn end_epoch(&mut self) -> Result<&mut Self, InsertEpochError> {
+        // Check to see if the latest block is already finalized, and finalize it if
+        // it is not
+        let already_finalized = self
+            .inner
+            .update(|block| {
+                let already_finalized = block.is_finalized();
+                block.finalize();
+                already_finalized
+            })
+            // If there is no focused block, the latest block is considered already finalized
+            .unwrap_or(true);
+
+        // If the latest block was already finalized (i.e. we are at the start of an unfinalized
+        // empty block), insert an empty finalized block
+        if already_finalized {
+            self.insert_epoch(epoch::Finalized::default())?;
+        };
+
+        Ok(self)
     }
 
     /// Get the root hash of the most recent [`Epoch`] in this [`Tree`].
@@ -278,20 +499,15 @@ impl Tree {
         self.inner
             .focus()
             .and_then(|epoch| {
-                // If the epoch was hashed, consider the current epoch to be the upcoming one
-                let epoch = epoch.as_ref().keep()?;
-
-                // If the epoch has already been finalized, consider the current epoch to be the
-                // upcoming one
                 if epoch.is_finalized() {
                     None
                 } else {
                     Some(epoch::Root(epoch.hash()))
                 }
             })
-            // In the case where the tree is empty, the current epoch root is the zero hash, because
-            // the epoch is empty and unfinalized
-            .unwrap_or_else(|| epoch::Root(Hash::zero()))
+            // In the case where there is no latest unfinalized epoch, we return the hash of the
+            // empty unfinalized epoch
+            .unwrap_or_else(|| epoch::Builder::default().root())
     }
 
     /// The position in this [`Tree`] at which the next [`Commitment`] would be inserted.

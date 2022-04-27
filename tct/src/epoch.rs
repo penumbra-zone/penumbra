@@ -22,9 +22,9 @@ pub use error::{InsertBlockError, InsertError};
 /// This is one [`Epoch`] in a [`Tree`].
 #[derive(Derivative, Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Builder {
-    pub(super) position: index::within::Epoch,
-    pub(super) index: HashedMap<Commitment, index::within::Epoch>,
-    pub(super) inner: Top<Tier<Item>>,
+    position: index::within::Epoch,
+    index: HashedMap<Commitment, index::within::Epoch>,
+    inner: Top<Tier<Item>>,
 }
 
 /// A finalized epoch builder, ready to be inserted into an [`Epoch`](super::epoch).
@@ -64,7 +64,7 @@ impl From<Root> for Finalized {
 }
 
 impl From<Builder> for Finalized {
-    fn from(builder: Builder) -> Self {
+    fn from(mut builder: Builder) -> Self {
         builder.finalize()
     }
 }
@@ -131,7 +131,7 @@ impl Builder {
         &mut self,
         witness: Witness,
         commitment: impl Into<Commitment>,
-    ) -> Result<(), InsertError> {
+    ) -> Result<&mut Self, InsertError> {
         let commitment = commitment.into();
         let commitment = match witness {
             Keep => Insert::Keep(commitment),
@@ -140,19 +140,14 @@ impl Builder {
 
         // Try to insert the commitment into the latest block
         self.inner
-            .update(|focus| match focus {
-                // If the latest block is represented only by a hash, we can't insert into it
-                Insert::Hash(_) => Err(InsertError::BlockForgotten),
-                // If it is an unfinalized frontier, insert the commitment into it
-                Insert::Keep(inner) => {
-                    inner
-                        .insert(commitment.map(Item::new))
-                        .map_err(|_| InsertError::BlockFull)?;
-                    Ok(())
-                }
+            .update(|block| {
+                block
+                    .insert(commitment.map(Item::new))
+                    .map_err(|_| InsertError::BlockFull)?;
+                Ok(())
             })
-            // If the latest block was finalized already, create a new block and insert into
-            // that block
+            // If the latest block was finalized already or doesn't exist, create a new block and
+            // insert into that block
             .unwrap_or_else(|| {
                 self.inner
                     .insert(Insert::Keep(Tier::singleton(commitment.map(Item::new))))
@@ -174,7 +169,7 @@ impl Builder {
         // Increment the commitment index of the position
         self.position.commitment.increment();
 
-        Ok(())
+        Ok(self)
     }
 
     /// Insert a block into this epoch.
@@ -184,7 +179,7 @@ impl Builder {
     pub fn insert_block(
         &mut self,
         block: impl Into<block::Finalized>,
-    ) -> Result<(), InsertBlockError> {
+    ) -> Result<&mut Self, InsertBlockError> {
         let block::Finalized { inner, index } = block.into();
 
         // Determine if the latest-inserted block has yet been finalized (it will implicitly be
@@ -193,24 +188,22 @@ impl Builder {
         let latest_block_finalized = self
             .inner
             .focus()
-            .map(|focus| {
-                focus
-                    .as_ref()
-                    .keep()
-                    .map(|focus| focus.is_finalized()) // Check whether focus is finalized
-                    // Focus is a hashed thing, so it's already finalized
-                    .unwrap_or(true)
-            })
-            // Epoch is empty, so there's nothing to finalize
+            .map(|block| block.is_finalized())
+            // Epoch is empty or latest block is finalized, so there's nothing to finalize
             .unwrap_or(true);
 
         // Insert the inner tree of the block into the epoch
-        if let Err(inner) = self.inner.insert(inner.map(Into::into)) {
-            // If the insertion failed, map the result back into the input block
-            return Err(InsertBlockError(block::Finalized {
-                inner: inner.and_then(|tier| tier.finalize_owned().map(Into::into)),
-                index,
-            }));
+        match self.inner.insert(inner.map(Into::into)) {
+            // Inserting the block succeeded
+            Ok(()) => {}
+            // Inserting the block failed because the epoch was full
+            Err(inner) => {
+                // If the insertion failed, map the result back into the input block
+                return Err(InsertBlockError(block::Finalized {
+                    inner: inner.and_then(|tier| tier.finalize_owned().map(Into::into)),
+                    index,
+                }));
+            }
         }
 
         // Add the index of all commitments in the block to the epoch index
@@ -231,7 +224,7 @@ impl Builder {
             }
         }
 
-        // Increment the position if the latest block wasn't already finalized, to track the
+        // Increment the block position if the latest block wasn't already finalized, to track the
         // implicit finalization of that block
         if !latest_block_finalized {
             self.position.block.increment();
@@ -244,29 +237,20 @@ impl Builder {
         // the next block
         self.position.commitment = index::Commitment::default();
 
-        Ok(())
+        Ok(self)
     }
 
     /// Explicitly mark the end of the current block in this epoch, advancing the position to the
     /// next block.
-    pub fn end_block(&mut self) -> Result<(), InsertBlockError> {
+    pub fn end_block(&mut self) -> Result<&mut Self, InsertBlockError> {
         // Check to see if the latest block is already finalized, and finalize it if
         // it is not
         let already_finalized = self
             .inner
             .update(|block| {
-                block
-                    .as_mut()
-                    .keep()
-                    .map(|block| {
-                        let already_finalized = block.is_finalized();
-                        if !already_finalized {
-                            block.finalize();
-                        }
-                        already_finalized
-                    })
-                    // If the latest block is a hash, it's already finalized
-                    .unwrap_or(true)
+                let already_finalized = block.is_finalized();
+                block.finalize();
+                already_finalized
             })
             // If the entire epoch is empty, the latest block is considered already finalized
             .unwrap_or(true);
@@ -277,13 +261,22 @@ impl Builder {
             self.insert_block(block::Finalized::default())?;
         };
 
-        Ok(())
+        Ok(self)
     }
 
-    /// Finalize this epoch builder.
-    pub fn finalize(self) -> Finalized {
-        let inner = self.inner.finalize();
-        let index = self.index;
+    /// Get the root hash of this epoch builder.
+    ///
+    /// Note that this root hash will differ from the root hash of the finalized epoch.
+    pub fn root(&self) -> Root {
+        Root(self.inner.hash())
+    }
+
+    /// Finalize this epoch builder, returning a finalized epoch and resetting the underlying
+    /// builder to the initial empty state.
+    pub fn finalize(&mut self) -> Finalized {
+        let this = std::mem::take(self);
+        let inner = this.inner.finalize();
+        let index = this.index;
         Finalized { index, inner }
     }
 }

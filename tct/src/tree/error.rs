@@ -15,15 +15,9 @@ pub enum InsertError {
     /// The most recent [`Epoch`] of the [`Tree`] was full.
     #[error("most recent epoch in tree is full")]
     EpochFull,
-    /// The most recent [`Epoch`] of the [`Tree`] was forgotten.
-    #[error("most recent epoch in tree was forgotten")]
-    EpochForgotten,
     /// The most recent [`Block`] of the most recent [`Epoch`] of the [`Tree`] was full.
     #[error("most recent block in most recent epoch of tree is full")]
     BlockFull,
-    /// The most recent [`Block`] of the most recent [`Epoch`] of the [`Tree`] was forgotten.
-    #[error("most recent block in most recent epoch of tree was forgotten")]
-    BlockForgotten,
 }
 
 /// An error occurred when trying to insert a [`Block`] root into the [`Tree`].
@@ -37,10 +31,6 @@ pub enum InsertBlockError {
     #[error("most recent epoch is full")]
     #[non_exhaustive]
     EpochFull(block::Finalized),
-    /// The most recent [`Epoch`] of the [`Tree`] was forgotten.
-    #[error("most recent epoch was forgotten")]
-    #[non_exhaustive]
-    EpochForgotten(block::Finalized),
 }
 
 impl From<InsertBlockError> for block::Finalized {
@@ -48,7 +38,6 @@ impl From<InsertBlockError> for block::Finalized {
         match error {
             InsertBlockError::Full(block) => block,
             InsertBlockError::EpochFull(block) => block,
-            InsertBlockError::EpochForgotten(block) => block,
         }
     }
 }
@@ -80,6 +69,5 @@ mod test {
         static_assertions::assert_impl_all!(InsertError: Sync, Send);
         static_assertions::assert_impl_all!(InsertBlockError: Sync, Send);
         static_assertions::assert_impl_all!(InsertEpochError: Sync, Send);
-        static_assertions::assert_impl_all!(InsertEpochRootError: Sync, Send);
     }
 }
