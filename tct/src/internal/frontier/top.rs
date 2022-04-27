@@ -35,29 +35,30 @@ impl<Item: Focus> Top<Item> {
     ///
     /// If the tier is full, return the input item without inserting it.
     pub fn insert(&mut self, item: Insert<Item>) -> Result<(), Insert<Item>> {
-        // Temporarily replace the inside with the zero hash (it will get put back right away, this
-        // is just to satisfy the borrow checker)
+        // Temporarily replace the inside with `None` (it will get put back right away, this is just
+        // to satisfy the borrow checker)
         let inner = std::mem::take(&mut self.inner);
 
-        let result;
-        (result, self.inner) = if let Some(inner) = inner {
+        let (result, inner) = if let Some(inner) = inner {
             if inner.is_full() {
                 // Don't even try inserting when we know it will fail: this means that there is *no
                 // implicit finalization* of the frontier, even when it is full
-                (Err(item), Some(inner))
+                (Err(item), inner)
             } else {
                 // If it's not full, then insert the item into it (which we know will succeed)
-                (
-                    Ok(()),
-                    Some(inner.insert(item).unwrap_or_else(|_| {
-                        panic!("frontier is not full, so insert must succeed")
-                    })),
-                )
+                let inner = inner
+                    .insert(item)
+                    .unwrap_or_else(|_| panic!("frontier is not full, so insert must succeed"));
+                (Ok(()), inner)
             }
         } else {
             // If the tier was empty, create a new frontier containing only the inserted item
-            (Ok(()), Some(Nested::singleton(item)))
+            let inner = Nested::singleton(item);
+            (Ok(()), inner)
         };
+
+        // Put the inner back
+        self.inner = Some(inner);
 
         result
     }

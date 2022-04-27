@@ -78,12 +78,11 @@ impl<Item: Focus> Tier<Item> {
                     (Err(item), Inner::Frontier(frontier))
                 } else {
                     // If it's not full, then insert the item into it (which we know will succeed)
-                    (
-                        Ok(()),
+                    let inner =
                         Inner::Frontier(Box::new(frontier.insert(item).unwrap_or_else(|_| {
                             panic!("frontier is not full, so insert must succeed")
-                        }))),
-                    )
+                        })));
+                    (Ok(()), inner)
                 }
             }
         };
