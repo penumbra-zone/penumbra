@@ -9,20 +9,18 @@ use once_cell::sync::Lazy;
 use poseidon377::Fq;
 use serde::{Deserialize, Serialize};
 
+use crate::prelude::*;
+
 #[cfg(not(feature = "fast_hash"))]
 use poseidon377::{hash_1, hash_4};
-
 #[cfg(feature = "fast_hash")]
 mod fast;
 #[cfg(feature = "fast_hash")]
 use fast::{hash_1, hash_4};
 
-use crate::Commitment;
-
 mod cache;
 mod option;
-pub use cache::CachedHash;
-pub use option::OptionHash;
+pub use {cache::CachedHash, option::OptionHash};
 
 /// A type which can be transformed into a [`struct@Hash`], either by retrieving a cached hash, computing a
 /// hash for it, or some combination of both.
