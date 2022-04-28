@@ -48,11 +48,6 @@ impl<Tree: Height> Proof<Tree> {
     pub fn auth_path(&self) -> &AuthPath<Tree> {
         &self.auth_path
     }
-
-    /// Get the commitment whose inclusion is witnessed by the proof.
-    pub fn item(&self) -> Commitment {
-        self.leaf
-    }
 }
 
 /// A proof of inclusion did not verify against the provided root hash.

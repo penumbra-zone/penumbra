@@ -57,6 +57,7 @@ impl<T> Three<T> {
 
     /// Determine if this [`Three`] is empty.
     #[inline]
+    #[cfg_attr(not(feature = "internal"), allow(unused))]
     pub fn is_empty(&self) -> bool {
         self.elems.is_empty()
     }
