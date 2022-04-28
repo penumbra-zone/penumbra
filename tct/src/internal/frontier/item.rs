@@ -117,7 +117,7 @@ impl Forget for Item {
                 false
             }
         } else {
-            panic!("non-zero index when forgetting leaf");
+            panic!("non-zero index when forgetting item");
         }
     }
 }
