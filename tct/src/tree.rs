@@ -6,21 +6,20 @@ use penumbra_proto::{crypto as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::internal::{frontier::Forget as _, path::Witness as _};
-use crate::*;
+use crate::error::*;
+use crate::prelude::{Witness as _, *};
+use crate::Witness;
 
 #[path = "epoch.rs"]
 pub(crate) mod epoch;
 pub(crate) use epoch::block;
-
-use crate::error::*;
 
 /// A sparse merkle tree to witness up to 65,536 [`Epoch`]s, each witnessing up to 65,536
 /// [`Block`]s, each witnessing up to 65,536 [`Commitment`]s.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Tree {
     index: HashedMap<Commitment, index::within::Tree>,
-    inner: Top<Tier<Tier<Item>>>,
+    inner: frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>>,
 }
 
 /// The root hash of a [`Tree`].
@@ -100,7 +99,7 @@ impl From<u64> for Position {
 }
 
 impl Height for Tree {
-    type Height = <Top<Tier<Tier<Item>>> as Height>::Height;
+    type Height = <frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>> as Height>::Height;
 }
 
 impl Tree {
@@ -142,8 +141,8 @@ impl Tree {
     ) -> Result<&mut Self, InsertError> {
         let commitment = commitment.into();
         let item = match witness {
-            Keep => commitment.into(),
-            Forget => Hash::of(commitment).into(),
+            Witness::Keep => commitment.into(),
+            Witness::Forget => Hash::of(commitment).into(),
         };
 
         // Get the position of the insertion, if it would succeed
@@ -163,7 +162,7 @@ impl Tree {
                     // insert into that block
                     .unwrap_or_else(|| {
                         epoch
-                            .insert(Tier::new(item))
+                            .insert(frontier::Tier::new(item))
                             .map_err(|_| InsertError::EpochFull)?;
                         Ok(())
                     })
@@ -172,7 +171,7 @@ impl Tree {
             // insert into that epoch
             .unwrap_or_else(|| {
                 self.inner
-                    .insert(Tier::new(Tier::new(item)))
+                    .insert(frontier::Tier::new(frontier::Tier::new(item)))
                     .expect("inserting a commitment must succeed because we already checked that the tree is not full");
                 Ok(())
             })?;
@@ -304,7 +303,7 @@ impl Tree {
             // The current epoch was finalized and there is room to insert a new epoch containing
             // this block
             self.inner
-                .insert(Tier::new(inner))
+                .insert(frontier::Tier::new(inner))
                 .expect("inserting an epoch must succeed when top of tree is not full");
         }
 
@@ -337,7 +336,7 @@ impl Tree {
         // it is not
         let already_finalized = self
             .inner
-            .update(|epoch| epoch.update(Tier::finalize))
+            .update(|epoch| epoch.update(frontier::Tier::finalize))
             .flatten()
             // If the entire tree or the latest epoch is empty or finalized, the latest block is
             // considered already finalized
@@ -441,7 +440,7 @@ impl Tree {
         // it is not
         let already_finalized = self
             .inner
-            .update(Tier::finalize)
+            .update(frontier::Tier::finalize)
             // If there is no focused block, the latest block is considered already finalized
             .unwrap_or(true);
 

@@ -6,8 +6,7 @@ use penumbra_proto::{crypto as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::internal::{complete, frontier::Forget as _};
-use crate::*;
+use crate::{prelude::*, Witness};
 
 #[path = "block.rs"]
 pub(crate) mod block;
@@ -19,7 +18,7 @@ pub(crate) mod block;
 #[derive(Derivative, Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Builder {
     index: HashedMap<Commitment, index::within::Epoch>,
-    inner: Top<Tier<Item>>,
+    inner: frontier::Top<frontier::Tier<frontier::Item>>,
 }
 
 /// A finalized epoch builder, ready to be inserted into an [`Epoch`](super::epoch).
@@ -154,8 +153,8 @@ impl Builder {
     ) -> Result<&mut Self, InsertError> {
         let commitment = commitment.into();
         let item = match witness {
-            Keep => commitment.into(),
-            Forget => Hash::of(commitment).into(),
+            Witness::Keep => commitment.into(),
+            Witness::Forget => Hash::of(commitment).into(),
         };
 
         // Get the position of the insertion, if it would succeed
@@ -173,7 +172,7 @@ impl Builder {
             // insert into that block
             .unwrap_or_else(|| {
                 self.inner
-                    .insert(Tier::new(item))
+                    .insert(frontier::Tier::new(item))
                     .map_err(|_| InsertError::Full)?;
                 Ok(())
             })?;
@@ -256,7 +255,7 @@ impl Builder {
         // it is not
         let already_finalized = self
             .inner
-            .update(Tier::finalize)
+            .update(frontier::Tier::finalize)
             // If the entire epoch is empty, the latest block is considered already finalized
             .unwrap_or(true);
 

@@ -6,8 +6,7 @@ use penumbra_proto::{crypto as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::internal::{complete, frontier::Forget as _};
-use crate::*;
+use crate::{prelude::*, Witness};
 
 /// A sparse merkle tree to witness up to 65,536 individual [`Commitment`]s.
 ///
@@ -15,7 +14,7 @@ use crate::*;
 #[derive(Derivative, Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Builder {
     index: HashedMap<Commitment, index::within::Block>,
-    inner: Top<Item>,
+    inner: frontier::Top<Item>,
 }
 
 /// A finalized block builder, ready to be inserted into an [`Epoch`](super::epoch).
@@ -127,8 +126,8 @@ impl Builder {
     ) -> Result<&mut Self, InsertError> {
         let commitment = commitment.into();
         let item = match witness {
-            Keep => commitment.into(),
-            Forget => Hash::of(commitment).into(),
+            Witness::Keep => commitment.into(),
+            Witness::Forget => Hash::of(commitment).into(),
         };
 
         // Get the position of the insertion, if it would succeed

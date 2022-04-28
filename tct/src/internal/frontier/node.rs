@@ -2,18 +2,7 @@ use std::fmt::Debug;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    internal::{
-        frontier::{Forget, Full},
-        hash::CachedHash,
-        height::{IsHeight, Succ},
-        path::{self, WhichWay, Witness},
-        three::{Elems, ElemsMut, Three},
-    },
-    AuthPath, Focus, ForgetOwned, Frontier, GetHash, GetPosition, Hash, Height, Insert,
-};
-
-use super::super::complete;
+use crate::prelude::*;
 
 /// A frontier of a node in a tree, into which items can be inserted.
 #[derive(Clone, Derivative, Serialize, Deserialize)]

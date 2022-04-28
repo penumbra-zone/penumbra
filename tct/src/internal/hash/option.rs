@@ -1,8 +1,6 @@
 use std::fmt::Debug;
 
-use serde::{Deserialize, Serialize};
-
-use crate::Hash;
+use crate::prelude::*;
 
 /// A representation of `Option<Hash>` without the tag bytes required by `Option`, because we
 /// know that no valid [`struct@Hash`] will be equal to `[u64::MAX; 4]`, since the modulus for

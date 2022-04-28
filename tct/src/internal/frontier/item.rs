@@ -1,14 +1,4 @@
-use serde::{Deserialize, Serialize};
-
-use crate::{
-    internal::{
-        complete,
-        frontier::{Forget, Full},
-        height::Zero,
-        path::{self, Witness},
-    },
-    AuthPath, Commitment, Focus, Frontier, GetHash, GetPosition, Hash, Height, Insert,
-};
+use crate::prelude::*;
 
 /// The hash of the most-recently-inserted item, stored at the tip of the frontier.
 #[derive(Debug, Clone, Copy, Derivative, Serialize, Deserialize)]

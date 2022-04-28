@@ -2,12 +2,9 @@ use std::fmt::Debug;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    internal::{frontier::Forget, path::Witness},
-    AuthPath, Focus, ForgetOwned, Frontier, GetHash, GetPosition, Hash, Height, Insert,
-};
+use crate::prelude::*;
 
-use super::super::{complete, frontier::tier::Nested};
+use frontier::tier::Nested;
 
 /// The frontier of the top level of some part of the commitment tree, which may be empty, but may
 /// not be finalized or hashed.

@@ -1,8 +1,6 @@
-use serde::{Deserialize, Serialize};
+use crate::prelude::*;
 
-use crate::{GetHash, Hash, Height};
-
-use super::super::complete::{self, Nested};
+use complete::Nested;
 
 /// A complete top-level tier of the tiered commitment tree, being an 8-deep sparse quad-tree.
 #[derive(Clone, Debug, Serialize, Deserialize)]

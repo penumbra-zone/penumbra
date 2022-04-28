@@ -1,8 +1,4 @@
-use serde::{Deserialize, Serialize};
-
-use crate::{internal::path::Witness, Complete, ForgetOwned, GetHash, Hash, Height, Insert};
-
-use super::super::frontier;
+use crate::prelude::*;
 
 /// A complete, witnessed leaf of a tree.
 #[derive(Clone, Copy, Derivative, Serialize, Deserialize)]
@@ -33,13 +29,13 @@ impl<Item: Height> Height for Leaf<Item> {
 }
 
 impl<Item: Complete> Complete for Leaf<Item> {
-    type Focus = frontier::Leaf<<Item as crate::Complete>::Focus>;
+    type Focus = frontier::Leaf<<Item as Complete>::Focus>;
 }
 
 impl<Item: Witness> Witness for Leaf<Item> {
     type Item = Item::Item;
 
-    fn witness(&self, index: impl Into<u64>) -> Option<(crate::AuthPath<Self>, Self::Item)> {
+    fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Self::Item)> {
         self.0.witness(index)
     }
 }

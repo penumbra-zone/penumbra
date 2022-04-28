@@ -7,8 +7,7 @@ use std::fmt::Debug;
 
 use thiserror::Error;
 
-use super::path::{self, AuthPath};
-use crate::{Commitment, Hash, Height};
+use crate::prelude::*;
 
 /// A proof of inclusion for a single [`Commitment`](crate::Commitment) commitment in a tree.
 #[derive(Derivative)]
@@ -29,8 +28,6 @@ impl<Tree: Height> Proof<Tree> {
     ///
     /// Returns [`VerifyError`] if the proof is invalid.
     pub fn verify(&self, root: Hash) -> Result<(), VerifyError> {
-        use path::Path;
-
         if root == Tree::Height::root(&self.auth_path, self.position, Hash::of(self.leaf)) {
             Ok(())
         } else {

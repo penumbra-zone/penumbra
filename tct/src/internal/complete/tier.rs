@@ -1,10 +1,4 @@
-use serde::{Deserialize, Serialize};
-
-use crate::{
-    internal::path::Witness, AuthPath, Complete, Focus, ForgetOwned, GetHash, Hash, Height, Insert,
-};
-
-use super::super::frontier;
+use crate::prelude::*;
 
 type N<Child> = super::super::complete::Node<Child>;
 type L<Item> = super::super::complete::Leaf<Item>;
@@ -48,7 +42,7 @@ impl<Item: GetHash + Witness> Witness for Tier<Item> {
 }
 
 impl<Item: GetHash + ForgetOwned> ForgetOwned for Tier<Item> {
-    fn forget_owned(self, index: impl Into<u64>) -> (crate::Insert<Self>, bool) {
+    fn forget_owned(self, index: impl Into<u64>) -> (Insert<Self>, bool) {
         let (inner, forgotten) = self.inner.forget_owned(index);
         (inner.map(|inner| Tier { inner }), forgotten)
     }

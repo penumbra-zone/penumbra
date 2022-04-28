@@ -1,14 +1,4 @@
-use serde::{Deserialize, Serialize};
-
-use crate::{
-    internal::{
-        frontier::{Forget, Full},
-        path::Witness,
-    },
-    AuthPath, Focus, Frontier, GetHash, GetPosition, Hash, Height, Insert,
-};
-
-use super::super::complete;
+use crate::prelude::*;
 
 /// The frontier (rightmost) leaf in a frontier of a tree.
 ///

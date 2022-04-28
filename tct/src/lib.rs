@@ -83,14 +83,22 @@ pub use crate::internal::{
     proof::{ProofDecodeError, VerifyError},
 };
 
-use internal::{
-    complete::{Complete, ForgetOwned},
-    frontier::{Focus, Frontier, GetPosition, Insert, Item, Tier, Top},
-    hash::GetHash,
-    hash::Hash,
-    height::Height,
-    path::AuthPath,
-};
+mod prelude {
+    pub(crate) use super::{
+        index,
+        internal::{
+            complete::{self, Complete, ForgetOwned},
+            frontier::{self, Focus, Forget, Frontier, Full, GetPosition, Insert, Item},
+            hash::GetHash,
+            hash::{CachedHash, Hash, OptionHash},
+            height::{Height, IsHeight, Succ, Zero},
+            interface::Witness,
+            path::{self, AuthPath, Path, WhichWay},
+            three::{Elems, ElemsMut, IntoElems, Three},
+        },
+        Commitment, Position, Proof, Root, Tree, VerifyError,
+    };
+}
 
 /// When inserting a [`Commitment`] into a [`Tree`], [`Epoch`], or [`Block`], should we
 /// [`Keep`] it to allow it to be witnessed later, or [`Forget`] about it after updating the root
@@ -106,8 +114,6 @@ pub enum Witness {
     /// witness its presence later.
     Forget,
 }
-
-use Witness::*;
 
 /// A commitment to be stored in a [`Block`].
 ///

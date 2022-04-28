@@ -1,8 +1,4 @@
-pub use thiserror::Error;
-
-use crate::{Commitment, Hash, VerifyError};
-
-pub use crate::{Position, Root, Tree};
+use crate::prelude::*;
 
 /// An as-yet-unverified proof of the inclusion of some [`Commitment`] in a [`Tree`].
 #[derive(Debug, Clone, PartialEq, Eq)]
