@@ -2,6 +2,7 @@ use std::convert::TryFrom;
 
 use anyhow::Result;
 use async_trait::async_trait;
+use ibc::core::ics23_commitment::commitment::CommitmentRoot;
 use ibc::core::ics24_host::identifier::ConnectionId;
 use ibc::{
     clients::ics07_tendermint::{
@@ -59,8 +60,22 @@ impl Component for ClientComponent {
         self.state.put_client_counter(ClientCounter(0)).await;
     }
 
-    #[instrument(name = "ics2_client", skip(self, _begin_block))]
-    async fn begin_block(&mut self, _begin_block: &abci::request::BeginBlock) {}
+    #[instrument(name = "ics2_client", skip(self, begin_block))]
+    async fn begin_block(&mut self, begin_block: &abci::request::BeginBlock) {
+        // save the penumbra verified consensus state for this block
+        //
+        // TODO: tendermint versioning conflicts
+
+        let cs = TendermintConsensusState::new(
+            begin_block.header.app_hash.value().into(),
+            begin_block.header.time,
+            begin_block.header.next_validators_hash,
+        );
+
+        self.state
+            .put_penumbra_consensus_state(begin_block.header.height.into(), cs.into())
+            .await;
+    }
 
     #[instrument(name = "ics2_client", skip(tx))]
     fn check_tx_stateless(tx: &Transaction) -> Result<()> {
@@ -609,6 +624,22 @@ pub trait View: StateExt + Send + Sync {
             )
             .into(),
             verified_heights,
+        )
+        .await;
+    }
+
+    // returns the ConsensusState for the penumbra chain (this chain) at the given height
+    async fn get_penumbra_consensus_state(&self, height: Height) -> Result<ConsensusState> {
+        self.get_domain(format!("ibc/ics02-client/penumbra_consensus_states/{}", height).into())
+            .await?
+            .ok_or(anyhow::anyhow!("consensus state not found"))
+    }
+
+    // returns the ConsensusState for the penumbra chain (this chain) at the given height
+    async fn put_penumbra_consensus_state(&self, height: Height, consensus_state: ConsensusState) {
+        self.put_domain(
+            format!("ibc/ics02-client/penumbra_consensus_states/{}", height).into(),
+            consensus_state,
         )
         .await;
     }

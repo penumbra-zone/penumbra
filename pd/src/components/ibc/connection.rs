@@ -1,9 +1,12 @@
 use crate::{components::app::View as _, components::ibc::client::View as _};
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc::clients::ics07_tendermint::client_state::ClientState as TendermintClientState;
+use ibc::core::ics02_client::client_consensus::ConsensusState;
+use ibc::core::ics02_client::client_def::AnyClient;
+use ibc::core::ics02_client::client_def::ClientDef;
 use ibc::core::ics02_client::client_state::AnyClientState;
-use ibc::core::ics02_client::client_type::ClientType;
+use ibc::core::ics02_client::client_state::ClientState;
+use ibc::core::ics02_client::trust_threshold::TrustThreshold;
 use ibc::core::ics03_connection::connection::Counterparty;
 use ibc::core::ics03_connection::connection::{ConnectionEnd, State as ConnectionState};
 use ibc::core::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
@@ -11,12 +14,18 @@ use ibc::core::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfi
 use ibc::core::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use ibc::core::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 use ibc::core::ics03_connection::version::Version;
+use ibc::core::ics23_commitment::commitment::CommitmentProofBytes;
+use ibc::core::ics23_commitment::specs::ProofSpecs;
+use ibc::core::ics24_host::identifier::ChainId;
 use ibc::core::ics24_host::identifier::ConnectionId;
 use ibc::downcast;
+use ibc::proofs::ConsensusProof;
+use ibc::proofs::Proofs;
+use ibc::Height;
 use ibc::Height as IBCHeight;
 use penumbra_chain::genesis;
 use penumbra_component::Component;
-use penumbra_ibc::{Connection, ConnectionCounter};
+use penumbra_ibc::{Connection, ConnectionCounter, COMMITMENT_PREFIX};
 use penumbra_proto::ibc::{
     ibc_action::Action::{
         ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
@@ -27,8 +36,6 @@ use penumbra_storage::{State, StateExt};
 use penumbra_transaction::Transaction;
 use tendermint::abci;
 use tracing::instrument;
-
-use crate::components::ibc::client::View as _;
 
 pub struct ConnectionComponent {
     state: State,
@@ -98,7 +105,7 @@ fn validate_ibc_action_stateless(ibc_action: &IbcAction) -> Result<(), anyhow::E
         }
 
         // process a notice of a connection attempt on a counterparty chain
-        ConnectionOpenTry(msg) => {
+        Some(ConnectionOpenTry(msg)) => {
             let _ = MsgConnectionOpenTry::try_from(msg.clone())?;
         }
 
@@ -111,6 +118,34 @@ fn validate_ibc_action_stateless(ibc_action: &IbcAction) -> Result<(), anyhow::E
         }
 
         _ => {}
+    }
+
+    Ok(())
+}
+
+// Check that the trust threshold is:
+//
+// a) non-zero
+// b) greater or equal to 1/3
+// c) strictly less than 1
+fn validate_trust_threshold(
+    id: &ChainId,
+    trust_threshold: TrustThreshold,
+) -> Result<(), anyhow::Error> {
+    if trust_threshold.denominator() == 0 {
+        return Err(anyhow::anyhow!(
+            "trust threshold denominator cannot be zero"
+        ));
+    }
+
+    if trust_threshold.numerator() * 3 < trust_threshold.denominator() {
+        return Err(anyhow::anyhow!("trust threshold must be greater than 1/3"));
+    }
+
+    if trust_threshold.numerator() >= trust_threshold.denominator() {
+        return Err(anyhow::anyhow!(
+            "trust threshold must be strictly less than 1"
+        ));
     }
 
     Ok(())
@@ -170,7 +205,9 @@ impl ConnectionComponent {
 
     // validate the client state given to us in a MsgConnectionOpenTry, verifying that the state
     // that the counterparty chain stored is valid
-    async fn validate_client_state(
+    //
+    // TODO: this should probably be a static function in the client crate
+    async fn validate_penumbra_client_state(
         &self,
         client_state: AnyClientState,
     ) -> Result<(), anyhow::Error> {
@@ -183,22 +220,53 @@ impl ConnectionComponent {
             return Err(anyhow::anyhow!("invalid client state: frozen"));
         }
 
-        if self.state.get_chain_id().await? != tm_client_state.chain_id.as_str() {
+        // NOTE: Chain ID validation is actually not standardized yet. see
+        // https://github.com/informalsystems/ibc-rs/pull/304#discussion_r503917283
+        let chain_id = ChainId::from_string(&self.state.get_chain_id().await?);
+        if chain_id != tm_client_state.chain_id {
             return Err(anyhow::anyhow!(
                 "invalid client state: chain id does not match"
             ));
         }
 
-        // TODO:
-        // - check client latest height
-        // - check client proof specs match penumbra proof specs
-        // - check trust level matches penumbra trust level
-        // - check unbonding time matches penumbra unbonding time
-        // - check unbonding period is less than trusting period
-        // - check upgrade path
+        // check that the revision number is the same as our chain ID's version
+        if tm_client_state.latest_height.revision_number != chain_id.version() {
+            return Err(anyhow::anyhow!(
+                "invalid client state: revision number does not match"
+            ));
+        }
+
+        // check that the latest height isn't gte the current block height
+        if tm_client_state.latest_height.revision_height >= self.state.get_block_height().await? {
+            return Err(anyhow::anyhow!(
+                "invalid client state: latest height is greater than or equal to the current block height"
+            ));
+        }
+
+        // check client proof specs match penumbra proof specs
+        let penumbra_proof_specs: ProofSpecs = vec![jmt::ics23_spec()].into();
+        if penumbra_proof_specs != tm_client_state.proof_specs {
+            return Err(anyhow::anyhow!(
+                "invalid client state: proof specs do not match"
+            ));
+        }
+
+        // check that the trust level is correct
+        validate_trust_threshold(&chain_id, tm_client_state.trust_level)?;
+
+        // TODO: check that the unbonding period is correct
+        //
+        // - check unbonding period is greater than trusting period
+        if tm_client_state.unbonding_period < tm_client_state.trusting_period {
+            return Err(anyhow::anyhow!(
+                "invalid client state: unbonding period is less than trusting period"
+            ));
+        }
+        // TODO: check upgrade path
 
         Ok(())
     }
+
     async fn validate_connection_open_try(
         &self,
         msg: &MsgConnectionOpenTry,
@@ -222,7 +290,7 @@ impl ConnectionComponent {
             .clone()
             .ok_or_else(|| anyhow::anyhow!("client state not provided in MsgConnectionOpenTry"))?;
 
-        self.validate_client_state(provided_cs).await?;
+        self.validate_penumbra_client_state(provided_cs).await?;
 
         let mut new_conn = ConnectionEnd::new(
             ConnectionState::Init,
@@ -261,18 +329,51 @@ impl ConnectionComponent {
             Counterparty::new(
                 msg.client_id.clone(),
                 None,
-                self.state.get_commitment_prefix().await?,
+                COMMITMENT_PREFIX.as_bytes().to_vec().try_into().unwrap(),
             ),
             msg.counterparty_versions.clone(),
             msg.delay_period,
         );
 
-        // TODO: use Client verification methods to verify that the connection was included on the
-        // counterparty chain
+        // 1. verify that the counterparty chain committed the expected_conn to its state
+        self.verify_connection_proof(
+            msg.proofs.height(),
+            &new_conn,
+            &expected_conn,
+            msg.proofs.height(),
+            msg.proofs.object_proof(),
+        )
+        .await?;
+
+        // 2. verify that the counterparty chain committed the correct ClientState (that was
+        //    provided in the msg)
+        self.verify_client_proof(
+            msg.proofs.height(),
+            &new_conn,
+            msg.client_state
+                .clone()
+                .ok_or_else(|| anyhow::anyhow!("client state not provided in connectionOpenTry"))?,
+            msg.proofs.height(),
+            msg.proofs.client_proof().as_ref().ok_or_else(|| {
+                anyhow::anyhow!("client state proof not provided in the connectionOpenTry")
+            })?,
+        )
+        .await?;
+
+        // 3. verify that the counterparty chain stored the correct consensus state of Penumbra at
+        //    the given consensus height
+        self.verify_consensus_proof(
+            msg.proofs.height(),
+            &new_conn,
+            &msg.proofs.consensus_proof().ok_or_else(|| {
+                anyhow::anyhow!("consensus proof not provided in the connectionOpenTry")
+            })?,
+        )
+        .await?;
 
         Ok(())
     }
-    async fn validate_ibc_action_stateful(&self, ibc_action: &IBCAction) -> Result<()> {
+    async fn validate_ibc_action_stateful(&self, ibc_action: &IbcAction) -> Result<()> {
         match &ibc_action.action {
             Some(ConnectionOpenInit(raw_msg)) => {
                 // check that the client id exists
@@ -282,7 +383,7 @@ impl ConnectionComponent {
                 return Ok(());
             }
 
-            ConnectionOpenTry(raw_msg) => {
+            Some(ConnectionOpenTry(raw_msg)) => {
                 let msg = MsgConnectionOpenTry::try_from(raw_msg.clone())?;
                 self.validate_connection_open_try(&msg).await?;
             }
@@ -297,6 +398,138 @@ impl ConnectionComponent {
 
             _ => {}
         }
+
+        Ok(())
+    }
+
+    async fn verify_consensus_proof(
+        &self,
+        height: Height,
+        connection_end: &ConnectionEnd,
+        proof: &ConsensusProof,
+    ) -> Result<()> {
+        let client_state = self
+            .state
+            .get_client_data(connection_end.client_id())
+            .await?
+            .client_state
+            .0;
+
+        if client_state.is_frozen() {
+            return Err(anyhow::anyhow!("client is frozen"));
+        }
+
+        let expected_consensus = self
+            .state
+            .get_penumbra_consensus_state(proof.height())
+            .await?
+            .0;
+
+        let consensus_state = self
+            .state
+            .get_verified_consensus_state(height, connection_end.client_id().clone())
+            .await?
+            .0;
+
+        let client = AnyClient::from_client_type(client_state.client_type());
+
+        client.verify_client_consensus_state(
+            &client_state,
+            height,
+            connection_end.counterparty().prefix(),
+            proof.proof(),
+            consensus_state.root(),
+            connection_end.counterparty().client_id(),
+            proof.height(),
+            &expected_consensus,
+        )?;
+
+        Ok(())
+    }
+
+    async fn verify_client_proof(
+        &self,
+        height: Height,
+        connection_end: &ConnectionEnd,
+        expected_client_state: AnyClientState,
+        proof_height: Height,
+        proof: &CommitmentProofBytes,
+    ) -> Result<()> {
+        let client_state = self
+            .state
+            .get_client_data(connection_end.client_id())
+            .await?
+            .client_state
+            .0;
+
+        if client_state.is_frozen() {
+            return Err(anyhow::anyhow!("client is frozen"));
+        }
+
+        let consensus_state = self
+            .state
+            .get_verified_consensus_state(height, connection_end.client_id().clone())
+            .await?
+            .0;
+
+        let client_def = AnyClient::from_client_type(client_state.client_type());
+
+        client_def.verify_client_full_state(
+            &client_state,
+            height,
+            connection_end.counterparty().prefix(),
+            proof,
+            consensus_state.root(),
+            connection_end.counterparty().client_id(),
+            &expected_client_state,
+        )?;
+
+        Ok(())
+    }
+
+    async fn verify_connection_proof(
+        &self,
+        height: Height,
+        connection_end: &ConnectionEnd,
+        expected_conn: &ConnectionEnd,
+        proof_height: Height,
+        proof: &CommitmentProofBytes,
+    ) -> Result<()> {
+        let client_state = self
+            .state
+            .get_client_data(&connection_end.client_id())
+            .await?
+            .client_state
+            .0;
+
+        // check if the client is frozen
+        // TODO: should we also check if the client is expired here?
+        if client_state.is_frozen() {
+            return Err(anyhow::anyhow!("client is frozen"));
+        }
+
+        let consensus_state = self
+            .state
+            .get_verified_consensus_state(proof_height, connection_end.client_id().clone())
+            .await?
+            .0;
+
+        let connection_id = connection_end
+            .counterparty()
+            .connection_id()
+            .ok_or_else(|| anyhow::anyhow!("connection id for counterparty not provided"))?;
+
+        let client_def = AnyClient::from_client_type(client_state.client_type());
+
+        client_def.verify_connection_state(
+            &client_state,
+            height,
+            connection_end.counterparty().prefix(),
+            proof,
+            consensus_state.root(),
+            connection_id,
+            expected_conn,
+        )?;
 
         Ok(())
     }
