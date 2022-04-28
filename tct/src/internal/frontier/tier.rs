@@ -54,36 +54,48 @@ impl<Item: Focus> From<Hash> for Tier<Item> {
     }
 }
 
-impl<Item: Focus> Frontier for Tier<Item> {
-    type Item = Item;
-
+impl<Item: Focus> Tier<Item> {
+    /// Create a new tier from a single item which will be its first element.
     #[inline]
-    fn new(item: Item) -> Self {
+    pub fn new(item: Item) -> Self {
         Self {
             inner: Inner::Frontier(Box::new(Nested::new(item))),
         }
     }
 
+    /// Insert an item or its hash into this frontier tier.
+    ///
+    /// If the tier is full, return the input item without inserting it.
     #[inline]
-    fn insert_owned(self, item: Item) -> Result<Self, Full<Self>> {
+    pub fn insert(&mut self, item: Item) -> Result<(), Item> {
+        // Temporarily swap the inside for the empty hash (this will get put back immediately)
+        let inner = std::mem::replace(&mut self.inner, Inner::Hash(Hash::zero()));
+
+        let result;
+        (result, *self) = match (Self { inner }.insert_owned(item)) {
+            Ok(this) => (Ok(()), this),
+            Err((item, this)) => (Err(item), this),
+        };
+
+        result
+    }
+
+    #[inline]
+    fn insert_owned(self, item: Item) -> Result<Self, (Item, Self)> {
         match self.inner {
             // The tier is full or is a single hash, so return the item without inserting it
-            inner @ (Inner::Complete(_) | Inner::Hash(_)) => Err(Full {
-                item,
-                complete: Self { inner }.finalize_owned(),
-            }),
+            inner @ (Inner::Complete(_) | Inner::Hash(_)) => Err((item, Self { inner })),
             // The tier is a frontier, so try inserting into it
             Inner::Frontier(frontier) => {
                 if frontier.is_full() {
                     // Don't even try inserting when we know it will fail: this means that there is *no
                     // implicit finalization* of the frontier, even when it is full
-                    Err(Full {
+                    Err((
                         item,
-                        complete: Self {
+                        Self {
                             inner: Inner::Frontier(frontier),
-                        }
-                        .finalize_owned(),
-                    })
+                        },
+                    ))
                 } else {
                     // If it's not full, then insert the item into it (which we know will succeed)
                     let inner =
@@ -96,8 +108,11 @@ impl<Item: Focus> Frontier for Tier<Item> {
         }
     }
 
+    /// Update the focused element of this tier using a function.
+    ///
+    /// If the tier is empty or finalized, the function is not executed, and this returns `None`.
     #[inline]
-    fn update<T>(&mut self, f: impl FnOnce(&mut Item) -> T) -> Option<T> {
+    pub fn update<T>(&mut self, f: impl FnOnce(&mut Item) -> T) -> Option<T> {
         if let Inner::Frontier(frontier) = &mut self.inner {
             frontier.update(f)
         } else {
@@ -105,8 +120,11 @@ impl<Item: Focus> Frontier for Tier<Item> {
         }
     }
 
+    /// Get the focused element of this tier, if one exists.
+    ///
+    /// If the tier is empty or finalized, returns `None`.
     #[inline]
-    fn focus(&self) -> Option<&Item> {
+    pub fn focus(&self) -> Option<&Item> {
         if let Inner::Frontier(frontier) = &self.inner {
             frontier.focus()
         } else {
@@ -114,34 +132,15 @@ impl<Item: Focus> Frontier for Tier<Item> {
         }
     }
 
+    /// Check whether this tier is full.
+    ///
+    /// If this returns `false`, then insertion will fail.
     #[inline]
-    fn is_full(&self) -> bool {
+    pub fn is_full(&self) -> bool {
         match &self.inner {
             Inner::Frontier(frontier) => frontier.is_full(),
             Inner::Complete(_) | Inner::Hash(_) => true,
         }
-    }
-}
-
-impl<Item: Focus> Tier<Item> {
-    /// Insert an item or its hash into this frontier tier.
-    ///
-    /// If the tier is full, return the input item without inserting it.
-    #[inline]
-    pub fn insert(&mut self, item: Item) -> Result<(), Item> {
-        if self.is_full() {
-            return Err(item);
-        }
-
-        // Temporarily swap the inside for the empty hash (this will get put back immediately)
-        let inner = std::mem::replace(&mut self.inner, Inner::Hash(Hash::zero()));
-        *self = if let Ok(this) = (Self { inner }.insert_owned(item)) {
-            this
-        } else {
-            panic!("insert must succeed because tier is not full");
-        };
-
-        Ok(())
     }
 
     /// Finalize this tier so that it is internally marked as complete.
