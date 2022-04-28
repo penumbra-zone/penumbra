@@ -4,7 +4,7 @@ use thiserror::Error;
 
 #[cfg(doc)]
 use super::Tree;
-use super::{block, epoch};
+use crate::builder::{block, epoch};
 
 /// An error occurred when trying to insert an commitment into a [`Tree`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]

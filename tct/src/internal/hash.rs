@@ -13,16 +13,16 @@ use serde::{Deserialize, Serialize};
 use poseidon377::{hash_1, hash_4};
 
 #[cfg(feature = "fast_hash")]
-mod fast_hash;
+mod fast;
 #[cfg(feature = "fast_hash")]
-use fast_hash::{hash_1, hash_4};
+use fast::{hash_1, hash_4};
 
 use crate::Commitment;
 
 mod cache;
-mod option_hash;
+mod option;
 pub use cache::CachedHash;
-pub use option_hash::OptionHash;
+pub use option::OptionHash;
 
 /// A type which can be transformed into a [`struct@Hash`], either by retrieving a cached hash, computing a
 /// hash for it, or some combination of both.
