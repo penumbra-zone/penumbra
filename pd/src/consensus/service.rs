@@ -5,6 +5,7 @@ use std::{
 };
 
 use futures::FutureExt;
+use penumbra_storage::Storage;
 use tendermint::{
     abci::{ConsensusRequest, ConsensusResponse},
     block,
@@ -14,7 +15,7 @@ use tokio_util::sync::PollSender;
 use tower_abci::BoxError;
 
 use super::{Message, Worker};
-use crate::{RequestExt, Storage};
+use crate::RequestExt;
 
 #[derive(Clone)]
 pub struct Consensus {

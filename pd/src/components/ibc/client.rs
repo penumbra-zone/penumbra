@@ -2,6 +2,7 @@ use std::convert::TryFrom;
 
 use anyhow::Result;
 use async_trait::async_trait;
+use ibc::core::ics24_host::identifier::ConnectionId;
 use ibc::{
     clients::ics07_tendermint::{
         client_state::ClientState as TendermintClientState,
@@ -19,8 +20,14 @@ use ibc::{
         ics24_host::identifier::ClientId,
     },
 };
-use penumbra_ibc::{ClientCounter, ClientData, ConsensusState, IBCAction, VerifiedHeights};
-use penumbra_proto::ibc::ibc_action::Action::{CreateClient, UpdateClient};
+use penumbra_chain::genesis;
+use penumbra_component::Component;
+use penumbra_ibc::{ClientConnections, ClientCounter, ClientData, ConsensusState, VerifiedHeights};
+use penumbra_proto::ibc::{
+    ibc_action::Action::{CreateClient, UpdateClient},
+    IbcAction,
+};
+use penumbra_storage::{State, StateExt};
 use penumbra_transaction::Transaction;
 use tendermint::{abci, Time};
 use tendermint_light_client_verifier::{
@@ -29,28 +36,27 @@ use tendermint_light_client_verifier::{
 };
 use tracing::instrument;
 
-use crate::{components::app::View as _, components::Component};
-use crate::{genesis, Overlay, OverlayExt};
+use crate::components::app::View as _;
 
 /// The Penumbra IBC client component. Handles all client-related IBC actions: MsgCreateClient,
 /// MsgUpdateClient, MsgUpgradeClient, and MsgSubmitMisbehaviour. The core responsibility of the
 /// client component is tracking light clients for IBC, creating new light clients and verifying
 /// state updates. Currently, only Tendermint light clients are supported.
 pub struct ClientComponent {
-    overlay: Overlay,
+    state: State,
 }
 
 #[async_trait]
 impl Component for ClientComponent {
-    #[instrument(name = "ics2_client", skip(overlay))]
-    async fn new(overlay: Overlay) -> Self {
-        Self { overlay }
+    #[instrument(name = "ics2_client", skip(state))]
+    async fn new(state: State) -> Self {
+        Self { state }
     }
 
     #[instrument(name = "ics2_client", skip(self, _app_state))]
     async fn init_chain(&mut self, _app_state: &genesis::AppState) {
         // set the initial client count
-        self.overlay.put_client_counter(ClientCounter(0)).await;
+        self.state.put_client_counter(ClientCounter(0)).await;
     }
 
     #[instrument(name = "ics2_client", skip(self, _begin_block))]
@@ -85,14 +91,14 @@ impl Component for ClientComponent {
 }
 
 // validates the given ibc action statelessly
-fn validate_ibc_action_stateless(ibc_action: &IBCAction) -> Result<(), anyhow::Error> {
+fn validate_ibc_action_stateless(ibc_action: &IbcAction) -> Result<(), anyhow::Error> {
     match &ibc_action.action {
-        CreateClient(msg) => {
+        Some(CreateClient(msg)) => {
             let msg_create_client = MsgCreateAnyClient::try_from(msg.clone())?;
 
             validate_create_client_stateless(&msg_create_client)?;
         }
-        UpdateClient(msg) => {
+        Some(UpdateClient(msg)) => {
             let msg_update_client = MsgUpdateAnyClient::try_from(msg.clone())?;
 
             validate_update_client_stateless(&msg_update_client)?;
@@ -144,15 +150,15 @@ fn validate_update_client_stateless(
 
 impl ClientComponent {
     // validates the given IBC action statefully.
-    async fn validate_ibc_action_stateful(&self, ibc_action: &IBCAction) -> Result<()> {
+    async fn validate_ibc_action_stateful(&self, ibc_action: &IbcAction) -> Result<()> {
         match &ibc_action.action {
-            CreateClient(msg) => {
+            Some(CreateClient(msg)) => {
                 let msg_create_client = MsgCreateAnyClient::try_from(msg.clone())?;
 
                 self.validate_create_client_stateful(msg_create_client)
                     .await?;
             }
-            UpdateClient(msg) => {
+            Some(UpdateClient(msg)) => {
                 let msg_update_client = MsgUpdateAnyClient::try_from(msg.clone())?;
 
                 self.validate_update_client_stateful(msg_update_client)
@@ -165,15 +171,15 @@ impl ClientComponent {
     }
 
     // executes the given IBC action, assuming that it has already been validated.
-    async fn execute_ibc_action(&mut self, ibc_action: &IBCAction) {
+    async fn execute_ibc_action(&mut self, ibc_action: &IbcAction) {
         match &ibc_action.action {
-            CreateClient(raw_msg_create_client) => {
+            Some(CreateClient(raw_msg_create_client)) => {
                 let msg_create_client =
                     MsgCreateAnyClient::try_from(raw_msg_create_client.clone()).unwrap();
 
                 self.execute_create_client(msg_create_client).await;
             }
-            UpdateClient(raw_msg_update_client) => {
+            Some(UpdateClient(raw_msg_update_client)) => {
                 let msg_update_client =
                     MsgUpdateAnyClient::try_from(raw_msg_update_client.clone()).unwrap();
 
@@ -198,7 +204,7 @@ impl ClientComponent {
     ) -> Result<()> {
         // get the latest client state
         let client_data = self
-            .overlay
+            .state
             .get_client_data(&msg_update_client.client_id)
             .await?;
 
@@ -209,7 +215,7 @@ impl ClientComponent {
 
         // check if client is expired
         let latest_consensus_state = self
-            .overlay
+            .state
             .get_verified_consensus_state(
                 client_data.client_state.0.latest_height(),
                 client_data.client_id.clone(),
@@ -224,7 +230,7 @@ impl ClientComponent {
                 ))
             }
         };
-        let now = self.overlay.get_block_timestamp().await?;
+        let now = self.state.get_block_timestamp().await?;
         let stamp = latest_consensus_state_tm.timestamp.to_rfc3339();
         let duration = now.duration_since(Time::parse_from_rfc3339(&stamp).unwrap())?;
         if client_data.client_state.0.expired(duration) {
@@ -257,7 +263,7 @@ impl ClientComponent {
         &self,
         msg_create_client: MsgCreateAnyClient,
     ) -> Result<()> {
-        let id_counter = self.overlay.client_counter().await?;
+        let id_counter = self.state.client_counter().await?;
         ClientId::new(msg_create_client.client_state.client_type(), id_counter.0)?;
 
         Ok(())
@@ -268,7 +274,7 @@ impl ClientComponent {
     async fn execute_update_client(&mut self, msg_update_client: MsgUpdateAnyClient) {
         // get the latest client state
         let client_data = self
-            .overlay
+            .state
             .get_client_data(&msg_update_client.client_id)
             .await
             .unwrap();
@@ -293,15 +299,15 @@ impl ClientComponent {
             .await;
 
         // store the updated client and consensus states
-        let height = self.overlay.get_block_height().await.unwrap();
-        let now = self.overlay.get_block_timestamp().await.unwrap();
+        let height = self.state.get_block_height().await.unwrap();
+        let now = self.state.get_block_timestamp().await.unwrap();
         let next_client_data = client_data.with_new_client_state(
             AnyClientState::Tendermint(next_tm_client_state),
             now.to_rfc3339(),
             height,
         );
-        self.overlay.put_client_data(next_client_data).await;
-        self.overlay
+        self.state.put_client_data(next_client_data).await;
+        self.state
             .put_verified_consensus_state(
                 tm_header.height(),
                 msg_update_client.client_id.clone(),
@@ -320,14 +326,14 @@ impl ClientComponent {
     // - processed time and height
     async fn execute_create_client(&mut self, msg_create_client: MsgCreateAnyClient) {
         // get the current client counter
-        let id_counter = self.overlay.client_counter().await.unwrap();
+        let id_counter = self.state.client_counter().await.unwrap();
         let client_id =
             ClientId::new(msg_create_client.client_state.client_type(), id_counter.0).unwrap();
 
         tracing::info!("creating client {:?}", client_id);
 
-        let height = self.overlay.get_block_height().await.unwrap();
-        let timestamp = self.overlay.get_block_timestamp().await.unwrap();
+        let height = self.state.get_block_height().await.unwrap();
+        let timestamp = self.state.get_block_timestamp().await.unwrap();
 
         let data = ClientData::new(
             client_id.clone(),
@@ -337,10 +343,10 @@ impl ClientComponent {
         );
 
         // store the client data
-        self.overlay.put_client_data(data.clone()).await;
+        self.state.put_client_data(data.clone()).await;
 
         // store the genesis consensus state
-        self.overlay
+        self.state
             .put_verified_consensus_state(
                 data.client_state.0.latest_height(),
                 client_id,
@@ -351,11 +357,11 @@ impl ClientComponent {
 
         // increment client counter
         let counter = self
-            .overlay
+            .state
             .client_counter()
             .await
             .unwrap_or(ClientCounter(0));
-        self.overlay
+        self.state
             .put_client_counter(ClientCounter(counter.0 + 1))
             .await;
     }
@@ -373,7 +379,7 @@ impl ClientComponent {
         // if we have a stored consensus state for this height that conflicts, we need to freeze
         // the client. if it doesn't conflict, we can return early
         if let Some(stored_cs_state) = self
-            .overlay
+            .state
             .get_verified_consensus_state(verified_header.height(), client_id.clone())
             .await
             .ok()
@@ -397,12 +403,12 @@ impl ClientComponent {
         // have. In that case, we need to verify that the timestamp is correct. if it isn't, freeze
         // the client.
         let next_consensus_state = self
-            .overlay
+            .state
             .next_verified_consensus_state(&client_id, verified_header.height())
             .await
             .unwrap();
         let prev_consensus_state = self
-            .overlay
+            .state
             .prev_verified_consensus_state(&client_id, verified_header.height())
             .await
             .unwrap();
@@ -466,7 +472,7 @@ impl ClientComponent {
         // check if we already have a consensus state for this height, if we do, check that it is
         // the same as this update, if it is, return early.
         if let Some(stored_consensus_state) = self
-            .overlay
+            .state
             .get_verified_consensus_state(untrusted_header.height(), client_id.clone())
             .await
             .ok()
@@ -478,7 +484,7 @@ impl ClientComponent {
         }
 
         let last_trusted_consensus_state = self
-            .overlay
+            .state
             .get_verified_consensus_state(untrusted_header.trusted_height, client_id.clone())
             .await?
             .as_tendermint()?;
@@ -513,7 +519,7 @@ impl ClientComponent {
         let options = trusted_client_state.as_light_client_options()?;
         let verifier = ProdVerifier::default();
         let current_block_timestamp = LightClientTime::parse_from_rfc3339(
-            &self.overlay.get_block_timestamp().await?.to_rfc3339(),
+            &self.state.get_block_timestamp().await?.to_rfc3339(),
         )
         .unwrap();
 
@@ -545,7 +551,7 @@ impl ClientComponent {
 }
 
 #[async_trait]
-pub trait View: OverlayExt + Send + Sync {
+pub trait View: StateExt + Send + Sync {
     async fn put_client_counter(&mut self, counter: ClientCounter) {
         self.put_domain("ibc/ics02-client/client_counter".into(), counter)
             .await;
@@ -718,20 +724,55 @@ pub trait View: OverlayExt + Send + Sync {
             return Ok(None);
         }
     }
+
+    // adds the provided connection ID to the client identified by client_id. returns an error if
+    // the client does not exist.
+    async fn add_connection_to_client(
+        &mut self,
+        client_id: &ClientId,
+        connection_id: &ConnectionId,
+    ) -> Result<()> {
+        self.get_client_data(client_id).await?;
+
+        let mut connections = self
+            .get_domain(
+                format!(
+                    "ibc/ics02-client/clients/{}/connections",
+                    hex::encode(client_id.as_bytes())
+                )
+                .into(),
+            )
+            .await?
+            .unwrap_or(ClientConnections::default());
+
+        connections.connection_ids.push(connection_id.clone());
+
+        self.put_domain(
+            format!(
+                "ibc/ics02-client/clients/{}/connections",
+                hex::encode(client_id.as_bytes())
+            )
+            .into(),
+            connections,
+        )
+        .await;
+
+        Ok(())
+    }
 }
 
-impl<T: OverlayExt + Send + Sync> View for T {}
+impl<T: StateExt + Send + Sync> View for T {}
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Storage;
     use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
     use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
     use penumbra_crypto::merkle;
     use penumbra_crypto::{Fq, Zero};
-    use penumbra_proto::ibc::ibc_action::Action as IBCActionInner;
+    use penumbra_proto::ibc::ibc_action::Action as IbcActionInner;
     use penumbra_proto::Message;
+    use penumbra_storage::Storage;
     use penumbra_transaction::{Action, Fee, Transaction, TransactionBody};
     use std::fs;
     use tempfile::tempdir;
@@ -744,24 +785,18 @@ mod tests {
         let file_path = dir.path().join("ibc-testing.db");
 
         let storage = Storage::load(file_path).await.unwrap();
-        let overlay = storage.overlay().await.unwrap();
+        let state = storage.state().await.unwrap();
 
-        let mut client_component = ClientComponent::new(overlay).await;
+        let mut client_component = ClientComponent::new(state).await;
 
         // init chain should result in client counter = 0
         let genesis_state = genesis::AppState::default();
         let timestamp = Time::parse_from_rfc3339("2022-02-11T17:30:50.425417198Z").unwrap();
-        client_component
-            .overlay
-            .put_block_timestamp(timestamp)
-            .await;
-        client_component.overlay.put_block_height(0).await;
+        client_component.state.put_block_timestamp(timestamp).await;
+        client_component.state.put_block_height(0).await;
         client_component.init_chain(&genesis_state).await;
 
-        assert_eq!(
-            client_component.overlay.client_counter().await.unwrap().0,
-            0
-        );
+        assert_eq!(client_component.state.client_counter().await.unwrap().0, 0);
 
         // base64 encoded MsgCreateClient that was used to create the currently in-use Stargaze
         // light client on the cosmos hub:
@@ -789,8 +824,8 @@ mod tests {
             RawMsgUpdateClient::decode(msg_update_client_stargaze_raw.as_slice()).unwrap();
         msg_update_stargaze_client.client_id = "07-tendermint-0".to_string();
 
-        let create_client_action = IBCAction {
-            action: IBCActionInner::CreateClient(msg_create_stargaze_client),
+        let create_client_action = IbcAction {
+            action: Some(IbcActionInner::CreateClient(msg_create_stargaze_client)),
         };
         let create_client_tx = Transaction {
             transaction_body: TransactionBody {
@@ -803,8 +838,8 @@ mod tests {
             binding_sig: [0u8; 64].into(),
         };
 
-        let update_client_action = IBCAction {
-            action: IBCActionInner::UpdateClient(msg_update_stargaze_client),
+        let update_client_action = IbcAction {
+            action: Some(IbcActionInner::UpdateClient(msg_update_stargaze_client)),
         };
         let update_client_tx = Transaction {
             transaction_body: TransactionBody {
@@ -825,10 +860,7 @@ mod tests {
         // execute (save client)
         client_component.execute_tx(&create_client_tx).await;
 
-        assert_eq!(
-            client_component.overlay.client_counter().await.unwrap().0,
-            1
-        );
+        assert_eq!(client_component.state.client_counter().await.unwrap().0, 1);
 
         // now try update client
 
@@ -852,8 +884,8 @@ mod tests {
 
         let mut second_update = RawMsgUpdateClient::decode(msg_update_second.as_slice()).unwrap();
         second_update.client_id = "07-tendermint-0".to_string();
-        let second_update_client_action = IBCAction {
-            action: IBCActionInner::UpdateClient(second_update),
+        let second_update_client_action = IbcAction {
+            action: Some(IbcActionInner::UpdateClient(second_update)),
         };
         let second_update_client_tx = Transaction {
             transaction_body: TransactionBody {

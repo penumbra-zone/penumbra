@@ -1,35 +1,40 @@
+//! This module contains trait definitions for the entire interface of the internal tree. All of
+//! them are exported from either [`frontier`](crate::internal::frontier) or
+//! [`complete`](crate::internal::complete), but they are also exported from here for ease of
+//! reading.
+
 use crate::{AuthPath, GetHash, Height, Insert};
 
-/// An active tree supporting the insertion of new elements and the updating of the
+/// A frontier of a tree supporting the insertion of new elements and the updating of the
 /// most-recently-inserted element.
-pub trait Active: Focus + Sized {
-    /// The type of item to persist in each witnessed leaf of the active tree.
+pub trait Frontier: Focus + Sized {
+    /// The type of item to persist in each witnessed leaf of the frontier.
     type Item: Focus;
 
-    /// Make a new [`Active`] containing a single [`Hash`](crate::Hash) or `Self::Item`.
+    /// Make a new [`Frontier`] containing a single [`Hash`](crate::Hash) or `Self::Item`.
     fn singleton(item: Insert<Self::Item>) -> Self;
 
-    /// Insert a new [`Hash`](crate::Hash) or `Self::Item` into this [`Active`], returning either
+    /// Insert a new [`Hash`](crate::Hash) or `Self::Item` into this [`Frontier`], returning either
     /// `Self` with the thing inserted, or the un-inserted thing and the [`Complete`] of this
-    /// [`Active`].
+    /// [`Frontier`].
     fn insert(self, item: Insert<Self::Item>) -> Result<Self, Full<Self>>;
 
-    /// Update the currently active `Insert<Self::Item>` (i.e. the most-recently
-    /// [`insert`](Active::insert)ed one), returning the result of the function.
+    /// Update the currently focused `Insert<Self::Item>` (i.e. the most-recently
+    /// [`insert`](Frontier::insert)ed one), returning the result of the function.
     fn update<T>(&mut self, f: impl FnOnce(&mut Insert<Self::Item>) -> T) -> T;
 
     /// Get a reference to the focused `Insert<Self::Item>` (i.e. the most-recently
-    /// [`insert`](Active::insert)ed one).
+    /// [`insert`](Frontier::insert)ed one).
     fn focus(&self) -> &Insert<Self::Item>;
 }
 
-/// A type which can be the focus of an [`Active`] tree: it can be finalized to make a [`Complete`]
+/// A type which can be the focus of an [`Frontier`] tree: it can be finalized to make a [`Complete`]
 /// tree.
 pub trait Focus: Height<Height = <Self::Complete as Height>::Height> + GetHash {
-    /// The [`Complete`] of this [`Active`].
+    /// The [`Complete`] of this [`Frontier`].
     type Complete: Complete<Focus = Self>;
 
-    /// Transition from an [`Active`] to being [`Complete`].
+    /// Transition from an [`Frontier`] to being [`Complete`].
     fn finalize(self) -> Insert<Self::Complete>;
 }
 
@@ -37,12 +42,13 @@ pub trait Focus: Height<Height = <Self::Complete as Height>::Height> + GetHash {
 ///
 /// It is enforced by the type system that [`Complete`] and [`Focus`] are dual to one another.
 pub trait Complete: Height + GetHash {
-    /// The [`Focus`] of this [`Complete`].
+    /// The corresponding [`Focus`] of this [`Complete`] (i.e. the type which will become this type
+    /// when it is [`finalize`](Focus::finalize)d).
     type Focus: Focus<Complete = Self>;
 }
 
-/// The result of [`Active::insert`] when the [`Active`] is full.
-pub struct Full<T: Active> {
+/// The result of [`Frontier::insert`] when the [`Frontier`] is full.
+pub struct Full<T: Frontier> {
     /// The original hash or item that could not be inserted.
     pub item: Insert<T::Item>,
     /// The completed structure, which has no more room for any further insertions, or a hash of

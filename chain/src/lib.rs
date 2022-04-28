@@ -1,6 +1,7 @@
 mod known_assets;
 mod note_source;
 
+pub mod genesis;
 pub mod params;
 pub mod sync;
 

@@ -6,17 +6,18 @@ use std::{
 
 use anyhow::Context;
 use metrics_exporter_prometheus::PrometheusBuilder;
-use pd::genesis::Allocation;
-use penumbra_chain::params::ChainParams;
+use penumbra_chain::{genesis::Allocation, params::ChainParams};
 use penumbra_crypto::{
     keys::{SpendKey, SpendSeed},
     rdsa::{SigningKey, SpendAuth, VerificationKey},
+    DelegationToken,
 };
 use penumbra_proto::client::{
     oblivious::oblivious_query_server::ObliviousQueryServer,
     specific::specific_query_server::SpecificQueryServer,
 };
 use penumbra_stake::{validator::Validator, FundingStream, FundingStreams};
+use penumbra_storage::Storage;
 use rand_core::OsRng;
 use structopt::StructOpt;
 use tonic::transport::Server;
@@ -125,7 +126,7 @@ async fn main() -> anyhow::Result<()> {
                 "starting pd"
             );
 
-            let storage = pd::Storage::load(rocks_path)
+            let storage = Storage::load(rocks_path)
                 .await
                 .context("Unable to initialize RocksDB storage")?;
 
@@ -139,7 +140,7 @@ async fn main() -> anyhow::Result<()> {
                     .consensus(consensus)
                     .snapshot(snapshot)
                     .mempool(mempool)
-                    .info(info)
+                    .info(info.clone())
                     .finish()
                     .unwrap()
                     .listen(format!("{}:{}", host, abci_port)),
@@ -155,7 +156,7 @@ async fn main() -> anyhow::Result<()> {
                             }
                             None => tracing::error_span!("oblivious_query"),
                         })
-                        .add_service(ObliviousQueryServer::new(storage.clone()))
+                        .add_service(ObliviousQueryServer::new(info.clone()))
                         .serve(
                             format!("{}:{}", host, oblivious_query_port)
                                 .parse()
@@ -172,7 +173,7 @@ async fn main() -> anyhow::Result<()> {
                             }
                             None => tracing::error_span!("specific_query"),
                         })
-                        .add_service(SpecificQueryServer::new(storage.clone()))
+                        .add_service(SpecificQueryServer::new(info.clone()))
                         .serve(
                             format!("{}:{}", host, specific_query_port)
                                 .parse()
@@ -237,9 +238,9 @@ async fn main() -> anyhow::Result<()> {
                 }
             };
 
-            use pd::{genesis, testnet::*};
-            use penumbra_crypto::Address;
-            use penumbra_stake::IdentityKey;
+            use pd::testnet::*;
+            use penumbra_chain::genesis;
+            use penumbra_crypto::{Address, IdentityKey};
             use tendermint::{account::Id, node, public_key::Algorithm, Genesis, Time};
             use tendermint_config::{NodeKey, PrivValidatorKey};
 
@@ -356,7 +357,7 @@ async fn main() -> anyhow::Result<()> {
 
                 // Add a default 1 upenumbra allocation to the validator.
                 let identity_key: IdentityKey = IdentityKey(fvk.spend_verification_key().clone());
-                let delegation_denom = identity_key.delegation_token().denom();
+                let delegation_denom = DelegationToken::from(&identity_key).denom();
                 allocations.push(Allocation {
                     address: dest,
                     amount: 1_000_000, // 1e6 udelegation tokens

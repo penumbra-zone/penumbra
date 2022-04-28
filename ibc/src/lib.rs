@@ -4,7 +4,7 @@
 #![allow(unreachable_patterns)]
 
 mod client;
-mod ibcaction;
+mod connection;
 
-pub use client::{ClientCounter, ClientData, ConsensusState, VerifiedHeights};
-pub use ibcaction::IBCAction;
+pub use client::{ClientConnections, ClientCounter, ClientData, ConsensusState, VerifiedHeights};
+pub use connection::{Connection, ConnectionCounter};

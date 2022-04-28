@@ -64,6 +64,10 @@ By default `template-definition` will use a random consensus key that you won't 
   },
 ```
 
+Note: if you can't find `priv_validator_key.json`, assure that you have set
+`validator = true` in the Tendermint `config.toml`, as described above, and
+restarted Tendermint after doing so.
+
 #### Configuring funding streams
 
 Unlike the Cosmos SDK, which has validators specify a commission percentage that
@@ -123,7 +127,7 @@ deployment.  You can find the values in use for the current chain in its
 First fetch your existing validator definition from the chain:
 
 ```console
-cargo run --release --bin pcli -- -n testnet-preview.penumbra.zone validator fetch-definition penumbravalid1dj3mgmje7z9mwu6rl9rplue2neqlc4zwls9a7w88vscwv88ltyqs8v6g9x --file validator.json
+cargo run --release --bin pcli -- validator fetch-definition penumbravalid1dj3mgmje7z9mwu6rl9rplue2neqlc4zwls9a7w88vscwv88ltyqs8v6g9x --file validator.json
 ```
 
 Then make any changes desired and **make sure to increase by `sequence_number` by at least 1!**

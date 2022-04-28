@@ -1,4 +1,7 @@
-//! Proofs of inclusion in the tree: how to create them, and how to verify them.
+//! Transparent merkle inclusion proofs defined generically for trees of any height.
+//!
+//! These are wrapped in mode specific domain types by the exposed crate API to make it more
+//! comprehensible.
 
 use std::fmt::Debug;
 

@@ -1,8 +1,7 @@
 use anyhow::Result;
 use penumbra_proto::{stake as pb, Protobuf};
+use penumbra_transaction::action::{Delegate, Undelegate};
 use serde::{Deserialize, Serialize};
-
-use crate::action::{Delegate, Undelegate};
 
 /// Data structure used to track queued delegation changes that have been
 /// committed to the chain but not yet processed at the epoch boundary.

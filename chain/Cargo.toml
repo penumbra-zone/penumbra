@@ -8,7 +8,11 @@ edition = "2021"
 penumbra-proto = { path = "../proto" }
 penumbra-crypto = { path = "../crypto" }
 penumbra-transaction = { path = "../transaction" }
+penumbra-stake = { path = "../stake" }
 
+# Penumbra dependencies
+ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }
+decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 
 # Crates.io deps
 anyhow = "1"

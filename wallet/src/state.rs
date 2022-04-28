@@ -10,11 +10,10 @@ use penumbra_crypto::{
     asset::{self, Denom},
     memo,
     merkle::{Frontier, NoteCommitmentTree, Tree, TreeExt},
-    note, Address, FieldExt, Note, Nullifier, Value,
+    note, Address, DelegationToken, FieldExt, Note, Nullifier, Value, STAKING_TOKEN_ASSET_ID,
+    STAKING_TOKEN_DENOM,
 };
-use penumbra_stake::{
-    action::ValidatorDefinition, rate::RateData, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
-};
+use penumbra_stake::{rate::RateData, validator};
 use penumbra_transaction::{action::output, Transaction};
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
@@ -279,7 +278,7 @@ impl ClientState {
         tx_builder
             .set_fee(fee)
             .set_chain_id(self.chain_id().ok_or_else(|| anyhow!("missing chain_id"))?)
-            .add_delegation(&rate_data, unbonded_amount);
+            .add_delegation(rate_data.build_delegate(unbonded_amount));
 
         let spend_amount = unbonded_amount + fee;
         let mut spent_amount = 0;
@@ -299,7 +298,7 @@ impl ClientState {
             &self_address,
             Value {
                 amount: rate_data.delegation_amount(unbonded_amount),
-                asset_id: rate_data.identity_key.delegation_token().id(),
+                asset_id: DelegationToken::new(rate_data.identity_key).id(),
             },
             memo::MemoPlaintext([0u8; memo::MEMO_LEN_BYTES]),
             self.wallet.outgoing_viewing_key(),
@@ -348,7 +347,7 @@ impl ClientState {
         tx_builder
             .set_fee(fee)
             .set_chain_id(self.chain_id().ok_or_else(|| anyhow!("missing chain_id"))?)
-            .add_undelegation(&rate_data, delegation_amount);
+            .add_undelegation(rate_data.build_undelegate(delegation_amount));
 
         // Because the outputs of an undelegation are quarantined, we want to
         // avoid any unnecessary change outputs, so we pay fees out of the
@@ -363,7 +362,7 @@ impl ClientState {
             )
         })?;
 
-        let delegation_denom = rate_data.identity_key.delegation_token().denom();
+        let delegation_denom = DelegationToken::new(rate_data.identity_key).denom();
 
         // XXX if the undelegation is for less than their total amount of delegation tokens,
         // all of their remaining delegation tokens will also be quarantined.
@@ -420,7 +419,7 @@ impl ClientState {
     pub fn build_validator_definition<R: RngCore + CryptoRng>(
         &mut self,
         rng: &mut R,
-        new_validator: ValidatorDefinition,
+        new_validator: validator::Definition,
         fee: u64,
         source_address: Option<u64>,
     ) -> Result<Transaction, anyhow::Error> {
@@ -431,7 +430,7 @@ impl ClientState {
             .set_chain_id(self.chain_id().ok_or_else(|| anyhow!("missing chain_id"))?);
 
         // Add the Validator to the tx_builder.
-        tx_builder.add_validator_definition(new_validator);
+        tx_builder.add_validator_definition(new_validator.into());
 
         // If there are any fees, they need to be spent.
         let mut value_to_spend = HashMap::<Denom, u64>::new();

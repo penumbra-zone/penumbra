@@ -1,14 +1,16 @@
 use anyhow::Result;
 use bytes::Bytes;
 
+use penumbra_component::Component;
 use penumbra_proto::Protobuf;
+use penumbra_storage::Storage;
 use penumbra_transaction::Transaction;
 use tendermint::block;
 use tokio::sync::{mpsc, watch};
 use tracing::Instrument;
 
 use super::Message;
-use crate::{App, Component, Storage};
+use crate::App;
 
 pub struct Worker {
     queue: mpsc::Receiver<Message>,
@@ -23,7 +25,7 @@ impl Worker {
         queue: mpsc::Receiver<Message>,
         height_rx: watch::Receiver<block::Height>,
     ) -> Result<Self> {
-        let app = App::new(storage.overlay().await?).await;
+        let app = App::new(storage.state().await?).await;
 
         Ok(Self {
             queue,
@@ -57,7 +59,7 @@ impl Worker {
                     if let Ok(()) = change {
                         let height = self.height_rx.borrow().value();
                         tracing::info!(?height, "resetting ephemeral mempool state");
-                        self.app = App::new(self.storage.overlay().await?).await;
+                        self.app = App::new(self.storage.state().await?).await;
                     } else {
                         tracing::info!("consensus worker shut down, shutting down mempool worker");
                         // The consensus worker shut down, we should too.

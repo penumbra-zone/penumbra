@@ -2,10 +2,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{internal::path::Witness, Complete, ForgetOwned, GetHash, Hash, Height, Insert};
 
-use super::super::active;
+use super::super::frontier;
 
 /// A complete, witnessed leaf of a tree.
-#[derive(Clone, Copy, PartialEq, Eq, Derivative, Serialize, Deserialize)]
+#[derive(Clone, Copy, Derivative, Serialize, Deserialize)]
 #[derivative(Debug = "transparent")]
 pub struct Leaf<Item>(pub(in super::super) Item);
 
@@ -13,15 +13,6 @@ impl<Item> Leaf<Item> {
     /// Create a new complete leaf from the item stored in the tree.
     pub fn new(item: Item) -> Self {
         Self(item)
-    }
-}
-
-impl<Item: Complete> PartialEq<active::Leaf<Item::Focus>> for Leaf<Item>
-where
-    Item::Focus: PartialEq<Item>,
-{
-    fn eq(&self, other: &active::Leaf<Item::Focus>) -> bool {
-        other == self
     }
 }
 
@@ -42,7 +33,7 @@ impl<Item: Height> Height for Leaf<Item> {
 }
 
 impl<Item: Complete> Complete for Leaf<Item> {
-    type Focus = active::Leaf<<Item as crate::Complete>::Focus>;
+    type Focus = frontier::Leaf<<Item as crate::Complete>::Focus>;
 }
 
 impl<Item: Witness> Witness for Leaf<Item> {

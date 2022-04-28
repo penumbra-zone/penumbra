@@ -19,6 +19,8 @@ penumbra-chain = { path = "../chain" }
 penumbra-crypto = { path = "../crypto" }
 penumbra-stake = { path = "../stake" }
 penumbra-transaction = { path = "../transaction" }
+penumbra-storage = { path = "../storage" }
+penumbra-component = { path = "../component" }
 
 # Penumbra dependencies
 ark-ff = { git = "https://github.com/penumbra-zone/algebra", branch = "ours" }

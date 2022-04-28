@@ -6,17 +6,13 @@ use penumbra_proto::{crypto as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::internal::{active::Forget as _, path::Witness as _};
+use crate::internal::frontier::Forget as _;
 use crate::*;
-
-#[path = "block/proof.rs"]
-mod proof;
-pub use proof::Proof;
 
 /// A sparse merkle tree to witness up to 65,536 individual [`Commitment`]s.
 ///
-/// This is one [`Block`] in an [`Epoch`], which is one [`Epoch`] in an [`Eternity`].
-#[derive(Derivative, Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+/// This is one [`Block`] in an [`Epoch`], which is one [`Epoch`] in a [`Tree`].
+#[derive(Derivative, Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Block {
     pub(super) position: index::within::Block,
     pub(super) index: HashedMap<Commitment, index::within::Block>,
@@ -66,31 +62,8 @@ impl Display for Root {
     }
 }
 
-/// The index of a [`Commitment`] within a [`Block`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Position(index::within::Block);
-
-impl Position {
-    /// The index of the [`Commitment`] to which this [`Position`] refers within its [`Block`].
-    pub fn commitment(&self) -> u16 {
-        self.0.commitment.into()
-    }
-}
-
-impl From<Position> for u16 {
-    fn from(position: Position) -> Self {
-        position.0.into()
-    }
-}
-
-impl From<u16> for Position {
-    fn from(position: u16) -> Self {
-        Position(position.into())
-    }
-}
-
 /// A mutable reference to a [`Block`].
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug)]
 pub(in super::super) struct BlockMut<'a> {
     pub(super) commitment: &'a mut index::Commitment,
     pub(super) index: IndexMut<'a>,
@@ -99,7 +72,7 @@ pub(in super::super) struct BlockMut<'a> {
 
 /// A mutable reference to an index from [`Commitment`] to indices into a tree.
 ///
-/// When a [`BlockMut`] is derived from some containing [`Epoch`] or [`Eternity`], this index
+/// When a [`BlockMut`] is derived from some containing [`Epoch`] or [`Tree`], this index
 /// contains all the indices for everything in the tree so far.
 #[derive(Debug, PartialEq, Eq)]
 pub(super) enum IndexMut<'a> {
@@ -113,10 +86,10 @@ pub(super) enum IndexMut<'a> {
         index: &'a mut HashedMap<Commitment, index::within::Epoch>,
     },
     /// An index for commitments within an entire eternity.
-    Eternity {
+    Tree {
         this_epoch: index::Epoch,
         this_block: index::Block,
-        index: &'a mut HashedMap<Commitment, index::within::Eternity>,
+        index: &'a mut HashedMap<Commitment, index::within::Tree>,
     },
 }
 
@@ -126,7 +99,7 @@ pub(super) enum ReplacedIndex {
     /// An index from within an epoch.
     Epoch(index::within::Epoch),
     /// An index from within an entire eternity.
-    Eternity(index::within::Eternity),
+    Tree(index::within::Tree),
 }
 
 impl Height for Block {
@@ -179,10 +152,7 @@ impl Block {
         &mut self,
         witness: Witness,
         commitment: impl Into<Commitment>,
-    ) -> Result<Position, InsertError> {
-        // The position at which we will insert the commitment
-        let position = self.position();
-
+    ) -> Result<(), InsertError> {
         self.as_mut()
             .insert(match witness {
                 Keep => Insert::Keep(commitment.into()),
@@ -194,69 +164,7 @@ impl Block {
                 debug_assert!(option.is_none()))
             .map_err(|_| InsertError)?;
 
-        Ok(position)
-    }
-
-    /// Get a [`Proof`] of inclusion for this commitment in the block.
-    ///
-    /// If the index is not witnessed in this block, return `None`.
-    pub fn witness(&self, commitment: impl Into<Commitment>) -> Option<Proof> {
-        let commitment = commitment.into();
-
-        let index = *self.index.get(&commitment)?;
-
-        let (auth_path, leaf) = match self.inner.witness(index) {
-            Some(witness) => witness,
-            None => panic!(
-                "commitment `{:?}` indexed with position `{:?}` must be witnessed",
-                commitment, index
-            ),
-        };
-        debug_assert_eq!(leaf, Hash::of(commitment));
-
-        Some(Proof(crate::proof::Proof {
-            position: index.into(),
-            auth_path,
-            leaf: commitment,
-        }))
-    }
-
-    /// Forget the witness of the given commitment, if it was witnessed.
-    ///
-    /// Returns `true` if the commitment was previously witnessed (and now is forgotten), and `false` if
-    /// it was not witnessed.
-    pub fn forget(&mut self, commitment: impl Into<Commitment>) -> bool {
-        let commitment = commitment.into();
-        self.as_mut().forget(commitment)
-    }
-
-    /// The position in this [`Block`] at which the next [`Commitment`] would be inserted.
-    ///
-    /// The maximum capacity of an [`Block`] is 65,536 [`Commitment`]s.
-    ///
-    /// Note that [`forget`](Block::forget)ting a commitment does not decrease this; it only
-    /// decreases the [`witnessed_count`](Block::witnessed_count).
-    pub fn position(&self) -> Position {
-        Position(self.position)
-    }
-
-    /// Get the position in this [`Block`] of the given [`Commitment`], if it is currently witnessed.
-    pub fn position_of(&self, commitment: impl Into<Commitment>) -> Option<Position> {
-        let commitment = commitment.into();
-        self.index.get(&commitment).map(|index| Position(*index))
-    }
-
-    /// The number of [`Commitment`]s currently witnessed in this [`Block`].
-    ///
-    /// Note that [`forget`](Block::forget)ting a commitment decreases this count, but does not
-    /// decrease the [`position`](Block::position) of the next inserted [`Commitment`].
-    pub fn witnessed_count(&self) -> usize {
-        self.index.len()
-    }
-
-    /// Check whether the underlying [`Block`] is empty.
-    pub fn is_empty(&self) -> bool {
-        self.inner.is_empty()
+        Ok(())
     }
 }
 
@@ -284,6 +192,8 @@ impl BlockMut<'_> {
                                 commitment: this_commitment,
                             },
                         ) {
+                            // This case is handled for completeness, but should not happen in
+                            // practice because commitments should be unique
                             self.inner.forget(replaced);
                         }
                         Ok(None)
@@ -299,82 +209,29 @@ impl BlockMut<'_> {
                                 commitment: this_commitment,
                             },
                         )
+                        // We cannot directly forget a replaced index in this case, because it could
+                        // refer to a *different* block, so we defer forgetting it to the caller
                         .map(ReplacedIndex::Epoch)),
-                    IndexMut::Eternity {
+                    IndexMut::Tree {
                         this_epoch,
                         this_block,
                         ref mut index,
                     } => Ok(index
                         .insert(
                             commitment,
-                            index::within::Eternity {
+                            index::within::Tree {
                                 epoch: this_epoch,
                                 block: this_block,
                                 commitment: this_commitment,
                             },
                         )
-                        .map(ReplacedIndex::Eternity)),
+                        // See above about why we defer forgetting the replaced index
+                        .map(ReplacedIndex::Tree)),
                 }
             } else {
                 Ok(None)
             }
         }
-    }
-
-    pub fn forget(&mut self, commitment: Commitment) -> bool {
-        let mut forgotten = false;
-
-        match self.index {
-            IndexMut::Block { ref mut index } => {
-                if let Some(&within_block) = index.get(&commitment) {
-                    // We forgot something
-                    forgotten = true;
-                    // Forget the index for this element in the tree
-                    let forgotten = self.inner.forget(within_block);
-                    debug_assert!(forgotten);
-                    // Remove this entry from the index
-                    index.remove(&commitment);
-                }
-            }
-            IndexMut::Epoch {
-                this_block,
-                ref mut index,
-            } => {
-                if let Some(&within_epoch) = index.get(&commitment) {
-                    // Only forget this index if it belongs to the current block
-                    if within_epoch.block == this_block {
-                        // We forgot something
-                        forgotten = true;
-                        // Forget the index for this element in the tree
-                        let forgotten = self.inner.forget(within_epoch);
-                        debug_assert!(forgotten);
-                        // Remove this entry from the index
-                        index.remove(&commitment);
-                    }
-                }
-            }
-            IndexMut::Eternity {
-                this_epoch,
-                this_block,
-                ref mut index,
-            } => {
-                if let Some(&within_eternity) = index.get(&commitment) {
-                    // Only forget this index if it belongs to the current block and that block
-                    // belongs to the current epoch
-                    if within_eternity.block == this_block && within_eternity.epoch == this_epoch {
-                        // We forgot something
-                        forgotten = true;
-                        // Forget the index for this element in the tree
-                        let forgotten = self.inner.forget(within_eternity);
-                        debug_assert!(forgotten);
-                        // Remove this entry from the index
-                        index.remove(&commitment);
-                    }
-                }
-            }
-        }
-
-        forgotten
     }
 }
 

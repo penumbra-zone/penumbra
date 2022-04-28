@@ -5,11 +5,12 @@ use std::{
 };
 
 use futures::FutureExt;
+use penumbra_storage::{State, Storage};
 use tendermint::abci::{self, response::Echo, InfoRequest, InfoResponse};
 use tower_abci::BoxError;
 use tracing::Instrument;
 
-use crate::{RequestExt, Storage};
+use crate::RequestExt;
 
 mod oblivious;
 mod specific;
@@ -24,6 +25,10 @@ pub struct Info {
 impl Info {
     pub fn new(storage: Storage) -> Self {
         Self { storage }
+    }
+
+    async fn state_tonic(&self) -> Result<State, tonic::Status> {
+        self.storage.state_tonic().await
     }
 
     async fn info(&self, info: abci::request::Info) -> Result<abci::response::Info, anyhow::Error> {

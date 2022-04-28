@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{internal::path::Witness, AuthPath, Complete, ForgetOwned, GetHash, Hash, Height};
 
-use super::super::active;
+use super::super::frontier;
 
 type N<Child> = super::super::complete::Node<Child>;
 type L<Item> = super::super::complete::Leaf<Item>;
@@ -12,11 +12,7 @@ pub type Nested<Item> = N<N<N<N<N<N<N<N<L<Item>>>>>>>>>;
 // Count the levels:    1 2 3 4 5 6 7 8
 
 /// A complete tier of the tiered commitment tree, being an 8-deep sparse quad-tree.
-#[derive(Clone, Debug, Derivative, Serialize, Deserialize)]
-#[derivative(
-    PartialEq(bound = "Item: Height + GetHash + PartialEq"),
-    Eq(bound = "Item: Height + GetHash + Eq")
-)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Tier<Item> {
     pub(in super::super) inner: Nested<Item>,
 }
@@ -38,7 +34,7 @@ impl<Item: Height + GetHash> GetHash for Tier<Item> {
 }
 
 impl<Item: Complete> Complete for Tier<Item> {
-    type Focus = active::Tier<Item::Focus>;
+    type Focus = frontier::Tier<Item::Focus>;
 }
 
 impl<Item: GetHash + Witness> Witness for Tier<Item> {

@@ -2,16 +2,20 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
+use penumbra_chain::genesis;
+use penumbra_component::Component;
+use penumbra_crypto::{DelegationToken, IdentityKey, STAKING_TOKEN_ASSET_ID};
 use penumbra_proto::Protobuf;
 use penumbra_stake::{
-    action::{Delegate, Undelegate},
     rate::{BaseRateData, RateData},
     validator::{self, Validator},
-    CommissionAmount, CommissionAmounts, DelegationChanges, Epoch, IdentityKey, Uptime,
-    STAKING_TOKEN_ASSET_ID,
+    CommissionAmount, CommissionAmounts, DelegationChanges, Epoch, Uptime,
 };
-use penumbra_transaction::{Action, Transaction};
-
+use penumbra_storage::{State, StateExt};
+use penumbra_transaction::{
+    action::{Delegate, Undelegate},
+    Action, Transaction,
+};
 use sha2::{Digest, Sha256};
 use tendermint::{
     abci::{
@@ -22,8 +26,7 @@ use tendermint::{
 };
 use tracing::instrument;
 
-use super::{app::View as _, shielded_pool::View as _, Component};
-use crate::{genesis, Overlay, OverlayExt};
+use super::{app::View as _, shielded_pool::View as _};
 
 // Max validator power is 1152921504606846975 (i64::MAX / 8)
 // https://github.com/tendermint/tendermint/blob/master/types/validator_set.go#L25
@@ -31,7 +34,7 @@ const MAX_VOTING_POWER: i64 = 1152921504606846975;
 
 // Staking component
 pub struct Staking {
-    overlay: Overlay,
+    state: State,
     /// Delegation changes accumulated over the course of this block, to be
     /// persisted at the end of the block for processing at the end of the next
     /// epoch.
@@ -47,7 +50,7 @@ impl Staking {
         let mut undelegations_by_validator = BTreeMap::<IdentityKey, Vec<Undelegate>>::new();
         for height in epoch_to_end.start_height().value()..=epoch_to_end.end_height().value() {
             let changes = self
-                .overlay
+                .state
                 .delegation_changes(height.try_into().unwrap())
                 .await?;
             for d in changes.delegations {
@@ -74,14 +77,14 @@ impl Staking {
                 .sum::<usize>(),
         );
 
-        let chain_params = self.overlay.get_chain_params().await?;
+        let chain_params = self.state.get_chain_params().await?;
         let unbonding_epochs = chain_params.unbonding_epochs;
         let active_validator_limit = chain_params.active_validator_limit;
 
         tracing::debug!("processing base rate");
         // We are transitioning to the next epoch, so set "cur_base_rate" to the previous "next_base_rate", and
         // update "next_base_rate".
-        let current_base_rate = self.overlay.next_base_rate().await?;
+        let current_base_rate = self.state.next_base_rate().await?;
 
         let next_base_rate = current_base_rate.next(chain_params.base_reward_rate);
 
@@ -90,22 +93,22 @@ impl Staking {
         tracing::debug!(?next_base_rate);
 
         // Update the base rates in the JMT:
-        self.overlay
+        self.state
             .set_base_rates(current_base_rate.clone(), next_base_rate.clone())
             .await;
 
         let mut commission_amounts = Vec::new();
-        let validator_list = self.overlay.validator_list().await?;
+        let validator_list = self.state.validator_list().await?;
         for v in &validator_list {
-            let validator = self.overlay.validator(v).await?.ok_or_else(|| {
+            let validator = self.state.validator(v).await?.ok_or_else(|| {
                 anyhow::anyhow!("validator had ID in validator_list but not found in JMT")
             })?;
             // The old epoch's "next rate" is now the "current rate".
-            let current_rate = self.overlay.next_validator_rate(v).await?.ok_or_else(|| {
+            let current_rate = self.state.next_validator_rate(v).await?.ok_or_else(|| {
                 anyhow::anyhow!("validator had ID in validator_list but rate not found in JMT")
             })?;
 
-            let validator_state = self.overlay.validator_state(v).await?.ok_or_else(|| {
+            let validator_state = self.state.validator_state(v).await?.ok_or_else(|| {
                 anyhow::anyhow!("validator had ID in validator_list but state not found in JMT")
             })?;
             tracing::debug!(?validator, "processing validator rate updates");
@@ -146,17 +149,17 @@ impl Staking {
             };
 
             // update the delegation token supply in the JMT
-            self.overlay
-                .update_token_supply(&v.delegation_token().id(), delegation_delta)
+            self.state
+                .update_token_supply(&DelegationToken::from(v).id(), delegation_delta)
                 .await?;
             // update the staking token supply in the JMT
-            self.overlay
+            self.state
                 .update_token_supply(&STAKING_TOKEN_ASSET_ID, staking_delta)
                 .await?;
 
             let delegation_token_supply = self
-                .overlay
-                .token_supply(&v.delegation_token().id())
+                .state
+                .token_supply(&DelegationToken::from(v).id())
                 .await?
                 .expect("delegation token should be known");
 
@@ -167,10 +170,10 @@ impl Staking {
 
             // Update the status of the validator within the validator set
             // with the newly starting epoch's calculated voting rate and power.
-            self.overlay
+            self.state
                 .set_validator_rates(v, current_rate.clone(), next_rate.clone())
                 .await;
-            self.overlay.set_validator_power(v, voting_power).await?;
+            self.state.set_validator_power(v, voting_power).await?;
 
             // Only Active validators produce commission rewards
             // The validator *may* drop out of Active state during the next epoch,
@@ -195,7 +198,7 @@ impl Staking {
             }
 
             // rename to curr_rate so it lines up with next_rate (same # chars)
-            let delegation_denom = v.delegation_token().denom();
+            let delegation_denom = DelegationToken::from(v).denom();
             tracing::debug!(curr_rate = ?current_rate);
             tracing::debug!(?next_rate);
             tracing::debug!(?delegation_delta);
@@ -213,9 +216,9 @@ impl Staking {
 
         // Set the pending reward notes on the JMT for the current block height
         // so they can be processed by the ShieldedPool.
-        self.overlay
+        self.state
             .set_commission_amounts(
-                self.overlay.get_block_height().await?,
+                self.state.get_block_height().await?,
                 CommissionAmounts {
                     notes: commission_amounts,
                 },
@@ -241,14 +244,14 @@ impl Staking {
         }
 
         let mut validator_power_list = Vec::new();
-        for v in self.overlay.validator_list().await?.iter() {
+        for v in self.state.validator_list().await?.iter() {
             let power = self
-                .overlay
+                .state
                 .validator_power(v)
                 .await?
                 .ok_or_else(|| anyhow::anyhow!("validator missing power"))?;
             let state = self
-                .overlay
+                .state
                 .validator_state(v)
                 .await?
                 .ok_or_else(|| anyhow::anyhow!("validator missing state"))?;
@@ -281,15 +284,15 @@ impl Staking {
                 // then the validator should be moved to the Active state.
                 if top_validators.contains(&vp.identity_key) {
                     tracing::debug!(identity_key = ?vp.identity_key, "validator is in top validators and will now enter active state");
-                    self.overlay
+                    self.state
                         .set_validator_state(&vp.identity_key, validator::State::Active)
                         .await;
                     // Start tracking the validator's uptime as it becomes active
                     let uptime = Uptime::new(
-                        self.overlay.get_block_height().await?,
-                        self.overlay.signed_blocks_window_len().await? as usize,
+                        self.state.get_block_height().await?,
+                        self.state.signed_blocks_window_len().await? as usize,
                     );
-                    self.overlay
+                    self.state
                         .set_validator_uptime(&vp.identity_key, uptime)
                         .await;
                 }
@@ -300,10 +303,8 @@ impl Staking {
                     tracing::debug!(identity_key = ?vp.identity_key, "validator left active set and will now enter unbonding");
                     // Unbonding the validator means that it can no longer participate
                     // in consensus, so its voting power is set to 0.
-                    self.overlay
-                        .set_validator_power(&vp.identity_key, 0)
-                        .await?;
-                    self.overlay
+                    self.state.set_validator_power(&vp.identity_key, 0).await?;
+                    self.state
                         .set_validator_state(
                             &vp.identity_key,
                             validator::State::Unbonding {
@@ -319,7 +320,7 @@ impl Staking {
             if let validator::State::Unbonding { unbonding_epoch } = vp.state {
                 if unbonding_epoch <= epoch_to_end.index {
                     tracing::debug!(identity_key = ?vp.identity_key, "validator unbonding period over and validator entering inactive state");
-                    self.overlay
+                    self.state
                         .set_validator_state(&vp.identity_key, validator::State::Inactive)
                         .await;
                 }
@@ -335,30 +336,33 @@ impl Staking {
         // This isn't strictly necessary because tendermint technically expects
         // an update, however it is useful for debugging.
         let mut updates = Vec::new();
-        for v in self.overlay.validator_list().await?.iter() {
+        for v in self.state.validator_list().await?.iter() {
             let validator_state = self
-                .overlay
+                .state
                 .validator_state(v)
                 .await?
                 .ok_or_else(|| anyhow::anyhow!("validator state missing"))?;
+            let validator = self
+                .state
+                .validator(v)
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("validator missing"))?;
 
-            // Only active validators report power to tendermint.
-            // TODO: actually this isn't quite right because Slashed validators
-            // need to report a 0 to Tendermint.
+            // Only active validators report power to tendermint. Other states
+            // report a 0 power.
             if validator_state != validator::State::Active {
+                updates.push(ValidatorUpdate {
+                    pub_key: validator.consensus_key.clone(),
+                    power: 0u32.into(),
+                });
                 continue;
             }
 
             let power = self
-                .overlay
+                .state
                 .validator_power(v)
                 .await?
                 .ok_or_else(|| anyhow::anyhow!("validator missing power"))?;
-            let validator = self
-                .overlay
-                .validator(v)
-                .await?
-                .ok_or_else(|| anyhow::anyhow!("validator missing"))?;
 
             updates.push(ValidatorUpdate {
                 pub_key: validator.consensus_key.clone(),
@@ -376,8 +380,8 @@ impl Staking {
         // Note: this probably isn't the correct height for the LastCommitInfo,
         // which is about the *last* commit, but at least it'll be consistent,
         // which is all we need to count signatures.
-        let height = self.overlay.get_block_height().await?;
-        let params = self.overlay.get_chain_params().await?;
+        let height = self.state.get_block_height().await?;
+        let params = self.state.get_chain_params().await?;
 
         // Build a mapping from addresses (20-byte truncated SHA256(pubkey)) to vote statuses.
         let did_address_vote = last_commit_info
@@ -388,9 +392,9 @@ impl Staking {
 
         // Since we don't have a lookup from "addresses" to identity keys,
         // iterate over our app's validators, and match them up with the vote data.
-        for v in self.overlay.validator_list().await?.iter() {
+        for v in self.state.validator_list().await?.iter() {
             let info = self
-                .overlay
+                .state
                 .validator_info(v)
                 .await?
                 .ok_or_else(|| anyhow::anyhow!("validator missing status"))?;
@@ -404,7 +408,7 @@ impl Staking {
 
                 let voted = did_address_vote.get(&addr).cloned().unwrap_or(false);
                 let mut uptime = self
-                    .overlay
+                    .state
                     .validator_uptime(v)
                     .await?
                     .ok_or_else(|| anyhow!("missing uptime for active validator {}", v))?;
@@ -420,11 +424,11 @@ impl Staking {
                 uptime.mark_height_as_signed(height, voted).unwrap();
                 if uptime.num_missed_blocks() as u64 >= params.missed_blocks_maximum {
                     tracing::info!(identity_key = ?v, "slashing for downtime");
-                    self.overlay
+                    self.state
                         .slash_validator(info.validator, params.slashing_penalty_downtime_bps)
                         .await?;
                 } else {
-                    self.overlay.set_validator_uptime(v, uptime).await;
+                    self.state.set_validator_uptime(v, uptime).await;
                 }
             }
         }
@@ -435,20 +439,20 @@ impl Staking {
 
 #[async_trait]
 impl Component for Staking {
-    #[instrument(name = "staking", skip(overlay))]
-    async fn new(overlay: Overlay) -> Self {
+    #[instrument(name = "staking", skip(state))]
+    async fn new(state: State) -> Self {
         Self {
-            overlay,
+            state,
             delegation_changes: Default::default(),
         }
     }
 
     #[instrument(name = "staking", skip(self, app_state))]
     async fn init_chain(&mut self, app_state: &genesis::AppState) {
-        let starting_height = self.overlay.get_block_height().await.unwrap();
+        let starting_height = self.state.get_block_height().await.unwrap();
         let starting_epoch = Epoch::from_height(
             starting_height,
-            self.overlay.get_epoch_duration().await.unwrap(),
+            self.state.get_epoch_duration().await.unwrap(),
         );
         let epoch_index = starting_epoch.index;
 
@@ -465,7 +469,7 @@ impl Component for Staking {
             base_reward_rate: 0,
             base_exchange_rate: 1_0000_0000,
         };
-        self.overlay
+        self.state
             .set_base_rates(cur_base_rate.clone(), next_base_rate)
             .await;
 
@@ -508,14 +512,14 @@ impl Component for Staking {
             //
             // This means that we need to iterate the app_state to calculate the initial
             // delegation token allocations for the genesis validators, to determine voting power.
-            let delegation_denom = validator_key.delegation_token().denom().to_string();
+            let delegation_denom = DelegationToken::from(validator_key).denom().to_string();
             let total_delegation_tokens = allocations_by_validator
                 .get(&delegation_denom)
                 .copied()
                 .unwrap_or(0);
             let power = cur_rate_data.voting_power(total_delegation_tokens, &cur_base_rate);
 
-            self.overlay
+            self.state
                 .add_validator(
                     validator.clone(),
                     cur_rate_data,
@@ -527,7 +531,7 @@ impl Component for Staking {
                 .await
                 .unwrap();
             // We also need to start tracking uptime of the genesis validators:
-            self.overlay
+            self.state
                 .set_validator_uptime(
                     &validator.identity_key,
                     Uptime::new(0, app_state.chain_params.signed_blocks_window_len as usize),
@@ -537,7 +541,7 @@ impl Component for Staking {
 
         // Finally, record that there were no delegations in this block, so the data
         // isn't missing when we process the first epoch transition.
-        self.overlay
+        self.state
             .set_delegation_changes(0u32.into(), Default::default())
             .await;
     }
@@ -547,7 +551,7 @@ impl Component for Staking {
         // For each validator identified as byzantine by tendermint, update its
         // state to be slashed.
         for evidence in begin_block.byzantine_validators.iter() {
-            self.overlay
+            self.state
                 .slash_validator_by_evidence(evidence)
                 .await
                 .unwrap();
@@ -586,6 +590,8 @@ impl Component for Staking {
 
         // Check that validator definitions are correctly signed and well-formed:
         for definition in tx.validator_definitions() {
+            let definition = validator::Definition::try_from(definition.clone())
+                .context("Supplied proto is not a valid definition")?;
             // First, check the signature:
             let definition_bytes = definition.validator.encode_to_vec();
             definition
@@ -595,6 +601,7 @@ impl Component for Staking {
                 .verify(&definition_bytes, &definition.auth_sig)
                 .context("Validator definition signature failed to verify")?;
 
+            // TODO(hdevalence) -- is this duplicated by the check during parsing?
             // Check that the funding streams do not exceed 100% commission (10000bps)
             let total_funding_bps = definition
                 .validator
@@ -620,7 +627,7 @@ impl Component for Staking {
         let mut delegation_changes = BTreeMap::new();
         for d in tx.delegations() {
             let next_rate_data = self
-                .overlay
+                .state
                 .next_validator_rate(&d.validator_identity)
                 .await?
                 .ok_or_else(|| {
@@ -640,7 +647,7 @@ impl Component for Staking {
 
             // Check whether the delegation is for a slashed validator
             let validator_state = self
-                .overlay
+                .state
                 .validator_state(&d.validator_identity)
                 .await?
                 .ok_or_else(|| anyhow::anyhow!("missing state for validator"))?;
@@ -683,7 +690,7 @@ impl Component for Staking {
         }
         for u in tx.undelegations() {
             let rate_data = self
-                .overlay
+                .state
                 .next_validator_rate(&u.validator_identity)
                 .await?
                 .ok_or_else(|| {
@@ -737,7 +744,9 @@ impl Component for Staking {
 
         // Check that the sequence numbers of updated validators are correct.
         for v in tx.validator_definitions() {
-            let existing_v = self.overlay.validator(&v.validator.identity_key).await?;
+            let v = validator::Definition::try_from(v.clone())
+                .context("Supplied proto is not a valid definition")?;
+            let existing_v = self.state.validator(&v.validator.identity_key).await?;
 
             if let Some(existing_v) = existing_v {
                 // This is an existing validator definition. Ensure that the highest
@@ -779,11 +788,13 @@ impl Component for Staking {
 
         // The validator definitions have been completely verified, so we can add them to the JMT
         let definitions = tx.validator_definitions().map(|v| v.to_owned());
-        let cur_epoch = self.overlay.get_current_epoch().await.unwrap();
+        let cur_epoch = self.state.get_current_epoch().await.unwrap();
 
         for v in definitions {
+            let v = validator::Definition::try_from(v.clone())
+                .expect("we already checked that this was a valid proto");
             if self
-                .overlay
+                .state
                 .validator(&v.validator.identity_key)
                 .await
                 .unwrap()
@@ -791,7 +802,7 @@ impl Component for Staking {
             {
                 // This is an existing validator definition.
                 // This means that only the Validator struct itself needs updating, not any rates/power/state.
-                self.overlay.update_validator(v.validator).await.unwrap();
+                self.state.update_validator(v.validator).await.unwrap();
             } else {
                 // This is a new validator definition.
                 // Set the default rates and state.
@@ -813,7 +824,7 @@ impl Component for Staking {
                     validator_exchange_rate: 1_0000_0000, // 1 represented as 1e8
                 };
 
-                self.overlay
+                self.state
                     .add_validator(
                         v.validator.clone(),
                         cur_rate_data,
@@ -832,7 +843,7 @@ impl Component for Staking {
     #[instrument(name = "staking", skip(self, end_block))]
     async fn end_block(&mut self, end_block: &abci::request::EndBlock) {
         // Write the delegation changes for this block.
-        self.overlay
+        self.state
             .set_delegation_changes(
                 end_block.height.try_into().unwrap(),
                 std::mem::take(&mut self.delegation_changes),
@@ -840,8 +851,8 @@ impl Component for Staking {
             .await;
 
         // If this is an epoch boundary, updated rates need to be calculated and set.
-        let cur_epoch = self.overlay.get_current_epoch().await.unwrap();
-        let cur_height = self.overlay.get_block_height().await.unwrap();
+        let cur_epoch = self.state.get_current_epoch().await.unwrap();
+        let cur_height = self.state.get_block_height().await.unwrap();
 
         if cur_epoch.is_epoch_end(cur_height) {
             self.end_epoch(cur_epoch).await.unwrap();
@@ -853,7 +864,7 @@ impl Component for Staking {
 ///
 /// TODO: should this be split into Read and Write traits?
 #[async_trait]
-pub trait View: OverlayExt {
+pub trait View: StateExt {
     async fn current_base_rate(&self) -> Result<BaseRateData> {
         self.get_domain("staking/base_rate/current".into())
             .await
@@ -1059,7 +1070,8 @@ pub trait View: OverlayExt {
 
         self.put_domain(format!("staking/validators/{}", id).into(), validator)
             .await;
-        self.register_denom(&id.delegation_token().denom()).await?;
+        self.register_denom(&DelegationToken::from(&id).denom())
+            .await?;
 
         self.set_validator_rates(&id, current_rates, next_rates)
             .await;
@@ -1180,4 +1192,4 @@ pub trait View: OverlayExt {
     }
 }
 
-impl<T: OverlayExt + Send + Sync> View for T {}
+impl<T: StateExt + Send + Sync> View for T {}

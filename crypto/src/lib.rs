@@ -7,6 +7,8 @@ pub use decaf377_rdsa as rdsa;
 
 mod address;
 pub mod asset;
+mod delegation_token;
+mod identity_key;
 pub mod keys;
 pub mod memo;
 pub mod merkle;
@@ -18,6 +20,8 @@ pub mod value;
 
 pub use address::Address;
 pub use asset::Asset;
+pub use delegation_token::DelegationToken;
+pub use identity_key::IdentityKey;
 pub use note::Note;
 pub use nullifier::Nullifier;
 pub use value::Value;
@@ -32,3 +36,9 @@ fn fmt_hex<T: AsRef<[u8]>>(data: T, f: &mut std::fmt::Formatter) -> std::fmt::Re
 fn fmt_fq(data: &Fq, f: &mut std::fmt::Formatter) -> std::fmt::Result {
     fmt_hex(&data.to_bytes(), f)
 }
+
+use once_cell::sync::Lazy;
+
+pub static STAKING_TOKEN_DENOM: Lazy<asset::Denom> =
+    Lazy::new(|| asset::REGISTRY.parse_denom("upenumbra").unwrap());
+pub static STAKING_TOKEN_ASSET_ID: Lazy<asset::Id> = Lazy::new(|| STAKING_TOKEN_DENOM.id());

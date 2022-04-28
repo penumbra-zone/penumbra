@@ -4,24 +4,26 @@ use anyhow::{anyhow, Context, Result};
 use ark_ff::PrimeField;
 use async_trait::async_trait;
 use decaf377::{Fq, Fr};
+use penumbra_chain::genesis;
 use penumbra_chain::{sync::CompactBlock, KnownAssets, NoteSource};
+use penumbra_component::Component;
 use penumbra_crypto::{
     asset::{self, Asset, Denom},
     ka,
     merkle::{self, Frontier, NoteCommitmentTree, TreeExt},
-    note, Address, Note, Nullifier, One, Value,
+    note, Address, Note, Nullifier, One, Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_stake::{Epoch, STAKING_TOKEN_ASSET_ID};
+use penumbra_stake::Epoch;
+use penumbra_storage::{State, StateExt};
 use penumbra_transaction::{action::output, Action, Transaction};
 use tendermint::abci;
 use tracing::instrument;
 
-use super::{app::View as _, staking::View as _, Component};
-use crate::{genesis, Overlay, OverlayExt};
+use super::{app::View as _, staking::View as _};
 
 // Stub component
 pub struct ShieldedPool {
-    overlay: Overlay,
+    state: State,
     note_commitment_tree: NoteCommitmentTree,
     /// The in-progress CompactBlock representation of the ShieldedPool changes
     compact_block: CompactBlock,
@@ -29,12 +31,12 @@ pub struct ShieldedPool {
 
 #[async_trait]
 impl Component for ShieldedPool {
-    #[instrument(name = "shielded_pool", skip(overlay))]
-    async fn new(overlay: Overlay) -> Self {
-        let note_commitment_tree = Self::get_nct(&overlay).await.unwrap();
+    #[instrument(name = "shielded_pool", skip(state))]
+    async fn new(state: State) -> Self {
+        let note_commitment_tree = Self::get_nct(&state).await.unwrap();
 
         Self {
-            overlay,
+            state,
             note_commitment_tree,
             compact_block: Default::default(),
         }
@@ -60,7 +62,7 @@ impl Component for ShieldedPool {
                 })
                 .unwrap();
 
-            self.overlay.register_denom(&denom).await.unwrap();
+            self.state.register_denom(&denom).await.unwrap();
             self.mint_note(
                 Value {
                     amount: allocation.amount,
@@ -162,14 +164,12 @@ impl Component for ShieldedPool {
     #[instrument(name = "shielded_pool", skip(self, tx))]
     async fn check_tx_stateful(&self, tx: &Transaction) -> Result<()> {
         // TODO: rename transaction_body.merkle_root now that we have 2 merkle trees
-        self.overlay
+        self.state
             .check_claimed_anchor(&tx.transaction_body.merkle_root)
             .await?;
 
         for spent_nullifier in tx.spent_nullifiers() {
-            self.overlay
-                .check_nullifier_unspent(spent_nullifier)
-                .await?;
+            self.state.check_nullifier_unspent(spent_nullifier).await?;
         }
 
         // TODO: handle quarantine
@@ -198,7 +198,7 @@ impl Component for ShieldedPool {
             // We need to record the nullifier as spent in the JMT (to prevent
             // double spends), as well as in the CompactBlock (so that clients
             // can learn that their note was spent).
-            self.overlay.spend_nullifier(spent_nullifier, source).await;
+            self.state.spend_nullifier(spent_nullifier, source).await;
             self.compact_block.nullifiers.push(spent_nullifier);
         }
         //}
@@ -211,7 +211,7 @@ impl Component for ShieldedPool {
 
         // Handle any pending reward notes from the Staking component
         let notes = self
-            .overlay
+            .state
             .commission_amounts(self.compact_block.height)
             .await
             .unwrap()
@@ -222,7 +222,7 @@ impl Component for ShieldedPool {
         let source = NoteSource::FundingStreamReward {
             epoch_index: Epoch::from_height(
                 self.compact_block.height,
-                self.overlay.get_epoch_duration().await.unwrap(),
+                self.state.get_epoch_duration().await.unwrap(),
             )
             .index,
         };
@@ -311,7 +311,7 @@ impl ShieldedPool {
         let encrypted_note = note.encrypt(&esk);
 
         // Now record the note and update the total supply:
-        self.overlay
+        self.state
             .update_token_supply(&value.asset_id, value.amount as i64)
             .await?;
         self.add_note(
@@ -334,7 +334,7 @@ impl ShieldedPool {
         self.note_commitment_tree
             .append(&output_body.note_commitment);
         // 2. Record its source in the JMT
-        self.overlay
+        self.state
             .set_note_source(&output_body.note_commitment, source)
             .await;
         // 3. Finally, record it in the pending compact block.
@@ -344,11 +344,11 @@ impl ShieldedPool {
     #[instrument(skip(self))]
     async fn write_compactblock_and_nct(&mut self) -> Result<()> {
         // Write the CompactBlock:
-        self.overlay
+        self.state
             .set_compact_block(std::mem::take(&mut self.compact_block))
             .await;
         // and the note commitment tree data and anchor:
-        self.overlay
+        self.state
             .set_nct_anchor(self.compact_block.height, self.note_commitment_tree.root2())
             .await;
         self.put_nct().await?;
@@ -361,7 +361,7 @@ impl ShieldedPool {
     /// implementing one now.  When switching to the TCT we should revisit.
     async fn put_nct(&mut self) -> Result<()> {
         let nct_data = bincode::serialize(&self.note_commitment_tree)?;
-        self.overlay
+        self.state
             .lock()
             .await
             .put(b"shielded_pool/nct_data".into(), nct_data);
@@ -371,9 +371,9 @@ impl ShieldedPool {
     /// This is an associated function rather than a method,
     /// so that we can call it in the constructor to get the NCT.
     /// NOTE: we may not need that any more now that we can use an
-    /// Overlay on an empty database.
-    async fn get_nct(overlay: &Overlay) -> Result<NoteCommitmentTree> {
-        if let Ok(Some(bytes)) = overlay
+    /// State on an empty database.
+    async fn get_nct(state: &State) -> Result<NoteCommitmentTree> {
+        if let Ok(Some(bytes)) = state
             .lock()
             .await
             .get(b"shielded_pool/nct_data".into())
@@ -390,7 +390,7 @@ impl ShieldedPool {
 ///
 /// TODO: should this be split into Read and Write traits?
 #[async_trait]
-pub trait View: OverlayExt {
+pub trait View: StateExt {
     async fn token_supply(&self, asset_id: &asset::Id) -> Result<Option<u64>> {
         self.get_proto(format!("shielded_pool/assets/{}/token_supply", asset_id).into())
             .await
@@ -567,4 +567,4 @@ pub trait View: OverlayExt {
     }
 }
 
-impl<T: OverlayExt> View for T {}
+impl<T: StateExt> View for T {}

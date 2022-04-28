@@ -16,8 +16,8 @@ impl RequestExt for ConsensusRequest {
         // Create a parent "abci" span. All of these spans are at error level, so they're always recorded.
         let p = error_span!("abci");
         match self {
-            ConsensusRequest::BeginBlock(BeginBlock { hash, header, .. }) => {
-                error_span!(parent: &p, "BeginBlock", height = ?header.height, hash = ?hex::encode(hash.as_ref()))
+            ConsensusRequest::BeginBlock(BeginBlock { header, .. }) => {
+                error_span!(parent: &p, "BeginBlock", height = ?header.height.value())
             }
             ConsensusRequest::DeliverTx(DeliverTx { tx }) => {
                 error_span!(parent: &p, "DeliverTx", txid = ?hex::encode(&Sha256::digest(tx.as_ref())))

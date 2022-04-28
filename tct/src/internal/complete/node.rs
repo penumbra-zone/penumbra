@@ -10,28 +10,17 @@ use crate::{
     Complete, ForgetOwned, GetHash, Hash, Height, Insert,
 };
 
-use super::super::active;
+use super::super::frontier;
 
 pub mod children;
 pub use children::Children;
 
 /// A complete sparse node in a tree, storing only the witnessed subtrees.
-#[derive(Clone, Derivative, Serialize, Deserialize)]
-#[derivative(Debug, PartialEq(bound = "Child: PartialEq"), Eq(bound = "Child: Eq"))]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Node<Child> {
-    #[derivative(PartialEq = "ignore")]
     #[serde(skip)]
     hash: CachedHash,
     children: Children<Child>,
-}
-
-impl<Child: Complete> PartialEq<active::Node<Child::Focus>> for Node<Child>
-where
-    Child: PartialEq + PartialEq<Child::Focus>,
-{
-    fn eq(&self, other: &active::Node<Child::Focus>) -> bool {
-        other == self
-    }
 }
 
 impl<Child: Height> Node<Child> {
@@ -92,7 +81,7 @@ impl<Child: Height> Height for Node<Child> {
 }
 
 impl<Child: Complete> Complete for Node<Child> {
-    type Focus = active::Node<Child::Focus>;
+    type Focus = frontier::Node<Child::Focus>;
 }
 
 impl<Child: Height + GetHash> GetHash for Node<Child> {

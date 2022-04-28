@@ -33,7 +33,7 @@ pub enum Action {
 
 impl Simulate for Action {
     type Spec = spec::eternity::Builder;
-    type Real = real::Eternity;
+    type Real = real::Tree;
 
     fn simulate(self, spec: &mut Self::Spec, real: &mut Self::Real) {
         match self {
@@ -107,7 +107,7 @@ pub enum Observation {
 
 impl Simulate for Observation {
     type Spec = spec::Eternity;
-    type Real = real::Eternity;
+    type Real = real::Tree;
 
     fn simulate(self, spec: &mut Self::Spec, real: &mut Self::Real) {
         use Observation::*;

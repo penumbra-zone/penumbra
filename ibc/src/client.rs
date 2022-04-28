@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use ibc::core::ics24_host::identifier::ConnectionId;
 use ibc::{
     clients::ics07_tendermint::{
         client_state, consensus_state, consensus_state::ConsensusState as TendermintConsensusState,
@@ -209,6 +210,39 @@ impl From<VerifiedHeights> for pb::VerifiedHeights {
     fn from(d: VerifiedHeights) -> Self {
         Self {
             heights: d.heights.into_iter().map(|h| h.into()).collect(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct ClientConnections {
+    pub connection_ids: Vec<ConnectionId>,
+}
+
+impl Protobuf<pb::ClientConnections> for ClientConnections {}
+
+impl TryFrom<pb::ClientConnections> for ClientConnections {
+    type Error = anyhow::Error;
+
+    fn try_from(msg: pb::ClientConnections) -> Result<Self, Self::Error> {
+        Ok(ClientConnections {
+            connection_ids: msg
+                .connections
+                .into_iter()
+                .map(|h| h.parse())
+                .collect::<Result<Vec<_>, _>>()?,
+        })
+    }
+}
+
+impl From<ClientConnections> for pb::ClientConnections {
+    fn from(d: ClientConnections) -> Self {
+        Self {
+            connections: d
+                .connection_ids
+                .into_iter()
+                .map(|h| h.as_str().to_string())
+                .collect(),
         }
     }
 }

@@ -10,18 +10,15 @@ mod mempool;
 mod pd_metrics;
 mod request_ext;
 mod snapshot;
-mod storage;
 
 pub mod components;
-pub mod genesis;
 pub mod testnet;
 
 use request_ext::RequestExt;
 
-pub use components::{App, Component};
+pub use components::App;
 pub use consensus::Consensus;
 pub use info::Info;
 pub use mempool::Mempool;
 pub use pd_metrics::register_all_metrics;
 pub use snapshot::Snapshot;
-pub use storage::{Overlay, OverlayExt, Storage};

@@ -2,8 +2,8 @@ use proptest::{arbitrary::*, prelude::*};
 
 use penumbra_tct::Commitment;
 
-mod simulate;
-use simulate::{Params, Simulate};
+// mod simulate;
+// use simulate::{Params, Simulate};
 
 const MAX_TIER_ACTIONS: usize = 10;
 const MAX_USED_COMMITMENTS: usize = 10;
@@ -61,8 +61,12 @@ macro_rules! spec_vs_impl {
     };
 }
 
+/*
+// TODO: re-enable these tests
+
 spec_vs_impl!(eternity_spec_vs_impl: eternity);
 
 spec_vs_impl!(epoch_spec_vs_impl: epoch);
 
 spec_vs_impl!(block_spec_vs_impl: block);
+*/
