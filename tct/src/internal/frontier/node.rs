@@ -101,21 +101,21 @@ impl<Child: Focus> Focus for Node<Child> {
     }
 }
 
-impl<Focus> Frontier for Node<Focus>
+impl<Child> Frontier for Node<Child>
 where
-    Focus: Frontier + GetHash,
+    Child: Focus + Frontier + GetHash,
 {
-    type Item = Focus::Item;
+    type Item = Child::Item;
 
     #[inline]
-    fn singleton(item: Insert<Self::Item>) -> Self {
-        let focus = Focus::singleton(item);
+    fn new(item: Self::Item) -> Self {
+        let focus = Child::new(item);
         let siblings = Three::new();
         Self::from_parts(siblings, focus)
     }
 
     #[inline]
-    fn update<T>(&mut self, f: impl FnOnce(&mut Insert<Self::Item>) -> T) -> T {
+    fn update<T>(&mut self, f: impl FnOnce(&mut Self::Item) -> T) -> Option<T> {
         let before_hash = self.focus.cached_hash();
         let output = self.focus.update(f);
         let after_hash = self.focus.cached_hash();
@@ -130,13 +130,13 @@ where
     }
 
     #[inline]
-    fn focus(&self) -> &Insert<Self::Item> {
+    fn focus(&self) -> Option<&Self::Item> {
         self.focus.focus()
     }
 
     #[inline]
-    fn insert(self, item: Insert<Self::Item>) -> Result<Self, Full<Self>> {
-        match self.focus.insert(item) {
+    fn insert_owned(self, item: Self::Item) -> Result<Self, Full<Self>> {
+        match self.focus.insert_owned(item) {
             // We successfully inserted at the focus, so siblings don't need to be changed
             Ok(focus) => Ok(Self::from_parts(self.siblings, focus)),
 
@@ -148,7 +148,7 @@ where
             }) => match self.siblings.push(sibling) {
                 // We had enough room to add another sibling, so we set our focus to a new focus
                 // containing only the item we couldn't previously insert
-                Ok(siblings) => Ok(Self::from_parts(siblings, Focus::singleton(item))),
+                Ok(siblings) => Ok(Self::from_parts(siblings, Child::new(item))),
 
                 // We didn't have enough room to add another sibling, so we return a complete node
                 // as a carry, to be propagated up above us and added to some ancestor segment's

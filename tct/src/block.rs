@@ -126,21 +126,24 @@ impl Builder {
         commitment: impl Into<Commitment>,
     ) -> Result<&mut Self, InsertError> {
         let commitment = commitment.into();
+        let item = match witness {
+            Keep => commitment.into(),
+            Forget => Hash::of(commitment).into(),
+        };
 
         // Get the position of the insertion, if it would succeed
-        let position = (self.inner.position().ok_or(InsertError)? as u16).into();
+        let position = u16::try_from(self.inner.position().ok_or(InsertError)?)
+            .expect("position of block is never greater than `u16::MAX`")
+            .into();
 
         // Insert the commitment into the inner tree
         self.inner
-            .insert(match witness {
-                Keep => Insert::Keep(Item::new(commitment)),
-                Forget => Insert::Hash(Hash::of(commitment)),
-            })
+            .insert(item)
             .expect("inserting a commitment must succeed when block has a position");
 
         // Keep track of the position of this just-inserted commitment in the index, if it was
         // slated to be kept
-        if matches!(witness, Witness::Keep) {
+        if let Witness::Keep = witness {
             if let Some(replaced) = self.index.insert(
                 commitment,
                 index::within::Block {
