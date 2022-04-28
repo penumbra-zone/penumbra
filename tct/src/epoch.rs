@@ -12,10 +12,6 @@ use crate::*;
 #[path = "block.rs"]
 pub(crate) mod block;
 
-#[path = "epoch/error.rs"]
-pub mod error;
-pub use error::{InsertBlockError, InsertError};
-
 /// A sparse merkle tree to witness up to 65,536 [`Block`]s, each witnessing up to 65,536
 /// [`Commitment`]s.
 ///
@@ -108,6 +104,31 @@ impl Protobuf<pb::MerkleRoot> for Root {}
 impl Display for Root {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}", hex::encode(&Fq::from(self.0).to_bytes()))
+    }
+}
+
+/// A [`Commitment`] could not be inserted into the [`Epoch`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
+pub enum InsertError {
+    /// The [`Epoch`] was full.
+    #[error("epoch is full")]
+    #[non_exhaustive]
+    Full,
+    /// The most recent [`Block`] in the [`Epoch`] was full.
+    #[error("most recent block in epoch is full")]
+    #[non_exhaustive]
+    BlockFull,
+}
+
+/// The [`Epoch`] was full when attempting to insert a block.
+#[derive(Debug, Clone, Error)]
+#[error("epoch is full")]
+#[non_exhaustive]
+pub struct InsertBlockError(pub block::Finalized);
+
+impl From<InsertBlockError> for block::Finalized {
+    fn from(error: InsertBlockError) -> Self {
+        error.0
     }
 }
 

@@ -11,13 +11,9 @@ use crate::*;
 
 #[path = "epoch.rs"]
 pub(crate) mod epoch;
-use epoch::block;
+pub(crate) use epoch::block;
 
-mod proof;
-pub use proof::Proof;
-
-pub mod error;
-pub use error::{InsertBlockError, InsertEpochError, InsertEpochRootError, InsertError};
+use crate::error::*;
 
 /// A sparse merkle tree to witness up to 65,536 [`Epoch`]s, each witnessing up to 65,536
 /// [`Block`]s, each witnessing up to 65,536 [`Commitment`]s.
@@ -212,7 +208,7 @@ impl Tree {
         };
         debug_assert_eq!(leaf, Hash::of(commitment));
 
-        Some(Proof(crate::proof::Proof {
+        Some(Proof(crate::internal::proof::Proof {
             position: index.into(),
             auth_path,
             leaf: commitment,

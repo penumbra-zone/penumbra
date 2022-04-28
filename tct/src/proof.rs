@@ -2,21 +2,20 @@ pub use thiserror::Error;
 
 use crate::{Commitment, Hash, VerifyError};
 
-pub use super::{Position, Root, Tree};
+pub use crate::{Position, Root, Tree};
 
 /// An as-yet-unverified proof of the inclusion of some [`Commitment`] in a [`Tree`].
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Proof(pub(super) crate::proof::Proof<Tree>);
+pub struct Proof(pub(super) crate::internal::proof::Proof<Tree>);
 
 impl Proof {
     /// Construct a new [`Proof`] of inclusion for a given [`Commitment`], index, and authentication
     /// path from root to leaf.
-    pub fn new(
-        commitment: Commitment,
-        Position(index): Position,
-        auth_path: [[Hash; 3]; 24],
-    ) -> Self {
+    pub fn new(commitment: Commitment, position: Position, auth_path: [[Hash; 3]; 24]) -> Self {
         use crate::internal::path::{Leaf, Node};
+
+        let position = position.into();
+
         let [a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x] = auth_path;
         let path = Leaf;
         let path = Node {
@@ -115,9 +114,9 @@ impl Proof {
             siblings: a,
             child: path,
         };
-        Self(crate::proof::Proof {
+        Self(crate::internal::proof::Proof {
             leaf: commitment,
-            position: index.into(),
+            position,
             auth_path: path,
         })
     }
@@ -138,7 +137,7 @@ impl Proof {
 
     /// Get the position of the witnessed commitment.
     pub fn position(&self) -> crate::Position {
-        crate::tree::Position(self.0.index().into())
+        self.0.index().into()
     }
 
     /// Get the authentication path for this proof, order from root to leaf.
