@@ -62,7 +62,7 @@ impl<Item: Focus> From<Hash> for Tier<Item> {
     }
 }
 
-impl<Item: Frontier + From<Hash>> Frontier for Tier<Item> {
+impl<Item: Focus> Frontier for Tier<Item> {
     type Item = Item;
 
     #[inline]
@@ -131,7 +131,7 @@ impl<Item: Frontier + From<Hash>> Frontier for Tier<Item> {
     }
 }
 
-impl<Item: Frontier + From<Hash>> Tier<Item> {
+impl<Item: Focus> Tier<Item> {
     /// Insert an item or its hash into this frontier tier.
     ///
     /// If the tier is full, return the input item without inserting it.
