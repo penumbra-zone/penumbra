@@ -143,7 +143,7 @@ mod test {
 
     #[test]
     fn check_eternity_size() {
-        static_assertions::assert_eq_size!(Tree, [u8; 616]);
+        static_assertions::assert_eq_size!(Tree, [u8; 608]);
     }
 
     #[test]

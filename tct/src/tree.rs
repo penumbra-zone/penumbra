@@ -206,7 +206,7 @@ impl Tree {
         let (auth_path, leaf) = match self.inner.witness(index) {
             Some(witness) => witness,
             None => panic!(
-                "commitment `{:?}` indexed with position `{:?}` must be witnessed",
+                "commitment `{:?}` at position `{:?}` must be witnessed because it is indexed",
                 commitment, index
             ),
         };
