@@ -36,7 +36,7 @@ impl<Item: Height> Height for Leaf<Item> {
     type Height = Item::Height;
 }
 
-impl<Item: Frontier + From<Hash>> Frontier for Leaf<Item> {
+impl<Item: Focus> Frontier for Leaf<Item> {
     type Item = Item;
 
     #[inline]

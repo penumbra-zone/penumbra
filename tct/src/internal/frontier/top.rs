@@ -25,7 +25,7 @@ pub struct Top<Item: Focus> {
     inner: Option<Nested<Item>>,
 }
 
-impl<Item: Frontier + From<Hash>> Top<Item> {
+impl<Item: Focus> Top<Item> {
     /// Create a new top-level frontier tier.
     pub fn new() -> Self {
         Self::default()
