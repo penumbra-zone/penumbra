@@ -52,8 +52,6 @@ pub mod internal;
 #[cfg(not(any(doc, feature = "internal")))]
 mod internal;
 
-#[cfg(doc)]
-use builder::{block::Builder, epoch::Builder};
 use internal::{
     complete::{Complete, ForgetOwned},
     frontier::{Focus, Frontier, GetPosition, Insert, Item, Tier, Top},
