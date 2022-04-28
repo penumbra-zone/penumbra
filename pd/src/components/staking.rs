@@ -259,13 +259,15 @@ impl Staking {
             });
         }
 
-        // Sort by voting power
-        validator_power_list.sort_by(|a, b| a.power.cmp(&b.power));
+        // Sort by voting power descending.
+        validator_power_list.sort_by(|a, b| b.power.cmp(&a.power));
 
         // Grab the top `active_validator_limit` validators
         let top_validators = validator_power_list
             .iter()
             .take(active_validator_limit as usize)
+            // The top validators should never include a validator without voting power
+            .filter(|v| v.power > 0)
             .map(|v| v.identity_key.clone())
             .collect::<Vec<_>>();
 
@@ -277,7 +279,8 @@ impl Staking {
                 // If an Inactive or Unbonding validator is in the top `active_validator_limit` based
                 // on voting power and the delegation pool has a nonzero balance (meaning non-zero voting power),
                 // then the validator should be moved to the Active state.
-                if top_validators.contains(&vp.identity_key) && vp.power > 0 {
+                if top_validators.contains(&vp.identity_key) {
+                    tracing::debug!(identity_key = ?vp.identity_key, "validator is in top validators and will now enter active state");
                     self.overlay
                         .set_validator_state(&vp.identity_key, validator::State::Active)
                         .await;
@@ -294,6 +297,7 @@ impl Staking {
                 // An Active validator could also be displaced and move to the
                 // Unbonding state.
                 if !top_validators.contains(&vp.identity_key) {
+                    tracing::debug!(identity_key = ?vp.identity_key, "validator left active set and will now enter unbonding");
                     // Unbonding the validator means that it can no longer participate
                     // in consensus, so its voting power is set to 0.
                     self.overlay
@@ -314,6 +318,7 @@ impl Staking {
             // and the validator is still in Unbonding state
             if let validator::State::Unbonding { unbonding_epoch } = vp.state {
                 if unbonding_epoch <= epoch_to_end.index {
+                    tracing::debug!(identity_key = ?vp.identity_key, "validator unbonding period over and validator entering inactive state");
                     self.overlay
                         .set_validator_state(&vp.identity_key, validator::State::Inactive)
                         .await;
@@ -407,14 +412,14 @@ impl Staking {
                 tracing::debug!(
                     ?voted,
                     num_missed_blocks = ?uptime.num_missed_blocks(),
-                    ?v,
+                    identity_key = ?v,
                     ?params.missed_blocks_maximum,
                     "recorded vote info"
                 );
 
                 uptime.mark_height_as_signed(height, voted).unwrap();
                 if uptime.num_missed_blocks() as u64 >= params.missed_blocks_maximum {
-                    tracing::info!(?v, "slashing for downtime");
+                    tracing::info!(identity_key = ?v, "slashing for downtime");
                     self.overlay
                         .slash_validator(info.validator, params.slashing_penalty_downtime_bps)
                         .await?;
