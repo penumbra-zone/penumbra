@@ -73,9 +73,7 @@ where
         Ok(match children {
             // All the children are hashes, so we should prune this node (we just hand back the
             // hashes so the parent can implement pruning):
-            [Hash(a), Hash(b), Hash(c), Hash(d)] => {
-                return Err([a, b, c, d]);
-            }
+            [Hash(a), Hash(b), Hash(c), Hash(d)] => return Err([a, b, c, d]),
             // There is at least one witnessed child:
             [Hash(a), Hash(b), Hash(c), Keep(d)] => Children::___C(Box::new(___C(a, b, c, d))),
             [Hash(a), Hash(b), Keep(c), Hash(d)] => Children::__C_(Box::new(__C_(a, b, c, d))),
