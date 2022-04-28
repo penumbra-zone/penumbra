@@ -121,7 +121,9 @@ impl<Item: Focus> Tier<Item> {
 
     /// Finalize this tier so that it is internally marked as complete.
     #[inline]
-    pub fn finalize(&mut self) {
+    pub fn finalize(&mut self) -> bool {
+        let already_finalized = self.is_finalized();
+
         // Temporarily replace the inside with the zero hash (it will get put back right away, this
         // is just to satisfy the borrow checker)
         let inner = std::mem::replace(&mut self.inner, Inner::Hash(Hash::zero()));
@@ -133,6 +135,8 @@ impl<Item: Focus> Tier<Item> {
             },
             inner @ (Inner::Complete(_) | Inner::Hash(_)) => inner,
         };
+
+        already_finalized
     }
 
     /// Check whether this tier has been finalized.
@@ -140,6 +144,15 @@ impl<Item: Focus> Tier<Item> {
     pub fn is_finalized(&self) -> bool {
         match self.inner {
             Inner::Frontier(_) => false,
+            Inner::Complete(_) | Inner::Hash(_) => true,
+        }
+    }
+
+    /// Check whether this tier has room for any more items.
+    #[inline]
+    pub fn is_full(&self) -> bool {
+        match &self.inner {
+            Inner::Frontier(frontier) => frontier.is_full(),
             Inner::Complete(_) | Inner::Hash(_) => true,
         }
     }
