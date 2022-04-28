@@ -52,17 +52,18 @@ jobs:
             -p ark-sponge \
             -p poseidon377 \
             -p decaf377 \
-            -p decaf377-ka \
             -p decaf377-rdsa \
             -p decaf377-fmd \
+            -p decaf377-ka \
             -p penumbra-proto \
-            -p penumbra-crypto \
-            -p penumbra-stake \
             -p penumbra-chain \
+            -p penumbra-component \
+            -p penumbra-crypto \
+            -p penumbra-ibc \
+            -p penumbra-stake \
+            -p penumbra-storage \
             -p penumbra-tct \
             -p penumbra-transaction \
-            -p penumbra-component \
-            -p penumbra-storage \
             -p penumbra-wallet \
             -p penumbra-wallet-next \
             -p pd \
