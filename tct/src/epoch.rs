@@ -132,34 +132,34 @@ impl Builder {
         commitment: impl Into<Commitment>,
     ) -> Result<&mut Self, InsertError> {
         let commitment = commitment.into();
-        let commitment = match witness {
-            Keep => Insert::Keep(commitment),
-            Forget => Insert::Hash(Hash::of(commitment)),
+        let item = match witness {
+            Keep => commitment.into(),
+            Forget => Hash::of(commitment).into(),
         };
 
         // Get the position of the insertion, if it would succeed
-        let position = (self.inner.position().ok_or(InsertError::Full)? as u32).into();
+        let position = u32::try_from(self.inner.position().ok_or(InsertError::Full)?)
+            .expect("position of epoch is never greater than `u32::MAX`")
+            .into();
 
         // Try to insert the commitment into the latest block
         self.inner
             .update(|block| {
-                block
-                    .insert(commitment.map(Item::new))
-                    .map_err(|_| InsertError::BlockFull)?;
+                block.insert(item).map_err(|_| InsertError::BlockFull)?;
                 Ok(())
             })
             // If the latest block was finalized already or doesn't exist, create a new block and
             // insert into that block
             .unwrap_or_else(|| {
                 self.inner
-                    .insert(Insert::Keep(Tier::singleton(commitment.map(Item::new))))
+                    .insert(Tier::new(item))
                     .map_err(|_| InsertError::Full)?;
                 Ok(())
             })?;
 
         // Keep track of the position of this just-inserted commitment in the index, if it was
         // slated to be kept
-        if let Insert::Keep(commitment) = commitment {
+        if let Witness::Keep = witness {
             if let Some(replaced) = self.index.insert(commitment, position) {
                 // This case is handled for completeness, but should not happen in
                 // practice because commitments should be unique
@@ -186,21 +186,28 @@ impl Builder {
             return Err(InsertBlockError(block::Finalized { inner, index }));
         }
 
+        // Convert the top level inside of the block to a tier that can be slotted into the epoch
+        let inner = match inner {
+            Insert::Keep(inner) => inner.into(),
+            Insert::Hash(hash) => hash.into(),
+        };
+
         // Finalize the latest block, if it exists and is not yet finalized -- this means that
         // position calculations will be correct, since they will start at the next block
         self.inner.update(|block| block.finalize());
 
         // Get the block index of the next insertion
-        let index::within::Epoch { block, .. } = (self
-            .inner
-            .position()
-            .expect("epoch must have a position because it is not full")
-            as u32)
-            .into();
+        let index::within::Epoch { block, .. } = u32::try_from(
+            self.inner
+                .position()
+                .expect("epoch must have a position because it is not full"),
+        )
+        .expect("position of epoch is never greater than `u32::MAX`")
+        .into();
 
         // Insert the inner tree of the block into the epoch
         self.inner
-            .insert(inner.map(Into::into))
+            .insert(inner)
             .expect("inserting a block must succeed because epoch is not full");
 
         // Add the index of all commitments in the block to the epoch index

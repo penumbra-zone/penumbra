@@ -25,7 +25,7 @@ pub struct Top<Item: Focus> {
     inner: Option<Nested<Item>>,
 }
 
-impl<Item: Focus> Top<Item> {
+impl<Item: Frontier + From<Hash>> Top<Item> {
     /// Create a new top-level frontier tier.
     pub fn new() -> Self {
         Self::default()
@@ -35,7 +35,7 @@ impl<Item: Focus> Top<Item> {
     ///
     /// If the tier is full, return the input item without inserting it.
     #[inline]
-    pub fn insert(&mut self, item: Insert<Item>) -> Result<(), Insert<Item>> {
+    pub fn insert(&mut self, item: Item) -> Result<(), Item> {
         // Temporarily replace the inside with `None` (it will get put back right away, this is just
         // to satisfy the borrow checker)
         let inner = std::mem::take(&mut self.inner);
@@ -48,13 +48,13 @@ impl<Item: Focus> Top<Item> {
             } else {
                 // If it's not full, then insert the item into it (which we know will succeed)
                 let inner = inner
-                    .insert(item)
+                    .insert_owned(item)
                     .unwrap_or_else(|_| panic!("frontier is not full, so insert must succeed"));
                 (Ok(()), inner)
             }
         } else {
             // If the tier was empty, create a new frontier containing only the inserted item
-            let inner = Nested::singleton(item);
+            let inner = Nested::new(item);
             (Ok(()), inner)
         };
 
@@ -71,9 +71,7 @@ impl<Item: Focus> Top<Item> {
     /// `None`.
     #[inline]
     pub fn update<T>(&mut self, f: impl FnOnce(&mut Item) -> T) -> Option<T> {
-        self.inner
-            .as_mut()
-            .and_then(|inner| inner.update(|inner| inner.as_mut().keep().map(f)))
+        self.inner.as_mut().and_then(|inner| inner.update(f))
     }
 
     /// Get a reference to the focused `Insert<Item>`, if there is one.
@@ -82,7 +80,7 @@ impl<Item: Focus> Top<Item> {
     #[inline]
     pub fn focus(&self) -> Option<&Item> {
         if let Some(ref inner) = self.inner {
-            inner.focus().as_ref().keep()
+            inner.focus()
         } else {
             None
         }

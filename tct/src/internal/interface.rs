@@ -9,23 +9,23 @@ use crate::{AuthPath, GetHash, Height, Insert};
 /// most-recently-inserted element.
 pub trait Frontier: Focus + Sized {
     /// The type of item to persist in each witnessed leaf of the frontier.
-    type Item: Focus;
+    type Item;
 
     /// Make a new [`Frontier`] containing a single [`Hash`](crate::Hash) or `Self::Item`.
-    fn singleton(item: Insert<Self::Item>) -> Self;
+    fn new(item: Self::Item) -> Self;
 
     /// Insert a new [`Hash`](crate::Hash) or `Self::Item` into this [`Frontier`], returning either
     /// `Self` with the thing inserted, or the un-inserted thing and the [`Complete`] of this
     /// [`Frontier`].
-    fn insert(self, item: Insert<Self::Item>) -> Result<Self, Full<Self>>;
+    fn insert_owned(self, item: Self::Item) -> Result<Self, Full<Self>>;
 
     /// Update the currently focused `Insert<Self::Item>` (i.e. the most-recently
     /// [`insert`](Frontier::insert)ed one), returning the result of the function.
-    fn update<T>(&mut self, f: impl FnOnce(&mut Insert<Self::Item>) -> T) -> T;
+    fn update<T>(&mut self, f: impl FnOnce(&mut Self::Item) -> T) -> Option<T>;
 
     /// Get a reference to the focused `Insert<Self::Item>` (i.e. the most-recently
     /// [`insert`](Frontier::insert)ed one).
-    fn focus(&self) -> &Insert<Self::Item>;
+    fn focus(&self) -> Option<&Self::Item>;
 
     /// Check whether this frontier is full.
     fn is_full(&self) -> bool;
@@ -54,7 +54,7 @@ pub trait Complete: Height + GetHash {
 #[derive(Debug)]
 pub struct Full<T: Frontier> {
     /// The original hash or item that could not be inserted.
-    pub item: Insert<T::Item>,
+    pub item: T::Item,
     /// The completed structure, which has no more room for any further insertions, or a hash of
     /// that structure if it contained no witnesses.
     pub complete: Insert<T::Complete>,

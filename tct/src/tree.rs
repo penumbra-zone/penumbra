@@ -145,13 +145,13 @@ impl Tree {
         commitment: impl Into<Commitment>,
     ) -> Result<&mut Self, InsertError> {
         let commitment = commitment.into();
-        let commitment = match witness {
-            Keep => Insert::Keep(commitment),
-            Forget => Insert::Hash(Hash::of(commitment)),
+        let item = match witness {
+            Keep => commitment.into(),
+            Forget => Hash::of(commitment).into(),
         };
 
         // Get the position of the insertion, if it would succeed
-        let position = (self.inner.position().ok_or(InsertError::Full)? as u64).into();
+        let position = (self.inner.position().ok_or(InsertError::Full)?).into();
 
         // Try to insert the commitment into the latest block
         self.inner
@@ -159,7 +159,7 @@ impl Tree {
                 epoch
                     .update(|block| {
                         block
-                            .insert(commitment.map(Item::new))
+                            .insert(item)
                             .map_err(|_| InsertError::BlockFull)?;
                         Ok(())
                     })
@@ -167,7 +167,7 @@ impl Tree {
                     // insert into that block
                     .unwrap_or_else(|| {
                         epoch
-                            .insert(Insert::Keep(Tier::singleton(commitment.map(Item::new))))
+                            .insert(Tier::new(item))
                             .map_err(|_| InsertError::EpochFull)?;
                         Ok(())
                     })
@@ -176,16 +176,14 @@ impl Tree {
             // insert into that epoch
             .unwrap_or_else(|| {
                 self.inner
-                    .insert(Insert::Keep(Tier::singleton(Insert::Keep(
-                        Tier::singleton(commitment.map(Item::new)),
-                    ))))
+                    .insert(Tier::new(Tier::new(item)))
                     .expect("inserting a commitment must succeed because we already checked that the tree is not full");
                 Ok(())
             })?;
 
         // Keep track of the position of this just-inserted commitment in the index, if it was
         // slated to be kept
-        if let Insert::Keep(commitment) = commitment {
+        if let Witness::Keep = witness {
             if let Some(replaced) = self.index.insert(commitment, position) {
                 // This case is handled for completeness, but should not happen in
                 // practice because commitments should be unique
@@ -279,17 +277,22 @@ impl Tree {
             return Err(InsertBlockError::Full(block::Finalized { inner, index }));
         }
 
+        // Convert the top level inside of the block to a tier that can be slotted into the epoch
+        let inner = match inner {
+            Insert::Keep(inner) => inner.into(),
+            Insert::Hash(hash) => hash.into(),
+        };
+
         // Finalize the latest block, if it exists and is not yet finalized -- this means that
         // position calculations will be correct, since they will start at the next block
         self.inner
             .update(|epoch| epoch.update(|block| block.finalize()));
 
         // Get the epoch and block index of the next insertion
-        let index::within::Tree { epoch, block, .. } = (self
+        let index::within::Tree { epoch, block, .. } = self
             .inner
             .position()
             .expect("tree must have a position because it is not full")
-            as u64)
             .into();
 
         // Insert the inner tree of the block into the epoch
@@ -297,7 +300,7 @@ impl Tree {
             self.inner
                 .update(|epoch| {
                     epoch
-                        .insert(inner.map(Into::into))
+                        .insert(inner)
                         .expect("inserting into current epoch must succeed when it is not full");
                 })
                 .expect("current epoch must exist when top tier has focus");
@@ -305,7 +308,7 @@ impl Tree {
             // The current epoch was finalized and there is room to insert a new epoch containing
             // this block
             self.inner
-                .insert(Insert::Keep(Tier::singleton(inner.map(Into::into))))
+                .insert(Tier::new(inner))
                 .expect("inserting an epoch must succeed when top of tree is not full");
         }
 
@@ -391,21 +394,26 @@ impl Tree {
             return Err(InsertEpochError(epoch::Finalized { inner, index }));
         }
 
+        // Convert the top level inside of the epoch to a tier that can be slotted into the tree
+        let inner = match inner {
+            Insert::Keep(inner) => inner.into(),
+            Insert::Hash(hash) => hash.into(),
+        };
+
         // Finalize the latest epoch, if it exists and is not yet finalized -- this means that
         // position calculations will be correct, since they will start at the next epoch
         self.inner.update(|epoch| epoch.finalize());
 
         // Get the epoch index of the next insertion
-        let index::within::Tree { epoch, .. } = (self
+        let index::within::Tree { epoch, .. } = self
             .inner
             .position()
             .expect("tree must have a position because it is not full")
-            as u64)
             .into();
 
         // Insert the inner tree of the eooch into the global tree
         self.inner
-            .insert(inner.map(Into::into))
+            .insert(inner)
             .expect("inserting an epoch must succeed when tree is not full");
 
         // Add the index of all commitments in the epoch to the global tree index
@@ -478,7 +486,7 @@ impl Tree {
     /// Note that [`forget`](Tree::forget)ting a commitment does not decrease this; it only
     /// decreases the [`witnessed_count`](Tree::witnessed_count).
     pub fn position(&self) -> Option<Position> {
-        Some(Position((self.inner.position()? as u64).into()))
+        Some(Position(self.inner.position()?.into()))
     }
 
     /// The number of [`Commitment`]s currently witnessed in this [`Tree`].
