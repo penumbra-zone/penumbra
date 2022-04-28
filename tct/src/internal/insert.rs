@@ -1,6 +1,4 @@
-use serde::{Deserialize, Serialize};
-
-use crate::{internal::frontier::Forget, ForgetOwned, GetHash, Hash, Height};
+use crate::prelude::*;
 
 /// Either an item or just its hash, to be used when inserting into a tree.
 ///

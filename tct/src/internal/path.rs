@@ -11,12 +11,7 @@
 
 use thiserror::Error;
 
-use crate::{
-    internal::height::{IsHeight, Succ, Zero},
-    Hash, Height,
-};
-
-pub use crate::internal::interface::Witness;
+use crate::prelude::*;
 
 /// An authentication path into a `Tree`.
 ///

@@ -4,7 +4,7 @@ use std::fmt::Debug;
 
 use parking_lot::Mutex;
 
-use crate::{internal::hash::OptionHash, Hash};
+use crate::prelude::*;
 
 /// An `Mutex`-based cache for hashes, to prevent repeated computation.
 #[derive(Default, Derivative)]

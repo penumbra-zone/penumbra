@@ -8,12 +8,14 @@
 //! unary representation good for type-level constraints ([`Succ`] and [`Zero`]) into constant
 //! `u64`s suitable for value-level computation.
 
+use crate::prelude::*;
+
 /// Trait identifying the statically-known height of a given tree element.
 ///
 /// This is used to differentiate the hashes at each level of the tree.
 pub trait Height {
     /// The height of this type above the leaves of the tree.
-    type Height: crate::internal::path::Path;
+    type Height: Path;
 }
 
 /// The constant `u64` associated with each unary height.

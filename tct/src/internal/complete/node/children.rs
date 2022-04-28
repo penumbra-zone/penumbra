@@ -12,12 +12,10 @@
 
 use std::fmt::Debug;
 
-use serde::{Deserialize, Serialize};
-
 mod shape;
 pub use shape::*;
 
-use crate::{Hash, Height, Insert};
+use crate::prelude::*;
 
 /// The children of a [`Node`](super::Node).
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]

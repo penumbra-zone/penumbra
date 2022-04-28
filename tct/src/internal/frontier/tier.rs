@@ -2,15 +2,7 @@ use std::fmt::Debug;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    internal::{
-        frontier::{Forget, Full},
-        path::Witness,
-    },
-    AuthPath, Focus, ForgetOwned, Frontier, GetHash, GetPosition, Hash, Height, Insert,
-};
-
-use super::super::{complete, frontier};
+use crate::prelude::*;
 
 /// A frontier of a tier of the tiered commitment tree, being an 8-deep quad-tree of items.
 #[derive(Derivative, Serialize, Deserialize)]

@@ -2,9 +2,7 @@
 
 #![allow(non_camel_case_types, clippy::upper_case_acronyms)]
 
-use serde::{Deserialize, Serialize};
-
-use crate::Hash;
+use crate::prelude::*;
 
 /// Children of a node having children in the positions: 3.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

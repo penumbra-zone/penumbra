@@ -3,7 +3,7 @@
 //! [`complete`](crate::internal::complete), but they are also exported from here for ease of
 //! reading.
 
-use crate::{AuthPath, GetHash, Height, Insert};
+use crate::prelude::*;
 
 /// A frontier of a tree supporting the insertion of new elements and the updating of the
 /// most-recently-inserted element.
