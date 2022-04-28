@@ -181,34 +181,27 @@ impl Builder {
     ) -> Result<&mut Self, InsertBlockError> {
         let block::Finalized { inner, index } = block.into();
 
-        // Get the block index of the next insertion, if it would succeed
-        let mut block = if let Some(position) = self.inner.position() {
-            index::within::Epoch::from(position as u32).block
-        } else {
+        // If the insertion would fail, return an error
+        if self.inner.is_full() {
             return Err(InsertBlockError(block::Finalized { inner, index }));
-        };
-
-        // Determine if the latest-inserted block has yet been finalized (it will implicitly be
-        // finalized by the insertion of the block, so we need to know to accurately record the new
-        // position)
-        let latest_block_finalized = self
-            .inner
-            .focus()
-            .map(|block| block.is_finalized())
-            // Epoch is empty or latest block is finalized, so there's nothing to finalize
-            .unwrap_or(true);
-
-        // If the latest block was not finalized, then inserting a new block will implicitly
-        // finalize the latest block, so the block index to use for indexing new commitments should
-        // be one higher than the current block index
-        if !latest_block_finalized {
-            block.increment();
         }
+
+        // Finalize the latest block, if it exists and is not yet finalized -- this means that
+        // position calculations will be correct, since they will start at the next block
+        self.inner.update(|block| block.finalize());
+
+        // Get the block index of the next insertion
+        let index::within::Epoch { block, .. } = (self
+            .inner
+            .position()
+            .expect("epoch must have a position because it is not full")
+            as u32)
+            .into();
 
         // Insert the inner tree of the block into the epoch
         self.inner
             .insert(inner.map(Into::into))
-            .expect("inserting a block must succeed when epoch has a position");
+            .expect("inserting a block must succeed because epoch is not full");
 
         // Add the index of all commitments in the block to the epoch index
         for (c, index::within::Block { commitment }) in index {
@@ -235,11 +228,7 @@ impl Builder {
         // it is not
         let already_finalized = self
             .inner
-            .update(|block| {
-                let already_finalized = block.is_finalized();
-                block.finalize();
-                already_finalized
-            })
+            .update(Tier::finalize)
             // If the entire epoch is empty, the latest block is considered already finalized
             .unwrap_or(true);
 

@@ -265,67 +265,48 @@ impl Tree {
     ) -> Result<&mut Self, InsertBlockError> {
         let block::Finalized { inner, index } = block.into();
 
-        // Get the block index of the next insertion, if it would succeed
-        let index::within::Tree {
-            epoch, mut block, ..
-        } = if let Some(position) = self.inner.position() {
-            index::within::Tree::from(position as u64)
-        } else {
-            return Err(InsertBlockError::Full(block::Finalized { inner, index }));
-        };
-
-        // Determine if the latest-inserted block has yet been finalized (it will implicitly be
-        // finalized by the insertion of the block, so we need to know to accurately record the new
-        // position)
-        let latest_block_finalized = self
-            .inner
-            .focus()
-            .and_then(|epoch| epoch.focus().map(|block| block.is_finalized()))
-            // Epoch is empty or latest block is complete, so there's nothing to finalize
-            .unwrap_or(true);
-
-        // If the latest block was not finalized, then inserting a new block will implicitly
-        // finalize the latest block, so the block index to use for indexing new commitments should
-        // be one higher than the current block index
-        if !latest_block_finalized {
-            block.increment();
-        }
-
-        // Put the inner tree into an `Option` container so that we can yank it out inside a closure
-        // (if the closure is never called, then we can take it *back*)
-        let mut inner = Some(inner);
-
-        // Insert the inner tree of the block into the epoch
-        match self
-            .inner
-            .update(|epoch| epoch.insert(inner.take().unwrap().map(Into::into)))
-        {
-            // Inserting the block into the current epoch succeeded
-            Some(Ok(())) => {}
-            // Inserting the block into the current epoch failed because the epoch was full but not finalized
-            Some(Err(inner)) => {
-                // If the insertion failed, map the result back into the input block
+        // If the insertion would fail, return an error
+        if let Some(epoch) = self.inner.focus() {
+            if epoch.is_full() {
+                // The current epoch would be full when we tried to insert into it
                 return Err(InsertBlockError::EpochFull(block::Finalized {
-                    inner: inner.and_then(|tier| tier.finalize_owned().map(Into::into)),
+                    inner,
                     index,
                 }));
             }
-            None => {
-                // Take back the inner thing, which was never inserted, because the closure was
-                // never invoked
-                let inner = inner.take().unwrap();
+        } else if self.inner.is_full() {
+            // There is no current epoch, so we would try to create one, but there wouldn't be room
+            return Err(InsertBlockError::Full(block::Finalized { inner, index }));
+        }
 
-                if self.inner.is_full() {
-                    // The current epoch was finalized and there is no more room for additional epochs
-                    return Err(InsertBlockError::Full(block::Finalized { inner, index }));
-                } else {
-                    // The current epoch was finalized and there is room to insert a new epoch containing
-                    // this block
-                    self.inner
-                        .insert(Insert::Keep(Tier::singleton(inner.map(Into::into))))
-                        .expect("inserting an epoch must succeed when tree has a position");
-                }
-            }
+        // Finalize the latest block, if it exists and is not yet finalized -- this means that
+        // position calculations will be correct, since they will start at the next block
+        self.inner
+            .update(|epoch| epoch.update(|block| block.finalize()));
+
+        // Get the epoch and block index of the next insertion
+        let index::within::Tree { epoch, block, .. } = (self
+            .inner
+            .position()
+            .expect("tree must have a position because it is not full")
+            as u64)
+            .into();
+
+        // Insert the inner tree of the block into the epoch
+        if self.inner.focus().is_some() {
+            self.inner
+                .update(|epoch| {
+                    epoch
+                        .insert(inner.map(Into::into))
+                        .expect("inserting into current epoch must succeed when it is not full");
+                })
+                .expect("current epoch must exist when top tier has focus");
+        } else {
+            // The current epoch was finalized and there is room to insert a new epoch containing
+            // this block
+            self.inner
+                .insert(Insert::Keep(Tier::singleton(inner.map(Into::into))))
+                .expect("inserting an epoch must succeed when top of tree is not full");
         }
 
         // Add the index of all commitments in the block to the global index
@@ -357,13 +338,7 @@ impl Tree {
         // it is not
         let already_finalized = self
             .inner
-            .update(|epoch| {
-                epoch.update(|block| {
-                    let already_finalized = block.is_finalized();
-                    block.finalize();
-                    already_finalized
-                })
-            })
+            .update(|epoch| epoch.update(Tier::finalize))
             .flatten()
             // If the entire tree or the latest epoch is empty or finalized, the latest block is
             // considered already finalized
@@ -410,43 +385,28 @@ impl Tree {
     ) -> Result<&mut Self, InsertEpochError> {
         let epoch::Finalized { inner, index } = epoch.into();
 
-        // Get the epoch index of the next insertion, if it would succeed
-        let mut epoch = if let Some(position) = self.inner.position() {
-            index::within::Tree::from(position as u64).epoch
-        } else {
+        // If the insertion would fail, return an error
+        if self.inner.is_full() {
+            // There is no room for another epoch to be inserted into the tree
             return Err(InsertEpochError(epoch::Finalized { inner, index }));
-        };
-
-        // Determine if the latest-inserted epoch has yet been finalized (it will implicitly be
-        // finalized by the insertion of the epoch, so we need to know to accurately record the new
-        // position)
-        let latest_epoch_finalized = self
-            .inner
-            .focus()
-            .map(|block| block.is_finalized())
-            // Tree is empty or latest epoch is finalized, so there's nothing to finalize
-            .unwrap_or(true);
-
-        // If the latest epoch was not finalized, then inserting a new epoch will implicitly
-        // finalize the latest epoch, so the epoch index to use for indexing new commitments should
-        // be one higher than the current epoch index
-        if !latest_epoch_finalized {
-            epoch.increment();
         }
+
+        // Finalize the latest epoch, if it exists and is not yet finalized -- this means that
+        // position calculations will be correct, since they will start at the next epoch
+        self.inner.update(|epoch| epoch.finalize());
+
+        // Get the epoch index of the next insertion
+        let index::within::Tree { epoch, .. } = (self
+            .inner
+            .position()
+            .expect("tree must have a position because it is not full")
+            as u64)
+            .into();
 
         // Insert the inner tree of the eooch into the global tree
-        match self.inner.insert(inner.map(Into::into)) {
-            // Inserting the epoch succeeded
-            Ok(()) => {}
-            // Inserting the block failed because the epoch was full
-            Err(inner) => {
-                // If the insertion failed, map the result back into the input block
-                return Err(InsertEpochError(epoch::Finalized {
-                    inner: inner.and_then(|tier| tier.finalize_owned().map(Into::into)),
-                    index,
-                }));
-            }
-        }
+        self.inner
+            .insert(inner.map(Into::into))
+            .expect("inserting an epoch must succeed when tree is not full");
 
         // Add the index of all commitments in the epoch to the global tree index
         for (c, index::within::Epoch { block, commitment }) in index {
@@ -477,11 +437,7 @@ impl Tree {
         // it is not
         let already_finalized = self
             .inner
-            .update(|block| {
-                let already_finalized = block.is_finalized();
-                block.finalize();
-                already_finalized
-            })
+            .update(Tier::finalize)
             // If there is no focused block, the latest block is considered already finalized
             .unwrap_or(true);
 
