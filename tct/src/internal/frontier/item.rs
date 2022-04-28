@@ -22,35 +22,6 @@ impl From<Hash> for Item {
     }
 }
 
-impl Frontier for Item {
-    type Item = Hash;
-
-    fn new(item: Self::Item) -> Self {
-        Self {
-            item: Insert::Keep(item),
-        }
-    }
-
-    fn insert_owned(self, item: Self::Item) -> Result<Self, Full<Self>> {
-        Err(Full {
-            item,
-            complete: self.finalize_owned(),
-        })
-    }
-
-    fn update<T>(&mut self, f: impl FnOnce(&mut Self::Item) -> T) -> Option<T> {
-        self.item.as_mut().keep().map(f)
-    }
-
-    fn focus(&self) -> Option<&Self::Item> {
-        self.item.as_ref().keep()
-    }
-
-    fn is_full(&self) -> bool {
-        true
-    }
-}
-
 impl GetHash for Item {
     #[inline]
     fn hash(&self) -> Hash {
