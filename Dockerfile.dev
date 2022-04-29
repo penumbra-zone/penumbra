@@ -29,6 +29,7 @@ COPY pd/build.rs ./pd
 # there will be a complete rebuild. This is maybe possible to avoid.
 COPY proto ./proto
 COPY chain ./chain
+COPY component ./component
 COPY crypto ./crypto
 COPY ibc ./ibc
 COPY stake ./stake
