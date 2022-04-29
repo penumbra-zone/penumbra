@@ -26,15 +26,12 @@ pub struct Opt {
     /// The address of the pd+tendermint node.
     #[structopt(short, long, default_value = "testnet.penumbra.zone")]
     pub node: String,
-    /// The port to use to speak to tendermint.
-    #[structopt(short, long, default_value = "26657")]
-    pub rpc_port: u16,
-    /// The port to use to speak to pd's light wallet server.
-    #[structopt(short, long, default_value = "26666")]
-    pub oblivious_query_port: u16,
-    /// The port to use to speak to pd's thin wallet server.
-    #[structopt(short, long, default_value = "26667")]
-    pub specific_query_port: u16,
+    /// The port to use to speak to tendermint's RPC server.
+    #[structopt(long, default_value = "26657")]
+    pub tendermint_port: u16,
+    /// The port to use to speak to pd's gRPC server.
+    #[structopt(long, default_value = "8080")]
+    pub pd_port: u16,
     #[structopt(subcommand)]
     pub cmd: Command,
     /// The location of the wallet file [default: platform appdata directory]

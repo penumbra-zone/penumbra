@@ -22,7 +22,7 @@ impl Opt {
         let client = reqwest::Client::new();
         let req_id: u8 = rand::thread_rng().gen();
         let rsp: serde_json::Value = client
-            .post(format!(r#"http://{}:{}"#, self.node, self.rpc_port))
+            .post(format!(r#"http://{}:{}"#, self.node, self.tendermint_port))
             .json(&serde_json::json!(
                 {
                     "method": "broadcast_tx_sync",
@@ -74,7 +74,7 @@ impl Opt {
         let client = reqwest::Client::new();
         let req_id: u8 = rand::thread_rng().gen();
         let rsp: serde_json::Value = client
-            .post(format!(r#"http://{}:{}"#, self.node, self.rpc_port))
+            .post(format!(r#"http://{}:{}"#, self.node, self.tendermint_port))
             .json(&serde_json::json!(
                 {
                     "method": "broadcast_tx_async",
@@ -93,17 +93,14 @@ impl Opt {
     }
 
     pub async fn specific_client(&self) -> Result<SpecificQueryClient<Channel>, anyhow::Error> {
-        SpecificQueryClient::connect(format!("http://{}:{}", self.node, self.specific_query_port))
+        SpecificQueryClient::connect(format!("http://{}:{}", self.node, self.pd_port))
             .await
             .map_err(Into::into)
     }
 
     pub async fn oblivious_client(&self) -> Result<ObliviousQueryClient<Channel>, anyhow::Error> {
-        ObliviousQueryClient::connect(format!(
-            "http://{}:{}",
-            self.node, self.oblivious_query_port
-        ))
-        .await
-        .map_err(Into::into)
+        ObliviousQueryClient::connect(format!("http://{}:{}", self.node, self.pd_port))
+            .await
+            .map_err(Into::into)
     }
 }

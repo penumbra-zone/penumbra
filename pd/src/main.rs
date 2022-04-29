@@ -47,12 +47,9 @@ enum Command {
         /// Bind the ABCI server to this port.
         #[structopt(short, long, default_value = "26658")]
         abci_port: u16,
-        /// Bind the oblivious query service to this port.
-        #[structopt(short, long, default_value = "26666")]
-        oblivious_query_port: u16,
-        /// Bind the specific query service to this port.
-        #[structopt(short, long, default_value = "26667")]
-        specific_query_port: u16,
+        /// Bind the gRPC server to this port.
+        #[structopt(short, long, default_value = "8080")]
+        grpc_port: u16,
         /// Bind the metrics endpoint to this port.
         #[structopt(short, long, default_value = "9000")]
         metrics_port: u16,
@@ -111,20 +108,13 @@ async fn main() -> anyhow::Result<()> {
 
     match opt.cmd {
         Command::Start {
+            rocks_path,
             host,
             abci_port,
-            oblivious_query_port,
-            specific_query_port,
+            grpc_port,
             metrics_port,
-            rocks_path,
         } => {
-            tracing::info!(
-                ?host,
-                ?abci_port,
-                ?oblivious_query_port,
-                ?specific_query_port,
-                "starting pd"
-            );
+            tracing::info!(?host, ?abci_port, ?grpc_port, "starting pd");
 
             let storage = Storage::load(rocks_path)
                 .await
@@ -146,40 +136,22 @@ async fn main() -> anyhow::Result<()> {
                     .listen(format!("{}:{}", host, abci_port)),
             );
 
-            let oblivious_server = tokio::task::Builder::new()
-                .name("oblivious_query_server")
-                .spawn(
-                    Server::builder()
-                        .trace_fn(|req| match remote_addr(req) {
-                            Some(remote_addr) => {
-                                tracing::error_span!("oblivious_query", ?remote_addr)
-                            }
-                            None => tracing::error_span!("oblivious_query"),
-                        })
-                        .add_service(ObliviousQueryServer::new(info.clone()))
-                        .serve(
-                            format!("{}:{}", host, oblivious_query_port)
-                                .parse()
-                                .expect("this is a valid address"),
-                        ),
-                );
-            let specific_server = tokio::task::Builder::new()
-                .name("specific_query_server")
-                .spawn(
-                    Server::builder()
-                        .trace_fn(|req| match remote_addr(req) {
-                            Some(remote_addr) => {
-                                tracing::error_span!("specific_query", ?remote_addr)
-                            }
-                            None => tracing::error_span!("specific_query"),
-                        })
-                        .add_service(SpecificQueryServer::new(info.clone()))
-                        .serve(
-                            format!("{}:{}", host, specific_query_port)
-                                .parse()
-                                .expect("this is a valid address"),
-                        ),
-                );
+            let grpc_server = tokio::task::Builder::new().name("grpc_server").spawn(
+                Server::builder()
+                    .trace_fn(|req| match remote_addr(req) {
+                        Some(remote_addr) => {
+                            tracing::error_span!("grpc", ?remote_addr)
+                        }
+                        None => tracing::error_span!("grpc"),
+                    })
+                    .add_service(ObliviousQueryServer::new(info.clone()))
+                    .add_service(SpecificQueryServer::new(info.clone()))
+                    .serve(
+                        format!("{}:{}", host, grpc_port)
+                            .parse()
+                            .expect("this is a valid address"),
+                    ),
+            );
 
             // This service lets Prometheus pull metrics from `pd`
             PrometheusBuilder::new()
@@ -197,8 +169,7 @@ async fn main() -> anyhow::Result<()> {
             // We error out if either service errors, rather than keep running
             tokio::select! {
                 x = abci_server => x?.map_err(|e| anyhow::anyhow!(e))?,
-                x = oblivious_server => x?.map_err(|e| anyhow::anyhow!(e))?,
-                x = specific_server => x?.map_err(|e| anyhow::anyhow!(e))?,
+                x = grpc_server => x?.map_err(|e| anyhow::anyhow!(e))?,
             };
         }
         Command::GenerateTestnet {
