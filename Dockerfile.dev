@@ -37,6 +37,7 @@ COPY tct ./tct
 COPY decaf377-fmd ./decaf377-fmd
 COPY decaf377-ka ./decaf377-ka
 COPY tct-property-test ./tct-property-test
+COPY storage ./storage
 COPY transaction ./transaction
 COPY wallet ./wallet
 COPY wallet-next ./wallet-next
@@ -51,7 +52,7 @@ RUN cargo fetch
 RUN cargo build --release --bin pd
 
 # Remove the cached builds of internal packages.
-RUN rm -rf pcli pd crypto wallet config stake ibc
+RUN rm -rf pcli pd crypto wallet config stake ibc component storage
 
 # Copy the repo source now that dependencies have been built and cached.
 COPY . .
