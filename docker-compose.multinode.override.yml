@@ -37,8 +37,7 @@ services:
         ipv4_address: 192.167.10.20
     ports:
       - "27658:26658"
-      - "27666:26666"
-      - "27667:26667"
+      - "8080:8080"
 
   # The Tendermint node
   tendermint-node1:
