@@ -114,12 +114,12 @@ impl Hash {
     }
 
     /// The zero hash, used for padding of frontier nodes.
-    pub(crate) fn zero() -> Hash {
+    pub fn zero() -> Hash {
         Self(Fq::zero())
     }
 
     /// The one hash, used for padding of complete nodes.
-    pub(crate) fn one() -> Hash {
+    pub fn one() -> Hash {
         Self(Fq::one())
     }
 

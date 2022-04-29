@@ -45,7 +45,13 @@ extern crate serde;
 
 mod commitment;
 mod error;
+pub use error::{InsertBlockError, InsertEpochError, InsertError};
+
+#[cfg(any(doc, feature = "internal"))]
+pub mod index;
+#[cfg(not(any(doc, feature = "internal")))]
 mod index;
+
 mod proof;
 mod serialize;
 mod tree;

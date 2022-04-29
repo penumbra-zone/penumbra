@@ -25,7 +25,7 @@ pub use error::InsertError;
 
 use penumbra_tct::{
     internal::{
-        active::Insert,
+        frontier::Insert,
         hash::{CachedHash, GetHash, Hash},
         path::WhichWay,
     },

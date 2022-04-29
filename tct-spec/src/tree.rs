@@ -190,9 +190,9 @@ impl Tree {
     /// frontier.
     fn padding_hash(&self) -> Hash {
         if self.is_frontier() {
-            Hash::default()
+            Hash::zero()
         } else {
-            todo!("one hash")
+            Hash::one()
         }
     }
 

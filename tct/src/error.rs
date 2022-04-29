@@ -25,11 +25,9 @@ pub enum InsertError {
 pub enum InsertBlockError {
     /// The [`Tree`] was full.
     #[error("tree is full")]
-    #[non_exhaustive]
     Full(block::Finalized),
     /// The most recent [`Epoch`] of the [`Tree`] was full.
     #[error("most recent epoch is full")]
-    #[non_exhaustive]
     EpochFull(block::Finalized),
 }
 
@@ -45,7 +43,6 @@ impl From<InsertBlockError> for block::Finalized {
 /// The [`Tree`] was full when trying to insert an [`Epoch`].
 #[derive(Debug, Clone, Error)]
 #[error("tree is full")]
-#[non_exhaustive]
 pub struct InsertEpochError(pub epoch::Finalized);
 
 impl From<InsertEpochError> for epoch::Finalized {
@@ -57,7 +54,6 @@ impl From<InsertEpochError> for epoch::Finalized {
 /// The [`Tree`] was full when trying to insert an [`Epoch`] root.
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 #[error("tree is full")]
-#[non_exhaustive]
 pub struct InsertEpochRootError;
 
 #[cfg(test)]
