@@ -1,7 +1,7 @@
 use penumbra_proto::{stake as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
-use crate::{validator::State, IdentityKey};
+use crate::{validator::State, validator::UnbondingStatus, IdentityKey};
 
 /// The current status of a validator, including its identity, voting power, and state in the
 /// validator state machine.
@@ -18,6 +18,8 @@ pub struct Status {
     pub voting_power: u64,
     /// The validator's current state.
     pub state: State,
+    /// Will be `Some(UnbondingStatus)` if the validator is currently unbonding.
+    pub unbonding_status: Option<UnbondingStatus>,
 }
 
 impl Protobuf<pb::ValidatorStatus> for Status {}
@@ -27,22 +29,16 @@ impl From<Status> for pb::ValidatorStatus {
         pb::ValidatorStatus {
             identity_key: Some(v.identity_key.into()),
             voting_power: v.voting_power,
+            unbonding_status: v.unbonding_status.map(Into::into),
             state: Some(match v.state {
                 State::Inactive => pb::ValidatorState {
                     state: pb::validator_state::ValidatorStateEnum::Inactive as i32,
-                    unbonding_epoch: None,
                 },
                 State::Active => pb::ValidatorState {
                     state: pb::validator_state::ValidatorStateEnum::Active as i32,
-                    unbonding_epoch: None,
-                },
-                State::Unbonding { unbonding_epoch } => pb::ValidatorState {
-                    state: pb::validator_state::ValidatorStateEnum::Unbonding as i32,
-                    unbonding_epoch: Some(unbonding_epoch),
                 },
                 State::Slashed => pb::ValidatorState {
                     state: pb::validator_state::ValidatorStateEnum::Slashed as i32,
-                    unbonding_epoch: None,
                 },
             }),
         }
@@ -59,13 +55,6 @@ impl TryFrom<pb::ValidatorStatus> for Status {
         {
             pb::validator_state::ValidatorStateEnum::Inactive => State::Inactive,
             pb::validator_state::ValidatorStateEnum::Active => State::Active,
-            pb::validator_state::ValidatorStateEnum::Unbonding => State::Unbonding {
-                unbonding_epoch: v
-                    .state
-                    .unwrap()
-                    .unbonding_epoch
-                    .ok_or_else(|| anyhow::anyhow!("missing unbonding epoch"))?,
-            },
             pb::validator_state::ValidatorStateEnum::Slashed => State::Slashed,
         };
 
@@ -76,6 +65,10 @@ impl TryFrom<pb::ValidatorStatus> for Status {
                 .try_into()?,
             voting_power: v.voting_power,
             state,
+            unbonding_status: v.unbonding_status.map(|status| UnbondingStatus {
+                start_epoch: status.start_epoch,
+                unbonding_epoch: status.unbonding_epoch,
+            }),
         })
     }
 }

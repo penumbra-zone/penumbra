@@ -308,10 +308,8 @@ impl Staking {
 
         // Iterate every validator and update according to their state and voting power.
         for vp in &validator_power_list {
-            if vp.state == validator::State::Inactive
-                || matches!(vp.state, validator::State::Unbonding { unbonding_epoch: _ })
-            {
-                // If an Inactive or Unbonding validator is in the top `active_validator_limit` based
+            if vp.state == validator::State::Inactive {
+                // If an Inactive validator is in the top `active_validator_limit` based
                 // on voting power and the delegation pool has a nonzero balance (meaning non-zero voting power),
                 // then the validator should be moved to the Active state.
                 if top_validators.contains(&vp.identity_key) {
@@ -328,6 +326,9 @@ impl Staking {
                         .set_validator_uptime(&vp.identity_key, uptime)
                         .await;
 
+                    // The validator should no longer be Unbonding if it was
+                    // TODO: clear unbonding for the validator
+
                     let validator = self
                         .state
                         .validator(&vp.identity_key)
@@ -338,25 +339,24 @@ impl Staking {
                 }
             } else if vp.state == validator::State::Active {
                 // An Active validator could also be displaced and move to the
-                // Unbonding state.
+                // Inactive state and begin Unbonding.
                 if !top_validators.contains(&vp.identity_key) {
                     tracing::debug!(identity_key = ?vp.identity_key, "validator left active set and will now enter unbonding");
                     // Unbonding the validator means that it can no longer participate
                     // in consensus, so its voting power is set to 0.
                     self.state.set_validator_power(&vp.identity_key, 0).await?;
                     self.state
-                        .set_validator_state(
-                            &vp.identity_key,
-                            validator::State::Unbonding {
-                                unbonding_epoch: epoch_to_end.index + unbonding_epochs,
-                            },
-                        )
+                        .set_validator_state(&vp.identity_key, validator::State::Inactive)
                         .await?;
                     let validator = self
                         .state
                         .validator(&vp.identity_key)
                         .await?
                         .ok_or_else(|| anyhow::anyhow!("validator missing"))?;
+                    // TODO: the validator needs to begin Unbonding
+                    // validator::State::Unbonding {
+                    //     unbonding_epoch: epoch_to_end.index + unbonding_epochs,
+                    // },
                     // The now-Unbonding validator should report 0 voting power to tendermint this block
                     self.update_tm_validator_power(&validator.consensus_key, 0)?;
                 } else {
@@ -376,16 +376,16 @@ impl Staking {
                 }
             }
 
-            // An Unbonding validator can become Inactive if the unbonding period expires
-            // and the validator is still in Unbonding state
-            if let validator::State::Unbonding { unbonding_epoch } = vp.state {
-                if unbonding_epoch <= epoch_to_end.index {
-                    tracing::debug!(identity_key = ?vp.identity_key, "validator unbonding period over and validator entering inactive state");
-                    self.state
-                        .set_validator_state(&vp.identity_key, validator::State::Inactive)
-                        .await?;
-                }
-            };
+            // An Unbonding validator can stop unbonding if the unbonding period expires
+            // TODO: implement
+            // if let validator::State::Unbonding { unbonding_epoch } = vp.state {
+            //     if unbonding_epoch <= epoch_to_end.index {
+            //         tracing::debug!(identity_key = ?vp.identity_key, "validator unbonding period over and validator entering inactive state");
+            //         self.state
+            //             .set_validator_state(&vp.identity_key, validator::State::Inactive)
+            //             .await?;
+            //     }
+            // };
         }
 
         Ok(())
@@ -1045,35 +1045,33 @@ pub trait View: StateExt {
         match state {
             validator::State::Slashed => match cur_state {
                 validator::State::Active => {}
-                validator::State::Unbonding { unbonding_epoch: _ } => {}
+                validator::State::Inactive => {
+                    // TODO: is it only possible for Unbonding && Inactive validators to be slashed?
+                    // Do we need to check the unbonding status here as well?
+                }
                 _ => {
                     return Err(anyhow::anyhow!(
-                        "only validators in the active or unbonding state may be slashed"
+                        "only validators in the active or inactive state may be slashed"
                     ))
                 }
             },
             validator::State::Active => match cur_state {
-                validator::State::Inactive => {}
-                validator::State::Unbonding { unbonding_epoch: _ } => {}
-                _ => {
-                    return Err(anyhow::anyhow!(
-                        "only validators in the inactive or unbonding state may become Active"
-                    ))
+                validator::State::Inactive => {
+                    // TODO: ensure the validator isn't currently unbonding --
+                    // clearing unbonding status should be handled separately prior to
+                    // the state transition
                 }
-            },
-            validator::State::Unbonding { unbonding_epoch: _ } => match cur_state {
-                validator::State::Active => {}
                 _ => {
                     return Err(anyhow::anyhow!(
-                        "only validators in the Active state may start Unbonding"
+                        "only validators in the inactive state may become Active"
                     ))
                 }
             },
             validator::State::Inactive => match cur_state {
-                validator::State::Unbonding { unbonding_epoch: _ } => {}
+                validator::State::Active => {}
                 _ => {
                     return Err(anyhow::anyhow!(
-                        "only validators in the Unbonding state may become Inactive"
+                        "only validators in the Active state may become Inactive"
                     ))
                 }
             },
@@ -1217,11 +1215,21 @@ pub trait View: StateExt {
             .await
     }
 
+    async fn validator_unbonding_status(
+        &self,
+        identity_key: &IdentityKey,
+    ) -> Result<Option<validator::UnbondingStatus>> {
+        self.get_domain(format!("staking/validators/{}/unbonding_status", identity_key).into())
+            .await
+    }
+
     /// Convenience method to assemble a [`ValidatorStatus`].
     async fn validator_status(
         &self,
         identity_key: &IdentityKey,
     ) -> Result<Option<validator::Status>> {
+        // TODO: replace w/ using the higher level `ValidatorStatus` struct
+        let unbonding_status = self.validator_unbonding_status(identity_key).await?;
         let state = self.validator_state(identity_key).await?;
         let power = self.validator_power(identity_key).await?;
         let identity_key = identity_key.clone();
@@ -1230,6 +1238,7 @@ pub trait View: StateExt {
                 identity_key,
                 state,
                 voting_power,
+                unbonding_status,
             })),
             _ => Ok(None),
         }
