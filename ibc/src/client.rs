@@ -83,6 +83,12 @@ impl ConsensusState {
     }
 }
 
+impl From<TendermintConsensusState> for ConsensusState {
+    fn from(value: TendermintConsensusState) -> Self {
+        ConsensusState(AnyConsensusState::Tendermint(value))
+    }
+}
+
 impl Protobuf<pb::ConsensusState> for ConsensusState {}
 
 impl TryFrom<pb::ConsensusState> for ConsensusState {

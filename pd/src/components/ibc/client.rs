@@ -63,8 +63,6 @@ impl Component for ClientComponent {
     #[instrument(name = "ics2_client", skip(self, begin_block))]
     async fn begin_block(&mut self, begin_block: &abci::request::BeginBlock) {
         // save the penumbra verified consensus state for this block
-        //
-        // TODO: tendermint versioning conflicts
 
         let cs = TendermintConsensusState::new(
             begin_block.header.app_hash.value().into(),
@@ -72,8 +70,11 @@ impl Component for ClientComponent {
             begin_block.header.next_validators_hash,
         );
 
+        // TODO: hard-coded revision number
+        let height = Height::new(0, begin_block.header.height.into());
+
         self.state
-            .put_penumbra_consensus_state(begin_block.header.height.into(), cs.into())
+            .put_penumbra_consensus_state(height, cs.into())
             .await;
     }
 
