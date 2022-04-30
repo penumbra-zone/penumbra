@@ -47,3 +47,13 @@ message Asset {
 message IdentityKey {
   bytes ik = 1;
 }
+
+message Note {
+    // We have a hand-rolled binary encoding for note contents that's more
+    // compact than a proto and guaranteed to be constant-size (unlike a proto,
+    // which uses variable-length encodings).  We use it here, so the "real"
+    // parsing will happen in the conversion to the domain type.
+    //
+    // TODO(hdevalence) -- plausible justification, is it actually a good one?
+    bytes inner = 1;
+}
