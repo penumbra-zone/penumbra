@@ -57,3 +57,7 @@ message Note {
     // TODO(hdevalence) -- plausible justification, is it actually a good one?
     bytes inner = 1;
 }
+
+message Nullifier {
+    bytes inner = 1;
+}
