@@ -77,7 +77,11 @@ fn validate_ibc_action_stateless(ibc_action: &IbcAction) -> Result<(), anyhow::E
             // TODO: should we be storing the compatible versions in our state instead?
             let compatible_versions = vec![Version::default()];
 
-            if !compatible_versions.contains(&msg_connection_open_init.version) {
+            if !compatible_versions.contains(
+                &msg_connection_open_init
+                    .version
+                    .ok_or_else(|| anyhow::anyhow!("invalid version"))?,
+            ) {
                 return Err(anyhow::anyhow!(
                     "unsupported version: in ConnectionOpenInit",
                 ));
