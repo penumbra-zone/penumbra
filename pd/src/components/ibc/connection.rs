@@ -164,12 +164,19 @@ impl ConnectionComponent {
 
     async fn execute_connection_open_try(&mut self, msg: &MsgConnectionOpenTry) {
         // new_conn is the new connection that we will open on this chain
-        let new_conn = ConnectionEnd::new(
+        let mut new_conn = ConnectionEnd::new(
             ConnectionState::TryOpen,
             msg.client_id.clone(),
             msg.counterparty.clone(),
             msg.counterparty_versions.clone(),
             msg.delay_period,
+        );
+        new_conn.set_version(
+            pick_version(
+                SUPPORTED_VERSIONS.to_vec(),
+                msg.counterparty_versions.clone(),
+            )
+            .unwrap(),
         );
 
         let mut new_connection_id =
