@@ -485,11 +485,10 @@ impl ClientComponent {
 
         // check if we already have a consensus state for this height, if we do, check that it is
         // the same as this update, if it is, return early.
-        if let Some(stored_consensus_state) = self
+        if let Ok(stored_consensus_state) = self
             .state
             .get_verified_consensus_state(untrusted_header.height(), client_id.clone())
             .await
-            .ok()
         {
             let stored_tm_consensus_state = stored_consensus_state.as_tendermint()?;
             if stored_tm_consensus_state == untrusted_consensus_state {
