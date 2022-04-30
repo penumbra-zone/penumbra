@@ -30,7 +30,8 @@ pub static NOTE_ENCRYPTION_NONCE: Lazy<[u8; 12]> = Lazy::new(|| [0u8; 12]);
 pub const NOTE_TYPE: u8 = 0;
 
 /// A plaintext Penumbra note.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(into = "pb::Note", try_from = "pb::Note")]
 pub struct Note {
     // Value (32-byte asset ID plus 8-byte amount).
     value: Value,
@@ -245,6 +246,32 @@ pub(crate) fn derive_symmetric_key(
     kdf.update(&epk.0);
 
     kdf.finalize()
+}
+
+impl std::fmt::Debug for Note {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Note")
+            .field("value", &self.value)
+            .field("diversifier", &self.diversifier())
+            .field("transmission_key", &self.transmission_key())
+            .field("note_blinding", &self.note_blinding())
+            .finish()
+    }
+}
+
+impl TryFrom<pb::Note> for Note {
+    type Error = anyhow::Error;
+    fn try_from(value: pb::Note) -> Result<Self, Self::Error> {
+        Ok(value.inner.as_slice().try_into()?)
+    }
+}
+
+impl From<Note> for pb::Note {
+    fn from(value: Note) -> Self {
+        pb::Note {
+            inner: value.to_bytes().to_vec(),
+        }
+    }
 }
 
 impl From<&Note> for [u8; NOTE_LEN_BYTES] {
