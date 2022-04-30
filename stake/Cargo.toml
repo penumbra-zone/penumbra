@@ -18,7 +18,7 @@ penumbra-proto = { path = "../proto" }
 penumbra-transaction = { path = "../transaction" }
 
 # Penumbra dependencies
-tendermint = { git = "https://github.com/penumbra-zone/tendermint-rs.git", branch = "master" }
+tendermint = "0.24.0-pre.1"
 # External dependencies
 anyhow = "1"
 serde_json = "1"
