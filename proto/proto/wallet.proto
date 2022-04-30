@@ -4,58 +4,29 @@ package penumbra.wallet;
 import "transaction.proto";
 import "crypto.proto";
 
+// The wallet protocol is used by a wallet client, who wants to do some
+// transaction-related actions, to request data from a wallet service, which is
+// responsible for synchronizing and scanning the public chain state with one or
+// more full viewing keys.
+//
+// Wallet protocol requests include a hash of the full viewing key, used to
+// identify which set of data to query.  This also works as a pseudo-auth system
+// (assuming transport security, the client has to know the FVK to request its
+// data).  (TODO: refine this)
 service WalletProtocol {
-    // TODO: do we want to include auth/signatures in all requests here?
-    /// Get current status of chain sync
-    rpc Status() returns (StatusResult);
+    // Get current status of chain sync
+    rpc Status(crypto.FullViewingKeyHash) returns (StatusResult);
 
-    // Addresses
-    /// List wallet addresses
-    rpc ListAddresses() returns (TransactionResult);
-    /// Show address and label by index
-    rpc ShowAddress(ShowAddress) returns (TransactionResult);
-    /// Create new address with the provided label
-    rpc CreateNewAddress(CreateNewAddress) returns (TransactionResult);
+    // Queries for notes.
+    rpc Notes(NoteRequest) returns (stream NoteRecord);
 
-    // Staking
-    /// Deposit stake into a validator's delegation pool.
-    rpc Delegate(Delegate) returns (TransactionResult);
-    /// Withdraw stake from a validator's delegation pool.
-    rpc Undelegate(Undelegate) returns (TransactionResult);
-    /// Redelegate stake from one validator's delegation pool to another.
-    rpc Redelegate(Redelegate) returns (TransactionResult);
-    /// Display this wallet's delegations and their value.
-    rpc ShowDelegations() returns (TransactionResult);
-    /// Display all of the validators participating in the chain.
-    rpc ListValidators(ListValidators) returns (TransactionResult);
-
-    // Transactions
-    /// Send transaction to the node.
-    rpc SendTransaction(SendTransaction) returns (TransactionResult);
-    /// Sweeps small notes of the same denomination into a few larger notes.
-    rpc SweepTransactions() returns (TransactionResult);
-
-    // Validators
-    /// Display the validator identity key derived from this wallet's spend seed.
-    rpc DisplayValidatorIdentity() returns (TransactionResult);
-    /// Create a ValidatorDefinition transaction to create or update a validator.
-    rpc CreateValidatorDefinition(CreateValidatorDefinition) returns (TransactionResult);
-
-    // Wallet
-    /// Show current wallet balance
-    rpc ShowWalletBalance() returns (TransactionResult);
-    /// Import an existing spend seed.
-    rpc ImportSpendSeed(ImportSpendSeed) returns (TransactionResult);
-    /// Import from an existing seed phrase.
-    rpc ImportFromSeedPhrase(ImportFromSeedPhrase) returns (TransactionResult);
-    /// Export the spend seed for the wallet.
-    rpc ExportSpendSeed() returns (TransactionResult);
-    /// Generate a new seed phrase.
-    rpc GenerateSeedPhrase() returns (TransactionResult);
-    /// Keep the spend seed, but reset all other client state.
-    rpc ResetClientState() returns (TransactionResult);
-    /// Delete the entire wallet permanently.
-    rpc DeleteWallet() returns (TransactionResult);
+    // Returns authentication paths for the given note commitments.
+    //
+    // This method takes a batch of input commitments, rather than just one, so
+    // that the client can get a consistent set of authentication paths to a
+    // common root.  (Otherwise, if a client made multiple requests, the wallet
+    // service could have advanced the note commitment tree state between queries).
+    rpc AuthPaths(AuthPathsRequest) returns (AuthPathsResponse);
 }
 
 // Returns the status of the wallet server and whether it is synchronized with the chain state.
@@ -68,90 +39,56 @@ message StatusResult {
     uint64 sync_height = 3;
 }
 
-// TODO: Placeholder transaction response, replace as needed
-message TransactionResult {}
-
-// Addresses
-message ShowAddress {        
-    // The index of the address to show.
-    u32 index = 1;
-    // If true, emits only the address and not the (local) label for it.
-    bool addr_only = 2;
-}
-message CreateNewAddress {
-    // A freeform label for the address, stored only locally.
-    string label = 1;
-}
-
-// Staking
-message Delegate {
-    /// The identity key of the validator to delegate to.
-    string to = 1;
-    /// The amount of stake to delegate.
-    string amount = 2;
-    /// The transaction fee (paid in upenumbra).
-    u64 fee = 3;
-    /// Optional. Only spend funds originally received by the given address index.
-    u64 source = 4;
-}
-message Undelegate {
-    /// The amount of delegation tokens to undelegate.
-    string amount = 1;
-    /// The transaction fee (paid in upenumbra).
-    u64 fee = 2;
-    /// Optional. Only spend funds originally received by the given address index.
-    u64 source = 3;
-}
-message Redelegate {
-    /// The identity key of the validator to withdraw delegation from.
-    string from = 1;
-    /// The identity key of the validator to delegate to.
-    string to = 2;
-    /// The amount of stake to delegate.
-    string amount = 3;
-    /// The transaction fee (paid in upenumbra).
-    u64 fee = 4;
-    /// Optional. Only spend funds originally received by the given address index.
-    u64 source = 5;
-}
-message ListValidators {
-    /// Whether to show validators that are not currently part of the consensus set.
-    bool show_inactive = 1;
-    /// Whether to show detailed validator info.
-    bool detailed = 2;
+// A note plaintext with associated metadata about its status.
+message NoteRecord {
+    // The note commitment, identifying the note.
+    crypto.NoteCommitment note_commitment = 1;
+    // The note plaintext itself.
+    crypto.Note note = 2;
+    // A precomputed decryption of the note's diversifier index.
+    crypto.DiversifierIndex diversifier_index = 3;
+    // The note's nullifier.
+    crypto.Nullifier nullifier = 4;
+    // The height at which the note was created.
+    uint64 height_created = 5;
+    // Records whether the note was spent (and if so, at what height).
+    optional uint64 height_spent = 6;
 }
 
-// Transactions
-message SendTransaction {
-    /// The destination address to send funds to.
-    string to = 1;
-    /// The amounts to send, written as typed values 1.87penumbra, 12cubes, etc.
-    repeated string values = 2;
-    /// The transaction fee (paid in upenumbra).
-    u64 fee = 3;
-    /// Optional. Only spend funds originally received by the given address index.
-    u64 source = 4;
-    /// Optional. Set the transaction's memo field to the provided text.
-    string memo = 5;
+// A query for notes known by the wallet service.
+//
+// This message uses the fact that all proto fields are optional
+// to allow various filtering on the returned notes.
+message NoteRequest {
+    // Identifies the FVK for the notes to query.
+    crypto.FullViewingKeyHash fvk_hash = 1;
+
+    // If set, return spent notes as well as unspent notes.
+    bool include_spent = 2;
+
+    // If set, only return notes with the specified asset id.
+    crypto.AssetId asset_id = 3;
+
+    // If set, only return notes with the specified diversifier index.
+    crypto.DiversifierIndex diversifier_index = 4;
+
+    // If set, stop returning notes once the total exceeds this amount.
+    //
+    // Ignored if `asset_id` is unset or if `include_spent` is set.
+    uint64 amount_to_spend = 5;
 }
 
-// Validators
-message CreateValidatorDefinition {
-    /// The JSON file containing the ValidatorDefinition to upload
-    string file = 1;
-    /// The transaction fee (paid in upenumbra).
-    u64 fee = 2;
-    /// Optional. Only spend funds originally received by the given address index.
-    u64 source = 3;
+message AuthPathsRequest {
+    // Identifies the FVK for the note commitments to query.
+    crypto.FullViewingKeyHash fvk_hash = 1;
+
+    // The note commitments to obtain auth paths for.
+    repeated crypto.NoteCommitment notes = 2;
 }
 
-// Wallet
-message ImportSpendSeed {
-    // A 32-byte hex string encoding the spend seed.
-    string spend_seed = 1;
-}
-// Import from an existing seed phrase.
-message ImportFromSeedPhrase {
-    // A 24 word phrase in quotes.
-    string seed_phrase  = 1;
+message AuthPathsResponse {
+    // The note commitment tree root the auth paths were constructed to.
+    crypto.MerkleRoot root = 1;
+    // An authentication path for each of the note commitments in the request.
+    repeated crypto.AuthPath paths = 2;
 }

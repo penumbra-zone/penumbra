@@ -15,7 +15,7 @@ use crate::{
 
 static IVK_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| Fq::from_le_bytes_mod_order(b"penumbra.derive.ivk"));
 
-/// The `FullViewingKey` allows one to identify incoming and outgoing notes only.
+/// The root viewing capability for all data related to a given spend authority.
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::FullViewingKey", into = "pb::FullViewingKey")]
 pub struct FullViewingKey {
@@ -24,6 +24,11 @@ pub struct FullViewingKey {
     ovk: OutgoingViewingKey,
     ivk: IncomingViewingKey,
 }
+
+/// The hash of a full viewing key, used as an account identifier.
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(try_from = "pb::FullViewingKeyHash", into = "pb::FullViewingKeyHash")]
+pub struct FullViewingKeyHash(pub [u8; 32]);
 
 impl FullViewingKey {
     /// Construct a full viewing key from its components.
@@ -80,6 +85,15 @@ impl FullViewingKey {
     /// Returns the spend verification key contained in this full viewing key.
     pub fn spend_verification_key(&self) -> &VerificationKey<SpendAuth> {
         &self.ak
+    }
+
+    /// Hashes the full viewing key into a [`FullViewingKeyHash`].
+    pub fn hash(&self) -> FullViewingKeyHash {
+        let hash_result = prf::expand(b"Penumbra_HashFVK", &self.nk.0.to_bytes(), self.ak.as_ref());
+        let hash = hash_result.as_bytes()[..32]
+            .try_into()
+            .expect("hash is 32 bytes");
+        FullViewingKeyHash(hash)
     }
 }
 
@@ -146,5 +160,34 @@ impl std::str::FromStr for FullViewingKey {
             )?,
         }
         .try_into()
+    }
+}
+
+impl TryFrom<pb::FullViewingKeyHash> for FullViewingKeyHash {
+    type Error = anyhow::Error;
+
+    fn try_from(value: pb::FullViewingKeyHash) -> Result<Self, Self::Error> {
+        Ok(FullViewingKeyHash(
+            value
+                .inner
+                .try_into()
+                .map_err(|_| anyhow::anyhow!("expected 32 byte array"))?,
+        ))
+    }
+}
+
+impl From<FullViewingKeyHash> for pb::FullViewingKeyHash {
+    fn from(value: FullViewingKeyHash) -> pb::FullViewingKeyHash {
+        pb::FullViewingKeyHash {
+            inner: value.0.to_vec(),
+        }
+    }
+}
+
+impl std::fmt::Debug for FullViewingKeyHash {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_tuple("FullViewingKeyHash")
+            .field(&hex::encode(&self.0))
+            .finish()
     }
 }
