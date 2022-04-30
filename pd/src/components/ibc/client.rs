@@ -801,6 +801,7 @@ mod tests {
     use penumbra_transaction::{Action, Fee, Transaction, TransactionBody};
     use std::fs;
     use tempfile::tempdir;
+    use tendermint::Time;
 
     // test that we can create and update a light client.
     #[tokio::test]

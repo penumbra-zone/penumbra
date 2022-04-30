@@ -1,4 +1,6 @@
 use ibc::core::ics03_connection::connection::ConnectionEnd;
+use ibc::core::ics03_connection::version::Version;
+use once_cell::sync::Lazy;
 use penumbra_proto::{ibc as pb, Protobuf};
 
 #[derive(Debug, Clone)]
@@ -50,3 +52,5 @@ impl From<ConnectionEnd> for Connection {
         Connection(c)
     }
 }
+
+pub static SUPPORTED_VERSIONS: Lazy<Vec<Version>> = Lazy::new(|| vec![Version::default()]);

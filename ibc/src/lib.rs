@@ -7,6 +7,6 @@ mod client;
 mod connection;
 
 pub use client::{ClientConnections, ClientCounter, ClientData, ConsensusState, VerifiedHeights};
-pub use connection::{Connection, ConnectionCounter};
+pub use connection::{Connection, ConnectionCounter, SUPPORTED_VERSIONS};
 
 pub static COMMITMENT_PREFIX: &str = "penumbra-ibc-commitment";

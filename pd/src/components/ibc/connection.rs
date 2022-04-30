@@ -13,7 +13,7 @@ use ibc::core::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
 use ibc::core::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
 use ibc::core::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use ibc::core::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
-use ibc::core::ics03_connection::version::Version;
+use ibc::core::ics03_connection::version::{pick_version, Version};
 use ibc::core::ics23_commitment::specs::ProofSpecs;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::core::ics24_host::identifier::ConnectionId;
@@ -21,7 +21,7 @@ use ibc::downcast;
 use ibc::Height as IBCHeight;
 use penumbra_chain::genesis;
 use penumbra_component::Component;
-use penumbra_ibc::{Connection, ConnectionCounter, COMMITMENT_PREFIX};
+use penumbra_ibc::{Connection, ConnectionCounter, COMMITMENT_PREFIX, SUPPORTED_VERSIONS};
 use penumbra_proto::ibc::{
     ibc_action::Action::{
         ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
@@ -85,9 +85,7 @@ fn validate_ibc_action_stateless(ibc_action: &IbcAction) -> Result<(), anyhow::E
 
             // check if the version is supported (we use the same versions as the cosmos SDK)
             // TODO: should we be storing the compatible versions in our state instead?
-            let compatible_versions = vec![Version::default()];
-
-            if !compatible_versions.contains(
+            if !SUPPORTED_VERSIONS.contains(
                 &msg_connection_open_init
                     .version
                     .ok_or_else(|| anyhow::anyhow!("invalid version"))?,
@@ -305,6 +303,7 @@ impl ConnectionComponent {
 
         self.validate_penumbra_client_state(provided_cs).await?;
 
+        let mut previous_conn: Option<ConnectionEnd> = None;
         if let Some(prev_conn_id) = &msg.previous_connection_id {
             // check that we have a valid connection with the given ID
             let prev_connection = self
@@ -324,6 +323,7 @@ impl ConnectionComponent {
                     "connection with the given ID is not in the correct state",
                 ));
             }
+            previous_conn = Some(prev_connection);
         }
 
         // expected_conn is the conn that we expect to have been committed to on the counterparty
@@ -340,8 +340,12 @@ impl ConnectionComponent {
             msg.delay_period,
         );
 
-        // TODO:
-        // version intersection
+        // perform version intersection
+        let mut supported_versions = SUPPORTED_VERSIONS.clone();
+        if let Some(prev_conn) = previous_conn {
+            supported_versions = prev_conn.versions().to_vec();
+        }
+        pick_version(supported_versions, msg.counterparty_versions.clone())?;
 
         // get the stored client state for the counterparty
         let stored_client_state = self
