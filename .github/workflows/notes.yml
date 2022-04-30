@@ -39,11 +39,8 @@ jobs:
           # - published crates are excluded
           # Doing this in one go is useful because the JSON file with search
           # indexes is overwritten on each cargo doc invocation.
-          # (The version specifier for tendermint avoids ambiguity from multiple
-          # package versions but will break in the future).
-          # NOTE: make sure we're rendering the version of the tendermint crate that has ABCI support (?? this is a mess)
           cargo doc --no-deps \
-            -p tendermint:0.23.0 \
+            -p tendermint \
             -p tower-abci \
             -p incrementalmerkletree \
             -p jmt \
