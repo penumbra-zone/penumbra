@@ -33,10 +33,6 @@ fn fmt_hex<T: AsRef<[u8]>>(data: T, f: &mut std::fmt::Formatter) -> std::fmt::Re
     write!(f, "{}", hex::encode(data))
 }
 
-fn fmt_fq(data: &Fq, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-    fmt_hex(&data.to_bytes(), f)
-}
-
 use once_cell::sync::Lazy;
 
 pub static STAKING_TOKEN_DENOM: Lazy<asset::Denom> =

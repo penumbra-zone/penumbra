@@ -2,14 +2,32 @@ use std::convert::{TryFrom, TryInto};
 
 use ark_ff::PrimeField;
 use decaf377::FieldExt;
-use derivative::Derivative;
 use once_cell::sync::Lazy;
+use penumbra_proto::{crypto as pb, Protobuf};
+use serde::{Deserialize, Serialize};
 
 use crate::Fq;
 
-#[derive(PartialEq, Eq, Derivative, Clone, Copy, Hash, PartialOrd, Ord)]
-#[derivative(Debug)]
-pub struct Nullifier(#[derivative(Debug(format_with = "crate::fmt_fq"))] pub Fq);
+#[derive(PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(try_from = "pb::Nullifier", into = "pb::Nullifier")]
+pub struct Nullifier(pub Fq);
+
+impl Protobuf<pb::Nullifier> for Nullifier {}
+
+impl From<Nullifier> for pb::Nullifier {
+    fn from(n: Nullifier) -> Self {
+        pb::Nullifier {
+            inner: n.0.to_bytes().to_vec(),
+        }
+    }
+}
+
+impl TryFrom<pb::Nullifier> for Nullifier {
+    type Error = anyhow::Error;
+    fn try_from(n: pb::Nullifier) -> Result<Self, Self::Error> {
+        n.inner.as_slice().try_into()
+    }
+}
 
 /// The domain separator used to derive nullifiers.
 pub static NULLIFIER_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
@@ -19,6 +37,14 @@ pub static NULLIFIER_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
 impl std::fmt::Display for Nullifier {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&hex::encode(&self.to_bytes()))
+    }
+}
+
+impl std::fmt::Debug for Nullifier {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("Nullifier")
+            .field(&hex::encode(&self.to_bytes()))
+            .finish()
     }
 }
 
