@@ -10,6 +10,7 @@ edition = "2021"
 penumbra-crypto = { path = "../crypto" }
 penumbra-proto = { path = "../proto" } 
 tendermint = "0.24.0-pre.1"
+jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "main" }
 
 # External dependencies
 prost-types = "0.9"
