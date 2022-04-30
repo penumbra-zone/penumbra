@@ -9,6 +9,10 @@ message FullViewingKey {
     bytes inner = 1;
 }
 
+message FullViewingKeyHash {
+    bytes inner = 1;
+}
+
 message Diversifier {
     bytes inner = 1;
 }
