@@ -62,6 +62,7 @@ fn main() -> Result<()> {
         &[
             "proto/client/oblivious.proto",
             "proto/client/specific.proto",
+            "proto/wallet.proto",
         ],
         &["proto/", "ibc-go-vendor/"],
     )?;
