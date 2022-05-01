@@ -1,11 +1,12 @@
-use std::{fmt::Debug, sync::Arc};
+use std::fmt::Debug;
 
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
-use jmt::{storage::TreeReader, KeyHash, WriteOverlay};
+use jmt::KeyHash;
 use penumbra_proto::{Message, Protobuf};
-use tokio::sync::Mutex;
 use tracing::instrument;
+
+use crate::State;
 
 /// An extension trait that allows writing proto-encoded domain types to
 /// a shared [`State`].
@@ -45,7 +46,7 @@ pub trait StateExt: Send + Sync + Sized + Clone + 'static {
 }
 
 #[async_trait]
-impl<R: TreeReader + Sync + 'static> StateExt for Arc<Mutex<WriteOverlay<R>>> {
+impl StateExt for State {
     #[instrument(skip(self, key))]
     async fn get_domain<D, P>(&self, key: KeyHash) -> Result<Option<D>>
     where
@@ -91,7 +92,7 @@ impl<R: TreeReader + Sync + 'static> StateExt for Arc<Mutex<WriteOverlay<R>>> {
     where
         P: Message + Default + Debug,
     {
-        let bytes = match self.lock().await.get(key).await? {
+        let bytes = match self.read().await.get(key).await? {
             None => return Ok(None),
             Some(bytes) => bytes,
         };
@@ -106,6 +107,6 @@ impl<R: TreeReader + Sync + 'static> StateExt for Arc<Mutex<WriteOverlay<R>>> {
     where
         P: Message + Debug,
     {
-        self.lock().await.put(key, value.encode_to_vec());
+        self.write().await.put(key, value.encode_to_vec());
     }
 }

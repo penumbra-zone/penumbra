@@ -35,7 +35,7 @@ impl App {
     #[instrument(skip(self, storage))]
     pub async fn commit(&mut self, storage: Storage) -> Result<(RootHash, Version)> {
         // Commit the pending writes, clearing the state.
-        let (root_hash, version) = self.state.lock().await.commit(storage).await?;
+        let (root_hash, version) = self.state.write().await.commit(storage).await?;
         tracing::debug!(?root_hash, version, "finished committing state");
         // Now re-instantiate all of the components:
         self.staking = Staking::new(self.state.clone()).await;

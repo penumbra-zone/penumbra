@@ -362,7 +362,7 @@ impl ShieldedPool {
     async fn put_nct(&mut self) -> Result<()> {
         let nct_data = bincode::serialize(&self.note_commitment_tree)?;
         self.state
-            .lock()
+            .write()
             .await
             .put(b"shielded_pool/nct_data".into(), nct_data);
         Ok(())
@@ -374,7 +374,7 @@ impl ShieldedPool {
     /// State on an empty database.
     async fn get_nct(state: &State) -> Result<NoteCommitmentTree> {
         if let Ok(Some(bytes)) = state
-            .lock()
+            .read()
             .await
             .get(b"shielded_pool/nct_data".into())
             .await

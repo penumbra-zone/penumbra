@@ -7,7 +7,7 @@ use jmt::{
     WriteOverlay,
 };
 use rocksdb::DB;
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 use tracing::{instrument, Span};
 
 use crate::State;
@@ -49,7 +49,7 @@ impl Storage {
             .unwrap_or(WriteOverlay::<Storage>::PRE_GENESIS_VERSION);
 
         tracing::debug!("creating state for version {}", version);
-        Ok(Arc::new(Mutex::new(WriteOverlay::new(
+        Ok(Arc::new(RwLock::new(WriteOverlay::new(
             self.clone(),
             version,
         ))))
