@@ -123,6 +123,7 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.crypto.DiversifierIndex", SERDE_TRANSPARENT),
     (".penumbra.crypto.Nullifier", SERIALIZE),
     (".penumbra.crypto.Nullifier", SERDE_TRANSPARENT),
+    (".penumbra.crypto.AuthPath", SERIALIZE),
     (".penumbra.chain.ChainParams", SERIALIZE),
     (".penumbra.chain.CompactBlock", SERIALIZE),
     (".penumbra.chain.KnownAssets", SERIALIZE),

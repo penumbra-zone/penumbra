@@ -61,3 +61,13 @@ message Note {
 message Nullifier {
     bytes inner = 1;
 }
+
+// An authentication path from a note commitment to the root of the note commitment tree.
+//
+// TODO: update this when migrating to TCT
+// copied from transparent_proofs
+message AuthPath {
+  NoteCommitment note_commitment = 1;
+  uint32 position = 2;
+  repeated NoteCommitment path = 3;
+}

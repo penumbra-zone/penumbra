@@ -21,6 +21,54 @@ pub static MERKLE_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
     Fq::from_le_bytes_mod_order(blake2b_simd::blake2b(b"penumbra.merkle.tree").as_bytes())
 });
 
+/// An authentication path for a note commitment in the note commitment tree.
+///
+/// NOTE: this is duplicative of the `Path` typedef below, which is currently
+/// used by the transparent proofs.  Deduplicating this should be done when
+/// migrating to the TCT, when we'll have to rewrite the transparent proof code anyways.
+///
+/// TODO: replace this when migrating to TCT.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(try_from = "pb::AuthPath", into = "pb::AuthPath")]
+pub struct AuthPath {
+    pub note_commitment: note::Commitment,
+    pub position: Position,
+    pub path: Vec<note::Commitment>,
+}
+
+impl Protobuf<pb::AuthPath> for AuthPath {}
+
+impl TryFrom<pb::AuthPath> for AuthPath {
+    type Error = anyhow::Error;
+
+    fn try_from(msg: pb::AuthPath) -> Result<Self, Self::Error> {
+        let position = (msg.position as usize).into();
+        let note_commitment = msg
+            .note_commitment
+            .ok_or_else(|| anyhow::anyhow!("missing note commitment"))?
+            .try_into()?;
+        let mut path = Vec::new();
+        for entry in msg.path {
+            path.push(entry.try_into()?);
+        }
+        Ok(AuthPath {
+            note_commitment,
+            position,
+            path,
+        })
+    }
+}
+
+impl From<AuthPath> for pb::AuthPath {
+    fn from(auth_path: AuthPath) -> Self {
+        Self {
+            position: u64::from(auth_path.position) as u32,
+            note_commitment: Some(auth_path.note_commitment.into()),
+            path: auth_path.path.into_iter().map(Into::into).collect(),
+        }
+    }
+}
+
 // Return value from `Tree::authentication_path(value: &note::Commitment)`
 pub type Path = (Position, Vec<note::Commitment>);
 
