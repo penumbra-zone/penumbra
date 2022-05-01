@@ -3,6 +3,7 @@ use std::convert::TryFrom;
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc::core::ics24_host::identifier::ConnectionId;
+use ibc::downcast;
 use ibc::{
     clients::ics07_tendermint::{
         client_state::ClientState as TendermintClientState,
@@ -29,9 +30,9 @@ use penumbra_proto::ibc::{
 };
 use penumbra_storage::{State, StateExt};
 use penumbra_transaction::Transaction;
-use tendermint::{abci, Time};
+use tendermint::abci;
 use tendermint_light_client_verifier::{
-    types::{Time as LightClientTime, TrustedBlockState, UntrustedBlockState},
+    types::{TrustedBlockState, UntrustedBlockState},
     ProdVerifier, Verdict, Verifier,
 };
 use tracing::instrument;
@@ -59,8 +60,23 @@ impl Component for ClientComponent {
         self.state.put_client_counter(ClientCounter(0)).await;
     }
 
-    #[instrument(name = "ics2_client", skip(self, _begin_block))]
-    async fn begin_block(&mut self, _begin_block: &abci::request::BeginBlock) {}
+    #[instrument(name = "ics2_client", skip(self, begin_block))]
+    async fn begin_block(&mut self, begin_block: &abci::request::BeginBlock) {
+        // save the penumbra verified consensus state for this block
+
+        let cs = TendermintConsensusState::new(
+            begin_block.header.app_hash.value().into(),
+            begin_block.header.time,
+            begin_block.header.next_validators_hash,
+        );
+
+        // TODO: hard-coded revision number
+        let height = Height::new(0, begin_block.header.height.into());
+
+        self.state
+            .put_penumbra_consensus_state(height, cs.into())
+            .await;
+    }
 
     #[instrument(name = "ics2_client", skip(tx))]
     fn check_tx_stateless(tx: &Transaction) -> Result<()> {
@@ -222,18 +238,16 @@ impl ClientComponent {
             )
             .await?;
 
-        let latest_consensus_state_tm = match latest_consensus_state.0 {
-            AnyConsensusState::Tendermint(consensus_state) => consensus_state,
-            _ => {
-                return Err(anyhow::anyhow!(
-                    "consensus state is not a Tendermint client"
-                ))
-            }
-        };
+        let latest_consensus_state_tm =
+            downcast!(latest_consensus_state.0 => AnyConsensusState::Tendermint).ok_or_else(
+                || anyhow::anyhow!("invalid consensus state: not a Tendermint consensus state"),
+            )?;
+
         let now = self.state.get_block_timestamp().await?;
-        let stamp = latest_consensus_state_tm.timestamp.to_rfc3339();
-        let duration = now.duration_since(Time::parse_from_rfc3339(&stamp).unwrap())?;
-        if client_data.client_state.0.expired(duration) {
+        if client_data.client_state.0.expired(
+            now.duration_since(latest_consensus_state_tm.timestamp)
+                .unwrap(),
+        ) {
             return Err(anyhow::anyhow!("client is expired"));
         }
 
@@ -471,11 +485,10 @@ impl ClientComponent {
 
         // check if we already have a consensus state for this height, if we do, check that it is
         // the same as this update, if it is, return early.
-        if let Some(stored_consensus_state) = self
+        if let Ok(stored_consensus_state) = self
             .state
             .get_verified_consensus_state(untrusted_header.height(), client_id.clone())
             .await
-            .ok()
         {
             let stored_tm_consensus_state = stored_consensus_state.as_tendermint()?;
             if stored_tm_consensus_state == untrusted_consensus_state {
@@ -518,16 +531,12 @@ impl ClientComponent {
 
         let options = trusted_client_state.as_light_client_options()?;
         let verifier = ProdVerifier::default();
-        let current_block_timestamp = LightClientTime::parse_from_rfc3339(
-            &self.state.get_block_timestamp().await?.to_rfc3339(),
-        )
-        .unwrap();
 
         let verdict = verifier.verify(
             untrusted_state,
             trusted_state,
             &options,
-            current_block_timestamp,
+            self.state.get_block_timestamp().await?,
         );
         match verdict {
             Verdict::Success => {}
@@ -609,6 +618,22 @@ pub trait View: StateExt + Send + Sync {
             )
             .into(),
             verified_heights,
+        )
+        .await;
+    }
+
+    // returns the ConsensusState for the penumbra chain (this chain) at the given height
+    async fn get_penumbra_consensus_state(&self, height: Height) -> Result<ConsensusState> {
+        self.get_domain(format!("ibc/ics02-client/penumbra_consensus_states/{}", height).into())
+            .await?
+            .ok_or(anyhow::anyhow!("consensus state not found"))
+    }
+
+    // returns the ConsensusState for the penumbra chain (this chain) at the given height
+    async fn put_penumbra_consensus_state(&self, height: Height, consensus_state: ConsensusState) {
+        self.put_domain(
+            format!("ibc/ics02-client/penumbra_consensus_states/{}", height).into(),
+            consensus_state,
         )
         .await;
     }
@@ -776,6 +801,7 @@ mod tests {
     use penumbra_transaction::{Action, Fee, Transaction, TransactionBody};
     use std::fs;
     use tempfile::tempdir;
+    use tendermint::Time;
 
     // test that we can create and update a light client.
     #[tokio::test]
