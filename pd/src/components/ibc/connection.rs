@@ -132,8 +132,9 @@ impl ConnectionComponent {
                 self.execute_connection_open_try(&msg).await;
             }
 
-            Some(ConnectionOpenAck(msg)) => {
-                let _msg_connection_open_ack = MsgConnectionOpenAck::try_from(msg.clone()).unwrap();
+            Some(ConnectionOpenAck(raw_msg)) => {
+                let msg = MsgConnectionOpenAck::try_from(raw_msg.clone()).unwrap();
+                self.execute_connection_open_ack(&msg).await;
             }
 
             Some(ConnectionOpenConfirm(msg)) => {
@@ -143,6 +144,30 @@ impl ConnectionComponent {
 
             _ => {}
         }
+    }
+
+    async fn execute_connection_open_ack(&mut self, msg: &MsgConnectionOpenAck) {
+        let mut connection = self
+            .state
+            .get_connection(&msg.connection_id)
+            .await
+            .unwrap()
+            .unwrap()
+            .0;
+
+        let prev_counterparty = connection.counterparty();
+        let counterparty = Counterparty::new(
+            prev_counterparty.client_id().clone(),
+            Some(msg.connection_id.clone()),
+            prev_counterparty.prefix().clone(),
+        );
+        connection.set_state(ConnectionState::Open);
+        connection.set_version(msg.version.clone());
+        connection.set_counterparty(counterparty);
+
+        self.state
+            .update_connection(&msg.connection_id, connection.into())
+            .await;
     }
 
     async fn execute_connection_open_init(&mut self, msg: &MsgConnectionOpenInit) {
@@ -397,17 +422,16 @@ impl ConnectionComponent {
             return Err(anyhow::anyhow!("connection is not in the correct state"));
         }
 
-        // set the connection id of the counterparty
-        let prev_counterparty = connection.counterparty();
+        // we are the counterparty here
         let counterparty = Counterparty::new(
-            prev_counterparty.client_id().clone(),
-            Some(msg.connection_id.clone()),
-            prev_counterparty.prefix().clone(),
+            connection.client_id().clone(),
+            Some(msg.counterparty_connection_id.clone()),
+            COMMITMENT_PREFIX.as_bytes().to_vec().try_into().unwrap(),
         );
 
         let expected_conn = ConnectionEnd::new(
             ConnectionState::TryOpen,
-            counterparty.client_id().clone(),
+            connection.counterparty().client_id().clone(),
             counterparty.clone(),
             vec![msg.version.clone()],
             connection.delay_period(),
@@ -513,6 +537,18 @@ pub trait View: StateExt + Send + Sync {
             .into(),
         )
         .await
+    }
+
+    async fn update_connection(&self, connection_id: &ConnectionId, connection: Connection) {
+        self.put_domain(
+            format!(
+                "ibc/ics03-connection/connections/{}",
+                connection_id.as_str()
+            )
+            .into(),
+            connection,
+        )
+        .await;
     }
 }
 
