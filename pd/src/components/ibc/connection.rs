@@ -137,13 +137,30 @@ impl ConnectionComponent {
                 self.execute_connection_open_ack(&msg).await;
             }
 
-            Some(ConnectionOpenConfirm(msg)) => {
-                let _msg_connection_open_confirm =
-                    MsgConnectionOpenConfirm::try_from(msg.clone()).unwrap();
+            Some(ConnectionOpenConfirm(raw_msg)) => {
+                let msg = MsgConnectionOpenConfirm::try_from(raw_msg.clone()).unwrap();
+                self.execute_connection_open_confirm(&msg).await;
             }
 
             _ => {}
         }
+    }
+
+    async fn execute_connection_open_confirm(&mut self, msg: &MsgConnectionOpenConfirm) {
+        let mut connection = self
+            .state
+            .get_connection(&msg.connection_id)
+            .await
+            .unwrap()
+            .ok_or_else(|| anyhow::anyhow!("no connection with the given ID"))
+            .unwrap()
+            .0;
+
+        connection.set_state(ConnectionState::Open);
+
+        self.state
+            .update_connection(&msg.connection_id, connection.into())
+            .await;
     }
 
     async fn execute_connection_open_ack(&mut self, msg: &MsgConnectionOpenAck) {
@@ -465,6 +482,73 @@ impl ConnectionComponent {
         Ok(())
     }
 
+    async fn validate_connection_open_confirm(&self, msg: &MsgConnectionOpenConfirm) -> Result<()> {
+        let connection = self
+            .state
+            .get_connection(&msg.connection_id)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("no connection with the given ID"))?
+            .0;
+
+        if !connection.state_matches(&ConnectionState::TryOpen) {
+            return Err(anyhow::anyhow!("connection is not in the correct state"));
+        }
+
+        let expected_conn = ConnectionEnd::new(
+            ConnectionState::Open,
+            connection.counterparty().client_id().clone(),
+            Counterparty::new(
+                connection.client_id().clone(),
+                Some(msg.connection_id.clone()),
+                COMMITMENT_PREFIX.as_bytes().to_vec().try_into().unwrap(),
+            ),
+            connection.versions().to_vec(),
+            connection.delay_period(),
+        );
+
+        // get the stored client state for the counterparty
+        let stored_client_state = self
+            .state
+            .get_client_data(connection.client_id())
+            .await?
+            .client_state
+            .0;
+
+        // check if the client is frozen
+        // TODO: should we also check if the client is expired here?
+        if stored_client_state.is_frozen() {
+            return Err(anyhow::anyhow!("client is frozen"));
+        }
+
+        // get the stored consensus state for the counterparty
+        let stored_consensus_state = self
+            .state
+            .get_verified_consensus_state(msg.proofs.height(), connection.client_id().clone())
+            .await?
+            .0;
+
+        let client_def = AnyClient::from_client_type(stored_client_state.client_type());
+
+        // PROOF VERIFICATION
+        // note: here we only verify connection state inclusion, not client state or consensus
+        // state.
+        // 1. verify that the counterparty chain committed the expected_conn to its state
+        client_def.verify_connection_state(
+            &stored_client_state,
+            msg.proofs.height(),
+            connection.counterparty().prefix(),
+            msg.proofs.object_proof(),
+            stored_consensus_state.root(),
+            connection
+                .counterparty()
+                .connection_id()
+                .ok_or_else(|| anyhow::anyhow!("invalid counterparty"))?,
+            &expected_conn,
+        )?;
+
+        Ok(())
+    }
+
     async fn validate_ibc_action_stateful(&self, ibc_action: &IbcAction) -> Result<()> {
         match &ibc_action.action {
             Some(ConnectionOpenInit(raw_msg)) => {
@@ -485,8 +569,9 @@ impl ConnectionComponent {
                 self.validate_connection_open_ack(&msg).await?;
             }
 
-            Some(ConnectionOpenConfirm(msg)) => {
-                let _msg_connection_open_confirm = MsgConnectionOpenConfirm::try_from(msg.clone())?;
+            Some(ConnectionOpenConfirm(raw_msg)) => {
+                let msg = MsgConnectionOpenConfirm::try_from(raw_msg.clone())?;
+                self.validate_connection_open_confirm(&msg).await?;
             }
 
             _ => {}
