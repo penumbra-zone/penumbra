@@ -19,6 +19,8 @@ use tracing::instrument;
 pub struct IBCComponent {
     client: client::ClientComponent,
     connection: connection::ConnectionComponent,
+
+    enabled: bool,
 }
 
 #[async_trait]
@@ -28,11 +30,17 @@ impl Component for IBCComponent {
         let client = ClientComponent::new(state.clone()).await;
         let connection = connection::ConnectionComponent::new(state.clone()).await;
 
-        Self { client, connection }
+        Self {
+            client,
+            connection,
+            enabled: false,
+        }
     }
 
     #[instrument(name = "ibc", skip(self, app_state))]
     async fn init_chain(&mut self, app_state: &genesis::AppState) {
+        self.enabled = app_state.chain_params.ibc_enabled;
+
         self.client.init_chain(app_state).await;
         self.connection.init_chain(app_state).await;
     }
@@ -53,6 +61,10 @@ impl Component for IBCComponent {
 
     #[instrument(name = "ibc", skip(self, tx))]
     async fn check_tx_stateful(&self, tx: &Transaction) -> Result<()> {
+        if !self.enabled {
+            return Err(anyhow::anyhow!("IBC is not enabled"));
+        }
+
         self.client.check_tx_stateful(tx).await?;
         self.connection.check_tx_stateful(tx).await?;
 
