@@ -21,6 +21,8 @@ f4jumble = { git = "https://github.com/zcash/librustzcash", rev="2425a0869098e3b
 
 # Crates.io deps
 ark-ff = "0.3"
+ark-poly = "0.3"
+ark-poly-commit = "0.3"
 ark-serialize = "0.3"
 regex = "1.5"
 sha2 = "0.10.1"
