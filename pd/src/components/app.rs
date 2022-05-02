@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use jmt::{RootHash, Version};
 use penumbra_chain::{genesis, View as _};
 use penumbra_component::Component;
+use penumbra_ibc::IBCComponent;
 use penumbra_shielded_pool::ShieldedPool;
 use penumbra_stake::component::Staking;
 use penumbra_storage::{State, StateExt, Storage};
@@ -10,8 +11,6 @@ use penumbra_transaction::Transaction;
 use tendermint::abci::{self, types::ValidatorUpdate};
 
 use tracing::instrument;
-
-use super::IBCComponent;
 
 /// The Penumbra application, written as a bundle of [`Component`]s.
 ///
