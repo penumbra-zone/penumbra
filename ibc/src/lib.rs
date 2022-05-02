@@ -4,12 +4,14 @@
 #![allow(unreachable_patterns)]
 
 mod client;
+mod component;
 mod connection;
 
 pub use client::{
     validate_penumbra_client_state, ClientConnections, ClientCounter, ClientData, ConsensusState,
     VerifiedHeights,
 };
+pub use component::IBCComponent;
 pub use connection::{Connection, ConnectionCounter, SUPPORTED_VERSIONS};
 
 pub static COMMITMENT_PREFIX: &str = "penumbra-ibc-commitment";

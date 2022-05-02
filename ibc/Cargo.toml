@@ -8,11 +8,18 @@ edition = "2021"
 [dependencies]
 # Workspace dependencies
 penumbra-crypto = { path = "../crypto" }
+penumbra-chain = { path = "../chain" }
+penumbra-component = { path = "../component" }
+penumbra-storage = { path = "../storage" }
+penumbra-transaction = { path = "../transaction" }
 penumbra-proto = { path = "../proto" } 
 tendermint = "0.24.0-pre.1"
 jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "main" }
 
 # External dependencies
+hex = "0.4"
+base64 = "0.13.0"
+tracing = "0.1"
 prost-types = "0.9"
 tendermint-proto = "0.24.0-pre.1"
 once_cell = "1"
@@ -22,3 +29,4 @@ anyhow = "1"
 async-trait = "0.1.52"
 ibc = { git = "https://github.com/penumbra-zone/ibc-rs.git", branch = "with-tendermintrs-24" }
 ibc-proto = { git = "https://github.com/penumbra-zone/ibc-rs.git", branch = "with-tendermintrs-24" }
+tendermint-light-client-verifier = "0.24.0-pre.1"

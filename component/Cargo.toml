@@ -10,5 +10,6 @@ penumbra-storage = { path = "../storage" }
 penumbra-transaction = { path = "../transaction" }
 penumbra-chain = { path = "../chain" }
 async-trait = "0.1.52"
+tonic = "0.6.1"
 tendermint = "0.24.0-pre.1"
 anyhow = "1"
