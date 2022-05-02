@@ -406,6 +406,16 @@ impl ConnectionComponent {
             ));
         }
 
+        // verify the provided client state
+        let provided_cs = msg
+            .client_state
+            .clone()
+            .ok_or_else(|| anyhow::anyhow!("client state not provided in MsgConnectionOpenTry"))?;
+
+        let height = self.state.get_block_height().await?;
+        let chain_id = self.state.get_chain_id().await?;
+        validate_penumbra_client_state(provided_cs, &chain_id, height)?;
+
         let connection = self
             .state
             .get_connection(&msg.connection_id)
@@ -442,7 +452,7 @@ impl ConnectionComponent {
             connection.client_id(),
             msg.proofs.clone(),
             msg.client_state.as_ref().ok_or_else(|| {
-                anyhow::anyhow!("client state not provided in MsgConnectionOpenTry")
+                anyhow::anyhow!("client state not provided in MsgConnectionOpenAck")
             })?,
             counterparty
                 .connection_id()
