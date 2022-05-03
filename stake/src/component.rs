@@ -40,9 +40,40 @@ pub struct Staking {
     /// persisted at the end of the block for processing at the end of the next
     /// epoch.
     delegation_changes: DelegationChanges,
+    /// List of changes to the tendermint validator set accumulated throughout
+    /// this block, to be returned during `EndBlock`.
+    tm_validator_updates: Vec<ValidatorUpdate>,
 }
 
 impl Staking {
+    #[instrument(skip(self))]
+    fn update_tm_validator_power(&mut self, ck: &PublicKey, power: u64) -> Result<()> {
+        // TODO: would it be more sensible to have `tm_validator_updates` be a
+        // BTreeMap instead, and construct the `ValidatorUpdate` vec on-demand?
+        let existing = self
+            .tm_validator_updates
+            .iter()
+            .enumerate()
+            .find(|(_i, v)| v.pub_key == *ck);
+
+        match existing {
+            Some((i, v)) => {
+                // mem::replace?
+                let mut v2 = v.clone();
+                v2.power = power.try_into()?;
+                self.tm_validator_updates[i] = v2;
+            }
+            None => {
+                self.tm_validator_updates.append(&mut vec![ValidatorUpdate {
+                    pub_key: ck.clone(),
+                    power: power.try_into()?,
+                }]);
+            }
+        };
+
+        Ok(())
+    }
+
     #[instrument(skip(self, epoch_to_end), fields(index = epoch_to_end.index))]
     async fn end_epoch(&mut self, epoch_to_end: Epoch) -> Result<()> {
         // calculate rate data for next rate, move previous next rate to cur rate,
@@ -287,7 +318,7 @@ impl Staking {
                     tracing::debug!(identity_key = ?vp.identity_key, "validator is in top validators and will now enter active state");
                     self.state
                         .set_validator_state(&vp.identity_key, validator::State::Active)
-                        .await;
+                        .await?;
                     // Start tracking the validator's uptime as it becomes active
                     let uptime = Uptime::new(
                         self.state.get_block_height().await?,
@@ -296,6 +327,14 @@ impl Staking {
                     self.state
                         .set_validator_uptime(&vp.identity_key, uptime)
                         .await;
+
+                    let validator = self
+                        .state
+                        .validator(&vp.identity_key)
+                        .await?
+                        .ok_or_else(|| anyhow::anyhow!("validator missing"))?;
+                    // The now-Active validator should report its voting power to tendermint this block
+                    self.update_tm_validator_power(&validator.consensus_key, vp.power)?;
                 }
             } else if vp.state == validator::State::Active {
                 // An Active validator could also be displaced and move to the
@@ -312,7 +351,28 @@ impl Staking {
                                 unbonding_epoch: unbonding_epochs,
                             },
                         )
-                        .await;
+                        .await?;
+                    let validator = self
+                        .state
+                        .validator(&vp.identity_key)
+                        .await?
+                        .ok_or_else(|| anyhow::anyhow!("validator missing"))?;
+                    // The now-Unbonding validator should report 0 voting power to tendermint this block
+                    self.update_tm_validator_power(&validator.consensus_key, 0)?;
+                } else {
+                    // This validator remains active, and we should report its latest voting
+                    // power to tendermint.
+                    let validator = self
+                        .state
+                        .validator(&vp.identity_key)
+                        .await?
+                        .ok_or_else(|| anyhow::anyhow!("validator missing"))?;
+                    let power = self
+                        .state
+                        .validator_power(&vp.identity_key)
+                        .await?
+                        .ok_or_else(|| anyhow::anyhow!("active validator should have power"))?;
+                    self.update_tm_validator_power(&validator.consensus_key, power)?;
                 }
             }
 
@@ -323,7 +383,7 @@ impl Staking {
                     tracing::debug!(identity_key = ?vp.identity_key, "validator unbonding period over and validator entering inactive state");
                     self.state
                         .set_validator_state(&vp.identity_key, validator::State::Inactive)
-                        .await;
+                        .await?;
                 }
             };
         }
@@ -333,53 +393,11 @@ impl Staking {
 
     // Returns the list of validator updates formatted for inclusion in the Tendermint `EndBlockResponse`
     pub async fn tm_validator_updates(&self) -> Result<Vec<ValidatorUpdate>> {
-        self.state
-            .block_validator_updates()
-            .await?
-            .ok_or_else(|| anyhow::anyhow!("missing block validator updates"))?;
-        // Return the voting power for all known validators.
-        // This isn't strictly necessary because tendermint technically expects
-        // an update, however it is useful for debugging.
-        let mut updates = Vec::new();
-        for v in self.state.validator_list().await?.iter() {
-            let validator_state = self
-                .state
-                .validator_state(v)
-                .await?
-                .ok_or_else(|| anyhow::anyhow!("validator state missing"))?;
-            let validator = self
-                .state
-                .validator(v)
-                .await?
-                .ok_or_else(|| anyhow::anyhow!("validator missing"))?;
-
-            // Only active validators report power to tendermint. Other states
-            // report a 0 power.
-            if validator_state != validator::State::Active {
-                updates.push(ValidatorUpdate {
-                    pub_key: validator.consensus_key.clone(),
-                    power: 0u32.into(),
-                });
-                continue;
-            }
-
-            let power = self
-                .state
-                .validator_power(v)
-                .await?
-                .ok_or_else(|| anyhow::anyhow!("validator missing power"))?;
-
-            updates.push(ValidatorUpdate {
-                pub_key: validator.consensus_key.clone(),
-                power: power.try_into()?,
-            });
-        }
-
-        Ok(updates)
+        Ok(self.tm_validator_updates.clone())
     }
 
     #[instrument(skip(self, last_commit_info))]
-    async fn track_uptime(&self, last_commit_info: &LastCommitInfo) -> Result<()> {
+    async fn track_uptime(&mut self, last_commit_info: &LastCommitInfo) -> Result<()> {
         tracing::debug!(?last_commit_info);
 
         // Note: this probably isn't the correct height for the LastCommitInfo,
@@ -429,8 +447,7 @@ impl Staking {
                 uptime.mark_height_as_signed(height, voted).unwrap();
                 if uptime.num_missed_blocks() as u64 >= params.missed_blocks_maximum {
                     tracing::info!(identity_key = ?v, "slashing for downtime");
-                    self.state
-                        .slash_validator(info.validator, params.slashing_penalty_downtime_bps)
+                    self.slash_validator(info.validator, params.slashing_penalty_downtime_bps)
                         .await?;
                 } else {
                     self.state.set_validator_uptime(v, uptime).await;
@@ -439,6 +456,82 @@ impl Staking {
         }
 
         Ok(())
+    }
+
+    async fn slash_validator(&mut self, validator: Validator, slashing_penalty: u64) -> Result<()> {
+        // Update the validator to return 0 power to Tendermint for this block.
+        self.update_tm_validator_power(&validator.consensus_key, 0)?;
+
+        self.state
+            .slash_validator(validator, slashing_penalty)
+            .await
+    }
+
+    /// Add a validator during genesis, which will start in Active
+    /// state with power assigned.
+    async fn add_genesis_validator(
+        &mut self,
+        validator: Validator,
+        cur_rate_data: RateData,
+        next_rate_data: RateData,
+        power: u64,
+    ) -> Result<()> {
+        // Update the validator to return its power to Tendermint for this block.
+        self.update_tm_validator_power(&validator.consensus_key, power)?;
+
+        self.state
+            .add_validator(
+                validator.clone(),
+                cur_rate_data,
+                next_rate_data,
+                // All genesis validators start in the "Active" state:
+                validator::State::Active,
+                power,
+            )
+            .await
+    }
+
+    /// Add a validator after genesis, which will start in Inactive
+    /// state with no power assigned.
+    async fn add_validator(
+        &mut self,
+        validator: Validator,
+        cur_rate_data: RateData,
+        next_rate_data: RateData,
+    ) -> Result<()> {
+        // We explicitly do not call `update_tm_validator_power` here,
+        // as a post-genesis validator should not have power reported
+        // to Tendermint until it becomes Active.
+        self.state
+            .add_validator(
+                validator.clone(),
+                cur_rate_data,
+                next_rate_data,
+                // All post-genesis validators start in the "Inactive" state:
+                validator::State::Inactive,
+                0,
+            )
+            .await
+    }
+
+    async fn slash_validator_by_evidence(&mut self, evidence: &Evidence) -> Result<()> {
+        let ck = tendermint::PublicKey::from_raw_ed25519(&evidence.validator.address)
+            .ok_or_else(|| anyhow::anyhow!("invalid ed25519 consensus pubkey from tendermint"))
+            .unwrap();
+
+        let validator = self
+            .state
+            .validator_by_consensus_key(&ck)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("attempted to slash validator not found in JMT"))?;
+
+        let slashing_penalty = self
+            .state
+            .get_chain_params()
+            .await?
+            .slashing_penalty_misbehavior_bps;
+
+        self.slash_validator(validator, slashing_penalty).await
     }
 }
 
@@ -449,6 +542,7 @@ impl Component for Staking {
         Self {
             state,
             delegation_changes: Default::default(),
+            tm_validator_updates: Default::default(),
         }
     }
 
@@ -526,15 +620,7 @@ impl Component for Staking {
                 .unwrap_or(0);
             let power = cur_rate_data.voting_power(total_delegation_tokens, &cur_base_rate);
 
-            self.state
-                .add_validator(
-                    validator.clone(),
-                    cur_rate_data,
-                    next_rate_data,
-                    // All genesis validators start in the "Active" state:
-                    validator::State::Active,
-                    power,
-                )
+            self.add_genesis_validator(validator.clone(), cur_rate_data, next_rate_data, power)
                 .await
                 .unwrap();
             // We also need to start tracking uptime of the genesis validators:
@@ -555,16 +641,10 @@ impl Component for Staking {
 
     #[instrument(name = "staking", skip(self, begin_block))]
     async fn begin_block(&mut self, begin_block: &abci::request::BeginBlock) {
-        // Reset the updates to the validator set for this block.
-        self.state.reset_validator_set_updates().await;
-
         // For each validator identified as byzantine by tendermint, update its
         // state to be slashed.
         for evidence in begin_block.byzantine_validators.iter() {
-            self.state
-                .slash_validator_by_evidence(evidence)
-                .await
-                .unwrap();
+            self.slash_validator_by_evidence(evidence).await.unwrap();
         }
 
         self.track_uptime(&begin_block.last_commit_info)
@@ -834,16 +914,7 @@ impl Component for Staking {
                     validator_exchange_rate: 1_0000_0000, // 1 represented as 1e8
                 };
 
-                self.state
-                    .add_validator(
-                        v.validator.clone(),
-                        cur_rate_data,
-                        next_rate_data,
-                        // All validator from definitions start in the "Inactive" state:
-                        validator::State::Inactive,
-                        // All validator from definitions start with 0 power:
-                        0,
-                    )
+                self.add_validator(v.validator.clone(), cur_rate_data, next_rate_data)
                     .await
                     .unwrap();
             }
@@ -952,13 +1023,73 @@ pub trait View: StateExt {
     }
 
     #[instrument(skip(self))]
-    async fn set_validator_state(&self, identity_key: &IdentityKey, state: validator::State) {
+    async fn set_validator_state(
+        &self,
+        identity_key: &IdentityKey,
+        state: validator::State,
+    ) -> Result<()> {
+        // Enforce state machine semantics here and update voting powers
+        // for tendermint appropriately
+
+        let cur_state = self.validator_state(&identity_key).await?.ok_or_else(|| {
+            anyhow::anyhow!("validator to have state change did not have state in JMT")
+        })?;
+
+        // Ensure that the state transitions are valid.
+        // TODO: there are other semantics we could possibly enforce here
+        // that are currently being enforced by upstream callers, for example
+        // that to become Active a validator must appear in the top N validators
+        // by voting power. Having all checks enforced through this single method
+        // makes bugs relating to improperly setting state less likely, though
+        // moving them here might mean duplicating checks in some cases (how do
+        // you know to call this method unless you've checked the criteria?).
+        // Is the View method even the right place to enforce these checks?
+        match state {
+            validator::State::Slashed => match cur_state {
+                validator::State::Active => {}
+                validator::State::Unbonding { unbonding_epoch: _ } => {}
+                _ => {
+                    return Err(anyhow::anyhow!(
+                        "only validators in the active or unbonding state may be slashed"
+                    ))
+                }
+            },
+            validator::State::Active => match cur_state {
+                validator::State::Inactive => {}
+                validator::State::Unbonding { unbonding_epoch: _ } => {}
+                _ => {
+                    return Err(anyhow::anyhow!(
+                        "only validators in the inactive or unbonding state may become Active"
+                    ))
+                }
+            },
+            validator::State::Unbonding { unbonding_epoch: _ } => match cur_state {
+                validator::State::Active => {}
+                _ => {
+                    return Err(anyhow::anyhow!(
+                        "only validators in the Active state may start Unbonding"
+                    ))
+                }
+            },
+            validator::State::Inactive => match cur_state {
+                validator::State::Unbonding { unbonding_epoch: _ } => {}
+                _ => {
+                    return Err(anyhow::anyhow!(
+                        "only validators in the Unbonding state may become Inactive"
+                    ))
+                }
+            },
+            _ => return Err(anyhow::anyhow!("cannot set validator state to {:?}", state)),
+        };
+
         tracing::debug!("setting validator state");
         self.put_domain(
             format!("staking/validators/{}/state", identity_key).into(),
             state,
         )
         .await;
+
+        Ok(())
     }
 
     async fn validator(&self, identity_key: &IdentityKey) -> Result<Option<Validator>> {
@@ -984,48 +1115,12 @@ pub trait View: StateExt {
         self.validator(&identity_key).await
     }
 
-    // TODO: move out of view? this seems more like business logic
-    // TODO: sort of messy, clean up slashing logic?
-    async fn slash_validator_by_evidence(&self, evidence: &Evidence) -> Result<()> {
-        let ck = tendermint::PublicKey::from_raw_ed25519(&evidence.validator.address)
-            .ok_or_else(|| anyhow::anyhow!("invalid ed25519 consensus pubkey from tendermint"))
-            .unwrap();
-
-        let validator = self
-            .validator_by_consensus_key(&ck)
-            .await?
-            .ok_or_else(|| anyhow::anyhow!("attempted to slash validator not found in JMT"))?;
-
-        let slashing_penalty = self
-            .get_chain_params()
-            .await?
-            .slashing_penalty_misbehavior_bps;
-
-        self.slash_validator(validator, slashing_penalty).await
-    }
-
     async fn slash_validator(&self, validator: Validator, slashing_penalty: u64) -> Result<()> {
         tracing::info!(?validator, ?slashing_penalty, "slashing validator");
 
-        let cur_state = self
-            .validator_state(&validator.identity_key)
-            .await?
-            .ok_or_else(|| anyhow::anyhow!("validator to be slashed did not have state in JMT"))?;
-
-        // Ensure that the state transitions are valid.
-        match cur_state {
-            validator::State::Active => {}
-            validator::State::Unbonding { unbonding_epoch: _ } => {}
-            _ => {
-                return Err(anyhow::anyhow!(
-                    "only validators in the active or unbonding state may be slashed"
-                ))
-            }
-        };
-
         // Mark the state as "slashed" in the JMT, and apply the slashing penalty.
         self.set_validator_state(&validator.identity_key, validator::State::Slashed)
-            .await;
+            .await?;
 
         let mut cur_rate = self
             .current_validator_rate(&validator.identity_key)
@@ -1048,9 +1143,6 @@ pub trait View: StateExt {
         self.set_validator_rates(&validator.identity_key, cur_rate, next_rate)
             .await;
 
-        // Update the validator to return a 0 power to Tendermint for this block.
-        self.update_tm_validator(&validator.identity_key, 0).await?;
-
         Ok(())
     }
 
@@ -1069,7 +1161,9 @@ pub trait View: StateExt {
         Ok(())
     }
 
-    // Used for adding a new validator to the JMT.
+    // Used for adding a new validator to the JMT. May be either
+    // Active (a genesis validator) on Inactive (a validator added
+    // post-genesis).
     async fn add_validator(
         &self,
         validator: Validator,
@@ -1088,26 +1182,17 @@ pub trait View: StateExt {
 
         self.set_validator_rates(&id, current_rates, next_rates)
             .await;
-        self.set_validator_state(&id, state).await;
+
+        // We can't call `set_validator_state` here because it requires an existing validator state,
+        // so we manually initialize the state for new validators.
+        self.put_domain(format!("staking/validators/{}/state", &id).into(), state)
+            .await;
         self.set_validator_power(&id, power).await?;
 
         let mut validator_list = self.validator_list().await?;
         validator_list.push(id);
         tracing::debug!(?validator_list);
         self.set_validator_list(validator_list).await;
-
-        if state == Inactive {
-            // Update the validator to return a 0 power to Tendermint for this block.
-            self.update_tm_validator(&validator.identity_key, 0).await?;
-        } else if state == Active {
-            // Update the validator to return its power to Tendermint for this block.
-            self.update_tm_validator(&validator.identity_key, power)
-                .await?;
-        } else {
-            return Err(anyhow::anyhow!(
-                "new validators should only be Active/Inactive"
-            ));
-        }
 
         Ok(())
     }
@@ -1132,10 +1217,6 @@ pub trait View: StateExt {
     ) -> Result<Option<validator::State>> {
         self.get_domain(format!("staking/validators/{}/state", identity_key).into())
             .await
-    }
-
-    async fn block_validator_updates(&self) -> Result<Vec<ValidatorUpdate>> {
-        self.get_domain("staking/validators/updates".into()).await
     }
 
     /// Convenience method to assemble a [`ValidatorStatus`].
