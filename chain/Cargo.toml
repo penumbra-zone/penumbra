@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 # Workspace dependencies
 penumbra-proto = { path = "../proto" }
+penumbra-storage = { path = "../storage" }
 penumbra-crypto = { path = "../crypto" }
 penumbra-transaction = { path = "../transaction" }
 penumbra-stake = { path = "../stake" }
@@ -20,3 +21,6 @@ anyhow = "1"
 bytes = "1"
 hex = "0.4"
 serde = { version = "1", features = ["derive"] }
+async-trait = "0.1.52"
+tracing = "0.1"
+tonic = "0.7"
