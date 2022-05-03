@@ -9,6 +9,7 @@ members = [
   "component",
   "crypto",
   "ibc",
+  "shielded-pool",
   "stake",
   "storage",
   "tct",

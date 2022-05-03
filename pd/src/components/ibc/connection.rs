@@ -1,4 +1,4 @@
-use crate::{components::app::View as _, components::ibc::client::View as _};
+use crate::components::ibc::client::View as _;
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc::core::ics02_client::client_consensus::ConsensusState;
@@ -17,7 +17,7 @@ use ibc::core::ics24_host::identifier::ClientId;
 use ibc::core::ics24_host::identifier::ConnectionId;
 use ibc::proofs::Proofs;
 use ibc::Height as IBCHeight;
-use penumbra_chain::genesis;
+use penumbra_chain::{genesis, View as _};
 use penumbra_component::Component;
 use penumbra_ibc::{
     validate_penumbra_client_state, Connection, ConnectionCounter, COMMITMENT_PREFIX,

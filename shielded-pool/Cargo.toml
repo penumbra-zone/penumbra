@@ -1,0 +1,30 @@
+[package]
+name = "penumbra-shielded-pool"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# Workspace dependencies
+penumbra-crypto = { path = "../crypto" }
+penumbra-proto = { path = "../proto" }
+penumbra-transaction = { path = "../transaction" }
+penumbra-storage = { path = "../storage" }
+penumbra-component = { path = "../component" }
+penumbra-chain = { path = "../chain" }
+
+# Penumbra dependencies
+tendermint = "0.24.0-pre.1"
+decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
+jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "main" }
+
+# External dependencies
+
+tracing = "0.1"
+anyhow = "1"
+ark-ff = "0.3"
+async-trait = "0.1.52"
+blake2b_simd = "0.5"
+bincode = "1.3.3"
+serde = { version = "1", features = ["derive"] }

@@ -4,8 +4,7 @@ use anyhow::{anyhow, Context, Result};
 use ark_ff::PrimeField;
 use async_trait::async_trait;
 use decaf377::{Fq, Fr};
-use penumbra_chain::genesis;
-use penumbra_chain::{sync::CompactBlock, KnownAssets, NoteSource};
+use penumbra_chain::{genesis, sync::CompactBlock, Epoch, KnownAssets, NoteSource, View as _};
 use penumbra_component::Component;
 use penumbra_crypto::{
     asset::{self, Asset, Denom},
@@ -13,13 +12,12 @@ use penumbra_crypto::{
     merkle::{self, Frontier, NoteCommitmentTree, TreeExt},
     note, Address, Note, Nullifier, One, Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_stake::Epoch;
 use penumbra_storage::{State, StateExt};
 use penumbra_transaction::{action::output, Action, Transaction};
 use tendermint::abci;
 use tracing::instrument;
 
-use super::{app::View as _, staking::View as _};
+use crate::CommissionAmounts;
 
 // Stub component
 pub struct ShieldedPool {
@@ -564,6 +562,22 @@ pub trait View: StateExt {
         } else {
             Ok(())
         }
+    }
+
+    // TODO: rename to something more generic ("minted notes"?) that can
+    // be used with IBC transfers, and fix up the path and proto
+
+    async fn commission_amounts(&self, height: u64) -> Result<Option<CommissionAmounts>> {
+        self.get_domain(format!("staking/commission_amounts/{}", height).into())
+            .await
+    }
+
+    async fn set_commission_amounts(&self, height: u64, notes: CommissionAmounts) {
+        self.put_domain(
+            format!("staking/commission_amounts/{}", height).into(),
+            notes,
+        )
+        .await
     }
 }
 

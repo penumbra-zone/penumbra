@@ -2,6 +2,7 @@ use std::pin::Pin;
 
 use async_stream::try_stream;
 use futures::stream::{StreamExt, TryStreamExt};
+use penumbra_chain::View as _;
 use penumbra_proto::{
     chain::{ChainParams, CompactBlock, KnownAssets},
     client::oblivious::{
@@ -11,7 +12,8 @@ use penumbra_proto::{
     stake::ValidatorInfo,
     Protobuf,
 };
-use penumbra_stake::validator;
+use penumbra_shielded_pool::View as _;
+use penumbra_stake::{component::View as _, validator};
 use tonic::Status;
 use tracing::instrument;
 
@@ -23,7 +25,6 @@ use tracing::instrument;
 // use tracing_futures::Instrument;
 
 use super::Info;
-use crate::components::{app::View as _, shielded_pool::View as _, staking::View as _};
 
 #[tonic::async_trait]
 impl ObliviousQuery for Info {
