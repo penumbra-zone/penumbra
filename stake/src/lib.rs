@@ -5,6 +5,7 @@ mod changes;
 mod funding_stream;
 mod uptime;
 
+pub mod component;
 pub mod rate;
 pub mod validator;
 

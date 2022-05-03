@@ -1,3 +1,4 @@
+use penumbra_chain::View as _;
 use penumbra_proto::{
     self as proto,
     chain::NoteSource,
@@ -5,6 +6,7 @@ use penumbra_proto::{
     crypto::NoteCommitment,
 };
 use penumbra_shielded_pool::View as _;
+use penumbra_stake::{component::View as _, validator};
 
 use tonic::Status;
 use tracing::instrument;
@@ -16,7 +18,6 @@ use tracing::instrument;
 //use tracing_futures::Instrument;
 
 use super::Info;
-use crate::components::{app::View as _, staking::View as _};
 
 #[tonic::async_trait]
 impl SpecificQuery for Info {
