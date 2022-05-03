@@ -2,14 +2,14 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
-use penumbra_chain::genesis;
+use penumbra_chain::{genesis, Epoch};
 use penumbra_component::Component;
 use penumbra_crypto::{DelegationToken, IdentityKey, STAKING_TOKEN_ASSET_ID};
 use penumbra_proto::Protobuf;
 use penumbra_stake::{
     rate::{BaseRateData, RateData},
     validator::{self, Validator},
-    CommissionAmount, CommissionAmounts, DelegationChanges, Epoch, Uptime,
+    CommissionAmount, CommissionAmounts, DelegationChanges, Uptime,
 };
 use penumbra_storage::{State, StateExt};
 use penumbra_transaction::{

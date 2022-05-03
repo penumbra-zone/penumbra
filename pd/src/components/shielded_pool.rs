@@ -5,7 +5,7 @@ use ark_ff::PrimeField;
 use async_trait::async_trait;
 use decaf377::{Fq, Fr};
 use penumbra_chain::genesis;
-use penumbra_chain::{sync::CompactBlock, KnownAssets, NoteSource};
+use penumbra_chain::{sync::CompactBlock, Epoch, KnownAssets, NoteSource};
 use penumbra_component::Component;
 use penumbra_crypto::{
     asset::{self, Asset, Denom},
@@ -13,7 +13,6 @@ use penumbra_crypto::{
     merkle::{self, Frontier, NoteCommitmentTree, TreeExt},
     note, Address, Note, Nullifier, One, Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_stake::Epoch;
 use penumbra_storage::{State, StateExt};
 use penumbra_transaction::{action::output, Action, Transaction};
 use tendermint::abci;
