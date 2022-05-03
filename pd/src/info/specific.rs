@@ -6,7 +6,7 @@ use penumbra_proto::{
     crypto::NoteCommitment,
 };
 use penumbra_shielded_pool::View as _;
-use penumbra_stake::{component::View as _, validator};
+use penumbra_stake::component::View as _;
 
 use tonic::Status;
 use tracing::instrument;
