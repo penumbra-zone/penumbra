@@ -61,8 +61,10 @@ impl Component for IBCComponent {
 
     #[instrument(name = "ibc", skip(self, tx))]
     async fn check_tx_stateful(&self, tx: &Transaction) -> Result<()> {
-        if !self.enabled {
-            return Err(anyhow::anyhow!("IBC is not enabled"));
+        if tx.ibc_actions().count() > 0 && !self.enabled {
+            return Err(anyhow::anyhow!(
+                "transaction contains IBC actions, but IBC is not enabled"
+            ));
         }
 
         self.client.check_tx_stateful(tx).await?;
