@@ -1,5 +1,4 @@
-use penumbra_proto::{chain as pb, Protobuf};
-use penumbra_stake::validator::Validator;
+use penumbra_proto::{chain as pb, stake as pb_stake, Protobuf};
 use serde::{Deserialize, Serialize};
 
 use super::Allocation;
@@ -12,7 +11,7 @@ pub struct AppState {
     /// Global configuration for the chain, such as chain ID and epoch duration.
     pub chain_params: ChainParams,
     /// The initial validator set.
-    pub validators: Vec<Validator>,
+    pub validators: Vec<pb_stake::Validator>,
     /// The initial token allocations.
     pub allocations: Vec<Allocation>,
 }

@@ -396,7 +396,7 @@ async fn main() -> anyhow::Result<()> {
                         active_validator_limit,
                         ..Default::default()
                     },
-                    validators: validators.clone(),
+                    validators: validators.clone().into_iter().map(Into::into).collect(),
                 };
 
                 // Create the directory for this node

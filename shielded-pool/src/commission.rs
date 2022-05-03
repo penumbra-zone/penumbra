@@ -1,3 +1,6 @@
+//! TODO: rename to something more generic ("minted notes"?) that can
+//! be used with IBC transfers, and fix up the proto location
+
 use anyhow::Result;
 use penumbra_crypto::Address;
 use penumbra_proto::{stake as pb, Protobuf};

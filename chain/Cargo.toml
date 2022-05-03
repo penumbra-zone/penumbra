@@ -9,7 +9,6 @@ penumbra-proto = { path = "../proto" }
 penumbra-storage = { path = "../storage" }
 penumbra-crypto = { path = "../crypto" }
 penumbra-transaction = { path = "../transaction" }
-penumbra-stake = { path = "../stake" }
 
 # Penumbra dependencies
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }

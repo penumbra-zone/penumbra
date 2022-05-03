@@ -11,6 +11,7 @@ use penumbra_proto::{
     stake::ValidatorInfo,
     Protobuf,
 };
+use penumbra_shielded_pool::View as _;
 use penumbra_stake::validator;
 use tonic::Status;
 use tracing::instrument;
@@ -23,7 +24,7 @@ use tracing::instrument;
 // use tracing_futures::Instrument;
 
 use super::Info;
-use crate::components::{app::View as _, shielded_pool::View as _, staking::View as _};
+use crate::components::{app::View as _, staking::View as _};
 
 #[tonic::async_trait]
 impl ObliviousQuery for Info {

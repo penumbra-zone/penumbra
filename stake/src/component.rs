@@ -1,22 +1,18 @@
+// Implementation of a pd component for the staking system.
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
-use penumbra_chain::{genesis, Epoch};
+use penumbra_chain::{genesis, Epoch, View as _};
 use penumbra_component::Component;
 use penumbra_crypto::{DelegationToken, IdentityKey, STAKING_TOKEN_ASSET_ID};
 use penumbra_proto::Protobuf;
-use penumbra_shielded_pool::{CommissionAmount, CommissionAmounts, View as _};
-use penumbra_stake::{
-    rate::{BaseRateData, RateData},
-    validator::{self, Validator},
-    DelegationChanges, Uptime,
-};
 use penumbra_storage::{State, StateExt};
 use penumbra_transaction::{
     action::{Delegate, Undelegate},
     Action, Transaction,
 };
+use penumbra_shielded_pool::View as _;
 use sha2::{Digest, Sha256};
 use tendermint::{
     abci::{
@@ -27,7 +23,12 @@ use tendermint::{
 };
 use tracing::instrument;
 
-use super::app::View as _;
+use crate::{
+    rate::{BaseRateData, RateData},
+    validator::{self, Validator},
+    CommissionAmount, CommissionAmounts, DelegationChanges, Uptime,
+};
+
 
 // Max validator power is 1152921504606846975 (i64::MAX / 8)
 // https://github.com/tendermint/tendermint/blob/master/types/validator_set.go#L25
@@ -490,8 +491,6 @@ impl Component for Staking {
         // Validators are indexed in the JMT by their public key,
         // and there is a separate key containing the list of all validator keys.
         for validator in &app_state.validators {
-            // Parse the proto into a domain type.
-            let validator = Validator::try_from(validator.clone()).unwrap();
             let validator_key = validator.identity_key.clone();
 
             // Delegations require knowing the rates for the
@@ -1156,6 +1155,19 @@ pub trait View: StateExt {
         self.put_domain(
             format!("staking/delegation_changes/{}", height.value()).into(),
             changes,
+        )
+        .await
+    }
+
+    async fn commission_amounts(&self, height: u64) -> Result<Option<CommissionAmounts>> {
+        self.get_domain(format!("staking/commission_amounts/{}", height).into())
+            .await
+    }
+
+    async fn set_commission_amounts(&self, height: u64, notes: CommissionAmounts) {
+        self.put_domain(
+            format!("staking/commission_amounts/{}", height).into(),
+            notes,
         )
         .await
     }
