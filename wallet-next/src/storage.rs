@@ -3,8 +3,9 @@ use penumbra_crypto::merkle::NoteCommitmentTree;
 use penumbra_proto::{crypto::FullViewingKey, Message, Protobuf};
 use sqlx::{query, Pool, Sqlite};
 
+#[derive(Clone)]
 pub struct Storage {
-    pub(super) pool: Pool<Sqlite>,
+    pool: Pool<Sqlite>,
 }
 
 impl Storage {
@@ -31,6 +32,7 @@ impl Storage {
 
         Ok(result[0].height.map(|h| h as u64))
     }
+
     pub async fn chain_params(&self) -> anyhow::Result<ChainParams> {
         let result = query!(
             r#"
@@ -44,6 +46,7 @@ impl Storage {
 
         ChainParams::decode(result[0].bytes.as_ref().unwrap().as_slice())
     }
+
     pub async fn full_viewing_key(&self) -> anyhow::Result<FullViewingKey> {
         let result = query!(
             r#"
@@ -59,6 +62,7 @@ impl Storage {
             result[0].bytes.as_ref().unwrap().as_slice(),
         )?)
     }
+
     pub async fn note_commitment_tree(&self) -> anyhow::Result<NoteCommitmentTree> {
         let result = query!(
             r#"

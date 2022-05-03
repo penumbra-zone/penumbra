@@ -15,10 +15,10 @@ import "crypto.proto";
 // data).  (TODO: refine this)
 service WalletProtocol {
     // Get current status of chain sync
-    rpc Status(crypto.FullViewingKeyHash) returns (StatusResult);
+    rpc Status(StatusRequest) returns (StatusResponse);
 
     // Queries for notes.
-    rpc Notes(NoteRequest) returns (stream NoteRecord);
+    rpc Notes(NotesRequest) returns (stream NoteRecord);
 
     // Returns authentication paths for the given note commitments.
     //
@@ -29,8 +29,14 @@ service WalletProtocol {
     rpc AuthPaths(AuthPathsRequest) returns (AuthPathsResponse);
 }
 
+// Requests sync status of the wallet service.
+message StatusRequest {
+    // Identifies the FVK for the notes to query.
+    crypto.FullViewingKeyHash fvk_hash = 1;
+}
+
 // Returns the status of the wallet server and whether it is synchronized with the chain state.
-message StatusResult {
+message StatusResponse {
     /// Whether the wallet service is synchronized with the chain state.
     bool synchronized = 1;
     // The height reported by the full node
@@ -59,7 +65,7 @@ message NoteRecord {
 //
 // This message uses the fact that all proto fields are optional
 // to allow various filtering on the returned notes.
-message NoteRequest {
+message NotesRequest {
     // Identifies the FVK for the notes to query.
     crypto.FullViewingKeyHash fvk_hash = 1;
 
