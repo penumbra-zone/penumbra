@@ -333,6 +333,10 @@ impl Staking {
 
     // Returns the list of validator updates formatted for inclusion in the Tendermint `EndBlockResponse`
     pub async fn tm_validator_updates(&self) -> Result<Vec<ValidatorUpdate>> {
+        self.state
+            .block_validator_updates()
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("missing block validator updates"))?;
         // Return the voting power for all known validators.
         // This isn't strictly necessary because tendermint technically expects
         // an update, however it is useful for debugging.
@@ -551,6 +555,9 @@ impl Component for Staking {
 
     #[instrument(name = "staking", skip(self, begin_block))]
     async fn begin_block(&mut self, begin_block: &abci::request::BeginBlock) {
+        // Reset the updates to the validator set for this block.
+        self.state.reset_validator_set_updates().await;
+
         // For each validator identified as byzantine by tendermint, update its
         // state to be slashed.
         for evidence in begin_block.byzantine_validators.iter() {
@@ -1041,6 +1048,9 @@ pub trait View: StateExt {
         self.set_validator_rates(&validator.identity_key, cur_rate, next_rate)
             .await;
 
+        // Update the validator to return a 0 power to Tendermint for this block.
+        self.update_tm_validator(&validator.identity_key, 0).await?;
+
         Ok(())
     }
 
@@ -1086,6 +1096,19 @@ pub trait View: StateExt {
         tracing::debug!(?validator_list);
         self.set_validator_list(validator_list).await;
 
+        if state == Inactive {
+            // Update the validator to return a 0 power to Tendermint for this block.
+            self.update_tm_validator(&validator.identity_key, 0).await?;
+        } else if state == Active {
+            // Update the validator to return its power to Tendermint for this block.
+            self.update_tm_validator(&validator.identity_key, power)
+                .await?;
+        } else {
+            return Err(anyhow::anyhow!(
+                "new validators should only be Active/Inactive"
+            ));
+        }
+
         Ok(())
     }
 
@@ -1109,6 +1132,10 @@ pub trait View: StateExt {
     ) -> Result<Option<validator::State>> {
         self.get_domain(format!("staking/validators/{}/state", identity_key).into())
             .await
+    }
+
+    async fn block_validator_updates(&self) -> Result<Vec<ValidatorUpdate>> {
+        self.get_domain("staking/validators/updates".into()).await
     }
 
     /// Convenience method to assemble a [`ValidatorStatus`].
