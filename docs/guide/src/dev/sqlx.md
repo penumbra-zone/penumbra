@@ -11,12 +11,12 @@ with a development database:
 1.  The database structure is defined in the `migrations/` directory of the
 wallet server crate.
 2.  Set the `DATABASE_URL` environment variable to point to the SQLite location.
-For instance,
-```
-export DATABASE_URL="sqlite:///tmp/pwalletd-dev-db.sqlite"
-```
-will set the shell environment variable to the same one set in the project's
-`.vscode/settings.json`.
+    For instance,
+    ```
+    export DATABASE_URL="sqlite:///tmp/pwalletd-dev-db.sqlite"
+    ```
+    will set the shell environment variable to the same one set in the project's
+    `.vscode/settings.json`.
 3.  From the `wallet-next` directory, run `cargo sqlx database setup` to create
 the database and run migrations.
 4.  From the `wallet-next` directory, run
