@@ -1,13 +1,16 @@
 use crate::Storage;
+use penumbra_proto::client::oblivious::oblivious_query_client::ObliviousQueryClient;
+use tonic::transport::Channel;
 
 pub struct Worker {
     storage: Storage,
+    client: ObliviousQueryClient<Channel>,
     // TODO: notifications (see TODOs on WalletService)
 }
 
 impl Worker {
-    pub fn new(storage: Storage) -> Self {
-        Self { storage }
+    pub fn new(storage: Storage, client: ObliviousQueryClient<Channel>) -> Self {
+        Self { storage, client }
     }
 
     pub async fn sync_to_latest(&self) -> Result<u64, anyhow::Error> {

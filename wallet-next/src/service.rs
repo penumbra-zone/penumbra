@@ -1,10 +1,11 @@
 use std::pin::Pin;
 
 use penumbra_proto::{
+    client::oblivious::oblivious_query_client::ObliviousQueryClient,
     crypto as pbc,
     wallet::{self as pb, wallet_protocol_server::WalletProtocol},
 };
-use tonic::async_trait;
+use tonic::{async_trait, transport::Channel};
 
 use crate::{Storage, Worker};
 
@@ -30,11 +31,13 @@ pub struct WalletService {
 impl WalletService {
     /// Constructs a new [`WalletService`], spawning a sync task internally.
     ///
+    /// The sync task uses the provided `client` to sync with the chain.
+    ///
     /// To create multiple [`WalletService`]s, clone the [`WalletService`] returned
     /// by this method, rather than calling it multiple times.  That way, each clone
     /// will be backed by the same scanning task, rather than each spawning its own.
-    pub fn new(storage: Storage) -> Self {
-        let worker = Worker::new(storage.clone());
+    pub fn new(storage: Storage, client: ObliviousQueryClient<Channel>) -> Self {
+        let worker = Worker::new(storage.clone(), client);
         tokio::spawn(worker.run());
 
         Self { storage }
