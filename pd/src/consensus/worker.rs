@@ -107,10 +107,6 @@ impl Worker {
             return Err(anyhow!("database already initialized"));
         }
         self.app.init_chain(&app_state).await;
-        // Note: App::commit resets internal components, so we don't need to do that ourselves.
-        let (jmt_root, _) = self.app.commit(self.storage.clone()).await?;
-
-        let app_hash = jmt_root.0.to_vec();
 
         // Extract the Tendermint validators from the app state
         //
@@ -119,6 +115,11 @@ impl Worker {
         // validators in InitChain::Response tells Tendermint that they are the initial validator
         // set. See https://docs.tendermint.com/master/spec/abci/abci.html#initchain
         let validators = self.app.tm_validator_updates().await?;
+
+        // Note: App::commit resets internal components, so we don't need to do that ourselves.
+        let (jmt_root, _) = self.app.commit(self.storage.clone()).await?;
+
+        let app_hash = jmt_root.0.to_vec();
 
         tracing::info!(
             consensus_params = ?init_chain.consensus_params,

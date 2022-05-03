@@ -15,27 +15,26 @@ WORKDIR /usr/src
 # how big they are but for the distributed images we likely want to use
 # a simpler Dockerfile.
 COPY Cargo.toml .
-RUN mkdir -p pcli/src pcli-next/src pd/src storage/src component/src &&\
+RUN mkdir -p pcli/src pcli-next/src pd/src &&\
     echo "fn main() {}" > pcli/src/main.rs &&\
     echo "fn main() {}" > pcli-next/src/main.rs &&\
-    echo "fn main() {}" > pd/src/main.rs &&\
-    touch storage/src/lib.rs &&\
-    touch component/src/lib.rs
+    echo "fn main() {}" > pd/src/main.rs
 COPY pcli/build.rs ./pcli
 COPY pcli/Cargo.toml ./pcli
 COPY pcli-next/build.rs ./pcli-next
 COPY pcli-next/Cargo.toml ./pcli-next
 COPY pd/Cargo.toml ./pd
 COPY pd/build.rs ./pd
-COPY storage/Cargo.toml ./storage
-COPY component/Cargo.toml ./component
 # TODO If the protobuf definitions, crypto, or wallet implementations change,
 # there will be a complete rebuild. This is maybe possible to avoid.
 COPY proto ./proto
 COPY chain ./chain
 COPY crypto ./crypto
+COPY shielded-pool ./shielded-pool
 COPY ibc ./ibc
 COPY stake ./stake
+COPY component ./component
+COPY storage ./storage
 COPY tct ./tct
 COPY decaf377-fmd ./decaf377-fmd
 COPY decaf377-ka ./decaf377-ka
@@ -46,6 +45,7 @@ COPY wallet-next ./wallet-next
 COPY testnets ./testnets
 COPY .git ./.git
 COPY testnets ./testnets
+COPY .cargo ./.cargo
 # Sorry about all that mess ^, but it's worth it during development.
 
 # Fetch dependencies in a separate layer, so that they can be cached.
