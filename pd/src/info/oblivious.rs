@@ -137,7 +137,7 @@ impl ObliviousQuery for Info {
         let block_range = try_stream! {
             // It's useful to record the end height since we adjusted it,
             // but the start height is already recorded in the span.
-            tracing::info!(
+            tracing::debug!(
                 end_height,
                 num_blocks = end_height.saturating_sub(start_height),
                 "starting compact_block_range response"
