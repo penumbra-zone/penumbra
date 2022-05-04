@@ -331,7 +331,10 @@ async fn main() -> anyhow::Result<()> {
                 let delegation_denom = DelegationToken::from(&identity_key).denom();
                 allocations.push(Allocation {
                     address: dest,
-                    amount: 1_000_000, // 1e6 udelegation tokens
+                    // Add an initial allocation of 50,000 delegation tokens,
+                    // starting them with 50x the individual allocations to discord users.
+                    // 50,000 delegation tokens * 1e6 udelegation factor
+                    amount: 50_000__000_000,
                     denom: delegation_denom.to_string(),
                 });
 
