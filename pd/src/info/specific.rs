@@ -79,9 +79,11 @@ impl SpecificQuery for Info {
         let rate_data = state
             .next_validator_rate(&identity_key)
             .await
-            .map_err(|e| tonic::Status::internal(e.to_string()))?
-            .unwrap();
+            .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
-        Ok(tonic::Response::new(rate_data.into()))
+        match rate_data {
+            Some(r) => Ok(tonic::Response::new(r.into())),
+            None => Err(Status::not_found("next validator rate not found")),
+        }
     }
 }
