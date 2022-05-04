@@ -348,7 +348,7 @@ impl Staking {
                         .set_validator_state(
                             &vp.identity_key,
                             validator::State::Unbonding {
-                                unbonding_epoch: unbonding_epochs,
+                                unbonding_epoch: epoch_to_end.index + unbonding_epochs,
                             },
                         )
                         .await?;
