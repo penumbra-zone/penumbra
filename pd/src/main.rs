@@ -62,10 +62,10 @@ enum Command {
         #[structopt(long, default_value = "40")]
         epoch_duration: u64,
         /// Number of epochs before unbonding stake is released.
-        #[structopt(long, default_value = "40")]
+        #[structopt(long, default_value = "2")]
         unbonding_epochs: u64,
         /// Maximum number of validators in the consensus set.
-        #[structopt(long, default_value = "10")]
+        #[structopt(long, default_value = "32")]
         active_validator_limit: u64,
         /// Whether to preserve the chain ID (useful for public testnets) or append a random suffix (useful for dev/testing).
         #[structopt(long)]
