@@ -122,7 +122,7 @@ impl Default for ChainParams {
             slashing_penalty_downtime_bps: 1,
             // 3bps -> 11% return over 365 epochs
             base_reward_rate: 3_0000,
-            ibc_enabled: false,
+            ibc_enabled: true,
             inbound_ics20_transfers_enabled: false,
             outbound_ics20_transfers_enabled: false,
         }
