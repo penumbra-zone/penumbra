@@ -1,5 +1,6 @@
 syntax = "proto3";
 package penumbra.transparent_proofs;
+option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
 
 // A Penumbra transparent Spend Proof.
 message SpendProof {
