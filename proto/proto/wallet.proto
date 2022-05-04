@@ -1,6 +1,8 @@
 syntax = "proto3";
 package penumbra.wallet;
 
+option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
+
 import "transaction.proto";
 import "crypto.proto";
 

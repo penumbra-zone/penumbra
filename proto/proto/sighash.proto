@@ -1,5 +1,6 @@
 syntax = "proto3";
 package penumbra.sighash;
+option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
 
 import "transaction.proto";
 import "stake.proto";
