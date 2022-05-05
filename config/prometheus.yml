@@ -4,7 +4,8 @@ scrape_configs:
     scheme: http
     metrics_path: metrics
     static_configs:
-      - targets: ['tendermint:26660']
+      # TODO: The hostname isn't working here, but the IP is hardcoded in docker-compose.yml so this works for now
+      - targets: ['192.167.10.11:26660']
   # NOTE: `pd` doesn't actually expose metrics yet, so this doesn't actually do
   # anything interesting...
   - job_name: 'Penumbra Daemon'
@@ -12,4 +13,4 @@ scrape_configs:
     scheme: http
     metrics_path: metrics
     static_configs:
-      - targets: ['pd:9096']
+      - targets: ['192.167.10.10:9096']
