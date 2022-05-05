@@ -1,8 +1,8 @@
 -- Application state, stored in single-row tables
-CREATE TABLE chain_params (bytes BLOB);
-CREATE TABLE full_viewing_key (bytes BLOB);
-CREATE TABLE sync_height (height BIGINT);
-CREATE TABLE note_commitment_tree (bytes BLOB);
+CREATE TABLE chain_params (bytes BLOB NOT NULL);
+CREATE TABLE full_viewing_key (bytes BLOB NOT NULL);
+CREATE TABLE sync_height (height BIGINT NOT NULL);
+CREATE TABLE note_commitment_tree (bytes BLOB NOT NULL);
 
 -- Minimal data required for balance tracking
 CREATE TABLE notes (

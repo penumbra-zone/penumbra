@@ -1,5 +1,33 @@
 {
   "db": "SQLite",
+  "0c9654cf156210edda72a63b80ad55cc1cd772f6ab83660307167aa3d2e8b094": {
+    "query": "UPDATE notes SET height_spent = ? WHERE nullifier = ? RETURNING note_commitment",
+    "describe": {
+      "columns": [
+        {
+          "name": "note_commitment",
+          "ordinal": 0,
+          "type_info": "Blob"
+        }
+      ],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "305580649ec6471af1f6691eb228cb960c5923a36187ac1fc82af55242be85d0": {
+    "query": "INSERT INTO notes\n                    (\n                        note_commitment,\n                        height_spent,\n                        height_created,\n                        diversifier,\n                        amount,\n                        asset_id,\n                        transmission_key,\n                        blinding_factor,\n                        diversifier_index,\n                        nullifier\n                    )\n                    VALUES \n                    (\n                        ?,\n                        NULL,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?\n                    )",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 9
+      },
+      "nullable": []
+    }
+  },
   "63aad4faac1ffefd5525595f9ca5a82186181368251da9fbacf65a4d48671a01": {
     "query": "\n            SELECT bytes\n            FROM full_viewing_key\n            LIMIT 1\n            ",
     "describe": {
@@ -14,7 +42,7 @@
         "Right": 0
       },
       "nullable": [
-        true
+        false
       ]
     }
   },
@@ -32,8 +60,18 @@
         "Right": 0
       },
       "nullable": [
-        true
+        false
       ]
+    }
+  },
+  "b4a0b026cd41003d66ec3ff1f104d89aee4ff22f10f1e7d20aa59dab4354b6ed": {
+    "query": "UPDATE note_commitment_tree SET bytes = ?",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": []
     }
   },
   "d437ce2946cba91cd0e4fa750f14d227c2caa78e6bd69ed475f7b0679914c897": {
@@ -50,7 +88,7 @@
         "Right": 0
       },
       "nullable": [
-        true
+        false
       ]
     }
   },
@@ -68,7 +106,7 @@
         "Right": 0
       },
       "nullable": [
-        true
+        false
       ]
     }
   }

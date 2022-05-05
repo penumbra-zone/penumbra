@@ -9,7 +9,7 @@ use penumbra_transaction::action::output;
 use crate::NoteRecord;
 
 /// Contains the results of scanning a single block.
-struct ScanResult {
+pub struct ScanResult {
     // write as new rows
     pub new_notes: Vec<NoteRecord>,
     // use to update existing rows
