@@ -25,7 +25,7 @@ penumbra-shielded-pool = { path = "../shielded-pool" }
 
 # Penumbra dependencies
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
-tower-abci = { git = "https://github.com/penumbra-zone/tower-abci/", branch =  "with-tendermintrs-24" }
+tower-abci = { git = "https://github.com/penumbra-zone/tower-abci/", branch =  "main" }
 jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "main" }
 
 
