@@ -2866,6 +2866,7 @@ dependencies = [
  "bytes",
  "directories",
  "futures",
+ "hex",
  "penumbra-chain",
  "penumbra-crypto",
  "penumbra-proto",
