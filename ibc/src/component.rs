@@ -8,7 +8,7 @@ mod connection;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use client::ClientComponent;
+use client::Ics2Client;
 use penumbra_chain::genesis;
 use penumbra_component::Component;
 use penumbra_storage::State;
@@ -17,7 +17,7 @@ use tendermint::abci;
 use tracing::instrument;
 
 pub struct IBCComponent {
-    client: client::ClientComponent,
+    client: client::Ics2Client,
     connection: connection::ConnectionComponent,
 
     enabled: bool,
@@ -27,7 +27,7 @@ pub struct IBCComponent {
 impl Component for IBCComponent {
     #[instrument(name = "ibc", skip(state))]
     async fn new(state: State) -> Self {
-        let client = ClientComponent::new(state.clone()).await;
+        let client = Ics2Client::new(state.clone()).await;
         let connection = connection::ConnectionComponent::new(state.clone()).await;
 
         Self {
@@ -53,7 +53,7 @@ impl Component for IBCComponent {
 
     #[instrument(name = "ibc", skip(tx))]
     fn check_tx_stateless(tx: &Transaction) -> Result<()> {
-        client::ClientComponent::check_tx_stateless(tx)?;
+        client::Ics2Client::check_tx_stateless(tx)?;
         connection::ConnectionComponent::check_tx_stateless(tx)?;
 
         Ok(())
