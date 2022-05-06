@@ -63,13 +63,25 @@ impl Component for ConnectionComponent {
                     version_is_supported(&msg)?;
                 }
                 Some(ConnectionOpenTry(msg)) => {
-                    let _ = MsgConnectionOpenTry::try_from(msg.clone())?;
+                    use stateless::connection_open_try::*;
+                    let msg = MsgConnectionOpenTry::try_from(msg.clone())?;
+
+                    has_client_state(&msg)?;
+                    has_client_proof(&msg)?;
+                    has_consensus_proof(&msg)?;
                 }
                 Some(ConnectionOpenAck(msg)) => {
-                    let _ = MsgConnectionOpenAck::try_from(msg.clone())?;
+                    use stateless::connection_open_ack::*;
+                    let msg = MsgConnectionOpenAck::try_from(msg.clone())?;
+
+                    has_client_state(&msg)?;
+                    has_client_proof(&msg)?;
+                    has_consensus_proof(&msg)?;
                 }
 
                 Some(ConnectionOpenConfirm(msg)) => {
+                    // NOTE: other than that the message is a well formed ConnectionOpenConfirm,
+                    // there is no other stateless validation to perform.
                     let _ = MsgConnectionOpenConfirm::try_from(msg.clone())?;
                 }
 
