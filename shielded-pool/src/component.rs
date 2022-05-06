@@ -278,10 +278,7 @@ impl ShieldedPool {
             .map(|b| b.frontier().position().into())
             // If there are no bridges, the tree is empty
             .unwrap_or(0u64);
-        tracing::debug!(
-            ?position,
-            "using NCT position for uniqueness in minted note"
-        );
+
         let blinding_factor = Fq::from_le_bytes_mod_order(
             blake2b_simd::Params::default()
                 .personal(b"PenumbraMint")
