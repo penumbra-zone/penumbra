@@ -39,7 +39,7 @@ services:
       - '3000'
     volumes:
       - "grafana_configs:/etc/grafana"
-      - "grafana_dashboards:/var/lib/grafana/dashboards"
+      - "grafana_data:/var/lib/grafana"
     networks:
       - monitoring
     depends_on:
