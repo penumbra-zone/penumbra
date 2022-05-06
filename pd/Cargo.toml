@@ -31,8 +31,19 @@ jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = 
 
 # External dependencies
 tendermint-config = "0.24.0-pre.1"
-tendermint-proto = "0.24.0-pre.1"
-tendermint = "0.24.0-pre.1"
+# These are = dependencies to force the whole workspace's dependency tree to go
+# back onto 0.24.0-pre.1, which, unlike 0.24.0-pre.2, doesn't have
+# ecosystem-incompatible breaking changes to the prost version.
+#
+# Longer-term, we can't rely on the upstream to publish versions, so we should plan
+# to fork the crates and maintain our fork.
+tendermint-proto = "=0.24.0-pre.1"
+tendermint = "=0.24.0-pre.1"
+# We don't need this crate at all, but its upstream published a breaking change as
+# 0.7.1 (also prost-related), and depending on an exact version here will exclude
+# the bad update until it's yanked.
+ics23 = "=0.7.0"
+
 ark-ff = "0.3"
 async-stream = "0.2"
 bincode = "1.3.3"
