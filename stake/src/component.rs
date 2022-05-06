@@ -398,8 +398,6 @@ impl Staking {
 
     #[instrument(skip(self, last_commit_info))]
     async fn track_uptime(&mut self, last_commit_info: &LastCommitInfo) -> Result<()> {
-        tracing::debug!(?last_commit_info);
-
         // Note: this probably isn't the correct height for the LastCommitInfo,
         // which is about the *last* commit, but at least it'll be consistent,
         // which is all we need to count signatures.

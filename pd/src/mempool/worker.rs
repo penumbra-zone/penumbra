@@ -72,7 +72,6 @@ impl Worker {
                         rsp_sender,
                         span,
                     }) = message {
-                        // ... and then execute it if it was valid.
                         let _ = rsp_sender.send(
                             self.check_and_execute_tx(tx_bytes)
                                 .instrument(span)
