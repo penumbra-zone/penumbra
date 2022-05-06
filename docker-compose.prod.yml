@@ -63,7 +63,7 @@ services:
 volumes:
   prometheus_data: {}
   grafana_configs: {}
-  grafana_dashboards: {}
+  grafana_data: {}
 
 networks:
   # add a separate network for grafana and prometheus to talk to each other.
