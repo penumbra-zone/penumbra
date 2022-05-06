@@ -15,7 +15,7 @@ use penumbra_proto::{
 use penumbra_shielded_pool::View as _;
 use penumbra_stake::{component::View as _, validator};
 use tonic::Status;
-use tracing::instrument;
+use tracing::{instrument, Instrument};
 
 // TODO(hdevalence): this still doesn't work, giving up for now
 // We need to use the tracing-futures version of Instrument,
@@ -134,20 +134,28 @@ impl ObliviousQuery for Info {
             std::cmp::min(end_height, current_height)
         };
 
+        // We want any events that happen to occur in the context of the
+        // current span, but the stream macro doesn't play well with Instrument,
+        // so instead just patch it up as best as we can
+        let span = tracing::Span::current();
         let block_range = try_stream! {
             // It's useful to record the end height since we adjusted it,
             // but the start height is already recorded in the span.
-            tracing::debug!(
-                end_height,
-                num_blocks = end_height.saturating_sub(start_height),
-                "starting compact_block_range response"
+            span.in_scope(||
+                tracing::debug!(
+                    end_height,
+                    num_blocks = end_height.saturating_sub(start_height),
+                    "starting compact_block_range response"
+                )
             );
             for height in start_height..end_height {
                 let block = state.compact_block(height)
+                    .instrument(span.clone())
                     .await?
                     .expect("compact block for in-range height must be present");
                 yield block.to_proto();
             }
+            span.in_scope(|| tracing::debug!("finished compact_block_range response"));
         };
 
         Ok(tonic::Response::new(
