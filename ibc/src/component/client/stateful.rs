@@ -34,7 +34,7 @@ pub mod update_client {
 
             // Optimization: reject duplicate updates instead of verifying them.
             if self
-                .update_is_already_committed(&client_data.client_id, &untrusted_header)
+                .update_is_already_committed(&client_data.client_id, untrusted_header)
                 .await?
             {
                 // If the update is already committed, return an error to reject a duplicate update.
@@ -43,8 +43,8 @@ pub mod update_client {
                 ));
             }
 
-            header_revision_matches_client_state(&trusted_client_state, &untrusted_header)?;
-            header_height_is_consistent(&untrusted_header)?;
+            header_revision_matches_client_state(&trusted_client_state, untrusted_header)?;
+            header_height_is_consistent(untrusted_header)?;
 
             // The (still untrusted) header uses the `trusted_height` field to
             // specify the trusted anchor data it is extending.
@@ -65,14 +65,14 @@ pub mod update_client {
                 .map_err(|_| anyhow::anyhow!("invalid header height"))?;
 
             let trusted_validator_set =
-                verify_header_validator_set(&untrusted_header, &last_trusted_consensus_state)?;
+                verify_header_validator_set(untrusted_header, &last_trusted_consensus_state)?;
 
             // Now we build the trusted and untrusted states to feed to the Tendermint light client.
 
             let trusted_state = TrustedBlockState {
                 header_time: last_trusted_consensus_state.timestamp,
                 height: trusted_height,
-                next_validators: &trusted_validator_set,
+                next_validators: trusted_validator_set,
                 next_validators_hash: last_trusted_consensus_state.next_validators_hash,
             };
 
