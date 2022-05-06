@@ -16,6 +16,7 @@ use tendermint::{
 use tokio::sync::{mpsc, oneshot, watch};
 use tokio_util::sync::PollSender;
 use tower_abci::BoxError;
+use tracing::Instrument;
 
 use super::{Message, Worker};
 use crate::RequestExt;
@@ -70,7 +71,7 @@ impl tower::Service<MempoolRequest> for Mempool {
             .send_item(Message {
                 tx_bytes,
                 rsp_sender: tx,
-                span,
+                span: span.clone(),
             })
             .expect("called without `poll_ready`");
 
@@ -79,14 +80,21 @@ impl tower::Service<MempoolRequest> for Mempool {
                 .await
                 .map_err(|_| anyhow::anyhow!("mempool worker terminated or panicked"))?
             {
-                Ok(()) => Ok(MempoolResponse::CheckTx(CheckTxRsp::default())),
-                Err(e) => Ok(MempoolResponse::CheckTx(CheckTxRsp {
-                    code: 1,
-                    log: e.to_string(),
-                    ..Default::default()
-                })),
+                Ok(()) => {
+                    tracing::info!("tx accepted");
+                    Ok(MempoolResponse::CheckTx(CheckTxRsp::default()))
+                }
+                Err(e) => {
+                    tracing::info!(?e, "tx rejected");
+                    Ok(MempoolResponse::CheckTx(CheckTxRsp {
+                        code: 1,
+                        log: e.to_string(),
+                        ..Default::default()
+                    }))
+                }
             }
         }
+        .instrument(span)
         .boxed()
     }
 }

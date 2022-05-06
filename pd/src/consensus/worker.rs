@@ -63,13 +63,22 @@ impl Worker {
                         .expect("begin_block must succeed"),
                 ),
                 Request::DeliverTx(deliver_tx) => {
-                    Response::DeliverTx(match self.deliver_tx(deliver_tx).instrument(span).await {
-                        Ok(()) => abci::response::DeliverTx::default(),
-                        Err(e) => abci::response::DeliverTx {
-                            code: 1,
-                            log: e.to_string(),
-                            ..Default::default()
-                        },
+                    let rsp = self.deliver_tx(deliver_tx).instrument(span.clone()).await;
+                    span.in_scope(|| {
+                        Response::DeliverTx(match rsp {
+                            Ok(()) => {
+                                tracing::info!("deliver_tx succeeded");
+                                abci::response::DeliverTx::default()
+                            }
+                            Err(e) => {
+                                tracing::info!(?e, "deliver_tx failed");
+                                abci::response::DeliverTx {
+                                    code: 1,
+                                    log: e.to_string(),
+                                    ..Default::default()
+                                }
+                            }
+                        })
                     })
                 }
                 Request::EndBlock(end_block) => Response::EndBlock(
