@@ -1,0 +1,62 @@
+# One day, this would be better handled via pushing Docker images up
+# and using Kubernetes or similar, but this will work for now.
+name: Deploy Testnet
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - '[0-9][0-9][0-9]-*'
+
+jobs:
+
+  deploy:
+    name: Trigger Deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: testnet-preview
+    steps:
+    - name: Update git repository
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.TESTNET_HOST }}
+        username: ${{ secrets.TUNNEL_USERNAME }}
+        key: ${{ secrets.ID_ED25519 }}
+        port: ${{ secrets.TUNNEL_PORT }}
+        script: |
+          cd ~/penumbra
+          git checkout main
+          git pull
+          cargo update
+    - name: Delete existing state
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.TESTNET_HOST }}
+        username: ${{ secrets.TUNNEL_USERNAME }}
+        key: ${{ secrets.ID_ED25519 }}
+        port: ${{ secrets.TUNNEL_PORT }}
+        script: |
+          cd ~/penumbra
+          docker-compose stop
+          rm -rf ~/.penumbra/testnet_data/
+    - name: Generate testnet
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.TESTNET_HOST }}
+        username: ${{ secrets.TUNNEL_USERNAME }}
+        key: ${{ secrets.ID_ED25519 }}
+        port: ${{ secrets.TUNNEL_PORT }}
+        script: |
+          cd ~/penumbra
+          cargo run --release --bin pd -- generate-testnet --preserve-chain-id
+          chmod -R 777 ~/.penumbra/testnet_data
+    - name: Restart deployment
+      uses: appleboy/ssh-action@master
+      timeout-minutes: 30
+      with:
+        host: ${{ secrets.TESTNET_HOST }}
+        username: ${{ secrets.TUNNEL_USERNAME }}
+        key: ${{ secrets.ID_ED25519 }}
+        port: ${{ secrets.TUNNEL_PORT }}
+        script: |
+          cd ~/penumbra
+          docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
