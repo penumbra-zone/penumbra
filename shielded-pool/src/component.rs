@@ -243,13 +243,23 @@ impl Component for ShieldedPool {
 }
 
 impl ShieldedPool {
-    #[instrument(skip(self))]
+    #[instrument(
+        skip(self, value, address, source),
+        fields(
+            position = self.note_commitment_tree
+                .bridges()
+                .last()
+                .map(|b| b.frontier().position().into())
+                .unwrap_or(0u64),
+        )
+    )]
     async fn mint_note(
         &mut self,
         value: Value,
         address: &Address,
         source: NoteSource,
     ) -> Result<()> {
+        tracing::debug!(?value, ?address, "minting tokens");
         // These notes are public, so we don't need a blinding factor for privacy,
         // but since the note commitments are determined by the note contents, we
         // need to have unique (deterministic) blinding factors for each note, so they
@@ -295,8 +305,6 @@ impl ShieldedPool {
             blinding_factor,
         )?;
         let note_commitment = note.commit();
-
-        tracing::debug!(?note_commitment, "minted tokens");
 
         // Scanning assumes that notes are encrypted, so we need to create
         // note ciphertexts, even if the plaintexts are known.  Use the key
@@ -391,7 +399,7 @@ pub trait View: StateExt {
             .await
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self, change))]
     async fn update_token_supply(&self, asset_id: &asset::Id, change: i64) -> Result<()> {
         let key = format!("shielded_pool/assets/{}/token_supply", asset_id).into();
         let current_supply = match self.get_proto(key).await {
@@ -423,7 +431,7 @@ pub trait View: StateExt {
                 )
             })?
         };
-        tracing::debug!(?current_supply, ?new_supply);
+        tracing::debug!(?current_supply, ?new_supply, ?change);
 
         self.put_proto(key, new_supply).await;
         Ok(())
