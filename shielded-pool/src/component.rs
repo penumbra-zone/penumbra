@@ -322,9 +322,9 @@ impl ShieldedPool {
         Ok(())
     }
 
-    #[instrument(skip(self, source, output_body))]
+    #[instrument(skip(self, source, output_body), fields(note_commitment = ?output_body.note_commitment))]
     async fn add_note(&mut self, output_body: output::Body, source: NoteSource) {
-        tracing::debug!(commitment = ?output_body.note_commitment, "appending to NCT in component");
+        tracing::debug!("adding note");
         // 1. Insert it into the NCT
         self.note_commitment_tree
             .append(&output_body.note_commitment);
@@ -530,8 +530,9 @@ pub trait View: StateExt {
         }
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self, source))]
     async fn spend_nullifier(&self, nullifier: Nullifier, source: NoteSource) {
+        tracing::debug!("marking as spent");
         self.put_proto(
             format!("shielded_pool/spent_nullifiers/{}", nullifier).into(),
             // We don't use the value for validity checks, but writing the source
