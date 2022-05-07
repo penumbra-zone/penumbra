@@ -327,7 +327,9 @@ impl Staking {
                         .await;
 
                     // The validator should no longer be Unbonding if it was
-                    // TODO: clear unbonding for the validator
+                    self.state
+                        .clear_validator_unbonding_status(&vp.identity_key)
+                        .await?;
 
                     let validator = self
                         .state
@@ -1045,10 +1047,7 @@ pub trait View: StateExt {
         match state {
             validator::State::Slashed => match cur_state {
                 validator::State::Active => {}
-                validator::State::Inactive => {
-                    // TODO: is it only possible for Unbonding && Inactive validators to be slashed?
-                    // Do we need to check the unbonding status here as well?
-                }
+                validator::State::Inactive => {}
                 _ => {
                     return Err(anyhow::anyhow!(
                         "only validators in the active or inactive state may be slashed"
@@ -1056,11 +1055,7 @@ pub trait View: StateExt {
                 }
             },
             validator::State::Active => match cur_state {
-                validator::State::Inactive => {
-                    // TODO: ensure the validator isn't currently unbonding --
-                    // clearing unbonding status should be handled separately prior to
-                    // the state transition
-                }
+                validator::State::Inactive => {}
                 _ => {
                     return Err(anyhow::anyhow!(
                         "only validators in the inactive state may become Active"
@@ -1228,7 +1223,7 @@ pub trait View: StateExt {
         &self,
         identity_key: &IdentityKey,
     ) -> Result<Option<validator::Status>> {
-        // TODO: replace w/ using the higher level `ValidatorStatus` struct
+        // TODO: replace w/ using the higher level `ValidatorStatus` struct to store all this data together
         let unbonding_status = self.validator_unbonding_status(identity_key).await?;
         let state = self.validator_state(identity_key).await?;
         let power = self.validator_power(identity_key).await?;
@@ -1284,6 +1279,14 @@ pub trait View: StateExt {
         self.put_domain(
             format!("staking/validator_uptime/{}", identity_key).into(),
             uptime,
+        )
+        .await
+    }
+
+    async fn clear_validator_unbonding_status(&self, identity_key: &IdentityKey) {
+        self.put_domain(
+            format!("staking/validators/{}/unbonding_status", identity_key).into(),
+            None,
         )
         .await
     }

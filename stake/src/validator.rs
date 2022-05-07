@@ -5,19 +5,19 @@ use serde::{Deserialize, Serialize};
 
 use crate::{FundingStream, FundingStreams, IdentityKey};
 
+mod bonding;
 mod definition;
 mod info;
 mod list;
 mod state;
 mod status;
-mod unbonding;
 
+pub use bonding::State as BondingState;
 pub use definition::Definition;
 pub use info::Info;
 pub use list::List;
 pub use state::State;
 pub use status::Status;
-pub use unbonding::Status as UnbondingStatus;
 
 /// Describes a Penumbra validator's configuration data.
 ///

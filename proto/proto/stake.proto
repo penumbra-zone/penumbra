@@ -61,10 +61,14 @@ message ValidatorStatus {
   optional UnbondingStatus unbonding_status = 4;
 }
 
-// Represents when an unbonding validator will finish.
-message UnbondingStatus {
-  uint64 start_epoch = 1;
-  uint64 unbonding_epoch = 2;
+// Describes the unbonding state of a validator's stake pool.
+message BondingState {
+  enum BondingStateEnum {
+    BONDING = 0;
+    UNBONDING = 1;
+    UNBONDED = 2;
+  }
+  BondingStateEnum state = 1;
 }
 
 // Describes the state of a validator
