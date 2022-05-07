@@ -278,12 +278,14 @@ impl StakeCmd {
                 table.load_preset(presets::NOTHING);
                 table.set_header(vec![
                     "Voting Power",
+                    "Share",
                     "Commission",
                     "State",
                     "Validator Info",
                 ]);
 
                 for v in validators {
+                    let voting_power = (v.status.voting_power as f64) * 1e-6; // apply udelegation factor
                     let power_percent = 100.0 * (v.status.voting_power as f64) / total_voting_power;
                     let commission_bps = v
                         .validator
@@ -294,29 +296,35 @@ impl StakeCmd {
                         .sum::<u16>();
 
                     table.add_row(vec![
+                        format!("{:.3}", voting_power),
                         format!("{:.2}%", power_percent),
                         format!("{}bps", commission_bps),
                         v.status.state.to_string(),
-                        v.validator.name,
+                        // TODO: consider rewriting this with term colors
+                        // at some point, when we get around to it
+                        format!("\x1b[1;31m{}\x1b[0m", v.validator.identity_key),
                     ]);
                     table.add_row(vec![
                         "".into(),
                         "".into(),
                         "".into(),
-                        format!("  {}", v.validator.identity_key),
+                        "".into(),
+                        format!("  \x1b[1;92m{}\x1b[0m", v.validator.name),
                     ]);
                     if *detailed {
                         table.add_row(vec![
                             "".into(),
                             "".into(),
                             "".into(),
-                            format!("  {}", v.validator.website),
+                            "".into(),
+                            format!("  {}", v.validator.description),
                         ]);
                         table.add_row(vec![
                             "".into(),
                             "".into(),
                             "".into(),
-                            format!("  {}", v.validator.description),
+                            "".into(),
+                            format!("  {}", v.validator.website),
                         ]);
                     }
                 }
