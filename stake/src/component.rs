@@ -338,6 +338,18 @@ impl Staking {
                         .ok_or_else(|| anyhow::anyhow!("validator missing"))?;
                     // The now-Active validator should report its voting power to tendermint this block
                     self.update_tm_validator_power(&validator.consensus_key, vp.power)?;
+                    continue;
+                }
+
+                if let validator::State::Unbonding { unbonding_epoch } = vp.state {
+                    if unbonding_epoch <= epoch_to_end.index {
+                        // An Unbonding validator can become Inactive if the unbonding period expires
+                        // and the validator is still in Unbonding state
+                        tracing::debug!(identity_key = ?vp.identity_key, "validator unbonding period over and validator entering inactive state");
+                        self.state
+                            .set_validator_state(&vp.identity_key, validator::State::Inactive)
+                            .await?;
+                    }
                 }
             } else if vp.state == validator::State::Active {
                 // An Active validator could also be displaced and move to the
@@ -377,17 +389,6 @@ impl Staking {
                     self.update_tm_validator_power(&validator.consensus_key, power)?;
                 }
             }
-
-            // An Unbonding validator can stop unbonding if the unbonding period expires
-            // TODO: implement
-            // if let validator::State::Unbonding { unbonding_epoch } = vp.state {
-            //     if unbonding_epoch <= epoch_to_end.index {
-            //         tracing::debug!(identity_key = ?vp.identity_key, "validator unbonding period over and validator entering inactive state");
-            //         self.state
-            //             .set_validator_state(&vp.identity_key, validator::State::Inactive)
-            //             .await?;
-            //     }
-            // };
         }
 
         Ok(())
