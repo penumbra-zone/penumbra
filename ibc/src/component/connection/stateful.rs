@@ -68,10 +68,8 @@ pub mod connection_open_confirm {
             let client_def = AnyClient::from_client_type(trusted_client_state.client_type());
 
             // PROOF VERIFICATION
-            // note: here we only verify connection state inclusion, not client state or consensus
-            // state.
-            //
-            // 1. verify that the counterparty chain committed the expected_conn to its state
+            // in connectionOpenConfirm, only the inclusion of the connection state must be
+            // verified, not the client or consensus states.
             client_def.verify_connection_state(
                 &trusted_client_state,
                 msg.proofs.height(),
