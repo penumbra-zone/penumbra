@@ -58,6 +58,18 @@ message ValidatorStatus {
   crypto.IdentityKey identity_key = 1;
   ValidatorState state = 2;
   uint64 voting_power = 3;
+  BondingState bonding_state = 4;
+}
+
+// Describes the unbonding state of a validator's stake pool.
+message BondingState {
+  enum BondingStateEnum {
+    BONDED = 0;
+    UNBONDING = 1;
+    UNBONDED = 2;
+  }
+  BondingStateEnum state = 1;
+  optional uint64 unbonding_epoch = 2;
 }
 
 // Describes the state of a validator
@@ -65,11 +77,9 @@ message ValidatorState {
   enum ValidatorStateEnum {
     INACTIVE = 0;
     ACTIVE = 1;
-    UNBONDING = 2;
-    SLASHED = 3;
+    SLASHED = 2;
   }
   ValidatorStateEnum state = 1;
-  optional uint64 unbonding_epoch = 2;
 }
 
 

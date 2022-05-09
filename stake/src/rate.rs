@@ -29,6 +29,7 @@ impl RateData {
         &self,
         base_rate_data: &BaseRateData,
         funding_streams: &[FundingStream],
+        // TODO: pass ValidatorStatus here so we can see if the validator is unbonding
         validator_state: &State,
     ) -> RateData {
         let prev = self;
@@ -56,9 +57,10 @@ impl RateData {
             State::Inactive => {
                 return constant_rate;
             }
-            State::Unbonding { unbonding_epoch: _ } => {
-                return constant_rate;
-            }
+            // TODO: if validator is unbonding they need a constant rate!!
+            // State::Unbonding { unbonding_epoch: _ } => {
+            //     return constant_rate;
+            // }
             State::Active => {}
         };
 
