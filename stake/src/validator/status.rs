@@ -1,7 +1,7 @@
 use penumbra_proto::{stake as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
-use crate::{validator::State, validator::UnbondingStatus, IdentityKey};
+use crate::{validator::BondingState, validator::State, IdentityKey};
 
 /// The current status of a validator, including its identity, voting power, and state in the
 /// validator state machine.
@@ -18,8 +18,8 @@ pub struct Status {
     pub voting_power: u64,
     /// The validator's current state.
     pub state: State,
-    /// Will be `Some(UnbondingStatus)` if the validator is currently unbonding.
-    pub unbonding_status: Option<UnbondingStatus>,
+    /// Represents the bonding status of the validator's stake pool.
+    pub bonding_state: BondingState,
 }
 
 impl Protobuf<pb::ValidatorStatus> for Status {}
@@ -29,7 +29,7 @@ impl From<Status> for pb::ValidatorStatus {
         pb::ValidatorStatus {
             identity_key: Some(v.identity_key.into()),
             voting_power: v.voting_power,
-            unbonding_status: v.unbonding_status.map(Into::into),
+            bonding_state: Some(v.bonding_state.into()),
             state: Some(match v.state {
                 State::Inactive => pb::ValidatorState {
                     state: pb::validator_state::ValidatorStateEnum::Inactive as i32,
@@ -65,10 +65,10 @@ impl TryFrom<pb::ValidatorStatus> for Status {
                 .try_into()?,
             voting_power: v.voting_power,
             state,
-            unbonding_status: v.unbonding_status.map(|status| UnbondingStatus {
-                start_epoch: status.start_epoch,
-                unbonding_epoch: status.unbonding_epoch,
-            }),
+            bonding_state: v
+                .bonding_state
+                .expect("expected bonding state to be set on validator status")
+                .try_into()?,
         })
     }
 }

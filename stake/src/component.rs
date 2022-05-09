@@ -200,7 +200,7 @@ impl Staking {
                 current_rate.voting_power(delegation_token_supply, &current_base_rate);
             tracing::debug!(?voting_power);
 
-            // Update the status of the validator within the validator set
+            // Update the state of the validator within the validator set
             // with the newly starting epoch's calculated voting rate and power.
             self.state
                 .set_validator_rates(v, current_rate.clone(), next_rate.clone())
@@ -273,6 +273,7 @@ impl Staking {
             identity_key: IdentityKey,
             power: u64,
             state: validator::State,
+            bonding_state: validator::BondingState,
         }
 
         let mut validator_power_list = Vec::new();
@@ -287,10 +288,16 @@ impl Staking {
                 .validator_state(v)
                 .await?
                 .ok_or_else(|| anyhow::anyhow!("validator missing state"))?;
+            let bonding_state = self
+                .state
+                .validator_bonding_state(v)
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("validator missing bonding state"))?;
             validator_power_list.push(VPower {
                 identity_key: v.clone(),
                 power,
                 state,
+                bonding_state,
             });
         }
 
@@ -326,10 +333,13 @@ impl Staking {
                         .set_validator_uptime(&vp.identity_key, uptime)
                         .await;
 
-                    // The validator should no longer be Unbonding if it was
+                    // The validator's stake pool should now be bonded.
                     self.state
-                        .clear_validator_unbonding_status(&vp.identity_key)
-                        .await?;
+                        .set_validator_bonding_state(
+                            &vp.identity_key,
+                            validator::BondingState::Bonded,
+                        )
+                        .await;
 
                     let validator = self
                         .state
@@ -339,17 +349,6 @@ impl Staking {
                     // The now-Active validator should report its voting power to tendermint this block
                     self.update_tm_validator_power(&validator.consensus_key, vp.power)?;
                     continue;
-                }
-
-                if let validator::State::Unbonding { unbonding_epoch } = vp.state {
-                    if unbonding_epoch <= epoch_to_end.index {
-                        // An Unbonding validator can become Inactive if the unbonding period expires
-                        // and the validator is still in Unbonding state
-                        tracing::debug!(identity_key = ?vp.identity_key, "validator unbonding period over and validator entering inactive state");
-                        self.state
-                            .set_validator_state(&vp.identity_key, validator::State::Inactive)
-                            .await?;
-                    }
                 }
             } else if vp.state == validator::State::Active {
                 // An Active validator could also be displaced and move to the
@@ -367,12 +366,21 @@ impl Staking {
                         .validator(&vp.identity_key)
                         .await?
                         .ok_or_else(|| anyhow::anyhow!("validator missing"))?;
-                    // TODO: the validator needs to begin Unbonding
-                    // validator::State::Unbonding {
-                    //     unbonding_epoch: epoch_to_end.index + unbonding_epochs,
-                    // },
-                    // The now-Unbonding validator should report 0 voting power to tendermint this block
+
+                    // The validator's staking pool now begins Unbonding
+                    // TODO: integrate with quarantine/undelegations
+                    self.state
+                        .set_validator_bonding_state(
+                            &vp.identity_key,
+                            validator::BondingState::Unbonding {
+                                unbonding_epoch: epoch_to_end.index + unbonding_epochs,
+                            },
+                        )
+                        .await;
+
+                    // The now-Inactive validator should report 0 voting power to tendermint this block
                     self.update_tm_validator_power(&validator.consensus_key, 0)?;
+                    continue;
                 } else {
                     // This validator remains active, and we should report its latest voting
                     // power to tendermint.
@@ -387,6 +395,20 @@ impl Staking {
                         .await?
                         .ok_or_else(|| anyhow::anyhow!("active validator should have power"))?;
                     self.update_tm_validator_power(&validator.consensus_key, power)?;
+                }
+            }
+
+            // Handle changing the unbonding state of the validator's stake pool
+            // if the unbonding period has elapsed.
+            if let validator::BondingState::Unbonding { unbonding_epoch } = vp.bonding_state {
+                if unbonding_epoch <= epoch_to_end.index {
+                    tracing::debug!(identity_key = ?vp.identity_key, "validator unbonding period over and validator staking pool entering unbonded state");
+                    self.state
+                        .set_validator_bonding_state(
+                            &vp.identity_key,
+                            validator::BondingState::Unbonded,
+                        )
+                        .await;
                 }
             }
         }
@@ -421,7 +443,7 @@ impl Staking {
                 .state
                 .validator_info(v)
                 .await?
-                .ok_or_else(|| anyhow::anyhow!("validator missing status"))?;
+                .ok_or_else(|| anyhow::anyhow!("validator missing info"))?;
 
             if info.status.state == validator::State::Active {
                 // for some reason last_commit_info has truncated sha256 hashes
@@ -1211,11 +1233,11 @@ pub trait View: StateExt {
             .await
     }
 
-    async fn validator_unbonding_status(
+    async fn validator_bonding_state(
         &self,
         identity_key: &IdentityKey,
-    ) -> Result<Option<validator::UnbondingStatus>> {
-        self.get_domain(format!("staking/validators/{}/unbonding_status", identity_key).into())
+    ) -> Result<Option<validator::BondingState>> {
+        self.get_domain(format!("staking/validators/{}/bonding_state", identity_key).into())
             .await
     }
 
@@ -1225,16 +1247,16 @@ pub trait View: StateExt {
         identity_key: &IdentityKey,
     ) -> Result<Option<validator::Status>> {
         // TODO: replace w/ using the higher level `ValidatorStatus` struct to store all this data together
-        let unbonding_status = self.validator_unbonding_status(identity_key).await?;
+        let bonding_state = self.validator_bonding_state(identity_key).await?;
         let state = self.validator_state(identity_key).await?;
         let power = self.validator_power(identity_key).await?;
         let identity_key = identity_key.clone();
-        match (state, power) {
-            (Some(state), Some(voting_power)) => Ok(Some(validator::Status {
+        match (state, power, bonding_state) {
+            (Some(state), Some(voting_power), Some(bonding_state)) => Ok(Some(validator::Status {
                 identity_key,
                 state,
                 voting_power,
-                unbonding_status,
+                bonding_state,
             })),
             _ => Ok(None),
         }
@@ -1284,10 +1306,14 @@ pub trait View: StateExt {
         .await
     }
 
-    async fn clear_validator_unbonding_status(&self, identity_key: &IdentityKey) {
+    async fn set_validator_bonding_state(
+        &self,
+        identity_key: &IdentityKey,
+        state: validator::BondingState,
+    ) {
         self.put_domain(
-            format!("staking/validators/{}/unbonding_status", identity_key).into(),
-            None,
+            format!("staking/validators/{}/bonding_state", identity_key).into(),
+            state,
         )
         .await
     }
