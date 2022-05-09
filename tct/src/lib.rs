@@ -57,9 +57,6 @@ pub mod internal;
 #[cfg(not(any(doc, feature = "internal")))]
 mod internal;
 
-#[cfg(any(test, feature = "arbitrary"))]
-pub mod arbitrary;
-
 pub mod builder {
     //! Builders for individual epochs and blocks within a tree.
     //!
@@ -115,33 +112,7 @@ pub enum Witness {
     Forget,
 }
 
-/// A commitment to be stored in a [`Block`].
-///
-/// This is an element of the base field of the curve used by the Poseidon hash function
-/// instantiated for BLS12-377.
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct Commitment(#[serde(with = "crate::serialize::fq")] pub poseidon377::Fq);
-
-impl std::fmt::Debug for Commitment {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        use ark_ff::ToBytes;
-        let mut bytes = Vec::with_capacity(4 * 8);
-        self.0.write(&mut bytes).unwrap();
-        write!(f, "Commitment({})", hex::encode(&bytes[3 * 8 + 4..]))
-    }
-}
-
-impl From<Commitment> for poseidon377::Fq {
-    fn from(commitment: Commitment) -> Self {
-        commitment.0
-    }
-}
-
-impl From<poseidon377::Fq> for Commitment {
-    fn from(commitment: poseidon377::Fq) -> Self {
-        Commitment(commitment)
-    }
-}
+pub use penumbra_crypto::note::Commitment;
 
 #[cfg(test)]
 mod test {

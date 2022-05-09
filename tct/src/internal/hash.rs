@@ -126,7 +126,7 @@ impl Hash {
     /// Hash an individual item to be inserted into the tree.
     #[inline]
     pub fn of(item: Commitment) -> Hash {
-        Self(hash_1(&DOMAIN_SEPARATOR, item.into()))
+        Self(hash_1(&DOMAIN_SEPARATOR, item.0))
     }
 
     /// Construct a hash for an internal node of the tree, given its height and the hashes of its

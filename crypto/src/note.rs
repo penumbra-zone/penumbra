@@ -29,6 +29,9 @@ pub static NOTE_ENCRYPTION_NONCE: Lazy<[u8; 12]> = Lazy::new(|| [0u8; 12]);
 // Can add to this/make this an enum when we add additional types of notes.
 pub const NOTE_TYPE: u8 = 0;
 
+#[cfg(any(test, feature = "arbitrary"))]
+pub mod arbitrary;
+
 /// A plaintext Penumbra note.
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(into = "pb::Note", try_from = "pb::Note")]
