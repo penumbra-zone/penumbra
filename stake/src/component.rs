@@ -42,7 +42,7 @@ pub struct Staking {
     delegation_changes: DelegationChanges,
     /// List of changes to the tendermint validator set accumulated throughout
     /// this block, to be returned during `EndBlock`.
-    tm_validator_updates: BTreeMap<tendermint::PublicKey, u64>,
+    tm_validator_updates: BTreeMap<IdentityKey, u64>,
 }
 
 impl Staking {
@@ -404,7 +404,7 @@ impl Staking {
                         .ok_or_else(|| anyhow::anyhow!("validator missing"))?;
                     // The now-Active validator should report its voting power to tendermint this block
                     self.tm_validator_updates
-                        .insert(validator.consensus_key, vp.power);
+                        .insert(validator.identity_key, vp.power);
                     continue;
                 }
             } else if vp.state == validator::State::Active {
@@ -436,7 +436,7 @@ impl Staking {
                         .await;
 
                     // The now-Inactive validator should report 0 voting power to tendermint this block
-                    self.tm_validator_updates.insert(validator.consensus_key, 0);
+                    self.tm_validator_updates.insert(validator.identity_key, 0);
                     continue;
                 } else {
                     // This validator remains active, and we should report its latest voting
@@ -452,7 +452,7 @@ impl Staking {
                         .await?
                         .ok_or_else(|| anyhow::anyhow!("active validator should have power"))?;
                     self.tm_validator_updates
-                        .insert(validator.consensus_key, power);
+                        .insert(validator.identity_key, power);
                 }
             }
 
@@ -474,15 +474,21 @@ impl Staking {
         Ok(())
     }
 
-    // Returns the list of validator updates formatted for inclusion in the Tendermint `EndBlockResponse`
-    pub fn tm_validator_updates(&self) -> Vec<ValidatorUpdate> {
-        self.tm_validator_updates
-            .iter()
-            .map(|(ck, power)| ValidatorUpdate {
-                pub_key: ck.clone(),
+    /// Returns the list of validator updates formatted for inclusion in the Tendermint `EndBlockResponse`
+    pub async fn tm_validator_updates(&self) -> Result<Vec<ValidatorUpdate>> {
+        let mut updates = Vec::new();
+        for (identity_key, power) in &self.tm_validator_updates {
+            let validator = self
+                .state
+                .validator(identity_key)
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("queued update for missing validator"))?;
+            updates.push(ValidatorUpdate {
+                pub_key: validator.consensus_key,
                 power: (*power).try_into().unwrap(),
-            })
-            .collect()
+            });
+        }
+        Ok(updates)
     }
 
     #[instrument(skip(self, last_commit_info))]
@@ -581,7 +587,7 @@ impl Staking {
 
         // Update the validator to return its power to Tendermint for this block.
         self.tm_validator_updates
-            .insert(validator.consensus_key, power);
+            .insert(validator.identity_key.clone(), power);
 
         self.state
             .add_validator_inner(
