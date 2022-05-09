@@ -494,16 +494,42 @@ impl Staking {
     /// state with power assigned.
     async fn add_genesis_validator(
         &mut self,
+        genesis_allocations: &HashMap<&String, u64>,
+        genesis_base_rate: &BaseRateData,
         validator: Validator,
-        cur_rate_data: RateData,
-        next_rate_data: RateData,
-        power: u64,
     ) -> Result<()> {
+        // Delegations require knowing the rates for the
+        // next epoch, so pre-populate with 0 reward => exchange rate 1 for
+        // the current and next epochs.
+        let cur_rate_data = RateData {
+            identity_key: validator.identity_key.clone(),
+            epoch_index: genesis_base_rate.epoch_index,
+            validator_reward_rate: 0,
+            validator_exchange_rate: 1_0000_0000, // 1 represented as 1e8
+        };
+        let next_rate_data = RateData {
+            identity_key: validator.identity_key.clone(),
+            epoch_index: genesis_base_rate.epoch_index + 1,
+            validator_reward_rate: 0,
+            validator_exchange_rate: 1_0000_0000, // 1 represented as 1e8
+        };
+
+        // The initial allocations to the validator are specified in `genesis_allocations`.
+        // We use these to determine the initial voting power for each validator.
+        let delegation_denom = DelegationToken::from(validator.identity_key.clone())
+            .denom()
+            .to_string();
+        let total_delegation_tokens = genesis_allocations
+            .get(&delegation_denom)
+            .copied()
+            .unwrap_or(0);
+        let power = cur_rate_data.voting_power(total_delegation_tokens, &genesis_base_rate);
+
         // Update the validator to return its power to Tendermint for this block.
         self.update_tm_validator_power(&validator.consensus_key, power)?;
 
         self.state
-            .add_validator(
+            .add_validator_inner(
                 validator.clone(),
                 cur_rate_data,
                 next_rate_data,
@@ -513,7 +539,19 @@ impl Staking {
                 validator::BondingState::Bonded,
                 power,
             )
-            .await
+            .await?;
+
+        // We also need to start tracking uptime of new validators, because they
+        // start in the active state, so we need to bundle in the effects of the
+        // Inactive -> Active state transition.
+        self.state
+            .set_validator_uptime(
+                &validator.identity_key,
+                Uptime::new(0, self.state.signed_blocks_window_len().await? as usize),
+            )
+            .await;
+
+        Ok(())
     }
 
     /// Add a validator after genesis, which will start in Inactive
@@ -528,7 +566,7 @@ impl Staking {
         // as a post-genesis validator should not have power reported
         // to Tendermint until it becomes Active.
         self.state
-            .add_validator(
+            .add_validator_inner(
                 validator.clone(),
                 cur_rate_data,
                 next_rate_data,
@@ -585,7 +623,7 @@ impl Component for Staking {
         // Delegations require knowing the rates for the next epoch, so
         // pre-populate with 0 reward => exchange rate 1 for the current
         // (index 0) and next (index 1) epochs for base rate data.
-        let cur_base_rate = BaseRateData {
+        let genesis_base_rate = BaseRateData {
             epoch_index,
             base_reward_rate: 0,
             base_exchange_rate: 1_0000_0000,
@@ -596,19 +634,14 @@ impl Component for Staking {
             base_exchange_rate: 1_0000_0000,
         };
         self.state
-            .set_base_rates(cur_base_rate.clone(), next_base_rate)
+            .set_base_rates(genesis_base_rate.clone(), next_base_rate)
             .await;
 
-        let mut allocations_by_validator = HashMap::new();
+        // Compile totals of genesis allocations by denom, which we can use
+        // to compute the delegation tokens for each validator.
+        let mut genesis_allocations = HashMap::new();
         for allocation in &app_state.allocations {
-            if allocation.amount == 0 {
-                continue;
-            }
-
-            let amount = allocations_by_validator
-                .entry(&allocation.denom)
-                .or_insert(0);
-            *amount += allocation.amount;
+            *genesis_allocations.entry(&allocation.denom).or_insert(0) += allocation.amount;
         }
 
         // Add initial validators to the JMT
@@ -617,52 +650,16 @@ impl Component for Staking {
         for validator in &app_state.validators {
             // Parse the proto into a domain type.
             let validator = Validator::try_from(validator.clone()).unwrap();
-            let validator_key = validator.identity_key.clone();
 
-            // Delegations require knowing the rates for the
-            // next epoch, so pre-populate with 0 reward => exchange rate 1 for
-            // the current and next epochs.
-            let cur_rate_data = RateData {
-                identity_key: validator_key.clone(),
-                epoch_index,
-                validator_reward_rate: 0,
-                validator_exchange_rate: 1_0000_0000, // 1 represented as 1e8
-            };
-            let next_rate_data = RateData {
-                identity_key: validator_key.clone(),
-                epoch_index: epoch_index + 1,
-                validator_reward_rate: 0,
-                validator_exchange_rate: 1_0000_0000, // 1 represented as 1e8
-            };
-
-            // The initial allocations to the validator are not available on the JMT yet,
-            // because the ShieldedPool component executes last.
-            //
-            // This means that we need to iterate the app_state to calculate the initial
-            // delegation token allocations for the genesis validators, to determine voting power.
-            let delegation_denom = DelegationToken::from(validator_key).denom().to_string();
-            let total_delegation_tokens = allocations_by_validator
-                .get(&delegation_denom)
-                .copied()
-                .unwrap_or(0);
-            let power = cur_rate_data.voting_power(total_delegation_tokens, &cur_base_rate);
-
-            self.add_genesis_validator(validator.clone(), cur_rate_data, next_rate_data, power)
+            self.add_genesis_validator(&genesis_allocations, &genesis_base_rate, validator)
                 .await
                 .unwrap();
-            // We also need to start tracking uptime of the genesis validators:
-            self.state
-                .set_validator_uptime(
-                    &validator.identity_key,
-                    Uptime::new(0, app_state.chain_params.signed_blocks_window_len as usize),
-                )
-                .await;
         }
 
         // Finally, record that there were no delegations in this block, so the data
         // isn't missing when we process the first epoch transition.
         self.state
-            .set_delegation_changes(0u32.into(), Default::default())
+            .set_delegation_changes(starting_height.try_into().unwrap(), Default::default())
             .await;
     }
 
@@ -1182,7 +1179,7 @@ pub trait View: StateExt {
     // Used for adding a new validator to the JMT. May be either
     // Active (a genesis validator) on Inactive (a validator added
     // post-genesis).
-    async fn add_validator(
+    async fn add_validator_inner(
         &self,
         validator: Validator,
         current_rates: RateData,
