@@ -509,6 +509,8 @@ impl Staking {
                 next_rate_data,
                 // All genesis validators start in the "Active" state:
                 validator::State::Active,
+                // All genesis validators start in the "Bonded" bonding state:
+                validator::BondingState::Bonded,
                 power,
             )
             .await
@@ -532,6 +534,8 @@ impl Staking {
                 next_rate_data,
                 // All post-genesis validators start in the "Inactive" state:
                 validator::State::Inactive,
+                // And post-genesis validators have "Unbonded" bonding state:
+                validator::BondingState::Unbonded,
                 0,
             )
             .await
@@ -1184,6 +1188,7 @@ pub trait View: StateExt {
         current_rates: RateData,
         next_rates: RateData,
         state: validator::State,
+        bonding_state: validator::BondingState,
         power: u64,
     ) -> Result<()> {
         tracing::debug!(?validator);
@@ -1202,6 +1207,7 @@ pub trait View: StateExt {
         self.put_domain(format!("staking/validators/{}/state", &id).into(), state)
             .await;
         self.set_validator_power(&id, power).await?;
+        self.set_validator_bonding_state(&id, bonding_state).await;
 
         let mut validator_list = self.validator_list().await?;
         validator_list.push(id);
@@ -1246,7 +1252,6 @@ pub trait View: StateExt {
         &self,
         identity_key: &IdentityKey,
     ) -> Result<Option<validator::Status>> {
-        // TODO: replace w/ using the higher level `ValidatorStatus` struct to store all this data together
         let bonding_state = self.validator_bonding_state(identity_key).await?;
         let state = self.validator_state(identity_key).await?;
         let power = self.validator_power(identity_key).await?;
