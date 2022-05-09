@@ -57,6 +57,7 @@ jobs:
         username: ${{ secrets.TUNNEL_USERNAME }}
         key: ${{ secrets.ID_ED25519 }}
         port: ${{ secrets.TUNNEL_PORT }}
+        command_timeout: 30m
         script: |
           cd ~/penumbra
           docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
