@@ -22,6 +22,18 @@ pub enum State {
     Unbonding { unbonding_epoch: u64 },
 }
 
+impl std::fmt::Display for State {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            State::Bonded => write!(f, "Bonded"),
+            State::Unbonded => write!(f, "Unbonded"),
+            State::Unbonding { unbonding_epoch } => {
+                write!(f, "Unbonding (end epoch: {})", unbonding_epoch)
+            }
+        }
+    }
+}
+
 impl Protobuf<pb::BondingState> for State {}
 
 impl From<State> for pb::BondingState {

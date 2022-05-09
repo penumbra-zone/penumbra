@@ -281,6 +281,7 @@ impl StakeCmd {
                     "Share",
                     "Commission",
                     "State",
+                    "Bonding State",
                     "Validator Info",
                 ]);
 
@@ -300,11 +301,13 @@ impl StakeCmd {
                         format!("{:.2}%", power_percent),
                         format!("{}bps", commission_bps),
                         v.status.state.to_string(),
+                        v.status.bonding_state.to_string(),
                         // TODO: consider rewriting this with term colors
                         // at some point, when we get around to it
                         format!("\x1b[1;31m{}\x1b[0m", v.validator.identity_key),
                     ]);
                     table.add_row(vec![
+                        "".into(),
                         "".into(),
                         "".into(),
                         "".into(),
@@ -317,9 +320,11 @@ impl StakeCmd {
                             "".into(),
                             "".into(),
                             "".into(),
+                            "".into(),
                             format!("  {}", v.validator.description),
                         ]);
                         table.add_row(vec![
+                            "".into(),
                             "".into(),
                             "".into(),
                             "".into(),
