@@ -137,9 +137,8 @@ impl Tree {
     pub fn insert(
         &mut self,
         witness: Witness,
-        commitment: impl Into<Commitment>,
+        commitment: Commitment,
     ) -> Result<&mut Self, InsertError> {
-        let commitment = commitment.into();
         let item = match witness {
             Witness::Keep => commitment.into(),
             Witness::Forget => Hash::of(commitment).into(),
@@ -193,9 +192,7 @@ impl Tree {
     /// Get a [`Proof`] of inclusion for the commitment at this index in the tree.
     ///
     /// If the index is not witnessed in this tree, return `None`.
-    pub fn witness(&self, commitment: impl Into<Commitment>) -> Option<Proof> {
-        let commitment = commitment.into();
-
+    pub fn witness(&self, commitment: Commitment) -> Option<Proof> {
         let index = *self.index.get(&commitment)?;
 
         let (auth_path, leaf) = match self.inner.witness(index) {
@@ -218,9 +215,7 @@ impl Tree {
     ///
     /// Returns `true` if the commitment was previously witnessed (and now is forgotten), and `false` if
     /// it was not witnessed.
-    pub fn forget(&mut self, commitment: impl Into<Commitment>) -> bool {
-        let commitment = commitment.into();
-
+    pub fn forget(&mut self, commitment: Commitment) -> bool {
         let mut forgotten = false;
 
         if let Some(&within_epoch) = self.index.get(&commitment) {
@@ -237,8 +232,7 @@ impl Tree {
     }
 
     /// Get the position in this [`Tree`] of the given [`Commitment`], if it is currently witnessed.
-    pub fn position_of(&self, commitment: impl Into<Commitment>) -> Option<Position> {
-        let commitment = commitment.into();
+    pub fn position_of(&self, commitment: Commitment) -> Option<Position> {
         self.index.get(&commitment).map(|index| Position(*index))
     }
 

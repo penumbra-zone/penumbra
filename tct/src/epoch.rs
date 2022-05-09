@@ -149,9 +149,8 @@ impl Builder {
     pub fn insert(
         &mut self,
         witness: Witness,
-        commitment: impl Into<Commitment>,
+        commitment: Commitment,
     ) -> Result<&mut Self, InsertError> {
-        let commitment = commitment.into();
         let item = match witness {
             Witness::Keep => commitment.into(),
             Witness::Forget => Hash::of(commitment).into(),
