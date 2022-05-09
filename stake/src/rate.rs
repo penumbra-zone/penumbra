@@ -44,17 +44,18 @@ impl RateData {
                 validator_exchange_rate: self.validator_exchange_rate,
             };
 
+        // TODO: cleanup
         match validator_state {
             // if a validator is slashed, their rates are updated to include the slashing penalty
             // and then held constant.
             //
             // if a validator is slashed during the epoch transition the current epoch's rate is set
             // to the slashed value (during end_block) and in here, the next epoch's rate is held constant.
-            State::Slashed => {
+            State::Jailed | State::Tombstoned => {
                 return constant_rate;
             }
             // if a validator isn't part of the consensus set, we do not update their rates
-            State::Inactive => {
+            State::Inactive | State::Disabled => {
                 return constant_rate;
             }
             // TODO: if validator is unbonding they need a constant rate!!

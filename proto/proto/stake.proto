@@ -77,7 +77,9 @@ message ValidatorState {
   enum ValidatorStateEnum {
     INACTIVE = 0;
     ACTIVE = 1;
-    SLASHED = 2;
+    JAILED = 2;
+    TOMBSTONED = 3;
+    DISABLED = 4;
   }
   ValidatorStateEnum state = 1;
 }

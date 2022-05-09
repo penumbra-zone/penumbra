@@ -10,9 +10,15 @@ pub enum State {
     Inactive,
     /// The validator is an active part of the consensus set.
     Active,
-    /// The validator has been slashed, and undelegations will occur immediately with no unbonding
-    /// period.
-    Slashed,
+    /// The validator has been slashed for downtime, and is prevented from participation
+    /// in consensus until it requests to be reinstated.
+    Jailed,
+    /// The validator has been slashed for byzantine misbehavior, and is permanently banned.
+    Tombstoned,
+    /// The validator operator has disabled this validator's operations.
+    ///
+    /// Delegations to this validator are not allowed.
+    Disabled,
 }
 
 impl std::fmt::Display for State {
@@ -20,7 +26,9 @@ impl std::fmt::Display for State {
         match self {
             State::Inactive => write!(f, "Inactive"),
             State::Active => write!(f, "Active"),
-            State::Slashed => write!(f, "Slashed"),
+            State::Jailed => write!(f, "Jailed"),
+            State::Tombstoned => write!(f, "Tombstoned"),
+            State::Disabled => write!(f, "Disabled"),
         }
     }
 }
@@ -33,7 +41,9 @@ impl From<State> for pb::ValidatorState {
             state: match v {
                 State::Inactive => pb::validator_state::ValidatorStateEnum::Inactive,
                 State::Active => pb::validator_state::ValidatorStateEnum::Active,
-                State::Slashed => pb::validator_state::ValidatorStateEnum::Slashed,
+                State::Jailed => pb::validator_state::ValidatorStateEnum::Jailed,
+                State::Tombstoned => pb::validator_state::ValidatorStateEnum::Tombstoned,
+                State::Disabled => pb::validator_state::ValidatorStateEnum::Disabled,
             } as i32,
         }
     }
@@ -48,7 +58,9 @@ impl TryFrom<pb::ValidatorState> for State {
             {
                 pb::validator_state::ValidatorStateEnum::Inactive => State::Inactive,
                 pb::validator_state::ValidatorStateEnum::Active => State::Active,
-                pb::validator_state::ValidatorStateEnum::Slashed => State::Slashed,
+                pb::validator_state::ValidatorStateEnum::Jailed => State::Jailed,
+                pb::validator_state::ValidatorStateEnum::Tombstoned => State::Tombstoned,
+                pb::validator_state::ValidatorStateEnum::Disabled => State::Disabled,
             },
         )
     }
