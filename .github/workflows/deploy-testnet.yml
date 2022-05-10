@@ -13,7 +13,7 @@ jobs:
     name: Trigger Deployment
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: testnet-preview
+    environment: testnet
     steps:
     - name: Update git repository
       uses: appleboy/ssh-action@master
