@@ -830,19 +830,21 @@ impl Component for Staking {
                 ));
             }
 
-            // Check whether the delegation is for a slashed validator
+            // Check whether the delegation is allowed
             let validator_state = self
                 .state
                 .validator_state(&d.validator_identity)
                 .await?
                 .ok_or_else(|| anyhow::anyhow!("missing state for validator"))?;
-            // TODO: fix
-            if validator_state == validator::State::Jailed {
+
+            use validator::State::*;
+            if !matches!(validator_state, Inactive | Active) {
                 return Err(anyhow::anyhow!(
-                    "Delegation to slashed validator {}",
-                    d.validator_identity
+                    "delegations are only allowed to active or inactive validators, but {} is in state {:?}",
+                    d.validator_identity,
+                    validator_state,
                 ));
-            };
+            }
 
             // For delegations, we enforce correct computation (with rounding)
             // of the *delegation amount based on the unbonded amount*, because
