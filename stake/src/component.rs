@@ -177,19 +177,68 @@ impl Staking {
                 todo!("happens when a validator operator disables their validator");
             }
             (Active, Jailed) => {
-                todo!("slashed for downtime");
+                let penalty = self
+                    .state
+                    .get_chain_params()
+                    .await?
+                    .slashing_penalty_downtime_bps;
+
+                // Apply the penalty to the validator's current exchange rate.
+                self.state
+                    .apply_slashing_penalty(identity_key, penalty)
+                    .await?;
+
+                // The validator's delegation pool begins unbonding.  Jailed
+                // validators are not unbonded immediately, because they need to
+                // be held accountable for byzantine behavior for the entire
+                // unbonding period.
+                self.state
+                    .set_validator_bonding_state(
+                        identity_key,
+                        Unbonding {
+                            unbonding_epoch: self.state.current_unbonding_end_epoch().await?,
+                        },
+                    )
+                    .await;
+
+                // Inform tendermint that the validator is no longer active.
+                self.tm_validator_updates.insert(identity_key.clone(), 0);
+
+                // Finally, set the validator to be jailed.
+                self.state.put_domain(state_key, Jailed).await;
+
+                Ok(())
             }
-            (Active, Tombstoned) => {
-                todo!("happens when a validator is slashed for misbehavior while active");
-            }
-            (Inactive, Tombstoned) => {
-                todo!("happens when a validator is slashed for misbehavior while unbonding");
-            }
-            (Disabled, Tombstoned) => {
-                todo!("happens when a validator is slashed for misbehavior while unbonding");
-            }
-            (Jailed, Tombstoned) => {
-                todo!("happens when a validator is slashed for misbehavior while unbonding");
+            (cur_state @ (Active | Inactive | Disabled | Jailed), Tombstoned) => {
+                let penalty = self
+                    .state
+                    .get_chain_params()
+                    .await?
+                    .slashing_penalty_misbehavior_bps;
+
+                // Apply the penalty to the validator's current exchange rate.
+                self.state
+                    .apply_slashing_penalty(identity_key, penalty)
+                    .await?;
+
+                // Regardless of its current bonding state, the validator's
+                // delegation pool is unbonded immediately, because the
+                // validator has already had the maximum slashing penalty
+                // applied.
+                self.state
+                    .set_validator_bonding_state(identity_key, Unbonded)
+                    .await;
+
+                // Tendermint gets confused about deletions for validators it doesn't
+                // know about, so only send an update if the validator was active.
+                if let Active = cur_state {
+                    self.tm_validator_updates.insert(identity_key.clone(), 0);
+                }
+
+                // Finally, set the validator to be tombstoned.
+                self.state.put_domain(state_key, Tombstoned).await;
+
+                Ok(())
             }
             (Tombstoned, _) => Err(anyhow::anyhow!("tombstoning is forever")),
             (_, Active) => Err(anyhow::anyhow!("only inactive validator may become active")),
@@ -233,8 +282,6 @@ impl Staking {
         );
 
         let chain_params = self.state.get_chain_params().await?;
-        let unbonding_epochs = chain_params.unbonding_epochs;
-        let active_validator_limit = chain_params.active_validator_limit;
 
         tracing::debug!("processing base rate");
         // We are transitioning to the next epoch, so set "cur_base_rate" to the previous "next_base_rate", and
@@ -348,7 +395,7 @@ impl Staking {
                     commission_amounts.push(CommissionAmount {
                         amount: commission_reward_amount,
                         destination: stream.address,
-                    });
+                    })
                 }
             }
 
@@ -441,6 +488,9 @@ impl Staking {
 
     /// Returns the list of validator updates formatted for inclusion in the Tendermint `EndBlockResponse`
     pub async fn tm_validator_updates(&self) -> Result<Vec<ValidatorUpdate>> {
+        // Tracking validator updates by identity key rather than by consensus
+        // key is convenient internally, but to create the Tendermint update, we
+        // now need to look up the consensus key for each validator.
         let mut updates = Vec::new();
         for (identity_key, power) in &self.tm_validator_updates {
             let validator = self
@@ -605,7 +655,7 @@ impl Staking {
             .await
     }
 
-    async fn slash_validator_by_evidence(&mut self, evidence: &Evidence) -> Result<()> {
+    async fn process_evidence(&mut self, evidence: &Evidence) -> Result<()> {
         let ck = tendermint::PublicKey::from_raw_ed25519(&evidence.validator.address)
             .ok_or_else(|| anyhow::anyhow!("invalid ed25519 consensus pubkey from tendermint"))
             .unwrap();
@@ -689,7 +739,7 @@ impl Component for Staking {
         // For each validator identified as byzantine by tendermint, update its
         // state to be slashed.
         for evidence in begin_block.byzantine_validators.iter() {
-            self.slash_validator_by_evidence(evidence).await.unwrap();
+            self.process_evidence(evidence).await.unwrap();
         }
 
         self.track_uptime(&begin_block.last_commit_info)
@@ -1091,32 +1141,28 @@ pub trait View: StateExt {
         self.validator(&identity_key).await
     }
 
-    async fn slash_validator(&self, validator: Validator, slashing_penalty: u64) -> Result<()> {
-        tracing::info!(?validator, ?slashing_penalty, "slashing validator");
-
-        // Mark the state as "slashed" in the JMT, and apply the slashing penalty.
-        self.set_validator_state(&validator.identity_key, validator::State::Jailed)
-            .await?;
-
+    async fn apply_slashing_penalty(
+        &self,
+        identity_key: &IdentityKey,
+        slashing_penalty_bps: u64,
+    ) -> Result<()> {
         let mut cur_rate = self
-            .current_validator_rate(&validator.identity_key)
+            .current_validator_rate(&identity_key)
             .await?
             .ok_or_else(|| {
                 anyhow::anyhow!("validator to be slashed did not have current rate in JMT")
             })?;
 
-        cur_rate = cur_rate.slash(slashing_penalty);
+        // Apply the slashing penalty to the current rate...
+        cur_rate = cur_rate.slash(slashing_penalty_bps);
+        // ...and ensure they're held constant at the penalized rate.
+        let next_rate = {
+            let mut rate = cur_rate.clone();
+            rate.epoch_index += 1;
+            rate
+        };
 
-        // TODO: would it be better to call `current_base_rate.next`? the same logic exists
-        // within there, but it requires passing in the current base rates & funding streams,
-        // which aren't actually used because the rate is held constant. So, doing it this way
-        // avoids a couple unnecessary JMT reads that the `current_base_rate.next` API would require.
-        //
-        // At any rate, the next rate is held constant for slashed validators.
-        let mut next_rate = cur_rate.clone();
-        next_rate.epoch_index += 1;
-
-        self.set_validator_rates(&validator.identity_key, cur_rate, next_rate)
+        self.set_validator_rates(&identity_key, cur_rate, next_rate)
             .await;
 
         Ok(())
