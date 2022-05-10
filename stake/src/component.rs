@@ -50,7 +50,6 @@ impl Staking {
     ///
     /// This method errors on illegal state transitions; since execution must be infallible,
     /// it's the caller's responsibility to ensure that the state transitions are legal.
-    #[instrument(skip(self))]
     async fn set_validator_state(
         &mut self,
         identity_key: &IdentityKey,
@@ -64,6 +63,23 @@ impl Staking {
                 anyhow::anyhow!("validator to have state change did not have state in JMT")
             })?;
 
+        // Delegating to an inner method here lets us create a span that has both states,
+        // without having to manage span entry/exit in async code.
+        self.set_validator_state_inner(identity_key, cur_state, new_state)
+            .await
+    }
+
+    // Inner function pretends to be the outer one, so we can include cur_state
+    // in the tracing span.  This way, we don't need to include any information
+    // in tracing events inside the function about what the state transition is,
+    // because it's already attached to the span.
+    #[instrument(skip(self), name = "set_validator_state")]
+    async fn set_validator_state_inner(
+        &mut self,
+        identity_key: &IdentityKey,
+        cur_state: validator::State,
+        new_state: validator::State,
+    ) -> Result<()> {
         let state_key = format!("staking/validators/{}/state", identity_key).into();
 
         // Doing a single tuple match, rather than matching on substates,
@@ -78,14 +94,16 @@ impl Staking {
                 // component, but we should send a validator update to the
                 // tendermint validator set, to propagate changes to the voting
                 // power.
-                self.tm_validator_updates.insert(
-                    identity_key.clone(),
-                    self.state
-                        .validator_power(identity_key)
-                        .await?
-                        .expect("active validator did not have power recorded"),
-                );
+                let power = self
+                    .state
+                    .validator_power(identity_key)
+                    .await?
+                    .expect("active validator did not have power recorded");
 
+                self.tm_validator_updates
+                    .insert(identity_key.clone(), power);
+
+                tracing::debug!(?power, "queued tendermint update");
                 Ok(())
             }
             (Inactive, Active) => {
@@ -108,17 +126,18 @@ impl Staking {
                     .await;
 
                 // Queue an update to send to Tendermint.
-                self.tm_validator_updates.insert(
-                    identity_key.clone(),
-                    self.state
-                        .validator_power(identity_key)
-                        .await?
-                        .expect("validator that became active did not have power recorded"),
-                );
+                let power = self
+                    .state
+                    .validator_power(identity_key)
+                    .await?
+                    .expect("validator that became active did not have power recorded");
+                self.tm_validator_updates
+                    .insert(identity_key.clone(), power);
 
                 // Finally, set the validator to be active.
                 self.state.put_domain(state_key, Active).await;
 
+                tracing::debug!(?power, "validator became active");
                 Ok(())
             }
             (Active, Inactive) => {
