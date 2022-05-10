@@ -282,7 +282,8 @@ pub trait View: StateExt + Send + Sync {
     ) -> Result<()> {
         self.put_domain(
             format!(
-                "ibc/ics03-connection/connections/{}",
+                "{}/connections/{}",
+                COMMITMENT_PREFIX,
                 connection_id.as_str()
             )
             .into(),
@@ -305,7 +306,8 @@ pub trait View: StateExt + Send + Sync {
     async fn get_connection(&self, connection_id: &ConnectionId) -> Result<Option<Connection>> {
         self.get_domain(
             format!(
-                "ibc/ics03-connection/connections/{}",
+                "{}/connections/{}",
+                COMMITMENT_PREFIX,
                 connection_id.as_str()
             )
             .into(),
@@ -316,7 +318,8 @@ pub trait View: StateExt + Send + Sync {
     async fn update_connection(&self, connection_id: &ConnectionId, connection: Connection) {
         self.put_domain(
             format!(
-                "ibc/ics03-connection/connections/{}",
+                "{}/connections/{}",
+                COMMITMENT_PREFIX,
                 connection_id.as_str()
             )
             .into(),

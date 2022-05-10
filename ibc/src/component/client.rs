@@ -36,7 +36,10 @@ use tendermint_light_client_verifier::{
 };
 use tracing::instrument;
 
-use crate::{ClientConnections, ClientCounter, ClientData, ConsensusState, VerifiedHeights};
+use crate::{
+    ClientConnections, ClientCounter, ClientData, ConsensusState, VerifiedHeights,
+    COMMITMENT_PREFIX,
+};
 
 mod stateful;
 mod stateless;
@@ -549,7 +552,8 @@ pub trait View: StateExt {
         let mut connections = self
             .get_domain(
                 format!(
-                    "ibc/ics02-client/clients/{}/connections",
+                    "{}/clients/{}/connections",
+                    COMMITMENT_PREFIX,
                     hex::encode(client_id.as_bytes())
                 )
                 .into(),
@@ -561,7 +565,8 @@ pub trait View: StateExt {
 
         self.put_domain(
             format!(
-                "ibc/ics02-client/clients/{}/connections",
+                "{}/clients/{}/connections",
+                COMMITMENT_PREFIX,
                 hex::encode(client_id.as_bytes())
             )
             .into(),

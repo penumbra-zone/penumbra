@@ -60,10 +60,6 @@ message ConnectionCounter {
   uint64 counter = 1;
 }
 
-message Connection {
-  .ibc.core.connection.v1.ConnectionEnd connectionEnd = 1;
-}
-
 message ClientConnections {
   repeated string connections = 1;
 }
