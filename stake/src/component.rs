@@ -21,7 +21,7 @@ use tendermint::{
     },
     block, PublicKey,
 };
-use tracing::instrument;
+use tracing::{instrument, Instrument};
 
 use crate::{
     rate::{BaseRateData, RateData},
@@ -125,7 +125,7 @@ impl Staking {
                     )
                     .await;
 
-                // Queue an update to send to Tendermint.
+                // Inform tendermint that the validator is now active.
                 let power = self
                     .state
                     .validator_power(identity_key)
@@ -141,7 +141,25 @@ impl Staking {
                 Ok(())
             }
             (Active, Inactive) => {
-                todo!("happens when a validator is removed from the top N");
+                tracing::debug!("validator became inactive");
+
+                // The validator's delegation pool begins unbonding.
+                self.state
+                    .set_validator_bonding_state(
+                        identity_key,
+                        Unbonding {
+                            unbonding_epoch: self.state.current_unbonding_end_epoch().await?,
+                        },
+                    )
+                    .await;
+
+                // Inform tendermint that the validator is no longer active.
+                self.tm_validator_updates.insert(identity_key.clone(), 0);
+
+                // Finally, set the validator to be inactive.
+                self.state.put_domain(state_key, Inactive).await;
+
+                Ok(())
             }
             (Jailed, Inactive) => {
                 todo!("happens when a validator operator unjails themself");
@@ -345,8 +363,8 @@ impl Staking {
 
         // Now that all the voting power has been calculated for the upcoming epoch,
         // we can determine which validators are Active for the next epoch.
-        self.process_epoch_transitions(epoch_to_end, active_validator_limit, unbonding_epochs)
-            .await?;
+        self.process_validator_unbondings().await?;
+        self.set_active_and_inactive_validators().await?;
 
         // The pending delegation changes should be empty at the beginning of the next epoch.
         self.delegation_changes = Default::default();
@@ -367,154 +385,52 @@ impl Staking {
 
     /// Called during `end_epoch`. Will perform state transitions to validators based
     /// on changes to voting power that occurred in this epoch.
-    pub async fn process_epoch_transitions(
-        &mut self,
-        epoch_to_end: Epoch,
-        active_validator_limit: u64,
-        unbonding_epochs: u64,
-    ) -> Result<()> {
-        // Sort the next validator states by voting power.
-        struct VPower {
-            identity_key: IdentityKey,
-            power: u64,
-            state: validator::State,
-            bonding_state: validator::BondingState,
-        }
-
-        let mut validator_power_list = Vec::new();
-        for v in self.state.validator_list().await?.iter() {
-            let power = self
-                .state
-                .validator_power(v)
-                .await?
-                .ok_or_else(|| anyhow::anyhow!("validator missing power"))?;
-            let state = self
-                .state
-                .validator_state(v)
-                .await?
-                .ok_or_else(|| anyhow::anyhow!("validator missing state"))?;
-            let bonding_state = self
-                .state
-                .validator_bonding_state(v)
-                .await?
-                .ok_or_else(|| anyhow::anyhow!("validator missing bonding state"))?;
-            validator_power_list.push(VPower {
-                identity_key: v.clone(),
-                power,
-                state,
-                bonding_state,
-            });
+    pub async fn set_active_and_inactive_validators(&mut self) -> Result<()> {
+        // Build a list of all active and inactive validators with nonzero voting power.
+        let mut validators_by_power = Vec::new();
+        for v in self.state.validator_list().await? {
+            let state = self.state.validator_state(&v).await?.unwrap();
+            let power = self.state.validator_power(&v).await?.unwrap();
+            if power != 0 && matches!(state, validator::State::Active | validator::State::Inactive)
+            {
+                validators_by_power.push((v, power));
+            }
         }
 
         // Sort by voting power descending.
-        validator_power_list.sort_by(|a, b| b.power.cmp(&a.power));
+        validators_by_power.sort_by(|a, b| b.1.cmp(&a.1));
 
-        // Grab the top `active_validator_limit` validators
-        let top_validators = validator_power_list
-            .iter()
-            .take(active_validator_limit as usize)
-            // The top validators should never include a validator without voting power
-            .filter(|v| v.power > 0)
-            .map(|v| v.identity_key.clone())
-            .collect::<Vec<_>>();
+        // The top `limit` validators become active, the rest inactive.
+        let limit = self.state.get_chain_params().await?.active_validator_limit as usize;
+        let active = validators_by_power.iter().take(limit);
+        let inactive = validators_by_power.iter().skip(limit);
 
-        // Iterate every validator and update according to their state and voting power.
-        for vp in &validator_power_list {
-            if vp.state == validator::State::Inactive {
-                // If an Inactive validator is in the top `active_validator_limit` based
-                // on voting power and the delegation pool has a nonzero balance (meaning non-zero voting power),
-                // then the validator should be moved to the Active state.
-                if top_validators.contains(&vp.identity_key) {
-                    tracing::debug!(identity_key = ?vp.identity_key, "validator is in top validators and will now enter active state");
+        for (v, _) in active {
+            self.set_validator_state(v, validator::State::Active)
+                .await?;
+        }
+        for (v, _) in inactive {
+            self.set_validator_state(v, validator::State::Inactive)
+                .await?;
+        }
+
+        Ok(())
+    }
+
+    /// Process all validator unbondings queued for release in the current epoch.
+    #[instrument(skip(self))]
+    pub async fn process_validator_unbondings(&mut self) -> Result<()> {
+        let current_epoch = self.state.get_current_epoch().await?;
+
+        for v in self.state.validator_list().await? {
+            let state = self.state.validator_bonding_state(&v).await?.unwrap();
+            if let validator::BondingState::Unbonding { unbonding_epoch } = state {
+                if unbonding_epoch <= current_epoch.index {
                     self.state
-                        .set_validator_state(&vp.identity_key, validator::State::Active)
-                        .await?;
-                    // Start tracking the validator's uptime as it becomes active
-                    let uptime = Uptime::new(
-                        self.state.get_block_height().await?,
-                        self.state.signed_blocks_window_len().await? as usize,
-                    );
-                    self.state
-                        .set_validator_uptime(&vp.identity_key, uptime)
-                        .await;
-
-                    // The validator's stake pool should now be bonded.
-                    self.state
-                        .set_validator_bonding_state(
-                            &vp.identity_key,
-                            validator::BondingState::Bonded,
-                        )
-                        .await;
-
-                    let validator = self
-                        .state
-                        .validator(&vp.identity_key)
-                        .await?
-                        .ok_or_else(|| anyhow::anyhow!("validator missing"))?;
-                    // The now-Active validator should report its voting power to tendermint this block
-                    self.tm_validator_updates
-                        .insert(validator.identity_key, vp.power);
-                    continue;
-                }
-            } else if vp.state == validator::State::Active {
-                // An Active validator could also be displaced and move to the
-                // Inactive state and begin Unbonding.
-                if !top_validators.contains(&vp.identity_key) {
-                    tracing::debug!(identity_key = ?vp.identity_key, "validator left active set and will now enter unbonding");
-                    // Unbonding the validator means that it can no longer participate
-                    // in consensus, so its voting power is set to 0.
-                    self.state.set_validator_power(&vp.identity_key, 0).await?;
-                    self.state
-                        .set_validator_state(&vp.identity_key, validator::State::Inactive)
-                        .await?;
-                    let validator = self
-                        .state
-                        .validator(&vp.identity_key)
-                        .await?
-                        .ok_or_else(|| anyhow::anyhow!("validator missing"))?;
-
-                    // The validator's staking pool now begins Unbonding
-                    // TODO: integrate with quarantine/undelegations
-                    self.state
-                        .set_validator_bonding_state(
-                            &vp.identity_key,
-                            validator::BondingState::Unbonding {
-                                unbonding_epoch: epoch_to_end.index + unbonding_epochs,
-                            },
-                        )
-                        .await;
-
-                    // The now-Inactive validator should report 0 voting power to tendermint this block
-                    self.tm_validator_updates.insert(validator.identity_key, 0);
-                    continue;
-                } else {
-                    // This validator remains active, and we should report its latest voting
-                    // power to tendermint.
-                    let validator = self
-                        .state
-                        .validator(&vp.identity_key)
-                        .await?
-                        .ok_or_else(|| anyhow::anyhow!("validator missing"))?;
-                    let power = self
-                        .state
-                        .validator_power(&vp.identity_key)
-                        .await?
-                        .ok_or_else(|| anyhow::anyhow!("active validator should have power"))?;
-                    self.tm_validator_updates
-                        .insert(validator.identity_key, power);
-                }
-            }
-
-            // Handle changing the unbonding state of the validator's stake pool
-            // if the unbonding period has elapsed.
-            if let validator::BondingState::Unbonding { unbonding_epoch } = vp.bonding_state {
-                if unbonding_epoch <= epoch_to_end.index {
-                    tracing::debug!(identity_key = ?vp.identity_key, "validator unbonding period over and validator staking pool entering unbonded state");
-                    self.state
-                        .set_validator_bonding_state(
-                            &vp.identity_key,
-                            validator::BondingState::Unbonded,
-                        )
+                        .set_validator_bonding_state(&v, validator::BondingState::Unbonded)
+                        // Instrument the call with a span that includes the validator ID,
+                        // since our current span doesn't have any per-validator information.
+                        .instrument(tracing::debug_span!("unbonding", ?v))
                         .await;
                 }
             }
@@ -1358,6 +1274,7 @@ pub trait View: StateExt {
         identity_key: &IdentityKey,
         state: validator::BondingState,
     ) {
+        tracing::debug!(?state, "set bonding state");
         self.put_domain(
             format!("staking/validators/{}/bonding_state", identity_key).into(),
             state,
@@ -1371,6 +1288,13 @@ pub trait View: StateExt {
 
     async fn missed_blocks_maximum(&self) -> Result<u64> {
         Ok(self.get_chain_params().await?.missed_blocks_maximum)
+    }
+
+    async fn current_unbonding_end_epoch(&self) -> Result<u64> {
+        let current_epoch = self.get_current_epoch().await?;
+        let unbonding_epochs = self.get_chain_params().await?.unbonding_epochs;
+
+        Ok(current_epoch.index + unbonding_epochs)
     }
 }
 
