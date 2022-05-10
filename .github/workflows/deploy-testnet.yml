@@ -40,18 +40,18 @@ jobs:
           cd ~/penumbra
           docker-compose stop
           rm -rf ~/.penumbra/testnet_data/
-    - name: Update Grafana configs and data
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.TESTNET_HOST }}
-        username: ${{ secrets.TUNNEL_USERNAME }}
-        key: ${{ secrets.ID_ED25519 }}
-        port: ${{ secrets.TUNNEL_PORT }}
-        script: |
-          cd ~/penumbra
-          sed 's/CLIENT_SECRET/'${GRAFANA_CLIENT_SECRET}'/' config/grafana/grafana.prod.ini
-          docker run --rm -v $PWD:/source -v penumbra_grafana_configs:/dest -w /source alpine cp config/grafana/grafana.prod.ini /dest/grafana.ini
-          docker run --rm -v $PWD:/source -v penumbra_grafana_data:/dest -w /source alpine cp config/grafana/dashboards/* /dest/
+    # - name: Update Grafana configs and data
+    #   uses: appleboy/ssh-action@master
+    #   with:
+    #     host: ${{ secrets.TESTNET_HOST }}
+    #     username: ${{ secrets.TUNNEL_USERNAME }}
+    #     key: ${{ secrets.ID_ED25519 }}
+    #     port: ${{ secrets.TUNNEL_PORT }}
+    #     script: |
+    #       cd ~/penumbra
+    #       sed 's/CLIENT_SECRET/'${GRAFANA_CLIENT_SECRET}'/' config/grafana/grafana.prod.ini
+    #       docker run --rm -v $PWD:/source -v penumbra_grafana_configs:/dest -w /source alpine cp config/grafana/grafana.prod.ini /dest/grafana.ini
+    #       # docker run --rm -v $PWD:/source -v penumbra_grafana_data:/dest -w /source alpine cp config/grafana/dashboards/* /dest/
     - name: Generate testnet
       uses: appleboy/ssh-action@master
       with:
