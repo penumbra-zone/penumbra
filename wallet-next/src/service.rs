@@ -17,7 +17,7 @@ use crate::{Storage, Worker};
 /// internally that performs synchronization and scanning.  The
 /// [`WalletService`] can be cloned; each clone will read from the same shared
 /// state, but there will only be a single scanning task.
-#[derive(Clone)]
+
 pub struct WalletService {
     storage: Storage,
     // TODO: add a way for the WalletService to poll the state of its worker task, to determine if it failed
@@ -36,11 +36,15 @@ impl WalletService {
     /// To create multiple [`WalletService`]s, clone the [`WalletService`] returned
     /// by this method, rather than calling it multiple times.  That way, each clone
     /// will be backed by the same scanning task, rather than each spawning its own.
-    pub fn new(storage: Storage, client: ObliviousQueryClient<Channel>) -> Self {
-        let worker = Worker::new(storage.clone(), client);
+    pub async fn new(
+        storage: Storage,
+        client: ObliviousQueryClient<Channel>,
+    ) -> Result<Self, anyhow::Error> {
+        let worker = Worker::new(storage.clone(), client).await?;
+
         tokio::spawn(worker.run());
 
-        Self { storage }
+        Ok(Self { storage })
     }
 
     async fn check_fvk(&self, fvk: Option<&pbc::FullViewingKeyHash>) -> Result<(), tonic::Status> {

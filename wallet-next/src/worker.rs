@@ -1,24 +1,69 @@
-use crate::Storage;
-use penumbra_proto::client::oblivious::oblivious_query_client::ObliviousQueryClient;
+use crate::{sync::scan_block, Storage};
+use penumbra_crypto::{merkle::NoteCommitmentTree, FullViewingKey};
+use penumbra_proto::client::oblivious::{
+    oblivious_query_client::ObliviousQueryClient, CompactBlockRangeRequest,
+};
 use tonic::transport::Channel;
-
+#[derive(Clone)]
 pub struct Worker {
     storage: Storage,
     client: ObliviousQueryClient<Channel>,
-    // TODO: notifications (see TODOs on WalletService)
+    nct: NoteCommitmentTree,
+    fvk: FullViewingKey, // TODO: notifications (see TODOs on WalletService)
 }
 
 impl Worker {
-    pub fn new(storage: Storage, client: ObliviousQueryClient<Channel>) -> Self {
-        Self { storage, client }
+    pub async fn new(
+        storage: Storage,
+        client: ObliviousQueryClient<Channel>,
+    ) -> Result<Self, anyhow::Error> {
+        let nct = storage.note_commitment_tree().await?;
+        let fvk = storage.full_viewing_key().await?;
+        Ok(Self {
+            storage,
+            client,
+            nct,
+            fvk,
+        })
     }
 
-    pub async fn sync_to_latest(&self) -> Result<u64, anyhow::Error> {
+    pub async fn sync_to_latest(&mut self) -> Result<u64, anyhow::Error> {
         // Do a single sync run, up to whatever the latest block height is
-        todo!()
+        tracing::info!("starting client sync");
+
+        let start_height = self
+            .storage
+            .last_sync_height()
+            .await?
+            .map(|h| h + 1)
+            .unwrap_or(0);
+
+        let mut stream = self
+            .client
+            .compact_block_range(tonic::Request::new(CompactBlockRangeRequest {
+                start_height,
+                end_height: 0,
+                chain_id: self.storage.chain_params().await?.chain_id,
+            }))
+            .await?
+            .into_inner();
+
+        while let Some(block) = stream.message().await? {
+            let scan_result = scan_block(&self.fvk, &mut self.nct, block.try_into()?);
+
+            self.storage
+                .record_block(scan_result, &mut self.nct)
+                .await?;
+        }
+
+        let end_height = self.storage.last_sync_height().await?.unwrap();
+
+        tracing::info!(?end_height, "finished sync");
+
+        Ok(end_height)
     }
 
-    pub async fn run(self) -> Result<(), anyhow::Error> {
+    pub async fn run(mut self) -> Result<(), anyhow::Error> {
         loop {
             self.sync_to_latest().await?;
 

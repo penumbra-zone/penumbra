@@ -5,10 +5,10 @@ use penumbra_chain::params::ChainParams;
 use penumbra_crypto::{
     merkle::{NoteCommitmentTree, Tree},
     note::Commitment,
-    FieldExt,
+    FieldExt, FullViewingKey,
 };
-use penumbra_proto::{crypto::FullViewingKey, Message, Protobuf};
-use sqlx::{migrate::MigrateDatabase, query, Pool, Sqlite};
+use penumbra_proto::Protobuf;
+use sqlx::{query, Pool, Sqlite};
 
 use crate::sync::ScanResult;
 
@@ -225,6 +225,13 @@ impl Storage {
 
         let nct_bytes = bincode::serialize(nct)?;
         sqlx::query!("UPDATE note_commitment_tree SET bytes = ?", nct_bytes)
+            .execute(&mut tx)
+            .await?;
+
+        // Record block height as latest synced height
+
+        let latest_sync_height = scan_result.height as i64;
+        sqlx::query!("UPDATE sync_height SET height = ?", latest_sync_height)
             .execute(&mut tx)
             .await?;
 
