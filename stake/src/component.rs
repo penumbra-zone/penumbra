@@ -48,7 +48,7 @@ pub struct Staking {
 impl Staking {
     #[instrument(skip(self))]
     async fn set_validator_state(
-        &self,
+        &mut self,
         identity_key: &IdentityKey,
         new_state: validator::State,
     ) -> Result<()> {
@@ -73,6 +73,8 @@ impl Staking {
         .await;
         */
 
+        let state_key = format!("staking/validators/{}/state", identity_key).into();
+
         // Ensure that the state transitions are valid.
         // TODO: there are other semantics we could possibly enforce here
         // that are currently being enforced by upstream callers, for example
@@ -82,12 +84,43 @@ impl Staking {
         // moving them here might mean duplicating checks in some cases (how do
         // you know to call this method unless you've checked the criteria?).
         // Is the View method even the right place to enforce these checks?
+        use validator::BondingState::*;
         use validator::State::*;
         // Doing a single tuple match, rather than matching on substates,
         // ensures we exhaustively cover all possible state transitions.
         match (cur_state, new_state) {
             (Inactive, Active) => {
-                todo!("happens when a validator enters the top N");
+                // The validator's delegation pool becomes bonded.
+                self.state
+                    .set_validator_bonding_state(identity_key, Bonded)
+                    .await;
+
+                // Start tracking the validator's uptime with a new uptime tracker.
+                // This overwrites any existing uptime tracking, regardless of whether
+                // the validator was recently in the active set.
+                self.state
+                    .set_validator_uptime(
+                        identity_key,
+                        Uptime::new(
+                            self.state.get_block_height().await?,
+                            self.state.signed_blocks_window_len().await? as usize,
+                        ),
+                    )
+                    .await;
+
+                // Queue an update to send to Tendermint.
+                self.tm_validator_updates.insert(
+                    identity_key.clone(),
+                    self.state
+                        .validator_power(identity_key)
+                        .await?
+                        .expect("validator that became active did not have power recorded"),
+                );
+
+                // Finally, set the validator to be active.
+                self.state.put_domain(state_key, Active).await;
+
+                Ok(())
             }
             (Active, Inactive) => {
                 todo!("happens when a validator is removed from the top N");
