@@ -162,7 +162,12 @@ impl Staking {
                 Ok(())
             }
             (Jailed, Inactive) => {
-                todo!("happens when a validator operator unjails themself");
+                // We don't really have to do anything here; the validator was already
+                // slashed, and we're just allowing it to return to society.
+                tracing::debug!("releasing validator from jail");
+                self.state.put_domain(state_key, Inactive).await;
+
+                Ok(())
             }
             (Disabled, Inactive) => {
                 todo!("happens when a validator operator enables their validator");
@@ -655,6 +660,34 @@ impl Staking {
             .await
     }
 
+    // Used for updating an existing validator's definition.
+    #[tracing::instrument(skip(self, validator))]
+    async fn update_validator(&mut self, validator: Validator) -> Result<()> {
+        tracing::debug!(?validator);
+        let id = &validator.identity_key;
+
+        // Check if we need to unjail the validator.
+        // TODO: when adding `enabled` to the validator def, turn into if statemnt..
+        let cur_state = self
+            .state
+            .validator_state(id)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("updated validator not found in JMT"))?;
+
+        use validator::State::*;
+
+        // Treat updates to jailed validators as unjail requests.
+        if let Jailed = cur_state {
+            self.set_validator_state(id, Inactive).await?;
+        }
+
+        self.state
+            .put_domain(format!("staking/validators/{}", id).into(), validator)
+            .await;
+
+        Ok(())
+    }
+
     async fn process_evidence(&mut self, evidence: &Evidence) -> Result<()> {
         let ck = tendermint::PublicKey::from_raw_ed25519(&evidence.validator.address)
             .ok_or_else(|| anyhow::anyhow!("invalid ed25519 consensus pubkey from tendermint"))
@@ -989,8 +1022,7 @@ impl Component for Staking {
                 .is_some()
             {
                 // This is an existing validator definition.
-                // This means that only the Validator struct itself needs updating, not any rates/power/state.
-                self.state.update_validator(v.validator).await.unwrap();
+                self.update_validator(v.validator).await.unwrap();
             } else {
                 // This is a new validator definition.
                 // Set the default rates and state.
@@ -1165,21 +1197,6 @@ pub trait View: StateExt {
         };
 
         self.set_validator_rates(&identity_key, cur_rate, next_rate)
-            .await;
-
-        Ok(())
-    }
-
-    // Used for updating an existing validator's definition.
-    async fn update_validator(&self, validator: Validator) -> Result<()> {
-        tracing::debug!(?validator);
-        let id = validator.identity_key.clone();
-        // If the validator isn't already in the JMT, we can't update it.
-        self.validator(&id)
-            .await?
-            .ok_or_else(|| anyhow::anyhow!("updated validator not found in JMT"))?;
-
-        self.put_domain(format!("staking/validators/{}", id).into(), validator)
             .await;
 
         Ok(())
