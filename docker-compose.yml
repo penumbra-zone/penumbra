@@ -6,7 +6,7 @@ services:
     build:
       context: .
     environment:
-      - RUST_LOG=${RUST_LOG:-warn,pd=info,penumbra=info}
+      - RUST_LOG=${RUST_LOG:-warn,pd=debug,penumbra=debug,jmt=info}
     volumes:
       - ~/.penumbra/testnet_data/node0/pd:/pd
     command: pd start --host 0.0.0.0 -r /pd/rocksdb
