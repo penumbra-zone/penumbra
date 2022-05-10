@@ -46,15 +46,16 @@ pub struct Staking {
 }
 
 impl Staking {
+    /// Updates the state of the given validator, performing all necessary state transitions.
+    ///
+    /// This method errors on illegal state transitions; since execution must be infallible,
+    /// it's the caller's responsibility to ensure that the state transitions are legal.
     #[instrument(skip(self))]
     async fn set_validator_state(
         &mut self,
         identity_key: &IdentityKey,
         new_state: validator::State,
     ) -> Result<()> {
-        // Enforce state machine semantics here and update voting powers
-        // for tendermint appropriately
-
         let cur_state = self
             .state
             .validator_state(&identity_key)
@@ -63,31 +64,12 @@ impl Staking {
                 anyhow::anyhow!("validator to have state change did not have state in JMT")
             })?;
 
-        /* remainder of code from original function not already moved into below,
-           preserved for reference until impl is finished
-        tracing::debug!("setting validator state");
-        self.put_domain(
-            format!("staking/validators/{}/state", identity_key).into(),
-            cur_state,
-        )
-        .await;
-        */
-
         let state_key = format!("staking/validators/{}/state", identity_key).into();
 
-        // Ensure that the state transitions are valid.
-        // TODO: there are other semantics we could possibly enforce here
-        // that are currently being enforced by upstream callers, for example
-        // that to become Active a validator must appear in the top N validators
-        // by voting power. Having all checks enforced through this single method
-        // makes bugs relating to improperly setting state less likely, though
-        // moving them here might mean duplicating checks in some cases (how do
-        // you know to call this method unless you've checked the criteria?).
-        // Is the View method even the right place to enforce these checks?
-        use validator::BondingState::*;
-        use validator::State::*;
         // Doing a single tuple match, rather than matching on substates,
         // ensures we exhaustively cover all possible state transitions.
+        use validator::BondingState::*;
+        use validator::State::*;
         match (cur_state, new_state) {
             (Inactive, Active) => {
                 // The validator's delegation pool becomes bonded.
