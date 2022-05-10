@@ -43,6 +43,11 @@ pub struct Validator {
     /// The validator's description.
     pub description: String,
 
+    /// Whether the validator is enabled or not.
+    ///
+    /// Disabled validators cannot be delegated to, and immediately begin unbonding.
+    pub enabled: bool,
+
     /// The destinations for the validator's staking reward. The commission is implicitly defined
     /// by the configuration of funding_streams, the sum of FundingStream.rate_bps.
     ///
@@ -68,6 +73,7 @@ impl From<Validator> for pb::Validator {
             name: v.name,
             website: v.website,
             description: v.description,
+            enabled: v.enabled,
             funding_streams: v.funding_streams.into_iter().map(Into::into).collect(),
             sequence_number: v.sequence_number,
         }
@@ -87,6 +93,7 @@ impl TryFrom<pb::Validator> for Validator {
             name: v.name,
             website: v.website,
             description: v.description,
+            enabled: v.enabled,
             funding_streams: v
                 .funding_streams
                 .into_iter()

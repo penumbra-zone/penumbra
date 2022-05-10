@@ -16,6 +16,10 @@ message Validator {
   string website = 4;
   // The validator's description.
   string description = 5;
+  // Whether the validator is enabled or not.
+  //
+  // Disabled validators cannot be delegated to, and immediately begin unbonding.
+  bool enabled = 8;
   // A list of funding streams describing the validator's commission.
   repeated FundingStream funding_streams = 6;
   // The sequence number determines which validator data takes priority, and
@@ -77,7 +81,9 @@ message ValidatorState {
   enum ValidatorStateEnum {
     INACTIVE = 0;
     ACTIVE = 1;
-    SLASHED = 2;
+    JAILED = 2;
+    TOMBSTONED = 3;
+    DISABLED = 4;
   }
   ValidatorStateEnum state = 1;
 }

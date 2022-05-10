@@ -30,17 +30,7 @@ impl From<Status> for pb::ValidatorStatus {
             identity_key: Some(v.identity_key.into()),
             voting_power: v.voting_power,
             bonding_state: Some(v.bonding_state.into()),
-            state: Some(match v.state {
-                State::Inactive => pb::ValidatorState {
-                    state: pb::validator_state::ValidatorStateEnum::Inactive as i32,
-                },
-                State::Active => pb::ValidatorState {
-                    state: pb::validator_state::ValidatorStateEnum::Active as i32,
-                },
-                State::Slashed => pb::ValidatorState {
-                    state: pb::validator_state::ValidatorStateEnum::Slashed as i32,
-                },
-            }),
+            state: Some(v.state.into()),
         }
     }
 }
@@ -48,23 +38,16 @@ impl From<Status> for pb::ValidatorStatus {
 impl TryFrom<pb::ValidatorStatus> for Status {
     type Error = anyhow::Error;
     fn try_from(v: pb::ValidatorStatus) -> Result<Self, Self::Error> {
-        let state = match pb::validator_state::ValidatorStateEnum::from_i32(
-            v.state.as_ref().unwrap().state,
-        )
-        .ok_or_else(|| anyhow::anyhow!("missing validator state"))?
-        {
-            pb::validator_state::ValidatorStateEnum::Inactive => State::Inactive,
-            pb::validator_state::ValidatorStateEnum::Active => State::Active,
-            pb::validator_state::ValidatorStateEnum::Slashed => State::Slashed,
-        };
-
         Ok(Status {
             identity_key: v
                 .identity_key
                 .ok_or_else(|| anyhow::anyhow!("missing identity key field in proto"))?
                 .try_into()?,
             voting_power: v.voting_power,
-            state,
+            state: v
+                .state
+                .ok_or_else(|| anyhow::anyhow!("missing state field in proto"))?
+                .try_into()?,
             bonding_state: v
                 .bonding_state
                 .expect("expected bonding state to be set on validator status")

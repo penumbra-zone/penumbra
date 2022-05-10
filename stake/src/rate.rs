@@ -29,68 +29,49 @@ impl RateData {
         &self,
         base_rate_data: &BaseRateData,
         funding_streams: &[FundingStream],
-        // TODO: pass ValidatorStatus here so we can see if the validator is unbonding
         validator_state: &State,
     ) -> RateData {
         let prev = self;
 
-        let constant_rate =
+        if let State::Active = validator_state {
+            // compute the validator's total commission
+            let commission_rate_bps = funding_streams
+                .iter()
+                .fold(0u64, |total, stream| total + stream.rate_bps as u64);
+
+            if commission_rate_bps > 1_0000 {
+                // we should never hit this branch: validator funding streams should be verified not to
+                // sum past 100% in the state machine's validation of registration of new funding
+                // streams
+                panic!("commission rate sums to > 100%")
+            }
+
+            // compute next validator reward rate
+            // 1 bps = 1e-4, so here we group digits by 4s rather than 3s as is usual
+            let validator_reward_rate = ((1_0000_0000u64 - (commission_rate_bps * 1_0000))
+                * base_rate_data.base_reward_rate)
+                / 1_0000_0000;
+
+            // compute validator exchange rate
+            let validator_exchange_rate = (prev.validator_exchange_rate
+                * (validator_reward_rate + 1_0000_0000))
+                / 1_0000_0000;
+
+            RateData {
+                identity_key: prev.identity_key.clone(),
+                epoch_index: prev.epoch_index + 1,
+                validator_reward_rate,
+                validator_exchange_rate,
+            }
+        } else {
             // Non-Active validator states result in a constant rate. This means
             // the next epoch's rate is set to the current rate.
             RateData {
-                identity_key: self.identity_key.clone(),
-                epoch_index: self.epoch_index + 1,
-                validator_reward_rate: self.validator_reward_rate,
-                validator_exchange_rate: self.validator_exchange_rate,
-            };
-
-        match validator_state {
-            // if a validator is slashed, their rates are updated to include the slashing penalty
-            // and then held constant.
-            //
-            // if a validator is slashed during the epoch transition the current epoch's rate is set
-            // to the slashed value (during end_block) and in here, the next epoch's rate is held constant.
-            State::Slashed => {
-                return constant_rate;
+                identity_key: prev.identity_key.clone(),
+                epoch_index: prev.epoch_index + 1,
+                validator_reward_rate: prev.validator_reward_rate,
+                validator_exchange_rate: prev.validator_exchange_rate,
             }
-            // if a validator isn't part of the consensus set, we do not update their rates
-            State::Inactive => {
-                return constant_rate;
-            }
-            // TODO: if validator is unbonding they need a constant rate!!
-            // State::Unbonding { unbonding_epoch: _ } => {
-            //     return constant_rate;
-            // }
-            State::Active => {}
-        };
-
-        // compute the validator's total commission
-        let commission_rate_bps = funding_streams
-            .iter()
-            .fold(0u64, |total, stream| total + stream.rate_bps as u64);
-
-        if commission_rate_bps > 1_0000 {
-            // we should never hit this branch: validator funding streams should be verified not to
-            // sum past 100% in the state machine's validation of registration of new funding
-            // streams
-            panic!("commission rate sums to > 100%")
-        }
-
-        // compute next validator reward rate
-        // 1 bps = 1e-4, so here we group digits by 4s rather than 3s as is usual
-        let validator_reward_rate = ((1_0000_0000u64 - (commission_rate_bps * 1_0000))
-            * base_rate_data.base_reward_rate)
-            / 1_0000_0000;
-
-        // compute validator exchange rate
-        let validator_exchange_rate =
-            (prev.validator_exchange_rate * (validator_reward_rate + 1_0000_0000)) / 1_0000_0000;
-
-        RateData {
-            identity_key: self.identity_key.clone(),
-            epoch_index: self.epoch_index + 1,
-            validator_reward_rate,
-            validator_exchange_rate,
         }
     }
 
