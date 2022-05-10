@@ -1,5 +1,6 @@
 use ibc::core::ics03_connection::connection::ConnectionEnd;
 use ibc::core::ics03_connection::version::Version;
+use ibc_proto::ibc::core::connection::v1::ConnectionEnd as RawConnectionEnd;
 use once_cell::sync::Lazy;
 use penumbra_proto::{ibc as pb, Protobuf};
 
@@ -25,25 +26,20 @@ impl From<ConnectionCounter> for pb::ConnectionCounter {
 #[derive(Debug, Clone)]
 pub struct Connection(pub ConnectionEnd);
 
-impl Protobuf<pb::Connection> for Connection {}
+impl Protobuf<RawConnectionEnd> for Connection {}
 
-impl TryFrom<pb::Connection> for Connection {
+impl TryFrom<RawConnectionEnd> for Connection {
     type Error = anyhow::Error;
 
-    fn try_from(p: pb::Connection) -> Result<Self, Self::Error> {
-        let end = p
-            .connection_end
-            .ok_or_else(|| anyhow::anyhow!("connection end not set"))?;
-        let connection_end = ConnectionEnd::try_from(end)?;
+    fn try_from(p: RawConnectionEnd) -> Result<Self, Self::Error> {
+        let connection_end = ConnectionEnd::try_from(p)?;
         Ok(Connection(connection_end))
     }
 }
 
-impl From<Connection> for pb::Connection {
+impl From<Connection> for RawConnectionEnd {
     fn from(c: Connection) -> Self {
-        pb::Connection {
-            connection_end: Some(c.0.into()),
-        }
+        c.0.into()
     }
 }
 
