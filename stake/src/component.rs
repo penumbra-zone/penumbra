@@ -443,23 +443,34 @@ impl Staking {
     /// Called during `end_epoch`. Will perform state transitions to validators based
     /// on changes to voting power that occurred in this epoch.
     pub async fn set_active_and_inactive_validators(&mut self) -> Result<()> {
-        // Build a list of all active and inactive validators.
+        // A list of all active and inactive validators, with nonzero voting power.
         let mut validators_by_power = Vec::new();
+        // A list of validators with zero power, who must be inactive.
+        let mut zero_power = Vec::new();
+
         for v in self.state.validator_list().await? {
             let state = self.state.validator_state(&v).await?.unwrap();
             let power = self.state.validator_power(&v).await?.unwrap();
             if matches!(state, validator::State::Active | validator::State::Inactive) {
-                validators_by_power.push((v, power));
+                if power == 0 {
+                    zero_power.push((v, power));
+                } else {
+                    validators_by_power.push((v, power));
+                }
             }
         }
 
         // Sort by voting power descending.
         validators_by_power.sort_by(|a, b| b.1.cmp(&a.1));
 
-        // The top `limit` validators become active, the rest inactive.
+        // The top `limit` validators with nonzero power become active.
+        // All other validators become inactive.
         let limit = self.state.get_chain_params().await?.active_validator_limit as usize;
         let active = validators_by_power.iter().take(limit);
-        let inactive = validators_by_power.iter().skip(limit);
+        let inactive = validators_by_power
+            .iter()
+            .skip(limit)
+            .chain(zero_power.iter());
 
         for (v, _) in active {
             self.set_validator_state(v, validator::State::Active)
