@@ -18,7 +18,7 @@ pub struct ScanResult {
 }
 
 #[tracing::instrument(skip(fvk, outputs, nullifiers))]
-fn scan_block(
+pub fn scan_block(
     fvk: &FullViewingKey,
     note_commitment_tree: &mut penumbra_crypto::merkle::NoteCommitmentTree,
     CompactBlock {
