@@ -24,6 +24,7 @@ jobs:
         port: ${{ secrets.TUNNEL_PORT }}
         script: |
           cd ~/penumbra
+          git reset --hard
           git checkout main
           git pull
           cargo update

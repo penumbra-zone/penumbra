@@ -22,8 +22,10 @@ jobs:
         username: ${{ secrets.TUNNEL_USERNAME }}
         key: ${{ secrets.ID_ED25519 }}
         port: ${{ secrets.TUNNEL_PORT }}
+        # TODO: `git checkout main` should refer to the tag instead
         script: |
           cd ~/penumbra
+          git reset --hard
           git checkout main
           git pull
           cargo update
