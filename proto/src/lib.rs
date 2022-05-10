@@ -1,4 +1,4 @@
-//! Protobuf definitions for Penumbra.
+//! Protobuf definitions for Penumbra.o
 //!
 //! This crate only contains the `.proto` files and the Rust types generated
 //! from them.  These types only handle parsing the wire format; validation
@@ -56,6 +56,14 @@ pub mod client {
 /// IBC protocol structures.
 pub mod ibc {
     tonic::include_proto!("penumbra.ibc");
+
+    extern crate ibc as ibc_rs;
+
+    use crate::Protobuf;
+    use ibc_proto::ibc::core::connection::v1::ConnectionEnd as RawConnectionEnd;
+    use ibc_rs::core::ics03_connection::connection::ConnectionEnd;
+
+    impl Protobuf<RawConnectionEnd> for ConnectionEnd {}
 }
 
 /// Wallet protocol structures.

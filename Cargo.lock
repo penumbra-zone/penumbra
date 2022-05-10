@@ -2687,6 +2687,7 @@ dependencies = [
  "bech32",
  "bytes",
  "hex",
+ "ibc",
  "ibc-proto",
  "prost 0.9.0",
  "prost-build",

@@ -98,8 +98,7 @@ pub mod connection_open_confirm {
                 let connection = self
                     .get_connection(&msg.connection_id)
                     .await?
-                    .ok_or_else(|| anyhow::anyhow!("connection not found"))?
-                    .0;
+                    .ok_or_else(|| anyhow::anyhow!("connection not found"))?;
 
                 if !connection.state_matches(&ConnectionState::TryOpen) {
                     return Err(anyhow::anyhow!("connection not in correct state"));
@@ -276,8 +275,7 @@ pub mod connection_open_ack {
                 let connection = self
                     .get_connection(&msg.connection_id)
                     .await?
-                    .ok_or_else(|| anyhow::anyhow!("no connection with the specified ID exists"))?
-                    .0;
+                    .ok_or_else(|| anyhow::anyhow!("no connection with the specified ID exists"))?;
 
                 // see
                 // https://github.com/cosmos/ibc/blob/master/spec/core/ics-003-connection-semantics/README.md
@@ -467,8 +465,7 @@ pub mod connection_open_try {
                     let prev_connection = self
                         .get_connection(prev_conn_id)
                         .await?
-                        .ok_or_else(|| anyhow::anyhow!("no connection with the given ID"))?
-                        .0;
+                        .ok_or_else(|| anyhow::anyhow!("no connection with the given ID"))?;
 
                     // check that the existing connection matches the incoming connectionOpenTry
                     if !(prev_connection.state_matches(&ConnectionState::Init)
