@@ -3,9 +3,9 @@
 // marked as unreachable only when not building in test configuration.
 #![allow(unreachable_patterns)]
 
+mod channel;
 mod client;
 mod connection;
-mod channel;
 
 use anyhow::Result;
 use async_trait::async_trait;
