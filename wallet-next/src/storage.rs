@@ -1,3 +1,6 @@
+use std::path::PathBuf;
+
+use anyhow::anyhow;
 use penumbra_chain::params::ChainParams;
 use penumbra_crypto::{
     merkle::{NoteCommitmentTree, Tree},
@@ -5,9 +8,11 @@ use penumbra_crypto::{
     FieldExt,
 };
 use penumbra_proto::{crypto::FullViewingKey, Message, Protobuf};
-use sqlx::{query, Pool, Sqlite};
+use sqlx::{migrate::MigrateDatabase, query, Pool, Sqlite};
 
 use crate::sync::ScanResult;
+
+const MAX_MERKLE_CHECKPOINTS_CLIENT: usize = 10;
 
 #[derive(Clone)]
 pub struct Storage {
@@ -15,12 +20,58 @@ pub struct Storage {
 }
 
 impl Storage {
-    pub fn new(pool: Pool<Sqlite>) -> Self {
-        Self { pool }
+    pub async fn load(storage_path: String) -> anyhow::Result<Self> {
+        Ok(Self {
+            pool: Pool::<Sqlite>::connect(&storage_path).await?,
+        })
     }
 
-    pub async fn migrate(self: &Storage) -> anyhow::Result<()> {
-        sqlx::migrate!().run(&self.pool).await.map_err(Into::into)
+    pub async fn initialize(
+        storage_path: String,
+        fvk: FullViewingKey,
+        params: ChainParams,
+    ) -> anyhow::Result<Self> {
+        //   Check that the file at the given path does not exist;
+        if PathBuf::from(&storage_path).exists() {
+            return Err(anyhow!("Database already exists at: {}", storage_path));
+        }
+        // Create the SQLite database
+        sqlx::Sqlite::create_database(&storage_path);
+
+        let pool = Pool::<Sqlite>::connect(&storage_path).await?;
+
+        // Run migrations
+        sqlx::migrate!().run(&pool).await?;
+
+        // Initialize the database state with: empty NCT, chain params, FVK
+        let mut tx = pool.begin().await?;
+
+        let nct_bytes =
+            bincode::serialize(&NoteCommitmentTree::new(MAX_MERKLE_CHECKPOINTS_CLIENT))?;
+        let chain_params_bytes = &ChainParams::encode_to_vec(&params)[..];
+        let fvk_bytes = &FullViewingKey::encode_to_vec(&fvk)[..];
+
+        sqlx::query!(
+            "INSERT INTO note_commitment_tree (bytes) VALUES (?)",
+            nct_bytes
+        )
+        .execute(&mut tx)
+        .await?;
+
+        sqlx::query!(
+            "INSERT INTO chain_params (bytes) VALUES (?)",
+            chain_params_bytes
+        )
+        .execute(&mut tx)
+        .await?;
+
+        sqlx::query!("INSERT INTO full_viewing_key (bytes) VALUES (?)", fvk_bytes)
+            .execute(&mut tx)
+            .await?;
+
+        tx.commit().await?;
+
+        Ok(Storage { pool })
     }
 
     /// The last block height we've scanned to, if any.
