@@ -115,7 +115,9 @@ impl Default for ChainParams {
             active_validator_limit: 10,
             // copied from cosmos hub
             signed_blocks_window_len: 10000,
-            missed_blocks_maximum: 9500,
+            //missed_blocks_maximum: 9500,
+            // more aggressive to test slashing
+            missed_blocks_maximum: 250,
             // 1000 basis points = 10%
             slashing_penalty_misbehavior_bps: 1000,
             // 1 basis point = 0.01%
