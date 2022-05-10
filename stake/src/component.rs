@@ -71,6 +71,23 @@ impl Staking {
         use validator::BondingState::*;
         use validator::State::*;
         match (cur_state, new_state) {
+            (Inactive, Inactive) => Ok(()), // no-op
+            (Disabled, Disabled) => Ok(()), // no-op
+            (Active, Active) => {
+                // This is a no-op from the point of view of the staking
+                // component, but we should send a validator update to the
+                // tendermint validator set, to propagate changes to the voting
+                // power.
+                self.tm_validator_updates.insert(
+                    identity_key.clone(),
+                    self.state
+                        .validator_power(identity_key)
+                        .await?
+                        .expect("active validator did not have power recorded"),
+                );
+
+                Ok(())
+            }
             (Inactive, Active) => {
                 // The validator's delegation pool becomes bonded.
                 self.state
@@ -140,8 +157,6 @@ impl Staking {
             (Tombstoned, _) => Err(anyhow::anyhow!("tombstoning is forever")),
             (_, Active) => Err(anyhow::anyhow!("only inactive validator may become active")),
             (_, Jailed) => Err(anyhow::anyhow!("only active validators may become jailed")),
-            (Inactive, Inactive) => Ok(()),
-            (Disabled, Disabled) => Ok(()),
         }
     }
 
