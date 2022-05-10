@@ -140,8 +140,8 @@ impl Staking {
                 tracing::debug!(?power, "validator became active");
                 Ok(())
             }
-            (Active, Inactive) => {
-                tracing::debug!("validator became inactive");
+            (Active, new_state @ (Inactive | Disabled)) => {
+                tracing::debug!("removing validator from active set");
 
                 // The validator's delegation pool begins unbonding.
                 self.state
@@ -156,8 +156,8 @@ impl Staking {
                 // Inform tendermint that the validator is no longer active.
                 self.tm_validator_updates.insert(identity_key.clone(), 0);
 
-                // Finally, set the validator to be inactive.
-                self.state.put_domain(state_key, Inactive).await;
+                // Finally, set the validator to be inactive or disabled.
+                self.state.put_domain(state_key, new_state).await;
 
                 Ok(())
             }
@@ -170,16 +170,21 @@ impl Staking {
                 Ok(())
             }
             (Disabled, Inactive) => {
-                todo!("happens when a validator operator enables their validator");
+                // We don't really have to do anything here; we're just
+                // recording that the validator was enabled.
+                tracing::debug!("enabling validator");
+                self.state.put_domain(state_key, Inactive).await;
+
+                Ok(())
             }
-            (Active, Disabled) => {
-                todo!("happens when a validator operator disables their validator");
-            }
-            (Inactive, Disabled) => {
-                todo!("happens when a validator operator disables their validator");
-            }
-            (Jailed, Disabled) => {
-                todo!("happens when a validator operator disables their validator");
+            (Inactive | Jailed, Disabled) => {
+                // We don't really have to do anything here; we're just
+                // recording that the validator was disabled, so delegations to
+                // it are not allowed.
+                tracing::debug!("disabling validator");
+                self.state.put_domain(state_key, Disabled).await;
+
+                Ok(())
             }
             (Active, Jailed) => {
                 let penalty = self

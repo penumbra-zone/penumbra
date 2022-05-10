@@ -124,6 +124,7 @@ impl ValidatorCmd {
                     name: String::new(),
                     website: String::new(),
                     description: String::new(),
+                    enabled: true,
                     funding_streams: FundingStreams::try_from(vec![FundingStream {
                         address,
                         rate_bps: 100,

@@ -363,6 +363,7 @@ async fn main() -> anyhow::Result<()> {
                         name: v.name.clone(),
                         website: v.website.clone(),
                         description: v.description.clone(),
+                        enabled: true,
                         funding_streams: FundingStreams::try_from(
                             v.funding_streams
                                 .iter()
