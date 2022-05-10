@@ -28,8 +28,7 @@ use tracing::instrument;
 
 use crate::component::client::View as _;
 use crate::{
-    validate_penumbra_client_state, Connection, ConnectionCounter, COMMITMENT_PREFIX,
-    SUPPORTED_VERSIONS,
+    validate_penumbra_client_state, ConnectionCounter, COMMITMENT_PREFIX, SUPPORTED_VERSIONS,
 };
 
 mod stateful;
@@ -174,8 +173,7 @@ impl ConnectionComponent {
             .await
             .unwrap()
             .ok_or_else(|| anyhow::anyhow!("no connection with the given ID"))
-            .unwrap()
-            .0;
+            .unwrap();
 
         connection.set_state(ConnectionState::Open);
 
@@ -190,8 +188,7 @@ impl ConnectionComponent {
             .get_connection(&msg.connection_id)
             .await
             .unwrap()
-            .unwrap()
-            .0;
+            .unwrap();
 
         let prev_counterparty = connection.counterparty();
         let counterparty = Counterparty::new(
@@ -278,7 +275,7 @@ pub trait View: StateExt + Send + Sync {
     async fn put_new_connection(
         &mut self,
         connection_id: &ConnectionId,
-        connection: Connection,
+        connection: ConnectionEnd,
     ) -> Result<()> {
         self.put_domain(
             format!(
@@ -297,13 +294,13 @@ pub trait View: StateExt + Send + Sync {
         self.put_connection_counter(ConnectionCounter(counter.0 + 1))
             .await;
 
-        self.add_connection_to_client(connection.0.client_id(), connection_id)
+        self.add_connection_to_client(connection.client_id(), connection_id)
             .await?;
 
         return Ok(());
     }
 
-    async fn get_connection(&self, connection_id: &ConnectionId) -> Result<Option<Connection>> {
+    async fn get_connection(&self, connection_id: &ConnectionId) -> Result<Option<ConnectionEnd>> {
         self.get_domain(
             format!(
                 "{}/connections/{}",
@@ -315,7 +312,7 @@ pub trait View: StateExt + Send + Sync {
         .await
     }
 
-    async fn update_connection(&self, connection_id: &ConnectionId, connection: Connection) {
+    async fn update_connection(&self, connection_id: &ConnectionId, connection: ConnectionEnd) {
         self.put_domain(
             format!(
                 "{}/connections/{}",

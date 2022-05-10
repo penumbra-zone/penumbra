@@ -12,6 +12,6 @@ pub use client::{
     VerifiedHeights,
 };
 pub use component::IBCComponent;
-pub use connection::{Connection, ConnectionCounter, SUPPORTED_VERSIONS};
+pub use connection::{ConnectionCounter, SUPPORTED_VERSIONS};
 
 pub static COMMITMENT_PREFIX: &str = "penumbra-ibc-commitment";
