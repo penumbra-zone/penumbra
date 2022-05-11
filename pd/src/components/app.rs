@@ -46,6 +46,11 @@ impl App {
     /// as an empty state over top of the newly written storage.
     #[instrument(skip(self, storage))]
     pub async fn commit(&mut self, storage: Storage) -> Result<(RootHash, Version)> {
+        // Store the latest NCT in the storage (this is not in the JMT State because we don't want
+        // the serialization format to be consensus critical; only the root is stored in the State)
+        storage
+            .put_nct(self.shielded_pool.note_commitment_tree())
+            .await?;
         // Commit the pending writes, clearing the state.
         let (root_hash, version) = self.state.write().await.commit(storage.clone()).await?;
         tracing::debug!(?root_hash, version, "finished committing state");
