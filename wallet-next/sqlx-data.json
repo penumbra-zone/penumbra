@@ -1,5 +1,15 @@
 {
   "db": "SQLite",
+  "00ebf9aa311283f814859965b74865091c6e9bca47f4d95985b2aa63d4e4ac2f": {
+    "query": "INSERT INTO full_viewing_key (bytes) VALUES (?)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": []
+    }
+  },
   "0c9654cf156210edda72a63b80ad55cc1cd772f6ab83660307167aa3d2e8b094": {
     "query": "UPDATE notes SET height_spent = ? WHERE nullifier = ? RETURNING note_commitment",
     "describe": {
@@ -16,6 +26,16 @@
       "nullable": [
         false
       ]
+    }
+  },
+  "1766574ebf4edffed45f0167f734a5ea5167ef2ec4280ed9710b4e1ec3eeb362": {
+    "query": "INSERT INTO chain_params (bytes) VALUES (?)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": []
     }
   },
   "305580649ec6471af1f6691eb228cb960c5923a36187ac1fc82af55242be85d0": {
@@ -90,6 +110,16 @@
       "nullable": [
         false
       ]
+    }
+  },
+  "e61182e04d553075f4385fda82a0822a04a08b8ada8ac5b5d46154a4c2901626": {
+    "query": "INSERT INTO note_commitment_tree (bytes) VALUES (?)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": []
     }
   },
   "efb5f4932197a38ca134b63d8ea5d2fad9145fb56d03a60351f15b5302905402": {
