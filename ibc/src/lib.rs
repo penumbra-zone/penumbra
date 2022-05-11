@@ -8,7 +8,7 @@ mod component;
 mod connection;
 
 pub use client::{
-    validate_penumbra_client_state, ClientConnections, ClientCounter, ClientData, ConsensusState,
+    validate_penumbra_client_state, ClientConnections, ClientCounter, ConsensusState,
     VerifiedHeights,
 };
 pub use component::IBCComponent;
