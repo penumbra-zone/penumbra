@@ -64,10 +64,12 @@ pub mod ibc {
     use crate::Protobuf;
     use ibc_proto::google::protobuf::Any;
     use ibc_proto::ibc::core::connection::v1::ConnectionEnd as RawConnectionEnd;
+    use ibc_rs::core::ics02_client::client_consensus::AnyConsensusState;
     use ibc_rs::core::ics03_connection::connection::ConnectionEnd;
 
     impl Protobuf<RawConnectionEnd> for ConnectionEnd {}
     impl Protobuf<Any> for AnyClientState {}
+    impl Protobuf<Any> for AnyConsensusState {}
 }
 
 /// Wallet protocol structures.
