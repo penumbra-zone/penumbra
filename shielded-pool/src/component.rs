@@ -38,6 +38,12 @@ impl ShieldedPool {
             compact_block: Default::default(),
         }
     }
+
+    /// Get the current note commitment tree (this may not yet have been committed to the underlying
+    /// storage).
+    pub fn note_commitment_tree(&self) -> &NoteCommitmentTree {
+        &self.note_commitment_tree
+    }
 }
 
 #[async_trait]
