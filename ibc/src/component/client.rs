@@ -39,7 +39,7 @@ use tendermint_light_client_verifier::{
 };
 use tracing::instrument;
 
-use crate::{ClientConnections, ClientCounter, ConsensusState, VerifiedHeights, COMMITMENT_PREFIX};
+use crate::{ClientConnections, ClientCounter, VerifiedHeights, COMMITMENT_PREFIX};
 
 mod stateful;
 mod stateless;
@@ -85,7 +85,7 @@ impl Component for Ics2Client {
         let height = Height::new(revision_number, begin_block.header.height.into());
 
         self.state
-            .put_penumbra_consensus_state(height, cs.into())
+            .put_penumbra_consensus_state(height, AnyConsensusState::Tendermint(cs))
             .await;
     }
 
@@ -211,7 +211,7 @@ impl Ics2Client {
             .put_verified_consensus_state(
                 tm_header.height(),
                 msg_update_client.client_id.clone(),
-                ConsensusState(AnyConsensusState::Tendermint(next_tm_consensus_state)),
+                AnyConsensusState::Tendermint(next_tm_consensus_state),
             )
             .await
             .unwrap();
@@ -242,7 +242,7 @@ impl Ics2Client {
             .put_verified_consensus_state(
                 msg_create_client.client_state.latest_height(),
                 client_id,
-                ConsensusState(msg_create_client.consensus_state),
+                msg_create_client.consensus_state,
             )
             .await
             .unwrap();
@@ -276,7 +276,11 @@ impl Ics2Client {
             .await
             .ok()
         {
-            let stored_cs_state_tm = stored_cs_state.as_tendermint().unwrap();
+            let stored_cs_state_tm = downcast!(stored_cs_state => AnyConsensusState::Tendermint)
+                .ok_or_else(|| {
+                    anyhow::anyhow!("stored consensus state is not a Tendermint consensus state")
+                })
+                .unwrap();
             if stored_cs_state_tm == verified_consensus_state {
                 return (trusted_client_state, verified_consensus_state);
             } else {
@@ -308,7 +312,11 @@ impl Ics2Client {
         // case 1: if we have a verified consensus state previous to this header, verify that this
         // header's timestamp is greater than or equal to the stored consensus state's timestamp
         if let Some(prev_state) = prev_consensus_state {
-            let prev_state_tm = prev_state.as_tendermint().unwrap();
+            let prev_state_tm = downcast!(prev_state => AnyConsensusState::Tendermint)
+                .ok_or_else(|| {
+                    anyhow::anyhow!("stored consensus state is not a Tendermint consensus state")
+                })
+                .unwrap();
             if !(verified_header.signed_header.header().time >= prev_state_tm.timestamp) {
                 return (
                     trusted_client_state
@@ -322,7 +330,11 @@ impl Ics2Client {
         // case 2: if we have a verified consensus state with higher block height than this header,
         // verify that this header's timestamp is less than or equal to this header's timestamp.
         if let Some(next_state) = next_consensus_state {
-            let next_state_tm = next_state.as_tendermint().unwrap();
+            let next_state_tm = downcast!(next_state => AnyConsensusState::Tendermint)
+                .ok_or_else(|| {
+                    anyhow::anyhow!("stored consensus state is not a Tendermint consensus state")
+                })
+                .unwrap();
             if !(verified_header.signed_header.header().time <= next_state_tm.timestamp) {
                 return (
                     trusted_client_state
@@ -415,7 +427,7 @@ pub trait View: StateExt {
     }
 
     // returns the ConsensusState for the penumbra chain (this chain) at the given height
-    async fn get_penumbra_consensus_state(&self, height: Height) -> Result<ConsensusState> {
+    async fn get_penumbra_consensus_state(&self, height: Height) -> Result<AnyConsensusState> {
         // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
         // it's not in the same path namespace.
         self.get_domain(format!("penumbra_consensus_states/{}", height).into())
@@ -424,7 +436,11 @@ pub trait View: StateExt {
     }
 
     // returns the ConsensusState for the penumbra chain (this chain) at the given height
-    async fn put_penumbra_consensus_state(&self, height: Height, consensus_state: ConsensusState) {
+    async fn put_penumbra_consensus_state(
+        &self,
+        height: Height,
+        consensus_state: AnyConsensusState,
+    ) {
         // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
         // it's not in the same path namespace.
         self.put_domain(
@@ -438,7 +454,7 @@ pub trait View: StateExt {
         &self,
         height: Height,
         client_id: ClientId,
-    ) -> Result<ConsensusState> {
+    ) -> Result<AnyConsensusState> {
         self.get_domain(
             format!(
                 "{}/{}/consensusStates/{}",
@@ -454,7 +470,7 @@ pub trait View: StateExt {
         &mut self,
         height: Height,
         client_id: ClientId,
-        consensus_state: ConsensusState,
+        consensus_state: AnyConsensusState,
     ) -> Result<()> {
         self.put_domain(
             format!(
@@ -488,7 +504,7 @@ pub trait View: StateExt {
         &self,
         client_id: &ClientId,
         height: Height,
-    ) -> Result<Option<ConsensusState>> {
+    ) -> Result<Option<AnyConsensusState>> {
         let mut verified_heights =
             self.get_verified_heights(client_id)
                 .await?
@@ -519,7 +535,7 @@ pub trait View: StateExt {
         &self,
         client_id: &ClientId,
         height: Height,
-    ) -> Result<Option<ConsensusState>> {
+    ) -> Result<Option<AnyConsensusState>> {
         let mut verified_heights =
             self.get_verified_heights(client_id)
                 .await?

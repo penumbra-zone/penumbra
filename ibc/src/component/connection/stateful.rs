@@ -59,8 +59,7 @@ pub mod connection_open_confirm {
             // get the stored consensus state for the counterparty
             let trusted_consensus_state = self
                 .get_verified_consensus_state(msg.proofs.height(), connection.client_id().clone())
-                .await?
-                .0;
+                .await?;
 
             let client_def = AnyClient::from_client_type(trusted_client_state.client_type());
 
@@ -166,8 +165,7 @@ pub mod connection_open_ack {
             // get the stored consensus state for the counterparty
             let trusted_consensus_state = self
                 .get_verified_consensus_state(msg.proofs.height(), connection.client_id().clone())
-                .await?
-                .0;
+                .await?;
 
             let client_def = AnyClient::from_client_type(trusted_client_state.client_type());
 
@@ -207,8 +205,7 @@ pub mod connection_open_ack {
             })?;
             let expected_consensus = self
                 .get_penumbra_consensus_state(cons_proof.height())
-                .await?
-                .0;
+                .await?;
 
             // 3. verify that the counterparty chain stored the correct consensus state of Penumbra at
             //    the given consensus height
@@ -355,8 +352,8 @@ pub mod connection_open_try {
             // get the stored consensus state for the counterparty
             let trusted_consensus_state = self
                 .get_verified_consensus_state(msg.proofs.height(), msg.client_id.clone())
-                .await?
-                .0;
+                .await?;
+
             let client_def = AnyClient::from_client_type(trusted_client_state.client_type());
 
             // PROOF VERIFICATION
@@ -395,8 +392,7 @@ pub mod connection_open_try {
             })?;
             let expected_consensus = self
                 .get_penumbra_consensus_state(cons_proof.height())
-                .await?
-                .0;
+                .await?;
 
             // 3. verify that the counterparty chain stored the correct consensus state of Penumbra at
             //    the given consensus height

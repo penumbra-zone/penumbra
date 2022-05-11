@@ -54,8 +54,15 @@ pub mod update_client {
             // consensus state the update extends.
             let last_trusted_consensus_state = self
                 .get_verified_consensus_state(trusted_height, msg.client_id.clone())
-                .await?
-                .as_tendermint()?;
+                .await?;
+
+            let last_trusted_consensus_state =
+                downcast!(last_trusted_consensus_state => AnyConsensusState::Tendermint)
+                    .ok_or_else(|| {
+                        anyhow::anyhow!(
+                            "stored consensus state is not a Tendermint consensus state!"
+                        )
+                    })?;
 
             // We also have to convert from an IBC height, which has two
             // components, to a Tendermint height, which has only one.
@@ -176,12 +183,13 @@ pub mod update_client {
                     .await?;
 
                 let latest_consensus_state_tm =
-                    downcast!(latest_consensus_state.0 => AnyConsensusState::Tendermint)
-                        .ok_or_else(|| {
+                    downcast!(latest_consensus_state => AnyConsensusState::Tendermint).ok_or_else(
+                        || {
                             anyhow::anyhow!(
                                 "invalid consensus state: not a Tendermint consensus state"
                             )
-                        })?;
+                        },
+                    )?;
 
                 let now = self.get_block_timestamp().await?;
                 let time_elapsed = now.duration_since(latest_consensus_state_tm.timestamp)?;
@@ -206,7 +214,13 @@ pub mod update_client {
                     .get_verified_consensus_state(untrusted_header.height(), client_id.clone())
                     .await
                 {
-                    let stored_tm_consensus_state = stored_consensus_state.as_tendermint()?;
+                    let stored_tm_consensus_state =
+                        downcast!(stored_consensus_state => AnyConsensusState::Tendermint)
+                            .ok_or_else(|| {
+                                anyhow::anyhow!(
+                                    "invalid consensus state: not a Tendermint consensus state"
+                                )
+                            })?;
 
                     Ok(stored_tm_consensus_state == untrusted_consensus_state)
                 } else {
