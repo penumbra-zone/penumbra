@@ -5,7 +5,8 @@ pub mod connection_open_init {
     pub trait ConnectionOpenInitCheck: StateExt {
         async fn validate(&self, msg: &MsgConnectionOpenInit) -> anyhow::Result<()> {
             // check that the client with the specified ID exists
-            self.get_client_data(&msg.client_id).await?;
+            self.get_client_state(&msg.client_id).await?;
+            self.get_client_type(&msg.client_id).await?;
 
             Ok(())
         }
@@ -47,11 +48,7 @@ pub mod connection_open_confirm {
             );
 
             // get the trusted client state for the counterparty
-            let trusted_client_state = self
-                .get_client_data(connection.client_id())
-                .await?
-                .client_state
-                .0;
+            let trusted_client_state = self.get_client_state(connection.client_id()).await?;
 
             // check if the client is frozen
             // TODO: should we also check if the client is expired here?
@@ -158,11 +155,7 @@ pub mod connection_open_ack {
             );
 
             // get the stored client state for the counterparty
-            let trusted_client_state = self
-                .get_client_data(connection.client_id())
-                .await?
-                .client_state
-                .0;
+            let trusted_client_state = self.get_client_state(connection.client_id()).await?;
 
             // check if the client is frozen
             // TODO: should we also check if the client is expired here?
@@ -351,7 +344,7 @@ pub mod connection_open_try {
             );
 
             // get the stored client state for the counterparty
-            let trusted_client_state = self.get_client_data(&msg.client_id).await?.client_state.0;
+            let trusted_client_state = self.get_client_state(&msg.client_id).await?;
 
             // check if the client is frozen
             // TODO: should we also check if the client is expired here?

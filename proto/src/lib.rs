@@ -59,11 +59,15 @@ pub mod ibc {
 
     extern crate ibc as ibc_rs;
 
+    use ibc_rs::core::ics02_client::client_state::AnyClientState;
+
     use crate::Protobuf;
+    use ibc_proto::google::protobuf::Any;
     use ibc_proto::ibc::core::connection::v1::ConnectionEnd as RawConnectionEnd;
     use ibc_rs::core::ics03_connection::connection::ConnectionEnd;
 
     impl Protobuf<RawConnectionEnd> for ConnectionEnd {}
+    impl Protobuf<Any> for AnyClientState {}
 }
 
 /// Wallet protocol structures.

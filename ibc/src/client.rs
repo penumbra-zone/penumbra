@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use ibc::core::ics02_client::trust_threshold::TrustThreshold;
 use ibc::core::ics23_commitment::specs::ProofSpecs;
 use ibc::core::ics24_host::identifier::ChainId;
@@ -9,11 +7,8 @@ use ibc::{
     clients::ics07_tendermint::{
         client_state, consensus_state, consensus_state::ConsensusState as TendermintConsensusState,
     },
-    core::{
-        ics02_client::{
-            client_consensus::AnyConsensusState, client_state::AnyClientState, height::Height,
-        },
-        ics24_host::identifier::ClientId,
+    core::ics02_client::{
+        client_consensus::AnyConsensusState, client_state::AnyClientState, height::Height,
     },
 };
 use penumbra_proto::{ibc as pb, Protobuf};
@@ -130,71 +125,6 @@ impl From<ConsensusState> for pb::ConsensusState {
                         .expect("encoding to `Any` from `ConsensusState::Tendermint`"),
                 }),
             },
-        }
-    }
-}
-
-/// ClientData encapsulates the data that represents an ICS-02 client, stored in the Penumbra
-/// state.
-#[derive(Clone, Debug)]
-pub struct ClientData {
-    pub client_id: ClientId,
-    pub client_state: ClientState,
-    pub processed_time: String,
-    pub processed_height: u64,
-}
-
-impl ClientData {
-    pub fn new(
-        client_id: ClientId,
-        client_state: AnyClientState,
-        processed_time: String,
-        processed_height: u64,
-    ) -> Self {
-        ClientData {
-            client_id,
-            client_state: ClientState(client_state),
-            processed_time,
-            processed_height,
-        }
-    }
-    pub fn with_new_client_state(
-        &self,
-        new_client_state: AnyClientState,
-        new_processed_time: String,
-        new_processed_height: u64,
-    ) -> Self {
-        ClientData {
-            client_id: self.client_id.clone(),
-            client_state: ClientState(new_client_state),
-            processed_time: new_processed_time,
-            processed_height: new_processed_height,
-        }
-    }
-}
-
-impl Protobuf<pb::ClientData> for ClientData {}
-
-impl TryFrom<pb::ClientData> for ClientData {
-    type Error = anyhow::Error;
-
-    fn try_from(msg: pb::ClientData) -> Result<Self, Self::Error> {
-        Ok(ClientData {
-            client_id: ClientId::from_str(&msg.client_id)?,
-            client_state: ClientState::try_from(msg.client_state.unwrap())?,
-            processed_time: msg.processed_time,
-            processed_height: msg.processed_height,
-        })
-    }
-}
-
-impl From<ClientData> for pb::ClientData {
-    fn from(d: ClientData) -> Self {
-        Self {
-            client_id: d.client_id.to_string(),
-            client_state: Some(d.client_state.into()),
-            processed_time: d.processed_time,
-            processed_height: d.processed_height,
         }
     }
 }

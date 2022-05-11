@@ -1,7 +1,9 @@
 use std::convert::TryFrom;
+use std::str::FromStr;
 
 use anyhow::Result;
 use async_trait::async_trait;
+use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics24_host::identifier::ConnectionId;
 use ibc::downcast;
 use ibc::{
@@ -13,7 +15,8 @@ use ibc::{
     core::{
         ics02_client::{
             client_consensus::AnyConsensusState,
-            client_state::{AnyClientState, ClientState},
+            client_state::AnyClientState,
+            client_type::ClientType,
             header::AnyHeader,
             height::Height,
             msgs::{create_client::MsgCreateAnyClient, update_client::MsgUpdateAnyClient},
@@ -36,10 +39,7 @@ use tendermint_light_client_verifier::{
 };
 use tracing::instrument;
 
-use crate::{
-    ClientConnections, ClientCounter, ClientData, ConsensusState, VerifiedHeights,
-    COMMITMENT_PREFIX,
-};
+use crate::{ClientConnections, ClientCounter, ConsensusState, VerifiedHeights, COMMITMENT_PREFIX};
 
 mod stateful;
 mod stateless;
@@ -173,13 +173,13 @@ impl Ics2Client {
     // validated, including header verification.
     async fn execute_update_client(&mut self, msg_update_client: MsgUpdateAnyClient) {
         // get the latest client state
-        let client_data = self
+        let client_state = self
             .state
-            .get_client_data(&msg_update_client.client_id)
+            .get_client_state(&msg_update_client.client_id)
             .await
             .unwrap();
 
-        let tm_client_state = match client_data.clone().client_state.0 {
+        let tm_client_state = match client_state {
             AnyClientState::Tendermint(tm_state) => tm_state,
             _ => panic!("unsupported client type"),
         };
@@ -199,14 +199,12 @@ impl Ics2Client {
             .await;
 
         // store the updated client and consensus states
-        let height = self.state.get_block_height().await.unwrap();
-        let now = self.state.get_block_timestamp().await.unwrap();
-        let next_client_data = client_data.with_new_client_state(
-            AnyClientState::Tendermint(next_tm_client_state),
-            now.to_rfc3339(),
-            height,
-        );
-        self.state.put_client_data(next_client_data).await;
+        self.state
+            .put_client(
+                &msg_update_client.client_id,
+                AnyClientState::Tendermint(next_tm_client_state),
+            )
+            .await;
         self.state
             .put_verified_consensus_state(
                 tm_header.height(),
@@ -232,23 +230,15 @@ impl Ics2Client {
 
         tracing::info!("creating client {:?}", client_id);
 
-        let height = self.state.get_block_height().await.unwrap();
-        let timestamp = self.state.get_block_timestamp().await.unwrap();
-
-        let data = ClientData::new(
-            client_id.clone(),
-            msg_create_client.client_state,
-            timestamp.to_rfc3339(),
-            height,
-        );
-
         // store the client data
-        self.state.put_client_data(data.clone()).await;
+        self.state
+            .put_client(&client_id, msg_create_client.client_state.clone())
+            .await;
 
         // store the genesis consensus state
         self.state
             .put_verified_consensus_state(
-                data.client_state.0.latest_height(),
+                msg_create_client.client_state.latest_height(),
                 client_id,
                 ConsensusState(msg_create_client.consensus_state),
             )
@@ -352,44 +342,52 @@ impl Ics2Client {
 #[async_trait]
 pub trait View: StateExt {
     async fn put_client_counter(&mut self, counter: ClientCounter) {
-        self.put_domain("ibc/ics02-client/client_counter".into(), counter)
-            .await;
+        self.put_domain("ibc_client_counter".into(), counter).await;
     }
     async fn client_counter(&self) -> Result<ClientCounter> {
-        self.get_domain("ibc/ics02-client/client_counter".into())
+        self.get_domain("ibc_client_counter".into())
             .await
             .map(|counter| counter.unwrap_or(ClientCounter(0)))
     }
-    async fn put_client_data(&mut self, data: ClientData) {
+
+    async fn put_client(&mut self, client_id: &ClientId, client_state: AnyClientState) {
+        self.put_proto(
+            format!("{}/clients/{}/clientType", COMMITMENT_PREFIX, client_id).into(),
+            client_state.client_type().as_str().to_string(),
+        )
+        .await;
+
         self.put_domain(
-            format!(
-                "ibc/ics02-client/clients/{}",
-                hex::encode(data.client_id.as_bytes())
-            )
-            .into(),
-            data,
+            format!("{}/clients/{}/clientState", COMMITMENT_PREFIX, client_id).into(),
+            client_state,
         )
         .await;
     }
-    async fn get_client_data(&self, client_id: &ClientId) -> Result<ClientData> {
-        let client_data = self
-            .get_domain(
-                format!(
-                    "ibc/ics02-client/clients/{}",
-                    hex::encode(client_id.as_bytes())
-                )
-                .into(),
-            )
+
+    async fn get_client_type(&self, client_id: &ClientId) -> Result<ClientType> {
+        let client_type_str: String = self
+            .get_proto(format!("{}/clients/{}/clientType", COMMITMENT_PREFIX, client_id).into())
+            .await?
+            .ok_or(anyhow::anyhow!("client not found"))?;
+
+        ClientType::from_str(&client_type_str).map_err(|_| anyhow::anyhow!("invalid client type"))
+    }
+
+    async fn get_client_state(&self, client_id: &ClientId) -> Result<AnyClientState> {
+        let client_state = self
+            .get_domain(format!("{}/clients/{}/clientState", COMMITMENT_PREFIX, client_id).into())
             .await?;
 
-        client_data.ok_or(anyhow::anyhow!("client not found"))
+        client_state.ok_or(anyhow::anyhow!("client not found"))
     }
 
     async fn get_verified_heights(&self, client_id: &ClientId) -> Result<Option<VerifiedHeights>> {
         self.get_domain(
             format!(
-                "ibc/ics02-client/clients/{}/verified_heights",
-                hex::encode(client_id.as_bytes())
+                // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
+                // it's not in the same path namespace.
+                "penumbra_verified_heights/{}/verified_heights",
+                client_id
             )
             .into(),
         )
@@ -403,8 +401,10 @@ pub trait View: StateExt {
     ) {
         self.put_domain(
             format!(
-                "ibc/ics02-client/clients/{}/verified_heights",
-                hex::encode(client_id.as_bytes())
+                // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
+                // it's not in the same path namespace.
+                "penumbra_verified_heights/{}/verified_heights",
+                client_id
             )
             .into(),
             verified_heights,
@@ -414,15 +414,19 @@ pub trait View: StateExt {
 
     // returns the ConsensusState for the penumbra chain (this chain) at the given height
     async fn get_penumbra_consensus_state(&self, height: Height) -> Result<ConsensusState> {
-        self.get_domain(format!("ibc/ics02-client/penumbra_consensus_states/{}", height).into())
+        // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
+        // it's not in the same path namespace.
+        self.get_domain(format!("penumbra_consensus_states/{}", height).into())
             .await?
             .ok_or(anyhow::anyhow!("consensus state not found"))
     }
 
     // returns the ConsensusState for the penumbra chain (this chain) at the given height
     async fn put_penumbra_consensus_state(&self, height: Height, consensus_state: ConsensusState) {
+        // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
+        // it's not in the same path namespace.
         self.put_domain(
-            format!("ibc/ics02-client/penumbra_consensus_states/{}", height).into(),
+            format!("penumbra_consensus_states/{}", height).into(),
             consensus_state,
         )
         .await;
@@ -435,9 +439,8 @@ pub trait View: StateExt {
     ) -> Result<ConsensusState> {
         self.get_domain(
             format!(
-                "ibc/ics02-client/clients/{}/consensus_state/{}",
-                hex::encode(client_id.as_bytes()),
-                height
+                "{}/{}/consensusStates/{}",
+                COMMITMENT_PREFIX, client_id, height
             )
             .into(),
         )
@@ -453,9 +456,8 @@ pub trait View: StateExt {
     ) -> Result<()> {
         self.put_domain(
             format!(
-                "ibc/ics02-client/clients/{}/consensus_state/{}",
-                hex::encode(client_id.as_bytes()),
-                height
+                "{}/{}/consensusStates/{}",
+                COMMITMENT_PREFIX, client_id, height
             )
             .into(),
             consensus_state,
@@ -547,7 +549,8 @@ pub trait View: StateExt {
         client_id: &ClientId,
         connection_id: &ConnectionId,
     ) -> Result<()> {
-        self.get_client_data(client_id).await?;
+        self.get_client_state(client_id).await?;
+        self.get_client_type(client_id).await?;
 
         let mut connections = self
             .get_domain(

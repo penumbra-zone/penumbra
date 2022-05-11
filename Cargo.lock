@@ -2669,6 +2669,7 @@ dependencies = [
  "penumbra-proto",
  "penumbra-storage",
  "penumbra-transaction",
+ "prost 0.9.0",
  "prost-types 0.9.0",
  "serde",
  "serde_json",

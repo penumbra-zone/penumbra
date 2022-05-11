@@ -20,21 +20,21 @@ pub mod update_client {
     #[async_trait]
     pub trait UpdateClientCheck: StateExt + inner::Inner {
         async fn validate(&self, msg: &MsgUpdateAnyClient) -> anyhow::Result<()> {
-            let client_data = self.client_is_present(msg).await?;
+            let client_state = self.client_is_present(msg).await?;
 
-            client_is_not_frozen(&client_data)?;
-            self.client_is_not_expired(&client_data).await?;
+            client_is_not_frozen(&client_state)?;
+            self.client_is_not_expired(&msg.client_id, &client_state)
+                .await?;
 
-            let trusted_client_state =
-                downcast!(client_data.client_state.0 => AnyClientState::Tendermint)
-                    .ok_or_else(|| anyhow::anyhow!("invalid client state: not Tendermint"))?;
+            let trusted_client_state = downcast!(client_state => AnyClientState::Tendermint)
+                .ok_or_else(|| anyhow::anyhow!("invalid client state: not Tendermint"))?;
 
             let untrusted_header = downcast!(&msg.header => AnyHeader::Tendermint)
                 .ok_or_else(|| anyhow::anyhow!("invalid header: not Tendermint"))?;
 
             // Optimization: reject duplicate updates instead of verifying them.
             if self
-                .update_is_already_committed(&client_data.client_id, untrusted_header)
+                .update_is_already_committed(&msg.client_id, untrusted_header)
                 .await?
             {
                 // If the update is already committed, return an error to reject a duplicate update.
@@ -53,7 +53,7 @@ pub mod update_client {
             // We use the specified trusted height to query the trusted
             // consensus state the update extends.
             let last_trusted_consensus_state = self
-                .get_verified_consensus_state(trusted_height, client_data.client_id)
+                .get_verified_consensus_state(trusted_height, msg.client_id.clone())
                 .await?
                 .as_tendermint()?;
 
@@ -106,8 +106,8 @@ pub mod update_client {
         }
     }
 
-    fn client_is_not_frozen(client: &ClientData) -> anyhow::Result<()> {
-        if client.client_state.0.is_frozen() {
+    fn client_is_not_frozen(client: &AnyClientState) -> anyhow::Result<()> {
+        if client.is_frozen() {
             Err(anyhow::anyhow!("client is frozen"))
         } else {
             Ok(())
@@ -160,16 +160,19 @@ pub mod update_client {
             async fn client_is_present(
                 &self,
                 msg: &MsgUpdateAnyClient,
-            ) -> anyhow::Result<ClientData> {
-                self.get_client_data(&msg.client_id).await
+            ) -> anyhow::Result<AnyClientState> {
+                self.get_client_type(&msg.client_id).await?;
+
+                self.get_client_state(&msg.client_id).await
             }
 
-            async fn client_is_not_expired(&self, client: &ClientData) -> anyhow::Result<()> {
+            async fn client_is_not_expired(
+                &self,
+                client_id: &ClientId,
+                client_state: &AnyClientState,
+            ) -> anyhow::Result<()> {
                 let latest_consensus_state = self
-                    .get_verified_consensus_state(
-                        client.client_state.0.latest_height(),
-                        client.client_id.clone(),
-                    )
+                    .get_verified_consensus_state(client_state.latest_height(), client_id.clone())
                     .await?;
 
                 let latest_consensus_state_tm =
@@ -183,7 +186,7 @@ pub mod update_client {
                 let now = self.get_block_timestamp().await?;
                 let time_elapsed = now.duration_since(latest_consensus_state_tm.timestamp)?;
 
-                if client.client_state.0.expired(time_elapsed) {
+                if client_state.expired(time_elapsed) {
                     Err(anyhow::anyhow!("client is expired"))
                 } else {
                     Ok(())
