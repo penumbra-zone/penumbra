@@ -266,12 +266,31 @@ impl StakeCmd {
                     .map(TryInto::try_into)
                     .collect::<Result<Vec<validator::Info>, _>>()?;
 
-                // Sort by voting power (descending)
-                validators.sort_by(|a, b| b.status.voting_power.cmp(&a.status.voting_power));
+                // Sort by voting power (descending), active first, then inactive
+                validators.sort_by(|a, b| {
+                    let av = if matches!(a.status.state, validator::State::Active) {
+                        (a.status.voting_power, 0)
+                    } else {
+                        (0, a.status.voting_power)
+                    };
+                    let bv = if matches!(b.status.state, validator::State::Active) {
+                        (b.status.voting_power, 0)
+                    } else {
+                        (0, b.status.voting_power)
+                    };
+
+                    bv.cmp(&av)
+                });
 
                 let total_voting_power = validators
                     .iter()
-                    .map(|v| v.status.voting_power)
+                    .filter_map(|v| {
+                        if let validator::State::Active = v.status.state {
+                            Some(v.status.voting_power)
+                        } else {
+                            None
+                        }
+                    })
                     .sum::<u64>() as f64;
 
                 let mut table = Table::new();
@@ -287,7 +306,13 @@ impl StakeCmd {
 
                 for v in validators {
                     let voting_power = (v.status.voting_power as f64) * 1e-6; // apply udelegation factor
-                    let power_percent = 100.0 * (v.status.voting_power as f64) / total_voting_power;
+                    let active_voting_power = if matches!(v.status.state, validator::State::Active)
+                    {
+                        v.status.voting_power as f64
+                    } else {
+                        0.0
+                    };
+                    let power_percent = 100.0 * active_voting_power / total_voting_power;
                     let commission_bps = v
                         .validator
                         .funding_streams
