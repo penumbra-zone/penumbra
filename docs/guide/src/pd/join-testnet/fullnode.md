@@ -28,12 +28,12 @@ curl -s http://testnet.penumbra.zone:26657/genesis | jq ".result.genesis" > \$HO
 ```
 The response data is nested, so we use `jq` to grab a specific key.
 
-Next you'll need to modify the persistent peers list to specify our primary
-testnet node as a permanent peer for your node. Open
-`\$HOME/.tendermint/config/config.toml` and find the `persistent-peers` line and
+Next you'll need to modify the bootstrap peers list to specify our primary
+testnet node as the initial peer for your node. Open
+`\$HOME/.tendermint/config/config.toml` and find the `bootstrap-peers` line and
 add the testnet node:
 ```toml
-persistent-peers = "NODE_ID@testnet.penumbra.zone:26656"
+bootstrap-peers = "NODE_ID@testnet.penumbra.zone:26656"
 ```
 The format is `NODE_ID@ADDRESS`.  You will need to replace `NODE_ID` with the
 identifier for the node you want to connect to.  On a production network, this

@@ -223,10 +223,10 @@ seeds = ""
 # Comma separated list of peers to be added to the peer store
 # on startup. Either BootstrapPeers or PersistentPeers are
 # needed for peer discovery
-bootstrap-peers = ""
+bootstrap-peers = "{}"
 
 # Comma separated list of nodes to keep persistent connections to
-persistent-peers = "{}"
+persistent-peers = ""
 
 # UPNP port forwarding
 upnp = false
