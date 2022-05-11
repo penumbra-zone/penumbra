@@ -358,35 +358,6 @@ impl ShieldedPool {
 
         Ok(())
     }
-
-    /// This is not part of the View trait because the NCT isn't a domain
-    /// type, and we'll be replacing it anyways, so there's not much point
-    /// implementing one now.  When switching to the TCT we should revisit.
-    async fn put_nct(&mut self) -> Result<()> {
-        let nct_data = bincode::serialize(&self.note_commitment_tree)?;
-        self.state
-            .write()
-            .await
-            .put(b"shielded_pool/nct_data".into(), nct_data);
-        Ok(())
-    }
-
-    /// This is an associated function rather than a method,
-    /// so that we can call it in the constructor to get the NCT.
-    /// NOTE: we may not need that any more now that we can use an
-    /// State on an empty database.
-    async fn get_nct(state: &State) -> Result<NoteCommitmentTree> {
-        if let Ok(Some(bytes)) = state
-            .read()
-            .await
-            .get(b"shielded_pool/nct_data".into())
-            .await
-        {
-            bincode::deserialize(&bytes).map_err(Into::into)
-        } else {
-            Ok(NoteCommitmentTree::new(0))
-        }
-    }
 }
 
 /// Extension trait providing read/write access to shielded pool data.
