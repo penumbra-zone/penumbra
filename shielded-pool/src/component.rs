@@ -12,7 +12,7 @@ use penumbra_crypto::{
     merkle::{self, Frontier, NoteCommitmentTree, TreeExt},
     note, Address, Note, Nullifier, One, Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_storage::{State, StateExt};
+use penumbra_storage::{State, StateExt, Storage};
 use penumbra_transaction::{action::output, Action, Transaction};
 use tendermint::abci;
 use tracing::instrument;
@@ -27,19 +27,21 @@ pub struct ShieldedPool {
     compact_block: CompactBlock,
 }
 
-#[async_trait]
-impl Component for ShieldedPool {
-    #[instrument(name = "shielded_pool", skip(state))]
-    async fn new(state: State) -> Self {
-        let note_commitment_tree = Self::get_nct(&state).await.unwrap();
+impl ShieldedPool {
+    #[instrument(name = "shielded_pool", skip(storage))]
+    pub async fn new(storage: Storage) -> Self {
+        let note_commitment_tree = storage.get_nct().await.unwrap();
 
         Self {
-            state,
+            state: storage.state().await.unwrap(),
             note_commitment_tree,
             compact_block: Default::default(),
         }
     }
+}
 
+#[async_trait]
+impl Component for ShieldedPool {
     #[instrument(name = "shielded_pool", skip(self, app_state))]
     async fn init_chain(&mut self, app_state: &genesis::AppState) {
         for allocation in &app_state.allocations {
@@ -124,7 +126,7 @@ impl Component for ShieldedPool {
                         .verify(
                             tx.transaction_body().merkle_root,
                             spend.body.value_commitment,
-                            spend.body.nullifier.clone(),
+                            spend.body.nullifier,
                             spend.body.rk,
                         )
                         .is_err()
@@ -138,7 +140,7 @@ impl Component for ShieldedPool {
                         return Err(anyhow::anyhow!("Double spend"));
                     }
 
-                    spent_nullifiers.insert(spend.body.nullifier.clone());
+                    spent_nullifiers.insert(spend.body.nullifier);
                 }
                 Action::Delegate(_delegate) => {
                     // Handled in the `Staking` component.
@@ -354,7 +356,6 @@ impl ShieldedPool {
         self.state
             .set_nct_anchor(self.compact_block.height, self.note_commitment_tree.root2())
             .await;
-        self.put_nct().await?;
 
         Ok(())
     }

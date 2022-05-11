@@ -52,13 +52,15 @@ pub struct Ics2Client {
     state: State,
 }
 
-#[async_trait]
-impl Component for Ics2Client {
+impl Ics2Client {
     #[instrument(name = "ics2_client", skip(state))]
-    async fn new(state: State) -> Self {
+    pub async fn new(state: State) -> Self {
         Self { state }
     }
+}
 
+#[async_trait]
+impl Component for Ics2Client {
     #[instrument(name = "ics2_client", skip(self, _app_state))]
     async fn init_chain(&mut self, _app_state: &genesis::AppState) {
         // set the initial client count

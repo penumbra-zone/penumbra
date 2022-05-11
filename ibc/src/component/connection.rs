@@ -39,13 +39,15 @@ pub struct ConnectionComponent {
     state: State,
 }
 
-#[async_trait]
-impl Component for ConnectionComponent {
+impl ConnectionComponent {
     #[instrument(name = "ibc_connection", skip(state))]
-    async fn new(state: State) -> Self {
+    pub async fn new(state: State) -> Self {
         Self { state }
     }
+}
 
+#[async_trait]
+impl Component for ConnectionComponent {
     #[instrument(name = "ibc_connection", skip(self, _app_state))]
     async fn init_chain(&mut self, _app_state: &genesis::AppState) {}
 

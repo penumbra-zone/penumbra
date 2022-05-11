@@ -46,6 +46,15 @@ pub struct Staking {
 }
 
 impl Staking {
+    #[instrument(name = "staking", skip(state))]
+    pub async fn new(state: State) -> Self {
+        Self {
+            state,
+            delegation_changes: Default::default(),
+            tm_validator_updates: Default::default(),
+        }
+    }
+
     /// Updates the state of the given validator, performing all necessary state transitions.
     ///
     /// This method errors on illegal state transitions; since execution must be infallible,
@@ -618,7 +627,7 @@ impl Staking {
             .get(&delegation_denom)
             .copied()
             .unwrap_or(0);
-        let power = cur_rate_data.voting_power(total_delegation_tokens, &genesis_base_rate);
+        let power = cur_rate_data.voting_power(total_delegation_tokens, genesis_base_rate);
 
         // Update the validator to return its power to Tendermint for this block.
         self.tm_validator_updates
@@ -737,15 +746,6 @@ impl Staking {
 
 #[async_trait]
 impl Component for Staking {
-    #[instrument(name = "staking", skip(state))]
-    async fn new(state: State) -> Self {
-        Self {
-            state,
-            delegation_changes: Default::default(),
-            tm_validator_updates: Default::default(),
-        }
-    }
-
     #[instrument(name = "staking", skip(self, app_state))]
     async fn init_chain(&mut self, app_state: &genesis::AppState) {
         let starting_height = self.state.get_block_height().await.unwrap();
@@ -1212,7 +1212,7 @@ pub trait View: StateExt {
         slashing_penalty_bps: u64,
     ) -> Result<()> {
         let mut cur_rate = self
-            .current_validator_rate(&identity_key)
+            .current_validator_rate(identity_key)
             .await?
             .ok_or_else(|| {
                 anyhow::anyhow!("validator to be slashed did not have current rate in JMT")
@@ -1227,7 +1227,7 @@ pub trait View: StateExt {
             rate
         };
 
-        self.set_validator_rates(&identity_key, cur_rate, next_rate)
+        self.set_validator_rates(identity_key, cur_rate, next_rate)
             .await;
 
         Ok(())

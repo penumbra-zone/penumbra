@@ -25,6 +25,20 @@ pub struct App {
 }
 
 impl App {
+    #[instrument(skip(storage))]
+    pub async fn new(storage: Storage) -> Self {
+        let staking = Staking::new(storage.state().await.unwrap()).await;
+        let ibc = IBCComponent::new(storage.state().await.unwrap()).await;
+        let shielded_pool = ShieldedPool::new(storage.clone()).await;
+
+        Self {
+            state: storage.state().await.unwrap(),
+            shielded_pool,
+            staking,
+            ibc,
+        }
+    }
+
     /// Commits the application state to persistent storage,
     /// returning the new root hash and storage version.
     ///
@@ -33,12 +47,12 @@ impl App {
     #[instrument(skip(self, storage))]
     pub async fn commit(&mut self, storage: Storage) -> Result<(RootHash, Version)> {
         // Commit the pending writes, clearing the state.
-        let (root_hash, version) = self.state.write().await.commit(storage).await?;
+        let (root_hash, version) = self.state.write().await.commit(storage.clone()).await?;
         tracing::debug!(?root_hash, version, "finished committing state");
         // Now re-instantiate all of the components:
         self.staking = Staking::new(self.state.clone()).await;
         self.ibc = IBCComponent::new(self.state.clone()).await;
-        self.shielded_pool = ShieldedPool::new(self.state.clone()).await;
+        self.shielded_pool = ShieldedPool::new(storage).await;
 
         Ok((root_hash, version))
     }
@@ -51,20 +65,6 @@ impl App {
 
 #[async_trait]
 impl Component for App {
-    #[instrument(skip(state))]
-    async fn new(state: State) -> Self {
-        let staking = Staking::new(state.clone()).await;
-        let ibc = IBCComponent::new(state.clone()).await;
-        let shielded_pool = ShieldedPool::new(state.clone()).await;
-
-        Self {
-            state,
-            shielded_pool,
-            staking,
-            ibc,
-        }
-    }
-
     #[instrument(skip(self, app_state))]
     async fn init_chain(&mut self, app_state: &genesis::AppState) {
         self.state

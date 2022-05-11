@@ -1,7 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::genesis;
-use penumbra_storage::State;
 use penumbra_transaction::Transaction;
 use tendermint::abci;
 
@@ -19,56 +18,50 @@ use tendermint::abci;
 ///
 /// The data and execution flow looks like:
 /// ```ascii,no_run
-/// ┌────────────┐          ┌───────────┐                           
-/// │State       │          │ Component │                           
-/// │  ::new()   │═════════▶│  ::new()  │      ═══▶ Execution Flow  
-/// └────────────┘          └───────────┘           (Approximate)   
-///        │                      ║            ───▶ Data Flow       
-///        ▼               ╔══════╩══════╗                          
-/// ┌────────────┐         ▼             ║                          
+/// ┌────────────┐          ┌───────────┐
+/// │State       │          │ Component │
+/// │  ::new()   │═════════▶│  ::new()  │      ═══▶ Execution Flow
+/// └────────────┘          └───────────┘           (Approximate)
+///        │                      ║            ───▶ Data Flow
+///        ▼               ╔══════╩══════╗
+/// ┌────────────┐         ▼             ║
 /// │            │   ┌───────────┐       ║         ┌───────────────┐
 /// │            │◀──│init_chain │◀──────╬─────────│ Genesis State │
 /// │            │   └───────────┘       ║         └───────────────┘
-/// │            │         ║             ▼                          
+/// │            │         ║             ▼
 /// │            │         ║       ┌───────────┐   ┌───────────────┐
 /// │            │◀────────╬──────▶│begin_block│◀──│ABCI BeginBlock│
 /// │            │         ║       └───────────┘   └───────────────┘
-/// │            │         ║             ║                          
-/// │            │         ║    ╔═══════▶║                          
-/// │            │         ║    ║        ▼                          
+/// │            │         ║             ║
+/// │            │         ║    ╔═══════▶║
+/// │            │         ║    ║        ▼
 /// │            │         ║    ║  ┌───────────┐   ┌───────────────┐
 /// │            │         ║    ║  │check_tx   │ ┌─│  Transaction  │
 /// │            │         ║    ║  │_stateless │◀┤ └───────────────┘
-/// │State       │         ║    ║  └───────────┘ │                  
-/// │            │         ║    ║  ┌───────────┐ │                  
-/// │            │         ║    ║  │check_tx   │ │                  
-/// │            │─────────╬────╬─▶│_stateful  │◀┤                  
-/// │            │         ║    ║  └───────────┘ │                  
-/// │            │         ║    ║  ┌───────────┐ │                  
-/// │            │◀────────╬────╬─▶│execute_tx │◀┘                  
-/// │            │         ║    ║  └───────────┘                    
-/// │            │         ║    ║        ║                          
-/// │            │         ║    ╚════════╣                          
-/// │            │         ║             ║                          
-/// │            │         ║             ▼                          
+/// │State       │         ║    ║  └───────────┘ │
+/// │            │         ║    ║  ┌───────────┐ │
+/// │            │         ║    ║  │check_tx   │ │
+/// │            │─────────╬────╬─▶│_stateful  │◀┤
+/// │            │         ║    ║  └───────────┘ │
+/// │            │         ║    ║  ┌───────────┐ │
+/// │            │◀────────╬────╬─▶│execute_tx │◀┘
+/// │            │         ║    ║  └───────────┘
+/// │            │         ║    ║        ║
+/// │            │         ║    ╚════════╣
+/// │            │         ║             ║
+/// │            │         ║             ▼
 /// │            │         ║       ┌───────────┐   ┌───────────────┐
 /// │            │◀────────╬──────▶│end_block  │◀──│ ABCI EndBlock │
 /// └────────────┘         ║       └───────────┘   └───────────────┘
-///        │               ║             ║                          
-///        ▼               ║             ║                          
-/// ┌────────────┐         ║             ║                          
-/// │State       │         ║             ║                          
-/// │ ::commit() │◀════════╩═════════════╝                          
-/// └────────────┘                                                  
+///        │               ║             ║
+///        ▼               ║             ║
+/// ┌────────────┐         ║             ║
+/// │State       │         ║             ║
+/// │ ::commit() │◀════════╩═════════════╝
+/// └────────────┘
 /// ```
 #[async_trait]
 pub trait Component: Sized {
-    /// Initializes the component relative to a shared state.
-    ///
-    /// This method should be called every time the [`State`] is
-    /// re-initialized.
-    async fn new(state: State) -> Self;
-
     /// Performs initialization, given the genesis state.
     ///
     /// This method is called once per chain, and should only perform

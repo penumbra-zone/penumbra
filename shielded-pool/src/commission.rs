@@ -19,7 +19,7 @@ impl Protobuf<pb::CommissionAmount> for CommissionAmount {}
 impl From<CommissionAmount> for pb::CommissionAmount {
     fn from(note: CommissionAmount) -> pb::CommissionAmount {
         pb::CommissionAmount {
-            amount: note.amount.into(),
+            amount: note.amount,
             destination: Some(note.destination.into()),
         }
     }
@@ -29,7 +29,7 @@ impl TryFrom<pb::CommissionAmount> for CommissionAmount {
     type Error = anyhow::Error;
     fn try_from(note: pb::CommissionAmount) -> Result<CommissionAmount> {
         Ok(CommissionAmount {
-            amount: note.amount.into(),
+            amount: note.amount,
             destination: note.destination.unwrap().try_into()?,
         })
     }
