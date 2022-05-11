@@ -8,7 +8,7 @@ use penumbra_crypto::{
     FieldExt, FullViewingKey,
 };
 use penumbra_proto::Protobuf;
-use sqlx::{query, Pool, Sqlite};
+use sqlx::{migrate::MigrateDatabase, query, Pool, Sqlite};
 
 use crate::sync::ScanResult;
 
@@ -115,7 +115,7 @@ impl Storage {
         .fetch_one(&self.pool)
         .await?;
 
-        Ok(FullViewingKey::decode(result.bytes.as_slice())?)
+        FullViewingKey::decode(result.bytes.as_slice())
     }
 
     pub async fn note_commitment_tree(&self) -> anyhow::Result<NoteCommitmentTree> {
