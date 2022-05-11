@@ -10,6 +10,8 @@ use rocksdb::DB;
 use tokio::sync::RwLock;
 use tracing::{instrument, Span};
 
+use penumbra_crypto::merkle::NoteCommitmentTree;
+
 use crate::State;
 
 #[derive(Clone, Debug)]
@@ -23,7 +25,11 @@ impl Storage {
             .spawn_blocking(move || {
                 span.in_scope(|| {
                     tracing::info!(?path, "opening rocksdb");
-                    Ok(Self(Arc::new(DB::open_default(path)?)))
+                    Ok(Self(Arc::new(DB::open_cf(
+                        &Default::default(),
+                        path,
+                        ["default", "nct"],
+                    )?)))
                 })
             })
             .await
@@ -65,6 +71,40 @@ impl Storage {
         self.state()
             .await
             .map_err(|e| tonic::Status::internal(e.to_string()))
+    }
+
+    pub async fn put_nct(&self, nct: &NoteCommitmentTree) -> Result<()> {
+        let db = self.0.clone();
+        let nct_data = bincode::serialize(nct)?;
+        let span = Span::current();
+        tokio::task::Builder::new()
+            .name("put_nct")
+            .spawn_blocking(move || {
+                span.in_scope(|| {
+                    let nct_cf = db.cf_handle("nct").expect("nct column family not found");
+                    db.put_cf(nct_cf, "nct", &nct_data)?;
+                    Ok::<_, anyhow::Error>(())
+                })
+            })
+            .await?
+    }
+
+    pub async fn get_nct(&self) -> Result<NoteCommitmentTree> {
+        let db = self.0.clone();
+        let span = Span::current();
+        tokio::task::Builder::new()
+            .name("get_nct")
+            .spawn_blocking(move || {
+                span.in_scope(|| {
+                    let nct_cf = db.cf_handle("nct").expect("nct column family not found");
+                    if let Some(bytes) = db.get_cf(nct_cf, "nct")? {
+                        bincode::deserialize(&bytes).map_err(Into::into)
+                    } else {
+                        Ok(NoteCommitmentTree::new(0))
+                    }
+                })
+            })
+            .await?
     }
 }
 

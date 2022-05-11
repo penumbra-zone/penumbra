@@ -34,7 +34,7 @@ impl NoteSource {
 impl TryFrom<[u8; 32]> for NoteSource {
     type Error = anyhow::Error;
     fn try_from(bytes: [u8; 32]) -> Result<Self> {
-        if &bytes[..CODE_INDEX] != &[0u8; CODE_INDEX][..] {
+        if bytes[..CODE_INDEX] != [0u8; CODE_INDEX][..] {
             Ok(Self::Transaction { id: bytes })
         } else {
             match (bytes[CODE_INDEX], &bytes[CODE_INDEX + 1..]) {
@@ -59,9 +59,9 @@ impl Protobuf<pb::NoteSource> for NoteSource {}
 impl TryFrom<pb::NoteSource> for NoteSource {
     type Error = anyhow::Error;
     fn try_from(note_source: pb::NoteSource) -> Result<Self> {
-        Ok(<[u8; 32]>::try_from(note_source.inner)
+        <[u8; 32]>::try_from(note_source.inner)
             .map_err(|_| anyhow!("expected 32 bytes"))?
-            .try_into()?)
+            .try_into()
     }
 }
 

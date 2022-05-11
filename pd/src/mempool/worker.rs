@@ -25,7 +25,7 @@ impl Worker {
         queue: mpsc::Receiver<Message>,
         height_rx: watch::Receiver<block::Height>,
     ) -> Result<Self> {
-        let app = App::new(storage.state().await?).await;
+        let app = App::new(storage.clone()).await;
 
         Ok(Self {
             queue,
@@ -59,7 +59,7 @@ impl Worker {
                     if let Ok(()) = change {
                         let height = self.height_rx.borrow().value();
                         tracing::info!(?height, "resetting ephemeral mempool state");
-                        self.app = App::new(self.storage.state().await?).await;
+                        self.app = App::new(self.storage.clone()).await;
                     } else {
                         tracing::info!("consensus worker shut down, shutting down mempool worker");
                         // The consensus worker shut down, we should too.

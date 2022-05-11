@@ -12,7 +12,7 @@ use penumbra_crypto::{
     merkle::{self, Frontier, NoteCommitmentTree, TreeExt},
     note, Address, Note, Nullifier, One, Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_storage::{State, StateExt};
+use penumbra_storage::{State, StateExt, Storage};
 use penumbra_transaction::{action::output, Action, Transaction};
 use tendermint::abci;
 use tracing::instrument;
@@ -27,19 +27,27 @@ pub struct ShieldedPool {
     compact_block: CompactBlock,
 }
 
-#[async_trait]
-impl Component for ShieldedPool {
-    #[instrument(name = "shielded_pool", skip(state))]
-    async fn new(state: State) -> Self {
-        let note_commitment_tree = Self::get_nct(&state).await.unwrap();
+impl ShieldedPool {
+    #[instrument(name = "shielded_pool", skip(storage))]
+    pub async fn new(storage: Storage) -> Self {
+        let note_commitment_tree = storage.get_nct().await.unwrap();
 
         Self {
-            state,
+            state: storage.state().await.unwrap(),
             note_commitment_tree,
             compact_block: Default::default(),
         }
     }
 
+    /// Get the current note commitment tree (this may not yet have been committed to the underlying
+    /// storage).
+    pub fn note_commitment_tree(&self) -> &NoteCommitmentTree {
+        &self.note_commitment_tree
+    }
+}
+
+#[async_trait]
+impl Component for ShieldedPool {
     #[instrument(name = "shielded_pool", skip(self, app_state))]
     async fn init_chain(&mut self, app_state: &genesis::AppState) {
         for allocation in &app_state.allocations {
@@ -124,7 +132,7 @@ impl Component for ShieldedPool {
                         .verify(
                             tx.transaction_body().merkle_root,
                             spend.body.value_commitment,
-                            spend.body.nullifier.clone(),
+                            spend.body.nullifier,
                             spend.body.rk,
                         )
                         .is_err()
@@ -138,7 +146,7 @@ impl Component for ShieldedPool {
                         return Err(anyhow::anyhow!("Double spend"));
                     }
 
-                    spent_nullifiers.insert(spend.body.nullifier.clone());
+                    spent_nullifiers.insert(spend.body.nullifier);
                 }
                 Action::Delegate(_delegate) => {
                     // Handled in the `Staking` component.
@@ -354,38 +362,8 @@ impl ShieldedPool {
         self.state
             .set_nct_anchor(self.compact_block.height, self.note_commitment_tree.root2())
             .await;
-        self.put_nct().await?;
 
         Ok(())
-    }
-
-    /// This is not part of the View trait because the NCT isn't a domain
-    /// type, and we'll be replacing it anyways, so there's not much point
-    /// implementing one now.  When switching to the TCT we should revisit.
-    async fn put_nct(&mut self) -> Result<()> {
-        let nct_data = bincode::serialize(&self.note_commitment_tree)?;
-        self.state
-            .write()
-            .await
-            .put(b"shielded_pool/nct_data".into(), nct_data);
-        Ok(())
-    }
-
-    /// This is an associated function rather than a method,
-    /// so that we can call it in the constructor to get the NCT.
-    /// NOTE: we may not need that any more now that we can use an
-    /// State on an empty database.
-    async fn get_nct(state: &State) -> Result<NoteCommitmentTree> {
-        if let Ok(Some(bytes)) = state
-            .read()
-            .await
-            .get(b"shielded_pool/nct_data".into())
-            .await
-        {
-            bincode::deserialize(&bytes).map_err(Into::into)
-        } else {
-            Ok(NoteCommitmentTree::new(0))
-        }
     }
 }
 

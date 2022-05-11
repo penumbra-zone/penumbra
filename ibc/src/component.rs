@@ -23,10 +23,9 @@ pub struct IBCComponent {
     enabled: bool,
 }
 
-#[async_trait]
-impl Component for IBCComponent {
+impl IBCComponent {
     #[instrument(name = "ibc", skip(state))]
-    async fn new(state: State) -> Self {
+    pub async fn new(state: State) -> Self {
         let client = Ics2Client::new(state.clone()).await;
         let connection = connection::ConnectionComponent::new(state.clone()).await;
 
@@ -36,7 +35,10 @@ impl Component for IBCComponent {
             enabled: false,
         }
     }
+}
 
+#[async_trait]
+impl Component for IBCComponent {
     #[instrument(name = "ibc", skip(self, app_state))]
     async fn init_chain(&mut self, app_state: &genesis::AppState) {
         self.enabled = app_state.chain_params.ibc_enabled;

@@ -6,7 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-penumbra-storage = { path = "../storage" }
 penumbra-transaction = { path = "../transaction" }
 penumbra-chain = { path = "../chain" }
 async-trait = "0.1.52"
