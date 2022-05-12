@@ -92,3 +92,44 @@ pub mod channel_open_confirm {
 
     impl<T: StateExt> ChannelOpenConfirmExecute for T {}
 }
+
+pub mod channel_close_init {
+    use super::super::*;
+
+    #[async_trait]
+    pub trait ChannelCloseInitExecute: StateExt {
+        async fn execute(&mut self, msg: &MsgChannelCloseInit) {
+            let mut channel = self
+                .get_channel(&msg.channel_id, &msg.port_id)
+                .await
+                .unwrap()
+                .unwrap();
+            channel.set_state(ChannelState::Closed);
+            self.put_channel(&msg.channel_id, &msg.port_id, channel)
+                .await;
+        }
+    }
+
+    impl<T: StateExt> ChannelCloseInitExecute for T {}
+}
+
+pub mod channel_close_confirm {
+    use super::super::*;
+
+    #[async_trait]
+    pub trait ChannelCloseConfirmExecute: StateExt {
+        async fn execute(&mut self, msg: &MsgChannelCloseConfirm) {
+            let mut channel = self
+                .get_channel(&msg.channel_id, &msg.port_id)
+                .await
+                .unwrap()
+                .unwrap();
+
+            channel.set_state(ChannelState::Closed);
+            self.put_channel(&msg.channel_id, &msg.port_id, channel)
+                .await;
+        }
+    }
+
+    impl<T: StateExt> ChannelCloseConfirmExecute for T {}
+}

@@ -304,3 +304,99 @@ pub mod channel_open_confirm {
 
     impl<T: StateExt> ChannelOpenConfirmCheck for T {}
 }
+
+pub mod channel_close_init {
+    use super::super::*;
+
+    #[async_trait]
+    pub trait ChannelCloseInitCheck: StateExt {
+        async fn validate(&self, msg: &MsgChannelCloseInit) -> anyhow::Result<()> {
+            // TODO: capability authentication?
+            //
+            // we probably do need capability authentication here, or some other authorization
+            // method, to prevent anyone from spuriously closing channels.
+            //
+            let channel = self
+                .get_channel(&msg.channel_id, &msg.port_id)
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("channel not found"))?;
+            if channel.state_matches(&ChannelState::Closed) {
+                return Err(anyhow::anyhow!("channel is already closed"));
+            }
+
+            let connection = self
+                .get_connection(&channel.connection_hops[0])
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("connection not found for channel"))?;
+            if !connection.state_matches(&ConnectionState::Open) {
+                return Err(anyhow::anyhow!("connection for channel is not open"));
+            }
+
+            Ok(())
+        }
+    }
+
+    impl<T: StateExt> ChannelCloseInitCheck for T {}
+}
+
+pub mod channel_close_confirm {
+    use super::super::*;
+    use super::proof_verification::ChannelProofVerifier;
+
+    #[async_trait]
+    pub trait ChannelCloseConfirmCheck: StateExt {
+        async fn validate(&self, msg: &MsgChannelCloseConfirm) -> anyhow::Result<()> {
+            // TODO: capability authentication?
+            //
+            // we probably do need capability authentication here, or some other authorization
+            // method, to prevent anyone from spuriously closing channels.
+            //
+            let channel = self
+                .get_channel(&msg.channel_id, &msg.port_id)
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("channel not found"))?;
+            if channel.state_matches(&ChannelState::Closed) {
+                return Err(anyhow::anyhow!("channel is already closed"));
+            }
+
+            let connection = self
+                .get_connection(&channel.connection_hops[0])
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("connection not found for channel"))?;
+            if !connection.state_matches(&ConnectionState::Open) {
+                return Err(anyhow::anyhow!("connection for channel is not open"));
+            }
+
+            let expected_connection_hops = vec![connection
+                .counterparty()
+                .connection_id
+                .clone()
+                .ok_or(anyhow::anyhow!("no counterparty connection id provided"))?];
+
+            let expected_counterparty =
+                Counterparty::new(msg.port_id.clone(), Some(msg.channel_id));
+
+            let expected_channel = ChannelEnd {
+                state: ChannelState::Closed,
+                ordering: channel.ordering,
+                remote: expected_counterparty,
+                connection_hops: expected_connection_hops,
+                version: channel.version.clone(),
+            };
+
+            self.verify_channel_proof(
+                &connection,
+                &msg.proofs,
+                &channel
+                    .remote
+                    .channel_id
+                    .ok_or(anyhow::anyhow!("no channel id"))?,
+                &channel.remote.port_id,
+                &expected_channel,
+            )
+            .await
+        }
+    }
+
+    impl<T: StateExt> ChannelCloseConfirmCheck for T {}
+}
