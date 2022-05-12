@@ -1,19 +1,24 @@
+use crate::component::client::View as _;
 use crate::component::connection::View as _;
+use crate::COMMITMENT_PREFIX;
 use anyhow::Result;
 use async_trait::async_trait;
+use ibc::core::ics02_client::client_consensus::ConsensusState;
+use ibc::core::ics02_client::client_def::AnyClient;
+use ibc::core::ics02_client::client_def::ClientDef;
+use ibc::core::ics02_client::client_state::ClientState;
+use ibc::core::ics03_connection::connection::ConnectionEnd;
 use ibc::core::ics04_channel::channel::ChannelEnd;
 use ibc::core::ics04_channel::channel::State as ChannelState;
 use ibc::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
+use ibc::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use ibc::core::ics24_host::identifier::ChannelId;
 use ibc::core::ics24_host::identifier::PortId;
 use penumbra_chain::genesis;
 use penumbra_component::Component;
-use penumbra_proto::ibc::{
-    ibc_action::Action::{
-        ChannelCloseConfirm, ChannelCloseInit, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit,
-        ChannelOpenTry,
-    },
-    IbcAction,
+use penumbra_proto::ibc::ibc_action::Action::{
+    ChannelCloseConfirm, ChannelCloseInit, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit,
+    ChannelOpenTry,
 };
 use penumbra_storage::{State, StateExt};
 use penumbra_transaction::Transaction;
@@ -58,7 +63,12 @@ impl Component for ICS4Channel {
 
                     connection_hops_eq_1(&msg)?;
                 }
-                Some(ChannelOpenTry(msg)) => {}
+                Some(ChannelOpenTry(msg)) => {
+                    use stateless::channel_open_try::*;
+                    let msg = MsgChannelOpenTry::try_from(msg.clone())?;
+
+                    connection_hops_eq_1(&msg)?;
+                }
                 Some(ChannelOpenAck(msg)) => {}
                 Some(ChannelOpenConfirm(msg)) => {}
                 Some(ChannelCloseInit(msg)) => {}
@@ -82,7 +92,12 @@ impl Component for ICS4Channel {
 
                     self.state.validate(&msg).await?;
                 }
-                Some(ChannelOpenTry(msg)) => {}
+                Some(ChannelOpenTry(msg)) => {
+                    use stateful::channel_open_try::ChannelOpenTryCheck;
+                    let msg = MsgChannelOpenTry::try_from(msg.clone())?;
+
+                    self.state.validate(&msg).await?;
+                }
                 Some(ChannelOpenAck(msg)) => {}
                 Some(ChannelOpenConfirm(msg)) => {}
                 Some(ChannelCloseInit(msg)) => {}
