@@ -7,9 +7,10 @@ use ibc::core::ics02_client::client_consensus::ConsensusState;
 use ibc::core::ics02_client::client_def::AnyClient;
 use ibc::core::ics02_client::client_def::ClientDef;
 use ibc::core::ics02_client::client_state::ClientState;
-use ibc::core::ics03_connection::connection::ConnectionEnd;
-use ibc::core::ics04_channel::channel::ChannelEnd;
+use ibc::core::ics03_connection::connection::{ConnectionEnd, State as ConnectionState};
 use ibc::core::ics04_channel::channel::State as ChannelState;
+use ibc::core::ics04_channel::channel::{ChannelEnd, Counterparty};
+use ibc::core::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
 use ibc::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use ibc::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use ibc::core::ics24_host::identifier::ChannelId;
@@ -69,7 +70,11 @@ impl Component for ICS4Channel {
 
                     connection_hops_eq_1(&msg)?;
                 }
-                Some(ChannelOpenAck(msg)) => {}
+                Some(ChannelOpenAck(msg)) => {
+                    MsgChannelOpenAck::try_from(msg.clone())?;
+                    // NOTE: no additional stateless validation is possible
+                }
+
                 Some(ChannelOpenConfirm(msg)) => {}
                 Some(ChannelCloseInit(msg)) => {}
                 Some(ChannelCloseConfirm(msg)) => {}
@@ -98,7 +103,12 @@ impl Component for ICS4Channel {
 
                     self.state.validate(&msg).await?;
                 }
-                Some(ChannelOpenAck(msg)) => {}
+                Some(ChannelOpenAck(msg)) => {
+                    use stateful::channel_open_ack::ChannelOpenAckCheck;
+                    let msg = MsgChannelOpenAck::try_from(msg.clone())?;
+
+                    self.state.validate(&msg).await?;
+                }
                 Some(ChannelOpenConfirm(msg)) => {}
                 Some(ChannelCloseInit(msg)) => {}
                 Some(ChannelCloseConfirm(msg)) => {}

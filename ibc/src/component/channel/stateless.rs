@@ -10,6 +10,7 @@ pub mod channel_open_init {
         Ok(())
     }
 }
+
 pub mod channel_open_try {
     use super::super::*;
 
@@ -22,3 +23,7 @@ pub mod channel_open_try {
         Ok(())
     }
 }
+
+pub mod channel_open_ack {}
+
+pub mod channel_open_confirm {}
