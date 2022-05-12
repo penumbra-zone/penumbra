@@ -136,7 +136,12 @@ impl Component for ICS4Channel {
 
                     self.state.execute(&msg).await;
                 }
-                Some(ChannelOpenAck(msg)) => {}
+                Some(ChannelOpenAck(msg)) => {
+                    use execution::channel_open_ack::ChannelOpenAckExecute;
+                    let msg = MsgChannelOpenAck::try_from(msg.clone()).unwrap();
+
+                    self.state.execute(&msg).await;
+                }
                 Some(ChannelOpenConfirm(msg)) => {}
                 Some(ChannelCloseInit(msg)) => {}
                 Some(ChannelCloseConfirm(msg)) => {}

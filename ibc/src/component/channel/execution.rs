@@ -48,3 +48,26 @@ pub mod channel_open_try {
     }
     impl<T: StateExt> ChannelOpenTryExecute for T {}
 }
+
+pub mod channel_open_ack {
+    use super::super::*;
+
+    #[async_trait]
+    pub trait ChannelOpenAckExecute: StateExt {
+        async fn execute(&mut self, msg: &MsgChannelOpenAck) {
+            let mut channel = self
+                .get_channel(&msg.channel_id, &msg.port_id)
+                .await
+                .unwrap()
+                .unwrap();
+
+            channel.set_state(ChannelState::Open);
+            channel.set_version(msg.counterparty_version.clone());
+            channel.set_counterparty_channel_id(msg.counterparty_channel_id.clone());
+            self.put_channel(&msg.channel_id, &msg.port_id, channel)
+                .await;
+        }
+    }
+
+    impl<T: StateExt> ChannelOpenAckExecute for T {}
+}
