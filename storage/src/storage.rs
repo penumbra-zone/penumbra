@@ -6,7 +6,7 @@ use jmt::{
     storage::{Node, NodeBatch, NodeKey, TreeReader, TreeWriter},
     WriteOverlay,
 };
-use rocksdb::DB;
+use rocksdb::{Options, DB};
 use tokio::sync::RwLock;
 use tracing::{instrument, Span};
 
@@ -25,8 +25,12 @@ impl Storage {
             .spawn_blocking(move || {
                 span.in_scope(|| {
                     tracing::info!(?path, "opening rocksdb");
+                    let mut opts = Options::default();
+                    opts.create_if_missing(true);
+                    opts.create_missing_column_families(true);
+
                     Ok(Self(Arc::new(DB::open_cf(
-                        &Default::default(),
+                        &opts,
                         path,
                         ["default", "nct"],
                     )?)))
