@@ -23,6 +23,8 @@ use tracing::instrument;
 mod stateful;
 mod stateless;
 
+mod execution;
+
 pub struct ICS4Channel {
     state: State,
 }
@@ -94,7 +96,23 @@ impl Component for ICS4Channel {
     }
 
     #[instrument(name = "ics4_channel", skip(self, tx))]
-    async fn execute_tx(&mut self, tx: &Transaction) {}
+    async fn execute_tx(&mut self, tx: &Transaction) {
+        for ibc_action in tx.ibc_actions() {
+            match &ibc_action.action {
+                Some(ChannelOpenInit(msg)) => {
+                    use execution::channel_open_init::ChannelOpenInitExecute;
+                    let msg = MsgChannelOpenInit::try_from(msg.clone()).unwrap();
+
+                    self.state.execute(&msg).await;
+                }
+                Some(ChannelOpenTry(msg)) => {}
+                Some(ChannelOpenAck(msg)) => {}
+                Some(ChannelOpenConfirm(msg)) => {}
+                Some(ChannelCloseInit(msg)) => {}
+                Some(ChannelCloseConfirm(msg)) => {}
+            }
+        }
+    }
 
     #[instrument(name = "ics4_channel", skip(self, _end_block))]
     async fn end_block(&mut self, _end_block: &abci::request::EndBlock) {}
@@ -118,13 +136,46 @@ pub trait View: StateExt {
         channel_id: &ChannelId,
         port_id: &PortId,
     ) -> Result<Option<ChannelEnd>> {
-        self.get_domain(format!("channelEnds/ports/{}/channels/{}", channel_id, port_id).into())
+        self.get_domain(format!("channelEnds/ports/{}/channels/{}", port_id, channel_id).into())
             .await
     }
-    async fn put_channel(&mut self, channel_id: ChannelId, port_id: PortId, channel: ChannelEnd) {
+    async fn put_channel(&mut self, channel_id: &ChannelId, port_id: &PortId, channel: ChannelEnd) {
         self.put_domain(
-            format!("channelEnds/ports/{}/channels/{}", channel_id, port_id).into(),
+            format!("channelEnds/ports/{}/channels/{}", port_id, channel_id).into(),
             channel,
+        )
+        .await;
+    }
+    async fn put_ack_sequence(&mut self, channel_id: &ChannelId, port_id: &PortId, sequence: u64) {
+        self.put_proto::<u64>(
+            format!(
+                "seqAcks/ports/{}/channels/{}/nextSequenceAck",
+                port_id, channel_id
+            )
+            .into(),
+            sequence,
+        )
+        .await;
+    }
+    async fn put_recv_sequence(&mut self, channel_id: &ChannelId, port_id: &PortId, sequence: u64) {
+        self.put_proto::<u64>(
+            format!(
+                "seqRecvs/ports/{}/channels/{}/nextSequenceRecv",
+                port_id, channel_id
+            )
+            .into(),
+            sequence,
+        )
+        .await;
+    }
+    async fn put_send_sequence(&mut self, channel_id: &ChannelId, port_id: &PortId, sequence: u64) {
+        self.put_proto::<u64>(
+            format!(
+                "seqSends/ports/{}/channels/{}/nextSequenceSend",
+                port_id, channel_id
+            )
+            .into(),
+            sequence,
         )
         .await;
     }

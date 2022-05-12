@@ -4,7 +4,7 @@ pub mod channel_open_init {
     #[async_trait]
     pub trait ChannelOpenInitCheck: StateExt + inner::Inner {
         async fn validate(&self, msg: &MsgChannelOpenInit) -> anyhow::Result<()> {
-            let channel_id = self.get_channel_id(msg).await?;
+            let channel_id = self.get_channel_id().await?;
 
             self.verify_channel_does_not_exist(&channel_id, &msg.port_id)
                 .await?;
@@ -30,7 +30,7 @@ pub mod channel_open_init {
                     .ok_or_else(|| anyhow::anyhow!("connection not found"))
                     .map(|_| ())
             }
-            async fn get_channel_id(&self, msg: &MsgChannelOpenInit) -> anyhow::Result<ChannelId> {
+            async fn get_channel_id(&self) -> anyhow::Result<ChannelId> {
                 let counter = self.get_channel_counter().await?;
 
                 Ok(ChannelId::new(counter))
