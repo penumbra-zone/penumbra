@@ -111,7 +111,7 @@ impl Component for Ics2Client {
                     header_is_tendermint(&msg)?;
                 }
                 // Other IBC messages are not handled by this component.
-                _ => return Ok(()),
+                _ => {}
             }
         }
 
@@ -133,7 +133,7 @@ impl Component for Ics2Client {
                     self.state.validate(&msg).await?;
                 }
                 // Other IBC messages are not handled by this component.
-                _ => return Ok(()),
+                _ => {}
             }
         }
         Ok(())

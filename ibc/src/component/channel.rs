@@ -75,7 +75,7 @@ impl Component for ICS4Channel {
                 Some(ChannelCloseConfirm(msg)) => {}
 
                 // Other IBC messages are not handled by this component.
-                _ => return Ok(()),
+                _ => {}
             }
         }
 
@@ -104,7 +104,7 @@ impl Component for ICS4Channel {
                 Some(ChannelCloseConfirm(msg)) => {}
 
                 // Other IBC messages are not handled by this component.
-                _ => return Ok(()),
+                _ => {}
             }
         }
         Ok(())
@@ -120,11 +120,19 @@ impl Component for ICS4Channel {
 
                     self.state.execute(&msg).await;
                 }
-                Some(ChannelOpenTry(msg)) => {}
+                Some(ChannelOpenTry(msg)) => {
+                    use execution::channel_open_try::ChannelOpenTryExecute;
+                    let msg = MsgChannelOpenTry::try_from(msg.clone()).unwrap();
+
+                    self.state.execute(&msg).await;
+                }
                 Some(ChannelOpenAck(msg)) => {}
                 Some(ChannelOpenConfirm(msg)) => {}
                 Some(ChannelCloseInit(msg)) => {}
                 Some(ChannelCloseConfirm(msg)) => {}
+
+                // Other IBC messages are not handled by this component.
+                _ => {}
             }
         }
     }
@@ -145,6 +153,12 @@ pub trait View: StateExt {
     async fn put_channel_counter(&self, counter: u64) {
         self.put_proto::<u64>("ibc_channel_counter".into(), counter)
             .await;
+    }
+    async fn next_channel_id(&mut self) -> Result<ChannelId> {
+        let ctr = self.get_channel_counter().await?;
+        self.put_channel_counter(ctr + 1).await;
+
+        Ok(ChannelId::new(ctr))
     }
     async fn get_channel(
         &self,
