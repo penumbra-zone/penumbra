@@ -11,6 +11,7 @@ use ibc::core::ics03_connection::connection::{ConnectionEnd, State as Connection
 use ibc::core::ics04_channel::channel::State as ChannelState;
 use ibc::core::ics04_channel::channel::{ChannelEnd, Counterparty};
 use ibc::core::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
+use ibc::core::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
 use ibc::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use ibc::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use ibc::core::ics24_host::identifier::ChannelId;

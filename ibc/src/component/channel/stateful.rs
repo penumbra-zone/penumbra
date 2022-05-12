@@ -1,3 +1,51 @@
+mod proof_verification {
+    use super::super::*;
+
+    #[async_trait]
+    pub trait ChannelProofVerifier: StateExt {
+        async fn verify_channel_proof(
+            &self,
+            connection: &ConnectionEnd,
+            proofs: &ibc::proofs::Proofs,
+            channel_id: &ChannelId,
+            port_id: &PortId,
+            expected_channel: &ChannelEnd,
+        ) -> anyhow::Result<()> {
+            // get the stored client state for the counterparty
+            let trusted_client_state = self.get_client_state(connection.client_id()).await?;
+
+            // check if the client is frozen
+            // TODO: should we also check if the client is expired here?
+            if trusted_client_state.is_frozen() {
+                return Err(anyhow::anyhow!("client is frozen"));
+            }
+
+            // get the stored consensus state for the counterparty
+            let trusted_consensus_state = self
+                .get_verified_consensus_state(proofs.height(), connection.client_id().clone())
+                .await?;
+
+            let client_def = AnyClient::from_client_type(trusted_client_state.client_type());
+
+            // PROOF VERIFICATION. verify that our counterparty committed expected_channel to its
+            // state.
+            client_def.verify_channel_state(
+                &trusted_client_state,
+                proofs.height(),
+                connection.counterparty().prefix(),
+                proofs.object_proof(),
+                trusted_consensus_state.root(),
+                port_id,
+                channel_id,
+                &expected_channel,
+            )?;
+
+            Ok(())
+        }
+    }
+    impl<T: StateExt> ChannelProofVerifier for T {}
+}
+
 pub mod channel_open_init {
     use super::super::*;
 
@@ -56,6 +104,7 @@ pub mod channel_open_init {
 
 pub mod channel_open_try {
     use super::super::*;
+    use super::proof_verification::ChannelProofVerifier;
 
     #[async_trait]
     pub trait ChannelOpenTryCheck: StateExt + inner::Inner {
@@ -81,36 +130,14 @@ pub mod channel_open_try {
                 version: msg.counterparty_version.clone(),
             };
 
-            // get the stored client state for the counterparty
-            let trusted_client_state = self.get_client_state(connection.client_id()).await?;
-
-            // check if the client is frozen
-            // TODO: should we also check if the client is expired here?
-            if trusted_client_state.is_frozen() {
-                return Err(anyhow::anyhow!("client is frozen"));
-            }
-
-            // get the stored consensus state for the counterparty
-            let trusted_consensus_state = self
-                .get_verified_consensus_state(msg.proofs.height(), connection.client_id().clone())
-                .await?;
-
-            let client_def = AnyClient::from_client_type(trusted_client_state.client_type());
-
-            // PROOF VERIFICATION. verify that our counterparty committed expected_channel to its
-            // state.
-            client_def.verify_channel_state(
-                &trusted_client_state,
-                msg.proofs.height(),
-                &COMMITMENT_PREFIX.as_bytes().to_vec().try_into().unwrap(),
-                msg.proofs.object_proof(),
-                trusted_consensus_state.root(),
-                &msg.port_id,
+            self.verify_channel_proof(
+                &connection,
+                &msg.proofs,
                 &channel_id,
+                &msg.port_id,
                 &expected_channel,
-            )?;
-
-            Ok(())
+            )
+            .await
         }
     }
     mod inner {
@@ -141,6 +168,7 @@ pub mod channel_open_try {
 
 pub mod channel_open_ack {
     use super::super::*;
+    use super::proof_verification::ChannelProofVerifier;
 
     fn channel_state_is_correct(channel: &ChannelEnd) -> anyhow::Result<()> {
         if channel.state == ChannelState::Init || channel.state == ChannelState::TryOpen {
@@ -181,36 +209,14 @@ pub mod channel_open_ack {
                 version: msg.counterparty_version.clone(),
             };
 
-            // get the stored client state for the counterparty
-            let trusted_client_state = self.get_client_state(connection.client_id()).await?;
-
-            // check if the client is frozen
-            // TODO: should we also check if the client is expired here?
-            if trusted_client_state.is_frozen() {
-                return Err(anyhow::anyhow!("client is frozen"));
-            }
-
-            // get the stored consensus state for the counterparty
-            let trusted_consensus_state = self
-                .get_verified_consensus_state(msg.proofs.height(), connection.client_id().clone())
-                .await?;
-
-            let client_def = AnyClient::from_client_type(trusted_client_state.client_type());
-
-            // PROOF VERIFICATION. verify that our counterparty committed expected_channel to its
-            // state.
-            client_def.verify_channel_state(
-                &trusted_client_state,
-                msg.proofs.height(),
-                &COMMITMENT_PREFIX.as_bytes().to_vec().try_into().unwrap(),
-                msg.proofs.object_proof(),
-                trusted_consensus_state.root(),
-                &channel.remote.port_id,
+            self.verify_channel_proof(
+                &connection,
+                &msg.proofs,
                 &msg.counterparty_channel_id,
+                &channel.remote.port_id,
                 &expected_channel,
-            )?;
-
-            Ok(())
+            )
+            .await
         }
     }
     mod inner {
@@ -238,4 +244,63 @@ pub mod channel_open_ack {
     }
 
     impl<T: StateExt> ChannelOpenAckCheck for T {}
+}
+
+pub mod channel_open_confirm {
+    use super::super::*;
+    use super::proof_verification::ChannelProofVerifier;
+
+    #[async_trait]
+    pub trait ChannelOpenConfirmCheck: StateExt {
+        async fn validate(&self, msg: &MsgChannelOpenConfirm) -> anyhow::Result<()> {
+            let channel = self
+                .get_channel(&msg.channel_id, &msg.port_id)
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("channel not found"))?;
+            if !channel.state_matches(&ChannelState::TryOpen) {
+                return Err(anyhow::anyhow!("channel is not in the correct state"));
+            }
+
+            // TODO: capability authentication?
+
+            let connection = self
+                .get_connection(&channel.connection_hops[0])
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("connection not found for channel"))?;
+            if !connection.state_matches(&ConnectionState::Open) {
+                return Err(anyhow::anyhow!("connection for channel is not open"));
+            }
+
+            let expected_connection_hops = vec![connection
+                .counterparty()
+                .connection_id
+                .clone()
+                .ok_or(anyhow::anyhow!("no counterparty connection id provided"))?];
+
+            let expected_counterparty =
+                Counterparty::new(msg.port_id.clone(), Some(msg.channel_id));
+
+            let expected_channel = ChannelEnd {
+                state: ChannelState::Open,
+                ordering: channel.ordering,
+                remote: expected_counterparty,
+                connection_hops: expected_connection_hops,
+                version: channel.version.clone(),
+            };
+
+            self.verify_channel_proof(
+                &connection,
+                &msg.proofs,
+                &channel
+                    .remote
+                    .channel_id
+                    .ok_or(anyhow::anyhow!("no channel id"))?,
+                &channel.remote.port_id,
+                &expected_channel,
+            )
+            .await
+        }
+    }
+
+    impl<T: StateExt> ChannelOpenConfirmCheck for T {}
 }
