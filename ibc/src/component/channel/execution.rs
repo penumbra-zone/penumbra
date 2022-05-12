@@ -71,3 +71,24 @@ pub mod channel_open_ack {
 
     impl<T: StateExt> ChannelOpenAckExecute for T {}
 }
+
+pub mod channel_open_confirm {
+    use super::super::*;
+
+    #[async_trait]
+    pub trait ChannelOpenConfirmExecute: StateExt {
+        async fn execute(&mut self, msg: &MsgChannelOpenConfirm) {
+            let mut channel = self
+                .get_channel(&msg.channel_id, &msg.port_id)
+                .await
+                .unwrap()
+                .unwrap();
+
+            channel.set_state(ChannelState::Open);
+            self.put_channel(&msg.channel_id, &msg.port_id, channel)
+                .await;
+        }
+    }
+
+    impl<T: StateExt> ChannelOpenConfirmExecute for T {}
+}

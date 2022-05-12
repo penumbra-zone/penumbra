@@ -76,7 +76,10 @@ impl Component for ICS4Channel {
                     // NOTE: no additional stateless validation is possible
                 }
 
-                Some(ChannelOpenConfirm(msg)) => {}
+                Some(ChannelOpenConfirm(msg)) => {
+                    MsgChannelOpenConfirm::try_from(msg.clone())?;
+                    // NOTE: no additional stateless validation is possible
+                }
                 Some(ChannelCloseInit(msg)) => {}
                 Some(ChannelCloseConfirm(msg)) => {}
 
@@ -110,7 +113,12 @@ impl Component for ICS4Channel {
 
                     self.state.validate(&msg).await?;
                 }
-                Some(ChannelOpenConfirm(msg)) => {}
+                Some(ChannelOpenConfirm(msg)) => {
+                    use stateful::channel_open_confirm::ChannelOpenConfirmCheck;
+                    let msg = MsgChannelOpenConfirm::try_from(msg.clone())?;
+
+                    self.state.validate(&msg).await?;
+                }
                 Some(ChannelCloseInit(msg)) => {}
                 Some(ChannelCloseConfirm(msg)) => {}
 
@@ -143,7 +151,12 @@ impl Component for ICS4Channel {
 
                     self.state.execute(&msg).await;
                 }
-                Some(ChannelOpenConfirm(msg)) => {}
+                Some(ChannelOpenConfirm(msg)) => {
+                    use execution::channel_open_confirm::ChannelOpenConfirmExecute;
+                    let msg = MsgChannelOpenConfirm::try_from(msg.clone()).unwrap();
+
+                    self.state.execute(&msg).await;
+                }
                 Some(ChannelCloseInit(msg)) => {}
                 Some(ChannelCloseConfirm(msg)) => {}
 
