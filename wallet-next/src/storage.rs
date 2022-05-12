@@ -137,6 +137,23 @@ impl Storage {
         scan_result: ScanResult,
         nct: &mut NoteCommitmentTree,
     ) -> anyhow::Result<()> {
+        //Check that the incoming block height follows the latest recorded height
+        let last_sync_height = self.last_sync_height().await?;
+
+        let correct_height = match last_sync_height {
+            // Require that the new block follows the last one we scanned.
+            Some(cur_height) => scan_result.height == cur_height + 1,
+            // Require that the new block represents the initial chain state.
+            None => scan_result.height == 0,
+        };
+
+        if !correct_height {
+            return Err(anyhow::anyhow!(
+                "Wrong block height {:?} for latest sync height {:?}",
+                scan_result.height,
+                last_sync_height
+            ));
+        }
         let mut tx = self.pool.begin().await?;
 
         // Insert all new note records
