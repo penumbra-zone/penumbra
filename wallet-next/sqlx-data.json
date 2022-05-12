@@ -48,6 +48,16 @@
       "nullable": []
     }
   },
+  "4af503f633659f5e73d7e64f3fb1f1ab5e37299a25dadcd851f4ec86aea0a78b": {
+    "query": "UPDATE sync_height SET height = ?",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": []
+    }
+  },
   "63aad4faac1ffefd5525595f9ca5a82186181368251da9fbacf65a4d48671a01": {
     "query": "\n            SELECT bytes\n            FROM full_viewing_key\n            LIMIT 1\n            ",
     "describe": {
