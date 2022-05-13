@@ -98,11 +98,11 @@ impl Component for ShieldedPool {
     #[instrument(name = "shielded_pool", skip(tx))]
     fn check_tx_stateless(tx: &Transaction) -> Result<()> {
         // TODO: add a check that ephemeral_key is not identity to prevent scanning dos attack ?
-        let sighash = tx.transaction_body().sighash();
+        let auth_hash = tx.transaction_body().auth_hash();
 
         // 1. Check binding signature.
         tx.binding_verification_key()
-            .verify(&sighash, tx.binding_sig())
+            .verify(auth_hash.as_ref(), tx.binding_sig())
             .context("binding signature failed to verify")?;
 
         // 2. Check all spend auth signatures using provided spend auth keys
@@ -130,7 +130,7 @@ impl Component for ShieldedPool {
                     spend
                         .body
                         .rk
-                        .verify(&sighash, &spend.auth_sig)
+                        .verify(auth_hash.as_ref(), &spend.auth_sig)
                         .context("spend auth signature failed to verify")?;
 
                     if spend

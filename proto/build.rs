@@ -52,7 +52,7 @@ fn main() -> Result<()> {
 
     // These should disappear, eventually.
     config.compile_protos(
-        &["proto/transparent_proofs.proto", "proto/sighash.proto"],
+        &["proto/transparent_proofs.proto"],
         &["proto/", "ibc-go-vendor/"],
     )?;
 
