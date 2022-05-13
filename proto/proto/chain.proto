@@ -3,7 +3,6 @@ package penumbra.chain;
 option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
 
 import "crypto.proto";
-import "transaction.proto";
 import "stake.proto";
 
 // Global chain configuration data, such as chain ID, epoch duration, etc.
@@ -49,8 +48,8 @@ message AssetInfo {
 // Contains the minimum data needed to update client state.
 message CompactBlock {
   uint64 height = 1;
-  // OutputBodies describing new notes.
-  repeated transaction.OutputBody outputs = 2;
+  // NotePayloads describing new notes.
+  repeated crypto.NotePayload note_payloads = 2;
   // Nullifiers identifying spent notes.
   repeated bytes nullifiers = 3;
 }

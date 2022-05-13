@@ -7,12 +7,12 @@ use decaf377::FieldExt;
 use penumbra_crypto::{
     merkle,
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
-    Fr, Nullifier, Value, STAKING_TOKEN_ASSET_ID,
+    Fr, NotePayload, Nullifier, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_proto::{ibc as pb_ibc, stake as pbs, transaction as pbt, Message, Protobuf};
 
 use crate::{
-    action::{output, Delegate, Undelegate},
+    action::{Delegate, Undelegate},
     Action,
 };
 
@@ -114,13 +114,13 @@ impl Transaction {
         })
     }
 
-    pub fn output_bodies(&self) -> Vec<output::Body> {
+    pub fn note_payloads(&self) -> Vec<NotePayload> {
         self.transaction_body
             .actions
             .iter()
             .filter_map(|action| {
                 if let Action::Output(output) = action {
-                    Some(output.body.clone())
+                    Some(output.note_payload.clone())
                 } else {
                     None
                 }

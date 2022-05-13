@@ -10,10 +10,10 @@ use penumbra_crypto::{
     asset::{self, Asset, Denom},
     ka,
     merkle::{self, Frontier, NoteCommitmentTree, TreeExt},
-    note, Address, Note, Nullifier, One, Value, STAKING_TOKEN_ASSET_ID,
+    note, Address, Note, NotePayload, Nullifier, One, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_storage::{State, StateExt, Storage};
-use penumbra_transaction::{action::output, Action, Transaction};
+use penumbra_transaction::{Action, Transaction};
 use tendermint::abci;
 use tracing::instrument;
 
@@ -110,8 +110,8 @@ impl Component for ShieldedPool {
                         .proof
                         .verify(
                             output.value_commitment,
-                            output.body.note_commitment,
-                            output.body.ephemeral_key,
+                            output.note_payload.note_commitment,
+                            output.note_payload.ephemeral_key,
                         )
                         .is_err()
                     {
@@ -197,7 +197,7 @@ impl Component for ShieldedPool {
             tracing::warn!("skipping processing, TODO: implement");
         } else {
          */
-        for compact_output in tx.output_bodies() {
+        for compact_output in tx.note_payloads() {
             self.add_note(compact_output, source).await;
         }
         for spent_nullifier in tx.spent_nullifiers() {
@@ -326,7 +326,7 @@ impl ShieldedPool {
             .update_token_supply(&value.asset_id, value.amount as i64)
             .await?;
         self.add_note(
-            output::Body {
+            NotePayload {
                 note_commitment,
                 ephemeral_key,
                 encrypted_note,
@@ -338,18 +338,18 @@ impl ShieldedPool {
         Ok(())
     }
 
-    #[instrument(skip(self, source, output_body), fields(note_commitment = ?output_body.note_commitment))]
-    async fn add_note(&mut self, output_body: output::Body, source: NoteSource) {
+    #[instrument(skip(self, source, note_payload), fields(note_commitment = ?note_payload.note_commitment))]
+    async fn add_note(&mut self, note_payload: NotePayload, source: NoteSource) {
         tracing::debug!("adding note");
         // 1. Insert it into the NCT
         self.note_commitment_tree
-            .append(&output_body.note_commitment);
+            .append(&note_payload.note_commitment);
         // 2. Record its source in the JMT
         self.state
-            .set_note_source(&output_body.note_commitment, source)
+            .set_note_source(&note_payload.note_commitment, source)
             .await;
         // 3. Finally, record it in the pending compact block.
-        self.compact_block.outputs.push(output_body);
+        self.compact_block.note_payloads.push(note_payload);
     }
 
     #[instrument(skip(self))]
