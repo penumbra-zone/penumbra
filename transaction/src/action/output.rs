@@ -8,14 +8,14 @@ use penumbra_crypto::{
     memo::{MemoCiphertext, MemoPlaintext},
     note,
     proofs::transparent::OutputProof,
-    value, Address, Fr, Note,
+    value, Address, Fr, Note, NotePayload,
 };
 use penumbra_proto::{transaction as pb, Protobuf};
 use rand_core::{CryptoRng, RngCore};
 
 #[derive(Clone, Debug)]
 pub struct Output {
-    pub body: Body,
+    pub note_payload: NotePayload,
     pub value_commitment: value::Commitment,
     pub encrypted_memo: MemoCiphertext,
     pub ovk_wrapped_key: [u8; note::OVK_WRAPPED_LEN_BYTES],
@@ -56,7 +56,7 @@ impl Output {
         };
 
         Self {
-            body: Body {
+            note_payload: NotePayload {
                 note_commitment,
                 ephemeral_key,
                 encrypted_note,
@@ -76,7 +76,7 @@ impl From<Output> for pb::Output {
         let cv_bytes: [u8; 32] = output.value_commitment.into();
         let proof: Vec<u8> = output.proof.into();
         pb::Output {
-            body: Some(output.body.into()),
+            note_payload: Some(output.note_payload.into()),
             cv: cv_bytes.to_vec().into(),
             encrypted_memo: Bytes::copy_from_slice(&output.encrypted_memo.0),
             ovk_wrapped_key: Bytes::copy_from_slice(&output.ovk_wrapped_key),
@@ -89,8 +89,8 @@ impl TryFrom<pb::Output> for Output {
     type Error = Error;
 
     fn try_from(proto: pb::Output) -> anyhow::Result<Self, Self::Error> {
-        let body = proto
-            .body
+        let note_payload = proto
+            .note_payload
             .ok_or(anyhow::anyhow!("missing output body"))?
             .try_into()
             .map_err(|e: Error| e.context("output body malformed"))?;
@@ -106,62 +106,13 @@ impl TryFrom<pb::Output> for Output {
             .map_err(|_| anyhow::anyhow!("output malformed"))?;
 
         Ok(Output {
-            body,
+            note_payload,
             encrypted_memo,
             ovk_wrapped_key,
             value_commitment: (proto.cv[..])
                 .try_into()
                 .map_err(|_| anyhow::anyhow!("output body malformed"))?,
             proof: proto.zkproof[..]
-                .try_into()
-                .map_err(|_| anyhow::anyhow!("output body malformed"))?,
-        })
-    }
-}
-
-#[derive(Clone)]
-pub struct Body {
-    pub note_commitment: note::Commitment,
-    pub ephemeral_key: ka::Public,
-    pub encrypted_note: [u8; note::NOTE_CIPHERTEXT_BYTES],
-}
-
-impl std::fmt::Debug for Body {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("output::Body")
-            .field("note_commitment", &self.note_commitment)
-            .field("ephemeral_key", &self.ephemeral_key)
-            .field("encrypted_note", &"...")
-            .finish()
-    }
-}
-
-impl Body {}
-
-impl Protobuf<pb::OutputBody> for Body {}
-
-impl From<Body> for pb::OutputBody {
-    fn from(msg: Body) -> Self {
-        pb::OutputBody {
-            note_commitment: Some(msg.note_commitment.into()),
-            ephemeral_key: Bytes::copy_from_slice(&msg.ephemeral_key.0),
-            encrypted_note: Bytes::copy_from_slice(&msg.encrypted_note),
-        }
-    }
-}
-
-impl TryFrom<pb::OutputBody> for Body {
-    type Error = Error;
-
-    fn try_from(proto: pb::OutputBody) -> anyhow::Result<Self, Self::Error> {
-        Ok(Body {
-            note_commitment: proto
-                .note_commitment
-                .ok_or_else(|| anyhow::anyhow!("missing note commitment"))?
-                .try_into()?,
-            ephemeral_key: ka::Public::try_from(&proto.ephemeral_key[..])
-                .map_err(|_| anyhow::anyhow!("output body malformed"))?,
-            encrypted_note: proto.encrypted_note[..]
                 .try_into()
                 .map_err(|_| anyhow::anyhow!("output body malformed"))?,
         })

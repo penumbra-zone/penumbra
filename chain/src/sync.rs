@@ -2,9 +2,8 @@ use std::convert::TryFrom;
 
 use anyhow::Result;
 use bytes::Bytes;
-use penumbra_crypto::{FieldExt, Nullifier};
+use penumbra_crypto::{FieldExt, NotePayload, Nullifier};
 use penumbra_proto::{chain as pb, Protobuf};
-use penumbra_transaction::action::output;
 use serde::{Deserialize, Serialize};
 
 // Domain type for CompactBlock.
@@ -14,7 +13,7 @@ use serde::{Deserialize, Serialize};
 pub struct CompactBlock {
     pub height: u64,
     // Output bodies describing new notes.
-    pub outputs: Vec<output::Body>,
+    pub note_payloads: Vec<NotePayload>,
     // Nullifiers identifying spent notes.
     pub nullifiers: Vec<Nullifier>,
 }
@@ -25,7 +24,7 @@ impl From<CompactBlock> for pb::CompactBlock {
     fn from(cb: CompactBlock) -> Self {
         pb::CompactBlock {
             height: cb.height,
-            outputs: cb.outputs.into_iter().map(Into::into).collect(),
+            note_payloads: cb.note_payloads.into_iter().map(Into::into).collect(),
             nullifiers: cb
                 .nullifiers
                 .into_iter()
@@ -41,11 +40,11 @@ impl TryFrom<pb::CompactBlock> for CompactBlock {
     fn try_from(value: pb::CompactBlock) -> Result<Self, Self::Error> {
         Ok(CompactBlock {
             height: value.height,
-            outputs: value
-                .outputs
+            note_payloads: value
+                .note_payloads
                 .into_iter()
-                .map(output::Body::try_from)
-                .collect::<Result<Vec<output::Body>>>()?,
+                .map(NotePayload::try_from)
+                .collect::<Result<Vec<NotePayload>>>()?,
             nullifiers: value
                 .nullifiers
                 .into_iter()

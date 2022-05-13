@@ -2,9 +2,8 @@ use penumbra_chain::CompactBlock;
 use penumbra_crypto::Nullifier;
 use penumbra_crypto::{
     merkle::{Frontier, Tree},
-    FullViewingKey, Note,
+    FullViewingKey, Note, NotePayload,
 };
-use penumbra_transaction::action::output;
 
 use crate::NoteRecord;
 
@@ -17,23 +16,23 @@ pub struct ScanResult {
     pub height: u64,
 }
 
-#[tracing::instrument(skip(fvk, outputs, nullifiers))]
+#[tracing::instrument(skip(fvk, note_commitment_tree, note_payloads, nullifiers))]
 pub fn scan_block(
     fvk: &FullViewingKey,
     note_commitment_tree: &mut penumbra_crypto::merkle::NoteCommitmentTree,
     CompactBlock {
         height,
-        outputs,
+        note_payloads,
         nullifiers,
     }: CompactBlock,
 ) -> ScanResult {
     let mut new_notes: Vec<NoteRecord> = Vec::new();
 
-    for output::Body {
+    for NotePayload {
         note_commitment,
         ephemeral_key,
         encrypted_note,
-    } in outputs.into_iter()
+    } in note_payloads
     {
         // Unconditionally insert the note commitment into the merkle tree
         tracing::debug!(?note_commitment, "appending to note commitment tree");

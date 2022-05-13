@@ -23,7 +23,7 @@ fn main() -> Result<()> {
         ".penumbra.transaction",
         // The byte fields in a compact block will also be converted to fixed-size
         // byte arrays and then discarded.
-        ".penumbra.chain.CompactOutput",
+        ".penumbra.crypto.NotePayload",
         ".penumbra.chain.CompactBlock",
     ]);
 
@@ -109,6 +109,7 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.crypto.Note", SERDE_TRANSPARENT),
     (".penumbra.crypto.NoteCommitment", SERIALIZE),
     (".penumbra.crypto.NoteCommitment", SERDE_TRANSPARENT),
+    (".penumbra.crypto.NotePayload", SERIALIZE),
     (".penumbra.crypto.AssetId", SERIALIZE),
     (".penumbra.crypto.AssetId", SERDE_TRANSPARENT),
     (".penumbra.crypto.Value", SERIALIZE),
@@ -136,7 +137,6 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.chain.NoteSource", SERDE_TRANSPARENT),
     (".penumbra.chain.GenesisAppState", SERIALIZE),
     (".penumbra.chain.GenesisAllocation", SERIALIZE),
-    (".penumbra.transaction.OutputBody", SERIALIZE),
     (".penumbra.wallet.NoteRecord", SERIALIZE),
 ];
 

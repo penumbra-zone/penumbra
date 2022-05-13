@@ -13,6 +13,7 @@ pub mod keys;
 pub mod memo;
 pub mod merkle;
 pub mod note;
+mod note_payload;
 mod nullifier;
 mod prf;
 pub mod proofs;
@@ -24,6 +25,7 @@ pub use delegation_token::DelegationToken;
 pub use identity_key::IdentityKey;
 pub use keys::FullViewingKey;
 pub use note::Note;
+pub use note_payload::NotePayload;
 pub use nullifier::Nullifier;
 pub use value::Value;
 

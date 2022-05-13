@@ -68,6 +68,18 @@ message Nullifier {
     bytes inner = 1;
 }
 
+// The body of an output description, including only the minimal
+// data required to scan and process the output.
+message NotePayload {
+  // The note commitment for the output note. 32 bytes.
+  NoteCommitment note_commitment = 1;
+  // The encoding of an ephemeral public key. 32 bytes.
+  bytes ephemeral_key = 2;
+  // An encryption of the newly created note.
+  // 132 = 1(type) + 11(d) + 8(amount) + 32(asset_id) + 32(rcm) + 32(pk_d) + 16(MAC) bytes.
+  bytes encrypted_note = 3;
+}
+
 // An authentication path from a note commitment to the root of the note commitment tree.
 //
 // TODO: update this when migrating to TCT

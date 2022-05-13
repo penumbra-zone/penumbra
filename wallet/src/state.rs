@@ -10,11 +10,11 @@ use penumbra_crypto::{
     asset::{self, Denom},
     memo,
     merkle::{Frontier, NoteCommitmentTree, Tree, TreeExt},
-    note, Address, DelegationToken, FieldExt, Note, Nullifier, Value, STAKING_TOKEN_ASSET_ID,
-    STAKING_TOKEN_DENOM,
+    note, Address, DelegationToken, FieldExt, Note, NotePayload, Nullifier, Value,
+    STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
 };
 use penumbra_stake::{rate::RateData, validator};
-use penumbra_transaction::{action::output, Transaction};
+use penumbra_transaction::Transaction;
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
@@ -49,7 +49,7 @@ pub struct ClientState {
     /// Notes that we have spent.
     spent_set: BTreeMap<note::Commitment, Note>,
     /// Map of note commitment to full transaction data for transactions we have visibility into.
-    transactions: BTreeMap<note::Commitment, Option<Vec<u8>>>,
+    //transactions: BTreeMap<note::Commitment, Option<Vec<u8>>>,
     /// Map of asset IDs to (raw) asset denominations.
     asset_cache: asset::Cache,
     /// Key material.
@@ -108,7 +108,7 @@ impl ClientState {
             submitted_spend_set: BTreeMap::new(),
             submitted_change_set: BTreeMap::new(),
             spent_set: BTreeMap::new(),
-            transactions: BTreeMap::new(),
+            //transactions: BTreeMap::new(),
             asset_cache: Default::default(),
             wallet,
             chain_params: None,
@@ -731,12 +731,12 @@ impl ClientState {
     /// Scan the provided block and update the client state.
     ///
     /// The provided block must be the one immediately following [`Self::last_block_height`].
-    #[instrument(skip(self, outputs, nullifiers))]
+    #[instrument(skip(self, note_payloads, nullifiers))]
     pub fn scan_block(
         &mut self,
         CompactBlock {
             height,
-            outputs,
+            note_payloads,
             nullifiers,
         }: CompactBlock,
     ) -> Result<(), anyhow::Error> {
@@ -752,13 +752,16 @@ impl ClientState {
                 ))
             }
         }
-        tracing::debug!(outputs_len = outputs.len(), "starting block scan");
+        tracing::debug!(
+            note_payloads_len = note_payloads.len(),
+            "starting block scan"
+        );
 
-        for output::Body {
+        for NotePayload {
             note_commitment,
             ephemeral_key,
             encrypted_note,
-        } in outputs.into_iter()
+        } in note_payloads
         {
             // Unconditionally insert the note commitment into the merkle tree
             tracing::debug!(?note_commitment, "appending to note commitment tree");
@@ -1050,7 +1053,7 @@ mod serde_helpers {
                 spent_set,
                 asset_cache: asset_registry.try_into()?,
                 // TODO: serialize full transactions
-                transactions: Default::default(),
+                //transactions: Default::default(),
                 chain_params: state.chain_params,
             })
         }
