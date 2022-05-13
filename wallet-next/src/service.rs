@@ -1,5 +1,6 @@
 use std::pin::Pin;
 
+use penumbra_crypto::keys::FullViewingKeyHash;
 use penumbra_proto::{
     client::oblivious::oblivious_query_client::ObliviousQueryClient,
     crypto as pbc,
@@ -26,6 +27,7 @@ pub struct WalletService {
     // TODO: add a way for the WalletService to signal the worker that it should shut down
     // this probably looks like an Arc<oneshot::Sender<()>> or something,
     // where the receiver is held by the worker and the worker checks if it's closed (=> all sender handles dropped)
+    fvk_hash: FullViewingKeyHash,
 }
 
 impl WalletService {
@@ -44,14 +46,31 @@ impl WalletService {
 
         tokio::spawn(worker.run());
 
-        Ok(Self { storage })
+        let fvk = storage.full_viewing_key().await?;
+        let fvk_hash = fvk.hash();
+
+        Ok(Self { storage, fvk_hash })
     }
 
     async fn check_fvk(&self, fvk: Option<&pbc::FullViewingKeyHash>) -> Result<(), tonic::Status> {
-        // TODO: check the fvk against the Storage
         // Takes an Option to avoid making the caller handle missing fields,
         // should error on None or wrong FVK hash
-        Ok(())
+        match fvk {
+            Some(fvk) => {
+                if fvk != &self.fvk_hash.into() {
+                    return Err(tonic::Status::new(
+                        tonic::Code::InvalidArgument,
+                        "Invalid FVK hash",
+                    ));
+                }
+
+                Ok(())
+            }
+            None => Err(tonic::Status::new(
+                tonic::Code::InvalidArgument,
+                "Missing FVK",
+            )),
+        }
     }
 
     async fn check_worker(&self) -> Result<(), tonic::Status> {
