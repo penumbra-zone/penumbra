@@ -12,7 +12,7 @@ use penumbra_crypto::{
     merkle::{self, Frontier, NoteCommitmentTree, TreeExt},
     note, Address, Note, NotePayload, Nullifier, One, Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_storage::{State, StateExt, Storage};
+use penumbra_storage::{State, StateExt};
 use penumbra_transaction::{Action, Transaction};
 use tendermint::abci;
 use tracing::instrument;
@@ -28,12 +28,10 @@ pub struct ShieldedPool {
 }
 
 impl ShieldedPool {
-    #[instrument(name = "shielded_pool", skip(storage))]
-    pub async fn new(storage: Storage) -> Self {
-        let note_commitment_tree = storage.get_nct().await.unwrap();
-
+    #[instrument(name = "shielded_pool", skip(state, note_commitment_tree))]
+    pub async fn new(state: State, note_commitment_tree: NoteCommitmentTree) -> Self {
         Self {
-            state: storage.state().await.unwrap(),
+            state,
             note_commitment_tree,
             compact_block: Default::default(),
         }
