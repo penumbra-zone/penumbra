@@ -15,6 +15,8 @@ mode** in the Tendermint `config.toml`:
 mode = "validator"
 ```
 
+Also, make sure that you followed the instructions in [the previous section](./fullnode.md) for pulling in Penumbra's tendermint configuration.
+
 After starting your node, as in [the previous section](./fullnode.md), you
 should now be participating in the network as a fullnode. However your validator
 won't be visible to the chain yet, as the definition hasn't been uploaded.
