@@ -3,7 +3,7 @@ use std::pin::Pin;
 use penumbra_proto::{
     client::oblivious::oblivious_query_client::ObliviousQueryClient,
     crypto as pbc,
-    wallet::{self as pb, wallet_protocol_server::WalletProtocol},
+    wallet::{self as pb, wallet_protocol_server::WalletProtocol, StatusResponse},
 };
 use tonic::{async_trait, transport::Channel};
 
@@ -72,7 +72,20 @@ impl WalletProtocol for WalletService {
         self.check_worker().await?;
         self.check_fvk(request.get_ref().fvk_hash.as_ref()).await?;
 
-        todo!()
+        let last_sync_height = self
+            .storage
+            .last_sync_height()
+            .await
+            .map_err(|_| tonic::Status::unavailable("database error"))?
+            .unwrap_or(0);
+
+        // TODO: we need to determine how to get the `chain_height` from the full node
+        // until we have that, we can't fully implement this.
+        Ok(tonic::Response::new(StatusResponse {
+            synchronized: true,
+            chain_height: last_sync_height,
+            sync_height: last_sync_height,
+        }))
     }
 
     async fn notes(
