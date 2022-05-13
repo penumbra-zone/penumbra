@@ -11,7 +11,7 @@ use tendermint::{
     block,
 };
 use tokio::sync::{mpsc, watch};
-use tracing::Instrument;
+use tracing::{instrument, Instrument};
 
 use super::Message;
 use crate::App;
@@ -24,6 +24,7 @@ pub struct Worker {
 }
 
 impl Worker {
+    #[instrument(skip(storage, queue, height_tx), name = "consensus::Worker::new")]
     pub async fn new(
         storage: Storage,
         queue: mpsc::Receiver<Message>,

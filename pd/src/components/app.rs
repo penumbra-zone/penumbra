@@ -25,14 +25,23 @@ pub struct App {
 }
 
 impl App {
-    #[instrument(skip(storage))]
     pub async fn new(storage: Storage) -> Self {
-        let staking = Staking::new(storage.state().await.unwrap()).await;
-        let ibc = IBCComponent::new(storage.state().await.unwrap()).await;
-        let shielded_pool = ShieldedPool::new(storage.clone()).await;
+        tracing::info!("initializing App instance");
+
+        // The NCT (and *only* the NCT) is stored outside of the main state,
+        // so that the backing format for the NCT isn't consensus-critical.
+        // (The NCT data is already committed to by the NCT root, which is in the state).
+        let note_commitment_tree = storage.get_nct().await.unwrap();
+
+        // All of the components need to use the *same* shared state.
+        let state = storage.state().await.unwrap();
+
+        let staking = Staking::new(state.clone()).await;
+        let ibc = IBCComponent::new(state.clone()).await;
+        let shielded_pool = ShieldedPool::new(state.clone(), note_commitment_tree).await;
 
         Self {
-            state: storage.state().await.unwrap(),
+            state,
             shielded_pool,
             staking,
             ibc,
@@ -46,18 +55,26 @@ impl App {
     /// as an empty state over top of the newly written storage.
     #[instrument(skip(self, storage))]
     pub async fn commit(&mut self, storage: Storage) -> Result<(RootHash, Version)> {
-        // Store the latest NCT in the storage (this is not in the JMT State because we don't want
-        // the serialization format to be consensus critical; only the root is stored in the State)
+        // We want to store the latest NCT in a sidecar part of the storage,
+        // rather than the Penumbra state, because the serialization format for
+        // the NCT should not be consensus-critical.  We need to grab a copy of
+        // the entire NCT, so we can use it to re-instantiate the ShieldedPool.
+        let note_commitment_tree = self.shielded_pool.note_commitment_tree().clone();
         storage
             .put_nct(self.shielded_pool.note_commitment_tree())
             .await?;
+
         // Commit the pending writes, clearing the state.
         let (root_hash, version) = self.state.write().await.commit(storage.clone()).await?;
         tracing::debug!(?root_hash, version, "finished committing state");
-        // Now re-instantiate all of the components:
+
+        // Get the latest version of the state, now that we've committed it.
+        self.state = storage.state().await?;
+
+        // Now re-instantiate all of the components so they all have the same shared state.
         self.staking = Staking::new(self.state.clone()).await;
         self.ibc = IBCComponent::new(self.state.clone()).await;
-        self.shielded_pool = ShieldedPool::new(storage).await;
+        self.shielded_pool = ShieldedPool::new(self.state.clone(), note_commitment_tree).await;
 
         Ok((root_hash, version))
     }
