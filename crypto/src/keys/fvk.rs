@@ -26,7 +26,7 @@ pub struct FullViewingKey {
 }
 
 /// The hash of a full viewing key, used as an account identifier.
-#[derive(Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(try_from = "pb::FullViewingKeyHash", into = "pb::FullViewingKeyHash")]
 pub struct FullViewingKeyHash(pub [u8; 32]);
 
