@@ -29,11 +29,7 @@ impl Storage {
                     opts.create_if_missing(true);
                     opts.create_missing_column_families(true);
 
-                    Ok(Self(Arc::new(DB::open_cf(
-                        &opts,
-                        path,
-                        ["default", "nct"],
-                    )?)))
+                    Ok(Self(Arc::new(DB::open_cf(&opts, path, ["jmt", "nct"])?)))
                 })
             })
             .await
@@ -137,7 +133,9 @@ impl TreeWriter for Storage {
                             let key_bytes = &node_key.encode()?;
                             let value_bytes = &node.encode()?;
                             tracing::trace!(?key_bytes, value_bytes = ?hex::encode(&value_bytes));
-                            db.put(key_bytes, value_bytes)?;
+
+                            let jmt_cf = db.cf_handle("jmt").expect("jmt column family not found");
+                            db.put_cf(jmt_cf, key_bytes, &value_bytes)?;
                         }
 
                         Ok(())
@@ -168,8 +166,9 @@ impl TreeReader for Storage {
                 .name("Storage::get_node_option")
                 .spawn_blocking(move || {
                     span.in_scope(|| {
+                        let jmt_cf = db.cf_handle("jmt").expect("jmt column family not found");
                         let value = db
-                            .get_pinned(&node_key.encode()?)?
+                            .get_pinned_cf(jmt_cf, &node_key.encode()?)?
                             .map(|db_slice| Node::decode(&db_slice))
                             .transpose()?;
 
@@ -193,7 +192,8 @@ impl TreeReader for Storage {
                 .name("Storage::get_rightmost_leaf")
                 .spawn_blocking(move || {
                     span.in_scope(|| {
-                        let mut iter = db.raw_iterator();
+                        let jmt_cf = db.cf_handle("jmt").expect("jmt column family not found");
+                        let mut iter = db.raw_iterator_cf(jmt_cf);
                         let mut ret = None;
                         iter.seek_to_last();
 
