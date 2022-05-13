@@ -28,6 +28,18 @@ curl -s http://testnet.penumbra.zone:26657/genesis | jq ".result.genesis" > \$HO
 ```
 The response data is nested, so we use `jq` to grab a specific key.
 
+Next, grab the correct tendermint configuration from our repo. This is important to make sure your node can stay in sync with the network:
+
+```console
+curl -s https://raw.githubusercontent.com/penumbra-zone/penumbra/main/testnets/tm_config_template.toml > \$HOME/.tendermint/config/config.toml
+```
+
+Fill in any missing fields in the template, checking for them like so:
+
+```console
+grep "{}" \$HOME/.tendermint/config/config.toml
+```
+
 Next you'll need to modify the bootstrap peers list to specify our primary
 testnet node as the initial peer for your node. Open
 `\$HOME/.tendermint/config/config.toml` and find the `bootstrap-peers` line and
