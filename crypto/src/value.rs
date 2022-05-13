@@ -48,6 +48,12 @@ impl TryFrom<pb::Value> for Value {
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
 pub struct Commitment(pub decaf377::Element);
 
+impl Commitment {
+    pub fn to_bytes(&self) -> [u8; 32] {
+        (*self).into()
+    }
+}
+
 pub static VALUE_BLINDING_GENERATOR: Lazy<decaf377::Element> = Lazy::new(|| {
     let s = Fq::from_le_bytes_mod_order(blake2b_simd::blake2b(b"decaf377-rdsa-binding").as_bytes());
     decaf377::Element::map_to_group_cdh(&s)

@@ -80,53 +80,6 @@ pub mod wallet {
     tonic::include_proto!("penumbra.wallet");
 }
 
-pub mod sighash {
-    include!(concat!(env!("OUT_DIR"), "/penumbra.sighash.rs"));
-
-    use sig_hash_action::Action as SHAction;
-
-    use super::transaction::{action::Action as TxAction, Output, Spend};
-
-    impl From<super::transaction::Action> for SigHashAction {
-        fn from(action: super::transaction::Action) -> Self {
-            let action = match action.action {
-                // Pass through other actions
-                Some(TxAction::Delegate(d)) => Some(SHAction::Delegate(d)),
-                Some(TxAction::Undelegate(d)) => Some(SHAction::Undelegate(d)),
-                // The `ValidatorDefinition` contains sig bytes, but they're across the validator itself,
-                // not the transaction, therefore it's fine to include them in the sighash.
-                Some(TxAction::ValidatorDefinition(vd)) => Some(SHAction::ValidatorDefinition(vd)),
-                // Collapse spends to spend bodies
-                Some(TxAction::Spend(Spend { body: None, .. })) => None,
-                Some(TxAction::Spend(Spend {
-                    body: Some(spend_body),
-                    ..
-                })) => Some(SHAction::Spend(spend_body)),
-                // Collapse outputs to output bodies
-                Some(TxAction::Output(Output { body: None, .. })) => None,
-                Some(TxAction::Output(Output {
-                    body: Some(output_body),
-                    ..
-                })) => Some(SHAction::Output(output_body)),
-                Some(TxAction::IbcAction(i)) => Some(SHAction::IbcAction(i)),
-                None => None,
-            };
-            Self { action }
-        }
-    }
-
-    impl From<super::transaction::TransactionBody> for SigHashTransaction {
-        fn from(body: super::transaction::TransactionBody) -> Self {
-            Self {
-                actions: body.actions.into_iter().map(Into::into).collect(),
-                expiry_height: body.expiry_height,
-                chain_id: body.chain_id,
-                fee: body.fee,
-            }
-        }
-    }
-}
-
 /// Transparent proofs.
 ///
 /// Note that these are protos for the "MVP" transparent version of Penumbra,

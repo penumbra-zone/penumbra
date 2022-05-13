@@ -1,9 +1,12 @@
 #![allow(clippy::clone_on_copy)]
-pub mod action;
-pub use action::Action;
 
+mod auth_hash;
 mod error;
-pub use error::Error;
-
 mod transaction;
+
+pub mod action;
+
+pub use action::Action;
+pub use auth_hash::AuthHash;
+pub use error::Error;
 pub use transaction::{Fee, Transaction, TransactionBody};

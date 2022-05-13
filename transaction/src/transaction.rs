@@ -27,20 +27,6 @@ pub struct TransactionBody {
     pub fee: Fee,
 }
 
-impl TransactionBody {
-    pub fn sighash(&self) -> [u8; 64] {
-        use penumbra_proto::sighash::SigHashTransaction;
-
-        let sighash_tx = SigHashTransaction::from(pbt::TransactionBody::from(self.clone()));
-        let sighash_tx_bytes: Vec<u8> = sighash_tx.encode_to_vec();
-
-        *blake2b_simd::Params::default()
-            .personal(b"Penumbra_SigHash")
-            .hash(&sighash_tx_bytes)
-            .as_array()
-    }
-}
-
 #[derive(Clone, Debug)]
 pub struct Fee(pub u64);
 
@@ -162,7 +148,7 @@ impl Transaction {
         id_bytes
     }
 
-    /// Verify the binding signature.
+    /// Compute the binding verification key from the transaction data.
     pub fn binding_verification_key(&self) -> VerificationKey<Binding> {
         let mut value_commitments = decaf377::Element::default();
         for action in &self.transaction_body.actions {

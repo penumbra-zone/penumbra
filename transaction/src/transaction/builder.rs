@@ -16,7 +16,7 @@ use rand_core::{CryptoRng, RngCore};
 
 use crate::{
     action::{spend, Action, Delegate, Output, Spend, Undelegate},
-    Error, Fee, Transaction, TransactionBody,
+    AuthHash, Error, Fee, Transaction, TransactionBody,
 };
 
 /// Used to construct a Penumbra transaction.
@@ -206,7 +206,7 @@ impl Builder {
     pub fn compute_binding_sig<R: CryptoRng + RngCore>(
         &self,
         rng: &mut R,
-        sighash: &[u8; 64],
+        auth_hash: &AuthHash,
     ) -> Signature<Binding> {
         let binding_signing_key: SigningKey<Binding> = self.synthetic_blinding_factor.into();
 
@@ -219,7 +219,7 @@ impl Builder {
         let computed_verification_key = self.value_commitments.compress().0;
         assert_eq!(binding_verification_key_raw, computed_verification_key);
 
-        binding_signing_key.sign(rng, sighash)
+        binding_signing_key.sign(rng, auth_hash.as_ref())
     }
 
     pub fn finalize<R: CryptoRng + RngCore>(
@@ -299,8 +299,8 @@ impl Builder {
         };
 
         // The transaction body is filled except for the signatures,
-        // so we can compute the sighash value....
-        let sighash = transaction_body.sighash();
+        // so we can compute the auth hash...
+        let auth_hash = transaction_body.auth_hash();
 
         // and use it to fill in the spendauth sigs...
         for i in 0..self.spends.len() {
@@ -309,14 +309,14 @@ impl Builder {
                 ref mut auth_sig, ..
             }) = transaction_body.actions[i]
             {
-                *auth_sig = rsk.sign(&mut rng, &sighash);
+                *auth_sig = rsk.sign(&mut rng, auth_hash.as_ref());
             } else {
                 unreachable!("spends come first in actions list")
             }
         }
 
         // ... and the binding sig
-        let binding_sig = self.compute_binding_sig(rng, &sighash);
+        let binding_sig = self.compute_binding_sig(rng, &auth_hash);
 
         // Prevent accidental reuse by erasing the chain ID.
         // It'd be cleaner to take ownership of self and consume it,
