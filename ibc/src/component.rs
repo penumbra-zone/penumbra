@@ -3,6 +3,7 @@
 // marked as unreachable only when not building in test configuration.
 #![allow(unreachable_patterns)]
 
+mod channel;
 mod client;
 mod connection;
 
@@ -19,6 +20,7 @@ use tracing::instrument;
 pub struct IBCComponent {
     client: client::Ics2Client,
     connection: connection::ConnectionComponent,
+    channel: channel::ICS4Channel,
 
     enabled: bool,
 }
@@ -28,8 +30,10 @@ impl IBCComponent {
     pub async fn new(state: State) -> Self {
         let client = Ics2Client::new(state.clone()).await;
         let connection = connection::ConnectionComponent::new(state.clone()).await;
+        let channel = channel::ICS4Channel::new(state.clone()).await;
 
         Self {
+            channel,
             client,
             connection,
             enabled: false,
@@ -45,18 +49,21 @@ impl Component for IBCComponent {
 
         self.client.init_chain(app_state).await;
         self.connection.init_chain(app_state).await;
+        self.channel.init_chain(app_state).await;
     }
 
     #[instrument(name = "ibc", skip(self, begin_block))]
     async fn begin_block(&mut self, begin_block: &abci::request::BeginBlock) {
         self.client.begin_block(begin_block).await;
         self.connection.begin_block(begin_block).await;
+        self.channel.begin_block(begin_block).await;
     }
 
     #[instrument(name = "ibc", skip(tx))]
     fn check_tx_stateless(tx: &Transaction) -> Result<()> {
         client::Ics2Client::check_tx_stateless(tx)?;
         connection::ConnectionComponent::check_tx_stateless(tx)?;
+        channel::ICS4Channel::check_tx_stateless(tx)?;
 
         Ok(())
     }
@@ -71,6 +78,7 @@ impl Component for IBCComponent {
 
         self.client.check_tx_stateful(tx).await?;
         self.connection.check_tx_stateful(tx).await?;
+        self.channel.check_tx_stateful(tx).await?;
 
         Ok(())
     }
@@ -79,11 +87,13 @@ impl Component for IBCComponent {
     async fn execute_tx(&mut self, tx: &Transaction) {
         self.client.execute_tx(tx).await;
         self.connection.execute_tx(tx).await;
+        self.channel.execute_tx(tx).await;
     }
 
     #[instrument(name = "ibc", skip(self, end_block))]
     async fn end_block(&mut self, end_block: &abci::request::EndBlock) {
         self.client.end_block(end_block).await;
         self.connection.end_block(end_block).await;
+        self.channel.end_block(end_block).await;
     }
 }

@@ -1,3 +1,7 @@
+use crate::component::client::View as _;
+use crate::{
+    validate_penumbra_client_state, ConnectionCounter, COMMITMENT_PREFIX, SUPPORTED_VERSIONS,
+};
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc::core::ics02_client::client_consensus::ConsensusState;
@@ -25,11 +29,6 @@ use penumbra_storage::{State, StateExt};
 use penumbra_transaction::Transaction;
 use tendermint::abci;
 use tracing::instrument;
-
-use crate::component::client::View as _;
-use crate::{
-    validate_penumbra_client_state, ConnectionCounter, COMMITMENT_PREFIX, SUPPORTED_VERSIONS,
-};
 
 mod stateful;
 mod stateless;
