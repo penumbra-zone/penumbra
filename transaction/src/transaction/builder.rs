@@ -6,6 +6,7 @@ use penumbra_crypto::{
     keys::{OutgoingViewingKey, SpendKey},
     memo::MemoPlaintext,
     merkle::{self, NoteCommitmentTree},
+    proofs::transparent::SpendProof,
     rdsa::{Binding, Signature, SigningKey, SpendAuth},
     value, Address, Fr, IdentityKey, Note, Value, STAKING_TOKEN_ASSET_ID,
 };
@@ -22,7 +23,7 @@ use crate::{
 pub struct Builder {
     /// List of spends. We store the spend key and body rather than a Spend
     /// so we can defer signing until the complete transaction is ready.
-    pub spends: Vec<(SigningKey<SpendAuth>, spend::Body)>,
+    pub spends: Vec<(SigningKey<SpendAuth>, SpendProof, spend::Body)>,
     /// List of outputs in the transaction.
     pub outputs: Vec<Output>,
     /// List of delegations in the transaction.
@@ -42,7 +43,7 @@ pub struct Builder {
     /// The root of the note commitment merkle tree.
     pub merkle_root: merkle::Root,
     /// Expiry height. None if unset.
-    pub expiry_height: Option<u32>,
+    pub expiry_height: Option<u64>,
     /// Chain ID. None if unset.
     pub chain_id: Option<String>,
 }
@@ -77,7 +78,7 @@ impl Builder {
         let spend_auth_randomizer = Fr::rand(rng);
         let rsk = spend_key.spend_auth_key().randomize(&spend_auth_randomizer);
 
-        let body = spend::Body::new(
+        let (body, spend_proof) = spend::Body::new(
             value_commitment,
             *spend_key.spend_auth_key(),
             spend_auth_randomizer,
@@ -87,7 +88,7 @@ impl Builder {
             *spend_key.nullifier_key(),
         );
 
-        self.spends.push((rsk, body));
+        self.spends.push((rsk, spend_proof, body));
 
         Ok(self)
     }
@@ -129,7 +130,7 @@ impl Builder {
         self.value_balance -=
             Fr::from(note.value().amount) * note.value().asset_id.value_generator();
 
-        self.value_commitments += output.value_commitment.0;
+        self.value_commitments += output.body.value_commitment.0;
         self.outputs.push(output);
 
         note
@@ -189,7 +190,7 @@ impl Builder {
     }
 
     /// Set the expiry height.
-    pub fn set_expiry_height(&mut self, expiry_height: u32) -> &mut Self {
+    pub fn set_expiry_height(&mut self, expiry_height: u64) -> &mut Self {
         self.expiry_height = Some(expiry_height);
         self
     }
@@ -247,9 +248,10 @@ impl Builder {
         self.validator_definitions.shuffle(rng);
 
         // Fill in the spends using blank signatures, so we can build the sighash tx
-        for (_, body) in &self.spends {
+        for (_, proof, body) in &self.spends {
             actions.push(Action::Spend(Spend {
                 body: body.clone(),
+                proof: proof.clone(),
                 auth_sig: Signature::from([0; 64]),
             }));
         }
@@ -291,7 +293,6 @@ impl Builder {
 
         let mut transaction_body = TransactionBody {
             actions,
-            merkle_root: self.merkle_root.clone(),
             expiry_height: self.expiry_height.unwrap_or(0),
             chain_id: self.chain_id.take().unwrap(),
             fee: self.fee.take().unwrap(),
@@ -303,7 +304,7 @@ impl Builder {
 
         // and use it to fill in the spendauth sigs...
         for i in 0..self.spends.len() {
-            let (rsk, _) = self.spends[i];
+            let (rsk, _, _) = self.spends[i];
             if let Action::Spend(Spend {
                 ref mut auth_sig, ..
             }) = transaction_body.actions[i]
@@ -324,6 +325,7 @@ impl Builder {
         self.chain_id = None;
 
         Ok(Transaction {
+            merkle_root: self.merkle_root.clone(),
             transaction_body,
             binding_sig,
         })

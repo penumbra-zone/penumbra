@@ -669,11 +669,11 @@ mod tests {
         let create_client_tx = Transaction {
             transaction_body: TransactionBody {
                 actions: vec![Action::IBCAction(create_client_action)],
-                merkle_root: merkle::Root(Fq::zero()),
                 expiry_height: 0,
                 chain_id: "".to_string(),
                 fee: Fee(0),
             },
+            merkle_root: merkle::Root(Fq::zero()),
             binding_sig: [0u8; 64].into(),
         };
 
@@ -683,12 +683,12 @@ mod tests {
         let update_client_tx = Transaction {
             transaction_body: TransactionBody {
                 actions: vec![Action::IBCAction(update_client_action)],
-                merkle_root: merkle::Root(Fq::zero()),
                 expiry_height: 0,
                 chain_id: "".to_string(),
                 fee: Fee(0),
             },
             binding_sig: [0u8; 64].into(),
+            merkle_root: merkle::Root(Fq::zero()),
         };
 
         Ics2Client::check_tx_stateless(&create_client_tx).unwrap();
@@ -729,11 +729,11 @@ mod tests {
         let second_update_client_tx = Transaction {
             transaction_body: TransactionBody {
                 actions: vec![Action::IBCAction(second_update_client_action)],
-                merkle_root: merkle::Root(Fq::zero()),
                 expiry_height: 0,
                 chain_id: "".to_string(),
                 fee: Fee(0),
             },
+            merkle_root: merkle::Root(Fq::zero()),
             binding_sig: [0u8; 64].into(),
         };
 

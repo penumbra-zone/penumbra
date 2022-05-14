@@ -85,13 +85,12 @@ pub mod sighash {
 
     use sig_hash_action::Action as SHAction;
 
-    use super::transaction::{action::Action as TxAction, Spend};
+    use super::transaction::{action::Action as TxAction, Output, Spend};
 
     impl From<super::transaction::Action> for SigHashAction {
         fn from(action: super::transaction::Action) -> Self {
             let action = match action.action {
                 // Pass through other actions
-                Some(TxAction::Output(o)) => Some(SHAction::Output(o)),
                 Some(TxAction::Delegate(d)) => Some(SHAction::Delegate(d)),
                 Some(TxAction::Undelegate(d)) => Some(SHAction::Undelegate(d)),
                 // The `ValidatorDefinition` contains sig bytes, but they're across the validator itself,
@@ -103,6 +102,12 @@ pub mod sighash {
                     body: Some(spend_body),
                     ..
                 })) => Some(SHAction::Spend(spend_body)),
+                // Collapse outputs to output bodies
+                Some(TxAction::Output(Output { body: None, .. })) => None,
+                Some(TxAction::Output(Output {
+                    body: Some(output_body),
+                    ..
+                })) => Some(SHAction::Output(output_body)),
                 Some(TxAction::IbcAction(i)) => Some(SHAction::IbcAction(i)),
                 None => None,
             };
@@ -114,7 +119,6 @@ pub mod sighash {
         fn from(body: super::transaction::TransactionBody) -> Self {
             Self {
                 actions: body.actions.into_iter().map(Into::into).collect(),
-                anchor: body.anchor.to_vec(),
                 expiry_height: body.expiry_height,
                 chain_id: body.chain_id,
                 fee: body.fee,

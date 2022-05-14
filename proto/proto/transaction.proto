@@ -11,16 +11,19 @@ message Transaction {
   TransactionBody body = 1;
   // The binding signature is stored separately from the transaction body that it signs.
   bytes binding_sig = 2;
+  // The root of some previous state of the note commitment tree, used as an anchor for all
+  // ZK state transition proofs.
+  bytes anchor = 3;
 }
 
 // The body of a transaction.
 message TransactionBody {
   // A list of actions (state changes) performed by this transaction.
   repeated Action actions = 1;
-  // The root of some previous state of the note commitment tree.
-  bytes anchor = 2;
   // The maximum height that this transaction can be included in the chain.
-  uint32 expiry_height = 3;
+  //
+  // If zero, there is no maximum.
+  uint64 expiry_height = 3;
   // The chain this transaction is intended for.  Including this prevents
   // replaying a transaction on one chain onto a different chain.
   string chain_id = 4;
@@ -48,12 +51,17 @@ message Fee {
 
 // Spends a shielded note.
 message Spend {
+  // The authorizing data for the spend, which is included in the authorization hash used for signing.
   SpendBody body = 1;
-  // The spend authorization signature is stored separately from the spend body it authorizes.
+  // The spend authorization signature is effecting data.
   bytes auth_sig = 2;
+  // The spend proof is effecting data.
+  bytes zkproof = 3;
 }
 
-// The body of a spend description, stored separately from the signatures that authorize it.
+// The body of a spend description, containing only the "authorizing" data
+// included in the authorization hash used for signing, and not the "effecting"
+// data which is bound to the authorizing data by some other means.
 message SpendBody {
   // A commitment to the value of the input note.
   bytes cv = 1;
@@ -61,12 +69,20 @@ message SpendBody {
   bytes nullifier = 3;
   // The randomized validating key for the spend authorization signature.
   bytes rk = 4;
-  // The spend proof.
-  bytes zkproof = 5;
 }
 
 // Creates a new shielded note.
 message Output {
+  // The authorizing data for the output.
+  OutputBody body = 1;
+  // The output proof is effecting data.
+  bytes zkproof = 2;
+}
+
+// The body of an output description, containing only the "authorizing" data
+// included in the authorization hash used for signing, and not the "effecting"
+// data which is bound to the authorizing data by some other means.
+message OutputBody {
   // The minimal data required to scan and process the new output note.
   crypto.NotePayload note_payload = 1;
   // A commitment to the value of the output note. 32 bytes.
@@ -76,6 +92,4 @@ message Output {
   // The key material used for note encryption, wrapped in encryption to the
   // sender's outgoing viewing key. 80 bytes.
   bytes ovk_wrapped_key = 4;
-  // The output proof. 192 bytes.
-  bytes zkproof = 5;
 }

@@ -29,7 +29,7 @@ impl Action {
     /// the transaction's balance by this action.
     pub fn value_commitment(&self) -> value::Commitment {
         match self {
-            Action::Output(output) => output.value_commitment,
+            Action::Output(output) => output.body.value_commitment,
             Action::Spend(spend) => spend.body.value_commitment,
             Action::Delegate(delegate) => delegate.value_commitment(),
             Action::Undelegate(undelegate) => undelegate.value_commitment(),

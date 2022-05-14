@@ -13,10 +13,8 @@ import "ibc.proto";
 message SigHashTransaction {
   // A list of actions (state changes) performed by this transaction.
   repeated SigHashAction actions = 1;
-  // The root of some previous state of the note commitment tree.
-  bytes anchor = 2;
   // The maximum height that this transaction can be included in the chain.
-  uint32 expiry_height = 3;
+  uint64 expiry_height = 3;
   // The chain this transaction is intended for.  Including this prevents
   // replaying a transaction on one chain onto a different chain.
   string chain_id = 4;
@@ -28,7 +26,7 @@ message SigHashTransaction {
 message SigHashAction {
   oneof action {
     transaction.SpendBody spend = 1;
-    transaction.Output output = 2;
+    transaction.OutputBody output = 2;
     stake.Delegate delegate = 3;
     stake.Undelegate undelegate = 4;
     stake.ValidatorDefinition validator_definition = 5;
