@@ -1,16 +1,18 @@
-use std::path::PathBuf;
-
 use anyhow::anyhow;
 use penumbra_chain::params::ChainParams;
 use penumbra_crypto::{
+    asset,
+    ka::Public,
+    keys::{Diversifier, DiversifierIndex},
     merkle::{NoteCommitmentTree, Tree},
     note::Commitment,
-    FieldExt, FullViewingKey,
+    FieldExt, Fq, FullViewingKey, Note, Nullifier, Value,
 };
 use penumbra_proto::Protobuf;
 use sqlx::{migrate::MigrateDatabase, query, Pool, Sqlite};
+use std::path::PathBuf;
 
-use crate::sync::ScanResult;
+use crate::{sync::ScanResult, NoteRecord};
 
 const MAX_MERKLE_CHECKPOINTS_CLIENT: usize = 10;
 
@@ -142,6 +144,86 @@ impl Storage {
         .await?;
 
         Ok(bincode::deserialize(result.bytes.as_slice())?)
+    }
+
+    pub async fn notes(
+        &self,
+        include_spent: bool,
+        asset_id: Option<asset::Id>,
+        diversifier_index: Option<penumbra_crypto::keys::DiversifierIndex>,
+        amount_to_spend: u64,
+    ) -> anyhow::Result<Vec<NoteRecord>> {
+        // If set, return spent notes as well as unspent notes.
+        // bool include_spent = 2;
+        let spent_clause = match include_spent {
+            false => "NULL",
+            true => "height_spent",
+        };
+
+        // If set, only return notes with the specified asset id.
+        // crypto.AssetId asset_id = 3;
+
+        let asset_clause = match asset_id {
+            Some(x) => format!("{:?}", x),
+            None => "asset_id".to_string(),
+        };
+
+        // If set, only return notes with the specified diversifier index.
+        // crypto.DiversifierIndex diversifier_index = 4;
+
+        let diversifier_clause = match diversifier_index {
+            Some(x) => format!("{:?}", x),
+            None => "diversifier_index".to_string(),
+        };
+
+        // If set, stop returning notes once the total exceeds this amount.
+        //
+        // Ignored if `asset_id` is unset or if `include_spent` is set.
+        // uint64 amount_to_spend = 5;
+
+        if asset_id.is_none() || include_spent {
+            //TODO: figure out a clever way to only return notes up to the sum using SQL
+        }
+
+        let result = sqlx::query!(
+            "SELECT * 
+            FROM notes 
+            WHERE height_spent = ? 
+            AND asset_id = ? 
+            AND diversifier_index = ?",
+            spent_clause,
+            asset_clause,
+            diversifier_clause
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        let mut output: Vec<NoteRecord> = Vec::new();
+
+        for record in result {
+            let diversifier = Diversifier::try_from(&record.diversifier[..])?;
+            let transmission_key = Public(record.transmission_key[..].try_into()?);
+            let value = Value {
+                amount: record.amount as u64,
+                asset_id: asset::Id(Fq::from_bytes(record.asset_id[..].try_into()?)?),
+            };
+            let note_blinding = Fq::from_bytes(record.blinding_factor[..].try_into()?)?;
+
+            output.push(NoteRecord {
+                note_commitment: Commitment::try_from(&record.note_commitment[..])?,
+                note: Note::from_parts(diversifier, transmission_key, value, note_blinding)?,
+                diversifier_index: DiversifierIndex(record.diversifier_index[..].try_into()?),
+                nullifier: Nullifier::try_from(record.nullifier)?,
+                height_created: record.height_created as u64,
+                height_spent: if record.height_spent == None {
+                    None
+                } else {
+                    Some(record.height_spent.unwrap() as u64)
+                }, //height_spent is nullable
+            })
+        }
+
+        Ok(output)
     }
 
     pub async fn record_block(

@@ -68,8 +68,6 @@ pub fn scan_block(
         }
     }
 
-    // TODO: write a query to mark all matching rows as spent
-
     ScanResult {
         new_notes,
         spent_nullifiers: nullifiers,
