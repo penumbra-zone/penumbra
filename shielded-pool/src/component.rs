@@ -116,9 +116,9 @@ impl Component for ShieldedPool {
                     if output
                         .proof
                         .verify(
-                            output.value_commitment,
-                            output.note_payload.note_commitment,
-                            output.note_payload.ephemeral_key,
+                            output.body.value_commitment,
+                            output.body.note_payload.note_commitment,
+                            output.body.note_payload.ephemeral_key,
                         )
                         .is_err()
                     {
@@ -134,10 +134,9 @@ impl Component for ShieldedPool {
                         .context("spend auth signature failed to verify")?;
 
                     if spend
-                        .body
                         .proof
                         .verify(
-                            tx.transaction_body().merkle_root,
+                            tx.merkle_root.clone(),
                             spend.body.value_commitment,
                             spend.body.nullifier,
                             spend.body.rk,
@@ -177,9 +176,7 @@ impl Component for ShieldedPool {
     #[instrument(name = "shielded_pool", skip(self, tx))]
     async fn check_tx_stateful(&self, tx: &Transaction) -> Result<()> {
         // TODO: rename transaction_body.merkle_root now that we have 2 merkle trees
-        self.state
-            .check_claimed_anchor(&tx.transaction_body.merkle_root)
-            .await?;
+        self.state.check_claimed_anchor(&tx.merkle_root).await?;
 
         for spent_nullifier in tx.spent_nullifiers() {
             self.state.check_nullifier_unspent(spent_nullifier).await?;

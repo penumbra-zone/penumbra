@@ -22,8 +22,7 @@ pub use builder::Builder;
 #[derive(Clone, Debug)]
 pub struct TransactionBody {
     pub actions: Vec<Action>,
-    pub merkle_root: merkle::Root,
-    pub expiry_height: u32,
+    pub expiry_height: u64,
     pub chain_id: String,
     pub fee: Fee,
 }
@@ -49,6 +48,7 @@ pub struct Fee(pub u64);
 pub struct Transaction {
     pub transaction_body: TransactionBody,
     pub binding_sig: Signature<Binding>,
+    pub merkle_root: merkle::Root,
 }
 
 impl Transaction {
@@ -120,7 +120,7 @@ impl Transaction {
             .iter()
             .filter_map(|action| {
                 if let Action::Output(output) = action {
-                    Some(output.note_payload.clone())
+                    Some(output.body.note_payload.clone())
                 } else {
                     None
                 }
@@ -200,7 +200,6 @@ impl From<TransactionBody> for pbt::TransactionBody {
     fn from(msg: TransactionBody) -> Self {
         pbt::TransactionBody {
             actions: msg.actions.into_iter().map(|x| x.into()).collect(),
-            anchor: Bytes::copy_from_slice(&msg.merkle_root.0.to_bytes()),
             expiry_height: msg.expiry_height,
             chain_id: msg.chain_id,
             fee: Some(msg.fee.into()),
@@ -221,10 +220,6 @@ impl TryFrom<pbt::TransactionBody> for TransactionBody {
             );
         }
 
-        let merkle_root = proto.anchor[..]
-            .try_into()
-            .map_err(|_| anyhow::anyhow!("transaction body malformed"))?;
-
         let expiry_height = proto.expiry_height;
 
         let chain_id = proto.chain_id;
@@ -236,7 +231,6 @@ impl TryFrom<pbt::TransactionBody> for TransactionBody {
 
         Ok(TransactionBody {
             actions,
-            merkle_root,
             expiry_height,
             chain_id,
             fee,
@@ -250,6 +244,7 @@ impl From<Transaction> for pbt::Transaction {
         let sig_bytes: [u8; 64] = msg.binding_sig.into();
         pbt::Transaction {
             body: Some(msg.transaction_body.into()),
+            anchor: Bytes::copy_from_slice(&msg.merkle_root.0.to_bytes()),
             binding_sig: Bytes::copy_from_slice(&sig_bytes),
         }
     }
@@ -275,9 +270,14 @@ impl TryFrom<pbt::Transaction> for Transaction {
             .try_into()
             .map_err(|_| anyhow::anyhow!("transaction malformed"))?;
 
+        let merkle_root = proto.anchor[..]
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("transaction malformed"))?;
+
         Ok(Transaction {
             transaction_body,
             binding_sig: sig_bytes.into(),
+            merkle_root,
         })
     }
 }

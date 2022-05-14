@@ -8,12 +8,13 @@ use penumbra_crypto::{
     rdsa::{Signature, SigningKey, SpendAuth, VerificationKey},
     value, Fr, Note, Nullifier,
 };
-use penumbra_proto::{transaction, Message, Protobuf};
+use penumbra_proto::{transaction, Protobuf};
 
 #[derive(Clone, Debug)]
 pub struct Spend {
     pub body: Body,
     pub auth_sig: Signature<SpendAuth>,
+    pub proof: SpendProof,
 }
 
 impl Protobuf<transaction::Spend> for Spend {}
@@ -21,9 +22,11 @@ impl Protobuf<transaction::Spend> for Spend {}
 impl From<Spend> for transaction::Spend {
     fn from(msg: Spend) -> Self {
         let sig_bytes: [u8; 64] = msg.auth_sig.into();
+        let proof: Vec<u8> = msg.proof.into();
         transaction::Spend {
             body: Some(msg.body.into()),
             auth_sig: Bytes::copy_from_slice(&sig_bytes),
+            zkproof: proof.into(),
         }
     }
 }
@@ -42,9 +45,14 @@ impl TryFrom<transaction::Spend> for Spend {
             .try_into()
             .map_err(|_| anyhow::anyhow!("spend body malformed"))?;
 
+        let proof = (proto.zkproof[..])
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("spend body malformed"))?;
+
         Ok(Spend {
             body,
             auth_sig: sig_bytes.into(),
+            proof,
         })
     }
 }
@@ -53,9 +61,7 @@ impl TryFrom<transaction::Spend> for Spend {
 pub struct Body {
     pub value_commitment: value::Commitment,
     pub nullifier: Nullifier,
-    // Randomized verification key.
     pub rk: VerificationKey<SpendAuth>,
-    pub proof: SpendProof,
 }
 
 impl Body {
@@ -67,7 +73,7 @@ impl Body {
         note: Note,
         v_blinding: Fr,
         nk: keys::NullifierKey,
-    ) -> Body {
+    ) -> (Body, SpendProof) {
         let rsk = ask.randomize(&spend_auth_randomizer);
         let rk = rsk.into();
         let note_commitment = note.commit();
@@ -87,19 +93,14 @@ impl Body {
             ak: ask.into(),
             nk,
         };
-        Body {
-            value_commitment,
-            nullifier: nk.derive_nullifier(position, &note_commitment),
-            rk,
+        (
+            Body {
+                value_commitment,
+                nullifier: nk.derive_nullifier(position, &note_commitment),
+                rk,
+            },
             proof,
-        }
-    }
-}
-
-impl From<Body> for Vec<u8> {
-    fn from(body: Body) -> Vec<u8> {
-        let protobuf_serialized: transaction::SpendBody = body.into();
-        protobuf_serialized.encode_to_vec()
+        )
     }
 }
 
@@ -110,12 +111,10 @@ impl From<Body> for transaction::SpendBody {
         let cv_bytes: [u8; 32] = msg.value_commitment.into();
         let nullifier_bytes: [u8; 32] = msg.nullifier.into();
         let rk_bytes: [u8; 32] = msg.rk.into();
-        let proof: Vec<u8> = msg.proof.into();
         transaction::SpendBody {
             cv: Bytes::copy_from_slice(&cv_bytes),
             nullifier: Bytes::copy_from_slice(&nullifier_bytes),
             rk: Bytes::copy_from_slice(&rk_bytes),
-            zkproof: proof.into(),
         }
     }
 }
@@ -139,15 +138,10 @@ impl TryFrom<transaction::SpendBody> for Body {
             .try_into()
             .map_err(|_| anyhow::anyhow!("spend body malformed"))?;
 
-        let proof = (proto.zkproof[..])
-            .try_into()
-            .map_err(|_| anyhow::anyhow!("spend body malformed"))?;
-
         Ok(Body {
             value_commitment,
             nullifier,
             rk,
-            proof,
         })
     }
 }
