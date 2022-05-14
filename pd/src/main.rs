@@ -163,7 +163,7 @@ async fn main() -> anyhow::Result<()> {
                 .install()
                 .expect("metrics service set up");
 
-            pd::register_all_metrics();
+            pd::register_metrics();
 
             // TODO: better error reporting
             // We error out if either service errors, rather than keep running

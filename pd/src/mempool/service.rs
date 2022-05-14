@@ -8,8 +8,8 @@ use futures::FutureExt;
 use penumbra_storage::Storage;
 use tendermint::{
     abci::{
-        request::CheckTx as CheckTxReq, response::CheckTx as CheckTxRsp, MempoolRequest,
-        MempoolResponse,
+        request::CheckTx as CheckTxReq, request::CheckTxKind, response::CheckTx as CheckTxRsp,
+        MempoolRequest, MempoolResponse,
     },
     block,
 };
@@ -19,6 +19,7 @@ use tower_abci::BoxError;
 use tracing::Instrument;
 
 use super::{Message, Worker};
+use crate::metrics;
 use crate::RequestExt;
 
 #[derive(Clone)]
@@ -65,7 +66,9 @@ impl tower::Service<MempoolRequest> for Mempool {
         let span = req.create_span();
         let (tx, rx) = oneshot::channel();
 
-        let MempoolRequest::CheckTx(CheckTxReq { tx: tx_bytes, .. }) = req;
+        let MempoolRequest::CheckTx(CheckTxReq {
+            tx: tx_bytes, kind, ..
+        }) = req;
 
         self.queue
             .send_item(Message {
@@ -76,16 +79,31 @@ impl tower::Service<MempoolRequest> for Mempool {
             .expect("called without `poll_ready`");
 
         async move {
+            let kind_str = match kind {
+                CheckTxKind::New => "new",
+                CheckTxKind::Recheck => "recheck",
+            };
+
             match rx
                 .await
                 .map_err(|_| anyhow::anyhow!("mempool worker terminated or panicked"))?
             {
                 Ok(()) => {
                     tracing::info!("tx accepted");
+                    metrics::increment_counter!(
+                        metrics::MEMPOOL_CHECKTX_TOTAL,
+                        "kind" => kind_str,
+                        "code" => "0"
+                    );
                     Ok(MempoolResponse::CheckTx(CheckTxRsp::default()))
                 }
                 Err(e) => {
                     tracing::info!(?e, "tx rejected");
+                    metrics::increment_counter!(
+                        metrics::MEMPOOL_CHECKTX_TOTAL,
+                        "kind" => kind_str,
+                        "code" => "1"
+                    );
                     Ok(MempoolResponse::CheckTx(CheckTxRsp {
                         code: 1,
                         log: e.to_string(),

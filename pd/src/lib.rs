@@ -7,7 +7,7 @@
 mod consensus;
 mod info;
 mod mempool;
-mod pd_metrics;
+mod metrics;
 mod request_ext;
 mod snapshot;
 
@@ -16,9 +16,9 @@ pub mod testnet;
 
 use request_ext::RequestExt;
 
+pub use crate::metrics::register_metrics;
 pub use components::App;
 pub use consensus::Consensus;
 pub use info::Info;
 pub use mempool::Mempool;
-pub use pd_metrics::register_all_metrics;
 pub use snapshot::Snapshot;

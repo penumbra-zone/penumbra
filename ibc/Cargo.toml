@@ -33,3 +33,4 @@ async-trait = "0.1.52"
 ibc = { git = "https://github.com/penumbra-zone/ibc-rs.git", branch = "with-tendermintrs-24" }
 ibc-proto = { git = "https://github.com/penumbra-zone/ibc-rs.git", branch = "with-tendermintrs-24" }
 tendermint-light-client-verifier = "0.24.0-pre.1"
+metrics = "0.18"
