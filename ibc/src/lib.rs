@@ -6,6 +6,9 @@
 mod client;
 mod component;
 mod connection;
+mod metrics;
+
+pub use crate::metrics::register_metrics;
 
 pub use client::{
     validate_penumbra_client_state, ClientConnections, ClientCounter, VerifiedHeights,

@@ -34,6 +34,7 @@ bitvec = "1"
 async-trait = "0.1.52"
 sha2 = "0.9"
 tracing = "0.1"
+metrics = "0.18"
 
 [dev-dependencies]
 ed25519-consensus = "2"
