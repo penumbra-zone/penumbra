@@ -13,7 +13,7 @@ pub use output::Output;
 pub use spend::Spend;
 pub use undelegate::Undelegate;
 
-/// Supported actions in a Penumbra transaction.
+/// An action performed by a Penumbra transaction.
 #[derive(Clone, Debug)]
 pub enum Action {
     Output(output::Output),
@@ -78,7 +78,6 @@ impl TryFrom<pb::Action> for Action {
 
         match proto.action.unwrap() {
             pb::action::Action::Output(inner) => Ok(Action::Output(inner.try_into()?)),
-
             pb::action::Action::Spend(inner) => Ok(Action::Spend(inner.try_into()?)),
             pb::action::Action::Delegate(inner) => Ok(Action::Delegate(inner.try_into()?)),
             pb::action::Action::Undelegate(inner) => Ok(Action::Undelegate(inner.try_into()?)),

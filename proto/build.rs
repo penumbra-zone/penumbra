@@ -63,6 +63,7 @@ fn main() -> Result<()> {
             "proto/client/oblivious.proto",
             "proto/client/specific.proto",
             "proto/wallet.proto",
+            "proto/custody.proto",
         ],
         &["proto/", "ibc-go-vendor/"],
     )?;
@@ -75,6 +76,7 @@ static SERIALIZE: &str = r#"#[derive(::serde::Deserialize, ::serde::Serialize)]"
 static SERDE_TRANSPARENT: &str = r#"#[serde(transparent)]"#;
 
 static AS_HEX: &str = r#"#[serde(with = "crate::serializers::hexstr")]"#;
+static AS_HEX_FOR_BYTES: &str = r#"#[serde(with = "crate::serializers::hexstr_bytes")]"#;
 static AS_BASE64: &str = r#"#[serde(with = "crate::serializers::base64str")]"#;
 static AS_BECH32_IDENTITY_KEY: &str =
     r#"#[serde(with = "crate::serializers::bech32str::validator_identity_key")]"#;
@@ -137,6 +139,12 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.chain.GenesisAppState", SERIALIZE),
     (".penumbra.chain.GenesisAllocation", SERIALIZE),
     (".penumbra.wallet.NoteRecord", SERIALIZE),
+    (".penumbra.transaction.TransactionPlan", SERIALIZE),
+    (".penumbra.transaction.Fee", SERIALIZE),
+    (".penumbra.transaction.ActionPlan", SERIALIZE),
+    (".penumbra.transaction.SpendPlan", SERIALIZE),
+    (".penumbra.transaction.OutputPlan", SERIALIZE),
+    (".penumbra.ibc.IBCAction", SERIALIZE),
 ];
 
 static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
@@ -161,4 +169,23 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.crypto.Note.transmission_key", AS_HEX),
     (".penumbra.crypto.Nullifier.inner", AS_HEX),
     (".penumbra.chain.NoteSource.inner", AS_HEX),
+    (
+        ".penumbra.transaction.SpendPlan.randomizer",
+        AS_HEX_FOR_BYTES,
+    ),
+    (
+        ".penumbra.transaction.SpendPlan.value_blinding",
+        AS_HEX_FOR_BYTES,
+    ),
+    (
+        ".penumbra.transaction.OutputPlan.note_blinding",
+        AS_HEX_FOR_BYTES,
+    ),
+    (
+        ".penumbra.transaction.OutputPlan.value_blinding",
+        AS_HEX_FOR_BYTES,
+    ),
+    (".penumbra.transaction.OutputPlan.esk", AS_HEX_FOR_BYTES),
+    // TODO: replace if we use UTF-8 memos
+    (".penumbra.transaction.OutputPlan.memo", AS_HEX_FOR_BYTES),
 ];

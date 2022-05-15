@@ -63,6 +63,11 @@ pub mod wallet {
     tonic::include_proto!("penumbra.wallet");
 }
 
+/// Custody protocol structures.
+pub mod custody {
+    tonic::include_proto!("penumbra.custody");
+}
+
 /// Transparent proofs.
 ///
 /// Note that these are protos for the "MVP" transparent version of Penumbra,
