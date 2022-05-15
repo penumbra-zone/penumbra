@@ -67,3 +67,21 @@ impl TryFrom<BindingSignature> for Signature<Binding> {
         Ok(value.inner.as_slice().try_into()?)
     }
 }
+
+// IBC-rs impls
+
+extern crate ibc as ibc_rs;
+
+use ibc_rs::core::ics02_client::client_state::AnyClientState;
+
+use ibc_proto::google::protobuf::Any;
+use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
+use ibc_proto::ibc::core::connection::v1::ConnectionEnd as RawConnectionEnd;
+use ibc_rs::core::ics02_client::client_consensus::AnyConsensusState;
+use ibc_rs::core::ics03_connection::connection::ConnectionEnd;
+use ibc_rs::core::ics04_channel::channel::ChannelEnd;
+
+impl Protobuf<RawConnectionEnd> for ConnectionEnd {}
+impl Protobuf<Any> for AnyClientState {}
+impl Protobuf<Any> for AnyConsensusState {}
+impl Protobuf<RawChannel> for ChannelEnd {}
