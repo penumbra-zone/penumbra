@@ -31,14 +31,14 @@ impl App {
         // The NCT (and *only* the NCT) is stored outside of the main state,
         // so that the backing format for the NCT isn't consensus-critical.
         // (The NCT data is already committed to by the NCT root, which is in the state).
-        let note_commitment_tree = storage.get_nct().await.unwrap();
+        let (nct, tct) = storage.get_nct().await.unwrap();
 
         // All of the components need to use the *same* shared state.
         let state = storage.state().await.unwrap();
 
         let staking = Staking::new(state.clone()).await;
         let ibc = IBCComponent::new(state.clone()).await;
-        let shielded_pool = ShieldedPool::new(state.clone(), note_commitment_tree).await;
+        let shielded_pool = ShieldedPool::new(state.clone(), nct, tct).await;
 
         Self {
             state,
@@ -59,11 +59,8 @@ impl App {
         // rather than the Penumbra state, because the serialization format for
         // the NCT should not be consensus-critical.  We need to grab a copy of
         // the entire NCT, so we can use it to re-instantiate the ShieldedPool.
-        let note_commitment_tree = self.shielded_pool.note_commitment_tree().clone();
-        storage
-            .put_nct(self.shielded_pool.note_commitment_tree())
-            .await?;
-
+        let (nct, tct) = self.shielded_pool.note_commitment_tree();
+        storage.put_nct(nct, tct).await?;
         // Commit the pending writes, clearing the state.
         let (root_hash, version) = self.state.write().await.commit(storage.clone()).await?;
         tracing::debug!(?root_hash, version, "finished committing state");
@@ -74,7 +71,7 @@ impl App {
         // Now re-instantiate all of the components so they all have the same shared state.
         self.staking = Staking::new(self.state.clone()).await;
         self.ibc = IBCComponent::new(self.state.clone()).await;
-        self.shielded_pool = ShieldedPool::new(self.state.clone(), note_commitment_tree).await;
+        self.shielded_pool = ShieldedPool::new(self.state.clone(), nct.clone(), tct.clone()).await;
 
         Ok((root_hash, version))
     }
