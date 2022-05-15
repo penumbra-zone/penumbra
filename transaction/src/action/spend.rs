@@ -5,7 +5,7 @@ use bytes::Bytes;
 use penumbra_crypto::{
     keys, merkle,
     proofs::transparent::SpendProof,
-    rdsa::{Signature, SigningKey, SpendAuth, VerificationKey},
+    rdsa::{Signature, SpendAuth, VerificationKey},
     value, Fr, Note, Nullifier,
 };
 use penumbra_proto::{transaction, Protobuf};
@@ -65,15 +65,14 @@ pub struct Body {
 impl Body {
     pub fn new(
         value_commitment: value::Commitment,
-        ask: SigningKey<SpendAuth>,
+        ak: VerificationKey<SpendAuth>,
         spend_auth_randomizer: Fr,
         merkle_path: merkle::Path,
         note: Note,
         v_blinding: Fr,
         nk: keys::NullifierKey,
     ) -> (Body, SpendProof) {
-        let rsk = ask.randomize(&spend_auth_randomizer);
-        let rk = rsk.into();
+        let rk = ak.randomize(&spend_auth_randomizer);
         let note_commitment = note.commit();
         let position = merkle_path.0.clone();
         let proof = SpendProof {
@@ -88,7 +87,7 @@ impl Body {
             note_commitment,
             note_blinding: note.note_blinding(),
             spend_auth_randomizer,
-            ak: ask.into(),
+            ak,
             nk,
         };
         (

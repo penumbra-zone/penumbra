@@ -2651,6 +2651,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "penumbra-custody"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "bytes",
+ "futures",
+ "hex",
+ "penumbra-chain",
+ "penumbra-crypto",
+ "penumbra-proto",
+ "penumbra-stake",
+ "penumbra-transaction",
+ "prost 0.9.0",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "tokio",
+ "tonic 0.6.2",
+ "tracing",
+ "vergen",
+]
+
+[[package]]
 name = "penumbra-ibc"
 version = "0.1.0"
 dependencies = [

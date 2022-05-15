@@ -1,8 +1,12 @@
+//! TODO: delete all the code in this module and switch everything
+//! using it over to the TransactionPlan.
+
 use std::ops::Deref;
 
 use ark_ff::{UniformRand, Zero};
 use incrementalmerkletree::Tree;
 use penumbra_crypto::{
+    ka,
     keys::{OutgoingViewingKey, SpendKey},
     memo::MemoPlaintext,
     merkle::{self, NoteCommitmentTree},
@@ -80,7 +84,7 @@ impl Builder {
 
         let (body, spend_proof) = spend::Body::new(
             value_commitment,
-            *spend_key.spend_auth_key(),
+            *spend_key.full_viewing_key().spend_verification_key(),
             spend_auth_randomizer,
             merkle_path,
             note,
@@ -123,7 +127,8 @@ impl Builder {
         let note = Note::generate(rng, dest, value_to_send);
 
         let v_blinding = Fr::rand(rng);
-        let output = Output::new(rng, note.clone(), memo, dest, ovk, v_blinding);
+        let esk = ka::Secret::new(rng);
+        let output = Output::new(esk, note.clone(), memo, dest, ovk, v_blinding);
 
         // Outputs subtract from the transaction's value balance.
         self.synthetic_blinding_factor -= v_blinding;

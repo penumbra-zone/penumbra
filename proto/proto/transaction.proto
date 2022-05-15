@@ -28,12 +28,12 @@ message TransactionBody {
   // The maximum height that this transaction can be included in the chain.
   //
   // If zero, there is no maximum.
-  uint64 expiry_height = 3;
+  uint64 expiry_height = 2;
   // The chain this transaction is intended for.  Including this prevents
   // replaying a transaction on one chain onto a different chain.
-  string chain_id = 4;
+  string chain_id = 3;
   // The transaction fee.
-  Fee fee = 5;
+  Fee fee = 4;
 }
 
 // A state change performed by a transaction.
@@ -97,4 +97,78 @@ message OutputBody {
   // The key material used for note encryption, wrapped in encryption to the
   // sender's outgoing viewing key. 80 bytes.
   bytes ovk_wrapped_key = 4;
+}
+
+// The data required to authorize a transaction plan.
+message AuthorizationData {
+    // The computed auth hash for the approved transaction plan.
+    transaction.AuthHash auth_hash = 1;
+    // The required spend authorizations, returned in the same order as the
+    // Spend actions in the original request.
+    repeated crypto.SpendAuthSignature spend_auths = 2;
+}
+
+// The data required for proving when building a transaction from a plan.
+message WitnessData {
+  // The anchor for the state transition proofs.
+  crypto.MerkleRoot anchor = 1;
+  // The auth paths for the notes the transaction spends, in the
+  // same order as the spends in the transaction plan.
+  repeated crypto.AuthPath auth_paths = 2;
+}
+
+// Describes a planned transaction.
+message TransactionPlan {
+    repeated ActionPlan actions = 1;
+    uint64 expiry_height = 2;
+    string chain_id = 3;
+    transaction.Fee fee = 4;
+}
+
+// Describes a planned transaction action.
+//
+// Some transaction Actions don't have any private data and are treated as being plans
+// themselves.
+message ActionPlan {
+    oneof action {
+        SpendPlan spend = 1;
+        OutputPlan output = 2;
+        // We don't need any extra information (yet) to understand delegations,
+        // because we don't yet use flow encryption.
+        stake.Delegate delegate = 3;
+        // We don't need any extra information (yet) to understand undelegations,
+        // because we don't yet use flow encryption.
+        stake.Undelegate undelegate = 4;
+        // This is just a message relayed to the chain.
+        stake.ValidatorDefinition validator_definition = 16;
+        // This is just a message relayed to the chain.
+        ibc.IBCAction ibc_action = 17;
+    }
+}
+
+message SpendPlan {
+    // The plaintext note we plan to spend.
+    crypto.Note note = 1;
+    // The position of the note we plan to spend.
+    // TODO: replace with TCT position
+    uint32 position = 2;
+    // The randomizer to use for the spend.
+    bytes randomizer = 3;
+    // The blinding factor to use for the value commitment.
+    bytes value_blinding = 4;
+}
+
+message OutputPlan {
+    // The value to send to this output.
+    crypto.Value value = 1;
+    // The destination address to send it to.
+    crypto.Address dest_address = 2;
+    // The memo describing the output.
+    bytes memo = 3;
+    // The blinding factor to use for the new note.
+    bytes note_blinding = 4;
+    // The blinding factor to use for the value commitment.
+    bytes value_blinding = 5;
+    // The ephemeral secret key to use for the note encryption.
+    bytes esk = 6;
 }

@@ -5,6 +5,7 @@
 //! the serializers are adapted from that code.
 
 pub mod hexstr;
+pub mod hexstr_bytes;
 
 pub mod base64str;
 

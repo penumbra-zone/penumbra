@@ -11,7 +11,6 @@ use penumbra_crypto::{
     value, Address, Fr, Note, NotePayload,
 };
 use penumbra_proto::{transaction as pb, Protobuf};
-use rand_core::{CryptoRng, RngCore};
 
 #[derive(Clone, Debug)]
 pub struct Output {
@@ -28,15 +27,14 @@ pub struct Body {
 }
 
 impl Output {
-    pub fn new<R: RngCore + CryptoRng>(
-        rng: &mut R,
+    pub fn new(
+        esk: ka::Secret,
         note: Note,
         memo: MemoPlaintext,
         dest: &Address,
         ovk: &OutgoingViewingKey,
         v_blinding: Fr,
     ) -> Output {
-        let esk = ka::Secret::new(rng);
         let diversified_generator = note.diversified_generator();
         let transmission_key = note.transmission_key();
 

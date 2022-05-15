@@ -94,6 +94,7 @@ message AuthPathsRequest {
     repeated crypto.NoteCommitment notes = 2;
 }
 
+// TODO: replace with WitnessData
 message AuthPathsResponse {
     // The note commitment tree root the auth paths were constructed to.
     crypto.MerkleRoot root = 1;

@@ -8,6 +8,7 @@ members = [
   "chain",
   "component",
   "crypto",
+  "custody",
   "ibc",
   "shielded-pool",
   "stake",
