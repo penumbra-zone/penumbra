@@ -21,11 +21,10 @@ impl Protobuf<transaction::Spend> for Spend {}
 
 impl From<Spend> for transaction::Spend {
     fn from(msg: Spend) -> Self {
-        let sig_bytes: [u8; 64] = msg.auth_sig.into();
         let proof: Vec<u8> = msg.proof.into();
         transaction::Spend {
             body: Some(msg.body.into()),
-            auth_sig: Bytes::copy_from_slice(&sig_bytes),
+            auth_sig: Some(msg.auth_sig.into()),
             zkproof: proof.into(),
         }
     }
@@ -38,12 +37,11 @@ impl TryFrom<transaction::Spend> for Spend {
         let body = proto
             .body
             .ok_or(anyhow::anyhow!("spend body malformed"))?
-            .try_into()
-            .map_err(|_| anyhow::anyhow!("spend body malformed"))?;
-
-        let sig_bytes: [u8; 64] = proto.auth_sig[..]
-            .try_into()
-            .map_err(|_| anyhow::anyhow!("spend body malformed"))?;
+            .try_into()?;
+        let auth_sig = proto
+            .auth_sig
+            .ok_or(anyhow::anyhow!("spend body malformed"))?
+            .try_into()?;
 
         let proof = (proto.zkproof[..])
             .try_into()
@@ -51,7 +49,7 @@ impl TryFrom<transaction::Spend> for Spend {
 
         Ok(Spend {
             body,
-            auth_sig: sig_bytes.into(),
+            auth_sig,
             proof,
         })
     }

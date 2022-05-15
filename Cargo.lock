@@ -2688,6 +2688,7 @@ dependencies = [
  "anyhow",
  "bech32",
  "bytes",
+ "decaf377-rdsa",
  "hex",
  "ibc",
  "ibc-proto",
