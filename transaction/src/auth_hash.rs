@@ -1,13 +1,39 @@
 use blake2b_simd::{Hash, Params};
 use decaf377::FieldExt;
-use penumbra_proto::Message;
+use penumbra_proto::{transaction as pb, Message, Protobuf};
 
 use crate::{
     action::{output, spend, Delegate, Undelegate},
     Action, Fee, Transaction, TransactionBody,
 };
 
+#[derive(Clone, Copy, Eq, PartialEq)]
 pub struct AuthHash([u8; 64]);
+
+impl std::fmt::Debug for AuthHash {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("AuthHash")
+            .field(&hex::encode(&self.0))
+            .finish()
+    }
+}
+
+impl Protobuf<pb::AuthHash> for AuthHash {}
+
+impl From<AuthHash> for pb::AuthHash {
+    fn from(msg: AuthHash) -> Self {
+        Self {
+            inner: msg.0.to_vec().into(),
+        }
+    }
+}
+
+impl TryFrom<pb::AuthHash> for AuthHash {
+    type Error = anyhow::Error;
+    fn try_from(value: pb::AuthHash) -> Result<Self, Self::Error> {
+        Ok(Self(value.inner.as_ref().try_into()?))
+    }
+}
 
 impl AsRef<[u8]> for AuthHash {
     fn as_ref(&self) -> &[u8] {
