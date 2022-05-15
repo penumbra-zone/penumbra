@@ -54,7 +54,7 @@ message Spend {
   // The authorizing data for the spend, which is included in the authorization hash used for signing.
   SpendBody body = 1;
   // The spend authorization signature is effecting data.
-  bytes auth_sig = 2;
+  crypto.SpendAuthSignature auth_sig = 2;
   // The spend proof is effecting data.
   bytes zkproof = 3;
 }

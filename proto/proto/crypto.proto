@@ -68,6 +68,14 @@ message Nullifier {
     bytes inner = 1;
 }
 
+message SpendAuthSignature {
+    bytes inner = 1;
+}
+
+message BindingSignature {
+    bytes inner = 1;
+}
+
 // The body of an output description, including only the minimal
 // data required to scan and process the output.
 message NotePayload {

@@ -26,3 +26,44 @@ where
             .map_err(Into::into)
     }
 }
+
+// Implementations on foreign types.
+//
+// This should only be done here in cases where the domain type lives in a crate
+// that shouldn't depend on the Penumbra proto framework.
+
+use crate::crypto::{BindingSignature, SpendAuthSignature};
+use decaf377_rdsa::{Binding, Signature, SpendAuth};
+
+impl Protobuf<SpendAuthSignature> for Signature<SpendAuth> {}
+impl Protobuf<BindingSignature> for Signature<Binding> {}
+
+impl From<Signature<SpendAuth>> for SpendAuthSignature {
+    fn from(sig: Signature<SpendAuth>) -> Self {
+        Self {
+            inner: sig.to_bytes().to_vec(),
+        }
+    }
+}
+
+impl From<Signature<Binding>> for BindingSignature {
+    fn from(sig: Signature<Binding>) -> Self {
+        Self {
+            inner: sig.to_bytes().to_vec(),
+        }
+    }
+}
+
+impl TryFrom<SpendAuthSignature> for Signature<SpendAuth> {
+    type Error = anyhow::Error;
+    fn try_from(value: SpendAuthSignature) -> Result<Self, Self::Error> {
+        Ok(value.inner.as_slice().try_into()?)
+    }
+}
+
+impl TryFrom<BindingSignature> for Signature<Binding> {
+    type Error = anyhow::Error;
+    fn try_from(value: BindingSignature) -> Result<Self, Self::Error> {
+        Ok(value.inner.as_slice().try_into()?)
+    }
+}
