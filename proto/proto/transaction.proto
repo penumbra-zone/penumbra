@@ -6,6 +6,11 @@ import "crypto.proto";
 import "stake.proto";
 import "ibc.proto";
 
+// An authorization hash for a Penumbra transaction.
+message AuthHash {
+  bytes inner = 1;
+}
+
 // A Penumbra transaction.
 message Transaction {
   TransactionBody body = 1;
