@@ -254,9 +254,10 @@ impl Component for ShieldedPool {
         }
 
         // Close the block in the TCT
-        self.tiered_commitment_tree
-            .end_block()
-            .expect("ending TCT block should never fail");
+        // TODO: replace this with an `expect!` when this is consensus-critical
+        if let Err(e) = self.tiered_commitment_tree.end_block() {
+            tracing::error!(error = ?e, "failed to end block in TCT");
+        }
 
         // If the block ends an epoch, also close the epoch in the TCT
         if Epoch::from_height(
@@ -269,9 +270,10 @@ impl Component for ShieldedPool {
         )
         .is_epoch_end(self.compact_block.height)
         {
-            self.tiered_commitment_tree
-                .end_epoch()
-                .expect("ending TCT block should never fail");
+            // TODO: replace this with an `expect!` when this is consensus-critical
+            if let Err(e) = self.tiered_commitment_tree.end_epoch() {
+                tracing::error!(error = ?e, "failed to end epoch in TCT");
+            }
         }
 
         tracing::debug!(tct_root = %self.tiered_commitment_tree.root(), "tct root");
@@ -377,6 +379,14 @@ impl ShieldedPool {
         self.tiered_commitment_tree
             .insert(penumbra_tct::Witness::Forget, note_payload.note_commitment)
             .expect("inserting a commitment into the TCT should never fail");
+
+        // TODO: replace this with an `expect!` when this is consensus-critical
+        if let Err(e) = self
+            .tiered_commitment_tree
+            .insert(penumbra_tct::Witness::Forget, note_payload.note_commitment)
+        {
+            tracing::error!(error = ?e, "failed to insert commitment into TCT");
+        }
         // 2. Record its source in the JMT
         self.state
             .set_note_source(&note_payload.note_commitment, source)
@@ -393,11 +403,7 @@ impl ShieldedPool {
             .await;
         // and the note commitment tree data and anchor:
         self.state
-            .set_nct_anchor(
-                self.compact_block.height,
-                self.note_commitment_tree.root2(),
-                self.tiered_commitment_tree.root(),
-            )
+            .set_nct_anchor(self.compact_block.height, self.note_commitment_tree.root2())
             .await;
 
         Ok(())
@@ -518,12 +524,7 @@ pub trait View: StateExt {
             .await
     }
 
-    async fn set_nct_anchor(
-        &self,
-        height: u64,
-        nct_anchor: merkle::Root,
-        tct_anchor: penumbra_tct::Root,
-    ) {
+    async fn set_nct_anchor(&self, height: u64, nct_anchor: merkle::Root) {
         tracing::debug!(?height, ?nct_anchor, "writing anchor");
 
         // Write the NCT anchor both as a value, so we can look it up,
@@ -535,21 +536,6 @@ pub trait View: StateExt {
         // and as a key, so we can query for it.
         self.put_proto(
             format!("shielded_pool/valid_anchors/{}", nct_anchor).into(),
-            // We don't use the value for validity checks, but writing the height
-            // here lets us find out what height the anchor was for.
-            height,
-        )
-        .await;
-
-        // Write the TCT anchor both as a value, so we can look it up,
-        self.put_domain(
-            format!("shielded_pool/tct_anchor/{}", height).into(),
-            tct_anchor,
-        )
-        .await;
-        // and as a key, so we can query for it.
-        self.put_proto(
-            format!("shielded_pool/valid_tct_anchors/{}", tct_anchor).into(),
             // We don't use the value for validity checks, but writing the height
             // here lets us find out what height the anchor was for.
             height,
