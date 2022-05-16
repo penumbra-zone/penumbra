@@ -673,7 +673,7 @@ mod tests {
                 chain_id: "".to_string(),
                 fee: Fee(0),
             },
-            merkle_root: merkle::Root(Fq::zero()),
+            anchor: merkle::Root(Fq::zero()),
             binding_sig: [0u8; 64].into(),
         };
 
@@ -688,7 +688,7 @@ mod tests {
                 fee: Fee(0),
             },
             binding_sig: [0u8; 64].into(),
-            merkle_root: merkle::Root(Fq::zero()),
+            anchor: merkle::Root(Fq::zero()),
         };
 
         Ics2Client::check_tx_stateless(&create_client_tx).unwrap();
@@ -733,7 +733,7 @@ mod tests {
                 chain_id: "".to_string(),
                 fee: Fee(0),
             },
-            merkle_root: merkle::Root(Fq::zero()),
+            anchor: merkle::Root(Fq::zero()),
             binding_sig: [0u8; 64].into(),
         };
 

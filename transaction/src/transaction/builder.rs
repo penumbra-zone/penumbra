@@ -325,7 +325,7 @@ impl Builder {
         self.chain_id = None;
 
         Ok(Transaction {
-            merkle_root: self.merkle_root.clone(),
+            anchor: self.merkle_root.clone(),
             transaction_body,
             binding_sig,
         })

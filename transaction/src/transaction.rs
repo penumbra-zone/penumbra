@@ -34,7 +34,7 @@ pub struct Fee(pub u64);
 pub struct Transaction {
     pub transaction_body: TransactionBody,
     pub binding_sig: Signature<Binding>,
-    pub merkle_root: merkle::Root,
+    pub anchor: merkle::Root,
 }
 
 impl Transaction {
@@ -230,7 +230,7 @@ impl From<Transaction> for pbt::Transaction {
         let sig_bytes: [u8; 64] = msg.binding_sig.into();
         pbt::Transaction {
             body: Some(msg.transaction_body.into()),
-            anchor: Bytes::copy_from_slice(&msg.merkle_root.0.to_bytes()),
+            anchor: Bytes::copy_from_slice(&msg.anchor.0.to_bytes()),
             binding_sig: Bytes::copy_from_slice(&sig_bytes),
         }
     }
@@ -256,14 +256,14 @@ impl TryFrom<pbt::Transaction> for Transaction {
             .try_into()
             .map_err(|_| anyhow::anyhow!("transaction malformed"))?;
 
-        let merkle_root = proto.anchor[..]
+        let anchor = proto.anchor[..]
             .try_into()
             .map_err(|_| anyhow::anyhow!("transaction malformed"))?;
 
         Ok(Transaction {
             transaction_body,
             binding_sig: sig_bytes.into(),
-            merkle_root,
+            anchor,
         })
     }
 }
