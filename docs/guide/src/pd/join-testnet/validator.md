@@ -43,6 +43,7 @@ To create a template configuration, use `pcli validator template-definition`:
   "name": "",
   "website": "",
   "description": "",
+  "enabled": false,
   "funding_streams": [
     {
       "address": "penumbrav1t1mw8270qtpgjy628fg97p2px45e860jtlw0nl3w5y7vq67qx697py9t8ppp3mhwfxv8kegg8wuny64nf60z966krx85cqznjpshqtngffpwnywtzqjklkg3qh7anxk368ywac9l",
@@ -53,6 +54,15 @@ To create a template configuration, use `pcli validator template-definition`:
 }
 ```
 and adjust the data like the name, website, description, etc as desired.
+
+The `enabled` field can be used to enable/disable your validator without facing slashing 
+penalties. Disabled validators can not appear in the active validator set and are ineligible for 
+rewards.
+
+This is useful if, for example, you know your validator will not be online for a period of time, 
+and you want to avoid an uptime violation penalty. If you are uploading your validator for the 
+first time, you will likely want to start with it disabled until your Tendermint & `pd` 
+instances have caught up to the consensus block height.
 
 #### Setting the consensus key
 

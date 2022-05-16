@@ -124,7 +124,9 @@ impl ValidatorCmd {
                     name: String::new(),
                     website: String::new(),
                     description: String::new(),
-                    enabled: true,
+                    // Default enabled to "false" so operators are required to manually
+                    // enable their validators when ready.
+                    enabled: false,
                     funding_streams: FundingStreams::try_from(vec![FundingStream {
                         address,
                         rate_bps: 100,
