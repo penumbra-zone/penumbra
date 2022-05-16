@@ -30,15 +30,15 @@ impl Default for MemoPlaintext {
     }
 }
 
-impl TryFrom<String> for MemoPlaintext {
+impl TryFrom<&[u8]> for MemoPlaintext {
     type Error = anyhow::Error;
 
-    fn try_from(input: String) -> Result<MemoPlaintext, Self::Error> {
+    fn try_from(input: &[u8]) -> Result<MemoPlaintext, Self::Error> {
         if input.len() > MEMO_LEN_BYTES {
             return Err(anyhow::anyhow!("provided memo exceeds maximum memo size"));
         }
         let mut mp = [0u8; MEMO_LEN_BYTES];
-        mp[..input.len()].copy_from_slice(input.as_bytes());
+        mp[..input.len()].copy_from_slice(input);
 
         Ok(MemoPlaintext(mp))
     }
