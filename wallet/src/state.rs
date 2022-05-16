@@ -523,7 +523,7 @@ impl ClientState {
 
         for (denom, amount) in &output_value {
             let memo: memo::MemoPlaintext = match tx_memo {
-                Some(ref input_memo) => input_memo.clone().try_into()?,
+                Some(ref input_memo) => input_memo.as_bytes().try_into()?,
                 None => memo::MemoPlaintext([0u8; memo::MEMO_LEN_BYTES]),
             };
             tx_builder.add_output(
