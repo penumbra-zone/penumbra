@@ -136,7 +136,7 @@ impl Component for ShieldedPool {
                     if spend
                         .proof
                         .verify(
-                            tx.merkle_root.clone(),
+                            tx.anchor.clone(),
                             spend.body.value_commitment,
                             spend.body.nullifier,
                             spend.body.rk,
@@ -176,7 +176,7 @@ impl Component for ShieldedPool {
     #[instrument(name = "shielded_pool", skip(self, tx))]
     async fn check_tx_stateful(&self, tx: &Transaction) -> Result<()> {
         // TODO: rename transaction_body.merkle_root now that we have 2 merkle trees
-        self.state.check_claimed_anchor(&tx.merkle_root).await?;
+        self.state.check_claimed_anchor(&tx.anchor).await?;
 
         for spent_nullifier in tx.spent_nullifiers() {
             self.state.check_nullifier_unspent(spent_nullifier).await?;
