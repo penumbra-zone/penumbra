@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 penumbra-proto = { path = "../proto" }
 penumbra-crypto = { path = "../crypto" }
+penumbra-tct = { path = "../tct" }
 
 tokio = { version = "1.16", features = ["full", "tracing"]}
 jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "main" }

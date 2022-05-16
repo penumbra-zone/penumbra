@@ -13,6 +13,7 @@ penumbra-transaction = { path = "../transaction" }
 penumbra-storage = { path = "../storage" }
 penumbra-component = { path = "../component" }
 penumbra-chain = { path = "../chain" }
+penumbra-tct = { path = "../tct" }
 
 # Penumbra dependencies
 tendermint = "0.24.0-pre.1"

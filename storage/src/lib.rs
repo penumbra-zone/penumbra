@@ -1,3 +1,6 @@
+// Required to ensure that Rust can infer a Send bound inside the TCT
+#![recursion_limit = "256"]
+
 use std::sync::Arc;
 
 use jmt::WriteOverlay;

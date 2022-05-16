@@ -73,9 +73,10 @@ impl Storage {
             .map_err(|e| tonic::Status::internal(e.to_string()))
     }
 
-    pub async fn put_nct(&self, nct: &NoteCommitmentTree) -> Result<()> {
+    pub async fn put_nct(&self, nct: &NoteCommitmentTree, tct: &penumbra_tct::Tree) -> Result<()> {
         let db = self.0.clone();
         let nct_data = bincode::serialize(nct)?;
+        let tct_data = bincode::serialize(tct)?;
         let span = Span::current();
         tokio::task::Builder::new()
             .name("put_nct")
@@ -83,13 +84,14 @@ impl Storage {
                 span.in_scope(|| {
                     let nct_cf = db.cf_handle("nct").expect("nct column family not found");
                     db.put_cf(nct_cf, "nct", &nct_data)?;
+                    db.put_cf(nct_cf, "tct", &tct_data)?;
                     Ok::<_, anyhow::Error>(())
                 })
             })
             .await?
     }
 
-    pub async fn get_nct(&self) -> Result<NoteCommitmentTree> {
+    pub async fn get_nct(&self) -> Result<(NoteCommitmentTree, penumbra_tct::Tree)> {
         let db = self.0.clone();
         let span = Span::current();
         tokio::task::Builder::new()
@@ -97,10 +99,15 @@ impl Storage {
             .spawn_blocking(move || {
                 span.in_scope(|| {
                     let nct_cf = db.cf_handle("nct").expect("nct column family not found");
-                    if let Some(bytes) = db.get_cf(nct_cf, "nct")? {
-                        bincode::deserialize(&bytes).map_err(Into::into)
+                    if let (Some(nct_bytes), Some(tct_bytes)) =
+                        (db.get_cf(nct_cf, "nct")?, db.get_cf(nct_cf, "tct")?)
+                    {
+                        Ok((
+                            bincode::deserialize(&nct_bytes)?,
+                            bincode::deserialize(&tct_bytes)?,
+                        ))
                     } else {
-                        Ok(NoteCommitmentTree::new(0))
+                        Ok((NoteCommitmentTree::new(0), penumbra_tct::Tree::new()))
                     }
                 })
             })

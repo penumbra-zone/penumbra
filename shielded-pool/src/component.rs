@@ -23,24 +23,33 @@ use crate::CommissionAmounts;
 pub struct ShieldedPool {
     state: State,
     note_commitment_tree: NoteCommitmentTree,
+    tiered_commitment_tree: penumbra_tct::Tree,
     /// The in-progress CompactBlock representation of the ShieldedPool changes
     compact_block: CompactBlock,
 }
 
 impl ShieldedPool {
-    #[instrument(name = "shielded_pool", skip(state, note_commitment_tree))]
-    pub async fn new(state: State, note_commitment_tree: NoteCommitmentTree) -> Self {
+    #[instrument(
+        name = "shielded_pool",
+        skip(state, note_commitment_tree, tiered_commitment_tree)
+    )]
+    pub async fn new(
+        state: State,
+        note_commitment_tree: NoteCommitmentTree,
+        tiered_commitment_tree: penumbra_tct::Tree,
+    ) -> Self {
         Self {
             state,
             note_commitment_tree,
+            tiered_commitment_tree,
             compact_block: Default::default(),
         }
     }
 
     /// Get the current note commitment tree (this may not yet have been committed to the underlying
     /// storage).
-    pub fn note_commitment_tree(&self) -> &NoteCommitmentTree {
-        &self.note_commitment_tree
+    pub fn note_commitment_tree(&self) -> (&NoteCommitmentTree, &penumbra_tct::Tree) {
+        (&self.note_commitment_tree, &self.tiered_commitment_tree)
     }
 }
 
@@ -244,6 +253,31 @@ impl Component for ShieldedPool {
             .unwrap();
         }
 
+        // Close the block in the TCT
+        // TODO: replace this with an `expect!` when this is consensus-critical
+        if let Err(e) = self.tiered_commitment_tree.end_block() {
+            tracing::error!(error = ?e, "failed to end block in TCT");
+        }
+
+        // If the block ends an epoch, also close the epoch in the TCT
+        if Epoch::from_height(
+            self.compact_block.height,
+            self.state
+                .get_chain_params()
+                .await
+                .expect("chain params request must succeed")
+                .epoch_duration,
+        )
+        .is_epoch_end(self.compact_block.height)
+        {
+            // TODO: replace this with an `expect!` when this is consensus-critical
+            if let Err(e) = self.tiered_commitment_tree.end_epoch() {
+                tracing::error!(error = ?e, "failed to end epoch in TCT");
+            }
+        }
+
+        tracing::debug!(tct_root = %self.tiered_commitment_tree.root(), "tct root");
+
         self.write_compactblock_and_nct().await.unwrap();
     }
 }
@@ -342,6 +376,17 @@ impl ShieldedPool {
         // 1. Insert it into the NCT
         self.note_commitment_tree
             .append(&note_payload.note_commitment);
+        self.tiered_commitment_tree
+            .insert(penumbra_tct::Witness::Forget, note_payload.note_commitment)
+            .expect("inserting a commitment into the TCT should never fail");
+
+        // TODO: replace this with an `expect!` when this is consensus-critical
+        if let Err(e) = self
+            .tiered_commitment_tree
+            .insert(penumbra_tct::Witness::Forget, note_payload.note_commitment)
+        {
+            tracing::error!(error = ?e, "failed to insert commitment into TCT");
+        }
         // 2. Record its source in the JMT
         self.state
             .set_note_source(&note_payload.note_commitment, source)
@@ -479,18 +524,18 @@ pub trait View: StateExt {
             .await
     }
 
-    async fn set_nct_anchor(&self, height: u64, anchor: merkle::Root) {
-        tracing::debug!(?height, ?anchor, "writing anchor");
+    async fn set_nct_anchor(&self, height: u64, nct_anchor: merkle::Root) {
+        tracing::debug!(?height, ?nct_anchor, "writing anchor");
 
         // Write the NCT anchor both as a value, so we can look it up,
         self.put_domain(
             format!("shielded_pool/nct_anchor/{}", height).into(),
-            anchor.clone(),
+            nct_anchor.clone(),
         )
         .await;
         // and as a key, so we can query for it.
         self.put_proto(
-            format!("shielded_pool/valid_anchors/{}", anchor).into(),
+            format!("shielded_pool/valid_anchors/{}", nct_anchor).into(),
             // We don't use the value for validity checks, but writing the height
             // here lets us find out what height the anchor was for.
             height,
