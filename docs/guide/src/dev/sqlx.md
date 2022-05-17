@@ -22,5 +22,5 @@ wallet server crate.
 4.  From the `wallet-next` directory, run `cargo sqlx database setup` to create
 the database and run migrations.
 5.  From the `wallet-next` directory, run
-`cargo sqlx prepare -- --lib=penumbra-wallet-next`
+`cargo sqlx prepare -- --lib penumbra-wallet-next`
 to regenerate the `sqlx-data.json` file that allows offline compilation.
