@@ -24,6 +24,7 @@ mod error;
 pub use error::InsertError;
 
 use penumbra_tct::{
+    self as tct,
     internal::{
         frontier::Insert,
         hash::{CachedHash, GetHash, Hash},

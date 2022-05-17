@@ -5,9 +5,19 @@ use super::*;
 ///
 /// We create a builder rather than a tree directly because this allows us to compositionally
 /// construct trees with parent references.
-pub(super) trait Builder {
+pub(super) trait Builder: Sized {
     /// Construct the tree, given that tree's parent.
     fn with_parent(self, parent: Parent) -> Tree;
+
+    /// Finish a `Builder` by wrapping it in a root.
+    fn finalized(self, finalized: bool) -> Tree {
+        Tree {
+            inner: Arc::new_cyclic(|this| {
+                let tree = self.with_parent(this.clone());
+                Inner::new(tree.height(), Node::Root(Root { finalized, tree }))
+            }),
+        }
+    }
 }
 
 impl<T: FnOnce(Parent) -> Tree> Builder for T {
@@ -19,7 +29,7 @@ impl<T: FnOnce(Parent) -> Tree> Builder for T {
 /// Make a leaf builder.
 fn leaf(commitment: Insert<Commitment>) -> impl Builder {
     move |parent| Tree {
-        inner: Arc::new(Inner::new(parent, 0, Node::Leaf(Leaf { commitment }))),
+        inner: Arc::new(Inner::new(0, Node::Leaf(Leaf { parent, commitment }))),
     }
 }
 
@@ -36,7 +46,7 @@ fn node(height: u8, children: Vec<impl Builder>) -> impl Builder {
                 "nodes must have between 1 and 4 children"
             );
 
-            Inner::new(parent, height, Node::Internal(Internal { children }))
+            Inner::new(height, Node::Internal(Internal { parent, children }))
         }),
     }
 }
@@ -48,7 +58,7 @@ mod tier {
     /// Make a builder for an empty tier.
     pub(super) fn empty(parent: Parent, height: u8) -> Tree {
         Tree {
-            inner: Arc::new(Inner::new(parent, height, Node::Tier(Tier { root: None }))),
+            inner: Arc::new(Inner::new(height, Node::Tier(Tier { parent, root: None }))),
         }
     }
 
@@ -57,9 +67,9 @@ mod tier {
         Tree {
             inner: Arc::new_cyclic(|this| {
                 Inner::new(
-                    parent,
                     height,
                     Node::Tier(Tier {
+                        parent,
                         root: Some(contents.map(|contents| contents.with_parent(this.clone()))),
                     }),
                 )

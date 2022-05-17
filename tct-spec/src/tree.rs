@@ -17,8 +17,6 @@ type Parent = Weak<Inner>;
 
 /// The interior of a tree node.
 struct Inner {
-    /// The parent pointer for this node.
-    parent: Parent,
     /// The height of this node above the level of the leaves of the tree.
     height: u8,
     /// The actual node itself, which can be a [`Tier`], [`Internal`] node, or [`Leaf`].
@@ -29,9 +27,8 @@ struct Inner {
 
 impl Inner {
     /// Construct a new `Inner`.
-    pub fn new(parent: Parent, height: u8, node: Node) -> Self {
+    pub fn new(height: u8, node: Node) -> Self {
         Self {
-            parent,
             height,
             node,
             hash: CachedHash::default(),
@@ -47,16 +44,22 @@ enum Node {
     Internal(Internal),
     /// A tier, wrapping a subtree.
     Tier(Tier),
+    /// The root of a tree.
+    Root(Root),
 }
 
 /// A leaf node.
 pub struct Leaf {
+    /// The parent pointer for this node.
+    parent: Parent,
     /// The contained commitment in this leaf, or if it was not witnessed, its hash.
     pub commitment: Insert<Commitment>,
 }
 
 /// An internal node.
 pub struct Internal {
+    /// The parent pointer for this node.
+    parent: Parent,
     /// The children of this node.
     ///
     /// Invariant: the length of this vector is between 1 and 4.
@@ -65,9 +68,19 @@ pub struct Internal {
 
 /// A tier node.
 pub struct Tier {
+    /// The parent pointer for this node.
+    parent: Parent,
     /// The wrapped subtree, which can be `None` if the tier is empty, a hash if it was summarized
     /// by a hash, or a non-empty subtree otherwise.
     pub root: Option<Insert<Tree>>,
+}
+
+/// The root of a tree.
+pub struct Root {
+    /// Was the tree finalized?
+    pub finalized: bool,
+    /// The tree.
+    pub tree: Tree,
 }
 
 impl Tree {
@@ -78,7 +91,16 @@ impl Tree {
 
     /// Get the parent, if there is one, of this tree.
     fn parent(&self) -> Option<Tree> {
-        self.inner.parent.upgrade().map(|inner| Tree { inner })
+        let inner = match &self.inner.node {
+            Node::Leaf(Leaf { parent, .. }) => parent,
+            Node::Internal(Internal { parent, .. }) => parent,
+            Node::Tier(Tier { parent, .. }) => parent,
+            Node::Root(Root { .. }) => return None,
+        }
+        .upgrade()
+        .expect("non-root tree must have parent");
+
+        Some(Tree { inner })
     }
 
     /// Get the wrapped [`Node`] at this level of the tree.
@@ -87,20 +109,20 @@ impl Tree {
     }
 
     /// Construct a one-tiered tree from an iterable sequence representing commitments in the block.
-    pub fn from_block(block: List<Insert<Commitment>>) -> Tree {
-        build::block(Insert::Keep(block)).with_parent(Parent::new())
+    pub fn from_block(finalized: bool, block: List<Insert<Commitment>>) -> Tree {
+        build::block(Insert::Keep(block)).finalized(finalized)
     }
 
     /// Construct a two-tiered tree from a doubly-nested iterable sequence representing commitments
     /// within blocks.
-    pub fn from_epoch(epoch: List<Insert<List<Insert<Commitment>>>>) -> Tree {
-        build::epoch(Insert::Keep(epoch)).with_parent(Parent::new())
+    pub fn from_epoch(finalized: bool, epoch: List<Insert<List<Insert<Commitment>>>>) -> Tree {
+        build::epoch(Insert::Keep(epoch)).finalized(finalized)
     }
 
     /// Construct a three-tiered tree from a triply-nested iterable sequence representing commitments within
     /// blocks within epochs.
     pub fn from_eternity(eternity: List<Insert<List<Insert<List<Insert<Commitment>>>>>>) -> Tree {
-        build::eternity(eternity).with_parent(Parent::new())
+        build::eternity(eternity).finalized(false)
     }
 
     /// Assuming this tree is a [`Leaf`], cast it as one.
@@ -142,6 +164,19 @@ impl Tree {
         }
     }
 
+    /// Assuming this tree is a [`Root`], cast it as one.
+    ///
+    /// # Panics
+    ///
+    /// Panics if this tree is not a [`Root`].
+    pub fn as_root(&self) -> &Root {
+        if let Node::Root(root) = self.inner() {
+            root
+        } else {
+            panic!("expected tree to be a root")
+        }
+    }
+
     /// Determine whether this (sub)tree is on the _frontier_: whether it is on the rightmost edge
     /// of its containing tree.
     fn is_frontier(&self) -> bool {
@@ -152,9 +187,10 @@ impl Tree {
                     node.children.last().unwrap().is(self) && parent.is_frontier()
                 }
                 Node::Leaf(_) => unreachable!("the parent of a tree can never be a leaf"),
+                Node::Root(_) => unreachable!("a root never has a parent"),
             }
         } else {
-            true
+            self.as_root().finalized
         }
     }
 
@@ -167,7 +203,7 @@ impl Tree {
     pub fn root(&self) -> Hash {
         self.inner.hash.set_if_empty(|| {
             let hash = match self.inner() {
-                Node::Leaf(Leaf { commitment }) => match commitment {
+                Node::Leaf(Leaf { commitment, .. }) => match commitment {
                     Insert::Keep(commitment) => Hash::of(*commitment),
                     Insert::Hash(hash) => *hash,
                 },
@@ -175,11 +211,12 @@ impl Tree {
                     let [a, b, c, d] = self.padded_children().unwrap().map(|child| child.hash());
                     Hash::node(self.height(), a, b, c, d)
                 }
-                Node::Tier(Tier { root }) => match root {
+                Node::Tier(Tier { root, .. }) => match root {
                     None => self.padding_hash(),
                     Some(Insert::Keep(root)) => root.hash(),
                     Some(Insert::Hash(hash)) => *hash,
                 },
+                Node::Root(Root { tree, .. }) => tree.hash(),
             };
 
             hash
@@ -218,6 +255,7 @@ impl Tree {
                 None | Some(Hash(_)) => None,
                 Some(Keep(ref root)) => root.padded_children(),
             },
+            Node::Root(Root { tree, .. }) => tree.padded_children(),
         }
     }
 

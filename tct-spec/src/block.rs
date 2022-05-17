@@ -30,4 +30,13 @@ impl Builder {
 
         Ok(())
     }
+
+    /// Get the root of this unfinalized block builder.
+    ///
+    /// This operation is expensive, because it constructs the entire block and hashes it, which is
+    /// not done in the implementation, because the implementation is incremental.
+    pub fn root(&self) -> tct::builder::block::Root {
+        let tree = Tree::from_block(false, self.block.clone());
+        tct::builder::block::Root(tree.root())
+    }
 }
