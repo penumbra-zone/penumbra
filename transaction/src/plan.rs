@@ -11,6 +11,7 @@ use crate::{
 };
 
 mod action;
+mod auth;
 mod build;
 
 pub use action::{ActionPlan, OutputPlan, SpendPlan};
