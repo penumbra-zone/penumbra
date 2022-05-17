@@ -1,4 +1,7 @@
-use std::pin::Pin;
+use std::{
+    pin::Pin,
+    sync::{Arc, Mutex},
+};
 
 use penumbra_crypto::keys::FullViewingKeyHash;
 use penumbra_proto::{
@@ -23,7 +26,7 @@ pub struct WalletService {
     storage: Storage,
     // TODO: add a way for the WalletService to poll the state of its worker task, to determine if it failed
     // this probably looks like a handle for the task, wrapped in an arc'd mutex or something
-    // error_slot: Arc<Mutex<Option<anyhow::Error>>>,
+    error_slot: Arc<Mutex<Option<anyhow::Error>>>,
     // TODO: add a way for the WalletService to signal the worker that it should shut down
     // this probably looks like an Arc<oneshot::Sender<()>> or something,
     // where the receiver is held by the worker and the worker checks if it's closed (=> all sender handles dropped)
@@ -42,14 +45,20 @@ impl WalletService {
         storage: Storage,
         client: ObliviousQueryClient<Channel>,
     ) -> Result<Self, anyhow::Error> {
-        let worker = Worker::new(storage.clone(), client).await?;
+        // Create a shared error slot
+        let error_slot = Arc::new(Mutex::new(None));
+        let worker = Worker::new(storage.clone(), client, error_slot.clone()).await?;
 
         tokio::spawn(worker.run());
 
         let fvk = storage.full_viewing_key().await?;
         let fvk_hash = fvk.hash();
 
-        Ok(Self { storage, fvk_hash })
+        Ok(Self {
+            storage,
+            fvk_hash,
+            error_slot,
+        })
     }
 
     async fn check_fvk(&self, fvk: Option<&pbc::FullViewingKeyHash>) -> Result<(), tonic::Status> {
@@ -74,7 +83,20 @@ impl WalletService {
     }
 
     async fn check_worker(&self) -> Result<(), tonic::Status> {
+        // If the shared error slot is set, then an error has occurred in the worker
+        // that we should bubble up.
+        if self.error_slot.lock().unwrap().is_some() {
+            return Err(tonic::Status::new(
+                tonic::Code::Internal,
+                format!(
+                    "Worker failed: {}",
+                    self.error_slot.lock().unwrap().as_ref().unwrap()
+                ),
+            ));
+        }
+
         // TODO: check whether the worker is still alive, else fail, when we have a way to do that
+
         Ok(())
     }
 }

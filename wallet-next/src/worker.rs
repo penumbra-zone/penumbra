@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use crate::{sync::scan_block, Storage};
 use penumbra_crypto::{merkle::NoteCommitmentTree, FullViewingKey};
 use penumbra_proto::client::oblivious::{
@@ -10,12 +12,14 @@ pub struct Worker {
     client: ObliviousQueryClient<Channel>,
     nct: NoteCommitmentTree,
     fvk: FullViewingKey, // TODO: notifications (see TODOs on WalletService)
+    error_slot: Arc<Mutex<Option<anyhow::Error>>>,
 }
 
 impl Worker {
     pub async fn new(
         storage: Storage,
         client: ObliviousQueryClient<Channel>,
+        error_slot: Arc<Mutex<Option<anyhow::Error>>>,
     ) -> Result<Self, anyhow::Error> {
         let nct = storage.note_commitment_tree().await?;
         let fvk = storage.full_viewing_key().await?;
@@ -24,6 +28,7 @@ impl Worker {
             client,
             nct,
             fvk,
+            error_slot,
         })
     }
 
@@ -64,6 +69,18 @@ impl Worker {
     }
 
     pub async fn run(mut self) -> Result<(), anyhow::Error> {
+        loop {
+            match self._run().await {
+                Ok(_) => {}
+                Err(e) => {
+                    tracing::info!(?e, "wallet worker error");
+                    self.error_slot.lock().unwrap().replace(e);
+                }
+            };
+        }
+    }
+
+    async fn _run(&mut self) -> Result<(), anyhow::Error> {
         loop {
             self.sync_to_latest().await?;
 
