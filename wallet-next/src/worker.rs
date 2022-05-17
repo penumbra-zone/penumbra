@@ -7,15 +7,13 @@ use penumbra_proto::client::oblivious::{
 };
 use tokio::sync::mpsc::{error::TryRecvError, Receiver};
 use tonic::transport::Channel;
-#[derive(Clone)]
 pub struct Worker {
     storage: Storage,
     client: ObliviousQueryClient<Channel>,
     nct: NoteCommitmentTree,
     fvk: FullViewingKey, // TODO: notifications (see TODOs on WalletService)
     error_slot: Arc<Mutex<Option<anyhow::Error>>>,
-    // This is in an `Arc` because `Receiver` is not `Clone`.
-    shutdown_rx: Arc<Mutex<Receiver<()>>>,
+    shutdown_rx: Receiver<()>,
 }
 
 impl Worker {
@@ -33,7 +31,7 @@ impl Worker {
             nct,
             fvk,
             error_slot,
-            shutdown_rx: Arc::new(Mutex::new(rx)),
+            shutdown_rx: rx,
         })
     }
 
@@ -75,7 +73,7 @@ impl Worker {
 
     pub async fn run(mut self) -> Result<(), anyhow::Error> {
         loop {
-            match self._run().await {
+            match self.run_inner().await {
                 Ok(_) => {
                     // If the worker returns `Ok` then it means it's done, so we can
                     // stop looping.
@@ -91,11 +89,11 @@ impl Worker {
         Ok(())
     }
 
-    async fn _run(&mut self) -> Result<(), anyhow::Error> {
+    async fn run_inner(&mut self) -> Result<(), anyhow::Error> {
         loop {
             self.sync_to_latest().await?;
 
-            if let Err(TryRecvError::Disconnected) = self.shutdown_rx.lock().unwrap().try_recv() {
+            if let Err(TryRecvError::Disconnected) = self.shutdown_rx.try_recv() {
                 // All senders have been dropped, so we can shut down.
                 tracing::info!("All senders dropped, wallet worker shutting down.");
                 break;

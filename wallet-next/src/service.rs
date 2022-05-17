@@ -101,6 +101,7 @@ impl WalletService {
         }
 
         // TODO: check whether the worker is still alive, else fail, when we have a way to do that
+        // (if the worker is to crash without setting the error_slot, the service should die as well)
 
         Ok(())
     }
