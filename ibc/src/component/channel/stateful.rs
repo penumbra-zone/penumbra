@@ -1,5 +1,56 @@
 mod proof_verification {
     use super::super::*;
+    use ibc::core::ics23_commitment::commitment::CommitmentPrefix;
+    use ibc::core::ics23_commitment::commitment::CommitmentProofBytes;
+    use ibc::core::ics23_commitment::commitment::CommitmentRoot;
+    use ibc::core::ics23_commitment::merkle::apply_prefix;
+    use ibc::core::ics23_commitment::merkle::MerkleProof;
+    use ibc::core::ics23_commitment::specs::ProofSpecs;
+    use ibc::core::ics24_host::Path;
+    use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
+
+    use crate::component::client::View as _;
+    use ibc::core::ics02_client::client_consensus::AnyConsensusState;
+    use ibc::core::ics02_client::client_state::AnyClientState;
+    use ibc::core::ics04_channel::context::calculate_block_delay;
+    use ibc::core::ics24_host::identifier::ClientId;
+    use ibc::core::ics24_host::path::CommitmentsPath;
+    use ibc::downcast;
+    use penumbra_chain::View as _;
+    use sha2::{Digest, Sha256};
+
+    // NOTE: this is underspecified.
+    // using the same implementation here as ibc-go:
+    // https://github.com/cosmos/ibc-go/blob/main/modules/core/04-channel/types/packet.go#L19
+    // timeout_timestamp + timeout_height.revision_number + timeout_height.revision_height
+    // + sha256(data)
+    fn commit_packet(packet: &Packet) -> Vec<u8> {
+        let mut commit = vec![];
+        commit.extend_from_slice(&packet.timeout_timestamp.nanoseconds().to_be_bytes());
+        commit.extend_from_slice(&packet.timeout_height.revision_number.to_be_bytes());
+        commit.extend_from_slice(&packet.timeout_height.revision_height.to_be_bytes());
+        commit.extend_from_slice(&Sha256::digest(&packet.data));
+
+        Sha256::digest(&commit).to_vec()
+    }
+
+    fn verify_merkle_proof(
+        proof_specs: &ProofSpecs,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        path: impl Into<Path>,
+        value: Vec<u8>,
+    ) -> anyhow::Result<()> {
+        let merkle_path = apply_prefix(prefix, vec![path.into().to_string()]);
+        let merkle_proof: MerkleProof = RawMerkleProof::try_from(proof.clone())
+            .map_err(|_| anyhow::anyhow!("invalid merkle proof"))?
+            .into();
+
+        merkle_proof.verify_membership(&proof_specs, root.clone().into(), merkle_path, value, 0)?;
+
+        Ok(())
+    }
 
     #[async_trait]
     pub trait ChannelProofVerifier: StateExt {
@@ -43,7 +94,104 @@ mod proof_verification {
             Ok(())
         }
     }
+
+    #[async_trait]
+    pub trait PacketProofVerifier: StateExt {
+        async fn verify_packet_data(
+            &self,
+            client_id: &ClientId,
+            client_state: &AnyClientState,
+            connection: &ConnectionEnd,
+            packet: &Packet,
+            proofs: &ibc::proofs::Proofs,
+            trusted_consensus_state: &AnyConsensusState,
+        ) -> anyhow::Result<()> {
+            // currently only tendermint clients.
+            let tm_client_state = downcast!(client_state => AnyClientState::Tendermint)
+                .ok_or(anyhow::anyhow!("client state is not tendermint"))?;
+
+            tm_client_state.verify_height(proofs.height())?;
+            let current_timestamp = self.get_block_timestamp().await?;
+            let current_height = self.get_block_height().await?;
+
+            let processed_height = self
+                .get_client_update_height(client_id, &proofs.height())
+                .await?;
+
+            let processed_time = self
+                .get_client_update_time(client_id, &proofs.height())
+                .await?;
+
+            // NOTE: hardcoded for now, should be a chain parameter.
+            let max_time_per_block = std::time::Duration::from_secs(20);
+
+            let delay_period_time = connection.delay_period();
+            let delay_period_blocks = calculate_block_delay(delay_period_time, max_time_per_block);
+
+            /*
+            if current_timestamp < processed_time + delay_period_time {
+                return Err(anyhow::anyhow!("not enough time has passed for packet"));
+            }
+            if current_height < processed_height + delay_period_blocks {
+                return Err(anyhow::anyhow!("not enough blocks have passed for packet"));
+            }*/
+
+            let commitment_path = CommitmentsPath {
+                port_id: packet.destination_port.clone(),
+                channel_id: packet.destination_channel.clone(),
+                sequence: packet.sequence,
+            };
+
+            let commitment_bytes = commit_packet(&packet);
+
+            verify_merkle_proof(
+                &tm_client_state.proof_specs,
+                connection.counterparty().prefix(),
+                proofs.object_proof(),
+                trusted_consensus_state.root(),
+                commitment_path,
+                commitment_bytes,
+            )?;
+
+            Ok(())
+        }
+
+        async fn verify_packet_proof(
+            &self,
+            connection: &ConnectionEnd,
+            proofs: &ibc::proofs::Proofs,
+            packet: &Packet,
+        ) -> anyhow::Result<()> {
+            // get the stored client state for the counterparty
+            let trusted_client_state = self.get_client_state(connection.client_id()).await?;
+
+            // check if the client is frozen
+            // TODO: should we also check if the client is expired here?
+            if trusted_client_state.is_frozen() {
+                return Err(anyhow::anyhow!("client is frozen"));
+            }
+
+            // get the stored consensus state for the counterparty
+            let trusted_consensus_state = self
+                .get_verified_consensus_state(proofs.height(), connection.client_id().clone())
+                .await?;
+
+            self.verify_packet_data(
+                &connection.client_id(),
+                &trusted_client_state,
+                connection,
+                packet,
+                proofs,
+                &trusted_consensus_state,
+            )
+            .await?;
+
+            Ok(())
+        }
+    }
+
     impl<T: StateExt> ChannelProofVerifier for T {}
+    impl<T: StateExt> PacketProofVerifier for T {}
 }
 
 pub mod channel_open_init {
@@ -399,4 +547,82 @@ pub mod channel_close_confirm {
     }
 
     impl<T: StateExt> ChannelCloseConfirmCheck for T {}
+}
+
+mod packet_validation {
+    use super::super::*;
+
+    #[async_trait]
+    pub trait PacketValidation {}
+
+    impl<T: StateExt> PacketValidation for T {}
+}
+
+pub mod recv_packet {
+    use super::super::*;
+    use ibc::timestamp::Timestamp as IBCTimestamp;
+    use ibc::Height as IBCHeight;
+    use penumbra_chain::View as _;
+
+    #[async_trait]
+    pub trait RecvPacketCheck: StateExt {
+        async fn validate(&self, msg: &MsgRecvPacket) -> anyhow::Result<()> {
+            let channel = self
+                .get_channel(
+                    &msg.packet.destination_channel,
+                    &msg.packet.destination_port,
+                )
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("channel not found"))?;
+            if !channel.state_matches(&ChannelState::Open) {
+                return Err(anyhow::anyhow!("channel is not open"));
+            }
+
+            // TODO: capability authentication?
+
+            if msg.packet.source_port != channel.counterparty().port_id {
+                return Err(anyhow::anyhow!("packet source port does not match channel"));
+            }
+            if msg.packet.source_channel
+                != channel
+                    .counterparty()
+                    .channel_id
+                    .ok_or(anyhow::anyhow!("missing channel id"))?
+            {
+                return Err(anyhow::anyhow!(
+                    "packet source channel does not match channel"
+                ));
+            }
+
+            let connection = self
+                .get_connection(&channel.connection_hops[0])
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("connection not found for channel"))?;
+            if !connection.state_matches(&ConnectionState::Open) {
+                return Err(anyhow::anyhow!("connection for channel is not open"));
+            }
+
+            if msg.packet.timeout_height != IBCHeight::zero()
+                && IBCHeight::zero().with_revision_height(self.get_block_height().await?)
+                    < msg.packet.timeout_height
+            {
+                return Err(anyhow::anyhow!("packet has timed out"));
+            }
+
+            if msg.packet.timeout_timestamp != IBCTimestamp::none()
+                && self.get_block_timestamp().await?
+                    < msg
+                        .packet
+                        .timeout_timestamp
+                        .into_tm_time()
+                        .ok_or(anyhow::anyhow!("invalid timestamp"))?
+            {
+                return Err(anyhow::anyhow!("packet has timed out"));
+            }
+
+            Ok(())
+        }
+    }
+
+    impl<T: StateExt> RecvPacketCheck for T {}
 }
