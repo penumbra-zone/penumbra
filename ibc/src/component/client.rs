@@ -465,6 +465,42 @@ pub trait View: StateExt {
         .ok_or_else(|| anyhow::anyhow!("consensus state not found"))
     }
 
+    async fn get_client_update_height(
+        &self,
+        client_id: &ClientId,
+        height: &Height,
+    ) -> Result<ibc::Height> {
+        self.get_domain(
+            format!(
+                "{}/clients/{}/processedHeights/{}",
+                COMMITMENT_PREFIX, client_id, height
+            )
+            .into(),
+        )
+        .await?
+        .ok_or(anyhow::anyhow!("client update time not found"))
+    }
+
+    async fn get_client_update_time(
+        &self,
+        client_id: &ClientId,
+        height: &Height,
+    ) -> Result<ibc::timestamp::Timestamp> {
+        let timestamp_nanos = self
+            .get_proto::<u64>(
+                format!(
+                    "{}/clients/{}/processedTimes/{}",
+                    COMMITMENT_PREFIX, client_id, height
+                )
+                .into(),
+            )
+            .await?
+            .ok_or(anyhow::anyhow!("client update time not found"))?;
+
+        ibc::timestamp::Timestamp::from_nanoseconds(timestamp_nanos)
+            .map_err(|_| anyhow::anyhow!("invalid client update time"))
+    }
+
     async fn put_verified_consensus_state(
         &mut self,
         height: Height,
@@ -478,6 +514,29 @@ pub trait View: StateExt {
             )
             .into(),
             consensus_state,
+        )
+        .await;
+
+        let current_height = self.get_block_height().await?;
+        let current_time: ibc::timestamp::Timestamp = self.get_block_timestamp().await?.into();
+
+        self.put_proto::<u64>(
+            format!(
+                "{}/clients/{}/processedTimes/{}",
+                COMMITMENT_PREFIX, client_id, height
+            )
+            .into(),
+            current_time.nanoseconds(),
+        )
+        .await;
+
+        self.put_domain(
+            format!(
+                "{}/clients/{}/processedHeights/{}",
+                COMMITMENT_PREFIX, client_id, height
+            )
+            .into(),
+            ibc::Height::zero().with_revision_height(current_height),
         )
         .await;
 

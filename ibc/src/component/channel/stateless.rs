@@ -27,3 +27,5 @@ pub mod channel_open_try {
 pub mod channel_open_ack {}
 
 pub mod channel_open_confirm {}
+
+pub mod recv_packet {}

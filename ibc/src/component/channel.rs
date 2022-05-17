@@ -15,13 +15,15 @@ use ibc::core::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
 use ibc::core::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
 use ibc::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use ibc::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
+use ibc::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
+use ibc::core::ics04_channel::packet::Packet;
 use ibc::core::ics24_host::identifier::ChannelId;
 use ibc::core::ics24_host::identifier::PortId;
 use penumbra_chain::genesis;
 use penumbra_component::Component;
 use penumbra_proto::ibc::ibc_action::Action::{
     ChannelCloseConfirm, ChannelCloseInit, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit,
-    ChannelOpenTry,
+    ChannelOpenTry, RecvPacket,
 };
 use penumbra_storage::{State, StateExt};
 use penumbra_transaction::Transaction;
@@ -76,7 +78,6 @@ impl Component for ICS4Channel {
                     MsgChannelOpenAck::try_from(msg.clone())?;
                     // NOTE: no additional stateless validation is possible
                 }
-
                 Some(ChannelOpenConfirm(msg)) => {
                     MsgChannelOpenConfirm::try_from(msg.clone())?;
                     // NOTE: no additional stateless validation is possible
@@ -87,6 +88,11 @@ impl Component for ICS4Channel {
                 }
                 Some(ChannelCloseConfirm(msg)) => {
                     MsgChannelCloseConfirm::try_from(msg.clone())?;
+                    // NOTE: no additional stateless validation is possible
+                }
+                Some(RecvPacket(msg)) => {
+                    MsgRecvPacket::try_from(msg.clone())?;
+
                     // NOTE: no additional stateless validation is possible
                 }
 
@@ -135,6 +141,12 @@ impl Component for ICS4Channel {
                 Some(ChannelCloseConfirm(msg)) => {
                     use stateful::channel_close_confirm::ChannelCloseConfirmCheck;
                     let msg = MsgChannelCloseConfirm::try_from(msg.clone())?;
+
+                    self.state.validate(&msg).await?;
+                }
+                Some(RecvPacket(msg)) => {
+                    use stateful::recv_packet::RecvPacketCheck;
+                    let msg = MsgRecvPacket::try_from(msg.clone())?;
 
                     self.state.validate(&msg).await?;
                 }

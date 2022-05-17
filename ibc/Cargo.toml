@@ -34,6 +34,7 @@ ibc = { git = "https://github.com/penumbra-zone/ibc-rs.git", branch = "with-tend
 ibc-proto = { git = "https://github.com/penumbra-zone/ibc-rs.git", branch = "with-tendermintrs-24" }
 tendermint-light-client-verifier = "0.24.0-pre.1"
 metrics = "0.18"
+sha2 = "0.9"
 
 [dev-dependencies]
 penumbra-tct = { path = "../tct" }

@@ -2807,6 +2807,7 @@ dependencies = [
  "prost-types 0.9.0",
  "serde",
  "serde_json",
+ "sha2 0.9.9",
  "tempfile",
  "tendermint",
  "tendermint-light-client-verifier",
