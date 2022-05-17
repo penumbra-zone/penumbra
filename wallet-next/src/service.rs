@@ -9,6 +9,7 @@ use penumbra_proto::{
     crypto as pbc,
     wallet::{self as pb, wallet_protocol_server::WalletProtocol, StatusResponse},
 };
+use tokio::sync::mpsc;
 use tonic::{async_trait, transport::Channel};
 
 use crate::{Storage, Worker};
@@ -24,12 +25,11 @@ use crate::{Storage, Worker};
 
 pub struct WalletService {
     storage: Storage,
-    // TODO: add a way for the WalletService to poll the state of its worker task, to determine if it failed
-    // this probably looks like a handle for the task, wrapped in an arc'd mutex or something
+    // A shared error slot for errors bubbled up by the worker. This is a regular Mutex
+    // rather than a Tokio Mutex because it should be uncontended.
     error_slot: Arc<Mutex<Option<anyhow::Error>>>,
-    // TODO: add a way for the WalletService to signal the worker that it should shut down
-    // this probably looks like an Arc<oneshot::Sender<()>> or something,
-    // where the receiver is held by the worker and the worker checks if it's closed (=> all sender handles dropped)
+    // When all the senders have dropped, the worker will stop.
+    worker_shutdown_tx: mpsc::Sender<()>,
     fvk_hash: FullViewingKeyHash,
 }
 
@@ -47,7 +47,11 @@ impl WalletService {
     ) -> Result<Self, anyhow::Error> {
         // Create a shared error slot
         let error_slot = Arc::new(Mutex::new(None));
-        let worker = Worker::new(storage.clone(), client, error_slot.clone()).await?;
+
+        // Create a means of communicating shutdown with the worker task
+        let (tx, mut rx) = mpsc::channel(1);
+
+        let worker = Worker::new(storage.clone(), client, error_slot.clone(), rx).await?;
 
         tokio::spawn(worker.run());
 
@@ -58,6 +62,7 @@ impl WalletService {
             storage,
             fvk_hash,
             error_slot,
+            worker_shutdown_tx: tx,
         })
     }
 

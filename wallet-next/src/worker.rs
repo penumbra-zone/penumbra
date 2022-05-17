@@ -5,6 +5,7 @@ use penumbra_crypto::{merkle::NoteCommitmentTree, FullViewingKey};
 use penumbra_proto::client::oblivious::{
     oblivious_query_client::ObliviousQueryClient, CompactBlockRangeRequest,
 };
+use tokio::sync::mpsc::{error::TryRecvError, Receiver};
 use tonic::transport::Channel;
 #[derive(Clone)]
 pub struct Worker {
@@ -13,6 +14,8 @@ pub struct Worker {
     nct: NoteCommitmentTree,
     fvk: FullViewingKey, // TODO: notifications (see TODOs on WalletService)
     error_slot: Arc<Mutex<Option<anyhow::Error>>>,
+    // This is in an `Arc` because `Receiver` is not `Clone`.
+    shutdown_rx: Arc<Mutex<Receiver<()>>>,
 }
 
 impl Worker {
@@ -20,6 +23,7 @@ impl Worker {
         storage: Storage,
         client: ObliviousQueryClient<Channel>,
         error_slot: Arc<Mutex<Option<anyhow::Error>>>,
+        rx: Receiver<()>,
     ) -> Result<Self, anyhow::Error> {
         let nct = storage.note_commitment_tree().await?;
         let fvk = storage.full_viewing_key().await?;
@@ -29,6 +33,7 @@ impl Worker {
             nct,
             fvk,
             error_slot,
+            shutdown_rx: Arc::new(Mutex::new(rx)),
         })
     }
 
@@ -71,22 +76,37 @@ impl Worker {
     pub async fn run(mut self) -> Result<(), anyhow::Error> {
         loop {
             match self._run().await {
-                Ok(_) => {}
+                Ok(_) => {
+                    // If the worker returns `Ok` then it means it's done, so we can
+                    // stop looping.
+                    break;
+                }
                 Err(e) => {
                     tracing::info!(?e, "wallet worker error");
                     self.error_slot.lock().unwrap().replace(e);
                 }
             };
         }
+
+        Ok(())
     }
 
     async fn _run(&mut self) -> Result<(), anyhow::Error> {
         loop {
             self.sync_to_latest().await?;
 
+            if let Err(TryRecvError::Disconnected) = self.shutdown_rx.lock().unwrap().try_recv() {
+                // All senders have been dropped, so we can shut down.
+                tracing::info!("All senders dropped, wallet worker shutting down.");
+                break;
+            }
+
             // TODO 1: randomize sleep interval within some range?
             // TODO 2: use websockets to be notified on new block
             tokio::time::sleep(std::time::Duration::from_millis(1729)).await;
         }
+
+        // If this is returned, it means the loop was broken by a shutdown signal.
+        Ok(())
     }
 }
