@@ -41,6 +41,11 @@ impl TransactionPlan {
         let mut actions = Vec::new();
         let mut synthetic_blinding_factor = Fr::zero();
 
+        // We build the actions sorted by type, with all spends first, then all
+        // outputs, etc.  This order has to align with the ordering in
+        // TransactionPlan::auth_hash, which computes the auth hash of the
+        // transaction we'll build here without actually building it.
+
         // Build the transaction's spends.
         for ((spend_plan, auth_sig), auth_path) in self
             .spend_plans()
