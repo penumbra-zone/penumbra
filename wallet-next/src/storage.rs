@@ -176,15 +176,6 @@ impl Storage {
             None => "diversifier_index".to_string(),
         };
 
-        // If set, stop returning notes once the total exceeds this amount.
-        //
-        // Ignored if `asset_id` is unset or if `include_spent` is set.
-        // uint64 amount_to_spend = 5;
-
-        if asset_id.is_none() || include_spent {
-            //TODO: figure out a clever way to only return notes up to the sum using SQL
-        }
-
         let result = sqlx::query!(
             "SELECT * 
             FROM notes 
@@ -197,6 +188,14 @@ impl Storage {
         )
         .fetch_all(&self.pool)
         .await?;
+
+        // If set, stop returning notes once the total exceeds this amount.
+        //
+        // Ignored if `asset_id` is unset or if `include_spent` is set.
+        // uint64 amount_to_spend = 5;
+        //TODO: figure out a clever way to only return notes up to the sum using SQL
+        let amount_cutoff = !(include_spent || asset_id.is_none());
+        let mut amount_total = 0;
 
         let mut output: Vec<NoteRecord> = Vec::new();
 
@@ -220,7 +219,17 @@ impl Storage {
                 } else {
                     Some(record.height_spent.unwrap() as u64)
                 }, //height_spent is nullable
-            })
+            });
+
+            // If we're tracking amounts, accumulate the value of the note
+            // and check if we should break out of the loop.
+            if amount_cutoff {
+                // We know all the notes are of the same type, so adding raw quantities makes sense.
+                amount_total += record.amount as u64;
+                if amount_total >= amount_to_spend {
+                    break;
+                }
+            }
         }
 
         Ok(output)
