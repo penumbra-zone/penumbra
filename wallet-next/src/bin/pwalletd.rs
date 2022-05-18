@@ -20,7 +20,7 @@ struct Opt {
     #[structopt(subcommand)]
     cmd: Command,
     /// The path used to store the SQLite state database.
-    #[structopt(long, default_value = "sqlite:///tmp/pwalletd-dev-db.sqlite")]
+    #[structopt(short, long, default_value = "pwalletd-db.sqlite")]
     sqlite_path: String,
 }
 
