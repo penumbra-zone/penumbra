@@ -1,8 +1,8 @@
 #![allow(clippy::clone_on_copy)]
 use anyhow::Result;
-use penumbra_chain::params::ChainParams;
 use penumbra_crypto::FullViewingKey;
 use penumbra_proto::client::oblivious::oblivious_query_client::ObliviousQueryClient;
+use penumbra_proto::client::oblivious::ChainParamsRequest;
 use penumbra_proto::wallet::wallet_protocol_server::WalletProtocolServer;
 use penumbra_wallet_next::WalletService;
 use std::env;
@@ -55,15 +55,22 @@ async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
     let opt = Opt::from_args();
 
-    let client =
+    let mut client =
         ObliviousQueryClient::connect(format!("http://{}:{}", opt.node, opt.pd_port)).await?;
 
     match opt.cmd {
         Command::Init { full_viewing_key } => {
+            let params = client
+                .chain_params(tonic::Request::new(ChainParamsRequest {
+                    chain_id: String::new(),
+                }))
+                .await?
+                .into_inner()
+                .try_into()?;
             penumbra_wallet_next::Storage::initialize(
                 opt.sqlite_path,
                 FullViewingKey::from_str(full_viewing_key.as_ref())?,
-                ChainParams::default(),
+                params,
             )
             .await?;
             Ok(())
