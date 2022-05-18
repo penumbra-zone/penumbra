@@ -132,6 +132,8 @@ impl Root {
 
 pub trait TreeExt {
     fn root2(&self) -> Root;
+
+    fn auth_path(&self, note_commitment: note::Commitment) -> Option<AuthPath>;
 }
 
 impl<T> TreeExt for T
@@ -140,6 +142,15 @@ where
 {
     fn root2(&self) -> Root {
         Root(self.root().0)
+    }
+
+    fn auth_path(&self, note_commitment: note::Commitment) -> Option<AuthPath> {
+        self.authentication_path(&note_commitment)
+            .map(|(position, path)| AuthPath {
+                note_commitment,
+                position,
+                path,
+            })
     }
 }
 
