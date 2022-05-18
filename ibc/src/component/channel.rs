@@ -305,6 +305,17 @@ pub trait View: StateExt {
         )
         .await;
     }
+    async fn seen_packet(&self, packet: &Packet) -> Result<bool> {
+        self.get_proto::<String>(
+            format!(
+                "receipts/ports/{}/channels/{}/receipts/{}",
+                packet.destination_port, packet.destination_channel, packet.sequence
+            )
+            .into(),
+        )
+        .await
+        .map(|res| res.is_some())
+    }
 }
 
 impl<T: StateExt> View for T {}

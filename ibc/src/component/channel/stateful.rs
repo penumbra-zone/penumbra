@@ -9,11 +9,8 @@ mod proof_verification {
     use ibc::core::ics24_host::Path;
     use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 
-    use crate::component::client::View as _;
-    use ibc::core::ics02_client::client_consensus::AnyConsensusState;
     use ibc::core::ics02_client::client_state::AnyClientState;
     use ibc::core::ics04_channel::context::calculate_block_delay;
-    use ibc::core::ics24_host::identifier::ClientId;
     use ibc::core::ics24_host::path::CommitmentsPath;
     use ibc::downcast;
     use penumbra_chain::View as _;
@@ -97,65 +94,6 @@ mod proof_verification {
 
     #[async_trait]
     pub trait PacketProofVerifier: StateExt {
-        async fn verify_packet_data(
-            &self,
-            client_id: &ClientId,
-            client_state: &AnyClientState,
-            connection: &ConnectionEnd,
-            packet: &Packet,
-            proofs: &ibc::proofs::Proofs,
-            trusted_consensus_state: &AnyConsensusState,
-        ) -> anyhow::Result<()> {
-            // currently only tendermint clients.
-            let tm_client_state = downcast!(client_state => AnyClientState::Tendermint)
-                .ok_or(anyhow::anyhow!("client state is not tendermint"))?;
-
-            tm_client_state.verify_height(proofs.height())?;
-            let current_timestamp = self.get_block_timestamp().await?;
-            let current_height = self.get_block_height().await?;
-
-            let processed_height = self
-                .get_client_update_height(client_id, &proofs.height())
-                .await?;
-
-            let processed_time = self
-                .get_client_update_time(client_id, &proofs.height())
-                .await?;
-
-            // NOTE: hardcoded for now, should be a chain parameter.
-            let max_time_per_block = std::time::Duration::from_secs(20);
-
-            let delay_period_time = connection.delay_period();
-            let delay_period_blocks = calculate_block_delay(delay_period_time, max_time_per_block);
-
-            /*
-            if current_timestamp < processed_time + delay_period_time {
-                return Err(anyhow::anyhow!("not enough time has passed for packet"));
-            }
-            if current_height < processed_height + delay_period_blocks {
-                return Err(anyhow::anyhow!("not enough blocks have passed for packet"));
-            }*/
-
-            let commitment_path = CommitmentsPath {
-                port_id: packet.destination_port.clone(),
-                channel_id: packet.destination_channel.clone(),
-                sequence: packet.sequence,
-            };
-
-            let commitment_bytes = commit_packet(&packet);
-
-            verify_merkle_proof(
-                &tm_client_state.proof_specs,
-                connection.counterparty().prefix(),
-                proofs.object_proof(),
-                trusted_consensus_state.root(),
-                commitment_path,
-                commitment_bytes,
-            )?;
-
-            Ok(())
-        }
-
         async fn verify_packet_proof(
             &self,
             connection: &ConnectionEnd,
@@ -176,15 +114,55 @@ mod proof_verification {
                 .get_verified_consensus_state(proofs.height(), connection.client_id().clone())
                 .await?;
 
-            self.verify_packet_data(
-                &connection.client_id(),
-                &trusted_client_state,
-                connection,
-                packet,
-                proofs,
-                &trusted_consensus_state,
-            )
-            .await?;
+            // currently only tendermint clients.
+            let tm_client_state = downcast!(trusted_client_state => AnyClientState::Tendermint)
+                .ok_or(anyhow::anyhow!("client state is not tendermint"))?;
+
+            tm_client_state.verify_height(proofs.height())?;
+            let current_timestamp = self.get_block_timestamp().await?;
+            let current_height = self.get_block_height().await?;
+
+            let processed_height = self
+                .get_client_update_height(&connection.client_id(), &proofs.height())
+                .await?;
+
+            let processed_time = self
+                .get_client_update_time(&connection.client_id(), &proofs.height())
+                .await?;
+
+            // NOTE: hardcoded for now, should probably be a chain parameter.
+            let max_time_per_block = std::time::Duration::from_secs(20);
+
+            let delay_period_time = connection.delay_period();
+            let delay_period_blocks = calculate_block_delay(delay_period_time, max_time_per_block);
+
+            if current_timestamp
+                < (processed_time + delay_period_time)?
+                    .into_tm_time()
+                    .ok_or(anyhow::anyhow!("invalid timestamp"))?
+            {
+                return Err(anyhow::anyhow!("not enough time has passed for packet"));
+            }
+            if current_height < processed_height.add(delay_period_blocks).revision_height {
+                return Err(anyhow::anyhow!("not enough blocks have passed for packet"));
+            }
+
+            let commitment_path = CommitmentsPath {
+                port_id: packet.destination_port.clone(),
+                channel_id: packet.destination_channel.clone(),
+                sequence: packet.sequence,
+            };
+
+            let commitment_bytes = commit_packet(&packet);
+
+            verify_merkle_proof(
+                &tm_client_state.proof_specs,
+                connection.counterparty().prefix(),
+                proofs.object_proof(),
+                trusted_consensus_state.root(),
+                commitment_path,
+                commitment_bytes,
+            )?;
 
             Ok(())
         }
@@ -549,17 +527,9 @@ pub mod channel_close_confirm {
     impl<T: StateExt> ChannelCloseConfirmCheck for T {}
 }
 
-mod packet_validation {
-    use super::super::*;
-
-    #[async_trait]
-    pub trait PacketValidation {}
-
-    impl<T: StateExt> PacketValidation for T {}
-}
-
 pub mod recv_packet {
     use super::super::*;
+    use super::proof_verification::PacketProofVerifier;
     use ibc::timestamp::Timestamp as IBCTimestamp;
     use ibc::Height as IBCHeight;
     use penumbra_chain::View as _;
@@ -618,6 +588,26 @@ pub mod recv_packet {
                         .ok_or(anyhow::anyhow!("invalid timestamp"))?
             {
                 return Err(anyhow::anyhow!("packet has timed out"));
+            }
+
+            self.verify_packet_proof(&connection, &msg.proofs, &msg.packet)
+                .await?;
+
+            if channel.ordering == ChannelOrder::Ordered {
+                let next_sequence_recv = self
+                    .get_recv_sequence(
+                        &msg.packet.destination_channel,
+                        &msg.packet.destination_port,
+                    )
+                    .await?;
+
+                if msg.packet.sequence != next_sequence_recv.into() {
+                    return Err(anyhow::anyhow!("packet sequence number does not match"));
+                }
+            } else {
+                if self.seen_packet(&msg.packet).await? {
+                    return Err(anyhow::anyhow!("packet has already been processed"));
+                }
             }
 
             Ok(())
