@@ -88,12 +88,23 @@ impl Component for ShieldedPool {
             .unwrap();
         }
 
-        self.compact_block.height = 0;
+        self.compact_block.height = self
+            .state
+            .get_block_height()
+            .await
+            .expect("block height must be set");
+
         self.write_compactblock_and_nct().await.unwrap();
     }
 
     #[instrument(name = "shielded_pool", skip(self, _begin_block))]
-    async fn begin_block(&mut self, _begin_block: &abci::request::BeginBlock) {}
+    async fn begin_block(&mut self, _begin_block: &abci::request::BeginBlock) {
+        self.compact_block.height = self
+            .state
+            .get_block_height()
+            .await
+            .expect("block height must be set");
+    }
 
     #[instrument(name = "shielded_pool", skip(tx))]
     fn check_tx_stateless(tx: &Transaction) -> Result<()> {
@@ -216,13 +227,25 @@ impl Component for ShieldedPool {
 
     #[instrument(name = "shielded_pool", skip(self, end_block))]
     async fn end_block(&mut self, end_block: &abci::request::EndBlock) {
-        // Set the height of the compact block, now that we got it in end_block
-        self.compact_block.height = end_block.height as u64;
+        // Get the current block height
+        let height = self
+            .state
+            .get_block_height()
+            .await
+            .expect("block height must be set");
+
+        if height != (end_block.height as u64) {
+            tracing::error!(
+                "end block height {} does not match current height {}",
+                end_block.height,
+                height
+            );
+        }
 
         // Handle any pending reward notes from the Staking component
         let notes = self
             .state
-            .commission_amounts(self.compact_block.height)
+            .commission_amounts(height)
             .await
             .unwrap()
             .unwrap_or_default();
@@ -230,11 +253,8 @@ impl Component for ShieldedPool {
         // TODO: should we calculate this here or include it directly within the PendingRewardNote
         // to prevent a potential mismatch between Staking and ShieldedPool?
         let source = NoteSource::FundingStreamReward {
-            epoch_index: Epoch::from_height(
-                self.compact_block.height,
-                self.state.get_epoch_duration().await.unwrap(),
-            )
-            .index,
+            epoch_index: Epoch::from_height(height, self.state.get_epoch_duration().await.unwrap())
+                .index,
         };
 
         for note in notes.notes {
@@ -258,14 +278,14 @@ impl Component for ShieldedPool {
 
         // If the block ends an epoch, also close the epoch in the TCT
         if Epoch::from_height(
-            self.compact_block.height,
+            height,
             self.state
                 .get_chain_params()
                 .await
                 .expect("chain params request must succeed")
                 .epoch_duration,
         )
-        .is_epoch_end(self.compact_block.height)
+        .is_epoch_end(height)
         {
             // TODO: replace this with an `expect!` when this is consensus-critical
             if let Err(e) = self.tiered_commitment_tree.end_epoch() {
@@ -391,13 +411,15 @@ impl ShieldedPool {
 
     #[instrument(skip(self))]
     async fn write_compactblock_and_nct(&mut self) -> Result<()> {
+        // Extract the compact block, resetting it
+        let compact_block = std::mem::take(&mut self.compact_block);
+        let height = compact_block.height;
+
         // Write the CompactBlock:
-        self.state
-            .set_compact_block(std::mem::take(&mut self.compact_block))
-            .await;
+        self.state.set_compact_block(compact_block).await;
         // and the note commitment tree data and anchor:
         self.state
-            .set_nct_anchor(self.compact_block.height, self.note_commitment_tree.root2())
+            .set_nct_anchor(height, self.note_commitment_tree.root2())
             .await;
 
         Ok(())
