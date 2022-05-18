@@ -1,4 +1,7 @@
 *wallet.dat
+wallet-next/pwalletd-db.sqlite
+wallet-next/pwalletd-db.sqlite-shm
+wallet-next/pwalletd-db.sqlite-wal
 
 book
 .firebase/
