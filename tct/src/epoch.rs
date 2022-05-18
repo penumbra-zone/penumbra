@@ -164,9 +164,15 @@ impl Builder {
         // Try to insert the commitment into the latest block
         self.inner
             .update(|block| {
-                block.insert(item).map_err(|_| InsertError::BlockFull)?;
-                Ok(())
+                // Don't insert into a finalized block (this will fail); create a new one instead
+                // (below)
+                if block.is_finalized() {
+                    return None;
+                }
+
+                Some(block.insert(item).map_err(|_| InsertError::BlockFull))
             })
+            .flatten()
             // If the latest block was finalized already or doesn't exist, create a new block and
             // insert into that block
             .unwrap_or_else(|| {
