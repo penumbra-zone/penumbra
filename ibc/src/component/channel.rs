@@ -7,6 +7,7 @@ use ibc::core::ics02_client::client_def::AnyClient;
 use ibc::core::ics02_client::client_def::ClientDef;
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics03_connection::connection::{ConnectionEnd, State as ConnectionState};
+use ibc::core::ics04_channel::channel::Order as ChannelOrder;
 use ibc::core::ics04_channel::channel::State as ChannelState;
 use ibc::core::ics04_channel::channel::{ChannelEnd, Counterparty};
 use ibc::core::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
@@ -198,6 +199,12 @@ impl Component for ICS4Channel {
 
                     self.state.execute(&msg).await;
                 }
+                Some(RecvPacket(msg)) => {
+                    use execution::recv_packet::RecvPacketExecute;
+                    let msg = MsgRecvPacket::try_from(msg.clone()).unwrap();
+
+                    self.state.execute(&msg).await;
+                }
 
                 // Other IBC messages are not handled by this component.
                 _ => {}
@@ -243,6 +250,17 @@ pub trait View: StateExt {
         )
         .await;
     }
+    async fn get_recv_sequence(&self, channel_id: &ChannelId, port_id: &PortId) -> Result<u64> {
+        self.get_proto::<u64>(
+            format!(
+                "seqRecvs/ports/{}/channels/{}/nextSequenceRecv",
+                port_id, channel_id
+            )
+            .into(),
+        )
+        .await
+        .map(|sequence| sequence.unwrap_or(0))
+    }
     async fn put_ack_sequence(&mut self, channel_id: &ChannelId, port_id: &PortId, sequence: u64) {
         self.put_proto::<u64>(
             format!(
@@ -273,6 +291,17 @@ pub trait View: StateExt {
             )
             .into(),
             sequence,
+        )
+        .await;
+    }
+    async fn put_packet_receipt(&mut self, packet: &Packet) {
+        self.put_proto::<String>(
+            format!(
+                "receipts/ports/{}/channels/{}/receipts/{}",
+                packet.destination_port, packet.destination_channel, packet.sequence
+            )
+            .into(),
+            "1".to_string(),
         )
         .await;
     }
