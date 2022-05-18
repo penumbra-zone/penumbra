@@ -73,6 +73,13 @@ impl Storage {
             .execute(&mut tx)
             .await?;
 
+        // Insert -1 as a signaling value for pre-genesis.
+        // We just have to be careful to treat negative values as None
+        // in last_sync_height.
+        sqlx::query!("INSERT INTO sync_height (height) VALUES (?)", -1i64)
+            .execute(&mut tx)
+            .await?;
+
         tx.commit().await?;
 
         Ok(Storage { pool })
@@ -88,10 +95,11 @@ impl Storage {
             LIMIT 1
         "#
         )
-        .fetch_optional(&self.pool)
+        .fetch_one(&self.pool)
         .await?;
 
-        Ok(result.map(|row| row.height as u64))
+        // Special-case negative values to None
+        Ok(u64::try_from(result.height).ok())
     }
 
     pub async fn chain_params(&self) -> anyhow::Result<ChainParams> {
