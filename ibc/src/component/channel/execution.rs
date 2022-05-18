@@ -176,3 +176,42 @@ pub mod recv_packet {
 
     impl<T: StateExt> RecvPacketExecute for T {}
 }
+
+pub mod acknowledge_packet {
+    use super::super::*;
+
+    #[async_trait]
+    pub trait AcknowledgePacketExecute: StateExt {
+        async fn execute(&mut self, msg: &MsgAcknowledgement) {
+            let channel = self
+                .get_channel(&msg.packet.source_channel, &msg.packet.source_port)
+                .await
+                .unwrap()
+                .unwrap();
+
+            if channel.ordering == ChannelOrder::Ordered {
+                let mut next_sequence_ack = self
+                    .get_ack_sequence(&msg.packet.source_channel, &msg.packet.source_port)
+                    .await
+                    .unwrap();
+                next_sequence_ack += 1;
+                self.put_ack_sequence(
+                    &msg.packet.source_channel,
+                    &msg.packet.source_port,
+                    next_sequence_ack,
+                )
+                .await;
+            }
+
+            // delete our commitment so we can't ack it again
+            self.delete_packet_commitment(
+                &msg.packet.source_channel,
+                &msg.packet.source_port,
+                msg.packet.sequence.into(),
+            )
+            .await;
+        }
+    }
+
+    impl<T: StateExt> AcknowledgePacketExecute for T {}
+}
