@@ -5,7 +5,7 @@ use std::{
 };
 
 use anyhow::anyhow;
-use penumbra_chain::{params::ChainParams, sync::CompactBlock};
+use penumbra_chain::{params::ChainParams, sync::CompactBlock, Epoch};
 use penumbra_crypto::{
     asset::{self, Denom},
     memo,
@@ -14,6 +14,7 @@ use penumbra_crypto::{
     STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
 };
 use penumbra_stake::{rate::RateData, validator};
+use penumbra_tct as tct;
 use penumbra_transaction::Transaction;
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
@@ -38,6 +39,8 @@ pub struct ClientState {
     last_block_height: Option<u64>,
     /// Note commitment tree.
     note_commitment_tree: NoteCommitmentTree,
+    /// Tiered commitment tree.
+    tiered_commitment_tree: penumbra_tct::Tree,
     /// Our nullifiers and the notes they correspond to.
     nullifier_map: BTreeMap<Nullifier, note::Commitment>,
     /// Notes that we have received.
@@ -103,6 +106,7 @@ impl ClientState {
         Self {
             last_block_height: None,
             note_commitment_tree: NoteCommitmentTree::new(MAX_MERKLE_CHECKPOINTS_CLIENT),
+            tiered_commitment_tree: tct::Tree::new(),
             nullifier_map: BTreeMap::new(),
             unspent_set: BTreeMap::new(),
             submitted_spend_set: BTreeMap::new(),
@@ -757,6 +761,9 @@ impl ClientState {
             "starting block scan"
         );
 
+        // // Add commitments to this block
+        // let mut block = tct::builder::block::Builder::new();
+
         for NotePayload {
             note_commitment,
             ephemeral_key,
@@ -767,6 +774,9 @@ impl ClientState {
             tracing::debug!(?note_commitment, "appending to note commitment tree");
             self.note_commitment_tree.append(&note_commitment);
 
+            // Keep track of whether we successfully trial-decrypted the note
+            let witness: tct::Witness;
+
             // Try to decrypt the encrypted note using the ephemeral key and persistent incoming
             // viewing key -- if it doesn't decrypt, it wasn't meant for us.
             if let Ok(note) = Note::decrypt(
@@ -774,6 +784,9 @@ impl ClientState {
                 self.wallet.incoming_viewing_key(),
                 &ephemeral_key,
             ) {
+                // This note commitment should be remembered
+                witness = tct::Witness::Keep;
+
                 tracing::debug!(?note_commitment, ?note, "found note while scanning");
                 // Mark the most-recently-inserted note commitment (the one corresponding to this
                 // note) as worth keeping track of, because it's ours
@@ -798,8 +811,40 @@ impl ClientState {
 
                 // Insert the note into the received set
                 self.unspent_set.insert(note_commitment, note.clone());
+            } else {
+                // This note commitment should be forgotten
+                witness = tct::Witness::Forget;
+            }
+
+            // TODO: replace this with a `?` when this is consensus-critical
+            if let Err(e) = self.tiered_commitment_tree.insert(witness, note_commitment) {
+                tracing::error!(error = ?e, "failed to insert note commitment into TCT");
             }
         }
+
+        // Insert the constructed block into the commitment tree
+        if let Err(e) = self.tiered_commitment_tree.end_block() {
+            tracing::error!(error = ?e, "failed to end block in TCT");
+        }
+
+        // If we've also reached the end of the epoch, end the epoch in the commitment tree
+        if Epoch::from_height(
+            height,
+            self.chain_params
+                .as_ref()
+                .expect("chain params must be set")
+                .epoch_duration,
+        )
+        .is_epoch_end(height)
+        {
+            // TODO: replace this with an `expect!` when this is consensus-critical
+            if let Err(e) = self.tiered_commitment_tree.end_epoch() {
+                tracing::error!(error = ?e, "failed to end epoch in TCT");
+            }
+        }
+
+        // Print the TCT root for debugging
+        tracing::debug!(tct_root = %self.tiered_commitment_tree.root(), "tct root");
 
         // Scan through the list of nullifiers to find those which refer to notes in our unspent
         // set, submitted change set, or submitted spend set and move them into the spent set.
@@ -869,6 +914,8 @@ mod serde_helpers {
         last_block_height: Option<u64>,
         #[serde_as(as = "serde_with::hex::Hex")]
         note_commitment_tree: Vec<u8>,
+        #[serde_as(as = "serde_with::hex::Hex")]
+        tiered_commitment_tree: Vec<u8>,
         nullifier_map: Vec<(String, String)>,
         unspent_set: Vec<(String, String)>,
         #[serde(default, alias = "pending_set")]
@@ -928,6 +975,7 @@ mod serde_helpers {
                 wallet: state.wallet,
                 last_block_height: state.last_block_height,
                 note_commitment_tree: bincode::serialize(&state.note_commitment_tree).unwrap(),
+                tiered_commitment_tree: bincode::serialize(&state.tiered_commitment_tree).unwrap(),
                 nullifier_map: state
                     .nullifier_map
                     .iter()
@@ -1046,6 +1094,7 @@ mod serde_helpers {
                 wallet: state.wallet,
                 last_block_height: state.last_block_height,
                 note_commitment_tree: bincode::deserialize(&state.note_commitment_tree)?,
+                tiered_commitment_tree: bincode::deserialize(&state.tiered_commitment_tree)?,
                 nullifier_map,
                 unspent_set,
                 submitted_spend_set,
