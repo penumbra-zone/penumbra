@@ -142,12 +142,7 @@ impl Builder {
         // Keep track of the position of this just-inserted commitment in the index, if it was
         // slated to be kept
         if let Witness::Keep = witness {
-            if let Some(replaced) = self.index.insert(
-                commitment,
-                index::within::Block {
-                    commitment: position,
-                },
-            ) {
+            if let Some(replaced) = self.index.insert(commitment, position) {
                 // This case is handled for completeness, but should not happen in
                 // practice because commitments should be unique
                 let forgotten = self.inner.forget(replaced);
