@@ -100,8 +100,9 @@ impl StakeCmd {
                     .into_inner()
                     .try_into()?;
 
-                let transaction =
-                    state.build_delegate(&mut OsRng, rate_data, unbonded_amount, *fee, *source)?;
+                let plan =
+                    state.plan_delegate(&mut OsRng, rate_data, unbonded_amount, *fee, *source)?;
+                let transaction = state.build_transaction(OsRng, plan)?;
 
                 opt.submit_transaction(&transaction).await?;
                 // Only commit the state if the transaction was submitted successfully,
@@ -135,13 +136,14 @@ impl StakeCmd {
                     .into_inner()
                     .try_into()?;
 
-                let transaction = state.build_undelegate(
+                let plan = state.plan_undelegate(
                     &mut OsRng,
                     rate_data,
                     delegation_amount,
                     *fee,
                     *source,
                 )?;
+                let transaction = state.build_transaction(OsRng, plan)?;
 
                 opt.submit_transaction(&transaction).await?;
                 // Only commit the state if the transaction was submitted successfully,

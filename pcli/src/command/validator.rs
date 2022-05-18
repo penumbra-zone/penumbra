@@ -93,8 +93,8 @@ impl ValidatorCmd {
                     auth_sig,
                 };
                 // Construct a new transaction and include the validator definition.
-                let transaction =
-                    state.build_validator_definition(&mut OsRng, vd, *fee, *source)?;
+                let plan = state.plan_validator_definition(&mut OsRng, vd, *fee, *source)?;
+                let transaction = state.build_transaction(OsRng, plan)?;
 
                 opt.submit_transaction(&transaction).await?;
                 // Only commit the state if the transaction was submitted
