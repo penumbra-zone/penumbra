@@ -88,11 +88,8 @@ impl Component for ShieldedPool {
             .unwrap();
         }
 
-        self.compact_block.height = self
-            .state
-            .get_block_height()
-            .await
-            .expect("block height must be set");
+        // Hard-coded to zero because we are in the genesis block
+        self.compact_block.height = 0;
 
         self.write_compactblock_and_nct().await.unwrap();
     }
@@ -233,14 +230,6 @@ impl Component for ShieldedPool {
             .get_block_height()
             .await
             .expect("block height must be set");
-
-        if height != (end_block.height as u64) {
-            tracing::error!(
-                "end block height {} does not match current height {}",
-                end_block.height,
-                height
-            );
-        }
 
         // Handle any pending reward notes from the Staking component
         let notes = self
@@ -415,7 +404,7 @@ impl ShieldedPool {
     async fn write_compactblock_and_nct(&mut self) -> Result<()> {
         // Extract the compact block, resetting it
         let compact_block = std::mem::take(&mut self.compact_block);
-        let height = compact_block.height;
+        let height = self.state.get_block_height().await?;
 
         // Write the CompactBlock:
         self.state.set_compact_block(compact_block).await;
