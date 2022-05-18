@@ -293,4 +293,14 @@ mod test {
     fn check_inner_size() {
         static_assertions::assert_eq_size!(Tier<Tier<Tier<frontier::Item>>>, [u8; 64]);
     }
+
+    #[test]
+    fn position_advances_by_one() {
+        let mut tier: Tier<Item> = Tier::new(Hash::zero().into());
+        for expected_position in 1..=(u16::MAX as u64) {
+            assert_eq!(tier.position(), Some(expected_position));
+            tier.insert(Hash::zero().into()).unwrap();
+        }
+        assert_eq!(tier.position(), None);
+    }
 }

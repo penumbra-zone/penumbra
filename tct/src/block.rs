@@ -160,6 +160,15 @@ impl Builder {
         Root(self.inner.hash())
     }
 
+    /// Get the current position of this block builder.
+    pub fn position(&self) -> Option<u16> {
+        self.inner.position().map(|position| {
+            position
+                .try_into()
+                .expect("position is less than `u16::MAX`")
+        })
+    }
+
     /// Finalize this block builder returning a finalized block and resetting the underlying builder
     /// to the initial empty state.
     pub fn finalize(&mut self) -> Finalized {

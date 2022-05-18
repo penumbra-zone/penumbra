@@ -166,17 +166,18 @@ impl<Child: Focus + GetPosition> GetPosition for Node<Child> {
     #[inline]
     fn position(&self) -> Option<u64> {
         let siblings = self.siblings.len() as u64;
+        let child_height = u32::from(Self::Height::HEIGHT) - 1;
 
         if let Some(focus_position) = self.focus.position() {
             // next insertion would be at: siblings * 4^height + focus_position
             // because we don't need to add a new child
-            Some((siblings << (Self::Height::HEIGHT << 1)) + focus_position)
+            Some(siblings * 4u64.pow(child_height) + focus_position)
         } else if siblings + 1 < 4
         /* this means adding a new child is possible */
         {
             // next insertion would be at: (siblings + 1) * 4^height
             // because we have to add a new child, and we can
-            Some((siblings + 1) << (Self::Height::HEIGHT << 1))
+            Some((siblings + 1) * 4u64.pow(child_height))
         } else {
             None
         }
