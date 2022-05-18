@@ -31,9 +31,13 @@ impl Storage {
         fvk: FullViewingKey,
         params: ChainParams,
     ) -> anyhow::Result<Self> {
-        //   Check that the file at the given path does not exist;
+        tracing::debug!(?storage_path, ?fvk, ?params);
+        // We don't want to overwrite existing data,
+        // but also, SQLX will complain if the file doesn't already exist
         if PathBuf::from(&storage_path).exists() {
             return Err(anyhow!("Database already exists at: {}", storage_path));
+        } else {
+            std::fs::File::create(&storage_path)?;
         }
         // Create the SQLite database
         sqlx::Sqlite::create_database(&storage_path);
