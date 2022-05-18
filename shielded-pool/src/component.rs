@@ -373,9 +373,6 @@ impl ShieldedPool {
         // 1. Insert it into the NCT
         self.note_commitment_tree
             .append(&note_payload.note_commitment);
-        self.tiered_commitment_tree
-            .insert(penumbra_tct::Witness::Forget, note_payload.note_commitment)
-            .expect("inserting a commitment into the TCT should never fail");
 
         // TODO: replace this with an `expect!` when this is consensus-critical
         if let Err(e) = self
