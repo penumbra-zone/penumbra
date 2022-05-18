@@ -22,6 +22,15 @@ struct Opt {
     /// The path used to store the SQLite state database.
     #[structopt(short, long, default_value = "pwalletd-db.sqlite")]
     sqlite_path: String,
+    /// The address of the pd+tendermint node.
+    #[structopt(short, long, default_value = "testnet.penumbra.zone")]
+    node: String,
+    /// The port to use to speak to tendermint's RPC server.
+    #[structopt(long, default_value = "26657")]
+    tendermint_port: u16,
+    /// The port to use to speak to pd's gRPC server.
+    #[structopt(long, default_value = "8080")]
+    pd_port: u16,
 }
 
 #[derive(Debug, StructOpt)]
@@ -39,21 +48,15 @@ enum Command {
         /// Bind the wallet gRPC server to this port.
         #[structopt(long, default_value = "8081")]
         wallet_port: u16,
-        /// The address of the pd+tendermint node.
-        #[structopt(short, long, default_value = "testnet.penumbra.zone")]
-        node: String,
-        /// The port to use to speak to tendermint's RPC server.
-        #[structopt(long, default_value = "26657")]
-        tendermint_port: u16,
-        /// The port to use to speak to pd's gRPC server.
-        #[structopt(long, default_value = "8080")]
-        pd_port: u16,
     },
 }
 #[tokio::main]
 async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
     let opt = Opt::from_args();
+
+    let client =
+        ObliviousQueryClient::connect(format!("http://{}:{}", opt.node, opt.pd_port)).await?;
 
     match opt.cmd {
         Command::Init { full_viewing_key } => {
@@ -65,18 +68,11 @@ async fn main() -> Result<()> {
             .await?;
             Ok(())
         }
-        Command::Start {
-            host,
-            wallet_port,
-            node,
-            tendermint_port,
-            pd_port,
-        } => {
-            tracing::info!(?opt.sqlite_path, ?host, ?wallet_port, ?node, ?tendermint_port, ?pd_port, "starting pwalletd");
+        Command::Start { host, wallet_port } => {
+            tracing::info!(?opt.sqlite_path, ?host, ?wallet_port, ?opt.node, ?opt.tendermint_port, ?opt.pd_port, "starting pwalletd");
 
             let storage = penumbra_wallet_next::Storage::load(opt.sqlite_path).await?;
-            let client =
-                ObliviousQueryClient::connect(format!("http://{}:{}", node, pd_port)).await?;
+
             let service = WalletService::new(storage, client).await?;
 
             tokio::task::Builder::new()
@@ -89,9 +85,9 @@ async fn main() -> Result<()> {
                                 .parse()
                                 .expect("this is a valid address"),
                         ),
-                );
-
-            todo!()
+                )
+                .await?
+                .map_err(|_| anyhow::anyhow!("tonic transport error on start"))
         }
     }
 }
