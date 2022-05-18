@@ -37,8 +37,17 @@ enum Command {
         #[structopt(short, long, default_value = "127.0.0.1")]
         host: String,
         /// Bind the wallet gRPC server to this port.
-        #[structopt(short, long, default_value = "8081")]
+        #[structopt(long, default_value = "8081")]
         wallet_port: u16,
+        /// The address of the pd+tendermint node.
+        #[structopt(short, long, default_value = "testnet.penumbra.zone")]
+        node: String,
+        /// The port to use to speak to tendermint's RPC server.
+        #[structopt(long, default_value = "26657")]
+        tendermint_port: u16,
+        /// The port to use to speak to pd's gRPC server.
+        #[structopt(long, default_value = "8080")]
+        pd_port: u16,
     },
 }
 #[tokio::main]
@@ -56,12 +65,18 @@ async fn main() -> Result<()> {
             .await?;
             Ok(())
         }
-        Command::Start { host, wallet_port } => {
-            tracing::info!(?opt.sqlite_path, ?host, ?wallet_port, "starting pwalletd");
+        Command::Start {
+            host,
+            wallet_port,
+            node,
+            tendermint_port,
+            pd_port,
+        } => {
+            tracing::info!(?opt.sqlite_path, ?host, ?wallet_port, ?node, ?tendermint_port, ?pd_port, "starting pwalletd");
 
             let storage = penumbra_wallet_next::Storage::load(opt.sqlite_path).await?;
             let client =
-                ObliviousQueryClient::connect(format!("http://{}:{}", host, wallet_port)).await?;
+                ObliviousQueryClient::connect(format!("http://{}:{}", node, pd_port)).await?;
             let service = WalletService::new(storage, client).await?;
 
             tokio::task::Builder::new()
