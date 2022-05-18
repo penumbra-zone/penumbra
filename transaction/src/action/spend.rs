@@ -3,10 +3,9 @@ use std::convert::{TryFrom, TryInto};
 use anyhow::Error;
 use bytes::Bytes;
 use penumbra_crypto::{
-    keys, merkle,
     proofs::transparent::SpendProof,
     rdsa::{Signature, SpendAuth, VerificationKey},
-    value, Fr, Note, Nullifier,
+    value, Nullifier,
 };
 use penumbra_proto::{transaction, Protobuf};
 
@@ -60,45 +59,6 @@ pub struct Body {
     pub value_commitment: value::Commitment,
     pub nullifier: Nullifier,
     pub rk: VerificationKey<SpendAuth>,
-}
-
-impl Body {
-    pub fn new(
-        value_commitment: value::Commitment,
-        ak: VerificationKey<SpendAuth>,
-        spend_auth_randomizer: Fr,
-        merkle_path: merkle::Path,
-        note: Note,
-        v_blinding: Fr,
-        nk: keys::NullifierKey,
-    ) -> (Body, SpendProof) {
-        let rk = ak.randomize(&spend_auth_randomizer);
-        let note_commitment = note.commit();
-        let position = merkle_path.0.clone();
-        let proof = SpendProof {
-            // XXX: the position field duplicates data from the merkle path
-            // probably not worth fixing before we just make them snarks...
-            position,
-            merkle_path,
-            g_d: note.diversified_generator(),
-            pk_d: note.transmission_key(),
-            value: note.value(),
-            v_blinding,
-            note_commitment,
-            note_blinding: note.note_blinding(),
-            spend_auth_randomizer,
-            ak,
-            nk,
-        };
-        (
-            Body {
-                value_commitment,
-                nullifier: nk.derive_nullifier(position, &note_commitment),
-                rk,
-            },
-            proof,
-        )
-    }
 }
 
 impl Protobuf<transaction::SpendBody> for Body {}

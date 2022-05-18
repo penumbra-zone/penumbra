@@ -3,12 +3,7 @@ use std::convert::{TryFrom, TryInto};
 use anyhow::Error;
 use bytes::Bytes;
 use penumbra_crypto::{
-    ka,
-    keys::OutgoingViewingKey,
-    memo::{MemoCiphertext, MemoPlaintext},
-    note,
-    proofs::transparent::OutputProof,
-    value, Address, Fr, Note, NotePayload,
+    memo::MemoCiphertext, note, proofs::transparent::OutputProof, value, NotePayload,
 };
 use penumbra_proto::{transaction as pb, Protobuf};
 
@@ -24,54 +19,6 @@ pub struct Body {
     pub value_commitment: value::Commitment,
     pub encrypted_memo: MemoCiphertext,
     pub ovk_wrapped_key: [u8; note::OVK_WRAPPED_LEN_BYTES],
-}
-
-impl Output {
-    pub fn new(
-        esk: ka::Secret,
-        note: Note,
-        memo: MemoPlaintext,
-        dest: &Address,
-        ovk: &OutgoingViewingKey,
-        v_blinding: Fr,
-    ) -> Output {
-        let diversified_generator = note.diversified_generator();
-        let transmission_key = note.transmission_key();
-
-        // TODO: p. 43 Spec. Decide whether to do leadByte 0x01 method or 0x02 or other.
-
-        // Outputs subtract from the transaction value balance, so commit to -value.
-        let value_commitment = -note.value().commit(v_blinding);
-        let note_commitment = note.commit();
-
-        let ephemeral_key = esk.diversified_public(&note.diversified_generator());
-        let encrypted_note = note.encrypt(&esk);
-        let encrypted_memo = memo.encrypt(&esk, dest);
-        let ovk_wrapped_key = note.encrypt_key(&esk, ovk, value_commitment);
-
-        let proof = OutputProof {
-            g_d: diversified_generator,
-            pk_d: transmission_key,
-            value: note.value(),
-            v_blinding,
-            note_blinding: note.note_blinding(),
-            esk: esk.clone(),
-        };
-
-        Self {
-            body: Body {
-                note_payload: NotePayload {
-                    note_commitment,
-                    ephemeral_key,
-                    encrypted_note,
-                },
-                value_commitment,
-                encrypted_memo,
-                ovk_wrapped_key,
-            },
-            proof,
-        }
-    }
 }
 
 impl Protobuf<pb::Output> for Output {}
