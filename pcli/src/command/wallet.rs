@@ -25,6 +25,8 @@ pub enum WalletCmd {
     },
     /// Export the spend seed for the wallet.
     Export,
+    /// Export the full viewing key for the wallet.
+    ExportFvk,
     /// Generate a new seed phrase.
     Generate,
     /// Keep the spend seed, but reset all other client state.
@@ -40,6 +42,7 @@ impl WalletCmd {
             WalletCmd::Import { .. } => false,
             WalletCmd::ImportFromPhrase { .. } => false,
             WalletCmd::Export => false,
+            WalletCmd::ExportFvk => false,
             WalletCmd::Generate => false,
             WalletCmd::Reset => false,
             WalletCmd::Delete => false,
@@ -76,6 +79,11 @@ impl WalletCmd {
                 let state = ClientStateFile::load(wallet_path.clone())?;
                 let seed = state.wallet().spend_key().seed().clone();
                 println!("{}", hex::encode(&seed.0));
+                None
+            }
+            WalletCmd::ExportFvk => {
+                let state = ClientStateFile::load(wallet_path.clone())?;
+                println!("{}", state.wallet().full_viewing_key());
                 None
             }
             WalletCmd::Delete => {
