@@ -130,10 +130,8 @@ impl Tree {
     /// Returns [`InsertError`] if any of:
     ///
     /// - the [`Tree`] is full,
-    /// - the most recently inserted [`Epoch`] is full or was inserted by
-    /// [`insert_epoch_root`](Tree::insert_epoch_root), or
-    /// - the most recently inserted [`Block`] is full or was inserted by
-    /// [`insert_block_root`](Tree::insert_block_root).
+    /// - the current [`Epoch`] is full, or
+    /// - the current [`Block`] is full.
     pub fn insert(
         &mut self,
         witness: Witness,
@@ -152,20 +150,32 @@ impl Tree {
             .update(|epoch| {
                 epoch
                     .update(|block| {
-                        block
+                        // Don't insert into a finalized block (this will fail); create a new one
+                        // instead (below)
+                        if block.is_finalized() {
+                            return None;
+                        }
+
+                        Some(block
                             .insert(item)
-                            .map_err(|_| InsertError::BlockFull)?;
-                        Ok(())
+                            .map_err(|_| InsertError::BlockFull))
                     })
+                    .flatten()
                     // If the latest block was finalized already or doesn't exist, create a new block and
                     // insert into that block
-                    .unwrap_or_else(|| {
-                        epoch
+                    .or_else(|| {
+                        // Don't insert into a finalized epoch (this will fail); create a new one
+                        // instead (below)
+                        if epoch.is_finalized() {
+                            return None;
+                        }
+
+                        Some(epoch
                             .insert(frontier::Tier::new(item))
-                            .map_err(|_| InsertError::EpochFull)?;
-                        Ok(())
+                            .map_err(|_| InsertError::EpochFull))
                     })
             })
+            .flatten()
             // If the latest epoch was finalized already or doesn't exist, create a new epoch and
             // insert into that epoch
             .unwrap_or_else(|| {
@@ -244,33 +254,22 @@ impl Tree {
     /// # Errors
     ///
     /// Returns [`InsertBlockError`] containing the inserted block without adding it to the [`Tree`]
-    /// if the [`Tree`] is full, or the most recently inserted [`Epoch`] is full or was inserted by
-    /// [`Insert::Hash`].
+    /// if the [`Tree`] is full or the current [`Epoch`] is full.
     pub fn insert_block(
         &mut self,
         block: impl Into<block::Finalized>,
     ) -> Result<&mut Self, InsertBlockError> {
         let block::Finalized { inner, index } = block.into();
 
-        // If the insertion would fail, return an error
-        if let Some(epoch) = self.inner.focus() {
-            if epoch.is_full() {
-                // The current epoch would be full when we tried to insert into it
-                return Err(InsertBlockError::EpochFull(block::Finalized {
-                    inner,
-                    index,
-                }));
-            }
-        } else if self.inner.is_full() {
-            // There is no current epoch, so we would try to create one, but there wouldn't be room
-            return Err(InsertBlockError::Full(block::Finalized { inner, index }));
-        }
-
         // Convert the top level inside of the block to a tier that can be slotted into the epoch
-        let inner = match inner {
+        // We have this be an `Option` because we need to `take` out of it inside closures
+        let mut inner: Option<frontier::Tier<_>> = Some(match inner {
             Insert::Keep(inner) => inner.into(),
             Insert::Hash(hash) => hash.into(),
-        };
+        });
+
+        // We have this be an `Option` because we need to `take` out of it in closures
+        let mut index = Some(index);
 
         // Finalize the latest block, if it exists and is not yet finalized -- this means that
         // position calculations will be correct, since they will start at the next block
@@ -278,31 +277,56 @@ impl Tree {
             .update(|epoch| epoch.update(|block| block.finalize()));
 
         // Get the epoch and block index of the next insertion
-        let index::within::Tree { epoch, block, .. } = self
-            .inner
-            .position()
-            .expect("tree must have a position because it is not full")
+        let position = self.inner.position();
+
+        // Insert the block into the latest epoch, or create a new epoch for it if the latest epoch
+        // does not exist or is finalized
+        self.inner
+            .update(|epoch| {
+                // If the epoch is finalized, create a new one (below) to insert the block into
+                if epoch.is_finalized() {
+                    return None;
+                }
+
+                if epoch.is_full() {
+                    // The current epoch would be full when we tried to insert into it
+                    return Some(Err(InsertBlockError::EpochFull(block::Finalized {
+                        inner: inner.take().unwrap().finalize_owned().map(Into::into),
+                        index: index.take().unwrap(),
+                    })));
+                }
+
+                epoch
+                    .insert(inner.take().unwrap())
+                    .expect("inserting into the current epoch must succeed when it is not full");
+
+                Some(Ok(()))
+            })
+            .flatten()
+            .unwrap_or_else(|| {
+                if self.inner.is_full() {
+                    return Err(InsertBlockError::Full(block::Finalized {
+                        inner: inner.take().unwrap().finalize_owned().map(Into::into),
+                        index: index.take().unwrap(),
+                    }));
+                }
+
+                // Create a new epoch and insert the block into it
+                self.inner
+                    .insert(frontier::Tier::new(inner.take().unwrap()))
+                    .expect("inserting a new epoch must succeed when the tree is not full");
+
+                Ok(())
+            })?;
+
+        // Extract from the position we recorded earlier what the epoch/block indexes for each
+        // inserted commitment should be
+        let index::within::Tree { epoch, block, .. } = position
+            .expect("insertion succeeded so position must exist")
             .into();
 
-        // Insert the inner tree of the block into the epoch
-        if self.inner.focus().is_some() {
-            self.inner
-                .update(|epoch| {
-                    epoch
-                        .insert(inner)
-                        .expect("inserting into current epoch must succeed when it is not full");
-                })
-                .expect("current epoch must exist when top tier has focus");
-        } else {
-            // The current epoch was finalized and there is room to insert a new epoch containing
-            // this block
-            self.inner
-                .insert(frontier::Tier::new(inner))
-                .expect("inserting an epoch must succeed when top of tree is not full");
-        }
-
         // Add the index of all commitments in the block to the global index
-        for (c, index::within::Block { commitment }) in index {
+        for (c, index::within::Block { commitment }) in index.take().unwrap() {
             // If any commitment is repeated, forget the previous one within the tree, since it is
             // now inaccessible
             if let Some(replaced) = self.index.insert(
@@ -400,7 +424,7 @@ impl Tree {
             .expect("tree must have a position because it is not full")
             .into();
 
-        // Insert the inner tree of the eooch into the global tree
+        // Insert the inner tree of the epoch into the global tree
         self.inner
             .insert(inner)
             .expect("inserting an epoch must succeed when tree is not full");
