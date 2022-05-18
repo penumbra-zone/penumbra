@@ -18,6 +18,7 @@ penumbra-chain = { path = "../chain" }
 penumbra-crypto = { path = "../crypto" }
 penumbra-stake = { path = "../stake" }
 penumbra-transaction = { path = "../transaction" }
+penumbra-tct = { path = "../tct" }
 
 # External dependencies
 bytes = "1"
