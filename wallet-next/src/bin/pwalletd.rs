@@ -19,23 +19,20 @@ struct Opt {
     /// Command to run.
     #[structopt(subcommand)]
     cmd: Command,
+    /// The path used to store the SQLite state database.
+    #[structopt(long, default_value = "sqlite:///tmp/pwalletd-dev-db.sqlite")]
+    sqlite_path: String,
 }
 
 #[derive(Debug, StructOpt)]
 enum Command {
     /// Start running the wallet daemon.
     Init {
-        /// The path used to store the SQLite state database.
-        #[structopt(short, long)]
-        sqlite_path: String,
         /// The full viewing key
         #[structopt(short, long)]
-        fvk: String,
+        full_viewing_key: String,
     },
     Start {
-        /// The path used to store the SQLite state database.
-        #[structopt(short, long)]
-        sqlite_path: String,
         /// Bind the services to this host.
         #[structopt(short, long, default_value = "127.0.0.1")]
         host: String,
@@ -50,23 +47,19 @@ async fn main() -> Result<()> {
     let opt = Opt::from_args();
 
     match opt.cmd {
-        Command::Init { sqlite_path, fvk } => {
+        Command::Init { full_viewing_key } => {
             penumbra_wallet_next::Storage::initialize(
-                sqlite_path,
-                FullViewingKey::from_str(fvk.as_ref())?,
+                opt.sqlite_path,
+                FullViewingKey::from_str(full_viewing_key.as_ref())?,
                 ChainParams::default(),
             )
             .await?;
             Ok(())
         }
-        Command::Start {
-            sqlite_path,
-            host,
-            wallet_port,
-        } => {
-            tracing::info!(?sqlite_path, ?host, ?wallet_port, "starting pwalletd");
+        Command::Start { host, wallet_port } => {
+            tracing::info!(?opt.sqlite_path, ?host, ?wallet_port, "starting pwalletd");
 
-            let storage = penumbra_wallet_next::Storage::load(sqlite_path).await?;
+            let storage = penumbra_wallet_next::Storage::load(opt.sqlite_path).await?;
             let client =
                 ObliviousQueryClient::connect(format!("http://{}:{}", host, wallet_port)).await?;
             let service = WalletService::new(storage, client).await?;
