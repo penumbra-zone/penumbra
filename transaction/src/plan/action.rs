@@ -31,6 +31,44 @@ pub enum ActionPlan {
     IBCAction(pb_ibc::IbcAction),
 }
 
+// Convenience impls that make declarative transaction construction easier.
+
+impl From<SpendPlan> for ActionPlan {
+    fn from(inner: SpendPlan) -> ActionPlan {
+        ActionPlan::Spend(inner)
+    }
+}
+
+impl From<OutputPlan> for ActionPlan {
+    fn from(inner: OutputPlan) -> ActionPlan {
+        ActionPlan::Output(inner)
+    }
+}
+
+impl From<Delegate> for ActionPlan {
+    fn from(inner: Delegate) -> ActionPlan {
+        ActionPlan::Delegate(inner)
+    }
+}
+
+impl From<Undelegate> for ActionPlan {
+    fn from(inner: Undelegate) -> ActionPlan {
+        ActionPlan::Undelegate(inner)
+    }
+}
+
+impl From<pb_stake::ValidatorDefinition> for ActionPlan {
+    fn from(inner: pb_stake::ValidatorDefinition) -> ActionPlan {
+        ActionPlan::ValidatorDefinition(inner)
+    }
+}
+
+impl From<pb_ibc::IbcAction> for ActionPlan {
+    fn from(inner: pb_ibc::IbcAction) -> ActionPlan {
+        ActionPlan::IBCAction(inner)
+    }
+}
+
 impl Protobuf<pb_t::ActionPlan> for ActionPlan {}
 
 impl From<ActionPlan> for pb_t::ActionPlan {
