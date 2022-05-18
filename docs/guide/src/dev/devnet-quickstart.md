@@ -69,7 +69,7 @@ two-step process, so be sure to do both steps.
 First, wipe the `pd` state:
 
 ```
-rm -rf ~/.penumbra/testnet_data/node0/rocksdb
+rm -rf ~/.penumbra/testnet_data/node0/pd/rocksdb
 ```
 
 Next, wipe the `tendermint` state:
