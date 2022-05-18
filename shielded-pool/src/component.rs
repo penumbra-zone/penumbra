@@ -95,13 +95,7 @@ impl Component for ShieldedPool {
     }
 
     #[instrument(name = "shielded_pool", skip(self, _begin_block))]
-    async fn begin_block(&mut self, _begin_block: &abci::request::BeginBlock) {
-        self.compact_block.height = self
-            .state
-            .get_block_height()
-            .await
-            .expect("block height must be set");
-    }
+    async fn begin_block(&mut self, _begin_block: &abci::request::BeginBlock) {}
 
     #[instrument(name = "shielded_pool", skip(tx))]
     fn check_tx_stateless(tx: &Transaction) -> Result<()> {
@@ -231,6 +225,9 @@ impl Component for ShieldedPool {
             .await
             .expect("block height must be set");
 
+        // Set the height of the compact block
+        self.compact_block.height = height;
+
         // Handle any pending reward notes from the Staking component
         let notes = self
             .state
@@ -284,7 +281,7 @@ impl Component for ShieldedPool {
             }
         }
 
-        tracing::debug!(tct_root = %self.tiered_commitment_tree.root(), "tct root");
+        tracing::debug!(?height, tct_root = %self.tiered_commitment_tree.root(), "tct root");
 
         self.write_compactblock_and_nct().await.unwrap();
     }
