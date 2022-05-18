@@ -38,6 +38,16 @@
       "nullable": []
     }
   },
+  "1ace3043077b74682c94e9d1876858fd696a42eac8f7da07d5b4ec43b0d9fc3f": {
+    "query": "INSERT INTO sync_height (height) VALUES (?)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": []
+    }
+  },
   "305580649ec6471af1f6691eb228cb960c5923a36187ac1fc82af55242be85d0": {
     "query": "INSERT INTO notes\n                    (\n                        note_commitment,\n                        height_spent,\n                        height_created,\n                        diversifier,\n                        amount,\n                        asset_id,\n                        transmission_key,\n                        blinding_factor,\n                        diversifier_index,\n                        nullifier\n                    )\n                    VALUES \n                    (\n                        ?,\n                        NULL,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?\n                    )",
     "describe": {
