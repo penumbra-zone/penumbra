@@ -133,3 +133,46 @@ pub mod channel_close_confirm {
 
     impl<T: StateExt> ChannelCloseConfirmExecute for T {}
 }
+
+pub mod recv_packet {
+    use super::super::*;
+
+    #[async_trait]
+    pub trait RecvPacketExecute: StateExt {
+        async fn execute(&mut self, msg: &MsgRecvPacket) {
+            let channel = self
+                .get_channel(
+                    &msg.packet.destination_channel,
+                    &msg.packet.destination_port,
+                )
+                .await
+                .unwrap()
+                .unwrap();
+
+            if channel.ordering == ChannelOrder::Ordered {
+                let mut next_sequence_recv = self
+                    .get_recv_sequence(
+                        &msg.packet.destination_channel,
+                        &msg.packet.destination_port,
+                    )
+                    .await
+                    .unwrap();
+
+                next_sequence_recv += 1;
+                self.put_recv_sequence(
+                    &msg.packet.destination_channel,
+                    &msg.packet.destination_port,
+                    next_sequence_recv,
+                )
+                .await;
+            } else {
+                // for unordered channels we must set the receipt so it can be verified on the other side
+                // this receipt does not contain any data, since the packet has not yet been processed
+                // it's just a single store key set to an empty string to indicate that the packet has been received
+                self.put_packet_receipt(&msg.packet).await;
+            }
+        }
+    }
+
+    impl<T: StateExt> RecvPacketExecute for T {}
+}
