@@ -222,8 +222,8 @@ impl Component for ShieldedPool {
         //}
     }
 
-    #[instrument(name = "shielded_pool", skip(self, end_block))]
-    async fn end_block(&mut self, end_block: &abci::request::EndBlock) {
+    #[instrument(name = "shielded_pool", skip(self, _end_block))]
+    async fn end_block(&mut self, _end_block: &abci::request::EndBlock) {
         // Get the current block height
         let height = self
             .state
