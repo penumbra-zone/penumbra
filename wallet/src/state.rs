@@ -837,6 +837,8 @@ impl ClientState {
         )
         .is_epoch_end(height)
         {
+            tracing::debug!(?height, "end of epoch");
+
             // TODO: replace this with an `expect!` when this is consensus-critical
             if let Err(e) = self.tiered_commitment_tree.end_epoch() {
                 tracing::error!(error = ?e, "failed to end epoch in TCT");
