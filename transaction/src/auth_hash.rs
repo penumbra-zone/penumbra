@@ -308,6 +308,8 @@ mod tests {
             ],
         };
 
+        println!("{}", serde_json::to_string_pretty(&plan).unwrap());
+
         let plan_auth_hash = plan.auth_hash(&fvk);
 
         let auth_data = plan.authorize(rng, &sk);
