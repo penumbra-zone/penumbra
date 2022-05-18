@@ -10,6 +10,7 @@ use ibc::core::ics03_connection::connection::{ConnectionEnd, State as Connection
 use ibc::core::ics04_channel::channel::Order as ChannelOrder;
 use ibc::core::ics04_channel::channel::State as ChannelState;
 use ibc::core::ics04_channel::channel::{ChannelEnd, Counterparty};
+use ibc::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
 use ibc::core::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
 use ibc::core::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
 use ibc::core::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
@@ -23,8 +24,8 @@ use ibc::core::ics24_host::identifier::PortId;
 use penumbra_chain::genesis;
 use penumbra_component::Component;
 use penumbra_proto::ibc::ibc_action::Action::{
-    ChannelCloseConfirm, ChannelCloseInit, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit,
-    ChannelOpenTry, RecvPacket,
+    Acknowledgement, ChannelCloseConfirm, ChannelCloseInit, ChannelOpenAck, ChannelOpenConfirm,
+    ChannelOpenInit, ChannelOpenTry, RecvPacket,
 };
 use penumbra_storage::{State, StateExt};
 use penumbra_transaction::Transaction;
@@ -96,6 +97,10 @@ impl Component for ICS4Channel {
 
                     // NOTE: no additional stateless validation is possible
                 }
+                Some(Acknowledgement(msg)) => {
+                    MsgAcknowledgement::try_from(msg.clone())?;
+                    // NOTE: no additional stateless validation is possible
+                }
 
                 // Other IBC messages are not handled by this component.
                 _ => {}
@@ -148,6 +153,12 @@ impl Component for ICS4Channel {
                 Some(RecvPacket(msg)) => {
                     use stateful::recv_packet::RecvPacketCheck;
                     let msg = MsgRecvPacket::try_from(msg.clone())?;
+
+                    self.state.validate(&msg).await?;
+                }
+                Some(Acknowledgement(msg)) => {
+                    use stateful::acknowledge_packet::AcknowledgePacketCheck;
+                    let msg = MsgAcknowledgement::try_from(msg.clone())?;
 
                     self.state.validate(&msg).await?;
                 }
@@ -205,6 +216,12 @@ impl Component for ICS4Channel {
 
                     self.state.execute(&msg).await;
                 }
+                Some(Acknowledgement(msg)) => {
+                    use execution::acknowledge_packet::AcknowledgePacketExecute;
+                    let msg = MsgAcknowledgement::try_from(msg.clone()).unwrap();
+
+                    self.state.execute(&msg).await;
+                }
 
                 // Other IBC messages are not handled by this component.
                 _ => {}
@@ -254,6 +271,17 @@ pub trait View: StateExt {
         self.get_proto::<u64>(
             format!(
                 "seqRecvs/ports/{}/channels/{}/nextSequenceRecv",
+                port_id, channel_id
+            )
+            .into(),
+        )
+        .await
+        .map(|sequence| sequence.unwrap_or(0))
+    }
+    async fn get_ack_sequence(&self, channel_id: &ChannelId, port_id: &PortId) -> Result<u64> {
+        self.get_proto::<u64>(
+            format!(
+                "seqAcks/ports/{}/channels/{}/nextSequenceAck",
                 port_id, channel_id
             )
             .into(),
@@ -315,6 +343,42 @@ pub trait View: StateExt {
         )
         .await
         .map(|res| res.is_some())
+    }
+    async fn get_packet_commitment(&self, packet: &Packet) -> Result<Option<Vec<u8>>> {
+        let commitment = self
+            .get_proto::<Vec<u8>>(
+                format!(
+                    "commitments/ports/{}/channels/{}/packets/{}",
+                    packet.source_port, packet.source_channel, packet.sequence
+                )
+                .into(),
+            )
+            .await?;
+
+        // this is for the special case where the commitment is empty, we consider this None.
+        if let Some(commitment) = commitment.as_ref() {
+            if commitment.len() == 0 {
+                return Ok(None);
+            }
+        }
+
+        Ok(commitment)
+    }
+    async fn delete_packet_commitment(
+        &mut self,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        sequence: u64,
+    ) {
+        self.put_proto::<Vec<u8>>(
+            format!(
+                "commitments/ports/{}/channels/{}/packets/{}",
+                port_id, channel_id, sequence
+            )
+            .into(),
+            vec![],
+        )
+        .await;
     }
 }
 
