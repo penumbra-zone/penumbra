@@ -28,6 +28,17 @@ pub struct TransactionPlan {
     pub fee: Fee,
 }
 
+impl Default for TransactionPlan {
+    fn default() -> Self {
+        Self {
+            actions: Default::default(),
+            expiry_height: 0,
+            chain_id: String::new(),
+            fee: Fee(0),
+        }
+    }
+}
+
 impl TransactionPlan {
     pub fn spend_plans(&self) -> impl Iterator<Item = &SpendPlan> {
         self.actions.iter().filter_map(|action| {

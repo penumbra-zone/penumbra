@@ -8,14 +8,17 @@ use anyhow::anyhow;
 use penumbra_chain::{params::ChainParams, sync::CompactBlock, Epoch};
 use penumbra_crypto::{
     asset::{self, Denom},
-    memo,
-    merkle::{Frontier, NoteCommitmentTree, Tree, TreeExt},
+    memo::MemoPlaintext,
+    merkle::{Frontier, NoteCommitmentTree, Position, Tree, TreeExt},
     note, Address, DelegationToken, FieldExt, Note, NotePayload, Nullifier, Value,
     STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
 };
 use penumbra_stake::{rate::RateData, validator};
 use penumbra_tct as tct;
-use penumbra_transaction::Transaction;
+use penumbra_transaction::{
+    plan::{ActionPlan, OutputPlan, SpendPlan, TransactionPlan},
+    Fee, Transaction, WitnessData,
+};
 use rand::seq::SliceRandom;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
@@ -117,6 +120,14 @@ impl ClientState {
             wallet,
             chain_params: None,
         }
+    }
+
+    /// TODO: this will go away with wallet restructuring, where we'll
+    /// record the position and return it with note queries
+    pub fn position(&self, note: &Note) -> Option<Position> {
+        self.note_commitment_tree
+            .authentication_path(&note.commit())
+            .map(|(pos, _path)| pos)
     }
 
     /// Returns a reference to the note commitment tree.
@@ -261,97 +272,122 @@ impl ClientState {
         self.chain_params().map(|p| p.chain_id.clone())
     }
 
-    /// Generate a new transaction delegating stake
+    pub fn build_transaction<R: RngCore + CryptoRng>(
+        &self,
+        mut rng: R,
+        plan: TransactionPlan,
+    ) -> anyhow::Result<Transaction> {
+        // Next, authorize the transaction, ...
+        let auth_data = plan.authorize(&mut rng, &self.wallet.spend_key());
+
+        // ... build the witness data ...
+        let witness_data = WitnessData {
+            anchor: self.note_commitment_tree.root2(),
+            auth_paths: plan
+                .spend_plans()
+                .map(|spend| {
+                    self.note_commitment_tree
+                        .auth_path(spend.note.commit())
+                        .ok_or_else(|| anyhow::anyhow!("missing auth path for note commitment"))
+                })
+                .collect::<Result<_, _>>()?,
+        };
+
+        // ... and then build the transaction:
+        plan.build(
+            &mut rng,
+            &self.wallet.full_viewing_key(),
+            auth_data,
+            witness_data,
+        )
+    }
+
+    /// Generate a new transaction plan delegating stake
     #[instrument(skip(self, rng, rate_data))]
-    pub fn build_delegate<R: RngCore + CryptoRng>(
+    pub fn plan_delegate<R: RngCore + CryptoRng>(
         &mut self,
         rng: &mut R,
         rate_data: RateData,
         unbonded_amount: u64,
         fee: u64,
         source_address: Option<u64>,
-    ) -> Result<Transaction, anyhow::Error> {
+    ) -> Result<TransactionPlan, anyhow::Error> {
         // If the source address is set, send the delegation tokens to the same
         // address; otherwise, send them to the default address.
         let (_label, self_address) = self
             .wallet()
             .address_by_index(source_address.unwrap_or(0) as usize)?;
 
-        let mut tx_builder = Transaction::build_with_root(self.note_commitment_tree.root2());
+        let mut plan = TransactionPlan {
+            chain_id: self.chain_id().ok_or_else(|| anyhow!("missing chain_id"))?,
+            fee: Fee(fee),
+            ..Default::default()
+        };
 
-        tx_builder
-            .set_fee(fee)
-            .set_chain_id(self.chain_id().ok_or_else(|| anyhow!("missing chain_id"))?)
-            .add_delegation(rate_data.build_delegate(unbonded_amount));
+        // Add the delegation action itself:
+        plan.actions
+            .push(rate_data.build_delegate(unbonded_amount).into());
 
-        let spend_amount = unbonded_amount + fee;
-        let mut spent_amount = 0;
-
-        for note in self.notes_to_spend(rng, spend_amount, &*STAKING_TOKEN_DENOM, source_address)? {
-            spent_amount += note.amount();
-            tx_builder.add_spend(
+        // Add an output to ourselves to record the delegation:
+        plan.actions.push(
+            OutputPlan::new(
                 rng,
-                &self.note_commitment_tree,
-                self.wallet.spend_key(),
-                note,
-            )?;
-        }
-
-        let delegation_note = tx_builder.add_output_producing_note(
-            rng,
-            &self_address,
-            Value {
-                amount: rate_data.delegation_amount(unbonded_amount),
-                asset_id: DelegationToken::new(rate_data.identity_key).id(),
-            },
-            memo::MemoPlaintext([0u8; memo::MEMO_LEN_BYTES]),
-            self.wallet.outgoing_viewing_key(),
+                Value {
+                    amount: rate_data.delegation_amount(unbonded_amount),
+                    asset_id: DelegationToken::new(rate_data.identity_key).id(),
+                },
+                self_address,
+                MemoPlaintext::default(),
+            )
+            .into(),
         );
 
+        // Add the required spends, and track change:
+        let spend_amount = unbonded_amount + fee;
+        let mut spent_amount = 0;
+        for note in self.notes_to_spend(rng, spend_amount, &*STAKING_TOKEN_DENOM, source_address)? {
+            spent_amount += note.amount();
+            plan.actions
+                .push(SpendPlan::new(rng, note.clone(), self.position(&note).unwrap()).into());
+        }
+
+        // Add a change note if we have change left over:
         let change_amount = spent_amount - spend_amount;
         // TODO: support dummy notes, and produce a change output unconditionally.
         // let change_note = if change_amount > 0 { ... } else { /* dummy note */}
         if change_amount > 0 {
-            let change_note = tx_builder.add_output_producing_note(
-                rng,
-                &self_address,
-                Value {
-                    amount: change_amount,
-                    asset_id: *STAKING_TOKEN_ASSET_ID,
-                },
-                memo::MemoPlaintext([0u8; memo::MEMO_LEN_BYTES]),
-                self.wallet.outgoing_viewing_key(),
+            plan.actions.push(
+                OutputPlan::new(
+                    rng,
+                    Value {
+                        amount: change_amount,
+                        asset_id: *STAKING_TOKEN_ASSET_ID,
+                    },
+                    self_address,
+                    MemoPlaintext::default(),
+                )
+                .into(),
             );
-            self.register_change(change_note);
         }
 
-        self.register_change(delegation_note);
-
-        tx_builder.finalize(rng).map_err(Into::into)
+        Ok(plan)
     }
 
-    /// Generate a new transaction delegating stake
+    /// Generate a new transaction plan delegating stake
     #[instrument(skip(self, rng))]
-    pub fn build_undelegate<R: RngCore + CryptoRng>(
+    pub fn plan_undelegate<R: RngCore + CryptoRng>(
         &mut self,
         rng: &mut R,
         rate_data: RateData,
         delegation_amount: u64,
         fee: u64,
         source_address: Option<u64>,
-    ) -> Result<Transaction, anyhow::Error> {
+    ) -> Result<TransactionPlan, anyhow::Error> {
         // If the source address is set, send the delegation tokens to the same
         // address; otherwise, send them to the default address.
         let (_label, self_address) = self
             .wallet()
             .address_by_index(source_address.unwrap_or(0) as usize)?;
-
-        let mut tx_builder = Transaction::build_with_root(self.note_commitment_tree.root2());
-
-        tx_builder
-            .set_fee(fee)
-            .set_chain_id(self.chain_id().ok_or_else(|| anyhow!("missing chain_id"))?)
-            .add_undelegation(rate_data.build_undelegate(delegation_amount));
 
         // Because the outputs of an undelegation are quarantined, we want to
         // avoid any unnecessary change outputs, so we pay fees out of the
@@ -366,138 +402,119 @@ impl ClientState {
             )
         })?;
 
+        let mut plan = TransactionPlan {
+            chain_id: self.chain_id().ok_or_else(|| anyhow!("missing chain_id"))?,
+            fee: Fee(fee),
+            ..Default::default()
+        };
+
+        // Add the undelegation action itself:
+        plan.actions
+            .push(rate_data.build_undelegate(delegation_amount).into());
+
+        // Add an output to ourselves to record the undelegation:
+        plan.actions.push(
+            OutputPlan::new(
+                rng,
+                Value {
+                    amount: output_amount,
+                    asset_id: *STAKING_TOKEN_ASSET_ID,
+                },
+                self_address,
+                MemoPlaintext::default(),
+            )
+            .into(),
+        );
+
+        // Add the required spends, and track change:
         let delegation_denom = DelegationToken::new(rate_data.identity_key).denom();
-
-        // XXX if the undelegation is for less than their total amount of delegation tokens,
-        // all of their remaining delegation tokens will also be quarantined.
-        // this sucks lmao
         let mut spent_amount = 0;
-
         for note in
             self.notes_to_spend(rng, delegation_amount, &delegation_denom, source_address)?
         {
             spent_amount += note.amount();
-            tx_builder.add_spend(
-                rng,
-                &self.note_commitment_tree,
-                self.wallet.spend_key(),
-                note,
-            )?;
+            plan.actions
+                .push(SpendPlan::new(rng, note.clone(), self.position(&note).unwrap()).into());
         }
-
-        let output_note = tx_builder.add_output_producing_note(
-            rng,
-            &self_address,
-            Value {
-                amount: output_amount,
-                asset_id: *STAKING_TOKEN_ASSET_ID,
-            },
-            memo::MemoPlaintext([0u8; memo::MEMO_LEN_BYTES]),
-            self.wallet.outgoing_viewing_key(),
-        );
 
         let change_amount = spent_amount - delegation_amount;
         // TODO: support dummy notes, and produce a change output unconditionally.
         // let change_note = if change_amount > 0 { ... } else { /* dummy note */}
         if change_amount > 0 {
-            let change_note = tx_builder.add_output_producing_note(
-                rng,
-                &self_address,
-                Value {
-                    amount: change_amount,
-                    asset_id: delegation_denom.id(),
-                },
-                memo::MemoPlaintext([0u8; memo::MEMO_LEN_BYTES]),
-                self.wallet.outgoing_viewing_key(),
+            plan.actions.push(
+                OutputPlan::new(
+                    rng,
+                    Value {
+                        amount: change_amount,
+                        asset_id: delegation_denom.id(),
+                    },
+                    self_address,
+                    MemoPlaintext::default(),
+                )
+                .into(),
             );
-            self.register_change(change_note);
         }
 
-        self.register_change(output_note);
-
-        tx_builder.finalize(rng).map_err(Into::into)
+        Ok(plan)
     }
 
     /// Generate a new transaction uploading a validator definition.
     #[instrument(skip(self, rng))]
-    pub fn build_validator_definition<R: RngCore + CryptoRng>(
+    pub fn plan_validator_definition<R: RngCore + CryptoRng>(
         &mut self,
         rng: &mut R,
         new_validator: validator::Definition,
         fee: u64,
         source_address: Option<u64>,
-    ) -> Result<Transaction, anyhow::Error> {
-        let mut tx_builder = Transaction::build_with_root(self.note_commitment_tree.root2());
+    ) -> Result<TransactionPlan, anyhow::Error> {
+        // If the source address is set, send fee change to the same
+        // address; otherwise, send it to the default address.
+        let (_label, self_address) = self
+            .wallet()
+            .address_by_index(source_address.unwrap_or(0) as usize)?;
 
-        tx_builder
-            .set_fee(fee)
-            .set_chain_id(self.chain_id().ok_or_else(|| anyhow!("missing chain_id"))?);
+        let mut plan = TransactionPlan {
+            chain_id: self.chain_id().ok_or_else(|| anyhow!("missing chain_id"))?,
+            fee: Fee(fee),
+            ..Default::default()
+        };
 
-        // Add the Validator to the tx_builder.
-        tx_builder.add_validator_definition(new_validator.into());
+        plan.actions
+            .push(ActionPlan::ValidatorDefinition(new_validator.into()));
 
-        // If there are any fees, they need to be spent.
-        let mut value_to_spend = HashMap::<Denom, u64>::new();
-        if fee > 0 {
-            *value_to_spend
-                .entry(STAKING_TOKEN_DENOM.clone())
-                .or_default() += fee;
+        // Add the required spends, and track change:
+        let spend_amount = fee;
+        let mut spent_amount = 0;
+        for note in self.notes_to_spend(rng, spend_amount, &*STAKING_TOKEN_DENOM, source_address)? {
+            spent_amount += note.amount();
+            plan.actions
+                .push(SpendPlan::new(rng, note.clone(), self.position(&note).unwrap()).into());
         }
-
-        for (denom, amount) in value_to_spend {
-            // Only produce an output if the amount is greater than zero
-            if amount == 0 {
-                continue;
-            }
-
-            // Select a list of notes that provides at least the required amount.
-            let notes: Vec<Note> = self.notes_to_spend(rng, amount, &denom, source_address)?;
-            let change_address = self
-                .wallet
-                .change_address(notes.last().expect("spent at least one note"))?;
-            let spent: u64 = notes.iter().map(|note| note.amount()).sum();
-
-            // Spend each of the notes we selected.
-            for note in notes {
-                tx_builder.add_spend(
+        // Add a change note if we have change left over:
+        let change_amount = spent_amount - spend_amount;
+        // TODO: support dummy notes, and produce a change output unconditionally.
+        // let change_note = if change_amount > 0 { ... } else { /* dummy note */}
+        if change_amount > 0 {
+            plan.actions.push(
+                OutputPlan::new(
                     rng,
-                    &self.note_commitment_tree,
-                    // The active wallet pays the fees for all the validators it is defining.
-                    self.wallet.spend_key(),
-                    note,
-                )?;
-            }
-
-            // Find out how much change we have and whether to add a change output.
-            let change = spent - amount;
-            if change > 0 {
-                // xx: add memo handling
-                let memo = memo::MemoPlaintext([0u8; 512]);
-                let note = tx_builder.add_output_producing_note(
-                    rng,
-                    &change_address,
                     Value {
-                        amount: change,
-                        asset_id: denom.id(),
+                        amount: change_amount,
+                        asset_id: *STAKING_TOKEN_ASSET_ID,
                     },
-                    memo,
-                    self.wallet.outgoing_viewing_key(),
-                );
-
-                self.register_change(note);
-            }
+                    self_address,
+                    MemoPlaintext::default(),
+                )
+                .into(),
+            );
         }
 
-        let transaction = tx_builder
-            .finalize(rng)
-            .map_err(|err| anyhow::anyhow!("error during transaction finalization: {}", err))?;
-
-        Ok(transaction)
+        Ok(plan)
     }
 
     /// Generate a new transaction sending value to `dest_address`.
     #[instrument(skip(self, rng))]
-    pub fn build_send<R: RngCore + CryptoRng>(
+    pub fn plan_send<R: RngCore + CryptoRng>(
         &mut self,
         rng: &mut R,
         values: &[Value],
@@ -505,13 +522,21 @@ impl ClientState {
         dest_address: Address,
         source_address: Option<u64>,
         tx_memo: Option<String>,
-    ) -> Result<Transaction, anyhow::Error> {
-        let mut tx_builder = Transaction::build_with_root(self.note_commitment_tree.root2());
+    ) -> Result<TransactionPlan, anyhow::Error> {
+        let memo = if let Some(input_memo) = tx_memo {
+            input_memo.as_bytes().try_into()?
+        } else {
+            MemoPlaintext::default()
+        };
 
-        tx_builder
-            .set_fee(fee)
-            .set_chain_id(self.chain_id().ok_or_else(|| anyhow!("missing chain_id"))?);
+        let mut plan = TransactionPlan {
+            chain_id: self.chain_id().ok_or_else(|| anyhow!("missing chain_id"))?,
+            fee: Fee(fee),
+            ..Default::default()
+        };
 
+        // Track totals of the output values rather than just processing
+        // them individually, so we can plan the required spends.
         let mut output_value = HashMap::<Denom, u64>::new();
         for Value { amount, asset_id } in values {
             let denom = self
@@ -521,20 +546,19 @@ impl ClientState {
             output_value.insert(denom.clone(), *amount);
         }
 
+        // Add outputs for the funds we want to send:
         for (denom, amount) in &output_value {
-            let memo: memo::MemoPlaintext = match tx_memo {
-                Some(ref input_memo) => input_memo.as_bytes().try_into()?,
-                None => memo::MemoPlaintext([0u8; memo::MEMO_LEN_BYTES]),
-            };
-            tx_builder.add_output(
-                rng,
-                &dest_address,
-                Value {
-                    amount: *amount,
-                    asset_id: denom.id(),
-                },
-                memo,
-                self.wallet.outgoing_viewing_key(),
+            plan.actions.push(
+                OutputPlan::new(
+                    rng,
+                    Value {
+                        amount: *amount,
+                        asset_id: denom.id(),
+                    },
+                    dest_address,
+                    memo.clone(),
+                )
+                .into(),
             );
         }
 
@@ -546,6 +570,7 @@ impl ClientState {
                 .or_default() += fee;
         }
 
+        // Add the required spends:
         for (denom, amount) in value_to_spend {
             // Only produce an output if the amount is greater than zero
             if amount == 0 {
@@ -561,39 +586,29 @@ impl ClientState {
 
             // Spend each of the notes we selected.
             for note in notes {
-                tx_builder.add_spend(
-                    rng,
-                    &self.note_commitment_tree,
-                    self.wallet.spend_key(),
-                    note,
-                )?;
+                plan.actions
+                    .push(SpendPlan::new(rng, note.clone(), self.position(&note).unwrap()).into());
             }
 
             // Find out how much change we have and whether to add a change output.
             let change = spent - amount;
             if change > 0 {
-                // xx: add memo handling
-                let memo = memo::MemoPlaintext([0u8; 512]);
-                let note = tx_builder.add_output_producing_note(
-                    rng,
-                    &change_address,
-                    Value {
-                        amount: change,
-                        asset_id: denom.id(),
-                    },
-                    memo,
-                    self.wallet.outgoing_viewing_key(),
+                plan.actions.push(
+                    OutputPlan::new(
+                        rng,
+                        Value {
+                            amount: change,
+                            asset_id: denom.id(),
+                        },
+                        change_address,
+                        MemoPlaintext::default(),
+                    )
+                    .into(),
                 );
-
-                self.register_change(note);
             }
         }
 
-        let transaction = tx_builder
-            .finalize(rng)
-            .map_err(|err| anyhow::anyhow!("error during transaction finalization: {}", err))?;
-
-        Ok(transaction)
+        Ok(plan)
     }
 
     /// Returns an iterator over unspent `(address_id, denom, note)` triples.

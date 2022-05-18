@@ -16,9 +16,6 @@ use crate::{
     Action,
 };
 
-mod builder;
-pub use builder::Builder;
-
 #[derive(Clone, Debug)]
 pub struct TransactionBody {
     pub actions: Vec<Action>,
@@ -38,24 +35,6 @@ pub struct Transaction {
 }
 
 impl Transaction {
-    /// Start building a transaction relative to a given [`merkle::Root`].
-    pub fn build_with_root(merkle_root: merkle::Root) -> Builder {
-        Builder {
-            spends: Vec::new(),
-            outputs: Vec::new(),
-            delegations: Vec::new(),
-            undelegations: Vec::new(),
-            validator_definitions: Vec::new(),
-            fee: None,
-            synthetic_blinding_factor: Fr::zero(),
-            value_balance: decaf377::Element::default(),
-            value_commitments: decaf377::Element::default(),
-            merkle_root,
-            expiry_height: None,
-            chain_id: None,
-        }
-    }
-
     pub fn actions(&self) -> impl Iterator<Item = &Action> {
         self.transaction_body.actions.iter()
     }
@@ -313,54 +292,5 @@ impl From<Fee> for pbt::Fee {
 impl From<pbt::Fee> for Fee {
     fn from(proto: pbt::Fee) -> Self {
         Fee(proto.amount)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use penumbra_crypto::{
-        keys::{SeedPhrase, SpendKey, SpendSeed},
-        memo::MemoPlaintext,
-        Fq, Value,
-    };
-    use rand_core::OsRng;
-
-    use super::*;
-    use crate::Error;
-
-    #[test]
-    fn test_transaction_single_output_fails_due_to_nonzero_value_balance() {
-        let mut rng = OsRng;
-        let seed_phrase = SeedPhrase::generate(&mut rng);
-        let spend_seed = SpendSeed::from_seed_phrase(seed_phrase, 0);
-        let sk_sender = SpendKey::new(spend_seed);
-        let fvk_sender = sk_sender.full_viewing_key();
-        let ovk_sender = fvk_sender.outgoing();
-
-        let seed_phrase = SeedPhrase::generate(&mut rng);
-        let spend_seed = SpendSeed::from_seed_phrase(seed_phrase, 0);
-        let sk_recipient = SpendKey::new(spend_seed);
-        let fvk_recipient = sk_recipient.full_viewing_key();
-        let ivk_recipient = fvk_recipient.incoming();
-        let (dest, _dtk_d) = ivk_recipient.payment_address(0u64.into());
-
-        let merkle_root = merkle::Root(Fq::zero());
-        let transaction = Transaction::build_with_root(merkle_root)
-            .set_fee(20)
-            .set_chain_id("penumbra".to_string())
-            .add_output(
-                &mut rng,
-                &dest,
-                Value {
-                    amount: 10,
-                    asset_id: *STAKING_TOKEN_ASSET_ID,
-                },
-                MemoPlaintext::default(),
-                ovk_sender,
-            )
-            .finalize(&mut rng);
-
-        assert!(transaction.is_err());
-        assert_eq!(transaction.err(), Some(Error::NonZeroValueBalance));
     }
 }

@@ -1,6 +1,9 @@
 use anyhow::{anyhow, Result};
-use penumbra_crypto::{memo, merkle::TreeExt, Value};
-use penumbra_transaction::Transaction;
+use penumbra_crypto::{memo::MemoPlaintext, Value};
+use penumbra_transaction::{
+    plan::{OutputPlan, SpendPlan, TransactionPlan},
+    Fee,
+};
 use rand_core::OsRng;
 use structopt::StructOpt;
 
@@ -63,8 +66,8 @@ impl TxCmd {
                     .parse()
                     .map_err(|_| anyhow::anyhow!("address is invalid"))?;
 
-                let transaction =
-                    state.build_send(&mut OsRng, &values, *fee, to, *from, memo.clone())?;
+                let plan = state.plan_send(&mut OsRng, &values, *fee, to, *from, memo.clone())?;
+                let transaction = state.build_transaction(OsRng, plan)?;
 
                 opt.submit_transaction(&transaction).await?;
                 // Only commit the state if the transaction was submitted
@@ -97,8 +100,6 @@ async fn sweep(opt: &Opt, state: &mut ClientStateFile) -> Result<()> {
     // The UnspentNote struct owns a borrow of a note, preventing use of
     // any mutable methods on the ClientState, so we have to accumulate
     // changes to be applied later.
-    let mut spent_notes = Vec::new();
-    let mut change_notes = Vec::new();
     let unspent = state.unspent_notes_by_address_and_denom();
     for (id, label, addr) in state.wallet().addresses() {
         if unspent.get(&(id as u64)).is_none() {
@@ -117,55 +118,42 @@ async fn sweep(opt: &Opt, state: &mut ClientStateFile) -> Result<()> {
             // chunks, ignoring the biggest notes in the remainder.
             for group in notes.chunks_exact(SWEEP_COUNT) {
                 tracing::info!(?denom, "building sweep transaction");
-                let mut tx_builder =
-                    Transaction::build_with_root(state.note_commitment_tree().root2());
-                tx_builder.set_fee(0).set_chain_id(
-                    state
+                let mut plan = TransactionPlan {
+                    chain_id: state
                         .chain_id()
                         .ok_or_else(|| anyhow!("missing chain_id"))?,
-                );
+                    fee: Fee(0),
+                    ..Default::default()
+                };
 
                 for note in group {
-                    tx_builder.add_spend(
-                        &mut OsRng,
-                        state.note_commitment_tree(),
-                        state.wallet().spend_key(),
-                        (*note).clone(),
-                    )?;
-                    spent_notes.push((*note).clone());
+                    plan.actions.push(
+                        SpendPlan::new(&mut OsRng, (**note).clone(), state.position(note).unwrap())
+                            .into(),
+                    );
                 }
-                let change = tx_builder.add_output_producing_note(
-                    &mut OsRng,
-                    &addr,
-                    Value {
-                        amount: group.iter().map(|n| n.amount()).sum(),
-                        asset_id: denom.id(),
-                    },
-                    memo::MemoPlaintext([0u8; 512]),
-                    state.wallet().outgoing_viewing_key(),
+                plan.actions.push(
+                    OutputPlan::new(
+                        &mut OsRng,
+                        Value {
+                            amount: group.iter().map(|n| n.amount()).sum(),
+                            asset_id: denom.id(),
+                        },
+                        addr,
+                        MemoPlaintext::default(),
+                    )
+                    .into(),
                 );
-                change_notes.push(change);
 
-                transactions.push(tx_builder.finalize(&mut OsRng).map_err(|err| {
-                    anyhow::anyhow!("error during transaction finalization: {}", err)
-                })?);
+                transactions.push(state.build_transaction(OsRng, plan)?);
             }
         }
     }
-
-    // Now drop `unspent` so that we can mutate the client state.
-    std::mem::drop(unspent);
 
     let num_sweeps = transactions.len();
     tracing::info!(num_sweeps, "submitting sweeps");
     for transaction in transactions {
         opt.submit_transaction_unconfirmed(&transaction).await?;
-    }
-    for spend in spent_notes {
-        state.register_spend(&spend);
-    }
-    for change in change_notes {
-        state.register_change(change);
     }
 
     // Print a message to the user, so they can find out what we did.
