@@ -106,7 +106,6 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.crypto.Address", SERIALIZE),
     (".penumbra.crypto.Address", SERDE_TRANSPARENT),
     (".penumbra.crypto.Note", SERIALIZE),
-    (".penumbra.crypto.Note", SERDE_TRANSPARENT),
     (".penumbra.crypto.NoteCommitment", SERIALIZE),
     (".penumbra.crypto.NoteCommitment", SERDE_TRANSPARENT),
     (".penumbra.crypto.NotePayload", SERIALIZE),
@@ -158,7 +157,8 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.crypto.Diversifier.inner", AS_HEX),
     (".penumbra.crypto.DiversifierIndex.inner", AS_HEX),
     (".penumbra.crypto.IdentityKey.ik", AS_BECH32_IDENTITY_KEY),
-    (".penumbra.crypto.Note.inner", AS_BASE64),
+    (".penumbra.crypto.Note.note_blinding", AS_HEX),
+    (".penumbra.crypto.Note.transmission_key", AS_HEX),
     (".penumbra.crypto.Nullifier.inner", AS_HEX),
     (".penumbra.chain.NoteSource.inner", AS_HEX),
 ];

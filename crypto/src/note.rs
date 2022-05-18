@@ -36,19 +36,18 @@ pub mod arbitrary;
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(into = "pb::Note", try_from = "pb::Note")]
 pub struct Note {
-    // Value (32-byte asset ID plus 8-byte amount).
+    /// The typed value recorded by this note.
     value: Value,
-
-    // Commitment trapdoor. 32 bytes.
+    /// A blinding factor that acts as a commitment trapdoor.
     note_blinding: Fq,
-
-    // The diversifier of the destination address. 11 bytes.
+    /// The diversifier of the address controlling this note.
     diversifier: Diversifier,
-
-    // The diversified transmission key of the destination address. 32 bytes.
+    /// The diversified transmission key of the address controlling this note.
     transmission_key: ka::Public,
-
-    // The s-component of the transmission key of the destination address.
+    /// The s-component of the transmission key of the destination address.
+    /// We store this separately to ensure that every `Note` is constructed
+    /// with a valid transmission key (the `ka::Public` does not validate
+    /// the curve point until it is used, since validation is not free).
     transmission_key_s: Fq,
 }
 
@@ -264,15 +263,34 @@ impl std::fmt::Debug for Note {
 
 impl TryFrom<pb::Note> for Note {
     type Error = anyhow::Error;
-    fn try_from(value: pb::Note) -> Result<Self, Self::Error> {
-        Ok(value.inner.as_slice().try_into()?)
+    fn try_from(msg: pb::Note) -> Result<Self, Self::Error> {
+        let diversifier = msg
+            .diversifier
+            .ok_or_else(|| anyhow::anyhow!("missing diversifier"))?
+            .try_into()?;
+        let transmission_key = ka::Public::try_from(msg.transmission_key.as_slice())?;
+        let value = msg
+            .value
+            .ok_or_else(|| anyhow::anyhow!("missing value"))?
+            .try_into()?;
+        let note_blinding = Fq::from_bytes(msg.note_blinding.as_slice().try_into()?)?;
+
+        Ok(Note::from_parts(
+            diversifier,
+            transmission_key,
+            value,
+            note_blinding,
+        )?)
     }
 }
 
 impl From<Note> for pb::Note {
-    fn from(value: Note) -> Self {
+    fn from(msg: Note) -> Self {
         pb::Note {
-            inner: value.to_bytes().to_vec(),
+            diversifier: Some(msg.diversifier().into()),
+            transmission_key: msg.transmission_key().0.to_vec(),
+            value: Some(msg.value().into()),
+            note_blinding: msg.note_blinding().to_bytes().to_vec(),
         }
     }
 }
