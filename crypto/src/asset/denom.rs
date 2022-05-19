@@ -232,15 +232,10 @@ impl Unit {
             return Err(anyhow::anyhow!("expected only one decimal point"));
         } else {
             let left = split[0];
-            let right;
 
             // The decimal point and right hand side is optional. If it's not present, we use "0"
             // such that the rest of the logic is the same.
-            if split.len() > 1 {
-                right = split[1];
-            } else {
-                right = "0";
-            }
+            let right = if split.len() > 1 { split[1] } else { "0" };
 
             let v1 = left.parse::<u64>().map_err(|e| anyhow::anyhow!(e))?;
             let mut v2 = right.parse::<u64>().map_err(|e| anyhow::anyhow!(e))?;
