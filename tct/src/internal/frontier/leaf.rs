@@ -83,6 +83,8 @@ impl<Item: GetPosition> GetPosition for Leaf<Item> {
     fn position(&self) -> Option<u64> {
         self.item.position()
     }
+
+    const CAPACITY: u64 = Item::CAPACITY;
 }
 
 impl<Item: GetHash + Forget> Forget for Leaf<Item> {
