@@ -30,11 +30,11 @@ impl TransactionPlan {
                 auth_data.spend_auths.len()
             ));
         }
-        if witness_data.auth_paths.len() != spend_count {
+        if witness_data.note_commitment_proofs.len() != spend_count {
             return Err(anyhow::anyhow!(
                 "expected {} auth paths but got {}",
                 spend_count,
-                witness_data.auth_paths.len()
+                witness_data.note_commitment_proofs.len()
             ));
         }
 
@@ -50,7 +50,7 @@ impl TransactionPlan {
         for ((spend_plan, auth_sig), auth_path) in self
             .spend_plans()
             .zip(auth_data.spend_auths.into_iter())
-            .zip(witness_data.auth_paths.into_iter())
+            .zip(witness_data.note_commitment_proofs.into_iter())
         {
             // Spends add to the transaction's value balance.
             synthetic_blinding_factor += spend_plan.value_blinding;

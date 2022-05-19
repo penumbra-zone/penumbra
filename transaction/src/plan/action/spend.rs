@@ -1,9 +1,8 @@
 use ark_ff::UniformRand;
 use decaf377_rdsa::{Signature, SpendAuth};
-use penumbra_crypto::{
-    merkle, merkle::AuthPath, proofs::transparent::SpendProof, FieldExt, Fr, FullViewingKey, Note,
-};
+use penumbra_crypto::{proofs::transparent::SpendProof, FieldExt, Fr, FullViewingKey, Note};
 use penumbra_proto::{transaction as pb, Protobuf};
+use penumbra_tct as tct;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
@@ -14,7 +13,7 @@ use crate::action::{spend, Spend};
 #[serde(try_from = "pb::SpendPlan", into = "pb::SpendPlan")]
 pub struct SpendPlan {
     pub note: Note,
-    pub position: merkle::Position,
+    pub position: tct::Position,
     pub randomizer: Fr,
     pub value_blinding: Fr,
 }
@@ -24,7 +23,7 @@ impl SpendPlan {
     pub fn new<R: CryptoRng + RngCore>(
         rng: &mut R,
         note: Note,
-        position: merkle::Position,
+        position: tct::Position,
     ) -> SpendPlan {
         SpendPlan {
             note,
@@ -39,7 +38,7 @@ impl SpendPlan {
         &self,
         fvk: &FullViewingKey,
         auth_sig: Signature<SpendAuth>,
-        auth_path: AuthPath,
+        auth_path: tct::Proof,
     ) -> Spend {
         Spend {
             body: self.spend_body(fvk),
@@ -58,15 +57,13 @@ impl SpendPlan {
     }
 
     /// Construct the [`SpendProof`] required by the [`spend::Body`] described by this [`SpendPlan`].
-    pub fn spend_proof(&self, fvk: &FullViewingKey, auth_path: AuthPath) -> SpendProof {
-        // XXX: the position field duplicates data from the merkle path
-        // probably not worth fixing before we just make them snarks...
-        // ... just patch up types and aim to replace by TCT
-        let position = auth_path.position.clone();
-        let merkle_path = (auth_path.position, auth_path.path);
+    pub fn spend_proof(
+        &self,
+        fvk: &FullViewingKey,
+        note_commitment_proof: tct::Proof,
+    ) -> SpendProof {
         SpendProof {
-            position,
-            merkle_path,
+            note_commitment_proof,
             g_d: self.note.diversified_generator(),
             pk_d: self.note.transmission_key(),
             value: self.note.value(),
@@ -86,8 +83,7 @@ impl From<SpendPlan> for pb::SpendPlan {
     fn from(msg: SpendPlan) -> Self {
         Self {
             note: Some(msg.note.into()),
-            // TODO replace platform-dep code with TCT
-            position: u64::from(msg.position) as u32,
+            position: u64::from(msg.position),
             randomizer: msg.randomizer.to_bytes().to_vec().into(),
             value_blinding: msg.value_blinding.to_bytes().to_vec().into(),
         }
@@ -102,7 +98,7 @@ impl TryFrom<pb::SpendPlan> for SpendPlan {
                 .note
                 .ok_or_else(|| anyhow::anyhow!("missing note"))?
                 .try_into()?,
-            position: (msg.position as usize).into(),
+            position: msg.position.into(),
             randomizer: Fr::from_bytes(msg.randomizer.as_ref().try_into()?)?,
             value_blinding: Fr::from_bytes(msg.value_blinding.as_ref().try_into()?)?,
         })

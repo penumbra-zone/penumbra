@@ -1,10 +1,10 @@
-use penumbra_crypto::merkle::{self, AuthPath};
 use penumbra_proto::{transaction as pb, Protobuf};
+use penumbra_tct as tct;
 
 #[derive(Clone, Debug)]
 pub struct WitnessData {
-    pub anchor: merkle::Root,
-    pub auth_paths: Vec<AuthPath>,
+    pub anchor: tct::Root,
+    pub note_commitment_proofs: Vec<tct::Proof>,
 }
 
 impl Protobuf<pb::WitnessData> for WitnessData {}
@@ -13,7 +13,11 @@ impl From<WitnessData> for pb::WitnessData {
     fn from(msg: WitnessData) -> Self {
         Self {
             anchor: Some(msg.anchor.into()),
-            auth_paths: msg.auth_paths.into_iter().map(Into::into).collect(),
+            note_commitment_proofs: msg
+                .note_commitment_proofs
+                .into_iter()
+                .map(Into::into)
+                .collect(),
         }
     }
 }
@@ -27,8 +31,8 @@ impl TryFrom<pb::WitnessData> for WitnessData {
                 .anchor
                 .ok_or_else(|| anyhow::anyhow!("missing anchor"))?
                 .try_into()?,
-            auth_paths: msg
-                .auth_paths
+            note_commitment_proofs: msg
+                .note_commitment_proofs
                 .into_iter()
                 .map(TryInto::try_into)
                 .collect::<Result<_, _>>()?,
