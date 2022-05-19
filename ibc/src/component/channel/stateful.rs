@@ -37,7 +37,7 @@ mod proof_verification {
                 trusted_consensus_state.root(),
                 port_id,
                 channel_id,
-                &expected_channel,
+                expected_channel,
             )?;
 
             Ok(())
@@ -59,7 +59,7 @@ pub mod channel_open_init {
 
             // NOTE: optimistic channel handshakes are allowed, so we don't check if the connection
             // is open here.
-            self.verify_connections_exist(&msg).await?;
+            self.verify_connections_exist(msg).await?;
 
             // TODO: do we want to do capability authentication?
 
@@ -91,7 +91,7 @@ pub mod channel_open_init {
                 port_id: &PortId,
             ) -> anyhow::Result<()> {
                 let channel = self.get_channel(channel_id, port_id).await?;
-                if !channel.is_none() {
+                if channel.is_some() {
                     return Err(anyhow::anyhow!("channel already exists"));
                 }
                 Ok(())
@@ -111,7 +111,7 @@ pub mod channel_open_try {
         async fn validate(&self, msg: &MsgChannelOpenTry) -> anyhow::Result<()> {
             let channel_id = ChannelId::new(self.get_channel_counter().await?);
 
-            let connection = self.verify_connections_open(&msg).await?;
+            let connection = self.verify_connections_open(msg).await?;
 
             // TODO: do we want to do capability authentication?
             // TODO: version intersection
@@ -126,7 +126,7 @@ pub mod channel_open_try {
                     .counterparty()
                     .connection_id
                     .clone()
-                    .ok_or(anyhow::anyhow!("no counterparty connection id provided"))?],
+                    .ok_or_else(|| anyhow::anyhow!("no counterparty connection id provided"))?],
                 version: msg.counterparty_version.clone(),
             };
 
@@ -193,13 +193,13 @@ pub mod channel_open_ack {
             let connection = self.verify_channel_connection_open(&channel).await?;
 
             let expected_counterparty =
-                Counterparty::new(msg.port_id.clone(), Some(msg.channel_id.clone()));
+                Counterparty::new(msg.port_id.clone(), Some(msg.channel_id));
 
             let expected_connection_hops = vec![connection
                 .counterparty()
                 .connection_id
                 .clone()
-                .ok_or(anyhow::anyhow!("no counterparty connection id provided"))?];
+                .ok_or_else(|| anyhow::anyhow!("no counterparty connection id provided"))?];
 
             let expected_channel = ChannelEnd {
                 state: ChannelState::TryOpen,
@@ -275,7 +275,7 @@ pub mod channel_open_confirm {
                 .counterparty()
                 .connection_id
                 .clone()
-                .ok_or(anyhow::anyhow!("no counterparty connection id provided"))?];
+                .ok_or_else(|| anyhow::anyhow!("no counterparty connection id provided"))?];
 
             let expected_counterparty =
                 Counterparty::new(msg.port_id.clone(), Some(msg.channel_id));
@@ -294,7 +294,7 @@ pub mod channel_open_confirm {
                 &channel
                     .remote
                     .channel_id
-                    .ok_or(anyhow::anyhow!("no channel id"))?,
+                    .ok_or_else(|| anyhow::anyhow!("no channel id"))?,
                 &channel.remote.port_id,
                 &expected_channel,
             )
@@ -371,7 +371,7 @@ pub mod channel_close_confirm {
                 .counterparty()
                 .connection_id
                 .clone()
-                .ok_or(anyhow::anyhow!("no counterparty connection id provided"))?];
+                .ok_or_else(|| anyhow::anyhow!("no counterparty connection id provided"))?];
 
             let expected_counterparty =
                 Counterparty::new(msg.port_id.clone(), Some(msg.channel_id));
@@ -390,7 +390,7 @@ pub mod channel_close_confirm {
                 &channel
                     .remote
                     .channel_id
-                    .ok_or(anyhow::anyhow!("no channel id"))?,
+                    .ok_or_else(|| anyhow::anyhow!("no channel id"))?,
                 &channel.remote.port_id,
                 &expected_channel,
             )

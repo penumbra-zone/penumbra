@@ -179,7 +179,7 @@ impl ConnectionComponent {
         connection.set_state(ConnectionState::Open);
 
         self.state
-            .update_connection(&msg.connection_id, connection.into())
+            .update_connection(&msg.connection_id, connection)
             .await;
     }
 
@@ -202,7 +202,7 @@ impl ConnectionComponent {
         connection.set_counterparty(counterparty);
 
         self.state
-            .update_connection(&msg.connection_id, connection.into())
+            .update_connection(&msg.connection_id, connection)
             .await;
     }
 
@@ -221,7 +221,7 @@ impl ConnectionComponent {
 
         // commit the connection, this also increments the connection counter
         self.state
-            .put_new_connection(&connection_id, new_connection_end.into())
+            .put_new_connection(&connection_id, new_connection_end)
             .await
             .unwrap();
     }
@@ -252,7 +252,7 @@ impl ConnectionComponent {
         }
 
         self.state
-            .put_new_connection(&new_connection_id, new_conn.into())
+            .put_new_connection(&new_connection_id, new_conn)
             .await
             .unwrap();
     }
