@@ -45,7 +45,7 @@ where
         where
             E: de::Error,
         {
-            let r = v.replace("_", "");
+            let r = v.replace('_', "");
             r.parse::<u64>().map_err(E::custom)
         }
 
