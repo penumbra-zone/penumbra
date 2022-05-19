@@ -93,7 +93,7 @@ async fn main() -> Result<()> {
         Command::Validator(cmd) => cmd.exec(&opt, &mut state).await?,
         Command::Stake(cmd) => cmd.exec(&opt, &mut state).await?,
         Command::Tmp(cmd) => cmd.exec().await?,
-        Command::Chain(cmd) => cmd.exec(&state).await?,
+        Command::Chain(cmd) => cmd.exec(&opt, &state).await?,
     }
 
     Ok(())
