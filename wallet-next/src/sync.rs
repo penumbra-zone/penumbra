@@ -23,6 +23,7 @@ pub fn scan_block(
         note_payloads,
         nullifiers,
     }: CompactBlock,
+    epoch_duration: u64,
 ) -> ScanResult {
     let mut new_notes: Vec<NoteRecord> = Vec::new();
 
@@ -74,7 +75,7 @@ pub fn scan_block(
         .expect("ending the block must succed");
 
     // If we've also reached the end of the epoch, end the epoch in the commitment tree
-    if Epoch::from_height(height, todo!("get epoch duration")).is_epoch_end(height) {
+    if Epoch::from_height(height, epoch_duration).is_epoch_end(height) {
         tracing::debug!(?height, "end of epoch");
         note_commitment_tree
             .end_epoch()

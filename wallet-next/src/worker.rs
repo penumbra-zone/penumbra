@@ -46,6 +46,8 @@ impl Worker {
             .map(|h| h + 1)
             .unwrap_or(0);
 
+        let epoch_duration = self.storage.chain_params().await?.epoch_duration;
+
         let mut stream = self
             .client
             .compact_block_range(tonic::Request::new(CompactBlockRangeRequest {
@@ -57,7 +59,8 @@ impl Worker {
             .into_inner();
 
         while let Some(block) = stream.message().await? {
-            let scan_result = scan_block(&self.fvk, &mut self.nct, block.try_into()?);
+            let scan_result =
+                scan_block(&self.fvk, &mut self.nct, block.try_into()?, epoch_duration);
 
             self.storage
                 .record_block(scan_result, &mut self.nct)
