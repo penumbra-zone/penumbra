@@ -1,3 +1,5 @@
+// Rust analyzer complains without this (but rustc is happy regardless)
+#![recursion_limit = "256"]
 #![allow(clippy::clone_on_copy)]
 use std::path::PathBuf;
 
