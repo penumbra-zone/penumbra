@@ -11,7 +11,6 @@ mod delegation_token;
 mod identity_key;
 pub mod keys;
 pub mod memo;
-pub mod merkle;
 pub mod note;
 mod note_payload;
 mod nullifier;
