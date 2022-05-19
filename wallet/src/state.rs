@@ -119,7 +119,7 @@ impl ClientState {
     /// TODO: this will go away with wallet restructuring, where we'll
     /// record the position and return it with note queries
     pub fn position(&self, note: &Note) -> Option<tct::Position> {
-        self.note_commitment_tree.position()
+        self.note_commitment_tree.position_of(note.commit())
     }
 
     /// Returns a reference to the note commitment tree.
