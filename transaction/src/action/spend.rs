@@ -35,11 +35,11 @@ impl TryFrom<transaction::Spend> for Spend {
     fn try_from(proto: transaction::Spend) -> anyhow::Result<Self, Self::Error> {
         let body = proto
             .body
-            .ok_or(anyhow::anyhow!("spend body malformed"))?
+            .ok_or_else(|| anyhow::anyhow!("spend body malformed"))?
             .try_into()?;
         let auth_sig = proto
             .auth_sig
-            .ok_or(anyhow::anyhow!("spend body malformed"))?
+            .ok_or_else(|| anyhow::anyhow!("spend body malformed"))?
             .try_into()?;
 
         let proof = (proto.zkproof[..])

@@ -104,21 +104,21 @@ impl TransactionPlan {
         for output in self.output_plans() {
             state.update(output.output_body(fvk.outgoing()).auth_hash().as_bytes());
         }
-        for delegation in self.delegations().cloned() {
+        for delegation in self.delegations() {
             state.update(delegation.auth_hash().as_bytes());
         }
-        for undelegation in self.undelegations().cloned() {
+        for undelegation in self.undelegations() {
             state.update(undelegation.auth_hash().as_bytes());
         }
         // These are data payloads, so just hash them directly,
         // since we consider them authorizing data.
-        for payload in self.validator_definitions().cloned() {
+        for payload in self.validator_definitions() {
             let auth_hash = Params::default()
                 .personal(b"PAH:valdefnition")
                 .hash(&payload.encode_to_vec());
             state.update(auth_hash.as_bytes());
         }
-        for payload in self.ibc_actions().cloned() {
+        for payload in self.ibc_actions() {
             let auth_hash = Params::default()
                 .personal(b"PAH:ibc_action")
                 .hash(&payload.encode_to_vec());
@@ -132,7 +132,7 @@ impl TransactionPlan {
 fn chain_id_auth_hash(chain_id: &str) -> Hash {
     blake2b_simd::Params::default()
         .personal(b"PAH:chain_id")
-        .hash(&chain_id.as_bytes())
+        .hash(chain_id.as_bytes())
 }
 
 impl Fee {
@@ -233,14 +233,12 @@ impl Undelegate {
 
 #[cfg(test)]
 mod tests {
-    use incrementalmerkletree::{Frontier, Tree};
     use penumbra_crypto::{
         keys::{SeedPhrase, SpendKey, SpendSeed},
         memo::MemoPlaintext,
-        merkle::NoteCommitmentTree,
-        merkle::TreeExt,
         Note, Value, STAKING_TOKEN_ASSET_ID,
     };
+    use penumbra_tct as tct;
     use rand_core::OsRng;
 
     use crate::{
@@ -262,7 +260,7 @@ mod tests {
         let fvk = sk.full_viewing_key();
         let (addr, _dtk) = fvk.incoming().payment_address(0u64.into());
 
-        let mut nct = NoteCommitmentTree::new(0);
+        let mut nct = tct::Tree::new();
 
         let note0 = Note::generate(
             &mut OsRng,
@@ -281,10 +279,8 @@ mod tests {
             },
         );
 
-        nct.append(&note0.commit());
-        nct.witness();
-        nct.append(&note1.commit());
-        nct.witness();
+        nct.insert(tct::Witness::Keep, note0.commit()).unwrap();
+        nct.insert(tct::Witness::Keep, note1.commit()).unwrap();
 
         let plan = TransactionPlan {
             expiry_height: 0,
@@ -303,25 +299,25 @@ mod tests {
                     MemoPlaintext::default(),
                 )
                 .into(),
-                SpendPlan::new(&mut OsRng, note0, 0usize.into()).into(),
-                SpendPlan::new(&mut OsRng, note1, 1usize.into()).into(),
+                SpendPlan::new(&mut OsRng, note0, 0u64.into()).into(),
+                SpendPlan::new(&mut OsRng, note1, 1u64.into()).into(),
             ],
         };
 
         println!("{}", serde_json::to_string_pretty(&plan).unwrap());
 
-        let plan_auth_hash = plan.auth_hash(&fvk);
+        let plan_auth_hash = plan.auth_hash(fvk);
 
         let auth_data = plan.authorize(rng, &sk);
         let witness_data = WitnessData {
-            anchor: nct.root2(),
-            auth_paths: plan
+            anchor: nct.root(),
+            note_commitment_proofs: plan
                 .spend_plans()
-                .map(|spend| nct.auth_path(spend.note.commit()).unwrap())
+                .map(|spend| nct.witness(spend.note.commit()).unwrap())
                 .collect(),
         };
         let transaction = plan
-            .build(&mut OsRng, &fvk, auth_data, witness_data)
+            .build(&mut OsRng, fvk, auth_data, witness_data)
             .unwrap();
 
         let transaction_auth_hash = transaction.auth_hash();

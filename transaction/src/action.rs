@@ -59,10 +59,10 @@ impl From<Action> for pb::Action {
                 action: Some(pb::action::Action::Undelegate(inner.into())),
             },
             Action::ValidatorDefinition(inner) => pb::Action {
-                action: Some(pb::action::Action::ValidatorDefinition(inner.into())),
+                action: Some(pb::action::Action::ValidatorDefinition(inner)),
             },
             Action::IBCAction(inner) => pb::Action {
-                action: Some(pb::action::Action::IbcAction(inner.into())),
+                action: Some(pb::action::Action::IbcAction(inner)),
             },
         }
     }
@@ -82,9 +82,9 @@ impl TryFrom<pb::Action> for Action {
             pb::action::Action::Delegate(inner) => Ok(Action::Delegate(inner.try_into()?)),
             pb::action::Action::Undelegate(inner) => Ok(Action::Undelegate(inner.try_into()?)),
             pb::action::Action::ValidatorDefinition(inner) => {
-                Ok(Action::ValidatorDefinition(inner.try_into()?))
+                Ok(Action::ValidatorDefinition(inner))
             }
-            pb::action::Action::IbcAction(inner) => Ok(Action::IBCAction(inner.try_into()?)),
+            pb::action::Action::IbcAction(inner) => Ok(Action::IBCAction(inner)),
         }
     }
 }
