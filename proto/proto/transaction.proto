@@ -114,7 +114,7 @@ message WitnessData {
   crypto.MerkleRoot anchor = 1;
   // The auth paths for the notes the transaction spends, in the
   // same order as the spends in the transaction plan.
-  repeated crypto.AuthPath auth_paths = 2;
+  repeated crypto.NoteCommitmentProof note_commitment_proofs = 2;
 }
 
 // Describes a planned transaction.

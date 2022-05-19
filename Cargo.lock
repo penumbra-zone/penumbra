@@ -1800,14 +1800,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "incrementalmerkletree"
-version = "0.1.0"
-source = "git+https://github.com/penumbra-zone/incrementalmerkletree#b7bd6246122a6e9ace8edb51553fbf5228906cbb"
-dependencies = [
- "serde",
-]
-
-[[package]]
 name = "indenter"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2620,15 +2612,14 @@ dependencies = [
  "fpe",
  "hex",
  "hmac",
- "incrementalmerkletree",
  "jmt",
  "num-bigint",
  "once_cell",
  "pbkdf2",
  "penumbra-proto",
+ "penumbra-tct",
  "poseidon377",
  "proptest",
- "proptest-derive",
  "rand",
  "rand_core",
  "regex",
@@ -2792,6 +2783,7 @@ version = "0.1.0"
 dependencies = [
  "ark-ff",
  "ark-serialize",
+ "bincode",
  "blake2b_simd 1.0.0",
  "decaf377",
  "derivative",
@@ -2799,7 +2791,6 @@ dependencies = [
  "hex",
  "once_cell",
  "parking_lot 0.12.0",
- "penumbra-crypto",
  "penumbra-proto",
  "penumbra-tct",
  "poseidon377",
@@ -2807,6 +2798,7 @@ dependencies = [
  "proptest-derive",
  "rand",
  "serde",
+ "serde_json",
  "static_assertions",
  "thiserror",
 ]
@@ -2841,7 +2833,6 @@ dependencies = [
  "derivative",
  "fpe",
  "hex",
- "incrementalmerkletree",
  "num-bigint",
  "once_cell",
  "penumbra-crypto",
