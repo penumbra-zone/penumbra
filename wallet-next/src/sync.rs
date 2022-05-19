@@ -1,4 +1,4 @@
-use penumbra_chain::CompactBlock;
+use penumbra_chain::{CompactBlock, Epoch};
 use penumbra_crypto::Nullifier;
 use penumbra_crypto::{FullViewingKey, Note, NotePayload};
 use penumbra_tct as tct;
@@ -38,7 +38,9 @@ pub fn scan_block(
             tracing::debug!(?note_commitment, ?note, "found note while scanning");
 
             // Keep track of this commitment for later witnessing
-            note_commitment_tree.insert(tct::Witness::Keep, note_commitment);
+            note_commitment_tree
+                .insert(tct::Witness::Keep, note_commitment)
+                .expect("inserting a commitment must succeed");
 
             let position = note_commitment_tree
                 .position_of(note_commitment)
@@ -60,9 +62,29 @@ pub fn scan_block(
             new_notes.push(record);
         } else {
             // Don't remember this commitment; it wasn't ours
-            note_commitment_tree.insert(tct::Witness::Forget, note_commitment);
+            note_commitment_tree
+                .insert(tct::Witness::Forget, note_commitment)
+                .expect("inserting a commitment must succeed");
         }
     }
+
+    // End the block in the commitment tree
+    note_commitment_tree
+        .end_block()
+        .expect("ending the block must succed");
+
+    // If we've also reached the end of the epoch, end the epoch in the commitment tree
+    if Epoch::from_height(height, todo!("get epoch duration")).is_epoch_end(height) {
+        tracing::debug!(?height, "end of epoch");
+        note_commitment_tree
+            .end_epoch()
+            .expect("ending the epoch must succeed");
+    }
+
+    // Print the TCT root for debugging
+    tracing::debug!(tct_root = %note_commitment_tree.root(), "tct root");
+
+    // TODO: write a query to mark all matching rows as spent
 
     ScanResult {
         new_notes,
