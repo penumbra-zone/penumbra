@@ -66,7 +66,7 @@ impl Staking {
     ) -> Result<()> {
         let cur_state = self
             .state
-            .validator_state(&identity_key)
+            .validator_state(identity_key)
             .await?
             .ok_or_else(|| {
                 anyhow::anyhow!("validator to have state change did not have state in JMT")
