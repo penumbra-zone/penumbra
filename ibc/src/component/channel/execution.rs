@@ -63,7 +63,7 @@ pub mod channel_open_ack {
 
             channel.set_state(ChannelState::Open);
             channel.set_version(msg.counterparty_version.clone());
-            channel.set_counterparty_channel_id(msg.counterparty_channel_id.clone());
+            channel.set_counterparty_channel_id(msg.counterparty_channel_id);
             self.put_channel(&msg.channel_id, &msg.port_id, channel)
                 .await;
         }

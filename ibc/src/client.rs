@@ -124,7 +124,7 @@ pub fn validate_penumbra_client_state(
 
     // NOTE: Chain ID validation is actually not standardized yet. see
     // https://github.com/informalsystems/ibc-rs/pull/304#discussion_r503917283
-    let chain_id = ChainId::from_string(&chain_id);
+    let chain_id = ChainId::from_string(chain_id);
     if chain_id != tm_client_state.chain_id {
         return Err(anyhow::anyhow!(
             "invalid client state: chain id does not match"
