@@ -2,22 +2,22 @@ syntax = "proto3";
 package penumbra.transparent_proofs;
 option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
 
+import "crypto.proto";
+
 // A Penumbra transparent Spend Proof.
 message SpendProof {
   // Auxiliary inputs
-  uint32 merkle_path_field_0 = 1;
-  repeated bytes merkle_path_field_1 = 2;
-  uint64 position = 3;
-  bytes g_d = 4;
-  bytes pk_d = 5;
-  uint64 value_amount = 6;
-  bytes value_asset_id = 7;
-  bytes v_blinding = 8;
-  bytes note_commitment = 9;
-  bytes note_blinding = 10;
-  bytes spend_auth_randomizer = 11;
-  bytes ak = 12;
-  bytes nk = 13;
+  crypto.NoteCommitmentProof note_commitment_proof = 1;
+  bytes g_d = 2;
+  bytes pk_d = 3;
+  uint64 value_amount = 4;
+  bytes value_asset_id = 5;
+  bytes v_blinding = 6;
+  bytes note_commitment = 7;
+  bytes note_blinding = 8;
+  bytes spend_auth_randomizer = 9;
+  bytes ak = 10;
+  bytes nk = 11;
 }
 
 // A Penumbra transparent output proof.

@@ -18,7 +18,7 @@ message Transaction {
   bytes binding_sig = 2;
   // The root of some previous state of the note commitment tree, used as an anchor for all
   // ZK state transition proofs.
-  bytes anchor = 3;
+  crypto.MerkleRoot anchor = 3;
 }
 
 // The body of a transaction.
@@ -150,8 +150,7 @@ message SpendPlan {
     // The plaintext note we plan to spend.
     crypto.Note note = 1;
     // The position of the note we plan to spend.
-    // TODO: replace with TCT position
-    uint32 position = 2;
+    uint64 position = 2;
     // The randomizer to use for the spend.
     bytes randomizer = 3;
     // The blinding factor to use for the value commitment.
