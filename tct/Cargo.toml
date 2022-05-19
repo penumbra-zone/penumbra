@@ -7,7 +7,6 @@ edition = "2021"
 
 [dependencies]
 penumbra-proto = { path = "../proto/" }
-penumbra-crypto = { path = "../crypto" }
 
 derivative = "2"
 once_cell = "1"
@@ -29,7 +28,7 @@ rand = { version = "0.8", optional = true }
 spec = []
 internal = []
 fast_hash = []
-arbitrary = ["proptest", "proptest-derive", "rand", "penumbra-crypto/arbitrary"]
+arbitrary = ["proptest", "proptest-derive", "rand"]
 
 [dev-dependencies]
 static_assertions = "1"

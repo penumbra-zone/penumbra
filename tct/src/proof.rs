@@ -13,107 +13,35 @@ impl Proof {
         let position = position.into();
 
         let [a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x] = auth_path;
-        let path = Leaf;
-        let path = Node {
-            siblings: x,
-            child: path,
-        };
-        let path = Node {
-            siblings: w,
-            child: path,
-        };
-        let path = Node {
-            siblings: v,
-            child: path,
-        };
-        let path = Node {
-            siblings: u,
-            child: path,
-        };
-        let path = Node {
-            siblings: t,
-            child: path,
-        };
-        let path = Node {
-            siblings: s,
-            child: path,
-        };
-        let path = Node {
-            siblings: r,
-            child: path,
-        };
-        let path = Node {
-            siblings: q,
-            child: path,
-        };
-        let path = Node {
-            siblings: p,
-            child: path,
-        };
-        let path = Node {
-            siblings: o,
-            child: path,
-        };
-        let path = Node {
-            siblings: n,
-            child: path,
-        };
-        let path = Node {
-            siblings: m,
-            child: path,
-        };
-        let path = Node {
-            siblings: l,
-            child: path,
-        };
-        let path = Node {
-            siblings: k,
-            child: path,
-        };
-        let path = Node {
-            siblings: j,
-            child: path,
-        };
-        let path = Node {
-            siblings: i,
-            child: path,
-        };
-        let path = Node {
-            siblings: h,
-            child: path,
-        };
-        let path = Node {
-            siblings: g,
-            child: path,
-        };
-        let path = Node {
-            siblings: f,
-            child: path,
-        };
-        let path = Node {
-            siblings: e,
-            child: path,
-        };
-        let path = Node {
-            siblings: d,
-            child: path,
-        };
-        let path = Node {
-            siblings: c,
-            child: path,
-        };
-        let path = Node {
-            siblings: b,
-            child: path,
-        };
-        let path = Node {
-            siblings: a,
-            child: path,
-        };
+        let child = Leaf;
+        let child = Node { siblings: x, child };
+        let child = Node { siblings: w, child };
+        let child = Node { siblings: v, child };
+        let child = Node { siblings: u, child };
+        let child = Node { siblings: t, child };
+        let child = Node { siblings: s, child };
+        let child = Node { siblings: r, child };
+        let child = Node { siblings: q, child };
+        let child = Node { siblings: p, child };
+        let child = Node { siblings: o, child };
+        let child = Node { siblings: n, child };
+        let child = Node { siblings: m, child };
+        let child = Node { siblings: l, child };
+        let child = Node { siblings: k, child };
+        let child = Node { siblings: j, child };
+        let child = Node { siblings: i, child };
+        let child = Node { siblings: h, child };
+        let child = Node { siblings: g, child };
+        let child = Node { siblings: f, child };
+        let child = Node { siblings: e, child };
+        let child = Node { siblings: d, child };
+        let child = Node { siblings: c, child };
+        let child = Node { siblings: b, child };
+        let child = Node { siblings: a, child };
         Self(crate::internal::proof::Proof {
             leaf: commitment,
             position,
-            auth_path: path,
+            auth_path: child,
         })
     }
 
@@ -139,104 +67,32 @@ impl Proof {
     /// Get the authentication path for this proof, order from root to leaf.
     pub fn auth_path(&self) -> [&[Hash; 3]; 24] {
         use crate::internal::path::{Leaf, Node};
-        let path = self.0.auth_path();
-        let Node {
-            siblings: a,
-            child: path,
-        } = path;
-        let Node {
-            siblings: b,
-            child: path,
-        } = path;
-        let Node {
-            siblings: c,
-            child: path,
-        } = path;
-        let Node {
-            siblings: d,
-            child: path,
-        } = path;
-        let Node {
-            siblings: e,
-            child: path,
-        } = path;
-        let Node {
-            siblings: f,
-            child: path,
-        } = path;
-        let Node {
-            siblings: g,
-            child: path,
-        } = path;
-        let Node {
-            siblings: h,
-            child: path,
-        } = path;
-        let Node {
-            siblings: i,
-            child: path,
-        } = path;
-        let Node {
-            siblings: j,
-            child: path,
-        } = path;
-        let Node {
-            siblings: k,
-            child: path,
-        } = path;
-        let Node {
-            siblings: l,
-            child: path,
-        } = path;
-        let Node {
-            siblings: m,
-            child: path,
-        } = path;
-        let Node {
-            siblings: n,
-            child: path,
-        } = path;
-        let Node {
-            siblings: o,
-            child: path,
-        } = path;
-        let Node {
-            siblings: p,
-            child: path,
-        } = path;
-        let Node {
-            siblings: q,
-            child: path,
-        } = path;
-        let Node {
-            siblings: r,
-            child: path,
-        } = path;
-        let Node {
-            siblings: s,
-            child: path,
-        } = path;
-        let Node {
-            siblings: t,
-            child: path,
-        } = path;
-        let Node {
-            siblings: u,
-            child: path,
-        } = path;
-        let Node {
-            siblings: v,
-            child: path,
-        } = path;
-        let Node {
-            siblings: w,
-            child: path,
-        } = path;
-        let Node {
-            siblings: x,
-            child: path,
-        } = path;
-        let Leaf = path;
+        let child = self.0.auth_path();
+        let Node { siblings: a, child } = child;
+        let Node { siblings: b, child } = child;
+        let Node { siblings: c, child } = child;
+        let Node { siblings: d, child } = child;
+        let Node { siblings: e, child } = child;
+        let Node { siblings: f, child } = child;
+        let Node { siblings: g, child } = child;
+        let Node { siblings: h, child } = child;
+        let Node { siblings: i, child } = child;
+        let Node { siblings: j, child } = child;
+        let Node { siblings: k, child } = child;
+        let Node { siblings: l, child } = child;
+        let Node { siblings: m, child } = child;
+        let Node { siblings: n, child } = child;
+        let Node { siblings: o, child } = child;
+        let Node { siblings: p, child } = child;
+        let Node { siblings: q, child } = child;
+        let Node { siblings: r, child } = child;
+        let Node { siblings: s, child } = child;
+        let Node { siblings: t, child } = child;
+        let Node { siblings: u, child } = child;
+        let Node { siblings: v, child } = child;
+        let Node { siblings: w, child } = child;
+        let Node { siblings: x, child } = child;
+        let Leaf = child;
         [
             a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x,
         ]
