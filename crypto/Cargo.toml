@@ -10,11 +10,11 @@ edition = "2021"
 decaf377-ka = { path = "../decaf377-ka/" }
 decaf377-fmd = { path = "../decaf377-fmd/" }
 penumbra-proto = { path = "../proto/" }
+penumbra-tct = { path = "../tct/" }
 
 # Git deps
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 decaf377-rdsa = { version = "0.5", git = "https://github.com/penumbra-zone/decaf377-rdsa" }
-incrementalmerkletree = { git = "https://github.com/penumbra-zone/incrementalmerkletree" }
 poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377" }
 jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "main" }
 f4jumble = { git = "https://github.com/zcash/librustzcash", rev="2425a0869098e3b0588ccd73c42716bcf418612c" }
@@ -43,13 +43,8 @@ rand = "0.8"
 chacha20poly1305 = "0.9.0"
 # only needed because ark-ff doesn't display correctly
 num-bigint = "0.4"
-proptest = { version = "1", optional = true }
-proptest-derive = { version = "0.3", optional = true }
 
 [dev-dependencies]
 proptest = "1"
 bincode = "1"
 serde_json = "1"
-
-[features]
-arbitrary = ["proptest", "proptest-derive"]

@@ -5,9 +5,10 @@ use std::convert::{TryFrom, TryInto};
 use decaf377::FieldExt;
 use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_proto::{transparent_proofs, Message, Protobuf};
+use penumbra_tct as tct;
 use thiserror;
 
-use crate::{asset, ka, keys, merkle, merkle::Hashable, note, value, Fq, Fr, Nullifier, Value};
+use crate::{asset, ka, keys, note, value, Fq, Fr, Nullifier, Value};
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -23,8 +24,6 @@ pub enum Error {
     EphemeralPublicKeyMismatch,
     #[error("Must not be an identity")]
     IdentityUnexpected,
-    #[error("Unexpected depth for merkle path")]
-    MerklePathMismatch,
     #[error("Merkle root mismatch")]
     MerkleRootMismatch,
     #[error("Invalid diversified address")]
@@ -40,10 +39,8 @@ pub enum Error {
 /// This structure keeps track of the auxiliary (private) inputs.
 #[derive(Clone, Debug)]
 pub struct SpendProof {
-    // Path to the note being spent in the note commitment merkle tree.
-    pub merkle_path: merkle::Path,
-    // Position of the note being spent in the note commitment merkle tree.
-    pub position: merkle::Position,
+    // Inclusion proof for the note commitment.
+    pub note_commitment_proof: tct::Proof,
     // The diversified base for the address.
     pub g_d: decaf377::Element,
     // The transmission key for the address.
@@ -74,7 +71,7 @@ impl SpendProof {
     /// * the randomized verification spend key,
     pub fn verify(
         &self,
-        anchor: merkle::Root,
+        anchor: tct::Root,
         value_commitment: value::Commitment,
         nullifier: Nullifier,
         rk: VerificationKey<SpendAuth>,
@@ -83,7 +80,7 @@ impl SpendProof {
         let s_component_transmission_key = Fq::from_bytes(self.pk_d.0);
         if let Ok(transmission_key_s) = s_component_transmission_key {
             let note_commitment_test =
-                note::Commitment::new(self.note_blinding, self.value, self.g_d, transmission_key_s);
+                note::commitment(self.note_blinding, self.value, self.g_d, transmission_key_s);
 
             if self.note_commitment != note_commitment_test {
                 return Err(Error::NoteCommitmentMismatch);
@@ -93,34 +90,9 @@ impl SpendProof {
         }
 
         // Merkle path integrity.
-        // 1. Check the Merkle path is a depth of `merkle::DEPTH`.
-        if self.merkle_path.1.len() != merkle::DEPTH {
-            return Err(Error::MerklePathMismatch);
-        }
-
-        // 2. Check the Merkle path leads to the expected anchor (`merkle::Root`).
-        let mut cur = self.note_commitment;
-
-        // This logic is from `incrementalmerkletree`'s `compute_root_from_auth_path` function which is
-        // `pub(crate)` so is included below.
-        let mut lvl = merkle::Altitude::zero();
-        for (i, v) in self.merkle_path.1.iter().enumerate().map(|(i, v)| {
-            (
-                ((<usize>::try_from(self.position).unwrap() >> i) & 1) == 1,
-                v,
-            )
-        }) {
-            if i {
-                cur = note::Commitment::combine(lvl, v, &cur);
-            } else {
-                cur = note::Commitment::combine(lvl, &cur, v);
-            }
-            lvl = lvl + 1;
-        }
-        let expected_root = merkle::Root(cur.0);
-        if expected_root != anchor {
-            return Err(Error::MerkleRootMismatch);
-        }
+        self.note_commitment_proof
+            .verify(anchor)
+            .map_err(|_| Error::MerkleRootMismatch)?;
 
         // Value commitment integrity.
         if self.value.commit(self.v_blinding) != value_commitment {
@@ -138,7 +110,7 @@ impl SpendProof {
         if nullifier
             != self
                 .nk
-                .derive_nullifier(self.position, &self.note_commitment)
+                .derive_nullifier(self.note_commitment_proof.position(), &self.note_commitment)
         {
             return Err(Error::BadNullifier);
         }
@@ -198,7 +170,7 @@ impl OutputProof {
         let s_component_transmission_key = Fq::from_bytes(self.pk_d.0);
         if let Ok(transmission_key_s) = s_component_transmission_key {
             let note_commitment_test =
-                note::Commitment::new(self.note_blinding, self.value, self.g_d, transmission_key_s);
+                note::commitment(self.note_blinding, self.value, self.g_d, transmission_key_s);
 
             if note_commitment != note_commitment_test {
                 return Err(Error::NoteCommitmentMismatch);
@@ -237,14 +209,7 @@ impl From<SpendProof> for transparent_proofs::SpendProof {
         let ak_bytes: [u8; 32] = msg.ak.into();
         let nk_bytes: [u8; 32] = msg.nk.0.to_bytes();
         transparent_proofs::SpendProof {
-            merkle_path_field_0: u64::from(msg.merkle_path.0) as u32,
-            merkle_path_field_1: msg
-                .merkle_path
-                .1
-                .into_iter()
-                .map(|x| x.0.to_bytes().into())
-                .collect(),
-            position: msg.position.into(),
+            note_commitment_proof: Some(msg.note_commitment_proof.into()),
             g_d: msg.g_d.compress().0.to_vec(),
             pk_d: msg.pk_d.0.to_vec(),
             value_amount: msg.value.amount,
@@ -275,18 +240,12 @@ impl TryFrom<transparent_proofs::SpendProof> for SpendProof {
             .map_err(|_| Error::ProtoMalformed)?;
         let ak = ak_bytes.try_into().map_err(|_| Error::ProtoMalformed)?;
 
-        let mut merkle_path_vec = Vec::<note::Commitment>::new();
-        for merkle_path_segment in proto.merkle_path_field_1 {
-            merkle_path_vec.push(
-                merkle_path_segment[..]
-                    .try_into()
-                    .map_err(|_| Error::ProtoMalformed)?,
-            );
-        }
-
         Ok(SpendProof {
-            merkle_path: ((proto.merkle_path_field_0 as usize).into(), merkle_path_vec),
-            position: (proto.position as usize).into(),
+            note_commitment_proof: proto
+                .note_commitment_proof
+                .ok_or(Error::ProtoMalformed)?
+                .try_into()
+                .map_err(|_| Error::ProtoMalformed)?,
             g_d: g_d_encoding
                 .decompress()
                 .map_err(|_| Error::ProtoMalformed)?,
@@ -437,8 +396,6 @@ mod tests {
     use super::*;
     use crate::{
         keys::{SeedPhrase, SpendKey, SpendSeed},
-        merkle,
-        merkle::{Frontier, Tree, TreeExt},
         note, Note, Value,
     };
 
@@ -505,7 +462,7 @@ mod tests {
             esk,
         };
 
-        let incorrect_note_commitment = note::Commitment::new(
+        let incorrect_note_commitment = note::commitment(
             Fq::rand(&mut rng),
             value_to_send,
             note.diversified_generator(),
@@ -652,15 +609,13 @@ mod tests {
         let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
         let nk = *sk_sender.nullifier_key();
         let ak = sk_sender.spend_auth_key().into();
-        let mut nct = merkle::BridgeTree::<note::Commitment, 32>::new(5);
-        nct.append(&note_commitment);
-        let anchor = nct.root2();
-        nct.witness();
-        let merkle_path = nct.authentication_path(&note_commitment).unwrap();
+        let mut nct = tct::Tree::new();
+        nct.insert(tct::Witness::Keep, note_commitment).unwrap();
+        let anchor = nct.root();
+        let note_commitment_proof = nct.witness(note_commitment).unwrap();
 
         let proof = SpendProof {
-            merkle_path,
-            position: 0.into(),
+            note_commitment_proof,
             g_d: *sender.diversified_generator(),
             pk_d: *sender.transmission_key(),
             value: value_to_send,
@@ -701,15 +656,13 @@ mod tests {
         let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
         let nk = *sk_sender.nullifier_key();
         let ak = sk_sender.spend_auth_key().into();
-        let mut nct = merkle::BridgeTree::<note::Commitment, 32>::new(5);
-        let incorrect_anchor = nct.root2();
-        nct.append(&note_commitment);
-        nct.witness();
-        let merkle_path = nct.authentication_path(&note_commitment).unwrap();
+        let mut nct = tct::Tree::new();
+        let incorrect_anchor = nct.root();
+        nct.insert(tct::Witness::Keep, note_commitment).unwrap();
+        let note_commitment_proof = nct.witness(note_commitment).unwrap();
 
         let proof = SpendProof {
-            merkle_path,
-            position: 0.into(),
+            note_commitment_proof,
             g_d: *sender.diversified_generator(),
             pk_d: *sender.transmission_key(),
             value: value_to_send,
@@ -749,15 +702,13 @@ mod tests {
         let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
         let nk = *sk_sender.nullifier_key();
         let ak = sk_sender.spend_auth_key().into();
-        let mut nct = merkle::BridgeTree::<note::Commitment, 32>::new(5);
-        nct.append(&note_commitment);
-        nct.witness();
-        let anchor = nct.root2();
-        let merkle_path = nct.authentication_path(&note_commitment).unwrap();
+        let mut nct = tct::Tree::new();
+        nct.insert(tct::Witness::Keep, note_commitment).unwrap();
+        let anchor = nct.root();
+        let note_commitment_proof = nct.witness(note_commitment).unwrap();
 
         let proof = SpendProof {
-            merkle_path,
-            position: 0.into(),
+            note_commitment_proof,
             g_d: *sender.diversified_generator(),
             pk_d: *sender.transmission_key(),
             value: value_to_send,
@@ -797,15 +748,13 @@ mod tests {
         let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
         let nk = *sk_sender.nullifier_key();
         let ak = sk_sender.spend_auth_key().into();
-        let mut nct = merkle::BridgeTree::<note::Commitment, 32>::new(5);
-        nct.append(&note_commitment);
-        nct.witness();
-        let anchor = nct.root2();
-        let merkle_path = nct.authentication_path(&note_commitment).unwrap();
+        let mut nct = tct::Tree::new();
+        nct.insert(tct::Witness::Keep, note_commitment).unwrap();
+        let anchor = nct.root();
+        let note_commitment_proof = nct.witness(note_commitment).unwrap();
 
         let proof = SpendProof {
-            merkle_path,
-            position: 0.into(),
+            note_commitment_proof,
             g_d: *sender.diversified_generator(),
             pk_d: *sender.transmission_key(),
             value: value_to_send,
