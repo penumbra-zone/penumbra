@@ -2,6 +2,7 @@ use crate::component::client::View as _;
 use crate::component::connection::View as _;
 use anyhow::Result;
 use async_trait::async_trait;
+use ibc::core::ics02_client::client_consensus::AnyConsensusState;
 use ibc::core::ics02_client::client_consensus::ConsensusState;
 use ibc::core::ics02_client::client_def::AnyClient;
 use ibc::core::ics02_client::client_def::ClientDef;
@@ -18,6 +19,7 @@ use ibc::core::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
 use ibc::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use ibc::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use ibc::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
+use ibc::core::ics04_channel::msgs::timeout::MsgTimeout;
 use ibc::core::ics04_channel::packet::Packet;
 use ibc::core::ics24_host::identifier::ChannelId;
 use ibc::core::ics24_host::identifier::PortId;
@@ -25,7 +27,7 @@ use penumbra_chain::genesis;
 use penumbra_component::Component;
 use penumbra_proto::ibc::ibc_action::Action::{
     Acknowledgement, ChannelCloseConfirm, ChannelCloseInit, ChannelOpenAck, ChannelOpenConfirm,
-    ChannelOpenInit, ChannelOpenTry, RecvPacket,
+    ChannelOpenInit, ChannelOpenTry, RecvPacket, Timeout,
 };
 use penumbra_storage::{State, StateExt};
 use penumbra_transaction::Transaction;
@@ -101,6 +103,10 @@ impl Component for ICS4Channel {
                     MsgAcknowledgement::try_from(msg.clone())?;
                     // NOTE: no additional stateless validation is possible
                 }
+                Some(Timeout(msg)) => {
+                    MsgTimeout::try_from(msg.clone())?;
+                    // NOTE: no additional stateless validation is possible
+                }
 
                 // Other IBC messages are not handled by this component.
                 _ => {}
@@ -159,6 +165,12 @@ impl Component for ICS4Channel {
                 Some(Acknowledgement(msg)) => {
                     use stateful::acknowledge_packet::AcknowledgePacketCheck;
                     let msg = MsgAcknowledgement::try_from(msg.clone())?;
+
+                    self.state.validate(&msg).await?;
+                }
+                Some(Timeout(msg)) => {
+                    use stateful::timeout::TimeoutCheck;
+                    let msg = MsgTimeout::try_from(msg.clone())?;
 
                     self.state.validate(&msg).await?;
                 }
@@ -222,6 +234,12 @@ impl Component for ICS4Channel {
 
                     self.state.execute(&msg).await;
                 }
+                Some(Timeout(msg)) => {
+                    use execution::timeout::TimeoutExecute;
+                    let msg = MsgTimeout::try_from(msg.clone()).unwrap();
+
+                    self.state.execute(&msg).await;
+                }
 
                 // Other IBC messages are not handled by this component.
                 _ => {}
@@ -232,8 +250,6 @@ impl Component for ICS4Channel {
     #[instrument(name = "ics4_channel", skip(self, _end_block))]
     async fn end_block(&mut self, _end_block: &abci::request::EndBlock) {}
 }
-
-impl ICS4Channel {}
 
 #[async_trait]
 pub trait View: StateExt {

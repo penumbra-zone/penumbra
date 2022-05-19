@@ -215,3 +215,34 @@ pub mod acknowledge_packet {
 
     impl<T: StateExt> AcknowledgePacketExecute for T {}
 }
+
+pub mod timeout {
+    use super::super::*;
+
+    #[async_trait]
+    pub trait TimeoutExecute: StateExt {
+        async fn execute(&mut self, msg: &MsgTimeout) {
+            let mut channel = self
+                .get_channel(&msg.packet.source_channel, &msg.packet.source_port)
+                .await
+                .unwrap()
+                .unwrap();
+
+            self.delete_packet_commitment(
+                &msg.packet.source_channel,
+                &msg.packet.source_port,
+                msg.packet.sequence.into(),
+            )
+            .await;
+
+            if channel.ordering == ChannelOrder::Ordered {
+                // if the channel is ordered and we get a timeout packet, close the channel
+                channel.set_state(ChannelState::Closed);
+                self.put_channel(&msg.packet.source_channel, &msg.packet.source_port, channel)
+                    .await;
+            }
+        }
+    }
+
+    impl<T: StateExt> TimeoutExecute for T {}
+}
