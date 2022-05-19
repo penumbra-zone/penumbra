@@ -76,3 +76,17 @@ tendermint start
 ```
 
 You should now be syncing from the network as a fullnode!
+
+If you see an error like the following:
+
+```
+fromProto: validatorSet proposer error: nil validator" closerError=""
+```
+
+when you run `tendermint start`, try resetting your tendermint state and trying again:
+
+```console
+rm -rf \$HOME/.tendermint/data/ && \
+echo "{}" > \$HOME/.tendermint/data/priv_validator_state.json
+tendermint start
+```
