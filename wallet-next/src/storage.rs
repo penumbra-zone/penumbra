@@ -14,8 +14,6 @@ use std::path::PathBuf;
 
 use crate::{sync::ScanResult, NoteRecord};
 
-const MAX_MERKLE_CHECKPOINTS_CLIENT: usize = 10;
-
 #[derive(Clone)]
 pub struct Storage {
     pool: Pool<Sqlite>,
