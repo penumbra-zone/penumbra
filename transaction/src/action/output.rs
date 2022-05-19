@@ -69,7 +69,7 @@ impl TryFrom<pb::OutputBody> for Body {
     fn try_from(proto: pb::OutputBody) -> anyhow::Result<Self, Self::Error> {
         let note_payload = proto
             .note_payload
-            .ok_or(anyhow::anyhow!("missing output body"))?
+            .ok_or_else(|| anyhow::anyhow!("missing output body"))?
             .try_into()
             .map_err(|e: Error| e.context("output body malformed"))?;
 

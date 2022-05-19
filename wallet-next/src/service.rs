@@ -49,7 +49,7 @@ impl WalletService {
         let error_slot = Arc::new(Mutex::new(None));
 
         // Create a means of communicating shutdown with the worker task
-        let (tx, mut rx) = mpsc::channel(1);
+        let (tx, rx) = mpsc::channel(1);
 
         let worker = Worker::new(storage.clone(), client, error_slot.clone(), rx).await?;
 

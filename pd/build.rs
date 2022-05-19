@@ -15,9 +15,7 @@ fn setup_testnet_config() -> anyhow::Result<()> {
     let testnets_path = std::env::current_dir()
         .context("could not get current working directory")?
         .parent()
-        .ok_or(anyhow::anyhow!(
-            "could not get parent of current working directory"
-        ))?
+        .ok_or_else(|| anyhow::anyhow!("could not get parent of current working directory"))?
         .join("testnets");
 
     // Get the most recent testnet name and its configuration directory
@@ -40,7 +38,7 @@ fn setup_testnet_config() -> anyhow::Result<()> {
             "cargo:rustc-env={}={}",
             env_var,
             path.to_str()
-                .ok_or(anyhow::anyhow!("invalid UTF-8 in path"))?
+                .ok_or_else(|| anyhow::anyhow!("invalid UTF-8 in path"))?
         );
     }
 

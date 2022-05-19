@@ -270,11 +270,10 @@ impl Ics2Client {
 
         // if we have a stored consensus state for this height that conflicts, we need to freeze
         // the client. if it doesn't conflict, we can return early
-        if let Some(stored_cs_state) = self
+        if let Ok(stored_cs_state) = self
             .state
             .get_verified_consensus_state(verified_header.height(), client_id.clone())
             .await
-            .ok()
         {
             let stored_cs_state_tm = downcast!(stored_cs_state => AnyConsensusState::Tendermint)
                 .ok_or_else(|| {
@@ -317,7 +316,7 @@ impl Ics2Client {
                     anyhow::anyhow!("stored consensus state is not a Tendermint consensus state")
                 })
                 .unwrap();
-            if !(verified_header.signed_header.header().time >= prev_state_tm.timestamp) {
+            if verified_header.signed_header.header().time < prev_state_tm.timestamp {
                 return (
                     trusted_client_state
                         .with_header(verified_header.clone())
@@ -335,7 +334,7 @@ impl Ics2Client {
                     anyhow::anyhow!("stored consensus state is not a Tendermint consensus state")
                 })
                 .unwrap();
-            if !(verified_header.signed_header.header().time <= next_state_tm.timestamp) {
+            if verified_header.signed_header.header().time > next_state_tm.timestamp {
                 return (
                     trusted_client_state
                         .with_header(verified_header.clone())
@@ -346,10 +345,10 @@ impl Ics2Client {
             }
         }
 
-        return (
+        (
             trusted_client_state.with_header(verified_header.clone()),
             verified_consensus_state,
-        );
+        )
     }
 }
 
@@ -382,7 +381,7 @@ pub trait View: StateExt {
         let client_type_str: String = self
             .get_proto(format!("{}/clients/{}/clientType", COMMITMENT_PREFIX, client_id).into())
             .await?
-            .ok_or(anyhow::anyhow!("client not found"))?;
+            .ok_or_else(|| anyhow::anyhow!("client not found"))?;
 
         ClientType::from_str(&client_type_str).map_err(|_| anyhow::anyhow!("invalid client type"))
     }
@@ -392,7 +391,7 @@ pub trait View: StateExt {
             .get_domain(format!("{}/clients/{}/clientState", COMMITMENT_PREFIX, client_id).into())
             .await?;
 
-        client_state.ok_or(anyhow::anyhow!("client not found"))
+        client_state.ok_or_else(|| anyhow::anyhow!("client not found"))
     }
 
     async fn get_verified_heights(&self, client_id: &ClientId) -> Result<Option<VerifiedHeights>> {
@@ -432,7 +431,7 @@ pub trait View: StateExt {
         // it's not in the same path namespace.
         self.get_domain(format!("penumbra_consensus_states/{}", height).into())
             .await?
-            .ok_or(anyhow::anyhow!("consensus state not found"))
+            .ok_or_else(|| anyhow::anyhow!("consensus state not found"))
     }
 
     // returns the ConsensusState for the penumbra chain (this chain) at the given height
@@ -463,7 +462,7 @@ pub trait View: StateExt {
             .into(),
         )
         .await?
-        .ok_or(anyhow::anyhow!("consensus state not found"))
+        .ok_or_else(|| anyhow::anyhow!("consensus state not found"))
     }
 
     async fn put_verified_consensus_state(
@@ -490,7 +489,7 @@ pub trait View: StateExt {
                     heights: Vec::new(),
                 });
 
-        verified_heights.heights.push(height.clone());
+        verified_heights.heights.push(height);
 
         self.put_verified_heights(&client_id, verified_heights)
             .await;
@@ -570,7 +569,7 @@ pub trait View: StateExt {
         self.get_client_state(client_id).await?;
         self.get_client_type(client_id).await?;
 
-        let mut connections = self
+        let mut connections: ClientConnections = self
             .get_domain(
                 format!(
                     "{}/clients/{}/connections",
@@ -580,7 +579,7 @@ pub trait View: StateExt {
                 .into(),
             )
             .await?
-            .unwrap_or(ClientConnections::default());
+            .unwrap_or_default();
 
         connections.connection_ids.push(connection_id.clone());
 

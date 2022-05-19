@@ -278,7 +278,7 @@ impl ClientState {
         plan: TransactionPlan,
     ) -> anyhow::Result<Transaction> {
         // Next, authorize the transaction, ...
-        let auth_data = plan.authorize(&mut rng, &self.wallet.spend_key());
+        let auth_data = plan.authorize(&mut rng, self.wallet.spend_key());
 
         // ... build the witness data ...
         let witness_data = WitnessData {
@@ -296,7 +296,7 @@ impl ClientState {
         // ... and then build the transaction:
         plan.build(
             &mut rng,
-            &self.wallet.full_viewing_key(),
+            self.wallet.full_viewing_key(),
             auth_data,
             witness_data,
         )

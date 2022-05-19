@@ -32,7 +32,7 @@ impl ClueKey {
     ///
     /// Fails if the bytes don't encode a valid clue key.
     pub fn expand(&self) -> Result<ExpandedClueKey, Error> {
-        ExpandedClueKey::new(&self)
+        ExpandedClueKey::new(self)
     }
 }
 
@@ -70,7 +70,7 @@ impl ExpandedClueKey {
 
         self.subkeys.borrow_mut().append(&mut expanded_keys);
 
-        return Ok(());
+        Ok(())
     }
 
     /// Create a [`Clue`] intended for the [`DetectionKey`](crate::DetectionKey)

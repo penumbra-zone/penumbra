@@ -191,7 +191,7 @@ impl TryFrom<pbt::TransactionBody> for TransactionBody {
 
         let fee: Fee = proto
             .fee
-            .ok_or(anyhow::anyhow!("transaction body malformed"))?
+            .ok_or_else(|| anyhow::anyhow!("transaction body malformed"))?
             .into();
 
         Ok(TransactionBody {
@@ -227,7 +227,7 @@ impl TryFrom<pbt::Transaction> for Transaction {
     fn try_from(proto: pbt::Transaction) -> anyhow::Result<Self, Self::Error> {
         let transaction_body = proto
             .body
-            .ok_or(anyhow::anyhow!("transaction malformed"))?
+            .ok_or_else(|| anyhow::anyhow!("transaction malformed"))?
             .try_into()
             .map_err(|_| anyhow::anyhow!("transaction body malformed"))?;
 
