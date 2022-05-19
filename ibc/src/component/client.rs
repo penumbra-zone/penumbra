@@ -606,11 +606,11 @@ mod tests {
     use super::*;
     use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
     use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
-    use penumbra_crypto::merkle;
     use penumbra_crypto::{Fq, Zero};
     use penumbra_proto::ibc::ibc_action::Action as IbcActionInner;
     use penumbra_proto::Message;
     use penumbra_storage::Storage;
+    use penumbra_tct as tct;
     use penumbra_transaction::{Action, Fee, Transaction, TransactionBody};
     use std::fs;
     use tempfile::tempdir;
@@ -673,7 +673,7 @@ mod tests {
                 chain_id: "".to_string(),
                 fee: Fee(0),
             },
-            anchor: merkle::Root(Fq::zero()),
+            anchor: tct::Tree::new().root(),
             binding_sig: [0u8; 64].into(),
         };
 
@@ -688,7 +688,7 @@ mod tests {
                 fee: Fee(0),
             },
             binding_sig: [0u8; 64].into(),
-            anchor: merkle::Root(Fq::zero()),
+            anchor: tct::Tree::new().root(),
         };
 
         Ics2Client::check_tx_stateless(&create_client_tx).unwrap();
@@ -733,7 +733,7 @@ mod tests {
                 chain_id: "".to_string(),
                 fee: Fee(0),
             },
-            anchor: merkle::Root(Fq::zero()),
+            anchor: tct::Root(Fq::zero()),
             binding_sig: [0u8; 64].into(),
         };
 
