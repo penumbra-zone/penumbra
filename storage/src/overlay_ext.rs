@@ -69,7 +69,7 @@ impl StateExt for State {
                 tracing::trace!(?key, "no entry in tree");
                 Ok(None)
             }
-            Err(e) => Err(e.into()),
+            Err(e) => Err(e),
         }
     }
 
