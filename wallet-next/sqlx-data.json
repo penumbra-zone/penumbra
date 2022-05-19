@@ -47,6 +47,7 @@
       }
     },
     "query": "INSERT INTO sync_height (height) VALUES (?)"
+<<<<<<< HEAD
   },
   "305580649ec6471af1f6691eb228cb960c5923a36187ac1fc82af55242be85d0": {
     "describe": {
@@ -57,6 +58,8 @@
       }
     },
     "query": "INSERT INTO notes\n                    (\n                        note_commitment,\n                        height_spent,\n                        height_created,\n                        diversifier,\n                        amount,\n                        asset_id,\n                        transmission_key,\n                        blinding_factor,\n                        diversifier_index,\n                        nullifier\n                    )\n                    VALUES \n                    (\n                        ?,\n                        NULL,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?\n                    )"
+=======
+>>>>>>> cd0a1a5b (Generate sqlx data file for wallet-next)
   },
   "4af503f633659f5e73d7e64f3fb1f1ab5e37299a25dadcd851f4ec86aea0a78b": {
     "describe": {
@@ -103,6 +106,7 @@
       }
     },
     "query": "\n            SELECT height\n            FROM sync_height\n            ORDER BY height DESC\n            LIMIT 1\n        "
+<<<<<<< HEAD
   },
   "adb0ad7f82c6a84b0e180d2210f9a52e416e9bd9e2d8dff6b55eefa7b1c06fd5": {
     "describe": {
@@ -175,6 +179,8 @@
       }
     },
     "query": "SELECT * \n            FROM notes \n            WHERE height_spent = ? \n            AND asset_id = ? \n            AND diversifier_index = ?"
+=======
+>>>>>>> cd0a1a5b (Generate sqlx data file for wallet-next)
   },
   "b4a0b026cd41003d66ec3ff1f104d89aee4ff22f10f1e7d20aa59dab4354b6ed": {
     "describe": {
@@ -185,6 +191,19 @@
       }
     },
     "query": "UPDATE note_commitment_tree SET bytes = ?"
+<<<<<<< HEAD
+=======
+  },
+  "d3d391318263dd6d83eaecd388c247fc5d5f0e1fb246fadfc6fb546261d23969": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 9
+      }
+    },
+    "query": "INSERT INTO notes\n                    (\n                        note_commitment,\n                        height_spent,\n                        height_created,\n                        diversifier,\n                        amount,\n                        asset_id,\n                        transmission_key,\n                        blinding_factor,\n                        diversifier_index,\n                        nullifier\n                    )\n                    VALUES\n                    (\n                        ?,\n                        NULL,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?\n                    )"
+>>>>>>> cd0a1a5b (Generate sqlx data file for wallet-next)
   },
   "d437ce2946cba91cd0e4fa750f14d227c2caa78e6bd69ed475f7b0679914c897": {
     "describe": {
