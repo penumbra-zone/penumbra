@@ -349,6 +349,7 @@ impl ShieldedPool {
         self.state
             .set_note_source(&note_payload.note_commitment, source)
             .await;
+
         // 3. Finally, record it in the pending compact block.
         self.compact_block.note_payloads.push(note_payload);
     }
@@ -358,8 +359,6 @@ impl ShieldedPool {
         // Extract the compact block, resetting it
         let compact_block = std::mem::take(&mut self.compact_block);
         let height = self.height().await;
-
-        tracing::debug!(?height, tct_root = %self.note_commitment_tree.root(), "tct root");
 
         // Write the CompactBlock:
         self.state.set_compact_block(compact_block).await;
