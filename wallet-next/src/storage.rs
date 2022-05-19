@@ -4,11 +4,11 @@ use penumbra_crypto::{
     asset,
     ka::Public,
     keys::{Diversifier, DiversifierIndex},
-    merkle::{NoteCommitmentTree, Tree},
     note::Commitment,
     FieldExt, Fq, FullViewingKey, Note, Nullifier, Value,
 };
 use penumbra_proto::Protobuf;
+use penumbra_tct as tct;
 use sqlx::{migrate::MigrateDatabase, query, Pool, Sqlite};
 use std::path::PathBuf;
 
@@ -52,8 +52,7 @@ impl Storage {
         // Initialize the database state with: empty NCT, chain params, FVK
         let mut tx = pool.begin().await?;
 
-        let nct_bytes =
-            bincode::serialize(&NoteCommitmentTree::new(MAX_MERKLE_CHECKPOINTS_CLIENT))?;
+        let nct_bytes = bincode::serialize(&tct::Tree::new())?;
         let chain_params_bytes = &ChainParams::encode_to_vec(&params)[..];
         let fvk_bytes = &FullViewingKey::encode_to_vec(&fvk)[..];
 
@@ -132,7 +131,7 @@ impl Storage {
         FullViewingKey::decode(result.bytes.as_slice())
     }
 
-    pub async fn note_commitment_tree(&self) -> anyhow::Result<NoteCommitmentTree> {
+    pub async fn note_commitment_tree(&self) -> anyhow::Result<tct::Tree> {
         let result = query!(
             r#"
             SELECT bytes
@@ -177,10 +176,10 @@ impl Storage {
         };
 
         let result = sqlx::query!(
-            "SELECT * 
-            FROM notes 
-            WHERE height_spent = ? 
-            AND asset_id = ? 
+            "SELECT *
+            FROM notes
+            WHERE height_spent = ?
+            AND asset_id = ?
             AND diversifier_index = ?",
             spent_clause,
             asset_clause,
@@ -238,7 +237,7 @@ impl Storage {
     pub async fn record_block(
         &self,
         scan_result: ScanResult,
-        nct: &mut NoteCommitmentTree,
+        nct: &mut tct::Tree,
     ) -> anyhow::Result<()> {
         //Check that the incoming block height follows the latest recorded height
         let last_sync_height = self.last_sync_height().await?;
@@ -289,7 +288,7 @@ impl Storage {
                         diversifier_index,
                         nullifier
                     )
-                    VALUES 
+                    VALUES
                     (
                         ?,
                         NULL,

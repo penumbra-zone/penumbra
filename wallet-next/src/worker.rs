@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use crate::{sync::scan_block, Storage};
-use penumbra_crypto::{merkle::NoteCommitmentTree, FullViewingKey};
+use penumbra_crypto::FullViewingKey;
 use penumbra_proto::client::oblivious::{
     oblivious_query_client::ObliviousQueryClient, CompactBlockRangeRequest,
 };
@@ -10,7 +10,7 @@ use tonic::transport::Channel;
 pub struct Worker {
     storage: Storage,
     client: ObliviousQueryClient<Channel>,
-    nct: NoteCommitmentTree,
+    nct: penumbra_tct::Tree,
     fvk: FullViewingKey, // TODO: notifications (see TODOs on WalletService)
     error_slot: Arc<Mutex<Option<anyhow::Error>>>,
     shutdown_rx: Receiver<()>,

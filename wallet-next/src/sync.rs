@@ -1,9 +1,7 @@
 use penumbra_chain::CompactBlock;
 use penumbra_crypto::Nullifier;
-use penumbra_crypto::{
-    merkle::{Frontier, Tree},
-    FullViewingKey, Note, NotePayload,
-};
+use penumbra_crypto::{FullViewingKey, Note, NotePayload};
+use penumbra_tct as tct;
 
 use crate::NoteRecord;
 
@@ -19,7 +17,7 @@ pub struct ScanResult {
 #[tracing::instrument(skip(fvk, note_commitment_tree, note_payloads, nullifiers))]
 pub fn scan_block(
     fvk: &FullViewingKey,
-    note_commitment_tree: &mut penumbra_crypto::merkle::NoteCommitmentTree,
+    note_commitment_tree: &mut tct::Tree,
     CompactBlock {
         height,
         note_payloads,
