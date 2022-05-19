@@ -88,6 +88,12 @@ impl Component for ShieldedPool {
             .unwrap();
         }
 
+        // Close the genesis block
+        // TODO: replace this with an `expect!` when this is consensus-critical
+        if let Err(e) = self.tiered_commitment_tree.end_block() {
+            tracing::error!(error = ?e, "failed to end genesis block");
+        }
+
         // Hard-coded to zero because we are in the genesis block
         self.compact_block.height = 0;
 
@@ -281,8 +287,6 @@ impl Component for ShieldedPool {
             }
         }
 
-        tracing::debug!(?height, tct_root = %self.tiered_commitment_tree.root(), "tct root");
-
         self.write_compactblock_and_nct().await.unwrap();
     }
 }
@@ -402,6 +406,8 @@ impl ShieldedPool {
         // Extract the compact block, resetting it
         let compact_block = std::mem::take(&mut self.compact_block);
         let height = self.state.get_block_height().await?;
+
+        tracing::debug!(?height, tct_root = %self.tiered_commitment_tree.root(), "tct root");
 
         // Write the CompactBlock:
         self.state.set_compact_block(compact_block).await;
