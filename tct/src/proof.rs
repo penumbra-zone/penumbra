@@ -99,24 +99,20 @@ impl Proof {
     }
 }
 
-// TODO: re-enable these impls once we adapt the protobuf crate:
+use penumbra_proto::crypto as pb;
 
-/*
-use penumbra_proto::transparent_proofs as pb;
-
-impl From<Proof> for pb::MerkleProof {
+impl From<Proof> for pb::NoteCommitmentProof {
     fn from(proof: Proof) -> Self {
         proof.0.into()
     }
 }
 
-impl TryFrom<pb::MerkleProof> for Proof {
+impl TryFrom<pb::NoteCommitmentProof> for Proof {
     type Error = crate::ProofDecodeError;
 
-    fn try_from(value: pb::MerkleProof) -> Result<Self, Self::Error> {
+    fn try_from(value: pb::NoteCommitmentProof) -> Result<Self, Self::Error> {
         Ok(Proof(crate::internal::proof::Proof::try_from(value)?))
     }
 }
 
-impl penumbra_proto::Protobuf<pb::MerkleProof> for Proof {}
-*/
+impl penumbra_proto::Protobuf<pb::NoteCommitmentProof> for Proof {}
