@@ -336,7 +336,7 @@ impl Storage {
             if let Some(bytes) = spent_commitment_bytes {
                 // Forget spent note commitments from the NCT
                 let spent_commitment = Commitment::try_from(bytes.note_commitment.as_slice())?;
-                nct.remove_witness(&spent_commitment);
+                nct.forget(spent_commitment);
             }
         }
 
