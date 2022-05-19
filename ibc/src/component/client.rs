@@ -733,7 +733,7 @@ mod tests {
                 chain_id: "".to_string(),
                 fee: Fee(0),
             },
-            anchor: tct::Root(Fq::zero()),
+            anchor: tct::Tree::new().root(),
             binding_sig: [0u8; 64].into(),
         };
 
