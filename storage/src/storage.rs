@@ -75,7 +75,11 @@ impl Storage {
 
     pub async fn put_nct(&self, tct: &tct::Tree) -> Result<()> {
         let db = self.0.clone();
+
+        tracing::debug!("serializing TCT");
         let tct_data = bincode::serialize(tct)?;
+        tracing::debug!(tct_bytes = tct_data.len(), "serialized TCT");
+
         let span = Span::current();
         tokio::task::Builder::new()
             .name("put_nct")
