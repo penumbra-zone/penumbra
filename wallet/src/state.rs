@@ -9,7 +9,6 @@ use penumbra_chain::{params::ChainParams, sync::CompactBlock, Epoch};
 use penumbra_crypto::{
     asset::{self, Denom},
     memo::MemoPlaintext,
-    merkle::{Frontier, NoteCommitmentTree, Position, Tree, TreeExt},
     note, Address, DelegationToken, FieldExt, Note, NotePayload, Nullifier, Value,
     STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
 };
@@ -26,8 +25,6 @@ use tracing::instrument;
 
 use crate::Wallet;
 
-const MAX_MERKLE_CHECKPOINTS_CLIENT: usize = 10;
-
 /// The time after which a locally cached submitted transaction is considered to have failed.
 const SUBMITTED_TRANSACTION_TIMEOUT: Duration = Duration::from_secs(60);
 
@@ -40,10 +37,8 @@ const SUBMITTED_TRANSACTION_TIMEOUT: Duration = Duration::from_secs(60);
 pub struct ClientState {
     /// The last block height we've scanned to, if any.
     last_block_height: Option<u64>,
-    /// Note commitment tree.
-    note_commitment_tree: NoteCommitmentTree,
     /// Tiered commitment tree.
-    tiered_commitment_tree: penumbra_tct::Tree,
+    note_commitment_tree: penumbra_tct::Tree,
     /// Our nullifiers and the notes they correspond to.
     nullifier_map: BTreeMap<Nullifier, note::Commitment>,
     /// Notes that we have received.
@@ -108,8 +103,7 @@ impl ClientState {
     pub fn new(wallet: Wallet) -> Self {
         Self {
             last_block_height: None,
-            note_commitment_tree: NoteCommitmentTree::new(MAX_MERKLE_CHECKPOINTS_CLIENT),
-            tiered_commitment_tree: tct::Tree::new(),
+            note_commitment_tree: tct::Tree::new(),
             nullifier_map: BTreeMap::new(),
             unspent_set: BTreeMap::new(),
             submitted_spend_set: BTreeMap::new(),
@@ -124,14 +118,12 @@ impl ClientState {
 
     /// TODO: this will go away with wallet restructuring, where we'll
     /// record the position and return it with note queries
-    pub fn position(&self, note: &Note) -> Option<Position> {
-        self.note_commitment_tree
-            .authentication_path(&note.commit())
-            .map(|(pos, _path)| pos)
+    pub fn position(&self, note: &Note) -> Option<tct::Position> {
+        self.note_commitment_tree.position()
     }
 
     /// Returns a reference to the note commitment tree.
-    pub fn note_commitment_tree(&self) -> &NoteCommitmentTree {
+    pub fn note_commitment_tree(&self) -> &tct::Tree {
         &self.note_commitment_tree
     }
 
@@ -278,16 +270,16 @@ impl ClientState {
         plan: TransactionPlan,
     ) -> anyhow::Result<Transaction> {
         // Next, authorize the transaction, ...
-        let auth_data = plan.authorize(&mut rng, &self.wallet.spend_key());
+        let auth_data = plan.authorize(&mut rng, self.wallet.spend_key());
 
         // ... build the witness data ...
         let witness_data = WitnessData {
-            anchor: self.note_commitment_tree.root2(),
-            auth_paths: plan
+            anchor: self.note_commitment_tree.root(),
+            note_commitment_proofs: plan
                 .spend_plans()
                 .map(|spend| {
                     self.note_commitment_tree
-                        .auth_path(spend.note.commit())
+                        .witness(spend.note.commit())
                         .ok_or_else(|| anyhow::anyhow!("missing auth path for note commitment"))
                 })
                 .collect::<Result<_, _>>()?,
@@ -296,7 +288,7 @@ impl ClientState {
         // ... and then build the transaction:
         plan.build(
             &mut rng,
-            &self.wallet.full_viewing_key(),
+            self.wallet.full_viewing_key(),
             auth_data,
             witness_data,
         )
@@ -785,10 +777,6 @@ impl ClientState {
             encrypted_note,
         } in note_payloads
         {
-            // Unconditionally insert the note commitment into the merkle tree
-            tracing::debug!(?note_commitment, "appending to note commitment tree");
-            self.note_commitment_tree.append(&note_commitment);
-
             // Keep track of whether we successfully trial-decrypted the note
             let witness: tct::Witness;
 
@@ -803,21 +791,6 @@ impl ClientState {
                 witness = tct::Witness::Keep;
 
                 tracing::debug!(?note_commitment, ?note, "found note while scanning");
-                // Mark the most-recently-inserted note commitment (the one corresponding to this
-                // note) as worth keeping track of, because it's ours
-                self.note_commitment_tree.witness();
-
-                // Insert the note associated with its computed nullifier into the nullifier map
-                let (pos, _auth_path) = self
-                    .note_commitment_tree
-                    .authentication_path(&note_commitment)
-                    .expect("we just witnessed this commitment");
-                self.nullifier_map.insert(
-                    self.wallet
-                        .full_viewing_key()
-                        .derive_nullifier(pos, &note_commitment),
-                    note_commitment,
-                );
 
                 // If the note was a submitted change note, remove it from the submitted change set
                 if self.submitted_change_set.remove(&note_commitment).is_some() {
@@ -831,16 +804,27 @@ impl ClientState {
                 witness = tct::Witness::Forget;
             }
 
-            // TODO: replace this with a `?` when this is consensus-critical
-            if let Err(e) = self.tiered_commitment_tree.insert(witness, note_commitment) {
-                tracing::error!(error = ?e, "failed to insert note commitment into TCT");
+            // Insert the note into the commitment tree, remembering it if it was one of our own
+            self.note_commitment_tree.insert(witness, note_commitment)?;
+
+            // Insert the note associated with its computed nullifier into the nullifier map
+            if matches!(witness, tct::Witness::Keep) {
+                let position = self
+                    .note_commitment_tree
+                    .position_of(note_commitment)
+                    .expect("witnessed note commitment is present");
+
+                self.nullifier_map.insert(
+                    self.wallet
+                        .full_viewing_key()
+                        .derive_nullifier(position, &note_commitment),
+                    note_commitment,
+                );
             }
         }
 
-        // Insert the constructed block into the commitment tree
-        if let Err(e) = self.tiered_commitment_tree.end_block() {
-            tracing::error!(error = ?e, "failed to end block in TCT");
-        }
+        // End the block in the commitment tree
+        self.note_commitment_tree.end_block()?;
 
         // If we've also reached the end of the epoch, end the epoch in the commitment tree
         if Epoch::from_height(
@@ -853,15 +837,11 @@ impl ClientState {
         .is_epoch_end(height)
         {
             tracing::debug!(?height, "end of epoch");
-
-            // TODO: replace this with an `expect!` when this is consensus-critical
-            if let Err(e) = self.tiered_commitment_tree.end_epoch() {
-                tracing::error!(error = ?e, "failed to end epoch in TCT");
-            }
+            self.note_commitment_tree.end_epoch()?;
         }
 
         // Print the TCT root for debugging
-        tracing::debug!(tct_root = %self.tiered_commitment_tree.root(), "tct root");
+        tracing::debug!(tct_root = %self.note_commitment_tree.root(), "tct root");
 
         // Scan through the list of nullifiers to find those which refer to notes in our unspent
         // set, submitted change set, or submitted spend set and move them into the spent set.
@@ -877,7 +857,7 @@ impl ClientState {
                         "found nullifier for unspent note, marking it as spent"
                     );
                     self.spent_set.insert(note_commitment, note);
-                    self.note_commitment_tree.remove_witness(&note_commitment);
+                    self.note_commitment_tree.forget(note_commitment);
                 } else if let Some((_, note)) = self.submitted_spend_set.remove(&note_commitment) {
                     // Insert the note into the spent set
                     tracing::debug!(
@@ -886,7 +866,7 @@ impl ClientState {
                         "found nullifier for submitted spend note, marking it as spent"
                     );
                     self.spent_set.insert(note_commitment, note);
-                    self.note_commitment_tree.remove_witness(&note_commitment);
+                    self.note_commitment_tree.forget(note_commitment);
                 } else if let Some((_, note)) = self.submitted_change_set.remove(&note_commitment) {
                     // Insert the note into the spent set
                     tracing::debug!(
@@ -895,7 +875,7 @@ impl ClientState {
                         "found nullifier for submitted change note, marking it as spent"
                     );
                     self.spent_set.insert(note_commitment, note);
-                    self.note_commitment_tree.remove_witness(&note_commitment);
+                    self.note_commitment_tree.forget(note_commitment);
                 } else if self.spent_set.contains_key(&note_commitment) {
                     // If the nullifier is already in the spent set, it means we've already
                     // processed this note and it's spent. This should never happen
@@ -931,8 +911,6 @@ mod serde_helpers {
         last_block_height: Option<u64>,
         #[serde_as(as = "serde_with::hex::Hex")]
         note_commitment_tree: Vec<u8>,
-        #[serde_as(as = "serde_with::hex::Hex")]
-        tiered_commitment_tree: Vec<u8>,
         nullifier_map: Vec<(String, String)>,
         unspent_set: Vec<(String, String)>,
         #[serde(default, alias = "pending_set")]
@@ -992,7 +970,6 @@ mod serde_helpers {
                 wallet: state.wallet,
                 last_block_height: state.last_block_height,
                 note_commitment_tree: bincode::serialize(&state.note_commitment_tree).unwrap(),
-                tiered_commitment_tree: bincode::serialize(&state.tiered_commitment_tree).unwrap(),
                 nullifier_map: state
                     .nullifier_map
                     .iter()
@@ -1111,7 +1088,6 @@ mod serde_helpers {
                 wallet: state.wallet,
                 last_block_height: state.last_block_height,
                 note_commitment_tree: bincode::deserialize(&state.note_commitment_tree)?,
-                tiered_commitment_tree: bincode::deserialize(&state.tiered_commitment_tree)?,
                 nullifier_map,
                 unspent_set,
                 submitted_spend_set,
