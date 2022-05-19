@@ -212,12 +212,9 @@ mod test {
 #[error("could not decode authentication path")]
 pub struct PathDecodeError;
 
-// TODO: re-enable these protobuf impls once we adapt the protobuf crate to this crate:
-
-/*
-use std::collections::VecDeque;
 use decaf377::{FieldExt, Fq};
-use penumbra_proto::transparent_proofs as pb;
+use penumbra_proto::crypto as pb;
+use std::collections::VecDeque;
 
 impl From<Leaf> for VecDeque<pb::MerklePathChunk> {
     fn from(Leaf: Leaf) -> VecDeque<pb::MerklePathChunk> {
@@ -340,4 +337,3 @@ where
         <Node<Child>>::try_from(VecDeque::from(queue))
     }
 }
-*/

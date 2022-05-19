@@ -86,11 +86,15 @@ message NotePayload {
 }
 
 // An authentication path from a note commitment to the root of the note commitment tree.
-//
-// TODO: update this when migrating to TCT
-// copied from transparent_proofs
-message AuthPath {
+message NoteCommitmentProof {
   NoteCommitment note_commitment = 1;
-  uint32 position = 2;
-  repeated NoteCommitment path = 3;
+  uint64 position = 2;
+  repeated MerklePathChunk auth_path = 3; // always length 24
+}
+
+// A set of 3 sibling hashes in the auth path for some note commitment.
+message MerklePathChunk {
+    bytes sibling_1 = 1;
+    bytes sibling_2 = 2;
+    bytes sibling_3 = 3;
 }

@@ -66,13 +66,10 @@ impl VerifyError {
 #[error("could not decode proof")]
 pub struct ProofDecodeError;
 
-// TODO: re-enable these protobuf impls once we adapt the protobuf crate to these types:
-
-/*
 use decaf377::{FieldExt, Fq};
-use penumbra_proto::transparent_proofs as pb;
+use penumbra_proto::crypto as pb;
 
-impl<Tree: Height> From<Proof<Tree>> for pb::MerkleProof
+impl<Tree: Height> From<Proof<Tree>> for pb::NoteCommitmentProof
 where
     Vec<pb::MerklePathChunk>: From<AuthPath<Tree>>,
 {
@@ -80,29 +77,31 @@ where
         Self {
             position: proof.position,
             auth_path: proof.auth_path.into(),
-            note_commitment: proof.leaf.0.to_bytes().to_vec(),
+            note_commitment: Some(proof.leaf.into()),
         }
     }
 }
 
-impl<Tree: Height> TryFrom<pb::MerkleProof> for Proof<Tree>
+impl<Tree: Height> TryFrom<pb::NoteCommitmentProof> for Proof<Tree>
 where
     AuthPath<Tree>: TryFrom<Vec<pb::MerklePathChunk>>,
 {
     type Error = ProofDecodeError;
 
-    fn try_from(proof: pb::MerkleProof) -> Result<Self, Self::Error> {
+    fn try_from(proof: pb::NoteCommitmentProof) -> Result<Self, Self::Error> {
         let position = proof.position;
         let auth_path = proof.auth_path.try_into().map_err(|_| ProofDecodeError)?;
-        let leaf = Fq::from_bytes(
-            proof
-                .note_commitment
-                .try_into()
-                .map_err(|_| ProofDecodeError)?,
-        )
-        .map_err(|_| ProofDecodeError)?
-        .try_into()
-        .map_err(|_| ProofDecodeError)?;
+        let leaf = Commitment(
+            Fq::from_bytes(
+                proof
+                    .note_commitment
+                    .ok_or(ProofDecodeError)?
+                    .inner
+                    .try_into()
+                    .map_err(|_| ProofDecodeError)?,
+            )
+            .map_err(|_| ProofDecodeError)?,
+        );
 
         Ok(Self {
             position,
@@ -111,4 +110,3 @@ where
         })
     }
 }
-*/
