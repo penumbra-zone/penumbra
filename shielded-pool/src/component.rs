@@ -89,10 +89,7 @@ impl Component for ShieldedPool {
         }
 
         // Close the genesis block
-        // TODO: replace this with an `expect!` when this is consensus-critical
-        if let Err(e) = self.tiered_commitment_tree.end_block() {
-            tracing::error!(error = ?e, "failed to end genesis block");
-        }
+        self.finish_nct_block().await;
 
         // Hard-coded to zero because we are in the genesis block
         self.compact_block.height = 0;
@@ -225,11 +222,7 @@ impl Component for ShieldedPool {
     #[instrument(name = "shielded_pool", skip(self, _end_block))]
     async fn end_block(&mut self, _end_block: &abci::request::EndBlock) {
         // Get the current block height
-        let height = self
-            .state
-            .get_block_height()
-            .await
-            .expect("block height must be set");
+        let height = self.height().await;
 
         // Set the height of the compact block
         self.compact_block.height = height;
@@ -262,30 +255,8 @@ impl Component for ShieldedPool {
             .unwrap();
         }
 
-        // Close the block in the TCT
-        // TODO: replace this with an `expect!` when this is consensus-critical
-        if let Err(e) = self.tiered_commitment_tree.end_block() {
-            tracing::error!(error = ?e, "failed to end block in TCT");
-        }
-
-        // If the block ends an epoch, also close the epoch in the TCT
-        if Epoch::from_height(
-            height,
-            self.state
-                .get_chain_params()
-                .await
-                .expect("chain params request must succeed")
-                .epoch_duration,
-        )
-        .is_epoch_end(height)
-        {
-            tracing::debug!(?height, "end of epoch");
-
-            // TODO: replace this with an `expect!` when this is consensus-critical
-            if let Err(e) = self.tiered_commitment_tree.end_epoch() {
-                tracing::error!(error = ?e, "failed to end epoch in TCT");
-            }
-        }
+        // Close the block in the NCT
+        self.finish_nct_block().await;
 
         self.write_compactblock_and_nct().await.unwrap();
     }
@@ -405,7 +376,7 @@ impl ShieldedPool {
     async fn write_compactblock_and_nct(&mut self) -> Result<()> {
         // Extract the compact block, resetting it
         let compact_block = std::mem::take(&mut self.compact_block);
-        let height = self.state.get_block_height().await?;
+        let height = self.height().await;
 
         tracing::debug!(?height, tct_root = %self.tiered_commitment_tree.root(), "tct root");
 
@@ -417,6 +388,46 @@ impl ShieldedPool {
             .await;
 
         Ok(())
+    }
+
+    /// Finish the block in the NCT.
+    #[instrument(skip(self))]
+    async fn finish_nct_block(&mut self) {
+        // Get the current block height
+        let height = self.height().await;
+
+        // Close the block in the TCT
+        // TODO: replace this with an `expect!` when this is consensus-critical
+        if let Err(e) = self.tiered_commitment_tree.end_block() {
+            tracing::error!(error = ?e, "failed to end block in TCT");
+        }
+
+        // If the block ends an epoch, also close the epoch in the TCT
+        if Epoch::from_height(
+            height,
+            self.state
+                .get_chain_params()
+                .await
+                .expect("chain params request must succeed")
+                .epoch_duration,
+        )
+        .is_epoch_end(height)
+        {
+            tracing::debug!(?height, "end of epoch");
+
+            // TODO: replace this with an `expect!` when this is consensus-critical
+            if let Err(e) = self.tiered_commitment_tree.end_epoch() {
+                tracing::error!(error = ?e, "failed to end epoch in TCT");
+            }
+        }
+    }
+
+    /// Get the current block height.
+    async fn height(&self) -> u64 {
+        self.state
+            .get_block_height()
+            .await
+            .expect("block height must be set")
     }
 }
 
