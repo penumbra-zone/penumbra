@@ -43,7 +43,8 @@ jobs:
         envs: TESTNET_HOST
         script: |
           cd ~/penumbra
-          docker-compose -f docker-compose.yml -f docker-compose.prod.yml stop
+          echo $TESTNET_HOST
+          TESTNET_HOST=$TESTNET_HOST docker-compose -f docker-compose.yml -f docker-compose.prod.yml stop
           rm -rf ~/.penumbra/testnet_data/
     - name: Generate testnet
       uses: appleboy/ssh-action@master
@@ -73,4 +74,5 @@ jobs:
         envs: TESTNET_HOST
         script: |
           cd ~/penumbra
-          docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+          echo $TESTNET_HOST
+          TESTNET_HOST=$TESTNET_HOST docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
