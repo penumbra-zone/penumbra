@@ -37,7 +37,7 @@ jobs:
         port: ${{ secrets.TUNNEL_PORT }}
         script: |
           cd ~/penumbra
-          docker-compose stop
+          docker-compose -f docker-compose.yml -f docker-compose.prod.yml stop
           rm -rf ~/.penumbra/testnet_data/
     - name: Generate testnet
       uses: appleboy/ssh-action@master
