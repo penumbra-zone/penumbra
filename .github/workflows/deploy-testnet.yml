@@ -17,11 +17,14 @@ jobs:
     steps:
     - name: Update git repository
       uses: appleboy/ssh-action@master
+      env:
+        TESTNET_HOST: ${{ secrets.TESTNET_HOST }}
       with:
         host: ${{ secrets.TESTNET_HOST }}
         username: ${{ secrets.TUNNEL_USERNAME }}
         key: ${{ secrets.ID_ED25519 }}
         port: ${{ secrets.TUNNEL_PORT }}
+        envs: TESTNET_HOST
         # TODO: `git checkout main` should refer to the tag instead
         script: |
           cd ~/penumbra
@@ -31,11 +34,14 @@ jobs:
           cargo update
     - name: Delete existing state
       uses: appleboy/ssh-action@master
+      env:
+        TESTNET_HOST: ${{ secrets.TESTNET_HOST }}
       with:
         host: ${{ secrets.TESTNET_HOST }}
         username: ${{ secrets.TUNNEL_USERNAME }}
         key: ${{ secrets.ID_ED25519 }}
         port: ${{ secrets.TUNNEL_PORT }}
+        envs: TESTNET_HOST
         script: |
           cd ~/penumbra
           docker-compose -f docker-compose.yml -f docker-compose.prod.yml stop
@@ -54,11 +60,14 @@ jobs:
     #       # docker run --rm -v $PWD:/source -v penumbra_grafana_data:/dest -w /source alpine cp config/grafana/dashboards/* /dest/
     - name: Generate testnet
       uses: appleboy/ssh-action@master
+      env:
+        TESTNET_HOST: ${{ secrets.TESTNET_HOST }}
       with:
         host: ${{ secrets.TESTNET_HOST }}
         username: ${{ secrets.TUNNEL_USERNAME }}
         key: ${{ secrets.ID_ED25519 }}
         port: ${{ secrets.TUNNEL_PORT }}
+        envs: TESTNET_HOST
         script: |
           cd ~/penumbra
           cargo run --release --bin pd -- generate-testnet --preserve-chain-id
@@ -66,12 +75,15 @@ jobs:
     - name: Restart deployment
       uses: appleboy/ssh-action@master
       timeout-minutes: 30
+      env:
+        TESTNET_HOST: ${{ secrets.TESTNET_HOST }}
       with:
         host: ${{ secrets.TESTNET_HOST }}
         username: ${{ secrets.TUNNEL_USERNAME }}
         key: ${{ secrets.ID_ED25519 }}
         port: ${{ secrets.TUNNEL_PORT }}
         command_timeout: 30m
+        envs: TESTNET_HOST
         script: |
           cd ~/penumbra
           docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
