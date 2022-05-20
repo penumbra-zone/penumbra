@@ -59,6 +59,12 @@ services:
       - /root/caddy/config:/config
     networks:
       - monitoring
+    environment:
+      # Directly pass the TESTNET_HOST env var to the caddy container.
+      # We set these in the GitHub Actions environment, as well as in
+      # `/etc/profile.d/penumbra.sh` on the testnet servers.
+      - TESTNET_HOST
+
 
 volumes:
   prometheus_data: {}
