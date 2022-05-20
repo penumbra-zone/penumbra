@@ -233,14 +233,12 @@ impl Undelegate {
 
 #[cfg(test)]
 mod tests {
-    use incrementalmerkletree::{Frontier, Tree};
     use penumbra_crypto::{
         keys::{SeedPhrase, SpendKey, SpendSeed},
         memo::MemoPlaintext,
-        merkle::NoteCommitmentTree,
-        merkle::TreeExt,
         Note, Value, STAKING_TOKEN_ASSET_ID,
     };
+    use penumbra_tct as tct;
     use rand_core::OsRng;
 
     use crate::{
@@ -262,7 +260,7 @@ mod tests {
         let fvk = sk.full_viewing_key();
         let (addr, _dtk) = fvk.incoming().payment_address(0u64.into());
 
-        let mut nct = NoteCommitmentTree::new(0);
+        let mut nct = tct::Tree::new();
 
         let note0 = Note::generate(
             &mut OsRng,
@@ -281,10 +279,8 @@ mod tests {
             },
         );
 
-        nct.append(&note0.commit());
-        nct.witness();
-        nct.append(&note1.commit());
-        nct.witness();
+        nct.insert(tct::Witness::Keep, note0.commit()).unwrap();
+        nct.insert(tct::Witness::Keep, note1.commit()).unwrap();
 
         let plan = TransactionPlan {
             expiry_height: 0,
@@ -303,8 +299,8 @@ mod tests {
                     MemoPlaintext::default(),
                 )
                 .into(),
-                SpendPlan::new(&mut OsRng, note0, 0usize.into()).into(),
-                SpendPlan::new(&mut OsRng, note1, 1usize.into()).into(),
+                SpendPlan::new(&mut OsRng, note0, 0u64.into()).into(),
+                SpendPlan::new(&mut OsRng, note1, 1u64.into()).into(),
             ],
         };
 
@@ -314,10 +310,10 @@ mod tests {
 
         let auth_data = plan.authorize(rng, &sk);
         let witness_data = WitnessData {
-            anchor: nct.root2(),
-            auth_paths: plan
+            anchor: nct.root(),
+            note_commitment_proofs: plan
                 .spend_plans()
-                .map(|spend| nct.auth_path(spend.note.commit()).unwrap())
+                .map(|spend| nct.witness(spend.note.commit()).unwrap())
                 .collect(),
         };
         let transaction = plan

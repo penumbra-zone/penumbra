@@ -43,6 +43,7 @@ extern crate derivative;
 #[macro_use]
 extern crate serde;
 
+mod commitment;
 mod error;
 mod index;
 mod proof;
@@ -112,7 +113,7 @@ pub enum Witness {
     Forget,
 }
 
-pub use penumbra_crypto::note::Commitment;
+pub use commitment::Commitment;
 
 #[cfg(test)]
 mod test {

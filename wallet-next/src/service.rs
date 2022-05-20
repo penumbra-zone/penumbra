@@ -3,7 +3,12 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use penumbra_crypto::keys::FullViewingKeyHash;
+use async_stream::try_stream;
+use futures::stream::{StreamExt, TryStreamExt};
+use penumbra_crypto::{
+    asset,
+    keys::{DiversifierIndex, FullViewingKeyHash},
+};
 use penumbra_proto::{
     client::oblivious::oblivious_query_client::ObliviousQueryClient,
     crypto as pbc,
@@ -142,7 +147,34 @@ impl WalletProtocol for WalletService {
         self.check_worker().await?;
         self.check_fvk(request.get_ref().fvk_hash.as_ref()).await?;
 
-        todo!()
+        let include_spent = request.get_ref().include_spent;
+        let asset_id = request
+            .get_ref()
+            .asset_id
+            .to_owned()
+            .map(|x| asset::Id::try_from(x).expect("AssetId protobuf conversion error"));
+        let diversifier_index = request.get_ref().diversifier_index.to_owned().map(|x| {
+            DiversifierIndex::try_from(x).expect("DiversifierIndex protobuf conversion error")
+        });
+        let amount_to_spend = request.get_ref().amount_to_spend;
+
+        let notes = self
+            .storage
+            .notes(include_spent, asset_id, diversifier_index, amount_to_spend)
+            .await
+            .map_err(|_| tonic::Status::unavailable("database error"))?;
+
+        let stream = try_stream! {
+            for note in notes {
+                yield note.into()
+            }
+        };
+
+        Ok(tonic::Response::new(
+            stream
+                .map_err(|_: anyhow::Error| tonic::Status::unavailable("database error"))
+                .boxed(),
+        ))
     }
 
     async fn auth_paths(

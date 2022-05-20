@@ -26,7 +26,7 @@ pub struct Tree {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(try_from = "pb::MerkleRoot", into = "pb::MerkleRoot")]
 #[cfg_attr(any(test, feature = "arbitrary"), derive(proptest_derive::Arbitrary))]
-pub struct Root(pub(crate) Hash);
+pub struct Root(pub Hash);
 
 impl From<Root> for Fq {
     fn from(root: Root) -> Self {

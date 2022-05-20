@@ -12,7 +12,7 @@ penumbra-chain = { path = "../chain" }
 penumbra-component = { path = "../component" }
 penumbra-storage = { path = "../storage" }
 penumbra-transaction = { path = "../transaction" }
-penumbra-proto = { path = "../proto" } 
+penumbra-proto = { path = "../proto" }
 tendermint = "0.24.0-pre.1"
 jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "main" }
 
@@ -34,3 +34,6 @@ ibc = { git = "https://github.com/penumbra-zone/ibc-rs.git", branch = "with-tend
 ibc-proto = { git = "https://github.com/penumbra-zone/ibc-rs.git", branch = "with-tendermintrs-24" }
 tendermint-light-client-verifier = "0.24.0-pre.1"
 metrics = "0.18"
+
+[dev-dependencies]
+penumbra-tct = { path = "../tct" }

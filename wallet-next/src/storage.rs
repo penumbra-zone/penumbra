@@ -1,18 +1,18 @@
-use std::path::PathBuf;
-
 use anyhow::anyhow;
 use penumbra_chain::params::ChainParams;
 use penumbra_crypto::{
-    merkle::{NoteCommitmentTree, Tree},
+    asset,
+    ka::Public,
+    keys::{Diversifier, DiversifierIndex},
     note::Commitment,
-    FieldExt, FullViewingKey,
+    FieldExt, Fq, FullViewingKey, Note, Nullifier, Value,
 };
 use penumbra_proto::Protobuf;
+use penumbra_tct as tct;
 use sqlx::{migrate::MigrateDatabase, query, Pool, Sqlite};
+use std::path::PathBuf;
 
-use crate::sync::ScanResult;
-
-const MAX_MERKLE_CHECKPOINTS_CLIENT: usize = 10;
+use crate::{sync::ScanResult, NoteRecord};
 
 #[derive(Clone)]
 pub struct Storage {
@@ -50,8 +50,7 @@ impl Storage {
         // Initialize the database state with: empty NCT, chain params, FVK
         let mut tx = pool.begin().await?;
 
-        let nct_bytes =
-            bincode::serialize(&NoteCommitmentTree::new(MAX_MERKLE_CHECKPOINTS_CLIENT))?;
+        let nct_bytes = bincode::serialize(&tct::Tree::new())?;
         let chain_params_bytes = &ChainParams::encode_to_vec(&params)[..];
         let fvk_bytes = &FullViewingKey::encode_to_vec(&fvk)[..];
 
@@ -130,7 +129,7 @@ impl Storage {
         FullViewingKey::decode(result.bytes.as_slice())
     }
 
-    pub async fn note_commitment_tree(&self) -> anyhow::Result<NoteCommitmentTree> {
+    pub async fn note_commitment_tree(&self) -> anyhow::Result<tct::Tree> {
         let result = query!(
             r#"
             SELECT bytes
@@ -144,10 +143,99 @@ impl Storage {
         Ok(bincode::deserialize(result.bytes.as_slice())?)
     }
 
+    pub async fn notes(
+        &self,
+        include_spent: bool,
+        asset_id: Option<asset::Id>,
+        diversifier_index: Option<penumbra_crypto::keys::DiversifierIndex>,
+        amount_to_spend: u64,
+    ) -> anyhow::Result<Vec<NoteRecord>> {
+        // If set, return spent notes as well as unspent notes.
+        // bool include_spent = 2;
+        let spent_clause = match include_spent {
+            false => "NULL",
+            true => "height_spent",
+        };
+
+        // If set, only return notes with the specified asset id.
+        // crypto.AssetId asset_id = 3;
+
+        let asset_clause = match asset_id {
+            Some(x) => format!("{:?}", x),
+            None => "asset_id".to_string(),
+        };
+
+        // If set, only return notes with the specified diversifier index.
+        // crypto.DiversifierIndex diversifier_index = 4;
+
+        let diversifier_clause = match diversifier_index {
+            Some(x) => format!("{:?}", x),
+            None => "diversifier_index".to_string(),
+        };
+
+        let result = sqlx::query!(
+            "SELECT *
+            FROM notes
+            WHERE height_spent = ?
+            AND asset_id = ?
+            AND diversifier_index = ?",
+            spent_clause,
+            asset_clause,
+            diversifier_clause
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        // If set, stop returning notes once the total exceeds this amount.
+        //
+        // Ignored if `asset_id` is unset or if `include_spent` is set.
+        // uint64 amount_to_spend = 5;
+        //TODO: figure out a clever way to only return notes up to the sum using SQL
+        let amount_cutoff = !(include_spent || asset_id.is_none());
+        let mut amount_total = 0;
+
+        let mut output: Vec<NoteRecord> = Vec::new();
+
+        for record in result {
+            let diversifier = Diversifier::try_from(&record.diversifier[..])?;
+            let transmission_key = Public(record.transmission_key[..].try_into()?);
+            let value = Value {
+                amount: record.amount as u64,
+                asset_id: asset::Id(Fq::from_bytes(record.asset_id[..].try_into()?)?),
+            };
+            let note_blinding = Fq::from_bytes(record.blinding_factor[..].try_into()?)?;
+
+            output.push(NoteRecord {
+                note_commitment: Commitment::try_from(&record.note_commitment[..])?,
+                note: Note::from_parts(diversifier, transmission_key, value, note_blinding)?,
+                diversifier_index: DiversifierIndex(record.diversifier_index[..].try_into()?),
+                nullifier: Nullifier::try_from(record.nullifier)?,
+                height_created: record.height_created as u64,
+                height_spent: if record.height_spent == None {
+                    None
+                } else {
+                    Some(record.height_spent.unwrap() as u64)
+                }, //height_spent is nullable
+            });
+
+            // If we're tracking amounts, accumulate the value of the note
+            // and check if we should break out of the loop.
+            if amount_cutoff {
+                // We know all the notes are of the same type, so adding raw quantities makes sense.
+                amount_total += record.amount as u64;
+                if amount_total >= amount_to_spend {
+                    break;
+                }
+            }
+        }
+
+        Ok(output)
+    }
+
     pub async fn record_block(
         &self,
         scan_result: ScanResult,
-        nct: &mut NoteCommitmentTree,
+        nct: &mut tct::Tree,
     ) -> anyhow::Result<()> {
         //Check that the incoming block height follows the latest recorded height
         let last_sync_height = self.last_sync_height().await?;
@@ -198,7 +286,7 @@ impl Storage {
                         diversifier_index,
                         nullifier
                     )
-                    VALUES 
+                    VALUES
                     (
                         ?,
                         NULL,
@@ -246,7 +334,7 @@ impl Storage {
             if let Some(bytes) = spent_commitment_bytes {
                 // Forget spent note commitments from the NCT
                 let spent_commitment = Commitment::try_from(bytes.note_commitment.as_slice())?;
-                nct.remove_witness(&spent_commitment);
+                nct.forget(spent_commitment);
             }
         }
 

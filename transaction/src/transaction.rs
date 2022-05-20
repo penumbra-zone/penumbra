@@ -3,13 +3,12 @@ use std::convert::{TryFrom, TryInto};
 use anyhow::Error;
 use ark_ff::Zero;
 use bytes::Bytes;
-use decaf377::FieldExt;
 use penumbra_crypto::{
-    merkle,
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
     Fr, NotePayload, Nullifier, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_proto::{ibc as pb_ibc, stake as pbs, transaction as pbt, Message, Protobuf};
+use penumbra_tct as tct;
 
 use crate::{
     action::{Delegate, Undelegate},
@@ -31,7 +30,7 @@ pub struct Fee(pub u64);
 pub struct Transaction {
     pub transaction_body: TransactionBody,
     pub binding_sig: Signature<Binding>,
-    pub anchor: merkle::Root,
+    pub anchor: tct::Root,
 }
 
 impl Transaction {
@@ -209,7 +208,7 @@ impl From<Transaction> for pbt::Transaction {
         let sig_bytes: [u8; 64] = msg.binding_sig.into();
         pbt::Transaction {
             body: Some(msg.transaction_body.into()),
-            anchor: Bytes::copy_from_slice(&msg.anchor.0.to_bytes()),
+            anchor: Some(msg.anchor.into()),
             binding_sig: Bytes::copy_from_slice(&sig_bytes),
         }
     }
@@ -235,7 +234,9 @@ impl TryFrom<pbt::Transaction> for Transaction {
             .try_into()
             .map_err(|_| anyhow::anyhow!("transaction malformed"))?;
 
-        let anchor = proto.anchor[..]
+        let anchor = proto
+            .anchor
+            .ok_or_else(|| anyhow::anyhow!("transaction malformed"))?
             .try_into()
             .map_err(|_| anyhow::anyhow!("transaction malformed"))?;
 

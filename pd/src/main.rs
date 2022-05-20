@@ -335,8 +335,7 @@ async fn main() -> anyhow::Result<()> {
                     // Add an initial allocation of 50,000 delegation tokens,
                     // starting them with 50x the individual allocations to discord users.
                     // 50,000 delegation tokens * 1e6 udelegation factor
-                    #[allow(clippy::inconsistent_digit_grouping)]
-                    amount: 50_000__000_000,
+                    amount: 50_000 * 10u64.pow(6),
                     denom: delegation_denom.to_string(),
                 });
 

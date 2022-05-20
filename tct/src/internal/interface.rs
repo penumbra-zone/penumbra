@@ -59,6 +59,7 @@ pub struct Full<T: Frontier> {
     /// that structure if it contained no witnesses.
     pub complete: Insert<T::Complete>,
 }
+
 /// Witness an authentication path into a tree, or remove a witnessed item from one.
 pub trait Witness: Height + Sized {
     /// The leaf of the tree: the element being witnessed.
@@ -77,6 +78,9 @@ pub trait GetPosition: Height {
     ///
     /// Returns `None` if the tree is full.
     fn position(&self) -> Option<u64>;
+
+    /// The maximum number of positions representable.
+    const CAPACITY: u64;
 }
 
 /// Forget about the authentication path to a given index.

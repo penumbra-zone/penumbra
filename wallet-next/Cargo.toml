@@ -17,6 +17,7 @@ penumbra-proto = { path = "../proto" }
 penumbra-chain = { path = "../chain" }
 penumbra-crypto = { path = "../crypto" }
 penumbra-stake = { path = "../stake" }
+penumbra-tct = { path = "../tct" }
 penumbra-transaction = { path = "../transaction" }
 
 sqlx = { version = "0.5", features = [ "runtime-tokio-rustls", "offline", "sqlite" ] }
@@ -38,6 +39,7 @@ prost = "0.9"
 futures = "0.3"
 hex = "0.4"
 metrics = "0.18"
+async-stream = "0.2"
 
 [build-dependencies]
 vergen = "5"

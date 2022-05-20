@@ -124,6 +124,8 @@ impl<Item: Focus + GetPosition> GetPosition for Top<Item> {
             Some(0)
         }
     }
+
+    const CAPACITY: u64 = <Nested<Item> as GetPosition>::CAPACITY;
 }
 
 impl<Item: Focus> GetHash for Top<Item> {

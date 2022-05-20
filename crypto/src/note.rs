@@ -8,10 +8,12 @@ use chacha20poly1305::{
 };
 use decaf377::FieldExt;
 use once_cell::sync::Lazy;
-use penumbra_proto::{crypto as pb, Protobuf};
+use penumbra_proto::crypto as pb;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use thiserror;
+
+pub use penumbra_tct::Commitment;
 
 use crate::{
     asset, ka,
@@ -28,9 +30,6 @@ pub static NOTE_ENCRYPTION_NONCE: Lazy<[u8; 12]> = Lazy::new(|| [0u8; 12]);
 
 // Can add to this/make this an enum when we add additional types of notes.
 pub const NOTE_TYPE: u8 = 0;
-
-#[cfg(any(test, feature = "arbitrary"))]
-pub mod arbitrary;
 
 /// A plaintext Penumbra note.
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -222,8 +221,9 @@ impl Note {
             .map_err(|_| Error::DecryptionError)
     }
 
+    /// Create the note commitment for this note.
     pub fn commit(&self) -> Commitment {
-        Commitment::new(
+        self::commitment(
             self.note_blinding,
             self.value,
             self.diversified_generator(),
@@ -234,6 +234,27 @@ impl Note {
     pub fn to_bytes(&self) -> [u8; NOTE_LEN_BYTES] {
         self.into()
     }
+}
+
+/// Create a note commitment from its parts.
+pub fn commitment(
+    note_blinding: Fq,
+    value: Value,
+    diversified_generator: decaf377::Element,
+    transmission_key_s: Fq,
+) -> Commitment {
+    let commit = poseidon377::hash_5(
+        &NOTECOMMIT_DOMAIN_SEP,
+        (
+            note_blinding,
+            value.amount.into(),
+            value.asset_id.0,
+            diversified_generator.compress_to_field(),
+            transmission_key_s,
+        ),
+    );
+
+    Commitment(commit)
 }
 
 /// Use Blake2b-256 to derive the symmetric key material for note and memo encryption.
@@ -371,125 +392,6 @@ impl TryFrom<[u8; NOTE_LEN_BYTES]> for Note {
 
     fn try_from(bytes: [u8; NOTE_LEN_BYTES]) -> Result<Note, Self::Error> {
         (&bytes[..]).try_into()
-    }
-}
-
-// Note commitment.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[serde(into = "pb::NoteCommitment", try_from = "pb::NoteCommitment")]
-pub struct Commitment(pub Fq);
-
-impl Protobuf<pb::NoteCommitment> for Commitment {}
-
-#[cfg(test)]
-mod test_serde {
-    use super::Commitment;
-
-    #[test]
-    fn roundtrip_json_zero() {
-        let commitment = Commitment::try_from([0; 32]).unwrap();
-        let bytes = serde_json::to_vec(&commitment).unwrap();
-        println!("{:?}", bytes);
-        let deserialized: Commitment = serde_json::from_slice(&bytes).unwrap();
-        assert_eq!(commitment, deserialized);
-    }
-
-    #[test]
-    fn roundtrip_bincode_zero() {
-        let commitment = Commitment::try_from([0; 32]).unwrap();
-        let bytes = bincode::serialize(&commitment).unwrap();
-        println!("{:?}", bytes);
-        let deserialized: Commitment = bincode::deserialize(&bytes).unwrap();
-        assert_eq!(commitment, deserialized);
-    }
-}
-
-impl From<Commitment> for pb::NoteCommitment {
-    fn from(nc: Commitment) -> Self {
-        Self {
-            inner: nc.0.to_bytes().to_vec(),
-        }
-    }
-}
-
-impl TryFrom<pb::NoteCommitment> for Commitment {
-    type Error = anyhow::Error;
-    fn try_from(value: pb::NoteCommitment) -> Result<Self, Self::Error> {
-        let bytes: [u8; 32] = value.inner[..]
-            .try_into()
-            .map_err(|_| Error::InvalidNoteCommitment)?;
-
-        let inner = Fq::from_bytes(bytes).map_err(|_| Error::InvalidNoteCommitment)?;
-
-        Ok(Commitment(inner))
-    }
-}
-
-impl std::fmt::Display for Commitment {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&hex::encode(&self.0.to_bytes()[..]))
-    }
-}
-
-impl std::fmt::Debug for Commitment {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!(
-            "note::Commitment({})",
-            hex::encode(&self.0.to_bytes()[..])
-        ))
-    }
-}
-
-impl Commitment {
-    pub fn new(
-        note_blinding: Fq,
-        value: Value,
-        diversified_generator: decaf377::Element,
-        transmission_key_s: Fq,
-    ) -> Self {
-        let commit = poseidon377::hash_5(
-            &NOTECOMMIT_DOMAIN_SEP,
-            (
-                note_blinding,
-                value.amount.into(),
-                value.asset_id.0,
-                diversified_generator.compress_to_field(),
-                transmission_key_s,
-            ),
-        );
-
-        Commitment(commit)
-    }
-}
-
-impl From<Commitment> for [u8; 32] {
-    fn from(commitment: Commitment) -> [u8; 32] {
-        commitment.0.to_bytes()
-    }
-}
-
-impl TryFrom<[u8; 32]> for Commitment {
-    type Error = Error;
-
-    fn try_from(bytes: [u8; 32]) -> Result<Commitment, Self::Error> {
-        let inner = Fq::from_bytes(bytes).map_err(|_| Error::InvalidNoteCommitment)?;
-
-        Ok(Commitment(inner))
-    }
-}
-
-// TODO: remove? aside from sqlx is there a use case for non-proto conversion from byte slices?
-impl TryFrom<&[u8]> for Commitment {
-    type Error = Error;
-
-    fn try_from(slice: &[u8]) -> Result<Commitment, Self::Error> {
-        let bytes: [u8; 32] = slice[..]
-            .try_into()
-            .map_err(|_| Error::InvalidNoteCommitment)?;
-
-        let inner = Fq::from_bytes(bytes).map_err(|_| Error::InvalidNoteCommitment)?;
-
-        Ok(Commitment(inner))
     }
 }
 

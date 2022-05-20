@@ -65,6 +65,8 @@ impl GetPosition for Item {
     fn position(&self) -> Option<u64> {
         None
     }
+
+    const CAPACITY: u64 = 1;
 }
 
 impl Forget for Item {

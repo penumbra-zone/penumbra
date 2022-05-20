@@ -8,11 +8,10 @@ use penumbra_chain::{genesis, sync::CompactBlock, Epoch, KnownAssets, NoteSource
 use penumbra_component::Component;
 use penumbra_crypto::{
     asset::{self, Asset, Denom},
-    ka,
-    merkle::{self, Frontier, NoteCommitmentTree, TreeExt},
-    note, Address, Note, NotePayload, Nullifier, One, Value, STAKING_TOKEN_ASSET_ID,
+    ka, note, Address, Note, NotePayload, Nullifier, One, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_storage::{State, StateExt};
+use penumbra_tct as tct;
 use penumbra_transaction::{Action, Transaction};
 use tendermint::abci;
 use tracing::instrument;
@@ -22,34 +21,25 @@ use crate::CommissionAmounts;
 // Stub component
 pub struct ShieldedPool {
     state: State,
-    note_commitment_tree: NoteCommitmentTree,
-    tiered_commitment_tree: penumbra_tct::Tree,
+    note_commitment_tree: tct::Tree,
     /// The in-progress CompactBlock representation of the ShieldedPool changes
     compact_block: CompactBlock,
 }
 
 impl ShieldedPool {
-    #[instrument(
-        name = "shielded_pool",
-        skip(state, note_commitment_tree, tiered_commitment_tree)
-    )]
-    pub async fn new(
-        state: State,
-        note_commitment_tree: NoteCommitmentTree,
-        tiered_commitment_tree: penumbra_tct::Tree,
-    ) -> Self {
+    #[instrument(name = "shielded_pool", skip(state, note_commitment_tree))]
+    pub async fn new(state: State, note_commitment_tree: tct::Tree) -> Self {
         Self {
             state,
             note_commitment_tree,
-            tiered_commitment_tree,
             compact_block: Default::default(),
         }
     }
 
     /// Get the current note commitment tree (this may not yet have been committed to the underlying
     /// storage).
-    pub fn note_commitment_tree(&self) -> (&NoteCommitmentTree, &penumbra_tct::Tree) {
-        (&self.note_commitment_tree, &self.tiered_commitment_tree)
+    pub fn note_commitment_tree(&self) -> &tct::Tree {
+        &self.note_commitment_tree
     }
 }
 
@@ -87,6 +77,9 @@ impl Component for ShieldedPool {
             .await
             .unwrap();
         }
+
+        // Close the genesis block
+        self.finish_nct_block().await;
 
         // Hard-coded to zero because we are in the genesis block
         self.compact_block.height = 0;
@@ -138,7 +131,7 @@ impl Component for ShieldedPool {
                     if spend
                         .proof
                         .verify(
-                            tx.anchor.clone(),
+                            tx.anchor,
                             spend.body.value_commitment,
                             spend.body.nullifier,
                             spend.body.rk,
@@ -219,11 +212,7 @@ impl Component for ShieldedPool {
     #[instrument(name = "shielded_pool", skip(self, _end_block))]
     async fn end_block(&mut self, _end_block: &abci::request::EndBlock) {
         // Get the current block height
-        let height = self
-            .state
-            .get_block_height()
-            .await
-            .expect("block height must be set");
+        let height = self.height().await;
 
         // Set the height of the compact block
         self.compact_block.height = height;
@@ -256,32 +245,8 @@ impl Component for ShieldedPool {
             .unwrap();
         }
 
-        // Close the block in the TCT
-        // TODO: replace this with an `expect!` when this is consensus-critical
-        if let Err(e) = self.tiered_commitment_tree.end_block() {
-            tracing::error!(error = ?e, "failed to end block in TCT");
-        }
-
-        // If the block ends an epoch, also close the epoch in the TCT
-        if Epoch::from_height(
-            height,
-            self.state
-                .get_chain_params()
-                .await
-                .expect("chain params request must succeed")
-                .epoch_duration,
-        )
-        .is_epoch_end(height)
-        {
-            tracing::debug!(?height, "end of epoch");
-
-            // TODO: replace this with an `expect!` when this is consensus-critical
-            if let Err(e) = self.tiered_commitment_tree.end_epoch() {
-                tracing::error!(error = ?e, "failed to end epoch in TCT");
-            }
-        }
-
-        tracing::debug!(?height, tct_root = %self.tiered_commitment_tree.root(), "tct root");
+        // Close the block in the NCT
+        self.finish_nct_block().await;
 
         self.write_compactblock_and_nct().await.unwrap();
     }
@@ -291,11 +256,10 @@ impl ShieldedPool {
     #[instrument(
         skip(self, value, address, source),
         fields(
-            position = self.note_commitment_tree
-                .bridges()
-                .last()
-                .map(|b| b.frontier().position().into())
-                .unwrap_or(0u64),
+            position = u64::from(self
+                .note_commitment_tree
+                .position()
+                .unwrap_or_else(|| u64::MAX.into())),
         )
     )]
     async fn mint_note(
@@ -326,13 +290,11 @@ impl ShieldedPool {
         */
 
         // ... so just hash the current position instead.
-        let position = self
+        let position: u64 = self
             .note_commitment_tree
-            .bridges()
-            .last()
-            .map(|b| b.frontier().position().into())
-            // If there are no bridges, the tree is empty
-            .unwrap_or(0u64);
+            .position()
+            .expect("note commitment tree is not full")
+            .into();
 
         let blinding_factor = Fq::from_le_bytes_mod_order(
             blake2b_simd::Params::default()
@@ -380,19 +342,14 @@ impl ShieldedPool {
         tracing::debug!("adding note");
         // 1. Insert it into the NCT
         self.note_commitment_tree
-            .append(&note_payload.note_commitment);
+            .insert(tct::Witness::Forget, note_payload.note_commitment)
+            .expect("inserting into the note commitment tree never fails");
 
-        // TODO: replace this with an `expect!` when this is consensus-critical
-        if let Err(e) = self
-            .tiered_commitment_tree
-            .insert(penumbra_tct::Witness::Forget, note_payload.note_commitment)
-        {
-            tracing::error!(error = ?e, "failed to insert commitment into TCT");
-        }
         // 2. Record its source in the JMT
         self.state
             .set_note_source(&note_payload.note_commitment, source)
             .await;
+
         // 3. Finally, record it in the pending compact block.
         self.compact_block.note_payloads.push(note_payload);
     }
@@ -401,16 +358,54 @@ impl ShieldedPool {
     async fn write_compactblock_and_nct(&mut self) -> Result<()> {
         // Extract the compact block, resetting it
         let compact_block = std::mem::take(&mut self.compact_block);
-        let height = self.state.get_block_height().await?;
+        let height = self.height().await;
 
         // Write the CompactBlock:
         self.state.set_compact_block(compact_block).await;
         // and the note commitment tree data and anchor:
         self.state
-            .set_nct_anchor(height, self.note_commitment_tree.root2())
+            .set_nct_anchor(height, self.note_commitment_tree.root())
             .await;
 
         Ok(())
+    }
+
+    /// Finish the block in the NCT.
+    #[instrument(skip(self))]
+    async fn finish_nct_block(&mut self) {
+        // Get the current block height
+        let height = self.height().await;
+
+        // Close the block in the TCT
+        self.note_commitment_tree
+            .end_block()
+            .expect("ending a block in the note commitment tree can never fail");
+
+        // If the block ends an epoch, also close the epoch in the TCT
+        if Epoch::from_height(
+            height,
+            self.state
+                .get_chain_params()
+                .await
+                .expect("chain params request must succeed")
+                .epoch_duration,
+        )
+        .is_epoch_end(height)
+        {
+            tracing::debug!(?height, "end of epoch");
+
+            self.note_commitment_tree
+                .end_epoch()
+                .expect("ending an epoch in the note commitment tree can never fail");
+        }
+    }
+
+    /// Get the current block height.
+    async fn height(&self) -> u64 {
+        self.state
+            .get_block_height()
+            .await
+            .expect("block height must be set")
     }
 }
 
@@ -528,13 +523,13 @@ pub trait View: StateExt {
             .await
     }
 
-    async fn set_nct_anchor(&self, height: u64, nct_anchor: merkle::Root) {
+    async fn set_nct_anchor(&self, height: u64, nct_anchor: tct::Root) {
         tracing::debug!(?height, ?nct_anchor, "writing anchor");
 
         // Write the NCT anchor both as a value, so we can look it up,
         self.put_domain(
-            format!("shielded_pool/nct_anchor/{}", height).into(),
-            nct_anchor.clone(),
+            format!("shielded_pool/tct_anchor/{}", height).into(),
+            nct_anchor,
         )
         .await;
         // and as a key, so we can query for it.
@@ -548,7 +543,7 @@ pub trait View: StateExt {
     }
 
     /// Checks whether a claimed NCT anchor is a previous valid state root.
-    async fn check_claimed_anchor(&self, anchor: &merkle::Root) -> Result<()> {
+    async fn check_claimed_anchor(&self, anchor: &tct::Root) -> Result<()> {
         if let Some(anchor_height) = self
             .get_proto::<u64>(format!("shielded_pool/valid_anchors/{}", anchor).into())
             .await?

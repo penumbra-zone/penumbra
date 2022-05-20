@@ -236,6 +236,8 @@ impl<Item: Focus + GetPosition> GetPosition for Tier<Item> {
             Inner::Complete(_) | Inner::Hash(_) => None,
         }
     }
+
+    const CAPACITY: u64 = <Nested<Item> as GetPosition>::CAPACITY;
 }
 
 impl<Item: Focus + Forget> Forget for Tier<Item>

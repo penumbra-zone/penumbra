@@ -1,3 +1,6 @@
+// Required because of NCT type size
+#![recursion_limit = "256"]
+
 mod metrics;
 mod note_record;
 mod service;
