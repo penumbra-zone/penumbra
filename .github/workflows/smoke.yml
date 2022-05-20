@@ -7,6 +7,7 @@ on:
 jobs:
   smoke_test:
     runs-on: buildjet-16vcpu-ubuntu-2004
+    environment: smoke-test
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -19,6 +20,11 @@ jobs:
           ./scripts/docker_compose_freshstart.sh
           chmod -R 777 ~/.penumbra/testnet_data
           docker-compose build
+
+      - name: Configure local wallet.
+        run: cargo run --bin pcli -- wallet import-from-phrase "$SEED_PHRASE" &> /dev/null
+        env:
+          SEED_PHRASE: ${{ secrets.TEST_SEED_PHRASE }}
 
       - name: Run testnet for smoke test duration.
         run: timeout --preserve-status $TESTNET_RUNTIME docker-compose up --exit-code-from pd-node0
