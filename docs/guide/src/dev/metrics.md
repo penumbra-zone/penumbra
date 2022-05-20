@@ -49,3 +49,16 @@ For instance:
 ```rust
 pub const MEMPOOL_CHECKTX_TOTAL: &str = "penumbra_pd_mempool_checktx_total";
 ```
+
+## Backing up Grafana
+
+After being changed, Grafana dashboards should be backed up to the repository for posterity and redeployment.
+
+1. SSH to the `testnet.penumbra.zone` deployment
+2. Grab the Grafana data files from the running Docker container:
+
+```console
+$ docker cp penumbra_grafana_1:/var/lib/grafana/ /tmp/grafana_data_backup
+$ tar czvf /tmp/grafana.tgz /tmp/grafana_data_backup 
+```
+3. Copy the data files to your local machine using `scp` and commit to the repo (`config/grafana/dashboards/grafana.tgz`)
