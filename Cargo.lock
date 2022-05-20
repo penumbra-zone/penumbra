@@ -2645,6 +2645,7 @@ dependencies = [
  "penumbra-stake",
  "penumbra-transaction",
  "prost 0.9.0",
+ "rand_core",
  "serde",
  "serde_json",
  "serde_with",
