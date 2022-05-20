@@ -54,6 +54,9 @@ enum Command {
         /// Bind the metrics endpoint to this port.
         #[structopt(short, long, default_value = "9000")]
         metrics_port: u16,
+        /// Disable tokio console-subscriber (enabled by default).
+        #[structopt(long)]
+        no_console: bool,
     },
 
     /// Generates a directory structure containing necessary files to run a
@@ -104,7 +107,6 @@ fn remote_addr(req: &http::Request<()>) -> Option<SocketAddr> {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    console_subscriber::init();
     let opt = Opt::from_args();
 
     match opt.cmd {
@@ -114,7 +116,14 @@ async fn main() -> anyhow::Result<()> {
             abci_port,
             grpc_port,
             metrics_port,
+            no_console,
         } => {
+            if no_console {
+                tracing_subscriber::fmt::init();
+            } else {
+                console_subscriber::init();
+            }
+
             tracing::info!(?host, ?abci_port, ?grpc_port, "starting pd");
 
             let storage = Storage::load(rocks_path)
@@ -197,6 +206,8 @@ async fn main() -> anyhow::Result<()> {
             };
 
             use rand::Rng;
+
+            tracing_subscriber::fmt::init();
 
             // Build script computes the latest testnet name and sets it as an env variable
             let chain_id = match preserve_chain_id {
