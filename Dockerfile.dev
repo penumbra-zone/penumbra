@@ -30,6 +30,7 @@ COPY pd/build.rs ./pd
 COPY proto ./proto
 COPY chain ./chain
 COPY crypto ./crypto
+COPY custody ./custody
 COPY shielded-pool ./shielded-pool
 COPY ibc ./ibc
 COPY stake ./stake
