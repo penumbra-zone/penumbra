@@ -61,10 +61,8 @@ jobs:
         envs: TESTNET_HOST,GRAFANA_CLIENT_SECRET,GRAFANA_CLIENT_ID,GRAFANA_SECRET
         script: |
           cd ~/penumbra
-          sed 's/CLIENT_SECRET/'${GRAFANA_CLIENT_SECRET}'/' config/grafana/grafana.prod.ini | \
-          sed 's/CLIENT_ID/'${GRAFANA_CLIENT_ID}'/' | \
-          sed 's/DOMAIN/'${TESTNET_HOST}'/' | \
-          sed 's/SECRET_KEY/'${GRAFANA_SECRET}'/' > /tmp/grafana.ini
+          sed 's/CLIENT_SECRET/'${GRAFANA_CLIENT_SECRET}'/' config/grafana/grafana.prod.ini | sed 's/CLIENT_ID/'${GRAFANA_CLIENT_ID}'/' | sed 's/DOMAIN/'${TESTNET_HOST}'/' | sed 's/SECRET_KEY/'${GRAFANA_SECRET}'/' > /tmp/grafana.ini
+          cat /tmp/grafana.ini
           docker run --rm -v $PWD:/source -v penumbra_grafana_configs:/dest -w /source alpine cp /tmp/grafana.ini /dest/grafana.ini
           TESTNET_HOST=$TESTNET_HOST docker-compose -f docker-compose.yml -f docker-compose.prod.yml restart penumbra_grafana_1
           # rm /tmp/grafana.ini
