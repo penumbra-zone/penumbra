@@ -63,7 +63,10 @@ impl From<Builder> for Finalized {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(try_from = "pb::MerkleRoot", into = "pb::MerkleRoot")]
 #[cfg_attr(any(test, feature = "arbitrary"), derive(proptest_derive::Arbitrary))]
-pub struct Root(pub Hash);
+pub struct Root(
+    #[cfg(feature = "internal")] pub Hash,
+    #[cfg(not(feature = "internal"))] pub(crate) Hash,
+);
 
 impl From<Root> for Fq {
     fn from(root: Root) -> Self {

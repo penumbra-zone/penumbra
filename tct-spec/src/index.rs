@@ -1,8 +1,11 @@
+//! Functions for constructing indices of commitments within blocks, epochs, and eternities.
+
 use crate::*;
 
 use hash_hasher::HashedMap;
 use penumbra_tct::{self as eternity, block, epoch};
 
+/// Index a block, producing a mapping from witnessed commitments to their position in the block.
 pub fn block(block: &[Insert<Commitment>]) -> HashedMap<Commitment, block::Position> {
     let mut index = HashedMap::default();
     for (within_block, insert) in block.iter().enumerate() {
@@ -13,6 +16,7 @@ pub fn block(block: &[Insert<Commitment>]) -> HashedMap<Commitment, block::Posit
     index
 }
 
+/// Index an epoch, producing a mapping from witnessed commitments to their position in the epoch.
 pub fn epoch(epoch: &[Insert<Vec<Insert<Commitment>>>]) -> HashedMap<Commitment, epoch::Position> {
     let mut index = HashedMap::default();
     for (within_epoch, insert) in epoch.iter().enumerate() {
@@ -34,6 +38,7 @@ pub fn epoch(epoch: &[Insert<Vec<Insert<Commitment>>>]) -> HashedMap<Commitment,
     index
 }
 
+/// Index an eternity, producing a mapping from witnessed commitments to their position in the eternity.
 pub fn eternity(
     eternity: &[Insert<Vec<Insert<Vec<Insert<Commitment>>>>>],
 ) -> HashedMap<Commitment, eternity::Position> {

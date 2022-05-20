@@ -1,6 +1,12 @@
 use super::*;
 
+/// This trait is used as a synonym for `impl FnOnce(Parent) -> Tree`: a closure which will
+/// construct a tree, as soon as it is given a reference to that tree's parent.
+///
+/// We create a builder rather than a tree directly because this allows us to compositionally
+/// construct trees with parent references.
 pub(super) trait Builder {
+    /// Construct the tree, given that tree's parent.
     fn with_parent(self, parent: Parent) -> Tree;
 }
 
@@ -10,16 +16,14 @@ impl<T: FnOnce(Parent) -> Tree> Builder for T {
     }
 }
 
+/// Make a leaf builder.
 fn leaf(commitment: Insert<Commitment>) -> impl Builder {
     move |parent| Tree {
-        inner: Arc::new(Wrapped::with_parent_and_height(
-            parent,
-            0,
-            Inner::Leaf(Leaf { commitment }),
-        )),
+        inner: Arc::new(Inner::new(parent, 0, Node::Leaf(Leaf { commitment }))),
     }
 }
 
+/// Make a node builder.
 fn node(height: u8, children: impl IntoIterator<Item = impl Builder>) -> impl Builder {
     move |parent| Tree {
         inner: Arc::new_cyclic(|this| {
@@ -32,31 +36,30 @@ fn node(height: u8, children: impl IntoIterator<Item = impl Builder>) -> impl Bu
                 "nodes must have between 1 and 4 children"
             );
 
-            Wrapped::with_parent_and_height(parent, height, Inner::Node(Node { children }))
+            Inner::new(parent, height, Node::Internal(Internal { children }))
         }),
     }
 }
 
+/// Functions for constructing tiers of different shapes.
 mod tier {
     use super::*;
 
+    /// Make a builder for an empty tier.
     pub(super) fn empty(parent: Parent, height: u8) -> Tree {
         Tree {
-            inner: Arc::new(Wrapped::with_parent_and_height(
-                parent,
-                height,
-                Inner::Tier(Tier { root: None }),
-            )),
+            inner: Arc::new(Inner::new(parent, height, Node::Tier(Tier { root: None }))),
         }
     }
 
+    /// Make a builder for a non-empty tier.
     fn non_empty(parent: Parent, height: u8, contents: Insert<impl Builder>) -> Tree {
         Tree {
             inner: Arc::new_cyclic(|this| {
-                Wrapped::with_parent_and_height(
+                Inner::new(
                     parent,
                     height,
-                    Inner::Tier(Tier {
+                    Node::Tier(Tier {
                         root: Some(contents.map(|contents| contents.with_parent(this.clone()))),
                     }),
                 )
@@ -64,15 +67,18 @@ mod tier {
         }
     }
 
+    /// Make a builder for a tier containing some subtree.
     pub(super) fn containing(parent: Parent, height: u8, contents: impl Builder) -> Tree {
         non_empty(parent, height, Insert::Keep(contents))
     }
 
+    /// Make a builder for a tier summarized by some hash value.
     pub(super) fn hashed(parent: Parent, height: u8, hash: Hash) -> Tree {
         non_empty(parent, height, Insert::Hash::<fn(Parent) -> Tree>(hash))
     }
 }
 
+/// Starting at some base height, consolidate the builders in the iterator into an 8-node-deep tier.
 fn tier(base_height: u8, level_0: Insert<impl IntoIterator<Item = impl Builder>>) -> impl Builder {
     fn level(height: u8, mut level: List<impl Builder>) -> List<impl Builder> {
         let mut next_level = List::new();
@@ -127,16 +133,19 @@ fn tier(base_height: u8, level_0: Insert<impl IntoIterator<Item = impl Builder>>
     }
 }
 
+/// Build a block from an iterator of commitments.
 pub(super) fn block(block: Insert<impl IntoIterator<Item = Insert<Commitment>>>) -> impl Builder {
     tier(0, block.map(|leaves| leaves.into_iter().map(self::leaf)))
 }
 
+/// Build an epoch from an iterator of blocks.
 pub(super) fn epoch(
     epoch: Insert<impl IntoIterator<Item = Insert<impl IntoIterator<Item = Insert<Commitment>>>>>,
 ) -> impl Builder {
     tier(8, epoch.map(|blocks| blocks.into_iter().map(self::block)))
 }
 
+/// Build an eternity from an iterator of epochs.
 pub(super) fn eternity(
     eternity: impl IntoIterator<
         Item = Insert<
