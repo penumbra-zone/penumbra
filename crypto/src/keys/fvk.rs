@@ -26,7 +26,7 @@ pub struct FullViewingKey {
 }
 
 /// The hash of a full viewing key, used as an account identifier.
-#[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(try_from = "pb::FullViewingKeyHash", into = "pb::FullViewingKeyHash")]
 pub struct FullViewingKeyHash(pub [u8; 32]);
 
@@ -189,5 +189,11 @@ impl std::fmt::Debug for FullViewingKeyHash {
         f.debug_tuple("FullViewingKeyHash")
             .field(&hex::encode(&self.0))
             .finish()
+    }
+}
+
+impl std::fmt::Display for FullViewingKeyHash {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.write_str(&hex::encode(&self.0))
     }
 }

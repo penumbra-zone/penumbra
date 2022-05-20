@@ -21,7 +21,7 @@ import "ibc.proto";
 // authorized.
 service CustodyProtocol {
     // Requests authorization of the transaction with the given description.
-    rpc Authorize(transaction.TransactionPlan) returns (transaction.AuthorizationData);
+    rpc Authorize(AuthorizeRequest) returns (transaction.AuthorizationData);
 }
 
 message AuthorizeRequest {
