@@ -43,7 +43,6 @@ jobs:
         envs: TESTNET_HOST
         script: |
           cd ~/penumbra
-          echo $TESTNET_HOST
           TESTNET_HOST=$TESTNET_HOST docker-compose -f docker-compose.yml -f docker-compose.prod.yml stop
           rm -rf ~/.penumbra/testnet_data/
     - name: Update Grafana configs and data
@@ -94,5 +93,4 @@ jobs:
         envs: TESTNET_HOST
         script: |
           cd ~/penumbra
-          echo $TESTNET_HOST
           TESTNET_HOST=$TESTNET_HOST docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build

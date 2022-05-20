@@ -44,20 +44,28 @@ jobs:
         envs: TESTNET_HOST
         script: |
           cd ~/penumbra
-          docker-compose -f docker-compose.yml -f docker-compose.prod.yml stop
+          TESTNET_HOST=$TESTNET_HOST docker-compose -f docker-compose.yml -f docker-compose.prod.yml stop
           rm -rf ~/.penumbra/testnet_data/
-    # - name: Update Grafana configs and data
-    #   uses: appleboy/ssh-action@master
-    #   with:
-    #     host: ${{ secrets.TESTNET_HOST }}
-    #     username: ${{ secrets.TUNNEL_USERNAME }}
-    #     key: ${{ secrets.ID_ED25519 }}
-    #     port: ${{ secrets.TUNNEL_PORT }}
-    #     script: |
-    #       cd ~/penumbra
-    #       sed 's/CLIENT_SECRET/'${GRAFANA_CLIENT_SECRET}'/' config/grafana/grafana.prod.ini
-    #       docker run --rm -v $PWD:/source -v penumbra_grafana_configs:/dest -w /source alpine cp config/grafana/grafana.prod.ini /dest/grafana.ini
-    #       # docker run --rm -v $PWD:/source -v penumbra_grafana_data:/dest -w /source alpine cp config/grafana/dashboards/* /dest/
+    - name: Update Grafana configs and data
+      uses: appleboy/ssh-action@master
+      env:
+        TESTNET_HOST: ${{ secrets.TESTNET_HOST }}
+        GRAFANA_CLIENT_ID: ${{ secrets.GRAFANA_CLIENT_ID }}
+        GRAFANA_CLIENT_SECRET: ${{ secrets.GRAFANA_CLIENT_SECRET }}
+        GRAFANA_SECRET: ${{ secrets.GRAFANA_SECRET }}
+      with:
+        host: ${{ secrets.TESTNET_HOST }}
+        username: ${{ secrets.TUNNEL_USERNAME }}
+        key: ${{ secrets.ID_ED25519 }}
+        port: ${{ secrets.TUNNEL_PORT }}
+        envs: TESTNET_HOST,GRAFANA_CLIENT_SECRET,GRAFANA_CLIENT_ID,GRAFANA_SECRET
+        script: |
+          cd ~/penumbra
+          sed 's/CLIENT_SECRET/'${GRAFANA_CLIENT_SECRET}'/' config/grafana/grafana.prod.ini | sed 's/CLIENT_ID/'${GRAFANA_CLIENT_ID}'/' | sed 's/DOMAIN/'${TESTNET_HOST}'/' | sed 's/SECRET_KEY/'${GRAFANA_SECRET}'/' > /tmp/grafana.ini
+          cat /tmp/grafana.ini
+          docker cp /tmp/grafana.ini penumbra_grafana_1:/etc/grafana/grafana.ini
+          TESTNET_HOST=$TESTNET_HOST docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d grafana
+          rm /tmp/grafana.ini
     - name: Generate testnet
       uses: appleboy/ssh-action@master
       env:
@@ -70,7 +78,7 @@ jobs:
         envs: TESTNET_HOST
         script: |
           cd ~/penumbra
-          cargo run --release --bin pd -- generate-testnet --preserve-chain-id
+          /root/.cargo/bin/cargo run --release --bin pd -- generate-testnet --preserve-chain-id
           chmod -R 777 ~/.penumbra/testnet_data
     - name: Restart deployment
       uses: appleboy/ssh-action@master
@@ -86,4 +94,4 @@ jobs:
         envs: TESTNET_HOST
         script: |
           cd ~/penumbra
-          docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+          TESTNET_HOST=$TESTNET_HOST docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
