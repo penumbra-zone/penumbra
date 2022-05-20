@@ -54,11 +54,9 @@ pub const MEMPOOL_CHECKTX_TOTAL: &str = "penumbra_pd_mempool_checktx_total";
 
 After being changed, Grafana dashboards should be backed up to the repository for posterity and redeployment.
 
-1. SSH to the `testnet.penumbra.zone` deployment
-2. Grab the Grafana data files from the running Docker container:
+Grafana has an [import/export](https://grafana.com/docs/grafana/latest/dashboards/export-import/) feature that
+we use for maintaining our dashboards.
 
-```console
-$ docker cp penumbra_grafana_1:/var/lib/grafana/ /tmp/grafana_data_backup
-$ tar czvf /tmp/grafana.tgz /tmp/grafana_data_backup 
-```
-3. Copy the data files to your local machine using `scp` and commit to the repo (`config/grafana/dashboards/grafana.tgz`)
+1. Export the dashboard as JSON with the default settings
+2. Rename the JSON file and copy into the repo (`config/grafana/dashboards/grafana.tgz`)
+3. Use the import function in the UI to update all deployments
