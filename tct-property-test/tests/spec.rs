@@ -1,16 +1,17 @@
-use proptest::{arbitrary::*, prelude::*};
+// use proptest::{arbitrary::*, prelude::*};
 
-use penumbra_tct::Commitment;
+// use penumbra_tct::Commitment;
 
 // mod simulate;
 // use simulate::{Params, Simulate};
 
-const MAX_TIER_ACTIONS: usize = 10;
-const MAX_USED_COMMITMENTS: usize = 10;
-const MAX_UNUSED_COMMITMENTS: usize = 2;
-const MAX_OBSERVATIONS: usize = 10;
+// const MAX_TIER_ACTIONS: usize = 10;
+// const MAX_USED_COMMITMENTS: usize = 10;
+// const MAX_UNUSED_COMMITMENTS: usize = 2;
+// const MAX_OBSERVATIONS: usize = 10;
 
 // This macro generates a simulation test for the given module
+#[allow(unused_macros)]
 macro_rules! spec_vs_impl {
     ($name:ident : $module:ident) => {
         proptest! {
