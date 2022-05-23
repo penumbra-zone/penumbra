@@ -6,13 +6,14 @@ use jmt::{
     storage::{Node, NodeBatch, NodeKey, TreeReader, TreeWriter},
     WriteOverlay,
 };
+use metrics::gauge;
 use rocksdb::{Options, DB};
 use tokio::sync::RwLock;
 use tracing::{instrument, Span};
 
 use penumbra_tct as tct;
 
-use crate::State;
+use crate::{metrics::TCT_SIZE_BYTES, State};
 
 #[derive(Clone, Debug)]
 pub struct Storage(Arc<DB>);
@@ -79,6 +80,7 @@ impl Storage {
         tracing::debug!("serializing TCT");
         let tct_data = bincode::serialize(tct)?;
         tracing::debug!(tct_bytes = tct_data.len(), "serialized TCT");
+        gauge!(TCT_SIZE_BYTES, tct_data.len() as f64);
 
         let span = Span::current();
         tokio::task::Builder::new()

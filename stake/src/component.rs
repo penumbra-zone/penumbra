@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
+use metrics::{decrement_gauge, gauge, increment_gauge};
 use penumbra_chain::{genesis, Epoch, View as _};
 use penumbra_component::Component;
 use penumbra_crypto::{DelegationToken, IdentityKey, STAKING_TOKEN_ASSET_ID};
@@ -24,6 +25,10 @@ use tendermint::{
 use tracing::{instrument, Instrument};
 
 use crate::{
+    metrics::{
+        ACTIVE_VALIDATORS, DISABLED_VALIDATORS, INACTIVE_VALIDATORS, JAILED_VALIDATORS,
+        MISSED_BLOCKS, TOMBSTONED_VALIDATORS,
+    },
     rate::{BaseRateData, RateData},
     validator::{self, Validator},
     DelegationChanges, Uptime,
@@ -146,6 +151,10 @@ impl Staking {
                 // Finally, set the validator to be active.
                 self.state.put_domain(state_key, Active).await;
 
+                // Update metrics
+                decrement_gauge!(INACTIVE_VALIDATORS, 1.0);
+                increment_gauge!(ACTIVE_VALIDATORS, 1.0);
+
                 tracing::debug!(?power, "validator became active");
                 Ok(())
             }
@@ -168,6 +177,14 @@ impl Staking {
                 // Finally, set the validator to be inactive or disabled.
                 self.state.put_domain(state_key, new_state).await;
 
+                // Update metrics
+                decrement_gauge!(ACTIVE_VALIDATORS, 1.0);
+                match new_state {
+                    Inactive => increment_gauge!(INACTIVE_VALIDATORS, 1.0),
+                    Disabled => increment_gauge!(DISABLED_VALIDATORS, 1.0),
+                    _ => unreachable!(),
+                };
+
                 Ok(())
             }
             (Jailed, Inactive) => {
@@ -175,6 +192,10 @@ impl Staking {
                 // slashed, and we're just allowing it to return to society.
                 tracing::debug!("releasing validator from jail");
                 self.state.put_domain(state_key, Inactive).await;
+
+                // Update metrics
+                decrement_gauge!(JAILED_VALIDATORS, 1.0);
+                increment_gauge!(INACTIVE_VALIDATORS, 1.0);
 
                 Ok(())
             }
@@ -184,14 +205,26 @@ impl Staking {
                 tracing::debug!("enabling validator");
                 self.state.put_domain(state_key, Inactive).await;
 
+                // Update metrics
+                decrement_gauge!(DISABLED_VALIDATORS, 1.0);
+                increment_gauge!(INACTIVE_VALIDATORS, 1.0);
+
                 Ok(())
             }
-            (Inactive | Jailed, Disabled) => {
+            (cur_state @ (Inactive | Jailed), Disabled) => {
                 // We don't really have to do anything here; we're just
                 // recording that the validator was disabled, so delegations to
                 // it are not allowed.
                 tracing::debug!("disabling validator");
                 self.state.put_domain(state_key, Disabled).await;
+
+                // Update metrics
+                match cur_state {
+                    Inactive => decrement_gauge!(INACTIVE_VALIDATORS, 1.0),
+                    Jailed => decrement_gauge!(JAILED_VALIDATORS, 1.0),
+                    _ => unreachable!(),
+                };
+                increment_gauge!(DISABLED_VALIDATORS, 1.0);
 
                 Ok(())
             }
@@ -226,6 +259,10 @@ impl Staking {
                 // Finally, set the validator to be jailed.
                 self.state.put_domain(state_key, Jailed).await;
 
+                // Update metrics
+                decrement_gauge!(ACTIVE_VALIDATORS, 1.0);
+                increment_gauge!(JAILED_VALIDATORS, 1.0);
+
                 Ok(())
             }
             (cur_state @ (Active | Inactive | Disabled | Jailed), Tombstoned) => {
@@ -256,6 +293,24 @@ impl Staking {
 
                 // Finally, set the validator to be tombstoned.
                 self.state.put_domain(state_key, Tombstoned).await;
+
+                // Update metrics
+                match cur_state {
+                    Active => {
+                        decrement_gauge!(ACTIVE_VALIDATORS, 1.0);
+                    }
+                    Inactive => {
+                        decrement_gauge!(INACTIVE_VALIDATORS, 1.0);
+                    }
+                    Disabled => {
+                        decrement_gauge!(DISABLED_VALIDATORS, 1.0);
+                    }
+                    Jailed => {
+                        decrement_gauge!(JAILED_VALIDATORS, 1.0);
+                    }
+                    _ => unreachable!(),
+                };
+                increment_gauge!(TOMBSTONED_VALIDATORS, 1.0);
 
                 Ok(())
             }
@@ -580,6 +635,8 @@ impl Staking {
                     ?params.missed_blocks_maximum,
                     "recorded vote info"
                 );
+                // TODO: We may want to update or clear this metric for non-active validators.
+                gauge!(MISSED_BLOCKS, uptime.num_missed_blocks() as f64, "identity_key" => v.to_string());
 
                 uptime.mark_height_as_signed(height, voted).unwrap();
                 if uptime.num_missed_blocks() as u64 >= params.missed_blocks_maximum {

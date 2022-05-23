@@ -15,15 +15,23 @@ pub use metrics::*;
 
 /// Registers all metrics used by this crate.
 pub fn register_metrics() {
-    /*
-    // Sample code for reference -- delete when adding the first metric
-    register_counter!(MEMPOOL_CHECKTX_TOTAL);
-    describe_counter!(
-        MEMPOOL_CHECKTX_TOTAL,
-        "The total number of checktx requests made to the mempool"
-    );
-     */
+    register_gauge!(MISSED_BLOCKS);
+    describe_gauge!(MISSED_BLOCKS, "The number of missed blocks per validator");
+    register_gauge!(ACTIVE_VALIDATORS);
+    describe_gauge!(ACTIVE_VALIDATORS, "The number of active validators");
+    register_gauge!(INACTIVE_VALIDATORS);
+    describe_gauge!(INACTIVE_VALIDATORS, "The number of inactive validators");
+    register_gauge!(JAILED_VALIDATORS);
+    describe_gauge!(JAILED_VALIDATORS, "The number of jailed validators");
+    register_gauge!(DISABLED_VALIDATORS);
+    describe_gauge!(DISABLED_VALIDATORS, "The number of disabled validators");
+    register_gauge!(TOMBSTONED_VALIDATORS);
+    describe_gauge!(TOMBSTONED_VALIDATORS, "The number of tombstoned validators");
 }
 
-// Sample code for reference -- delete when adding the first metric
-// pub const MEMPOOL_CHECKTX_TOTAL: &str = "penumbra_pd_mempool_checktx_total";
+pub const MISSED_BLOCKS: &str = "penumbra_pd_missed_blocks";
+pub const ACTIVE_VALIDATORS: &str = "penumbra_pd_active_validators";
+pub const INACTIVE_VALIDATORS: &str = "penumbra_pd_inactive_validators";
+pub const JAILED_VALIDATORS: &str = "penumbra_pd_jailed_validators";
+pub const DISABLED_VALIDATORS: &str = "penumbra_pd_disabled_validators";
+pub const TOMBSTONED_VALIDATORS: &str = "penumbra_pd_tombstoned_validators";
