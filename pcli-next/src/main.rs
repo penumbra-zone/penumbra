@@ -1,56 +1,155 @@
-use anyhow::Result;
-use penumbra_crypto::keys::{SeedPhrase, SpendKey};
+// Rust analyzer complains without this (but rustc is happy regardless)
+#![recursion_limit = "256"]
+#![allow(clippy::clone_on_copy)]
+use std::path::PathBuf;
+
+use anyhow::{Context, Result};
+use directories::ProjectDirs;
+use futures::StreamExt;
 use penumbra_custody::SoftHSM;
 use penumbra_proto::{
-    client::oblivious::oblivious_query_client::ObliviousQueryClient,
     custody::{
         custody_protocol_client::CustodyProtocolClient,
         custody_protocol_server::CustodyProtocolServer,
     },
     view::{view_protocol_client::ViewProtocolClient, view_protocol_server::ViewProtocolServer},
 };
-use penumbra_transaction::plan::TransactionPlan;
-use penumbra_view::{Storage, ViewService};
-use penumbra_wallet_next::build_transaction;
-use rand_core::OsRng;
+use penumbra_view::{ViewClient, ViewService};
+use structopt::StructOpt;
+
+mod command;
+mod legacy;
+mod network;
+mod wallet;
+mod warning;
+
+use wallet::Wallet;
+
+const CUSTODY_FILE_NAME: &'static str = "custody.json";
+const VIEW_FILE_NAME: &'static str = "pcli-view.sqlite";
+
+use command::*;
+
+#[derive(Debug, StructOpt)]
+#[structopt(
+    name = "pcli-next",
+    about = "The Penumbra command-line interface.",
+    version = env!("VERGEN_GIT_SEMVER"),
+)]
+pub struct Opt {
+    /// The address of the pd+tendermint node.
+    #[structopt(short, long, default_value = "testnet.penumbra.zone")]
+    pub node: String,
+    /// The port to use to speak to tendermint's RPC server.
+    #[structopt(long, default_value = "26657")]
+    pub tendermint_port: u16,
+    /// The port to use to speak to pd's gRPC server.
+    #[structopt(long, default_value = "8080")]
+    pub pd_port: u16,
+    #[structopt(subcommand)]
+    pub cmd: Command,
+    /// The directory to store the wallet and view data in [default: platform appdata directory]
+    #[structopt(short, long)]
+    pub data_path: Option<String>,
+}
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // stub code to check that generics are well-formed in wallet-next
+    // Display a warning message to the user so they don't get upset when all their tokens are lost.
+    if std::env::var("PCLI_UNLEASH_DANGER").is_err() {
+        warning::display();
+    }
 
-    let sk = SpendKey::from_seed_phrase(SeedPhrase::generate(OsRng), 0);
-    let fvk = sk.full_viewing_key().clone();
+    tracing_subscriber::fmt::init();
+    let opt = Opt::from_args();
 
-    let oq_client =
-        ObliviousQueryClient::connect(format!("http://{}:{}", "testnet.penumbra.zone", "8080"))
-            .await?;
+    let default_data_dir = ProjectDirs::from("zone", "penumbra", "pcli")
+        .context("Failed to get platform data dir")?
+        .data_dir()
+        .to_path_buf();
+    let data_dir = opt
+        .data_path
+        .as_ref()
+        .map(|s| PathBuf::from(s))
+        .unwrap_or(default_data_dir);
 
-    let storage = Storage::load("tmp.sqlite".to_string()).await?;
-    let view_service = ViewService::new(
-        storage,
-        oq_client,
-        "testnet.penumbra.zone".to_string(),
-        26657,
+    // Create the data directory if it is missing.
+    std::fs::create_dir_all(&data_dir).context("Failed to create data directory")?;
+
+    let custody_path = data_dir.join(CUSTODY_FILE_NAME);
+    let view_path = data_dir.join(VIEW_FILE_NAME);
+
+    let legacy_wallet_path = data_dir.join(legacy::WALLET_FILE_NAME);
+
+    // Try to auto-migrate the legacy wallet file to the new location, if:
+    // - the legacy wallet file exists
+    // - the new wallet file does not exist
+    if legacy_wallet_path.exists() && !custody_path.exists() {
+        legacy::migrate(&legacy_wallet_path, &custody_path)?;
+    }
+
+    // The wallet command takes the data dir directly, since it may need to
+    // create the client state, so handle it specially here so that we can have
+    // common code for the other subcommands.
+    if let Command::Wallet(wallet_cmd) = &opt.cmd {
+        wallet_cmd.exec(data_dir)?;
+        return Ok(());
+    }
+
+    // Otherwise, build the custody service...
+    let wallet = Wallet::load(custody_path)?;
+    let soft_hsm = SoftHSM::new(vec![wallet.spend_key.clone()]);
+
+    // ...and the view service...
+    // TODO: allow specifying an out-of-process pviewd
+    let mut oc_client = opt.oblivious_client().await?;
+    let fvk = wallet.spend_key.full_viewing_key().clone();
+    let view_storage = penumbra_view::Storage::load_or_initialize(
+        view_path
+            .to_str()
+            .ok_or_else(|| anyhow::anyhow!("Non-UTF8 view path"))?
+            .to_string(),
+        &fvk,
+        &mut oc_client,
     )
     .await?;
-    let custody_service = SoftHSM::new(vec![sk]);
+    let view_service = ViewService::new(
+        view_storage,
+        oc_client,
+        opt.node.clone(),
+        opt.tendermint_port,
+    )
+    .await?;
 
-    // local, in-memory servers
-    let vc1 = ViewProtocolClient::new(ViewProtocolServer::new(view_service));
-    let cc1 = CustodyProtocolClient::new(CustodyProtocolServer::new(custody_service));
+    // Now build the view and custody clients, doing gRPC with ourselves
+    let custody = CustodyProtocolClient::new(CustodyProtocolServer::new(soft_hsm));
+    let mut view = ViewProtocolClient::new(ViewProtocolServer::new(view_service));
 
-    // remote servers
-    let vc2 = ViewProtocolClient::connect("http://example.com:8080").await?;
-    let cc2 = CustodyProtocolClient::connect("http://example.com:8080").await?;
+    if opt.cmd.needs_sync() {
+        // this has to manually invoke the method on the "domain trait" because we haven't
+        // forgotten the concrete type, which has a method of the same name.
+        let mut status_stream = ViewClient::status_stream(&mut view, fvk.hash()).await?;
+        while let Some(status) = status_stream.next().await.transpose()? {
+            tracing::debug!(?status);
+        }
+    }
 
-    let plan = TransactionPlan::default();
+    // TODO: this is a mess, figure out the right way to bundle up the clients + fvk
+    // make sure to be compatible with client for remote view service, with different
+    // concrete type
 
-    // both of these sholud compile, proving that the generics capture what we want
-
-    // local servers
-    let _tx1 = build_transaction(&fvk, vc1, cc1, OsRng, plan.clone()).await?;
-    // remote servers
-    let _tx2 = build_transaction(&fvk, vc2, cc2, OsRng, plan.clone()).await?;
+    match &opt.cmd {
+        Command::Wallet(_) => unreachable!("wallet command already executed"),
+        Command::Sync => {
+            // We have already synchronized the wallet above, so we can just return.
+        }
+        Command::Tx(tx_cmd) => tx_cmd.exec(&opt, &fvk, view, custody).await?,
+        Command::Addr(addr_cmd) => addr_cmd.exec(&fvk)?,
+        Command::Balance(balance_cmd) => balance_cmd.exec(&fvk, view).await?,
+        Command::Validator(cmd) => cmd.exec(&opt, &wallet.spend_key, view, custody).await?,
+        Command::Stake(cmd) => cmd.exec(&opt, &fvk, view, custody).await?,
+        Command::Chain(cmd) => cmd.exec(&opt, &fvk, view).await?,
+    }
 
     Ok(())
 }

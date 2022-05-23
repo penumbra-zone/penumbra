@@ -7,10 +7,14 @@ use penumbra_crypto::{
     note::Commitment,
     Asset, FieldExt, Fq, FullViewingKey, Note, Nullifier, Value,
 };
-use penumbra_proto::Protobuf;
+use penumbra_proto::{
+    client::oblivious::{oblivious_query_client::ObliviousQueryClient, ChainParamsRequest},
+    Protobuf,
+};
 use penumbra_tct as tct;
 use sqlx::{migrate::MigrateDatabase, query, Pool, Sqlite};
 use std::path::PathBuf;
+use tonic::transport::Channel;
 
 use crate::{sync::ScanResult, NoteRecord};
 
@@ -20,6 +24,26 @@ pub struct Storage {
 }
 
 impl Storage {
+    /// If the database at `storage_path` exists, [`Self::load`] it, otherwise, [`Self::initialize`] it.
+    pub async fn load_or_initialize(
+        storage_path: String,
+        fvk: &FullViewingKey,
+        client: &mut ObliviousQueryClient<Channel>,
+    ) -> anyhow::Result<Self> {
+        if PathBuf::from(&storage_path).exists() {
+            Self::load(storage_path).await
+        } else {
+            let params = client
+                .chain_params(tonic::Request::new(ChainParamsRequest {
+                    chain_id: String::new(),
+                }))
+                .await?
+                .into_inner()
+                .try_into()?;
+            Self::initialize(storage_path, fvk.clone(), params).await
+        }
+    }
+
     pub async fn load(storage_path: String) -> anyhow::Result<Self> {
         Ok(Self {
             pool: Pool::<Sqlite>::connect(&storage_path).await?,

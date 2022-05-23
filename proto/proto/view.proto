@@ -47,8 +47,6 @@ message ChainParamsRequest {
 
 // Requests all assets known to the view service.
 message AssetRequest {
-    // For verification.
-    crypto.FullViewingKeyHash fvk_hash = 1;
 }
 
 // Requests sync status of the view service.

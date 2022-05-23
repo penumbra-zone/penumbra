@@ -149,6 +149,14 @@ impl From<usize> for DiversifierIndex {
     }
 }
 
+impl From<DiversifierIndex> for u128 {
+    fn from(x: DiversifierIndex) -> Self {
+        let mut bytes = [0; 16];
+        bytes[0..11].copy_from_slice(&x.0);
+        u128::from_le_bytes(bytes)
+    }
+}
+
 impl TryFrom<DiversifierIndex> for u64 {
     type Error = anyhow::Error;
     fn try_from(diversifier_index: DiversifierIndex) -> Result<Self, Self::Error> {
