@@ -77,6 +77,8 @@ tendermint start
 
 You should now be syncing from the network as a fullnode!
 
+## Common errors
+
 If you see an error like the following:
 
 ```
@@ -90,3 +92,18 @@ rm -rf ~/.rocksdb
 tendermint unsafe-reset-all
 tendermint start
 ```
+
+If you get an error like the following:
+
+```
+Did you reset Tendermint without resetting your application's data?
+```
+
+when you run `tendermint start`, try removing RocksDB:
+
+
+```
+rm -r $HOME/.rocksdb
+```
+
+and restarting `pd`.
