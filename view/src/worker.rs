@@ -11,7 +11,7 @@ pub struct Worker {
     storage: Storage,
     client: ObliviousQueryClient<Channel>,
     nct: penumbra_tct::Tree,
-    fvk: FullViewingKey, // TODO: notifications (see TODOs on WalletService)
+    fvk: FullViewingKey, // TODO: notifications (see TODOs on ViewService)
     error_slot: Arc<Mutex<Option<anyhow::Error>>>,
     shutdown_rx: Receiver<()>,
 }
@@ -83,7 +83,7 @@ impl Worker {
                     break;
                 }
                 Err(e) => {
-                    tracing::info!(?e, "wallet worker error");
+                    tracing::info!(?e, "view worker error");
                     self.error_slot.lock().unwrap().replace(e);
                 }
             };

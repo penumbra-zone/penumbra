@@ -12,5 +12,5 @@ use worker::Worker;
 
 pub use crate::metrics::register_metrics;
 pub use note_record::NoteRecord;
-pub use service::WalletService;
+pub use service::ViewService;
 pub use storage::Storage;

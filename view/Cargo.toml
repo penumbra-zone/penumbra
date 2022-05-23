@@ -1,9 +1,9 @@
 [package]
-name = "penumbra-wallet-next"
+name = "penumbra-view"
 version = "0.1.0"
 authors = ["Penumbra Labs <team@penumbra.zone>"]
 edition = "2021"
-description = "The wallet RPC library for the Penumbra Zone"
+description = "The view RPC library for the Penumbra Zone"
 repository = "https://github.com/penumbra-zone/penumbra/"
 homepage = "https://penumbra.zone"
 license = "MIT OR Apache-2.0"

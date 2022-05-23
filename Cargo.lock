@@ -2853,33 +2853,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-wallet"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bincode",
- "bytes",
- "hex",
- "penumbra-chain",
- "penumbra-crypto",
- "penumbra-proto",
- "penumbra-stake",
- "penumbra-tct",
- "penumbra-transaction",
- "pin-project",
- "rand",
- "rand_core",
- "serde",
- "serde_json",
- "serde_with",
- "tokio",
- "tower",
- "tracing",
- "tracing-subscriber 0.3.11",
-]
-
-[[package]]
-name = "penumbra-wallet-next"
+name = "penumbra-view"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -2909,6 +2883,32 @@ dependencies = [
  "tracing",
  "tracing-subscriber 0.2.25",
  "vergen",
+]
+
+[[package]]
+name = "penumbra-wallet"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "bytes",
+ "hex",
+ "penumbra-chain",
+ "penumbra-crypto",
+ "penumbra-proto",
+ "penumbra-stake",
+ "penumbra-tct",
+ "penumbra-transaction",
+ "pin-project",
+ "rand",
+ "rand_core",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "tokio",
+ "tower",
+ "tracing",
+ "tracing-subscriber 0.3.11",
 ]
 
 [[package]]
