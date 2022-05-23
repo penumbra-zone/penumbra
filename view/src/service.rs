@@ -12,7 +12,7 @@ use penumbra_crypto::{
 use penumbra_proto::{
     client::oblivious::oblivious_query_client::ObliviousQueryClient,
     crypto as pbc,
-    wallet::{self as pb, wallet_protocol_server::WalletProtocol, StatusResponse},
+    view::{self as pb, view_protocol_server::ViewProtocol, StatusResponse},
 };
 use tokio::sync::mpsc;
 use tonic::{async_trait, transport::Channel};
@@ -22,13 +22,13 @@ use crate::{Storage, Worker};
 /// A service that synchronizes private chain state and responds to queries
 /// about it.
 ///
-/// The [`WalletService`] implements the Tonic-derived [`WalletProtocol`] trait,
+/// The [`ViewService`] implements the Tonic-derived [`ViewProtocol`] trait,
 /// so it can be used as a gRPC server, or called directly.  It spawns a task
 /// internally that performs synchronization and scanning.  The
-/// [`WalletService`] can be cloned; each clone will read from the same shared
+/// [`ViewService`] can be cloned; each clone will read from the same shared
 /// state, but there will only be a single scanning task.
 
-pub struct WalletService {
+pub struct ViewService {
     storage: Storage,
     // A shared error slot for errors bubbled up by the worker. This is a regular Mutex
     // rather than a Tokio Mutex because it should be uncontended.
@@ -38,12 +38,12 @@ pub struct WalletService {
     fvk_hash: FullViewingKeyHash,
 }
 
-impl WalletService {
-    /// Constructs a new [`WalletService`], spawning a sync task internally.
+impl ViewService {
+    /// Constructs a new [`ViewService`], spawning a sync task internally.
     ///
     /// The sync task uses the provided `client` to sync with the chain.
     ///
-    /// To create multiple [`WalletService`]s, clone the [`WalletService`] returned
+    /// To create multiple [`ViewService`]s, clone the [`ViewService`] returned
     /// by this method, rather than calling it multiple times.  That way, each clone
     /// will be backed by the same scanning task, rather than each spawning its own.
     pub async fn new(
@@ -113,7 +113,7 @@ impl WalletService {
 }
 
 #[async_trait]
-impl WalletProtocol for WalletService {
+impl ViewProtocol for ViewService {
     type NotesStream =
         Pin<Box<dyn futures::Stream<Item = Result<pb::NoteRecord, tonic::Status>> + Send>>;
 

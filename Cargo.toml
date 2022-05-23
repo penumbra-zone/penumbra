@@ -17,7 +17,7 @@ members = [
   "tct-property-test",
   "transaction",
   "wallet",
-  "wallet-next",
+  "view",
   "pd",
   "pcli",
   "pcli-next",

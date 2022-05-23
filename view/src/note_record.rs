@@ -1,5 +1,5 @@
 use penumbra_crypto::{keys::DiversifierIndex, note, Note, Nullifier};
-use penumbra_proto::{wallet as pb, Protobuf};
+use penumbra_proto::{view as pb, Protobuf};
 
 use serde::{Deserialize, Serialize};
 

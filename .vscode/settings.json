@@ -1,5 +1,5 @@
 {
     "rust-analyzer.server.extraEnv": {
-        "DATABASE_URL": "sqlite:///tmp/pwalletd-dev-db.sqlite"
+        "DATABASE_URL": "sqlite:///tmp/pviewd-dev-db.sqlite"
     }
 }

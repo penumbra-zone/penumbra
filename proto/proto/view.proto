@@ -1,21 +1,21 @@
 syntax = "proto3";
-package penumbra.wallet;
+package penumbra.view;
 
 option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
 
 import "transaction.proto";
 import "crypto.proto";
 
-// The wallet protocol is used by a wallet client, who wants to do some
-// transaction-related actions, to request data from a wallet service, which is
+// The view protocol is used by a view client, who wants to do some
+// transaction-related actions, to request data from a view service, which is
 // responsible for synchronizing and scanning the public chain state with one or
 // more full viewing keys.
 //
-// Wallet protocol requests include a hash of the full viewing key, used to
+// View protocol requests include a hash of the full viewing key, used to
 // identify which set of data to query.  This also works as a pseudo-auth system
 // (assuming transport security, the client has to know the FVK to request its
 // data).  (TODO: refine this)
-service WalletProtocol {
+service ViewProtocol {
     // Get current status of chain sync
     rpc Status(StatusRequest) returns (StatusResponse);
 
@@ -31,19 +31,19 @@ service WalletProtocol {
     rpc AuthPaths(AuthPathsRequest) returns (AuthPathsResponse);
 }
 
-// Requests sync status of the wallet service.
+// Requests sync status of the view service.
 message StatusRequest {
     // Identifies the FVK for the notes to query.
     crypto.FullViewingKeyHash fvk_hash = 1;
 }
 
-// Returns the status of the wallet server and whether it is synchronized with the chain state.
+// Returns the status of the view service and whether it is synchronized with the chain state.
 message StatusResponse {
-    /// Whether the wallet service is synchronized with the chain state.
+    /// Whether the view service is synchronized with the chain state.
     bool synchronized = 1;
     // The height reported by the full node
     uint64 chain_height = 2;
-    // The height the wallet has synchronized to so far
+    // The height the view service has synchronized to so far
     uint64 sync_height = 3;
 }
 
@@ -63,7 +63,7 @@ message NoteRecord {
     optional uint64 height_spent = 6;
 }
 
-// A query for notes known by the wallet service.
+// A query for notes known by the view service.
 //
 // This message uses the fact that all proto fields are optional
 // to allow various filtering on the returned notes.

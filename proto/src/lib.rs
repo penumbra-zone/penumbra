@@ -58,9 +58,9 @@ pub mod ibc {
     tonic::include_proto!("penumbra.ibc");
 }
 
-/// Wallet protocol structures.
-pub mod wallet {
-    tonic::include_proto!("penumbra.wallet");
+/// View protocol structures.
+pub mod view {
+    tonic::include_proto!("penumbra.view");
 }
 
 /// Custody protocol structures.

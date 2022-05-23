@@ -62,7 +62,7 @@ fn main() -> Result<()> {
         &[
             "proto/client/oblivious.proto",
             "proto/client/specific.proto",
-            "proto/wallet.proto",
+            "proto/view.proto",
             "proto/custody.proto",
         ],
         &["proto/", "ibc-go-vendor/"],
@@ -138,7 +138,7 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.chain.NoteSource", SERDE_TRANSPARENT),
     (".penumbra.chain.GenesisAppState", SERIALIZE),
     (".penumbra.chain.GenesisAllocation", SERIALIZE),
-    (".penumbra.wallet.NoteRecord", SERIALIZE),
+    (".penumbra.view.NoteRecord", SERIALIZE),
     (".penumbra.transaction.TransactionPlan", SERIALIZE),
     (".penumbra.transaction.Fee", SERIALIZE),
     (".penumbra.transaction.ActionPlan", SERIALIZE),
