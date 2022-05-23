@@ -6,7 +6,7 @@ use penumbra_crypto::{
     asset::Denom, keys::DiversifierIndex, memo::MemoPlaintext, Address, DelegationToken,
     FullViewingKey, Value, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
 };
-use penumbra_proto::view::{AssetRequest, NotesRequest};
+use penumbra_proto::view::NotesRequest;
 use penumbra_stake::rate::RateData;
 use penumbra_stake::validator;
 use penumbra_transaction::{
@@ -343,20 +343,14 @@ where
         ..Default::default()
     };
 
-    let assets = view
-        .assets(AssetRequest {
-            fvk_hash: Some(fvk.hash().into()),
-        })
-        .await?;
+    let assets = view.assets().await?;
     // Track totals of the output values rather than just processing
     // them individually, so we can plan the required spends.
     let mut output_value = HashMap::<Denom, u64>::new();
     for Value { amount, asset_id } in values {
-        let denom = &assets
-            .iter()
-            .find(|asset| asset.id == *asset_id)
-            .ok_or_else(|| anyhow::anyhow!("unknown denomination for asset id {}", asset_id))?
-            .denom;
+        let denom = assets
+            .get(asset_id)
+            .ok_or_else(|| anyhow::anyhow!("unknown denomination for asset id {}", asset_id))?;
         output_value.insert(denom.clone(), *amount);
     }
 

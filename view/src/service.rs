@@ -299,7 +299,6 @@ impl ViewProtocol for ViewService {
         request: tonic::Request<pb::AssetRequest>,
     ) -> Result<tonic::Response<Self::AssetsStream>, tonic::Status> {
         self.check_worker().await?;
-        self.check_fvk(request.get_ref().fvk_hash.as_ref()).await?;
 
         // Fetch assets from storage.
         let assets = self
