@@ -212,6 +212,7 @@ impl Tree {
                 commitment, index
             ),
         };
+
         debug_assert_eq!(leaf, Hash::of(commitment));
 
         Some(Proof(crate::internal::proof::Proof {
