@@ -19,4 +19,4 @@ pub fn register_metrics() {
     describe_gauge!(TCT_SIZE_BYTES, "The size of the serialized TCT in bytes");
 }
 
-pub const TCT_SIZE_BYTES: &str = "penumbra_pd_tct_size_bytes";
+pub const TCT_SIZE_BYTES: &str = "penumbra_storage_tct_size_bytes";

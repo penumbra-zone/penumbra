@@ -1,9 +1,9 @@
 // Implementation of a pd component for the staking system.
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
+use ::metrics::{decrement_gauge, gauge, increment_gauge};
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
-use metrics::{decrement_gauge, gauge, increment_gauge};
 use penumbra_chain::{genesis, Epoch, View as _};
 use penumbra_component::Component;
 use penumbra_crypto::{DelegationToken, IdentityKey, STAKING_TOKEN_ASSET_ID};
@@ -25,10 +25,7 @@ use tendermint::{
 use tracing::{instrument, Instrument};
 
 use crate::{
-    metrics::{
-        ACTIVE_VALIDATORS, DISABLED_VALIDATORS, INACTIVE_VALIDATORS, JAILED_VALIDATORS,
-        MISSED_BLOCKS, TOMBSTONED_VALIDATORS,
-    },
+    metrics,
     rate::{BaseRateData, RateData},
     validator::{self, Validator},
     DelegationChanges, Uptime,
@@ -152,8 +149,9 @@ impl Staking {
                 self.state.put_domain(state_key, Active).await;
 
                 // Update metrics
-                decrement_gauge!(INACTIVE_VALIDATORS, 1.0);
-                increment_gauge!(ACTIVE_VALIDATORS, 1.0);
+                decrement_gauge!(metrics::INACTIVE_VALIDATORS, 1.0);
+                increment_gauge!(metrics::ACTIVE_VALIDATORS, 1.0);
+                gauge!(metrics::MISSED_BLOCKS, 0.0, "identity_key" => identity_key.to_string());
 
                 tracing::debug!(?power, "validator became active");
                 Ok(())
@@ -178,10 +176,10 @@ impl Staking {
                 self.state.put_domain(state_key, new_state).await;
 
                 // Update metrics
-                decrement_gauge!(ACTIVE_VALIDATORS, 1.0);
+                decrement_gauge!(metrics::ACTIVE_VALIDATORS, 1.0);
                 match new_state {
-                    Inactive => increment_gauge!(INACTIVE_VALIDATORS, 1.0),
-                    Disabled => increment_gauge!(DISABLED_VALIDATORS, 1.0),
+                    Inactive => increment_gauge!(metrics::INACTIVE_VALIDATORS, 1.0),
+                    Disabled => increment_gauge!(metrics::DISABLED_VALIDATORS, 1.0),
                     _ => unreachable!(),
                 };
 
@@ -194,8 +192,8 @@ impl Staking {
                 self.state.put_domain(state_key, Inactive).await;
 
                 // Update metrics
-                decrement_gauge!(JAILED_VALIDATORS, 1.0);
-                increment_gauge!(INACTIVE_VALIDATORS, 1.0);
+                decrement_gauge!(metrics::JAILED_VALIDATORS, 1.0);
+                increment_gauge!(metrics::INACTIVE_VALIDATORS, 1.0);
 
                 Ok(())
             }
@@ -206,8 +204,8 @@ impl Staking {
                 self.state.put_domain(state_key, Inactive).await;
 
                 // Update metrics
-                decrement_gauge!(DISABLED_VALIDATORS, 1.0);
-                increment_gauge!(INACTIVE_VALIDATORS, 1.0);
+                decrement_gauge!(metrics::DISABLED_VALIDATORS, 1.0);
+                increment_gauge!(metrics::INACTIVE_VALIDATORS, 1.0);
 
                 Ok(())
             }
@@ -220,11 +218,11 @@ impl Staking {
 
                 // Update metrics
                 match cur_state {
-                    Inactive => decrement_gauge!(INACTIVE_VALIDATORS, 1.0),
-                    Jailed => decrement_gauge!(JAILED_VALIDATORS, 1.0),
+                    Inactive => decrement_gauge!(metrics::INACTIVE_VALIDATORS, 1.0),
+                    Jailed => decrement_gauge!(metrics::JAILED_VALIDATORS, 1.0),
                     _ => unreachable!(),
                 };
-                increment_gauge!(DISABLED_VALIDATORS, 1.0);
+                increment_gauge!(metrics::DISABLED_VALIDATORS, 1.0);
 
                 Ok(())
             }
@@ -260,8 +258,8 @@ impl Staking {
                 self.state.put_domain(state_key, Jailed).await;
 
                 // Update metrics
-                decrement_gauge!(ACTIVE_VALIDATORS, 1.0);
-                increment_gauge!(JAILED_VALIDATORS, 1.0);
+                decrement_gauge!(metrics::ACTIVE_VALIDATORS, 1.0);
+                increment_gauge!(metrics::JAILED_VALIDATORS, 1.0);
 
                 Ok(())
             }
@@ -297,20 +295,20 @@ impl Staking {
                 // Update metrics
                 match cur_state {
                     Active => {
-                        decrement_gauge!(ACTIVE_VALIDATORS, 1.0);
+                        decrement_gauge!(metrics::ACTIVE_VALIDATORS, 1.0);
                     }
                     Inactive => {
-                        decrement_gauge!(INACTIVE_VALIDATORS, 1.0);
+                        decrement_gauge!(metrics::INACTIVE_VALIDATORS, 1.0);
                     }
                     Disabled => {
-                        decrement_gauge!(DISABLED_VALIDATORS, 1.0);
+                        decrement_gauge!(metrics::DISABLED_VALIDATORS, 1.0);
                     }
                     Jailed => {
-                        decrement_gauge!(JAILED_VALIDATORS, 1.0);
+                        decrement_gauge!(metrics::JAILED_VALIDATORS, 1.0);
                     }
                     _ => unreachable!(),
                 };
-                increment_gauge!(TOMBSTONED_VALIDATORS, 1.0);
+                increment_gauge!(metrics::TOMBSTONED_VALIDATORS, 1.0);
 
                 Ok(())
             }
@@ -635,8 +633,7 @@ impl Staking {
                     ?params.missed_blocks_maximum,
                     "recorded vote info"
                 );
-                // TODO: We may want to update or clear this metric for non-active validators.
-                gauge!(MISSED_BLOCKS, uptime.num_missed_blocks() as f64, "identity_key" => v.to_string());
+                gauge!(metrics::MISSED_BLOCKS, uptime.num_missed_blocks() as f64, "identity_key" => v.to_string());
 
                 uptime.mark_height_as_signed(height, voted).unwrap();
                 if uptime.num_missed_blocks() as u64 >= params.missed_blocks_maximum {
@@ -1321,9 +1318,21 @@ pub trait View: StateExt {
         self.set_validator_bonding_state(&id, bonding_state).await;
 
         let mut validator_list = self.validator_list().await?;
-        validator_list.push(id);
+        validator_list.push(id.clone());
         tracing::debug!(?validator_list);
         self.set_validator_list(validator_list).await;
+
+        // Lastly, update metrics for the new validator.
+        match state {
+            validator::State::Active => {
+                increment_gauge!(metrics::ACTIVE_VALIDATORS, 1.0);
+            }
+            validator::State::Inactive => {
+                increment_gauge!(metrics::INACTIVE_VALIDATORS, 1.0);
+            }
+            _ => unreachable!(),
+        };
+        gauge!(metrics::MISSED_BLOCKS, 0.0, "identity_key" => id.to_string());
 
         Ok(())
     }

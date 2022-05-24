@@ -29,9 +29,9 @@ pub fn register_metrics() {
     describe_gauge!(TOMBSTONED_VALIDATORS, "The number of tombstoned validators");
 }
 
-pub const MISSED_BLOCKS: &str = "penumbra_pd_missed_blocks";
-pub const ACTIVE_VALIDATORS: &str = "penumbra_pd_active_validators";
-pub const INACTIVE_VALIDATORS: &str = "penumbra_pd_inactive_validators";
-pub const JAILED_VALIDATORS: &str = "penumbra_pd_jailed_validators";
-pub const DISABLED_VALIDATORS: &str = "penumbra_pd_disabled_validators";
-pub const TOMBSTONED_VALIDATORS: &str = "penumbra_pd_tombstoned_validators";
+pub const MISSED_BLOCKS: &str = "penumbra_stake_missed_blocks";
+pub const ACTIVE_VALIDATORS: &str = "penumbra_stake_validators_active_validators";
+pub const DISABLED_VALIDATORS: &str = "penumbra_stake_validators_disabled_validators";
+pub const INACTIVE_VALIDATORS: &str = "penumbra_stake_validators_inactive_validators";
+pub const JAILED_VALIDATORS: &str = "penumbra_stake_validators_jailed_validators";
+pub const TOMBSTONED_VALIDATORS: &str = "penumbra_stake_validators_tombstoned_validators";
