@@ -5,6 +5,10 @@ use std::{
     path::PathBuf,
 };
 
+use console_subscriber::ConsoleLayer;
+use metrics_tracing_context::{MetricsLayer, TracingContextLayer};
+use metrics_util::debugging::DebuggingRecorder;
+
 use anyhow::Context;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use penumbra_chain::{genesis::Allocation, params::ChainParams};
@@ -22,6 +26,7 @@ use penumbra_storage::Storage;
 use rand_core::OsRng;
 use structopt::StructOpt;
 use tonic::transport::Server;
+use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -104,7 +109,23 @@ fn remote_addr(req: &http::Request<()>) -> Option<SocketAddr> {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    console_subscriber::init();
+    let metrics_layer = MetricsLayer::new();
+    let console_layer = ConsoleLayer::builder().with_default_env().spawn();
+    tracing_subscriber::registry()
+        .with(metrics_layer)
+        .with(console_layer)
+        .with(tracing_subscriber::fmt::layer())
+        .init();
+
+    let recorder = DebuggingRecorder::new();
+    let snapshotter = recorder.snapshotter();
+
+    use metrics_util::layers::Layer;
+    let tracing_context_layer = TracingContextLayer::all();
+    let recorder = tracing_context_layer.layer(recorder);
+    metrics::clear_recorder();
+    metrics::set_boxed_recorder(Box::new(recorder)).expect("failed to install recorder");
+
     let opt = Opt::from_args();
 
     match opt.cmd {
