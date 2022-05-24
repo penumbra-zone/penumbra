@@ -1,6 +1,7 @@
 // Implementation of a pd component for the staking system.
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
+use ::metrics::{decrement_gauge, gauge, increment_gauge};
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
 use penumbra_chain::{genesis, Epoch, View as _};
@@ -24,6 +25,7 @@ use tendermint::{
 use tracing::{instrument, Instrument};
 
 use crate::{
+    metrics,
     rate::{BaseRateData, RateData},
     validator::{self, Validator},
     DelegationChanges, Uptime,
@@ -91,6 +93,22 @@ impl Staking {
     ) -> Result<()> {
         let state_key = format!("staking/validators/{}/state", identity_key).into();
 
+        // Update metrics
+        match cur_state {
+            Inactive => decrement_gauge!(metrics::INACTIVE_VALIDATORS, 1.0),
+            Active => decrement_gauge!(metrics::ACTIVE_VALIDATORS, 1.0),
+            Disabled => decrement_gauge!(metrics::DISABLED_VALIDATORS, 1.0),
+            Jailed => decrement_gauge!(metrics::JAILED_VALIDATORS, 1.0),
+            Tombstoned => decrement_gauge!(metrics::TOMBSTONED_VALIDATORS, 1.0),
+        };
+        match new_state {
+            Inactive => increment_gauge!(metrics::INACTIVE_VALIDATORS, 1.0),
+            Active => increment_gauge!(metrics::ACTIVE_VALIDATORS, 1.0),
+            Disabled => increment_gauge!(metrics::DISABLED_VALIDATORS, 1.0),
+            Jailed => increment_gauge!(metrics::JAILED_VALIDATORS, 1.0),
+            Tombstoned => increment_gauge!(metrics::TOMBSTONED_VALIDATORS, 1.0),
+        };
+
         // Doing a single tuple match, rather than matching on substates,
         // ensures we exhaustively cover all possible state transitions.
         use validator::BondingState::*;
@@ -146,6 +164,9 @@ impl Staking {
                 // Finally, set the validator to be active.
                 self.state.put_domain(state_key, Active).await;
 
+                // Update metrics
+                gauge!(metrics::MISSED_BLOCKS, 0.0, "identity_key" => identity_key.to_string());
+
                 tracing::debug!(?power, "validator became active");
                 Ok(())
             }
@@ -167,6 +188,9 @@ impl Staking {
 
                 // Finally, set the validator to be inactive or disabled.
                 self.state.put_domain(state_key, new_state).await;
+
+                // Update metrics
+                gauge!(metrics::MISSED_BLOCKS, 0.0, "identity_key" => identity_key.to_string());
 
                 Ok(())
             }
@@ -580,6 +604,7 @@ impl Staking {
                     ?params.missed_blocks_maximum,
                     "recorded vote info"
                 );
+                gauge!(metrics::MISSED_BLOCKS, uptime.num_missed_blocks() as f64, "identity_key" => v.to_string());
 
                 uptime.mark_height_as_signed(height, voted).unwrap();
                 if uptime.num_missed_blocks() as u64 >= params.missed_blocks_maximum {
@@ -1264,9 +1289,21 @@ pub trait View: StateExt {
         self.set_validator_bonding_state(&id, bonding_state).await;
 
         let mut validator_list = self.validator_list().await?;
-        validator_list.push(id);
+        validator_list.push(id.clone());
         tracing::debug!(?validator_list);
         self.set_validator_list(validator_list).await;
+
+        // Lastly, update metrics for the new validator.
+        match state {
+            validator::State::Active => {
+                increment_gauge!(metrics::ACTIVE_VALIDATORS, 1.0);
+            }
+            validator::State::Inactive => {
+                increment_gauge!(metrics::INACTIVE_VALIDATORS, 1.0);
+            }
+            _ => unreachable!(),
+        };
+        gauge!(metrics::MISSED_BLOCKS, 0.0, "identity_key" => id.to_string());
 
         Ok(())
     }

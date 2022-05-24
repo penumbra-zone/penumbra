@@ -15,15 +15,8 @@ pub use metrics::*;
 
 /// Registers all metrics used by this crate.
 pub fn register_metrics() {
-    /*
-    // Sample code for reference -- delete when adding the first metric
-    register_counter!(MEMPOOL_CHECKTX_TOTAL);
-    describe_counter!(
-        MEMPOOL_CHECKTX_TOTAL,
-        "The total number of checktx requests made to the mempool"
-    );
-     */
+    register_gauge!(TCT_SIZE_BYTES);
+    describe_gauge!(TCT_SIZE_BYTES, "The size of the serialized TCT in bytes");
 }
 
-// Sample code for reference -- delete when adding the first metric
-// pub const MEMPOOL_CHECKTX_TOTAL: &str = "penumbra_pd_mempool_checktx_total";
+pub const TCT_SIZE_BYTES: &str = "penumbra_storage_tct_size_bytes";
