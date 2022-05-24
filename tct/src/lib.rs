@@ -115,6 +115,9 @@ pub enum Witness {
 
 pub use commitment::Commitment;
 
+#[cfg(feature = "arbitrary")]
+pub use commitment::CommitmentStrategy;
+
 #[cfg(test)]
 mod test {
     use super::*;
