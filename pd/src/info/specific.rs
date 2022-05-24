@@ -97,16 +97,33 @@ impl SpecificQuery for Info {
     ) -> Result<tonic::Response<KeyValueResponse>, Status> {
         let state = self.state_tonic().await?;
         state.check_chain_id(&request.get_ref().chain_id).await?;
-
         let key = request.into_inner().key_hash;
-        let value = state
-            .read()
-            .await
-            .get(key.into())
-            .await
-            .map_err(|_| Status::not_found("key not found"))?
-            .ok_or_else(|| Status::not_found("requested key not found in state"))?;
 
-        Ok(tonic::Response::new(KeyValueResponse { value }))
+        if request.get_ref().proof == true {
+            let (value, proof) = state
+                .read()
+                .await
+                .get_with_proof(key)
+                .await
+                .map_err(|e| tonic::Status::internal(e.to_string()))?;
+
+            Ok(tonic::Response::new(KeyValueResponse {
+                value,
+                proof: Some(proof),
+            }))
+        } else {
+            let value = state
+                .read()
+                .await
+                .get(key.into())
+                .await
+                .map_err(|e| Status::internal(e.to_string()))?
+                .ok_or_else(|| Status::not_found("requested key not found in state"))?;
+
+            Ok(tonic::Response::new(KeyValueResponse {
+                value,
+                proof: None,
+            }))
+        }
     }
 }

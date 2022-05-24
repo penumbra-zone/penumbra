@@ -38,6 +38,7 @@ fn main() -> Result<()> {
     // part of this crate.
     // See https://docs.rs/prost-build/0.5.0/prost_build/struct.Config.html#method.extern_path
     config.extern_path(".ibc", "::ibc_proto::ibc");
+    config.extern_path(".ics23", "::ibc_proto::ics23");
 
     config.compile_protos(
         &[
