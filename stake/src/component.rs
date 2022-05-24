@@ -172,6 +172,21 @@ impl Staking {
                 // Inform tendermint that the validator is no longer active.
                 self.tm_validator_updates.insert(identity_key.clone(), 0);
 
+                if new_state == Inactive {
+                    // Start tracking the validator's uptime with a new uptime tracker.
+                    // This overwrites any existing uptime tracking, regardless of whether
+                    // the validator was recently in the active set.
+                    self.state
+                        .set_validator_uptime(
+                            identity_key,
+                            Uptime::new(
+                                self.state.get_block_height().await?,
+                                self.state.signed_blocks_window_len().await? as usize,
+                            ),
+                        )
+                        .await;
+                }
+
                 // Finally, set the validator to be inactive or disabled.
                 self.state.put_domain(state_key, new_state).await;
 
@@ -182,6 +197,7 @@ impl Staking {
                     Disabled => increment_gauge!(metrics::DISABLED_VALIDATORS, 1.0),
                     _ => unreachable!(),
                 };
+                gauge!(metrics::MISSED_BLOCKS, 0.0, "identity_key" => identity_key.to_string());
 
                 Ok(())
             }
