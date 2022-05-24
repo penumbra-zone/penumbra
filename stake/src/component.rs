@@ -210,7 +210,7 @@ impl Staking {
 
                 Ok(())
             }
-            (cur_state @ (Inactive | Jailed), Disabled) => {
+            (Inactive | Jailed, Disabled) => {
                 // We don't really have to do anything here; we're just
                 // recording that the validator was disabled, so delegations to
                 // it are not allowed.
