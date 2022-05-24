@@ -14,10 +14,28 @@ service SpecificQuery {
   rpc TransactionByNote(crypto.NoteCommitment) returns (chain.NoteSource);
   rpc ValidatorStatus(ValidatorStatusRequest) returns (stake.ValidatorStatus);
   rpc NextValidatorRate(crypto.IdentityKey) returns (stake.RateData);
+
+  // General-purpose key-value state query API, that can be used to query
+  // arbitrary keys in the JMT storage.
+  rpc KeyValue(KeyValueRequest) returns (KeyValueResponse);
 }
 
 message ValidatorStatusRequest {
   // The expected chain id (empty string if no expectation).
   string chain_id = 1;
   crypto.IdentityKey identity_key = 2;
+}
+
+message KeyValueRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  bytes key_hash = 2;
+
+  // TODO (avahowell) add a proof boolean that requests an auth proof
+}
+
+message KeyValueResponse {
+  bytes value = 1;
+
+  // TODO (avahowell) add a proof field that contains an ICS23 auth proof. 
 }

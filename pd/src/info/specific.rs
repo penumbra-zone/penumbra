@@ -2,7 +2,10 @@ use penumbra_chain::View as _;
 use penumbra_proto::{
     self as proto,
     chain::NoteSource,
-    client::specific::{specific_query_server::SpecificQuery, ValidatorStatusRequest},
+    client::specific::{
+        specific_query_server::SpecificQuery, KeyValueRequest, KeyValueResponse,
+        ValidatorStatusRequest,
+    },
     crypto::NoteCommitment,
 };
 use penumbra_shielded_pool::View as _;
@@ -85,5 +88,25 @@ impl SpecificQuery for Info {
             Some(r) => Ok(tonic::Response::new(r.into())),
             None => Err(Status::not_found("next validator rate not found")),
         }
+    }
+
+    #[instrument(skip(self, request))]
+    async fn key_value(
+        &self,
+        request: tonic::Request<KeyValueRequest>,
+    ) -> Result<tonic::Response<KeyValueResponse>, Status> {
+        let state = self.state_tonic().await?;
+        state.check_chain_id(&request.get_ref().chain_id).await?;
+
+        let key = request.into_inner().key_hash;
+        let value = state
+            .read()
+            .await
+            .get(key.into())
+            .await
+            .map_err(|_| Status::not_found("key not found"))?
+            .ok_or_else(|| Status::not_found("requested key not found in state"))?;
+
+        Ok(tonic::Response::new(KeyValueResponse { value }))
     }
 }
