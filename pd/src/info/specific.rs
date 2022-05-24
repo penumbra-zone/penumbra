@@ -10,7 +10,6 @@ use penumbra_proto::{
 };
 use penumbra_shielded_pool::View as _;
 use penumbra_stake::component::View as _;
-use penumbra_storage::StateExt;
 
 use tonic::Status;
 use tracing::instrument;
@@ -100,16 +99,14 @@ impl SpecificQuery for Info {
         state.check_chain_id(&request.get_ref().chain_id).await?;
 
         let key = request.into_inner().key_hash;
-
-        // NOTE: should the key value api differentiate between proto types and domain types, by
-        // calling get_domain vs get_proto?
         let value = state
-            .get_proto(key.into())
+            .read()
             .await
-            .map_err(|_| tonic::Status::unavailable("database error"))?
-            .ok_or_else(|| tonic::Status::not_found("no such key"))?;
+            .get(key.into())
+            .await
+            .map_err(|_| Status::not_found("key not found"))?
+            .ok_or_else(|| Status::not_found("requested key not found in state"))?;
 
-        let response = tonic::Response::new(KeyValueResponse { value });
-        Ok(response)
+        Ok(tonic::Response::new(KeyValueResponse { value }))
     }
 }
