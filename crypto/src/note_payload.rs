@@ -15,7 +15,7 @@ pub struct NotePayload {
 
 impl std::fmt::Debug for NotePayload {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("output::Body")
+        f.debug_struct("NotePayload")
             .field("note_commitment", &self.note_commitment)
             .field("ephemeral_key", &self.ephemeral_key)
             .field("encrypted_note", &"...")
