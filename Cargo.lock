@@ -2100,7 +2100,7 @@ dependencies = [
  "indexmap",
  "ipnet",
  "metrics",
- "metrics-util 0.11.1",
+ "metrics-util",
  "parking_lot 0.11.2",
  "quanta",
  "thiserror",
@@ -2128,7 +2128,7 @@ dependencies = [
  "itoa 1.0.2",
  "lockfree-object-pool",
  "metrics",
- "metrics-util 0.11.1",
+ "metrics-util",
  "once_cell",
  "tracing",
  "tracing-core",
@@ -2140,27 +2140,6 @@ name = "metrics-util"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0296c9cffd3d72c61d8fcd25efc381fd589f7b155a81f2fa5670010430f60c57"
-dependencies = [
- "aho-corasick",
- "atomic-shim",
- "crossbeam-epoch",
- "crossbeam-utils",
- "hashbrown",
- "indexmap",
- "metrics",
- "num_cpus",
- "ordered-float",
- "parking_lot 0.11.2",
- "quanta",
- "radix_trie",
- "sketches-ddsketch",
-]
-
-[[package]]
-name = "metrics-util"
-version = "0.12.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "65a9e83b833e1d2e07010a386b197c13aa199bbd0fca5cf69bfa147972db890a"
 dependencies = [
  "aho-corasick",
  "atomic-shim",
@@ -2559,7 +2538,7 @@ dependencies = [
  "metrics",
  "metrics-exporter-prometheus",
  "metrics-tracing-context",
- "metrics-util 0.12.1",
+ "metrics-util",
  "once_cell",
  "penumbra-chain",
  "penumbra-component",

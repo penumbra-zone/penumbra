@@ -7,7 +7,7 @@ use std::{
 
 use console_subscriber::ConsoleLayer;
 use metrics_tracing_context::{MetricsLayer, TracingContextLayer};
-use metrics_util::debugging::DebuggingRecorder;
+use metrics_util::DebuggingRecorder;
 
 use anyhow::Context;
 use metrics_exporter_prometheus::PrometheusBuilder;
