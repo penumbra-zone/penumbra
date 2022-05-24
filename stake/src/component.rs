@@ -283,9 +283,15 @@ impl Staking {
 
                 Ok(())
             }
-            (Tombstoned, _) => Err(anyhow::anyhow!("tombstoning is forever")),
-            (_, Active) => Err(anyhow::anyhow!("only inactive validator may become active")),
-            (_, Jailed) => Err(anyhow::anyhow!("only active validators may become jailed")),
+            (Jailed | Disabled, Active) => {
+                Err(anyhow::anyhow!("only inactive validator may become active"))
+            }
+            (Inactive | Jailed | Disabled, Jailed) => {
+                Err(anyhow::anyhow!("only active validators may become jailed"))
+            }
+            (Tombstoned, Inactive | Active | Jailed | Tombstoned | Disabled) => {
+                Err(anyhow::anyhow!("tombstoning is forever"))
+            }
         }
     }
 
