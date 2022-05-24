@@ -8,7 +8,7 @@ the Penumbra software is doing.
 TODO: add details on how to use Grafana:
 - [ ] link to https://testnet.penumbra.zone for dashboard on current testnet;
 - [ ] instructions on how to run Grafana + Prometheus for local dev setup (ideally this could work without requiring that `pd` itself is Dockerized, since local development is often more convenient outside of docker);
-- [ ] instructions on how to commit dashboards back to the repo.
+- [x] instructions on how to commit dashboards back to the repo.
 
 ## Adding Metrics
 
@@ -58,5 +58,5 @@ Grafana has an [import/export](https://grafana.com/docs/grafana/latest/dashboard
 we use for maintaining our dashboards.
 
 1. Export the dashboard as JSON with the default settings
-2. Rename the JSON file and copy into the repo (`config/grafana/dashboards/grafana.tgz`)
+2. Rename the JSON file and copy into the repo (`config/grafana/dashboards/`)
 3. Use the import function in the UI to update all deployments
