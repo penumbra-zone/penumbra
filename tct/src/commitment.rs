@@ -104,6 +104,9 @@ impl TryFrom<&[u8]> for Commitment {
 }
 
 #[cfg(feature = "arbitrary")]
+pub use arbitrary::CommitmentStrategy;
+
+#[cfg(feature = "arbitrary")]
 mod arbitrary {
     use super::Commitment;
 

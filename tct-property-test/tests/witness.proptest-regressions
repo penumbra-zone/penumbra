@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 9b0b30e0127fda824382ef1c8f20ca26734bc82ced221d04d8c3e94c9e6e15c9 # shrinks to actions = [Insert(Forget, note::Commitment(c38d49528121961f75e5eee0470e33ec5dcc1f1faa07a3a1e4e45f6226383103))]

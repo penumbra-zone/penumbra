@@ -7,7 +7,8 @@ edition = "2021"
 
 [dev-dependencies]
 sqlx = { version = "0.5.9", features = ["postgres", "runtime-tokio-rustls"] }
+anyhow = "1"
 static_assertions = "1"
 proptest = "1"
 proptest-derive = "0.3"
-penumbra-tct = { path = "../tct", features = ["spec", "arbitrary", "fast_hash"] }
+penumbra-tct = { path = "../tct", features = ["arbitrary", "fast_hash"] }
