@@ -68,7 +68,7 @@ impl<Child: Focus> GetHash for Node<Child> {
 
             // Compute the hash of the node based on its height and the height of its children,
             // and cache it in the node
-            Hash::node(Child::Height::HEIGHT + 1, a, b, c, d)
+            Hash::node(<Self as Height>::Height::HEIGHT, a, b, c, d)
         })
     }
 

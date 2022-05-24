@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate proptest_derive;
 
+use std::collections::HashSet;
+
 use proptest::{arbitrary::*, prelude::*};
 
 use penumbra_tct::{Commitment, CommitmentStrategy, Tree, Witness};
@@ -13,10 +15,11 @@ const MAX_TIER_ACTIONS: usize = 100;
 enum Action {
     Insert(
         Witness,
-        #[proptest(strategy = "CommitmentStrategy::one_of(params)")] Commitment,
+        #[proptest(strategy = "CommitmentStrategy::one_of(params.clone())")] Commitment,
     ),
     EndBlock,
     EndEpoch,
+    Forget(#[proptest(strategy = "CommitmentStrategy::one_of(params)")] Commitment),
 }
 
 impl Action {
@@ -74,6 +77,11 @@ impl Action {
                 assert_eq!(new_position.block(), 0);
                 assert_eq!(new_position.commitment(), 0);
             }
+            Action::Forget(commitment) => {
+                let exists = tree.witness(*commitment).is_some();
+                let result = tree.forget(*commitment);
+                assert_eq!(exists, result);
+            }
         };
 
         Ok(())
@@ -82,7 +90,7 @@ impl Action {
 
 proptest! {
     #![proptest_config(ProptestConfig {
-        cases: 10000, .. ProptestConfig::default()
+        cases: 1000, .. ProptestConfig::default()
     })]
 
     #[test]
@@ -95,8 +103,32 @@ proptest! {
     ) {
         let mut tree = Tree::new();
 
-        for action in actions {
+        let mut commitments_added = HashSet::new();
+        for action in &actions {
+            match action {
+                Action::Insert (witness, commitment) => {
+                    match witness {
+                        Witness::Keep => {
+                            commitments_added.insert(commitment);
+                        },
+                        _ => {}
+                    }
+                },
+                Action::Forget (commitment) => { commitments_added.remove(&commitment); },
+                _ => {}
+            }
             action.apply(&mut tree).unwrap();
+        }
+
+        // Check generated commitments
+        for commitment in commitments_added {
+            let commitment_position = tree.position_of(*commitment);
+            assert!(commitment_position.is_some());
+
+            let proof = tree.witness(*commitment).unwrap();
+            assert_eq!(*commitment, proof.commitment());
+
+            assert!(proof.verify(tree.root()).is_ok());
         }
     }
 }
