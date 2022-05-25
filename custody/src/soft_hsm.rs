@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
 use penumbra_crypto::keys::{FullViewingKeyHash, SpendKey};
+use penumbra_proto::{custody as pb, transaction as pb_transaction};
 use penumbra_transaction::AuthorizationData;
 use rand_core::OsRng;
 use tonic::{async_trait, Request, Response, Status};
@@ -37,11 +38,11 @@ impl SoftHSM {
 }
 
 #[async_trait]
-impl crate::CustodyProtocol for SoftHSM {
+impl pb::custody_protocol_server::CustodyProtocol for SoftHSM {
     async fn authorize(
         &self,
-        request: Request<crate::proto::AuthorizeRequest>,
-    ) -> Result<Response<crate::proto::AuthorizationData>, Status> {
+        request: Request<pb::AuthorizeRequest>,
+    ) -> Result<Response<pb_transaction::AuthorizationData>, Status> {
         let request = request
             .into_inner()
             .try_into()
