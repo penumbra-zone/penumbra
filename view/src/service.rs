@@ -11,7 +11,7 @@ use penumbra_crypto::{
 };
 use penumbra_proto::{
     client::oblivious::oblivious_query_client::ObliviousQueryClient,
-    crypto as pbc,
+    crypto as pbc, transaction as pbt,
     view::{self as pb, view_protocol_server::ViewProtocol, StatusResponse},
 };
 use tokio::sync::mpsc;
@@ -177,10 +177,10 @@ impl ViewProtocol for ViewService {
         ))
     }
 
-    async fn auth_paths(
+    async fn witness(
         &self,
-        request: tonic::Request<pb::AuthPathsRequest>,
-    ) -> Result<tonic::Response<pb::AuthPathsResponse>, tonic::Status> {
+        request: tonic::Request<pb::WitnessRequest>,
+    ) -> Result<tonic::Response<pbt::WitnessData>, tonic::Status> {
         self.check_worker().await?;
         self.check_fvk(request.get_ref().fvk_hash.as_ref()).await?;
 

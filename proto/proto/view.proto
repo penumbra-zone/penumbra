@@ -28,7 +28,7 @@ service ViewProtocol {
     // that the client can get a consistent set of authentication paths to a
     // common root.  (Otherwise, if a client made multiple requests, the wallet
     // service could have advanced the note commitment tree state between queries).
-    rpc AuthPaths(AuthPathsRequest) returns (AuthPathsResponse);
+    rpc Witness(WitnessRequest) returns (transaction.WitnessData);
 }
 
 // Requests sync status of the view service.
@@ -86,18 +86,10 @@ message NotesRequest {
     uint64 amount_to_spend = 5;
 }
 
-message AuthPathsRequest {
+message WitnessRequest {
     // Identifies the FVK for the note commitments to query.
     crypto.FullViewingKeyHash fvk_hash = 1;
 
     // The note commitments to obtain auth paths for.
     repeated crypto.NoteCommitment notes = 2;
-}
-
-// TODO: replace with WitnessData
-message AuthPathsResponse {
-    // The note commitment tree root the auth paths were constructed to.
-    crypto.MerkleRoot root = 1;
-    // An authentication path for each of the note commitments in the request.
-    repeated crypto.NoteCommitmentProof note_commitment_proofs = 2;
 }
