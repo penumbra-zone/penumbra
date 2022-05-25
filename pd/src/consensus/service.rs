@@ -67,7 +67,7 @@ impl tower::Service<ConsensusRequest> for Consensus {
         }
 
         let span = req.create_span();
-        let span = error_span!(parent: &span, "ConsensusService");
+        let span = error_span!(parent: &span, "ConsensusService", worker=?"consensus");
         let (tx, rx) = oneshot::channel();
 
         self.queue
