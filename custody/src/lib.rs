@@ -8,15 +8,8 @@
 
 mod request;
 mod soft_hsm;
+mod client;
 
+pub use client::CustodyClient;
 pub use request::AuthorizeRequest;
 pub use soft_hsm::SoftHSM;
-
-/// Re-exports of protobuf messages.
-pub mod proto {
-    pub use penumbra_proto::{custody::AuthorizeRequest, transaction::AuthorizationData};
-}
-pub use penumbra_proto::custody::{
-    custody_protocol_client::CustodyProtocolClient,
-    custody_protocol_server::{CustodyProtocol, CustodyProtocolServer},
-};
