@@ -27,7 +27,9 @@ use rand_core::OsRng;
 use structopt::StructOpt;
 use tokio::runtime;
 use tonic::transport::Server;
-use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
+use tracing_subscriber::{
+    prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt, EnvFilter,
+};
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -110,13 +112,23 @@ fn remote_addr(req: &http::Request<()>) -> Option<SocketAddr> {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // Instantiate tracing layers.
+    // The MetricsLayer handles enriching metrics output with labels from tracing spans.
     let metrics_layer = MetricsLayer::new();
+    // The ConsoleLayer enables collection of data for `tokio-console`.
     let console_layer = ConsoleLayer::builder().with_default_env().spawn();
-    // TODO: for some reason RUST_LOG isn't being respected any more after this change
+    // The `FmtLayer` is used to print to the console.
+    let fmt_layer = tracing_subscriber::fmt::layer().with_target(false);
+    // The `EnvFilter` layer is used to filter events based on `RUST_LOG`.
+    let filter_layer = EnvFilter::try_from_default_env()
+        .or_else(|_| EnvFilter::try_new("info"))
+        .unwrap();
+
     tracing_subscriber::registry()
+        .with(filter_layer)
+        .with(fmt_layer)
         .with(metrics_layer)
         .with(console_layer)
-        .with(tracing_subscriber::fmt::layer())
         .init();
 
     let opt = Opt::from_args();
