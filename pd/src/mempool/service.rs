@@ -16,7 +16,7 @@ use tendermint::{
 use tokio::sync::{mpsc, oneshot, watch};
 use tokio_util::sync::PollSender;
 use tower_abci::BoxError;
-use tracing::Instrument;
+use tracing::{error_span, Instrument};
 
 use super::{Message, Worker};
 use crate::metrics;
@@ -64,6 +64,7 @@ impl tower::Service<MempoolRequest> for Mempool {
             .boxed();
         }
         let span = req.create_span();
+        let span = error_span!(parent: &span, "MempoolService");
         let (tx, rx) = oneshot::channel();
 
         let MempoolRequest::CheckTx(CheckTxReq {
