@@ -7,10 +7,10 @@ use std::{
 
 use console_subscriber::ConsoleLayer;
 use metrics_tracing_context::{MetricsLayer, TracingContextLayer};
-use metrics_util::DebuggingRecorder;
+use metrics_util::{layers::Stack, DebuggingRecorder};
 
 use anyhow::Context;
-use metrics_exporter_prometheus::PrometheusBuilder;
+use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusRecorder};
 use penumbra_chain::{genesis::Allocation, params::ChainParams};
 use penumbra_crypto::{
     keys::{SpendKey, SpendSeed},
@@ -25,6 +25,7 @@ use penumbra_stake::{validator::Validator, FundingStream, FundingStreams};
 use penumbra_storage::Storage;
 use rand_core::OsRng;
 use structopt::StructOpt;
+use tokio::runtime;
 use tonic::transport::Server;
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 
@@ -111,20 +112,12 @@ fn remote_addr(req: &http::Request<()>) -> Option<SocketAddr> {
 async fn main() -> anyhow::Result<()> {
     let metrics_layer = MetricsLayer::new();
     let console_layer = ConsoleLayer::builder().with_default_env().spawn();
+    // TODO: for some reason RUST_LOG isn't being respected any more after this change
     tracing_subscriber::registry()
         .with(metrics_layer)
         .with(console_layer)
         .with(tracing_subscriber::fmt::layer())
         .init();
-
-    let recorder = DebuggingRecorder::new();
-    let snapshotter = recorder.snapshotter();
-
-    use metrics_util::layers::Layer;
-    let tracing_context_layer = TracingContextLayer::all();
-    let recorder = tracing_context_layer.layer(recorder);
-    metrics::clear_recorder();
-    metrics::set_boxed_recorder(Box::new(recorder)).expect("failed to install recorder");
 
     let opt = Opt::from_args();
 
@@ -175,15 +168,25 @@ async fn main() -> anyhow::Result<()> {
                     ),
             );
 
-            // This service lets Prometheus pull metrics from `pd`
-            PrometheusBuilder::new()
+            // Configure a Prometheus recorder and exporter.
+            let (recorder, exporter) = PrometheusBuilder::new()
                 .with_http_listener(
                     format!("{}:{}", host, metrics_port)
                         .parse::<SocketAddr>()
                         .expect("this is a valid address"),
                 )
+                .build()
+                .expect("failed to build prometheus recorder");
+
+            Stack::new(recorder)
+                // Adding the `TracingContextLayer` will add labels from the tracing span to metrics.
+                .push(TracingContextLayer::all())
                 .install()
-                .expect("metrics service set up");
+                .expect("global recorder already installed");
+
+            // This spawns the HTTP service that lets Prometheus pull metrics from `pd`
+            let handle = runtime::Handle::try_current().expect("unable to get runtime handle");
+            handle.spawn(exporter);
 
             pd::register_metrics();
 
