@@ -85,7 +85,7 @@ ibc-proto = { git = "https://github.com/penumbra-zone/ibc-rs.git", branch = "wit
 tendermint-light-client-verifier = "0.24.0-pre.1"
 tempfile = "3.3.0"
 base64 = "0.13.0"
-console-subscriber = "0.1.4"
+console-subscriber = "0.1.6"
 metrics-tracing-context = "0.10.0"
 metrics-util = "0.11.1"
 
