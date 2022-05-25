@@ -42,9 +42,9 @@ async fn main() -> Result<()> {
     // both of these sholud compile, proving that the generics capture what we want
 
     // local servers
-    let _tx1 = build_transaction(&fvk, plan.clone(), vc1, cc1, OsRng).await?;
+    let _tx1 = build_transaction(&fvk, vc1, cc1, OsRng, plan.clone()).await?;
     // remote servers
-    let _tx2 = build_transaction(&fvk, plan.clone(), vc2, cc2, OsRng).await?;
+    let _tx2 = build_transaction(&fvk, vc2, cc2, OsRng, plan.clone()).await?;
 
     Ok(())
 }

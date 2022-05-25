@@ -4,7 +4,7 @@ use penumbra_proto::{view as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
 /// Corresponds to the NoteRecord proto
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(try_from = "pb::NoteRecord", into = "pb::NoteRecord")]
 pub struct NoteRecord {
     pub note_commitment: note::Commitment,
