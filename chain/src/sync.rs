@@ -6,8 +6,8 @@ use penumbra_crypto::{FieldExt, NotePayload, Nullifier};
 use penumbra_proto::{chain as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
-// Domain type for CompactBlock.
-// Contains the minimum data needed to update client state.
+/// A compressed delta update with the minimal data from a block required to
+/// synchronize private client state.
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
 #[serde(try_from = "pb::CompactBlock", into = "pb::CompactBlock")]
 pub struct CompactBlock {
