@@ -6,9 +6,9 @@
 //! (HSMs, hardware wallets with humans-in-the-loop, threshold signer clusters,
 //! offline threshold signing, ...).
 
+mod client;
 mod request;
 mod soft_hsm;
-mod client;
 
 pub use client::CustodyClient;
 pub use request::AuthorizeRequest;

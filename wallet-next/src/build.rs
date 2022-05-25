@@ -8,10 +8,10 @@ use rand_core::{CryptoRng, RngCore};
 
 pub async fn build_transaction<V, C, R>(
     fvk: &FullViewingKey,
-    plan: TransactionPlan,
     mut view: V,
     mut custody: C,
     mut rng: R,
+    plan: TransactionPlan,
 ) -> Result<Transaction>
 where
     V: ViewClient,
