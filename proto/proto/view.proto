@@ -91,5 +91,5 @@ message WitnessRequest {
     crypto.FullViewingKeyHash fvk_hash = 1;
 
     // The note commitments to obtain auth paths for.
-    repeated crypto.NoteCommitment notes = 2;
+    repeated crypto.NoteCommitment note_commitments = 2;
 }
