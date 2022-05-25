@@ -13,6 +13,7 @@ use tendermint::{
 use tokio::sync::{mpsc, oneshot, watch};
 use tokio_util::sync::PollSender;
 use tower_abci::BoxError;
+use tracing::error_span;
 
 use super::{Message, Worker};
 use crate::RequestExt;
@@ -66,6 +67,7 @@ impl tower::Service<ConsensusRequest> for Consensus {
         }
 
         let span = req.create_span();
+        let span = error_span!(parent: &span, "ConsensusService");
         let (tx, rx) = oneshot::channel();
 
         self.queue
