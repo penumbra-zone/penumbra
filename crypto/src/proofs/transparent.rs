@@ -49,8 +49,6 @@ pub struct SpendProof {
     pub value: Value,
     // The blinding factor used for generating the value commitment.
     pub v_blinding: Fr,
-    // The note commitment.
-    pub note_commitment: note::Commitment,
     // The blinding factor used for generating the note commitment.
     pub note_blinding: Fq,
     // The randomizer used for generating the randomized spend auth key.
@@ -82,7 +80,7 @@ impl SpendProof {
             let note_commitment_test =
                 note::commitment(self.note_blinding, self.value, self.g_d, transmission_key_s);
 
-            if self.note_commitment != note_commitment_test {
+            if self.note_commitment_proof.commitment() != note_commitment_test {
                 return Err(Error::NoteCommitmentMismatch);
             }
         } else {
@@ -108,9 +106,10 @@ impl SpendProof {
 
         // Nullifier integrity.
         if nullifier
-            != self
-                .nk
-                .derive_nullifier(self.note_commitment_proof.position(), &self.note_commitment)
+            != self.nk.derive_nullifier(
+                self.note_commitment_proof.position(),
+                &self.note_commitment_proof.commitment(),
+            )
         {
             return Err(Error::BadNullifier);
         }
@@ -215,7 +214,6 @@ impl From<SpendProof> for transparent_proofs::SpendProof {
             value_amount: msg.value.amount,
             value_asset_id: msg.value.asset_id.0.to_bytes().to_vec(),
             v_blinding: msg.v_blinding.to_bytes().to_vec(),
-            note_commitment: msg.note_commitment.0.to_bytes().to_vec(),
             note_blinding: msg.note_blinding.to_bytes().to_vec(),
             spend_auth_randomizer: msg.spend_auth_randomizer.to_bytes().to_vec(),
             ak: ak_bytes.into(),
@@ -263,9 +261,6 @@ impl TryFrom<transparent_proofs::SpendProof> for SpendProof {
                 ),
             },
             v_blinding: Fr::from_bytes(v_blinding_bytes).map_err(|_| Error::ProtoMalformed)?,
-            note_commitment: (proto.note_commitment[..])
-                .try_into()
-                .map_err(|_| Error::ProtoMalformed)?,
             note_blinding: Fq::from_bytes(
                 proto.note_blinding[..]
                     .try_into()
@@ -620,7 +615,6 @@ mod tests {
             pk_d: *sender.transmission_key(),
             value: value_to_send,
             v_blinding,
-            note_commitment,
             note_blinding: note.note_blinding(),
             spend_auth_randomizer,
             ak,
@@ -667,7 +661,6 @@ mod tests {
             pk_d: *sender.transmission_key(),
             value: value_to_send,
             v_blinding,
-            note_commitment,
             note_blinding: note.note_blinding(),
             spend_auth_randomizer,
             ak,
@@ -713,7 +706,6 @@ mod tests {
             pk_d: *sender.transmission_key(),
             value: value_to_send,
             v_blinding,
-            note_commitment,
             note_blinding: note.note_blinding(),
             spend_auth_randomizer,
             ak,
@@ -759,7 +751,6 @@ mod tests {
             pk_d: *sender.transmission_key(),
             value: value_to_send,
             v_blinding,
-            note_commitment,
             note_blinding: note.note_blinding(),
             spend_auth_randomizer,
             ak,
