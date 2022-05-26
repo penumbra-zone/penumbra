@@ -1,5 +1,6 @@
 use penumbra_crypto::{keys::DiversifierIndex, note, Note, Nullifier};
 use penumbra_proto::{view as pb, Protobuf};
+use penumbra_tct as tct;
 
 use serde::{Deserialize, Serialize};
 
@@ -13,6 +14,7 @@ pub struct NoteRecord {
     pub nullifier: Nullifier,
     pub height_created: u64,
     pub height_spent: Option<u64>,
+    pub position: tct::Position,
 }
 
 impl Protobuf<pb::NoteRecord> for NoteRecord {}
@@ -25,6 +27,7 @@ impl From<NoteRecord> for pb::NoteRecord {
             nullifier: Some(v.nullifier.into()),
             height_created: v.height_created,
             height_spent: v.height_spent,
+            position: v.position.into(),
         }
     }
 }
@@ -51,6 +54,7 @@ impl TryFrom<pb::NoteRecord> for NoteRecord {
                 .try_into()?,
             height_created: v.height_created,
             height_spent: v.height_spent,
+            position: v.position.into(),
         })
     }
 }

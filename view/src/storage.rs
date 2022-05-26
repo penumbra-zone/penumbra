@@ -216,6 +216,7 @@ impl Storage {
                 } else {
                     Some(record.height_spent.unwrap() as u64)
                 }, //height_spent is nullable
+                position: (record.position as u64).into(),
             });
 
             // If we're tracking amounts, accumulate the value of the note
@@ -272,6 +273,7 @@ impl Storage {
             let blinding_factor = note_record.note.note_blinding().to_bytes().to_vec();
             let diversifier_index = note_record.diversifier_index.0.to_vec();
             let nullifier = note_record.nullifier.to_bytes().to_vec();
+            let position = (u64::from(note_record.position)) as i64;
             sqlx::query!(
                 "INSERT INTO notes
                     (
@@ -284,12 +286,14 @@ impl Storage {
                         transmission_key,
                         blinding_factor,
                         diversifier_index,
-                        nullifier
+                        nullifier,
+                        position
                     )
                     VALUES
                     (
                         ?,
                         NULL,
+                        ?,
                         ?,
                         ?,
                         ?,
@@ -309,6 +313,7 @@ impl Storage {
                 blinding_factor,
                 diversifier_index,
                 nullifier,
+                position,
             )
             .execute(&mut tx)
             .await?;
