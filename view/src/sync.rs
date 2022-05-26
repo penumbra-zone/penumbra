@@ -58,6 +58,7 @@ pub fn scan_block(
                 note,
                 diversifier_index: fvk.incoming().index_for_diversifier(diversifier),
                 nullifier,
+                position,
             };
 
             new_notes.push(record);

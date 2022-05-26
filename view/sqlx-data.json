@@ -58,6 +58,16 @@
     },
     "query": "UPDATE sync_height SET height = ?"
   },
+  "52159e7c73f1adfe3098fdd6c1141aade5f4372584a359302b0fe64051daefad": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 10
+      }
+    },
+    "query": "INSERT INTO notes\n                    (\n                        note_commitment,\n                        height_spent,\n                        height_created,\n                        diversifier,\n                        amount,\n                        asset_id,\n                        transmission_key,\n                        blinding_factor,\n                        diversifier_index,\n                        nullifier,\n                        position\n                    )\n                    VALUES\n                    (\n                        ?,\n                        NULL,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?\n                    )"
+  },
   "5342f12d217c5e7aaf374fa574fd26df465f95878c84ce5670336f7f78a23c9f": {
     "describe": {
       "columns": [
@@ -110,11 +120,17 @@
           "name": "nullifier",
           "ordinal": 9,
           "type_info": "Blob"
+        },
+        {
+          "name": "position",
+          "ordinal": 10,
+          "type_info": "Int64"
         }
       ],
       "nullable": [
         false,
         true,
+        false,
         false,
         false,
         false,
@@ -175,16 +191,6 @@
       }
     },
     "query": "UPDATE note_commitment_tree SET bytes = ?"
-  },
-  "d3d391318263dd6d83eaecd388c247fc5d5f0e1fb246fadfc6fb546261d23969": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 9
-      }
-    },
-    "query": "INSERT INTO notes\n                    (\n                        note_commitment,\n                        height_spent,\n                        height_created,\n                        diversifier,\n                        amount,\n                        asset_id,\n                        transmission_key,\n                        blinding_factor,\n                        diversifier_index,\n                        nullifier\n                    )\n                    VALUES\n                    (\n                        ?,\n                        NULL,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?\n                    )"
   },
   "d437ce2946cba91cd0e4fa750f14d227c2caa78e6bd69ed475f7b0679914c897": {
     "describe": {

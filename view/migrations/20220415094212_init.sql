@@ -14,11 +14,13 @@ CREATE TABLE notes (
     amount                  BIGINT NOT NULL,
     asset_id                BLOB NOT NULL,
     transmission_key        BLOB NOT NULL,
-    blinding_factor         BLOB NOT NULL, 
+    blinding_factor         BLOB NOT NULL,
     -- precomputed decryption of the diversifier
     diversifier_index       BLOB NOT NULL,
     -- the nullifier for this note, used to detect when it is spent
-    nullifier               BLOB NOT NULL
+    nullifier               BLOB NOT NULL,
+    -- the position of the note in the note commitment tree
+    position                BIGINT NOT NULL
 );
 
 -- general purpose note queries

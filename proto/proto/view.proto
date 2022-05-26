@@ -61,6 +61,8 @@ message NoteRecord {
     uint64 height_created = 5;
     // Records whether the note was spent (and if so, at what height).
     optional uint64 height_spent = 6;
+    // The note position.
+    uint64 position = 7;
 }
 
 // A query for notes known by the view service.
