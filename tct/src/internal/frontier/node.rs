@@ -76,6 +76,11 @@ impl<Child: Focus> GetHash for Node<Child> {
     fn cached_hash(&self) -> Option<Hash> {
         self.hash.get()
     }
+
+    #[inline]
+    fn clear_cached_hash(&self) {
+        self.hash.clear();
+    }
 }
 
 impl<Child: Focus> Focus for Node<Child> {

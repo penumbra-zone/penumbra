@@ -36,6 +36,22 @@ pub trait GetHash {
     /// this function expect it to be reliably fast, so it may cause unexpected performance issues
     /// if this function performs any significant work.
     fn cached_hash(&self) -> Option<Hash>;
+
+    /// If there is a hash cached, clear the cache.
+    ///
+    /// By default, this does nothing. Override this if there is a cache.
+    fn clear_cached_hash(&self) {}
+}
+
+/// Given something that's [`GetHash`], recalculate its hash, only if it was already cached, and
+/// return whether the hash matches what was already cached.
+///
+/// This should never return `Some(false)` unless some internal invariant was violated.
+pub fn verify_cached_hash(hashable: &impl GetHash) -> Option<bool> {
+    let cached = hashable.cached_hash()?;
+    hashable.clear_cached_hash();
+    let recalculated = hashable.hash();
+    Some(cached == recalculated)
 }
 
 impl<T: GetHash> GetHash for &T {
