@@ -49,15 +49,21 @@ where
     // Add the required spends, and track change:
     let spend_amount = fee;
     let mut spent_amount = 0;
-    for note in self.notes_to_spend(
-        &mut rng,
-        spend_amount,
-        &*STAKING_TOKEN_DENOM,
-        source_address,
-    )? {
+    let source_index: Option<DiversifierIndex> = source_address.map(Into::into);
+    let notes_to_spend = view
+        .notes(NotesRequest {
+            fvk_hash: Some(fvk.hash().into()),
+            asset_id: Some((*STAKING_TOKEN_ASSET_ID).into()),
+            diversifier_index: source_index.map(Into::into),
+            amount_to_spend: spend_amount,
+            include_spent: false,
+        })
+        .await?;
+    for note_record in notes_to_spend {
+        let note = note_record.note;
         spent_amount += note.amount();
         plan.actions
-            .push(SpendPlan::new(&mut rng, note.clone(), self.position(&note).unwrap()).into());
+            .push(SpendPlan::new(&mut rng, note.clone(), note_record.position).into());
     }
     // Add a change note if we have change left over:
     let change_amount = spent_amount - spend_amount;
