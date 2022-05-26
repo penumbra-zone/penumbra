@@ -150,11 +150,9 @@ impl<Item: Focus> GetHash for Top<Item> {
 
 impl<Item: Focus + Witness> Witness for Top<Item>
 where
-    Item::Complete: Witness<Item = Item::Item>,
+    Item::Complete: Witness,
 {
-    type Item = Item::Item;
-
-    fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Self::Item)> {
+    fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Hash)> {
         if let Some(ref inner) = self.inner {
             inner.witness(index)
         } else {

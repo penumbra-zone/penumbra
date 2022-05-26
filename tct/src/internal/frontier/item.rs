@@ -51,10 +51,8 @@ impl Focus for Item {
 }
 
 impl Witness for Item {
-    type Item = Hash;
-
     #[inline]
-    fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Self::Item)> {
+    fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Hash)> {
         debug_assert_eq!(index.into(), 0, "non-zero index when witnessing leaf");
         Some((path::Leaf, self.hash()))
     }

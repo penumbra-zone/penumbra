@@ -6,7 +6,7 @@ use crate::prelude::*;
 pub struct Item(Hash);
 
 impl Item {
-    /// Create a new `Item` from a [`Hash`](crate::Hash).
+    /// Create a new `Item` from a [`Hash`](struct@Hash).
     pub fn new(hash: Hash) -> Self {
         Self(hash)
     }
@@ -33,8 +33,6 @@ impl Complete for Item {
 }
 
 impl Witness for Item {
-    type Item = Hash;
-
     fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Hash)> {
         debug_assert_eq!(index.into(), 0, "non-zero index when witnessing leaf");
         Some((path::Leaf, self.0))

@@ -14,8 +14,8 @@ use crate::Witness;
 pub(crate) mod epoch;
 pub(crate) use epoch::block;
 
-/// A sparse merkle tree to witness up to 65,536 [`Epoch`]s, each witnessing up to 65,536
-/// [`Block`]s, each witnessing up to 65,536 [`Commitment`]s.
+/// A sparse merkle tree witnessing up to 65,536 epochs of up to 65,536 blocks of up to 65,536
+/// [`Commitment`]s.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Tree {
     index: HashedMap<Commitment, index::within::Tree>,
@@ -70,17 +70,17 @@ impl Display for Root {
 pub struct Position(index::within::Tree);
 
 impl Position {
-    /// The index of the [`Commitment`] to which this [`Position`] refers within its [`Block`].
+    /// The index of the [`Commitment`] to which this [`Position`] refers within its own block.
     pub fn commitment(&self) -> u16 {
         self.0.commitment.into()
     }
 
-    /// The index of the [`Block`] to which this [`Position`] refers within its [`Epoch`].
+    /// The index of the block to which this [`Position`] refers within its own epoch.
     pub fn block(&self) -> u16 {
         self.0.block.into()
     }
 
-    /// The index of the [`Epoch`] to which this [`Position`] refers within its [`Tree`].
+    /// The index of the epoch to which this [`Position`] refers within its [`Tree`].
     pub fn epoch(&self) -> u16 {
         self.0.epoch.into()
     }
@@ -120,8 +120,7 @@ impl Tree {
         Root(self.inner.hash())
     }
 
-    /// Add a new [`Commitment`] to the most recent [`Block`] of the most recent [`Epoch`] of this
-    /// [`Tree`].
+    /// Add a new [`Commitment`] to the most recent block of the most recent epoch of this [`Tree`].
     ///
     /// If successful, returns the [`Position`] at which the commitment was inserted.
     ///
@@ -130,13 +129,13 @@ impl Tree {
     /// Returns [`InsertError`] if any of:
     ///
     /// - the [`Tree`] is full,
-    /// - the current [`Epoch`] is full, or
-    /// - the current [`Block`] is full.
+    /// - the current epoch is full, or
+    /// - the current block is full.
     pub fn insert(
         &mut self,
         witness: Witness,
         commitment: Commitment,
-    ) -> Result<&mut Self, InsertError> {
+    ) -> Result<Position, InsertError> {
         let item = match witness {
             Witness::Keep => commitment.into(),
             Witness::Forget => Hash::of(commitment).into(),
@@ -196,7 +195,7 @@ impl Tree {
             }
         }
 
-        Ok(self)
+        Ok(Position(position))
     }
 
     /// Get a [`Proof`] of inclusion for the commitment at this index in the tree.
@@ -247,19 +246,23 @@ impl Tree {
         self.index.get(&commitment).map(|index| Position(*index))
     }
 
-    /// Add a new [`Block`] all at once to the most recently inserted [`Epoch`] of this [`Tree`].
+    /// Add a new block all at once to the most recently inserted epoch of this [`Tree`].
     ///
-    /// This function can be called on anything that implements `Into<block::Finalized>`; in
-    /// particular, on [`block::Builder`], [`block::Finalized`], and [`block::Root`].
+    /// This function can be called on anything that implements `Into<block::Finalized>`, in
+    /// particular:
+    ///
+    /// - [`block::Root`] (treated as a finalized block with no witnessed commitments).
+    /// - [`block::Builder`] (the block is finalized as it is inserted), and of course
+    /// - [`block::Finalized`].
     ///
     /// # Errors
     ///
     /// Returns [`InsertBlockError`] containing the inserted block without adding it to the [`Tree`]
-    /// if the [`Tree`] is full or the current [`Epoch`] is full.
+    /// if the [`Tree`] is full or the current epoch is full.
     pub fn insert_block(
         &mut self,
         block: impl Into<block::Finalized>,
-    ) -> Result<&mut Self, InsertBlockError> {
+    ) -> Result<(), InsertBlockError> {
         let block::Finalized { inner, index } = block.into();
 
         // Convert the top level inside of the block to a tier that can be slotted into the epoch
@@ -345,7 +348,7 @@ impl Tree {
             }
         }
 
-        Ok(self)
+        Ok(())
     }
 
     /// Explicitly mark the end of the current block in this tree, advancing the position to the
@@ -370,8 +373,7 @@ impl Tree {
         Ok(self)
     }
 
-    /// Get the root hash of the most recent [`Block`] in the most recent [`Epoch`] of this
-    /// [`Tree`].
+    /// Get the root hash of the most recent block in the most recent epoch of this [`Tree`].
     pub fn current_block_root(&self) -> block::Root {
         self.inner
             .focus()
@@ -387,10 +389,14 @@ impl Tree {
             .unwrap_or_else(|| block::Builder::default().root())
     }
 
-    /// Add a new [`Epoch`] all at once to this [`Tree`].
+    /// Add a new epoch all at once to this [`Tree`].
     ///
-    /// This function can be called on anything that implements `Into<epoch::Finalized>`; in
-    /// particular, on [`epoch::Builder`], [`epoch::Finalized`], and [`epoch::Root`].
+    /// This function can be called on anything that implements `Into<epoch::Finalized>`, in
+    /// particular:
+    ///
+    /// - [`epoch::Root`] (treated as a finalized epoch with no witnessed commitments).
+    /// - [`epoch::Builder`] (the epoch is finalized as it is inserted), and of course
+    /// - [`epoch::Finalized`].
     ///
     /// # Errors
     ///
@@ -472,9 +478,7 @@ impl Tree {
         Ok(self)
     }
 
-    /// Get the root hash of the most recent [`Epoch`] in this [`Tree`].
-    ///
-    /// If the [`Tree`] is empty, returns `None`.
+    /// Get the root hash of the most recent epoch in this [`Tree`].
     pub fn current_epoch_root(&self) -> epoch::Root {
         self.inner
             .focus()
@@ -494,8 +498,8 @@ impl Tree {
     ///
     /// If the [`Tree`] is full, returns `None`.
     ///
-    /// The maximum capacity of a [`Tree`] is 281,474,976,710,656 = 65,536 [`Epoch`]s of 65,536
-    /// [`Block`]s of 65,536 [`Commitment`]s.
+    /// The maximum capacity of a [`Tree`] is 281,474,976,710,656 = 65,536 epochs of 65,536
+    /// blocks of 65,536 [`Commitment`]s.
     ///
     /// Note that [`forget`](Tree::forget)ting a commitment does not decrease this; it only
     /// decreases the [`witnessed_count`](Tree::witnessed_count).
