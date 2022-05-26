@@ -14,6 +14,8 @@ use penumbra_proto::{
     crypto as pbc, transaction as pbt,
     view::{self as pb, view_protocol_server::ViewProtocol, StatusResponse},
 };
+use penumbra_tct::{Commitment, Proof};
+use penumbra_transaction::WitnessData;
 use tokio::sync::{mpsc, RwLock};
 use tonic::{async_trait, transport::Channel};
 
@@ -187,6 +189,38 @@ impl ViewProtocol for ViewService {
         self.check_worker().await?;
         self.check_fvk(request.get_ref().fvk_hash.as_ref()).await?;
 
-        todo!()
+        // Acquire a read lock for the NCT that will live for the entire request,
+        // so that all auth paths are relative to the same NCT root.
+        let nct = self.note_commitment_tree.read().await;
+
+        // Read the NCT root
+        let anchor = nct.root();
+
+        // Obtain an auth path for each requested note commitment
+        let requested_note_commitments = request
+            .get_ref()
+            .note_commitments
+            .iter()
+            .map(|nc| {
+                Commitment::try_from(nc.clone()).expect("Note commitment protobuf conversion error")
+            })
+            .collect::<Vec<Commitment>>();
+        let auth_paths: Vec<Proof> = requested_note_commitments
+            .iter()
+            .map(|nc| {
+                nct.witness(*nc).ok_or_else(|| {
+                    tonic::Status::new(tonic::Code::InvalidArgument, "Note commitment missing")
+                })
+            })
+            .collect::<Result<Vec<Proof>, tonic::Status>>()?;
+
+        // Release the read lock on the NCT
+        drop(nct);
+
+        let witness_data = WitnessData {
+            anchor,
+            note_commitment_proofs: auth_paths,
+        };
+        Ok(tonic::Response::new(witness_data.into()))
     }
 }
