@@ -74,6 +74,11 @@ impl<Item: Witness> Witness for Leaf<Item> {
     fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Hash)> {
         self.item.witness(index)
     }
+
+    #[inline]
+    fn foreach_witness(&self, per_witness: impl FnMut(u64, Hash)) {
+        self.item.foreach_witness(per_witness);
+    }
 }
 
 impl<Item: GetPosition> GetPosition for Leaf<Item> {

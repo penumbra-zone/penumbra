@@ -33,8 +33,14 @@ impl<Item: Complete> Complete for Leaf<Item> {
 }
 
 impl<Item: Witness> Witness for Leaf<Item> {
+    #[inline]
     fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Hash)> {
         self.0.witness(index)
+    }
+
+    #[inline]
+    fn foreach_witness(&self, per_witness: impl FnMut(u64, Hash)) {
+        self.0.foreach_witness(per_witness)
     }
 }
 

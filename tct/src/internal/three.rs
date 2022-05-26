@@ -68,6 +68,12 @@ impl<T> Three<T> {
         self.elems.len() as u8
     }
 
+    /// Get an iterator over the elements of the [`Three`].
+    #[inline]
+    pub fn iter(&self) -> impl Iterator<Item = &T> {
+        self.elems.iter()
+    }
+
     /// Get an enumeration of the elements of this [`Three`] by reference.
     pub fn elems(&self) -> Elems<T> {
         match self.elems.len() {
