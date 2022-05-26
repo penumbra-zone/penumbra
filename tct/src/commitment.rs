@@ -2,7 +2,7 @@ use decaf377::FieldExt;
 use penumbra_proto::{crypto as pb, Protobuf};
 use poseidon377::Fq;
 
-/// Commitment to the value of a note.
+/// A commitment to the value of a note.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(into = "pb::NoteCommitment", try_from = "pb::NoteCommitment")]
 pub struct Commitment(pub Fq);

@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-/// An as-yet-unverified proof of the inclusion of some [`Commitment`] in a [`Tree`].
+/// A proof of the inclusion of some [`Commitment`] in a [`Tree`] with a particular [`Root`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Proof(pub(super) crate::internal::proof::Proof<Tree>);
 
@@ -108,7 +108,7 @@ impl From<Proof> for pb::NoteCommitmentProof {
 }
 
 impl TryFrom<pb::NoteCommitmentProof> for Proof {
-    type Error = crate::ProofDecodeError;
+    type Error = crate::error::ProofDecodeError;
 
     fn try_from(value: pb::NoteCommitmentProof) -> Result<Self, Self::Error> {
         Ok(Proof(crate::internal::proof::Proof::try_from(value)?))

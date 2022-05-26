@@ -10,14 +10,15 @@ use crate::{prelude::*, Witness};
 
 /// A sparse merkle tree to witness up to 65,536 individual [`Commitment`]s.
 ///
-/// This is one [`Block`] in an [`Epoch`], which is one [`Epoch`] in a [`Tree`].
+/// This is one block in an [`epoch`](crate::builder::epoch), which is one epoch in a [`Tree`].
 #[derive(Derivative, Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Builder {
     index: HashedMap<Commitment, index::within::Block>,
     inner: frontier::Top<Item>,
 }
 
-/// A finalized block builder, ready to be inserted into an [`Epoch`](super::epoch).
+/// A finalized block builder, ready to be inserted into an [`epoch::Builder`](super::Builder) or a
+/// [`Tree`].
 #[derive(Derivative, Debug, Clone, Serialize, Deserialize)]
 pub struct Finalized {
     pub(in super::super) index: HashedMap<Commitment, index::within::Block>,
@@ -59,7 +60,7 @@ impl From<Builder> for Finalized {
     }
 }
 
-/// The root hash of a [`Block`].
+/// The root hash of a block.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(try_from = "pb::MerkleRoot", into = "pb::MerkleRoot")]
 #[cfg_attr(any(test, feature = "arbitrary"), derive(proptest_derive::Arbitrary))]
@@ -109,12 +110,12 @@ impl Display for Root {
 pub struct InsertError;
 
 impl Builder {
-    /// Create a new empty [`Block`].
+    /// Create a new empty [`block::Builder`](Builder).
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Add a new [`Commitment`] to this [`Block`].
+    /// Add a new [`Commitment`] to this [`block::Builder`](Builder).
     ///
     /// # Errors
     ///

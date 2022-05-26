@@ -11,17 +11,17 @@ use crate::{prelude::*, Witness};
 #[path = "block.rs"]
 pub(crate) mod block;
 
-/// A sparse merkle tree to witness up to 65,536 [`Block`]s, each witnessing up to 65,536
+/// A sparse merkle tree to witness up to 65,536 blocks, each witnessing up to 65,536
 /// [`Commitment`]s.
 ///
-/// This is one [`Epoch`] in a [`Tree`].
+/// This is one epoch in a [`Tree`].
 #[derive(Derivative, Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Builder {
     index: HashedMap<Commitment, index::within::Epoch>,
     inner: frontier::Top<frontier::Tier<frontier::Item>>,
 }
 
-/// A finalized epoch builder, ready to be inserted into an [`Epoch`](super::epoch).
+/// A finalized epoch builder, ready to be inserted into a [`Tree`].
 #[derive(Derivative, Debug, Clone, Serialize, Deserialize)]
 pub struct Finalized {
     pub(super) index: HashedMap<Commitment, index::within::Epoch>,
@@ -63,7 +63,7 @@ impl From<Builder> for Finalized {
     }
 }
 
-/// The root hash of an [`Epoch`].
+/// The root hash of an epoch.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(try_from = "pb::MerkleRoot", into = "pb::MerkleRoot")]
 #[cfg_attr(any(test, feature = "arbitrary"), derive(proptest_derive::Arbitrary))]
@@ -106,20 +106,20 @@ impl Display for Root {
     }
 }
 
-/// A [`Commitment`] could not be inserted into the [`Epoch`].
+/// A [`Commitment`] could not be inserted into the [`epoch::Builder`](Builder).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
 pub enum InsertError {
-    /// The [`Epoch`] was full.
+    /// The [`epoch::Builder`](Builder) was full.
     #[error("epoch is full")]
     #[non_exhaustive]
     Full,
-    /// The most recent [`Block`] in the [`Epoch`] was full.
+    /// The most recent block in the [`epoch::Builder`](Builder) was full.
     #[error("most recent block in epoch is full")]
     #[non_exhaustive]
     BlockFull,
 }
 
-/// The [`Epoch`] was full when attempting to insert a block.
+/// The [`epoch::Builder`](Builder) was full when attempting to insert a block.
 #[derive(Debug, Clone, Error)]
 #[error("epoch is full")]
 #[non_exhaustive]
@@ -132,20 +132,19 @@ impl From<InsertBlockError> for block::Finalized {
 }
 
 impl Builder {
-    /// Create a new empty [`Epoch`].
+    /// Create a new empty [`epoch::Builder`](Builder).
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Add a new [`Commitment`] to the most recent [`Block`] of this [`Epoch`].
+    /// Add a new [`Commitment`] to the most recent block of this [`epoch::Builder`](Builder).
     ///
     /// # Errors
     ///
-    /// Returns [`InsertError`] if any of:
+    /// Returns [`InsertError`] if either:
     ///
-    /// - the [`Epoch`] is full, or
-    /// - the most recent [`Block`] is full or was inserted by
-    ///   [`insert_block_root`](Epoch::insert_block_root).
+    /// - the [`epoch::Builder`](Builder) is full, or
+    /// - the most recent block is full.
     pub fn insert(
         &mut self,
         witness: Witness,

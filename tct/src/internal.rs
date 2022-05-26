@@ -5,13 +5,16 @@
 //! ## Structure of Implementation
 //!
 //! The tiered commitment tree is not accessed directly _as a tree_; rather, the
-//! [`Tree`](crate::Tree), [`Epoch`](crate::Epoch), and [`Block`](crate::Block) structs from
-//! the top level of the crate contain a tree together with a hashmap which maps commitments to
-//! their corresponding index within the tree. This `internal` module and all its submodules concern
-//! themselves solely with the implementation of the tree itself, wherein commitments and their
-//! authentication paths are accessed by index. The surrounding pieces of the crate make use of the
-//! internal-facing API exposed by this module to implement an external API specific to the
-//! three-tiered tree/epoch/block commitment tree required by Penumbra.
+//! [`Tree`](crate::Tree), [`epoch::Builder`](crate::builder::epoch::Builder),
+//! [`epoch::Finalized`](crate::builder::epoch::Finalized),
+//! [`block::Builder`](crate::builder::block::Builder), and
+//! [`block::Finalized`](crate::builder::block::Finalized) structs from the top level of the crate
+//! contain a tree together with a hashmap which maps commitments to their corresponding index
+//! within the tree. This `internal` module and all its submodules concern themselves solely with
+//! the implementation of the tree itself, wherein commitments and their authentication paths are
+//! accessed by index. The surrounding pieces of the crate make use of the internal-facing API
+//! exposed by this module to implement an external API specific to the three-tiered
+//! tree/epoch/block commitment tree required by Penumbra.
 //!
 //! The tiered commitment tree has a very specific structure, and in this implementation we make
 //! strong Rust's type system to enforce that structure. In particular, we ensure that internal
@@ -31,10 +34,9 @@
 //! ## Tiers of Nodes of Leaves of Items: Frontier and Complete
 //!
 //! The primary exports of this module is the type [`frontier::Tier`]. It is in terms of this type
-//! that the [`Tree`](crate::Tree), [`Epoch`](crate::Epoch), and [`Block`](crate::Block)
-//! structs are defined: an `Tree` is a `Tier<Tier<Tier<Item>>>`, an `Epoch` is a
-//! `Tier<Tier<Item>>`, and a `Block` is a `Tier<Item>` (each with a managed index of commitments
-//! alongside).
+//! that the [`Tree`](crate::Tree) and [`builder`](crate::builder) structs are defined: a
+//! [`Tree`](crate::Tree) is a `Top<Tier<Tier<Item>>>`, an epoch is a `Top<Tier<Item>>`, and a
+//! `Block` is a `Top<Item>` (each with a managed index of commitments alongside).
 //!
 //! Internally, a [`Tier`](frontier::Tier) is a quadtree where every internal node is annotated with
 //! the hash of its children, into which leaves (all at depth 8) are inserted in left to right
@@ -43,6 +45,12 @@
 //! which stores the finalized bulk of the items inserted into the tree. As new leaves are created,
 //! the frontier zig-zags rightwards, pushing finalized portions of itself into the leftward
 //! complete tree.
+//!
+//! All [`Tier`](frontier::Tier)s must contain at least one child, and may be either unfinalized or
+//! finalized; a [`Top`](frontier::Top) is like a tier, but it may be empty, and may not be
+//! finalized. Stacking a [`Top`](frontier::Top) on top of [`Tier`](frontier::Tier)s allows there to
+//! be a canonical representation for empty trees, and prevents the illegal state of a finalized
+//! top-level tree.
 //!
 //! As described above, a variety of recursively defined traits are used to define the behavior of
 //! trees. The [`Frontier`](frontier::Frontier) trait defines the operations possible on a frontier
@@ -109,8 +117,8 @@ pub mod frontier {
 
 pub mod complete {
     //! [`Complete`] things are sparse representations of only the data that was inserted using
-    //! [`Insert::Keep`](crate::Insert::Keep), with the data that was inserted using
-    //! [`Insert::Hash`](crate::Insert::Hash) being pruned eagerly.
+    //! [`Witness::Keep`](crate::Witness::Keep), with the data that was inserted using
+    //! [`Witness::Forget`](crate::Witness::Forget) being pruned eagerly.
     //!
     //! The structure of a single [`Tier`] contains eight levels of [`Node`]s, the bottom-most level
     //! of which contains [`Leaf`]s. Alternatively, a tier can be a summarized [`Hash`] of what its

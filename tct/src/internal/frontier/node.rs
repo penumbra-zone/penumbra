@@ -187,11 +187,9 @@ impl<Child: Focus + GetPosition> GetPosition for Node<Child> {
 
 impl<Child: Focus + Witness> Witness for Node<Child>
 where
-    Child::Complete: Witness<Item = Child::Item>,
+    Child::Complete: Witness,
 {
-    type Item = Child::Item;
-
-    fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Self::Item)> {
+    fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Hash)> {
         use Elems::*;
         use WhichWay::*;
 

@@ -215,11 +215,9 @@ impl<Item: Focus> Focus for Tier<Item> {
 
 impl<Item: Focus + Witness> Witness for Tier<Item>
 where
-    Item::Complete: Witness<Item = Item::Item>,
+    Item::Complete: Witness,
 {
-    type Item = Item::Item;
-
-    fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Self::Item)> {
+    fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Hash)> {
         match &self.inner {
             Inner::Frontier(frontier) => frontier.witness(index),
             Inner::Complete(complete) => complete.witness(index),

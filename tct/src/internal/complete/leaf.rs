@@ -33,9 +33,7 @@ impl<Item: Complete> Complete for Leaf<Item> {
 }
 
 impl<Item: Witness> Witness for Leaf<Item> {
-    type Item = Item::Item;
-
-    fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Self::Item)> {
+    fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Hash)> {
         self.0.witness(index)
     }
 }

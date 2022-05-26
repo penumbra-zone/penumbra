@@ -70,10 +70,8 @@ impl<Item: Focus> Focus for Leaf<Item> {
 }
 
 impl<Item: Witness> Witness for Leaf<Item> {
-    type Item = Item::Item;
-
     #[inline]
-    fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Self::Item)> {
+    fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Hash)> {
         self.item.witness(index)
     }
 }

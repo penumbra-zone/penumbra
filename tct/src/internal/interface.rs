@@ -11,20 +11,20 @@ pub trait Frontier: Focus + Sized {
     /// The type of item to persist in each witnessed leaf of the frontier.
     type Item;
 
-    /// Make a new [`Frontier`] containing a single [`Hash`](crate::Hash) or `Self::Item`.
+    /// Make a new [`Frontier`] containing a single [`Hash`](struct@Hash) or `Self::Item`.
     fn new(item: Self::Item) -> Self;
 
-    /// Insert a new [`Hash`](crate::Hash) or `Self::Item` into this [`Frontier`], returning either
+    /// Insert a new [`Hash`](struct@Hash) or `Self::Item` into this [`Frontier`], returning either
     /// `Self` with the thing inserted, or the un-inserted thing and the [`Complete`] of this
     /// [`Frontier`].
     fn insert_owned(self, item: Self::Item) -> Result<Self, Full<Self>>;
 
     /// Update the currently focused `Insert<Self::Item>` (i.e. the most-recently
-    /// [`insert`](Frontier::insert)ed one), returning the result of the function.
+    /// [`insert`](Frontier::insert_owned) one), returning the result of the function.
     fn update<T>(&mut self, f: impl FnOnce(&mut Self::Item) -> T) -> Option<T>;
 
     /// Get a reference to the focused `Insert<Self::Item>` (i.e. the most-recently
-    /// [`insert`](Frontier::insert)ed one).
+    /// [`insert`](Frontier::insert_owned) one).
     fn focus(&self) -> Option<&Self::Item>;
 
     /// Check whether this frontier is full.
@@ -46,11 +46,11 @@ pub trait Focus: Height<Height = <Self::Complete as Height>::Height> + GetHash {
 /// It is enforced by the type system that [`Complete`] and [`Focus`] are dual to one another.
 pub trait Complete: Height + GetHash {
     /// The corresponding [`Focus`] of this [`Complete`] (i.e. the type which will become this type
-    /// when it is [`finalize`](Focus::finalize)d).
+    /// when it is [`finalize_owned`](Focus::finalize_owned)).
     type Focus: Focus<Complete = Self>;
 }
 
-/// The result of [`Frontier::insert`] when the [`Frontier`] is full.
+/// The result of [`Frontier::insert_owned`] when the [`Frontier`] is full.
 #[derive(Debug)]
 pub struct Full<T: Frontier> {
     /// The original hash or item that could not be inserted.
@@ -62,14 +62,11 @@ pub struct Full<T: Frontier> {
 
 /// Witness an authentication path into a tree, or remove a witnessed item from one.
 pub trait Witness: Height + Sized {
-    /// The leaf of the tree: the element being witnessed.
-    type Item;
-
     /// Witness an authentication path to the given index in the tree.
     ///
     /// The input mutable slice should be at least the height of the tree, and is overwritten by
     /// this function.
-    fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Self::Item)>;
+    fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Hash)>;
 }
 
 /// Get the position of the next insertion into the tree.
