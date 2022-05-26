@@ -10,6 +10,7 @@ use penumbra_crypto::{
     keys::{DiversifierIndex, FullViewingKeyHash},
 };
 use penumbra_proto::{
+    chain as pbp,
     client::oblivious::oblivious_query_client::ObliviousQueryClient,
     crypto as pbc, transaction as pbt,
     view::{self as pb, view_protocol_server::ViewProtocol, StatusResponse},
@@ -261,5 +262,22 @@ impl ViewProtocol for ViewService {
             note_commitment_proofs: auth_paths,
         };
         Ok(tonic::Response::new(witness_data.into()))
+    }
+
+    async fn chain_params(
+        &self,
+        _request: tonic::Request<pb::ChainParamsRequest>,
+    ) -> Result<tonic::Response<pbp::ChainParams>, tonic::Status> {
+        self.check_worker().await?;
+
+        // NOTE: should we check the chain ID here?
+
+        let params = self
+            .storage
+            .chain_params()
+            .await
+            .map_err(|_| tonic::Status::unavailable("database error"))?;
+
+        Ok(tonic::Response::new(params.into()))
     }
 }

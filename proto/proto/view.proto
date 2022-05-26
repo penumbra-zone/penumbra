@@ -5,6 +5,7 @@ option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
 
 import "transaction.proto";
 import "crypto.proto";
+import "chain.proto";
 
 // The view protocol is used by a view client, who wants to do some
 // transaction-related actions, to request data from a view service, which is
@@ -32,6 +33,14 @@ service ViewProtocol {
 
     // Queries for assets.
     rpc Assets(AssetRequest) returns (stream crypto.Asset);
+    
+    // Query for the current chain parameters.
+    rpc ChainParams(ChainParamsRequest) returns (chain.ChainParams);
+}
+
+// Requests the current chain parameters from the view service.
+message ChainParamsRequest {
+    string chain_id = 1;
 }
 
 // Requests sync status of the view service.
