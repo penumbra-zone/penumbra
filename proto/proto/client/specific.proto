@@ -1,9 +1,11 @@
 syntax = "proto3";
+
 package penumbra.client.specific;
 
 import "crypto.proto";
 import "chain.proto";
 import "stake.proto";
+import "proofs.proto";
 
 // Methods for accessing chain state that are "specific" in the sense that they
 // request specific portions of the chain state that could reveal private
@@ -30,12 +32,11 @@ message KeyValueRequest {
   // The expected chain id (empty string if no expectation).
   string chain_id = 1;
   bytes key_hash = 2;
-
-  // TODO (avahowell) add a proof boolean that requests an auth proof
+  bool proof = 3;
 }
 
 message KeyValueResponse {
   bytes value = 1;
 
-  // TODO (avahowell) add a proof field that contains an ICS23 auth proof. 
+  .ics23.ExistenceProof proof = 2;
 }

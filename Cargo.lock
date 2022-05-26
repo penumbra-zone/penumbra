@@ -2826,6 +2826,7 @@ dependencies = [
  "hex",
  "ibc",
  "ibc-proto",
+ "ics23",
  "prost 0.9.0",
  "prost-build",
  "prost-types 0.9.0",
