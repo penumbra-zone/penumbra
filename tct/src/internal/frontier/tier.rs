@@ -217,11 +217,21 @@ impl<Item: Focus + Witness> Witness for Tier<Item>
 where
     Item::Complete: Witness,
 {
+    #[inline]
     fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Hash)> {
         match &self.inner {
             Inner::Frontier(frontier) => frontier.witness(index),
             Inner::Complete(complete) => complete.witness(index),
             Inner::Hash(_) => None,
+        }
+    }
+
+    #[inline]
+    fn foreach_witness(&self, per_witness: impl FnMut(u64, Hash)) {
+        match &self.inner {
+            Inner::Frontier(frontier) => frontier.foreach_witness(per_witness),
+            Inner::Complete(complete) => complete.foreach_witness(per_witness),
+            Inner::Hash(_) => (),
         }
     }
 }
