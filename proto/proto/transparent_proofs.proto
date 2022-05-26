@@ -13,7 +13,6 @@ message SpendProof {
   uint64 value_amount = 4;
   bytes value_asset_id = 5;
   bytes v_blinding = 6;
-  bytes note_commitment = 7;
   bytes note_blinding = 8;
   bytes spend_auth_randomizer = 9;
   bytes ak = 10;

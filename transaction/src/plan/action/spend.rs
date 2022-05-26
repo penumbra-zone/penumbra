@@ -68,7 +68,6 @@ impl SpendPlan {
             pk_d: self.note.transmission_key(),
             value: self.note.value(),
             v_blinding: self.value_blinding,
-            note_commitment: self.note.commit(),
             note_blinding: self.note.note_blinding(),
             spend_auth_randomizer: self.randomizer,
             ak: *fvk.spend_verification_key(),
