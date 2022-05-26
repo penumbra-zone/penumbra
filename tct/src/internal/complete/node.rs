@@ -87,6 +87,11 @@ impl<Child: Height + GetHash> GetHash for Node<Child> {
     fn cached_hash(&self) -> Option<Hash> {
         self.hash.get()
     }
+
+    #[inline]
+    fn clear_cached_hash(&self) {
+        self.hash.clear();
+    }
 }
 
 impl<Child: GetHash + Witness> Witness for Node<Child> {

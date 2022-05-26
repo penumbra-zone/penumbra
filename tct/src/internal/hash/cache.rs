@@ -39,12 +39,17 @@ impl CachedHash {
     /// If the cache is empty, set its value using the closure, then return its contents regardless.
     pub fn set_if_empty(&self, new: impl FnOnce() -> Hash) -> Hash {
         let mut guard = self.mutex.lock();
-        if let Some(hash) = <Option<Hash>>::from(*guard) {
+        if let Some(hash) = Option::from(*guard) {
             hash
         } else {
             let new = new();
             *guard = OptionHash::from(Some(new));
             new
         }
+    }
+
+    /// Reset the cached hash to empty.
+    pub fn clear(&self) {
+        *self.mutex.lock() = OptionHash::from(None);
     }
 }
