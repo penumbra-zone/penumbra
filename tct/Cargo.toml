@@ -25,15 +25,13 @@ proptest-derive = { version = "0.3", optional = true }
 rand = { version = "0.8", optional = true }
 
 [features]
-spec = []
 internal = []
-fast_hash = []
 arbitrary = ["proptest", "proptest-derive", "rand"]
 
 [dev-dependencies]
 static_assertions = "1"
 proptest = "1"
 proptest-derive = "0.3"
-penumbra-tct = { path = ".", features = ["spec", "arbitrary"] }
+penumbra-tct = { path = ".", features = ["arbitrary"] }
 serde_json = "1"
 bincode = "1"

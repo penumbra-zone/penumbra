@@ -3175,11 +3175,12 @@ dependencies = [
 [[package]]
 name = "poseidon377"
 version = "0.1.0"
-source = "git+https://github.com/penumbra-zone/poseidon377#862bfd67bfb4ea6988fbc2dfdb79a62cd87bde65"
+source = "git+https://github.com/penumbra-zone/poseidon377#ab3f80aad2d09f93e34682a26df0f90aaa0ae8c6"
 dependencies = [
  "ark-ed-on-bls12-377",
  "ark-ff",
  "ark-sponge",
+ "num-bigint",
  "once_cell",
 ]
 
