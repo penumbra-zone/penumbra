@@ -14,7 +14,7 @@ use penumbra_proto::{
     crypto as pbc, transaction as pbt,
     view::{self as pb, view_protocol_server::ViewProtocol, StatusResponse},
 };
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, RwLock};
 use tonic::{async_trait, transport::Channel};
 
 use crate::{Storage, Worker};
@@ -36,6 +36,8 @@ pub struct ViewService {
     // When all the senders have dropped, the worker will stop.
     worker_shutdown_tx: mpsc::Sender<()>,
     fvk_hash: FullViewingKeyHash,
+    // A copy of the NCT used by the worker task.
+    note_commitment_tree: Arc<RwLock<penumbra_tct::Tree>>,
 }
 
 impl ViewService {
@@ -56,7 +58,7 @@ impl ViewService {
         // Create a means of communicating shutdown with the worker task
         let (tx, rx) = mpsc::channel(1);
 
-        let worker = Worker::new(storage.clone(), client, error_slot.clone(), rx).await?;
+        let (worker, nct) = Worker::new(storage.clone(), client, error_slot.clone(), rx).await?;
 
         tokio::spawn(worker.run());
 
@@ -68,6 +70,7 @@ impl ViewService {
             fvk_hash,
             error_slot,
             worker_shutdown_tx: tx,
+            note_commitment_tree: nct,
         })
     }
 

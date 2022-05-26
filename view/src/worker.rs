@@ -5,12 +5,15 @@ use penumbra_crypto::FullViewingKey;
 use penumbra_proto::client::oblivious::{
     oblivious_query_client::ObliviousQueryClient, CompactBlockRangeRequest,
 };
-use tokio::sync::mpsc::{error::TryRecvError, Receiver};
+use tokio::sync::{
+    mpsc::{error::TryRecvError, Receiver},
+    RwLock,
+};
 use tonic::transport::Channel;
 pub struct Worker {
     storage: Storage,
     client: ObliviousQueryClient<Channel>,
-    nct: penumbra_tct::Tree,
+    nct: Arc<RwLock<penumbra_tct::Tree>>,
     fvk: FullViewingKey, // TODO: notifications (see TODOs on ViewService)
     error_slot: Arc<Mutex<Option<anyhow::Error>>>,
     shutdown_rx: Receiver<()>,
@@ -22,22 +25,28 @@ impl Worker {
         client: ObliviousQueryClient<Channel>,
         error_slot: Arc<Mutex<Option<anyhow::Error>>>,
         rx: Receiver<()>,
-    ) -> Result<Self, anyhow::Error> {
-        let nct = storage.note_commitment_tree().await?;
+    ) -> Result<(Self, Arc<RwLock<penumbra_tct::Tree>>), anyhow::Error> {
+        let nct = Arc::new(RwLock::new(storage.note_commitment_tree().await?));
         let fvk = storage.full_viewing_key().await?;
-        Ok(Self {
-            storage,
-            client,
+        Ok((
+            Self {
+                storage,
+                client,
+                nct: nct.clone(),
+                fvk,
+                error_slot,
+                shutdown_rx: rx,
+            },
             nct,
-            fvk,
-            error_slot,
-            shutdown_rx: rx,
-        })
+        ))
     }
 
     pub async fn sync_to_latest(&mut self) -> Result<u64, anyhow::Error> {
         // Do a single sync run, up to whatever the latest block height is
         tracing::info!("starting client sync");
+
+        // Lock the NCT during sync
+        let mut nct = self.nct.write().await;
 
         let start_height = self
             .storage
@@ -59,15 +68,15 @@ impl Worker {
             .into_inner();
 
         while let Some(block) = stream.message().await? {
-            let scan_result =
-                scan_block(&self.fvk, &mut self.nct, block.try_into()?, epoch_duration);
+            let scan_result = scan_block(&self.fvk, &mut nct, block.try_into()?, epoch_duration);
 
-            self.storage
-                .record_block(scan_result, &mut self.nct)
-                .await?;
+            self.storage.record_block(scan_result, &mut nct).await?;
         }
 
         let end_height = self.storage.last_sync_height().await?.unwrap();
+
+        // Release the NCT RwLock
+        drop(nct);
 
         tracing::info!(?end_height, "finished sync");
 
