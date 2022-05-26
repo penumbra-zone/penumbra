@@ -8,6 +8,7 @@ pub use decaf377_rdsa as rdsa;
 mod address;
 pub mod asset;
 mod delegation_token;
+pub mod eddy;
 mod identity_key;
 pub mod keys;
 pub mod memo;
@@ -16,7 +17,6 @@ mod note_payload;
 mod nullifier;
 mod prf;
 pub mod proofs;
-pub mod threshold;
 pub mod value;
 
 pub use address::Address;
