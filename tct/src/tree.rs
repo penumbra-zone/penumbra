@@ -248,6 +248,17 @@ impl Tree {
 
     /// Add a new block all at once to the most recently inserted epoch of this [`Tree`].
     ///
+    /// This can be used for two purposes:
+    ///
+    /// 1. to insert a [`block::Root`] into the tree as a stand-in for an entire un-witnessed block,
+    ///    or
+    /// 2. to insert a [`block::Builder`] into the tree that was constructed separately.
+    ///
+    /// The latter [`block::Builder`] API only accelerates tree construction when used in parallel,
+    /// but the former [`block::Root`] insertion can be used to accelerate the construction of a
+    /// tree even in a single thread, because if the root is already known, only one set of hashes
+    /// need be performed, rather than performing hashing for each commitment in the block.
+    ///
     /// This function can be called on anything that implements `Into<block::Finalized>`, in
     /// particular:
     ///
@@ -391,6 +402,17 @@ impl Tree {
 
     /// Add a new epoch all at once to this [`Tree`].
     ///
+    /// This can be used for two purposes:
+    ///
+    /// 1. to insert an [`epoch::Root`] into the tree as a stand-in for an entire un-witnessed block,
+    ///    or
+    /// 2. to insert an [`epoch::Builder`] into the tree that was constructed separately.
+    ///
+    /// The latter [`epoch::Builder`] API only accelerates tree construction when used in parallel,
+    /// but the former [`epoch::Root`] insertion can be used to accelerate the construction of a
+    /// tree even in a single thread, because if the root is already known, only one set of hashes
+    /// need be performed, rather than performing hashing for each commitment in the epoch.
+    ///
     /// This function can be called on anything that implements `Into<epoch::Finalized>`, in
     /// particular:
     ///
@@ -400,8 +422,8 @@ impl Tree {
     ///
     /// # Errors
     ///
-    /// Returns [`InsertEpochError`] containing the epoch without adding it to the [`Tree`] if
-    /// the [`Tree`] is full.
+    /// Returns [`InsertEpochError`] containing the epoch without adding it to the [`Tree`] if the
+    /// [`Tree`] is full.
     pub fn insert_epoch(
         &mut self,
         epoch: impl Into<epoch::Finalized>,
