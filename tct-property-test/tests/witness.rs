@@ -7,8 +7,8 @@ use proptest::{arbitrary::*, prelude::*};
 
 use penumbra_tct::{Commitment, CommitmentStrategy, Tree, Witness};
 
-const MAX_USED_COMMITMENTS: usize = 10;
-const MAX_TIER_ACTIONS: usize = 100;
+const MAX_USED_COMMITMENTS: usize = 3;
+const MAX_TIER_ACTIONS: usize = 10;
 
 #[derive(Debug, Copy, Clone, Arbitrary)]
 #[proptest(params("Vec<Commitment>"))]
@@ -89,10 +89,6 @@ impl Action {
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig {
-        cases: 1000, .. ProptestConfig::default()
-    })]
-
     #[test]
     fn index_correct(
         actions in
@@ -104,17 +100,15 @@ proptest! {
         let mut tree = Tree::new();
 
         let mut commitments_added = HashSet::new();
+
         for action in &actions {
             match action {
-                Action::Insert (witness, commitment) => {
-                    match witness {
-                        Witness::Keep => {
-                            commitments_added.insert(commitment);
-                        },
-                        _ => {}
-                    }
+                Action::Insert (Witness::Keep, commitment) => {
+                    commitments_added.insert(commitment);
                 },
-                Action::Forget (commitment) => { commitments_added.remove(&commitment); },
+                Action::Forget (commitment) => {
+                    commitments_added.remove(&commitment);
+                },
                 _ => {}
             }
             action.apply(&mut tree).unwrap();
