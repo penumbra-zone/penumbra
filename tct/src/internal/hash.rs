@@ -6,17 +6,10 @@ use std::fmt::Debug;
 
 use ark_ff::{fields::PrimeField, BigInteger256, Fp256, One, ToBytes, Zero};
 use once_cell::sync::Lazy;
-use poseidon377::Fq;
+use poseidon377::{hash_1, hash_4, Fq};
 use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
-
-#[cfg(not(feature = "fast_hash"))]
-use poseidon377::{hash_1, hash_4};
-#[cfg(feature = "fast_hash")]
-mod fast;
-#[cfg(feature = "fast_hash")]
-use fast::{hash_1, hash_4};
 
 mod cache;
 mod option;
