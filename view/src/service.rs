@@ -157,10 +157,16 @@ impl ViewProtocol for ViewService {
             .get_ref()
             .asset_id
             .to_owned()
-            .map(|x| asset::Id::try_from(x).expect("AssetId protobuf conversion error"));
-        let diversifier_index = request.get_ref().diversifier_index.to_owned().map(|x| {
-            DiversifierIndex::try_from(x).expect("DiversifierIndex protobuf conversion error")
-        });
+            .map(asset::Id::try_from)
+            .map_or(Ok(None), |v| v.map(Some))
+            .map_err(|_| tonic::Status::invalid_argument("invalid asset id"))?;
+        let diversifier_index = request
+            .get_ref()
+            .diversifier_index
+            .to_owned()
+            .map(DiversifierIndex::try_from)
+            .map_or(Ok(None), |v| v.map(Some))
+            .map_err(|_| tonic::Status::invalid_argument("invalid diversifier index"))?;
         let amount_to_spend = request.get_ref().amount_to_spend;
 
         let notes = self
@@ -201,10 +207,14 @@ impl ViewProtocol for ViewService {
             .get_ref()
             .note_commitments
             .iter()
-            .map(|nc| {
-                Commitment::try_from(nc.clone()).expect("Note commitment protobuf conversion error")
-            })
-            .collect::<Vec<Commitment>>();
+            .map(|nc| Commitment::try_from(nc.clone()))
+            .collect::<Result<Vec<Commitment>, _>>()
+            .map_err(|_| {
+                tonic::Status::new(
+                    tonic::Code::InvalidArgument,
+                    "Unable to deserialize note commitment",
+                )
+            })?;
         let auth_paths: Vec<Proof> = requested_note_commitments
             .iter()
             .map(|nc| {
