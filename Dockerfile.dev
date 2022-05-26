@@ -42,6 +42,7 @@ COPY decaf377-ka ./decaf377-ka
 COPY tct-property-test ./tct-property-test
 COPY transaction ./transaction
 COPY wallet ./wallet
+COPY wallet-next ./wallet-next
 COPY view ./view
 COPY testnets ./testnets
 COPY .git ./.git
