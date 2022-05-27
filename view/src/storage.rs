@@ -229,6 +229,14 @@ impl Storage {
             }
         }
 
+        if amount_total < amount_to_spend {
+            return Err(anyhow!(
+                "requested amount of {} exceeds total of {}",
+                amount_to_spend,
+                amount_total
+            ));
+        }
+
         Ok(output)
     }
 
