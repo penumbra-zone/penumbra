@@ -71,7 +71,7 @@ pub trait View: StateExt {
     /// Gets the current block timestamp from the JMT
     async fn get_block_timestamp(&self) -> Result<Time> {
         let timestamp_string: String = self
-            .get_proto(state_key::block_height())
+            .get_proto(state_key::block_timestamp())
             .await?
             .ok_or_else(|| anyhow!("Missing block_timestamp"))?;
 
@@ -80,7 +80,7 @@ pub trait View: StateExt {
 
     /// Writes the block timestamp to the JMT
     async fn put_block_timestamp(&self, timestamp: Time) {
-        self.put_proto(state_key::block_height(), timestamp.to_rfc3339())
+        self.put_proto(state_key::block_timestamp(), timestamp.to_rfc3339())
             .await
     }
 
