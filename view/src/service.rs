@@ -270,8 +270,6 @@ impl ViewProtocol for ViewService {
     ) -> Result<tonic::Response<pbp::ChainParams>, tonic::Status> {
         self.check_worker().await?;
 
-        // NOTE: should we check the chain ID here?
-
         let params = self
             .storage
             .chain_params()
