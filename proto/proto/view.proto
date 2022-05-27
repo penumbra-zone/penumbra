@@ -56,12 +56,10 @@ message AssetRequest {
 
 // Returns the status of the view service and whether it is synchronized with the chain state.
 message StatusResponse {
-    /// Whether the view service is synchronized with the chain state.
-    bool synchronized = 1;
-    // The height reported by the full node
-    uint64 chain_height = 2;
     // The height the view service has synchronized to so far
-    uint64 sync_height = 3;
+    uint64 sync_height = 1;
+    // Whether the view service is catching up with the chain state
+    bool catching_up = 2;
 }
 
 // A note plaintext with associated metadata about its status.
