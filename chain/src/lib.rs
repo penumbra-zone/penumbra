@@ -5,8 +5,8 @@ mod view;
 
 pub mod genesis;
 pub mod params;
-pub mod sync;
 pub(crate) mod state_key;
+pub mod sync;
 
 pub use epoch::Epoch;
 pub use known_assets::KnownAssets;
