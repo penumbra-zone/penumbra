@@ -60,7 +60,7 @@ where
 
     async fn notes(&mut self, request: pb::NotesRequest) -> Result<Vec<NoteRecord>> {
         let pb_notes: Vec<_> = self
-            .notes(tonic::Request::new(request.into()))
+            .notes(tonic::Request::new(request))
             .await?
             .into_inner()
             .try_collect()
@@ -69,8 +69,14 @@ where
         pb_notes.into_iter().map(TryInto::try_into).collect()
     }
 
-    async fn witness(&mut self, _request: pb::WitnessRequest) -> Result<WitnessData> {
-        todo!();
+    async fn witness(&mut self, request: pb::WitnessRequest) -> Result<WitnessData> {
+        let witness_data: WitnessData = self
+            .witness(tonic::Request::new(request))
+            .await?
+            .into_inner()
+            .try_into()?;
+
+        Ok(witness_data)
     }
 
     async fn assets(&mut self, request: pb::AssetRequest) -> Result<Vec<Asset>> {
