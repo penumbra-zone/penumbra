@@ -1,10 +1,12 @@
+use std::collections::HashMap;
+
 use anyhow::Result;
 use penumbra_chain::params::ChainParams;
 use penumbra_crypto::{
-    keys::DiversifierIndex, memo::MemoPlaintext, DelegationToken, FullViewingKey, Value,
-    STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
+    asset::Denom, keys::DiversifierIndex, memo::MemoPlaintext, Address, DelegationToken,
+    FullViewingKey, Value, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
 };
-use penumbra_proto::view::NotesRequest;
+use penumbra_proto::view::{AssetRequest, NotesRequest};
 use penumbra_stake::rate::RateData;
 use penumbra_stake::validator;
 use penumbra_transaction::{
@@ -307,6 +309,144 @@ where
             )
             .into(),
         );
+    }
+
+    Ok(plan)
+}
+
+#[instrument(skip(fvk, view, rng, values, fee, dest_address, source_address, tx_memo))]
+pub async fn send<V, R>(
+    fvk: &FullViewingKey,
+    mut view: V,
+    mut rng: R,
+    values: &[Value],
+    fee: u64,
+    dest_address: Address,
+    source_address: Option<u64>,
+    tx_memo: Option<String>,
+) -> Result<TransactionPlan, anyhow::Error>
+where
+    V: ViewClient,
+    R: RngCore + CryptoRng,
+{
+    let memo = if let Some(input_memo) = tx_memo {
+        input_memo.as_bytes().try_into()?
+    } else {
+        MemoPlaintext::default()
+    };
+
+    let chain_params = ChainParams::default();
+
+    let mut plan = TransactionPlan {
+        chain_id: chain_params.chain_id,
+        fee: Fee(fee),
+        ..Default::default()
+    };
+
+    let assets = view
+        .assets(AssetRequest {
+            fvk_hash: Some(fvk.hash().into()),
+        })
+        .await?;
+    // Track totals of the output values rather than just processing
+    // them individually, so we can plan the required spends.
+    let mut output_value = HashMap::<Denom, u64>::new();
+    for Value { amount, asset_id } in values {
+        let denom = &assets
+            .iter()
+            .find(|asset| asset.id == *asset_id)
+            .ok_or_else(|| anyhow::anyhow!("unknown denomination for asset id {}", asset_id))?
+            .denom;
+        output_value.insert(denom.clone(), *amount);
+    }
+
+    // Add outputs for the funds we want to send:
+    for (denom, amount) in &output_value {
+        plan.actions.push(
+            OutputPlan::new(
+                &mut rng,
+                Value {
+                    amount: *amount,
+                    asset_id: denom.id(),
+                },
+                dest_address,
+                memo.clone(),
+            )
+            .into(),
+        );
+    }
+
+    // The value we need to spend is the output value, plus fees.
+    let mut value_to_spend = output_value;
+    if fee > 0 {
+        *value_to_spend
+            .entry(STAKING_TOKEN_DENOM.clone())
+            .or_default() += fee;
+    }
+
+    // Add the required spends:
+    for (denom, spend_amount) in value_to_spend {
+        // Only produce an output if the amount is greater than zero
+        if spend_amount == 0 {
+            continue;
+        }
+
+        let source_index: Option<DiversifierIndex> = source_address.map(Into::into);
+        // Select a list of notes that provides at least the required amount.
+        let notes_to_spend = view
+            .notes(NotesRequest {
+                fvk_hash: Some(fvk.hash().into()),
+                asset_id: Some((*STAKING_TOKEN_ASSET_ID).into()),
+                diversifier_index: source_index.map(Into::into),
+                amount_to_spend: spend_amount,
+                include_spent: false,
+            })
+            .await?;
+        if notes_to_spend.is_empty() {
+            // Shouldn't happen because the other side checks this, but just in case...
+            return Err(anyhow::anyhow!("not enough notes to spend",));
+        }
+
+        let change_address_index: u64 = fvk
+            .incoming()
+            .index_for_diversifier(
+                &notes_to_spend
+                    .last()
+                    .expect("notes_to_spend should never be empty")
+                    .note
+                    .diversifier(),
+            )
+            .try_into()?;
+
+        let (change_address, _dtk) = fvk.incoming().payment_address(change_address_index.into());
+        let spent: u64 = notes_to_spend
+            .iter()
+            .map(|note_record| note_record.note.amount())
+            .sum();
+
+        // Spend each of the notes we selected.
+        for note_record in notes_to_spend {
+            let note = note_record.note;
+            plan.actions
+                .push(SpendPlan::new(&mut rng, note.clone(), note_record.position).into());
+        }
+
+        // Find out how much change we have and whether to add a change output.
+        let change = spent - spend_amount;
+        if change > 0 {
+            plan.actions.push(
+                OutputPlan::new(
+                    &mut rng,
+                    Value {
+                        amount: change,
+                        asset_id: denom.id(),
+                    },
+                    change_address,
+                    MemoPlaintext::default(),
+                )
+                .into(),
+            );
+        }
     }
 
     Ok(plan)

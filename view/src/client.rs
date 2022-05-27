@@ -1,6 +1,7 @@
 use anyhow::Result;
 use futures::TryStreamExt;
 use penumbra_crypto::keys::FullViewingKeyHash;
+use penumbra_crypto::Asset;
 use penumbra_proto::view as pb;
 use penumbra_proto::view::view_protocol_client::ViewProtocolClient;
 use penumbra_transaction::WitnessData;
@@ -34,6 +35,9 @@ pub trait ViewClient: Sized {
     /// common root.  (Otherwise, if a client made multiple requests, the wallet
     /// service could have advanced the note commitment tree state between queries).
     async fn witness(&mut self, request: pb::WitnessRequest) -> Result<WitnessData>;
+
+    /// Queries for all known assets.
+    async fn assets(&mut self, request: pb::AssetRequest) -> Result<Vec<Asset>>;
 }
 
 // We need to tell `async_trait` not to add a `Send` bound to the boxed
@@ -67,5 +71,16 @@ where
 
     async fn witness(&mut self, _request: pb::WitnessRequest) -> Result<WitnessData> {
         todo!();
+    }
+
+    async fn assets(&mut self, request: pb::AssetRequest) -> Result<Vec<Asset>> {
+        let pb_assets: Vec<_> = self
+            .assets(tonic::Request::new(request))
+            .await?
+            .into_inner()
+            .try_collect()
+            .await?;
+
+        pb_assets.into_iter().map(TryInto::try_into).collect()
     }
 }
