@@ -100,7 +100,7 @@ impl SpecificQuery for Info {
 
         let req_inner = request.into_inner();
         let req_proof = req_inner.proof;
-        let req_key = req_inner.key_hash;
+        let req_key = req_inner.key;
 
         if req_proof == true {
             let (value, proof) = state
@@ -110,9 +110,13 @@ impl SpecificQuery for Info {
                 .await
                 .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
+            let commitment_proof = ics23::CommitmentProof {
+                proof: Some(ics23::commitment_proof::Proof::Exist(proof)),
+            };
+
             Ok(tonic::Response::new(KeyValueResponse {
                 value,
-                proof: Some(proof),
+                proof: Some(commitment_proof),
             }))
         } else {
             let value = state
