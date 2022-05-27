@@ -560,24 +560,7 @@ impl Tree {
 
         let mut errors = vec![];
 
-        self.inner.foreach_witness(|index, leaf| {
-            if let Some(commitment) = reverse_index.get(&index.into()) {
-                let expected_hash = Hash::of(*commitment);
-                if expected_hash != leaf {
-                    errors.push(IndexError::HashMismatch {
-                        commitment: *commitment,
-                        position: index.into(),
-                        expected_hash,
-                        found_hash: leaf,
-                    });
-                }
-            } else {
-                errors.push(IndexError::UnindexedWitness {
-                    position: index.into(),
-                    found_hash: leaf,
-                });
-            }
-        });
+        todo!("collect leaves");
 
         if errors.is_empty() {
             Ok(())
