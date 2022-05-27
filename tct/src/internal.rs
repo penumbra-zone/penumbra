@@ -74,6 +74,7 @@ pub mod three;
 
 mod insert;
 pub mod interface;
+pub mod visit;
 
 pub mod frontier {
     //! [`Frontier`] things can be inserted into and updated, always representing the rightmost

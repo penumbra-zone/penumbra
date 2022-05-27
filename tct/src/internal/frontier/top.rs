@@ -180,6 +180,33 @@ where
     }
 }
 
+impl<Item: Height + GetHash + Focus> Visit for Top<Item> {
+    fn visit_indexed<V: Visitor>(&self, index: u64, visitor: &mut V) -> V::Output {
+        visitor.frontier_top(index, self)
+    }
+}
+
+impl<Item: Height + GetHash + Focus> Traverse for Top<Item>
+where
+    Item: Traverse,
+    Item::Complete: Traverse,
+{
+    fn traverse<T: Traversal, V: Visitor>(
+        &self,
+        traversal: &mut T,
+        visitor: &mut V,
+        output: &mut impl FnMut(V::Output),
+    ) {
+        traversal.traverse(
+            visitor,
+            output,
+            self,
+            visit::NO_CHILDREN,
+            self.inner.as_ref(),
+        );
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

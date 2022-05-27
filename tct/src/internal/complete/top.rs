@@ -29,3 +29,20 @@ impl<Item> From<complete::Tier<Item>> for Top<Item> {
         Top { inner: tier.inner }
     }
 }
+
+impl<Item: Height + GetHash> Visit for Top<Item> {
+    fn visit_indexed<V: Visitor>(&self, index: u64, visitor: &mut V) -> V::Output {
+        visitor.complete_top(index, self)
+    }
+}
+
+impl<Item: Height + GetHash + Traverse> Traverse for Top<Item> {
+    fn traverse<T: Traversal, V: Visitor>(
+        &self,
+        traversal: &mut T,
+        visitor: &mut V,
+        output: &mut impl FnMut(V::Output),
+    ) {
+        traversal.traverse_complete(visitor, output, self, [&self.inner]);
+    }
+}
