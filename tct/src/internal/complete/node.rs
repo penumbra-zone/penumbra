@@ -184,6 +184,32 @@ impl<Child: GetHash + ForgetOwned> ForgetOwned for Node<Child> {
     }
 }
 
+impl<Child: Height + GetHash + Traverse> Visit for Node<Child> {
+    fn visit_indexed<V: Visitor>(&self, index: u64, visitor: &mut V) -> V::Output {
+        visitor.complete_node(index, self)
+    }
+}
+
+impl<Child: Height + GetHash + Traverse> Traverse for Node<Child> {
+    fn traverse<T: Traversal, V: Visitor>(
+        &self,
+        traversal: &mut T,
+        visitor: &mut V,
+        output: &mut impl FnMut(V::Output),
+    ) {
+        traversal.traverse_complete(
+            visitor,
+            output,
+            self,
+            self.children()
+                .map(Insert::keep)
+                .into_iter()
+                .enumerate()
+                .map(|(n, child)| visit::child(n, child)),
+        )
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

@@ -295,6 +295,33 @@ impl<Item: Focus> From<complete::Top<Item::Complete>> for Tier<Item> {
     }
 }
 
+impl<Item: Height + GetHash + Focus> Visit for Tier<Item> {
+    fn visit_indexed<V: Visitor>(&self, index: u64, visitor: &mut V) -> V::Output {
+        visitor.frontier_tier(index, self)
+    }
+}
+
+impl<Item: Height + GetHash + Focus> Traverse for Tier<Item>
+where
+    Item: Traverse,
+    Item::Complete: Traverse,
+{
+    fn traverse<T: Traversal, V: Visitor>(
+        &self,
+        traversal: &mut T,
+        visitor: &mut V,
+        output: &mut impl FnMut(V::Output),
+    ) {
+        let (complete, frontier) = match &self.inner {
+            Inner::Frontier(frontier) => (None, Some(&**frontier)),
+            Inner::Complete(complete) => (Some(complete), None),
+            Inner::Hash(_) => (None, None),
+        };
+
+        traversal.traverse(visitor, output, self, complete, frontier);
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

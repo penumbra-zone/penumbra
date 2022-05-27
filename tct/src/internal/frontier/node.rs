@@ -349,3 +349,34 @@ where
         }
     }
 }
+
+impl<Child: Height + GetHash + Focus> Visit for Node<Child> {
+    fn visit_indexed<V: Visitor>(&self, index: u64, visitor: &mut V) -> V::Output {
+        visitor.frontier_node(index, self)
+    }
+}
+
+impl<Child: Height + GetHash + Focus> Traverse for Node<Child>
+where
+    Child: Traverse,
+    Child::Complete: Traverse,
+{
+    fn traverse<T: Traversal, V: Visitor>(
+        &self,
+        traversal: &mut T,
+        visitor: &mut V,
+        output: &mut impl FnMut(V::Output),
+    ) {
+        traversal.traverse(
+            visitor,
+            output,
+            self,
+            self.siblings
+                .iter()
+                .map(|child| child.as_ref().keep())
+                .enumerate()
+                .map(|(n, child)| visit::child(n, child)),
+            Some(visit::child(self.siblings.len().into(), Some(&self.focus))),
+        );
+    }
+}

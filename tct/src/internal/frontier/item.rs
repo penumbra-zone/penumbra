@@ -87,3 +87,20 @@ impl Forget for Item {
         }
     }
 }
+
+impl Visit for Item {
+    fn visit_indexed<V: Visitor>(&self, index: u64, visitor: &mut V) -> V::Output {
+        visitor.frontier_item(index, self)
+    }
+}
+
+impl Traverse for Item {
+    fn traverse<T: Traversal, V: Visitor>(
+        &self,
+        traversal: &mut T,
+        visitor: &mut V,
+        output: &mut impl FnMut(V::Output),
+    ) {
+        traversal.traverse(visitor, output, self, visit::NO_CHILDREN, visit::NO_CHILD);
+    }
+}

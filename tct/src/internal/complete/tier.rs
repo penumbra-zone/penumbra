@@ -57,3 +57,20 @@ impl<Item: Complete> From<frontier::Tier<Item::Focus>> for Insert<Tier<Item>> {
         frontier.finalize_owned()
     }
 }
+
+impl<Item: Height + GetHash> Visit for Tier<Item> {
+    fn visit_indexed<V: Visitor>(&self, index: u64, visitor: &mut V) -> V::Output {
+        visitor.complete_tier(index, self)
+    }
+}
+
+impl<Item: Height + GetHash + Traverse> Traverse for Tier<Item> {
+    fn traverse<T: Traversal, V: Visitor>(
+        &self,
+        traversal: &mut T,
+        visitor: &mut V,
+        output: &mut impl FnMut(V::Output),
+    ) {
+        traversal.traverse_complete(visitor, output, self, [&self.inner]);
+    }
+}

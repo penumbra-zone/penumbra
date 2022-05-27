@@ -89,6 +89,7 @@ mod prelude {
             interface::Witness,
             path::{self, AuthPath, Path, WhichWay},
             three::{Elems, ElemsMut, IntoElems, Three},
+            visit::{self, Traversal, Traverse, Visit, Visitor},
         },
         Commitment, Position, Proof, Root, Tree,
     };
