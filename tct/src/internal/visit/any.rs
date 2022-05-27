@@ -15,6 +15,8 @@ pub struct Any {
     pub kind: Kind,
     /// The "place" of the node: whether or not it is on the frontier.
     pub place: Place,
+    /// The cached hash of the node.
+    pub hash: Option<Hash>,
 }
 
 /// The kind of a node.
@@ -46,135 +48,150 @@ pub enum Place {
 
 impl<T: Visit> From<T> for Any {
     fn from(node: T) -> Self {
-        node.visit(&mut |any| any)
+        node.visit(&mut AnyVisitor(|any| any))
     }
 }
 
-impl<F, T> Visitor for F
+/// A wrapper for a visitor defined in terms of a function on `Any`.
+///
+/// This struct is a [`Visitor`] if the wrapped thing is `FnMut(Any) -> T`, for any `T`.
+pub struct AnyVisitor<F>(pub F);
+
+impl<F, T> Visitor for AnyVisitor<F>
 where
     F: FnMut(Any) -> T,
 {
     type Output = T;
 
-    fn frontier_item(&mut self, index: u64, _item: &frontier::Item) -> Self::Output {
-        self(Any {
+    fn frontier_item(&mut self, index: u64, item: &frontier::Item) -> Self::Output {
+        self.0(Any {
             kind: Kind::Item,
             place: Place::Frontier,
             height: <frontier::Item as Height>::Height::HEIGHT,
             index,
+            hash: item.cached_hash(),
         })
     }
 
     fn frontier_leaf<Child: Height + GetHash>(
         &mut self,
         index: u64,
-        _leaf: &frontier::Leaf<Child>,
+        leaf: &frontier::Leaf<Child>,
     ) -> Self::Output {
-        self(Any {
+        self.0(Any {
             kind: Kind::Leaf,
             place: Place::Frontier,
             height: <frontier::Leaf<Child> as Height>::Height::HEIGHT,
             index,
+            hash: leaf.cached_hash(),
         })
     }
 
     fn frontier_node<Child: Height + Focus + GetHash>(
         &mut self,
         index: u64,
-        _node: &frontier::Node<Child>,
+        node: &frontier::Node<Child>,
     ) -> Self::Output {
-        self(Any {
+        self.0(Any {
             kind: Kind::Node,
             place: Place::Frontier,
             height: <frontier::Node<Child> as Height>::Height::HEIGHT,
             index,
+            hash: node.cached_hash(),
         })
     }
 
     fn frontier_tier<Child: Height + Focus + GetHash>(
         &mut self,
         index: u64,
-        _tier: &frontier::Tier<Child>,
+        tier: &frontier::Tier<Child>,
     ) -> Self::Output {
-        self(Any {
+        self.0(Any {
             kind: Kind::Tier,
             place: Place::Frontier,
             height: <frontier::Tier<Child> as Height>::Height::HEIGHT,
             index,
+            hash: tier.cached_hash(),
         })
     }
 
     fn frontier_top<Child: Height + Focus + GetHash>(
         &mut self,
         index: u64,
-        _top: &frontier::Top<Child>,
+        top: &frontier::Top<Child>,
     ) -> Self::Output {
-        self(Any {
+        self.0(Any {
             kind: Kind::Top,
             place: Place::Frontier,
             height: <frontier::Top<Child> as Height>::Height::HEIGHT,
             index,
+            hash: top.cached_hash(),
         })
     }
 
-    fn complete_item(&mut self, index: u64, _item: &complete::Item) -> Self::Output {
-        self(Any {
+    fn complete_item(&mut self, index: u64, item: &complete::Item) -> Self::Output {
+        self.0(Any {
             kind: Kind::Item,
             place: Place::Complete,
             height: <complete::Item as Height>::Height::HEIGHT,
             index,
+            hash: item.cached_hash(),
         })
     }
 
     fn complete_leaf<Child: Height + GetHash>(
         &mut self,
         index: u64,
-        _leaf: &complete::Leaf<Child>,
+        leaf: &complete::Leaf<Child>,
     ) -> Self::Output {
-        self(Any {
+        self.0(Any {
             kind: Kind::Leaf,
             place: Place::Complete,
             height: <complete::Leaf<Child> as Height>::Height::HEIGHT,
             index,
+            hash: leaf.cached_hash(),
         })
     }
 
     fn complete_node<Child: Height + GetHash>(
         &mut self,
         index: u64,
-        _node: &complete::Node<Child>,
+        node: &complete::Node<Child>,
     ) -> Self::Output {
-        self(Any {
+        self.0(Any {
             kind: Kind::Node,
             place: Place::Complete,
             height: <complete::Node<Child> as Height>::Height::HEIGHT,
             index,
+            hash: node.cached_hash(),
         })
     }
 
     fn complete_tier<Child: Height + GetHash>(
         &mut self,
         index: u64,
-        _tier: &complete::Tier<Child>,
+        tier: &complete::Tier<Child>,
     ) -> Self::Output {
-        self(Any {
+        self.0(Any {
             kind: Kind::Tier,
             place: Place::Complete,
             height: <complete::Tier<Child> as Height>::Height::HEIGHT,
             index,
+            hash: tier.cached_hash(),
         })
     }
 
     fn complete_top<Child: Height + GetHash>(
         &mut self,
         index: u64,
-        _top: &complete::Top<Child>,
+        top: &complete::Top<Child>,
     ) -> Self::Output {
-        self(Any {
+        self.0(Any {
             kind: Kind::Top,
             place: Place::Complete,
             height: <complete::Top<Child> as Height>::Height::HEIGHT,
             index,
+            hash: top.cached_hash(),
         })
     }
 }
