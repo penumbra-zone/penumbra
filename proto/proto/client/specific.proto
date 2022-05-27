@@ -31,12 +31,14 @@ message ValidatorStatusRequest {
 message KeyValueRequest {
   // The expected chain id (empty string if no expectation).
   string chain_id = 1;
-  bytes key_hash = 2;
+  // the key to fetch from storage
+  bytes key = 2;
+  // whether to return a proof
   bool proof = 3;
 }
 
 message KeyValueResponse {
   bytes value = 1;
 
-  .ics23.ExistenceProof proof = 2;
+  .ics23.CommitmentProof proof = 2;
 }

@@ -5,6 +5,8 @@ use std::{
 };
 
 use futures::FutureExt;
+use penumbra_chain::View as _;
+use penumbra_proto::{client::specific::KeyValueResponse, Message};
 use penumbra_storage::{State, Storage};
 use tendermint::{
     abci::{self, response::Echo, InfoRequest, InfoResponse},
@@ -61,9 +63,48 @@ impl Info {
         &self,
         query: abci::request::Query,
     ) -> Result<abci::response::Query, anyhow::Error> {
-        tracing::warn!(?query, "unhandled query");
+        tracing::info!(?query);
+
+        match query.path.as_str() {
+            "/jmt/key" => {
+                let state = self.state_tonic().await?;
+                let (value, proof) = state
+                    .read()
+                    .await
+                    .get_with_proof(query.data.to_vec())
+                    .await
+                    .map_err(|e| tonic::Status::internal(e.to_string()))?;
+
+                let commitment_proof = ics23::CommitmentProof {
+                    proof: Some(ics23::commitment_proof::Proof::Exist(proof)),
+                };
+
+                let kvr = KeyValueResponse {
+                    value,
+                    proof: Some(commitment_proof),
+                };
+
+                let height = state.get_block_height().await?;
+
+                Ok(abci::response::Query {
+                    code: 0,
+                    key: query.data,
+                    log: "".to_string(),
+                    value: kvr.encode_to_vec().into(),
+                    // NOTE: the ABCI query proof is not the same as ICS-23 proofs.
+                    proof: None,
+                    height: height.try_into()?,
+                    codespace: "".to_string(),
+                    info: "".to_string(),
+                    index: 0, // TODO
+                })
+            }
+            _ => {
+                // TODO: handle unrecognized path
+                Ok(Default::default())
+            }
+        }
         // TODO: implement (#22)
-        Ok(Default::default())
     }
 }
 
