@@ -4,10 +4,12 @@
 use crate::prelude::*;
 
 mod any;
+mod define;
 mod offset;
 
 pub mod traversal;
-pub use any::{Any, Kind, Place};
+pub use any::{Any, AnyVisitor, Kind, Place};
+pub use define::DefineVisitor;
 
 /// A visitor for a node within a tree.
 pub trait Visitor {
@@ -234,8 +236,11 @@ mod test {
 
         let mut nodes = Vec::new();
         block.traverse(
-            &mut traversal::PostOrder,
-            &mut |n| nodes.push(n),
+            &mut traversal::PostOrder {
+                child_filter: |_: &Any| true,
+                parent_filter: |_: &Any| true,
+            },
+            &mut AnyVisitor(|n| nodes.push(n)),
             &mut |_| (),
         );
 
