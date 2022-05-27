@@ -91,8 +91,17 @@ where
         );
     }
 
+    if spent_amount < spend_amount {
+        return Err(anyhow::anyhow!(
+            "not enough notes to delegate: wanted to delegate {}, have {}",
+            spend_amount,
+            spent_amount
+        ));
+    }
+
     // Add a change note if we have change left over:
     let change_amount = spent_amount - spend_amount;
+
     // TODO: support dummy notes, and produce a change output unconditionally.
     // let change_note = if change_amount > 0 { ... } else { /* dummy note */}
     if change_amount > 0 {
@@ -102,6 +111,123 @@ where
                 Value {
                     amount: change_amount,
                     asset_id: *STAKING_TOKEN_ASSET_ID,
+                },
+                self_address,
+                MemoPlaintext::default(),
+            )
+            .into(),
+        );
+    }
+
+    Ok(plan)
+}
+
+/// Generate a new transaction plan undelegating stake
+pub async fn undelegate<V, R>(
+    fvk: &FullViewingKey,
+    mut view: V,
+    mut rng: R,
+    rate_data: RateData,
+    delegation_amount: u64,
+    fee: u64,
+    source_address: Option<u64>,
+) -> Result<TransactionPlan>
+where
+    V: ViewClient,
+    R: RngCore + CryptoRng,
+{
+    let (self_address, _dtk) = fvk
+        .incoming()
+        .payment_address(source_address.unwrap_or(0).into());
+
+    // TODO: add this to the view service
+    //let chain_params = view.chain_params().await?;
+    let chain_params = ChainParams::default();
+
+    // Because the outputs of an undelegation are quarantined, we want to
+    // avoid any unnecessary change outputs, so we pay fees out of the
+    // unbonded amount.
+    let unbonded_amount = rate_data.unbonded_amount(delegation_amount);
+    let output_amount = unbonded_amount.checked_sub(fee).ok_or_else(|| {
+        anyhow::anyhow!(
+            "unbonded amount {} from delegation amount {} is insufficient to pay fees {}",
+            unbonded_amount,
+            delegation_amount,
+            fee
+        )
+    })?;
+
+    let mut plan = TransactionPlan {
+        chain_id: chain_params.chain_id,
+        fee: Fee(fee),
+        ..Default::default()
+    };
+
+    // add the undelegation action itself
+    plan.actions
+        .push(rate_data.build_undelegate(delegation_amount).into());
+
+    // add the outputs for the undelegation
+    plan.actions.push(
+        OutputPlan::new(
+            &mut rng,
+            Value {
+                amount: output_amount,
+                asset_id: *STAKING_TOKEN_ASSET_ID,
+            },
+            self_address,
+            MemoPlaintext::default(),
+        )
+        .into(),
+    );
+
+    let delegation_id = DelegationToken::new(rate_data.identity_key).id();
+
+    // accumulate the list of notes to spend from
+    let spend_amount = delegation_amount;
+    let source_index: Option<DiversifierIndex> = source_address.map(Into::into);
+    let notes_to_spend = view
+        .notes(NotesRequest {
+            fvk_hash: Some(fvk.hash().into()),
+            asset_id: Some(delegation_id.into()),
+            diversifier_index: source_index.map(Into::into),
+            amount_to_spend: spend_amount,
+            include_spent: false,
+        })
+        .await?;
+
+    let mut spent_amount = 0;
+    for note_record in notes_to_spend {
+        tracing::debug!(?note_record, ?spend_amount);
+        spent_amount += note_record.note.amount();
+        plan.actions.push(
+            SpendPlan::new(
+                &mut rng,
+                note_record.note,
+                0u64.into(), // TODO: record the position in the NoteRecord so we don't have to make this up
+            )
+            .into(),
+        );
+    }
+
+    if spent_amount < spend_amount {
+        Err(anyhow::anyhow!(
+            "not enough delegated tokens to undelegate: wanted to undelegate {}, have {}",
+            spend_amount,
+            spent_amount,
+        ))?;
+    }
+
+    // Add a change note if we have change left over:
+    let change_amount = spent_amount - spend_amount;
+
+    if change_amount > 0 {
+        plan.actions.push(
+            OutputPlan::new(
+                &mut rng,
+                Value {
+                    amount: change_amount,
+                    asset_id: delegation_id.into(),
                 },
                 self_address,
                 MemoPlaintext::default(),
