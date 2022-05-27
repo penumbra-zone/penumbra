@@ -12,6 +12,8 @@ use tendermint::abci::{self, types::ValidatorUpdate};
 
 use tracing::instrument;
 
+use super::state_key;
+
 /// The Penumbra application, written as a bundle of [`Component`]s.
 ///
 /// The [`App`] is also a [`Component`], but as the top-level component,
@@ -91,7 +93,7 @@ impl Component for App {
             .await;
         // TODO: do we actually need to store the app state here?
         self.state
-            .put_domain(b"genesis/app_state".into(), app_state.clone())
+            .put_domain(state_key::app_state(), app_state.clone())
             .await;
         // The genesis block height is 0
         self.state.put_block_height(0).await;
