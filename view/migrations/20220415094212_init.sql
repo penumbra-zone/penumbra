@@ -34,3 +34,9 @@ CREATE INDEX notes_idx ON notes (
 
 -- used to detect spends
 CREATE INDEX nullifier_idx on notes ( nullifier );
+
+-- used for storing a cache of known assets
+CREATE TABLE assets (
+    asset_id BLOB PRIMARY KEY NOT NULL,
+    denom    TEXT NOT NULL
+);

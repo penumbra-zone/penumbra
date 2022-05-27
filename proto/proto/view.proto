@@ -29,11 +29,20 @@ service ViewProtocol {
     // common root.  (Otherwise, if a client made multiple requests, the wallet
     // service could have advanced the note commitment tree state between queries).
     rpc Witness(WitnessRequest) returns (transaction.WitnessData);
+
+    // Queries for assets.
+    rpc Assets(AssetRequest) returns (stream crypto.Asset);
 }
 
 // Requests sync status of the view service.
 message StatusRequest {
     // Identifies the FVK for the notes to query.
+    crypto.FullViewingKeyHash fvk_hash = 1;
+}
+
+// Requests all assets known to the view service.
+message AssetRequest {
+    // For verification.
     crypto.FullViewingKeyHash fvk_hash = 1;
 }
 

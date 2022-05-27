@@ -1,11 +1,11 @@
 use anyhow::anyhow;
 use penumbra_chain::params::ChainParams;
 use penumbra_crypto::{
-    asset,
+    asset::{self, Id},
     ka::Public,
     keys::{Diversifier, DiversifierIndex},
     note::Commitment,
-    FieldExt, Fq, FullViewingKey, Note, Nullifier, Value,
+    Asset, FieldExt, Fq, FullViewingKey, Note, Nullifier, Value,
 };
 use penumbra_proto::Protobuf;
 use penumbra_tct as tct;
@@ -143,6 +143,29 @@ impl Storage {
         Ok(bincode::deserialize(result.bytes.as_slice())?)
     }
 
+    pub async fn assets(&self) -> anyhow::Result<Vec<Asset>> {
+        let result = sqlx::query!(
+            "SELECT *
+            FROM assets"
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        let mut output: Vec<Asset> = Vec::new();
+
+        for record in result {
+            let asset = Asset {
+                id: Id::try_from(record.asset_id.as_slice())?,
+                denom: asset::REGISTRY
+                    .parse_denom(&record.denom)
+                    .ok_or_else(|| anyhow::anyhow!("invalid denomination {}", record.denom))?,
+            };
+            output.push(asset);
+        }
+
+        Ok(output)
+    }
+
     pub async fn notes(
         &self,
         include_spent: bool,
@@ -231,6 +254,33 @@ impl Storage {
         }
 
         Ok(output)
+    }
+
+    pub async fn record_asset(&self, asset: Asset) -> anyhow::Result<()> {
+        let mut tx = self.pool.begin().await?;
+
+        let asset_id = asset.id.to_bytes().to_vec();
+        let denom = asset.denom.to_string();
+        sqlx::query!(
+            "INSERT INTO assets
+                    (
+                        asset_id,
+                        denom
+                    )
+                    VALUES
+                    (
+                        ?,
+                        ?
+                    )",
+            asset_id,
+            denom,
+        )
+        .execute(&mut tx)
+        .await?;
+
+        tx.commit().await?;
+
+        Ok(())
     }
 
     pub async fn record_block(

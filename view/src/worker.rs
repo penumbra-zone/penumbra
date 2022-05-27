@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use crate::{sync::scan_block, Storage};
 use penumbra_crypto::FullViewingKey;
 use penumbra_proto::client::oblivious::{
-    oblivious_query_client::ObliviousQueryClient, CompactBlockRangeRequest,
+    oblivious_query_client::ObliviousQueryClient, AssetListRequest, CompactBlockRangeRequest,
 };
 use tokio::sync::{
     mpsc::{error::TryRecvError, Receiver},
@@ -39,6 +39,26 @@ impl Worker {
             },
             nct,
         ))
+    }
+
+    pub async fn fetch_assets(&mut self) -> Result<(), anyhow::Error> {
+        tracing::info!("fetching assets");
+
+        let chain_id = self.storage.chain_params().await?.chain_id;
+
+        let known_assets = self
+            .client
+            .asset_list(tonic::Request::new(AssetListRequest { chain_id }))
+            .await?
+            .into_inner();
+
+        for known_asset in known_assets.assets {
+            self.storage.record_asset(known_asset.try_into()?).await?;
+        }
+
+        tracing::info!("updated asset cache");
+
+        Ok(())
     }
 
     pub async fn sync_to_latest(&mut self) -> Result<u64, anyhow::Error> {
@@ -104,6 +124,7 @@ impl Worker {
     async fn run_inner(&mut self) -> Result<(), anyhow::Error> {
         loop {
             self.sync_to_latest().await?;
+            self.fetch_assets().await?;
 
             if let Err(TryRecvError::Disconnected) = self.shutdown_rx.try_recv() {
                 // All senders have been dropped, so we can shut down.

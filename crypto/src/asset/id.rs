@@ -1,4 +1,5 @@
 use ark_ff::fields::PrimeField;
+use ark_serialize::CanonicalDeserialize;
 use decaf377::FieldExt;
 use once_cell::sync::Lazy;
 use penumbra_proto::{crypto as pb, serializers::bech32str, Protobuf};
@@ -48,6 +49,14 @@ impl TryFrom<pb::AssetId> for Id {
 }
 
 impl Protobuf<pb::AssetId> for Id {}
+
+impl TryFrom<&[u8]> for Id {
+    type Error = anyhow::Error;
+
+    fn try_from(slice: &[u8]) -> Result<Id, Self::Error> {
+        Ok(Id(Fq::deserialize(slice)?))
+    }
+}
 
 impl std::fmt::Debug for Id {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

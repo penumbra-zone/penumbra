@@ -121,6 +121,8 @@ impl ViewService {
 impl ViewProtocol for ViewService {
     type NotesStream =
         Pin<Box<dyn futures::Stream<Item = Result<pb::NoteRecord, tonic::Status>> + Send>>;
+    type AssetsStream =
+        Pin<Box<dyn futures::Stream<Item = Result<pbc::Asset, tonic::Status>> + Send>>;
 
     async fn status(
         &self,
@@ -178,6 +180,33 @@ impl ViewProtocol for ViewService {
         let stream = try_stream! {
             for note in notes {
                 yield note.into()
+            }
+        };
+
+        Ok(tonic::Response::new(
+            stream
+                .map_err(|_: anyhow::Error| tonic::Status::unavailable("database error"))
+                .boxed(),
+        ))
+    }
+
+    async fn assets(
+        &self,
+        request: tonic::Request<pb::AssetRequest>,
+    ) -> Result<tonic::Response<Self::AssetsStream>, tonic::Status> {
+        self.check_worker().await?;
+        self.check_fvk(request.get_ref().fvk_hash.as_ref()).await?;
+
+        // Fetch assets from storage.
+        let assets = self
+            .storage
+            .assets()
+            .await
+            .map_err(|_| tonic::Status::unavailable("database error"))?;
+
+        let stream = try_stream! {
+            for asset in assets {
+                yield asset.into()
             }
         };
 
