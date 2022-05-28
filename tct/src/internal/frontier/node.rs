@@ -289,6 +289,26 @@ where
 
         Some((path::Node { siblings, child }, leaf))
     }
+
+    #[inline]
+    fn foreach_witness(&self, mut per_witness: impl FnMut(u64, Hash)) {
+        for (n, child) in self
+            .siblings
+            .iter()
+            .map(Insert::as_ref)
+            .map(Insert::keep)
+            .enumerate()
+        {
+            if let Some(child) = child {
+                let offset: u64 = (n as u64) * 4u64.pow(Child::Height::HEIGHT.into());
+                child.foreach_witness(|index, leaf| per_witness(index + offset, leaf));
+            }
+        }
+
+        let offset: u64 = (self.siblings.len() as u64) * 4u64.pow(Child::Height::HEIGHT.into());
+        self.focus
+            .foreach_witness(|index, leaf| per_witness(index + offset, leaf));
+    }
 }
 
 impl<Child: Focus + Forget> Forget for Node<Child>

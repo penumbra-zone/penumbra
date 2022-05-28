@@ -38,6 +38,11 @@ impl<Item: GetHash + Witness> Witness for Tier<Item> {
     fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Hash)> {
         self.inner.witness(index)
     }
+
+    #[inline]
+    fn foreach_witness(&self, per_witness: impl FnMut(u64, Hash)) {
+        self.inner.foreach_witness(per_witness)
+    }
 }
 
 impl<Item: GetHash + ForgetOwned> ForgetOwned for Tier<Item> {

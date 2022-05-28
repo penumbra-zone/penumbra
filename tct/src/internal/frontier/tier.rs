@@ -225,6 +225,15 @@ where
             Inner::Hash(_) => None,
         }
     }
+
+    #[inline]
+    fn foreach_witness(&self, per_witness: impl FnMut(u64, Hash)) {
+        match &self.inner {
+            Inner::Frontier(frontier) => frontier.foreach_witness(per_witness),
+            Inner::Complete(complete) => complete.foreach_witness(per_witness),
+            Inner::Hash(_) => (),
+        }
+    }
 }
 
 impl<Item: Focus + GetPosition> GetPosition for Tier<Item> {
