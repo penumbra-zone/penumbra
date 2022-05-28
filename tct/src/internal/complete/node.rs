@@ -174,7 +174,7 @@ impl<Child: GetHash + ForgetOwned> ForgetOwned for Node<Child> {
     }
 }
 
-impl<Child: Height + GetHash + Traverse> Visit for Node<Child> {
+impl<Child: Height + GetHash> Visit for Node<Child> {
     fn visit_indexed<V: Visitor>(&self, index: u64, visitor: &mut V) -> V::Output {
         visitor.complete_node(index, self)
     }

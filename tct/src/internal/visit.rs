@@ -121,12 +121,17 @@ pub trait Visit: GetHash {
     /// Visit this node with the provided visitor.
     ///
     /// There is never a need to override this; define `visit_indexed` instead.
-    fn visit<V: Visitor>(&self, visitor: &mut V) -> V::Output {
+    fn visit<V: Visitor>(&self, visitor: &mut V) -> V::Output
+    where
+        Self: Sized,
+    {
         self.visit_indexed(0, visitor)
     }
 
     /// Visit this node using the provided visitor and index.
-    fn visit_indexed<V: Visitor>(&self, index: u64, visitor: &mut V) -> V::Output;
+    fn visit_indexed<V: Visitor>(&self, index: u64, visitor: &mut V) -> V::Output
+    where
+        Self: Sized;
 }
 
 /// Nodes within the tree implement this trait to allow themselves to be traversed.
@@ -220,34 +225,5 @@ impl Traverse for std::convert::Infallible {
         _output: &mut impl FnMut(V::Output),
     ) {
         // never do anything, because there's nothing here to traverse
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn get_leaves_correct() {
-        let mut block: frontier::Top<Item> = frontier::Top::new();
-        for n in 0u64..10 {
-            block.insert(Commitment(n.into()).into()).unwrap();
-        }
-
-        let mut nodes = Vec::new();
-        block.traverse(
-            &mut traversal::PostOrder {
-                child_filter: |_: &Any| true,
-                parent_filter: |_: &Any| true,
-            },
-            &mut AnyVisitor(|n| nodes.push(n)),
-            &mut |_| (),
-        );
-
-        for item in nodes {
-            println!("{item:?}");
-        }
-
-        panic!();
     }
 }
