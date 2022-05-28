@@ -46,7 +46,7 @@ impl<Item: ForgetOwned> ForgetOwned for Leaf<Item> {
     }
 }
 
-impl<Item: Height + GetHash> Visit for Leaf<Item> {
+impl<Item: Height + GetHash + Traverse> Visit for Leaf<Item> {
     fn visit_indexed<V: Visitor>(&self, index: u64, visitor: &mut V) -> V::Output {
         visitor.complete_leaf(index, self)
     }
