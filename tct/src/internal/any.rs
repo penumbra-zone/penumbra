@@ -1,6 +1,6 @@
 //! A dynamic representation of nodes within the tree structure, for writing homogeneous traversals.
 
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 
 use crate::prelude::*;
 
@@ -26,6 +26,24 @@ pub trait Any: GetHash {
 
     /// The children, or hashes of them, of this node.
     fn children(&self) -> Vec<Insert<Child>>;
+}
+
+impl Debug for &dyn Any {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Any")
+            .field("place", &self.place())
+            .field("kind", &self.kind())
+            .field("height", &self.height())
+            .field("index", &self.index())
+            .field("children", &self.children())
+            .finish()
+    }
+}
+
+impl Display for &dyn Any {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}::{} {{ height: {}, index: {} }}", self.place(), self.kind(), self.height(), self.index())
+    }
 }
 
 /// The kind of a node.
@@ -81,6 +99,18 @@ impl Display for Place {
 pub struct Child<'a> {
     offset: u64,
     inner: &'a dyn Any,
+}
+
+impl Debug for Child<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Child")
+            .field("place", &self.place())
+            .field("kind", &self.kind())
+            .field("height", &self.height())
+            .field("index", &self.index())
+            .field("children", &self.children())
+            .finish()
+    }
 }
 
 impl<'a> Child<'a> {
@@ -149,7 +179,7 @@ mod test {
     use super::*;
 
     #[test]
-    fn indexing_correct_for_leaves() {
+    fn indexing_correct() {
         const MAX_SIZE_TO_TEST: u16 = 100;
 
         let mut top: frontier::Top<Item> = frontier::Top::new();
@@ -157,21 +187,20 @@ mod test {
             top.insert(Commitment(i.into()).into()).unwrap();
         }
 
-        fn check_leaves(index: &mut u64, node: &dyn Any) {
-            if node.kind() == Kind::Item {
-                assert_eq!(node.index(), *index);
-                *index += 1;
-            } else {
-                for child in node
-                    .children()
-                    .iter()
-                    .filter_map(|child| child.as_ref().keep())
-                {
-                    check_leaves(index, child);
-                }
+        fn check_leaves(index: &mut [[u64; 5]; 9], node: &dyn Any) {
+            assert_eq!(node.index(), index[usize::from(node.height())][node.kind() as usize], "{}", node);
+
+            index[usize::from(node.height())][node.kind() as usize] += 1;
+
+            for child in node
+                .children()
+                .iter()
+                .filter_map(|child| child.as_ref().keep())
+            {
+                check_leaves(index, child);
             }
         }
 
-        check_leaves(&mut 0, &top);
+        check_leaves(&mut [[0; 5]; 9], &top);
     }
 }
