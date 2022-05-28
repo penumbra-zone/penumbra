@@ -26,7 +26,13 @@ async fn main() -> Result<()> {
             .await?;
 
     let storage = Storage::load("tmp.sqlite".to_string()).await?;
-    let view_service = ViewService::new(storage, oq_client).await?;
+    let view_service = ViewService::new(
+        storage,
+        oq_client,
+        "testnet.penumbra.zone".to_string(),
+        26657,
+    )
+    .await?;
     let custody_service = SoftHSM::new(vec![sk]);
 
     // local, in-memory servers

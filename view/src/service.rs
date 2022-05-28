@@ -3,6 +3,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use anyhow::anyhow;
 use async_stream::try_stream;
 use futures::stream::{StreamExt, TryStreamExt};
 use penumbra_crypto::{
@@ -19,6 +20,7 @@ use penumbra_tct::{Commitment, Proof};
 use penumbra_transaction::WitnessData;
 use tokio::sync::{mpsc, RwLock};
 use tonic::{async_trait, transport::Channel};
+use tracing::instrument;
 
 use crate::{Storage, Worker};
 
@@ -41,6 +43,10 @@ pub struct ViewService {
     fvk_hash: FullViewingKeyHash,
     // A copy of the NCT used by the worker task.
     note_commitment_tree: Arc<RwLock<penumbra_tct::Tree>>,
+    // The address of the pd+tendermint node.
+    node: String,
+    // The port to use to speak to tendermint's RPC server.
+    tendermint_port: u16,
 }
 
 impl ViewService {
@@ -54,6 +60,8 @@ impl ViewService {
     pub async fn new(
         storage: Storage,
         client: ObliviousQueryClient<Channel>,
+        node: String,
+        tendermint_port: u16,
     ) -> Result<Self, anyhow::Error> {
         // Create a shared error slot
         let error_slot = Arc::new(Mutex::new(None));
@@ -74,6 +82,8 @@ impl ViewService {
             error_slot,
             worker_shutdown_tx: tx,
             note_commitment_tree: nct,
+            node,
+            tendermint_port,
         })
     }
 
@@ -116,6 +126,57 @@ impl ViewService {
 
         Ok(())
     }
+
+    #[instrument(skip(self))]
+    pub async fn status(&self) -> Result<StatusResponse, anyhow::Error> {
+        let client = reqwest::Client::new();
+
+        let rsp: serde_json::Value = client
+            .get(format!(
+                r#"http://{}:{}/status"#,
+                self.node, self.tendermint_port
+            ))
+            .send()
+            .await?
+            .json()
+            .await?;
+
+        tracing::info!("{}", rsp);
+
+        let sync_info = rsp.get("sync_info").unwrap();
+
+        let latest_block_height = sync_info
+            .get("latest_block_height")
+            .and_then(|c| c.as_u64())
+            .ok_or_else(|| anyhow::anyhow!("could not parse JSON response"))?;
+
+        let node_catching_up = sync_info
+            .get("catching_up")
+            .and_then(|c| c.as_bool())
+            .ok_or_else(|| anyhow::anyhow!("could not parse JSON response"))?;
+
+        let sync_height = self.storage.last_sync_height().await?.unwrap_or(0);
+
+        let height_diff = latest_block_height
+            .checked_sub(sync_height)
+            .ok_or_else(|| anyhow!("sync height ahead of node height"))?;
+
+        let catching_up = match (node_catching_up, height_diff) {
+            // We're synced to the same height as the node
+            (false, 0) => false,
+            // We're one block behind, and will learn about it soon, close enough
+            (false, 1) => false,
+            // We're behind the node
+            (false, _) => true,
+            // The node is behind the network
+            (true, _) => true,
+        };
+
+        Ok(StatusResponse {
+            sync_height,
+            catching_up,
+        })
+    }
 }
 
 #[async_trait]
@@ -132,20 +193,9 @@ impl ViewProtocol for ViewService {
         self.check_worker().await?;
         self.check_fvk(request.get_ref().fvk_hash.as_ref()).await?;
 
-        let last_sync_height = self
-            .storage
-            .last_sync_height()
-            .await
-            .map_err(|_| tonic::Status::unavailable("database error"))?
-            .unwrap_or(0);
-
-        // TODO: we need to determine how to get the `chain_height` from the full node
-        // until we have that, we can't fully implement this.
-        Ok(tonic::Response::new(StatusResponse {
-            synchronized: true,
-            chain_height: last_sync_height,
-            sync_height: last_sync_height,
-        }))
+        Ok(tonic::Response::new(self.status().await.map_err(|_| {
+            tonic::Status::unknown("unknown error getting status response")
+        })?))
     }
 
     async fn notes(

@@ -5,11 +5,13 @@ use penumbra_crypto::FullViewingKey;
 use penumbra_proto::client::oblivious::oblivious_query_client::ObliviousQueryClient;
 use penumbra_proto::client::oblivious::ChainParamsRequest;
 use penumbra_proto::view::view_protocol_server::ViewProtocolServer;
+use penumbra_proto::view::StatusResponse;
 use penumbra_view::ViewService;
 use std::env;
 use std::str::FromStr;
 use structopt::StructOpt;
 use tonic::transport::Server;
+use tracing::instrument;
 #[derive(Debug, StructOpt)]
 #[structopt(
     name = "pviewd",
@@ -81,7 +83,7 @@ async fn main() -> Result<()> {
 
             let storage = penumbra_view::Storage::load(opt.sqlite_path).await?;
 
-            let service = ViewService::new(storage, client).await?;
+            let service = ViewService::new(storage, client, opt.node, opt.tendermint_port).await?;
 
             tokio::spawn(
                 Server::builder()
