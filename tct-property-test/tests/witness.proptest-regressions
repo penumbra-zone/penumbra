@@ -5,3 +5,5 @@
 # It is recommended to check this file in to source control so that
 # everyone who runs the test benefits from these saved cases.
 cc 9b0b30e0127fda824382ef1c8f20ca26734bc82ced221d04d8c3e94c9e6e15c9 # shrinks to actions = [Insert(Forget, note::Commitment(c38d49528121961f75e5eee0470e33ec5dcc1f1faa07a3a1e4e45f6226383103))]
+cc 90fdae3a9ff02aca8bb97f9d92621cdc91400d7244757d98f9682bab4ce4cb19 # shrinks to actions = [Insert(Keep, note::Commitment(8e80f2bd163ff5d6c6996417d5b1952d91b9d64d2c13527f7bf7f402a763040d)), Insert(Keep, note::Commitment(8e80f2bd163ff5d6c6996417d5b1952d91b9d64d2c13527f7bf7f402a763040d))]
+cc 9e6ccd22e2c45933e6ebedf7dc1d4ea32a4252285c2b7cf44556d8e9d8595f9c # shrinks to actions = [Insert(Forget, note::Commitment(ca04ad4423b52682e4641fb4d0ec66df5f5f3d812f12f690b485e259c3f84709))]

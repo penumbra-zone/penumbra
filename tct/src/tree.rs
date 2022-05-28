@@ -583,12 +583,15 @@ impl Tree {
                             found_hash: node.hash(),
                         });
                     }
-                } else {
+                } else if node.place() != Place::Frontier {
+                    // It's okay for there to be an unindexed witness on the frontier (because the
+                    // frontier is always represented, even if it's marked for later forgetting),
+                    // but otherwise we want to ensure that all witnesses are indexed
                     errors.push(IndexError::UnindexedWitness {
                         position: node.index().into(),
                         found_hash: node.hash(),
                     });
-                }
+                };
             } else {
                 // We're at internal node, so recurse down farther...
                 for child in node
