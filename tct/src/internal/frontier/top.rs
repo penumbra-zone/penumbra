@@ -61,6 +61,20 @@ impl<Item: Focus> Top<Item> {
         result
     }
 
+    /// Forget an index within this structure.
+    #[inline]
+    fn forget(&mut self, index: impl Into<u64>) -> bool
+    where
+        Item: Forget,
+        Item::Complete: ForgetOwned,
+    {
+        if let Some(ref mut inner) = self.inner {
+            inner.forget(index)
+        } else {
+            false
+        }
+    }
+
     /// Update the currently focused `Item` (i.e. the most-recently-[`insert`](Self::insert)ed one),
     /// returning the result of the function.
     ///
@@ -157,19 +171,6 @@ where
             inner.witness(index)
         } else {
             None
-        }
-    }
-}
-
-impl<Item: Focus + Forget> Forget for Top<Item>
-where
-    Item::Complete: ForgetOwned,
-{
-    fn forget(&mut self, index: impl Into<u64>) -> bool {
-        if let Some(ref mut inner) = self.inner {
-            inner.forget(index)
-        } else {
-            false
         }
     }
 }
