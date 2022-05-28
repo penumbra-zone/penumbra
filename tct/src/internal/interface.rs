@@ -67,6 +67,10 @@ pub trait Witness: Height + Sized {
     /// The input mutable slice should be at least the height of the tree, and is overwritten by
     /// this function.
     fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Hash)>;
+
+    /// In left to right order, call the given function on each witnessed hash in the tree,
+    /// accompanied by the position of that hash.
+    fn foreach_witness(&self, per_witness: impl FnMut(u64, Hash));
 }
 
 /// Get the position of the next insertion into the tree.

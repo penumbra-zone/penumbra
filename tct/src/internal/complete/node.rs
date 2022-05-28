@@ -113,6 +113,16 @@ impl<Child: GetHash + Witness> Witness for Node<Child> {
 
         Some((path::Node { siblings, child }, leaf))
     }
+
+    #[inline]
+    fn foreach_witness(&self, mut per_witness: impl FnMut(u64, Hash)) {
+        for (n, child) in self.children().map(Insert::keep).iter().enumerate() {
+            if let Some(child) = child {
+                let offset: u64 = (n as u64) * 4u64.pow(Child::Height::HEIGHT.into());
+                child.foreach_witness(|index, leaf| per_witness(index + offset, leaf));
+            }
+        }
+    }
 }
 
 impl<Child: GetHash + ForgetOwned> ForgetOwned for Node<Child> {

@@ -38,6 +38,11 @@ impl Witness for Item {
         debug_assert_eq!(index.into(), 0, "non-zero index when witnessing leaf");
         Some((path::Leaf, self.0))
     }
+
+    #[inline]
+    fn foreach_witness(&self, mut per_witness: impl FnMut(u64, Hash)) {
+        per_witness(0, self.0);
+    }
 }
 
 impl ForgetOwned for Item {
