@@ -52,7 +52,7 @@ mod tree;
 pub mod error;
 pub use commitment::Commitment;
 pub use proof::Proof;
-pub use tree::{verify, Position, Root, Tree};
+pub use tree::{Position, Root, Tree};
 
 #[cfg(any(doc, feature = "internal"))]
 pub mod internal;
