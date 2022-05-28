@@ -112,6 +112,10 @@ pub trait Reconstruct: Sized {
     - if kind is 'tier', height is 8, 16, or 24
     - if kind is 'top', height is 24
     - index < 4^(24 - height)
+
+    In a real key-value store like rocksdb, we would want to interleave the nodes and children tables,
+    because they lexicographically sort together nicely if you treat the child index as a sub-index of
+    the rest of the index.
 */
 
 // TODO: async
