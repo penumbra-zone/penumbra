@@ -43,17 +43,6 @@ pub trait GetHash {
     fn clear_cached_hash(&self) {}
 }
 
-/// Given something that's [`GetHash`], recalculate its hash, only if it was already cached, and
-/// return whether the hash matches what was already cached.
-///
-/// This should never return `Some(false)` unless some internal invariant was violated.
-pub fn verify_cached_hash(hashable: &impl GetHash) -> Option<bool> {
-    let cached = hashable.cached_hash()?;
-    hashable.clear_cached_hash();
-    let recalculated = hashable.hash();
-    Some(cached == recalculated)
-}
-
 impl<T: GetHash> GetHash for &T {
     #[inline]
     fn hash(&self) -> Hash {

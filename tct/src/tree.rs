@@ -554,16 +554,13 @@ impl Tree {
     ///
     /// If this ever returns `Err`, it indicates either a bug in this crate, or a tree that was
     /// deserialized from an untrustworthy source.
-    pub fn verify_index(&self) -> Result<(), IndexMalformed> {
+    pub fn validate_index(&self) -> Result<(), IndexMalformed> {
         // A reverse index from positions back to the commitments that are supposed to map to their hashes
         let reverse_index: HashMap<index::within::Tree, Commitment> = self
             .index
             .iter()
             .map(|(commitment, position)| (*position, *commitment))
             .collect();
-
-        // Collect all the errors discovered
-        let mut errors = vec![];
 
         // A recursive traversal that checks each leaf in the tree for correctness against the index
         fn check_leaves(
@@ -605,6 +602,7 @@ impl Tree {
         }
 
         // Run the traversal
+        let mut errors = vec![];
         check_leaves(&reverse_index, &mut errors, &self.inner);
 
         // Return an error if any were discovered
@@ -647,6 +645,52 @@ impl Tree {
             Ok(())
         } else {
             Err(InvalidWitnesses { root, errors })
+        }
+    }
+
+    /// Verify that every internally cached hash matches what it should be, by re-hashing all of them.
+    ///
+    /// This is an expensive operation that requires traversing the entire tree structure and doing
+    /// a lot of hashing.
+    ///
+    /// If this ever returns `Err`, it indicates either a bug in this crate, or a tree that was
+    /// deserialized from an untrustworthy source.
+    pub fn validate_cached_hashes(&self) -> Result<(), InvalidCachedHashes> {
+        fn check_hashes(errors: &mut Vec<InvalidCachedHash>, node: &dyn Any) {
+            // IMPORTANT: we need to traverse children before parent, to avoid overwriting the
+            // parent's hash before we have a chance to check it!
+            for child in node.children() {
+                if let Some(child) = child.as_ref().keep() {
+                    check_hashes(errors, child as &dyn Any);
+                }
+            }
+
+            if let Some(cached) = node.cached_hash() {
+                // IMPORTANT: we need to clear the cache to actually recompute it!
+                node.clear_cached_hash();
+
+                let recomputed = node.hash();
+
+                if cached != recomputed {
+                    errors.push(InvalidCachedHash {
+                        place: node.place(),
+                        kind: node.kind(),
+                        height: node.height(),
+                        index: node.index(),
+                        cached,
+                        recomputed,
+                    })
+                }
+            }
+        }
+
+        let mut errors = vec![];
+        check_hashes(&mut errors, &self.inner);
+
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(InvalidCachedHashes { errors })
         }
     }
 }
