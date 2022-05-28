@@ -12,6 +12,12 @@ pub use crate::internal::{
     proof::{ProofDecodeError, VerifyError},
 };
 
+#[doc(inline)]
+pub use crate::tree::verify::{
+    IndexError, IndexMalformed, InvalidCachedHash, InvalidCachedHashes, InvalidWitnesses,
+    WitnessError,
+};
+
 /// An error occurred when trying to insert an commitment into a [`Tree`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
 pub enum InsertError {
