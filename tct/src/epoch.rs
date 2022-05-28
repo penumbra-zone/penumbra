@@ -4,9 +4,9 @@ use decaf377::{FieldExt, Fq};
 use hash_hasher::HashedMap;
 use penumbra_proto::{crypto as pb, Protobuf};
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
 
 use crate::{prelude::*, Witness};
+use crate::error::epoch::*;
 
 #[path = "block.rs"]
 pub(crate) mod block;
@@ -75,11 +75,6 @@ impl From<Root> for Fq {
     }
 }
 
-/// An error occurred when decoding an epoch root from bytes.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
-#[error("could not decode epoch root")]
-pub struct RootDecodeError;
-
 impl TryFrom<pb::MerkleRoot> for Root {
     type Error = RootDecodeError;
 
@@ -105,25 +100,6 @@ impl Display for Root {
         write!(f, "{}", hex::encode(&Fq::from(self.0).to_bytes()))
     }
 }
-
-/// A [`Commitment`] could not be inserted into the [`epoch::Builder`](Builder).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
-pub enum InsertError {
-    /// The [`epoch::Builder`](Builder) was full.
-    #[error("epoch is full")]
-    #[non_exhaustive]
-    Full,
-    /// The most recent block in the [`epoch::Builder`](Builder) was full.
-    #[error("most recent block in epoch is full")]
-    #[non_exhaustive]
-    BlockFull,
-}
-
-/// The [`epoch::Builder`](Builder) was full when attempting to insert a block.
-#[derive(Debug, Clone, Error)]
-#[error("epoch is full")]
-#[non_exhaustive]
-pub struct InsertBlockError(pub block::Finalized);
 
 impl From<InsertBlockError> for block::Finalized {
     fn from(error: InsertBlockError) -> Self {
