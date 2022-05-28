@@ -76,8 +76,6 @@ pub mod three;
 
 mod insert;
 
-pub use any::{Any, Child, Kind, Place};
-
 pub mod frontier {
     //! [`Frontier`] things can be inserted into and updated, always representing the rightmost
     //! (most recently inserted) element of a tree.

@@ -552,33 +552,56 @@ impl Tree {
     /// If this ever returns `Err`, it indicates either a bug in this crate, or a tree that was
     /// deserialized from an untrustworthy source.
     pub fn verify_index(&self) -> Result<(), IndexMalformed> {
+        // A reverse index from positions back to the commitments that are supposed to map to their hashes
         let reverse_index: HashMap<index::within::Tree, Commitment> = self
             .index
             .iter()
             .map(|(commitment, position)| (*position, *commitment))
             .collect();
 
+        // Collect all the errors discovered
         let mut errors = vec![];
 
-        self.inner.foreach_witness(|index, leaf| {
-            if let Some(commitment) = reverse_index.get(&index.into()) {
-                let expected_hash = Hash::of(*commitment);
-                if expected_hash != leaf {
-                    errors.push(IndexError::HashMismatch {
-                        commitment: *commitment,
-                        position: index.into(),
-                        expected_hash,
-                        found_hash: leaf,
+        // A recursive traversal that checks each leaf in the tree for correctness against the index
+        fn check_leaves(
+            reverse_index: &HashMap<index::within::Tree, Commitment>,
+            errors: &mut Vec<IndexError>,
+            node: &dyn Any,
+        ) {
+            if node.kind() == Kind::Item {
+                // We're at a leaf, so check it:
+                if let Some(commitment) = reverse_index.get(&node.index().into()) {
+                    let expected_hash = Hash::of(*commitment);
+                    if expected_hash != node.hash() {
+                        errors.push(IndexError::HashMismatch {
+                            commitment: *commitment,
+                            position: node.index().into(),
+                            expected_hash,
+                            found_hash: node.hash(),
+                        });
+                    }
+                } else {
+                    errors.push(IndexError::UnindexedWitness {
+                        position: node.index().into(),
+                        found_hash: node.hash(),
                     });
                 }
             } else {
-                errors.push(IndexError::UnindexedWitness {
-                    position: index.into(),
-                    found_hash: leaf,
-                });
+                // We're at internal node, so recurse down farther...
+                for child in node
+                    .children()
+                    .iter()
+                    .filter_map(|child| child.as_ref().keep())
+                {
+                    check_leaves(reverse_index, errors, child as &dyn Any);
+                }
             }
-        });
+        }
 
+        // Run the traversal
+        check_leaves(&reverse_index, &mut errors, &self.inner);
+
+        // Return an error if any were discovered
         if errors.is_empty() {
             Ok(())
         } else {
