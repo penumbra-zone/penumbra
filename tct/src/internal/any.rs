@@ -103,11 +103,11 @@ pub trait Write: Read {
     // should error on trying to overwrite a hash that's already cached and is different
     fn cache(&mut self, key: Key, hash: Hash) -> Result<(), <Self as Write>::Error>;
 
-    // mark this key as to-be-preserved up to the specified version (not recursive)
-    fn mark(&mut self, key: Key, version: Version) -> Result<(), <Self as Write>::Error>;
+    // mark this key as to-be-preserved up to the latest version (not recursive)
+    fn mark(&mut self, key: Key) -> Result<(), <Self as Write>::Error>;
 
-    // delete any key if its marked version is strictly less than the specified one
-    fn sweep(&mut self, version: Version) -> Result<(), <Self as Write>::Error>;
+    // delete any key if its marked version is strictly less than the latest one
+    fn sweep(&mut self) -> Result<(), <Self as Write>::Error>;
 }
 
 fn debug_any(this: &dyn Any, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
