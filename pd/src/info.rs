@@ -67,13 +67,13 @@ impl Info {
 
         match query.path.as_str() {
             "/jmt/key" => {
-                let state = self.state_tonic().await?;
-                let (value, proof) = state
-                    .read()
-                    .await
-                    .get_with_proof(query.data.to_vec())
-                    .await
-                    .map_err(|e| tonic::Status::internal(e.to_string()))?;
+                let height: u64 = query.height.into();
+                let key = query.data.to_vec();
+
+                let proof = jmt::JellyfishMerkleTree::new(&self.storage)
+                    .get_with_ics23_proof(key, height)
+                    .await?;
+                let value = proof.value.clone();
 
                 let commitment_proof = ics23::CommitmentProof {
                     proof: Some(ics23::commitment_proof::Proof::Exist(proof)),
@@ -84,8 +84,6 @@ impl Info {
                     proof: Some(commitment_proof),
                 };
 
-                let height = state.get_block_height().await?;
-
                 Ok(abci::response::Query {
                     code: 0,
                     key: query.data,
@@ -93,10 +91,10 @@ impl Info {
                     value: kvr.encode_to_vec().into(),
                     // NOTE: the ABCI query proof is not the same as ICS-23 proofs.
                     proof: None,
-                    height: height.try_into()?,
+                    height: height.try_into().unwrap(),
                     codespace: "".to_string(),
                     info: "".to_string(),
-                    index: 0, // TODO
+                    index: 0,
                 })
             }
             _ => {
