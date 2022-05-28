@@ -42,7 +42,14 @@ impl Debug for &dyn Any {
 
 impl Display for &dyn Any {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}::{} {{ height: {}, index: {} }}", self.place(), self.kind(), self.height(), self.index())
+        write!(
+            f,
+            "{}::{} {{ height: {}, index: {} }}",
+            self.place(),
+            self.kind(),
+            self.height(),
+            self.index()
+        )
     }
 }
 
@@ -188,7 +195,12 @@ mod test {
         }
 
         fn check_leaves(index: &mut [[u64; 5]; 9], node: &dyn Any) {
-            assert_eq!(node.index(), index[usize::from(node.height())][node.kind() as usize], "{}", node);
+            assert_eq!(
+                node.index(),
+                index[usize::from(node.height())][node.kind() as usize],
+                "{}",
+                node
+            );
 
             index[usize::from(node.height())][node.kind() as usize] += 1;
 
