@@ -140,4 +140,19 @@ proptest! {
         }
         tree.verify_index().unwrap();
     }
+
+    #[test]
+    fn verify_all_proofs(
+        actions in
+            prop::collection::vec(any::<Commitment>(), 1..MAX_USED_COMMITMENTS)
+                .prop_flat_map(|commitments| {
+                    prop::collection::vec(any_with::<Action>(commitments), 1..MAX_TIER_ACTIONS)
+                })
+    ) {
+        let mut tree = Tree::new();
+        for action in actions {
+            action.apply(&mut tree).unwrap();
+        }
+        tree.verify_all_proofs().unwrap();
+    }
 }
