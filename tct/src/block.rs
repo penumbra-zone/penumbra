@@ -5,8 +5,8 @@ use hash_hasher::HashedMap;
 use penumbra_proto::{crypto as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
-use crate::{prelude::*, Witness};
 use crate::error::block::*;
+use crate::{prelude::*, Witness};
 
 /// A sparse merkle tree to witness up to 65,536 individual [`Commitment`]s.
 ///
