@@ -51,19 +51,20 @@ impl<Item: ForgetOwned> ForgetOwned for Leaf<Item> {
     }
 }
 
-impl<Item: Height + GetHash + Traverse> Visit for Leaf<Item> {
-    fn visit_indexed<V: Visitor>(&self, index: u64, visitor: &mut V) -> V::Output {
-        visitor.complete_leaf(index, self)
+impl<Item: Height + Any> Any for Leaf<Item> {
+    fn place(&self) -> Place {
+        Place::Complete
     }
-}
 
-impl<Item: Height + GetHash + Traverse> Traverse for Leaf<Item> {
-    fn traverse<T: Traversal, V: Visitor>(
-        &self,
-        traversal: &mut T,
-        visitor: &mut V,
-        output: &mut impl FnMut(V::Output),
-    ) {
-        traversal.traverse_complete(visitor, output, self, [&self.0]);
+    fn kind(&self) -> Kind {
+        Kind::Leaf
+    }
+
+    fn height(&self) -> u8 {
+        <Self as Height>::Height::HEIGHT
+    }
+
+    fn children(&self) -> Vec<Insert<Child>> {
+        vec![Insert::Keep(Child::new(&self.0))]
     }
 }

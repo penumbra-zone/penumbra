@@ -180,30 +180,24 @@ where
     }
 }
 
-impl<Item: Height + GetHash + Focus> Visit for Top<Item> {
-    fn visit_indexed<V: Visitor>(&self, index: u64, visitor: &mut V) -> V::Output {
-        visitor.frontier_top(index, self)
-    }
-}
-
-impl<Item: Height + GetHash + Focus> Traverse for Top<Item>
+impl<Item: Focus + Height + Any> Any for Top<Item>
 where
-    Item: Traverse,
-    Item::Complete: Traverse,
+    Item::Complete: Any,
 {
-    fn traverse<T: Traversal, V: Visitor>(
-        &self,
-        traversal: &mut T,
-        visitor: &mut V,
-        output: &mut impl FnMut(V::Output),
-    ) {
-        traversal.traverse(
-            visitor,
-            output,
-            self,
-            visit::NO_CHILDREN,
-            self.inner.as_ref(),
-        );
+    fn place(&self) -> Place {
+        Place::Frontier
+    }
+
+    fn kind(&self) -> Kind {
+        Kind::Top
+    }
+
+    fn height(&self) -> u8 {
+        <Self as Height>::Height::HEIGHT
+    }
+
+    fn children(&self) -> Vec<Insert<Child>> {
+        self.inner.iter().map(|child| Insert::Keep(Child::new(child))).collect()
     }
 }
 

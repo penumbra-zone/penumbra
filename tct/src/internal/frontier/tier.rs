@@ -295,30 +295,28 @@ impl<Item: Focus> From<complete::Top<Item::Complete>> for Tier<Item> {
     }
 }
 
-impl<Item: Height + GetHash + Focus> Visit for Tier<Item> {
-    fn visit_indexed<V: Visitor>(&self, index: u64, visitor: &mut V) -> V::Output {
-        visitor.frontier_tier(index, self)
-    }
-}
-
-impl<Item: Height + GetHash + Focus> Traverse for Tier<Item>
+impl<Item: Focus + Height + Any> Any for Tier<Item>
 where
-    Item: Traverse,
-    Item::Complete: Traverse,
+    Item::Complete: Any,
 {
-    fn traverse<T: Traversal, V: Visitor>(
-        &self,
-        traversal: &mut T,
-        visitor: &mut V,
-        output: &mut impl FnMut(V::Output),
-    ) {
-        let (complete, frontier) = match &self.inner {
-            Inner::Frontier(frontier) => (None, Some(&**frontier)),
-            Inner::Complete(complete) => (Some(complete), None),
-            Inner::Hash(_) => (None, None),
-        };
+    fn place(&self) -> Place {
+        Place::Frontier
+    }
 
-        traversal.traverse(visitor, output, self, complete, frontier);
+    fn kind(&self) -> Kind {
+        Kind::Tier
+    }
+
+    fn height(&self) -> u8 {
+        <Self as Height>::Height::HEIGHT
+    }
+
+    fn children(&self) -> Vec<Insert<Child>> {
+        match &self.inner {
+            Inner::Frontier(frontier) => vec![Insert::Keep(Child::new(&**frontier))],
+            Inner::Complete(complete) => vec![Insert::Keep(Child::new(complete))],
+            Inner::Hash(_) => vec![],
+        }
     }
 }
 

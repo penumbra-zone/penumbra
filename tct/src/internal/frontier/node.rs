@@ -350,33 +350,27 @@ where
     }
 }
 
-impl<Child: Height + GetHash + Focus> Visit for Node<Child> {
-    fn visit_indexed<V: Visitor>(&self, index: u64, visitor: &mut V) -> V::Output {
-        visitor.frontier_node(index, self)
-    }
-}
-
-impl<Child: Height + GetHash + Focus> Traverse for Node<Child>
+impl<Item: Focus + Height + Any> Any for Node<Item>
 where
-    Child: Traverse,
-    Child::Complete: Traverse,
+    Item::Complete: Any,
 {
-    fn traverse<T: Traversal, V: Visitor>(
-        &self,
-        traversal: &mut T,
-        visitor: &mut V,
-        output: &mut impl FnMut(V::Output),
-    ) {
-        traversal.traverse(
-            visitor,
-            output,
-            self,
-            self.siblings
-                .iter()
-                .map(|child| child.as_ref().keep())
-                .enumerate()
-                .map(|(n, child)| visit::child(n, child)),
-            Some(visit::child(self.siblings.len().into(), Some(&self.focus))),
-        );
+    fn place(&self) -> Place {
+        Place::Frontier
+    }
+
+    fn kind(&self) -> Kind {
+        Kind::Node
+    }
+
+    fn height(&self) -> u8 {
+        <Self as Height>::Height::HEIGHT
+    }
+
+    fn children(&self) -> Vec<Insert<Child>> {
+        self.siblings
+            .iter()
+            .map(|child| child.as_ref().map(|child| Child::new(child)))
+            .chain(std::iter::once(Insert::Keep(Child::new(&self.focus))))
+            .collect()
     }
 }
