@@ -159,12 +159,6 @@ where
             None
         }
     }
-
-    fn foreach_witness(&self, per_witness: impl FnMut(u64, Hash)) {
-        if let Some(ref inner) = self.inner {
-            inner.foreach_witness(per_witness)
-        }
-    }
 }
 
 impl<Item: Focus + Forget> Forget for Top<Item>
