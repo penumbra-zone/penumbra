@@ -81,16 +81,26 @@ pub trait Reconstruct: Sized {
 /*
     Table schema (all columns non-optional except as noted):
 
-    /---- composite primary key ------\
-    | version | height | kind | index | finalized | hash          | marked |
-    +---------+--------+------+-------+-----------+---------------+--------+
-    | u64     | u8     | text | u64   | bool      | optional blob | u64    |
+    TABLE latest:
 
-    /---- composite primary key --------------\/--- exactly one is non-null --\
-    /---- foreign keys ---------------\       |                               |
-    | version | height | kind | index | child | child_version | child_hash    |
-    +---------+--------+------+-------+-------+---------------+---------------+
-    | u64     | u8     | text | u64   | u8    | optional u64  | optional blob |
+        | latest_version |
+        +----------------+
+        | u64            |
+
+    TABLE nodes:
+
+        /---- composite primary key ------\
+        | version | height | kind | index | finalized | hash          | marked_version |
+        +---------+--------+------+-------+-----------+---------------+----------------+
+        | u64     | u8     | text | u64   | bool      | optional blob | u64            |
+
+    TABLE children:
+
+        /---- composite primary key --------------\/--- exactly one is non-null --\
+        /---- foreign keys ---------------\       |                               |
+        | version | height | kind | index | child | child_version | child_hash    |
+        +---------+--------+------+-------+-------+---------------+---------------+
+        | u64     | u8     | text | u64   | u8    | optional u64  | optional blob |
 
     Other constraints:
 
