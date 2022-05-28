@@ -197,7 +197,10 @@ where
     }
 
     fn children(&self) -> Vec<Insert<Child>> {
-        self.inner.iter().map(|child| Insert::Keep(Child::new(child))).collect()
+        self.inner
+            .iter()
+            .map(|child| Insert::Keep(Child::new(child)))
+            .collect()
     }
 }
 
