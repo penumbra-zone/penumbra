@@ -15,6 +15,9 @@ use crate::Witness;
 pub(crate) mod epoch;
 pub(crate) use epoch::block;
 
+pub mod verify;
+use verify::*;
+
 /// A sparse merkle tree witnessing up to 65,536 epochs of up to 65,536 blocks of up to 65,536
 /// [`Commitment`]s.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -552,7 +555,7 @@ impl Tree {
     /// If this ever returns `Err`, it indicates either a bug in this crate, or a tree that was
     /// deserialized from an untrustworthy source.
     pub fn verify_index(&self) -> Result<(), IndexMalformed> {
-        use visit::{traversal::PostOrder, Any, AnyVisitor, Kind};
+        use visit::{traversal::PostOrder, AnyVisitor, Kind};
 
         // Build a reverse index mapping known indices to their commitments
         let reverse_index: HashMap<index::within::Tree, Commitment> = self
@@ -561,43 +564,44 @@ impl Tree {
             .map(|(commitment, position)| (*position, *commitment))
             .collect();
 
+        // Traverse all the leaves in post-order, skipping all non-terminal nodes
+        let mut terminal_leaves = PostOrder {
+            child_filter: |_: &Any| true,
+            parent_filter: |node: &Any| node.kind == Kind::Item,
+        };
+
+        // Get the index and hash of each terminal leaf
+        let mut index_and_hash = AnyVisitor(|any: Any, visit: &dyn Visit| {
+            (index::within::Tree::from(any.index), visit.hash())
+        });
+
         // Collect all discovered errors
         let mut errors = vec![];
+        let mut check_against_index = &mut |(index, found_hash)| {
+            if let Some(&commitment) = reverse_index.get(&index) {
+                let expected_hash = Hash::of(commitment);
+
+                if expected_hash != found_hash {
+                    errors.push(IndexError::HashMismatch {
+                        position: Position(index),
+                        commitment,
+                        found_hash,
+                        expected_hash,
+                    });
+                }
+            } else {
+                errors.push(IndexError::UnindexedWitness {
+                    position: Position(index),
+                    found_hash,
+                })
+            }
+        };
 
         // Traverse the tree structure
         self.inner.traverse(
-            // In post-order, skipping all non-terminal nodes
-            &mut PostOrder {
-                child_filter: |_: &Any| true,
-                parent_filter: |node: &Any| node.kind == Kind::Item,
-            },
-            // Extracting the pair `(position, hash)` from each terminal node
-            &mut AnyVisitor(|any: Any| {
-                (
-                    index::within::Tree::from(any.index),
-                    any.hash.expect("bottom-level leaves always have hashes"),
-                )
-            }),
-            // And for each such pair, checking it against the reverse index for errors
-            &mut |(index, found_hash)| {
-                if let Some(&commitment) = reverse_index.get(&index) {
-                    let expected_hash = Hash::of(commitment);
-
-                    if expected_hash != found_hash {
-                        errors.push(IndexError::HashMismatch {
-                            position: Position(index),
-                            commitment,
-                            found_hash,
-                            expected_hash,
-                        });
-                    }
-                } else {
-                    errors.push(IndexError::UnindexedWitness {
-                        position: Position(index),
-                        found_hash,
-                    })
-                }
-            },
+            &mut terminal_leaves,
+            &mut index_and_hash,
+            &mut check_against_index,
         );
 
         // Check to see if we found any errors
@@ -642,54 +646,64 @@ impl Tree {
             Err(InvalidWitnesses { root, errors })
         }
     }
-}
 
-/// The index for the tree contained at least one error.
-pub struct IndexMalformed {
-    /// The errors found in the index.
-    pub errors: Vec<IndexError>,
-}
+    /// Verify that each cached hash is correct by rehashing every internal node that has a cached
+    /// hash and checking it against the previously cached hash.
+    ///
+    /// This is an expensive operation that requires traversing the entire tree structure and doing
+    /// a lot of hashing.
+    ///
+    /// If this ever returns `Err`, it indicates either a bug in this crate, or a tree that was
+    /// deserialized from an untrustworthy source.
+    pub fn verify_cached_hashes(&self) -> Result<(), InvalidCachedHashes> {
+        use visit::{traversal::PostOrder, AnyVisitor};
 
-pub enum IndexError {
-    /// The index is missing a position.
-    UnindexedWitness {
-        /// The position expected to be present in the index.
-        position: Position,
-        /// The hash found at that position.
-        found_hash: Hash,
-    },
-    /// A commitment in the index doesn't match the hash in the tree at that position.
-    HashMismatch {
-        /// The commitment which should have the found hash.
-        commitment: Commitment,
-        /// The position that commitment maps to in the index.
-        position: Position,
-        /// The expected hash value of that commitment.
-        expected_hash: Hash,
-        /// The actual hash found in the tree structure at the position in the index for that commitment.
-        found_hash: Hash,
-    },
-}
+        // Traverse every node in the tree structure post-order (important, or else we'll overwrite
+        // hashes before we check them!)
+        let mut every_node = PostOrder {
+            parent_filter: |_: &Any| true,
+            child_filter: |_: &Any| true,
+        };
 
-/// At least one proof generated by the tree failed to verify against the root.
-pub struct InvalidWitnesses {
-    /// The root of the tree at which the errors were found.
-    pub root: Root,
-    /// The errors found.
-    pub errors: Vec<WitnessError>,
-}
+        // Locate all nodes with mismatching hashes
+        let mut find_hash_mismatch = AnyVisitor(|any: Any, visit: &dyn Visit| {
+            if let Some(cached_hash) = visit.cached_hash() {
+                // IMPORTANT: we need to clear the cache to actually recompute it!
+                visit.clear_cached_hash();
 
-pub enum WitnessError {
-    /// The index contains a commitment that is not witnessed.
-    UnwitnessedCommitment {
-        /// The commitment that was not present in the tree.
-        commitment: Commitment,
-        /// The position at which it was supposed to appear.
-        position: Position,
-    },
-    /// The proof produced by the tree does not verify against the root.
-    InvalidProof {
-        /// The proof which failed to verify.
-        proof: Box<Proof>,
-    },
+                let recomputed_hash = visit.hash();
+
+                if cached_hash != recomputed_hash {
+                    Some((any, cached_hash, recomputed_hash))
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        });
+
+        // Record errors in a vector
+        let mut errors = vec![];
+        let mut log_errors = |option| {
+            if let Some((node, cached, recomputed)) = option {
+                errors.push(InvalidCachedHash {
+                    node,
+                    cached,
+                    recomputed,
+                })
+            }
+        };
+
+        // Perform the traversal
+        self.inner
+            .traverse(&mut every_node, &mut find_hash_mismatch, &mut log_errors);
+
+        // Throw an error if we found any issues
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(InvalidCachedHashes { errors })
+        }
+    }
 }
