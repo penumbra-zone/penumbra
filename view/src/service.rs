@@ -18,7 +18,8 @@ use penumbra_proto::{
 };
 use penumbra_tct::{Commitment, Proof};
 use penumbra_transaction::WitnessData;
-use tokio::sync::{mpsc, RwLock};
+use tokio::sync::{watch, RwLock};
+use tokio_stream::wrappers::WatchStream;
 use tonic::{async_trait, transport::Channel};
 use tracing::instrument;
 
@@ -38,8 +39,6 @@ pub struct ViewService {
     // A shared error slot for errors bubbled up by the worker. This is a regular Mutex
     // rather than a Tokio Mutex because it should be uncontended.
     error_slot: Arc<Mutex<Option<anyhow::Error>>>,
-    // When all the senders have dropped, the worker will stop.
-    worker_shutdown_tx: mpsc::Sender<()>,
     fvk_hash: FullViewingKeyHash,
     // A copy of the NCT used by the worker task.
     note_commitment_tree: Arc<RwLock<penumbra_tct::Tree>>,
@@ -47,6 +46,8 @@ pub struct ViewService {
     node: String,
     // The port to use to speak to tendermint's RPC server.
     tendermint_port: u16,
+    /// Used to watch for changes to the sync height.
+    sync_height_rx: watch::Receiver<u64>,
 }
 
 impl ViewService {
@@ -66,10 +67,12 @@ impl ViewService {
         // Create a shared error slot
         let error_slot = Arc::new(Mutex::new(None));
 
-        // Create a means of communicating shutdown with the worker task
-        let (tx, rx) = mpsc::channel(1);
+        // Create a channel for the worker to notify us of sync height changes.
+        let (sync_height_tx, sync_height_rx) =
+            watch::channel(storage.last_sync_height().await?.unwrap_or(0));
 
-        let (worker, nct) = Worker::new(storage.clone(), client, error_slot.clone(), rx).await?;
+        let (worker, nct) =
+            Worker::new(storage.clone(), client, error_slot.clone(), sync_height_tx).await?;
 
         tokio::spawn(worker.run());
 
@@ -80,7 +83,7 @@ impl ViewService {
             storage,
             fvk_hash,
             error_slot,
-            worker_shutdown_tx: tx,
+            sync_height_rx,
             note_commitment_tree: nct,
             node,
             tendermint_port,
@@ -127,8 +130,10 @@ impl ViewService {
         Ok(())
     }
 
+    /// Return the latest block height known by the fullnode or its peers, as
+    /// well as whether the fullnode is caught up with that height.
     #[instrument(skip(self))]
-    pub async fn status(&self) -> Result<StatusResponse, anyhow::Error> {
+    pub async fn latest_known_block_height(&self) -> Result<(u64, bool), anyhow::Error> {
         let client = reqwest::Client::new();
 
         let rsp: serde_json::Value = client
@@ -150,14 +155,29 @@ impl ViewService {
             .and_then(|c| c.as_u64())
             .ok_or_else(|| anyhow::anyhow!("could not parse JSON response"))?;
 
+        let max_peer_block_height = sync_info
+            .get("max_peer_block_height")
+            .and_then(|c| c.as_u64())
+            .ok_or_else(|| anyhow::anyhow!("could not parse JSON response"))?;
+
+        let latest_known_block_height = std::cmp::max(latest_block_height, max_peer_block_height);
+
         let node_catching_up = sync_info
             .get("catching_up")
             .and_then(|c| c.as_bool())
             .ok_or_else(|| anyhow::anyhow!("could not parse JSON response"))?;
 
+        Ok((latest_known_block_height, node_catching_up))
+    }
+
+    #[instrument(skip(self))]
+    pub async fn status(&self) -> Result<StatusResponse, anyhow::Error> {
         let sync_height = self.storage.last_sync_height().await?.unwrap_or(0);
 
-        let height_diff = latest_block_height
+        let (latest_known_block_height, node_catching_up) =
+            self.latest_known_block_height().await?;
+
+        let height_diff = latest_known_block_height
             .checked_sub(sync_height)
             .ok_or_else(|| anyhow!("sync height ahead of node height"))?;
 
@@ -185,6 +205,9 @@ impl ViewProtocol for ViewService {
         Pin<Box<dyn futures::Stream<Item = Result<pb::NoteRecord, tonic::Status>> + Send>>;
     type AssetsStream =
         Pin<Box<dyn futures::Stream<Item = Result<pbc::Asset, tonic::Status>> + Send>>;
+    type StatusStreamStream = Pin<
+        Box<dyn futures::Stream<Item = Result<pb::StatusStreamResponse, tonic::Status>> + Send>,
+    >;
 
     async fn status(
         &self,
@@ -196,6 +219,36 @@ impl ViewProtocol for ViewService {
         Ok(tonic::Response::new(self.status().await.map_err(|_| {
             tonic::Status::unknown("unknown error getting status response")
         })?))
+    }
+
+    async fn status_stream(
+        &self,
+        request: tonic::Request<pb::StatusStreamRequest>,
+    ) -> Result<tonic::Response<Self::StatusStreamStream>, tonic::Status> {
+        self.check_worker().await?;
+        self.check_fvk(request.get_ref().fvk_hash.as_ref()).await?;
+
+        let (latest_known_block_height, _) =
+            self.latest_known_block_height().await.map_err(|_| {
+                tonic::Status::unknown("unable to fetch latest known block height from fullnode")
+            })?;
+
+        // Create a stream of sync height updates from our worker, and send them to the client
+        // until we've reached the latest known block height at the time the request was made.
+        let mut sync_height_stream = WatchStream::new(self.sync_height_rx.clone());
+        let stream = try_stream! {
+            while let Some(sync_height) = sync_height_stream.next().await {
+                yield pb::StatusStreamResponse {
+                    latest_known_block_height,
+                    sync_height,
+                };
+                if sync_height == latest_known_block_height {
+                    break;
+                }
+            }
+        };
+
+        Ok(tonic::Response::new(stream.boxed()))
     }
 
     async fn notes(

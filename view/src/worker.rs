@@ -5,10 +5,7 @@ use penumbra_crypto::FullViewingKey;
 use penumbra_proto::client::oblivious::{
     oblivious_query_client::ObliviousQueryClient, AssetListRequest, CompactBlockRangeRequest,
 };
-use tokio::sync::{
-    mpsc::{error::TryRecvError, Receiver},
-    RwLock,
-};
+use tokio::sync::{watch, RwLock};
 use tonic::transport::Channel;
 pub struct Worker {
     storage: Storage,
@@ -16,7 +13,7 @@ pub struct Worker {
     nct: Arc<RwLock<penumbra_tct::Tree>>,
     fvk: FullViewingKey, // TODO: notifications (see TODOs on ViewService)
     error_slot: Arc<Mutex<Option<anyhow::Error>>>,
-    shutdown_rx: Receiver<()>,
+    sync_height_tx: watch::Sender<u64>,
 }
 
 impl Worker {
@@ -24,7 +21,7 @@ impl Worker {
         storage: Storage,
         client: ObliviousQueryClient<Channel>,
         error_slot: Arc<Mutex<Option<anyhow::Error>>>,
-        rx: Receiver<()>,
+        sync_height_tx: watch::Sender<u64>,
     ) -> Result<(Self, Arc<RwLock<penumbra_tct::Tree>>), anyhow::Error> {
         let nct = Arc::new(RwLock::new(storage.note_commitment_tree().await?));
         let fvk = storage.full_viewing_key().await?;
@@ -35,7 +32,7 @@ impl Worker {
                 nct: nct.clone(),
                 fvk,
                 error_slot,
-                shutdown_rx: rx,
+                sync_height_tx,
             },
             nct,
         ))
@@ -89,8 +86,11 @@ impl Worker {
 
         while let Some(block) = stream.message().await? {
             let scan_result = scan_block(&self.fvk, &mut nct, block.try_into()?, epoch_duration);
+            let height = scan_result.height;
 
             self.storage.record_block(scan_result, &mut nct).await?;
+            // Notify all watchers of the new height we just recorded.
+            self.sync_height_tx.send(height)?;
         }
 
         let end_height = self.storage.last_sync_height().await?.unwrap();
@@ -122,13 +122,15 @@ impl Worker {
     }
 
     async fn run_inner(&mut self) -> Result<(), anyhow::Error> {
+        // For now, this can be outside of the loop, because assets are only
+        // created at genesis. In the future, we'll want to have a way for
+        // clients to learn about assets as they're created.
+        self.fetch_assets().await?;
         loop {
             self.sync_to_latest().await?;
-            self.fetch_assets().await?;
 
-            if let Err(TryRecvError::Disconnected) = self.shutdown_rx.try_recv() {
-                // All senders have been dropped, so we can shut down.
-                tracing::info!("All senders dropped, wallet worker shutting down.");
+            if self.sync_height_tx.is_closed() {
+                tracing::info!("all view services dropped, shutting down worker");
                 break;
             }
 
