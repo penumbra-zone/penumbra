@@ -5,8 +5,8 @@ use hash_hasher::HashedMap;
 use penumbra_proto::{crypto as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
-use crate::{prelude::*, Witness};
 use crate::error::epoch::*;
+use crate::{prelude::*, Witness};
 
 #[path = "block.rs"]
 pub(crate) mod block;
