@@ -17,6 +17,9 @@ pub trait Any: Versioned {
     /// The height of this node above the base of the tree.
     fn height(&self) -> u8;
 
+    /// Whether or not this thing is finalized.
+    fn finalized(&self) -> bool;
+
     /// The index of this node from the left of the tree.
     ///
     /// For items at the base, this is the position of the item.
@@ -26,30 +29,118 @@ pub trait Any: Versioned {
 
     /// The children, or hashes of them, of this node.
     fn children(&self) -> Vec<Insert<Child>>;
+
+    /// The unique key describing this node in space and time.
+    fn key(&self) -> Key {
+        Key {
+            version: self.version(),
+            height: self.height(),
+            kind: self.kind(),
+            index: self.index(),
+        }
+    }
+
+    /// The value associated with this node. Together with the node's key and the collection of all
+    /// other nodes' keys and values, this allows the tree to be reconstructed.
+    fn value(&self) -> Value {
+        Value {
+            finalized: self.finalized(),
+            children: self
+                .children()
+                .into_iter()
+                .map(|insert| insert.map(Version::version))
+                .collect(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Key {
+    pub version: Version,
+    pub height: u8,
+    pub kind: Kind,
+    pub index: u64,
+}
+
+impl Key {
+    pub fn child(&self, index: u64, version: Version) -> Self {
+        todo!("calculate what the descendent key should be")
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Value {
+    pub finalized: bool,
+    pub children: Vec<Insert<Version>>,
+}
+
+pub trait Reconstruct: Sized {
+    fn reconstruct<R: Read>(reader: &R, version: Version, index: u64) -> Result<Self, R::Error>;
+}
+
+// TODO: async
+pub trait Read {
+    type Error;
+
+    // get the latest version stored
+    fn latest(&self) -> Result<Version, Self::Error>;
+
+    // get the value associated with this key (returns error if missing key)
+    fn get(&self, key: Key) -> Result<Value, Self::Error>;
+
+    // get the cached hash, if any
+    fn hash(&self, key: Key) -> Result<Option<Hash>, Self::Error>;
+}
+
+// TODO: async
+pub trait Write: Read {
+    type Error: From<<Self as Read>::Error>;
+
+    // should error on trying to overwrite a key if the value is different
+    // created entries are automatically marked with the value of their own key
+    fn create(&mut self, key: Key, value: Value) -> Result<(), <Self as Write>::Error>;
+
+    // should error on trying to overwrite a hash that's already cached and is different
+    fn cache(&mut self, key: Key, hash: Hash) -> Result<(), <Self as Write>::Error>;
+
+    // mark this key as to-be-preserved up to the specified version (not recursive)
+    fn mark(&mut self, key: Key, version: Version) -> Result<(), <Self as Write>::Error>;
+
+    // delete any key if its marked version is strictly less than the specified one
+    fn sweep(&mut self, version: Version) -> Result<(), <Self as Write>::Error>;
+}
+
+fn debug_any(this: &dyn Any, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    let mut s = f
+        .debug_struct(&format!("{}::{}", this.place(), this.kind()))
+        .field("version", &u64::from(this.version()))
+        .field("height", &this.height())
+        .field("index", &this.index());
+    if let Some(hash) = this.cached_hash() {
+        s = s.field("hash", &hash);
+    }
+    s.field("finalized", &this.finalized())
+        .field("children", &this.children())
+        .finish()
+}
+
+fn display_any(this: &dyn Any, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct(&format!("{}::{}", this.place(), this.kind()))
+        .field("version", &u64::from(this.version()))
+        .field("height", &this.height())
+        .field("index", &this.index())
+        .finish_non_exhaustive()
 }
 
 impl Debug for &dyn Any {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Any")
-            .field("place", &self.place())
-            .field("kind", &self.kind())
-            .field("height", &self.height())
-            .field("index", &self.index())
-            .field("children", &self.children())
-            .finish()
+        debug_any(self, f)
     }
 }
 
 impl Display for &dyn Any {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}::{} {{ height: {}, index: {} }}",
-            self.place(),
-            self.kind(),
-            self.height(),
-            self.index()
-        )
+        display_any(self, f)
     }
 }
 
@@ -110,13 +201,13 @@ pub struct Child<'a> {
 
 impl Debug for Child<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Child")
-            .field("place", &self.place())
-            .field("kind", &self.kind())
-            .field("height", &self.height())
-            .field("index", &self.index())
-            .field("children", &self.children())
-            .finish()
+        debug_any(self, f)
+    }
+}
+
+impl Display for Child<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        display_any(self, f)
     }
 }
 

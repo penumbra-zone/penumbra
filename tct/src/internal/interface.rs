@@ -3,6 +3,8 @@
 //! Most of these are also re-exported from either [`frontier`](crate::internal::frontier) or
 //! [`complete`](crate::internal::complete).
 
+use std::fmt::{self, Display, Formatter};
+
 use crate::prelude::*;
 
 /// A frontier of a tree supporting the insertion of new elements and the updating of the
@@ -122,6 +124,12 @@ pub trait Versioned: GetHash {
     Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize,
 )]
 pub struct Version(u64);
+
+impl Display for Version {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 
 impl From<Version> for u64 {
     fn from(version: Version) -> Self {
