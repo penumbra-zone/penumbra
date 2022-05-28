@@ -6,7 +6,7 @@ use crate::prelude::*;
 
 /// Every kind of node in the tree implements [`Any`], and its methods collectively describe every
 /// salient fact about each node, dynamically rather than statically as in the rest of the crate.
-pub trait Any: GetHash {
+pub trait Any: Versioned {
     /// The place this node is located: on the frontier or in the complete interior.
     fn place(&self) -> Place;
 
@@ -137,6 +137,20 @@ impl GetHash for Child<'_> {
 
     fn cached_hash(&self) -> Option<Hash> {
         self.inner.cached_hash()
+    }
+}
+
+impl Versioned for Child<'_> {
+    fn version(&self) -> Version {
+        self.inner.version()
+    }
+
+    fn hash_version(&self) -> Option<Version> {
+        self.inner.hash_version()
+    }
+
+    fn set_version(&mut self, version: Version) {
+        self.inner.set_version(version)
     }
 }
 
