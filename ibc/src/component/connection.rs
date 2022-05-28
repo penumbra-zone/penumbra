@@ -194,11 +194,8 @@ pub trait View: StateExt + Send + Sync {
         connection_id: &ConnectionId,
         connection: ConnectionEnd,
     ) -> Result<()> {
-        self.put_domain(
-            state_key::connection(COMMITMENT_PREFIX, connection_id),
-            connection.clone(),
-        )
-        .await;
+        self.put_domain(state_key::connection(connection_id), connection.clone())
+            .await;
         let counter = self
             .get_connection_counter()
             .await
@@ -213,16 +210,12 @@ pub trait View: StateExt + Send + Sync {
     }
 
     async fn get_connection(&self, connection_id: &ConnectionId) -> Result<Option<ConnectionEnd>> {
-        self.get_domain(state_key::connection(COMMITMENT_PREFIX, connection_id))
-            .await
+        self.get_domain(state_key::connection(connection_id)).await
     }
 
     async fn update_connection(&self, connection_id: &ConnectionId, connection: ConnectionEnd) {
-        self.put_domain(
-            state_key::connection(COMMITMENT_PREFIX, connection_id),
-            connection,
-        )
-        .await;
+        self.put_domain(state_key::connection(connection_id), connection)
+            .await;
     }
 }
 

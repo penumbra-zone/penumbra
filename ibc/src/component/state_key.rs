@@ -1,10 +1,12 @@
 use ibc::core::ics24_host::identifier::ConnectionId;
 use jmt::KeyHash;
 
-pub fn connection(commitment_prefix: &str, connection_id: &ConnectionId) -> KeyHash {
+use crate::COMMITMENT_PREFIX;
+
+pub fn connection(connection_id: &ConnectionId) -> KeyHash {
     format!(
         "{}/connections/{}",
-        commitment_prefix,
+        COMMITMENT_PREFIX,
         connection_id.as_str()
     )
     .into()

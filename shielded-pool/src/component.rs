@@ -480,7 +480,7 @@ pub trait View: StateExt {
         } else {
             tracing::debug!(?denom, ?id, "registering new denom");
             // We want to be able to query for the denom by asset ID...
-            self.put_domain(state_key::register_denom(denom), denom.clone())
+            self.put_domain(state_key::denom_by_asset(denom), denom.clone())
                 .await;
             // ... and we want to record it in the list of known asset IDs
             // (this requires reading the whole list, which is sad, but hopefully
@@ -507,23 +507,23 @@ pub trait View: StateExt {
     }
 
     async fn set_compact_block(&self, compact_block: CompactBlock) {
-        self.put_domain(state_key::set_compact_block(&compact_block), compact_block)
+        self.put_domain(state_key::compact_block(&compact_block), compact_block)
             .await
     }
 
     async fn compact_block(&self, height: u64) -> Result<Option<CompactBlock>> {
-        self.get_domain(state_key::compact_block(height)).await
+        self.get_domain(state_key::compact_block(&height)).await
     }
 
     async fn set_nct_anchor(&self, height: u64, nct_anchor: tct::Root) {
         tracing::debug!(?height, ?nct_anchor, "writing anchor");
 
         // Write the NCT anchor both as a value, so we can look it up,
-        self.put_domain(state_key::nct_anchor_tct(&nct_anchor), nct_anchor)
+        self.put_domain(state_key::anchor_by_height(&height), nct_anchor)
             .await;
         // and as a key, so we can query for it.
         self.put_proto(
-            state_key::nct_anchor_valid(&nct_anchor),
+            state_key::anchor_lookup(&nct_anchor),
             // We don't use the value for validity checks, but writing the height
             // here lets us find out what height the anchor was for.
             height,
@@ -534,7 +534,7 @@ pub trait View: StateExt {
     /// Checks whether a claimed NCT anchor is a previous valid state root.
     async fn check_claimed_anchor(&self, anchor: &tct::Root) -> Result<()> {
         if let Some(anchor_height) = self
-            .get_proto::<u64>(state_key::claimed_anchor(&anchor))
+            .get_proto::<u64>(state_key::anchor_lookup(&anchor))
             .await?
         {
             tracing::debug!(?anchor, ?anchor_height, "anchor is valid");
@@ -551,7 +551,7 @@ pub trait View: StateExt {
     async fn spend_nullifier(&self, nullifier: Nullifier, source: NoteSource) {
         tracing::debug!("marking as spent");
         self.put_proto(
-            state_key::spend_nullifier(&nullifier),
+            state_key::spent_nullifier_lookup(&nullifier),
             // We don't use the value for validity checks, but writing the source
             // here lets us find out what transaction spent the nullifier.
             // TODO: NoteSource proto?
@@ -563,7 +563,7 @@ pub trait View: StateExt {
     #[instrument(skip(self))]
     async fn check_nullifier_unspent(&self, nullifier: Nullifier) -> Result<()> {
         if let Some(source_bytes) = self
-            .get_proto::<Vec<u8>>(state_key::spend_nullifier(&nullifier))
+            .get_proto::<Vec<u8>>(state_key::spent_nullifier_lookup(&nullifier))
             .await?
         {
             // TODO: NoteSource proto?
