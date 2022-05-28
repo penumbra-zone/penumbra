@@ -4,9 +4,9 @@ use decaf377::{FieldExt, Fq};
 use hash_hasher::HashedMap;
 use penumbra_proto::{crypto as pb, Protobuf};
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
 
 use crate::{prelude::*, Witness};
+use crate::error::block::*;
 
 /// A sparse merkle tree to witness up to 65,536 individual [`Commitment`]s.
 ///
@@ -72,11 +72,6 @@ impl From<Root> for Fq {
     }
 }
 
-/// An error occurred when decoding a block root from bytes.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
-#[error("could not decode block root")]
-pub struct RootDecodeError;
-
 impl TryFrom<pb::MerkleRoot> for Root {
     type Error = RootDecodeError;
 
@@ -102,12 +97,6 @@ impl Display for Root {
         write!(f, "{}", hex::encode(&Fq::from(self.0).to_bytes()))
     }
 }
-
-/// When inserting into a block, this error is returned when it is full.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
-#[error("block is full")]
-#[non_exhaustive]
-pub struct InsertError;
 
 impl Builder {
     /// Create a new empty [`block::Builder`](Builder).

@@ -108,7 +108,7 @@ impl From<Proof> for pb::NoteCommitmentProof {
 }
 
 impl TryFrom<pb::NoteCommitmentProof> for Proof {
-    type Error = crate::error::ProofDecodeError;
+    type Error = crate::error::proof::DecodeError;
 
     fn try_from(value: pb::NoteCommitmentProof) -> Result<Self, Self::Error> {
         Ok(Proof(crate::internal::proof::Proof::try_from(value)?))

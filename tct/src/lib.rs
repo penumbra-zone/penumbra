@@ -78,7 +78,7 @@ pub mod builder {
 // A crate-internal prelude to make things easier to import
 mod prelude {
     pub(crate) use super::{
-        error::VerifyError,
+        error::proof::VerifyError,
         index,
         internal::{
             any::{Any, Child, Kind, Place},
