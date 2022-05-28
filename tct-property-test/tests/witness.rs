@@ -13,13 +13,13 @@ const MAX_TIER_ACTIONS: usize = 10;
 #[derive(Debug, Copy, Clone, Arbitrary)]
 #[proptest(params("Vec<Commitment>"))]
 enum Action {
-    Insert(
-        Witness,
-        #[proptest(strategy = "CommitmentStrategy::one_of(params.clone())")] Commitment,
-    ),
     EndBlock,
     EndEpoch,
-    Forget(#[proptest(strategy = "CommitmentStrategy::one_of(params)")] Commitment),
+    Forget(#[proptest(strategy = "CommitmentStrategy::one_of(params.clone())")] Commitment),
+    Insert(
+        Witness,
+        #[proptest(strategy = "CommitmentStrategy::one_of(params)")] Commitment,
+    ),
 }
 
 impl Action {
