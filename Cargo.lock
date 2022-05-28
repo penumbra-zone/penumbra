@@ -3011,6 +3011,7 @@ dependencies = [
  "sqlx",
  "structopt",
  "tokio",
+ "tokio-stream",
  "tonic 0.6.2",
  "tracing",
  "tracing-subscriber 0.2.25",
@@ -4611,6 +4612,7 @@ dependencies = [
  "futures-core",
  "pin-project-lite",
  "tokio",
+ "tokio-util 0.6.10",
 ]
 
 [[package]]

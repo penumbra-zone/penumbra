@@ -22,6 +22,7 @@ penumbra-transaction = { path = "../transaction" }
 
 sqlx = { version = "0.5", features = [ "runtime-tokio-rustls", "offline", "sqlite" ] }
 tokio = { version = "1.16", features = ["full"]}
+tokio-stream = { version =  "0.1.8", features = ["sync"] }
 anyhow = "1"
 directories = "4.0.1"
 rand_core = { version = "0.6.3", features = ["getrandom"] }
