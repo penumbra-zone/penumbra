@@ -87,7 +87,7 @@ mod prelude {
             hash::GetHash,
             hash::{CachedHash, Hash, OptionHash},
             height::{Height, IsHeight, Succ, Zero},
-            interface::Witness,
+            interface::{Version, Versioned, Witness},
             path::{self, AuthPath, Path, WhichWay},
             three::{Elems, ElemsMut, IntoElems, Three},
         },

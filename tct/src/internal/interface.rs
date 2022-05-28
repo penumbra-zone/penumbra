@@ -1,7 +1,7 @@
-//! This module contains trait definitions for the entire interface of the internal tree. All of
-//! them are exported from either [`frontier`](crate::internal::frontier) or
-//! [`complete`](crate::internal::complete), but they are also exported from here for ease of
-//! reading.
+//! This module contains trait definitions for the entire interface of the internal tree.
+//!
+//! Most of these are also re-exported from either [`frontier`](crate::internal::frontier) or
+//! [`complete`](crate::internal::complete).
 
 use crate::prelude::*;
 
@@ -17,11 +17,11 @@ pub trait Frontier: Focus + Sized {
     /// Insert a new [`Hash`](struct@Hash) or `Self::Item` into this [`Frontier`], returning either
     /// `Self` with the thing inserted, or the un-inserted thing and the [`Complete`] of this
     /// [`Frontier`].
-    fn insert_owned(self, item: Self::Item) -> Result<Self, Full<Self>>;
+    fn insert_owned(self, version: Version, item: Self::Item) -> Result<Self, Full<Self>>;
 
     /// Update the currently focused `Insert<Self::Item>` (i.e. the most-recently
     /// [`insert`](Frontier::insert_owned) one), returning the result of the function.
-    fn update<T>(&mut self, f: impl FnOnce(&mut Self::Item) -> T) -> Option<T>;
+    fn update<T>(&mut self, version: Version, f: impl FnOnce(&mut Self::Item) -> T) -> Option<T>;
 
     /// Get a reference to the focused `Insert<Self::Item>` (i.e. the most-recently
     /// [`insert`](Frontier::insert_owned) one).
@@ -85,7 +85,7 @@ pub trait Forget: Height {
     /// Remove the witness for the given index.
     ///
     /// Returns `true` if the witness was previously present in the tree.
-    fn forget(&mut self, index: impl Into<u64>) -> bool;
+    fn forget(&mut self, version: Version, index: impl Into<u64>) -> bool;
 }
 
 /// Forget about the authentication path to a given index, when forgetting can turn the entirety of
@@ -97,5 +97,38 @@ pub trait ForgetOwned: Height + Sized {
     /// Returns either `(Self, boool)` where the boolean is `true` if the witness was removed or
     /// `false` if the witness was not present, or `Hash` if the witness was removed and it was the
     /// last witness remaining in this tree.
-    fn forget_owned(self, index: impl Into<u64>) -> (Insert<Self>, bool);
+    fn forget_owned(self, version: Version, index: impl Into<u64>) -> (Insert<Self>, bool);
+}
+
+/// Every piece of the tree is versioned, and every operation on the tree increments the version of
+/// all parts of the tree which it changes.
+pub trait Versioned {
+    /// The version of this thing.
+    fn version(&self) -> Version;
+
+    /// Set the version of this and all its children to a new version.
+    ///
+    /// # Panics
+    ///
+    /// If the version specified is less than the current version.
+    fn set_version(&mut self, version: Version);
+}
+
+/// The version of something within the tree.
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize,
+)]
+pub struct Version(u64);
+
+impl From<Version> for u64 {
+    fn from(version: Version) -> Self {
+        version.0
+    }
+}
+
+impl Version {
+    /// Return the next version after this one.
+    pub fn next(self) -> Self {
+        Version(self.0.checked_add(1).expect("version overflow"))
+    }
 }
