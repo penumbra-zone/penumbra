@@ -2,7 +2,7 @@ use anyhow::Context;
 use penumbra_crypto::{
     fmd,
     keys::{
-        FullViewingKey, IncomingViewingKey, OutgoingViewingKey, SeedPhrase, SpendKey, SpendSeed,
+        FullViewingKey, IncomingViewingKey, OutgoingViewingKey, SeedPhrase, SpendKey, SpendKeyBytes,
     },
     Address, Note,
 };
@@ -25,8 +25,7 @@ impl Wallet {
     pub fn from_seed_phrase(seed_phrase: SeedPhrase) -> Self {
         // Currently we support a single spend authority per wallet. In the future,
         // we can derive multiple spend seeds from a single seed phrase.
-        let spend_seed = SpendSeed::from_seed_phrase(seed_phrase, 0);
-        let spend_key = SpendKey::new(spend_seed);
+        let spend_key = SpendKey::from_seed_phrase(seed_phrase, 0);
 
         Self {
             spend_key,
@@ -35,7 +34,7 @@ impl Wallet {
     }
 
     /// Imports a wallet from a legacy [`SpendSeed`].
-    pub fn import(spend_seed: SpendSeed) -> Self {
+    pub fn import(spend_seed: SpendKeyBytes) -> Self {
         let spend_key = spend_seed.into();
         Self {
             spend_key,
@@ -111,7 +110,7 @@ impl Wallet {
 }
 
 mod serde_helpers {
-    use penumbra_crypto::keys::SpendSeed;
+    use penumbra_crypto::keys::SpendKeyBytes;
     use serde_with::serde_as;
 
     use super::*;
@@ -128,7 +127,7 @@ mod serde_helpers {
         fn from(w: WalletHelper) -> Self {
             Self {
                 address_labels: w.address_labels,
-                spend_key: SpendKey::from(SpendSeed(w.spend_seed)),
+                spend_key: SpendKey::from(SpendKeyBytes(w.spend_seed)),
             }
         }
     }
@@ -137,7 +136,7 @@ mod serde_helpers {
         fn from(w: Wallet) -> Self {
             Self {
                 address_labels: w.address_labels,
-                spend_seed: w.spend_key.seed().clone().0,
+                spend_seed: w.spend_key.to_bytes().clone().0,
             }
         }
     }

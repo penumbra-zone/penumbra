@@ -234,7 +234,7 @@ impl Undelegate {
 #[cfg(test)]
 mod tests {
     use penumbra_crypto::{
-        keys::{SeedPhrase, SpendKey, SpendSeed},
+        keys::{SeedPhrase, SpendKey},
         memo::MemoPlaintext,
         Note, Value, STAKING_TOKEN_ASSET_ID,
     };
@@ -255,8 +255,7 @@ mod tests {
     fn plan_auth_hash_matches_transaction_auth_hash() {
         let mut rng = OsRng;
         let seed_phrase = SeedPhrase::generate(&mut rng);
-        let spend_seed = SpendSeed::from_seed_phrase(seed_phrase, 0);
-        let sk = SpendKey::new(spend_seed);
+        let sk = SpendKey::from_seed_phrase(seed_phrase, 0);
         let fvk = sk.full_viewing_key();
         let (addr, _dtk) = fvk.incoming().payment_address(0u64.into());
 

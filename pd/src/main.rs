@@ -13,7 +13,7 @@ use anyhow::Context;
 use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusRecorder};
 use penumbra_chain::{genesis::Allocation, params::ChainParams};
 use penumbra_crypto::{
-    keys::{SpendKey, SpendSeed},
+    keys::{SpendKey, SpendKeyBytes},
     rdsa::{SigningKey, SpendAuth, VerificationKey},
     DelegationToken,
 };
@@ -321,7 +321,7 @@ async fn main() -> anyhow::Result<()> {
                 pub node_key_sk: tendermint::PrivateKey,
                 #[allow(unused_variables, dead_code)]
                 pub node_key_pk: tendermint::PublicKey,
-                pub validator_spendseed: SpendSeed,
+                pub validator_spendseed: SpendKeyBytes,
             }
             let mut validator_keys = Vec::<ValidatorKeys>::new();
             // Generate a keypair for each validator
@@ -332,7 +332,7 @@ async fn main() -> anyhow::Result<()> {
             );
             for _ in 0..num_validator_nodes {
                 // Create the spend key for this node.
-                let seed = SpendSeed(OsRng.gen());
+                let seed = SpendKeyBytes(OsRng.gen());
                 let spend_key = SpendKey::from(seed.clone());
 
                 // Create signing key and verification key for this node.

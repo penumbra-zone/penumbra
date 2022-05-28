@@ -142,8 +142,30 @@ pub mod asset_id {
 pub mod full_viewing_key {
     use super::*;
 
-    /// The Bech32 prefix used for asset IDs.
+    /// The Bech32 prefix used for full viewing keys.
     pub const BECH32_PREFIX: &str = "penumbrafullviewingkey";
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserialize_bech32(deserializer, BECH32_PREFIX, Variant::Bech32m)
+    }
+
+    pub fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+        T: AsRef<[u8]>,
+    {
+        serialize_bech32(value, serializer, BECH32_PREFIX, Variant::Bech32m)
+    }
+}
+
+pub mod spend_key {
+    use super::*;
+
+    /// The Bech32 prefix used for spend keys.
+    pub const BECH32_PREFIX: &str = "penumbraspendkey";
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
     where

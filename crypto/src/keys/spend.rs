@@ -2,6 +2,7 @@ use std::convert::TryFrom;
 
 use hmac::Hmac;
 use pbkdf2::pbkdf2;
+use penumbra_proto::{crypto as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
 use super::{
@@ -13,14 +14,63 @@ use crate::{
     rdsa::{SigningKey, SpendAuth},
 };
 
-pub const SPENDSEED_LEN_BYTES: usize = 32;
+pub const SPENDKEY_LEN_BYTES: usize = 32;
 
-/// The root key material for a [`SpendKey`].
+/// A refinement type for a `[u8; 32]` indicating that it stores the
+/// bytes of a spend key.
+///
+/// TODO(hdevalence): In the future, we should hide the SpendKeyBytes
+/// and force everything to use the proto format / bech32 serialization.
+/// But we can't do this now, because we need it to support existing wallets.
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct SpendSeed(pub [u8; SPENDSEED_LEN_BYTES]);
+pub struct SpendKeyBytes(pub [u8; SPENDKEY_LEN_BYTES]);
 
-impl SpendSeed {
-    /// Deterministically generate a [`SpendSeed`] from a [`SeedPhrase`].
+/// A key representing a single spending authority.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(try_from = "pb::SpendKey", into = "pb::SpendKey")]
+pub struct SpendKey {
+    seed: SpendKeyBytes,
+    ask: SigningKey<SpendAuth>,
+    fvk: FullViewingKey,
+}
+
+impl Protobuf<pb::SpendKey> for SpendKey {}
+
+impl TryFrom<pb::SpendKey> for SpendKey {
+    type Error = anyhow::Error;
+
+    fn try_from(msg: pb::SpendKey) -> Result<Self, Self::Error> {
+        Ok(SpendKeyBytes::try_from(msg.inner.as_slice())?.into())
+    }
+}
+
+impl From<SpendKey> for pb::SpendKey {
+    fn from(msg: SpendKey) -> Self {
+        Self {
+            inner: msg.to_bytes().0.to_vec(),
+        }
+    }
+}
+
+impl From<SpendKeyBytes> for SpendKey {
+    fn from(seed: SpendKeyBytes) -> Self {
+        let ask = SigningKey::new_from_field(prf::expand_ff(b"Penumbra_ExpndSd", &seed.0, &[0; 1]));
+        let nk = NullifierKey(prf::expand_ff(b"Penumbra_ExpndSd", &seed.0, &[1; 1]));
+        let fvk = FullViewingKey::from_components(ask.into(), nk);
+
+        Self { seed, ask, fvk }
+    }
+}
+
+impl SpendKey {
+    /// Get the [`SpendKeyBytes`] this [`SpendKey`] was derived from.
+    ///
+    /// This is useful for serialization.
+    pub fn to_bytes(&self) -> SpendKeyBytes {
+        self.seed.clone()
+    }
+
+    /// Deterministically generate a [`SpendKey`] from a [`SeedPhrase`].
     ///
     /// The choice of KDF (PBKDF2), iteration count, and PRF (HMAC-SHA512) are specified
     /// in [`BIP39`]. The salt is specified in BIP39 as the string "mnemonic" plus an optional
@@ -38,39 +88,7 @@ impl SpendSeed {
             NUM_PBKDF2_ROUNDS,
             &mut spend_seed_bytes,
         );
-        SpendSeed(spend_seed_bytes)
-    }
-}
-
-/// A key representing a single spending authority.
-#[derive(Debug, Clone)]
-pub struct SpendKey {
-    seed: SpendSeed,
-    ask: SigningKey<SpendAuth>,
-    fvk: FullViewingKey,
-}
-
-impl From<SpendSeed> for SpendKey {
-    fn from(seed: SpendSeed) -> Self {
-        let ask = SigningKey::new_from_field(prf::expand_ff(b"Penumbra_ExpndSd", &seed.0, &[0; 1]));
-        let nk = NullifierKey(prf::expand_ff(b"Penumbra_ExpndSd", &seed.0, &[1; 1]));
-        let fvk = FullViewingKey::from_components(ask.into(), nk);
-
-        Self { seed, ask, fvk }
-    }
-}
-
-impl SpendKey {
-    /// Create a [`SpendKey`] from a [`SpendSeed`].
-    pub fn new(seed: SpendSeed) -> Self {
-        Self::from(seed)
-    }
-
-    /// Get the [`SpendSeed`] this [`SpendKey`] was derived from.
-    ///
-    /// This is useful for serialization.
-    pub fn seed(&self) -> &SpendSeed {
-        &self.seed
+        SpendKeyBytes(spend_seed_bytes).into()
     }
 
     // XXX how many of these do we need? leave them for now
@@ -97,18 +115,42 @@ impl SpendKey {
     }
 }
 
-impl TryFrom<&[u8]> for SpendSeed {
+impl TryFrom<&[u8]> for SpendKeyBytes {
     type Error = anyhow::Error;
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        if slice.len() != SPENDSEED_LEN_BYTES {
+        if slice.len() != SPENDKEY_LEN_BYTES {
             return Err(anyhow::anyhow!(
                 "spendseed must be 32 bytes, got {:?}",
                 slice.len()
             ));
         }
 
-        let mut bytes = [0u8; SPENDSEED_LEN_BYTES];
+        let mut bytes = [0u8; SPENDKEY_LEN_BYTES];
         bytes.copy_from_slice(&slice[0..32]);
-        Ok(SpendSeed(bytes))
+        Ok(SpendKeyBytes(bytes))
+    }
+}
+
+impl std::fmt::Display for SpendKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        use penumbra_proto::serializers::bech32str;
+        let proto = pb::SpendKey::from(self.clone());
+        f.write_str(&bech32str::encode(
+            &proto.inner,
+            bech32str::spend_key::BECH32_PREFIX,
+            bech32str::Bech32m,
+        ))
+    }
+}
+
+impl std::str::FromStr for SpendKey {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        use penumbra_proto::serializers::bech32str;
+        pb::SpendKey {
+            inner: bech32str::decode(s, bech32str::spend_key::BECH32_PREFIX, bech32str::Bech32m)?,
+        }
+        .try_into()
     }
 }

@@ -2,7 +2,7 @@ use std::{fs::File, io::BufReader, path::PathBuf, str::FromStr};
 
 use anyhow::{anyhow, Context as _, Result};
 use directories::ProjectDirs;
-use penumbra_crypto::keys::{SeedPhrase, SpendSeed};
+use penumbra_crypto::keys::{SeedPhrase, SpendKeyBytes};
 use penumbra_wallet::{ClientState, Wallet};
 use rand_core::OsRng;
 use serde::Deserialize;
@@ -68,7 +68,7 @@ impl WalletCmd {
             }
             WalletCmd::Import { spend_seed } => {
                 let seed = hex::decode(spend_seed)?;
-                let seed = SpendSeed::try_from(seed.as_slice())?;
+                let seed = SpendKeyBytes::try_from(seed.as_slice())?;
                 Some(ClientState::new(Wallet::import(seed)))
             }
             WalletCmd::ImportFromPhrase { seed_phrase } => Some(ClientState::new(
@@ -77,7 +77,7 @@ impl WalletCmd {
             // The rest of these commands don't require a wallet state to be saved to disk:
             WalletCmd::Export => {
                 let state = ClientStateFile::load(wallet_path.clone())?;
-                let seed = state.wallet().spend_key().seed().clone();
+                let seed = state.wallet().spend_key().to_bytes().clone();
                 println!("{}", hex::encode(&seed.0));
                 None
             }
@@ -163,7 +163,7 @@ impl WalletCmd {
                 .expect("can access penumbra-testnet-archive dir");
 
             // Create the directory <data dir>/penumbra-testnet-archive/<chain id>/<spend key hash prefix>/
-            let spend_key_hash = Sha256::digest(&state.wallet().spend_key().seed().0);
+            let spend_key_hash = Sha256::digest(&state.wallet().spend_key().to_bytes().0);
             let wallet_archive_dir = archive_dir
                 .data_dir()
                 // TODO the chain ID should be synced from the server if
