@@ -1,5 +1,7 @@
 //! A dynamic representation of nodes within the tree structure, for writing homogeneous traversals.
 
+use std::fmt::Display;
+
 use crate::prelude::*;
 
 /// Every kind of node in the tree implements [`Any`], and its methods collectively describe every
@@ -26,19 +28,52 @@ pub trait Any: GetHash {
     fn children(&self) -> Vec<Insert<Child>>;
 }
 
+/// The kind of a node.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum Kind {
+    /// An item node at the bottom of the tree.
+    Item,
+    /// A leaf node at the bottom of some tier.
+    Leaf,
+    /// An internal node within some tier.
+    Node,
+    /// The root of a tier node.
+    Tier,
+    /// The top of a tree.
+    Top,
+}
+
+impl Display for Kind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Kind::Item => write!(f, "Item"),
+            Kind::Leaf => write!(f, "Leaf"),
+            Kind::Node => write!(f, "Node"),
+            Kind::Tier => write!(f, "Tier"),
+            Kind::Top => write!(f, "Top"),
+        }
+    }
+}
+
+/// The place a node is located in a tree: whether it is on the frontier or is completed.
+///
+/// This is redundant with the pair of (height, index) if the total size of the tree is known, but
+/// it is useful to reveal it directly.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Place {
+    /// The node is not on the frontier.
     Complete,
+    /// The node is on the frontier.
     Frontier,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Kind {
-    Item,
-    Leaf,
-    Node,
-    Tier,
-    Top,
+impl Display for Place {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Place::Frontier => write!(f, "frontier"),
+            Place::Complete => write!(f, "complete"),
+        }
+    }
 }
 
 /// A child of an [`Any`]: this implements [`Any`] and supertraits, so can and should be treated
@@ -91,11 +126,52 @@ impl Any for Child<'_> {
             .into_iter()
             .enumerate()
             .map(|(nth, child)| {
-                child.map(|child| Child {
-                    inner: child.inner,
-                    offset: self.offset * 4 + child.offset + nth as u64,
+                child.map(|child| {
+                    debug_assert_eq!(
+                        child.offset, 0,
+                        "explicitly constructed children should have zero offset"
+                    );
+                    // If the height doesn't change, we shouldn't be applying a multiplier to the
+                    // parent offset:
+                    let multiplier = 4u64.pow((self.height() - child.height()).into());
+                    Child {
+                        inner: child.inner,
+                        offset: self.offset * multiplier + nth as u64,
+                    }
                 })
             })
             .collect()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn indexing_correct_for_leaves() {
+        const MAX_SIZE_TO_TEST: u16 = 100;
+
+        let mut top: frontier::Top<Item> = frontier::Top::new();
+        for i in 0..=MAX_SIZE_TO_TEST {
+            top.insert(Commitment(i.into()).into()).unwrap();
+        }
+
+        fn check_leaves(index: &mut u64, node: &dyn Any) {
+            if node.kind() == Kind::Item {
+                assert_eq!(node.index(), *index);
+                *index += 1;
+            } else {
+                for child in node
+                    .children()
+                    .iter()
+                    .filter_map(|child| child.as_ref().keep())
+                {
+                    check_leaves(index, child);
+                }
+            }
+        }
+
+        check_leaves(&mut 0, &top);
     }
 }
