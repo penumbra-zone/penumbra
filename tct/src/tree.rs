@@ -552,55 +552,16 @@ impl Tree {
     /// If this ever returns `Err`, it indicates either a bug in this crate, or a tree that was
     /// deserialized from an untrustworthy source.
     pub fn verify_index(&self) -> Result<(), IndexMalformed> {
-        use visit::{traversal::PostOrder, Any, AnyVisitor, Kind};
-
-        // Build a reverse index mapping known indices to their commitments
         let reverse_index: HashMap<index::within::Tree, Commitment> = self
             .index
             .iter()
             .map(|(commitment, position)| (*position, *commitment))
             .collect();
 
-        // Collect all discovered errors
         let mut errors = vec![];
 
-        // Traverse the tree structure
-        self.inner.traverse(
-            // In post-order, skipping all non-terminal nodes
-            &mut PostOrder {
-                child_filter: |_: &Any| true,
-                parent_filter: |node: &Any| node.kind == Kind::Item,
-            },
-            // Extracting the pair `(position, hash)` from each terminal node
-            &mut AnyVisitor(|any: Any| {
-                (
-                    index::within::Tree::from(any.index),
-                    any.hash.expect("bottom-level leaves always have hashes"),
-                )
-            }),
-            // And for each such pair, checking it against the reverse index for errors
-            &mut |(index, found_hash)| {
-                if let Some(&commitment) = reverse_index.get(&index) {
-                    let expected_hash = Hash::of(commitment);
+        todo!("collect leaves");
 
-                    if expected_hash != found_hash {
-                        errors.push(IndexError::HashMismatch {
-                            position: Position(index),
-                            commitment,
-                            found_hash,
-                            expected_hash,
-                        });
-                    }
-                } else {
-                    errors.push(IndexError::UnindexedWitness {
-                        position: Position(index),
-                        found_hash,
-                    })
-                }
-            },
-        );
-
-        // Check to see if we found any errors
         if errors.is_empty() {
             Ok(())
         } else {
