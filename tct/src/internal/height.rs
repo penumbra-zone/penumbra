@@ -18,7 +18,7 @@ pub trait Height {
     type Height: Path;
 }
 
-/// The constant `u64` associated with each unary height.
+/// The constant `u8` associated with each unary height.
 pub trait IsHeight: sealed::IsHeight {
     /// The number for this height.
     const HEIGHT: u8;
@@ -35,7 +35,11 @@ impl IsHeight for Zero {
 pub struct Succ<N>(N);
 
 impl<N: IsHeight> IsHeight for Succ<N> {
-    const HEIGHT: u8 = N::HEIGHT + 1;
+    const HEIGHT: u8 = if let Some(n) = N::HEIGHT.checked_add(1) {
+        n
+    } else {
+        panic!("height overflow: can't construct something of height > u8::MAX")
+    };
 }
 
 /// Seal the `IsHeight` trait so that only `Succ` and `Zero` can inhabit it.
