@@ -1,5 +1,5 @@
 use anyhow::Result;
-use penumbra_crypto::keys::{SeedPhrase, SpendKey, SpendSeed};
+use penumbra_crypto::keys::{SeedPhrase, SpendKey};
 use penumbra_custody::SoftHSM;
 use penumbra_proto::{
     client::oblivious::oblivious_query_client::ObliviousQueryClient,
@@ -18,7 +18,7 @@ use rand_core::OsRng;
 async fn main() -> Result<()> {
     // stub code to check that generics are well-formed in wallet-next
 
-    let sk = SpendKey::new(SpendSeed::from_seed_phrase(SeedPhrase::generate(OsRng), 0));
+    let sk = SpendKey::from_seed_phrase(SeedPhrase::generate(OsRng), 0);
     let fvk = sk.full_viewing_key().clone();
 
     let oq_client =
