@@ -102,9 +102,12 @@ pub trait ForgetOwned: Height + Sized {
 
 /// Every piece of the tree is versioned, and every operation on the tree increments the version of
 /// all parts of the tree which it changes.
-pub trait Versioned {
+pub trait Versioned: GetHash {
     /// The version of this thing.
     fn version(&self) -> Version;
+
+    /// The version at which the cached hash was computed.
+    fn hash_version(&self) -> Option<Version>;
 
     /// Set the version of this and all its children to a new version.
     ///
