@@ -78,6 +78,32 @@ pub trait Reconstruct: Sized {
     fn reconstruct<R: Read>(reader: &R, version: Version, index: u64) -> Result<Self, R::Error>;
 }
 
+/*
+    Table schema (all columns non-optional except as noted):
+
+    /---- composite primary key ------\
+    | version | height | kind | index | finalized | hash          | marked |
+    +---------+--------+------+-------+-----------+---------------+--------+
+    | u64     | u8     | text | u64   | bool      | optional blob | u64    |
+
+    /---- composite primary key --------------\/--- exactly one is non-null --\
+    /---- foreign keys ---------------\       |                               |
+    | version | height | kind | index | child | child_version | child_hash    |
+    +---------+--------+------+-------+-------+---------------+---------------+
+    | u64     | u8     | text | u64   | u8    | optional u64  | optional blob |
+
+    Other constraints:
+
+    - kind is one of 'item', 'leaf', 'node', 'tier', or 'top'
+    - height <= 24
+    - if kind is 'item', height is 0
+    - if kind is 'leaf', height is 0, 8, or 16
+    - if kind is 'node', height is > 0
+    - if kind is 'tier', height is 8, 16, or 24
+    - if kind is 'top', height is 24
+    - index < 4^(24 - height)
+*/
+
 // TODO: async
 pub trait Read {
     type Error;
