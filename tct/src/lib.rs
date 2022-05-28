@@ -81,6 +81,7 @@ mod prelude {
         error::VerifyError,
         index,
         internal::{
+            any::{Any, Child, Kind, Place},
             complete::{self, Complete, ForgetOwned},
             frontier::{self, Focus, Forget, Frontier, Full, GetPosition, Insert, Item},
             hash::GetHash,
@@ -89,7 +90,6 @@ mod prelude {
             interface::Witness,
             path::{self, AuthPath, Path, WhichWay},
             three::{Elems, ElemsMut, IntoElems, Three},
-            visit::{self, Traversal, Traverse, Visit, Visitor},
         },
         Commitment, Position, Proof, Root, Tree,
     };

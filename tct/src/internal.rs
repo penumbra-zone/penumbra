@@ -66,15 +66,17 @@
 //! tree, and the [`ForgetOwned`](complete::ForgetOwned) trait, which defines an equivalent to
 //! [`frontier::Forget`] that is applicable to the by-value usage pattern of complete trees.
 
+pub mod any;
 pub mod hash;
 pub mod height;
+pub mod interface;
 pub mod path;
 pub mod proof;
 pub mod three;
 
 mod insert;
-pub mod interface;
-pub mod visit;
+
+pub use any::{Any, Child, Kind, Place};
 
 pub mod frontier {
     //! [`Frontier`] things can be inserted into and updated, always representing the rightmost

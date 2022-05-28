@@ -58,19 +58,20 @@ impl<Item: Complete> From<frontier::Tier<Item::Focus>> for Insert<Tier<Item>> {
     }
 }
 
-impl<Item: Height + GetHash> Visit for Tier<Item> {
-    fn visit_indexed<V: Visitor>(&self, index: u64, visitor: &mut V) -> V::Output {
-        visitor.complete_tier(index, self)
+impl<Item: Height + Any> Any for Tier<Item> {
+    fn place(&self) -> Place {
+        Place::Complete
     }
-}
 
-impl<Item: Height + GetHash + Traverse> Traverse for Tier<Item> {
-    fn traverse<T: Traversal, V: Visitor>(
-        &self,
-        traversal: &mut T,
-        visitor: &mut V,
-        output: &mut impl FnMut(V::Output),
-    ) {
-        traversal.traverse_complete(visitor, output, self, [&self.inner]);
+    fn kind(&self) -> Kind {
+        Kind::Tier
+    }
+
+    fn height(&self) -> u8 {
+        <Self as Height>::Height::HEIGHT
+    }
+
+    fn children(&self) -> Vec<Insert<Child>> {
+        vec![Insert::Keep(Child::new(&self.inner))]
     }
 }
