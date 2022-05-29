@@ -2,10 +2,8 @@ use anyhow::anyhow;
 use penumbra_chain::params::ChainParams;
 use penumbra_crypto::{
     asset::{self, Id},
-    ka::Public,
-    keys::{Diversifier, DiversifierIndex},
     note::Commitment,
-    Asset, FieldExt, Fq, FullViewingKey, Note, Nullifier, Value,
+    Asset, FieldExt, FullViewingKey,
 };
 use penumbra_proto::{
     client::oblivious::{oblivious_query_client::ObliviousQueryClient, ChainParamsRequest},
@@ -220,15 +218,16 @@ impl Storage {
             None => "diversifier_index".to_string(),
         };
 
-        let result = sqlx::query!(
-            "SELECT *
+        let result = sqlx::query_as::<_, NoteRecord>(
+            format!(
+                "SELECT *
             FROM notes
-            WHERE height_spent = ?
-            AND asset_id = ?
-            AND diversifier_index = ?",
-            spent_clause,
-            asset_clause,
-            diversifier_clause
+            WHERE height_spent IS {}
+            AND asset_id IS {}
+            AND diversifier_index IS {}",
+                spent_clause, asset_clause, diversifier_clause
+            )
+            .as_str(),
         )
         .fetch_all(&self.pool)
         .await?;
@@ -243,34 +242,14 @@ impl Storage {
 
         let mut output: Vec<NoteRecord> = Vec::new();
 
-        for record in result {
-            let diversifier = Diversifier::try_from(&record.diversifier[..])?;
-            let transmission_key = Public(record.transmission_key[..].try_into()?);
-            let value = Value {
-                amount: record.amount as u64,
-                asset_id: asset::Id(Fq::from_bytes(record.asset_id[..].try_into()?)?),
-            };
-            let note_blinding = Fq::from_bytes(record.blinding_factor[..].try_into()?)?;
-
-            output.push(NoteRecord {
-                note_commitment: Commitment::try_from(&record.note_commitment[..])?,
-                note: Note::from_parts(diversifier, transmission_key, value, note_blinding)?,
-                diversifier_index: DiversifierIndex(record.diversifier_index[..].try_into()?),
-                nullifier: Nullifier::try_from(record.nullifier)?,
-                height_created: record.height_created as u64,
-                height_spent: if record.height_spent == None {
-                    None
-                } else {
-                    Some(record.height_spent.unwrap() as u64)
-                }, //height_spent is nullable
-                position: (record.position as u64).into(),
-            });
-
+        for record in result.into_iter() {
+            let amount = record.note.amount();
+            output.push(record);
             // If we're tracking amounts, accumulate the value of the note
             // and check if we should break out of the loop.
             if amount_cutoff {
                 // We know all the notes are of the same type, so adding raw quantities makes sense.
-                amount_total += record.amount as u64;
+                amount_total += amount;
                 if amount_total >= amount_to_spend {
                     break;
                 }

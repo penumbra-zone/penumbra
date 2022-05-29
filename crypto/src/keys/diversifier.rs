@@ -173,6 +173,23 @@ impl TryFrom<DiversifierIndex> for u64 {
     }
 }
 
+impl TryFrom<&[u8]> for DiversifierIndex {
+    type Error = anyhow::Error;
+
+    fn try_from(slice: &[u8]) -> Result<DiversifierIndex, Self::Error> {
+        if slice.len() != DIVERSIFIER_LEN_BYTES {
+            return Err(anyhow!(
+                "diversifier index must be 11 bytes, got {:?}",
+                slice.len()
+            ));
+        }
+
+        let mut bytes = [0u8; DIVERSIFIER_LEN_BYTES];
+        bytes.copy_from_slice(&slice[0..11]);
+        Ok(DiversifierIndex(bytes))
+    }
+}
+
 impl Protobuf<pb::DiversifierIndex> for DiversifierIndex {}
 
 impl From<DiversifierIndex> for pb::DiversifierIndex {
