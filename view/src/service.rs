@@ -146,26 +146,40 @@ impl ViewService {
             .json()
             .await?;
 
-        tracing::info!("{}", rsp);
+        tracing::debug!("{}", rsp);
 
-        let sync_info = rsp.get("sync_info").unwrap();
+        let sync_info = rsp
+            .get("result")
+            .and_then(|r| r.get("sync_info"))
+            .ok_or_else(|| anyhow::anyhow!("could not parse sync_info in JSON response"))?;
 
         let latest_block_height = sync_info
             .get("latest_block_height")
-            .and_then(|c| c.as_u64())
-            .ok_or_else(|| anyhow::anyhow!("could not parse JSON response"))?;
+            .and_then(|c| c.as_str())
+            .ok_or_else(|| anyhow::anyhow!("could not parse latest_block_height in JSON response"))?
+            .parse()?;
 
         let max_peer_block_height = sync_info
             .get("max_peer_block_height")
-            .and_then(|c| c.as_u64())
-            .ok_or_else(|| anyhow::anyhow!("could not parse JSON response"))?;
-
-        let latest_known_block_height = std::cmp::max(latest_block_height, max_peer_block_height);
+            .and_then(|c| c.as_str())
+            .ok_or_else(|| {
+                anyhow::anyhow!("could not parse max_peer_block_height in JSON response")
+            })?
+            .parse()?;
 
         let node_catching_up = sync_info
             .get("catching_up")
             .and_then(|c| c.as_bool())
-            .ok_or_else(|| anyhow::anyhow!("could not parse JSON response"))?;
+            .ok_or_else(|| anyhow::anyhow!("could not parse catching_up in JSON response"))?;
+
+        let latest_known_block_height = std::cmp::max(latest_block_height, max_peer_block_height);
+
+        tracing::debug!(
+            ?latest_block_height,
+            ?max_peer_block_height,
+            ?node_catching_up,
+            ?latest_known_block_height
+        );
 
         Ok((latest_known_block_height, node_catching_up))
     }
@@ -229,8 +243,11 @@ impl ViewProtocol for ViewService {
         self.check_fvk(request.get_ref().fvk_hash.as_ref()).await?;
 
         let (latest_known_block_height, _) =
-            self.latest_known_block_height().await.map_err(|_| {
-                tonic::Status::unknown("unable to fetch latest known block height from fullnode")
+            self.latest_known_block_height().await.map_err(|e| {
+                tonic::Status::unknown(format!(
+                    "unable to fetch latest known block height from fullnode: {}",
+                    e
+                ))
             })?;
 
         // Create a stream of sync height updates from our worker, and send them to the client
@@ -296,7 +313,7 @@ impl ViewProtocol for ViewService {
 
     async fn assets(
         &self,
-        request: tonic::Request<pb::AssetRequest>,
+        _request: tonic::Request<pb::AssetRequest>,
     ) -> Result<tonic::Response<Self::AssetsStream>, tonic::Status> {
         self.check_worker().await?;
 
