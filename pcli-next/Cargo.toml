@@ -21,6 +21,9 @@ penumbra-transaction = { path = "../transaction" }
 penumbra-wallet-next = { path = "../wallet-next" }
 penumbra-view = { path = "../view" }
 penumbra-custody = { path = "../custody" }
+# TODO: replace by a penumbra-app
+penumbra-component = { path = "../component" }
+pd = { path = "../pd" }
 
 # Penumbra dependencies
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
