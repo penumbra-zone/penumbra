@@ -4,11 +4,12 @@ use anyhow::Result;
 use futures::{Stream, StreamExt, TryStreamExt};
 use penumbra_chain::params::ChainParams;
 use penumbra_crypto::keys::FullViewingKeyHash;
-use penumbra_crypto::{asset, asset::Denom, keys::DiversifierIndex, Asset};
+use penumbra_crypto::{asset, keys::DiversifierIndex, Asset};
 use penumbra_proto::view as pb;
 use penumbra_proto::view::view_protocol_client::ViewProtocolClient;
 use penumbra_transaction::WitnessData;
 use tonic::async_trait;
+use tracing::instrument;
 
 use crate::{NoteRecord, StatusStreamResponse};
 
@@ -52,22 +53,64 @@ pub trait ViewClient: Sized {
     /// Queries for all known assets.
     async fn assets(&mut self) -> Result<asset::Cache>;
 
-    /// Return unspent notes, grouped by diversifier index and then by denomination.
-    async fn unspent_notes_by_address_and_denom(
+    /// Return unspent notes, grouped by diversifier index and then by asset id.
+    #[instrument(skip(self, fvk_hash))]
+    async fn unspent_notes_by_address_and_asset(
         &mut self,
         fvk_hash: FullViewingKeyHash,
-        cache: &asset::Cache,
-    ) -> Result<BTreeMap<DiversifierIndex, BTreeMap<Denom, Vec<NoteRecord>>>> {
-        todo!()
+    ) -> Result<BTreeMap<DiversifierIndex, BTreeMap<asset::Id, Vec<NoteRecord>>>> {
+        let notes = self
+            .notes(pb::NotesRequest {
+                fvk_hash: Some(fvk_hash.into()),
+                include_spent: false,
+                ..Default::default()
+            })
+            .await?;
+        tracing::debug!(?notes);
+
+        let mut notes_by_address_and_asset = BTreeMap::new();
+
+        for note_record in notes {
+            notes_by_address_and_asset
+                .entry(note_record.diversifier_index)
+                .or_insert_with(BTreeMap::new)
+                .entry(note_record.note.asset_id())
+                .or_insert_with(Vec::new)
+                .push(note_record);
+        }
+        tracing::debug!(?notes_by_address_and_asset);
+
+        Ok(notes_by_address_and_asset)
     }
 
     /// Return unspent notes, grouped by denom and then by diversifier index.
-    async fn unspent_notes_by_denom_and_address(
+    #[instrument(skip(self, fvk_hash))]
+    async fn unspent_notes_by_asset_and_address(
         &mut self,
         fvk_hash: FullViewingKeyHash,
-        cache: &asset::Cache,
-    ) -> Result<BTreeMap<Denom, BTreeMap<DiversifierIndex, Vec<NoteRecord>>>> {
-        todo!()
+    ) -> Result<BTreeMap<asset::Id, BTreeMap<DiversifierIndex, Vec<NoteRecord>>>> {
+        let notes = self
+            .notes(pb::NotesRequest {
+                fvk_hash: Some(fvk_hash.into()),
+                include_spent: false,
+                ..Default::default()
+            })
+            .await?;
+        tracing::debug!(?notes);
+
+        let mut notes_by_asset_and_address = BTreeMap::new();
+
+        for note_record in notes {
+            notes_by_asset_and_address
+                .entry(note_record.note.asset_id())
+                .or_insert_with(BTreeMap::new)
+                .entry(note_record.diversifier_index)
+                .or_insert_with(Vec::new)
+                .push(note_record);
+        }
+        tracing::debug!(?notes_by_asset_and_address);
+
+        Ok(notes_by_asset_and_address)
     }
 }
 

@@ -5,7 +5,6 @@ use comfy_table::{presets, Table};
 use futures::stream::TryStreamExt;
 use penumbra_crypto::{
     DelegationToken, FullViewingKey, IdentityKey, Value, STAKING_TOKEN_ASSET_ID,
-    STAKING_TOKEN_DENOM,
 };
 use penumbra_custody::CustodyClient;
 use penumbra_proto::client::oblivious::ValidatorInfoRequest;
@@ -187,9 +186,7 @@ impl StakeCmd {
                     .map(TryInto::try_into)
                     .collect::<Result<Vec<validator::Info>, _>>()?;
 
-                let notes = view
-                    .unspent_notes_by_denom_and_address(fvk.hash(), &asset_cache)
-                    .await?;
+                let notes = view.unspent_notes_by_asset_and_address(fvk.hash()).await?;
                 let mut total = 0;
 
                 let mut table = Table::new();
@@ -200,8 +197,11 @@ impl StakeCmd {
                     .unwrap()
                     .set_cell_alignment(comfy_table::CellAlignment::Right);
 
-                for (denom, notes_by_address) in notes.iter() {
-                    let dt = if let Ok(dt) = DelegationToken::try_from(denom.clone()) {
+                for (asset_id, notes_by_address) in notes.iter() {
+                    let dt = if let Some(Ok(dt)) = asset_cache
+                        .get(&asset_id)
+                        .map(|denom| DelegationToken::try_from(denom.clone()))
+                    {
                         dt
                     } else {
                         continue;
@@ -239,7 +239,7 @@ impl StakeCmd {
 
                 let unbonded = Value {
                     amount: notes
-                        .get(&*STAKING_TOKEN_DENOM)
+                        .get(&*STAKING_TOKEN_ASSET_ID)
                         .unwrap_or(&BTreeMap::default())
                         .values()
                         .flat_map(|notes| notes.iter().map(|n| n.note.amount()))
