@@ -104,7 +104,7 @@ impl DiversifierKey {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Derivative, Serialize, Deserialize)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Derivative, Serialize, Deserialize)]
 #[serde(try_from = "pb::DiversifierIndex", into = "pb::DiversifierIndex")]
 #[derivative(Debug)]
 pub struct DiversifierIndex(
