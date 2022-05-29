@@ -66,7 +66,7 @@ pub trait ViewClient: Sized {
                 ..Default::default()
             })
             .await?;
-        tracing::debug!(?notes);
+        tracing::trace!(?notes);
 
         let mut notes_by_address_and_asset = BTreeMap::new();
 
@@ -78,7 +78,7 @@ pub trait ViewClient: Sized {
                 .or_insert_with(Vec::new)
                 .push(note_record);
         }
-        tracing::debug!(?notes_by_address_and_asset);
+        tracing::trace!(?notes_by_address_and_asset);
 
         Ok(notes_by_address_and_asset)
     }
@@ -96,7 +96,7 @@ pub trait ViewClient: Sized {
                 ..Default::default()
             })
             .await?;
-        tracing::debug!(?notes);
+        tracing::trace!(?notes);
 
         let mut notes_by_asset_and_address = BTreeMap::new();
 
@@ -108,7 +108,7 @@ pub trait ViewClient: Sized {
                 .or_insert_with(Vec::new)
                 .push(note_record);
         }
-        tracing::debug!(?notes_by_asset_and_address);
+        tracing::trace!(?notes_by_asset_and_address);
 
         Ok(notes_by_asset_and_address)
     }
