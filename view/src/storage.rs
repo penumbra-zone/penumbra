@@ -238,7 +238,7 @@ impl Storage {
         // Ignored if `asset_id` is unset or if `include_spent` is set.
         // uint64 amount_to_spend = 5;
         //TODO: figure out a clever way to only return notes up to the sum using SQL
-        let amount_cutoff = !(include_spent || asset_id.is_none());
+        let amount_cutoff = (amount_to_spend != 0) && !(include_spent || asset_id.is_none());
         let mut amount_total = 0;
 
         let mut output: Vec<NoteRecord> = Vec::new();
