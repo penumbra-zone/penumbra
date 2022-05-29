@@ -36,30 +36,28 @@ impl BalanceCmd {
         table.load_preset(presets::NOTHING);
 
         if self.by_address {
-            let notes = view
-                .unspent_notes_by_address_and_denom(fvk.hash(), &asset_cache)
-                .await?;
+            let notes = view.unspent_notes_by_address_and_asset(fvk.hash()).await?;
 
             let rows: Vec<(DiversifierIndex, Value)> = if self.by_note {
                 notes
                     .iter()
-                    .flat_map(|(index, notes_by_denom)| {
+                    .flat_map(|(index, notes_by_asset)| {
                         // Include each note individually:
-                        notes_by_denom.iter().flat_map(|(denom, notes)| {
+                        notes_by_asset.iter().flat_map(|(asset, notes)| {
                             notes
                                 .iter()
-                                .map(|record| (*index, denom.value(record.note.amount())))
+                                .map(|record| (*index, asset.value(record.note.amount())))
                         })
                     })
                     .collect()
             } else {
                 notes
                     .iter()
-                    .flat_map(|(index, notes_by_denom)| {
-                        // Sum the notes for each denom:
-                        notes_by_denom.iter().map(|(denom, notes)| {
+                    .flat_map(|(index, notes_by_asset)| {
+                        // Sum the notes for each asset:
+                        notes_by_asset.iter().map(|(asset, notes)| {
                             let sum = notes.iter().map(|record| record.note.amount()).sum();
-                            (*index, denom.value(sum))
+                            (*index, asset.value(sum))
                         })
                     })
                     .collect()
@@ -73,30 +71,28 @@ impl BalanceCmd {
                 ]);
             }
         } else {
-            let notes = view
-                .unspent_notes_by_denom_and_address(fvk.hash(), &asset_cache)
-                .await?;
+            let notes = view.unspent_notes_by_asset_and_address(fvk.hash()).await?;
 
             let rows: Vec<Value> = if self.by_note {
                 notes
                     .iter()
-                    .flat_map(|(denom, notes)| {
+                    .flat_map(|(asset, notes)| {
                         // Include each note individually:
                         notes.iter().flat_map(|(_index, notes)| {
-                            notes.iter().map(|record| denom.value(record.note.amount()))
+                            notes.iter().map(|record| asset.value(record.note.amount()))
                         })
                     })
                     .collect()
             } else {
                 notes
                     .iter()
-                    .map(|(denom, notes)| {
+                    .map(|(asset, notes)| {
                         // Sum the notes for each index:
                         let sum = notes
                             .values()
                             .flat_map(|records| records.iter().map(|record| record.note.amount()))
                             .sum();
-                        denom.value(sum)
+                        asset.value(sum)
                     })
                     .collect()
             };
