@@ -128,7 +128,7 @@ impl Component for ShieldedPool {
                         .verify(auth_hash.as_ref(), &spend.auth_sig)
                         .context("spend auth signature failed to verify")?;
 
-                    if spend
+                    spend
                         .proof
                         .verify(
                             tx.anchor,
@@ -136,11 +136,7 @@ impl Component for ShieldedPool {
                             spend.body.nullifier,
                             spend.body.rk,
                         )
-                        .is_err()
-                    {
-                        // TODO should the verification error be bubbled up here?
-                        return Err(anyhow::anyhow!("A spend proof did not verify"));
-                    }
+                        .context("a spend proof did not verify")?;
 
                     // Check nullifier has not been revealed already in this transaction.
                     if spent_nullifiers.contains(&spend.body.nullifier.clone()) {
