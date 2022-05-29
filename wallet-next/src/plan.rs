@@ -35,9 +35,7 @@ where
         .incoming()
         .payment_address(source_address.unwrap_or(0).into());
 
-    // TODO: add this to the view service
-    //let chain_params = view.chain_params().await?;
-    let chain_params = ChainParams::default();
+    let chain_params = view.chain_params().await?;
 
     let mut plan = TransactionPlan {
         chain_id: chain_params.chain_id,
@@ -62,10 +60,9 @@ where
         })
         .await?;
     for note_record in notes_to_spend {
-        let note = note_record.note;
-        spent_amount += note.amount();
+        spent_amount += note_record.note.amount();
         plan.actions
-            .push(SpendPlan::new(&mut rng, note.clone(), note_record.position).into());
+            .push(SpendPlan::new(&mut rng, note_record.note, note_record.position).into());
     }
     // Add a change note if we have change left over:
     let change_amount = spent_amount - spend_amount;
@@ -110,9 +107,7 @@ where
         .incoming()
         .payment_address(source_address.unwrap_or(0).into());
 
-    // TODO: add this to the view service
-    //let chain_params = view.chain_params().await?;
-    let chain_params = ChainParams::default();
+    let chain_params = view.chain_params().await?;
 
     let mut plan = TransactionPlan {
         chain_id: chain_params.chain_id,
@@ -154,16 +149,9 @@ where
     // Add the required spends, and track change:
     let mut spent_amount = 0;
     for note_record in notes_to_spend {
-        tracing::debug!(?note_record, ?spent_amount);
         spent_amount += note_record.note.amount();
-        plan.actions.push(
-            SpendPlan::new(
-                &mut rng,
-                note_record.note,
-                0u64.into(), // TODO: record the position in the NoteRecord so we don't have to make this up
-            )
-            .into(),
-        );
+        plan.actions
+            .push(SpendPlan::new(&mut rng, note_record.note, note_record.position).into());
     }
 
     if spent_amount < spend_amount {
@@ -215,9 +203,7 @@ where
         .incoming()
         .payment_address(source_address.unwrap_or(0).into());
 
-    // TODO: add this to the view service
-    //let chain_params = view.chain_params().await?;
-    let chain_params = ChainParams::default();
+    let chain_params = view.chain_params().await?;
 
     // Because the outputs of an undelegation are quarantined, we want to
     // avoid any unnecessary change outputs, so we pay fees out of the
@@ -275,14 +261,8 @@ where
     for note_record in notes_to_spend {
         tracing::debug!(?note_record, ?spend_amount);
         spent_amount += note_record.note.amount();
-        plan.actions.push(
-            SpendPlan::new(
-                &mut rng,
-                note_record.note,
-                0u64.into(), // TODO: record the position in the NoteRecord so we don't have to make this up
-            )
-            .into(),
-        );
+        plan.actions
+            .push(SpendPlan::new(&mut rng, note_record.note, note_record.position).into());
     }
 
     if spent_amount < spend_amount {
@@ -336,7 +316,7 @@ where
         MemoPlaintext::default()
     };
 
-    let chain_params = ChainParams::default();
+    let chain_params = view.chain_params().await?;
 
     let mut plan = TransactionPlan {
         chain_id: chain_params.chain_id,
@@ -421,9 +401,8 @@ where
 
         // Spend each of the notes we selected.
         for note_record in notes_to_spend {
-            let note = note_record.note;
             plan.actions
-                .push(SpendPlan::new(&mut rng, note.clone(), note_record.position).into());
+                .push(SpendPlan::new(&mut rng, note_record.note, note_record.position).into());
         }
 
         // Find out how much change we have and whether to add a change output.
