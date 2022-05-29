@@ -22,8 +22,9 @@ pub fn migrate(legacy_wallet_path: &Path, custody_path: &Path) -> anyhow::Result
     if new_wallet_2.spend_key.to_bytes().0 != new_wallet.spend_key.to_bytes().0 {
         return Err(anyhow::anyhow!("Failed to save wallet"));
     } else {
-        tracing::info!("Removing legacy wallet file");
-        std::fs::remove_file(legacy_wallet_path)?;
+        // TODO: Remove this once we're ready to replace pcli with pcli-next
+        //tracing::info!("Removing legacy wallet file");
+        //std::fs::remove_file(legacy_wallet_path)?;
     }
 
     Ok(())
