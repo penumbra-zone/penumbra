@@ -391,7 +391,7 @@ where
         let notes_to_spend = view
             .notes(NotesRequest {
                 fvk_hash: Some(fvk.hash().into()),
-                asset_id: Some((*STAKING_TOKEN_ASSET_ID).into()),
+                asset_id: Some(denom.id().into()),
                 diversifier_index: source_index.map(Into::into),
                 amount_to_spend: spend_amount,
                 include_spent: false,
