@@ -5,7 +5,7 @@ use once_cell::sync::Lazy;
 use penumbra_proto::{crypto as pb, serializers::bech32str, Protobuf};
 use serde::{Deserialize, Serialize};
 
-use crate::Fq;
+use crate::{Fq, Value};
 
 /// An identifier for an IBC asset type.
 ///
@@ -104,5 +104,13 @@ impl Id {
     /// Convert the asset ID to bytes.
     pub fn to_bytes(&self) -> [u8; 32] {
         self.0.to_bytes()
+    }
+
+    /// Create a value of this denomination.
+    pub fn value(&self, amount: u64) -> Value {
+        Value {
+            amount,
+            asset_id: self.clone(),
+        }
     }
 }
