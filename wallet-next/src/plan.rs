@@ -329,6 +329,7 @@ where
     V: ViewClient,
     R: RngCore + CryptoRng,
 {
+    tracing::debug!(?values, ?fee, ?dest_address, ?source_address, ?tx_memo);
     let memo = if let Some(input_memo) = tx_memo {
         input_memo.as_bytes().try_into()?
     } else {
