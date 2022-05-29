@@ -1,3 +1,4 @@
+use anyhow::Context;
 use penumbra_proto::{
     client::{
         oblivious::oblivious_query_client::ObliviousQueryClient,
@@ -17,6 +18,11 @@ impl Opt {
     /// node has accepted the transaction, and erroring otherwise.
     #[instrument(skip(self, transaction))]
     pub async fn submit_transaction(&self, transaction: &Transaction) -> Result<(), anyhow::Error> {
+        tracing::info!("pre-checking transaction...");
+        use penumbra_component::Component;
+        pd::App::check_tx_stateless(transaction)
+            .context("transaction pre-submission checks failed")?;
+
         tracing::info!("broadcasting transaction...");
 
         let client = reqwest::Client::new();
