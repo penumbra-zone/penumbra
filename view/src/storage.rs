@@ -205,18 +205,15 @@ impl Storage {
         // If set, only return notes with the specified asset id.
         // crypto.AssetId asset_id = 3;
 
-        let asset_clause = match asset_id {
-            Some(x) => format!("{:?}", x),
-            None => "asset_id".to_string(),
-        };
+        let asset_clause = asset_id
+            .map(|id| format!("x'{}'", hex::encode(&id.to_bytes())))
+            .unwrap_or_else(|| "asset_id".to_string());
 
         // If set, only return notes with the specified diversifier index.
         // crypto.DiversifierIndex diversifier_index = 4;
-
-        let diversifier_clause = match diversifier_index {
-            Some(x) => format!("{:?}", x),
-            None => "diversifier_index".to_string(),
-        };
+        let diversifier_clause = diversifier_index
+            .map(|d| format!("x'{}'", hex::encode(&d.0)))
+            .unwrap_or_else(|| "diversifier_index".to_string());
 
         let result = sqlx::query_as::<_, NoteRecord>(
             format!(
