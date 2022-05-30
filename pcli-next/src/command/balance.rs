@@ -4,8 +4,6 @@ use penumbra_crypto::{keys::DiversifierIndex, FullViewingKey, Value};
 use penumbra_view::ViewClient;
 use structopt::StructOpt;
 
-// TODO
-
 #[derive(Debug, StructOpt)]
 pub struct BalanceCmd {
     /// If set, breaks down balances by address.

@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
-use penumbra_chain::params::ChainParams;
 use penumbra_crypto::{
     asset::Denom, keys::DiversifierIndex, memo::MemoPlaintext, Address, DelegationToken,
     FullViewingKey, Value, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,

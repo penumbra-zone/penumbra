@@ -33,7 +33,7 @@ use crate::{Storage, Worker};
 /// internally that performs synchronization and scanning.  The
 /// [`ViewService`] can be cloned; each clone will read from the same shared
 /// state, but there will only be a single scanning task.
-
+#[derive(Clone)]
 pub struct ViewService {
     storage: Storage,
     // A shared error slot for errors bubbled up by the worker. This is a regular Mutex
