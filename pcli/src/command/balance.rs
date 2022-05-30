@@ -1,7 +1,7 @@
 use anyhow::Result;
 use comfy_table::{presets, Table};
-use penumbra_crypto::asset::{self, Denom};
-use penumbra_wallet::{ClientState, UnspentNote};
+use penumbra_crypto::{keys::DiversifierIndex, FullViewingKey, Value};
+use penumbra_view::ViewClient;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -17,150 +17,85 @@ pub struct BalanceCmd {
     pub by_note: bool,
 }
 
-/// Result of formatting the tally for a particular asset.
-struct FormattedTally {
-    total: String,
-    available: String,
-    submitted_spend: String,
-    submitted_change: String,
-}
-
-// Format a tally of notes as a set of strings.
-///
-/// This assumes that the notes are all of the same denomination, and it is called below only
-// in the places where they are.
-fn tally_format_notes<'a>(
-    denom: &'a Denom,
-    cache: &'a asset::Cache,
-    notes_groups: impl IntoIterator<Item = impl IntoIterator<Item = UnspentNote<'a>> + 'a> + 'a,
-) -> impl IntoIterator<Item = FormattedTally> + 'a {
-    notes_groups.into_iter().map(|notes| {
-        // Tally each of the kinds of note:
-        let mut unspent = 0;
-        let mut submitted_spend = 0;
-        let mut submitted_change = 0;
-
-        for note in notes {
-            *match note {
-                UnspentNote::Ready(_) => &mut unspent,
-                UnspentNote::SubmittedSpend(_) => &mut submitted_spend,
-                UnspentNote::SubmittedChange(_) => &mut submitted_change,
-            } += note.as_ref().amount();
-        }
-
-        // The amount spent is the difference between submitted spend and submitted change:
-        let net_submitted_spend = submitted_spend - submitted_change;
-
-        // Convert the results to denominations:
-        let submitted_change = denom.value(submitted_change);
-        let net_submitted_spend = denom.value(net_submitted_spend);
-
-        let submitted_change_string = if submitted_change.amount > 0 {
-            format!("+{} (change)", submitted_change.try_format(cache).unwrap())
-        } else {
-            "".to_string()
-        };
-
-        let submitted_spend_string = if net_submitted_spend.amount > 0 {
-            format!(
-                "-{} (spend)",
-                net_submitted_spend.try_format(cache).unwrap()
-            )
-        } else {
-            "".to_string()
-        };
-
-        // The total amount, disregarding submitted transactions:
-        let total = denom.value(submitted_change.amount + unspent);
-
-        // The amount available to spend:
-        let available = denom.value(unspent);
-
-        FormattedTally {
-            total: total.try_format(cache).unwrap(),
-            available: available.try_format(cache).unwrap(),
-            submitted_change: submitted_change_string,
-            submitted_spend: submitted_spend_string,
-        }
-    })
-}
-
 impl BalanceCmd {
     pub fn needs_sync(&self) -> bool {
         !self.offline
     }
 
-    pub fn exec(&self, state: &ClientState) -> Result<()> {
+    pub async fn exec<V: ViewClient>(&self, fvk: &FullViewingKey, view: &mut V) -> Result<()> {
+        let asset_cache = view.assets().await?;
+
         // Initialize the table
         let mut table = Table::new();
         table.load_preset(presets::NOTHING);
-        let mut print_submitted_column = false; // This will become true if there are any submitted transactions
-        let mut headers;
 
         if self.by_address {
-            for (address_id, by_denom) in state.unspent_notes_by_address_and_denom().into_iter() {
-                let (mut label, _) = state.wallet().address_by_index(address_id as usize)?;
-                for (denom, notes) in by_denom.into_iter() {
-                    let notes_groups = if self.by_note {
-                        notes.into_iter().map(|n| vec![n]).collect()
-                    } else {
-                        vec![notes]
-                    };
-                    let tallies = tally_format_notes(&denom, state.asset_cache(), notes_groups);
-                    for tally in tallies {
-                        let mut row = vec![label.clone(), tally.total];
-                        if !tally.submitted_change.is_empty() || !tally.submitted_spend.is_empty() {
-                            print_submitted_column = true;
-                            row.push(tally.available);
-                            row.push(tally.submitted_change);
-                            row.push(tally.submitted_spend);
-                        }
-                        table.add_row(row);
+            let notes = view.unspent_notes_by_address_and_asset(fvk.hash()).await?;
 
-                        // Only display the label on the first row
-                        label = String::default();
-                    }
-                }
+            let rows: Vec<(DiversifierIndex, Value)> = if self.by_note {
+                notes
+                    .iter()
+                    .flat_map(|(index, notes_by_asset)| {
+                        // Include each note individually:
+                        notes_by_asset.iter().flat_map(|(asset, notes)| {
+                            notes
+                                .iter()
+                                .map(|record| (*index, asset.value(record.note.amount())))
+                        })
+                    })
+                    .collect()
+            } else {
+                notes
+                    .iter()
+                    .flat_map(|(index, notes_by_asset)| {
+                        // Sum the notes for each asset:
+                        notes_by_asset.iter().map(|(asset, notes)| {
+                            let sum = notes.iter().map(|record| record.note.amount()).sum();
+                            (*index, asset.value(sum))
+                        })
+                    })
+                    .collect()
+            };
+
+            table.set_header(vec!["Addr Index", "Amount"]);
+            for (index, value) in rows {
+                table.add_row(vec![
+                    format!("{}", u128::from(index)),
+                    value.try_format(&asset_cache).unwrap(),
+                ]);
             }
-
-            // Set up headers for the table (a "Submitted" column will be added if there are any
-            // submitted transactions)
-            headers = vec!["Address", "Total"];
         } else {
-            for (denom, by_address) in state.unspent_notes_by_denom_and_address().into_iter() {
-                let notes = by_address.into_values().flatten();
+            let notes = view.unspent_notes_by_asset_and_address(fvk.hash()).await?;
 
-                let notes_groups = if self.by_note {
-                    notes.map(|n| vec![n]).collect()
-                } else {
-                    vec![notes.collect()]
-                };
-
-                let tallies = tally_format_notes(&denom, state.asset_cache(), notes_groups);
-
-                for tally in tallies {
-                    let mut row = vec![tally.total];
-                    if !tally.submitted_change.is_empty() || !tally.submitted_spend.is_empty() {
-                        print_submitted_column = true;
-                        row.push(tally.available);
-                        row.push(tally.submitted_change);
-                        row.push(tally.submitted_spend);
-                    }
-                    table.add_row(row);
-                }
+            let rows: Vec<Value> = if self.by_note {
+                notes
+                    .iter()
+                    .flat_map(|(asset, notes)| {
+                        // Include each note individually:
+                        notes.iter().flat_map(|(_index, notes)| {
+                            notes.iter().map(|record| asset.value(record.note.amount()))
+                        })
+                    })
+                    .collect()
+            } else {
+                notes
+                    .iter()
+                    .map(|(asset, notes)| {
+                        // Sum the notes for each index:
+                        let sum = notes
+                            .values()
+                            .flat_map(|records| records.iter().map(|record| record.note.amount()))
+                            .sum();
+                        asset.value(sum)
+                    })
+                    .collect()
+            };
+            table.set_header(vec!["Amount"]);
+            for value in rows {
+                table.add_row(vec![value.try_format(&asset_cache).unwrap()]);
             }
-
-            // Set up headers for the table (a "Submitted" column will be added if there are any
-            // submitted transactions)
-            headers = vec!["Total"];
         }
 
-        // Add an "Available" and "Submitted" column if there are any submitted transactions
-        if print_submitted_column {
-            headers.push("Available");
-            headers.push("Submitted");
-        }
-        table.set_header(headers);
         println!("{}", table);
 
         Ok(())

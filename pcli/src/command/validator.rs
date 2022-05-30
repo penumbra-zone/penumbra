@@ -2,13 +2,16 @@ use std::{fs::File, io::Write};
 
 use anyhow::{Context, Result};
 use futures::TryStreamExt;
-use penumbra_crypto::IdentityKey;
+use penumbra_crypto::{keys::SpendKey, IdentityKey};
+use penumbra_custody::CustodyClient;
 use penumbra_proto::{stake::Validator as ProtoValidator, Message};
 use penumbra_stake::{validator, validator::Validator, FundingStream, FundingStreams};
+use penumbra_view::ViewClient;
+use penumbra_wallet::{build_transaction, plan};
 use rand_core::OsRng;
 use structopt::StructOpt;
 
-use crate::{state::ClientStateFile, Opt};
+use crate::Opt;
 
 #[derive(Debug, StructOpt)]
 pub enum ValidatorCmd {
@@ -55,16 +58,18 @@ impl ValidatorCmd {
         }
     }
 
-    pub async fn exec(&self, opt: &Opt, state: &mut ClientStateFile) -> Result<()> {
+    // TODO: move use of sk into custody service
+    pub async fn exec<V: ViewClient, C: CustodyClient>(
+        &self,
+        opt: &Opt,
+        sk: &SpendKey,
+        view: &mut V,
+        custody: &mut C,
+    ) -> Result<()> {
+        let fvk = sk.full_viewing_key().clone();
         match self {
             ValidatorCmd::Identity => {
-                let ik = IdentityKey(
-                    state
-                        .wallet()
-                        .full_viewing_key()
-                        .spend_verification_key()
-                        .clone(),
-                );
+                let ik = IdentityKey(fvk.spend_verification_key().clone());
 
                 println!("{}", ik);
             }
@@ -86,32 +91,24 @@ impl ValidatorCmd {
                 // Sign the validator definition with the wallet's spend key.
                 let protobuf_serialized: ProtoValidator = new_validator.clone().into();
                 let v_bytes = protobuf_serialized.encode_to_vec();
-                let signing_key = state.wallet().spend_key().spend_auth_key().clone();
-                let auth_sig = signing_key.sign(&mut OsRng, &v_bytes);
+                let auth_sig = sk.spend_auth_key().sign(&mut OsRng, &v_bytes);
                 let vd = validator::Definition {
                     validator: new_validator,
                     auth_sig,
                 };
                 // Construct a new transaction and include the validator definition.
-                let plan = state.plan_validator_definition(&mut OsRng, vd, *fee, *source)?;
-                let transaction = state.build_transaction(OsRng, plan)?;
+                let plan = plan::validator_definition(&fvk, view, OsRng, vd, *fee, *source).await?;
+                let transaction = build_transaction(&fvk, view, custody, OsRng, plan).await?;
 
                 opt.submit_transaction(&transaction).await?;
                 // Only commit the state if the transaction was submitted
                 // successfully, so that we don't store pending notes that will
                 // never appear on-chain.
-                state.commit()?;
                 println!("Uploaded validator definition");
             }
             ValidatorCmd::TemplateDefinition { file } => {
-                let (_label, address) = state.wallet().address_by_index(0)?;
-                let identity_key = IdentityKey(
-                    state
-                        .wallet()
-                        .full_viewing_key()
-                        .spend_verification_key()
-                        .clone(),
-                );
+                let (address, _dtk) = fvk.incoming().payment_address(0u64.into());
+                let identity_key = IdentityKey(fvk.spend_verification_key().clone());
                 // Generate a random consensus key.
                 // TODO: not great because the private key is discarded here and this isn't obvious to the user
                 let consensus_key =
@@ -168,7 +165,7 @@ impl ValidatorCmd {
                 let validators = client
                     .validator_info(ValidatorInfoRequest {
                         show_inactive: true,
-                        chain_id: state.chain_id().unwrap_or_default(),
+                        ..Default::default()
                     })
                     .await?
                     .into_inner()

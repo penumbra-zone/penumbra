@@ -1,11 +1,15 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use comfy_table::{presets, Table};
 use futures::TryStreamExt;
 use penumbra_chain::Epoch;
+use penumbra_crypto::FullViewingKey;
 use penumbra_stake::validator;
+use penumbra_view::ViewClient;
 use structopt::StructOpt;
 
-use crate::{ClientStateFile, Opt};
+// TODO: remove this subcommand and merge into `pcli q`
+
+use crate::Opt;
 
 #[derive(Debug, StructOpt)]
 pub enum ChainCmd {
@@ -19,7 +23,7 @@ pub enum ChainCmd {
     },
 }
 
-struct Stats {
+pub struct Stats {
     current_block_height: u64,
     current_epoch: u64,
     total_validators: u64,
@@ -38,14 +42,8 @@ impl ChainCmd {
         true
     }
 
-    pub async fn print_chain_params(&self, state: &ClientStateFile) -> Result<()> {
-        let params = match state.chain_params() {
-            Some(params) => params,
-            None => {
-                // This indicates that the sync failed.
-                return Err(anyhow!("chain parameters not available"));
-            }
-        };
+    pub async fn print_chain_params<V: ViewClient>(&self, view: &mut V) -> Result<()> {
+        let params = view.chain_params().await?;
 
         println!("Chain Parameters:");
         let mut table = Table::new();
@@ -100,23 +98,27 @@ impl ChainCmd {
         Ok(())
     }
 
-    pub async fn get_stats(&self, opt: &Opt, state: &ClientStateFile) -> Result<Stats> {
+    pub async fn get_stats<V: ViewClient>(
+        &self,
+        opt: &Opt,
+        fvk: &FullViewingKey,
+        view: &mut V,
+    ) -> Result<Stats> {
         use penumbra_proto::client::oblivious::ValidatorInfoRequest;
 
         let mut client = opt.oblivious_client().await?;
 
-        let current_block_height = state.last_block_height().unwrap_or_default();
-        let epoch_duration = state
-            .chain_params()
-            .expect("chain params unavailable")
-            .epoch_duration;
+        let current_block_height = view.status(fvk.hash()).await?.sync_height;
+        let chain_params = view.chain_params().await?;
+
+        let epoch_duration = chain_params.epoch_duration;
         let current_epoch = Epoch::from_height(current_block_height, epoch_duration).index;
 
         // Fetch validators.
         let validators = client
             .validator_info(ValidatorInfoRequest {
                 show_inactive: true,
-                chain_id: state.chain_id().unwrap_or_default(),
+                chain_id: chain_params.chain_id,
             })
             .await?
             .into_inner()
@@ -160,19 +162,25 @@ impl ChainCmd {
         })
     }
 
-    pub async fn exec(&self, opt: &Opt, state: &ClientStateFile) -> Result<()> {
+    pub async fn exec<V: ViewClient>(
+        &self,
+        opt: &Opt,
+        fvk: &FullViewingKey,
+        view: &mut V,
+    ) -> Result<()> {
         match self {
             ChainCmd::Params => {
-                self.print_chain_params(state).await?;
+                self.print_chain_params(view).await?;
             }
             // TODO: we could implement this as an RPC call using the metrics
             // subsystems once #829 is complete
+            // OR (hdevalence): fold it into pcli q
             ChainCmd::Info { verbose } => {
                 if *verbose {
-                    self.print_chain_params(state).await?;
+                    self.print_chain_params(view).await?;
                 }
 
-                let stats = self.get_stats(opt, state).await?;
+                let stats = self.get_stats(opt, fvk, view).await?;
 
                 println!("Chain Info:");
                 let mut table = Table::new();
