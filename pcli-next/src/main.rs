@@ -129,9 +129,34 @@ async fn main() -> Result<()> {
         // this has to manually invoke the method on the "domain trait" because we haven't
         // forgotten the concrete type, which has a method of the same name.
         let mut status_stream = ViewClient::status_stream(&mut view, fvk.hash()).await?;
+
+        // Pull out the first message from the stream, which has the current state, and use
+        // it to set up a progress bar.
+        let initial_status = status_stream
+            .next()
+            .await
+            .transpose()?
+            .ok_or_else(|| anyhow::anyhow!("view service did not report sync status"))?;
+
+        println!(
+            "Scanning blocks from last sync height {} to latest height {}",
+            initial_status.sync_height, initial_status.latest_known_block_height,
+        );
+
+        use indicatif::{ProgressBar, ProgressDrawTarget, ProgressStyle};
+        let progress_bar = ProgressBar::with_draw_target(
+            initial_status.latest_known_block_height - initial_status.sync_height,
+            ProgressDrawTarget::stdout(),
+        )
+        .with_style(
+            ProgressStyle::default_bar()
+                .template("[{elapsed}] {bar:50.cyan/blue} {pos:>7}/{len:7} {per_sec} ETA: {eta}"),
+        );
+
         while let Some(status) = status_stream.next().await.transpose()? {
-            tracing::debug!(?status);
+            progress_bar.set_position(status.sync_height - initial_status.sync_height);
         }
+        progress_bar.finish();
     }
 
     // TODO: this is a mess, figure out the right way to bundle up the clients + fvk
