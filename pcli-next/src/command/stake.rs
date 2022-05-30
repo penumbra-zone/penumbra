@@ -78,12 +78,12 @@ impl StakeCmd {
         true
     }
 
-    pub async fn exec<V: ViewClient + Clone, C: CustodyClient>(
+    pub async fn exec<V: ViewClient, C: CustodyClient>(
         &self,
         opt: &Opt,
         fvk: &FullViewingKey,
-        mut view: V,
-        custody: C,
+        view: &mut V,
+        custody: &mut C,
     ) -> Result<()> {
         match self {
             StakeCmd::Delegate {
@@ -109,16 +109,9 @@ impl StakeCmd {
                     .into_inner()
                     .try_into()?;
 
-                let plan = plan::delegate(
-                    fvk,
-                    view.clone(),
-                    OsRng,
-                    rate_data,
-                    unbonded_amount,
-                    *fee,
-                    *source,
-                )
-                .await?;
+                let plan =
+                    plan::delegate(fvk, view, OsRng, rate_data, unbonded_amount, *fee, *source)
+                        .await?;
                 let transaction = build_transaction(fvk, view, custody, OsRng, plan).await?;
 
                 opt.submit_transaction(&transaction).await?;
@@ -153,7 +146,7 @@ impl StakeCmd {
 
                 let plan = plan::undelegate(
                     fvk,
-                    view.clone(),
+                    view,
                     OsRng,
                     rate_data,
                     delegation_amount,

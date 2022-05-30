@@ -59,12 +59,12 @@ impl ValidatorCmd {
     }
 
     // TODO: move use of sk into custody service
-    pub async fn exec<V: ViewClient + Clone, C: CustodyClient>(
+    pub async fn exec<V: ViewClient, C: CustodyClient>(
         &self,
         opt: &Opt,
         sk: &SpendKey,
-        view: V,
-        custody: C,
+        view: &mut V,
+        custody: &mut C,
     ) -> Result<()> {
         let fvk = sk.full_viewing_key().clone();
         match self {
@@ -97,8 +97,7 @@ impl ValidatorCmd {
                     auth_sig,
                 };
                 // Construct a new transaction and include the validator definition.
-                let plan = plan::validator_definition(&fvk, view.clone(), OsRng, vd, *fee, *source)
-                    .await?;
+                let plan = plan::validator_definition(&fvk, view, OsRng, vd, *fee, *source).await?;
                 let transaction = build_transaction(&fvk, view, custody, OsRng, plan).await?;
 
                 opt.submit_transaction(&transaction).await?;

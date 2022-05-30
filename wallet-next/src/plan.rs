@@ -18,7 +18,7 @@ use tracing::instrument;
 
 pub async fn validator_definition<V, R>(
     fvk: &FullViewingKey,
-    mut view: V,
+    view: &mut V,
     mut rng: R,
     new_validator: validator::Definition,
     fee: u64,
@@ -89,7 +89,7 @@ where
 #[instrument(skip(fvk, view, rng, rate_data, unbonded_amount, fee, source_address))]
 pub async fn delegate<V, R>(
     fvk: &FullViewingKey,
-    mut view: V,
+    view: &mut V,
     mut rng: R,
     rate_data: RateData,
     unbonded_amount: u64,
@@ -187,7 +187,7 @@ where
 /// Generate a new transaction plan undelegating stake
 pub async fn undelegate<V, R>(
     fvk: &FullViewingKey,
-    mut view: V,
+    view: &mut V,
     mut rng: R,
     rate_data: RateData,
     delegation_amount: u64,
@@ -296,7 +296,7 @@ where
 #[instrument(skip(fvk, view, rng, values, fee, dest_address, source_address, tx_memo))]
 pub async fn send<V, R>(
     fvk: &FullViewingKey,
-    mut view: V,
+    view: &mut V,
     mut rng: R,
     values: &[Value],
     fee: u64,

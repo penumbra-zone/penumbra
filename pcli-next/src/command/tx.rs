@@ -47,12 +47,12 @@ impl TxCmd {
         }
     }
 
-    pub async fn exec<V: ViewClient + Clone, C: CustodyClient>(
+    pub async fn exec<V: ViewClient, C: CustodyClient>(
         &self,
         opt: &Opt,
         fvk: &FullViewingKey,
-        view_client: V,
-        custody_client: C,
+        view: &mut V,
+        custody: &mut C,
     ) -> Result<()> {
         match self {
             TxCmd::Send {
@@ -71,20 +71,10 @@ impl TxCmd {
                     .parse()
                     .map_err(|_| anyhow::anyhow!("address is invalid"))?;
 
-                let plan = plan::send(
-                    &fvk,
-                    view_client.clone(),
-                    OsRng,
-                    &values,
-                    *fee,
-                    to,
-                    *from,
-                    memo.clone(),
-                )
-                .await?;
+                let plan =
+                    plan::send(&fvk, view, OsRng, &values, *fee, to, *from, memo.clone()).await?;
 
-                let transaction =
-                    build_transaction(fvk, view_client, custody_client, OsRng, plan).await?;
+                let transaction = build_transaction(fvk, view, custody, OsRng, plan).await?;
 
                 opt.submit_transaction(&transaction).await?;
             }

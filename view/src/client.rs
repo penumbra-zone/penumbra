@@ -26,7 +26,7 @@ use crate::{NoteRecord, StatusStreamResponse};
 ///   which requires complex bounds on its inner type to
 ///   enforce that it is a tower `Service`.
 #[async_trait(?Send)]
-pub trait ViewClient: Sized {
+pub trait ViewClient {
     /// Get the current status of chain sync.
     async fn status(&mut self, fvk_hash: FullViewingKeyHash) -> Result<pb::StatusResponse>;
 
@@ -157,11 +157,13 @@ where
     }
 
     async fn chain_params(&mut self) -> Result<ChainParams> {
-        let params = self
-            .chain_params(tonic::Request::new(pb::ChainParamsRequest {}))
-            .await?
-            .into_inner()
-            .try_into()?;
+        // We have to manually invoke the method on the type, because it has the
+        // same name as the one we're implementing.
+        let params =
+            ViewProtocolClient::chain_params(self, tonic::Request::new(pb::ChainParamsRequest {}))
+                .await?
+                .into_inner()
+                .try_into()?;
 
         Ok(params)
     }
@@ -188,12 +190,14 @@ where
     }
 
     async fn assets(&mut self) -> Result<asset::Cache> {
-        let pb_assets: Vec<_> = self
-            .assets(tonic::Request::new(pb::AssetRequest {}))
-            .await?
-            .into_inner()
-            .try_collect()
-            .await?;
+        // We have to manually invoke the method on the type, because it has the
+        // same name as the one we're implementing.
+        let pb_assets: Vec<_> =
+            ViewProtocolClient::assets(self, tonic::Request::new(pb::AssetRequest {}))
+                .await?
+                .into_inner()
+                .try_collect()
+                .await?;
 
         let assets = pb_assets
             .into_iter()
