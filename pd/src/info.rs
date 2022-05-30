@@ -6,7 +6,11 @@ use std::{
 
 use futures::FutureExt;
 use penumbra_storage::{State, Storage};
-use tendermint::abci::{self, response::Echo, InfoRequest, InfoResponse};
+use tendermint::{
+    abci::{self, response::Echo, InfoRequest, InfoResponse},
+    block,
+};
+use tokio::sync::watch;
 use tower_abci::BoxError;
 use tracing::Instrument;
 
@@ -20,11 +24,12 @@ const ABCI_INFO_VERSION: &str = env!("VERGEN_GIT_SEMVER");
 #[derive(Clone, Debug)]
 pub struct Info {
     storage: Storage,
+    height_rx: watch::Receiver<block::Height>,
 }
 
 impl Info {
-    pub fn new(storage: Storage) -> Self {
-        Self { storage }
+    pub fn new(storage: Storage, height_rx: watch::Receiver<block::Height>) -> Self {
+        Self { storage, height_rx }
     }
 
     async fn state_tonic(&self) -> Result<State, tonic::Status> {

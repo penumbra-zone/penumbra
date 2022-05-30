@@ -1,7 +1,10 @@
 use std::pin::Pin;
 
 use async_stream::try_stream;
-use futures::stream::{StreamExt, TryStreamExt};
+use futures::{
+    stream::{StreamExt, TryStreamExt},
+    TryFutureExt,
+};
 use penumbra_chain::View as _;
 use penumbra_proto::{
     chain::{ChainParams, CompactBlock, KnownAssets},
@@ -14,6 +17,7 @@ use penumbra_proto::{
 };
 use penumbra_shielded_pool::View as _;
 use penumbra_stake::{component::View as _, validator};
+use tokio::sync::mpsc;
 use tonic::Status;
 use tracing::{instrument, Instrument};
 
@@ -105,6 +109,7 @@ impl ObliviousQuery for Info {
         fields(
             start_height = request.get_ref().start_height,
             end_height = request.get_ref().end_height,
+            keep_alive = request.get_ref().keep_alive,
         ),
     )]
     async fn compact_block_range(
@@ -117,6 +122,7 @@ impl ObliviousQuery for Info {
         let CompactBlockRangeRequest {
             start_height,
             end_height,
+            keep_alive,
             ..
         } = request.into_inner();
 
@@ -134,36 +140,91 @@ impl ObliviousQuery for Info {
             std::cmp::min(end_height, current_height)
         };
 
-        // We want any events that happen to occur in the context of the
-        // current span, but the stream macro doesn't play well with Instrument,
-        // so instead just patch it up as best as we can
-        let span = tracing::Span::current();
-        let block_range = try_stream! {
-            // It's useful to record the end height since we adjusted it,
-            // but the start height is already recorded in the span.
-            span.in_scope(||
+        // Clone these, so we can keep copies in the worker task we spawn
+        // to handle this request.
+        let storage = self.storage.clone();
+        let mut height_rx = self.height_rx.clone();
+
+        let (tx, rx) = mpsc::channel(10);
+        let txerr = tx.clone();
+        tokio::spawn(
+            async move {
+                // Phase 1: Catch up from the start height.
                 tracing::debug!(
-                    end_height,
-                    num_blocks = end_height.saturating_sub(start_height),
-                    "starting compact_block_range response"
-                )
-            );
-            for height in start_height..end_height {
-                let block = state.compact_block(height)
-                    .instrument(span.clone())
-                    .await?
-                    .expect("compact block for in-range height must be present");
-                yield block.to_proto();
+                    ?end_height,
+                    "catching up from start height to current end height"
+                );
+                for height in start_height..=end_height {
+                    let block = state
+                        .compact_block(height)
+                        .await?
+                        .expect("compact block for in-range height must be present");
+                    tx.send(Ok(block.to_proto())).await?;
+                }
+
+                // If the client didn't request a keep-alive, we're done.
+                if !keep_alive {
+                    // Explicitly annotate the error type, so we can bubble up errors...
+                    return Ok::<(), anyhow::Error>(());
+                }
+
+                // Before we can stream new compact blocks as they're created,
+                // catch up on any blocks that have been created while catching up.
+                let cur_height = height_rx.borrow_and_update().value();
+                let state = storage.state().await?;
+                tracing::debug!(
+                    cur_height,
+                    "finished request, client requested keep-alive, continuing to stream blocks"
+                );
+
+                // We want to send all blocks *after* end_height (which we already sent)
+                // up to and including cur_height (which we won't send in the loop below).
+                // This range could be empty.
+                for height in (end_height + 1)..=cur_height {
+                    tracing::debug!(?height, "sending block in phase 2 catch-up");
+                    let block = state
+                        .compact_block(height)
+                        .await?
+                        .expect("compact block for in-range height must be present");
+                    tx.send(Ok(block.to_proto())).await?;
+                }
+
+                // Phase 2: wait on the height notifier and stream blocks as
+                // they're created.
+                //
+                // Because we used borrow_and_update above, we know this will
+                // wait for the *next* block to be created before firing.
+                loop {
+                    height_rx.changed().await?;
+                    let height = height_rx.borrow().value();
+                    tracing::debug!(?height, "notifying client of new block");
+                    let state = storage.state().await?;
+                    let block = state
+                        .compact_block(height)
+                        .await?
+                        .expect("compact block for in-range height must be present");
+                    tx.send(Ok(block.to_proto())).await?;
+                }
             }
-            span.in_scope(|| tracing::debug!("finished compact_block_range response"));
-        };
+            .map_err(|e| async move {
+                // ... into something that can convert them into a tonic error
+                // and stuff it into a second copy of the response channel
+                // to notify the client before the task exits.
+                let _ = txerr
+                    .send(Err(tonic::Status::internal(e.to_string())))
+                    .await;
+            })
+            .instrument(tracing::Span::current()),
+        );
+
+        // TODO: eventually, we may want to register joinhandles or something
+        // and be able to track how many open connections we have, drop them to
+        // manage load, etc.
+        //
+        // for now, assume that we can do c10k or whatever and don't worry about it.
 
         Ok(tonic::Response::new(
-            block_range
-                .map_err(|_: anyhow::Error| tonic::Status::unavailable("database error"))
-                // TODO: how to instrument a Stream?
-                //.instrument(Span::current())
-                .boxed(),
+            tokio_stream::wrappers::ReceiverStream::new(rx).boxed(),
         ))
     }
 }

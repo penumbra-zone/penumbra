@@ -148,8 +148,8 @@ async fn main() -> anyhow::Result<()> {
                 .context("Unable to initialize RocksDB storage")?;
 
             let (consensus, height_rx) = pd::Consensus::new(storage.clone()).await?;
-            let mempool = pd::Mempool::new(storage.clone(), height_rx).await?;
-            let info = pd::Info::new(storage.clone());
+            let mempool = pd::Mempool::new(storage.clone(), height_rx.clone()).await?;
+            let info = pd::Info::new(storage.clone(), height_rx);
             let snapshot = pd::Snapshot {};
 
             let abci_server = tokio::task::Builder::new().name("abci_server").spawn(
