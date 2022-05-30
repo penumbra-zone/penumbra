@@ -75,12 +75,9 @@ impl Worker {
         Ok(())
     }
 
-    pub async fn sync_to_latest(&mut self) -> Result<u64, anyhow::Error> {
+    pub async fn sync(&mut self) -> Result<(), anyhow::Error> {
         // Do a single sync run, up to whatever the latest block height is
         tracing::info!("starting client sync");
-
-        // Lock the NCT during sync
-        let mut nct = self.nct.write().await;
 
         let start_height = self
             .storage
@@ -94,30 +91,36 @@ impl Worker {
         let mut stream = self
             .client
             .compact_block_range(tonic::Request::new(CompactBlockRangeRequest {
+                chain_id: self.storage.chain_params().await?.chain_id,
                 start_height,
                 end_height: 0,
-                chain_id: self.storage.chain_params().await?.chain_id,
+                // Instruct the server to keep feeding us blocks as they're created.
+                keep_alive: true,
             }))
             .await?
             .into_inner();
 
         while let Some(block) = stream.message().await? {
+            // Lock the NCT only while processing this block.
+            let mut nct = self.nct.write().await;
+
             let scan_result = scan_block(&self.fvk, &mut nct, block.try_into()?, epoch_duration);
             let height = scan_result.height;
 
             self.storage.record_block(scan_result, &mut nct).await?;
             // Notify all watchers of the new height we just recorded.
             self.sync_height_tx.send(height)?;
+            // Release the NCT RwLock
+            drop(nct);
+
+            // Check if we should stop waiting for blocks to arrive, because the view
+            // services are dropped and we're supposed to shut down.
+            if self.sync_height_tx.is_closed() {
+                return Ok(());
+            }
         }
 
-        let end_height = self.storage.last_sync_height().await?.unwrap();
-
-        // Release the NCT RwLock
-        drop(nct);
-
-        tracing::info!(?end_height, "finished sync");
-
-        Ok(end_height)
+        Ok(())
     }
 
     pub async fn run(mut self) -> Result<(), anyhow::Error> {
@@ -131,6 +134,8 @@ impl Worker {
                 Err(e) => {
                     tracing::info!(?e, "view worker error");
                     self.error_slot.lock().unwrap().replace(e);
+                    // Exit the worker to avoid looping endlessly.
+                    return Err(anyhow::anyhow!("view worker error"));
                 }
             };
         }
@@ -143,20 +148,23 @@ impl Worker {
         // created at genesis. In the future, we'll want to have a way for
         // clients to learn about assets as they're created.
         self.fetch_assets().await?;
+
+        let mut error_count = 0;
         loop {
-            self.sync_to_latest().await?;
-
-            if self.sync_height_tx.is_closed() {
-                tracing::info!("all view services dropped, shutting down worker");
-                break;
+            match self.sync().await {
+                // If the sync returns `Ok` then it means we're shutting down.
+                Ok(()) => return Ok(()),
+                Err(e) => {
+                    tracing::error!(?e);
+                    error_count += 1;
+                    // Retry a few times and then give up.
+                    if error_count > 3 {
+                        return Err(e);
+                    }
+                }
             }
-
-            // TODO 1: randomize sleep interval within some range?
-            // TODO 2: use websockets to be notified on new block
+            // Wait a bit before restarting
             tokio::time::sleep(std::time::Duration::from_millis(1729)).await;
         }
-
-        // If this is returned, it means the loop was broken by a shutdown signal.
-        Ok(())
     }
 }

@@ -17,6 +17,7 @@ pub async fn sync(opt: &Opt, state: &mut ClientStateFile) -> Result<()> {
             chain_id: state
                 .chain_id()
                 .ok_or_else(|| anyhow::anyhow!("missing chain_id"))?,
+            keep_alive: false,
         }))
         .await?
         .into_inner();
