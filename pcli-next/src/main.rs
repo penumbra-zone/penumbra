@@ -178,6 +178,7 @@ async fn main_inner<V: ViewClient, C: CustodyClient>(
             ProgressStyle::default_bar()
                 .template("[{elapsed}] {bar:50.cyan/blue} {pos:>7}/{len:7} {per_sec} ETA: {eta}"),
         );
+        progress_bar.set_position(0);
 
         while let Some(status) = status_stream.next().await.transpose()? {
             progress_bar.set_position(status.sync_height - initial_status.sync_height);
