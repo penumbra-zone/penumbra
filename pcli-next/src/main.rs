@@ -121,8 +121,10 @@ async fn main() -> Result<()> {
     )
     .await?;
 
+    //let viewservice2 = view_service.clone();
+
     // Now build the view and custody clients, doing gRPC with ourselves
-    let custody = CustodyProtocolClient::new(CustodyProtocolServer::new(soft_hsm));
+    let mut custody = CustodyProtocolClient::new(CustodyProtocolServer::new(soft_hsm));
     let mut view = ViewProtocolClient::new(ViewProtocolServer::new(view_service));
 
     if opt.cmd.needs_sync() {
@@ -168,12 +170,15 @@ async fn main() -> Result<()> {
         Command::Sync => {
             // We have already synchronized the wallet above, so we can just return.
         }
-        Command::Tx(tx_cmd) => tx_cmd.exec(&opt, &fvk, view, custody).await?,
+        Command::Tx(tx_cmd) => tx_cmd.exec(&opt, &fvk, &mut view, &mut custody).await?,
         Command::Addr(addr_cmd) => addr_cmd.exec(&fvk)?,
-        Command::Balance(balance_cmd) => balance_cmd.exec(&fvk, view).await?,
-        Command::Validator(cmd) => cmd.exec(&opt, &wallet.spend_key, view, custody).await?,
-        Command::Stake(cmd) => cmd.exec(&opt, &fvk, view, custody).await?,
-        Command::Chain(cmd) => cmd.exec(&opt, &fvk, view).await?,
+        Command::Balance(balance_cmd) => balance_cmd.exec(&fvk, &mut view).await?,
+        Command::Validator(cmd) => {
+            cmd.exec(&opt, &wallet.spend_key, &mut view, &mut custody)
+                .await?
+        }
+        Command::Stake(cmd) => cmd.exec(&opt, &fvk, &mut view, &mut custody).await?,
+        Command::Chain(cmd) => cmd.exec(&opt, &fvk, &mut view).await?,
     }
 
     Ok(())

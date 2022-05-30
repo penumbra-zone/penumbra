@@ -42,7 +42,7 @@ impl ChainCmd {
         true
     }
 
-    pub async fn print_chain_params<V: ViewClient>(&self, mut view: V) -> Result<()> {
+    pub async fn print_chain_params<V: ViewClient>(&self, view: &mut V) -> Result<()> {
         let params = view.chain_params().await?;
 
         println!("Chain Parameters:");
@@ -102,7 +102,7 @@ impl ChainCmd {
         &self,
         opt: &Opt,
         fvk: &FullViewingKey,
-        mut view: V,
+        view: &mut V,
     ) -> Result<Stats> {
         use penumbra_proto::client::oblivious::ValidatorInfoRequest;
 
@@ -162,11 +162,11 @@ impl ChainCmd {
         })
     }
 
-    pub async fn exec<V: ViewClient + Clone>(
+    pub async fn exec<V: ViewClient>(
         &self,
         opt: &Opt,
         fvk: &FullViewingKey,
-        view: V,
+        view: &mut V,
     ) -> Result<()> {
         match self {
             ChainCmd::Params => {
@@ -177,7 +177,7 @@ impl ChainCmd {
             // OR (hdevalence): fold it into pcli q
             ChainCmd::Info { verbose } => {
                 if *verbose {
-                    self.print_chain_params(view.clone()).await?;
+                    self.print_chain_params(view).await?;
                 }
 
                 let stats = self.get_stats(opt, fvk, view).await?;
