@@ -30,6 +30,7 @@ use penumbra_transaction::Transaction;
 use tendermint::abci;
 use tracing::instrument;
 
+mod execution;
 mod stateful;
 mod stateless;
 
@@ -142,119 +143,32 @@ impl ConnectionComponent {
     async fn execute_ibc_action(&mut self, ibc_action: &IbcAction) {
         match &ibc_action.action {
             Some(ConnectionOpenInit(msg)) => {
+                use execution::connection_open_init::ConnectionOpenInitExecute;
                 let msg_connection_open_init =
                     MsgConnectionOpenInit::try_from(msg.clone()).unwrap();
-                self.execute_connection_open_init(&msg_connection_open_init)
-                    .await;
+                self.state.execute(&msg_connection_open_init).await;
             }
 
             Some(ConnectionOpenTry(raw_msg)) => {
+                use execution::connection_open_try::ConnectionOpenTryExecute;
                 let msg = MsgConnectionOpenTry::try_from(raw_msg.clone()).unwrap();
-                self.execute_connection_open_try(&msg).await;
+                self.state.execute(&msg).await;
             }
 
             Some(ConnectionOpenAck(raw_msg)) => {
+                use execution::connection_open_ack::ConnectionOpenAckExecute;
                 let msg = MsgConnectionOpenAck::try_from(raw_msg.clone()).unwrap();
-                self.execute_connection_open_ack(&msg).await;
+                self.state.execute(&msg).await;
             }
 
             Some(ConnectionOpenConfirm(raw_msg)) => {
+                use execution::connection_open_confirm::ConnectionOpenConfirmExecute;
                 let msg = MsgConnectionOpenConfirm::try_from(raw_msg.clone()).unwrap();
-                self.execute_connection_open_confirm(&msg).await;
+                self.state.execute(&msg).await;
             }
 
             _ => {}
         }
-    }
-
-    async fn execute_connection_open_confirm(&mut self, msg: &MsgConnectionOpenConfirm) {
-        let mut connection = self
-            .state
-            .get_connection(&msg.connection_id)
-            .await
-            .unwrap()
-            .ok_or_else(|| anyhow::anyhow!("no connection with the given ID"))
-            .unwrap();
-
-        connection.set_state(ConnectionState::Open);
-
-        self.state
-            .update_connection(&msg.connection_id, connection)
-            .await;
-    }
-
-    async fn execute_connection_open_ack(&mut self, msg: &MsgConnectionOpenAck) {
-        let mut connection = self
-            .state
-            .get_connection(&msg.connection_id)
-            .await
-            .unwrap()
-            .unwrap();
-
-        let prev_counterparty = connection.counterparty();
-        let counterparty = Counterparty::new(
-            prev_counterparty.client_id().clone(),
-            Some(msg.connection_id.clone()),
-            prev_counterparty.prefix().clone(),
-        );
-        connection.set_state(ConnectionState::Open);
-        connection.set_version(msg.version.clone());
-        connection.set_counterparty(counterparty);
-
-        self.state
-            .update_connection(&msg.connection_id, connection)
-            .await;
-    }
-
-    async fn execute_connection_open_init(&mut self, msg: &MsgConnectionOpenInit) {
-        let connection_id = ConnectionId::new(self.state.get_connection_counter().await.unwrap().0);
-
-        let compatible_versions = vec![Version::default()];
-
-        let new_connection_end = ConnectionEnd::new(
-            ConnectionState::Init,
-            msg.client_id.clone(),
-            msg.counterparty.clone(),
-            compatible_versions,
-            msg.delay_period,
-        );
-
-        // commit the connection, this also increments the connection counter
-        self.state
-            .put_new_connection(&connection_id, new_connection_end)
-            .await
-            .unwrap();
-    }
-
-    async fn execute_connection_open_try(&mut self, msg: &MsgConnectionOpenTry) {
-        // new_conn is the new connection that we will open on this chain
-        let mut new_conn = ConnectionEnd::new(
-            ConnectionState::TryOpen,
-            msg.client_id.clone(),
-            msg.counterparty.clone(),
-            msg.counterparty_versions.clone(),
-            msg.delay_period,
-        );
-        new_conn.set_version(
-            pick_version(
-                SUPPORTED_VERSIONS.to_vec(),
-                msg.counterparty_versions.clone(),
-            )
-            .unwrap(),
-        );
-
-        let mut new_connection_id =
-            ConnectionId::new(self.state.get_connection_counter().await.unwrap().0);
-
-        if let Some(prev_conn_id) = &msg.previous_connection_id {
-            // prev conn ID already validated in check_tx_stateful
-            new_connection_id = prev_conn_id.clone();
-        }
-
-        self.state
-            .put_new_connection(&new_connection_id, new_conn)
-            .await
-            .unwrap();
     }
 }
 

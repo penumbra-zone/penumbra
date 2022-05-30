@@ -34,10 +34,9 @@ use penumbra_transaction::Transaction;
 use tendermint::abci;
 use tracing::instrument;
 
+mod execution;
 mod stateful;
 mod stateless;
-
-mod execution;
 
 pub struct ICS4Channel {
     state: State,
