@@ -4,14 +4,17 @@ use anyhow::{anyhow, Context, Result};
 use comfy_table::{presets, Table};
 use futures::stream::TryStreamExt;
 use penumbra_crypto::{
-    DelegationToken, IdentityKey, Value, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
+    DelegationToken, FullViewingKey, IdentityKey, Value, STAKING_TOKEN_ASSET_ID,
 };
+use penumbra_custody::CustodyClient;
 use penumbra_proto::client::oblivious::ValidatorInfoRequest;
 use penumbra_stake::{rate::RateData, validator};
+use penumbra_view::ViewClient;
+use penumbra_wallet::{build_transaction, plan};
 use rand_core::OsRng;
 use structopt::StructOpt;
 
-use crate::{ClientStateFile, Opt};
+use crate::Opt;
 
 #[derive(Debug, StructOpt)]
 pub enum StakeCmd {
@@ -75,7 +78,13 @@ impl StakeCmd {
         true
     }
 
-    pub async fn exec(&self, opt: &Opt, state: &mut ClientStateFile) -> Result<()> {
+    pub async fn exec<V: ViewClient, C: CustodyClient>(
+        &self,
+        opt: &Opt,
+        fvk: &FullViewingKey,
+        view: &mut V,
+        custody: &mut C,
+    ) -> Result<()> {
         match self {
             StakeCmd::Delegate {
                 to,
@@ -101,13 +110,11 @@ impl StakeCmd {
                     .try_into()?;
 
                 let plan =
-                    state.plan_delegate(&mut OsRng, rate_data, unbonded_amount, *fee, *source)?;
-                let transaction = state.build_transaction(OsRng, plan)?;
+                    plan::delegate(fvk, view, OsRng, rate_data, unbonded_amount, *fee, *source)
+                        .await?;
+                let transaction = build_transaction(fvk, view, custody, OsRng, plan).await?;
 
                 opt.submit_transaction(&transaction).await?;
-                // Only commit the state if the transaction was submitted successfully,
-                // so that we don't store pending notes that will never appear on-chain.
-                state.commit()?;
             }
             StakeCmd::Undelegate {
                 amount,
@@ -119,8 +126,9 @@ impl StakeCmd {
                     asset_id,
                 } = amount.parse::<Value>()?;
 
-                let delegation_token: DelegationToken = state
-                    .asset_cache()
+                let delegation_token: DelegationToken = view
+                    .assets()
+                    .await?
                     .get(&asset_id)
                     .ok_or_else(|| anyhow::anyhow!("unknown asset id {}", asset_id))?
                     .clone()
@@ -136,19 +144,19 @@ impl StakeCmd {
                     .into_inner()
                     .try_into()?;
 
-                let plan = state.plan_undelegate(
-                    &mut OsRng,
+                let plan = plan::undelegate(
+                    fvk,
+                    view,
+                    OsRng,
                     rate_data,
                     delegation_amount,
                     *fee,
                     *source,
-                )?;
-                let transaction = state.build_transaction(OsRng, plan)?;
+                )
+                .await?;
+                let transaction = build_transaction(fvk, view, custody, OsRng, plan).await?;
 
                 opt.submit_transaction(&transaction).await?;
-                // Only commit the state if the transaction was submitted successfully,
-                // so that we don't store pending notes that will never appear on-chain.
-                state.commit()?;
             }
             StakeCmd::Redelegate { .. } => {
                 todo!()
@@ -156,10 +164,12 @@ impl StakeCmd {
             StakeCmd::Show => {
                 let mut client = opt.oblivious_client().await?;
 
+                let asset_cache = view.assets().await?;
+
                 let validators = client
                     .validator_info(ValidatorInfoRequest {
                         show_inactive: true,
-                        chain_id: state.chain_id().unwrap_or_default(),
+                        ..Default::default()
                     })
                     .await?
                     .into_inner()
@@ -169,7 +179,7 @@ impl StakeCmd {
                     .map(TryInto::try_into)
                     .collect::<Result<Vec<validator::Info>, _>>()?;
 
-                let notes = state.unspent_notes_by_denom_and_address();
+                let notes = view.unspent_notes_by_asset_and_address(fvk.hash()).await?;
                 let mut total = 0;
 
                 let mut table = Table::new();
@@ -180,8 +190,11 @@ impl StakeCmd {
                     .unwrap()
                     .set_cell_alignment(comfy_table::CellAlignment::Right);
 
-                for (denom, notes_by_address) in notes.iter() {
-                    let dt = if let Ok(dt) = DelegationToken::try_from(denom.clone()) {
+                for (asset_id, notes_by_address) in notes.iter() {
+                    let dt = if let Some(Ok(dt)) = asset_cache
+                        .get(&asset_id)
+                        .map(|denom| DelegationToken::try_from(denom.clone()))
+                    {
                         dt
                     } else {
                         continue;
@@ -195,7 +208,7 @@ impl StakeCmd {
                     let delegation = Value {
                         amount: notes_by_address
                             .values()
-                            .flat_map(|notes| notes.iter().map(|n| n.as_ref().amount()))
+                            .flat_map(|notes| notes.iter().map(|n| n.note.amount()))
                             .sum::<u64>(),
                         asset_id: dt.id(),
                     };
@@ -209,9 +222,9 @@ impl StakeCmd {
 
                     table.add_row(vec![
                         info.validator.name.clone(),
-                        unbonded.try_format(state.asset_cache()).unwrap(),
+                        unbonded.try_format(&asset_cache).unwrap(),
                         format!("{:.4}", rate),
-                        delegation.try_format(state.asset_cache()).unwrap(),
+                        delegation.try_format(&asset_cache).unwrap(),
                     ]);
 
                     total += unbonded.amount;
@@ -219,10 +232,10 @@ impl StakeCmd {
 
                 let unbonded = Value {
                     amount: notes
-                        .get(&*STAKING_TOKEN_DENOM)
+                        .get(&*STAKING_TOKEN_ASSET_ID)
                         .unwrap_or(&BTreeMap::default())
                         .values()
-                        .flat_map(|notes| notes.iter().map(|n| n.as_ref().amount()))
+                        .flat_map(|notes| notes.iter().map(|n| n.note.amount()))
                         .sum::<u64>(),
                     asset_id: *STAKING_TOKEN_ASSET_ID,
                 };
@@ -231,9 +244,9 @@ impl StakeCmd {
 
                 table.add_row(vec![
                     "Unbonded Stake".to_string(),
-                    unbonded.try_format(state.asset_cache()).unwrap(),
+                    unbonded.try_format(&asset_cache).unwrap(),
                     format!("{:.4}", 1.0),
-                    unbonded.try_format(state.asset_cache()).unwrap(),
+                    unbonded.try_format(&asset_cache).unwrap(),
                 ]);
 
                 let total = Value {
@@ -243,7 +256,7 @@ impl StakeCmd {
 
                 table.add_row(vec![
                     "Total".to_string(),
-                    total.try_format(state.asset_cache()).unwrap(),
+                    total.try_format(&asset_cache).unwrap(),
                     String::new(),
                     String::new(),
                 ]);
@@ -258,7 +271,7 @@ impl StakeCmd {
                 let mut validators = client
                     .validator_info(ValidatorInfoRequest {
                         show_inactive: *show_inactive,
-                        chain_id: state.chain_id().unwrap_or_default(),
+                        ..Default::default()
                     })
                     .await?
                     .into_inner()

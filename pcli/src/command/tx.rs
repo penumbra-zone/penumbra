@@ -1,13 +1,12 @@
-use anyhow::{anyhow, Result};
-use penumbra_crypto::{memo::MemoPlaintext, Value};
-use penumbra_transaction::{
-    plan::{OutputPlan, SpendPlan, TransactionPlan},
-    Fee,
-};
+use anyhow::Result;
+use penumbra_crypto::{FullViewingKey, Value};
+use penumbra_custody::CustodyClient;
+use penumbra_view::ViewClient;
+use penumbra_wallet::{build_transaction, plan};
 use rand_core::OsRng;
 use structopt::StructOpt;
 
-use crate::{ClientStateFile, Opt};
+use crate::Opt;
 
 #[derive(Debug, StructOpt)]
 pub enum TxCmd {
@@ -48,7 +47,13 @@ impl TxCmd {
         }
     }
 
-    pub async fn exec(&self, opt: &Opt, state: &mut ClientStateFile) -> Result<()> {
+    pub async fn exec<V: ViewClient, C: CustodyClient>(
+        &self,
+        opt: &Opt,
+        fvk: &FullViewingKey,
+        view: &mut V,
+        custody: &mut C,
+    ) -> Result<()> {
         match self {
             TxCmd::Send {
                 values,
@@ -66,22 +71,24 @@ impl TxCmd {
                     .parse()
                     .map_err(|_| anyhow::anyhow!("address is invalid"))?;
 
-                let plan = state.plan_send(&mut OsRng, &values, *fee, to, *from, memo.clone())?;
-                let transaction = state.build_transaction(OsRng, plan)?;
+                let plan =
+                    plan::send(&fvk, view, OsRng, &values, *fee, to, *from, memo.clone()).await?;
+
+                let transaction = build_transaction(fvk, view, custody, OsRng, plan).await?;
 
                 opt.submit_transaction(&transaction).await?;
-                // Only commit the state if the transaction was submitted
-                // successfully, so that we don't store pending notes that will
-                // never appear on-chain.
-                state.commit()?;
             }
             TxCmd::Sweep => {
-                sweep(opt, state).await?;
+                todo!("port to new API");
+                //sweep(opt, state).await?;
             }
         }
         Ok(())
     }
 }
+
+// TODO: port to new API
+/*
 
 // This code is done outside of the client state as a test case for whether it's
 // possible to use that interface to implement bespoke note handling.
@@ -172,3 +179,5 @@ async fn sweep(opt: &Opt, state: &mut ClientStateFile) -> Result<()> {
 
     Ok(())
 }
+
+ */

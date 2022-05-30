@@ -64,11 +64,9 @@ jobs:
             -p penumbra-tct \
             -p penumbra-transaction \
             -p penumbra-wallet \
-            -p penumbra-wallet-next \
             -p penumbra-view \
             -p pd \
-            -p pcli \
-            -p pcli-next
+            -p pcli
       - name: Move API docs to subdirectory
         run: |
           cd docs/rustdoc

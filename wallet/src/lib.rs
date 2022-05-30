@@ -1,8 +1,7 @@
 // Required because of NCT type size
 #![recursion_limit = "256"]
 
-mod state;
-mod wallet;
+mod build;
+pub use build::build_transaction;
 
-pub use state::{ClientState, UnspentNote};
-pub use wallet::Wallet;
+pub mod plan;

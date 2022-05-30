@@ -15,14 +15,11 @@ WORKDIR /usr/src
 # how big they are but for the distributed images we likely want to use
 # a simpler Dockerfile.
 COPY Cargo.toml .
-RUN mkdir -p pcli/src pcli-next/src pd/src &&\
+RUN mkdir -p pcli/src pd/src &&\
     echo "fn main() {}" > pcli/src/main.rs &&\
-    echo "fn main() {}" > pcli-next/src/main.rs &&\
     echo "fn main() {}" > pd/src/main.rs
 COPY pcli/build.rs ./pcli
 COPY pcli/Cargo.toml ./pcli
-COPY pcli-next/build.rs ./pcli-next
-COPY pcli-next/Cargo.toml ./pcli-next
 COPY pd/Cargo.toml ./pd
 COPY pd/build.rs ./pd
 # TODO If the protobuf definitions, crypto, or wallet implementations change,
@@ -42,7 +39,6 @@ COPY decaf377-ka ./decaf377-ka
 COPY tct-property-test ./tct-property-test
 COPY transaction ./transaction
 COPY wallet ./wallet
-COPY wallet-next ./wallet-next
 COPY view ./view
 COPY testnets ./testnets
 COPY .git ./.git

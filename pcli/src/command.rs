@@ -4,7 +4,6 @@ mod addr;
 mod balance;
 mod chain;
 mod stake;
-mod temp;
 mod tx;
 mod validator;
 mod wallet;
@@ -13,7 +12,6 @@ pub use addr::AddrCmd;
 pub use balance::BalanceCmd;
 pub use chain::ChainCmd;
 pub use stake::StakeCmd;
-pub use temp::TmpCmd;
 pub use tx::TxCmd;
 pub use validator::ValidatorCmd;
 pub use wallet::WalletCmd;
@@ -39,8 +37,6 @@ pub enum Command {
     Stake(StakeCmd),
     /// View chain data.
     Chain(ChainCmd),
-    /// Temporary commands for migrating address formats.
-    Tmp(TmpCmd),
 }
 
 impl Command {
@@ -54,7 +50,6 @@ impl Command {
             Command::Balance(cmd) => cmd.needs_sync(),
             Command::Validator(cmd) => cmd.needs_sync(),
             Command::Stake(cmd) => cmd.needs_sync(),
-            Command::Tmp(cmd) => cmd.needs_sync(),
             Command::Chain(cmd) => cmd.needs_sync(),
         }
     }

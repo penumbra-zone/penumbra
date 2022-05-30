@@ -1868,9 +1868,9 @@ checksum = "ce23b50ad8242c51a442f3ff322d56b02f08852c77e4c0b4d3fd684abc89c683"
 
 [[package]]
 name = "indexmap"
-version = "1.7.0"
+version = "1.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc633605454125dec4b66843673f01c7df2b89479b32e0ed634e43a91cff62a5"
+checksum = "e6012d540c5baa3589337a98ce73408de9b5a25ec9fc2c6fd6be8f0d39e0ca5a"
 dependencies = [
  "autocfg",
  "hashbrown",
@@ -2546,50 +2546,6 @@ dependencies = [
  "fslock",
  "futures",
  "hex",
- "penumbra-chain",
- "penumbra-crypto",
- "penumbra-proto",
- "penumbra-stake",
- "penumbra-transaction",
- "penumbra-wallet",
- "pin-project",
- "rand",
- "rand_chacha",
- "rand_core",
- "reqwest",
- "serde",
- "serde_json",
- "serde_with",
- "sha2 0.9.9",
- "structopt",
- "tendermint",
- "tokio",
- "tokio-stream",
- "tokio-util 0.6.10",
- "tonic 0.6.2",
- "tower",
- "tracing",
- "tracing-subscriber 0.3.11",
- "vergen",
-]
-
-[[package]]
-name = "pcli-next"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "ark-ff",
- "async-stream 0.2.1",
- "bincode",
- "blake2b_simd 0.5.11",
- "bytes",
- "comfy-table",
- "decaf377",
- "directories",
- "ed25519-consensus 1.2.1",
- "fslock",
- "futures",
- "hex",
  "indicatif",
  "pd",
  "penumbra-chain",
@@ -2600,7 +2556,7 @@ dependencies = [
  "penumbra-stake",
  "penumbra-transaction",
  "penumbra-view",
- "penumbra-wallet-next",
+ "penumbra-wallet",
  "pin-project",
  "rand",
  "rand_chacha",
@@ -3066,32 +3022,6 @@ dependencies = [
  "hex",
  "penumbra-chain",
  "penumbra-crypto",
- "penumbra-proto",
- "penumbra-stake",
- "penumbra-tct",
- "penumbra-transaction",
- "pin-project",
- "rand",
- "rand_core",
- "serde",
- "serde_json",
- "serde_with",
- "tokio",
- "tower",
- "tracing",
- "tracing-subscriber 0.3.11",
-]
-
-[[package]]
-name = "penumbra-wallet-next"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bincode",
- "bytes",
- "hex",
- "penumbra-chain",
- "penumbra-crypto",
  "penumbra-custody",
  "penumbra-proto",
  "penumbra-stake",
@@ -3128,9 +3058,9 @@ dependencies = [
 
 [[package]]
 name = "petgraph"
-version = "0.6.1"
+version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "51b305cc4569dd4e8765bab46261f67ef5d4d11a4b6e745100ee5dad8948b46c"
+checksum = "e6d5014253a1331579ce62aa67443b4a658c5e7dd03d4bc6d302b94474888143"
 dependencies = [
  "fixedbitset",
  "indexmap",
@@ -3943,12 +3873,11 @@ dependencies = [
 
 [[package]]
 name = "serde_with"
-version = "1.13.0"
+version = "1.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b827f2113224f3f19a665136f006709194bdfdcb1fdc1e4b2b5cbac8e0cced54"
+checksum = "678b5a069e50bf00ecd22d0cd8ddf7c236f68581b03db652061ed5eb13a312ff"
 dependencies = [
  "hex",
- "rustversion",
  "serde",
  "serde_with_macros",
 ]
