@@ -21,7 +21,7 @@ struct Opt {
     /// Command to run.
     #[structopt(subcommand)]
     cmd: Command,
-    /// The path used to store the SQLite state database.
+    /// The path used to store the state database.
     #[structopt(short, long, default_value = "pviewd-db.sqlite")]
     sqlite_path: String,
     /// The address of the pd+tendermint node.
@@ -37,12 +37,12 @@ struct Opt {
 
 #[derive(Debug, StructOpt)]
 enum Command {
-    /// Start running the view daemon.
+    /// Initialize the view service with a full viewing key.
     Init {
         /// The full viewing key to initialize the view service with.
-        #[structopt(short, long)]
         full_viewing_key: String,
     },
+    /// Start the view service.
     Start {
         /// Bind the view service to this host.
         #[structopt(short, long, default_value = "127.0.0.1")]

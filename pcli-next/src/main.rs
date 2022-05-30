@@ -1,12 +1,13 @@
 // Rust analyzer complains without this (but rustc is happy regardless)
 #![recursion_limit = "256"]
 #![allow(clippy::clone_on_copy)]
-use std::path::PathBuf;
+use std::{net::SocketAddr, path::PathBuf};
 
 use anyhow::{Context, Result};
 use directories::ProjectDirs;
 use futures::StreamExt;
-use penumbra_custody::SoftHSM;
+use penumbra_crypto::{keys::SpendKey, FullViewingKey};
+use penumbra_custody::{CustodyClient, SoftHSM};
 use penumbra_proto::{
     custody::{
         custody_protocol_client::CustodyProtocolClient,
@@ -51,6 +52,9 @@ pub struct Opt {
     /// The directory to store the wallet and view data in [default: platform appdata directory]
     #[structopt(short, long)]
     pub data_path: Option<String>,
+    /// If set, use a remote view service instead of local synchronization.
+    #[structopt(short, long)]
+    pub view_address: Option<SocketAddr>,
 }
 
 #[tokio::main]
@@ -99,33 +103,53 @@ async fn main() -> Result<()> {
     // Otherwise, build the custody service...
     let wallet = Wallet::load(custody_path)?;
     let soft_hsm = SoftHSM::new(vec![wallet.spend_key.clone()]);
+    let custody = CustodyProtocolClient::new(CustodyProtocolServer::new(soft_hsm));
 
-    // ...and the view service...
-    // TODO: allow specifying an out-of-process pviewd
-    let mut oc_client = opt.oblivious_client().await?;
     let fvk = wallet.spend_key.full_viewing_key().clone();
-    let view_storage = penumbra_view::Storage::load_or_initialize(
-        view_path
-            .to_str()
-            .ok_or_else(|| anyhow::anyhow!("Non-UTF8 view path"))?
-            .to_string(),
-        &fvk,
-        &mut oc_client,
-    )
-    .await?;
-    let view_service = ViewService::new(
-        view_storage,
-        oc_client,
-        opt.node.clone(),
-        opt.tendermint_port,
-    )
-    .await?;
+    // ...and the view service...
+    if let Some(view_address) = opt.view_address {
+        // Use a remote view service.
+        let view = ViewProtocolClient::connect(format!("http://{}", view_address)).await?;
 
+        main_inner(opt, wallet.spend_key, fvk, view, custody).await
+    } else {
+        // Use an in-memory view service.
+        let mut oc_client = opt.oblivious_client().await?;
+        let view_storage = penumbra_view::Storage::load_or_initialize(
+            view_path
+                .to_str()
+                .ok_or_else(|| anyhow::anyhow!("Non-UTF8 view path"))?
+                .to_string(),
+            &fvk,
+            &mut oc_client,
+        )
+        .await?;
+        let view_service = ViewService::new(
+            view_storage,
+            oc_client,
+            opt.node.clone(),
+            opt.tendermint_port,
+        )
+        .await?;
+
+        // Now build the view and custody clients, doing gRPC with ourselves
+        let view = ViewProtocolClient::new(ViewProtocolServer::new(view_service));
+
+        main_inner(opt, wallet.spend_key, fvk, view, custody).await
+    }
+}
+
+/// The rest of the main function is split into a separate function so that we
+/// can erase the `ViewProtocolClient` and `CustodyProtocolClient` types.
+async fn main_inner<V: ViewClient, C: CustodyClient>(
+    opt: Opt,
+    // TODO: remove this
+    sk: SpendKey,
+    fvk: FullViewingKey,
+    mut view: V,
+    mut custody: C,
+) -> Result<()> {
     //let viewservice2 = view_service.clone();
-
-    // Now build the view and custody clients, doing gRPC with ourselves
-    let mut custody = CustodyProtocolClient::new(CustodyProtocolServer::new(soft_hsm));
-    let mut view = ViewProtocolClient::new(ViewProtocolServer::new(view_service));
 
     if opt.cmd.needs_sync() {
         // this has to manually invoke the method on the "domain trait" because we haven't
@@ -173,10 +197,7 @@ async fn main() -> Result<()> {
         Command::Tx(tx_cmd) => tx_cmd.exec(&opt, &fvk, &mut view, &mut custody).await?,
         Command::Addr(addr_cmd) => addr_cmd.exec(&fvk)?,
         Command::Balance(balance_cmd) => balance_cmd.exec(&fvk, &mut view).await?,
-        Command::Validator(cmd) => {
-            cmd.exec(&opt, &wallet.spend_key, &mut view, &mut custody)
-                .await?
-        }
+        Command::Validator(cmd) => cmd.exec(&opt, &sk, &mut view, &mut custody).await?,
         Command::Stake(cmd) => cmd.exec(&opt, &fvk, &mut view, &mut custody).await?,
         Command::Chain(cmd) => cmd.exec(&opt, &fvk, &mut view).await?,
     }

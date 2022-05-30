@@ -7,6 +7,13 @@ This section describes how to use `pcli`, the command line client for Penumbra:
 - [Viewing Balances](./pcli/balance.md) describes how to view balances;
 - [Sending Transactions](./pcli/send.md) describes how to send funds.
 
+Penumbra is a private blockchain, so the public chain state does not reveal any
+private user data.  By default, `pcli` includes a _view service_ that
+synchronizes with the chain and scans with a viewing key.  However, it's also
+possible to run the view service as a standalone `pviewd` daemon:
+
+- [Using `pcli` with `pviewd`](./pcli/pviewd.md) describes how to use `pcli` with `pviewd`.
+
 ### Please submit any feedback and bug reports
 
 Thank you for helping us test the Penumbra network! If you have any feedback, please let us know in
@@ -19,8 +26,3 @@ fun! :)
 
 By default, `pcli` prints a warning message to the terminal, to be sure that people understand that this is *unstable, unfinished, pre-release software*.
 To disable this warning, export the `PCLI_UNLEASH_DANGER` environment variable.
-
-When working with `pcli`, the level of diagnostic information printed is
-dependent on the `RUST_LOG` environment variable. To see progress updates and
-other logged information while running `pcli`, we recommend you set `export
-RUST_LOG=info` in your terminal.
