@@ -54,7 +54,10 @@ impl From<CompactBlock> for pb::CompactBlock {
                 .into_iter()
                 .map(|v| Bytes::copy_from_slice(&v.0.to_bytes()))
                 .collect(),
-            block_root: Some(cb.block_root.into()),
+            // We don't serialize block roots if they are the empty block, because we don't need to
+            block_root: Some(cb.block_root)
+                .filter(|root| root.is_empty_finalized())
+                .map(Into::into),
             epoch_root: cb.epoch_root.map(Into::into),
         }
     }
@@ -78,8 +81,10 @@ impl TryFrom<pb::CompactBlock> for CompactBlock {
                 .collect::<Result<Vec<Nullifier>>>()?,
             block_root: value
                 .block_root
-                .ok_or_else(|| anyhow::anyhow!("missing block root"))?
-                .try_into()?,
+                .map(TryInto::try_into)
+                .transpose()?
+                // If the block root wasn't present, that means it's the default finalized block root
+                .unwrap_or_else(|| tct::builder::block::Finalized::default().root()),
             epoch_root: value.epoch_root.map(TryInto::try_into).transpose()?,
         })
     }
