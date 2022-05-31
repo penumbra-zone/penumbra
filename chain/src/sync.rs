@@ -18,6 +18,13 @@ pub struct CompactBlock {
     pub nullifiers: Vec<Nullifier>,
 }
 
+impl CompactBlock {
+    /// Returns true if the compact block is empty.
+    pub fn is_empty(&self) -> bool {
+        self.note_payloads.is_empty() && self.nullifiers.is_empty()
+    }
+}
+
 impl Protobuf<pb::CompactBlock> for CompactBlock {}
 
 impl From<CompactBlock> for pb::CompactBlock {

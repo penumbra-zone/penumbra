@@ -1,4 +1,5 @@
 use anyhow::anyhow;
+use parking_lot::Mutex;
 use penumbra_chain::params::ChainParams;
 use penumbra_crypto::{
     asset::{self, Id},
@@ -11,7 +12,7 @@ use penumbra_proto::{
 };
 use penumbra_tct as tct;
 use sqlx::{migrate::MigrateDatabase, query, Pool, Sqlite};
-use std::path::PathBuf;
+use std::{num::NonZeroU64, path::PathBuf, sync::Arc};
 use tonic::transport::Channel;
 
 use crate::{sync::ScanResult, NoteRecord};
@@ -19,6 +20,15 @@ use crate::{sync::ScanResult, NoteRecord};
 #[derive(Clone)]
 pub struct Storage {
     pool: Pool<Sqlite>,
+
+    /// This allows an optimization where we only commit to the database after
+    /// scanning a nonempty block.
+    ///
+    /// If this is `Some`, we have uncommitted empty blocks up to the inner height.
+    /// If this is `None`, we don't.
+    ///
+    /// Using a `NonZeroU64` ensures that `Option<NonZeroU64>` fits in 8 bytes.
+    uncommitted_height: Arc<Mutex<Option<NonZeroU64>>>,
 }
 
 impl Storage {
@@ -45,6 +55,7 @@ impl Storage {
     pub async fn load(storage_path: String) -> anyhow::Result<Self> {
         Ok(Self {
             pool: Pool::<Sqlite>::connect(&storage_path).await?,
+            uncommitted_height: Arc::new(Mutex::new(None)),
         })
     }
 
@@ -103,11 +114,19 @@ impl Storage {
 
         tx.commit().await?;
 
-        Ok(Storage { pool })
+        Ok(Storage {
+            pool,
+            uncommitted_height: Arc::new(Mutex::new(None)),
+        })
     }
 
     /// The last block height we've scanned to, if any.
     pub async fn last_sync_height(&self) -> anyhow::Result<Option<u64>> {
+        // Check if we have uncommitted blocks beyond the database height.
+        if let Some(height) = *self.uncommitted_height.lock() {
+            return Ok(Some(height.get()));
+        }
+
         let result = sqlx::query!(
             r#"
             SELECT height
@@ -291,6 +310,24 @@ impl Storage {
         Ok(())
     }
 
+    pub async fn record_empty_block(&self, height: u64) -> anyhow::Result<()> {
+        //Check that the incoming block height follows the latest recorded height
+        let last_sync_height = self.last_sync_height().await?.ok_or_else(|| {
+            anyhow::anyhow!("invalid: tried to record empty block as genesis block")
+        })?;
+
+        if height != last_sync_height + 1 {
+            return Err(anyhow::anyhow!(
+                "Wrong block height {} for latest sync height {}",
+                height,
+                last_sync_height
+            ));
+        }
+
+        *self.uncommitted_height.lock() = Some(height.try_into().unwrap());
+        Ok(())
+    }
+
     pub async fn record_block(
         &self,
         scan_result: ScanResult,
@@ -308,7 +345,7 @@ impl Storage {
 
         if !correct_height {
             return Err(anyhow::anyhow!(
-                "Wrong block height {:?} for latest sync height {:?}",
+                "Wrong block height {} for latest sync height {:?}",
                 scan_result.height,
                 last_sync_height
             ));
@@ -416,6 +453,9 @@ impl Storage {
             .await?;
 
         tx.commit().await?;
+        // It's critical to reset the uncommitted height here, since we've just
+        // invalidated it by committing.
+        self.uncommitted_height.lock().take();
 
         Ok(())
     }
