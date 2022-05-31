@@ -2691,6 +2691,7 @@ dependencies = [
  "penumbra-crypto",
  "penumbra-proto",
  "penumbra-storage",
+ "penumbra-tct",
  "penumbra-transaction",
  "serde",
  "tendermint",

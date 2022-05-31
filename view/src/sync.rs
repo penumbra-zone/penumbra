@@ -22,6 +22,8 @@ pub fn scan_block(
         height,
         note_payloads,
         nullifiers,
+        block_root,
+        epoch_root,
     }: CompactBlock,
     epoch_duration: u64,
 ) -> ScanResult {

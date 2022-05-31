@@ -52,6 +52,10 @@ message CompactBlock {
   repeated crypto.NotePayload note_payloads = 2;
   // Nullifiers identifying spent notes.
   repeated bytes nullifiers = 3;
+  // The block root of this block.
+  crypto.MerkleRoot block_root = 4;
+  // The epoch root of this epoch (only present when the block is the last in an epoch).
+  crypto.MerkleRoot epoch_root = 5;
 }
 
 message KnownAssets {
