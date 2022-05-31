@@ -2,7 +2,11 @@ use crate::prelude::*;
 
 /// A proof of the inclusion of some [`Commitment`] in a [`Tree`] with a particular [`Root`].
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Proof(pub(super) crate::internal::proof::Proof<Tree>);
+pub struct Proof(
+    pub(super)  crate::internal::proof::Proof<
+        frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>>,
+    >,
+);
 
 impl Proof {
     /// Construct a new [`Proof`] of inclusion for a given [`Commitment`], index, and authentication

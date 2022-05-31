@@ -102,10 +102,6 @@ impl From<u64> for Position {
     }
 }
 
-impl Height for Tree {
-    type Height = <frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>> as Height>::Height;
-}
-
 impl Tree {
     /// Create a new empty [`Tree`] for storing all commitments to the end of time.
     pub fn new() -> Self {
@@ -368,16 +364,23 @@ impl Tree {
 
     /// Explicitly mark the end of the current block in this tree, advancing the position to the
     /// next block.
-    pub fn end_block(&mut self) -> Result<&mut Self, InsertBlockError> {
+    ///
+    /// Returns the root of the block which was just finalized.
+    pub fn end_block(&mut self) -> Result<block::Root, InsertBlockError> {
         // Check to see if the latest block is already finalized, and finalize it if
         // it is not
-        let already_finalized = self
+        let (already_finalized, finalized_root) = self
             .inner
-            .update(|epoch| epoch.update(frontier::Tier::finalize))
+            .update(|epoch| {
+                epoch.update(|tier| {
+                    let already_finalized = tier.finalize();
+                    (already_finalized, block::Root(tier.hash()))
+                })
+            })
             .flatten()
             // If the entire tree or the latest epoch is empty or finalized, the latest block is
             // considered already finalized
-            .unwrap_or(true);
+            .unwrap_or((true, block::Finalized::default().root()));
 
         // If the latest block was already finalized (i.e. we are at the start of an unfinalized
         // empty block), insert an empty finalized block
@@ -385,7 +388,7 @@ impl Tree {
             self.insert_block(block::Finalized::default())?;
         };
 
-        Ok(self)
+        Ok(finalized_root)
     }
 
     /// Get the root hash of the most recent block in the most recent epoch of this [`Tree`].
@@ -431,7 +434,7 @@ impl Tree {
     pub fn insert_epoch(
         &mut self,
         epoch: impl Into<epoch::Finalized>,
-    ) -> Result<&mut Self, InsertEpochError> {
+    ) -> Result<(), InsertEpochError> {
         let epoch::Finalized { inner, index } = epoch.into();
 
         // If the insertion would fail, return an error
@@ -481,19 +484,24 @@ impl Tree {
             }
         }
 
-        Ok(self)
+        Ok(())
     }
 
     /// Explicitly mark the end of the current epoch in this tree, advancing the position to the
     /// next epoch.
-    pub fn end_epoch(&mut self) -> Result<&mut Self, InsertEpochError> {
+    ///
+    /// Returns the root of the epoch which was just finalized.
+    pub fn end_epoch(&mut self) -> Result<epoch::Root, InsertEpochError> {
         // Check to see if the latest block is already finalized, and finalize it if
         // it is not
-        let already_finalized = self
+        let (already_finalized, finalized_root) = self
             .inner
-            .update(frontier::Tier::finalize)
+            .update(|tier| {
+                let already_finalized = tier.finalize();
+                (already_finalized, epoch::Root(tier.hash()))
+            })
             // If there is no focused block, the latest block is considered already finalized
-            .unwrap_or(true);
+            .unwrap_or((true, epoch::Finalized::default().root()));
 
         // If the latest block was already finalized (i.e. we are at the start of an unfinalized
         // empty block), insert an empty finalized block
@@ -501,7 +509,7 @@ impl Tree {
             self.insert_epoch(epoch::Finalized::default())?;
         };
 
-        Ok(self)
+        Ok(finalized_root)
     }
 
     /// Get the root hash of the most recent epoch in this [`Tree`].
