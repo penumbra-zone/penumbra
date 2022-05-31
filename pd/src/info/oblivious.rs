@@ -21,12 +21,31 @@ use tokio::sync::mpsc;
 use tonic::Status;
 use tracing::{instrument, Instrument};
 
-// TODO(hdevalence): this still doesn't work, giving up for now
-// We need to use the tracing-futures version of Instrument,
-// because we want to instrument a Stream, and the Stream trait
-// isn't in std, and the tracing::Instrument trait only works with
-// (stable) std types.
-// use tracing_futures::Instrument;
+use crate::metrics;
+
+/// RAII guard used to increment and decrement an active connection counter.
+///
+/// This ensures we appropriately decrement the counter when the guard goes out of scope.
+struct CompactBlockConnectionCounter {}
+
+impl CompactBlockConnectionCounter {
+    pub fn new() -> Self {
+        metrics::increment_gauge!(
+            metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_ACTIVE_CONNECTIONS,
+            1.0
+        );
+        CompactBlockConnectionCounter {}
+    }
+}
+
+impl Drop for CompactBlockConnectionCounter {
+    fn drop(&mut self) {
+        metrics::decrement_gauge!(
+            metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_ACTIVE_CONNECTIONS,
+            1.0
+        );
+    }
+}
 
 use super::Info;
 
@@ -149,6 +168,8 @@ impl ObliviousQuery for Info {
         let txerr = tx.clone();
         tokio::spawn(
             async move {
+                let _guard = CompactBlockConnectionCounter::new();
+
                 // Phase 1: Catch up from the start height.
                 tracing::debug!(
                     ?end_height,
@@ -160,6 +181,9 @@ impl ObliviousQuery for Info {
                         .await?
                         .expect("compact block for in-range height must be present");
                     tx.send(Ok(block.to_proto())).await?;
+                    metrics::increment_counter!(
+                        metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL
+                    );
                 }
 
                 // If the client didn't request a keep-alive, we're done.
@@ -187,6 +211,9 @@ impl ObliviousQuery for Info {
                         .await?
                         .expect("compact block for in-range height must be present");
                     tx.send(Ok(block.to_proto())).await?;
+                    metrics::increment_counter!(
+                        metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL
+                    );
                 }
 
                 // Phase 2: wait on the height notifier and stream blocks as
@@ -204,6 +231,9 @@ impl ObliviousQuery for Info {
                         .await?
                         .expect("compact block for in-range height must be present");
                     tx.send(Ok(block.to_proto())).await?;
+                    metrics::increment_counter!(
+                        metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL
+                    );
                 }
             }
             .map_err(|e| async move {
