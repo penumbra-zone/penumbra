@@ -32,6 +32,13 @@ pub struct Tree {
 #[cfg_attr(any(test, feature = "arbitrary"), derive(proptest_derive::Arbitrary))]
 pub struct Root(pub Hash);
 
+impl Root {
+    /// Check if this is the root of an empty tree.
+    pub fn is_empty(&self) -> bool {
+        self.0 == Hash::zero()
+    }
+}
+
 impl From<Root> for Fq {
     fn from(root: Root) -> Self {
         root.0.into()
