@@ -373,9 +373,13 @@ impl ShieldedPool {
         let height = self.height().await;
 
         // Close the block in the TCT
-        self.note_commitment_tree
+        let block_root = self
+            .note_commitment_tree
             .end_block()
             .expect("ending a block in the note commitment tree can never fail");
+
+        // Put the block root in the compact block
+        self.compact_block.block_root = block_root;
 
         // If the block ends an epoch, also close the epoch in the TCT
         if Epoch::from_height(
@@ -390,9 +394,13 @@ impl ShieldedPool {
         {
             tracing::debug!(?height, "end of epoch");
 
-            self.note_commitment_tree
+            let epoch_root = self
+                .note_commitment_tree
                 .end_epoch()
                 .expect("ending an epoch in the note commitment tree can never fail");
+
+            // Put the epoch root in the compact block
+            self.compact_block.epoch_root = Some(epoch_root);
         }
     }
 
