@@ -147,16 +147,10 @@ where
                 // We didn't have enough room to add another sibling, so we return a complete node
                 // as a carry, to be propagated up above us and added to some ancestor segment's
                 // siblings, along with the item we couldn't insert
-                Err(children) => {
-                    Err(Full {
-                        item,
-                        // Implicitly, we only hash the children together when we're pruning them
-                        // (because otherwise we would lose that informtion); if at least one child
-                        // and its sibling hashes/subtrees is preserved in a `Complete` node, then
-                        // we defer calculating the node hash until looking up an authentication path
-                        complete: complete::Node::from_children_or_else_hash(children),
-                    })
-                }
+                Err(children) => Err(Full {
+                    item,
+                    complete: complete::Node::from_children_or_else_hash(children),
+                }),
             },
         }
     }
