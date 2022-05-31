@@ -69,6 +69,18 @@ impl From<Builder> for Finalized {
 #[cfg_attr(any(test, feature = "arbitrary"), derive(proptest_derive::Arbitrary))]
 pub struct Root(pub Hash);
 
+impl Root {
+    /// Check if this is the root of an empty finalized block.
+    pub fn is_empty_finalized(&self) -> bool {
+        self.0 == Hash::one()
+    }
+
+    /// Check if this is the root of an empty unfinalized block.
+    pub fn is_empty_unfinalized(&self) -> bool {
+        self.0 == Hash::zero()
+    }
+}
+
 impl From<Root> for Fq {
     fn from(root: Root) -> Self {
         root.0.into()
