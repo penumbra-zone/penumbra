@@ -59,7 +59,7 @@ impl<Child: Debug> Debug for Children<Child> {
 }
 
 impl<Child: Height> Height for Children<Child> {
-    type Height = <Child as Height>::Height;
+    type Height = Succ<<Child as Height>::Height>;
 }
 
 impl<Child: Height + GetHash> GetHash for Children<Child> {
