@@ -167,7 +167,13 @@ impl<Child: GetHash + ForgetOwned> ForgetOwned for Node<Child> {
 
         // Reconstruct the node from the children, or else (if all the children are hashes) hash
         // those hashes into a single node hash
-        let reconstructed = Self::from_children_or_else_hash(children);
+        let reconstructed = match Children::try_from(children) {
+            Ok(children) => Insert::Keep(Self {
+                children,
+                hash: self.hash,
+            }),
+            Err(_) => Insert::Hash(self.hash),
+        };
 
         (reconstructed, forgotten)
     }
