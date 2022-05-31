@@ -1,5 +1,7 @@
+use std::collections::BTreeMap;
+
 use penumbra_chain::{CompactBlock, Epoch};
-use penumbra_crypto::Nullifier;
+use penumbra_crypto::{note, Nullifier};
 use penumbra_crypto::{FullViewingKey, Note, NotePayload};
 use penumbra_tct as tct;
 
@@ -27,50 +29,68 @@ pub fn scan_block(
     }: CompactBlock,
     epoch_duration: u64,
 ) -> ScanResult {
-    let mut new_notes: Vec<NoteRecord> = Vec::new();
+    let mut decrypted_notes: BTreeMap<note::Commitment, Note> = note_payloads
+        .iter()
+        .filter_map(
+            |NotePayload {
+                 note_commitment,
+                 ephemeral_key,
+                 encrypted_note,
+             }| {
+                // Try to decrypt the encrypted note using the ephemeral key and persistent incoming
+                // viewing key -- if it doesn't decrypt, it wasn't meant for us.
+                if let Ok(note) =
+                    Note::decrypt(encrypted_note.as_ref(), fvk.incoming(), ephemeral_key)
+                {
+                    tracing::debug!(?note_commitment, ?note, "found note while scanning");
+                    Some((*note_commitment, note))
+                } else {
+                    None
+                }
+            },
+        )
+        .collect();
 
-    for NotePayload {
-        note_commitment,
-        ephemeral_key,
-        encrypted_note,
-    } in note_payloads
-    {
-        // Try to decrypt the encrypted note using the ephemeral key and persistent incoming
-        // viewing key -- if it doesn't decrypt, it wasn't meant for us.
-        if let Ok(note) = Note::decrypt(encrypted_note.as_ref(), fvk.incoming(), &ephemeral_key) {
-            tracing::debug!(?note_commitment, ?note, "found note while scanning");
+    let new_notes: Vec<NoteRecord> = note_payloads
+        .iter()
+        .filter_map(|note_payload| {
+            let note_commitment = note_payload.note_commitment;
 
-            // Keep track of this commitment for later witnessing
-            note_commitment_tree
-                .insert(tct::Witness::Keep, note_commitment)
-                .expect("inserting a commitment must succeed");
+            if let Some(note) = decrypted_notes.remove(&note_commitment) {
+                // Keep track of this commitment for later witnessing
+                note_commitment_tree
+                    .insert(tct::Witness::Keep, note_commitment)
+                    .expect("inserting a commitment must succeed");
 
-            let position = note_commitment_tree
-                .position_of(note_commitment)
-                .expect("witnessed note commitment is present");
+                let position = note_commitment_tree
+                    .position_of(note_commitment)
+                    .expect("witnessed note commitment is present");
 
-            let nullifier = fvk.derive_nullifier(position, &note_commitment);
+                let nullifier = fvk.derive_nullifier(position, &note_commitment);
 
-            let diversifier = &note.diversifier();
+                let diversifier = &note.diversifier();
 
-            let record = NoteRecord {
-                note_commitment,
-                height_spent: None,
-                height_created: height,
-                note,
-                diversifier_index: fvk.incoming().index_for_diversifier(diversifier),
-                nullifier,
-                position,
-            };
+                let record = NoteRecord {
+                    note_commitment,
+                    height_spent: None,
+                    height_created: height,
+                    note,
+                    diversifier_index: fvk.incoming().index_for_diversifier(diversifier),
+                    nullifier,
+                    position,
+                };
 
-            new_notes.push(record);
-        } else {
-            // Don't remember this commitment; it wasn't ours
-            note_commitment_tree
-                .insert(tct::Witness::Forget, note_commitment)
-                .expect("inserting a commitment must succeed");
-        }
-    }
+                Some(record)
+            } else {
+                // Don't remember this commitment; it wasn't ours
+                note_commitment_tree
+                    .insert(tct::Witness::Forget, note_commitment)
+                    .expect("inserting a commitment must succeed");
+
+                None
+            }
+        })
+        .collect();
 
     // End the block in the commitment tree
     note_commitment_tree
