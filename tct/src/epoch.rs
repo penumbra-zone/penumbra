@@ -121,11 +121,7 @@ impl Builder {
     ///
     /// - the [`epoch::Builder`](Builder) is full, or
     /// - the most recent block is full.
-    pub fn insert(
-        &mut self,
-        witness: Witness,
-        commitment: Commitment,
-    ) -> Result<&mut Self, InsertError> {
+    pub fn insert(&mut self, witness: Witness, commitment: Commitment) -> Result<(), InsertError> {
         let item = match witness {
             Witness::Keep => commitment.into(),
             Witness::Forget => Hash::of(commitment).into(),
@@ -168,7 +164,7 @@ impl Builder {
             }
         }
 
-        Ok(self)
+        Ok(())
     }
 
     /// Insert a block into this epoch.
@@ -178,7 +174,7 @@ impl Builder {
     pub fn insert_block(
         &mut self,
         block: impl Into<block::Finalized>,
-    ) -> Result<(), InsertBlockError> {
+    ) -> Result<block::Root, InsertBlockError> {
         let block::Finalized { inner, index } = block.into();
 
         // If the insertion would fail, return an error
@@ -187,7 +183,7 @@ impl Builder {
         }
 
         // Convert the top level inside of the block to a tier that can be slotted into the epoch
-        let inner = match inner {
+        let inner: frontier::Tier<frontier::Item> = match inner {
             Insert::Keep(inner) => inner.into(),
             Insert::Hash(hash) => hash.into(),
         };
@@ -204,6 +200,9 @@ impl Builder {
         )
         .expect("position of epoch is never greater than `u32::MAX`")
         .into();
+
+        // Calculate the root hash of the block being inserted
+        let block_root = block::Root(inner.hash());
 
         // Insert the inner tree of the block into the epoch
         self.inner
@@ -225,7 +224,7 @@ impl Builder {
             }
         }
 
-        Ok(())
+        Ok(block_root)
     }
 
     /// Explicitly mark the end of the current block in this epoch, advancing the position to the

@@ -246,7 +246,8 @@ impl Tree {
         self.index.get(&commitment).map(|index| Position(*index))
     }
 
-    /// Add a new block all at once to the most recently inserted epoch of this [`Tree`].
+    /// Add a new block all at once to the most recently inserted epoch of this [`Tree`], returning
+    /// the block root of the finalized block.
     ///
     /// This can be used for two purposes:
     ///
@@ -273,7 +274,7 @@ impl Tree {
     pub fn insert_block(
         &mut self,
         block: impl Into<block::Finalized>,
-    ) -> Result<(), InsertBlockError> {
+    ) -> Result<block::Root, InsertBlockError> {
         let block::Finalized { inner, index } = block.into();
 
         // Convert the top level inside of the block to a tier that can be slotted into the epoch
@@ -296,7 +297,8 @@ impl Tree {
 
         // Insert the block into the latest epoch, or create a new epoch for it if the latest epoch
         // does not exist or is finalized
-        self.inner
+        let block_root = self
+            .inner
             .update(|epoch| {
                 // If the epoch is finalized, create a new one (below) to insert the block into
                 if epoch.is_finalized() {
@@ -311,11 +313,17 @@ impl Tree {
                     })));
                 }
 
+                // Get the inner thing from the `Option` storage
+                let inner = inner.take().unwrap();
+
+                // Calculate the block root
+                let block_root = block::Root(inner.hash());
+
                 epoch
-                    .insert(inner.take().unwrap())
+                    .insert(inner)
                     .expect("inserting into the current epoch must succeed when it is not full");
 
-                Some(Ok(()))
+                Some(Ok(block_root))
             })
             .flatten()
             .unwrap_or_else(|| {
@@ -326,12 +334,18 @@ impl Tree {
                     }));
                 }
 
+                // Get the inner thing from the `Option` storage
+                let inner = inner.take().unwrap();
+
+                // Calculate the block root
+                let block_root = block::Root(inner.hash());
+
                 // Create a new epoch and insert the block into it
                 self.inner
-                    .insert(frontier::Tier::new(inner.take().unwrap()))
+                    .insert(frontier::Tier::new(inner))
                     .expect("inserting a new epoch must succeed when the tree is not full");
 
-                Ok(())
+                Ok(block_root)
             })?;
 
         // Extract from the position we recorded earlier what the epoch/block indexes for each
@@ -359,13 +373,11 @@ impl Tree {
             }
         }
 
-        Ok(())
+        Ok(block_root)
     }
 
     /// Explicitly mark the end of the current block in this tree, advancing the position to the
-    /// next block.
-    ///
-    /// Returns the root of the block which was just finalized.
+    /// next block, and returning the root of the block which was just finalized.
     pub fn end_block(&mut self) -> Result<block::Root, InsertBlockError> {
         // Check to see if the latest block is already finalized, and finalize it if
         // it is not
@@ -407,7 +419,8 @@ impl Tree {
             .unwrap_or_else(|| block::Builder::default().root())
     }
 
-    /// Add a new epoch all at once to this [`Tree`].
+    /// Add a new epoch all at once to this [`Tree`], returning the root of the finalized epoch
+    /// which was inserted.
     ///
     /// This can be used for two purposes:
     ///
@@ -434,7 +447,7 @@ impl Tree {
     pub fn insert_epoch(
         &mut self,
         epoch: impl Into<epoch::Finalized>,
-    ) -> Result<(), InsertEpochError> {
+    ) -> Result<epoch::Root, InsertEpochError> {
         let epoch::Finalized { inner, index } = epoch.into();
 
         // If the insertion would fail, return an error
@@ -444,7 +457,7 @@ impl Tree {
         }
 
         // Convert the top level inside of the epoch to a tier that can be slotted into the tree
-        let inner = match inner {
+        let inner: frontier::Tier<frontier::Tier<frontier::Item>> = match inner {
             Insert::Keep(inner) => inner.into(),
             Insert::Hash(hash) => hash.into(),
         };
@@ -459,6 +472,9 @@ impl Tree {
             .position()
             .expect("tree must have a position because it is not full")
             .into();
+
+        // Calculate the root of the finalized epoch we're about to insert
+        let epoch_root = epoch::Root(inner.hash());
 
         // Insert the inner tree of the epoch into the global tree
         self.inner
@@ -484,13 +500,11 @@ impl Tree {
             }
         }
 
-        Ok(())
+        Ok(epoch_root)
     }
 
     /// Explicitly mark the end of the current epoch in this tree, advancing the position to the
-    /// next epoch.
-    ///
-    /// Returns the root of the epoch which was just finalized.
+    /// next epoch, and returning the root of the epoch which was just finalized.
     pub fn end_epoch(&mut self) -> Result<epoch::Root, InsertEpochError> {
         // Check to see if the latest block is already finalized, and finalize it if
         // it is not
