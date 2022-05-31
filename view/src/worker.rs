@@ -112,6 +112,8 @@ impl Worker {
                 // and skip touching the database:
                 nct_guard.end_block().unwrap();
                 self.storage.record_empty_block(block.height).await?;
+                // Notify all watchers of the new height we just recorded.
+                self.sync_height_tx.send(block.height)?;
             } else {
                 // Otherwise, scan the block and commit its changes:
                 let scan_result =
