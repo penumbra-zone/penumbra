@@ -88,9 +88,21 @@ impl<Child: Focus> Focus for Node<Child> {
 
     #[inline]
     fn finalize_owned(self) -> Insert<Self::Complete> {
-        complete::Node::from_siblings_and_focus_or_else_hash(
-            self.siblings,
-            self.focus.finalize_owned(),
+        let one = || Insert::Hash(Hash::one());
+
+        // Push the focus into the siblings, and fill any empty children with the *ONE* hash, which
+        // causes the hash of a complete node to deliberately differ from that of a frontier node,
+        // which uses *ZERO* padding
+        complete::Node::from_children_or_else_hash(
+            match self.siblings.push(self.focus.finalize_owned()) {
+                Err([a, b, c, d]) => [a, b, c, d],
+                Ok(siblings) => match siblings.into_elems() {
+                    IntoElems::_3([a, b, c]) => [a, b, c, one()],
+                    IntoElems::_2([a, b]) => [a, b, one(), one()],
+                    IntoElems::_1([a]) => [a, one(), one(), one()],
+                    IntoElems::_0([]) => [one(), one(), one(), one()],
+                },
+            },
         )
     }
 }

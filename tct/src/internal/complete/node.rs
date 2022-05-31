@@ -43,26 +43,6 @@ impl<'de, Child: Height + GetHash + Deserialize<'de>> Deserialize<'de> for Node<
 }
 
 impl<Child: GetHash + Height> Node<Child> {
-    pub(in super::super) fn from_siblings_and_focus_or_else_hash(
-        siblings: Three<Insert<Child>>,
-        focus: Insert<Child>,
-    ) -> Insert<Self> {
-        let one = || Insert::Hash(Hash::one());
-
-        // Push the focus into the siblings, and fill any empty children with the *ONE* hash, which
-        // causes the hash of a complete node to deliberately differ from that of a frontier node,
-        // which uses *ZERO* padding
-        Self::from_children_or_else_hash(match siblings.push(focus) {
-            Err([a, b, c, d]) => [a, b, c, d],
-            Ok(siblings) => match siblings.into_elems() {
-                IntoElems::_3([a, b, c]) => [a, b, c, one()],
-                IntoElems::_2([a, b]) => [a, b, one(), one()],
-                IntoElems::_1([a]) => [a, one(), one(), one()],
-                IntoElems::_0([]) => [one(), one(), one(), one()],
-            },
-        })
-    }
-
     pub(in super::super) fn from_children_or_else_hash(
         children: [Insert<Child>; 4],
     ) -> Insert<Self> {
