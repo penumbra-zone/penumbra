@@ -4,11 +4,12 @@ use anyhow::Result;
 use bytes::Bytes;
 use penumbra_crypto::{FieldExt, NotePayload, Nullifier};
 use penumbra_proto::{chain as pb, Protobuf};
+use penumbra_tct as tct;
 use serde::{Deserialize, Serialize};
 
 /// A compressed delta update with the minimal data from a block required to
 /// synchronize private client state.
-#[derive(Clone, Debug, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(try_from = "pb::CompactBlock", into = "pb::CompactBlock")]
 pub struct CompactBlock {
     pub height: u64,
@@ -16,6 +17,22 @@ pub struct CompactBlock {
     pub note_payloads: Vec<NotePayload>,
     // Nullifiers identifying spent notes.
     pub nullifiers: Vec<Nullifier>,
+    // The block root of this block.
+    pub block_root: tct::builder::block::Root,
+    // The epoch root of this epoch, if this block ends an epoch (`None` otherwise).
+    pub epoch_root: Option<tct::builder::block::Root>,
+}
+
+impl Default for CompactBlock {
+    fn default() -> Self {
+        Self {
+            height: 0,
+            note_payloads: Vec::new(),
+            nullifiers: Vec::new(),
+            block_root: tct::builder::block::Finalized::default().root(),
+            epoch_root: None,
+        }
+    }
 }
 
 impl CompactBlock {
@@ -37,6 +54,8 @@ impl From<CompactBlock> for pb::CompactBlock {
                 .into_iter()
                 .map(|v| Bytes::copy_from_slice(&v.0.to_bytes()))
                 .collect(),
+            block_root: Some(cb.block_root.into()),
+            epoch_root: cb.epoch_root.map(Into::into),
         }
     }
 }
@@ -57,6 +76,11 @@ impl TryFrom<pb::CompactBlock> for CompactBlock {
                 .into_iter()
                 .map(|v| Nullifier::try_from(&*v))
                 .collect::<Result<Vec<Nullifier>>>()?,
+            block_root: value
+                .block_root
+                .ok_or_else(|| anyhow::anyhow!("missing block root"))?
+                .try_into()?,
+            epoch_root: value.epoch_root.map(TryInto::try_into).transpose()?,
         })
     }
 }
