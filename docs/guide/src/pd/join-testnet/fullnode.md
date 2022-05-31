@@ -62,6 +62,12 @@ JSON.
 
 After configuration is complete, you're ready to start your node.
 
+If you've run a previous testnet, first wipe your RocksDB with:
+
+```
+rm -r \$HOME/.rocksdb
+```
+
 First, start the `pd` binary:
 
 ```console
@@ -103,7 +109,7 @@ when you run `tendermint start`, try removing RocksDB:
 
 
 ```
-rm -r $HOME/.rocksdb
+rm -r \$HOME/.rocksdb
 ```
 
 and restarting `pd`.
