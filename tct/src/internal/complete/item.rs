@@ -1,26 +1,28 @@
 use crate::prelude::*;
 
 /// A witnessed hash of a commitment at the true leaf of a complete tree.
-#[derive(Clone, Copy, PartialEq, Eq, Derivative, Serialize, Deserialize)]
-#[derivative(Debug = "transparent")]
-pub struct Item(Hash);
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Derivative, Serialize, Deserialize)]
+pub struct Item {
+    hash: Hash,
+    commitment: Commitment,
+}
 
 impl Item {
     /// Create a new `Item` from a [`Hash`](struct@Hash).
-    pub fn new(hash: Hash) -> Self {
-        Self(hash)
+    pub fn new(hash: Hash, commitment: Commitment) -> Self {
+        Self { hash, commitment }
     }
 }
 
 impl GetHash for Item {
     #[inline]
     fn hash(&self) -> Hash {
-        self.0
+        self.hash
     }
 
     #[inline]
     fn cached_hash(&self) -> Option<Hash> {
-        Some(self.0)
+        Some(self.hash)
     }
 }
 
@@ -36,14 +38,14 @@ impl Witness for Item {
     #[inline]
     fn witness(&self, index: impl Into<u64>) -> Option<(AuthPath<Self>, Hash)> {
         debug_assert_eq!(index.into(), 0, "non-zero index when witnessing leaf");
-        Some((path::Leaf, self.0))
+        Some((path::Leaf, self.hash))
     }
 }
 
 impl ForgetOwned for Item {
     fn forget_owned(self, index: impl Into<u64>) -> (Insert<Self>, bool) {
         debug_assert_eq!(index.into(), 0, "non-zero index when forgetting leaf");
-        (Insert::Hash(self.0), true)
+        (Insert::Hash(self.hash), true)
     }
 }
 

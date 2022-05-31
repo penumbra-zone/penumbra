@@ -317,7 +317,7 @@ mod test {
 
     #[test]
     fn check_inner_size() {
-        static_assertions::assert_eq_size!(Tier<Tier<Tier<frontier::Item>>>, [u8; 64]);
+        static_assertions::assert_eq_size!(Tier<Tier<Tier<frontier::Item>>>, [u8; 56]);
     }
 
     #[test]

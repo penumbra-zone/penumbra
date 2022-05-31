@@ -58,6 +58,21 @@ impl<Child: Debug> Debug for Children<Child> {
     }
 }
 
+impl<Child: Height> Height for Children<Child> {
+    type Height = <Child as Height>::Height;
+}
+
+impl<Child: Height + GetHash> GetHash for Children<Child> {
+    fn hash(&self) -> Hash {
+        let [a, b, c, d] = self.children().map(|x| x.hash());
+        Hash::node(<Self as Height>::Height::HEIGHT, a, b, c, d)
+    }
+
+    fn cached_hash(&self) -> Option<Hash> {
+        None
+    }
+}
+
 impl<Child> TryFrom<[Insert<Child>; 4]> for Children<Child>
 where
     Child: Height,

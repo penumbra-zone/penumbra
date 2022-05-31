@@ -3,13 +3,13 @@ use crate::prelude::*;
 /// The hash of the most-recently-inserted item, stored at the tip of the frontier.
 #[derive(Debug, Clone, Copy, Derivative, Serialize, Deserialize)]
 pub struct Item {
-    item: Insert<Hash>,
+    item: Insert<(Commitment, Hash)>,
 }
 
 impl From<Commitment> for Item {
-    fn from(item: Commitment) -> Self {
+    fn from(commitment: Commitment) -> Self {
         Self {
-            item: Insert::Keep(Hash::of(item)),
+            item: Insert::Keep((commitment, Hash::of(commitment))),
         }
     }
 }
@@ -27,7 +27,7 @@ impl GetHash for Item {
     fn hash(&self) -> Hash {
         match self.item {
             Insert::Hash(hash) => hash,
-            Insert::Keep(hash) => hash,
+            Insert::Keep((_, hash)) => hash,
         }
     }
 
@@ -46,7 +46,8 @@ impl Focus for Item {
 
     #[inline]
     fn finalize_owned(self) -> Insert<Self::Complete> {
-        self.item.map(complete::Item::new)
+        self.item
+            .map(|(commitment, hash)| complete::Item::new(hash, commitment))
     }
 }
 
@@ -71,7 +72,7 @@ impl Forget for Item {
     #[inline]
     fn forget(&mut self, index: impl Into<u64>) -> bool {
         if index.into() == 0 {
-            if let Insert::Keep(hash) = self.item {
+            if let Insert::Keep((_, hash)) = self.item {
                 self.item = Insert::Hash(hash);
                 true
             } else {
