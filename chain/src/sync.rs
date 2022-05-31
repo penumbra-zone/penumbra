@@ -20,7 +20,7 @@ pub struct CompactBlock {
     // The block root of this block.
     pub block_root: tct::builder::block::Root,
     // The epoch root of this epoch, if this block ends an epoch (`None` otherwise).
-    pub epoch_root: Option<tct::builder::block::Root>,
+    pub epoch_root: Option<tct::builder::epoch::Root>,
 }
 
 impl Default for CompactBlock {
