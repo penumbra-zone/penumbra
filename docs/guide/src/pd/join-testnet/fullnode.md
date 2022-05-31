@@ -109,7 +109,7 @@ when you run `tendermint start`, try removing RocksDB:
 
 
 ```
-rm -r \$HOME/.rocksdb
+rm -r $HOME/.rocksdb
 ```
 
 and restarting `pd`.
