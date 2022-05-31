@@ -109,11 +109,7 @@ impl Builder {
     /// # Errors
     ///
     /// Returns [`InsertError`] if the block is full.
-    pub fn insert(
-        &mut self,
-        witness: Witness,
-        commitment: Commitment,
-    ) -> Result<(), InsertError> {
+    pub fn insert(&mut self, witness: Witness, commitment: Commitment) -> Result<(), InsertError> {
         let item = match witness {
             Witness::Keep => commitment.into(),
             Witness::Forget => Hash::of(commitment).into(),
