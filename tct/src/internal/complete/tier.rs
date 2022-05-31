@@ -9,15 +9,15 @@ pub type Nested<Item> = N<N<N<N<N<N<N<N<L<Item>>>>>>>>>;
 
 /// A complete tier of the tiered commitment tree, being an 8-deep sparse quad-tree.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Tier<Item> {
+pub struct Tier<Item: GetHash + Height> {
     pub(in super::super) inner: Nested<Item>,
 }
 
-impl<Item: Height> Height for Tier<Item> {
+impl<Item: GetHash + Height> Height for Tier<Item> {
     type Height = <Nested<Item> as Height>::Height;
 }
 
-impl<Item: Height + GetHash> GetHash for Tier<Item> {
+impl<Item: GetHash + Height> GetHash for Tier<Item> {
     #[inline]
     fn hash(&self) -> Hash {
         self.inner.hash()

@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use crate::prelude::*;
 
 use super::super::frontier;
@@ -6,24 +8,41 @@ pub mod children;
 pub use children::Children;
 
 /// A complete sparse node in a tree, storing only the witnessed subtrees.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct Node<Child> {
-    #[serde(skip)]
-    hash: CachedHash,
+    hash: Hash,
     children: Children<Child>,
 }
 
-impl<Child: Height> Node<Child> {
-    /// Set the hash of this node without checking to see whether the hash is correct.
-    ///
-    /// # Correctness
-    ///
-    /// This should only be called when the hash is already known (i.e. after construction from
-    /// children with a known node hash).
-    pub fn set_hash_unchecked(&self, hash: Hash) {
-        self.hash.set_if_empty(|| hash);
+impl<Child: Height + GetHash> From<Children<Child>> for Node<Child> {
+    fn from(children: Children<Child>) -> Self {
+        Self {
+            hash: children.hash(),
+            children,
+        }
     }
+}
 
+impl<Child: Serialize> Serialize for Node<Child> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.children.serialize(serializer)
+    }
+}
+
+impl<'de, Child: Height + GetHash + Deserialize<'de>> Deserialize<'de> for Node<Child> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let children = Children::deserialize(deserializer)?;
+        Ok(children.into())
+    }
+}
+
+impl<Child: GetHash + Height> Node<Child> {
     pub(in super::super) fn from_siblings_and_focus_or_else_hash(
         siblings: Three<Insert<Child>>,
         focus: Insert<Child>,
@@ -48,10 +67,7 @@ impl<Child: Height> Node<Child> {
         children: [Insert<Child>; 4],
     ) -> Insert<Self> {
         match Children::try_from(children) {
-            Ok(children) => Insert::Keep(Self {
-                hash: CachedHash::default(),
-                children,
-            }),
+            Ok(children) => Insert::Keep(children.into()),
             Err([a, b, c, d]) => {
                 // If there were no witnessed children, compute a hash for this node based on the
                 // node's height and the hashes of its children.
@@ -77,20 +93,12 @@ impl<Child: Complete> Complete for Node<Child> {
 impl<Child: Height + GetHash> GetHash for Node<Child> {
     #[inline]
     fn hash(&self) -> Hash {
-        self.hash.set_if_empty(|| {
-            let [a, b, c, d] = self.children.children().map(|x| x.hash());
-            Hash::node(<Self as Height>::Height::HEIGHT, a, b, c, d)
-        })
+        self.hash
     }
 
     #[inline]
     fn cached_hash(&self) -> Option<Hash> {
-        self.hash.get()
-    }
-
-    #[inline]
-    fn clear_cached_hash(&self) {
-        self.hash.clear();
+        Some(self.hash)
     }
 }
 
@@ -161,15 +169,6 @@ impl<Child: GetHash + ForgetOwned> ForgetOwned for Node<Child> {
         // those hashes into a single node hash
         let reconstructed = Self::from_children_or_else_hash(children);
 
-        // If the node was reconstructed, we know that its hash should not have changed, so carry
-        // over the old cached hash, if any existed, to prevent recomputation
-        let reconstructed = reconstructed.map(|node| {
-            if let Some(hash) = self.hash.get() {
-                node.set_hash_unchecked(hash);
-            }
-            node
-        });
-
         (reconstructed, forgotten)
     }
 }
@@ -202,6 +201,6 @@ mod test {
 
     #[test]
     fn check_node_size() {
-        static_assertions::assert_eq_size!(Node<()>, [u8; 56]);
+        static_assertions::assert_eq_size!(Node<()>, [u8; 48]);
     }
 }

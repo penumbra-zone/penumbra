@@ -4,15 +4,15 @@ use complete::Nested;
 
 /// A complete top-level tier of the tiered commitment tree, being an 8-deep sparse quad-tree.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Top<Item> {
+pub struct Top<Item: GetHash + Height> {
     pub(in super::super) inner: Nested<Item>,
 }
 
-impl<Item: Height> Height for Top<Item> {
+impl<Item: GetHash + Height> Height for Top<Item> {
     type Height = <Nested<Item> as Height>::Height;
 }
 
-impl<Item: Height + GetHash> GetHash for Top<Item> {
+impl<Item: GetHash + Height> GetHash for Top<Item> {
     #[inline]
     fn hash(&self) -> Hash {
         self.inner.hash()
@@ -24,7 +24,7 @@ impl<Item: Height + GetHash> GetHash for Top<Item> {
     }
 }
 
-impl<Item> From<complete::Tier<Item>> for Top<Item> {
+impl<Item: GetHash + Height> From<complete::Tier<Item>> for Top<Item> {
     fn from(tier: complete::Tier<Item>) -> Self {
         Top { inner: tier.inner }
     }
