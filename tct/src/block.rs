@@ -113,7 +113,7 @@ impl Builder {
         &mut self,
         witness: Witness,
         commitment: Commitment,
-    ) -> Result<&mut Self, InsertError> {
+    ) -> Result<(), InsertError> {
         let item = match witness {
             Witness::Keep => commitment.into(),
             Witness::Forget => Hash::of(commitment).into(),
@@ -140,7 +140,7 @@ impl Builder {
             }
         }
 
-        Ok(self)
+        Ok(())
     }
 
     /// Get the root hash of this block builder.

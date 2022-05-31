@@ -178,7 +178,7 @@ impl Builder {
     pub fn insert_block(
         &mut self,
         block: impl Into<block::Finalized>,
-    ) -> Result<&mut Self, InsertBlockError> {
+    ) -> Result<(), InsertBlockError> {
         let block::Finalized { inner, index } = block.into();
 
         // If the insertion would fail, return an error
@@ -225,19 +225,22 @@ impl Builder {
             }
         }
 
-        Ok(self)
+        Ok(())
     }
 
     /// Explicitly mark the end of the current block in this epoch, advancing the position to the
     /// next block.
-    pub fn end_block(&mut self) -> Result<&mut Self, InsertBlockError> {
+    pub fn end_block(&mut self) -> Result<block::Root, InsertBlockError> {
         // Check to see if the latest block is already finalized, and finalize it if
         // it is not
-        let already_finalized = self
+        let (already_finalized, finalized_root) = self
             .inner
-            .update(frontier::Tier::finalize)
+            .update(|tier| {
+                let already_finalized = tier.finalize();
+                (already_finalized, block::Root(tier.hash()))
+            })
             // If the entire epoch is empty, the latest block is considered already finalized
-            .unwrap_or(true);
+            .unwrap_or((true, block::Finalized::default().root()));
 
         // If the latest block was already finalized (i.e. we are at the start of an unfinalized
         // empty block), insert an empty finalized block
@@ -245,7 +248,7 @@ impl Builder {
             self.insert_block(block::Finalized::default())?;
         };
 
-        Ok(self)
+        Ok(finalized_root)
     }
 
     /// Get the root hash of this epoch builder.
