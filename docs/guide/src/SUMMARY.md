@@ -4,6 +4,7 @@
   - [Generating a Wallet](./pcli/wallet.md)
   - [Viewing Balances](./pcli/balance.md)
   - [Sending Transactions](./pcli/send.md)
+  - [Using `pcli` with `pviewd`](./pcli/pviewd.md)
 - [Using `pd`](./pd.md)
   - [Building `pd`](./pd/build.md)
   - [Joining a Testnet](./pd/join-testnet.md)
