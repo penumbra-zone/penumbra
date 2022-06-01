@@ -8,6 +8,8 @@ pub enum AddrCmd {
     /// Show the address with the given index.
     Show {
         /// The index of the address to show.
+        /// Default to 0
+        #[structopt(default_value = "0")]
         index: u64,
         /// If true, emits only the address and not the (local) label for it.
         #[structopt(short, long)]
