@@ -96,10 +96,10 @@ impl<Item: GetPosition + Height + Any> Any for Leaf<Item> {
     }
 
     fn global_position(&self) -> Option<u64> {
-        <Self as GetPosition>::position(&self)
+        <Self as GetPosition>::position(self)
     }
 
-    fn children(&self) -> Vec<(Insert<Child>, Forgotten)> {
+    fn children(&self) -> Vec<(Forgotten, Insert<Child>)> {
         self.item.children()
     }
 }
