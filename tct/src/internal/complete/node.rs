@@ -173,6 +173,23 @@ impl<Child: GetHash + ForgetOwned> ForgetOwned for Node<Child> {
     }
 }
 
+impl<Child: ForgetForgotten> ForgetForgotten for Node<Child> {
+    fn forget_forgotten(&mut self) {
+        for (forgotten, child) in self
+            .forgotten
+            .iter_mut()
+            .zip(self.children.children_mut().iter_mut())
+        {
+            if *forgotten != Forgotten::default() {
+                *forgotten = Forgotten::default();
+                if let Some(child) = child.as_mut().keep() {
+                    child.forget_forgotten();
+                }
+            }
+        }
+    }
+}
+
 impl<Child> GetPosition for Node<Child> {
     fn position(&self) -> Option<u64> {
         None

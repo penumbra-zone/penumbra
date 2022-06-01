@@ -90,6 +90,12 @@ impl<Item: GetHash + Forget> Forget for Leaf<Item> {
     }
 }
 
+impl<Item: ForgetForgotten> ForgetForgotten for Leaf<Item> {
+    fn forget_forgotten(&mut self) {
+        self.item.forget_forgotten()
+    }
+}
+
 impl<Item: GetPosition + Height + Any> Any for Leaf<Item> {
     fn kind(&self) -> Kind {
         self.item.kind()

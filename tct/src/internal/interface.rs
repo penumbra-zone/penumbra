@@ -96,3 +96,10 @@ pub trait ForgetOwned: Height + Sized {
     /// last witness remaining in this tree.
     fn forget_owned(self, forgotten: Forgotten, index: impl Into<u64>) -> (Insert<Self>, bool);
 }
+
+/// Forget about how many things have been forgotten in a tree.
+pub trait ForgetForgotten {
+    /// Forget about how many things have been forgotten in a tree, resetting all internal forgotten
+    /// counts to zero.
+    fn forget_forgotten(&mut self);
+}

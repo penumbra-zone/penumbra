@@ -195,7 +195,7 @@ impl Builder {
         }
 
         // Convert the top level inside of the block to a tier that can be slotted into the epoch
-        let inner: frontier::Tier<frontier::Item> = match inner {
+        let mut inner: frontier::Tier<frontier::Item> = match inner {
             Insert::Keep(inner) => inner.into(),
             Insert::Hash(hash) => hash.into(),
         };
@@ -215,6 +215,10 @@ impl Builder {
 
         // Calculate the root hash of the block being inserted
         let block_root = block::Root(inner.hash());
+
+        // Forget the forgotten counts within the block being inserted, since they're not coherent
+        // with the epoch's own forgotten counts, and not useful
+        inner.forget_forgotten();
 
         // Insert the inner tree of the block into the epoch
         self.inner

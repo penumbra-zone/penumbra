@@ -46,6 +46,12 @@ impl<Item: ForgetOwned> ForgetOwned for Leaf<Item> {
     }
 }
 
+impl<Item: ForgetForgotten> ForgetForgotten for Leaf<Item> {
+    fn forget_forgotten(&mut self) {
+        self.0.forget_forgotten()
+    }
+}
+
 impl<Item> GetPosition for Leaf<Item> {
     fn position(&self) -> Option<u64> {
         None
