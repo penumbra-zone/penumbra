@@ -42,10 +42,10 @@ impl<Item: Height + Any> Any for Top<Item> {
     }
 
     fn global_position(&self) -> Option<u64> {
-        <Self as GetPosition>::position(&self)
+        <Self as GetPosition>::position(self)
     }
 
-    fn children(&self) -> Vec<(Insert<Child>, Forgotten)> {
+    fn children(&self) -> Vec<(Forgotten, Insert<Child>)> {
         (&self.inner as &dyn Any).children()
     }
 }

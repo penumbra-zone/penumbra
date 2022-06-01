@@ -362,15 +362,19 @@ where
     }
 
     fn global_position(&self) -> Option<u64> {
-        <Self as GetPosition>::position(&self)
+        <Self as GetPosition>::position(self)
     }
 
-    fn children(&self) -> Vec<(Insert<Child>, Forgotten)> {
-        self.siblings
+    fn children(&self) -> Vec<(Forgotten, Insert<Child>)> {
+        self.forgotten
             .iter()
-            .map(|child| child.as_ref().map(|child| Child::new(self, child)))
-            .chain(std::iter::once(Insert::Keep(Child::new(self, &self.focus))))
-            .zip(self.forgotten.iter().copied())
+            .copied()
+            .zip(
+                self.siblings
+                    .iter()
+                    .map(|child| child.as_ref().map(|child| Child::new(self, child)))
+                    .chain(std::iter::once(Insert::Keep(Child::new(self, &self.focus)))),
+            )
             .collect()
     }
 }

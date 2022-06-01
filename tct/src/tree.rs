@@ -597,7 +597,7 @@ impl Tree {
             errors: &mut Vec<IndexError>,
             node: &dyn Any,
         ) {
-            if node.kind() == Kind::Item {
+            if matches!(node.kind(), Kind::Leaf(_) | Kind::Rightmost(Some(_))) {
                 // We're at a leaf, so check it:
                 if let Some(commitment) = reverse_index.get(&node.index().into()) {
                     let expected_hash = Hash::of(*commitment);
@@ -609,7 +609,7 @@ impl Tree {
                             found_hash: node.hash(),
                         });
                     }
-                } else if node.place() != Place::Frontier {
+                } else {
                     // It's okay for there to be an unindexed witness on the frontier (because the
                     // frontier is always represented, even if it's marked for later forgetting),
                     // but otherwise we want to ensure that all witnesses are indexed
@@ -623,7 +623,7 @@ impl Tree {
                 for child in node
                     .children()
                     .iter()
-                    .filter_map(|child| child.as_ref().keep())
+                    .filter_map(|child| child.1.as_ref().keep())
                 {
                     check_leaves(reverse_index, errors, child as &dyn Any);
                 }
@@ -689,8 +689,10 @@ impl Tree {
             // IMPORTANT: we need to traverse children before parent, to avoid overwriting the
             // parent's hash before we have a chance to check it!
             for child in node.children() {
-                if let Some(child) = child.as_ref().keep() {
-                    check_hashes(errors, child as &dyn Any);
+                if let Some(child) = child.1.as_ref().keep() {
+                    if child.place() == Place::Frontier {
+                        check_hashes(errors, child as &dyn Any);
+                    }
                 }
             }
 

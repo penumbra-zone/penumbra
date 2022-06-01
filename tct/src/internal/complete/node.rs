@@ -185,15 +185,19 @@ impl<Item: Height + Any> Any for Node<Item> {
     }
 
     fn global_position(&self) -> Option<u64> {
-        <Self as GetPosition>::position(&self)
+        <Self as GetPosition>::position(self)
     }
 
-    fn children(&self) -> Vec<(Insert<Child>, Forgotten)> {
-        self.children
-            .children()
-            .into_iter()
-            .map(|child| child.map(|child| Child::new(self, child)))
-            .zip(self.forgotten.iter().copied())
+    fn children(&self) -> Vec<(Forgotten, Insert<Child>)> {
+        self.forgotten
+            .iter()
+            .copied()
+            .zip(
+                self.children
+                    .children()
+                    .into_iter()
+                    .map(|child| child.map(|child| Child::new(self, child))),
+            )
             .collect()
     }
 }
