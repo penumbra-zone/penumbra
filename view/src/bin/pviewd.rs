@@ -1,6 +1,6 @@
 #![recursion_limit = "256"]
 #![allow(clippy::clone_on_copy)]
-use anyhow::Result;
+use anyhow::{Context, Result};
 use penumbra_crypto::FullViewingKey;
 use penumbra_proto::client::oblivious::oblivious_query_client::ObliviousQueryClient;
 use penumbra_proto::client::oblivious::ChainParamsRequest;
@@ -69,9 +69,11 @@ async fn main() -> Result<()> {
                 .await?
                 .into_inner()
                 .try_into()?;
+
             penumbra_view::Storage::initialize(
                 opt.sqlite_path,
-                FullViewingKey::from_str(full_viewing_key.as_ref())?,
+                FullViewingKey::from_str(full_viewing_key.as_ref())
+                    .context("The provided string is not a valid FullViewingKey")?,
                 params,
             )
             .await?;
