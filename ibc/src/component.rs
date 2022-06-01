@@ -10,7 +10,7 @@ mod connection;
 use anyhow::Result;
 use async_trait::async_trait;
 use client::Ics2Client;
-use penumbra_chain::genesis;
+use penumbra_chain::{genesis, View as _};
 use penumbra_component::Component;
 use penumbra_storage::State;
 use penumbra_transaction::Transaction;
@@ -22,7 +22,7 @@ pub struct IBCComponent {
     connection: connection::ConnectionComponent,
     channel: channel::ICS4Channel,
 
-    enabled: bool,
+    state: State,
 }
 
 impl IBCComponent {
@@ -36,7 +36,8 @@ impl IBCComponent {
             channel,
             client,
             connection,
-            enabled: false,
+
+            state: state.clone(),
         }
     }
 }
@@ -45,8 +46,6 @@ impl IBCComponent {
 impl Component for IBCComponent {
     #[instrument(name = "ibc", skip(self, app_state))]
     async fn init_chain(&mut self, app_state: &genesis::AppState) {
-        self.enabled = app_state.chain_params.ibc_enabled;
-
         self.client.init_chain(app_state).await;
         self.connection.init_chain(app_state).await;
         self.channel.init_chain(app_state).await;
@@ -70,7 +69,7 @@ impl Component for IBCComponent {
 
     #[instrument(name = "ibc", skip(self, tx))]
     async fn check_tx_stateful(&self, tx: &Transaction) -> Result<()> {
-        if tx.ibc_actions().count() > 0 && !self.enabled {
+        if tx.ibc_actions().count() > 0 && !self.state.get_chain_params().await?.ibc_enabled {
             return Err(anyhow::anyhow!(
                 "transaction contains IBC actions, but IBC is not enabled"
             ));
