@@ -5,8 +5,7 @@ use std::{
 };
 
 use futures::FutureExt;
-use penumbra_chain::View as _;
-use penumbra_proto::{client::specific::KeyValueResponse, Message};
+use penumbra_proto::Message;
 use penumbra_storage::{State, Storage};
 use tendermint::{
     abci::{self, response::Echo, InfoRequest, InfoResponse},
@@ -66,31 +65,32 @@ impl Info {
         tracing::info!(?query);
 
         match query.path.as_str() {
-            "/jmt/key" => {
+            "state/key" => {
                 let height: u64 = query.height.into();
                 let key = query.data.to_vec();
 
-                let proof = jmt::JellyfishMerkleTree::new(&self.storage)
-                    .get_with_ics23_proof(key, height)
+                let jmt_proof = jmt::JellyfishMerkleTree::new(&self.storage)
+                    .get_with_ics23_proof(key.clone(), height)
                     .await?;
-                let value = proof.value.clone();
+                let value = jmt_proof.value.clone();
 
                 let commitment_proof = ics23::CommitmentProof {
-                    proof: Some(ics23::commitment_proof::Proof::Exist(proof)),
+                    proof: Some(ics23::commitment_proof::Proof::Exist(jmt_proof)),
                 };
 
-                let kvr = KeyValueResponse {
-                    value,
-                    proof: Some(commitment_proof),
+                let op = tendermint::merkle::proof::ProofOp {
+                    field_type: "jmt:v".to_string(),
+                    key,
+                    data: commitment_proof.encode_to_vec(),
                 };
+                let proof = Some(tendermint::merkle::proof::Proof { ops: vec![op] });
 
                 Ok(abci::response::Query {
                     code: 0,
                     key: query.data,
                     log: "".to_string(),
-                    value: kvr.encode_to_vec().into(),
-                    // NOTE: the ABCI query proof is not the same as ICS-23 proofs.
-                    proof: None,
+                    value: value.into(),
+                    proof,
                     height: height.try_into().unwrap(),
                     codespace: "".to_string(),
                     info: "".to_string(),
