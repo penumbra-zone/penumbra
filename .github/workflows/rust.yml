@@ -32,6 +32,11 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
+          args: --exclude penumbra-tct-property-test
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --release -p penumbra-tct-property-test
 
   fmt:
     name: Rustfmt
