@@ -93,6 +93,9 @@ mod prelude {
         },
         Commitment, Position, Proof, Root,
     };
+
+    #[cfg(doc)]
+    pub use crate::Tree;
 }
 
 /// When inserting a [`Commitment`] into a [`Tree`], should we [`Keep`](Witness::Keep) it to allow

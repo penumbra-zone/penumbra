@@ -24,6 +24,7 @@ pub struct Top<Item: Focus> {
 
 impl<Item: Focus> Top<Item> {
     /// Create a new top-level frontier tier.
+    #[allow(unused)]
     pub fn new() -> Self {
         Self::default()
     }

@@ -3,9 +3,9 @@
 
 use thiserror::Error;
 
-#[cfg(doc)]
-use super::Tree;
 use crate::builder;
+#[cfg(doc)]
+use crate::prelude::*;
 
 #[doc(inline)]
 pub use crate::tree::RootDecodeError;
@@ -32,12 +32,13 @@ pub mod block {
     //! Errors for [`block`] builders.
     use super::*;
 
-    /// An error occurred when decoding a block root from bytes.
+    /// An error occurred when decoding a [`block::Root`](builder::block::Root) from bytes.
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
     #[error("could not decode block root")]
     pub struct RootDecodeError;
 
-    /// When inserting into a block, this error is returned when it is full.
+    /// When inserting into a [`block::Builder`](builder::block::Builder), this error is returned
+    /// when it is full.
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
     #[error("block is full")]
     #[non_exhaustive]
@@ -48,32 +49,32 @@ pub mod epoch {
     //! Errors for [`epoch`] builders.
     use super::*;
 
-    /// An error occurred when decoding an epoch root from bytes.
+    /// An error occurred when decoding an [`epoch::Root`](builder::epoch::Root) from bytes.
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
     #[error("could not decode epoch root")]
     pub struct RootDecodeError;
 
-    /// A [`Commitment`] could not be inserted into the [`epoch::Builder`](Builder).
+    /// A [`Commitment`] could not be inserted into the [`epoch::Builder`](builder::epoch::Builder).
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
     pub enum InsertError {
-        /// The [`epoch::Builder`](Builder) was full.
+        /// The [`epoch::Builder`](builder::epoch::Builder) was full.
         #[error("epoch is full")]
         #[non_exhaustive]
         Full,
-        /// The most recent block in the [`epoch::Builder`](Builder) was full.
+        /// The most recent block in the [`epoch::Builder`](builder::epoch::Builder) was full.
         #[error("most recent block in epoch is full")]
         #[non_exhaustive]
         BlockFull,
     }
 
-    /// The [`epoch::Builder`](Builder) was full when attempting to insert a block.
+    /// The [`epoch::Builder`](builder::epoch::Builder) was full when attempting to insert a block.
     #[derive(Debug, Clone, Error)]
     #[error("epoch is full")]
     #[non_exhaustive]
     pub struct InsertBlockError(pub builder::block::Finalized);
 }
 
-/// An error occurred when trying to insert an commitment into a [`Tree`].
+/// An error occurred when trying to insert a [`Commitment`] into a [`Tree`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
 pub enum InsertError {
     /// The [`Tree`] was full.
@@ -109,7 +110,7 @@ impl From<InsertBlockError> for builder::block::Finalized {
     }
 }
 
-/// The [`Tree`] was full when trying to insert an epoch.
+/// The [`Tree`] was full when trying to insert an epoch into it.
 #[derive(Debug, Clone, Error)]
 #[error("tree is full")]
 #[non_exhaustive]
