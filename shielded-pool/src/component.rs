@@ -145,22 +145,8 @@ impl Component for ShieldedPool {
 
                     spent_nullifiers.insert(spend.body.nullifier);
                 }
-                Action::Delegate(_delegate) => {
-                    // Handled in the `Staking` component.
-                }
-                Action::Undelegate(_undelegate) => {
-                    // Handled in the `Staking` component.
-                }
-                Action::ValidatorDefinition(_validator) => {
-                    // Handled in the `Staking` component.
-                }
-                Action::IBCAction(_ibc_action) => {
-                    // Handled in the `IBC` component.
-                }
-                #[allow(unreachable_patterns)]
-                _ => {
-                    return Err(anyhow::anyhow!("unsupported action"));
-                }
+                // other actions are handled by other components.
+                _ => {}
             }
         }
 
