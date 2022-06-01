@@ -163,6 +163,12 @@ impl Forgotten {
     }
 }
 
+impl From<Forgotten> for u64 {
+    fn from(forgotten: Forgotten) -> Self {
+        forgotten.0
+    }
+}
+
 #[cfg(any(test, feature = "arbitrary"))]
 mod arbitrary {
     use super::Hash;

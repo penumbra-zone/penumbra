@@ -100,3 +100,29 @@ pub struct InvalidCachedHash {
     /// The recomputed hash that should have been there.
     pub recomputed: Hash,
 }
+
+/// The tree contained at least one discrepancy in the internal forgotten versions of its nodes.
+#[derive(Clone, Debug, Error)]
+#[error("invalid forgotten versions:{}", display_errors(.errors))]
+pub struct InvalidForgotten {
+    /// The errors found in the tree.
+    pub errors: Vec<InvalidForgottenVersion>,
+}
+
+/// A mismatch between the expected maximum forgotten version and the actual one.
+#[derive(Clone, Debug, Error)]
+#[error("forgotten version mismatch for `{place}::{kind}` at height {height}, index {index}: found {actual_max:?}, expected {expected_max:?}")]
+pub struct InvalidForgottenVersion {
+    /// The place of the node with the error.
+    pub place: Place,
+    /// The kind of the node with the error.
+    pub kind: Kind,
+    /// The height of the node with the error.
+    pub height: u8,
+    /// The index of the node with the error.
+    pub index: u64,
+    /// The actual maximum forgotten version.
+    pub actual_max: Forgotten,
+    /// The expected maximum forgotten version.
+    pub expected_max: Forgotten,
+}

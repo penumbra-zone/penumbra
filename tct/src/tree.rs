@@ -574,6 +574,16 @@ impl Tree {
         Some(Position(self.inner.position()?.into()))
     }
 
+    /// The count of how many commitments have been forgotten explicitly using
+    /// [`forget`](Tree::forget), or implicitly by being overwritten by a subsequent insertion of
+    /// the _same_ commitment (this case is rare in practice).
+    ///
+    /// This does not include commitments that were inserted using [`Witness::Forget`], only those
+    /// forgotten subsequent to their insertion.
+    pub fn forgotten(&self) -> Forgotten {
+        self.inner.forgotten()
+    }
+
     /// The number of [`Commitment`]s currently witnessed in this [`Tree`].
     ///
     /// Note that [`forget`](Tree::forget)ting a commitment decreases this count, but does not
@@ -694,14 +704,14 @@ impl Tree {
     /// This is an expensive operation that requires traversing the entire tree structure and doing
     /// a lot of hashing.
     ///
-    /// If this ever returns `Err`, it indicates either a bug in this crate, or a tree that was
-    /// deserialized from an untrustworthy source.
+    /// If this ever returns `Err`, it indicates a bug in this crate.
     pub fn validate_cached_hashes(&self) -> Result<(), InvalidCachedHashes> {
         fn check_hashes(errors: &mut Vec<InvalidCachedHash>, node: &dyn Any) {
             // IMPORTANT: we need to traverse children before parent, to avoid overwriting the
             // parent's hash before we have a chance to check it!
             for child in node.children() {
                 if let Some(child) = child.1.as_ref().keep() {
+                    // The frontier is the only place where cached hashes occur
                     if child.place() == Place::Frontier {
                         check_hashes(errors, child as &dyn Any);
                     }
@@ -734,6 +744,53 @@ impl Tree {
             Ok(())
         } else {
             Err(InvalidCachedHashes { errors })
+        }
+    }
+
+    /// Verify that the internal forgotten versions are consistent throughout the tree.
+    ///
+    /// This is a relatively expensive operation which requires traversing the entire tree structure.
+    ///
+    /// If this ever returns `Err`, it indicates a bug in this crate.
+    pub fn validate_forgotten(&self) -> Result<(), InvalidForgotten> {
+        fn check_forgotten(
+            errors: &mut Vec<InvalidForgottenVersion>,
+            expected_max: Option<Forgotten>,
+            node: &dyn Any,
+        ) {
+            let children = node.children();
+
+            if let Some(&actual_max) = children.iter().map(|(f, _)| f).max() {
+                if let Some(expected_max) = expected_max {
+                    // Check the expected forgotten version here
+                    if actual_max != expected_max {
+                        errors.push(InvalidForgottenVersion {
+                            kind: node.kind(),
+                            place: node.place(),
+                            height: node.height(),
+                            index: node.index(),
+                            expected_max,
+                            actual_max,
+                        })
+                    }
+                }
+
+                // Check the children
+                for (forgotten, child) in children {
+                    if let Some(child) = child.as_ref().keep() {
+                        check_forgotten(errors, Some(forgotten), child as &dyn Any);
+                    }
+                }
+            }
+        }
+
+        let mut errors = vec![];
+        check_forgotten(&mut errors, None, &self.inner);
+
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(InvalidForgotten { errors })
         }
     }
 }
