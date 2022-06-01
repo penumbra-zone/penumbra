@@ -154,6 +154,9 @@ impl Component for ShieldedPool {
                 Action::ValidatorDefinition(_validator) => {
                     // Handled in the `Staking` component.
                 }
+                Action::IBCAction(_ibc_action) => {
+                    // Handled in the `IBC` component.
+                }
                 #[allow(unreachable_patterns)]
                 _ => {
                     return Err(anyhow::anyhow!("unsupported action"));
