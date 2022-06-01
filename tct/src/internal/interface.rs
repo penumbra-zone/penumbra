@@ -85,7 +85,7 @@ pub trait Forget: Height {
     /// Remove the witness for the given index.
     ///
     /// Returns `true` if the witness was previously present in the tree.
-    fn forget(&mut self, index: impl Into<u64>) -> bool;
+    fn forget(&mut self, forgotten: Forgotten, index: impl Into<u64>) -> bool;
 }
 
 /// Forget about the authentication path to a given index, when forgetting can turn the entirety of
@@ -97,5 +97,5 @@ pub trait ForgetOwned: Height + Sized {
     /// Returns either `(Self, boool)` where the boolean is `true` if the witness was removed or
     /// `false` if the witness was not present, or `Hash` if the witness was removed and it was the
     /// last witness remaining in this tree.
-    fn forget_owned(self, index: impl Into<u64>) -> (Insert<Self>, bool);
+    fn forget_owned(self, forgotten: Forgotten, index: impl Into<u64>) -> (Insert<Self>, bool);
 }

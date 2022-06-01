@@ -87,8 +87,8 @@ impl<Item: GetPosition> GetPosition for Leaf<Item> {
 
 impl<Item: GetHash + Forget> Forget for Leaf<Item> {
     #[inline]
-    fn forget(&mut self, index: impl Into<u64>) -> bool {
-        self.item.forget(index)
+    fn forget(&mut self, forgotten: Forgotten, index: impl Into<u64>) -> bool {
+        self.item.forget(forgotten, index)
     }
 }
 

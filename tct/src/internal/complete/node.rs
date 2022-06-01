@@ -11,16 +11,8 @@ pub use children::Children;
 #[derive(Clone, Debug)]
 pub struct Node<Child> {
     hash: Hash,
+    forgotten: [Forgotten; 4],
     children: Children<Child>,
-}
-
-impl<Child: Height + GetHash> From<Children<Child>> for Node<Child> {
-    fn from(children: Children<Child>) -> Self {
-        Self {
-            hash: children.hash(),
-            children,
-        }
-    }
 }
 
 impl<Child: Serialize> Serialize for Node<Child> {
@@ -38,16 +30,27 @@ impl<'de, Child: Height + GetHash + Deserialize<'de>> Deserialize<'de> for Node<
         D: serde::Deserializer<'de>,
     {
         let children = Children::deserialize(deserializer)?;
-        Ok(children.into())
+        Ok(Self {
+            hash: children.hash(),
+            forgotten: Default::default(),
+            children,
+        })
     }
 }
 
 impl<Child: GetHash + Height> Node<Child> {
     pub(in super::super) fn from_children_or_else_hash(
+        forgotten: [Forgotten; 4],
         children: [Insert<Child>; 4],
     ) -> Insert<Self> {
         match Children::try_from(children) {
-            Ok(children) => Insert::Keep(children.into()),
+            Ok(children) => {
+                Insert::Keep(Self {
+                    hash: children.hash(),
+                    forgotten,
+                    children,
+                })
+            }
             Err([a, b, c, d]) => {
                 // If there were no witnessed children, compute a hash for this node based on the
                 // node's height and the hashes of its children.
@@ -59,6 +62,11 @@ impl<Child: GetHash + Height> Node<Child> {
     /// Get the children of this node as an array of either children or hashes.
     pub fn children(&self) -> [Insert<&Child>; 4] {
         self.children.children()
+    }
+
+    /// Get the forgotten versions of the children.
+    pub fn forgotten(&self) -> [Forgotten; 4] {
+        self.forgotten
     }
 }
 
@@ -105,7 +113,7 @@ impl<Child: GetHash + Witness> Witness for Node<Child> {
 
 impl<Child: GetHash + ForgetOwned> ForgetOwned for Node<Child> {
     #[inline]
-    fn forget_owned(self, index: impl Into<u64>) -> (Insert<Self>, bool) {
+    fn forget_owned(self, forgotten: Forgotten, index: impl Into<u64>) -> (Insert<Self>, bool) {
         let index = index.into();
 
         let [a, b, c, d]: [Insert<Child>; 4] = self.children.into();
@@ -114,31 +122,31 @@ impl<Child: GetHash + ForgetOwned> ForgetOwned for Node<Child> {
         let (which_way, index) = WhichWay::at(Self::Height::HEIGHT, index);
 
         // Recursively forget the appropriate child
-        let (children, forgotten) = match which_way {
+        let (children, was_forgotten) = match which_way {
             WhichWay::Leftmost => {
                 let (a, forgotten) = match a {
-                    Insert::Keep(a) => a.forget_owned(index),
+                    Insert::Keep(a) => a.forget_owned(forgotten, index),
                     Insert::Hash(_) => (a, false),
                 };
                 ([a, b, c, d], forgotten)
             }
             WhichWay::Left => {
                 let (b, forgotten) = match b {
-                    Insert::Keep(b) => b.forget_owned(index),
+                    Insert::Keep(b) => b.forget_owned(forgotten, index),
                     Insert::Hash(_) => (b, false),
                 };
                 ([a, b, c, d], forgotten)
             }
             WhichWay::Right => {
                 let (c, forgotten) = match c {
-                    Insert::Keep(c) => c.forget_owned(index),
+                    Insert::Keep(c) => c.forget_owned(forgotten, index),
                     Insert::Hash(_) => (c, false),
                 };
                 ([a, b, c, d], forgotten)
             }
             WhichWay::Rightmost => {
                 let (d, forgotten) = match d {
-                    Insert::Keep(d) => d.forget_owned(index),
+                    Insert::Keep(d) => d.forget_owned(forgotten, index),
                     Insert::Hash(_) => (d, false),
                 };
                 ([a, b, c, d], forgotten)
@@ -148,14 +156,22 @@ impl<Child: GetHash + ForgetOwned> ForgetOwned for Node<Child> {
         // Reconstruct the node from the children, or else (if all the children are hashes) hash
         // those hashes into a single node hash
         let reconstructed = match Children::try_from(children) {
-            Ok(children) => Insert::Keep(Self {
-                children,
-                hash: self.hash,
-            }),
+            Ok(children) => {
+                let mut reconstructed = Self {
+                    children,
+                    hash: self.hash,
+                    forgotten: self.forgotten,
+                };
+                // If we forgot something, mark the location of the forgetting
+                if was_forgotten {
+                    reconstructed.forgotten[which_way] = forgotten.next();
+                }
+                Insert::Keep(reconstructed)
+            }
             Err(_) => Insert::Hash(self.hash),
         };
 
-        (reconstructed, forgotten)
+        (reconstructed, was_forgotten)
     }
 }
 
@@ -187,6 +203,6 @@ mod test {
 
     #[test]
     fn check_node_size() {
-        static_assertions::assert_eq_size!(Node<()>, [u8; 48]);
+        static_assertions::assert_eq_size!(Node<()>, [u8; 80]);
     }
 }

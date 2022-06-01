@@ -137,6 +137,30 @@ impl WhichWay {
     }
 }
 
+impl<T> Index<WhichWay> for [T; 4] {
+    type Output = T;
+
+    fn index(&self, index: WhichWay) -> &T {
+        match index {
+            WhichWay::Leftmost => &self[0],
+            WhichWay::Left => &self[1],
+            WhichWay::Right => &self[2],
+            WhichWay::Rightmost => &self[3],
+        }
+    }
+}
+
+impl<T> IndexMut<WhichWay> for [T; 4] {
+    fn index_mut(&mut self, index: WhichWay) -> &mut T {
+        match index {
+            WhichWay::Leftmost => &mut self[0],
+            WhichWay::Left => &mut self[1],
+            WhichWay::Right => &mut self[2],
+            WhichWay::Rightmost => &mut self[3],
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -214,7 +238,10 @@ pub struct PathDecodeError;
 
 use decaf377::{FieldExt, Fq};
 use penumbra_proto::crypto as pb;
-use std::collections::VecDeque;
+use std::{
+    collections::VecDeque,
+    ops::{Index, IndexMut},
+};
 
 impl From<Leaf> for VecDeque<pb::MerklePathChunk> {
     fn from(Leaf: Leaf) -> VecDeque<pb::MerklePathChunk> {
