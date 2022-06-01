@@ -480,7 +480,7 @@ pub trait View: StateExt {
         } else {
             tracing::debug!(?denom, ?id, "registering new denom");
             // We want to be able to query for the denom by asset ID...
-            self.put_domain(state_key::denom_by_asset(denom), denom.clone())
+            self.put_domain(state_key::denom_by_asset(&id), denom.clone())
                 .await;
             // ... and we want to record it in the list of known asset IDs
             // (this requires reading the whole list, which is sad, but hopefully
@@ -507,12 +507,13 @@ pub trait View: StateExt {
     }
 
     async fn set_compact_block(&self, compact_block: CompactBlock) {
-        self.put_domain(state_key::compact_block(&compact_block), compact_block)
+        let height = compact_block.height;
+        self.put_domain(state_key::compact_block(height), compact_block)
             .await
     }
 
     async fn compact_block(&self, height: u64) -> Result<Option<CompactBlock>> {
-        self.get_domain(state_key::compact_block(&height)).await
+        self.get_domain(state_key::compact_block(height)).await
     }
 
     async fn set_nct_anchor(&self, height: u64, nct_anchor: tct::Root) {
