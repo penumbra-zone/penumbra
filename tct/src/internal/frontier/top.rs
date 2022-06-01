@@ -62,6 +62,32 @@ impl<Item: Focus> Top<Item> {
         result
     }
 
+    /// Forgot the commitment at the given index.
+    ///
+    /// This isn't an implementation of [`Forget`] because unlike [`Forget`], this doesn't require
+    /// an input forgotten version, since it calculates it based on the forgotten versions at this
+    /// top level.
+    #[inline]
+    pub fn forget(&mut self, index: impl Into<u64>) -> bool
+    where
+        Item: Forget,
+        Item::Complete: ForgetOwned,
+    {
+        // Calculate the maximum forgotten version for any child
+        let max_forgotten = self
+            .inner
+            .iter()
+            .flat_map(|inner| inner.forgotten().iter().copied())
+            .max()
+            .unwrap_or_default();
+
+        if let Some(ref mut inner) = self.inner {
+            inner.forget(max_forgotten, index)
+        } else {
+            false
+        }
+    }
+
     /// Update the currently focused `Item` (i.e. the most-recently-[`insert`](Self::insert)ed one),
     /// returning the result of the function.
     ///
@@ -158,19 +184,6 @@ where
             inner.witness(index)
         } else {
             None
-        }
-    }
-}
-
-impl<Item: Focus + Forget> Forget for Top<Item>
-where
-    Item::Complete: ForgetOwned,
-{
-    fn forget(&mut self, index: impl Into<u64>) -> bool {
-        if let Some(ref mut inner) = self.inner {
-            inner.forget(index)
-        } else {
-            false
         }
     }
 }

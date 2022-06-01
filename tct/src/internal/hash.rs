@@ -136,6 +136,33 @@ impl Hash {
     }
 }
 
+/// A version tracking when a particular piece of the tree was explicitly forgotten.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    std::hash::Hash,
+    Serialize,
+    Deserialize,
+    Default,
+)]
+pub struct Forgotten(u64);
+
+impl Forgotten {
+    /// Get the next forgotten-version after this one.
+    pub fn next(&self) -> Self {
+        Self(
+            self.0
+                .checked_add(1)
+                .expect("forgotten should never overflow"),
+        )
+    }
+}
+
 #[cfg(any(test, feature = "arbitrary"))]
 mod arbitrary {
     use super::Hash;

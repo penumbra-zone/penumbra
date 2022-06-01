@@ -13,20 +13,30 @@ pub struct Node<Child: Focus> {
     #[derivative(PartialEq = "ignore", Debug)]
     #[serde(skip)]
     hash: CachedHash,
+    #[serde(skip)]
+    forgotten: [Forgotten; 4],
     siblings: Three<Insert<Child::Complete>>,
     focus: Child,
 }
 
 impl<Child: Focus> Node<Child> {
+    /// Construct a new node from parts.
     pub(crate) fn from_parts(siblings: Three<Insert<Child::Complete>>, focus: Child) -> Self
     where
         Child: Frontier + GetHash,
     {
         Self {
-            hash: CachedHash::default(),
+            hash: Default::default(),
+            forgotten: Default::default(),
             siblings,
             focus,
         }
+    }
+
+    /// Get the list of forgotten counts for the children of this node.
+    #[inline]
+    pub(crate) fn forgotten(&self) -> &[Forgotten; 4] {
+        &self.forgotten
     }
 }
 
@@ -94,6 +104,7 @@ impl<Child: Focus> Focus for Node<Child> {
         // causes the hash of a complete node to deliberately differ from that of a frontier node,
         // which uses *ZERO* padding
         complete::Node::from_children_or_else_hash(
+            self.forgotten,
             match self.siblings.push(self.focus.finalize_owned()) {
                 Err([a, b, c, d]) => [a, b, c, d],
                 Ok(siblings) => match siblings.into_elems() {
@@ -161,7 +172,7 @@ where
                 // siblings, along with the item we couldn't insert
                 Err(children) => Err(Full {
                     item,
-                    complete: complete::Node::from_children_or_else_hash(children),
+                    complete: complete::Node::from_children_or_else_hash(self.forgotten, children),
                 }),
             },
         }
@@ -301,7 +312,7 @@ impl<Child: Focus + Forget> Forget for Node<Child>
 where
     Child::Complete: ForgetOwned,
 {
-    fn forget(&mut self, index: impl Into<u64>) -> bool {
+    fn forget(&mut self, forgotten: Forgotten, index: impl Into<u64>) -> bool {
         use ElemsMut::*;
         use WhichWay::*;
 
@@ -310,29 +321,36 @@ where
         // Which direction should we forget from this node?
         let (which_way, index) = WhichWay::at(Self::Height::HEIGHT, index);
 
-        match (self.siblings.elems_mut(), &mut self.focus) {
+        let was_forgotten = match (self.siblings.elems_mut(), &mut self.focus) {
             (_0([]), a) => match which_way {
-                Leftmost => a.forget(index),
+                Leftmost => a.forget(forgotten, index),
                 Left | Right | Rightmost => false,
             },
             (_1([a]), b) => match which_way {
-                Leftmost => a.forget(index),
-                Left => b.forget(index),
+                Leftmost => a.forget(forgotten, index),
+                Left => b.forget(forgotten, index),
                 Right | Rightmost => false,
             },
             (_2([a, b]), c) => match which_way {
-                Leftmost => a.forget(index),
-                Left => b.forget(index),
-                Right => c.forget(index),
+                Leftmost => a.forget(forgotten, index),
+                Left => b.forget(forgotten, index),
+                Right => c.forget(forgotten, index),
                 Rightmost => false,
             },
             (_3([a, b, c]), d) => match which_way {
-                Leftmost => a.forget(index),
-                Left => b.forget(index),
-                Right => c.forget(index),
-                Rightmost => d.forget(index),
+                Leftmost => a.forget(forgotten, index),
+                Left => b.forget(forgotten, index),
+                Right => c.forget(forgotten, index),
+                Rightmost => d.forget(forgotten, index),
             },
+        };
+
+        // If we forgot something, mark the location at which we forgot it
+        if was_forgotten {
+            self.forgotten[which_way] = forgotten.next();
         }
+
+        was_forgotten
     }
 }
 

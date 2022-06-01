@@ -43,7 +43,7 @@ impl Witness for Item {
 }
 
 impl ForgetOwned for Item {
-    fn forget_owned(self, index: impl Into<u64>) -> (Insert<Self>, bool) {
+    fn forget_owned(self, _forgotten: Forgotten, index: impl Into<u64>) -> (Insert<Self>, bool) {
         debug_assert_eq!(index.into(), 0, "non-zero index when forgetting leaf");
         (Insert::Hash(self.hash), true)
     }

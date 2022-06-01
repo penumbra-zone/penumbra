@@ -84,8 +84,7 @@ mod prelude {
             any::{Any, Child, Kind, Place},
             complete::{self, Complete, ForgetOwned},
             frontier::{self, Focus, Forget, Frontier, Full, GetPosition, Insert, Item},
-            hash::GetHash,
-            hash::{CachedHash, Hash, OptionHash},
+            hash::{CachedHash, Forgotten, GetHash, Hash, OptionHash},
             height::{Height, IsHeight, Succ, Zero},
             interface::Witness,
             path::{self, AuthPath, Path, WhichWay},
@@ -131,7 +130,7 @@ mod test {
 
     #[test]
     fn check_eternity_size() {
-        static_assertions::assert_eq_size!(Tree, [u8; 600]);
+        static_assertions::assert_eq_size!(Tree, [u8; 888]);
     }
 
     #[test]

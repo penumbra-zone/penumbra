@@ -99,21 +99,21 @@ impl<T: Height> Height for Insert<T> {
 }
 
 impl<T: Height + ForgetOwned> Forget for Insert<T> {
-    fn forget(&mut self, index: impl Into<u64>) -> bool {
+    fn forget(&mut self, forgotten: Forgotten, index: impl Into<u64>) -> bool {
         // Replace `self` temporarily with an empty hash, so we can move out of it
         let this = std::mem::replace(self, Insert::Hash(Hash::zero()));
 
         // Whether something was actually forgotten
-        let forgotten;
+        let was_forgotten;
 
         // No matter which branch we take, we always put something valid back into `self` before
         // returning from this function
-        (*self, forgotten) = match this {
-            Insert::Keep(item) => item.forget_owned(index),
+        (*self, was_forgotten) = match this {
+            Insert::Keep(item) => item.forget_owned(forgotten, index),
             Insert::Hash(_) => (this, false),
         };
 
         // Return whether something was actually forgotten
-        forgotten
+        was_forgotten
     }
 }

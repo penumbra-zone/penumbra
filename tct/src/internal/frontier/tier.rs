@@ -244,20 +244,22 @@ where
     Item::Complete: ForgetOwned,
 {
     #[inline]
-    fn forget(&mut self, index: impl Into<u64>) -> bool {
+    fn forget(&mut self, forgotten: Forgotten, index: impl Into<u64>) -> bool {
         // Whether something was actually forgotten
-        let forgotten;
+        let was_forgotten;
 
         // Temporarily replace the inside with the zero hash (it will get put back right away, this
         // is just to satisfy the borrow checker)
         let inner = std::mem::replace(&mut self.inner, Inner::Hash(Hash::zero()));
 
-        (forgotten, self.inner) = match inner {
+        (was_forgotten, self.inner) = match inner {
             // If the tier is a frontier, try to forget from the frontier path, if it's not empty
-            Inner::Frontier(mut frontier) => (frontier.forget(index), Inner::Frontier(frontier)),
+            Inner::Frontier(mut frontier) => {
+                (frontier.forget(forgotten, index), Inner::Frontier(frontier))
+            }
             // If the tier is complete, forget from the complete tier and if it resulted in a hash,
             // set the self to that hash
-            Inner::Complete(complete) => match complete.forget_owned(index) {
+            Inner::Complete(complete) => match complete.forget_owned(forgotten, index) {
                 (Insert::Keep(complete), forgotten) => (forgotten, Inner::Complete(complete)),
                 (Insert::Hash(hash), forgotten) => (forgotten, Inner::Hash(hash)),
             },
@@ -266,7 +268,7 @@ where
         };
 
         // Return whether something was actually forgotten
-        forgotten
+        was_forgotten
     }
 }
 
@@ -317,7 +319,7 @@ mod test {
 
     #[test]
     fn check_inner_size() {
-        static_assertions::assert_eq_size!(Tier<Tier<Tier<frontier::Item>>>, [u8; 56]);
+        static_assertions::assert_eq_size!(Tier<Tier<Tier<frontier::Item>>>, [u8; 88]);
     }
 
     #[test]
