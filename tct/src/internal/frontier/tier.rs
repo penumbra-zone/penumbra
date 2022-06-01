@@ -270,6 +270,20 @@ where
     }
 }
 
+impl<Item: Focus + ForgetForgotten> ForgetForgotten for Tier<Item>
+where
+    Item::Complete: ForgetForgotten,
+{
+    #[inline]
+    fn forget_forgotten(&mut self) {
+        match &mut self.inner {
+            Inner::Frontier(frontier) => frontier.forget_forgotten(),
+            Inner::Complete(complete) => complete.forget_forgotten(),
+            Inner::Hash(_) => {}
+        }
+    }
+}
+
 impl<Item: Focus> From<complete::Tier<Item::Complete>> for Tier<Item> {
     fn from(complete: complete::Tier<Item::Complete>) -> Self {
         Self {

@@ -47,6 +47,12 @@ impl<Item: GetHash + ForgetOwned> ForgetOwned for Tier<Item> {
     }
 }
 
+impl<Item: Height + GetHash + ForgetForgotten> ForgetForgotten for Tier<Item> {
+    fn forget_forgotten(&mut self) {
+        self.inner.forget_forgotten()
+    }
+}
+
 impl<Item: Complete> From<frontier::Tier<Item::Focus>> for Insert<Tier<Item>> {
     fn from(frontier: frontier::Tier<Item::Focus>) -> Self {
         frontier.finalize_owned()

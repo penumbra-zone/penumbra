@@ -49,6 +49,10 @@ impl ForgetOwned for Item {
     }
 }
 
+impl ForgetForgotten for Item {
+    fn forget_forgotten(&mut self) {}
+}
+
 impl GetPosition for Item {
     fn position(&self) -> Option<u64> {
         None

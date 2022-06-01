@@ -74,18 +74,23 @@ impl<Item: Focus> Top<Item> {
         Item::Complete: ForgetOwned,
     {
         // Calculate the maximum forgotten version for any child
-        let max_forgotten = self
-            .inner
-            .iter()
-            .flat_map(|inner| inner.forgotten().iter().copied())
-            .max()
-            .unwrap_or_default();
+        let max_forgotten = self.forgotten();
 
         if let Some(ref mut inner) = self.inner {
             inner.forget(max_forgotten, index)
         } else {
             false
         }
+    }
+
+    /// Count the number of times something has been forgotten from this tree.
+    #[inline]
+    pub fn forgotten(&self) -> Forgotten {
+        self.inner
+            .iter()
+            .flat_map(|inner| inner.forgotten().iter().copied())
+            .max()
+            .unwrap_or_default()
     }
 
     /// Update the currently focused `Item` (i.e. the most-recently-[`insert`](Self::insert)ed one),
@@ -140,6 +145,17 @@ impl<Item: Focus> Top<Item> {
 
 impl<Item: Focus> Height for Top<Item> {
     type Height = <Nested<Item> as Height>::Height;
+}
+
+impl<Item: Focus + ForgetForgotten> ForgetForgotten for Top<Item>
+where
+    Item::Complete: ForgetForgotten,
+{
+    fn forget_forgotten(&mut self) {
+        if let Some(ref mut inner) = self.inner {
+            inner.forget_forgotten();
+        }
+    }
 }
 
 impl<Item: Focus + GetPosition> GetPosition for Top<Item> {

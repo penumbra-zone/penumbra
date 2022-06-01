@@ -353,6 +353,32 @@ where
     }
 }
 
+impl<Child: Focus + ForgetForgotten> ForgetForgotten for Node<Child>
+where
+    Child::Complete: ForgetForgotten,
+{
+    fn forget_forgotten(&mut self) {
+        // Clear all the complete siblings
+        for (forgotten, child) in self.forgotten[0..3]
+            .iter_mut()
+            .zip(self.siblings.iter_mut())
+        {
+            if *forgotten != Forgotten::default() {
+                *forgotten = Forgotten::default();
+                if let Some(child) = child.as_mut().keep() {
+                    child.forget_forgotten();
+                }
+            }
+        }
+
+        // Clear the focus
+        if self.forgotten[3] != Forgotten::default() {
+            self.forgotten[3] = Forgotten::default();
+            self.focus.forget_forgotten();
+        }
+    }
+}
+
 impl<Item: Focus + GetPosition + Height + Any> Any for Node<Item>
 where
     Item::Complete: Any,

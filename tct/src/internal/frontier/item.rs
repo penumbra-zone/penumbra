@@ -82,6 +82,10 @@ impl Forget for Item {
     }
 }
 
+impl ForgetForgotten for Item {
+    fn forget_forgotten(&mut self) {}
+}
+
 impl Any for Item {
     fn kind(&self) -> Kind {
         Kind::Rightmost(self.item.keep().map(|(commitment, _)| commitment))

@@ -74,6 +74,12 @@ impl<T> Three<T> {
         self.elems.iter()
     }
 
+    /// Get an iterator over mutable elements of the [`Three`].
+    #[inline]
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
+        self.elems.iter_mut()
+    }
+
     /// Get an enumeration of the elements of this [`Three`] by reference.
     pub fn elems(&self) -> Elems<T> {
         match self.elems.len() {
