@@ -81,7 +81,7 @@ mod prelude {
         error::proof::VerifyError,
         index,
         internal::{
-            any::{Any, Child, Kind, Place},
+            any::{AnyExt, Any, Child, Kind, Place},
             complete::{self, Complete, ForgetOwned},
             frontier::{self, Focus, Forget, Frontier, Full, GetPosition, Insert, Item},
             hash::{CachedHash, Forgotten, GetHash, Hash, OptionHash},

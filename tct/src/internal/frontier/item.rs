@@ -64,8 +64,6 @@ impl GetPosition for Item {
     fn position(&self) -> Option<u64> {
         None
     }
-
-    const CAPACITY: u64 = 1;
 }
 
 impl Forget for Item {
@@ -85,19 +83,15 @@ impl Forget for Item {
 }
 
 impl Any for Item {
-    fn place(&self) -> Place {
-        Place::Frontier
-    }
-
     fn kind(&self) -> Kind {
-        Kind::Item
+        Kind::Rightmost(self.item.keep().map(|(commitment, _)| commitment))
     }
 
-    fn height(&self) -> u8 {
-        <Self as Height>::Height::HEIGHT
+    fn global_position(&self) -> Option<u64> {
+        <Self as GetPosition>::position(&self)
     }
 
-    fn children(&self) -> Vec<Insert<Child>> {
+    fn children(&self) -> Vec<(Insert<Child>, Forgotten)> {
         vec![]
     }
 }

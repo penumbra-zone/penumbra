@@ -151,8 +151,6 @@ impl<Item: Focus + GetPosition> GetPosition for Top<Item> {
             Some(0)
         }
     }
-
-    const CAPACITY: u64 = <Nested<Item> as GetPosition>::CAPACITY;
 }
 
 impl<Item: Focus> GetHash for Top<Item> {
@@ -188,27 +186,20 @@ where
     }
 }
 
-impl<Item: Focus + Height + Any> Any for Top<Item>
+impl<Item: Focus + GetPosition + Height + Any> Any for Top<Item>
 where
     Item::Complete: Any,
 {
-    fn place(&self) -> Place {
-        Place::Frontier
-    }
-
     fn kind(&self) -> Kind {
-        Kind::Top
+        Kind::Node(<Self as Height>::Height::HEIGHT)
     }
 
-    fn height(&self) -> u8 {
-        <Self as Height>::Height::HEIGHT
+    fn global_position(&self) -> Option<u64> {
+        <Self as GetPosition>::position(&self)
     }
 
-    fn children(&self) -> Vec<Insert<Child>> {
-        self.inner
-            .iter()
-            .map(|child| Insert::Keep(Child::new(child)))
-            .collect()
+    fn children(&self) -> Vec<(Insert<Child>, Forgotten)> {
+        self.inner.as_ref().map(Any::children).unwrap_or_default()
     }
 }
 

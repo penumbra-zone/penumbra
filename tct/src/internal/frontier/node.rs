@@ -187,24 +187,23 @@ where
 impl<Child: Focus + GetPosition> GetPosition for Node<Child> {
     #[inline]
     fn position(&self) -> Option<u64> {
+        let child_capacity: u64 = 4u64.pow(Child::Height::HEIGHT.into());
         let siblings = self.siblings.len() as u64;
 
         if let Some(focus_position) = self.focus.position() {
             // next insertion would be at: siblings * 4^height + focus_position
             // because we don't need to add a new child
-            Some(siblings * Child::CAPACITY + focus_position)
+            Some(siblings * child_capacity + focus_position)
         } else if siblings + 1 < 4
         /* this means adding a new child is possible */
         {
             // next insertion would be at: (siblings + 1) * 4^height
             // because we have to add a new child, and we can
-            Some((siblings + 1) * Child::CAPACITY)
+            Some((siblings + 1) * child_capacity)
         } else {
             None
         }
     }
-
-    const CAPACITY: u64 = 4 * Child::CAPACITY;
 }
 
 impl<Child: Focus + Witness> Witness for Node<Child>
@@ -354,27 +353,24 @@ where
     }
 }
 
-impl<Item: Focus + Height + Any> Any for Node<Item>
+impl<Item: Focus + GetPosition + Height + Any> Any for Node<Item>
 where
     Item::Complete: Any,
 {
-    fn place(&self) -> Place {
-        Place::Frontier
-    }
-
     fn kind(&self) -> Kind {
-        Kind::Node
+        Kind::Node(<Self as Height>::Height::HEIGHT)
     }
 
-    fn height(&self) -> u8 {
-        <Self as Height>::Height::HEIGHT
+    fn global_position(&self) -> Option<u64> {
+        <Self as GetPosition>::position(&self)
     }
 
-    fn children(&self) -> Vec<Insert<Child>> {
+    fn children(&self) -> Vec<(Insert<Child>, Forgotten)> {
         self.siblings
             .iter()
-            .map(|child| child.as_ref().map(|child| Child::new(child)))
-            .chain(std::iter::once(Insert::Keep(Child::new(&self.focus))))
+            .map(|child| child.as_ref().map(|child| Child::new(self, child)))
+            .chain(std::iter::once(Insert::Keep(Child::new(self, &self.focus))))
+            .zip(self.forgotten.iter().copied())
             .collect()
     }
 }

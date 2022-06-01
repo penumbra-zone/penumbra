@@ -235,8 +235,6 @@ impl<Item: Focus + GetPosition> GetPosition for Tier<Item> {
             Inner::Complete(_) | Inner::Hash(_) => None,
         }
     }
-
-    const CAPACITY: u64 = <Nested<Item> as GetPosition>::CAPACITY;
 }
 
 impl<Item: Focus + Forget> Forget for Tier<Item>
@@ -288,26 +286,22 @@ impl<Item: Focus> From<complete::Top<Item::Complete>> for Tier<Item> {
     }
 }
 
-impl<Item: Focus + Height + Any> Any for Tier<Item>
+impl<Item: Focus + GetPosition + Height + Any> Any for Tier<Item>
 where
     Item::Complete: Any,
 {
-    fn place(&self) -> Place {
-        Place::Frontier
-    }
-
     fn kind(&self) -> Kind {
-        Kind::Tier
+        Kind::Node(<Self as Height>::Height::HEIGHT)
     }
 
-    fn height(&self) -> u8 {
-        <Self as Height>::Height::HEIGHT
+    fn global_position(&self) -> Option<u64> {
+        <Self as GetPosition>::position(&self)
     }
 
-    fn children(&self) -> Vec<Insert<Child>> {
+    fn children(&self) -> Vec<(Insert<Child>, Forgotten)> {
         match &self.inner {
-            Inner::Frontier(frontier) => vec![Insert::Keep(Child::new(&**frontier))],
-            Inner::Complete(complete) => vec![Insert::Keep(Child::new(complete))],
+            Inner::Frontier(frontier) => frontier.children(),
+            Inner::Complete(complete) => (complete as &dyn Any).children(),
             Inner::Hash(_) => vec![],
         }
     }
