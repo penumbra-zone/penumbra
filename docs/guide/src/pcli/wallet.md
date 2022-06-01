@@ -9,14 +9,14 @@ Saving wallet to /home/\$USER/.local/share/pcli/penumbra_wallet.json
 Saving backup wallet to /home/\$USER/.local/share/penumbra-testnet-archive/penumbra-euporie/.../penumbra_wallet.json
 ```
 
-Penumbra's design allows you to create arbitrarily many publicly unlinkable addresses which all
-correspond to your own wallet. When you first created your wallet above, `pcli` created your first
-address, labeled `Default`. When you list your addresses, you should see something like this:
+Penumbra's design automatically creates many (`u64::MAX`) publicly unlinkable addresses which all
+correspond to your own wallet. When you first created your wallet above, `pcli` initialized all
+of your wallet addresses, which you can view like this:
 
 ```bash
-\$ cargo run --quiet --release --bin pcli addr list
- Index  Label    Address
- 0      Default  penumbrav0t1...
+\$ cargo run --quiet --release --bin pcli addr show 0
+ Index  Address
+ 0      penumbrav1t1
 ```
 
 ### Getting testnet tokens on the [Discord] in the `#testnet-faucet` channel
