@@ -49,20 +49,22 @@ impl ForgetOwned for Item {
     }
 }
 
+impl GetPosition for Item {
+    fn position(&self) -> Option<u64> {
+        None
+    }
+}
+
 impl Any for Item {
-    fn place(&self) -> Place {
-        Place::Complete
-    }
-
     fn kind(&self) -> Kind {
-        Kind::Item
+        Kind::Leaf(self.commitment)
     }
 
-    fn height(&self) -> u8 {
-        <Self as Height>::Height::HEIGHT
+    fn global_position(&self) -> Option<u64> {
+        <Self as GetPosition>::position(&self)
     }
 
-    fn children(&self) -> Vec<Insert<Child>> {
+    fn children(&self) -> Vec<(Insert<Child>, Forgotten)> {
         vec![]
     }
 }

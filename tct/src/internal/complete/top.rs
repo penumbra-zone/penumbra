@@ -30,20 +30,22 @@ impl<Item: GetHash + Height> From<complete::Tier<Item>> for Top<Item> {
     }
 }
 
+impl<Item: Height + GetHash> GetPosition for Top<Item> {
+    fn position(&self) -> Option<u64> {
+        None
+    }
+}
+
 impl<Item: Height + Any> Any for Top<Item> {
-    fn place(&self) -> Place {
-        Place::Complete
-    }
-
     fn kind(&self) -> Kind {
-        Kind::Top
+        self.inner.kind()
     }
 
-    fn height(&self) -> u8 {
-        <Self as Height>::Height::HEIGHT
+    fn global_position(&self) -> Option<u64> {
+        <Self as GetPosition>::position(&self)
     }
 
-    fn children(&self) -> Vec<Insert<Child>> {
-        vec![Insert::Keep(Child::new(&self.inner))]
+    fn children(&self) -> Vec<(Insert<Child>, Forgotten)> {
+        (&self.inner as &dyn Any).children()
     }
 }

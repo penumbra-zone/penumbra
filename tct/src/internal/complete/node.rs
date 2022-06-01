@@ -44,13 +44,11 @@ impl<Child: GetHash + Height> Node<Child> {
         children: [Insert<Child>; 4],
     ) -> Insert<Self> {
         match Children::try_from(children) {
-            Ok(children) => {
-                Insert::Keep(Self {
-                    hash: children.hash(),
-                    forgotten,
-                    children,
-                })
-            }
+            Ok(children) => Insert::Keep(Self {
+                hash: children.hash(),
+                forgotten,
+                children,
+            }),
             Err([a, b, c, d]) => {
                 // If there were no witnessed children, compute a hash for this node based on the
                 // node's height and the hashes of its children.
@@ -175,24 +173,27 @@ impl<Child: GetHash + ForgetOwned> ForgetOwned for Node<Child> {
     }
 }
 
+impl<Child> GetPosition for Node<Child> {
+    fn position(&self) -> Option<u64> {
+        None
+    }
+}
+
 impl<Item: Height + Any> Any for Node<Item> {
-    fn place(&self) -> Place {
-        Place::Complete
-    }
-
     fn kind(&self) -> Kind {
-        Kind::Node
+        Kind::Node(<Self as Height>::Height::HEIGHT)
     }
 
-    fn height(&self) -> u8 {
-        <Self as Height>::Height::HEIGHT
+    fn global_position(&self) -> Option<u64> {
+        <Self as GetPosition>::position(&self)
     }
 
-    fn children(&self) -> Vec<Insert<Child>> {
+    fn children(&self) -> Vec<(Insert<Child>, Forgotten)> {
         self.children
             .children()
             .into_iter()
-            .map(|child| child.map(|child| Child::new(child)))
+            .map(|child| child.map(|child| Child::new(self, child)))
+            .zip(self.forgotten.iter().copied())
             .collect()
     }
 }

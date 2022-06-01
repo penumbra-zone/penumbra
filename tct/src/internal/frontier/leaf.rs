@@ -81,8 +81,6 @@ impl<Item: GetPosition> GetPosition for Leaf<Item> {
     fn position(&self) -> Option<u64> {
         self.item.position()
     }
-
-    const CAPACITY: u64 = Item::CAPACITY;
 }
 
 impl<Item: GetHash + Forget> Forget for Leaf<Item> {
@@ -92,20 +90,16 @@ impl<Item: GetHash + Forget> Forget for Leaf<Item> {
     }
 }
 
-impl<Item: Height + Any> Any for Leaf<Item> {
-    fn place(&self) -> Place {
-        Place::Frontier
-    }
-
+impl<Item: GetPosition + Height + Any> Any for Leaf<Item> {
     fn kind(&self) -> Kind {
-        Kind::Leaf
+        self.item.kind()
     }
 
-    fn height(&self) -> u8 {
-        <Self as Height>::Height::HEIGHT
+    fn global_position(&self) -> Option<u64> {
+        <Self as GetPosition>::position(&self)
     }
 
-    fn children(&self) -> Vec<Insert<Child>> {
-        vec![Insert::Keep(Child::new(&self.item))]
+    fn children(&self) -> Vec<(Insert<Child>, Forgotten)> {
+        self.item.children()
     }
 }
