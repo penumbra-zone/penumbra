@@ -32,7 +32,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --exclude penumbra-tct-property-test
+          args: --workspace --exclude penumbra-tct-property-test
       - uses: actions-rs/cargo@v1
         with:
           command: test
