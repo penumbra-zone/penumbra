@@ -23,7 +23,7 @@ pub fn compact_block(height: u64) -> KeyHash {
 }
 
 pub fn anchor_by_height(height: &u64) -> KeyHash {
-    format!("shielded_pool/tct_anchor/{}", height).into()
+    format!("shielded_pool/anchor/{}", height).into()
 }
 
 pub fn anchor_lookup(anchor: &Root) -> KeyHash {
