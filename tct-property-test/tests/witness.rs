@@ -29,7 +29,7 @@ impl Action {
 
         match self {
             Action::Insert(witness, commitment) => {
-                // Insert the commitmentg
+                // Insert the commitment
                 tree.insert(*witness, *commitment)?;
 
                 // If the insertion succeeded, the position must have been non-`None`
@@ -169,5 +169,46 @@ proptest! {
             action.apply(&mut tree).unwrap();
         }
         tree.validate_cached_hashes().unwrap();
+    }
+
+
+    #[test]
+    fn validate_forgotten(
+        actions in
+            prop::collection::vec(any::<Commitment>(), 1..MAX_USED_COMMITMENTS)
+                .prop_flat_map(|commitments| {
+                    prop::collection::vec(any_with::<Action>(commitments), 1..MAX_TIER_ACTIONS)
+                })
+    ) {
+        let mut tree = Tree::new();
+        for action in actions {
+            // Number of commitments forgotten already
+            let pre = tree.forgotten();
+
+            // The number of forgotten commitments should increase if the commitment is contained
+            // and the action is about to forget it: the common case in practice is `forget`, but if
+            // the same commitment is inserted twice, both times with `Witness::Keep`, this will
+            // also increment the count
+            let should_increase = if let Action::Forget(commitment) | Action::Insert(Witness::Keep, commitment) = action {
+                tree.position_of(commitment).is_some()
+            } else {
+                false
+            };
+
+            // Apply the action
+            action.apply(&mut tree).unwrap();
+
+            // Number of commitments forgotten after the action
+            let post = tree.forgotten();
+
+            // Check that the count is increasing correctly
+            if should_increase {
+                assert_eq!(post, pre.next());
+            } else {
+                assert_eq!(post, pre);
+            }
+        }
+        println!("{tree:?}");
+        tree.validate_forgotten().unwrap();
     }
 }

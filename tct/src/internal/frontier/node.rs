@@ -21,13 +21,17 @@ pub struct Node<Child: Focus> {
 
 impl<Child: Focus> Node<Child> {
     /// Construct a new node from parts.
-    pub(crate) fn from_parts(siblings: Three<Insert<Child::Complete>>, focus: Child) -> Self
+    pub(crate) fn from_parts(
+        forgotten: [Forgotten; 4],
+        siblings: Three<Insert<Child::Complete>>,
+        focus: Child,
+    ) -> Self
     where
         Child: Frontier + GetHash,
     {
         Self {
             hash: Default::default(),
-            forgotten: Default::default(),
+            forgotten,
             siblings,
             focus,
         }
@@ -128,7 +132,7 @@ where
     fn new(item: Self::Item) -> Self {
         let focus = Child::new(item);
         let siblings = Three::new();
-        Self::from_parts(siblings, focus)
+        Self::from_parts(Default::default(), siblings, focus)
     }
 
     #[inline]
@@ -155,7 +159,7 @@ where
     fn insert_owned(self, item: Self::Item) -> Result<Self, Full<Self>> {
         match self.focus.insert_owned(item) {
             // We successfully inserted at the focus, so siblings don't need to be changed
-            Ok(focus) => Ok(Self::from_parts(self.siblings, focus)),
+            Ok(focus) => Ok(Self::from_parts(self.forgotten, self.siblings, focus)),
 
             // We couldn't insert at the focus because it was full, so we need to move our path
             // rightwards and insert into a newly created focus
@@ -165,7 +169,7 @@ where
             }) => match self.siblings.push(sibling) {
                 // We had enough room to add another sibling, so we set our focus to a new focus
                 // containing only the item we couldn't previously insert
-                Ok(siblings) => Ok(Self::from_parts(siblings, Child::new(item))),
+                Ok(siblings) => Ok(Self::from_parts(self.forgotten, siblings, Child::new(item))),
 
                 // We didn't have enough room to add another sibling, so we return a complete node
                 // as a carry, to be propagated up above us and added to some ancestor segment's
