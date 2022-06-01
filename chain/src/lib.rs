@@ -5,6 +5,7 @@ mod view;
 
 pub mod genesis;
 pub mod params;
+pub(crate) mod state_key;
 pub mod sync;
 
 pub use epoch::Epoch;

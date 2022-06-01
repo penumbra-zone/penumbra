@@ -30,6 +30,8 @@ use penumbra_transaction::Transaction;
 use tendermint::abci;
 use tracing::instrument;
 
+use super::state_key;
+
 mod execution;
 mod stateful;
 mod stateless;
@@ -175,13 +177,13 @@ impl ConnectionComponent {
 #[async_trait]
 pub trait View: StateExt + Send + Sync {
     async fn get_connection_counter(&self) -> Result<ConnectionCounter> {
-        self.get_domain("ibc/ics03-connection/connection_counter".into())
+        self.get_domain(state_key::connection_counter())
             .await
             .map(|counter| counter.unwrap_or(ConnectionCounter(0)))
     }
 
     async fn put_connection_counter(&self, counter: ConnectionCounter) {
-        self.put_domain("ibc/ics03-connection/connection_counter".into(), counter)
+        self.put_domain(state_key::connection_counter(), counter)
             .await;
     }
 
@@ -192,16 +194,8 @@ pub trait View: StateExt + Send + Sync {
         connection_id: &ConnectionId,
         connection: ConnectionEnd,
     ) -> Result<()> {
-        self.put_domain(
-            format!(
-                "{}/connections/{}",
-                COMMITMENT_PREFIX,
-                connection_id.as_str()
-            )
-            .into(),
-            connection.clone(),
-        )
-        .await;
+        self.put_domain(state_key::connection(connection_id), connection.clone())
+            .await;
         let counter = self
             .get_connection_counter()
             .await
@@ -216,28 +210,12 @@ pub trait View: StateExt + Send + Sync {
     }
 
     async fn get_connection(&self, connection_id: &ConnectionId) -> Result<Option<ConnectionEnd>> {
-        self.get_domain(
-            format!(
-                "{}/connections/{}",
-                COMMITMENT_PREFIX,
-                connection_id.as_str()
-            )
-            .into(),
-        )
-        .await
+        self.get_domain(state_key::connection(connection_id)).await
     }
 
     async fn update_connection(&self, connection_id: &ConnectionId, connection: ConnectionEnd) {
-        self.put_domain(
-            format!(
-                "{}/connections/{}",
-                COMMITMENT_PREFIX,
-                connection_id.as_str()
-            )
-            .into(),
-            connection,
-        )
-        .await;
+        self.put_domain(state_key::connection(connection_id), connection)
+            .await;
     }
 }
 

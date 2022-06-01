@@ -16,7 +16,7 @@ use penumbra_transaction::{Action, Transaction};
 use tendermint::abci;
 use tracing::instrument;
 
-use crate::CommissionAmounts;
+use crate::{state_key, CommissionAmounts};
 
 // Stub component
 pub struct ShieldedPool {
@@ -419,8 +419,7 @@ impl ShieldedPool {
 #[async_trait]
 pub trait View: StateExt {
     async fn token_supply(&self, asset_id: &asset::Id) -> Result<Option<u64>> {
-        self.get_proto(format!("shielded_pool/assets/{}/token_supply", asset_id).into())
-            .await
+        self.get_proto(state_key::token_supply(asset_id)).await
     }
 
     #[instrument(skip(self, change))]
@@ -463,14 +462,13 @@ pub trait View: StateExt {
 
     async fn known_assets(&self) -> Result<KnownAssets> {
         Ok(self
-            .get_domain("shielded_pool/known_assets".into())
+            .get_domain(state_key::known_assets())
             .await?
             .unwrap_or_default())
     }
 
     async fn denom_by_asset(&self, asset_id: &asset::Id) -> Result<Option<Denom>> {
-        self.get_domain(format!("shielded_pool/assets/{}/denom", asset_id).into())
-            .await
+        self.get_domain(state_key::denom_by_asset(asset_id)).await
     }
 
     #[instrument(skip(self))]
@@ -482,11 +480,8 @@ pub trait View: StateExt {
         } else {
             tracing::debug!(?denom, ?id, "registering new denom");
             // We want to be able to query for the denom by asset ID...
-            self.put_domain(
-                format!("shielded_pool/assets/{}/denom", id).into(),
-                denom.clone(),
-            )
-            .await;
+            self.put_domain(state_key::denom_by_asset(&id), denom.clone())
+                .await;
             // ... and we want to record it in the list of known asset IDs
             // (this requires reading the whole list, which is sad, but hopefully
             // we don't do this often).
@@ -495,50 +490,41 @@ pub trait View: StateExt {
                 id,
                 denom: denom.clone(),
             });
-            self.put_domain("shielded_pool/known_assets".into(), known_assets)
+            self.put_domain(state_key::known_assets(), known_assets)
                 .await;
             Ok(())
         }
     }
 
     async fn set_note_source(&self, note_commitment: &note::Commitment, source: NoteSource) {
-        self.put_domain(
-            format!("shielded_pool/note_source/{}", note_commitment).into(),
-            source,
-        )
-        .await
+        self.put_domain(state_key::note_source(note_commitment), source)
+            .await
     }
 
     async fn note_source(&self, note_commitment: &note::Commitment) -> Result<Option<NoteSource>> {
-        self.get_domain(format!("shielded_pool/note_source/{}", note_commitment).into())
+        self.get_domain(state_key::note_source(note_commitment))
             .await
     }
 
     async fn set_compact_block(&self, compact_block: CompactBlock) {
-        self.put_domain(
-            format!("shielded_pool/compact_block/{}", compact_block.height).into(),
-            compact_block,
-        )
-        .await
+        let height = compact_block.height;
+        self.put_domain(state_key::compact_block(height), compact_block)
+            .await
     }
 
     async fn compact_block(&self, height: u64) -> Result<Option<CompactBlock>> {
-        self.get_domain(format!("shielded_pool/compact_block/{}", height).into())
-            .await
+        self.get_domain(state_key::compact_block(height)).await
     }
 
     async fn set_nct_anchor(&self, height: u64, nct_anchor: tct::Root) {
         tracing::debug!(?height, ?nct_anchor, "writing anchor");
 
         // Write the NCT anchor both as a value, so we can look it up,
-        self.put_domain(
-            format!("shielded_pool/tct_anchor/{}", height).into(),
-            nct_anchor,
-        )
-        .await;
+        self.put_domain(state_key::anchor_by_height(&height), nct_anchor)
+            .await;
         // and as a key, so we can query for it.
         self.put_proto(
-            format!("shielded_pool/valid_anchors/{}", nct_anchor).into(),
+            state_key::anchor_lookup(&nct_anchor),
             // We don't use the value for validity checks, but writing the height
             // here lets us find out what height the anchor was for.
             height,
@@ -549,7 +535,7 @@ pub trait View: StateExt {
     /// Checks whether a claimed NCT anchor is a previous valid state root.
     async fn check_claimed_anchor(&self, anchor: &tct::Root) -> Result<()> {
         if let Some(anchor_height) = self
-            .get_proto::<u64>(format!("shielded_pool/valid_anchors/{}", anchor).into())
+            .get_proto::<u64>(state_key::anchor_lookup(&anchor))
             .await?
         {
             tracing::debug!(?anchor, ?anchor_height, "anchor is valid");
@@ -566,7 +552,7 @@ pub trait View: StateExt {
     async fn spend_nullifier(&self, nullifier: Nullifier, source: NoteSource) {
         tracing::debug!("marking as spent");
         self.put_proto(
-            format!("shielded_pool/spent_nullifiers/{}", nullifier).into(),
+            state_key::spent_nullifier_lookup(&nullifier),
             // We don't use the value for validity checks, but writing the source
             // here lets us find out what transaction spent the nullifier.
             // TODO: NoteSource proto?
@@ -578,7 +564,7 @@ pub trait View: StateExt {
     #[instrument(skip(self))]
     async fn check_nullifier_unspent(&self, nullifier: Nullifier) -> Result<()> {
         if let Some(source_bytes) = self
-            .get_proto::<Vec<u8>>(format!("shielded_pool/spent_nullifiers/{}", nullifier).into())
+            .get_proto::<Vec<u8>>(state_key::spent_nullifier_lookup(&nullifier))
             .await?
         {
             // TODO: NoteSource proto?
@@ -598,16 +584,12 @@ pub trait View: StateExt {
     // be used with IBC transfers, and fix up the path and proto
 
     async fn commission_amounts(&self, height: u64) -> Result<Option<CommissionAmounts>> {
-        self.get_domain(format!("staking/commission_amounts/{}", height).into())
-            .await
+        self.get_domain(state_key::commission_amounts(height)).await
     }
 
     async fn set_commission_amounts(&self, height: u64, notes: CommissionAmounts) {
-        self.put_domain(
-            format!("staking/commission_amounts/{}", height).into(),
-            notes,
-        )
-        .await
+        self.put_domain(state_key::commission_amounts(height), notes)
+            .await
     }
 }
 

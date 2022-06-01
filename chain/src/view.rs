@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use penumbra_storage::StateExt;
 use tendermint::Time;
 
-use crate::{params::ChainParams, Epoch};
+use crate::{params::ChainParams, state_key, Epoch};
 
 /// This trait provides read and write access to common parts of the Penumbra
 /// state store.
@@ -16,14 +16,14 @@ use crate::{params::ChainParams, Epoch};
 pub trait View: StateExt {
     /// Gets the chain parameters from the JMT.
     async fn get_chain_params(&self) -> Result<ChainParams> {
-        self.get_domain(b"chain_params".into())
+        self.get_domain(state_key::chain_params())
             .await?
             .ok_or_else(|| anyhow!("Missing ChainParams"))
     }
 
     /// Writes the provided chain parameters to the JMT.
     async fn put_chain_params(&self, params: ChainParams) {
-        self.put_domain(b"chain_params".into(), params).await
+        self.put_domain(state_key::chain_params(), params).await
     }
 
     /// Gets the current epoch for the chain.
@@ -56,7 +56,7 @@ pub trait View: StateExt {
     /// Gets the current block height from the JMT
     async fn get_block_height(&self) -> Result<u64> {
         let height_bytes: u64 = self
-            .get_proto(b"block_height".into())
+            .get_proto(state_key::block_height())
             .await?
             .ok_or_else(|| anyhow!("Missing block_height"))?;
 
@@ -71,7 +71,7 @@ pub trait View: StateExt {
     /// Gets the current block timestamp from the JMT
     async fn get_block_timestamp(&self) -> Result<Time> {
         let timestamp_string: String = self
-            .get_proto(b"block_timestamp".into())
+            .get_proto(state_key::block_timestamp())
             .await?
             .ok_or_else(|| anyhow!("Missing block_timestamp"))?;
 
@@ -80,7 +80,7 @@ pub trait View: StateExt {
 
     /// Writes the block timestamp to the JMT
     async fn put_block_timestamp(&self, timestamp: Time) {
-        self.put_proto(b"block_timestamp".into(), timestamp.to_rfc3339())
+        self.put_proto(state_key::block_timestamp(), timestamp.to_rfc3339())
             .await
     }
 

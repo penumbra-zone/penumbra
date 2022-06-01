@@ -6,6 +6,7 @@
 mod channel;
 mod client;
 mod connection;
+pub(crate) mod state_key;
 
 use anyhow::Result;
 use async_trait::async_trait;

@@ -2688,6 +2688,7 @@ dependencies = [
  "bytes",
  "decaf377",
  "hex",
+ "jmt",
  "penumbra-crypto",
  "penumbra-proto",
  "penumbra-storage",
