@@ -23,6 +23,11 @@ pub trait Any: GetHash {
     /// The position of the tree within which this node occurs.
     fn global_position(&self) -> Option<u64>;
 
+    /// The parent of this node, if any.
+    fn parent(&self) -> Option<&dyn Any> {
+        None
+    }
+
     /// The children, or hashes of them, of this node.
     fn children(&self) -> Vec<(Forgotten, Insert<Child>)>;
 }
@@ -148,8 +153,8 @@ impl Display for Place {
 #[derive(Copy, Clone)]
 pub struct Child<'a> {
     offset: u64,
-    global_position: Option<u64>,
-    inner: &'a dyn Any,
+    parent: &'a dyn Any,
+    child: &'a dyn Any,
 }
 
 impl Debug for Child<'_> {
@@ -167,37 +172,41 @@ impl<'a> Child<'a> {
     pub fn new(parent: &'a dyn Any, child: &'a dyn Any) -> Self {
         Child {
             offset: 0,
-            global_position: parent.global_position(),
-            inner: child,
+            parent,
+            child,
         }
     }
 }
 
 impl GetHash for Child<'_> {
     fn hash(&self) -> Hash {
-        self.inner.hash()
+        self.child.hash()
     }
 
     fn cached_hash(&self) -> Option<Hash> {
-        self.inner.cached_hash()
+        self.child.cached_hash()
     }
 }
 
 impl Any for Child<'_> {
     fn index(&self) -> u64 {
-        self.offset + self.inner.index()
+        self.offset + self.child.index()
+    }
+
+    fn parent(&self) -> Option<&dyn Any> {
+        Some(self.parent)
     }
 
     fn kind(&self) -> Kind {
-        self.inner.kind()
+        self.child.kind()
     }
 
     fn global_position(&self) -> Option<u64> {
-        self.global_position
+        self.parent.global_position()
     }
 
     fn children(&self) -> Vec<(Forgotten, Insert<Child>)> {
-        self.inner
+        self.child
             .children()
             .into_iter()
             .enumerate()
@@ -213,8 +222,8 @@ impl Any for Child<'_> {
                         // parent offset:
                         let multiplier = 4u64.pow((self.height() - child.height()).into());
                         Child {
-                            inner: child.inner,
-                            global_position: self.global_position,
+                            child: child.child,
+                            parent: child.parent,
                             offset: self.offset * multiplier + nth as u64,
                         }
                     }),
