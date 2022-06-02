@@ -598,8 +598,8 @@ impl Tree {
     }
 
     /// Get a dynamic representation of the internal structure of the tree, which can be traversed
-    /// and inspected using the methods of [`structure::Node`].
-    pub fn structure(&self) -> &dyn structure::Node {
-        &self.inner
+    /// and inspected arbitrarily.
+    pub fn structure(&self) -> structure::Node {
+        Node::root(&self.inner)
     }
 }

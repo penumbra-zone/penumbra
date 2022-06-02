@@ -185,7 +185,7 @@ impl<Child> GetPosition for Node<Child> {
     }
 }
 
-impl<Item: Height + structure::Node> structure::Node for Node<Item> {
+impl<Item: Height + structure::Any> structure::Any for Node<Item> {
     fn kind(&self) -> Kind {
         Kind::Internal {
             height: <Self as Height>::Height::HEIGHT,
@@ -200,17 +200,13 @@ impl<Item: Height + structure::Node> structure::Node for Node<Item> {
         self.forgotten.iter().copied().max().unwrap_or_default()
     }
 
-    fn children(&self) -> Vec<Child> {
+    fn children(&self) -> Vec<structure::Node> {
         self.forgotten
             .iter()
             .copied()
             .zip(self.children.children().into_iter())
             .map(|(forgotten, child)| {
-                Child::new(
-                    self,
-                    forgotten,
-                    child.map(|child| child as &dyn structure::Node),
-                )
+                structure::Node::child(forgotten, child.map(|child| child as &dyn structure::Any))
             })
             .collect()
     }

@@ -213,9 +213,9 @@ where
     }
 }
 
-impl<Item: Focus + GetPosition + Height + structure::Node> structure::Node for Top<Item>
+impl<Item: Focus + GetPosition + Height + structure::Any> structure::Any for Top<Item>
 where
-    Item::Complete: structure::Node,
+    Item::Complete: structure::Any,
 {
     fn kind(&self) -> Kind {
         Kind::Internal {
@@ -231,10 +231,10 @@ where
         self.forgotten().unwrap_or_default()
     }
 
-    fn children(&self) -> Vec<Child> {
+    fn children(&self) -> Vec<structure::Node> {
         self.inner
             .as_ref()
-            .map(structure::Node::children)
+            .map(structure::Any::children)
             .unwrap_or_default()
     }
 }

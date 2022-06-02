@@ -24,7 +24,7 @@ pub fn index(tree: &Tree) -> Result<(), IndexMalformed> {
     fn check_leaves(
         reverse_index: &HashMap<Position, Commitment>,
         errors: &mut Vec<IndexError>,
-        node: &dyn structure::Node,
+        node: structure::Node,
     ) {
         if matches!(
             node.kind(),
@@ -55,7 +55,7 @@ pub fn index(tree: &Tree) -> Result<(), IndexMalformed> {
         } else {
             // We're at internal node, so recurse down farther...
             for child in node.children() {
-                check_leaves(reverse_index, errors, &child);
+                check_leaves(reverse_index, errors, child);
             }
         }
     }
@@ -181,13 +181,13 @@ pub enum WitnessError {
 pub fn cached_hashes(tree: &Tree) -> Result<(), InvalidCachedHashes> {
     use structure::*;
 
-    fn check_hashes(errors: &mut Vec<InvalidCachedHash>, node: &dyn Node) {
+    fn check_hashes(errors: &mut Vec<InvalidCachedHash>, node: Node) {
         // IMPORTANT: we need to traverse children before parent, to avoid overwriting the
         // parent's hash before we have a chance to check it!
         for child in node.children() {
             // The frontier is the only place where cached hashes occur
             if child.place() == Place::Frontier {
-                check_hashes(errors, &child);
+                check_hashes(errors, child);
             }
         }
 
@@ -257,13 +257,13 @@ pub fn forgotten(tree: &Tree) -> Result<(), InvalidForgotten> {
     fn check_forgotten(
         errors: &mut Vec<InvalidForgottenVersion>,
         expected_max: Option<Forgotten>,
-        node: &dyn Node,
+        node: Node,
     ) {
         let children = node.children();
         let actual_max = node
             .children()
             .iter()
-            .map(Node::forgotten)
+            .map(Any::forgotten)
             .max()
             .unwrap_or_default();
 
@@ -282,7 +282,7 @@ pub fn forgotten(tree: &Tree) -> Result<(), InvalidForgotten> {
 
             // Check the children
             for child in children {
-                check_forgotten(errors, Some(child.forgotten()), &child);
+                check_forgotten(errors, Some(child.forgotten()), child);
             }
         }
     }

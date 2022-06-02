@@ -91,7 +91,7 @@ mod prelude {
             path::{self, AuthPath, Path, WhichWay},
             three::{Elems, ElemsMut, IntoElems, Three},
         },
-        structure::{self, Child, Kind, Place},
+        structure::{self, Kind, Node, Place},
         Commitment, Position, Proof, Root, Tree,
     };
 }
