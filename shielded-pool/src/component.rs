@@ -1,11 +1,11 @@
 use std::collections::BTreeSet;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Context as _, Result};
 use ark_ff::PrimeField;
 use async_trait::async_trait;
 use decaf377::{Fq, Fr};
 use penumbra_chain::{genesis, sync::CompactBlock, Epoch, KnownAssets, NoteSource, View as _};
-use penumbra_component::Component;
+use penumbra_component::{Component, Context};
 use penumbra_crypto::{
     asset::{self, Asset, Denom},
     ka, note, Address, Note, NotePayload, Nullifier, One, Value, STAKING_TOKEN_ASSET_ID,
@@ -16,7 +16,7 @@ use penumbra_transaction::{Action, Transaction};
 use tendermint::abci;
 use tracing::instrument;
 
-use crate::{state_key, CommissionAmounts};
+use crate::{event, state_key, CommissionAmounts};
 
 // Stub component
 pub struct ShieldedPool {
@@ -87,11 +87,11 @@ impl Component for ShieldedPool {
         self.write_compactblock_and_nct().await.unwrap();
     }
 
-    #[instrument(name = "shielded_pool", skip(self, _begin_block))]
-    async fn begin_block(&mut self, _begin_block: &abci::request::BeginBlock) {}
+    #[instrument(name = "shielded_pool", skip(self, _ctx, _begin_block))]
+    async fn begin_block(&mut self, _ctx: Context, _begin_block: &abci::request::BeginBlock) {}
 
-    #[instrument(name = "shielded_pool", skip(tx))]
-    fn check_tx_stateless(tx: &Transaction) -> Result<()> {
+    #[instrument(name = "shielded_pool", skip(_ctx, tx))]
+    fn check_tx_stateless(_ctx: Context, tx: &Transaction) -> Result<()> {
         // TODO: add a check that ephemeral_key is not identity to prevent scanning dos attack ?
         let auth_hash = tx.transaction_body().auth_hash();
 
@@ -153,8 +153,8 @@ impl Component for ShieldedPool {
         Ok(())
     }
 
-    #[instrument(name = "shielded_pool", skip(self, tx))]
-    async fn check_tx_stateful(&self, tx: &Transaction) -> Result<()> {
+    #[instrument(name = "shielded_pool", skip(self, _ctx, tx))]
+    async fn check_tx_stateful(&self, _ctx: Context, tx: &Transaction) -> Result<()> {
         // TODO: rename transaction_body.merkle_root now that we have 2 merkle trees
         self.state.check_claimed_anchor(&tx.anchor).await?;
 
@@ -166,8 +166,8 @@ impl Component for ShieldedPool {
         Ok(())
     }
 
-    #[instrument(name = "shielded_pool", skip(self, tx))]
-    async fn execute_tx(&mut self, tx: &Transaction) {
+    #[instrument(name = "shielded_pool", skip(self, ctx, tx))]
+    async fn execute_tx(&mut self, ctx: Context, tx: &Transaction) {
         let _should_quarantine = tx
             .transaction_body
             .actions
@@ -190,12 +190,13 @@ impl Component for ShieldedPool {
             // can learn that their note was spent).
             self.state.spend_nullifier(spent_nullifier, source).await;
             self.compact_block.nullifiers.push(spent_nullifier);
+            ctx.record(event::spend(spent_nullifier));
         }
         //}
     }
 
-    #[instrument(name = "shielded_pool", skip(self, _end_block))]
-    async fn end_block(&mut self, _end_block: &abci::request::EndBlock) {
+    #[instrument(name = "shielded_pool", skip(self, _ctx, _end_block))]
+    async fn end_block(&mut self, _ctx: Context, _end_block: &abci::request::EndBlock) {
         // Get the current block height
         let height = self.height().await;
 

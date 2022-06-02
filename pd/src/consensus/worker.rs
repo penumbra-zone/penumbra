@@ -3,7 +3,7 @@ use anyhow::{anyhow, Result};
 use penumbra_proto::Protobuf;
 
 use penumbra_chain::genesis;
-use penumbra_component::Component;
+use penumbra_component::{Component, Context};
 use penumbra_storage::Storage;
 use penumbra_transaction::Transaction;
 use tendermint::{
@@ -64,18 +64,26 @@ impl Worker {
                         .expect("begin_block must succeed"),
                 ),
                 Request::DeliverTx(deliver_tx) => {
-                    let rsp = self.deliver_tx(deliver_tx).instrument(span.clone()).await;
+                    let ctx = Context::new();
+                    let rsp = self
+                        .deliver_tx(ctx.clone(), deliver_tx)
+                        .instrument(span.clone())
+                        .await;
                     span.in_scope(|| {
                         Response::DeliverTx(match rsp {
                             Ok(()) => {
                                 tracing::info!("deliver_tx succeeded");
-                                abci::response::DeliverTx::default()
+                                abci::response::DeliverTx {
+                                    events: ctx.into_events(),
+                                    ..Default::default()
+                                }
                             }
                             Err(e) => {
                                 tracing::info!(?e, "deliver_tx failed");
                                 abci::response::DeliverTx {
                                     code: 1,
                                     log: e.to_string(),
+                                    events: ctx.into_events(),
                                     ..Default::default()
                                 }
                             }
@@ -149,9 +157,11 @@ impl Worker {
         &mut self,
         begin_block: abci::request::BeginBlock,
     ) -> Result<abci::response::BeginBlock> {
-        self.app.begin_block(&begin_block).await;
-        // TODO(events): consider creating + returning Events to Tendermint here.
-        Ok(Default::default())
+        let ctx = Context::new();
+        self.app.begin_block(ctx.clone(), &begin_block).await;
+        Ok(abci::response::BeginBlock {
+            events: ctx.into_events(),
+        })
     }
 
     /// Perform full transaction validation via `DeliverTx`.
@@ -161,17 +171,23 @@ impl Worker {
     /// We must perform all checks again here even though they are performed in `CheckTx`, as a
     /// Byzantine node may propose a block containing double spends or other disallowed behavior,
     /// so it is not safe to assume all checks performed in `CheckTx` were done.
-    async fn deliver_tx(&mut self, deliver_tx: abci::request::DeliverTx) -> Result<()> {
+    async fn deliver_tx(
+        &mut self,
+        ctx: Context,
+        deliver_tx: abci::request::DeliverTx,
+    ) -> Result<()> {
         // Verify the transaction is well-formed...
         let transaction = Transaction::decode(deliver_tx.tx)?;
         // ... and statelessly valid...
-        App::check_tx_stateless(&transaction)?;
+        App::check_tx_stateless(ctx.clone(), &transaction)?;
         // ... and statefully valid.
-        self.app.check_tx_stateful(&transaction).await?;
+        self.app
+            .check_tx_stateful(ctx.clone(), &transaction)
+            .await?;
         // Now execute the transaction. It's important to panic on error here, since if
         // we fail to execute the transaction here, it's because of an internal
         // error and we may have left the chain in an inconsistent state.
-        self.app.execute_tx(&transaction).await;
+        self.app.execute_tx(ctx.clone(), &transaction).await;
         Ok(())
     }
 
@@ -179,7 +195,8 @@ impl Worker {
         &mut self,
         end_block: abci::request::EndBlock,
     ) -> Result<abci::response::EndBlock> {
-        self.app.end_block(&end_block).await;
+        let ctx = Context::new();
+        self.app.end_block(ctx.clone(), &end_block).await;
 
         // Set `tm_validator_updates` to the complete set of
         // validators and voting power. This must be the last step performed,
@@ -195,7 +212,7 @@ impl Worker {
         Ok(abci::response::EndBlock {
             validator_updates,
             consensus_param_updates: None,
-            events: Vec::new(),
+            events: ctx.into_events(),
         })
     }
 

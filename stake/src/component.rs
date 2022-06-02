@@ -2,10 +2,10 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use ::metrics::{decrement_gauge, gauge, increment_gauge};
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Context as _, Result};
 use async_trait::async_trait;
 use penumbra_chain::{genesis, Epoch, View as _};
-use penumbra_component::Component;
+use penumbra_component::{Component, Context};
 use penumbra_crypto::{DelegationToken, IdentityKey, STAKING_TOKEN_ASSET_ID};
 use penumbra_proto::Protobuf;
 use penumbra_shielded_pool::{CommissionAmount, CommissionAmounts, View as _};
@@ -829,10 +829,10 @@ impl Component for Staking {
             .await;
     }
 
-    #[instrument(name = "staking", skip(self, begin_block))]
-    async fn begin_block(&mut self, begin_block: &abci::request::BeginBlock) {
+    #[instrument(name = "staking", skip(self, _ctx, begin_block))]
+    async fn begin_block(&mut self, _ctx: Context, begin_block: &abci::request::BeginBlock) {
         // For each validator identified as byzantine by tendermint, update its
-        // state to be slashed.
+        // state to be slashed
         for evidence in begin_block.byzantine_validators.iter() {
             self.process_evidence(evidence).await.unwrap();
         }
@@ -842,8 +842,8 @@ impl Component for Staking {
             .unwrap();
     }
 
-    #[instrument(name = "staking", skip(tx))]
-    fn check_tx_stateless(tx: &Transaction) -> Result<()> {
+    #[instrument(name = "staking", skip(_ctx, tx))]
+    fn check_tx_stateless(_ctx: Context, tx: &Transaction) -> Result<()> {
         // Check that the transaction undelegates from at most one validator.
         let undelegation_identities = tx
             .undelegations()
@@ -901,8 +901,8 @@ impl Component for Staking {
         Ok(())
     }
 
-    #[instrument(name = "staking", skip(self, tx))]
-    async fn check_tx_stateful(&self, tx: &Transaction) -> Result<()> {
+    #[instrument(name = "staking", skip(self, _ctx, tx))]
+    async fn check_tx_stateful(&self, _ctx: Context, tx: &Transaction) -> Result<()> {
         // Tally the delegations and undelegations
         let mut delegation_changes = BTreeMap::new();
         for d in tx.delegations() {
@@ -1052,8 +1052,8 @@ impl Component for Staking {
         Ok(())
     }
 
-    #[instrument(name = "staking", skip(self, tx))]
-    async fn execute_tx(&mut self, tx: &Transaction) {
+    #[instrument(name = "staking", skip(self, _ctx, tx))]
+    async fn execute_tx(&mut self, _ctx: Context, tx: &Transaction) {
         // Queue any (un)delegations for processing at the next epoch boundary.
         for action in &tx.transaction_body.actions {
             match action {
@@ -1113,8 +1113,8 @@ impl Component for Staking {
         }
     }
 
-    #[instrument(name = "staking", skip(self, end_block))]
-    async fn end_block(&mut self, end_block: &abci::request::EndBlock) {
+    #[instrument(name = "staking", skip(self, _ctx, end_block))]
+    async fn end_block(&mut self, _ctx: Context, end_block: &abci::request::EndBlock) {
         // Write the delegation changes for this block.
         self.state
             .set_delegation_changes(

@@ -2,6 +2,8 @@ use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::genesis;
 use penumbra_transaction::Transaction;
+use std::sync::Arc;
+use std::sync::Mutex;
 use tendermint::abci;
 
 /// A component of the Penumbra application.
@@ -82,11 +84,11 @@ pub trait Component: Sized {
     /// This method should only be called immediately after [`Component::new`].
     /// This method need not be called before [`Component::execute_tx`] (e.g.,
     /// in order to simulate executing a transaction in the mempool).
-    async fn begin_block(&mut self, begin_block: &abci::request::BeginBlock);
+    async fn begin_block(&mut self, ctx: Context, begin_block: &abci::request::BeginBlock);
 
     /// Performs all of this component's stateless validity checks on the given
     /// [`Transaction`].
-    fn check_tx_stateless(tx: &Transaction) -> Result<()>;
+    fn check_tx_stateless(ctx: Context, tx: &Transaction) -> Result<()>;
 
     /// Performs all of this component's stateful validity checks on the given
     /// [`Transaction`].
@@ -96,7 +98,7 @@ pub trait Component: Sized {
     /// This method should only be called on transactions that have been
     /// checked with [`Component::check_tx_stateless`].
     /// This method can be called before [`Component::begin_block`].
-    async fn check_tx_stateful(&self, tx: &Transaction) -> Result<()>;
+    async fn check_tx_stateful(&self, ctx: Context, tx: &Transaction) -> Result<()>;
 
     /// Executes the given [`Transaction`] against the current state.
     ///
@@ -105,7 +107,7 @@ pub trait Component: Sized {
     /// This method should only be called immediately following a successful
     /// invocation of [`Component::check_tx_stateful`] on the same transaction.
     /// This method can be called before [`Component::begin_block`].
-    async fn execute_tx(&mut self, tx: &Transaction);
+    async fn execute_tx(&mut self, ctx: Context, tx: &Transaction);
 
     /// Ends the block, optionally inspecting the ABCI
     /// [`EndBlock`](abci::request::EndBlock) request, and performing any batch
@@ -115,5 +117,41 @@ pub trait Component: Sized {
     ///
     /// This method should only be called after [`Component::begin_block`].
     /// No methods should be called following this method.
-    async fn end_block(&mut self, end_block: &abci::request::EndBlock);
+    async fn end_block(&mut self, ctx: Context, end_block: &abci::request::EndBlock);
+}
+
+/// A context accumulates events that may occur during various parts of a
+/// Component's life-cycle. Since Penumbra components want to accumulate events
+/// in potentially concurrent ways, a Context is an owned handle to a shared
+/// state. It is cheap to copy, and is safe to use across threads.
+///
+/// A context is created by the [`Context::new()`] method. Events can be
+/// accumulated using [`Context::record()`], and finally collected (consuming
+/// the underlying data) in [`Context::into_events()`].
+#[derive(Clone)]
+pub struct Context {
+    inner: Arc<Mutex<Option<Vec<abci::Event>>>>,
+}
+
+impl Context {
+    pub fn new() -> Self {
+        Self {
+            inner: Arc::new(Mutex::new(Some(Vec::new()))),
+        }
+    }
+    pub fn record(&self, e: abci::Event) {
+        self.inner
+            .lock()
+            .expect("record called after into_events")
+            .as_mut()
+            .unwrap()
+            .push(e);
+    }
+    pub fn into_events(self) -> Vec<abci::Event> {
+        self.inner
+            .lock()
+            .expect("into_events called after record")
+            .take()
+            .unwrap()
+    }
 }

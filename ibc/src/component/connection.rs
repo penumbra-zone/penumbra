@@ -18,7 +18,7 @@ use ibc::core::ics03_connection::version::{pick_version, Version};
 use ibc::core::ics24_host::identifier::ConnectionId;
 use ibc::Height as IBCHeight;
 use penumbra_chain::{genesis, View as _};
-use penumbra_component::Component;
+use penumbra_component::{Component, Context};
 use penumbra_proto::ibc::{
     ibc_action::Action::{
         ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
@@ -52,11 +52,11 @@ impl Component for ConnectionComponent {
     #[instrument(name = "ibc_connection", skip(self, _app_state))]
     async fn init_chain(&mut self, _app_state: &genesis::AppState) {}
 
-    #[instrument(name = "ibc_connection", skip(self, _begin_block))]
-    async fn begin_block(&mut self, _begin_block: &abci::request::BeginBlock) {}
+    #[instrument(name = "ibc_connection", skip(self, _ctx, _begin_block))]
+    async fn begin_block(&mut self, _ctx: Context, _begin_block: &abci::request::BeginBlock) {}
 
-    #[instrument(name = "ibc_connection", skip(tx))]
-    fn check_tx_stateless(tx: &Transaction) -> Result<()> {
+    #[instrument(name = "ibc_connection", skip(_ctx, tx))]
+    fn check_tx_stateless(_ctx: Context, tx: &Transaction) -> Result<()> {
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {
                 Some(ConnectionOpenInit(msg)) => {
@@ -95,8 +95,8 @@ impl Component for ConnectionComponent {
         Ok(())
     }
 
-    #[instrument(name = "ibc_connection", skip(self, tx))]
-    async fn check_tx_stateful(&self, tx: &Transaction) -> Result<()> {
+    #[instrument(name = "ibc_connection", skip(self, _ctx, tx))]
+    async fn check_tx_stateful(&self, _ctx: Context, tx: &Transaction) -> Result<()> {
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {
                 Some(ConnectionOpenInit(msg)) => {
@@ -130,15 +130,15 @@ impl Component for ConnectionComponent {
         Ok(())
     }
 
-    #[instrument(name = "ibc_connection", skip(self, tx))]
-    async fn execute_tx(&mut self, tx: &Transaction) {
+    #[instrument(name = "ibc_connection", skip(self, _ctx, tx))]
+    async fn execute_tx(&mut self, _ctx: Context, tx: &Transaction) {
         for ibc_action in tx.ibc_actions() {
             self.execute_ibc_action(ibc_action).await;
         }
     }
 
-    #[instrument(name = "ibc_connection", skip(self, _end_block))]
-    async fn end_block(&mut self, _end_block: &abci::request::EndBlock) {}
+    #[instrument(name = "ibc_connection", skip(self, _ctx, _end_block))]
+    async fn end_block(&mut self, _ctx: Context, _end_block: &abci::request::EndBlock) {}
 }
 
 impl ConnectionComponent {

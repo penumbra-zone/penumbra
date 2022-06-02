@@ -3,6 +3,7 @@
 
 mod commission;
 mod component;
+pub(crate) mod event;
 mod metrics;
 pub(crate) mod state_key;
 

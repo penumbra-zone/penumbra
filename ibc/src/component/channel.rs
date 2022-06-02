@@ -24,7 +24,7 @@ use ibc::core::ics04_channel::packet::Packet;
 use ibc::core::ics24_host::identifier::ChannelId;
 use ibc::core::ics24_host::identifier::PortId;
 use penumbra_chain::genesis;
-use penumbra_component::Component;
+use penumbra_component::{Component, Context};
 use penumbra_proto::ibc::ibc_action::Action::{
     Acknowledgement, ChannelCloseConfirm, ChannelCloseInit, ChannelOpenAck, ChannelOpenConfirm,
     ChannelOpenInit, ChannelOpenTry, RecvPacket, Timeout,
@@ -54,11 +54,11 @@ impl Component for ICS4Channel {
     #[instrument(name = "ics4_channel", skip(self, _app_state))]
     async fn init_chain(&mut self, _app_state: &genesis::AppState) {}
 
-    #[instrument(name = "ics4_channel", skip(self, _begin_block))]
-    async fn begin_block(&mut self, _begin_block: &abci::request::BeginBlock) {}
+    #[instrument(name = "ics4_channel", skip(self, _ctx, _begin_block))]
+    async fn begin_block(&mut self, _ctx: Context, _begin_block: &abci::request::BeginBlock) {}
 
-    #[instrument(name = "ics4_channel", skip(tx))]
-    fn check_tx_stateless(tx: &Transaction) -> Result<()> {
+    #[instrument(name = "ics4_channel", skip(_ctx, tx))]
+    fn check_tx_stateless(_ctx: Context, tx: &Transaction) -> Result<()> {
         // Each stateless check is a distinct function in an appropriate submodule,
         // so that we can easily add new stateless checks and see a birds' eye view
         // of all of the checks we're performing.
@@ -115,8 +115,8 @@ impl Component for ICS4Channel {
         Ok(())
     }
 
-    #[instrument(name = "ics4_channel", skip(self, tx))]
-    async fn check_tx_stateful(&self, tx: &Transaction) -> Result<()> {
+    #[instrument(name = "ics4_channel", skip(self, _ctx, tx))]
+    async fn check_tx_stateful(&self, _ctx: Context, tx: &Transaction) -> Result<()> {
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {
                 Some(ChannelOpenInit(msg)) => {
@@ -181,8 +181,8 @@ impl Component for ICS4Channel {
         Ok(())
     }
 
-    #[instrument(name = "ics4_channel", skip(self, tx))]
-    async fn execute_tx(&mut self, tx: &Transaction) {
+    #[instrument(name = "ics4_channel", skip(self, _ctx, tx))]
+    async fn execute_tx(&mut self, _ctx: Context, tx: &Transaction) {
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {
                 Some(ChannelOpenInit(msg)) => {
@@ -246,8 +246,8 @@ impl Component for ICS4Channel {
         }
     }
 
-    #[instrument(name = "ics4_channel", skip(self, _end_block))]
-    async fn end_block(&mut self, _end_block: &abci::request::EndBlock) {}
+    #[instrument(name = "ics4_channel", skip(self, _ctx, _end_block))]
+    async fn end_block(&mut self, _ctx: Context, _end_block: &abci::request::EndBlock) {}
 }
 
 #[async_trait]

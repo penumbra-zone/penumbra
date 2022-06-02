@@ -25,7 +25,7 @@ use ibc::{
     },
 };
 use penumbra_chain::{genesis, View as _};
-use penumbra_component::Component;
+use penumbra_component::{Component, Context};
 use penumbra_proto::ibc::{
     ibc_action::Action::{CreateClient, UpdateClient},
     IbcAction,
@@ -67,8 +67,8 @@ impl Component for Ics2Client {
         self.state.put_client_counter(ClientCounter(0)).await;
     }
 
-    #[instrument(name = "ics2_client", skip(self, begin_block))]
-    async fn begin_block(&mut self, begin_block: &abci::request::BeginBlock) {
+    #[instrument(name = "ics2_client", skip(self, _ctx, begin_block))]
+    async fn begin_block(&mut self, _ctx: Context, begin_block: &abci::request::BeginBlock) {
         // In BeginBlock, we want to save a copy of our consensus state to our
         // own state tree, so that when we get a message from our
         // counterparties, we can verify that they are committing the correct
@@ -89,8 +89,8 @@ impl Component for Ics2Client {
             .await;
     }
 
-    #[instrument(name = "ics2_client", skip(tx))]
-    fn check_tx_stateless(tx: &Transaction) -> Result<()> {
+    #[instrument(name = "ics2_client", skip(_ctx, tx))]
+    fn check_tx_stateless(_ctx: Context, tx: &Transaction) -> Result<()> {
         // Each stateless check is a distinct function in an appropriate submodule,
         // so that we can easily add new stateless checks and see a birds' eye view
         // of all of the checks we're performing.
@@ -118,8 +118,8 @@ impl Component for Ics2Client {
         Ok(())
     }
 
-    #[instrument(name = "ics2_client", skip(self, tx))]
-    async fn check_tx_stateful(&self, tx: &Transaction) -> Result<()> {
+    #[instrument(name = "ics2_client", skip(self, _ctx, tx))]
+    async fn check_tx_stateful(&self, _ctx: Context, tx: &Transaction) -> Result<()> {
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {
                 Some(CreateClient(msg)) => {
@@ -139,16 +139,16 @@ impl Component for Ics2Client {
         Ok(())
     }
 
-    #[instrument(name = "ics2_client", skip(self, tx))]
-    async fn execute_tx(&mut self, tx: &Transaction) {
+    #[instrument(name = "ics2_client", skip(self, _ctx, tx))]
+    async fn execute_tx(&mut self, _ctx: Context, tx: &Transaction) {
         // Handle any IBC actions found in the transaction.
         for ibc_action in tx.ibc_actions() {
             self.execute_ibc_action(ibc_action).await;
         }
     }
 
-    #[instrument(name = "ics2_client", skip(self, _end_block))]
-    async fn end_block(&mut self, _end_block: &abci::request::EndBlock) {}
+    #[instrument(name = "ics2_client", skip(self, _ctx, _end_block))]
+    async fn end_block(&mut self, _ctx: Context, _end_block: &abci::request::EndBlock) {}
 }
 
 impl Ics2Client {
@@ -748,26 +748,31 @@ mod tests {
             anchor: tct::Tree::new().root(),
         };
 
-        Ics2Client::check_tx_stateless(&create_client_tx).unwrap();
+        let ctx = Context::new();
+        Ics2Client::check_tx_stateless(ctx.clone(), &create_client_tx).unwrap();
         client_component
-            .check_tx_stateful(&create_client_tx)
+            .check_tx_stateful(ctx.clone(), &create_client_tx)
             .await
             .unwrap();
         // execute (save client)
-        client_component.execute_tx(&create_client_tx).await;
+        client_component
+            .execute_tx(ctx.clone(), &create_client_tx)
+            .await;
 
         assert_eq!(client_component.state.client_counter().await.unwrap().0, 1);
 
         // now try update client
 
-        Ics2Client::check_tx_stateless(&update_client_tx).unwrap();
+        Ics2Client::check_tx_stateless(ctx.clone(), &update_client_tx).unwrap();
         // verify the ClientUpdate proof
         client_component
-            .check_tx_stateful(&update_client_tx)
+            .check_tx_stateful(ctx.clone(), &update_client_tx)
             .await
             .unwrap();
         // save the next tm state
-        client_component.execute_tx(&update_client_tx).await;
+        client_component
+            .execute_tx(ctx.clone(), &update_client_tx)
+            .await;
 
         // try one more client update
         // https://cosmos.bigdipper.live/transactions/ED217D360F51E622859F7B783FEF98BDE3544AA32BBD13C6C77D8D0D57A19FFD
@@ -794,13 +799,15 @@ mod tests {
             binding_sig: [0u8; 64].into(),
         };
 
-        Ics2Client::check_tx_stateless(&second_update_client_tx).unwrap();
+        Ics2Client::check_tx_stateless(ctx.clone(), &second_update_client_tx).unwrap();
         // verify the ClientUpdate proof
         client_component
-            .check_tx_stateful(&second_update_client_tx)
+            .check_tx_stateful(ctx.clone(), &second_update_client_tx)
             .await
             .unwrap();
         // save the next tm state
-        client_component.execute_tx(&second_update_client_tx).await;
+        client_component
+            .execute_tx(ctx.clone(), &second_update_client_tx)
+            .await;
     }
 }

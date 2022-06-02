@@ -12,7 +12,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use client::Ics2Client;
 use penumbra_chain::{genesis, View as _};
-use penumbra_component::Component;
+use penumbra_component::{Component, Context};
 use penumbra_storage::State;
 use penumbra_transaction::Transaction;
 use tendermint::abci;
@@ -52,48 +52,48 @@ impl Component for IBCComponent {
         self.channel.init_chain(app_state).await;
     }
 
-    #[instrument(name = "ibc", skip(self, begin_block))]
-    async fn begin_block(&mut self, begin_block: &abci::request::BeginBlock) {
-        self.client.begin_block(begin_block).await;
-        self.connection.begin_block(begin_block).await;
-        self.channel.begin_block(begin_block).await;
+    #[instrument(name = "ibc", skip(self, begin_block, ctx))]
+    async fn begin_block(&mut self, ctx: Context, begin_block: &abci::request::BeginBlock) {
+        self.client.begin_block(ctx.clone(), begin_block).await;
+        self.connection.begin_block(ctx.clone(), begin_block).await;
+        self.channel.begin_block(ctx.clone(), begin_block).await;
     }
 
-    #[instrument(name = "ibc", skip(tx))]
-    fn check_tx_stateless(tx: &Transaction) -> Result<()> {
-        client::Ics2Client::check_tx_stateless(tx)?;
-        connection::ConnectionComponent::check_tx_stateless(tx)?;
-        channel::ICS4Channel::check_tx_stateless(tx)?;
+    #[instrument(name = "ibc", skip(tx, ctx))]
+    fn check_tx_stateless(ctx: Context, tx: &Transaction) -> Result<()> {
+        client::Ics2Client::check_tx_stateless(ctx.clone(), tx)?;
+        connection::ConnectionComponent::check_tx_stateless(ctx.clone(), tx)?;
+        channel::ICS4Channel::check_tx_stateless(ctx.clone(), tx)?;
 
         Ok(())
     }
 
-    #[instrument(name = "ibc", skip(self, tx))]
-    async fn check_tx_stateful(&self, tx: &Transaction) -> Result<()> {
+    #[instrument(name = "ibc", skip(self, ctx, tx))]
+    async fn check_tx_stateful(&self, ctx: Context, tx: &Transaction) -> Result<()> {
         if tx.ibc_actions().count() > 0 && !self.state.get_chain_params().await?.ibc_enabled {
             return Err(anyhow::anyhow!(
                 "transaction contains IBC actions, but IBC is not enabled"
             ));
         }
 
-        self.client.check_tx_stateful(tx).await?;
-        self.connection.check_tx_stateful(tx).await?;
-        self.channel.check_tx_stateful(tx).await?;
+        self.client.check_tx_stateful(ctx.clone(), tx).await?;
+        self.connection.check_tx_stateful(ctx.clone(), tx).await?;
+        self.channel.check_tx_stateful(ctx.clone(), tx).await?;
 
         Ok(())
     }
 
-    #[instrument(name = "ibc", skip(self, tx))]
-    async fn execute_tx(&mut self, tx: &Transaction) {
-        self.client.execute_tx(tx).await;
-        self.connection.execute_tx(tx).await;
-        self.channel.execute_tx(tx).await;
+    #[instrument(name = "ibc", skip(self, ctx, tx))]
+    async fn execute_tx(&mut self, ctx: Context, tx: &Transaction) {
+        self.client.execute_tx(ctx.clone(), tx).await;
+        self.connection.execute_tx(ctx.clone(), tx).await;
+        self.channel.execute_tx(ctx.clone(), tx).await;
     }
 
-    #[instrument(name = "ibc", skip(self, end_block))]
-    async fn end_block(&mut self, end_block: &abci::request::EndBlock) {
-        self.client.end_block(end_block).await;
-        self.connection.end_block(end_block).await;
-        self.channel.end_block(end_block).await;
+    #[instrument(name = "ibc", skip(self, ctx, end_block))]
+    async fn end_block(&mut self, ctx: Context, end_block: &abci::request::EndBlock) {
+        self.client.end_block(ctx.clone(), end_block).await;
+        self.connection.end_block(ctx.clone(), end_block).await;
+        self.channel.end_block(ctx.clone(), end_block).await;
     }
 }

@@ -2767,6 +2767,7 @@ dependencies = [
  "penumbra-chain",
  "penumbra-transaction",
  "tendermint",
+ "tokio",
  "tonic 0.6.2",
 ]
 
