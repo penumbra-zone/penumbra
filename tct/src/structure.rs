@@ -43,8 +43,8 @@ pub trait Node: GetHash + sealed::Sealed {
     /// The height of this node above the base of the tree.
     fn height(&self) -> u8 {
         match self.kind() {
-            Kind::Internal(height) => height,
-            Kind::Leaf(_) => 0,
+            Kind::Internal { height } => height,
+            Kind::Leaf { .. } => 0,
         }
     }
 
@@ -132,16 +132,22 @@ impl Display for &dyn Node {
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Kind {
     /// A leaf node at the bottom of some tier.
-    Leaf(Option<Commitment>),
+    Leaf {
+        /// The witnessed commitment at this leaf, or `None` if this leaf was forgotten.
+        commitment: Option<Commitment>,
+    },
     /// An internal node within some tier.
-    Internal(u8),
+    Internal {
+        /// The height of this internal node.
+        height: u8,
+    },
 }
 
 impl Display for Kind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Kind::Leaf(_) => write!(f, "Leaf",),
-            Kind::Internal(_) => write!(f, "Node"),
+            Kind::Leaf { .. } => write!(f, "Leaf",),
+            Kind::Internal { .. } => write!(f, "Node"),
         }
     }
 }
@@ -226,12 +232,16 @@ impl Node for Child<'_> {
         match self.child {
             Insert::Keep(child) => child.kind(),
             Insert::Hash(_) => match self.parent.kind() {
-                Kind::Internal(height @ 2..=24) => Kind::Internal(height - 1),
-                Kind::Internal(1) => Kind::Leaf(None),
-                Kind::Internal(0 | 25..=u8::MAX) => {
+                Kind::Internal {
+                    height: height @ 2..=24,
+                } => Kind::Internal { height: height - 1 },
+                Kind::Internal { height: 1 } => Kind::Leaf { commitment: None },
+                Kind::Internal {
+                    height: 0 | 25..=u8::MAX,
+                } => {
                     unreachable!("nodes cannot have zero height or height greater than 24")
                 }
-                Kind::Leaf(_) => unreachable!("leaves cannot have children"),
+                Kind::Leaf { .. } => unreachable!("leaves cannot have children"),
             },
         }
     }
