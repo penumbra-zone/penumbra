@@ -1,7 +1,7 @@
 use anyhow::Result;
 use bytes::Bytes;
 
-use penumbra_component::Component;
+use penumbra_component::{Component, Context};
 use penumbra_proto::Protobuf;
 use penumbra_storage::Storage;
 use penumbra_transaction::Transaction;
@@ -41,11 +41,11 @@ impl Worker {
     /// perform the stateful checks in the worker, and have a frontend service
     /// that performs the stateless checks.  However, this probably isn't
     /// important to do until we know that it's a bottleneck.
-    async fn check_and_execute_tx(&mut self, tx_bytes: Bytes) -> Result<()> {
+    async fn check_and_execute_tx(&mut self, ctx: Context, tx_bytes: Bytes) -> Result<()> {
         let tx = Transaction::decode(tx_bytes.as_ref())?;
-        App::check_tx_stateless(&tx)?;
-        self.app.check_tx_stateful(&tx).await?;
-        self.app.execute_tx(&tx).await;
+        App::check_tx_stateless(ctx.clone(), &tx)?;
+        self.app.check_tx_stateful(ctx.clone(), &tx).await?;
+        self.app.execute_tx(ctx.clone(), &tx).await;
         Ok(())
     }
 
@@ -73,8 +73,9 @@ impl Worker {
                         rsp_sender,
                         span,
                     }) = message {
+                        let ctx = Context::new();
                         let _ = rsp_sender.send(
-                            self.check_and_execute_tx(tx_bytes)
+                            self.check_and_execute_tx(ctx.clone(), tx_bytes)
                                 .instrument(span)
                                 .await
                         );

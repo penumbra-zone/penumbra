@@ -25,7 +25,7 @@ use ibc::{
     },
 };
 use penumbra_chain::{genesis, View as _};
-use penumbra_component::Component;
+use penumbra_component::{Component, Context};
 use penumbra_proto::ibc::{
     ibc_action::Action::{CreateClient, UpdateClient},
     IbcAction,
@@ -67,8 +67,8 @@ impl Component for Ics2Client {
         self.state.put_client_counter(ClientCounter(0)).await;
     }
 
-    #[instrument(name = "ics2_client", skip(self, begin_block))]
-    async fn begin_block(&mut self, begin_block: &abci::request::BeginBlock) {
+    #[instrument(name = "ics2_client", skip(self, _ctx, begin_block))]
+    async fn begin_block(&mut self, _ctx: Context, begin_block: &abci::request::BeginBlock) {
         // In BeginBlock, we want to save a copy of our consensus state to our
         // own state tree, so that when we get a message from our
         // counterparties, we can verify that they are committing the correct
@@ -89,8 +89,8 @@ impl Component for Ics2Client {
             .await;
     }
 
-    #[instrument(name = "ics2_client", skip(tx))]
-    fn check_tx_stateless(tx: &Transaction) -> Result<()> {
+    #[instrument(name = "ics2_client", skip(_ctx, tx))]
+    fn check_tx_stateless(_ctx: Context, tx: &Transaction) -> Result<()> {
         // Each stateless check is a distinct function in an appropriate submodule,
         // so that we can easily add new stateless checks and see a birds' eye view
         // of all of the checks we're performing.
@@ -118,8 +118,8 @@ impl Component for Ics2Client {
         Ok(())
     }
 
-    #[instrument(name = "ics2_client", skip(self, tx))]
-    async fn check_tx_stateful(&self, tx: &Transaction) -> Result<()> {
+    #[instrument(name = "ics2_client", skip(self, _ctx, tx))]
+    async fn check_tx_stateful(&self, _ctx: Context, tx: &Transaction) -> Result<()> {
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {
                 Some(CreateClient(msg)) => {
@@ -139,16 +139,16 @@ impl Component for Ics2Client {
         Ok(())
     }
 
-    #[instrument(name = "ics2_client", skip(self, tx))]
-    async fn execute_tx(&mut self, tx: &Transaction) {
+    #[instrument(name = "ics2_client", skip(self, _ctx, tx))]
+    async fn execute_tx(&mut self, _ctx: Context, tx: &Transaction) {
         // Handle any IBC actions found in the transaction.
         for ibc_action in tx.ibc_actions() {
             self.execute_ibc_action(ibc_action).await;
         }
     }
 
-    #[instrument(name = "ics2_client", skip(self, _end_block))]
-    async fn end_block(&mut self, _end_block: &abci::request::EndBlock) {}
+    #[instrument(name = "ics2_client", skip(self, _ctx, _end_block))]
+    async fn end_block(&mut self, _ctx: Context, _end_block: &abci::request::EndBlock) {}
 }
 
 impl Ics2Client {

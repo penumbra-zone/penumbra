@@ -1,4 +1,5 @@
-use anyhow::Context;
+use anyhow::Context as _;
+use penumbra_component::Context;
 use penumbra_proto::{
     client::{
         oblivious::oblivious_query_client::ObliviousQueryClient,
@@ -20,7 +21,8 @@ impl Opt {
     pub async fn submit_transaction(&self, transaction: &Transaction) -> Result<(), anyhow::Error> {
         println!("pre-checking transaction...");
         use penumbra_component::Component;
-        pd::App::check_tx_stateless(transaction)
+        let ctx = Context::new();
+        pd::App::check_tx_stateless(ctx.clone(), transaction)
             .context("transaction pre-submission checks failed")?;
 
         println!("broadcasting transaction...");

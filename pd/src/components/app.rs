@@ -2,7 +2,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use jmt::{RootHash, Version};
 use penumbra_chain::{genesis, View as _};
-use penumbra_component::Component;
+use penumbra_component::{Component, Context};
 use penumbra_ibc::IBCComponent;
 use penumbra_shielded_pool::ShieldedPool;
 use penumbra_stake::component::Staking;
@@ -105,8 +105,8 @@ impl Component for App {
         self.shielded_pool.init_chain(app_state).await;
     }
 
-    #[instrument(skip(self, begin_block))]
-    async fn begin_block(&mut self, begin_block: &abci::request::BeginBlock) {
+    #[instrument(skip(self, ctx, begin_block))]
+    async fn begin_block(&mut self, ctx: Context, begin_block: &abci::request::BeginBlock) {
         // store the block height
         self.state
             .put_block_height(begin_block.header.height.into())
@@ -116,44 +116,48 @@ impl Component for App {
             .put_block_timestamp(begin_block.header.time)
             .await;
 
-        self.staking.begin_block(begin_block).await;
-        self.ibc.begin_block(begin_block).await;
+        self.staking.begin_block(ctx.clone(), begin_block).await;
+        self.ibc.begin_block(ctx.clone(), begin_block).await;
         // Shielded pool always executes last.
-        self.shielded_pool.begin_block(begin_block).await;
+        self.shielded_pool
+            .begin_block(ctx.clone(), begin_block)
+            .await;
     }
 
-    #[instrument(skip(tx))]
-    fn check_tx_stateless(tx: &Transaction) -> Result<()> {
-        Staking::check_tx_stateless(tx)?;
-        IBCComponent::check_tx_stateless(tx)?;
-        ShieldedPool::check_tx_stateless(tx)?;
+    #[instrument(skip(ctx, tx))]
+    fn check_tx_stateless(ctx: Context, tx: &Transaction) -> Result<()> {
+        Staking::check_tx_stateless(ctx.clone(), tx)?;
+        IBCComponent::check_tx_stateless(ctx.clone(), tx)?;
+        ShieldedPool::check_tx_stateless(ctx.clone(), tx)?;
         Ok(())
     }
 
-    #[instrument(skip(self, tx))]
-    async fn check_tx_stateful(&self, tx: &Transaction) -> Result<()> {
-        self.staking.check_tx_stateful(tx).await?;
-        self.ibc.check_tx_stateful(tx).await?;
+    #[instrument(skip(self, ctx, tx))]
+    async fn check_tx_stateful(&self, ctx: Context, tx: &Transaction) -> Result<()> {
+        self.staking.check_tx_stateful(ctx.clone(), tx).await?;
+        self.ibc.check_tx_stateful(ctx.clone(), tx).await?;
 
         // Shielded pool always executes last.
-        self.shielded_pool.check_tx_stateful(tx).await?;
+        self.shielded_pool
+            .check_tx_stateful(ctx.clone(), tx)
+            .await?;
         Ok(())
     }
 
-    #[instrument(skip(self, tx))]
-    async fn execute_tx(&mut self, tx: &Transaction) {
-        self.staking.execute_tx(tx).await;
-        self.ibc.execute_tx(tx).await;
+    #[instrument(skip(self, ctx, tx))]
+    async fn execute_tx(&mut self, ctx: Context, tx: &Transaction) {
+        self.staking.execute_tx(ctx.clone(), tx).await;
+        self.ibc.execute_tx(ctx.clone(), tx).await;
         // Shielded pool always executes last.
-        self.shielded_pool.execute_tx(tx).await;
+        self.shielded_pool.execute_tx(ctx.clone(), tx).await;
     }
 
-    #[instrument(skip(self, end_block))]
-    async fn end_block(&mut self, end_block: &abci::request::EndBlock) {
-        self.staking.end_block(end_block).await;
-        self.ibc.end_block(end_block).await;
+    #[instrument(skip(self, ctx, end_block))]
+    async fn end_block(&mut self, ctx: Context, end_block: &abci::request::EndBlock) {
+        self.staking.end_block(ctx.clone(), end_block).await;
+        self.ibc.end_block(ctx.clone(), end_block).await;
 
         // Shielded pool always executes last.
-        self.shielded_pool.end_block(end_block).await;
+        self.shielded_pool.end_block(ctx.clone(), end_block).await;
     }
 }
