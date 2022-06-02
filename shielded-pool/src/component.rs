@@ -16,7 +16,7 @@ use penumbra_transaction::{Action, Transaction};
 use tendermint::abci;
 use tracing::instrument;
 
-use crate::{state_key, CommissionAmounts};
+use crate::{event, state_key, CommissionAmounts};
 
 // Stub component
 pub struct ShieldedPool {
@@ -167,7 +167,7 @@ impl Component for ShieldedPool {
     }
 
     #[instrument(name = "shielded_pool", skip(self, _ctx, tx))]
-    async fn execute_tx(&mut self, _ctx: Context, tx: &Transaction) {
+    async fn execute_tx(&mut self, ctx: Context, tx: &Transaction) {
         let _should_quarantine = tx
             .transaction_body
             .actions
@@ -190,6 +190,7 @@ impl Component for ShieldedPool {
             // can learn that their note was spent).
             self.state.spend_nullifier(spent_nullifier, source).await;
             self.compact_block.nullifiers.push(spent_nullifier);
+            ctx.record(event::spend(spent_nullifier, source));
         }
         //}
     }
