@@ -82,7 +82,7 @@ impl Forget for Item {
     }
 }
 
-impl structure::Node for Item {
+impl structure::Any for Item {
     fn kind(&self) -> Kind {
         Kind::Leaf {
             commitment: self.item.keep().map(|(commitment, _)| commitment),
@@ -97,7 +97,7 @@ impl structure::Node for Item {
         Forgotten::default()
     }
 
-    fn children(&self) -> Vec<Child> {
+    fn children(&self) -> Vec<Node> {
         vec![]
     }
 }
