@@ -50,6 +50,8 @@ mod serialize;
 mod tree;
 
 pub mod error;
+pub mod structure;
+pub mod validate;
 pub use commitment::Commitment;
 pub use proof::Proof;
 pub use tree::{Position, Root, Tree};
@@ -81,7 +83,6 @@ mod prelude {
         error::proof::VerifyError,
         index,
         internal::{
-            any::{Any, AnyExt, Child, Kind, Place},
             complete::{self, Complete, ForgetOwned},
             frontier::{self, Focus, Forget, Frontier, Full, GetPosition, Insert, Item},
             hash::{CachedHash, Forgotten, GetHash, Hash, OptionHash},
@@ -90,11 +91,9 @@ mod prelude {
             path::{self, AuthPath, Path, WhichWay},
             three::{Elems, ElemsMut, IntoElems, Three},
         },
-        Commitment, Position, Proof, Root,
+        structure::{self, Child, Kind, Place},
+        Commitment, Position, Proof, Root, Tree,
     };
-
-    #[cfg(doc)]
-    pub use crate::Tree;
 }
 
 /// When inserting a [`Commitment`] into a [`Tree`], should we [`Keep`](Witness::Keep) it to allow

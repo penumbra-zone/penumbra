@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::fmt::Display;
 
 use decaf377::{FieldExt, Fq};
@@ -14,9 +13,6 @@ use crate::Witness;
 #[path = "epoch.rs"]
 pub(crate) mod epoch;
 pub(crate) use epoch::block;
-
-pub mod verify;
-use verify::*;
 
 /// A sparse merkle tree witnessing up to 65,536 epochs of up to 65,536 blocks of up to 65,536
 /// [`Commitment`]s.
@@ -596,200 +592,14 @@ impl Tree {
         self.inner.is_empty()
     }
 
-    /// Verify that the inner index of the tree is correct with respect to the tree structure
-    /// itself.
-    ///
-    /// This is an expensive operation that requires traversing the entire tree structure,
-    /// building an auxiliary reverse index, and re-hashing every leaf of the tree.
-    ///
-    /// If this ever returns `Err`, it indicates either a bug in this crate, or a tree that was
-    /// deserialized from an untrustworthy source.
-    pub fn validate_index(&self) -> Result<(), IndexMalformed> {
-        // A reverse index from positions back to the commitments that are supposed to map to their hashes
-        let reverse_index: HashMap<index::within::Tree, Commitment> = self
-            .index
-            .iter()
-            .map(|(commitment, position)| (*position, *commitment))
-            .collect();
-
-        // A recursive traversal that checks each leaf in the tree for correctness against the index
-        fn check_leaves(
-            reverse_index: &HashMap<index::within::Tree, Commitment>,
-            errors: &mut Vec<IndexError>,
-            node: &dyn Any,
-        ) {
-            if matches!(node.kind(), Kind::Leaf(_) | Kind::Rightmost(Some(_))) {
-                // We're at a leaf, so check it:
-                if let Some(commitment) = reverse_index.get(&node.index().into()) {
-                    let expected_hash = Hash::of(*commitment);
-                    if expected_hash != node.hash() {
-                        errors.push(IndexError::HashMismatch {
-                            commitment: *commitment,
-                            position: node.index().into(),
-                            expected_hash,
-                            found_hash: node.hash(),
-                        });
-                    }
-                } else {
-                    // It's okay for there to be an unindexed witness on the frontier (because the
-                    // frontier is always represented, even if it's marked for later forgetting),
-                    // but otherwise we want to ensure that all witnesses are indexed
-                    errors.push(IndexError::UnindexedWitness {
-                        position: node.index().into(),
-                        found_hash: node.hash(),
-                    });
-                };
-            } else {
-                // We're at internal node, so recurse down farther...
-                for child in node
-                    .children()
-                    .iter()
-                    .filter_map(|child| child.1.as_ref().keep())
-                {
-                    check_leaves(reverse_index, errors, child as &dyn Any);
-                }
-            }
-        }
-
-        // Run the traversal
-        let mut errors = vec![];
-        check_leaves(&reverse_index, &mut errors, &self.inner);
-
-        // Return an error if any were discovered
-        if errors.is_empty() {
-            Ok(())
-        } else {
-            Err(IndexMalformed { errors })
-        }
+    /// Get an iterator over all commitments currently witnessed in the tree, in order of insertion.
+    pub fn commitments(&self) -> impl Iterator<Item = (Commitment, Position)> + '_ {
+        self.index.iter().map(|(c, p)| (*c, Position(*p)))
     }
 
-    /// Verify that every witnessed commitment can be used to generate a proof of inclusion which is
-    /// valid with respect to the current root.
-    ///
-    /// This is an expensive operation that requires traversing the entire tree structure and doing
-    /// a lot of hashing.
-    ///
-    /// If this ever returns `Err`, it indicates either a bug in this crate, or a tree that was
-    /// deserialized from an untrustworthy source.
-    pub fn verify_all_proofs(&self) -> Result<(), InvalidWitnesses> {
-        let root = self.root();
-
-        let mut errors = vec![];
-
-        for (&commitment, &index) in self.index.iter() {
-            if let Some(proof) = self.witness(commitment) {
-                if proof.verify(root).is_err() {
-                    errors.push(WitnessError::InvalidProof {
-                        proof: Box::new(proof),
-                    });
-                }
-            } else {
-                errors.push(WitnessError::UnwitnessedCommitment {
-                    commitment,
-                    position: Position(index),
-                })
-            }
-        }
-
-        if errors.is_empty() {
-            Ok(())
-        } else {
-            Err(InvalidWitnesses { root, errors })
-        }
-    }
-
-    /// Verify that every internally cached hash matches what it should be, by re-hashing all of them.
-    ///
-    /// This is an expensive operation that requires traversing the entire tree structure and doing
-    /// a lot of hashing.
-    ///
-    /// If this ever returns `Err`, it indicates a bug in this crate.
-    pub fn validate_cached_hashes(&self) -> Result<(), InvalidCachedHashes> {
-        fn check_hashes(errors: &mut Vec<InvalidCachedHash>, node: &dyn Any) {
-            // IMPORTANT: we need to traverse children before parent, to avoid overwriting the
-            // parent's hash before we have a chance to check it!
-            for child in node.children() {
-                if let Some(child) = child.1.as_ref().keep() {
-                    // The frontier is the only place where cached hashes occur
-                    if child.place() == Place::Frontier {
-                        check_hashes(errors, child as &dyn Any);
-                    }
-                }
-            }
-
-            if let Some(cached) = node.cached_hash() {
-                // IMPORTANT: we need to clear the cache to actually recompute it!
-                node.clear_cached_hash();
-
-                let recomputed = node.hash();
-
-                if cached != recomputed {
-                    errors.push(InvalidCachedHash {
-                        place: node.place(),
-                        kind: node.kind(),
-                        height: node.height(),
-                        index: node.index(),
-                        cached,
-                        recomputed,
-                    })
-                }
-            }
-        }
-
-        let mut errors = vec![];
-        check_hashes(&mut errors, &self.inner);
-
-        if errors.is_empty() {
-            Ok(())
-        } else {
-            Err(InvalidCachedHashes { errors })
-        }
-    }
-
-    /// Verify that the internal forgotten versions are consistent throughout the tree.
-    ///
-    /// This is a relatively expensive operation which requires traversing the entire tree structure.
-    ///
-    /// If this ever returns `Err`, it indicates a bug in this crate.
-    pub fn validate_forgotten(&self) -> Result<(), InvalidForgotten> {
-        fn check_forgotten(
-            errors: &mut Vec<InvalidForgottenVersion>,
-            expected_max: Option<Forgotten>,
-            node: &dyn Any,
-        ) {
-            let children = node.children();
-
-            if let Some(&actual_max) = children.iter().map(|(f, _)| f).max() {
-                if let Some(expected_max) = expected_max {
-                    // Check the expected forgotten version here
-                    if actual_max != expected_max {
-                        errors.push(InvalidForgottenVersion {
-                            kind: node.kind(),
-                            place: node.place(),
-                            height: node.height(),
-                            index: node.index(),
-                            expected_max,
-                            actual_max,
-                        })
-                    }
-                }
-
-                // Check the children
-                for (forgotten, child) in children {
-                    if let Some(child) = child.as_ref().keep() {
-                        check_forgotten(errors, Some(forgotten), child as &dyn Any);
-                    }
-                }
-            }
-        }
-
-        let mut errors = vec![];
-        check_forgotten(&mut errors, None, &self.inner);
-
-        if errors.is_empty() {
-            Ok(())
-        } else {
-            Err(InvalidForgotten { errors })
-        }
+    /// Get a dynamic representation of the internal structure of the tree, which can be traversed
+    /// and inspected using the methods of [`structure::Node`].
+    pub fn structure(&self) -> &dyn structure::Node {
+        &self.inner
     }
 }

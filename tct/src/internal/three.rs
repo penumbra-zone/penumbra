@@ -76,6 +76,7 @@ impl<T> Three<T> {
 
     /// Get an iterator over mutable elements of the [`Three`].
     #[inline]
+    #[allow(unused)]
     pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
         self.elems.iter_mut()
     }

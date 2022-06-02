@@ -59,16 +59,20 @@ impl GetPosition for Item {
     }
 }
 
-impl Any for Item {
+impl structure::Node for Item {
     fn kind(&self) -> Kind {
-        Kind::Leaf(self.commitment)
+        Kind::Leaf(Some(self.commitment))
     }
 
     fn global_position(&self) -> Option<u64> {
         <Self as GetPosition>::position(self)
     }
 
-    fn children(&self) -> Vec<(Forgotten, Insert<Child>)> {
+    fn forgotten(&self) -> Forgotten {
+        Forgotten::default()
+    }
+
+    fn children(&self) -> Vec<Child> {
         vec![]
     }
 }

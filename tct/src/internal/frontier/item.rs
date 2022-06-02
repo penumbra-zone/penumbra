@@ -82,16 +82,20 @@ impl Forget for Item {
     }
 }
 
-impl Any for Item {
+impl structure::Node for Item {
     fn kind(&self) -> Kind {
-        Kind::Rightmost(self.item.keep().map(|(commitment, _)| commitment))
+        Kind::Leaf(self.item.keep().map(|(commitment, _)| commitment))
     }
 
     fn global_position(&self) -> Option<u64> {
         <Self as GetPosition>::position(self)
     }
 
-    fn children(&self) -> Vec<(Forgotten, Insert<Child>)> {
+    fn forgotten(&self) -> Forgotten {
+        Forgotten::default()
+    }
+
+    fn children(&self) -> Vec<Child> {
         vec![]
     }
 }
