@@ -1,4 +1,3 @@
-use penumbra_chain::NoteSource;
 use penumbra_crypto::Nullifier;
 use tendermint::abci::{Event, EventAttributeIndexExt};
 
