@@ -1,9 +1,9 @@
 use anyhow::anyhow;
+use futures::Future;
 use parking_lot::Mutex;
 use penumbra_chain::params::ChainParams;
 use penumbra_crypto::{
     asset::{self, Id},
-    note::Commitment,
     Asset, FieldExt, FullViewingKey,
 };
 use penumbra_proto::{
@@ -13,6 +13,8 @@ use penumbra_proto::{
 use penumbra_tct as tct;
 use sqlx::{migrate::MigrateDatabase, query, Pool, Sqlite};
 use std::{num::NonZeroU64, path::PathBuf, sync::Arc};
+use tct::Commitment;
+use tokio::sync::broadcast;
 use tonic::transport::Channel;
 
 use crate::{sync::ScanResult, NoteRecord};
@@ -29,6 +31,8 @@ pub struct Storage {
     ///
     /// Using a `NonZeroU64` ensures that `Option<NonZeroU64>` fits in 8 bytes.
     uncommitted_height: Arc<Mutex<Option<NonZeroU64>>>,
+
+    scanned_notes_tx: tokio::sync::broadcast::Sender<NoteRecord>,
 }
 
 impl Storage {
@@ -56,6 +60,7 @@ impl Storage {
         Ok(Self {
             pool: Pool::<Sqlite>::connect(&storage_path).await?,
             uncommitted_height: Arc::new(Mutex::new(None)),
+            scanned_notes_tx: broadcast::channel(10).0,
         })
     }
 
@@ -117,7 +122,47 @@ impl Storage {
         Ok(Storage {
             pool,
             uncommitted_height: Arc::new(Mutex::new(None)),
+            scanned_notes_tx: broadcast::channel(10).0,
         })
+    }
+
+    pub fn await_change(
+        &self,
+        note_commitment: tct::Commitment,
+    ) -> impl Future<Output = anyhow::Result<NoteRecord>> + '_ {
+        let mut rx = self.scanned_notes_tx.subscribe();
+
+        async move {
+            match self.note_record_by_commitment(note_commitment).await? {
+                Some(record) => Ok(record),
+
+                None => loop {
+                    let record = rx.recv().await.map_err(|x| x)?;
+
+                    if record.note_commitment == note_commitment {
+                        return Ok(record);
+                    }
+                },
+            }
+        }
+    }
+
+    /// Returns the NoteRecord corresponding to the NoteCommitment, or None if it does not exist in storage
+    pub async fn note_record_by_commitment(
+        &self,
+        note_commitment: tct::Commitment,
+    ) -> anyhow::Result<Option<NoteRecord>> {
+        Ok(sqlx::query_as::<_, NoteRecord>(
+            format!(
+                "SELECT *
+                    FROM notes
+                    WHERE note_commitment = {:?}",
+                note_commitment
+            )
+            .as_str(),
+        )
+        .fetch_optional(&self.pool)
+        .await?)
     }
 
     /// The last block height we've scanned to, if any.
@@ -352,8 +397,8 @@ impl Storage {
         }
         let mut tx = self.pool.begin().await?;
 
-        // Insert all new note records
-        for note_record in scan_result.new_notes {
+        // Insert all new note records into storage & broadcast each to note channel
+        for note_record in &scan_result.new_notes {
             // https://github.com/launchbadge/sqlx/issues/1430
             // https://github.com/launchbadge/sqlx/issues/1151
             // For some reason we can't use any temporaries with the query! macro
@@ -456,6 +501,13 @@ impl Storage {
         // It's critical to reset the uncommitted height here, since we've just
         // invalidated it by committing.
         self.uncommitted_height.lock().take();
+
+        // Broadcast all committed note records to channel
+        // Done following tx.commit() to avoid notifying of a new NoteRecord before it is actually committed to the database
+
+        for note_record in scan_result.new_notes {
+            self.scanned_notes_tx.send(note_record).map_err(|x| x)?;
+        }
 
         Ok(())
     }

@@ -139,6 +139,8 @@ impl Worker {
         Ok(())
     }
 
+    //TODO: should this actually be looping? seems worth revisiting, because right now it either breaks or errors once.
+    #[allow(clippy::never_loop)]
     pub async fn run(mut self) -> Result<(), anyhow::Error> {
         loop {
             match self.run_inner().await {
