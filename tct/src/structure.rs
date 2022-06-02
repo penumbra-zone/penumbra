@@ -13,7 +13,7 @@ pub(crate) trait Any: GetHash + sealed::Sealed {
     /// The parent of this node, if any.
     ///
     /// This defaults to `None`, but is filled in by the [`Any`] implementation of [`Node`].
-    fn parent(&self) -> Option<&Node> {
+    fn parent(&self) -> Option<Node> {
         None
     }
 
@@ -63,7 +63,7 @@ impl<T: Any> Any for &T {
         (**self).global_position()
     }
 
-    fn parent(&self) -> Option<&Node> {
+    fn parent(&self) -> Option<Node> {
         (**self).parent()
     }
 
@@ -171,7 +171,7 @@ impl<'a> Node<'a> {
     }
 
     /// The parent of this node, if any.
-    pub fn parent(&self) -> Option<&Node> {
+    pub fn parent(&self) -> Option<Node> {
         (self as &dyn Any).parent()
     }
 
@@ -257,8 +257,8 @@ impl Any for Node<'_> {
         self.offset
     }
 
-    fn parent(&self) -> Option<&Node> {
-        self.parent
+    fn parent(&self) -> Option<Node> {
+        self.parent.copied()
     }
 
     fn kind(&self) -> Kind {
@@ -374,17 +374,23 @@ mod test {
         let mut top: frontier::Top<Item> = frontier::Top::new(frontier::TrackForgotten::No);
         top.insert(Commitment(0u8.into()).into()).unwrap();
 
-        let root = Node::root(&top);
-        let mut parent = &root;
-
-        while let Some(child) = parent.children().pop() {
-            let parent_of_child = child.parent().expect("child has no parent");
-            assert_eq!(
-                parent.hash(),
-                parent_of_child.hash(),
-                "parent hash mismatch"
-            );
-            parent = Box::leak(Box::new(child));
+        // This can't be a loop, it has to be recursive because the lifetime parameter of the parent
+        // is different for each recursive call
+        fn check(parent: Node) {
+            if let Some(child) = parent.children().pop() {
+                let parent_of_child = child.parent().expect("child has no parent");
+                assert_eq!(
+                    parent.hash(),
+                    parent_of_child.hash(),
+                    "parent hash mismatch"
+                );
+                check(child);
+            } else {
+                assert_eq!(parent.height(), 0, "got all the way to a leaf");
+            }
         }
+
+        let root = Node::root(&top);
+        check(root);
     }
 }
