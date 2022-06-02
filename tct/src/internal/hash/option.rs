@@ -1,5 +1,7 @@
 use std::fmt::Debug;
 
+use ark_ff::{Fp256, BigInteger256};
+
 use crate::prelude::*;
 
 /// A representation of `Option<Hash>` without the tag bytes required by `Option`, because we
@@ -32,9 +34,11 @@ impl From<Option<Hash>> for OptionHash {
     fn from(hash: Option<Hash>) -> Self {
         match hash {
             Some(hash) => Self {
-                inner: hash.into_bytes(),
+                inner: hash.0.0.0,
             },
             None => Self {
+                // This sentinel value is not a valid `Fq` because it's bigger than the modulus,
+                // which means that it will never occur otherwise
                 inner: [u64::MAX; 4],
             },
         }
@@ -46,7 +50,10 @@ impl From<OptionHash> for Option<Hash> {
         if hash.inner == [u64::MAX; 4] {
             None
         } else {
-            Some(Hash::from_bytes_unchecked(hash.inner))
+            // We're directly constructing the hash here by coercing the bytes into the right type,
+            // but this is safe because we know that the bytes are a real `Fq` and not the sentinel
+            // value we just checked for
+            Some(Hash::new(Fp256::new(BigInteger256(hash.inner))))
         }
     }
 }
