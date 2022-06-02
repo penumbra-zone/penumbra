@@ -241,7 +241,7 @@ mod test {
     fn indexing_correct() {
         const MAX_SIZE_TO_TEST: u16 = 100;
 
-        let mut top: frontier::Top<Item> = frontier::Top::new();
+        let mut top: frontier::Top<Item> = frontier::Top::new(frontier::TrackForgotten::No);
         for i in 0..MAX_SIZE_TO_TEST {
             top.insert(Commitment(i.into()).into()).unwrap();
         }

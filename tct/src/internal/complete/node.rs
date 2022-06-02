@@ -111,7 +111,11 @@ impl<Child: GetHash + Witness> Witness for Node<Child> {
 
 impl<Child: GetHash + ForgetOwned> ForgetOwned for Node<Child> {
     #[inline]
-    fn forget_owned(self, forgotten: Forgotten, index: impl Into<u64>) -> (Insert<Self>, bool) {
+    fn forget_owned(
+        self,
+        forgotten: Option<Forgotten>,
+        index: impl Into<u64>,
+    ) -> (Insert<Self>, bool) {
         let index = index.into();
 
         let [a, b, c, d]: [Insert<Child>; 4] = self.children.into();
@@ -162,7 +166,9 @@ impl<Child: GetHash + ForgetOwned> ForgetOwned for Node<Child> {
                 };
                 // If we forgot something, mark the location of the forgetting
                 if was_forgotten {
-                    reconstructed.forgotten[which_way] = forgotten.next();
+                    if let Some(forgotten) = forgotten {
+                        reconstructed.forgotten[which_way] = forgotten.next();
+                    }
                 }
                 Insert::Keep(reconstructed)
             }
@@ -170,23 +176,6 @@ impl<Child: GetHash + ForgetOwned> ForgetOwned for Node<Child> {
         };
 
         (reconstructed, was_forgotten)
-    }
-}
-
-impl<Child: ForgetForgotten> ForgetForgotten for Node<Child> {
-    fn forget_forgotten(&mut self) {
-        for (forgotten, child) in self
-            .forgotten
-            .iter_mut()
-            .zip(self.children.children_mut().iter_mut())
-        {
-            if *forgotten != Forgotten::default() {
-                *forgotten = Forgotten::default();
-                if let Some(child) = child.as_mut().keep() {
-                    child.forget_forgotten();
-                }
-            }
-        }
     }
 }
 

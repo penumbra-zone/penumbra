@@ -99,7 +99,7 @@ impl<T: Height> Height for Insert<T> {
 }
 
 impl<T: Height + ForgetOwned> Forget for Insert<T> {
-    fn forget(&mut self, forgotten: Forgotten, index: impl Into<u64>) -> bool {
+    fn forget(&mut self, forgotten: Option<Forgotten>, index: impl Into<u64>) -> bool {
         // Replace `self` temporarily with an empty hash, so we can move out of it
         let this = std::mem::replace(self, Insert::Hash(Hash::zero()));
 

@@ -242,7 +242,7 @@ where
     Item::Complete: ForgetOwned,
 {
     #[inline]
-    fn forget(&mut self, forgotten: Forgotten, index: impl Into<u64>) -> bool {
+    fn forget(&mut self, forgotten: Option<Forgotten>, index: impl Into<u64>) -> bool {
         // Whether something was actually forgotten
         let was_forgotten;
 
@@ -267,20 +267,6 @@ where
 
         // Return whether something was actually forgotten
         was_forgotten
-    }
-}
-
-impl<Item: Focus + ForgetForgotten> ForgetForgotten for Tier<Item>
-where
-    Item::Complete: ForgetForgotten,
-{
-    #[inline]
-    fn forget_forgotten(&mut self) {
-        match &mut self.inner {
-            Inner::Frontier(frontier) => frontier.forget_forgotten(),
-            Inner::Complete(complete) => complete.forget_forgotten(),
-            Inner::Hash(_) => {}
-        }
     }
 }
 

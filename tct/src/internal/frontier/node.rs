@@ -315,7 +315,7 @@ impl<Child: Focus + Forget> Forget for Node<Child>
 where
     Child::Complete: ForgetOwned,
 {
-    fn forget(&mut self, forgotten: Forgotten, index: impl Into<u64>) -> bool {
+    fn forget(&mut self, forgotten: Option<Forgotten>, index: impl Into<u64>) -> bool {
         use ElemsMut::*;
         use WhichWay::*;
 
@@ -350,36 +350,12 @@ where
 
         // If we forgot something, mark the location at which we forgot it
         if was_forgotten {
-            self.forgotten[which_way] = forgotten.next();
-        }
-
-        was_forgotten
-    }
-}
-
-impl<Child: Focus + ForgetForgotten> ForgetForgotten for Node<Child>
-where
-    Child::Complete: ForgetForgotten,
-{
-    fn forget_forgotten(&mut self) {
-        // Clear all the complete siblings
-        for (forgotten, child) in self.forgotten[0..3]
-            .iter_mut()
-            .zip(self.siblings.iter_mut())
-        {
-            if *forgotten != Forgotten::default() {
-                *forgotten = Forgotten::default();
-                if let Some(child) = child.as_mut().keep() {
-                    child.forget_forgotten();
-                }
+            if let Some(forgotten) = forgotten {
+                self.forgotten[which_way] = forgotten.next();
             }
         }
 
-        // Clear the focus
-        if self.forgotten[3] != Forgotten::default() {
-            self.forgotten[3] = Forgotten::default();
-            self.focus.forget_forgotten();
-        }
+        was_forgotten
     }
 }
 

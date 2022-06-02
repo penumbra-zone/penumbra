@@ -41,15 +41,13 @@ impl<Item: GetHash + Witness> Witness for Tier<Item> {
 }
 
 impl<Item: GetHash + ForgetOwned> ForgetOwned for Tier<Item> {
-    fn forget_owned(self, forgotten: Forgotten, index: impl Into<u64>) -> (Insert<Self>, bool) {
+    fn forget_owned(
+        self,
+        forgotten: Option<Forgotten>,
+        index: impl Into<u64>,
+    ) -> (Insert<Self>, bool) {
         let (inner, forgotten) = self.inner.forget_owned(forgotten, index);
         (inner.map(|inner| Tier { inner }), forgotten)
-    }
-}
-
-impl<Item: Height + GetHash + ForgetForgotten> ForgetForgotten for Tier<Item> {
-    fn forget_forgotten(&mut self) {
-        self.inner.forget_forgotten()
     }
 }
 

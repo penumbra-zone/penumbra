@@ -113,7 +113,7 @@ pub mod frontier {
     pub use leaf::Leaf;
     pub use node::Node;
     pub use tier::{Nested, Tier};
-    pub use top::Top;
+    pub use top::{Top, TrackForgotten};
 }
 
 pub mod complete {

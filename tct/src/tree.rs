@@ -20,10 +20,19 @@ use verify::*;
 
 /// A sparse merkle tree witnessing up to 65,536 epochs of up to 65,536 blocks of up to 65,536
 /// [`Commitment`]s.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Tree {
     index: HashedMap<Commitment, index::within::Tree>,
     inner: frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>>,
+}
+
+impl Default for Tree {
+    fn default() -> Self {
+        Self {
+            index: HashedMap::default(),
+            inner: frontier::Top::new(frontier::TrackForgotten::Yes),
+        }
+    }
 }
 
 /// The root hash of a [`Tree`].
@@ -321,11 +330,7 @@ impl Tree {
                 }
 
                 // Get the inner thing from the `Option` storage
-                let mut inner = inner.take().unwrap();
-
-                // Clear the forgotten counts within the block we're about to insert, because they're not
-                // coherent with the tree as a whole and they're not useful
-                inner.forget_forgotten();
+                let inner = inner.take().unwrap();
 
                 // Calculate the block root
                 let block_root = block::Root(inner.hash());
@@ -346,14 +351,10 @@ impl Tree {
                 }
 
                 // Get the inner thing from the `Option` storage
-                let mut inner = inner.take().unwrap();
+                let inner = inner.take().unwrap();
 
                 // Calculate the block root
                 let block_root = block::Root(inner.hash());
-
-                // Clear the forgotten counts within the block we're about to insert, because they're not
-                // coherent with the tree as a whole and they're not useful
-                inner.forget_forgotten();
 
                 // Create a new epoch and insert the block into it
                 self.inner
@@ -472,7 +473,7 @@ impl Tree {
         }
 
         // Convert the top level inside of the epoch to a tier that can be slotted into the tree
-        let mut inner: frontier::Tier<frontier::Tier<frontier::Item>> = match inner {
+        let inner: frontier::Tier<frontier::Tier<frontier::Item>> = match inner {
             Insert::Keep(inner) => inner.into(),
             Insert::Hash(hash) => hash.into(),
         };
@@ -490,10 +491,6 @@ impl Tree {
 
         // Calculate the root of the finalized epoch we're about to insert
         let epoch_root = epoch::Root(inner.hash());
-
-        // Clear the forgotten counts within the epoch we're about to insert, because they're not
-        // coherent with the tree as a whole and they're not useful
-        inner.forget_forgotten();
 
         // Insert the inner tree of the epoch into the global tree
         self.inner
@@ -581,7 +578,9 @@ impl Tree {
     /// This does not include commitments that were inserted using [`Witness::Forget`], only those
     /// forgotten subsequent to their insertion.
     pub fn forgotten(&self) -> Forgotten {
-        self.inner.forgotten()
+        self.inner
+            .forgotten()
+            .expect("inner `Top` of `Tree` must always be in forgotten-tracking mode")
     }
 
     /// The number of [`Commitment`]s currently witnessed in this [`Tree`].
