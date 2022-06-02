@@ -26,7 +26,12 @@ pub fn index(tree: &Tree) -> Result<(), IndexMalformed> {
         errors: &mut Vec<IndexError>,
         node: &dyn structure::Node,
     ) {
-        if matches!(node.kind(), Kind::Leaf(Some(_))) {
+        if matches!(
+            node.kind(),
+            Kind::Leaf {
+                commitment: Some(_)
+            }
+        ) {
             // We're at a leaf, so check it:
             if let Some(commitment) = reverse_index.get(&node.index().into()) {
                 let expected_hash = Hash::of(*commitment);

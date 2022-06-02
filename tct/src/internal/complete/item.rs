@@ -61,7 +61,9 @@ impl GetPosition for Item {
 
 impl structure::Node for Item {
     fn kind(&self) -> Kind {
-        Kind::Leaf(Some(self.commitment))
+        Kind::Leaf {
+            commitment: Some(self.commitment),
+        }
     }
 
     fn global_position(&self) -> Option<u64> {

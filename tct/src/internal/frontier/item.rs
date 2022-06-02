@@ -84,7 +84,9 @@ impl Forget for Item {
 
 impl structure::Node for Item {
     fn kind(&self) -> Kind {
-        Kind::Leaf(self.item.keep().map(|(commitment, _)| commitment))
+        Kind::Leaf {
+            commitment: self.item.keep().map(|(commitment, _)| commitment),
+        }
     }
 
     fn global_position(&self) -> Option<u64> {

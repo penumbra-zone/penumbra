@@ -291,7 +291,9 @@ where
     Item::Complete: structure::Node,
 {
     fn kind(&self) -> Kind {
-        Kind::Internal(<Self as Height>::Height::HEIGHT)
+        Kind::Internal {
+            height: <Self as Height>::Height::HEIGHT,
+        }
     }
 
     fn global_position(&self) -> Option<u64> {
