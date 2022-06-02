@@ -49,6 +49,7 @@ jobs:
             -p ark-serialize \
             -p ark-sponge \
             -p poseidon377 \
+            -p poseidon-paramgen \
             -p decaf377 \
             -p decaf377-rdsa \
             -p decaf377-fmd \
