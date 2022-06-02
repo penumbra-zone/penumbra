@@ -748,26 +748,31 @@ mod tests {
             anchor: tct::Tree::new().root(),
         };
 
-        Ics2Client::check_tx_stateless(&create_client_tx).unwrap();
+        let ctx = Context::new();
+        Ics2Client::check_tx_stateless(ctx.clone(), &create_client_tx).unwrap();
         client_component
-            .check_tx_stateful(&create_client_tx)
+            .check_tx_stateful(ctx.clone(), &create_client_tx)
             .await
             .unwrap();
         // execute (save client)
-        client_component.execute_tx(&create_client_tx).await;
+        client_component
+            .execute_tx(ctx.clone(), &create_client_tx)
+            .await;
 
         assert_eq!(client_component.state.client_counter().await.unwrap().0, 1);
 
         // now try update client
 
-        Ics2Client::check_tx_stateless(&update_client_tx).unwrap();
+        Ics2Client::check_tx_stateless(ctx.clone(), &update_client_tx).unwrap();
         // verify the ClientUpdate proof
         client_component
-            .check_tx_stateful(&update_client_tx)
+            .check_tx_stateful(ctx.clone(), &update_client_tx)
             .await
             .unwrap();
         // save the next tm state
-        client_component.execute_tx(&update_client_tx).await;
+        client_component
+            .execute_tx(ctx.clone(), &update_client_tx)
+            .await;
 
         // try one more client update
         // https://cosmos.bigdipper.live/transactions/ED217D360F51E622859F7B783FEF98BDE3544AA32BBD13C6C77D8D0D57A19FFD
@@ -794,13 +799,15 @@ mod tests {
             binding_sig: [0u8; 64].into(),
         };
 
-        Ics2Client::check_tx_stateless(&second_update_client_tx).unwrap();
+        Ics2Client::check_tx_stateless(ctx.clone(), &second_update_client_tx).unwrap();
         // verify the ClientUpdate proof
         client_component
-            .check_tx_stateful(&second_update_client_tx)
+            .check_tx_stateful(ctx.clone(), &second_update_client_tx)
             .await
             .unwrap();
         // save the next tm state
-        client_component.execute_tx(&second_update_client_tx).await;
+        client_component
+            .execute_tx(ctx.clone(), &second_update_client_tx)
+            .await;
     }
 }
