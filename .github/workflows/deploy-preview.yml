@@ -45,6 +45,7 @@ jobs:
           cd ~/penumbra
           TESTNET_HOST=$TESTNET_HOST docker-compose -f docker-compose.yml -f docker-compose.prod.yml stop
           rm -rf ~/.penumbra/testnet_data/
+          docker system prune
     - name: Update Grafana configs and data
       uses: appleboy/ssh-action@master
       env:
