@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use ark_ff::{Fp256, BigInteger256};
+use ark_ff::{BigInteger256, Fp256};
 
 use crate::prelude::*;
 
@@ -34,7 +34,7 @@ impl From<Option<Hash>> for OptionHash {
     fn from(hash: Option<Hash>) -> Self {
         match hash {
             Some(hash) => Self {
-                inner: hash.0.0.0,
+                inner: hash.0 .0 .0,
             },
             None => Self {
                 // This sentinel value is not a valid `Fq` because it's bigger than the modulus,

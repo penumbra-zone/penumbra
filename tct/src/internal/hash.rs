@@ -5,9 +5,9 @@
 use std::fmt::Debug;
 
 use ark_ff::{fields::PrimeField, One, Zero};
+use decaf377::FieldExt;
 use once_cell::sync::Lazy;
 use poseidon377::{hash_1, hash_4, Fq};
-use decaf377::FieldExt;
 use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
