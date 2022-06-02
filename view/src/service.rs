@@ -13,7 +13,8 @@ use penumbra_crypto::{
 use penumbra_proto::{
     chain as pbp,
     client::oblivious::oblivious_query_client::ObliviousQueryClient,
-    crypto as pbc, transaction as pbt,
+    crypto::{self as pbc},
+    transaction as pbt,
     view::{self as pb, view_protocol_server::ViewProtocol, StatusResponse},
 };
 use penumbra_tct::{Commitment, Proof};
@@ -222,6 +223,32 @@ impl ViewProtocol for ViewService {
     type StatusStreamStream = Pin<
         Box<dyn futures::Stream<Item = Result<pb::StatusStreamResponse, tonic::Status>> + Send>,
     >;
+
+    async fn await_change(
+        &self,
+        request: tonic::Request<pb::AwaitChangeRequest>,
+    ) -> Result<tonic::Response<pb::NoteRecord>, tonic::Status> {
+        self.check_worker().await?;
+        self.check_fvk(request.get_ref().fvk_hash.as_ref()).await?;
+
+        let note_commitment = request
+            .into_inner()
+            .note_commitment
+            .ok_or_else(|| tonic::Status::failed_precondition("NoteCommitment may not be None"))?;
+
+        Ok(tonic::Response::new(pb::NoteRecord::from(
+            self.storage
+                .await_change(
+                    note_commitment
+                        .try_into()
+                        .expect("Conversion error from NoteCommitment proto to domain type"),
+                )
+                .await
+                .map_err(|_| {
+                    tonic::Status::unknown("unknown error getting requested note record")
+                })?,
+        )))
+    }
 
     async fn status(
         &self,
