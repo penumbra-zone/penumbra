@@ -187,7 +187,7 @@ impl<Child> GetPosition for Node<Child> {
 
 impl<Item: Height + structure::Node> structure::Node for Node<Item> {
     fn kind(&self) -> Kind {
-        Kind::Node(<Self as Height>::Height::HEIGHT)
+        Kind::Internal(<Self as Height>::Height::HEIGHT)
     }
 
     fn global_position(&self) -> Option<u64> {

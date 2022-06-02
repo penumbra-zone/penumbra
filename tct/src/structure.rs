@@ -7,9 +7,27 @@ use std::{
 
 use crate::prelude::*;
 
-/// Every kind of node in the tree implements [`Any`], and its methods collectively describe every
+#[doc(inline)]
+pub use crate::internal::hash::GetHash;
+
+/// Every kind of node in the tree implements [`Node`], and its methods collectively describe every
 /// salient fact about each node, dynamically rather than statically as in the rest of the crate.
 pub trait Node: GetHash + sealed::Sealed {
+    /// The parent of this node, if any.
+    fn parent(&self) -> Option<&dyn Node> {
+        None
+    }
+
+    /// The children of this node.
+    fn children(&self) -> Vec<Child>;
+
+    /// The kind of the node: either a [`Kind::Internal`] with a height, or a [`Kind::Leaf`] with an
+    /// optional [`Commitment`].
+    fn kind(&self) -> Kind;
+
+    /// The most recent time something underneath this node was forgotten.
+    fn forgotten(&self) -> Forgotten;
+
     /// The index of this node from the left of the tree.
     ///
     /// For items at the base, this is the position of the item.
@@ -17,29 +35,15 @@ pub trait Node: GetHash + sealed::Sealed {
         0
     }
 
-    /// The kind of the node: either an internal node with a height, or a leaf with a commitment
-    fn kind(&self) -> Kind;
-
     /// The position of the tree within which this node occurs.
     fn global_position(&self) -> Option<u64>;
-
-    /// The parent of this node, if any.
-    fn parent(&self) -> Option<&dyn Node> {
-        None
-    }
-
-    /// The most recent time something underneath this node was forgotten.
-    fn forgotten(&self) -> Forgotten;
-
-    /// The children, or hashes of them, of this node.
-    fn children(&self) -> Vec<Child>;
 
     // All of these methods are implemented in terms of the ones above:
 
     /// The height of this node above the base of the tree.
     fn height(&self) -> u8 {
         match self.kind() {
-            Kind::Node(height) => height,
+            Kind::Internal(height) => height,
             Kind::Leaf(_) => 0,
         }
     }
@@ -130,14 +134,14 @@ pub enum Kind {
     /// A leaf node at the bottom of some tier.
     Leaf(Option<Commitment>),
     /// An internal node within some tier.
-    Node(u8),
+    Internal(u8),
 }
 
 impl Display for Kind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Kind::Leaf(_) => write!(f, "Leaf",),
-            Kind::Node(_) => write!(f, "Node"),
+            Kind::Internal(_) => write!(f, "Node"),
         }
     }
 }
@@ -163,7 +167,7 @@ impl Display for Place {
     }
 }
 
-/// A child of an [`Any`]: this implements [`Any`] and supertraits, so can and should be treated
+/// A child of a [`Node`]: this implements [`Node`] and supertraits, so can and should be treated
 /// equivalently.
 #[derive(Copy, Clone)]
 pub struct Child<'a> {
@@ -184,8 +188,12 @@ impl Debug for Child<'_> {
 }
 
 impl<'a> Child<'a> {
-    /// Make a new [`Child`] from a reference to something implementing [`Any`].
-    pub fn new(parent: &'a dyn Node, forgotten: Forgotten, child: Insert<&'a dyn Node>) -> Self {
+    /// Make a new [`Child`] from a reference to something implementing [`Node`].
+    pub(crate) fn new(
+        parent: &'a dyn Node,
+        forgotten: Forgotten,
+        child: Insert<&'a dyn Node>,
+    ) -> Self {
         Child {
             offset: 0,
             forgotten,
@@ -218,9 +226,9 @@ impl Node for Child<'_> {
         match self.child {
             Insert::Keep(child) => child.kind(),
             Insert::Hash(_) => match self.parent.kind() {
-                Kind::Node(height @ 2..=24) => Kind::Node(height - 1),
-                Kind::Node(1) => Kind::Leaf(None),
-                Kind::Node(0 | 25..=u8::MAX) => {
+                Kind::Internal(height @ 2..=24) => Kind::Internal(height - 1),
+                Kind::Internal(1) => Kind::Leaf(None),
+                Kind::Internal(0 | 25..=u8::MAX) => {
                     unreachable!("nodes cannot have zero height or height greater than 24")
                 }
                 Kind::Leaf(_) => unreachable!("leaves cannot have children"),
