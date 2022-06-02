@@ -68,7 +68,7 @@ impl<T: GetHash> GetHash for &mut T {
     }
 }
 
-/// The hash of an individual item, tree root, or intermediate node.
+/// The hash of an individual [`Commitment`] or internal node in the tree.
 #[derive(Clone, Copy, PartialEq, Eq, std::hash::Hash, Serialize, Deserialize)]
 pub struct Hash(#[serde(with = "crate::serialize::fq")] Fq);
 
@@ -119,7 +119,7 @@ impl Hash {
         Self(Fq::one())
     }
 
-    /// Hash an individual item to be inserted into the tree.
+    /// Hash an individual commitment to be inserted into the tree.
     #[inline]
     pub fn of(item: Commitment) -> Hash {
         Self(hash_1(&DOMAIN_SEPARATOR, item.0))
@@ -128,9 +128,9 @@ impl Hash {
     /// Construct a hash for an internal node of the tree, given its height and the hashes of its
     /// four children.
     #[inline]
-    pub fn node(height: u8, Hash(a): Hash, Hash(b): Hash, Hash(c): Hash, Hash(d): Hash) -> Hash {
+    pub fn node(height: u8, a: Hash, b: Hash, c: Hash, d: Hash) -> Hash {
         let height = Fq::from_le_bytes_mod_order(&height.to_le_bytes());
-        Self(hash_4(&(*DOMAIN_SEPARATOR + height), (a, b, c, d)))
+        Self(hash_4(&(*DOMAIN_SEPARATOR + height), (a.0, b.0, c.0, d.0)))
     }
 }
 

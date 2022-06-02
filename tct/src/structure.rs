@@ -7,6 +7,9 @@ use std::{
 
 use crate::prelude::*;
 
+#[doc(inline)]
+pub use crate::internal::hash::{Forgotten, Hash};
+
 /// Every kind of node in the tree implements [`Node`], and its methods collectively describe every
 /// salient fact about each node, dynamically rather than statically as in the rest of the crate.
 pub(crate) trait Any: GetHash + sealed::Sealed {
