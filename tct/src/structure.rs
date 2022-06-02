@@ -36,7 +36,7 @@ pub trait Node: GetHash + sealed::Sealed {
     }
 
     /// The position of the tree within which this node occurs.
-    fn global_position(&self) -> Option<u64>;
+    fn global_position(&self) -> Option<Position>;
 
     // All of these methods are implemented in terms of the ones above:
 
@@ -49,14 +49,14 @@ pub trait Node: GetHash + sealed::Sealed {
     }
 
     /// The position of the node (the vertical extension of the position of commitments below).
-    fn position(&self) -> u64 {
-        4u64.pow(self.height() as u32) * self.index()
+    fn position(&self) -> Position {
+        (4u64.pow(self.height() as u32) * self.index()).into()
     }
 
     /// The range of positions that occur beneath this node.
-    fn range(&self) -> Range<u64> {
-        let position = self.position();
-        position..position + 4u64.pow(self.height() as u32)
+    fn range(&self) -> Range<Position> {
+        let position: u64 = self.position().into();
+        position.into()..(position + 4u64.pow(self.height() as u32)).into()
     }
 
     /// The place on the tree where this node occurs.
@@ -92,7 +92,7 @@ impl<T: Node> Node for &T {
         (**self).kind()
     }
 
-    fn global_position(&self) -> Option<u64> {
+    fn global_position(&self) -> Option<Position> {
         (**self).global_position()
     }
 
@@ -250,7 +250,7 @@ impl Node for Child<'_> {
         self.forgotten
     }
 
-    fn global_position(&self) -> Option<u64> {
+    fn global_position(&self) -> Option<Position> {
         self.parent.global_position()
     }
 

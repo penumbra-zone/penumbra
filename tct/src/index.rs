@@ -10,7 +10,9 @@ use serde::{Deserialize, Serialize};
 /// The index of an individual item in a block.
 ///
 /// Create this using `From<u16>`.
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Default, Derivative, Serialize, Deserialize)]
+#[derive(
+    Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Derivative, Serialize, Deserialize,
+)]
 #[derivative(Debug = "transparent")]
 pub struct Commitment(u16);
 
@@ -41,7 +43,9 @@ impl From<Commitment> for u16 {
 /// The index of an individual block in an epoch.
 ///
 /// Create this using `From<u16>`.
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Default, Derivative, Serialize, Deserialize)]
+#[derive(
+    Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Derivative, Serialize, Deserialize,
+)]
 #[derivative(Debug = "transparent")]
 pub struct Block(u16);
 
@@ -72,7 +76,9 @@ impl Block {
 /// The index of an individual epoch in a tree.
 ///
 /// Create this using `From<u16>`.
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Default, Derivative, Serialize, Deserialize)]
+#[derive(
+    Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Derivative, Serialize, Deserialize,
+)]
 #[derivative(Debug = "transparent")]
 pub struct Epoch(u16);
 
@@ -105,7 +111,9 @@ pub mod within {
     use super::*;
 
     /// The index of an individual item within a block.
-    #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
+    #[derive(
+        Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize,
+    )]
     pub struct Block {
         /// The index of the item within its block.
         pub commitment: super::Commitment,
@@ -143,7 +151,9 @@ pub mod within {
     }
 
     /// The index of an individual item within an epoch.
-    #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
+    #[derive(
+        Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize,
+    )]
     pub struct Epoch {
         /// The index of the block within its epoch.
         pub block: super::Block,
@@ -188,7 +198,9 @@ pub mod within {
     }
 
     /// The index of an individual item within a tree.
-    #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
+    #[derive(
+        Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize,
+    )]
     pub struct Tree {
         /// The index of the epoch within its tree.
         pub epoch: super::Epoch,

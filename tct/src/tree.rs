@@ -82,7 +82,7 @@ impl Display for Root {
 }
 
 /// The index of a [`Commitment`] within a [`Tree`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct Position(index::within::Tree);
 
 impl Position {
