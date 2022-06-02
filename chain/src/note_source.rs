@@ -87,18 +87,3 @@ impl std::fmt::Debug for NoteSource {
         }
     }
 }
-
-impl std::fmt::Display for NoteSource {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            NoteSource::Transaction { id } => {
-                f.write_fmt(format_args!("NoteSource::Transaction({})", hex::encode(id)))
-            }
-            NoteSource::Genesis => f.write_fmt(format_args!("NoteSource::Genesis")),
-            NoteSource::FundingStreamReward { epoch_index } => f.write_fmt(format_args!(
-                "NoteSource::FundingStreamReward({})",
-                epoch_index
-            )),
-        }
-    }
-}

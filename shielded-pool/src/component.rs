@@ -166,7 +166,7 @@ impl Component for ShieldedPool {
         Ok(())
     }
 
-    #[instrument(name = "shielded_pool", skip(self, _ctx, tx))]
+    #[instrument(name = "shielded_pool", skip(self, ctx, tx))]
     async fn execute_tx(&mut self, ctx: Context, tx: &Transaction) {
         let _should_quarantine = tx
             .transaction_body
@@ -190,7 +190,7 @@ impl Component for ShieldedPool {
             // can learn that their note was spent).
             self.state.spend_nullifier(spent_nullifier, source).await;
             self.compact_block.nullifiers.push(spent_nullifier);
-            ctx.record(event::spend(spent_nullifier, source));
+            ctx.record(event::spend(spent_nullifier));
         }
         //}
     }
