@@ -26,19 +26,24 @@ pub fn index(tree: &Tree) -> Result<(), IndexMalformed> {
         errors: &mut Vec<IndexError>,
         node: structure::Node,
     ) {
-        if matches!(
-            node.kind(),
-            Kind::Leaf {
-                commitment: Some(_)
-            }
-        ) {
+        if let Kind::Leaf {
+            commitment: Some(actual_commitment),
+        } = node.kind()
+        {
             // We're at a leaf, so check it:
-            if let Some(commitment) = reverse_index.get(&node.index().into()) {
-                let expected_hash = Hash::of(*commitment);
+            if let Some(&expected_commitment) = reverse_index.get(&node.position()) {
+                if actual_commitment != expected_commitment {
+                    errors.push(IndexError::CommitmentMismatch {
+                        position: node.position(),
+                        expected_commitment,
+                        actual_commitment,
+                    });
+                }
+                let expected_hash = Hash::of(actual_commitment);
                 if expected_hash != node.hash() {
                     errors.push(IndexError::HashMismatch {
-                        commitment: *commitment,
-                        position: node.index().into(),
+                        commitment: expected_commitment,
+                        position: node.position(),
                         expected_hash,
                         found_hash: node.hash(),
                     });
@@ -48,7 +53,7 @@ pub fn index(tree: &Tree) -> Result<(), IndexMalformed> {
                 // frontier is always represented, even if it's marked for later forgetting),
                 // but otherwise we want to ensure that all witnesses are indexed
                 errors.push(IndexError::UnindexedWitness {
-                    position: node.index().into(),
+                    position: node.position(),
                     found_hash: node.hash(),
                 });
             };
@@ -90,6 +95,16 @@ pub enum IndexError {
         position: Position,
         /// The hash found at that position.
         found_hash: Hash,
+    },
+    /// A commitment in the index points to a leaf with a different commitment
+    #[error("found commitment {actual_commitment:?} at position {position:?} but expected {expected_commitment:?}")]
+    CommitmentMismatch {
+        /// The position of the leaf that was found to have the wrong commitment.
+        position: Position,
+        /// The commitment that was expected.
+        expected_commitment: Commitment,
+        /// The commitment that was found.
+        actual_commitment: Commitment,
     },
     /// A commitment in the index doesn't match the hash in the tree at that position.
     #[error("mismatched hash for commitment {commitment:?} at position `{position:?}`: found {found_hash:?}, expected {expected_hash:?}")]
