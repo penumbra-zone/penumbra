@@ -592,7 +592,9 @@ impl Tree {
         self.inner.is_empty()
     }
 
-    /// Get an iterator over all commitments currently witnessed in the tree, in order of insertion.
+    /// Get an iterator over all commitments currently witnessed in the tree.
+    ///
+    /// This does not guarantee that commitments will be returned in order.
     pub fn commitments(&self) -> impl Iterator<Item = (Commitment, Position)> + '_ {
         self.index.iter().map(|(c, p)| (*c, Position(*p)))
     }
