@@ -6,34 +6,6 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use tendermint::abci;
 
-#[derive(Clone)]
-pub struct Context {
-    inner: Arc<Mutex<Option<Vec<abci::Event>>>>,
-}
-
-impl Context {
-    pub fn new() -> Self {
-        Self {
-            inner: Arc::new(Mutex::new(Some(Vec::new()))),
-        }
-    }
-    pub fn record(&self, e: abci::Event) {
-        self.inner
-            .lock()
-            .expect("record called after into_events")
-            .as_mut()
-            .unwrap()
-            .push(e);
-    }
-    pub fn into_events(self) -> Vec<abci::Event> {
-        self.inner
-            .lock()
-            .expect("into_events called after record")
-            .take()
-            .unwrap()
-    }
-}
-
 /// A component of the Penumbra application.
 ///
 /// Each component is a thin wrapper around a shared [`State`], over a
@@ -146,4 +118,40 @@ pub trait Component: Sized {
     /// This method should only be called after [`Component::begin_block`].
     /// No methods should be called following this method.
     async fn end_block(&mut self, ctx: Context, end_block: &abci::request::EndBlock);
+}
+
+/// A context accumulates events that may occur during various parts of a
+/// Component's life-cycle. Since Penumbra components want to accumulate events
+/// in potentially concurrent ways, a Context is an owned handle to a shared
+/// state. It is cheap to copy, and is safe to use across threads.
+///
+/// A context is created by the [`Context::new()`] method. Events can be
+/// accumulated using [`Context::record()`], and finally collected (consuming
+/// the underlying data) in [`Context::into_events()`].
+#[derive(Clone)]
+pub struct Context {
+    inner: Arc<Mutex<Option<Vec<abci::Event>>>>,
+}
+
+impl Context {
+    pub fn new() -> Self {
+        Self {
+            inner: Arc::new(Mutex::new(Some(Vec::new()))),
+        }
+    }
+    pub fn record(&self, e: abci::Event) {
+        self.inner
+            .lock()
+            .expect("record called after into_events")
+            .as_mut()
+            .unwrap()
+            .push(e);
+    }
+    pub fn into_events(self) -> Vec<abci::Event> {
+        self.inner
+            .lock()
+            .expect("into_events called after record")
+            .take()
+            .unwrap()
+    }
 }
