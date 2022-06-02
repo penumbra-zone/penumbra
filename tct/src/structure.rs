@@ -131,12 +131,12 @@ impl Display for &dyn Node {
 /// The kind of a node.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Kind {
-    /// A leaf node at the bottom of some tier.
+    /// A leaf node at the bottom of the tree.
     Leaf {
         /// The witnessed commitment at this leaf, or `None` if this leaf was forgotten.
         commitment: Option<Commitment>,
     },
-    /// An internal node within some tier.
+    /// An internal node within the tree.
     Internal {
         /// The height of this internal node.
         height: u8,
