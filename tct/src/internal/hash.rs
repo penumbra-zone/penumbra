@@ -4,9 +4,10 @@
 
 use std::fmt::Debug;
 
-use ark_ff::{fields::PrimeField, BigInteger256, Fp256, One, ToBytes, Zero};
+use ark_ff::{fields::PrimeField, One, Zero};
 use once_cell::sync::Lazy;
 use poseidon377::{hash_1, hash_4, Fq};
+use decaf377::FieldExt;
 use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
@@ -80,9 +81,13 @@ impl From<Hash> for Fq {
 
 impl Debug for Hash {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        let mut bytes = Vec::with_capacity(4 * 8);
-        self.0.write(&mut bytes).unwrap();
-        write!(f, "{}", hex::encode(&bytes))
+        if *self == Hash::zero() {
+            write!(f, "0")
+        } else if *self == Hash::one() {
+            write!(f, "1")
+        } else {
+            write!(f, "{}", hex::encode(&self.to_bytes()))
+        }
     }
 }
 
@@ -95,29 +100,22 @@ pub static DOMAIN_SEPARATOR: Lazy<Fq> =
 #[allow(unused)]
 impl Hash {
     /// Create a hash from an arbitrary [`Fq`].
-    pub(crate) fn new(fq: Fq) -> Self {
+    pub fn new(fq: Fq) -> Self {
         Self(fq)
     }
 
-    /// Get the underlying bytes for the hash
-    pub(crate) fn into_bytes(self) -> [u64; 4] {
-        self.0 .0 .0
-    }
-
-    /// Construct a hash from bytes directly without checking whether they are in range for [`Commitment`].
-    ///
-    /// This should only be called when you know that the bytes are valid.
-    pub(crate) fn from_bytes_unchecked(bytes: [u64; 4]) -> Hash {
-        Self(Fp256::new(BigInteger256(bytes)))
+    /// Get an array of bytes representing the hash
+    pub fn to_bytes(self) -> [u8; 32] {
+        self.0.to_bytes()
     }
 
     /// The zero hash, used for padding of frontier nodes.
-    pub(crate) fn zero() -> Hash {
+    pub fn zero() -> Hash {
         Self(Fq::zero())
     }
 
     /// The one hash, used for padding of complete nodes.
-    pub(crate) fn one() -> Hash {
+    pub fn one() -> Hash {
         Self(Fq::one())
     }
 
@@ -132,13 +130,13 @@ impl Hash {
     #[inline]
     pub fn node(height: u8, Hash(a): Hash, Hash(b): Hash, Hash(c): Hash, Hash(d): Hash) -> Hash {
         let height = Fq::from_le_bytes_mod_order(&height.to_le_bytes());
-        Hash(hash_4(&(*DOMAIN_SEPARATOR + height), (a, b, c, d)))
+        Self(hash_4(&(*DOMAIN_SEPARATOR + height), (a, b, c, d)))
     }
 }
 
 /// A version tracking when a particular piece of the tree was explicitly forgotten.
 #[derive(
-    Debug,
+    Derivative,
     Clone,
     Copy,
     PartialEq,
@@ -150,6 +148,7 @@ impl Hash {
     Deserialize,
     Default,
 )]
+#[derivative(Debug = "transparent")]
 pub struct Forgotten(u64);
 
 impl Forgotten {
