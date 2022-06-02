@@ -19,15 +19,6 @@ pub mod proof {
     };
 }
 
-pub mod validate {
-    //! Errors resulting from internal validation.
-    #[doc(inline)]
-    pub use crate::tree::verify::{
-        IndexError, IndexMalformed, InvalidCachedHash, InvalidCachedHashes, InvalidWitnesses,
-        WitnessError,
-    };
-}
-
 pub mod block {
     //! Errors for [`block`] builders.
     use super::*;

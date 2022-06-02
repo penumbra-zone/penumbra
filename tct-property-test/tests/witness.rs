@@ -5,7 +5,7 @@ use std::collections::HashSet;
 
 use proptest::{arbitrary::*, prelude::*};
 
-use penumbra_tct::{proptest::CommitmentStrategy, Commitment, Tree, Witness};
+use penumbra_tct::{proptest::CommitmentStrategy, validate, Commitment, Tree, Witness};
 
 const MAX_USED_COMMITMENTS: usize = 3;
 const MAX_TIER_ACTIONS: usize = 10;
@@ -138,7 +138,7 @@ proptest! {
         for action in actions {
             action.apply(&mut tree).unwrap();
         }
-        tree.validate_index().unwrap();
+        validate::index(&tree).unwrap();
     }
 
     #[test]
@@ -153,7 +153,7 @@ proptest! {
         for action in actions {
             action.apply(&mut tree).unwrap();
         }
-        tree.verify_all_proofs().unwrap();
+        validate::all_proofs(&tree).unwrap();
     }
 
     #[test]
@@ -168,7 +168,7 @@ proptest! {
         for action in actions {
             action.apply(&mut tree).unwrap();
         }
-        tree.validate_cached_hashes().unwrap();
+        validate::cached_hashes(&tree).unwrap();
     }
 
 
@@ -208,7 +208,6 @@ proptest! {
                 assert_eq!(post, pre);
             }
         }
-        println!("{tree:?}");
-        tree.validate_forgotten().unwrap();
+        validate::forgotten(&tree).unwrap();
     }
 }

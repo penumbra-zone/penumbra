@@ -1,4 +1,4 @@
-//! A dynamic representation of nodes within the tree structure, for writing homogeneous traversals.
+//! A dynamic representation of nodes within the internal tree structure.
 
 use std::{
     fmt::{Debug, Display},
@@ -9,7 +9,7 @@ use crate::prelude::*;
 
 /// Every kind of node in the tree implements [`Any`], and its methods collectively describe every
 /// salient fact about each node, dynamically rather than statically as in the rest of the crate.
-pub trait Any: GetHash {
+pub trait Node: GetHash + sealed::Sealed {
     /// The index of this node from the left of the tree.
     ///
     /// For items at the base, this is the position of the item.
@@ -24,39 +24,23 @@ pub trait Any: GetHash {
     fn global_position(&self) -> Option<u64>;
 
     /// The parent of this node, if any.
-    fn parent(&self) -> Option<&dyn Any> {
+    fn parent(&self) -> Option<&dyn Node> {
         None
     }
 
+    /// The most recent time something underneath this node was forgotten.
+    fn forgotten(&self) -> Forgotten;
+
     /// The children, or hashes of them, of this node.
-    fn children(&self) -> Vec<(Forgotten, Insert<Child>)>;
-}
+    fn children(&self) -> Vec<Child>;
 
-impl<T: Any> Any for &T {
-    fn index(&self) -> u64 {
-        (**self).index()
-    }
+    // All of these methods are implemented in terms of the ones above:
 
-    fn kind(&self) -> Kind {
-        (**self).kind()
-    }
-
-    fn global_position(&self) -> Option<u64> {
-        (**self).global_position()
-    }
-
-    fn children(&self) -> Vec<(Forgotten, Insert<Child>)> {
-        (**self).children()
-    }
-}
-
-/// Extra methods for `dyn Any` and `Child` that are defined in terms of the methods of [`Any`].
-pub trait AnyExt: Any {
     /// The height of this node above the base of the tree.
     fn height(&self) -> u8 {
         match self.kind() {
             Kind::Node(height) => height,
-            Kind::Leaf(_) | Kind::Rightmost(_) => 0,
+            Kind::Leaf(_) => 0,
         }
     }
 
@@ -85,10 +69,43 @@ pub trait AnyExt: Any {
     }
 }
 
-impl AnyExt for dyn Any + '_ {}
-impl AnyExt for Child<'_> {}
+impl GetHash for &dyn Node {
+    fn hash(&self) -> Hash {
+        (**self).hash()
+    }
 
-impl Debug for &dyn Any {
+    fn cached_hash(&self) -> Option<Hash> {
+        (**self).cached_hash()
+    }
+}
+
+impl<T: Node> Node for &T {
+    fn index(&self) -> u64 {
+        (**self).index()
+    }
+
+    fn kind(&self) -> Kind {
+        (**self).kind()
+    }
+
+    fn global_position(&self) -> Option<u64> {
+        (**self).global_position()
+    }
+
+    fn parent(&self) -> Option<&dyn Node> {
+        (**self).parent()
+    }
+
+    fn forgotten(&self) -> Forgotten {
+        (**self).forgotten()
+    }
+
+    fn children(&self) -> Vec<Child> {
+        (**self).children()
+    }
+}
+
+impl Debug for &dyn Node {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct(&format!("{}::{}", self.place(), self.kind()))
             .field("height", &(*self).height())
@@ -98,7 +115,7 @@ impl Debug for &dyn Any {
     }
 }
 
-impl Display for &dyn Any {
+impl Display for &dyn Node {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct(&format!("{}::{}", self.place(), self.kind()))
             .field("height", &self.height())
@@ -110,10 +127,8 @@ impl Display for &dyn Any {
 /// The kind of a node.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Kind {
-    /// The rightmost leaf of the tree.
-    Rightmost(Option<Commitment>),
     /// A leaf node at the bottom of some tier.
-    Leaf(Commitment),
+    Leaf(Option<Commitment>),
     /// An internal node within some tier.
     Node(u8),
 }
@@ -121,7 +136,7 @@ pub enum Kind {
 impl Display for Kind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Kind::Leaf(_) | Kind::Rightmost(_) => write!(f, "Leaf",),
+            Kind::Leaf(_) => write!(f, "Leaf",),
             Kind::Node(_) => write!(f, "Node"),
         }
     }
@@ -153,8 +168,9 @@ impl Display for Place {
 #[derive(Copy, Clone)]
 pub struct Child<'a> {
     offset: u64,
-    parent: &'a dyn Any,
-    child: &'a dyn Any,
+    forgotten: Forgotten,
+    parent: &'a (dyn Node + 'a),
+    child: Insert<&'a (dyn Node + 'a)>,
 }
 
 impl Debug for Child<'_> {
@@ -169,9 +185,10 @@ impl Debug for Child<'_> {
 
 impl<'a> Child<'a> {
     /// Make a new [`Child`] from a reference to something implementing [`Any`].
-    pub fn new(parent: &'a dyn Any, child: &'a dyn Any) -> Self {
+    pub fn new(parent: &'a dyn Node, forgotten: Forgotten, child: Insert<&'a dyn Node>) -> Self {
         Child {
             offset: 0,
+            forgotten,
             parent,
             child,
         }
@@ -188,49 +205,84 @@ impl GetHash for Child<'_> {
     }
 }
 
-impl Any for Child<'_> {
+impl Node for Child<'_> {
     fn index(&self) -> u64 {
-        self.offset + self.child.index()
+        self.offset
     }
 
-    fn parent(&self) -> Option<&dyn Any> {
+    fn parent(&self) -> Option<&dyn Node> {
         Some(self.parent)
     }
 
     fn kind(&self) -> Kind {
-        self.child.kind()
+        match self.child {
+            Insert::Keep(child) => child.kind(),
+            Insert::Hash(_) => match self.parent.kind() {
+                Kind::Node(height @ 2..=24) => Kind::Node(height - 1),
+                Kind::Node(1) => Kind::Leaf(None),
+                Kind::Node(0 | 25..=u8::MAX) => {
+                    unreachable!("nodes cannot have zero height or height greater than 24")
+                }
+                Kind::Leaf(_) => unreachable!("leaves cannot have children"),
+            },
+        }
+    }
+
+    fn forgotten(&self) -> Forgotten {
+        self.forgotten
     }
 
     fn global_position(&self) -> Option<u64> {
         self.parent.global_position()
     }
 
-    fn children(&self) -> Vec<(Forgotten, Insert<Child>)> {
-        self.child
-            .children()
-            .into_iter()
-            .enumerate()
-            .map(|(nth, (forgotten, child))| {
-                (
-                    forgotten,
-                    child.map(|child| {
-                        debug_assert_eq!(
-                            child.offset, 0,
-                            "explicitly constructed children should have zero offset"
-                        );
-                        // If the height doesn't change, we shouldn't be applying a multiplier to the
-                        // parent offset:
-                        let multiplier = 4u64.pow((self.height() - child.height()).into());
-                        Child {
-                            child: child.child,
-                            parent: child.parent,
-                            offset: self.offset * multiplier + nth as u64,
-                        }
-                    }),
-                )
-            })
-            .collect()
+    fn children(&self) -> Vec<Child> {
+        if let Insert::Keep(child) = self.child {
+            child
+                .children()
+                .into_iter()
+                .enumerate()
+                .map(|(nth, child)| {
+                    debug_assert_eq!(
+                        child.offset, 0,
+                        "explicitly constructed children should have zero offset"
+                    );
+                    // If the height doesn't change, we shouldn't be applying a multiplier to the
+                    // parent offset:
+                    let multiplier = 4u64.pow((self.height() - child.height()).into());
+                    Child {
+                        forgotten: child.forgotten,
+                        child: child.child,
+                        parent: child.parent,
+                        offset: self.offset * multiplier + nth as u64,
+                    }
+                })
+                .collect()
+        } else {
+            vec![]
+        }
     }
+}
+
+mod sealed {
+    use super::*;
+
+    pub trait Sealed {}
+
+    impl<T: Sealed> Sealed for &T {}
+    impl Sealed for Child<'_> {}
+
+    impl Sealed for complete::Item {}
+    impl<T: Sealed> Sealed for complete::Leaf<T> {}
+    impl<T: Sealed> Sealed for complete::Node<T> {}
+    impl<T: Sealed + Height + GetHash> Sealed for complete::Tier<T> {}
+    impl<T: Sealed + Height + GetHash> Sealed for complete::Top<T> {}
+
+    impl Sealed for frontier::Item {}
+    impl<T: Sealed> Sealed for frontier::Leaf<T> {}
+    impl<T: Sealed + Focus> Sealed for frontier::Node<T> {}
+    impl<T: Sealed + Height + GetHash + Focus> Sealed for frontier::Tier<T> {}
+    impl<T: Sealed + Height + GetHash + Focus> Sealed for frontier::Top<T> {}
 }
 
 #[cfg(test)]
@@ -246,17 +298,13 @@ mod test {
             top.insert(Commitment(i.into()).into()).unwrap();
         }
 
-        fn check_leaves(index: &mut [u64; 9], node: &dyn Any) {
+        fn check_leaves(index: &mut [u64; 9], node: &dyn Node) {
             assert_eq!(node.index(), index[usize::from(node.height())], "{}", node);
 
             index[usize::from(node.height())] += 1;
 
-            for child in node
-                .children()
-                .iter()
-                .filter_map(|child| child.1.as_ref().keep())
-            {
-                check_leaves(index, child);
+            for child in node.children() {
+                check_leaves(index, &child);
             }
         }
 

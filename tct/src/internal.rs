@@ -66,7 +66,6 @@
 //! tree, and the [`ForgetOwned`](complete::ForgetOwned) trait, which defines an equivalent to
 //! [`frontier::Forget`] that is applicable to the by-value usage pattern of complete trees.
 
-pub mod any;
 pub mod hash;
 pub mod height;
 pub mod interface;

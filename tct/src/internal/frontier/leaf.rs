@@ -90,7 +90,7 @@ impl<Item: GetHash + Forget> Forget for Leaf<Item> {
     }
 }
 
-impl<Item: GetPosition + Height + Any> Any for Leaf<Item> {
+impl<Item: GetPosition + Height + structure::Node> structure::Node for Leaf<Item> {
     fn kind(&self) -> Kind {
         self.item.kind()
     }
@@ -99,7 +99,11 @@ impl<Item: GetPosition + Height + Any> Any for Leaf<Item> {
         <Self as GetPosition>::position(self)
     }
 
-    fn children(&self) -> Vec<(Forgotten, Insert<Child>)> {
+    fn forgotten(&self) -> Forgotten {
+        self.item.forgotten()
+    }
+
+    fn children(&self) -> Vec<Child> {
         self.item.children()
     }
 }

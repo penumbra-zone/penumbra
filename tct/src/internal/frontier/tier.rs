@@ -286,9 +286,9 @@ impl<Item: Focus> From<complete::Top<Item::Complete>> for Tier<Item> {
     }
 }
 
-impl<Item: Focus + GetPosition + Height + Any> Any for Tier<Item>
+impl<Item: Focus + GetPosition + Height + structure::Node> structure::Node for Tier<Item>
 where
-    Item::Complete: Any,
+    Item::Complete: structure::Node,
 {
     fn kind(&self) -> Kind {
         Kind::Node(<Self as Height>::Height::HEIGHT)
@@ -298,10 +298,18 @@ where
         <Self as GetPosition>::position(self)
     }
 
-    fn children(&self) -> Vec<(Forgotten, Insert<Child>)> {
+    fn forgotten(&self) -> Forgotten {
+        match &self.inner {
+            Inner::Frontier(frontier) => (&**frontier as &dyn structure::Node).forgotten(),
+            Inner::Complete(complete) => (complete as &dyn structure::Node).forgotten(),
+            Inner::Hash(_) => Forgotten::default(),
+        }
+    }
+
+    fn children(&self) -> Vec<Child> {
         match &self.inner {
             Inner::Frontier(frontier) => frontier.children(),
-            Inner::Complete(complete) => (complete as &dyn Any).children(),
+            Inner::Complete(complete) => (complete as &dyn structure::Node).children(),
             Inner::Hash(_) => vec![],
         }
     }
