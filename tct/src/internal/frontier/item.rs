@@ -68,7 +68,7 @@ impl GetPosition for Item {
 
 impl Forget for Item {
     #[inline]
-    fn forget(&mut self, _forgotten: Forgotten, index: impl Into<u64>) -> bool {
+    fn forget(&mut self, _forgotten: Option<Forgotten>, index: impl Into<u64>) -> bool {
         if index.into() == 0 {
             if let Insert::Keep((_, hash)) = self.item {
                 self.item = Insert::Hash(hash);
@@ -80,10 +80,6 @@ impl Forget for Item {
             panic!("non-zero index when forgetting item");
         }
     }
-}
-
-impl ForgetForgotten for Item {
-    fn forget_forgotten(&mut self) {}
 }
 
 impl Any for Item {

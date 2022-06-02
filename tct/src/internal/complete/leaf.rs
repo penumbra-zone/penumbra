@@ -40,15 +40,13 @@ impl<Item: Witness> Witness for Leaf<Item> {
 }
 
 impl<Item: ForgetOwned> ForgetOwned for Leaf<Item> {
-    fn forget_owned(self, forgotten: Forgotten, index: impl Into<u64>) -> (Insert<Self>, bool) {
+    fn forget_owned(
+        self,
+        forgotten: Option<Forgotten>,
+        index: impl Into<u64>,
+    ) -> (Insert<Self>, bool) {
         let (item, forgotten) = self.0.forget_owned(forgotten, index);
         (item.map(Leaf), forgotten)
-    }
-}
-
-impl<Item: ForgetForgotten> ForgetForgotten for Leaf<Item> {
-    fn forget_forgotten(&mut self) {
-        self.0.forget_forgotten()
     }
 }
 

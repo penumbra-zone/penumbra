@@ -11,10 +11,19 @@ use crate::{prelude::*, Witness};
 /// A sparse merkle tree to witness up to 65,536 individual [`Commitment`]s.
 ///
 /// This is one block in an [`epoch`](crate::builder::epoch), which is one epoch in a [`Tree`].
-#[derive(Derivative, Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Derivative, Debug, Clone, Serialize, Deserialize)]
 pub struct Builder {
     index: HashedMap<Commitment, index::within::Block>,
     inner: frontier::Top<Item>,
+}
+
+impl Default for Builder {
+    fn default() -> Self {
+        Self {
+            index: HashedMap::default(),
+            inner: frontier::Top::new(frontier::TrackForgotten::No),
+        }
+    }
 }
 
 /// A finalized block builder, ready to be inserted into an [`epoch::Builder`](super::Builder) or a

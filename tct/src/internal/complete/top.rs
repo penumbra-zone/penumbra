@@ -36,12 +36,6 @@ impl<Item: Height + GetHash> GetPosition for Top<Item> {
     }
 }
 
-impl<Item: Height + GetHash + ForgetForgotten> ForgetForgotten for Top<Item> {
-    fn forget_forgotten(&mut self) {
-        self.inner.forget_forgotten()
-    }
-}
-
 impl<Item: Height + Any> Any for Top<Item> {
     fn kind(&self) -> Kind {
         self.inner.kind()

@@ -15,10 +15,19 @@ pub(crate) mod block;
 /// [`Commitment`]s.
 ///
 /// This is one epoch in a [`Tree`].
-#[derive(Derivative, Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Derivative, Debug, Clone, Serialize, Deserialize)]
 pub struct Builder {
     index: HashedMap<Commitment, index::within::Epoch>,
     inner: frontier::Top<frontier::Tier<frontier::Item>>,
+}
+
+impl Default for Builder {
+    fn default() -> Self {
+        Self {
+            index: HashedMap::default(),
+            inner: frontier::Top::new(frontier::TrackForgotten::No),
+        }
+    }
 }
 
 /// A finalized epoch builder, ready to be inserted into a [`Tree`].
@@ -195,7 +204,7 @@ impl Builder {
         }
 
         // Convert the top level inside of the block to a tier that can be slotted into the epoch
-        let mut inner: frontier::Tier<frontier::Item> = match inner {
+        let inner: frontier::Tier<frontier::Item> = match inner {
             Insert::Keep(inner) => inner.into(),
             Insert::Hash(hash) => hash.into(),
         };
@@ -215,10 +224,6 @@ impl Builder {
 
         // Calculate the root hash of the block being inserted
         let block_root = block::Root(inner.hash());
-
-        // Forget the forgotten counts within the block being inserted, since they're not coherent
-        // with the epoch's own forgotten counts, and not useful
-        inner.forget_forgotten();
 
         // Insert the inner tree of the block into the epoch
         self.inner

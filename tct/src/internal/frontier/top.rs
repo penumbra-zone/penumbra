@@ -11,22 +11,39 @@ use frontier::tier::Nested;
 #[derive(Derivative, Serialize, Deserialize)]
 #[derivative(
     Debug(bound = "Item: Debug, Item::Complete: Debug"),
-    Clone(bound = "Item: Clone, Item::Complete: Clone"),
-    Default(bound = "")
+    Clone(bound = "Item: Clone, Item::Complete: Clone")
 )]
 #[serde(bound(
     serialize = "Item: Serialize, Item::Complete: Serialize",
     deserialize = "Item: Deserialize<'de>, Item::Complete: Deserialize<'de>"
 ))]
 pub struct Top<Item: Focus> {
+    track_forgotten: TrackForgotten,
     inner: Option<Nested<Item>>,
+}
+
+/// Whether or not to track forgotten elements of the tree.
+///
+/// This is set to `Yes` for trees, but to `No` for epoch and block builders, because when they are
+/// inserted all at once, there would be no meaning to their internal forgotten versions, and the
+/// tree wouldn't have known about any elements that were forgotten before the builder was inserted,
+/// so it doesn't need to track them.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum TrackForgotten {
+    /// Do keep track of what things are forgotten.
+    Yes,
+    /// Do not keep track of what things are forgotten.
+    No,
 }
 
 impl<Item: Focus> Top<Item> {
     /// Create a new top-level frontier tier.
     #[allow(unused)]
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(track_forgotten: TrackForgotten) -> Self {
+        Self {
+            track_forgotten,
+            inner: None,
+        }
     }
 
     /// Insert an item or its hash into this frontier tier.
@@ -73,11 +90,10 @@ impl<Item: Focus> Top<Item> {
         Item: Forget,
         Item::Complete: ForgetOwned,
     {
-        // Calculate the maximum forgotten version for any child
-        let max_forgotten = self.forgotten();
+        let forgotten = self.forgotten();
 
         if let Some(ref mut inner) = self.inner {
-            inner.forget(max_forgotten, index)
+            inner.forget(forgotten, index)
         } else {
             false
         }
@@ -85,12 +101,18 @@ impl<Item: Focus> Top<Item> {
 
     /// Count the number of times something has been forgotten from this tree.
     #[inline]
-    pub fn forgotten(&self) -> Forgotten {
-        self.inner
-            .iter()
-            .flat_map(|inner| inner.forgotten().iter().copied())
-            .max()
-            .unwrap_or_default()
+    pub fn forgotten(&self) -> Option<Forgotten> {
+        if let TrackForgotten::Yes = self.track_forgotten {
+            Some(
+                self.inner
+                    .iter()
+                    .flat_map(|inner| inner.forgotten().iter().copied())
+                    .max()
+                    .unwrap_or_default(),
+            )
+        } else {
+            None
+        }
     }
 
     /// Update the currently focused `Item` (i.e. the most-recently-[`insert`](Self::insert)ed one),
@@ -145,17 +167,6 @@ impl<Item: Focus> Top<Item> {
 
 impl<Item: Focus> Height for Top<Item> {
     type Height = <Nested<Item> as Height>::Height;
-}
-
-impl<Item: Focus + ForgetForgotten> ForgetForgotten for Top<Item>
-where
-    Item::Complete: ForgetForgotten,
-{
-    fn forget_forgotten(&mut self) {
-        if let Some(ref mut inner) = self.inner {
-            inner.forget_forgotten();
-        }
-    }
 }
 
 impl<Item: Focus + GetPosition> GetPosition for Top<Item> {
@@ -225,7 +236,7 @@ mod test {
 
     #[test]
     fn position_advances_by_one() {
-        let mut top: Top<Item> = Top::new();
+        let mut top: Top<Item> = Top::new(TrackForgotten::No);
         for expected_position in 0..=(u16::MAX as u64) {
             assert_eq!(top.position(), Some(expected_position));
             top.insert(Hash::zero().into()).unwrap();

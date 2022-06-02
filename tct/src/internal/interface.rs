@@ -79,27 +79,26 @@ pub trait GetPosition {
 
 /// Forget about the authentication path to a given index.
 pub trait Forget: Height {
-    /// Remove the witness for the given index.
+    /// Remove the witness for the given index. If a forgotten version is specified, update the path
+    /// down to the forgotten item to that version plus one.
     ///
     /// Returns `true` if the witness was previously present in the tree.
-    fn forget(&mut self, forgotten: Forgotten, index: impl Into<u64>) -> bool;
+    fn forget(&mut self, forgotten: Option<Forgotten>, index: impl Into<u64>) -> bool;
 }
 
 /// Forget about the authentication path to a given index, when forgetting can turn the entirety of
 /// `Self` into a hash.
 pub trait ForgetOwned: Height + Sized {
     /// Remove the witness for the given index and summarize the item as a single `Hash` if it now
-    /// contains no more witnesses.
+    /// contains no more witnesses. If a forgotten version is specified, update the path
+    /// down to the forgotten item to that version plus one.
     ///
     /// Returns either `(Self, boool)` where the boolean is `true` if the witness was removed or
     /// `false` if the witness was not present, or `Hash` if the witness was removed and it was the
     /// last witness remaining in this tree.
-    fn forget_owned(self, forgotten: Forgotten, index: impl Into<u64>) -> (Insert<Self>, bool);
-}
-
-/// Forget about how many things have been forgotten in a tree.
-pub trait ForgetForgotten {
-    /// Forget about how many things have been forgotten in a tree, resetting all internal forgotten
-    /// counts to zero.
-    fn forget_forgotten(&mut self);
+    fn forget_owned(
+        self,
+        forgotten: Option<Forgotten>,
+        index: impl Into<u64>,
+    ) -> (Insert<Self>, bool);
 }
