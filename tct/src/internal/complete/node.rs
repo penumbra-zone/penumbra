@@ -192,8 +192,8 @@ impl<Item: Height + structure::Node> structure::Node for Node<Item> {
         }
     }
 
-    fn global_position(&self) -> Option<u64> {
-        <Self as GetPosition>::position(self)
+    fn global_position(&self) -> Option<Position> {
+        <Self as GetPosition>::position(self).map(Into::into)
     }
 
     fn forgotten(&self) -> Forgotten {
