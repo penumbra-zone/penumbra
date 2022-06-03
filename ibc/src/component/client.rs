@@ -26,10 +26,7 @@ use ibc::{
 };
 use penumbra_chain::{genesis, View as _};
 use penumbra_component::{Component, Context};
-use penumbra_proto::ibc::{
-    ibc_action::Action::{CreateClient, UpdateClient},
-    IbcAction,
-};
+use penumbra_proto::ibc::ibc_action::Action::{CreateClient, UpdateClient};
 use penumbra_storage::{State, StateExt};
 use penumbra_transaction::Transaction;
 use tendermint::{abci, validator};
@@ -39,7 +36,7 @@ use tendermint_light_client_verifier::{
 };
 use tracing::instrument;
 
-use crate::{ClientConnections, ClientCounter, VerifiedHeights, COMMITMENT_PREFIX};
+use crate::{event, ClientConnections, ClientCounter, VerifiedHeights, COMMITMENT_PREFIX};
 
 mod stateful;
 mod stateless;
@@ -139,11 +136,27 @@ impl Component for Ics2Client {
         Ok(())
     }
 
-    #[instrument(name = "ics2_client", skip(self, _ctx, tx))]
-    async fn execute_tx(&mut self, _ctx: Context, tx: &Transaction) {
+    #[instrument(name = "ics2_client", skip(self, ctx, tx))]
+    async fn execute_tx(&mut self, ctx: Context, tx: &Transaction) {
         // Handle any IBC actions found in the transaction.
         for ibc_action in tx.ibc_actions() {
-            self.execute_ibc_action(ibc_action).await;
+            match &ibc_action.action {
+                Some(CreateClient(raw_msg_create_client)) => {
+                    let msg_create_client =
+                        MsgCreateAnyClient::try_from(raw_msg_create_client.clone()).unwrap();
+
+                    self.execute_create_client(ctx.clone(), msg_create_client)
+                        .await;
+                }
+                Some(UpdateClient(raw_msg_update_client)) => {
+                    let msg_update_client =
+                        MsgUpdateAnyClient::try_from(raw_msg_update_client.clone()).unwrap();
+
+                    self.execute_update_client(ctx.clone(), msg_update_client)
+                        .await;
+                }
+                _ => {}
+            }
         }
     }
 
@@ -152,28 +165,9 @@ impl Component for Ics2Client {
 }
 
 impl Ics2Client {
-    // executes the given IBC action, assuming that it has already been validated.
-    async fn execute_ibc_action(&mut self, ibc_action: &IbcAction) {
-        match &ibc_action.action {
-            Some(CreateClient(raw_msg_create_client)) => {
-                let msg_create_client =
-                    MsgCreateAnyClient::try_from(raw_msg_create_client.clone()).unwrap();
-
-                self.execute_create_client(msg_create_client).await;
-            }
-            Some(UpdateClient(raw_msg_update_client)) => {
-                let msg_update_client =
-                    MsgUpdateAnyClient::try_from(raw_msg_update_client.clone()).unwrap();
-
-                self.execute_update_client(msg_update_client).await;
-            }
-            _ => {}
-        }
-    }
-
     // execute a UpdateClient IBC action. this assumes that the UpdateClient has already been
     // validated, including header verification.
-    async fn execute_update_client(&mut self, msg_update_client: MsgUpdateAnyClient) {
+    async fn execute_update_client(&mut self, ctx: Context, msg_update_client: MsgUpdateAnyClient) {
         // get the latest client state
         let client_state = self
             .state
@@ -181,11 +175,11 @@ impl Ics2Client {
             .await
             .unwrap();
 
-        let tm_client_state = match client_state {
+        let tm_client_state = match client_state.clone() {
             AnyClientState::Tendermint(tm_state) => tm_state,
             _ => panic!("unsupported client type"),
         };
-        let tm_header = match msg_update_client.header {
+        let tm_header = match msg_update_client.header.clone() {
             AnyHeader::Tendermint(tm_header) => tm_header,
             _ => {
                 panic!("update header is not a Tendermint header");
@@ -215,6 +209,12 @@ impl Ics2Client {
             )
             .await
             .unwrap();
+
+        ctx.record(event::update_client(
+            msg_update_client.client_id,
+            client_state,
+            msg_update_client.header,
+        ));
     }
 
     // execute IBC CreateClient.
@@ -224,7 +224,7 @@ impl Ics2Client {
     // - client type
     // - consensus state
     // - processed time and height
-    async fn execute_create_client(&mut self, msg_create_client: MsgCreateAnyClient) {
+    async fn execute_create_client(&mut self, ctx: Context, msg_create_client: MsgCreateAnyClient) {
         // get the current client counter
         let id_counter = self.state.client_counter().await.unwrap();
         let client_id =
@@ -241,7 +241,7 @@ impl Ics2Client {
         self.state
             .put_verified_consensus_state(
                 msg_create_client.client_state.latest_height(),
-                client_id,
+                client_id.clone(),
                 msg_create_client.consensus_state,
             )
             .await
@@ -256,6 +256,11 @@ impl Ics2Client {
         self.state
             .put_client_counter(ClientCounter(counter.0 + 1))
             .await;
+
+        ctx.record(event::create_client(
+            client_id,
+            msg_create_client.client_state,
+        ));
     }
 
     // given an already verified tendermint header, and a trusted tendermint client state, compute
