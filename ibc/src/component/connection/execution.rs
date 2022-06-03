@@ -3,7 +3,7 @@ pub mod connection_open_init {
 
     #[async_trait]
     pub trait ConnectionOpenInitExecute: StateExt {
-        async fn execute(&mut self, msg: &MsgConnectionOpenInit) {
+        async fn execute(&mut self, ctx: Context, msg: &MsgConnectionOpenInit) {
             let connection_id = ConnectionId::new(self.get_connection_counter().await.unwrap().0);
 
             let compatible_versions = vec![Version::default()];
@@ -20,6 +20,12 @@ pub mod connection_open_init {
             self.put_new_connection(&connection_id, new_connection_end)
                 .await
                 .unwrap();
+
+            ctx.record(event::connection_open_init(
+                &connection_id,
+                &msg.client_id,
+                &msg.counterparty,
+            ));
         }
     }
 

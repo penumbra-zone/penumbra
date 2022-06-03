@@ -1,6 +1,6 @@
 use crate::component::client::View as _;
 use crate::{
-    validate_penumbra_client_state, ConnectionCounter, COMMITMENT_PREFIX, SUPPORTED_VERSIONS,
+    event, validate_penumbra_client_state, ConnectionCounter, COMMITMENT_PREFIX, SUPPORTED_VERSIONS,
 };
 use anyhow::Result;
 use async_trait::async_trait;
@@ -130,48 +130,44 @@ impl Component for ConnectionComponent {
         Ok(())
     }
 
-    #[instrument(name = "ibc_connection", skip(self, _ctx, tx))]
-    async fn execute_tx(&mut self, _ctx: Context, tx: &Transaction) {
+    #[instrument(name = "ibc_connection", skip(self, ctx, tx))]
+    async fn execute_tx(&mut self, ctx: Context, tx: &Transaction) {
         for ibc_action in tx.ibc_actions() {
-            self.execute_ibc_action(ibc_action).await;
+            match &ibc_action.action {
+                Some(ConnectionOpenInit(msg)) => {
+                    use execution::connection_open_init::ConnectionOpenInitExecute;
+                    let msg_connection_open_init =
+                        MsgConnectionOpenInit::try_from(msg.clone()).unwrap();
+                    self.state
+                        .execute(ctx.clone(), &msg_connection_open_init)
+                        .await;
+                }
+
+                Some(ConnectionOpenTry(raw_msg)) => {
+                    use execution::connection_open_try::ConnectionOpenTryExecute;
+                    let msg = MsgConnectionOpenTry::try_from(raw_msg.clone()).unwrap();
+                    self.state.execute(&msg).await;
+                }
+
+                Some(ConnectionOpenAck(raw_msg)) => {
+                    use execution::connection_open_ack::ConnectionOpenAckExecute;
+                    let msg = MsgConnectionOpenAck::try_from(raw_msg.clone()).unwrap();
+                    self.state.execute(&msg).await;
+                }
+
+                Some(ConnectionOpenConfirm(raw_msg)) => {
+                    use execution::connection_open_confirm::ConnectionOpenConfirmExecute;
+                    let msg = MsgConnectionOpenConfirm::try_from(raw_msg.clone()).unwrap();
+                    self.state.execute(&msg).await;
+                }
+
+                _ => {}
+            }
         }
     }
 
     #[instrument(name = "ibc_connection", skip(self, _ctx, _end_block))]
     async fn end_block(&mut self, _ctx: Context, _end_block: &abci::request::EndBlock) {}
-}
-
-impl ConnectionComponent {
-    async fn execute_ibc_action(&mut self, ibc_action: &IbcAction) {
-        match &ibc_action.action {
-            Some(ConnectionOpenInit(msg)) => {
-                use execution::connection_open_init::ConnectionOpenInitExecute;
-                let msg_connection_open_init =
-                    MsgConnectionOpenInit::try_from(msg.clone()).unwrap();
-                self.state.execute(&msg_connection_open_init).await;
-            }
-
-            Some(ConnectionOpenTry(raw_msg)) => {
-                use execution::connection_open_try::ConnectionOpenTryExecute;
-                let msg = MsgConnectionOpenTry::try_from(raw_msg.clone()).unwrap();
-                self.state.execute(&msg).await;
-            }
-
-            Some(ConnectionOpenAck(raw_msg)) => {
-                use execution::connection_open_ack::ConnectionOpenAckExecute;
-                let msg = MsgConnectionOpenAck::try_from(raw_msg.clone()).unwrap();
-                self.state.execute(&msg).await;
-            }
-
-            Some(ConnectionOpenConfirm(raw_msg)) => {
-                use execution::connection_open_confirm::ConnectionOpenConfirmExecute;
-                let msg = MsgConnectionOpenConfirm::try_from(raw_msg.clone()).unwrap();
-                self.state.execute(&msg).await;
-            }
-
-            _ => {}
-        }
-    }
 }
 
 #[async_trait]
