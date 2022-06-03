@@ -255,7 +255,7 @@ impl<'a> Node<'a> {
     /// represented in the tree).
     pub fn range(&self) -> Range<Position> {
         let position: u64 = self.position().into();
-        position.into()..(position + self.stride()).min(0x_FF_FF_FF).into()
+        position.into()..(position + self.stride()).min(4u64.pow(24) - 1).into()
     }
 
     /// The place on the tree where this node occurs.
