@@ -16,7 +16,7 @@ use crate::rdsa::{SpendAuth, VerificationKey};
 ///
 /// Using a [`SpendAuth`] key means that validators can reuse code and processes
 /// designed for custodying funds to protect their identity.
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(try_from = "pb::IdentityKey", into = "pb::IdentityKey")]
 pub struct IdentityKey(pub VerificationKey<SpendAuth>);
 

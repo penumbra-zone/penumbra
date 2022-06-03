@@ -38,6 +38,10 @@ pub fn commission_amounts(height: u64) -> KeyHash {
     format!("staking/commission_amounts/{}", height).into()
 }
 
+pub fn quarantined_note_source(note_commitment: &note::Commitment) -> KeyHash {
+    format!("shielded_pool/quarantined_note_source/{}", note_commitment).into()
+}
+
 pub fn quarantined_notes_to_apply_at_height(height: u64) -> KeyHash {
     format!(
         "shielded_pool/quarantined_notes_to_apply_at_height/{}",
@@ -54,22 +58,28 @@ pub fn quarantined_nullifiers_to_apply_at(height: u64) -> KeyHash {
     .into()
 }
 
-pub fn quarantined_notes_connected_to_validator(validator_identity: IdentityKey) -> KeyHash {
+pub fn quarantined_notes_connected_to_validator(
+    validator_identity: IdentityKey,
+    height: u64,
+) -> KeyHash {
     format!(
-        "shielded_pool/quarantined_notes_connected_to_validator/{}",
-        validator_identity
+        "shielded_pool/quarantined_notes_connected_to_validator/{}/{}",
+        validator_identity, height
     )
     .into()
 }
 
-pub fn quarantined_nullifiers_connected_to_validator(validator_identity: IdentityKey) -> KeyHash {
+pub fn quarantined_nullifiers_connected_to_validator(
+    validator_identity: IdentityKey,
+    height: u64,
+) -> KeyHash {
     format!(
-        "shielded_pool/quarantined_nullifiers_connected_to_validator/{}",
-        validator_identity
+        "shielded_pool/quarantined_nullifiers_connected_to_validator/{}/{}",
+        validator_identity, height
     )
     .into()
 }
 
-pub fn quarantined_nullifier_lookup(nullifier: &Nullifier) -> KeyHash {
+pub fn quarantined_spent_nullifier_lookup(nullifier: &Nullifier) -> KeyHash {
     format!("shielded_pool/quarantined_spent_nullifiers/{}", nullifier).into()
 }
