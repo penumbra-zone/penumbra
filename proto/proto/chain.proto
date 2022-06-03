@@ -51,11 +51,19 @@ message CompactBlock {
   // NotePayloads describing new notes.
   repeated crypto.NotePayload note_payloads = 2;
   // Nullifiers identifying spent notes.
-  repeated bytes nullifiers = 3;
+  repeated crypto.Nullifier nullifiers = 3;
   // The block root of this block.
   crypto.MerkleRoot block_root = 4;
   // The epoch root of this epoch (only present when the block is the last in an epoch).
   crypto.MerkleRoot epoch_root = 5;
+  // NotePayloads describing new quarantined notes.
+  repeated crypto.NotePayload quarantined_note_payloads = 6;
+  // Nullifiers identifying quarantined spent notes.
+  repeated crypto.Nullifier quarantined_nullifiers = 7;
+  // Note commitments referring to quarantined notes that have been rolled back.
+  repeated crypto.NoteCommitment rolled_back_note_commitments = 8;
+  // Nullifiers identifying quarantined spent notes that have been rolled back.
+  repeated crypto.Nullifier rolled_back_nullifiers = 9;
 }
 
 message KnownAssets {
