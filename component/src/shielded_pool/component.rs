@@ -8,22 +8,27 @@ use decaf377::{Fq, Fr};
 use penumbra_chain::{genesis, sync::CompactBlock, Epoch, KnownAssets, NoteSource, View as _};
 use penumbra_crypto::{
     asset::{self, Asset, Denom},
-    ka, note, Address, Note, NotePayload, Nullifier, One, Value, STAKING_TOKEN_ASSET_ID,
+    ka, note, Address, IdentityKey, Note, NotePayload, Nullifier, One, Value,
+    STAKING_TOKEN_ASSET_ID,
 };
+use penumbra_proto::Protobuf;
 use penumbra_storage::{State, StateExt};
 use penumbra_tct as tct;
-use penumbra_transaction::{Action, Transaction};
+use penumbra_transaction::{action::Undelegate, Action, Transaction};
 use tendermint::abci;
 use tracing::instrument;
 
 use crate::shielded_pool::{event, state_key, CommissionAmounts};
 
-// Stub component
 pub struct ShieldedPool {
     state: State,
     note_commitment_tree: tct::Tree,
     /// The in-progress CompactBlock representation of the ShieldedPool changes
     compact_block: CompactBlock,
+    /// The scheduled quarantine actions for notes (processed all at once in end_block)
+    quarantine_notes: Vec<(IdentityKey, NotePayload)>,
+    /// The scheduled quarantine actions for nullifiers (processed all at once in end_block)
+    quarantine_nullifiers: Vec<(IdentityKey, Nullifier)>,
 }
 
 impl ShieldedPool {
@@ -33,6 +38,8 @@ impl ShieldedPool {
             state,
             note_commitment_tree,
             compact_block: Default::default(),
+            quarantine_notes: Vec::new(),
+            quarantine_nullifiers: Vec::new(),
         }
     }
 
@@ -168,31 +175,57 @@ impl Component for ShieldedPool {
 
     #[instrument(name = "shielded_pool", skip(self, ctx, tx))]
     async fn execute_tx(&mut self, ctx: Context, tx: &Transaction) {
-        let _should_quarantine = tx
-            .transaction_body
-            .actions
-            .iter()
-            .any(|action| matches!(action, Action::Undelegate { .. }));
+        let should_quarantine = tx.transaction_body.actions.iter().find_map(|action| {
+            if let Action::Undelegate(Undelegate {
+                validator_identity, ..
+            }) = action
+            {
+                Some(validator_identity)
+            } else {
+                None
+            }
+        });
 
         let source = NoteSource::Transaction { id: tx.id() };
 
-        /*
-        if should_quarantine {
-            tracing::warn!("skipping processing, TODO: implement");
+        if let Some(&identity_key) = should_quarantine {
+            for quarantined_output in tx.note_payloads() {
+                self.add_quarantined_note(quarantined_output.clone(), source)
+                    .await;
+                // Queue up scheduling this note to be unquarantined: the actual state-writing for
+                // all quarantined notes happens during end_block, to avoid state churn
+                self.quarantine_notes
+                    .push((identity_key, quarantined_output));
+            }
+            for quarantined_spent_nullifier in tx.spent_nullifiers() {
+                // We need to record the nullifier as spent under quarantine in the JMT (to prevent
+                // double spends), as well as in the CompactBlock (so clients can learn their note
+                // was provisionally spent, pending quarantine period).
+                self.state
+                    .spend_quarantined_nullifier(quarantined_spent_nullifier, source)
+                    .await;
+                self.compact_block
+                    .quarantined_nullifiers
+                    .push(quarantined_spent_nullifier);
+                // Queue up scheduling this nullifier to be unquarantined: the actual state-writing
+                // for all quarantined nullifiers happens during end_block, to avoid state churn
+                self.quarantine_nullifiers
+                    .push((identity_key, quarantined_spent_nullifier));
+                ctx.record(event::quarantine_spend(quarantined_spent_nullifier));
+            }
         } else {
-         */
-        for compact_output in tx.note_payloads() {
-            self.add_note(compact_output, source).await;
+            for compact_output in tx.note_payloads() {
+                self.add_note(compact_output, source).await;
+            }
+            for spent_nullifier in tx.spent_nullifiers() {
+                // We need to record the nullifier as spent in the JMT (to prevent
+                // double spends), as well as in the CompactBlock (so that clients
+                // can learn that their note was spent).
+                self.state.spend_nullifier(spent_nullifier, source).await;
+                self.compact_block.nullifiers.push(spent_nullifier);
+                ctx.record(event::spend(spent_nullifier));
+            }
         }
-        for spent_nullifier in tx.spent_nullifiers() {
-            // We need to record the nullifier as spent in the JMT (to prevent
-            // double spends), as well as in the CompactBlock (so that clients
-            // can learn that their note was spent).
-            self.state.spend_nullifier(spent_nullifier, source).await;
-            self.compact_block.nullifiers.push(spent_nullifier);
-            ctx.record(event::spend(spent_nullifier));
-        }
-        //}
     }
 
     #[instrument(name = "shielded_pool", skip(self, _ctx, _end_block))]
@@ -210,6 +243,10 @@ impl Component for ShieldedPool {
             .await
             .unwrap()
             .unwrap_or_default();
+
+        // TODO: process any scheduled quarantined notes and nullifiers in this block
+        // TODO: process any slashing that has occurred
+        // TODO: process any notes/nullifiers due to be unquarantined in this block
 
         // TODO: should we calculate this here or include it directly within the PendingRewardNote
         // to prevent a potential mismatch between Staking and ShieldedPool?
@@ -338,6 +375,20 @@ impl ShieldedPool {
 
         // 3. Finally, record it in the pending compact block.
         self.compact_block.note_payloads.push(note_payload);
+    }
+
+    #[instrument(skip(self, source, note_payload), fields(note_commitment = ?note_payload.note_commitment))]
+    async fn add_quarantined_note(&mut self, note_payload: NotePayload, source: NoteSource) {
+        tracing::debug!("adding quarantined note");
+        // 1. Record its source in the JMT
+        self.state
+            .set_quarantined_note_source(&note_payload.note_commitment, source)
+            .await;
+
+        // 2. Finally, record it in the pending compact block.
+        self.compact_block
+            .quarantined_note_payloads
+            .push(note_payload);
     }
 
     #[instrument(skip(self))]
@@ -491,6 +542,15 @@ pub trait View: StateExt {
             .await
     }
 
+    async fn set_quarantined_note_source(
+        &self,
+        note_commitment: &note::Commitment,
+        source: NoteSource,
+    ) {
+        self.put_domain(state_key::quarantined_note_source(note_commitment), source)
+            .await
+    }
+
     async fn note_source(&self, note_commitment: &note::Commitment) -> Result<Option<NoteSource>> {
         self.get_domain(state_key::note_source(note_commitment))
             .await
@@ -541,33 +601,99 @@ pub trait View: StateExt {
     #[instrument(skip(self, source))]
     async fn spend_nullifier(&self, nullifier: Nullifier, source: NoteSource) {
         tracing::debug!("marking as spent");
-        self.put_proto(
+        self.put_domain(
             state_key::spent_nullifier_lookup(&nullifier),
             // We don't use the value for validity checks, but writing the source
             // here lets us find out what transaction spent the nullifier.
-            // TODO: NoteSource proto?
-            source.to_bytes().to_vec(),
+            source,
         )
         .await;
     }
 
+    #[instrument(skip(self, source))]
+    async fn spend_quarantined_nullifier(&self, nullifier: Nullifier, source: NoteSource) {
+        tracing::debug!("marking as spent (currently quarantined)");
+        self.put_domain(
+            state_key::quarantined_spent_nullifier_lookup(&nullifier),
+            // We don't use the value for validity checks, but writing the source
+            // here lets us find out what transaction spent the nullifier.
+            source,
+        )
+        .await;
+    }
+
+    // Returns whether the nullifier was in quarantine already
+    #[instrument(skip(self))]
+    async fn try_unquarantine_nullifier(&self, apply: bool, nullifier: Nullifier) -> Result<bool> {
+        tracing::debug!("applying quarantined nullifier");
+        // Get the note source of the nullifier (or empty vec if already applied or rolled back)
+        let source = self
+            .get_proto::<Vec<_>>(state_key::quarantined_spent_nullifier_lookup(&nullifier))
+            .await?
+            .expect("can't apply nullifier that was never quarantined");
+
+        if !source.is_empty() {
+            tracing::debug!(
+                ?source,
+                "nullifier {:?} was already applied or rolled back",
+                nullifier
+            );
+            // We did not actually apply this nullifier, because it was marked as deleted
+            Ok(false)
+        } else {
+            // Non-empty source means we should be able to decode it
+            let source = NoteSource::decode(&*source)?;
+
+            // Delete the nullifier from the quarantine set
+            self.put_proto(
+                state_key::quarantined_spent_nullifier_lookup(&nullifier),
+                // We don't use the value for validity checks, but writing the source
+                // here lets us find out what transaction spent the nullifier.
+                vec![], // sentinel value meaning "deleted"
+            )
+            .await;
+            // Add it to the main nullifier set if instructed; otherwise, it's just deleted
+            if apply {
+                self.spend_nullifier(nullifier, source).await;
+            }
+            // We applied this nullifier, because it was not marked as deleted
+            Ok(true)
+        }
+    }
+
     #[instrument(skip(self))]
     async fn check_nullifier_unspent(&self, nullifier: Nullifier) -> Result<()> {
-        if let Some(source_bytes) = self
-            .get_proto::<Vec<u8>>(state_key::spent_nullifier_lookup(&nullifier))
+        if let Some(source) = self
+            .get_domain::<NoteSource, _>(state_key::spent_nullifier_lookup(&nullifier))
             .await?
         {
-            // TODO: NoteSource proto?
-            let source_bytes: [u8; 32] = source_bytes.try_into().unwrap();
-            let source = NoteSource::try_from(source_bytes).expect("source is validly encoded");
-            Err(anyhow!(
+            return Err(anyhow!(
                 "Nullifier {} was already spent in {:?}",
                 nullifier,
-                source
-            ))
-        } else {
-            Ok(())
+                source,
+            ));
         }
+
+        if let Some(source) = self
+            .get_proto::<Vec<u8>>(state_key::quarantined_spent_nullifier_lookup(&nullifier))
+            .await?
+        {
+            // We mark quarantined nullifiers as rolled back or applied by erasing their source to
+            // the empty set of bytes, so if we find an empty value for the key, that means it's
+            // been rolled back and we don't have to care about it here:
+            if !source.is_empty() {
+                // Non-empty source means we should be able to decode it
+                let source = NoteSource::decode(&*source)?;
+
+                return Err(anyhow!(
+                    "Nullifier {} was already spent in {:?} (currently quarantined)",
+                    nullifier,
+                    source,
+                ));
+            }
+        }
+
+        Ok(())
     }
 
     // TODO: rename to something more generic ("minted notes"?) that can
