@@ -58,23 +58,33 @@ pub fn quarantined_nullifiers_to_apply_at(height: u64) -> KeyHash {
     .into()
 }
 
-pub fn quarantined_notes_connected_to_validator(
+// NOTE: Quarantined notes and nullifiers mapped to validators are keyed by height as well as
+// validator identity key. This means that is more expensive to look up all the relevant quarantined
+// notes/nullifiers for a validator when slashing (you need to do a manual range iteration over all
+// the heights from now back through the preceding unbonding period), but it means that it's faster
+// to add more quarantined notes/nullifiers to a validator, which needs to happen in every block. Sot
+// rather than reading a single key with a huge value (all the quarantined notes/nullifiers for the
+// preceding unbonding period) every single block, we write a smaller value (only the
+// notes/nullifiers that were quarantined in this block), and read a whole range of keys, **but
+// only** when slashing.
+
+pub fn quarantined_notes_connected_to_validator_at(
     validator_identity: IdentityKey,
     height: u64,
 ) -> KeyHash {
     format!(
-        "shielded_pool/quarantined_notes_connected_to_validator/{}/{}",
+        "shielded_pool/quarantined_notes_connected_to_validator_at/{}/{}",
         validator_identity, height
     )
     .into()
 }
 
-pub fn quarantined_nullifiers_connected_to_validator(
+pub fn quarantined_nullifiers_connected_to_validator_at(
     validator_identity: IdentityKey,
     height: u64,
 ) -> KeyHash {
     format!(
-        "shielded_pool/quarantined_nullifiers_connected_to_validator/{}/{}",
+        "shielded_pool/quarantined_nullifiers_connected_to_validator_at/{}/{}",
         validator_identity, height
     )
     .into()

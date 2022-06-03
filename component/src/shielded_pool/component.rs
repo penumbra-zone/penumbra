@@ -181,6 +181,7 @@ impl Component for ShieldedPool {
             }) = action
             {
                 Some(validator_identity)
+                // TODO: if validator is unbonding, we need to schedule unquarantine for earlier
             } else {
                 None
             }
