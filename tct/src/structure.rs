@@ -51,6 +51,10 @@ impl GetHash for &dyn Any {
     fn cached_hash(&self) -> Option<Hash> {
         (**self).cached_hash()
     }
+
+    fn clear_cached_hash(&self) {
+        (**self).clear_cached_hash()
+    }
 }
 
 impl<T: Any> Any for &T {
@@ -135,11 +139,29 @@ pub struct Node<'a> {
 
 impl Debug for Node<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct(&format!("{}::{}", self.place(), self.kind()))
-            .field("height", &(*self).height())
-            .field("index", &self.index())
-            .field("children", &self.children())
-            .finish()
+        let name = format!("{}::{}", self.place(), self.kind());
+        let mut s = f.debug_struct(&name);
+        if self.height() != 0 {
+            s.field("height", &(*self).height());
+        }
+        s.field("position", &u64::from(self.position()));
+        if self.forgotten() != Forgotten::default() {
+            s.field("forgotten", &self.forgotten());
+        }
+        if let Some(hash) = self.cached_hash() {
+            s.field("hash", &hash);
+        }
+        if let Kind::Leaf {
+            commitment: Some(commitment),
+        } = self.kind()
+        {
+            s.field("commitment", &commitment);
+        }
+        let children = self.children();
+        if !children.is_empty() {
+            s.field("children", &children);
+        }
+        s.finish()
     }
 }
 
@@ -147,7 +169,7 @@ impl Display for Node<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct(&format!("{}::{}", self.place(), self.kind()))
             .field("height", &self.height())
-            .field("index", &self.index())
+            .field("position", &self.position())
             .finish_non_exhaustive()
     }
 }
@@ -224,17 +246,22 @@ impl<'a> Node<'a> {
         (4u64.pow(self.height() as u32) * self.index()).into()
     }
 
+    /// The distance between positions of nodes at this height.
+    pub fn stride(&self) -> u64 {
+        4u64.pow(self.height() as u32)
+    }
+
     /// The range of positions that could occur beneath this node (not all of them need be actually
     /// represented in the tree).
     pub fn range(&self) -> Range<Position> {
         let position: u64 = self.position().into();
-        position.into()..(position + 4u64.pow(self.height() as u32)).into()
+        position.into()..(position + self.stride()).min(0x_FF_FF_FF).into()
     }
 
     /// The place on the tree where this node occurs.
     pub fn place(&self) -> Place {
         if let Some(global_position) = self.global_position() {
-            if self.range().end >= global_position {
+            if self.range().contains(&global_position) {
                 Place::Frontier
             } else {
                 Place::Complete
@@ -294,7 +321,11 @@ impl Any for Node<'_> {
     }
 
     fn global_position(&self) -> Option<Position> {
-        self.parent.and_then(Any::global_position)
+        if let Some(parent) = self.parent {
+            parent.global_position()
+        } else {
+            self.this.keep().and_then(Any::global_position)
+        }
     }
 
     fn children(&self) -> Vec<Node> {
@@ -308,14 +339,11 @@ impl Any for Node<'_> {
                         child.offset, 0,
                         "explicitly constructed children should have zero offset"
                     );
-                    // If the height doesn't change, we shouldn't be applying a multiplier to the
-                    // parent offset:
-                    let multiplier = 4u64.pow((self.height() - child.height()).into());
                     Node {
                         forgotten: child.forgotten,
                         this: child.this,
                         parent: Some(self),
-                        offset: self.offset * multiplier + nth as u64,
+                        offset: self.offset * 4 + nth as u64,
                     }
                 })
                 .collect()
