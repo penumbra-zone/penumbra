@@ -16,17 +16,41 @@ pub use metrics::*;
 /// Registers all metrics used by this crate.
 pub fn register_metrics() {
     register_gauge!(MISSED_BLOCKS);
-    describe_gauge!(MISSED_BLOCKS, "The number of missed blocks per validator");
+    describe_gauge!(
+        MISSED_BLOCKS,
+        Unit::Count,
+        "The number of missed blocks per validator"
+    );
     register_gauge!(ACTIVE_VALIDATORS);
-    describe_gauge!(ACTIVE_VALIDATORS, "The number of active validators");
+    describe_gauge!(
+        ACTIVE_VALIDATORS,
+        Unit::Count,
+        "The number of active validators"
+    );
     register_gauge!(INACTIVE_VALIDATORS);
-    describe_gauge!(INACTIVE_VALIDATORS, "The number of inactive validators");
+    describe_gauge!(
+        INACTIVE_VALIDATORS,
+        Unit::Count,
+        "The number of inactive validators"
+    );
     register_gauge!(JAILED_VALIDATORS);
-    describe_gauge!(JAILED_VALIDATORS, "The number of jailed validators");
+    describe_gauge!(
+        JAILED_VALIDATORS,
+        Unit::Count,
+        "The number of jailed validators"
+    );
     register_gauge!(DISABLED_VALIDATORS);
-    describe_gauge!(DISABLED_VALIDATORS, "The number of disabled validators");
+    describe_gauge!(
+        DISABLED_VALIDATORS,
+        Unit::Count,
+        "The number of disabled validators"
+    );
     register_gauge!(TOMBSTONED_VALIDATORS);
-    describe_gauge!(TOMBSTONED_VALIDATORS, "The number of tombstoned validators");
+    describe_gauge!(
+        TOMBSTONED_VALIDATORS,
+        Unit::Count,
+        "The number of tombstoned validators"
+    );
 }
 
 pub const MISSED_BLOCKS: &str = "penumbra_stake_missed_blocks";
