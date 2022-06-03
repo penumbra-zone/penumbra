@@ -670,6 +670,7 @@ mod tests {
     use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
     use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
     use penumbra_proto::ibc::ibc_action::Action as IbcActionInner;
+    use penumbra_proto::ibc::IbcAction;
     use penumbra_proto::Message;
     use penumbra_storage::Storage;
     use penumbra_tct as tct;
