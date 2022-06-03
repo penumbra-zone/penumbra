@@ -60,7 +60,7 @@ message CompactBlock {
   repeated crypto.NotePayload quarantined_note_payloads = 6;
   // Nullifiers identifying quarantined spent notes.
   repeated crypto.Nullifier quarantined_nullifiers = 7;
-  // Note commitments referring to quarantined notes that have been rolled back.
+  // Note commitments identifying quarantined notes that have been rolled back.
   repeated crypto.NoteCommitment rolled_back_note_commitments = 8;
   // Nullifiers identifying quarantined spent notes that have been rolled back.
   repeated crypto.Nullifier rolled_back_nullifiers = 9;
