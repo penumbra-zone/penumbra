@@ -16,7 +16,11 @@ pub use metrics::*;
 /// Registers all metrics used by this crate.
 pub fn register_metrics() {
     register_gauge!(TCT_SIZE_BYTES);
-    describe_gauge!(TCT_SIZE_BYTES, "The size of the serialized TCT in bytes");
+    describe_gauge!(
+        TCT_SIZE_BYTES,
+        Unit::Bytes,
+        "The size of the serialized TCT in bytes"
+    );
 }
 
 pub const TCT_SIZE_BYTES: &str = "penumbra_storage_tct_size_bytes";

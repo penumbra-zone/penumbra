@@ -26,18 +26,21 @@ pub fn register_metrics() {
     register_counter!(MEMPOOL_CHECKTX_TOTAL);
     describe_counter!(
         MEMPOOL_CHECKTX_TOTAL,
+        Unit::Count,
         "The total number of checktx requests made to the mempool"
     );
 
     register_gauge!(CLIENT_OBLIVIOUS_COMPACT_BLOCK_ACTIVE_CONNECTIONS);
     describe_gauge!(
         CLIENT_OBLIVIOUS_COMPACT_BLOCK_ACTIVE_CONNECTIONS,
+        Unit::Count,
         "The number of active connections streaming compact blocks"
     );
 
     register_counter!(CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL);
     describe_counter!(
         CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL,
+        Unit::Count,
         "The total number of compact blocks served to clients"
     );
 }
