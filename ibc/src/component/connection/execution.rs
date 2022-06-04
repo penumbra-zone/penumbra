@@ -3,7 +3,7 @@ pub mod connection_open_init {
 
     #[async_trait]
     pub trait ConnectionOpenInitExecute: StateExt {
-        async fn execute(&mut self, msg: &MsgConnectionOpenInit) {
+        async fn execute(&mut self, ctx: Context, msg: &MsgConnectionOpenInit) {
             let connection_id = ConnectionId::new(self.get_connection_counter().await.unwrap().0);
 
             let compatible_versions = vec![Version::default()];
@@ -20,6 +20,12 @@ pub mod connection_open_init {
             self.put_new_connection(&connection_id, new_connection_end)
                 .await
                 .unwrap();
+
+            ctx.record(event::connection_open_init(
+                &connection_id,
+                &msg.client_id,
+                &msg.counterparty,
+            ));
         }
     }
 
@@ -31,7 +37,7 @@ pub mod connection_open_try {
 
     #[async_trait]
     pub trait ConnectionOpenTryExecute: StateExt {
-        async fn execute(&mut self, msg: &MsgConnectionOpenTry) {
+        async fn execute(&mut self, ctx: Context, msg: &MsgConnectionOpenTry) {
             // new_conn is the new connection that we will open on this chain
             let mut new_conn = ConnectionEnd::new(
                 ConnectionState::TryOpen,
@@ -59,6 +65,12 @@ pub mod connection_open_try {
             self.put_new_connection(&new_connection_id, new_conn)
                 .await
                 .unwrap();
+
+            ctx.record(event::connection_open_try(
+                &new_connection_id,
+                &msg.client_id,
+                &msg.counterparty,
+            ));
         }
     }
 
@@ -70,7 +82,7 @@ pub mod connection_open_confirm {
 
     #[async_trait]
     pub trait ConnectionOpenConfirmExecute: StateExt {
-        async fn execute(&mut self, msg: &MsgConnectionOpenConfirm) {
+        async fn execute(&mut self, ctx: Context, msg: &MsgConnectionOpenConfirm) {
             let mut connection = self
                 .get_connection(&msg.connection_id)
                 .await
@@ -80,7 +92,13 @@ pub mod connection_open_confirm {
 
             connection.set_state(ConnectionState::Open);
 
-            self.update_connection(&msg.connection_id, connection).await;
+            self.update_connection(&msg.connection_id, connection.clone())
+                .await;
+
+            ctx.record(event::connection_open_confirm(
+                &msg.connection_id,
+                &connection,
+            ));
         }
     }
 
@@ -91,7 +109,7 @@ pub mod connection_open_ack {
 
     #[async_trait]
     pub trait ConnectionOpenAckExecute: StateExt {
-        async fn execute(&mut self, msg: &MsgConnectionOpenAck) {
+        async fn execute(&mut self, ctx: Context, msg: &MsgConnectionOpenAck) {
             let mut connection = self
                 .get_connection(&msg.connection_id)
                 .await
@@ -108,7 +126,10 @@ pub mod connection_open_ack {
             connection.set_version(msg.version.clone());
             connection.set_counterparty(counterparty);
 
-            self.update_connection(&msg.connection_id, connection).await;
+            self.update_connection(&msg.connection_id, connection.clone())
+                .await;
+
+            ctx.record(event::connection_open_ack(&msg.connection_id, &connection));
         }
     }
 

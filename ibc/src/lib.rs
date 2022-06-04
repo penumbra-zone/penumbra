@@ -6,6 +6,7 @@
 mod client;
 mod component;
 mod connection;
+pub(crate) mod event;
 mod metrics;
 
 pub use crate::metrics::register_metrics;

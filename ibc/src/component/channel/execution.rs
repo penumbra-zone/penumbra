@@ -3,7 +3,7 @@ pub mod channel_open_init {
 
     #[async_trait]
     pub trait ChannelOpenInitExecute: StateExt {
-        async fn execute(&mut self, msg: &MsgChannelOpenInit) {
+        async fn execute(&mut self, ctx: Context, msg: &MsgChannelOpenInit) {
             let channel_id = self.next_channel_id().await.unwrap();
             let new_channel = ChannelEnd {
                 state: ChannelState::Init,
@@ -13,11 +13,17 @@ pub mod channel_open_init {
                 version: msg.channel.version.clone(),
             };
 
-            self.put_channel(&channel_id, &msg.port_id, new_channel)
+            self.put_channel(&channel_id, &msg.port_id, new_channel.clone())
                 .await;
             self.put_send_sequence(&channel_id, &msg.port_id, 1).await;
             self.put_recv_sequence(&channel_id, &msg.port_id, 1).await;
             self.put_ack_sequence(&channel_id, &msg.port_id, 1).await;
+
+            ctx.record(event::channel_open_init(
+                &msg.port_id,
+                &channel_id,
+                &new_channel,
+            ));
         }
     }
 
@@ -29,7 +35,7 @@ pub mod channel_open_try {
 
     #[async_trait]
     pub trait ChannelOpenTryExecute: StateExt {
-        async fn execute(&mut self, msg: &MsgChannelOpenTry) {
+        async fn execute(&mut self, ctx: Context, msg: &MsgChannelOpenTry) {
             let channel_id = self.next_channel_id().await.unwrap();
             let new_channel = ChannelEnd {
                 state: ChannelState::TryOpen,
@@ -39,11 +45,17 @@ pub mod channel_open_try {
                 version: msg.channel.version.clone(),
             };
 
-            self.put_channel(&channel_id, &msg.port_id, new_channel)
+            self.put_channel(&channel_id, &msg.port_id, new_channel.clone())
                 .await;
             self.put_send_sequence(&channel_id, &msg.port_id, 1).await;
             self.put_recv_sequence(&channel_id, &msg.port_id, 1).await;
             self.put_ack_sequence(&channel_id, &msg.port_id, 1).await;
+
+            ctx.record(event::channel_open_try(
+                &msg.port_id,
+                &channel_id,
+                &new_channel,
+            ));
         }
     }
     impl<T: StateExt> ChannelOpenTryExecute for T {}
@@ -54,7 +66,7 @@ pub mod channel_open_ack {
 
     #[async_trait]
     pub trait ChannelOpenAckExecute: StateExt {
-        async fn execute(&mut self, msg: &MsgChannelOpenAck) {
+        async fn execute(&mut self, ctx: Context, msg: &MsgChannelOpenAck) {
             let mut channel = self
                 .get_channel(&msg.channel_id, &msg.port_id)
                 .await
@@ -64,8 +76,14 @@ pub mod channel_open_ack {
             channel.set_state(ChannelState::Open);
             channel.set_version(msg.counterparty_version.clone());
             channel.set_counterparty_channel_id(msg.counterparty_channel_id);
-            self.put_channel(&msg.channel_id, &msg.port_id, channel)
+            self.put_channel(&msg.channel_id, &msg.port_id, channel.clone())
                 .await;
+
+            ctx.record(event::channel_open_ack(
+                &msg.port_id,
+                &msg.channel_id,
+                &channel,
+            ));
         }
     }
 
@@ -77,7 +95,7 @@ pub mod channel_open_confirm {
 
     #[async_trait]
     pub trait ChannelOpenConfirmExecute: StateExt {
-        async fn execute(&mut self, msg: &MsgChannelOpenConfirm) {
+        async fn execute(&mut self, ctx: Context, msg: &MsgChannelOpenConfirm) {
             let mut channel = self
                 .get_channel(&msg.channel_id, &msg.port_id)
                 .await
@@ -85,8 +103,14 @@ pub mod channel_open_confirm {
                 .unwrap();
 
             channel.set_state(ChannelState::Open);
-            self.put_channel(&msg.channel_id, &msg.port_id, channel)
+            self.put_channel(&msg.channel_id, &msg.port_id, channel.clone())
                 .await;
+
+            ctx.record(event::channel_open_confirm(
+                &msg.port_id,
+                &msg.channel_id,
+                &channel,
+            ));
         }
     }
 
@@ -98,15 +122,21 @@ pub mod channel_close_init {
 
     #[async_trait]
     pub trait ChannelCloseInitExecute: StateExt {
-        async fn execute(&mut self, msg: &MsgChannelCloseInit) {
+        async fn execute(&mut self, ctx: Context, msg: &MsgChannelCloseInit) {
             let mut channel = self
                 .get_channel(&msg.channel_id, &msg.port_id)
                 .await
                 .unwrap()
                 .unwrap();
             channel.set_state(ChannelState::Closed);
-            self.put_channel(&msg.channel_id, &msg.port_id, channel)
+            self.put_channel(&msg.channel_id, &msg.port_id, channel.clone())
                 .await;
+
+            ctx.record(event::channel_close_init(
+                &msg.port_id,
+                &msg.channel_id,
+                &channel,
+            ));
         }
     }
 
@@ -118,7 +148,7 @@ pub mod channel_close_confirm {
 
     #[async_trait]
     pub trait ChannelCloseConfirmExecute: StateExt {
-        async fn execute(&mut self, msg: &MsgChannelCloseConfirm) {
+        async fn execute(&mut self, ctx: Context, msg: &MsgChannelCloseConfirm) {
             let mut channel = self
                 .get_channel(&msg.channel_id, &msg.port_id)
                 .await
@@ -126,8 +156,14 @@ pub mod channel_close_confirm {
                 .unwrap();
 
             channel.set_state(ChannelState::Closed);
-            self.put_channel(&msg.channel_id, &msg.port_id, channel)
+            self.put_channel(&msg.channel_id, &msg.port_id, channel.clone())
                 .await;
+
+            ctx.record(event::channel_close_confirm(
+                &msg.port_id,
+                &msg.channel_id,
+                &channel,
+            ));
         }
     }
 
@@ -139,7 +175,7 @@ pub mod recv_packet {
 
     #[async_trait]
     pub trait RecvPacketExecute: StateExt {
-        async fn execute(&mut self, msg: &MsgRecvPacket) {
+        async fn execute(&mut self, ctx: Context, msg: &MsgRecvPacket) {
             let channel = self
                 .get_channel(
                     &msg.packet.destination_channel,
@@ -171,6 +207,8 @@ pub mod recv_packet {
                 // it's just a single store key set to an empty string to indicate that the packet has been received
                 self.put_packet_receipt(&msg.packet).await;
             }
+
+            ctx.record(event::receive_packet(&msg.packet, &channel));
         }
     }
 
@@ -182,7 +220,7 @@ pub mod acknowledge_packet {
 
     #[async_trait]
     pub trait AcknowledgePacketExecute: StateExt {
-        async fn execute(&mut self, msg: &MsgAcknowledgement) {
+        async fn execute(&mut self, ctx: Context, msg: &MsgAcknowledgement) {
             let channel = self
                 .get_channel(&msg.packet.source_channel, &msg.packet.source_port)
                 .await
@@ -210,6 +248,8 @@ pub mod acknowledge_packet {
                 msg.packet.sequence.into(),
             )
             .await;
+
+            ctx.record(event::acknowledge_packet(&msg.packet, &channel));
         }
     }
 
@@ -221,7 +261,7 @@ pub mod timeout {
 
     #[async_trait]
     pub trait TimeoutExecute: StateExt {
-        async fn execute(&mut self, msg: &MsgTimeout) {
+        async fn execute(&mut self, ctx: Context, msg: &MsgTimeout) {
             let mut channel = self
                 .get_channel(&msg.packet.source_channel, &msg.packet.source_port)
                 .await
@@ -238,9 +278,15 @@ pub mod timeout {
             if channel.ordering == ChannelOrder::Ordered {
                 // if the channel is ordered and we get a timeout packet, close the channel
                 channel.set_state(ChannelState::Closed);
-                self.put_channel(&msg.packet.source_channel, &msg.packet.source_port, channel)
-                    .await;
+                self.put_channel(
+                    &msg.packet.source_channel,
+                    &msg.packet.source_port,
+                    channel.clone(),
+                )
+                .await;
             }
+
+            ctx.record(event::timeout_packet(&msg.packet, &channel));
         }
     }
 

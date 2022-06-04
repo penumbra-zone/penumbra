@@ -1,5 +1,6 @@
 use crate::component::client::View as _;
 use crate::component::connection::View as _;
+use crate::event;
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc::core::ics02_client::client_consensus::AnyConsensusState;
@@ -181,63 +182,63 @@ impl Component for ICS4Channel {
         Ok(())
     }
 
-    #[instrument(name = "ics4_channel", skip(self, _ctx, tx))]
-    async fn execute_tx(&mut self, _ctx: Context, tx: &Transaction) {
+    #[instrument(name = "ics4_channel", skip(self, ctx, tx))]
+    async fn execute_tx(&mut self, ctx: Context, tx: &Transaction) {
         for ibc_action in tx.ibc_actions() {
             match &ibc_action.action {
                 Some(ChannelOpenInit(msg)) => {
                     use execution::channel_open_init::ChannelOpenInitExecute;
                     let msg = MsgChannelOpenInit::try_from(msg.clone()).unwrap();
 
-                    self.state.execute(&msg).await;
+                    self.state.execute(ctx.clone(), &msg).await;
                 }
                 Some(ChannelOpenTry(msg)) => {
                     use execution::channel_open_try::ChannelOpenTryExecute;
                     let msg = MsgChannelOpenTry::try_from(msg.clone()).unwrap();
 
-                    self.state.execute(&msg).await;
+                    self.state.execute(ctx.clone(), &msg).await;
                 }
                 Some(ChannelOpenAck(msg)) => {
                     use execution::channel_open_ack::ChannelOpenAckExecute;
                     let msg = MsgChannelOpenAck::try_from(msg.clone()).unwrap();
 
-                    self.state.execute(&msg).await;
+                    self.state.execute(ctx.clone(), &msg).await;
                 }
                 Some(ChannelOpenConfirm(msg)) => {
                     use execution::channel_open_confirm::ChannelOpenConfirmExecute;
                     let msg = MsgChannelOpenConfirm::try_from(msg.clone()).unwrap();
 
-                    self.state.execute(&msg).await;
+                    self.state.execute(ctx.clone(), &msg).await;
                 }
                 Some(ChannelCloseInit(msg)) => {
                     use execution::channel_close_init::ChannelCloseInitExecute;
                     let msg = MsgChannelCloseInit::try_from(msg.clone()).unwrap();
 
-                    self.state.execute(&msg).await;
+                    self.state.execute(ctx.clone(), &msg).await;
                 }
                 Some(ChannelCloseConfirm(msg)) => {
                     use execution::channel_close_confirm::ChannelCloseConfirmExecute;
                     let msg = MsgChannelCloseConfirm::try_from(msg.clone()).unwrap();
 
-                    self.state.execute(&msg).await;
+                    self.state.execute(ctx.clone(), &msg).await;
                 }
                 Some(RecvPacket(msg)) => {
                     use execution::recv_packet::RecvPacketExecute;
                     let msg = MsgRecvPacket::try_from(msg.clone()).unwrap();
 
-                    self.state.execute(&msg).await;
+                    self.state.execute(ctx.clone(), &msg).await;
                 }
                 Some(Acknowledgement(msg)) => {
                     use execution::acknowledge_packet::AcknowledgePacketExecute;
                     let msg = MsgAcknowledgement::try_from(msg.clone()).unwrap();
 
-                    self.state.execute(&msg).await;
+                    self.state.execute(ctx.clone(), &msg).await;
                 }
                 Some(Timeout(msg)) => {
                     use execution::timeout::TimeoutExecute;
                     let msg = MsgTimeout::try_from(msg.clone()).unwrap();
 
-                    self.state.execute(&msg).await;
+                    self.state.execute(ctx.clone(), &msg).await;
                 }
 
                 // Other IBC messages are not handled by this component.
