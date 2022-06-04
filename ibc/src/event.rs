@@ -2,8 +2,9 @@ use ibc::core::{
     ics02_client::{client_state::AnyClientState, header::AnyHeader, header::Header},
     ics03_connection::connection::ConnectionEnd,
     ics03_connection::connection::Counterparty,
+    ics04_channel::channel::ChannelEnd,
     ics24_host::identifier::ClientId,
-    ics24_host::identifier::ConnectionId,
+    ics24_host::identifier::{ChannelId, ConnectionId, PortId},
 };
 use tendermint::abci::{Event, EventAttributeIndexExt};
 
@@ -129,6 +130,140 @@ pub fn connection_open_confirm(
                     .to_string(),
             )
                 .index(),
+        ],
+    )
+}
+
+pub fn channel_open_init(port_id: &PortId, channel_id: &ChannelId, channel: &ChannelEnd) -> Event {
+    Event::new(
+        "channel_open_init",
+        vec![
+            ("port_id", port_id.to_string()).index(),
+            ("channel_id", channel_id.to_string()).index(),
+            (
+                "counterparty_port_id",
+                channel.counterparty().port_id().to_string(),
+            )
+                .index(),
+            (
+                "counterparty_channel_id",
+                channel.counterparty().channel_id().unwrap().to_string(),
+            )
+                .index(),
+            ("connection_id", channel.connection_hops[0].to_string()).index(),
+        ],
+    )
+}
+
+pub fn channel_open_try(port_id: &PortId, channel_id: &ChannelId, channel: &ChannelEnd) -> Event {
+    Event::new(
+        "channel_open_try",
+        vec![
+            ("port_id", port_id.to_string()).index(),
+            ("channel_id", channel_id.to_string()).index(),
+            (
+                "counterparty_port_id",
+                channel.counterparty().port_id().to_string(),
+            )
+                .index(),
+            (
+                "counterparty_channel_id",
+                channel.counterparty().channel_id().unwrap().to_string(),
+            )
+                .index(),
+            ("connection_id", channel.connection_hops[0].to_string()).index(),
+        ],
+    )
+}
+
+pub fn channel_open_ack(port_id: &PortId, channel_id: &ChannelId, channel: &ChannelEnd) -> Event {
+    Event::new(
+        "channel_open_ack",
+        vec![
+            ("port_id", port_id.to_string()).index(),
+            ("channel_id", channel_id.to_string()).index(),
+            (
+                "counterparty_port_id",
+                channel.counterparty().port_id().to_string(),
+            )
+                .index(),
+            (
+                "counterparty_channel_id",
+                channel.counterparty().channel_id().unwrap().to_string(),
+            )
+                .index(),
+            ("connection_id", channel.connection_hops[0].to_string()).index(),
+        ],
+    )
+}
+
+pub fn channel_open_confirm(
+    port_id: &PortId,
+    channel_id: &ChannelId,
+    channel: &ChannelEnd,
+) -> Event {
+    Event::new(
+        "channel_open_confirm",
+        vec![
+            ("port_id", port_id.to_string()).index(),
+            ("channel_id", channel_id.to_string()).index(),
+            (
+                "counterparty_port_id",
+                channel.counterparty().port_id().to_string(),
+            )
+                .index(),
+            (
+                "counterparty_channel_id",
+                channel.counterparty().channel_id().unwrap().to_string(),
+            )
+                .index(),
+            ("connection_id", channel.connection_hops[0].to_string()).index(),
+        ],
+    )
+}
+
+pub fn channel_close_init(port_id: &PortId, channel_id: &ChannelId, channel: &ChannelEnd) -> Event {
+    Event::new(
+        "channel_close_init",
+        vec![
+            ("port_id", port_id.to_string()).index(),
+            ("channel_id", channel_id.to_string()).index(),
+            (
+                "counterparty_port_id",
+                channel.counterparty().port_id().to_string(),
+            )
+                .index(),
+            (
+                "counterparty_channel_id",
+                channel.counterparty().channel_id().unwrap().to_string(),
+            )
+                .index(),
+            ("connection_id", channel.connection_hops[0].to_string()).index(),
+        ],
+    )
+}
+
+pub fn channel_close_confirm(
+    port_id: &PortId,
+    channel_id: &ChannelId,
+    channel: &ChannelEnd,
+) -> Event {
+    Event::new(
+        "channel_close_confirm",
+        vec![
+            ("port_id", port_id.to_string()).index(),
+            ("channel_id", channel_id.to_string()).index(),
+            (
+                "counterparty_port_id",
+                channel.counterparty().port_id().to_string(),
+            )
+                .index(),
+            (
+                "counterparty_channel_id",
+                channel.counterparty().channel_id().unwrap().to_string(),
+            )
+                .index(),
+            ("connection_id", channel.connection_hops[0].to_string()).index(),
         ],
     )
 }
