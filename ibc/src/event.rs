@@ -2,7 +2,7 @@ use ibc::core::{
     ics02_client::{client_state::AnyClientState, header::AnyHeader, header::Header},
     ics03_connection::connection::ConnectionEnd,
     ics03_connection::connection::Counterparty,
-    ics04_channel::channel::ChannelEnd,
+    ics04_channel::{channel::ChannelEnd, packet::Packet},
     ics24_host::identifier::ClientId,
     ics24_host::identifier::{ChannelId, ConnectionId, PortId},
 };
@@ -264,6 +264,74 @@ pub fn channel_close_confirm(
             )
                 .index(),
             ("connection_id", channel.connection_hops[0].to_string()).index(),
+        ],
+    )
+}
+
+// TODO: add packet send
+
+pub fn receive_packet(packet: &Packet, channel: &ChannelEnd) -> Event {
+    Event::new(
+        "recv_packet",
+        vec![
+            ("packet_data_hex", hex::encode(packet.data.clone())).index(),
+            ("packet_timeout_height", packet.timeout_height.to_string()).index(),
+            (
+                "packet_timeout_timestamp",
+                packet.timeout_timestamp.to_string(),
+            )
+                .index(),
+            ("packet_sequence", packet.sequence.to_string()).index(),
+            ("packet_src_port", packet.source_port.to_string()).index(),
+            ("packet_src_channel", packet.source_channel.to_string()).index(),
+            ("packet_dst_port", packet.destination_port.to_string()).index(),
+            ("packet_dst_channel", packet.destination_channel.to_string()).index(),
+            ("packet_channel_ordering", channel.ordering.to_string()).index(),
+            ("packet_connection", channel.connection_hops[0].to_string()).index(),
+        ],
+    )
+}
+
+pub fn acknowledge_packet(packet: &Packet, channel: &ChannelEnd) -> Event {
+    Event::new(
+        "acknowledge_packet",
+        vec![
+            ("packet_data_hex", hex::encode(packet.data.clone())).index(),
+            ("packet_timeout_height", packet.timeout_height.to_string()).index(),
+            (
+                "packet_timeout_timestamp",
+                packet.timeout_timestamp.to_string(),
+            )
+                .index(),
+            ("packet_sequence", packet.sequence.to_string()).index(),
+            ("packet_src_port", packet.source_port.to_string()).index(),
+            ("packet_src_channel", packet.source_channel.to_string()).index(),
+            ("packet_dst_port", packet.destination_port.to_string()).index(),
+            ("packet_dst_channel", packet.destination_channel.to_string()).index(),
+            ("packet_channel_ordering", channel.ordering.to_string()).index(),
+            ("packet_connection", channel.connection_hops[0].to_string()).index(),
+        ],
+    )
+}
+
+pub fn timeout_packet(packet: &Packet, channel: &ChannelEnd) -> Event {
+    Event::new(
+        "timeout_packet",
+        vec![
+            ("packet_data_hex", hex::encode(packet.data.clone())).index(),
+            ("packet_timeout_height", packet.timeout_height.to_string()).index(),
+            (
+                "packet_timeout_timestamp",
+                packet.timeout_timestamp.to_string(),
+            )
+                .index(),
+            ("packet_sequence", packet.sequence.to_string()).index(),
+            ("packet_src_port", packet.source_port.to_string()).index(),
+            ("packet_src_channel", packet.source_channel.to_string()).index(),
+            ("packet_dst_port", packet.destination_port.to_string()).index(),
+            ("packet_dst_channel", packet.destination_channel.to_string()).index(),
+            ("packet_channel_ordering", channel.ordering.to_string()).index(),
+            ("packet_connection", channel.connection_hops[0].to_string()).index(),
         ],
     )
 }

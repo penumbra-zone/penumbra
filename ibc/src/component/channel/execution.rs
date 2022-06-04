@@ -62,8 +62,6 @@ pub mod channel_open_try {
 }
 
 pub mod channel_open_ack {
-    use ibc_proto::ibc::core::channel;
-
     use super::super::*;
 
     #[async_trait]
@@ -209,6 +207,8 @@ pub mod recv_packet {
                 // it's just a single store key set to an empty string to indicate that the packet has been received
                 self.put_packet_receipt(&msg.packet).await;
             }
+
+            ctx.record(event::receive_packet(&msg.packet, &channel));
         }
     }
 
@@ -248,6 +248,8 @@ pub mod acknowledge_packet {
                 msg.packet.sequence.into(),
             )
             .await;
+
+            ctx.record(event::acknowledge_packet(&msg.packet, &channel));
         }
     }
 
@@ -276,9 +278,15 @@ pub mod timeout {
             if channel.ordering == ChannelOrder::Ordered {
                 // if the channel is ordered and we get a timeout packet, close the channel
                 channel.set_state(ChannelState::Closed);
-                self.put_channel(&msg.packet.source_channel, &msg.packet.source_port, channel)
-                    .await;
+                self.put_channel(
+                    &msg.packet.source_channel,
+                    &msg.packet.source_port,
+                    channel.clone(),
+                )
+                .await;
             }
+
+            ctx.record(event::timeout_packet(&msg.packet, &channel));
         }
     }
 

@@ -19,11 +19,8 @@ use ibc::core::ics24_host::identifier::ConnectionId;
 use ibc::Height as IBCHeight;
 use penumbra_chain::{genesis, View as _};
 use penumbra_component::{Component, Context};
-use penumbra_proto::ibc::{
-    ibc_action::Action::{
-        ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
-    },
-    IbcAction,
+use penumbra_proto::ibc::ibc_action::Action::{
+    ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
 };
 use penumbra_storage::{State, StateExt};
 use penumbra_transaction::Transaction;
