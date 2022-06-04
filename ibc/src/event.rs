@@ -1,5 +1,6 @@
 use ibc::core::{
     ics02_client::{client_state::AnyClientState, header::AnyHeader, header::Header},
+    ics03_connection::connection::ConnectionEnd,
     ics03_connection::connection::Counterparty,
     ics24_host::identifier::ClientId,
     ics24_host::identifier::ConnectionId,
@@ -51,6 +52,81 @@ pub fn connection_open_init(
             (
                 "counterparty_conneciton_id",
                 counterparty.connection_id().unwrap().to_string(),
+            )
+                .index(),
+        ],
+    )
+}
+
+pub fn connection_open_try(
+    connection_id: &ConnectionId,
+    client_id: &ClientId,
+    counterparty: &Counterparty,
+) -> Event {
+    Event::new(
+        "connection_open_try",
+        vec![
+            ("connection_id", connection_id.to_string()).index(),
+            ("client_id", client_id.to_string()).index(),
+            (
+                "counterparty_client_id",
+                counterparty.client_id().to_string(),
+            )
+                .index(),
+            (
+                "counterparty_conneciton_id",
+                counterparty.connection_id().unwrap().to_string(),
+            )
+                .index(),
+        ],
+    )
+}
+
+pub fn connection_open_ack(connection_id: &ConnectionId, connection_end: &ConnectionEnd) -> Event {
+    Event::new(
+        "connection_open_ack",
+        vec![
+            ("connection_id", connection_id.to_string()).index(),
+            ("client_id", connection_end.client_id().to_string()).index(),
+            (
+                "counterparty_client_id",
+                connection_end.counterparty().client_id().to_string(),
+            )
+                .index(),
+            (
+                "counterparty_connection_id",
+                connection_end
+                    .counterparty()
+                    .connection_id()
+                    .unwrap()
+                    .to_string(),
+            )
+                .index(),
+        ],
+    )
+}
+
+pub fn connection_open_confirm(
+    connection_id: &ConnectionId,
+    connection_end: &ConnectionEnd,
+) -> Event {
+    Event::new(
+        "connection_open_confirm",
+        vec![
+            ("connection_id", connection_id.to_string()).index(),
+            ("client_id", connection_end.client_id().to_string()).index(),
+            (
+                "counterparty_client_id",
+                connection_end.counterparty().client_id().to_string(),
+            )
+                .index(),
+            (
+                "counterparty_connection_id",
+                connection_end
+                    .counterparty()
+                    .connection_id()
+                    .unwrap()
+                    .to_string(),
             )
                 .index(),
         ],

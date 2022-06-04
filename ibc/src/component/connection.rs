@@ -146,19 +146,19 @@ impl Component for ConnectionComponent {
                 Some(ConnectionOpenTry(raw_msg)) => {
                     use execution::connection_open_try::ConnectionOpenTryExecute;
                     let msg = MsgConnectionOpenTry::try_from(raw_msg.clone()).unwrap();
-                    self.state.execute(&msg).await;
+                    self.state.execute(ctx.clone(), &msg).await;
                 }
 
                 Some(ConnectionOpenAck(raw_msg)) => {
                     use execution::connection_open_ack::ConnectionOpenAckExecute;
                     let msg = MsgConnectionOpenAck::try_from(raw_msg.clone()).unwrap();
-                    self.state.execute(&msg).await;
+                    self.state.execute(ctx.clone(), &msg).await;
                 }
 
                 Some(ConnectionOpenConfirm(raw_msg)) => {
                     use execution::connection_open_confirm::ConnectionOpenConfirmExecute;
                     let msg = MsgConnectionOpenConfirm::try_from(raw_msg.clone()).unwrap();
-                    self.state.execute(&msg).await;
+                    self.state.execute(ctx.clone(), &msg).await;
                 }
 
                 _ => {}
