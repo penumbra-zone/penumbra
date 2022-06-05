@@ -1,6 +1,7 @@
 use std::convert::TryFrom;
 use std::str::FromStr;
 
+use crate::{Component, Context};
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc::core::ics02_client::client_state::ClientState;
@@ -25,7 +26,6 @@ use ibc::{
     },
 };
 use penumbra_chain::{genesis, View as _};
-use crate::{Component, Context};
 use penumbra_proto::ibc::ibc_action::Action::{CreateClient, UpdateClient};
 use penumbra_storage::{State, StateExt};
 use penumbra_transaction::Transaction;
@@ -483,7 +483,7 @@ pub trait View: StateExt {
             .into(),
         )
         .await?
-        .ok_or(anyhow::anyhow!("client update time not found"))
+        .ok_or_else(|| anyhow::anyhow!("client update time not found"))
     }
 
     async fn get_client_update_time(
@@ -500,7 +500,7 @@ pub trait View: StateExt {
                 .into(),
             )
             .await?
-            .ok_or(anyhow::anyhow!("client update time not found"))?;
+            .ok_or_else(|| anyhow::anyhow!("client update time not found"))?;
 
         ibc::timestamp::Timestamp::from_nanoseconds(timestamp_nanos)
             .map_err(|_| anyhow::anyhow!("invalid client update time"))
@@ -704,21 +704,17 @@ mod tests {
         // https://cosmos.bigdipper.live/transactions/13C1ECC54F088473E2925AD497DDCC092101ADE420BC64BADE67D34A75769CE9
         //
         //
-        let msg_create_client_stargaze_raw = base64::decode(
-            include_str!("../../ibc/test/create_client.msg")
-                .replace('\n', ""),
-        )
-        .unwrap();
+        let msg_create_client_stargaze_raw =
+            base64::decode(include_str!("../../ibc/test/create_client.msg").replace('\n', ""))
+                .unwrap();
         let msg_create_stargaze_client =
             RawMsgCreateClient::decode(msg_create_client_stargaze_raw.as_slice()).unwrap();
 
         // base64 encoded MsgUpdateClient that was used to issue the first update to the in-use stargaze light client on the cosmos hub:
         // https://cosmos.bigdipper.live/transactions/24F1E19F218CAF5CA41D6E0B653E85EB965843B1F3615A6CD7BCF336E6B0E707
-        let msg_update_client_stargaze_raw = base64::decode(
-            include_str!("../../ibc/test/update_client_1.msg")
-                .replace('\n', ""),
-        )
-        .unwrap();
+        let msg_update_client_stargaze_raw =
+            base64::decode(include_str!("../../ibc/test/update_client_1.msg").replace('\n', ""))
+                .unwrap();
         let mut msg_update_stargaze_client =
             RawMsgUpdateClient::decode(msg_update_client_stargaze_raw.as_slice()).unwrap();
         msg_update_stargaze_client.client_id = "07-tendermint-0".to_string();
@@ -779,11 +775,9 @@ mod tests {
 
         // try one more client update
         // https://cosmos.bigdipper.live/transactions/ED217D360F51E622859F7B783FEF98BDE3544AA32BBD13C6C77D8D0D57A19FFD
-        let msg_update_second = base64::decode(
-            include_str!("../../ibc/test/update_client_2.msg")
-                .replace('\n', ""),
-        )
-        .unwrap();
+        let msg_update_second =
+            base64::decode(include_str!("../../ibc/test/update_client_2.msg").replace('\n', ""))
+                .unwrap();
 
         let mut second_update = RawMsgUpdateClient::decode(msg_update_second.as_slice()).unwrap();
         second_update.client_id = "07-tendermint-0".to_string();

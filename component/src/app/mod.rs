@@ -1,18 +1,18 @@
+use crate::ibc::IBCComponent;
+use crate::shielded_pool::ShieldedPool;
+use crate::stake::component::Staking;
+use crate::{Component, Context};
 use anyhow::Result;
 use async_trait::async_trait;
 use jmt::{RootHash, Version};
 use penumbra_chain::{genesis, View as _};
-use penumbra_component::shielded_pool::ShieldedPool;
-use penumbra_component::stake::component::Staking;
-use penumbra_component::{Component, Context};
-use penumbra_component::ibc::IBCComponent;
 use penumbra_storage::{State, StateExt, Storage};
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, types::ValidatorUpdate};
 
 use tracing::instrument;
 
-use super::state_key;
+pub mod state_key;
 
 /// The Penumbra application, written as a bundle of [`Component`]s.
 ///
@@ -128,7 +128,7 @@ impl Component for App {
     fn check_tx_stateless(ctx: Context, tx: &Transaction) -> Result<()> {
         Staking::check_tx_stateless(ctx.clone(), tx)?;
         IBCComponent::check_tx_stateless(ctx.clone(), tx)?;
-        ShieldedPool::check_tx_stateless(ctx.clone(), tx)?;
+        ShieldedPool::check_tx_stateless(ctx, tx)?;
         Ok(())
     }
 

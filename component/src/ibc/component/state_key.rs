@@ -13,5 +13,5 @@ pub fn connection(connection_id: &ConnectionId) -> KeyHash {
 }
 
 pub fn connection_counter() -> KeyHash {
-    format!("ibc/ics03-connection/connection_counter").into()
+    "ibc/ics03-connection/connection_counter".into()
 }

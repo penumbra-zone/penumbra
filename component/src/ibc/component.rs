@@ -8,11 +8,11 @@ mod client;
 mod connection;
 pub(crate) mod state_key;
 
+use crate::{Component, Context};
 use anyhow::Result;
 use async_trait::async_trait;
 use client::Ics2Client;
 use penumbra_chain::{genesis, View as _};
-use crate::{Component, Context};
 use penumbra_storage::State;
 use penumbra_transaction::Transaction;
 use tendermint::abci;
@@ -63,7 +63,7 @@ impl Component for IBCComponent {
     fn check_tx_stateless(ctx: Context, tx: &Transaction) -> Result<()> {
         client::Ics2Client::check_tx_stateless(ctx.clone(), tx)?;
         connection::ConnectionComponent::check_tx_stateless(ctx.clone(), tx)?;
-        channel::ICS4Channel::check_tx_stateless(ctx.clone(), tx)?;
+        channel::ICS4Channel::check_tx_stateless(ctx, tx)?;
 
         Ok(())
     }

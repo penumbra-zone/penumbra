@@ -2,6 +2,7 @@ use crate::ibc::component::client::View as _;
 use crate::ibc::{
     event, validate_penumbra_client_state, ConnectionCounter, COMMITMENT_PREFIX, SUPPORTED_VERSIONS,
 };
+use crate::{Component, Context};
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc::core::ics02_client::client_consensus::ConsensusState;
@@ -18,7 +19,6 @@ use ibc::core::ics03_connection::version::{pick_version, Version};
 use ibc::core::ics24_host::identifier::ConnectionId;
 use ibc::Height as IBCHeight;
 use penumbra_chain::{genesis, View as _};
-use crate::{Component, Context};
 use penumbra_proto::ibc::ibc_action::Action::{
     ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
 };

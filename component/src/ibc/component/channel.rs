@@ -1,6 +1,7 @@
 use crate::ibc::component::client::View as _;
 use crate::ibc::component::connection::View as _;
 use crate::ibc::event;
+use crate::{Component, Context};
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc::core::ics02_client::client_consensus::AnyConsensusState;
@@ -25,7 +26,6 @@ use ibc::core::ics04_channel::packet::Packet;
 use ibc::core::ics24_host::identifier::ChannelId;
 use ibc::core::ics24_host::identifier::PortId;
 use penumbra_chain::genesis;
-use crate::{Component, Context};
 use penumbra_proto::ibc::ibc_action::Action::{
     Acknowledgement, ChannelCloseConfirm, ChannelCloseInit, ChannelOpenAck, ChannelOpenConfirm,
     ChannelOpenInit, ChannelOpenTry, RecvPacket, Timeout,
@@ -373,7 +373,7 @@ pub trait View: StateExt {
 
         // this is for the special case where the commitment is empty, we consider this None.
         if let Some(commitment) = commitment.as_ref() {
-            if commitment.len() == 0 {
+            if commitment.is_empty() {
                 return Ok(None);
             }
         }
