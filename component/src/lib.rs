@@ -8,9 +8,10 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use tendermint::abci;
 
+pub mod app;
+pub mod ibc;
 pub mod shielded_pool;
 pub mod stake;
-pub mod ibc;
 
 /// A component of the Penumbra application.
 ///

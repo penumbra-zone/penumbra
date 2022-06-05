@@ -31,7 +31,7 @@ pub fn commit_packet(packet: &Packet) -> Vec<u8> {
     commit.extend_from_slice(&packet.timeout_timestamp.nanoseconds().to_be_bytes());
     commit.extend_from_slice(&packet.timeout_height.revision_number.to_be_bytes());
     commit.extend_from_slice(&packet.timeout_height.revision_height.to_be_bytes());
-    commit.extend_from_slice(&Sha256::digest(&packet.data));
+    commit.extend_from_slice(&Sha256::digest(&packet.data)[..]);
 
     Sha256::digest(&commit).to_vec()
 }
@@ -48,7 +48,7 @@ fn verify_merkle_absence_proof(
         .map_err(|_| anyhow::anyhow!("invalid merkle proof"))?
         .into();
 
-    merkle_proof.verify_non_membership(&proof_specs, root.clone().into(), merkle_path)?;
+    merkle_proof.verify_non_membership(proof_specs, root.clone().into(), merkle_path)?;
 
     Ok(())
 }
@@ -66,7 +66,7 @@ fn verify_merkle_proof(
         .map_err(|_| anyhow::anyhow!("invalid merkle proof"))?
         .into();
 
-    merkle_proof.verify_membership(&proof_specs, root.clone().into(), merkle_path, value, 0)?;
+    merkle_proof.verify_membership(proof_specs, root.clone().into(), merkle_path, value, 0)?;
 
     Ok(())
 }
@@ -107,7 +107,7 @@ pub trait ChannelProofVerifier: StateExt {
             trusted_consensus_state.root(),
             port_id,
             channel_id,
-            &expected_channel,
+            expected_channel,
         )?;
 
         Ok(())
@@ -131,7 +131,7 @@ pub trait PacketProofVerifier: StateExt + inner::Inner {
 
         let commitment_path = CommitmentsPath {
             port_id: msg.packet.destination_port.clone(),
-            channel_id: msg.packet.destination_channel.clone(),
+            channel_id: msg.packet.destination_channel,
             sequence: msg.packet.sequence,
         };
 
@@ -156,7 +156,7 @@ pub trait PacketProofVerifier: StateExt + inner::Inner {
     ) -> anyhow::Result<()> {
         let (trusted_client_state, trusted_consensus_state) = self
             .get_trusted_client_and_consensus_state(
-                &connection.client_id(),
+                connection.client_id(),
                 &msg.proofs.height(),
                 connection,
             )
@@ -164,7 +164,7 @@ pub trait PacketProofVerifier: StateExt + inner::Inner {
 
         let ack_path = AcksPath {
             port_id: msg.packet.destination_port.clone(),
-            channel_id: msg.packet.destination_channel.clone(),
+            channel_id: msg.packet.destination_channel,
             sequence: msg.packet.sequence,
         };
 
@@ -187,7 +187,7 @@ pub trait PacketProofVerifier: StateExt + inner::Inner {
     ) -> anyhow::Result<()> {
         let (trusted_client_state, trusted_consensus_state) = self
             .get_trusted_client_and_consensus_state(
-                &connection.client_id(),
+                connection.client_id(),
                 &msg.proofs.height(),
                 connection,
             )
@@ -200,7 +200,7 @@ pub trait PacketProofVerifier: StateExt + inner::Inner {
 
         let seq_path = SeqRecvsPath(
             msg.packet.destination_port.clone(),
-            msg.packet.destination_channel.clone(),
+            msg.packet.destination_channel,
         );
 
         verify_merkle_proof(
@@ -222,7 +222,7 @@ pub trait PacketProofVerifier: StateExt + inner::Inner {
     ) -> anyhow::Result<()> {
         let (trusted_client_state, trusted_consensus_state) = self
             .get_trusted_client_and_consensus_state(
-                &connection.client_id(),
+                connection.client_id(),
                 &msg.proofs.height(),
                 connection,
             )
@@ -230,7 +230,7 @@ pub trait PacketProofVerifier: StateExt + inner::Inner {
 
         let receipt_path = ReceiptsPath {
             port_id: msg.packet.destination_port.clone(),
-            channel_id: msg.packet.destination_channel.clone(),
+            channel_id: msg.packet.destination_channel,
             sequence: msg.packet.sequence,
         };
 
@@ -269,7 +269,7 @@ mod inner {
                 .await?;
 
             let tm_client_state = downcast!(trusted_client_state => AnyClientState::Tendermint)
-                .ok_or(anyhow::anyhow!("client state is not tendermint"))?;
+                .ok_or_else(|| anyhow::anyhow!("client state is not tendermint"))?;
 
             tm_client_state.verify_height(*height)?;
 

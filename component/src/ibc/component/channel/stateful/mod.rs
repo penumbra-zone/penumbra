@@ -385,7 +385,7 @@ pub mod recv_packet {
                 != channel
                     .counterparty()
                     .channel_id
-                    .ok_or(anyhow::anyhow!("missing channel id"))?
+                    .ok_or_else(|| anyhow::anyhow!("missing channel id"))?
             {
                 return Err(anyhow::anyhow!(
                     "packet source channel does not match channel"
@@ -413,12 +413,12 @@ pub mod recv_packet {
                         .packet
                         .timeout_timestamp
                         .into_tm_time()
-                        .ok_or(anyhow::anyhow!("invalid timestamp"))?
+                        .ok_or_else(|| anyhow::anyhow!("invalid timestamp"))?
             {
                 return Err(anyhow::anyhow!("packet has timed out"));
             }
 
-            self.verify_packet_recv_proof(&connection, &msg).await?;
+            self.verify_packet_recv_proof(&connection, msg).await?;
 
             if channel.ordering == ChannelOrder::Ordered {
                 let next_sequence_recv = self
@@ -431,10 +431,8 @@ pub mod recv_packet {
                 if msg.packet.sequence != next_sequence_recv.into() {
                     return Err(anyhow::anyhow!("packet sequence number does not match"));
                 }
-            } else {
-                if self.seen_packet(&msg.packet).await? {
-                    return Err(anyhow::anyhow!("packet has already been processed"));
-                }
+            } else if self.seen_packet(&msg.packet).await? {
+                return Err(anyhow::anyhow!("packet has already been processed"));
             }
 
             Ok(())
@@ -472,7 +470,7 @@ pub mod acknowledge_packet {
                 != channel
                     .counterparty()
                     .channel_id
-                    .ok_or(anyhow::anyhow!("missing counterparty channel id"))?
+                    .ok_or_else(|| anyhow::anyhow!("missing counterparty channel id"))?
             {
                 return Err(anyhow::anyhow!(
                     "packet destination channel does not match channel"
@@ -491,12 +489,12 @@ pub mod acknowledge_packet {
             let commitment = self
                 .get_packet_commitment(&msg.packet)
                 .await?
-                .ok_or(anyhow::anyhow!("packet commitment not found"))?;
+                .ok_or_else(|| anyhow::anyhow!("packet commitment not found"))?;
             if commitment != commit_packet(&msg.packet) {
                 return Err(anyhow::anyhow!("packet commitment does not match"));
             }
 
-            self.verify_packet_ack_proof(&connection, &msg).await?;
+            self.verify_packet_ack_proof(&connection, msg).await?;
 
             if channel.ordering == ChannelOrder::Ordered {
                 let next_sequence_ack = self
@@ -536,7 +534,7 @@ pub mod timeout {
                 != channel
                     .counterparty()
                     .channel_id
-                    .ok_or(anyhow::anyhow!("missing channel id"))?
+                    .ok_or_else(|| anyhow::anyhow!("missing channel id"))?
             {
                 return Err(anyhow::anyhow!(
                     "packet destination channel does not match channel"
@@ -563,7 +561,7 @@ pub mod timeout {
             }
             if msg.packet.timeout_timestamp == IBCTimestamp::none()
                 || self
-                    .get_client_update_time(&connection.client_id(), &msg.proofs.height())
+                    .get_client_update_time(connection.client_id(), &msg.proofs.height())
                     .await?
                     .nanoseconds()
                     < msg.packet.timeout_timestamp.nanoseconds()
@@ -577,7 +575,7 @@ pub mod timeout {
             let commitment = self
                 .get_packet_commitment(&msg.packet)
                 .await?
-                .ok_or(anyhow::anyhow!("packet commitment not found"))?;
+                .ok_or_else(|| anyhow::anyhow!("packet commitment not found"))?;
             if commitment != commit_packet(&msg.packet) {
                 return Err(anyhow::anyhow!("packet commitment does not match"));
             }
@@ -590,11 +588,11 @@ pub mod timeout {
 
                 // in the case of a timed-out ordered packet, the counterparty should have
                 // committed the next sequence number to their state
-                self.verify_packet_timeout_proof(&connection, &msg).await?;
+                self.verify_packet_timeout_proof(&connection, msg).await?;
             } else {
                 // in the case of a timed-out unordered packet, the counterparty should not have
                 // committed a receipt to the state.
-                self.verify_packet_timeout_absence_proof(&connection, &msg)
+                self.verify_packet_timeout_absence_proof(&connection, msg)
                     .await?;
             }
 
