@@ -1,7 +1,7 @@
 use penumbra_proto::{stake as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
-use crate::IdentityKey;
+use super::IdentityKey;
 
 /// A list of validators.
 ///

@@ -10,7 +10,8 @@ pub mod component;
 pub mod rate;
 pub mod validator;
 
-pub use crate::metrics::register_metrics;
+pub use self::metrics::register_metrics;
 pub use changes::DelegationChanges;
+pub use component::View;
 pub use funding_stream::{FundingStream, FundingStreams};
 pub use uptime::Uptime;

@@ -6,6 +6,8 @@ use futures::{
     TryFutureExt,
 };
 use penumbra_chain::View as _;
+use penumbra_component::shielded_pool::View as _;
+use penumbra_component::stake::{validator, View as _};
 use penumbra_proto::{
     chain::{ChainParams, CompactBlock, KnownAssets},
     client::oblivious::{
@@ -15,8 +17,6 @@ use penumbra_proto::{
     stake::ValidatorInfo,
     Protobuf,
 };
-use penumbra_shielded_pool::View as _;
-use penumbra_stake::{component::View as _, validator};
 use tokio::sync::mpsc;
 use tonic::Status;
 use tracing::{instrument, Instrument};

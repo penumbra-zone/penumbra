@@ -7,7 +7,7 @@ pub fn token_supply(asset_id: &asset::Id) -> KeyHash {
 }
 
 pub fn known_assets() -> KeyHash {
-    format!("shielded_pool/known_assets").into()
+    "shielded_pool/known_assets".into()
 }
 
 pub fn denom_by_asset(asset_id: &asset::Id) -> KeyHash {
