@@ -17,11 +17,9 @@ penumbra-proto = { path = "../proto" }
 penumbra-ibc = { path = "../ibc" }
 penumbra-chain = { path = "../chain" }
 penumbra-crypto = { path = "../crypto" }
-penumbra-stake = { path = "../stake" }
 penumbra-transaction = { path = "../transaction" }
 penumbra-storage = { path = "../storage" }
 penumbra-component = { path = "../component" }
-penumbra-shielded-pool = { path = "../shielded-pool" }
 
 # Penumbra dependencies
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }

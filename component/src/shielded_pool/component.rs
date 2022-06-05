@@ -1,11 +1,11 @@
 use std::collections::BTreeSet;
 
+use crate::{Component, Context};
 use anyhow::{anyhow, Context as _, Result};
 use ark_ff::PrimeField;
 use async_trait::async_trait;
 use decaf377::{Fq, Fr};
 use penumbra_chain::{genesis, sync::CompactBlock, Epoch, KnownAssets, NoteSource, View as _};
-use penumbra_component::{Component, Context};
 use penumbra_crypto::{
     asset::{self, Asset, Denom},
     ka, note, Address, Note, NotePayload, Nullifier, One, Value, STAKING_TOKEN_ASSET_ID,
@@ -16,7 +16,7 @@ use penumbra_transaction::{Action, Transaction};
 use tendermint::abci;
 use tracing::instrument;
 
-use crate::{event, state_key, CommissionAmounts};
+use crate::shielded_pool::{event, state_key, CommissionAmounts};
 
 // Stub component
 pub struct ShieldedPool {
@@ -525,7 +525,7 @@ pub trait View: StateExt {
     /// Checks whether a claimed NCT anchor is a previous valid state root.
     async fn check_claimed_anchor(&self, anchor: &tct::Root) -> Result<()> {
         if let Some(anchor_height) = self
-            .get_proto::<u64>(state_key::anchor_lookup(&anchor))
+            .get_proto::<u64>(state_key::anchor_lookup(anchor))
             .await?
         {
             tracing::debug!(?anchor, ?anchor_height, "anchor is valid");

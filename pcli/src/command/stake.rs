@@ -3,12 +3,12 @@ use std::collections::BTreeMap;
 use anyhow::{anyhow, Context, Result};
 use comfy_table::{presets, Table};
 use futures::stream::TryStreamExt;
+use penumbra_component::stake::{rate::RateData, validator};
 use penumbra_crypto::{
     DelegationToken, FullViewingKey, IdentityKey, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_custody::CustodyClient;
 use penumbra_proto::client::oblivious::ValidatorInfoRequest;
-use penumbra_stake::{rate::RateData, validator};
 use penumbra_view::ViewClient;
 use penumbra_wallet::{build_transaction, plan};
 use rand_core::OsRng;

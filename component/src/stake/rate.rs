@@ -7,7 +7,7 @@ use penumbra_proto::{
 use penumbra_transaction::action::{Delegate, Undelegate};
 use serde::{Deserialize, Serialize};
 
-use crate::{validator::State, FundingStream, IdentityKey};
+use crate::stake::{validator::State, FundingStream, IdentityKey};
 
 /// Describes a validator's reward rate and voting power in some epoch.
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]

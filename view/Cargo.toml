@@ -16,7 +16,6 @@ publish = false
 penumbra-proto = { path = "../proto" }
 penumbra-chain = { path = "../chain" }
 penumbra-crypto = { path = "../crypto" }
-penumbra-stake = { path = "../stake" }
 penumbra-tct = { path = "../tct" }
 penumbra-transaction = { path = "../transaction" }
 

@@ -2,8 +2,8 @@ use anyhow::Result;
 use comfy_table::{presets, Table};
 use futures::TryStreamExt;
 use penumbra_chain::Epoch;
+use penumbra_component::stake::validator;
 use penumbra_crypto::FullViewingKey;
-use penumbra_stake::validator;
 use penumbra_view::ViewClient;
 use structopt::StructOpt;
 

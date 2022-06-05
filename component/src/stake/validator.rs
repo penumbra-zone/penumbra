@@ -3,7 +3,7 @@
 use penumbra_proto::{stake as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
-use crate::{FundingStream, FundingStreams, IdentityKey};
+use crate::stake::{FundingStream, FundingStreams, IdentityKey};
 
 mod bonding;
 mod definition;

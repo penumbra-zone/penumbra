@@ -12,6 +12,7 @@ use metrics_util::{layers::Stack, DebuggingRecorder};
 use anyhow::Context;
 use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusRecorder};
 use penumbra_chain::{genesis::Allocation, params::ChainParams};
+use penumbra_component::stake::{validator::Validator, FundingStream, FundingStreams};
 use penumbra_crypto::{
     keys::{SpendKey, SpendKeyBytes},
     rdsa::{SigningKey, SpendAuth, VerificationKey},
@@ -21,7 +22,6 @@ use penumbra_proto::client::{
     oblivious::oblivious_query_server::ObliviousQueryServer,
     specific::specific_query_server::SpecificQueryServer,
 };
-use penumbra_stake::{validator::Validator, FundingStream, FundingStreams};
 use penumbra_storage::Storage;
 use rand_core::OsRng;
 use structopt::StructOpt;

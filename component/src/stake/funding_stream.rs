@@ -2,7 +2,7 @@ use penumbra_crypto::Address;
 use penumbra_proto::{stake as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
-use crate::rate::BaseRateData;
+use crate::stake::rate::BaseRateData;
 
 /// A destination for a portion of a validator's commission of staking rewards.
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone, Copy)]

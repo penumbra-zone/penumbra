@@ -1,3 +1,5 @@
+#![recursion_limit = "256"] // required for TCT
+
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::genesis;
@@ -133,12 +135,19 @@ pub struct Context {
     inner: Arc<Mutex<Option<Vec<abci::Event>>>>,
 }
 
+impl Default for Context {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Context {
     pub fn new() -> Self {
         Self {
             inner: Arc::new(Mutex::new(Some(Vec::new()))),
         }
     }
+
     pub fn record(&self, e: abci::Event) {
         self.inner
             .lock()
@@ -147,6 +156,7 @@ impl Context {
             .unwrap()
             .push(e);
     }
+
     pub fn into_events(self) -> Vec<abci::Event> {
         self.inner
             .lock()
@@ -155,3 +165,6 @@ impl Context {
             .unwrap()
     }
 }
+
+pub mod shielded_pool;
+pub mod stake;

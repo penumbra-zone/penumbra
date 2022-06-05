@@ -1,14 +1,14 @@
 // Implementation of a pd component for the staking system.
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
+use crate::shielded_pool::{CommissionAmount, CommissionAmounts, View as _};
+use crate::{Component, Context};
 use ::metrics::{decrement_gauge, gauge, increment_gauge};
 use anyhow::{anyhow, Context as _, Result};
 use async_trait::async_trait;
 use penumbra_chain::{genesis, Epoch, View as _};
-use penumbra_component::{Component, Context};
 use penumbra_crypto::{DelegationToken, IdentityKey, STAKING_TOKEN_ASSET_ID};
 use penumbra_proto::Protobuf;
-use penumbra_shielded_pool::{CommissionAmount, CommissionAmounts, View as _};
 use penumbra_storage::{State, StateExt};
 use penumbra_transaction::{
     action::{Delegate, Undelegate},
@@ -24,7 +24,7 @@ use tendermint::{
 };
 use tracing::{instrument, Instrument};
 
-use crate::{
+use crate::stake::{
     metrics,
     rate::{BaseRateData, RateData},
     validator::{self, Validator},

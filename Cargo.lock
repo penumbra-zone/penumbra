@@ -2611,7 +2611,6 @@ dependencies = [
  "penumbra-crypto",
  "penumbra-custody",
  "penumbra-proto",
- "penumbra-stake",
  "penumbra-transaction",
  "penumbra-view",
  "penumbra-wallet",
@@ -2671,8 +2670,6 @@ dependencies = [
  "penumbra-crypto",
  "penumbra-ibc",
  "penumbra-proto",
- "penumbra-shielded-pool",
- "penumbra-stake",
  "penumbra-storage",
  "penumbra-transaction",
  "pin-project",
@@ -2763,12 +2760,33 @@ name = "penumbra-component"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "ark-ff",
  "async-trait",
+ "bech32",
+ "bincode",
+ "bitvec 1.0.0",
+ "blake2b_simd 0.5.11",
+ "decaf377",
+ "ed25519-consensus 2.0.1",
+ "jmt",
+ "metrics",
+ "once_cell",
  "penumbra-chain",
+ "penumbra-crypto",
+ "penumbra-proto",
+ "penumbra-storage",
+ "penumbra-tct",
  "penumbra-transaction",
+ "rand_core",
+ "regex",
+ "serde",
+ "serde_json",
+ "sha2 0.9.9",
  "tendermint",
  "tokio",
  "tonic 0.6.2",
+ "tracing",
+ "vergen",
 ]
 
 [[package]]
@@ -2826,7 +2844,6 @@ dependencies = [
  "penumbra-chain",
  "penumbra-crypto",
  "penumbra-proto",
- "penumbra-stake",
  "penumbra-transaction",
  "prost 0.9.0",
  "rand_core",
@@ -2891,58 +2908,6 @@ dependencies = [
  "subtle-encoding",
  "tonic 0.6.2",
  "tonic-build",
-]
-
-[[package]]
-name = "penumbra-shielded-pool"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "ark-ff",
- "async-trait",
- "bincode",
- "blake2b_simd 0.5.11",
- "decaf377",
- "jmt",
- "metrics",
- "penumbra-chain",
- "penumbra-component",
- "penumbra-crypto",
- "penumbra-proto",
- "penumbra-storage",
- "penumbra-tct",
- "penumbra-transaction",
- "serde",
- "tendermint",
- "tracing",
-]
-
-[[package]]
-name = "penumbra-stake"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "bech32",
- "bitvec 1.0.0",
- "ed25519-consensus 2.0.1",
- "metrics",
- "once_cell",
- "penumbra-chain",
- "penumbra-component",
- "penumbra-crypto",
- "penumbra-proto",
- "penumbra-shielded-pool",
- "penumbra-storage",
- "penumbra-transaction",
- "rand_core",
- "regex",
- "serde",
- "serde_json",
- "sha2 0.9.9",
- "tendermint",
- "tracing",
- "vergen",
 ]
 
 [[package]]
@@ -3055,7 +3020,6 @@ dependencies = [
  "penumbra-chain",
  "penumbra-crypto",
  "penumbra-proto",
- "penumbra-stake",
  "penumbra-tct",
  "penumbra-transaction",
  "prost 0.9.0",
@@ -3084,10 +3048,10 @@ dependencies = [
  "bytes",
  "hex",
  "penumbra-chain",
+ "penumbra-component",
  "penumbra-crypto",
  "penumbra-custody",
  "penumbra-proto",
- "penumbra-stake",
  "penumbra-tct",
  "penumbra-transaction",
  "penumbra-view",

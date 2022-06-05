@@ -10,8 +10,6 @@ members = [
   "crypto",
   "custody",
   "ibc",
-  "shielded-pool",
-  "stake",
   "storage",
   "tct",
   "tct-property-test",

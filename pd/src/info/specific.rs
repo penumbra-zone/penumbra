@@ -1,4 +1,6 @@
 use penumbra_chain::View as _;
+use penumbra_component::shielded_pool::View as _;
+use penumbra_component::stake::View as _;
 use penumbra_proto::{
     self as proto,
     chain::NoteSource,
@@ -8,8 +10,6 @@ use penumbra_proto::{
     },
     crypto::NoteCommitment,
 };
-use penumbra_shielded_pool::View as _;
-use penumbra_stake::component::View as _;
 
 use tonic::Status;
 use tracing::instrument;
