@@ -5,7 +5,7 @@ use penumbra_chain::{genesis, View as _};
 use penumbra_component::shielded_pool::ShieldedPool;
 use penumbra_component::stake::component::Staking;
 use penumbra_component::{Component, Context};
-use penumbra_ibc::IBCComponent;
+use penumbra_component::ibc::IBCComponent;
 use penumbra_storage::{State, StateExt, Storage};
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, types::ValidatorUpdate};

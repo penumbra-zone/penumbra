@@ -25,7 +25,7 @@ use ibc::{
     },
 };
 use penumbra_chain::{genesis, View as _};
-use penumbra_component::{Component, Context};
+use crate::{Component, Context};
 use penumbra_proto::ibc::ibc_action::Action::{CreateClient, UpdateClient};
 use penumbra_storage::{State, StateExt};
 use penumbra_transaction::Transaction;
@@ -36,7 +36,7 @@ use tendermint_light_client_verifier::{
 };
 use tracing::instrument;
 
-use crate::{event, ClientConnections, ClientCounter, VerifiedHeights, COMMITMENT_PREFIX};
+use crate::ibc::{event, ClientConnections, ClientCounter, VerifiedHeights, COMMITMENT_PREFIX};
 
 mod stateful;
 mod stateless;
@@ -675,7 +675,6 @@ mod tests {
     use penumbra_storage::Storage;
     use penumbra_tct as tct;
     use penumbra_transaction::{Action, Fee, Transaction, TransactionBody};
-    use std::fs;
     use tempfile::tempdir;
     use tendermint::Time;
 
@@ -706,8 +705,7 @@ mod tests {
         //
         //
         let msg_create_client_stargaze_raw = base64::decode(
-            fs::read_to_string("../ibc/test/create_client.msg")
-                .unwrap()
+            include_str!("../../ibc/test/create_client.msg")
                 .replace('\n', ""),
         )
         .unwrap();
@@ -717,8 +715,7 @@ mod tests {
         // base64 encoded MsgUpdateClient that was used to issue the first update to the in-use stargaze light client on the cosmos hub:
         // https://cosmos.bigdipper.live/transactions/24F1E19F218CAF5CA41D6E0B653E85EB965843B1F3615A6CD7BCF336E6B0E707
         let msg_update_client_stargaze_raw = base64::decode(
-            fs::read_to_string("../ibc/test/update_client_1.msg")
-                .unwrap()
+            include_str!("../../ibc/test/update_client_1.msg")
                 .replace('\n', ""),
         )
         .unwrap();
@@ -783,8 +780,7 @@ mod tests {
         // try one more client update
         // https://cosmos.bigdipper.live/transactions/ED217D360F51E622859F7B783FEF98BDE3544AA32BBD13C6C77D8D0D57A19FFD
         let msg_update_second = base64::decode(
-            fs::read_to_string("../ibc/test/update_client_2.msg")
-                .unwrap()
+            include_str!("../../ibc/test/update_client_2.msg")
                 .replace('\n', ""),
         )
         .unwrap();

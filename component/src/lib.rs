@@ -8,6 +8,10 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use tendermint::abci;
 
+pub mod shielded_pool;
+pub mod stake;
+pub mod ibc;
+
 /// A component of the Penumbra application.
 ///
 /// Each component is a thin wrapper around a shared [`State`], over a
@@ -165,6 +169,3 @@ impl Context {
             .unwrap()
     }
 }
-
-pub mod shielded_pool;
-pub mod stake;

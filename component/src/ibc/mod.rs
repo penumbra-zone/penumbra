@@ -9,7 +9,7 @@ mod connection;
 pub(crate) mod event;
 mod metrics;
 
-pub use crate::metrics::register_metrics;
+pub use self::metrics::register_metrics;
 
 pub use client::{
     validate_penumbra_client_state, ClientConnections, ClientCounter, VerifiedHeights,

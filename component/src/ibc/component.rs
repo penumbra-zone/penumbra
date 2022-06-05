@@ -12,7 +12,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use client::Ics2Client;
 use penumbra_chain::{genesis, View as _};
-use penumbra_component::{Component, Context};
+use crate::{Component, Context};
 use penumbra_storage::State;
 use penumbra_transaction::Transaction;
 use tendermint::abci;
