@@ -1,7 +1,7 @@
 use ibc::core::ics24_host::identifier::ConnectionId;
 use jmt::KeyHash;
 
-use crate::COMMITMENT_PREFIX;
+use crate::ibc::COMMITMENT_PREFIX;
 
 pub fn connection(connection_id: &ConnectionId) -> KeyHash {
     format!(

@@ -1,5 +1,5 @@
-use crate::component::client::View as _;
-use crate::{
+use crate::ibc::component::client::View as _;
+use crate::ibc::{
     event, validate_penumbra_client_state, ConnectionCounter, COMMITMENT_PREFIX, SUPPORTED_VERSIONS,
 };
 use anyhow::Result;
@@ -18,7 +18,7 @@ use ibc::core::ics03_connection::version::{pick_version, Version};
 use ibc::core::ics24_host::identifier::ConnectionId;
 use ibc::Height as IBCHeight;
 use penumbra_chain::{genesis, View as _};
-use penumbra_component::{Component, Context};
+use crate::{Component, Context};
 use penumbra_proto::ibc::ibc_action::Action::{
     ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
 };

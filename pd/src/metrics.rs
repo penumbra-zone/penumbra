@@ -20,7 +20,7 @@ pub use metrics::*;
 pub fn register_metrics() {
     penumbra_storage::register_metrics();
     penumbra_component::stake::register_metrics();
-    penumbra_ibc::register_metrics();
+    penumbra_component::ibc::register_metrics();
     penumbra_component::shielded_pool::register_metrics();
 
     register_counter!(MEMPOOL_CHECKTX_TOTAL);

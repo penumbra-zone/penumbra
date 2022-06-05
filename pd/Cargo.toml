@@ -14,7 +14,6 @@ publish = false
 [dependencies]
 # Workspace dependencies
 penumbra-proto = { path = "../proto" }
-penumbra-ibc = { path = "../ibc" }
 penumbra-chain = { path = "../chain" }
 penumbra-crypto = { path = "../crypto" }
 penumbra-transaction = { path = "../transaction" }
