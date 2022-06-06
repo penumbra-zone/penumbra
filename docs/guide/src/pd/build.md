@@ -24,4 +24,4 @@ which you can safely ignore.
 
 You'll need to have [tendermint installed](https://docs.tendermint.com/v0.35/introduction/install.html) on your system to join your node to the testnet.
 
-**NOTE**: be sure to install the correct version of Tendermint (`v0.35.5`).
+**NOTE**: be sure to install the correct version of Tendermint (`v0.35.6`).

@@ -8,7 +8,7 @@ parameters of the network.  This has two parts:
 1. Tendermint-related data specifying parameters for the consensus engine;
 2. Penumbra-related data specifying the initial chain state.
 
-First, [install Tendermint][tm-install].  Be sure to install `v0.35.5`, rather
+First, [install Tendermint][tm-install].  Be sure to install `v0.35.6`, rather
 than `master`.
 
 Next, create the Tendermint config data with
