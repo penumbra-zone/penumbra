@@ -20,12 +20,9 @@ pub fn index(tree: &Tree) -> Result<(), IndexMalformed> {
         .map(|(commitment, position)| (position, commitment))
         .collect();
 
-    // A recursive traversal that checks each leaf in the tree for correctness against the index
-    fn check_leaves(
-        reverse_index: &HashMap<Position, Commitment>,
-        errors: &mut Vec<IndexError>,
-        node: structure::Node,
-    ) {
+    let mut errors = vec![];
+
+    structure::traverse(tree.structure(), &mut |node| {
         if let Kind::Leaf {
             commitment: Some(actual_commitment),
         } = node.kind()
@@ -57,17 +54,8 @@ pub fn index(tree: &Tree) -> Result<(), IndexMalformed> {
                     found_hash: node.hash(),
                 });
             };
-        } else {
-            // We're at internal node, so recurse down farther...
-            for child in node.children() {
-                check_leaves(reverse_index, errors, child);
-            }
         }
-    }
-
-    // Run the traversal
-    let mut errors = vec![];
-    check_leaves(&reverse_index, &mut errors, tree.structure());
+    });
 
     // Return an error if any were discovered
     if errors.is_empty() {
@@ -198,7 +186,8 @@ pub fn cached_hashes(tree: &Tree) -> Result<(), InvalidCachedHashes> {
 
     fn check_hashes(errors: &mut Vec<InvalidCachedHash>, node: Node) {
         // IMPORTANT: we need to traverse children before parent, to avoid overwriting the
-        // parent's hash before we have a chance to check it!
+        // parent's hash before we have a chance to check it! This is why we don't use
+        // `structure::traverse` here, because that is a pre-order traversal.
         for child in node.children() {
             // The frontier is the only place where cached hashes occur
             if child.place() == Place::Frontier {
