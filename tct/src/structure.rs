@@ -353,10 +353,104 @@ impl Any for Node<'_> {
     }
 }
 
+#[doc(inline)]
+pub use traverse::{traverse, traverse_async};
+
+/// Functions to perform traversals of [`Node`]s in synchronous and asynchronous contexts.
+pub mod traverse {
+    use std::{future::Future, pin::Pin};
+
+    use super::Node;
+
+    /// Flag to determine whether the traversal continues downward from this node or stops at the
+    /// current node.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+    pub enum Recur {
+        /// Default: Continue downwards.
+        Down,
+        /// Continue downwards, but traversing children right-to-left.
+        DownBackwards,
+        /// Stop here and don't continue downwards.
+        Stop,
+    }
+
+    impl Default for Recur {
+        fn default() -> Self {
+            Down
+        }
+    }
+
+    impl From<()> for Recur {
+        fn from(_: ()) -> Self {
+            Down
+        }
+    }
+
+    #[doc(inline)]
+    pub use Recur::*;
+
+    /// Synchronously traverse a node depth-first, visiting each node using the given function.
+    ///
+    /// If the function returns [`Stop`], the traversal will stop at this node and not continue
+    /// into the children; otherwise it will recur downwards.
+    ///
+    /// Note that because `(): Into<Recur>`, it is valid to pass a function which returns `()` if
+    /// the traversal should always recur and never stop before reaching a leaf.
+    pub fn traverse<R: Into<Recur>>(node: Node, with: &mut impl FnMut(Node) -> R) {
+        if let down @ (Down | DownBackwards) = with(node).into() {
+            let mut children = node.children();
+            if let DownBackwards = down {
+                children.reverse();
+            }
+            for child in children {
+                traverse(child, with);
+            }
+        }
+    }
+
+    /// Asynchronously traverse a node depth-first, visiting each node using the given function.
+    ///
+    /// If the function returns [`Stop`], the traversal will stop at this node and not continue
+    /// into the children; otherwise it will recur downwards.
+    ///
+    /// Note that because `(): Into<Recur>`, it is valid to pass a function which returns `()` if
+    /// the traversal should always recur and never stop before reaching a leaf.
+    pub async fn traverse_async<'a, R: Send + Into<Recur>, Fut>(
+        node: Node<'a>,
+        with: &mut (impl FnMut(Node) -> Fut + Send),
+    ) where
+        Fut: Future<Output = R> + Send,
+    {
+        // We need this inner function to correctly specify the lifetimes for the recursive call
+        fn traverse_async_inner<'a, 'b: 'a, R: Send + Into<Recur>, F, Fut>(
+            node: Node<'a>,
+            with: &'b mut F,
+        ) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>>
+        where
+            F: FnMut(Node) -> Fut + Send,
+            Fut: Future<Output = R> + Send,
+        {
+            Box::pin(async move {
+                if let down @ (Down | DownBackwards) = with(node).await.into() {
+                    let mut children = node.children();
+                    if let DownBackwards = down {
+                        children.reverse();
+                    }
+                    for child in children {
+                        traverse_async_inner::<'_, '_, R, F, Fut>(child, with).await;
+                    }
+                }
+            })
+        }
+
+        traverse_async_inner::<'_, '_, R, _, Fut>(node, with).await
+    }
+}
+
 mod sealed {
     use super::*;
 
-    pub trait Sealed {}
+    pub trait Sealed: Send + Sync {}
 
     impl<T: Sealed> Sealed for &T {}
     impl Sealed for Node<'_> {}
@@ -369,9 +463,13 @@ mod sealed {
 
     impl Sealed for frontier::Item {}
     impl<T: Sealed> Sealed for frontier::Leaf<T> {}
-    impl<T: Sealed + Focus> Sealed for frontier::Node<T> {}
-    impl<T: Sealed + Height + GetHash + Focus> Sealed for frontier::Tier<T> {}
-    impl<T: Sealed + Height + GetHash + Focus> Sealed for frontier::Top<T> {}
+    impl<T: Sealed + Focus> Sealed for frontier::Node<T> where T::Complete: Send + Sync {}
+    impl<T: Sealed + Height + GetHash + Focus> Sealed for frontier::Tier<T> where
+        T::Complete: Send + Sync
+    {
+    }
+    impl<T: Sealed + Height + GetHash + Focus> Sealed for frontier::Top<T> where T::Complete: Send + Sync
+    {}
 }
 
 #[cfg(test)]
