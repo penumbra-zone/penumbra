@@ -26,6 +26,7 @@ Thursday:
 - [ ] Check in with team again in a release meeting and update the GitHub milestone to ensure it represents what will make it into the testnet.
 
 Monday (release day):
+- [ ] Check for any [tendermint updates](https://github.com/tendermint/tendermint/releases) and update the Dockerfiles, documentation, and relay deployments with the latest desired version
 - [ ] Update the User Guide to mention the git tag
 - [ ] Create new git tag e.g. `006-orthosie`, push to shared remote: `git tag -a <tag_name>` - must be annotated tag for Vergen build. This will begin the release process. Monitor the GitHub action to ensure it completes.
 - [ ] Update peer configuration on our Penumbra validator running on `testnet.penumbra.zone`: in Tendermint's `config.toml`, update the `bootstrap-peers` and `persistent-peers` fields to contain the IPs of the Penumbra-operated full nodes.
