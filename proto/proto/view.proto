@@ -40,13 +40,15 @@ service ViewProtocol {
     // Query for the current chain parameters.
     rpc ChainParams(ChainParamsRequest) returns (chain.ChainParams);
 
-    // Returns requested NoteRecord if available, otherwise awaits until available
-    rpc AwaitChange(AwaitChangeRequest) returns (NoteRecord);
+    // Query for a note by its note commitment, optionally waiting until the note is detected.
+    rpc NoteByCommitment(NoteByCommitmentRequest) returns (NoteRecord);
 }
 
-message AwaitChangeRequest {
+message NoteByCommitmentRequest {
   crypto.FullViewingKeyHash fvk_hash = 1;
   crypto.NoteCommitment note_commitment = 2;
+  // If set to true, waits to return until the requested note is detected.
+  bool await_detection = 3;
 }
 
 // Requests the current chain parameters from the view service.
