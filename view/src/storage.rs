@@ -15,7 +15,6 @@ use sqlx::{migrate::MigrateDatabase, query, Pool, Sqlite};
 use std::{num::NonZeroU64, path::PathBuf, sync::Arc};
 use tct::Commitment;
 use tokio::sync::broadcast;
-use tonic::transport::Channel;
 
 use crate::{sync::ScanResult, NoteRecord};
 
@@ -40,11 +39,14 @@ impl Storage {
     pub async fn load_or_initialize(
         storage_path: String,
         fvk: &FullViewingKey,
-        client: &mut ObliviousQueryClient<Channel>,
+        node: String,
+        pd_port: u16,
     ) -> anyhow::Result<Self> {
         if PathBuf::from(&storage_path).exists() {
             Self::load(storage_path).await
         } else {
+            let mut client =
+                ObliviousQueryClient::connect(format!("http://{}:{}", node, pd_port)).await?;
             let params = client
                 .chain_params(tonic::Request::new(ChainParamsRequest {
                     chain_id: String::new(),

@@ -8,11 +8,10 @@ use async_stream::try_stream;
 use futures::stream::{StreamExt, TryStreamExt};
 use penumbra_crypto::{
     asset,
-    keys::{DiversifierIndex, FullViewingKeyHash},
+    keys::{DiversifierIndex, FullViewingKey, FullViewingKeyHash},
 };
 use penumbra_proto::{
     chain as pbp,
-    client::oblivious::oblivious_query_client::ObliviousQueryClient,
     crypto::{self as pbc},
     transaction as pbt,
     view::{self as pb, view_protocol_server::ViewProtocol, StatusResponse},
@@ -21,7 +20,7 @@ use penumbra_tct::{Commitment, Proof};
 use penumbra_transaction::WitnessData;
 use tokio::sync::{watch, RwLock};
 use tokio_stream::wrappers::WatchStream;
-use tonic::{async_trait, transport::Channel};
+use tonic::async_trait;
 use tracing::instrument;
 
 use crate::{Storage, Worker};
@@ -52,6 +51,19 @@ pub struct ViewService {
 }
 
 impl ViewService {
+    /// Convenience method that calls [`Storage::load_or_initialize`] and then [`Self::new`].
+    pub async fn load_or_initialize(
+        storage_path: String,
+        fvk: &FullViewingKey,
+        node: String,
+        pd_port: u16,
+        tendermint_port: u16,
+    ) -> anyhow::Result<Self> {
+        let storage = Storage::load_or_initialize(storage_path, fvk, node.clone(), pd_port).await?;
+
+        Self::new(storage, node, pd_port, tendermint_port).await
+    }
+
     /// Constructs a new [`ViewService`], spawning a sync task internally.
     ///
     /// The sync task uses the provided `client` to sync with the chain.
@@ -61,19 +73,12 @@ impl ViewService {
     /// will be backed by the same scanning task, rather than each spawning its own.
     pub async fn new(
         storage: Storage,
-        client: ObliviousQueryClient<Channel>,
         node: String,
+        pd_port: u16,
         tendermint_port: u16,
     ) -> Result<Self, anyhow::Error> {
-        // Create a shared error slot
-        let error_slot = Arc::new(Mutex::new(None));
-
-        // Create a channel for the worker to notify us of sync height changes.
-        let (sync_height_tx, sync_height_rx) =
-            watch::channel(storage.last_sync_height().await?.unwrap_or(0));
-
-        let (worker, nct) =
-            Worker::new(storage.clone(), client, error_slot.clone(), sync_height_tx).await?;
+        let (worker, nct, error_slot, sync_height_rx) =
+            Worker::new(storage.clone(), node.clone(), pd_port).await?;
 
         tokio::spawn(worker.run());
 
