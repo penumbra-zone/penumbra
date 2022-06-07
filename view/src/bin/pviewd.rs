@@ -57,11 +57,12 @@ async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
     let opt = Opt::from_args();
 
-    let mut client =
-        ObliviousQueryClient::connect(format!("http://{}:{}", opt.node, opt.pd_port)).await?;
-
     match opt.cmd {
         Command::Init { full_viewing_key } => {
+            let mut client =
+                ObliviousQueryClient::connect(format!("http://{}:{}", opt.node, opt.pd_port))
+                    .await?;
+
             let params = client
                 .chain_params(tonic::Request::new(ChainParamsRequest {
                     chain_id: String::new(),
@@ -84,7 +85,8 @@ async fn main() -> Result<()> {
 
             let storage = penumbra_view::Storage::load(opt.sqlite_path).await?;
 
-            let service = ViewService::new(storage, client, opt.node, opt.tendermint_port).await?;
+            let service =
+                ViewService::new(storage, opt.node, opt.pd_port, opt.tendermint_port).await?;
 
             tokio::spawn(
                 Server::builder()

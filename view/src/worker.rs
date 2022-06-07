@@ -18,24 +18,51 @@ pub struct Worker {
 }
 
 impl Worker {
+    /// Creates a new worker, returning:
+    ///
+    /// - the worker itself;
+    /// - a shared, in-memory NCT instance;
+    /// - a shared error slot;
+    /// - a channel for notifying the client of sync progress.
     pub async fn new(
         storage: Storage,
-        client: ObliviousQueryClient<Channel>,
-        error_slot: Arc<Mutex<Option<anyhow::Error>>>,
-        sync_height_tx: watch::Sender<u64>,
-    ) -> Result<(Self, Arc<RwLock<penumbra_tct::Tree>>), anyhow::Error> {
-        let nct = Arc::new(RwLock::new(storage.note_commitment_tree().await?));
+        node: String,
+        pd_port: u16,
+    ) -> Result<
+        (
+            Self,
+            Arc<RwLock<penumbra_tct::Tree>>,
+            Arc<Mutex<Option<anyhow::Error>>>,
+            watch::Receiver<u64>,
+        ),
+        anyhow::Error,
+    > {
         let fvk = storage.full_viewing_key().await?;
+
+        // Create a shared, in-memory NCT.
+        let nct = Arc::new(RwLock::new(storage.note_commitment_tree().await?));
+        // Create a shared error slot
+        let error_slot = Arc::new(Mutex::new(None));
+        // Create a channel for the worker to notify of sync height changes.
+        let (sync_height_tx, mut sync_height_rx) =
+            watch::channel(storage.last_sync_height().await?.unwrap_or(0));
+        // Mark the current height as seen, since it's not new.
+        sync_height_rx.borrow_and_update();
+
+        let client = ObliviousQueryClient::connect(format!("http://{}:{}", node, pd_port)).await?;
+
         Ok((
             Self {
                 storage,
                 client,
                 nct: nct.clone(),
                 fvk,
-                error_slot,
+                error_slot: error_slot.clone(),
                 sync_height_tx,
             },
             nct,
+            error_slot,
+            sync_height_rx,
         ))
     }
 

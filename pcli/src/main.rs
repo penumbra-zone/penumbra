@@ -114,20 +114,14 @@ async fn main() -> Result<()> {
         main_inner(opt, wallet.spend_key, fvk, view, custody).await
     } else {
         // Use an in-memory view service.
-        let mut oc_client = opt.oblivious_client().await?;
-        let view_storage = penumbra_view::Storage::load_or_initialize(
+        let view_service = ViewService::load_or_initialize(
             view_path
                 .to_str()
                 .ok_or_else(|| anyhow::anyhow!("Non-UTF8 view path"))?
                 .to_string(),
             &fvk,
-            &mut oc_client,
-        )
-        .await?;
-        let view_service = ViewService::new(
-            view_storage,
-            oc_client,
             opt.node.clone(),
+            opt.pd_port,
             opt.tendermint_port,
         )
         .await?;
