@@ -13,6 +13,7 @@ publish = false
 
 [dependencies]
 # Workspace dependencies
+jmt = { git = "https://github.com/penumbra-zone/jellyfish-merkle.git", branch = "main" }
 penumbra-proto = { path = "../proto" }
 penumbra-chain = { path = "../chain" }
 penumbra-crypto = { path = "../crypto" }
@@ -20,6 +21,7 @@ penumbra-transaction = { path = "../transaction" }
 penumbra-wallet= { path = "../wallet" }
 penumbra-view = { path = "../view" }
 penumbra-custody = { path = "../custody" }
+penumbra-tct = { path = "../tct" }
 # TODO: replace by a penumbra-app
 penumbra-component = { path = "../component" }
 pd = { path = "../pd" }

@@ -201,6 +201,7 @@ async fn main_inner<V: ViewClient, C: CustodyClient>(
         Command::Validator(cmd) => cmd.exec(&opt, &sk, &mut view, &mut custody).await?,
         Command::Stake(cmd) => cmd.exec(&opt, &fvk, &mut view, &mut custody).await?,
         Command::Chain(cmd) => cmd.exec(&opt, &fvk, &mut view).await?,
+        Command::Q(cmd) => cmd.exec(&opt).await?,
     }
 
     Ok(())
