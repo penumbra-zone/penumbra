@@ -28,11 +28,16 @@ message ValidatorStatusRequest {
   crypto.IdentityKey identity_key = 2;
 }
 
+// Performs a key-value query, either by key or by key hash.
+//
+// Proofs are only supported by key.
 message KeyValueRequest {
   // The expected chain id (empty string if no expectation).
   string chain_id = 1;
-  // the key to fetch from storage
+  // If set, the key to fetch from storage.
   bytes key = 2;
+  // If set, the hash of the key to fetch from storage.
+  bytes key_hash = 4;
   // whether to return a proof
   bool proof = 3;
 }

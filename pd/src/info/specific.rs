@@ -98,15 +98,23 @@ impl SpecificQuery for Info {
         let state = self.state_tonic().await?;
         state.check_chain_id(&request.get_ref().chain_id).await?;
 
-        let req_inner = request.into_inner();
-        let req_proof = req_inner.proof;
-        let req_key = req_inner.key;
+        let request = request.into_inner();
+        tracing::debug!(?request);
 
-        if req_proof == true {
+        if request.proof {
+            if request.key.is_empty() {
+                return Err(Status::invalid_argument("key is empty"));
+            }
+            if !request.key_hash.is_empty() {
+                return Err(Status::invalid_argument(
+                    "key_hash is nonempty but proof was requested",
+                ));
+            }
+
             let (value, proof) = state
                 .read()
                 .await
-                .get_with_proof(req_key)
+                .get_with_proof(request.key)
                 .await
                 .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
@@ -119,10 +127,29 @@ impl SpecificQuery for Info {
                 proof: Some(commitment_proof),
             }))
         } else {
+            let key_hash = match (!request.key.is_empty(), !request.key_hash.is_empty()) {
+                (false, true) => jmt::KeyHash(
+                    request
+                        .key_hash
+                        .try_into()
+                        .map_err(|_| Status::invalid_argument("invalid key_hash"))?,
+                ),
+                (true, false) => request.key.as_slice().into(),
+                (false, false) => {
+                    return Err(Status::invalid_argument("key and key_hash are both empty"))
+                }
+                (true, true) => {
+                    return Err(Status::invalid_argument(
+                        "key and key_hash were both provided",
+                    ))
+                }
+            };
+            tracing::debug!(?key_hash);
+
             let value = state
                 .read()
                 .await
-                .get(req_key.into())
+                .get(key_hash)
                 .await
                 .map_err(|e| Status::internal(e.to_string()))?
                 .ok_or_else(|| Status::not_found("requested key not found in state"))?;
