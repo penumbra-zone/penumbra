@@ -11,6 +11,12 @@ publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = []
+# When this feature is enabled, the view worker will request every single
+# NCT root, to pinpoint exactly where any NCT root divergence occurs.
+nct-divergence-check = []
+
 [dependencies]
 # Workspace dependencies
 penumbra-proto = { path = "../proto" }

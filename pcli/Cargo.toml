@@ -11,6 +11,10 @@ publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = []
+nct-divergence-check = ["penumbra-view/nct-divergence-check"]
+
 [dependencies]
 # Workspace dependencies
 penumbra-proto = { path = "../proto" }
