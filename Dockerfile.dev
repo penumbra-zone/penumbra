@@ -28,9 +28,6 @@ COPY proto ./proto
 COPY chain ./chain
 COPY crypto ./crypto
 COPY custody ./custody
-COPY shielded-pool ./shielded-pool
-COPY ibc ./ibc
-COPY stake ./stake
 COPY component ./component
 COPY storage ./storage
 COPY tct ./tct
