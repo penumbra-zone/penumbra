@@ -224,25 +224,28 @@ impl ViewProtocol for ViewService {
         Box<dyn futures::Stream<Item = Result<pb::StatusStreamResponse, tonic::Status>> + Send>,
     >;
 
-    async fn await_change(
+    async fn note_by_commitment(
         &self,
-        request: tonic::Request<pb::AwaitChangeRequest>,
+        request: tonic::Request<pb::NoteByCommitmentRequest>,
     ) -> Result<tonic::Response<pb::NoteRecord>, tonic::Status> {
         self.check_worker().await?;
         self.check_fvk(request.get_ref().fvk_hash.as_ref()).await?;
 
+        let request = request.into_inner();
+
         let note_commitment = request
-            .into_inner()
             .note_commitment
-            .ok_or_else(|| tonic::Status::failed_precondition("NoteCommitment may not be None"))?;
+            .ok_or_else(|| {
+                tonic::Status::failed_precondition("Missing note commitment in request")
+            })?
+            .try_into()
+            .map_err(|_| {
+                tonic::Status::failed_precondition("Invalid note commitment in request")
+            })?;
 
         Ok(tonic::Response::new(pb::NoteRecord::from(
             self.storage
-                .await_change(
-                    note_commitment
-                        .try_into()
-                        .expect("Conversion error from NoteCommitment proto to domain type"),
-                )
+                .note_by_commitment(note_commitment, request.await_detection)
                 .await
                 .map_err(|_| {
                     tonic::Status::unknown("unknown error getting requested note record")

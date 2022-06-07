@@ -126,20 +126,37 @@ impl Storage {
         })
     }
 
-    pub fn await_change(
+    /// Query for a note by its note commitment, optionally waiting until the note is detected.
+    pub fn note_by_commitment(
         &self,
         note_commitment: tct::Commitment,
+        await_detection: bool,
     ) -> impl Future<Output = anyhow::Result<NoteRecord>> {
         // Start subscribing now, before querying for whether we already
         // have the record, so that we can't miss it if we race a write.
         let mut rx = self.scanned_notes_tx.subscribe();
 
-        // Clone the storage handle so that the returned future is 'static
-        let self2 = self.clone();
+        // Clone the pool handle so that the returned future is 'static
+        let pool = self.pool.clone();
         async move {
             // Check if we already have the note
-            if let Some(record) = self2.note_record_by_commitment(note_commitment).await? {
+            if let Some(record) = sqlx::query_as::<_, NoteRecord>(
+                format!(
+                    "SELECT *
+                    FROM notes
+                    WHERE note_commitment = {:?}",
+                    note_commitment
+                )
+                .as_str(),
+            )
+            .fetch_optional(&pool)
+            .await?
+            {
                 return Ok(record);
+            }
+
+            if !await_detection {
+                return Err(anyhow!("Note commitment {} not found", note_commitment));
             }
 
             // Otherwise, wait for newly detected notes and check whether they're
@@ -152,24 +169,6 @@ impl Storage {
                 }
             }
         }
-    }
-
-    /// Returns the NoteRecord corresponding to the NoteCommitment, or None if it does not exist in storage
-    pub async fn note_record_by_commitment(
-        &self,
-        note_commitment: tct::Commitment,
-    ) -> anyhow::Result<Option<NoteRecord>> {
-        Ok(sqlx::query_as::<_, NoteRecord>(
-            format!(
-                "SELECT *
-                    FROM notes
-                    WHERE note_commitment = {:?}",
-                note_commitment
-            )
-            .as_str(),
-        )
-        .fetch_optional(&self.pool)
-        .await?)
     }
 
     /// The last block height we've scanned to, if any.
@@ -513,7 +512,9 @@ impl Storage {
         // Done following tx.commit() to avoid notifying of a new NoteRecord before it is actually committed to the database
 
         for note_record in scan_result.new_notes {
-            self.scanned_notes_tx.send(note_record).map_err(|x| x)?;
+            // This will fail to be broadcast if there is no active receiver (such as on initial sync)
+            // The error is ignored, as this isn't a problem, because if there is no active receiver there is nothing to do
+            let _ = self.scanned_notes_tx.send(note_record);
         }
 
         Ok(())
