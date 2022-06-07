@@ -6,6 +6,8 @@ use penumbra_crypto::{Asset, FullViewingKey};
 use penumbra_proto::client::oblivious::{
     oblivious_query_client::ObliviousQueryClient, AssetListRequest, CompactBlockRangeRequest,
 };
+#[cfg(feature = "nct-divergence-check")]
+use penumbra_proto::client::specific::specific_query_client::SpecificQueryClient;
 use tokio::sync::{watch, RwLock};
 use tonic::transport::Channel;
 pub struct Worker {
@@ -15,6 +17,8 @@ pub struct Worker {
     fvk: FullViewingKey, // TODO: notifications (see TODOs on ViewService)
     error_slot: Arc<Mutex<Option<anyhow::Error>>>,
     sync_height_tx: watch::Sender<u64>,
+    #[cfg(feature = "nct-divergence-check")]
+    specific_client: SpecificQueryClient<Channel>,
 }
 
 impl Worker {
@@ -50,6 +54,9 @@ impl Worker {
         sync_height_rx.borrow_and_update();
 
         let client = ObliviousQueryClient::connect(format!("http://{}:{}", node, pd_port)).await?;
+        #[cfg(feature = "nct-divergence-check")]
+        let specific_client =
+            SpecificQueryClient::connect(format!("http://{}:{}", node, pd_port)).await?;
 
         Ok((
             Self {
@@ -59,6 +66,8 @@ impl Worker {
                 fvk,
                 error_slot: error_slot.clone(),
                 sync_height_tx,
+                #[cfg(feature = "nct-divergence-check")]
+                specific_client,
             },
             nct,
             error_slot,
@@ -130,6 +139,7 @@ impl Worker {
 
         while let Some(block) = stream.message().await? {
             let block = CompactBlock::try_from(block)?;
+            let height = block.height;
 
             // Lock the NCT only while processing this block.
             let mut nct_guard = self.nct.write().await;
@@ -138,14 +148,13 @@ impl Worker {
                 // Optimization: if the block is empty, seal the in-memory NCT,
                 // and skip touching the database:
                 nct_guard.end_block().unwrap();
-                self.storage.record_empty_block(block.height).await?;
+                self.storage.record_empty_block(height).await?;
                 // Notify all watchers of the new height we just recorded.
-                self.sync_height_tx.send(block.height)?;
+                self.sync_height_tx.send(height)?;
             } else {
                 // Otherwise, scan the block and commit its changes:
                 let scan_result =
                     scan_block(&self.fvk, &mut nct_guard, block.try_into()?, epoch_duration);
-                let height = scan_result.height;
 
                 self.storage
                     .record_block(scan_result, &mut nct_guard)
@@ -153,6 +162,9 @@ impl Worker {
                 // Notify all watchers of the new height we just recorded.
                 self.sync_height_tx.send(height)?;
             }
+            #[cfg(feature = "nct-divergence-check")]
+            nct_divergence_check(&mut self.specific_client, height, nct_guard.root()).await?;
+
             // Release the NCT RwLock
             drop(nct_guard);
 
@@ -211,5 +223,40 @@ impl Worker {
             // Wait a bit before restarting
             tokio::time::sleep(std::time::Duration::from_millis(1729)).await;
         }
+    }
+}
+
+#[cfg(feature = "nct-divergence-check")]
+async fn nct_divergence_check(
+    client: &mut SpecificQueryClient<Channel>,
+    height: u64,
+    actual_root: penumbra_tct::Root,
+) -> anyhow::Result<()> {
+    use penumbra_proto::Protobuf;
+
+    let value = client
+        .key_value(penumbra_proto::client::specific::KeyValueRequest {
+            key: format!("shielded_pool/anchor/{}", height).into_bytes(),
+            ..Default::default()
+        })
+        .await?
+        .into_inner()
+        .value;
+
+    let expected_root = penumbra_tct::Root::decode(value.as_slice())?;
+
+    if actual_root == expected_root {
+        tracing::info!(?height, ?actual_root, ?expected_root, "nct roots match");
+        Ok(())
+    } else {
+        let e = anyhow::anyhow!(
+            "NCT divergence detected at height {}: expected {}, got {}",
+            height,
+            expected_root,
+            actual_root
+        );
+        // Print the error immediately, so that it's visible in the logs.
+        tracing::error!(?e);
+        Err(e)
     }
 }
