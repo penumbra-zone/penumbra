@@ -1,4 +1,4 @@
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use futures::Future;
 use parking_lot::Mutex;
 use penumbra_chain::params::ChainParams;
@@ -129,20 +129,27 @@ impl Storage {
     pub fn await_change(
         &self,
         note_commitment: tct::Commitment,
-    ) -> impl Future<Output = anyhow::Result<NoteRecord>> + '_ {
+    ) -> impl Future<Output = anyhow::Result<NoteRecord>> {
+        // Start subscribing now, before querying for whether we already
+        // have the record, so that we can't miss it if we race a write.
         let mut rx = self.scanned_notes_tx.subscribe();
 
+        // Clone the storage handle so that the returned future is 'static
+        let self2 = self.clone();
         async move {
-            match self.note_record_by_commitment(note_commitment).await? {
-                Some(record) => Ok(record),
+            // Check if we already have the note
+            if let Some(record) = self2.note_record_by_commitment(note_commitment).await? {
+                return Ok(record);
+            }
 
-                None => loop {
-                    let record = rx.recv().await.map_err(|x| x)?;
+            // Otherwise, wait for newly detected notes and check whether they're
+            // the requested one.
+            loop {
+                let record = rx.recv().await.context("Change subscriber failed")?;
 
-                    if record.note_commitment == note_commitment {
-                        return Ok(record);
-                    }
-                },
+                if record.note_commitment == note_commitment {
+                    return Ok(record);
+                }
             }
         }
     }
