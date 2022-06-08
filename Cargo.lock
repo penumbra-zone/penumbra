@@ -2604,6 +2604,7 @@ dependencies = [
  "fslock",
  "futures",
  "hex",
+ "http-body",
  "indicatif",
  "jmt",
  "pd",

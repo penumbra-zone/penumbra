@@ -1,7 +1,10 @@
 // Rust analyzer complains without this (but rustc is happy regardless)
 #![recursion_limit = "256"]
 #![allow(clippy::clone_on_copy)]
-use std::{net::SocketAddr, path::PathBuf};
+use std::{
+    net::SocketAddr,
+    path::{Path, PathBuf},
+};
 
 use anyhow::{Context, Result};
 use directories::ProjectDirs;
@@ -18,6 +21,7 @@ use penumbra_proto::{
 use penumbra_view::{ViewClient, ViewService};
 use structopt::StructOpt;
 
+mod box_grpc_svc;
 mod command;
 mod legacy;
 mod network;
@@ -57,6 +61,39 @@ pub struct Opt {
     pub view_address: Option<SocketAddr>,
 }
 
+impl Opt {
+    /// Constructs a [`ViewProtocolClient`] based on the command-line options.
+    async fn view_client(&self, fvk: &FullViewingKey, data_dir: &Path) -> Result<impl ViewClient> {
+        let svc = if let Some(address) = self.view_address {
+            // Use a remote view service.
+            tracing::info!(%address, "using remote view service");
+
+            let ep = tonic::transport::Endpoint::new(format!("http://{}", address))?;
+            box_grpc_svc::connect(ep).await?
+        } else {
+            // Use an in-memory view service.
+            let path = data_dir.join(VIEW_FILE_NAME);
+            tracing::info!(path = %path.display(), "using local view service");
+
+            let svc = ViewService::load_or_initialize(
+                path.to_str()
+                    .ok_or_else(|| anyhow::anyhow!("Non-UTF8 view path"))?
+                    .to_string(),
+                &fvk,
+                self.node.clone(),
+                self.pd_port,
+                self.tendermint_port,
+            )
+            .await?;
+
+            // Now build the view and custody clients, doing gRPC with ourselves
+            let svc = ViewProtocolServer::new(svc);
+            box_grpc_svc::local(svc)
+        };
+
+        Ok(ViewProtocolClient::new(svc))
+    }
+}
 #[tokio::main]
 async fn main() -> Result<()> {
     // Display a warning message to the user so they don't get upset when all their tokens are lost.
@@ -81,7 +118,6 @@ async fn main() -> Result<()> {
     std::fs::create_dir_all(&data_dir).context("Failed to create data directory")?;
 
     let custody_path = data_dir.join(CUSTODY_FILE_NAME);
-    let view_path = data_dir.join(VIEW_FILE_NAME);
 
     let legacy_wallet_path = data_dir.join(legacy::WALLET_FILE_NAME);
 
@@ -103,52 +139,15 @@ async fn main() -> Result<()> {
     // Otherwise, build the custody service...
     let wallet = Wallet::load(custody_path)?;
     let soft_hsm = SoftHSM::new(vec![wallet.spend_key.clone()]);
-    let custody = CustodyProtocolClient::new(CustodyProtocolServer::new(soft_hsm));
+    let mut custody = CustodyProtocolClient::new(CustodyProtocolServer::new(soft_hsm));
 
     let fvk = wallet.spend_key.full_viewing_key().clone();
+
     // ...and the view service...
-    if let Some(view_address) = opt.view_address {
-        // Use a remote view service.
-        let view = ViewProtocolClient::connect(format!("http://{}", view_address)).await?;
-
-        main_inner(opt, wallet.spend_key, fvk, view, custody).await
-    } else {
-        // Use an in-memory view service.
-        let view_service = ViewService::load_or_initialize(
-            view_path
-                .to_str()
-                .ok_or_else(|| anyhow::anyhow!("Non-UTF8 view path"))?
-                .to_string(),
-            &fvk,
-            opt.node.clone(),
-            opt.pd_port,
-            opt.tendermint_port,
-        )
-        .await?;
-
-        // Now build the view and custody clients, doing gRPC with ourselves
-        let view = ViewProtocolClient::new(ViewProtocolServer::new(view_service));
-
-        main_inner(opt, wallet.spend_key, fvk, view, custody).await
-    }
-}
-
-/// The rest of the main function is split into a separate function so that we
-/// can erase the `ViewProtocolClient` and `CustodyProtocolClient` types.
-async fn main_inner<V: ViewClient, C: CustodyClient>(
-    opt: Opt,
-    // TODO: remove this
-    sk: SpendKey,
-    fvk: FullViewingKey,
-    mut view: V,
-    mut custody: C,
-) -> Result<()> {
-    //let viewservice2 = view_service.clone();
+    let mut view = opt.view_client(&fvk, data_dir.as_ref()).await?;
 
     if opt.cmd.needs_sync() {
-        // this has to manually invoke the method on the "domain trait" because we haven't
-        // forgotten the concrete type, which has a method of the same name.
-        let mut status_stream = ViewClient::status_stream(&mut view, fvk.hash()).await?;
+        let mut status_stream = view.status_stream(fvk.hash()).await?;
 
         // Pull out the first message from the stream, which has the current state, and use
         // it to set up a progress bar.
@@ -192,7 +191,10 @@ async fn main_inner<V: ViewClient, C: CustodyClient>(
         Command::Tx(tx_cmd) => tx_cmd.exec(&opt, &fvk, &mut view, &mut custody).await?,
         Command::Addr(addr_cmd) => addr_cmd.exec(&fvk)?,
         Command::Balance(balance_cmd) => balance_cmd.exec(&fvk, &mut view).await?,
-        Command::Validator(cmd) => cmd.exec(&opt, &sk, &mut view, &mut custody).await?,
+        Command::Validator(cmd) => {
+            cmd.exec(&opt, &wallet.spend_key, &mut view, &mut custody)
+                .await?
+        }
         Command::Stake(cmd) => cmd.exec(&opt, &fvk, &mut view, &mut custody).await?,
         Command::Chain(cmd) => cmd.exec(&opt, &fvk, &mut view).await?,
         Command::Q(cmd) => cmd.exec(&opt).await?,
