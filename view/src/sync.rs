@@ -112,14 +112,14 @@ pub fn scan_block(
         note_commitment_tree
             .end_block()
             .expect("ending the block must succed");
+    }
 
-        // If we've also reached the end of the epoch, end the epoch in the commitment tree
-        if Epoch::from_height(height, epoch_duration).is_epoch_end(height) {
-            tracing::debug!(?height, "end of epoch");
-            note_commitment_tree
-                .end_epoch()
-                .expect("ending the epoch must succeed");
-        }
+    // If we've also reached the end of the epoch, end the epoch in the commitment tree
+    if Epoch::from_height(height, epoch_duration).is_epoch_end(height) {
+        tracing::debug!(?height, "end of epoch");
+        note_commitment_tree
+            .end_epoch()
+            .expect("ending the epoch must succeed");
     }
 
     // Print the TCT root for debugging
