@@ -6,7 +6,7 @@ use decaf377::Fq;
 use std::fmt::Debug;
 
 mod error;
-pub mod packed;
+// pub mod packed; // TODO: fix this module
 pub use error::{Error, HitBottom, IResult};
 
 /// In a depth-first traversal, is the next node below, or to the right? If this is the last
@@ -19,6 +19,33 @@ pub enum Instruction {
     /// This node is a leaf, with no children and a mandatory value. We should create it, then
     /// return it as completed, to continue the traversal at the parent.
     Leaf { here: Fq },
+}
+
+#[cfg(feature = "arbitrary")]
+fn arbitrary_instruction() -> impl proptest::prelude::Strategy<Value = Instruction> {
+    use proptest::prelude::*;
+
+    proptest::option::of(crate::commitment::FqStrategy::arbitrary()).prop_flat_map(|option_fq| {
+        Size::arbitrary().prop_flat_map(move |children| {
+            bool::arbitrary().prop_map(move |variant| {
+                if let Some(here) = option_fq {
+                    if variant {
+                        Instruction::Node {
+                            here: Some(here),
+                            children,
+                        }
+                    } else {
+                        Instruction::Leaf { here }
+                    }
+                } else {
+                    Instruction::Node {
+                        here: None,
+                        children,
+                    }
+                }
+            })
+        })
+    })
 }
 
 /// The number of children of a node we're creating.
@@ -66,15 +93,13 @@ pub trait Construct: Sized {
     /// Create a new constructor for a node at the given index, given the global position of the
     /// tree.
     ///
-    /// The global position and index are used to report errors and to calculate the location of the
-    /// frontier.
+    /// The global position and index are used to calculate the location of the frontier.
     fn build(global_position: u64, index: u64) -> Self;
 
-    /// Continue with the traversal, going either [`Down`](Direction::Down) or
-    /// [`RightOrUp`](Direction::RightOrUp), and setting the value at this node to the given [`Fq`].
+    /// Continue with the traversal using the given [`Instruction`].
     ///
-    /// Depending on location, the [`Fq`] may be interpreted either as a [`Hash`] or as a
-    /// [`Commitment`].
+    /// Depending on location, the [`Fq`] contained in the instruction may be interpreted either as
+    /// a [`Hash`] or as a [`Commitment`].
     fn go(self, instruction: Instruction) -> IResult<Self>;
 
     /// Get the current index under construction in the traversal.
