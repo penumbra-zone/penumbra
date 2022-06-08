@@ -126,7 +126,7 @@ pub enum Witness {
 /// Generation of random [`Commitment`]s for testing.
 pub mod proptest {
     #[doc(inline)]
-    pub use super::commitment::CommitmentStrategy;
+    pub use super::commitment::FqStrategy;
 }
 
 #[cfg(test)]

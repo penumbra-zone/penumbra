@@ -95,30 +95,6 @@ impl Instruction {
     }
 }
 
-impl AsRef<[u8]> for Instruction {
-    fn as_ref(&self) -> &[u8] {
-        &self.bytes
-    }
-}
-
-impl AsRef<[u8; 32]> for Instruction {
-    fn as_ref(&self) -> &[u8; 32] {
-        &self.bytes
-    }
-}
-
-impl From<(Instruction, Fq)> for Instruction {
-    fn from((direction, element): (Instruction, Fq)) -> Self {
-        Self::pack(direction, element)
-    }
-}
-
-impl From<Instruction> for (Instruction, Fq) {
-    fn from(packed: Instruction) -> Self {
-        packed.unpack()
-    }
-}
-
 /// An error when parsing a [`PackedDirection`].
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Error)]
 pub enum ParsePackedInstructionError {
@@ -202,36 +178,16 @@ mod test {
 
     proptest! {
         #[test]
-        fn roundtrip_pack_unpack(
-            direction in prop::arbitrary::any::<Instruction>(),
-            fq in
-                proptest::array::uniform32(0..u8::MAX)
-                    .prop_filter_map("bigger than modulus", |bytes| {
-                        let mut integer = BigInteger256::from(0);
-                        integer.read_le(&mut std::io::Cursor::new(bytes)).unwrap();
-                        if integer < FqParameters::MODULUS {
-                            Some(Fq::new(integer))
-                        } else {
-                            None
-                        }
-                    })
-        ) {
-            let packed = Instruction::pack(direction, fq);
-            let (direction_out, fq_out) = packed.unpack();
-            assert_eq!(direction, direction_out);
-            assert_eq!(fq, fq_out);
+        fn roundtrip_pack_unpack(instruction in arbitrary_instruction()) {
+            let packed = Instruction::pack(instruction);
+            let unpacked = packed.unpack();
+            assert_eq!(instruction, unpacked);
         }
 
         #[test]
-        fn roundtrip_unpack_pack(
-            packed in
-                proptest::array::uniform32(0..u8::MAX)
-                    .prop_filter_map("bigger than modulus", |bytes| {
-                        Instruction::try_from(bytes).ok()
-                    })
-        ) {
-            let (direction, fq) = packed.unpack();
-            let packed_again = Instruction::pack(direction, fq);
+        fn roundtrip_unpack_pack(instruction in arbitrary_instruction()) {
+            let unpacked = packed.unpack();
+            let packed_again = Instruction::pack(unpacked);
             assert_eq!(packed, packed_again);
         }
     }
