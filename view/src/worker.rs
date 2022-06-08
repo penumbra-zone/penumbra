@@ -153,8 +153,8 @@ impl Worker {
                 self.sync_height_tx.send(height)?;
             } else {
                 // Otherwise, scan the block and commit its changes:
-                let scan_result =
-                    scan_block(&self.fvk, &mut nct_guard, block.try_into()?, epoch_duration);
+                let scan_result = scan_block(&self.fvk, &mut nct_guard, block, epoch_duration);
+                let height = scan_result.height;
 
                 self.storage
                     .record_block(scan_result, &mut nct_guard)
@@ -181,23 +181,12 @@ impl Worker {
     //TODO: should this actually be looping? seems worth revisiting, because right now it either breaks or errors once.
     #[allow(clippy::never_loop)]
     pub async fn run(mut self) -> Result<(), anyhow::Error> {
-        loop {
-            match self.run_inner().await {
-                Ok(_) => {
-                    // If the worker returns `Ok` then it means it's done, so we can
-                    // stop looping.
-                    break;
-                }
-                Err(e) => {
-                    tracing::info!(?e, "view worker error");
-                    self.error_slot.lock().unwrap().replace(e);
-                    // Exit the worker to avoid looping endlessly.
-                    return Err(anyhow::anyhow!("view worker error"));
-                }
-            };
-        }
-
-        Ok(())
+        self.run_inner().await.map_err(|e| {
+            tracing::info!(?e, "view worker error");
+            self.error_slot.lock().unwrap().replace(e);
+            // Exit the worker to avoid looping endlessly.
+            anyhow::anyhow!("view worker error")
+        })
     }
 
     async fn run_inner(&mut self) -> Result<(), anyhow::Error> {
