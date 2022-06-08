@@ -55,9 +55,11 @@ impl From<CompactBlock> for pb::CompactBlock {
                 .map(|v| Bytes::copy_from_slice(&v.0.to_bytes()))
                 .collect(),
             // We don't serialize block roots if they are the empty block, because we don't need to
-            block_root: Some(cb.block_root)
-                .filter(|root| root.is_empty_finalized())
-                .map(Into::into),
+            block_root: if cb.block_root.is_empty_finalized() {
+                None
+            } else {
+                Some(cb.block_root.into())
+            },
             epoch_root: cb.epoch_root.map(Into::into),
         }
     }
