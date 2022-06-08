@@ -7,20 +7,18 @@ use std::fmt::Debug;
 
 mod error;
 pub mod packed;
-pub use error::{Error, HitBottom, IResult, Incomplete, IncompleteInfo};
+pub use error::{Error, HitBottom, IResult};
 
 /// In a depth-first traversal, is the next node below, or to the right? If this is the last
 /// represented sibling, then we should go up instead of (illegally) right.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Instruction {
-    /// Go down, and remember that the size of the thing below is as specified (`None` for a
-    /// terminal node).
-    Down {
-        here: Option<Fq>,
-        size: Option<Size>,
-    },
-    /// Go right, or up if we can't go right.
-    RightOrUp { here: Fq },
+    /// This node is an internal node, with a non-zero number of children and an optional cached
+    /// value. We should create it, then continue the traversal to create its children.
+    Node { here: Option<Fq>, children: Size },
+    /// This node is a leaf, with no children and a mandatory value. We should create it, then
+    /// return it as completed, to continue the traversal at the parent.
+    Leaf { here: Fq },
 }
 
 /// The number of children of a node we're creating.
@@ -35,6 +33,17 @@ pub enum Size {
     Three,
     /// 4 children.
     Four,
+}
+
+impl From<Size> for usize {
+    fn from(size: Size) -> Self {
+        match size {
+            Size::One => 1,
+            Size::Two => 2,
+            Size::Three => 3,
+            Size::Four => 4,
+        }
+    }
 }
 
 impl Debug for Size {
@@ -67,4 +76,13 @@ pub trait Construct: Sized {
     /// Depending on location, the [`Fq`] may be interpreted either as a [`Hash`] or as a
     /// [`Commitment`].
     fn go(self, instruction: Instruction) -> IResult<Self>;
+
+    /// Get the current index under construction in the traversal.
+    fn index(&self) -> u64;
+
+    /// Get the current height under construction in the traversal.
+    fn height(&self) -> u8;
+
+    /// Get the minimum number of instructions necessary to complete construction.
+    fn min_required(&self) -> usize;
 }
