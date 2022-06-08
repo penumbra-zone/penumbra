@@ -39,12 +39,12 @@ impl Instruction {
 
         // Compute a bit mask to apply to the highest 3 bits of the highest byte
         let tag = match direction {
-            Down(None) => DOWN_0,
-            Down(Some(One)) => DOWN_1,
-            Down(Some(Two)) => DOWN_2,
-            Down(Some(Three)) => DOWN_3,
-            Down(Some(Four)) => DOWN_4,
-            RightOrUp => RIGHT_OR_UP,
+            Node(None) => DOWN_0,
+            Node(Some(One)) => DOWN_1,
+            Node(Some(Two)) => DOWN_2,
+            Node(Some(Three)) => DOWN_3,
+            Node(Some(Four)) => DOWN_4,
+            Leaf => RIGHT_OR_UP,
         };
 
         // Apply the tag to the highest byte
