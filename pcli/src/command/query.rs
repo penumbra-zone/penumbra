@@ -30,15 +30,21 @@ impl QueryCmd {
         let mut client = opt.specific_client().await?;
 
         let key_hash = self.key_hash();
-        tracing::debug!(?key_hash);
 
-        let rsp = client
-            .key_value(penumbra_proto::client::specific::KeyValueRequest {
+        let req = if let QueryCmd::Key { key } = self {
+            penumbra_proto::client::specific::KeyValueRequest {
+                key: key.as_bytes().to_vec(),
+                ..Default::default()
+            }
+        } else {
+            penumbra_proto::client::specific::KeyValueRequest {
                 key_hash: key_hash.0.to_vec(),
                 ..Default::default()
-            })
-            .await?
-            .into_inner();
+            }
+        };
+        tracing::debug!(?req);
+
+        let rsp = client.key_value(req).await?.into_inner();
 
         self.display_value(&rsp.value)?;
         Ok(())
