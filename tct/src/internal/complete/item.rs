@@ -78,3 +78,7 @@ impl structure::Any for Item {
         vec![]
     }
 }
+
+pub struct Builder {
+    index: u64,
+}
