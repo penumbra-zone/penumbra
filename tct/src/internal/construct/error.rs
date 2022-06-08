@@ -61,6 +61,29 @@ impl<C: Construct> IResult<C> {
         })
     }
 
+    /// Apply a function returning an [`IResult`] to the inner constructor of this [`IResult`].
+    ///
+    /// If the traversal was already complete, or returned an error, this short-circuits and does
+    /// nothing (to override this and proceed in the case of an error, see [`IResult::proceed`]).
+    pub fn and_then<F: FnOnce(C) -> IResult<C>>(self, f: F) -> Self {
+        Self(match self.0 {
+            IResultInner::Complete { output } => IResultInner::Complete { output },
+            IResultInner::Incomplete {
+                continuation,
+                hit_bottom,
+            } => {
+                if let Err(hit_bottom) = hit_bottom {
+                    IResultInner::Incomplete {
+                        continuation,
+                        hit_bottom: Err(hit_bottom),
+                    }
+                } else {
+                    f(continuation).0
+                }
+            }
+        })
+    }
+
     /// Proceed with the construction of the tree, assuming that the [`IResult`] is not yet complete
     /// or carrying an error from the last action performed.
     ///
