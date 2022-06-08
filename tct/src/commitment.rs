@@ -123,46 +123,50 @@ impl TryFrom<&[u8]> for Commitment {
 }
 
 #[cfg(feature = "arbitrary")]
-pub use arbitrary::CommitmentStrategy;
+pub use arbitrary::FqStrategy;
 
 #[cfg(feature = "arbitrary")]
 mod arbitrary {
+    use ark_ed_on_bls12_377::{Fq, FqParameters};
+    use ark_ff::FpParameters;
+    use proptest::strategy::Strategy;
+
     use super::Commitment;
 
     // Arbitrary implementation for [`Commitment`]s.
-
     impl proptest::arbitrary::Arbitrary for Commitment {
         type Parameters = Vec<Commitment>;
 
         fn arbitrary_with(args: Self::Parameters) -> Self::Strategy {
-            CommitmentStrategy(args)
+            FqStrategy(args.into_iter().map(|commitment| commitment.0).collect())
+                .prop_map(|fq| Commitment(fq))
         }
 
-        type Strategy = CommitmentStrategy;
+        type Strategy = proptest::strategy::Map<FqStrategy, fn(Fq) -> Commitment>;
     }
 
-    /// A [`proptest`] [`Strategy`](proptest::strategy::Strategy) for generating [`Commitment`]s.
+    /// A [`proptest`] [`Strategy`](proptest::strategy::Strategy) for generating [`Fq`]s.
     #[derive(Clone, Debug, PartialEq, Eq, Default)]
-    pub struct CommitmentStrategy(Vec<Commitment>);
+    pub struct FqStrategy(Vec<Fq>);
 
-    impl CommitmentStrategy {
-        /// Create a new [`CommitmentStrategy`] that will generate arbitrary [`Commitment`]s.
+    impl FqStrategy {
+        /// Create a new [`FqStrategy`] that will generate arbitrary [`Commitment`]s.
         pub fn arbitrary() -> Self {
             Self::one_of(vec![])
         }
 
-        /// Create a new [`CommitmentStrategy`] that will only produce the given [`Commitment`]s.
+        /// Create a new [`FqStrategy`] that will only produce the given [`Fq`]s.
         ///
-        /// If the given vector is empty, this will generate arbitrary commitments instead.
-        pub fn one_of(commitments: Vec<Commitment>) -> Self {
-            CommitmentStrategy(commitments)
+        /// If the given vector is empty, this will generate arbitrary [`Fq`]s instead.
+        pub fn one_of(commitments: Vec<Fq>) -> Self {
+            FqStrategy(commitments)
         }
     }
 
-    impl proptest::strategy::Strategy for CommitmentStrategy {
-        type Tree = proptest::strategy::Just<Commitment>;
+    impl proptest::strategy::Strategy for FqStrategy {
+        type Tree = proptest::strategy::Filter<proptest::strategy::Just<Fq>, fn(&Fq) -> bool>;
 
-        type Value = Commitment;
+        type Value = Fq;
 
         fn new_tree(
             &self,
@@ -170,10 +174,10 @@ mod arbitrary {
         ) -> proptest::strategy::NewTree<Self> {
             use proptest::prelude::{Rng, RngCore};
             let rng = runner.rng();
-            if !self.0.is_empty() {
-                Ok(proptest::strategy::Just(
+            Ok(if !self.0.is_empty() {
+                proptest::strategy::Just(
                     *rng.sample(rand::distributions::Slice::new(&self.0).unwrap()),
-                ))
+                )
             } else {
                 let parts = [
                     rng.next_u64(),
@@ -181,10 +185,9 @@ mod arbitrary {
                     rng.next_u64(),
                     rng.next_u64(),
                 ];
-                Ok(proptest::strategy::Just(Commitment(decaf377::Fq::new(
-                    ark_ff::BigInteger256(parts),
-                ))))
+                proptest::strategy::Just(decaf377::Fq::new(ark_ff::BigInteger256(parts)))
             }
+            .prop_filter("bigger than modulus", |fq| fq.0 < FqParameters::MODULUS))
         }
     }
 }

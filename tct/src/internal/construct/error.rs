@@ -8,7 +8,7 @@ where
     C::Output: Debug,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.0 {
+        match &self.0 {
             IResultInner::Complete { output } => {
                 f.debug_struct("Complete").field("output", &output).finish()
             }

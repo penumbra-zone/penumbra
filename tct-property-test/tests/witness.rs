@@ -5,7 +5,7 @@ use std::collections::HashSet;
 
 use proptest::{arbitrary::*, prelude::*};
 
-use penumbra_tct::{proptest::CommitmentStrategy, validate, Commitment, Tree, Witness};
+use penumbra_tct::{validate, Commitment, Tree, Witness};
 
 const MAX_USED_COMMITMENTS: usize = 3;
 const MAX_TIER_ACTIONS: usize = 10;
@@ -15,11 +15,8 @@ const MAX_TIER_ACTIONS: usize = 10;
 enum Action {
     EndBlock,
     EndEpoch,
-    Forget(#[proptest(strategy = "CommitmentStrategy::one_of(params.clone())")] Commitment),
-    Insert(
-        Witness,
-        #[proptest(strategy = "CommitmentStrategy::one_of(params)")] Commitment,
-    ),
+    Forget(Commitment),
+    Insert(Witness, Commitment),
 }
 
 impl Action {
