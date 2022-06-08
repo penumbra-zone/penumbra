@@ -5,9 +5,9 @@
 use decaf377::Fq;
 use std::fmt::Debug;
 
-mod error;
+mod iresult;
 // pub mod packed; // TODO: fix this module
-pub use error::{Error, HitBottom, IResult};
+pub use iresult::{HitBottom, IResult};
 
 /// In a depth-first traversal, is the next node below, or to the right? If this is the last
 /// represented sibling, then we should go up instead of (illegally) right.
@@ -15,37 +15,54 @@ pub use error::{Error, HitBottom, IResult};
 pub enum Instruction {
     /// This node is an internal node, with a non-zero number of children and an optional cached
     /// value. We should create it, then continue the traversal to create its children.
-    Node { here: Option<Fq>, children: Size },
+    Node {
+        /// The element at this leaf, if any (internal nodes can always calculate their element, so
+        /// this is optional).
+        here: Option<Fq>,
+        /// The number of children of this node.
+        children: Size,
+    },
     /// This node is a leaf, with no children and a mandatory value. We should create it, then
     /// return it as completed, to continue the traversal at the parent.
-    Leaf { here: Fq },
+    Leaf {
+        /// The element at this leaf.
+        here: Fq,
+    },
 }
 
+/// Proptest generators for things relevant to construction.
 #[cfg(feature = "arbitrary")]
-fn arbitrary_instruction() -> impl proptest::prelude::Strategy<Value = Instruction> {
-    use proptest::prelude::*;
+pub mod arbitrary {
+    use super::*;
 
-    proptest::option::of(crate::commitment::FqStrategy::arbitrary()).prop_flat_map(|option_fq| {
-        Size::arbitrary().prop_flat_map(move |children| {
-            bool::arbitrary().prop_map(move |variant| {
-                if let Some(here) = option_fq {
-                    if variant {
-                        Instruction::Node {
-                            here: Some(here),
-                            children,
+    /// Generate an arbitrary instruction.
+    pub fn instruction() -> impl proptest::prelude::Strategy<Value = Instruction> {
+        use proptest::prelude::*;
+
+        proptest::option::of(crate::commitment::FqStrategy::arbitrary()).prop_flat_map(
+            |option_fq| {
+                Size::arbitrary().prop_flat_map(move |children| {
+                    bool::arbitrary().prop_map(move |variant| {
+                        if let Some(here) = option_fq {
+                            if variant {
+                                Instruction::Node {
+                                    here: Some(here),
+                                    children,
+                                }
+                            } else {
+                                Instruction::Leaf { here }
+                            }
+                        } else {
+                            Instruction::Node {
+                                here: None,
+                                children,
+                            }
                         }
-                    } else {
-                        Instruction::Leaf { here }
-                    }
-                } else {
-                    Instruction::Node {
-                        here: None,
-                        children,
-                    }
-                }
-            })
-        })
-    })
+                    })
+                })
+            },
+        )
+    }
 }
 
 /// The number of children of a node we're creating.
@@ -100,7 +117,7 @@ pub trait Construct: Sized {
     ///
     /// Depending on location, the [`Fq`] contained in the instruction may be interpreted either as
     /// a [`Hash`] or as a [`Commitment`].
-    fn go(self, instruction: Instruction) -> IResult<Self>;
+    fn go(self, instruction: Instruction) -> Result<IResult<Self>, HitBottom>;
 
     /// Get the current index under construction in the traversal.
     fn index(&self) -> u64;
