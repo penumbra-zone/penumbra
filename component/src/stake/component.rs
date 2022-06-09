@@ -852,7 +852,7 @@ impl Component for Staking {
 
         if undelegation_identities.len() > 1 {
             return Err(anyhow!(
-                "Transaction contains undelegations from multiple validators: {:?}",
+                "transaction contains undelegations from multiple validators: {:?}",
                 undelegation_identities
             ));
         }
@@ -871,7 +871,7 @@ impl Component for Staking {
         // Check that validator definitions are correctly signed and well-formed:
         for definition in tx.validator_definitions() {
             let definition = validator::Definition::try_from(definition.clone())
-                .context("Supplied proto is not a valid definition")?;
+                .context("supplied proto is not a valid definition")?;
             // First, check the signature:
             let definition_bytes = definition.validator.encode_to_vec();
             definition
@@ -879,7 +879,7 @@ impl Component for Staking {
                 .identity_key
                 .0
                 .verify(&definition_bytes, &definition.auth_sig)
-                .context("Validator definition signature failed to verify")?;
+                .context("validator definition signature failed to verify")?;
 
             // TODO(hdevalence) -- is this duplicated by the check during parsing?
             // Check that the funding streams do not exceed 100% commission (10000bps)
@@ -892,7 +892,7 @@ impl Component for Staking {
 
             if total_funding_bps > 10000 {
                 return Err(anyhow::anyhow!(
-                    "Validator defined {} bps of funding streams, greater than 10000bps = 100%",
+                    "validator defined {} bps of funding streams, greater than 10000bps = 100%",
                     total_funding_bps
                 ));
             }
@@ -911,7 +911,7 @@ impl Component for Staking {
                 .next_validator_rate(&d.validator_identity)
                 .await?
                 .ok_or_else(|| {
-                    anyhow::anyhow!("Unknown validator identity {}", d.validator_identity)
+                    anyhow::anyhow!("unknown validator identity {}", d.validator_identity)
                 })?
                 .clone();
 
@@ -919,7 +919,7 @@ impl Component for Staking {
             // error message if it's wrong.
             if d.epoch_index != next_rate_data.epoch_index {
                 return Err(anyhow::anyhow!(
-                    "Delegation was prepared for epoch {} but the next epoch is {}",
+                    "delegation was prepared for epoch {} but the next epoch is {}",
                     d.epoch_index,
                     next_rate_data.epoch_index
                 ));
@@ -964,7 +964,7 @@ impl Component for Staking {
                     .or_insert(0) += i64::try_from(d.delegation_amount).unwrap();
             } else {
                 return Err(anyhow::anyhow!(
-                    "Given {} unbonded stake, expected {} delegation tokens but description produces {}",
+                    "given {} unbonded stake, expected {} delegation tokens but description produces {}",
                     d.unbonded_amount,
                     expected_delegation_amount,
                     d.delegation_amount
@@ -977,14 +977,14 @@ impl Component for Staking {
                 .next_validator_rate(&u.validator_identity)
                 .await?
                 .ok_or_else(|| {
-                    anyhow::anyhow!("Unknown validator identity {}", u.validator_identity)
+                    anyhow::anyhow!("unknown validator identity {}", u.validator_identity)
                 })?;
 
             // Check whether the epoch is correct first, to give a more helpful
             // error message if it's wrong.
             if u.epoch_index != rate_data.epoch_index {
                 return Err(anyhow::anyhow!(
-                    "Undelegation was prepared for next epoch {} but the next epoch is {}",
+                    "undelegation was prepared for next epoch {} but the next epoch is {}",
                     u.epoch_index,
                     rate_data.epoch_index
                 ));
@@ -1017,7 +1017,7 @@ impl Component for Staking {
                     .or_insert(0) -= i64::try_from(u.delegation_amount).unwrap();
             } else {
                 return Err(anyhow::anyhow!(
-                    "Given {} delegation tokens, expected {} unbonded stake but description produces {}",
+                    "given {} delegation tokens, expected {} unbonded stake but description produces {}",
                     u.delegation_amount,
                     expected_unbonded_amount,
                     u.unbonded_amount,
@@ -1028,7 +1028,7 @@ impl Component for Staking {
         // Check that the sequence numbers of updated validators are correct.
         for v in tx.validator_definitions() {
             let v = validator::Definition::try_from(v.clone())
-                .context("Supplied proto is not a valid definition")?;
+                .context("supplied proto is not a valid definition")?;
             let existing_v = self.state.validator(&v.validator.identity_key).await?;
 
             if let Some(existing_v) = existing_v {
@@ -1037,7 +1037,7 @@ impl Component for Staking {
                 let current_seq = existing_v.sequence_number;
                 if v.validator.sequence_number <= current_seq {
                     return Err(anyhow::anyhow!(
-                        "Expected sequence numbers to be increasing. Current sequence number is {}",
+                        "expected sequence numbers to be increasing: current sequence number is {}",
                         current_seq
                     ));
                 }
