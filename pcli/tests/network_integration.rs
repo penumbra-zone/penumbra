@@ -10,8 +10,11 @@ use assert_cmd::{prelude::*, Command};
 use predicates::prelude::*;
 use tempfile::{tempdir, TempDir};
 
-// These addresses both correspond to the test address that was created and added to
-// the allocations beginning with 016-Pandia for integration testing.
+// This address is for test purposes, allocations were added beginning with
+// the 016-Pandia testnet.
+const TEST_SEED_PHRASE: &'static str = "benefit cherry cannon tooth exhibit law avocado spare tooth that amount pumpkin scene foil tape mobile shine apology add crouch situate sun business explain";
+
+// These addresses both correspond to the test wallet above.
 const TEST_ADDRESS_0: &'static str = "penumbrav1t19amxg2dsmv6kfgfu8w7qqeqc4kxhtagz6nk0vt4kvy4wc5r39hqs47z9qxq9g5cljje4zrnvxghzyn5a24mhxc93e6gy2qrmtl0hgcnelmy48stgmc2ryujm0xhfeqhmazxzft";
 const TEST_ADDRESS_1: &'static str = "penumbrav1t1fgxxj6r6hq489hyn56dmh2aezq54c5gq56tnc7d8fm78j36frsmzpgcm0vy8yg56hdsu9a0ym3npmtvl8xwltknyy85q7ffq59759mnc9ww5z5xy2vpsuxazyxplx290uwment";
 
@@ -25,7 +28,7 @@ fn load_wallet_into_tmpdir() -> TempDir {
         tmpdir.path().to_str().unwrap(),
         "wallet",
         "import-from-phrase",
-        option_env!("SEED_PHRASE").expect("please configure the test SEED_PHRASE env var"),
+        TEST_SEED_PHRASE,
     ]);
     setup_cmd
         .assert()
