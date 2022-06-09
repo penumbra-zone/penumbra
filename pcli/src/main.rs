@@ -41,13 +41,18 @@ use command::*;
 )]
 pub struct Opt {
     /// The address of the pd+tendermint node.
-    #[clap(short, long, default_value = "testnet.penumbra.zone")]
+    #[clap(
+        short,
+        long,
+        default_value = "testnet.penumbra.zone",
+        env = "PENUMBRA_NODE_HOSTNAME"
+    )]
     pub node: String,
     /// The port to use to speak to tendermint's RPC server.
-    #[clap(long, default_value = "26657")]
+    #[clap(long, default_value_t = 26657, env = "PENUMBRA_TENDERMINT_PORT")]
     pub tendermint_port: u16,
     /// The port to use to speak to pd's gRPC server.
-    #[clap(long, default_value = "8080")]
+    #[clap(long, default_value_t = 8080, env = "PENUMBRA_PD_PORT")]
     pub pd_port: u16,
     #[clap(subcommand)]
     pub cmd: Command,
@@ -55,7 +60,7 @@ pub struct Opt {
     #[clap(short, long, default_value_t = default_data_dir())]
     pub data_path: Utf8PathBuf,
     /// If set, use a remote view service instead of local synchronization.
-    #[clap(short, long)]
+    #[clap(short, long, env = "PENUMBRA_VIEW_ADDRESS")]
     pub view_address: Option<SocketAddr>,
 }
 

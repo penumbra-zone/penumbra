@@ -64,7 +64,7 @@ rand_chacha = "0.3.1"
 rand_core = { version = "0.6.3", features = ["getrandom"] }
 indicatif = "0.16"
 http-body = "0.4.5"
-clap = { version = "3", features = ["derive"] }
+clap = { version = "3", features = ["derive", "env"] }
 camino = "1"
 
 [build-dependencies]
