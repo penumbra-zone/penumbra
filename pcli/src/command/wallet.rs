@@ -1,4 +1,4 @@
-use std::{path::PathBuf, str::FromStr};
+use std::str::FromStr;
 
 use anyhow::{anyhow, Result};
 use directories::ProjectDirs;
@@ -57,7 +57,8 @@ impl WalletCmd {
         Ok(())
     }
 
-    pub fn exec(&self, data_dir: PathBuf) -> Result<()> {
+    pub fn exec(&self, data_dir: impl AsRef<camino::Utf8Path>) -> Result<()> {
+        let data_dir = data_dir.as_ref();
         match self {
             WalletCmd::Generate => {
                 let seed_phrase = SeedPhrase::generate(&mut OsRng);
@@ -86,16 +87,16 @@ impl WalletCmd {
                 let wallet_path = data_dir.join(crate::CUSTODY_FILE_NAME);
                 if wallet_path.is_file() {
                     std::fs::remove_file(&wallet_path)?;
-                    println!("Deleted wallet file at {}", wallet_path.display());
+                    println!("Deleted wallet file at {}", wallet_path);
                 } else if wallet_path.exists() {
                     return Err(anyhow!(
                             "Expected wallet file at {} but found something that is not a file; refusing to delete it",
-                            wallet_path.display()
+                            wallet_path
                         ));
                 } else {
                     return Err(anyhow!(
                         "No wallet exists at {}, so it cannot be deleted",
-                        wallet_path.display()
+                        wallet_path
                     ));
                 }
             }
@@ -104,16 +105,16 @@ impl WalletCmd {
                 let view_path = data_dir.join(crate::VIEW_FILE_NAME);
                 if view_path.is_file() {
                     std::fs::remove_file(&view_path)?;
-                    println!("Deleted view data at {}", view_path.display());
+                    println!("Deleted view data at {}", view_path);
                 } else if view_path.exists() {
                     return Err(anyhow!(
                             "Expected view data at {} but found something that is not a file; refusing to delete it",
-                            view_path.display()
+                            view_path
                         ));
                 } else {
                     return Err(anyhow!(
                         "No view data exists at {}, so it cannot be deleted",
-                        view_path.display()
+                        view_path
                     ));
                 }
             }

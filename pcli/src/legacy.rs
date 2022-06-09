@@ -7,7 +7,13 @@ use serde::{Deserialize, Serialize};
 pub const WALLET_FILE_NAME: &'static str = "penumbra_wallet.json";
 
 /// Migrate from a legacy wallet to the current wallet format.
-pub fn migrate(legacy_wallet_path: &Path, custody_path: &Path) -> anyhow::Result<()> {
+pub fn migrate(
+    legacy_wallet_path: impl AsRef<Path>,
+    custody_path: impl AsRef<Path>,
+) -> anyhow::Result<()> {
+    let legacy_wallet_path = legacy_wallet_path.as_ref();
+    let custody_path = custody_path.as_ref();
+
     tracing::info!("Migrating legacy wallet to new wallet format");
     let legacy_wallet: ClientState =
         serde_json::from_slice(std::fs::read(legacy_wallet_path)?.as_slice())?;
