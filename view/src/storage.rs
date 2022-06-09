@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Context};
+use camino::Utf8Path;
 use futures::Future;
 use parking_lot::Mutex;
 use penumbra_chain::params::ChainParams;
@@ -12,7 +13,7 @@ use penumbra_proto::{
 };
 use penumbra_tct as tct;
 use sqlx::{migrate::MigrateDatabase, query, Pool, Sqlite};
-use std::{num::NonZeroU64, path::PathBuf, sync::Arc};
+use std::{num::NonZeroU64, sync::Arc};
 use tct::Commitment;
 use tokio::sync::broadcast;
 
@@ -37,13 +38,14 @@ pub struct Storage {
 impl Storage {
     /// If the database at `storage_path` exists, [`Self::load`] it, otherwise, [`Self::initialize`] it.
     pub async fn load_or_initialize(
-        storage_path: String,
+        storage_path: impl AsRef<Utf8Path>,
         fvk: &FullViewingKey,
         node: String,
         pd_port: u16,
     ) -> anyhow::Result<Self> {
-        if PathBuf::from(&storage_path).exists() {
-            Self::load(storage_path).await
+        let storage_path = storage_path.as_ref();
+        if storage_path.exists() {
+            Self::load(storage_path.as_str()).await
         } else {
             let mut client =
                 ObliviousQueryClient::connect(format!("http://{}:{}", node, pd_port)).await?;
@@ -58,31 +60,32 @@ impl Storage {
         }
     }
 
-    pub async fn load(storage_path: String) -> anyhow::Result<Self> {
+    pub async fn load(path: impl AsRef<Utf8Path>) -> anyhow::Result<Self> {
         Ok(Self {
-            pool: Pool::<Sqlite>::connect(&storage_path).await?,
+            pool: Pool::<Sqlite>::connect(path.as_ref().as_str()).await?,
             uncommitted_height: Arc::new(Mutex::new(None)),
             scanned_notes_tx: broadcast::channel(10).0,
         })
     }
 
     pub async fn initialize(
-        storage_path: String,
+        storage_path: impl AsRef<Utf8Path>,
         fvk: FullViewingKey,
         params: ChainParams,
     ) -> anyhow::Result<Self> {
-        tracing::debug!(?storage_path, ?fvk, ?params);
+        let storage_path = storage_path.as_ref();
+        tracing::debug!(%storage_path, ?fvk, ?params);
         // We don't want to overwrite existing data,
         // but also, SQLX will complain if the file doesn't already exist
-        if PathBuf::from(&storage_path).exists() {
+        if storage_path.exists() {
             return Err(anyhow!("Database already exists at: {}", storage_path));
         } else {
             std::fs::File::create(&storage_path)?;
         }
         // Create the SQLite database
-        sqlx::Sqlite::create_database(&storage_path);
+        sqlx::Sqlite::create_database(storage_path.as_str());
 
-        let pool = Pool::<Sqlite>::connect(&storage_path).await?;
+        let pool = Pool::<Sqlite>::connect(&storage_path.as_str()).await?;
 
         // Run migrations
         sqlx::migrate!().run(&pool).await?;

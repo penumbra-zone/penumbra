@@ -1,6 +1,7 @@
 #![recursion_limit = "256"]
 #![allow(clippy::clone_on_copy)]
 use anyhow::{Context, Result};
+use camino::Utf8PathBuf;
 use clap::{Parser, Subcommand};
 use penumbra_crypto::FullViewingKey;
 use penumbra_proto::client::oblivious::oblivious_query_client::ObliviousQueryClient;
@@ -23,7 +24,7 @@ struct Opt {
     cmd: Command,
     /// The path used to store the state database.
     #[clap(short, long, default_value = "pviewd-db.sqlite")]
-    sqlite_path: String,
+    sqlite_path: Utf8PathBuf,
     /// The address of the pd+tendermint node.
     #[clap(short, long, default_value = "testnet.penumbra.zone")]
     node: String,
@@ -72,7 +73,7 @@ async fn main() -> Result<()> {
                 .try_into()?;
 
             penumbra_view::Storage::initialize(
-                opt.sqlite_path,
+                opt.sqlite_path.as_path(),
                 FullViewingKey::from_str(full_viewing_key.as_ref())
                     .context("The provided string is not a valid FullViewingKey")?,
                 params,
