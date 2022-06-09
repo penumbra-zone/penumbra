@@ -614,6 +614,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "camino"
+version = "1.0.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "869119e97797867fd90f5e22af7d0bd274bd4635ebb9eb68c04f3f513ae6c412"
+
+[[package]]
 name = "cast"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2638,6 +2644,7 @@ dependencies = [
  "bincode",
  "blake2b_simd 0.5.11",
  "bytes",
+ "camino",
  "clap 3.1.18",
  "comfy-table",
  "decaf377",

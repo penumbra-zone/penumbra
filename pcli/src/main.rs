@@ -1,12 +1,10 @@
 // Rust analyzer complains without this (but rustc is happy regardless)
 #![recursion_limit = "256"]
 #![allow(clippy::clone_on_copy)]
-use std::{
-    net::SocketAddr,
-    path::{Path, PathBuf},
-};
+use std::{net::SocketAddr, path::Path};
 
 use anyhow::{Context, Result};
+use camino::Utf8PathBuf;
 use clap::Parser;
 use directories::ProjectDirs;
 use futures::StreamExt;
@@ -53,9 +51,9 @@ pub struct Opt {
     pub pd_port: u16,
     #[clap(subcommand)]
     pub cmd: Command,
-    /// The directory to store the wallet and view data in [default: platform appdata directory]
-    #[clap(short, long)]
-    pub data_path: Option<String>,
+    /// The directory to store the wallet and view data in.
+    #[clap(short, long, default_value_t = default_data_dir())]
+    pub data_path: Utf8PathBuf,
     /// If set, use a remote view service instead of local synchronization.
     #[clap(short, long)]
     pub view_address: Option<SocketAddr>,
@@ -94,6 +92,15 @@ impl Opt {
         Ok(ViewProtocolClient::new(svc))
     }
 }
+
+fn default_data_dir() -> Utf8PathBuf {
+    let path = ProjectDirs::from("zone", "penumbra", "pcli")
+        .expect("Failed to get platform data dir")
+        .data_dir()
+        .to_path_buf();
+    Utf8PathBuf::from_path_buf(path).expect("Platform default data dir was not UTF-8")
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     // Display a warning message to the user so they don't get upset when all their tokens are lost.
@@ -104,35 +111,25 @@ async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
     let opt = Opt::parse();
 
-    let default_data_dir = ProjectDirs::from("zone", "penumbra", "pcli")
-        .context("Failed to get platform data dir")?
-        .data_dir()
-        .to_path_buf();
-    let data_dir = opt
-        .data_path
-        .as_ref()
-        .map(|s| PathBuf::from(s))
-        .unwrap_or(default_data_dir);
-
+    let data_dir = &opt.data_path;
     // Create the data directory if it is missing.
-    std::fs::create_dir_all(&data_dir).context("Failed to create data directory")?;
+    std::fs::create_dir_all(data_dir).context("Failed to create data directory")?;
 
     let custody_path = data_dir.join(CUSTODY_FILE_NAME);
-
     let legacy_wallet_path = data_dir.join(legacy::WALLET_FILE_NAME);
 
     // Try to auto-migrate the legacy wallet file to the new location, if:
     // - the legacy wallet file exists
     // - the new wallet file does not exist
     if legacy_wallet_path.exists() && !custody_path.exists() {
-        legacy::migrate(&legacy_wallet_path, &custody_path)?;
+        legacy::migrate(&legacy_wallet_path, &custody_path.as_path())?;
     }
 
     // The wallet command takes the data dir directly, since it may need to
     // create the client state, so handle it specially here so that we can have
     // common code for the other subcommands.
     if let Command::Wallet(wallet_cmd) = &opt.cmd {
-        wallet_cmd.exec(data_dir)?;
+        wallet_cmd.exec(data_dir.as_path())?;
         return Ok(());
     }
 

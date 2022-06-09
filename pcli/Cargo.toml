@@ -65,6 +65,7 @@ rand_core = { version = "0.6.3", features = ["getrandom"] }
 indicatif = "0.16"
 http-body = "0.4.5"
 clap = { version = "3", features = ["derive"] }
+camino = "1"
 
 [build-dependencies]
 vergen = "5"
