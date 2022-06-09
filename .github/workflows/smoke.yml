@@ -21,12 +21,15 @@ jobs:
           chmod -R 777 ~/.penumbra/testnet_data
           docker-compose build
 
-      - name: Configure local wallet.
-        run: cargo run --bin pcli -- wallet import-from-phrase "$SEED_PHRASE" &> /dev/null
-        env:
-          SEED_PHRASE: ${{ secrets.TEST_SEED_PHRASE }}
-
       - name: Run testnet for smoke test duration.
         run: timeout --preserve-status $TESTNET_RUNTIME docker-compose up --exit-code-from pd-node0
         env:
-          TESTNET_RUNTIME: 4m
+          TESTNET_RUNTIME: 5m
+
+      - name: Now start testnet again in the background so we can run integration tests.
+        run: docker-compose up --detach pd-node0
+
+      - name: Run integration tests against localhost.
+        run: cargo test --package pcli -- --ignored
+        env:
+          PENUMBRA_NODE: 192.167.10.10
