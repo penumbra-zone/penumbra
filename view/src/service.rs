@@ -5,6 +5,7 @@ use std::{
 
 use anyhow::anyhow;
 use async_stream::try_stream;
+use camino::Utf8Path;
 use futures::stream::{StreamExt, TryStreamExt};
 use penumbra_crypto::{
     asset,
@@ -53,7 +54,7 @@ pub struct ViewService {
 impl ViewService {
     /// Convenience method that calls [`Storage::load_or_initialize`] and then [`Self::new`].
     pub async fn load_or_initialize(
-        storage_path: String,
+        storage_path: impl AsRef<Utf8Path>,
         fvk: &FullViewingKey,
         node: String,
         pd_port: u16,

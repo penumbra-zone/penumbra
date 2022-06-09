@@ -32,6 +32,7 @@ use wallet::Wallet;
 const CUSTODY_FILE_NAME: &'static str = "custody.json";
 const VIEW_FILE_NAME: &'static str = "pcli-view.sqlite";
 
+use box_grpc_svc::BoxGrpcService;
 use command::*;
 
 #[derive(Debug, Parser)]
@@ -68,9 +69,97 @@ pub struct Opt {
     pub trace_filter: EnvFilter,
 }
 
+#[derive(Debug)]
+pub struct App {
+    pub view: ViewProtocolClient<BoxGrpcService>,
+    pub custody: CustodyProtocolClient<BoxGrpcService>,
+    pub fvk: FullViewingKey,
+    pub wallet: Wallet,
+    pub pd_addr: String,
+    pub tendermint_addr: String,
+}
+
+impl App {
+    async fn from_opts(opts: &Opt) -> Result<Self> {
+        // Create the data directory if it is missing.
+        std::fs::create_dir_all(&opts.data_path).context("Failed to create data directory")?;
+
+        let custody_path = opts.data_path.join(CUSTODY_FILE_NAME);
+        let legacy_wallet_path = opts.data_path.join(legacy::WALLET_FILE_NAME);
+
+        // Try to auto-migrate the legacy wallet file to the new location, if:
+        // - the legacy wallet file exists
+        // - the new wallet file does not exist
+        if legacy_wallet_path.exists() && !custody_path.exists() {
+            legacy::migrate(&legacy_wallet_path, &custody_path.as_path())?;
+        }
+
+        // Build the custody service...
+        let wallet = Wallet::load(custody_path)?;
+        let soft_hsm = SoftHSM::new(vec![wallet.spend_key.clone()]);
+        let custody_svc = CustodyProtocolServer::new(soft_hsm);
+        let custody = CustodyProtocolClient::new(box_grpc_svc::local(custody_svc));
+
+        let fvk = wallet.spend_key.full_viewing_key().clone();
+
+        // ...and the view service...
+        let view = opts.view_client(&fvk).await?;
+
+        let pd_addr = format!("{}:{}", opts.node, opts.pd_port);
+        let tendermint_addr = format!("{}:{}", opts.node, opts.tendermint_port);
+
+        Ok(Self {
+            view,
+            custody,
+            fvk,
+            wallet,
+            pd_addr,
+            tendermint_addr,
+        })
+    }
+
+    async fn sync(&mut self) -> Result<()> {
+        let mut status_stream = ViewClient::status_stream(&mut self.view, self.fvk.hash()).await?;
+
+        // Pull out the first message from the stream, which has the current state, and use
+        // it to set up a progress bar.
+        let initial_status = status_stream
+            .next()
+            .await
+            .transpose()?
+            .ok_or_else(|| anyhow::anyhow!("view service did not report sync status"))?;
+
+        println!(
+            "Scanning blocks from last sync height {} to latest height {}",
+            initial_status.sync_height, initial_status.latest_known_block_height,
+        );
+
+        use indicatif::{ProgressBar, ProgressDrawTarget, ProgressStyle};
+        let progress_bar = ProgressBar::with_draw_target(
+            initial_status.latest_known_block_height - initial_status.sync_height,
+            ProgressDrawTarget::stdout(),
+        )
+        .with_style(
+            ProgressStyle::default_bar()
+                .template("[{elapsed}] {bar:50.cyan/blue} {pos:>7}/{len:7} {per_sec} ETA: {eta}"),
+        );
+        progress_bar.set_position(0);
+
+        while let Some(status) = status_stream.next().await.transpose()? {
+            progress_bar.set_position(status.sync_height - initial_status.sync_height);
+        }
+        progress_bar.finish();
+
+        Ok(())
+    }
+}
+
 impl Opt {
     /// Constructs a [`ViewProtocolClient`] based on the command-line options.
-    async fn view_client(&self, fvk: &FullViewingKey, data_dir: &Path) -> Result<impl ViewClient> {
+    async fn view_client(
+        &self,
+        fvk: &FullViewingKey,
+    ) -> Result<ViewProtocolClient<BoxGrpcService>> {
         let svc = if let Some(address) = self.view_address {
             // Use a remote view service.
             tracing::info!(%address, "using remote view service");
@@ -79,13 +168,11 @@ impl Opt {
             box_grpc_svc::connect(ep).await?
         } else {
             // Use an in-memory view service.
-            let path = data_dir.join(VIEW_FILE_NAME);
-            tracing::info!(path = %path.display(), "using local view service");
+            let path = self.data_path.join(VIEW_FILE_NAME);
+            tracing::info!(%path, "using local view service");
 
             let svc = ViewService::load_or_initialize(
-                path.to_str()
-                    .ok_or_else(|| anyhow::anyhow!("Non-UTF8 view path"))?
-                    .to_string(),
+                path,
                 &fvk,
                 self.node.clone(),
                 self.pd_port,
@@ -123,69 +210,18 @@ async fn main() -> Result<()> {
         .with_env_filter(std::mem::take(&mut opt.trace_filter))
         .init();
 
-    let data_dir = &opt.data_path;
-    // Create the data directory if it is missing.
-    std::fs::create_dir_all(data_dir).context("Failed to create data directory")?;
-
-    let custody_path = data_dir.join(CUSTODY_FILE_NAME);
-    let legacy_wallet_path = data_dir.join(legacy::WALLET_FILE_NAME);
-
-    // Try to auto-migrate the legacy wallet file to the new location, if:
-    // - the legacy wallet file exists
-    // - the new wallet file does not exist
-    if legacy_wallet_path.exists() && !custody_path.exists() {
-        legacy::migrate(&legacy_wallet_path, &custody_path.as_path())?;
-    }
-
     // The wallet command takes the data dir directly, since it may need to
     // create the client state, so handle it specially here so that we can have
     // common code for the other subcommands.
     if let Command::Wallet(wallet_cmd) = &opt.cmd {
-        wallet_cmd.exec(data_dir.as_path())?;
+        wallet_cmd.exec(opt.data_path.as_path())?;
         return Ok(());
     }
 
-    // Otherwise, build the custody service...
-    let wallet = Wallet::load(custody_path)?;
-    let soft_hsm = SoftHSM::new(vec![wallet.spend_key.clone()]);
-    let mut custody = CustodyProtocolClient::new(CustodyProtocolServer::new(soft_hsm));
-
-    let fvk = wallet.spend_key.full_viewing_key().clone();
-
-    // ...and the view service...
-    let mut view = opt.view_client(&fvk, data_dir.as_ref()).await?;
+    let mut app = App::from_opts(&opt).await?;
 
     if opt.cmd.needs_sync() {
-        let mut status_stream = view.status_stream(fvk.hash()).await?;
-
-        // Pull out the first message from the stream, which has the current state, and use
-        // it to set up a progress bar.
-        let initial_status = status_stream
-            .next()
-            .await
-            .transpose()?
-            .ok_or_else(|| anyhow::anyhow!("view service did not report sync status"))?;
-
-        println!(
-            "Scanning blocks from last sync height {} to latest height {}",
-            initial_status.sync_height, initial_status.latest_known_block_height,
-        );
-
-        use indicatif::{ProgressBar, ProgressDrawTarget, ProgressStyle};
-        let progress_bar = ProgressBar::with_draw_target(
-            initial_status.latest_known_block_height - initial_status.sync_height,
-            ProgressDrawTarget::stdout(),
-        )
-        .with_style(
-            ProgressStyle::default_bar()
-                .template("[{elapsed}] {bar:50.cyan/blue} {pos:>7}/{len:7} {per_sec} ETA: {eta}"),
-        );
-        progress_bar.set_position(0);
-
-        while let Some(status) = status_stream.next().await.transpose()? {
-            progress_bar.set_position(status.sync_height - initial_status.sync_height);
-        }
-        progress_bar.finish();
+        app.sync().await?;
     }
 
     // TODO: this is a mess, figure out the right way to bundle up the clients + fvk
@@ -197,15 +233,22 @@ async fn main() -> Result<()> {
         Command::Sync => {
             // We have already synchronized the wallet above, so we can just return.
         }
-        Command::Tx(tx_cmd) => tx_cmd.exec(&opt, &fvk, &mut view, &mut custody).await?,
-        Command::Addr(addr_cmd) => addr_cmd.exec(&fvk)?,
-        Command::Balance(balance_cmd) => balance_cmd.exec(&fvk, &mut view).await?,
-        Command::Validator(cmd) => {
-            cmd.exec(&opt, &wallet.spend_key, &mut view, &mut custody)
+        Command::Tx(tx_cmd) => {
+            tx_cmd
+                .exec(&opt, &app.fvk, &mut app.view, &mut app.custody)
                 .await?
         }
-        Command::Stake(cmd) => cmd.exec(&opt, &fvk, &mut view, &mut custody).await?,
-        Command::Chain(cmd) => cmd.exec(&opt, &fvk, &mut view).await?,
+        Command::Addr(addr_cmd) => addr_cmd.exec(&app.fvk)?,
+        Command::Balance(balance_cmd) => balance_cmd.exec(&app.fvk, &mut app.view).await?,
+        Command::Validator(cmd) => {
+            cmd.exec(&opt, &app.wallet.spend_key, &mut app.view, &mut app.custody)
+                .await?
+        }
+        Command::Stake(cmd) => {
+            cmd.exec(&opt, &app.fvk, &mut app.view, &mut app.custody)
+                .await?
+        }
+        Command::Chain(cmd) => cmd.exec(&opt, &app.fvk, &mut app.view).await?,
         Command::Q(cmd) => cmd.exec(&opt).await?,
     }
 
