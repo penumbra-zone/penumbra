@@ -86,3 +86,13 @@ message GenesisAppState {
     repeated stake.Validator validators = 2;
     repeated Allocation allocations = 3;
 }
+
+message QuarantinedPerValidator {
+  crypto.IdentityKey identity_key = 1;
+  repeated crypto.NotePayload note_payloads = 2;
+  repeated crypto.Nullifier nullifiers = 3;
+}
+
+message Quarantined {
+  repeated QuarantinedPerValidator quarantined = 1;
+}
