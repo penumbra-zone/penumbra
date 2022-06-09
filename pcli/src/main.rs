@@ -18,6 +18,7 @@ use penumbra_proto::{
     view::{view_protocol_client::ViewProtocolClient, view_protocol_server::ViewProtocolServer},
 };
 use penumbra_view::{ViewClient, ViewService};
+use tracing_subscriber::EnvFilter;
 
 mod box_grpc_svc;
 mod command;
@@ -62,6 +63,9 @@ pub struct Opt {
     /// If set, use a remote view service instead of local synchronization.
     #[clap(short, long, env = "PENUMBRA_VIEW_ADDRESS")]
     pub view_address: Option<SocketAddr>,
+    /// The filter for `pcli`'s log messages.
+    #[clap( long, default_value_t = EnvFilter::new("warn"), env = "RUST_LOG")]
+    pub trace_filter: EnvFilter,
 }
 
 impl Opt {
@@ -113,8 +117,11 @@ async fn main() -> Result<()> {
         warning::display();
     }
 
-    tracing_subscriber::fmt::init();
-    let opt = Opt::parse();
+    let mut opt = Opt::parse();
+
+    tracing_subscriber::fmt()
+        .with_env_filter(std::mem::take(&mut opt.trace_filter))
+        .init();
 
     let data_dir = &opt.data_path;
     // Create the data directory if it is missing.
