@@ -3,7 +3,7 @@ use tendermint::block;
 /// Penumbra groups blocks into epochs and restricts validator changes to epoch boundaries.
 ///
 /// The epoch duration is a chain parameter and cannot be changed after initialization.
-#[derive(Debug, Eq, PartialEq, Copy, Clone)]
+#[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone)]
 pub struct Epoch {
     pub index: u64,
     pub duration: u64,
@@ -45,6 +45,17 @@ impl Epoch {
     pub fn prev(&self) -> Self {
         Epoch {
             index: self.index - 1,
+            duration: self.duration,
+        }
+    }
+}
+
+impl std::ops::Add<u64> for Epoch {
+    type Output = Epoch;
+
+    fn add(self, other: u64) -> Self::Output {
+        Epoch {
+            index: self.index + other,
             duration: self.duration,
         }
     }
