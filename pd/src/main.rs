@@ -49,7 +49,7 @@ enum Command {
         #[clap(short, long)]
         rocks_path: PathBuf,
         /// Bind the services to this host.
-        #[clap(short, long, default_value = "127.0.0.1")]
+        #[clap(long, default_value = "127.0.0.1")]
         host: String,
         /// Bind the ABCI server to this port.
         #[clap(short, long, default_value = "26658")]
