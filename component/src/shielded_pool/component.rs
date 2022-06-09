@@ -36,9 +36,15 @@ impl ShieldedPool {
     #[instrument(name = "shielded_pool", skip(state, note_commitment_tree))]
     pub async fn new(state: State, note_commitment_tree: tct::Tree) -> Self {
         Self {
-            state,
             note_commitment_tree,
-            compact_block: Default::default(),
+            // If a previous component started writing into the compact block (i.e. staking
+            // recording rolled back nullifiers and notes), retrieve it
+            compact_block: state
+                .compact_block(state.get_block_height().await.expect("can get height"))
+                .await
+                .expect("can get compact block")
+                .unwrap_or_default(),
+            state,
             quarantined: Quarantined::default(),
         }
     }
@@ -857,7 +863,11 @@ pub trait View: StateExt {
         Ok(())
     }
 
-    async fn unschedule_unquarantine(&self, epoch: Epoch, identity_key: IdentityKey) -> Result<()> {
+    async fn unschedule_unquarantine(
+        &self,
+        epoch: Epoch,
+        identity_key: IdentityKey,
+    ) -> Result<super::quarantined::PerValidator> {
         let mut updated_quarantined = self.quarantined_to_apply(epoch).await?;
         let per_validator = updated_quarantined
             .quarantined
@@ -867,13 +877,52 @@ pub trait View: StateExt {
         self.put_domain(state_key::quarantined_to_apply(epoch), updated_quarantined)
             .await;
         // Now we also ought to remove these nullifiers and notes from quarantine, but *not* apply them:
-        for nullifier in per_validator.nullifiers {
+        for &nullifier in per_validator.nullifiers.iter() {
             self.try_unquarantine_nullifier(false, nullifier).await?;
         }
-        for note_payload in per_validator.notes {
+        for note_payload in per_validator.notes.iter() {
             self.unquarantine_note(&note_payload.note_commitment)
                 .await?;
         }
+
+        // Return the per_validator structure so we can use it later
+        Ok(per_validator)
+    }
+
+    // Unschedule the unquarantining of all notes and nullifiers for the given validator, in any
+    // epoch which could possibly still be unbonding
+    async fn unschedule_unquarantine_all(&self, identity_key: IdentityKey) -> Result<()> {
+        let height = self.get_block_height().await?;
+        let epoch_duration = self.get_epoch_duration().await?;
+        let this_epoch = Epoch::from_height(height, epoch_duration);
+        let unbonding_epochs = self.get_chain_params().await?.unbonding_epochs;
+
+        // We will edit the compact block to note the rolled back nullifiers and commitments
+        let mut compact_block = self.compact_block(height).await?.unwrap_or_default();
+
+        for index in this_epoch.index.saturating_sub(unbonding_epochs)..=this_epoch.index {
+            let per_validator = self
+                .unschedule_unquarantine(
+                    Epoch {
+                        index,
+                        duration: epoch_duration,
+                    },
+                    identity_key,
+                )
+                .await?;
+
+            // Add the rolled back nullifiers and commitments to the compact block
+            compact_block
+                .rolled_back_nullifiers
+                .extend(per_validator.nullifiers);
+            compact_block
+                .rolled_back_note_commitments
+                .extend(per_validator.notes.iter().map(|n| n.note_commitment));
+        }
+
+        // Only write the compact block back to the state once
+        self.set_compact_block(compact_block).await;
+
         Ok(())
     }
 

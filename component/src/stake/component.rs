@@ -1264,19 +1264,7 @@ pub trait View: StateExt {
         // Whenever a slashing penalty is applied, we need to cancel all pending undelegations that
         // could possibly have still been pending, because the exchange rate has now changed andt
         // therefore those undelegations are now invalid:
-        let epoch_duration = self.get_epoch_duration().await?;
-        let this_epoch = Epoch::from_height(self.get_block_height().await?, epoch_duration);
-        let unbonding_epochs = self.get_chain_params().await?.unbonding_epochs;
-        for index in this_epoch.index.saturating_sub(unbonding_epochs)..=this_epoch.index {
-            self.unschedule_unquarantine(
-                Epoch {
-                    index,
-                    duration: epoch_duration,
-                },
-                *identity_key,
-            )
-            .await?;
-        }
+        self.unschedule_unquarantine_all(*identity_key).await?;
 
         Ok(())
     }
