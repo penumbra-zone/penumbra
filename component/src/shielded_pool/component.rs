@@ -1,6 +1,9 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
-use crate::{Component, Context};
+use crate::{
+    stake::{validator, View as _},
+    Component, Context,
+};
 use anyhow::{anyhow, Context as _, Result};
 use ark_ff::PrimeField;
 use async_trait::async_trait;
@@ -26,9 +29,9 @@ pub struct ShieldedPool {
     /// The in-progress CompactBlock representation of the ShieldedPool changes
     compact_block: CompactBlock,
     /// The scheduled quarantine actions for notes (processed all at once in end_block)
-    quarantine_notes: Vec<(IdentityKey, NotePayload)>,
+    quarantine_notes: BTreeMap<IdentityKey, Vec<NotePayload>>,
     /// The scheduled quarantine actions for nullifiers (processed all at once in end_block)
-    quarantine_nullifiers: Vec<(IdentityKey, Nullifier)>,
+    quarantine_nullifiers: BTreeMap<IdentityKey, Vec<Nullifier>>,
 }
 
 impl ShieldedPool {
@@ -38,8 +41,8 @@ impl ShieldedPool {
             state,
             note_commitment_tree,
             compact_block: Default::default(),
-            quarantine_notes: Vec::new(),
-            quarantine_nullifiers: Vec::new(),
+            quarantine_notes: Default::default(),
+            quarantine_nullifiers: Default::default(),
         }
     }
 
@@ -175,17 +178,30 @@ impl Component for ShieldedPool {
 
     #[instrument(name = "shielded_pool", skip(self, ctx, tx))]
     async fn execute_tx(&mut self, ctx: Context, tx: &Transaction) {
-        let should_quarantine = tx.transaction_body.actions.iter().find_map(|action| {
+        let mut should_quarantine = tx.transaction_body.actions.iter().find_map(|action| {
             if let Action::Undelegate(Undelegate {
                 validator_identity, ..
             }) = action
             {
                 Some(validator_identity)
-                // TODO: if validator is unbonding, we need to schedule unquarantine for earlier
             } else {
                 None
             }
         });
+
+        // If the validator is unbonded, undelegations take effect immediately
+        if let Some(identity_key) = should_quarantine {
+            if matches!(
+                self.state
+                    .validator_bonding_state(identity_key)
+                    .await
+                    .expect("validator lookup in state succeeds")
+                    .expect("validator is present in state"),
+                validator::BondingState::Unbonded
+            ) {
+                should_quarantine = None;
+            }
+        }
 
         let source = NoteSource::Transaction { id: tx.id() };
 
@@ -196,7 +212,9 @@ impl Component for ShieldedPool {
                 // Queue up scheduling this note to be unquarantined: the actual state-writing for
                 // all quarantined notes happens during end_block, to avoid state churn
                 self.quarantine_notes
-                    .push((identity_key, quarantined_output));
+                    .entry(identity_key)
+                    .or_insert_with(Vec::new)
+                    .push(quarantined_output);
             }
             for quarantined_spent_nullifier in tx.spent_nullifiers() {
                 // We need to record the nullifier as spent under quarantine in the JMT (to prevent
@@ -211,7 +229,9 @@ impl Component for ShieldedPool {
                 // Queue up scheduling this nullifier to be unquarantined: the actual state-writing
                 // for all quarantined nullifiers happens during end_block, to avoid state churn
                 self.quarantine_nullifiers
-                    .push((identity_key, quarantined_spent_nullifier));
+                    .entry(identity_key)
+                    .or_insert_with(Vec::new)
+                    .push(quarantined_spent_nullifier);
                 ctx.record(event::quarantine_spend(quarantined_spent_nullifier));
             }
         } else {
@@ -234,6 +254,21 @@ impl Component for ShieldedPool {
         // Get the current block height
         let height = self.height().await;
 
+        // Get the epoch duration
+        let epoch_duration = self
+            .state
+            .get_epoch_duration()
+            .await
+            .expect("can get epoch duration");
+
+        // Get the unbonding epochs
+        let unbonding_epochs = self
+            .state
+            .get_chain_params()
+            .await
+            .expect("can get chain params")
+            .unbonding_epochs;
+
         // Set the height of the compact block
         self.compact_block.height = height;
 
@@ -245,9 +280,29 @@ impl Component for ShieldedPool {
             .unwrap()
             .unwrap_or_default();
 
-        // TODO: process any scheduled quarantined notes and nullifiers in this block
+        // Process any scheduled quarantined notes and nullifiers in this block
+        for (identity_key, note_payloads) in std::mem::take(&mut self.quarantine_notes) {
+            let bonding_state = self
+                .state
+                .validator_bonding_state(&identity_key)
+                .await
+                .expect("can do bonding state lookup")
+                .expect("validator is known");
+            let unquarantine_epoch = match bonding_state {
+                validator::BondingState::Unbonded =>
+                    panic!("output of undelegation to unbonded validator shouldn't have been scheduled for unquarantine"),
+                validator::BondingState::Bonded =>
+                    Epoch::from_height(height, epoch_duration),
+                validator::BondingState::Unbonding { unbonding_epoch } =>
+                    Epoch { index: unbonding_epoch, duration: epoch_duration },
+            };
+        }
+
+        // TODO: if validator is unbonding, we need to schedule unquarantine for earlier
         // TODO: process any slashing that has occurred
+
         // TODO: process any notes/nullifiers due to be unquarantined in this block
+        for (identity_key, note_payloads) in std::mem::take(&mut self.quarantine_nullifiers) {}
 
         // TODO: should we calculate this here or include it directly within the PendingRewardNote
         // to prevent a potential mismatch between Staking and ShieldedPool?
@@ -669,7 +724,7 @@ pub trait View: StateExt {
             .await?
         {
             return Err(anyhow!(
-                "Nullifier {} was already spent in {:?}",
+                "nullifier {} was already spent in {:?}",
                 nullifier,
                 source,
             ));
@@ -687,7 +742,7 @@ pub trait View: StateExt {
                 let source = NoteSource::decode(&*source)?;
 
                 return Err(anyhow!(
-                    "Nullifier {} was already spent in {:?} (currently quarantined)",
+                    "nullifier {} was already spent in {:?} (currently quarantined)",
                     nullifier,
                     source,
                 ));

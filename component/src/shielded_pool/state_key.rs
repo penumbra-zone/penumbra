@@ -1,4 +1,5 @@
 use jmt::KeyHash;
+use penumbra_chain::Epoch;
 use penumbra_crypto::{asset, note, IdentityKey, Nullifier};
 use penumbra_tct::Root;
 
@@ -42,18 +43,24 @@ pub fn quarantined_note_source(note_commitment: &note::Commitment) -> KeyHash {
     format!("shielded_pool/quarantined_note_source/{}", note_commitment).into()
 }
 
-pub fn quarantined_notes_to_apply_at_height(height: u64) -> KeyHash {
+// NOTE: Quarantined notes and nullifiers to apply at a given epoch are keyed by height instead of
+// unbonding epoch. This means it is more expensive to look up all the relevant notes/nullifiers
+// scheduled for unquarantine when we reach an epoch boundary, but cheaper to insert the
+// notes/nullifiers every block, since we don't have to look up and modify a previously extant state
+// value. Since epoch boundaries are less frequent than blocks, this is a good tradeoff.
+
+pub fn quarantined_notes_to_apply(undelegated_height: u64) -> KeyHash {
     format!(
-        "shielded_pool/quarantined_notes_to_apply_at_height/{}",
-        height
+        "shielded_pool/quarantined_notes_to_apply/{}",
+        undelegated_height
     )
     .into()
 }
 
-pub fn quarantined_nullifiers_to_apply_at(height: u64) -> KeyHash {
+pub fn quarantined_nullifiers_to_apply(undelegated_height: u64) -> KeyHash {
     format!(
-        "shielded_pool/quarantined_nullifiers_to_apply_at_height/{}",
-        height
+        "shielded_pool/quarantined_nullifiers_to_apply/{}",
+        undelegated_height
     )
     .into()
 }
@@ -68,24 +75,24 @@ pub fn quarantined_nullifiers_to_apply_at(height: u64) -> KeyHash {
 // notes/nullifiers that were quarantined in this block), and read a whole range of keys, **but
 // only** when slashing.
 
-pub fn quarantined_notes_connected_to_validator_at(
+pub fn quarantined_notes_connected_to_validator(
+    undelegated_height: u64,
     validator_identity: IdentityKey,
-    height: u64,
 ) -> KeyHash {
     format!(
         "shielded_pool/quarantined_notes_connected_to_validator_at/{}/{}",
-        validator_identity, height
+        undelegated_height, validator_identity,
     )
     .into()
 }
 
-pub fn quarantined_nullifiers_connected_to_validator_at(
+pub fn quarantined_nullifiers_connected_to_validator(
+    undelegated_height: u64,
     validator_identity: IdentityKey,
-    height: u64,
 ) -> KeyHash {
     format!(
         "shielded_pool/quarantined_nullifiers_connected_to_validator_at/{}/{}",
-        validator_identity, height
+        undelegated_height, validator_identity,
     )
     .into()
 }
