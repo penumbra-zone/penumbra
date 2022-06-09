@@ -5,11 +5,10 @@ use directories::ProjectDirs;
 use penumbra_crypto::keys::SeedPhrase;
 use rand_core::OsRng;
 use sha2::{Digest, Sha256};
-use structopt::StructOpt;
 
 use crate::Wallet;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, clap::Subcommand)]
 pub enum WalletCmd {
     /// Import from an existing seed phrase.
     ImportFromPhrase {

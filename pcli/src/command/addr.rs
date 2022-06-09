@@ -1,18 +1,17 @@
 use anyhow::Result;
 use comfy_table::{presets, Table};
 use penumbra_crypto::FullViewingKey;
-use structopt::StructOpt;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, clap::Subcommand)]
 pub enum AddrCmd {
     /// Show the address with the given index.
     Show {
         /// The index of the address to show.
         /// Default to 0
-        #[structopt(default_value = "0")]
+        #[clap(default_value = "0")]
         index: u64,
         /// If true, emits only the address and not the (local) label for it.
-        #[structopt(short, long)]
+        #[clap(short, long)]
         addr_only: bool,
     },
 }

@@ -1,5 +1,3 @@
-use structopt::StructOpt;
-
 mod addr;
 mod balance;
 mod chain;
@@ -18,13 +16,16 @@ pub use tx::TxCmd;
 pub use validator::ValidatorCmd;
 pub use wallet::WalletCmd;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, clap::Subcommand)]
 pub enum Command {
     /// Creates a transaction.
+    #[clap(subcommand)]
     Tx(TxCmd),
     /// Manages the wallet state.
+    #[clap(subcommand)]
     Wallet(WalletCmd),
     /// Manages addresses.
+    #[clap(subcommand)]
     Addr(AddrCmd),
     /// Synchronizes the client, privately scanning the chain state.
     ///
@@ -34,16 +35,20 @@ pub enum Command {
     /// Displays the current wallet balance.
     Balance(BalanceCmd),
     /// Manages a validator.
+    #[clap(subcommand)]
     Validator(ValidatorCmd),
     /// Manages delegations and undelegations.
+    #[clap(subcommand)]
     Stake(StakeCmd),
     /// Queries the public chain state.
     ///
     /// This command has two modes: it can be used to query raw bytes of
     /// arbitrary keys with the `key` subcommand, or it can be used to query
     /// typed data with a subcommand for a particular component.
+    #[clap(subcommand)]
     Q(QueryCmd),
     /// View chain data.
+    #[clap(subcommand)]
     Chain(ChainCmd),
 }
 

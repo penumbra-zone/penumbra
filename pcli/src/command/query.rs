@@ -1,11 +1,10 @@
 use anyhow::Result;
 use jmt::KeyHash;
 use penumbra_proto::Protobuf;
-use structopt::StructOpt;
 
 use crate::Opt;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, clap::Subcommand)]
 pub enum QueryCmd {
     /// Queries an arbitrary key.
     Key {
@@ -13,10 +12,11 @@ pub enum QueryCmd {
         key: String,
     },
     /// Queries shielded pool data.
+    #[clap(subcommand)]
     ShieldedPool(ShieldedPool),
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, clap::Subcommand)]
 pub enum ShieldedPool {
     /// Queries the note commitment tree anchor for a given height.
     Anchor {

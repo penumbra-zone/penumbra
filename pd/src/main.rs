@@ -10,6 +10,7 @@ use metrics_tracing_context::{MetricsLayer, TracingContextLayer};
 use metrics_util::{layers::Stack, DebuggingRecorder};
 
 use anyhow::Context;
+use clap::{Parser, Subcommand};
 use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusRecorder};
 use penumbra_chain::{genesis::Allocation, params::ChainParams};
 use penumbra_component::stake::{validator::Validator, FundingStream, FundingStreams};
@@ -24,43 +25,40 @@ use penumbra_proto::client::{
 };
 use penumbra_storage::Storage;
 use rand_core::OsRng;
-use structopt::StructOpt;
 use tokio::runtime;
 use tonic::transport::Server;
-use tracing_subscriber::{
-    prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt, EnvFilter,
-};
+use tracing_subscriber::{prelude::*, EnvFilter};
 
-#[derive(Debug, StructOpt)]
-#[structopt(
+#[derive(Debug, Parser)]
+#[clap(
     name = "pd",
     about = "The Penumbra daemon.",
     version = env!("VERGEN_GIT_SEMVER"),
 )]
 struct Opt {
     /// Command to run.
-    #[structopt(subcommand)]
+    #[clap(subcommand)]
     cmd: Command,
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Subcommand)]
 enum Command {
     /// Start running the ABCI and wallet services.
     Start {
         /// The path used to store the Rocks database.
-        #[structopt(short, long)]
+        #[clap(short, long)]
         rocks_path: PathBuf,
         /// Bind the services to this host.
-        #[structopt(short, long, default_value = "127.0.0.1")]
+        #[clap(short, long, default_value = "127.0.0.1")]
         host: String,
         /// Bind the ABCI server to this port.
-        #[structopt(short, long, default_value = "26658")]
+        #[clap(short, long, default_value = "26658")]
         abci_port: u16,
         /// Bind the gRPC server to this port.
-        #[structopt(short, long, default_value = "8080")]
+        #[clap(short, long, default_value = "8080")]
         grpc_port: u16,
         /// Bind the metrics endpoint to this port.
-        #[structopt(short, long, default_value = "9000")]
+        #[clap(short, long, default_value = "9000")]
         metrics_port: u16,
     },
 
@@ -68,31 +66,31 @@ enum Command {
     /// testnet based on input configuration.
     GenerateTestnet {
         /// Number of blocks per epoch.
-        #[structopt(long, default_value = "40")]
+        #[clap(long, default_value = "40")]
         epoch_duration: u64,
         /// Number of epochs before unbonding stake is released.
-        #[structopt(long, default_value = "2")]
+        #[clap(long, default_value = "2")]
         unbonding_epochs: u64,
         /// Maximum number of validators in the consensus set.
-        #[structopt(long, default_value = "32")]
+        #[clap(long, default_value = "32")]
         active_validator_limit: u64,
         /// Whether to preserve the chain ID (useful for public testnets) or append a random suffix (useful for dev/testing).
-        #[structopt(long)]
+        #[clap(long)]
         preserve_chain_id: bool,
         /// Path to CSV file containing initial allocations [default: latest testnet].
-        #[structopt(long, parse(from_os_str))]
+        #[clap(long, parse(from_os_str))]
         allocations_input_file: Option<PathBuf>,
         /// Path to JSON file containing initial validator configs [default: latest testnet].
-        #[structopt(long, parse(from_os_str))]
+        #[clap(long, parse(from_os_str))]
         validators_input_file: Option<PathBuf>,
         /// Path to directory to store output in. Must not exist.
-        #[structopt(long)]
+        #[clap(long)]
         output_dir: Option<PathBuf>,
         /// Testnet name [default: latest testnet].
-        #[structopt(long)]
+        #[clap(long)]
         chain_id: Option<String>,
         /// IP Address to start `tendermint` nodes on. Increments by three to make room for `pd` per node.
-        #[structopt(long, default_value = "192.167.10.11")]
+        #[clap(long, default_value = "192.167.10.11")]
         starting_ip: Ipv4Addr,
     },
 }
@@ -131,7 +129,7 @@ async fn main() -> anyhow::Result<()> {
         .with(console_layer)
         .init();
 
-    let opt = Opt::from_args();
+    let opt = Opt::parse();
 
     match opt.cmd {
         Command::Start {

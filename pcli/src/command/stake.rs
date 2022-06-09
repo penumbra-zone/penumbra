@@ -12,24 +12,23 @@ use penumbra_proto::client::oblivious::ValidatorInfoRequest;
 use penumbra_view::ViewClient;
 use penumbra_wallet::{build_transaction, plan};
 use rand_core::OsRng;
-use structopt::StructOpt;
 
 use crate::Opt;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, clap::Subcommand)]
 pub enum StakeCmd {
     /// Deposit stake into a validator's delegation pool.
     Delegate {
         /// The identity key of the validator to delegate to.
-        #[structopt(long)]
+        #[clap(long)]
         to: String,
         /// The amount of stake to delegate.
         amount: String,
         /// The transaction fee (paid in upenumbra).
-        #[structopt(long, default_value = "0")]
+        #[clap(long, default_value = "0")]
         fee: u64,
         /// Optional. Only spend funds originally received by the given address index.
-        #[structopt(long)]
+        #[clap(long)]
         source: Option<u64>,
     },
     /// Withdraw stake from a validator's delegation pool.
@@ -37,27 +36,27 @@ pub enum StakeCmd {
         /// The amount of delegation tokens to undelegate.
         amount: String,
         /// The transaction fee (paid in upenumbra).
-        #[structopt(long, default_value = "0")]
+        #[clap(long, default_value = "0")]
         fee: u64,
         /// Optional. Only spend funds originally received by the given address index.
-        #[structopt(long)]
+        #[clap(long)]
         source: Option<u64>,
     },
     /// Redelegate stake from one validator's delegation pool to another.
     Redelegate {
         /// The identity key of the validator to withdraw delegation from.
-        #[structopt(long)]
+        #[clap(long)]
         from: String,
         /// The identity key of the validator to delegate to.
-        #[structopt(long)]
+        #[clap(long)]
         to: String,
         /// The amount of stake to delegate.
         amount: String,
         /// The transaction fee (paid in upenumbra).
-        #[structopt(long, default_value = "0")]
+        #[clap(long, default_value = "0")]
         fee: u64,
         /// Optional. Only spend funds originally received by the given address index.
-        #[structopt(long)]
+        #[clap(long)]
         source: Option<u64>,
     },
     /// Display this wallet's delegations and their value.
@@ -65,10 +64,10 @@ pub enum StakeCmd {
     /// Display all of the validators participating in the chain.
     ListValidators {
         /// Whether to show validators that are not currently part of the consensus set.
-        #[structopt(short = "i", long)]
+        #[clap(short = 'i', long)]
         show_inactive: bool,
         /// Whether to show detailed validator info.
-        #[structopt(short, long)]
+        #[clap(short, long)]
         detailed: bool,
     },
 }
