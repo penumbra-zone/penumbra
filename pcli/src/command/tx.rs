@@ -4,27 +4,26 @@ use penumbra_custody::CustodyClient;
 use penumbra_view::ViewClient;
 use penumbra_wallet::{build_transaction, plan};
 use rand_core::OsRng;
-use structopt::StructOpt;
 
 use crate::Opt;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, clap::Subcommand)]
 pub enum TxCmd {
     /// Send transaction to the node.
     Send {
         /// The destination address to send funds to.
-        #[structopt(long)]
+        #[clap(long)]
         to: String,
         /// The amounts to send, written as typed values 1.87penumbra, 12cubes, etc.
         values: Vec<String>,
         /// The transaction fee (paid in upenumbra).
-        #[structopt(long, default_value = "0")]
+        #[clap(long, default_value = "0")]
         fee: u64,
         /// Optional. Only spend funds originally received by the given address index.
-        #[structopt(long)]
+        #[clap(long)]
         source: Option<u64>,
         /// Optional. Set the transaction's memo field to the provided text.
-        #[structopt(long)]
+        #[clap(long)]
         memo: Option<String>,
     },
     /// Sweeps small notes of the same denomination into a few larger notes.

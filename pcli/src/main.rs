@@ -7,6 +7,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
+use clap::Parser;
 use directories::ProjectDirs;
 use futures::StreamExt;
 use penumbra_crypto::{keys::SpendKey, FullViewingKey};
@@ -19,7 +20,6 @@ use penumbra_proto::{
     view::{view_protocol_client::ViewProtocolClient, view_protocol_server::ViewProtocolServer},
 };
 use penumbra_view::{ViewClient, ViewService};
-use structopt::StructOpt;
 
 mod box_grpc_svc;
 mod command;
@@ -35,29 +35,29 @@ const VIEW_FILE_NAME: &'static str = "pcli-view.sqlite";
 
 use command::*;
 
-#[derive(Debug, StructOpt)]
-#[structopt(
+#[derive(Debug, Parser)]
+#[clap(
     name = "pcli",
     about = "The Penumbra command-line interface.",
     version = env!("VERGEN_GIT_SEMVER"),
 )]
 pub struct Opt {
     /// The address of the pd+tendermint node.
-    #[structopt(short, long, default_value = "testnet.penumbra.zone")]
+    #[clap(short, long, default_value = "testnet.penumbra.zone")]
     pub node: String,
     /// The port to use to speak to tendermint's RPC server.
-    #[structopt(long, default_value = "26657")]
+    #[clap(long, default_value = "26657")]
     pub tendermint_port: u16,
     /// The port to use to speak to pd's gRPC server.
-    #[structopt(long, default_value = "8080")]
+    #[clap(long, default_value = "8080")]
     pub pd_port: u16,
-    #[structopt(subcommand)]
+    #[clap(subcommand)]
     pub cmd: Command,
     /// The directory to store the wallet and view data in [default: platform appdata directory]
-    #[structopt(short, long)]
+    #[clap(short, long)]
     pub data_path: Option<String>,
     /// If set, use a remote view service instead of local synchronization.
-    #[structopt(short, long)]
+    #[clap(short, long)]
     pub view_address: Option<SocketAddr>,
 }
 
@@ -102,7 +102,7 @@ async fn main() -> Result<()> {
     }
 
     tracing_subscriber::fmt::init();
-    let opt = Opt::from_args();
+    let opt = Opt::parse();
 
     let default_data_dir = ProjectDirs::from("zone", "penumbra", "pcli")
         .context("Failed to get platform data dir")?

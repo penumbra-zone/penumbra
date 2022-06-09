@@ -2,17 +2,15 @@ use anyhow::Result;
 use comfy_table::{presets, Table};
 use penumbra_crypto::{keys::DiversifierIndex, FullViewingKey, Value};
 use penumbra_view::ViewClient;
-use structopt::StructOpt;
-
-#[derive(Debug, StructOpt)]
+#[derive(Debug, clap::Args)]
 pub struct BalanceCmd {
     /// If set, breaks down balances by address.
-    #[structopt(short, long)]
+    #[clap(short, long)]
     pub by_address: bool,
-    #[structopt(long)]
+    #[clap(long)]
     /// If set, does not attempt to synchronize the wallet before printing the balance.
     pub offline: bool,
-    #[structopt(long)]
+    #[clap(long)]
     /// If set, prints the value of each note individually.
     pub by_note: bool,
 }

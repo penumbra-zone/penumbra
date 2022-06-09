@@ -35,7 +35,6 @@ rand = "0.8"
 serde_json = "1"
 serde = { version = "1", features = ["derive"] }
 serde_with = { version = "1.11", features = ["hex"] }
-structopt = "0.3"
 tracing = "0.1"
 tracing-subscriber = "0.2"
 tonic = "0.6.1"
@@ -48,6 +47,7 @@ metrics = "0.18"
 async-stream = "0.2"
 reqwest = { version = "0.11", features = ["json"] }
 parking_lot = "0.12"
+clap = { version = "3", features = ["derive"] }
 
 [build-dependencies]
 vergen = "5"

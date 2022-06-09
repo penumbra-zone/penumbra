@@ -1,6 +1,7 @@
 #![recursion_limit = "256"]
 #![allow(clippy::clone_on_copy)]
 use anyhow::{Context, Result};
+use clap::{Parser, Subcommand};
 use penumbra_crypto::FullViewingKey;
 use penumbra_proto::client::oblivious::oblivious_query_client::ObliviousQueryClient;
 use penumbra_proto::client::oblivious::ChainParamsRequest;
@@ -8,34 +9,33 @@ use penumbra_proto::view::view_protocol_server::ViewProtocolServer;
 use penumbra_view::ViewService;
 use std::env;
 use std::str::FromStr;
-use structopt::StructOpt;
 use tonic::transport::Server;
 
-#[derive(Debug, StructOpt)]
-#[structopt(
+#[derive(Debug, Parser)]
+#[clap(
     name = "pviewd",
     about = "The Penumbra view daemon.",
     version = env!("VERGEN_GIT_SEMVER"),
 )]
 struct Opt {
     /// Command to run.
-    #[structopt(subcommand)]
+    #[clap(subcommand)]
     cmd: Command,
     /// The path used to store the state database.
-    #[structopt(short, long, default_value = "pviewd-db.sqlite")]
+    #[clap(short, long, default_value = "pviewd-db.sqlite")]
     sqlite_path: String,
     /// The address of the pd+tendermint node.
-    #[structopt(short, long, default_value = "testnet.penumbra.zone")]
+    #[clap(short, long, default_value = "testnet.penumbra.zone")]
     node: String,
     /// The port to use to speak to tendermint's RPC server.
-    #[structopt(long, default_value = "26657")]
+    #[clap(long, default_value = "26657")]
     tendermint_port: u16,
     /// The port to use to speak to pd's gRPC server.
-    #[structopt(long, default_value = "8080")]
+    #[clap(long, default_value = "8080")]
     pd_port: u16,
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Subcommand)]
 enum Command {
     /// Initialize the view service with a full viewing key.
     Init {
@@ -45,17 +45,17 @@ enum Command {
     /// Start the view service.
     Start {
         /// Bind the view service to this host.
-        #[structopt(short, long, default_value = "127.0.0.1")]
+        #[clap(short, long, default_value = "127.0.0.1")]
         host: String,
         /// Bind the view gRPC server to this port.
-        #[structopt(long, default_value = "8081")]
+        #[clap(long, default_value = "8081")]
         view_port: u16,
     },
 }
 #[tokio::main]
 async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
-    let opt = Opt::from_args();
+    let opt = Opt::parse();
 
     match opt.cmd {
         Command::Init { full_viewing_key } => {

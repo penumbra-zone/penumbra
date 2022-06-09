@@ -5,20 +5,19 @@ use penumbra_chain::Epoch;
 use penumbra_component::stake::validator;
 use penumbra_crypto::FullViewingKey;
 use penumbra_view::ViewClient;
-use structopt::StructOpt;
 
 // TODO: remove this subcommand and merge into `pcli q`
 
 use crate::Opt;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, clap::Subcommand)]
 pub enum ChainCmd {
     /// Display chain parameters.
     Params,
     /// Display information about the current chain state.
     Info {
         /// If true, will also display chain parameters.
-        #[structopt(short, long)]
+        #[clap(short, long)]
         verbose: bool,
     },
 }

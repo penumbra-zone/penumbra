@@ -9,24 +9,23 @@ use penumbra_proto::{stake::Validator as ProtoValidator, Message};
 use penumbra_view::ViewClient;
 use penumbra_wallet::{build_transaction, plan};
 use rand_core::OsRng;
-use structopt::StructOpt;
 
 use crate::Opt;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, clap::Subcommand)]
 pub enum ValidatorCmd {
     /// Display the validator identity key derived from this wallet's spend seed.
     Identity,
     /// Create a ValidatorDefinition transaction to create or update a validator.
     UploadDefinition {
         /// The JSON file containing the ValidatorDefinition to upload
-        #[structopt(long)]
+        #[clap(long)]
         file: String,
         /// The transaction fee (paid in upenumbra).
-        #[structopt(long, default_value = "0")]
+        #[clap(long, default_value = "0")]
         fee: u64,
         /// Optional. Only spend funds originally received by the given address index.
-        #[structopt(long)]
+        #[clap(long)]
         source: Option<u64>,
     },
     /// Generates a template validator definition for editing.
@@ -35,13 +34,13 @@ pub enum ValidatorCmd {
     /// identity key derived from this wallet's seed phrase.
     TemplateDefinition {
         /// The JSON file to write the template to.
-        #[structopt(long)]
+        #[clap(long)]
         file: String,
     },
     /// Fetches a validator's current definition and saves it to a file.
     FetchDefinition {
         /// The JSON file to write the template to.
-        #[structopt(long)]
+        #[clap(long)]
         file: String,
         /// The identity key of the validator to fetch.
         identity_key: String,
