@@ -4,16 +4,13 @@ use anyhow::{anyhow, Context, Result};
 use comfy_table::{presets, Table};
 use futures::stream::TryStreamExt;
 use penumbra_component::stake::{rate::RateData, validator};
-use penumbra_crypto::{
-    DelegationToken, FullViewingKey, IdentityKey, Value, STAKING_TOKEN_ASSET_ID,
-};
-use penumbra_custody::CustodyClient;
+use penumbra_crypto::{DelegationToken, IdentityKey, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_proto::client::oblivious::ValidatorInfoRequest;
 use penumbra_view::ViewClient;
-use penumbra_wallet::{build_transaction, plan};
+use penumbra_wallet::plan;
 use rand_core::OsRng;
 
-use crate::Opt;
+use crate::App;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum StakeCmd {
@@ -77,13 +74,7 @@ impl StakeCmd {
         true
     }
 
-    pub async fn exec<V: ViewClient, C: CustodyClient>(
-        &self,
-        opt: &Opt,
-        fvk: &FullViewingKey,
-        view: &mut V,
-        custody: &mut C,
-    ) -> Result<()> {
+    pub async fn exec(&self, app: &mut App) -> Result<()> {
         match self {
             StakeCmd::Delegate {
                 to,
@@ -101,19 +92,25 @@ impl StakeCmd {
 
                 let to = to.parse::<IdentityKey>()?;
 
-                let mut client = opt.specific_client().await?;
+                let mut client = app.specific_client().await?;
                 let rate_data: RateData = client
                     .next_validator_rate(tonic::Request::new(to.into()))
                     .await?
                     .into_inner()
                     .try_into()?;
 
-                let plan =
-                    plan::delegate(fvk, view, OsRng, rate_data, unbonded_amount, *fee, *source)
-                        .await?;
-                let transaction = build_transaction(fvk, view, custody, OsRng, plan).await?;
+                let plan = plan::delegate(
+                    &app.fvk,
+                    &mut app.view,
+                    OsRng,
+                    rate_data,
+                    unbonded_amount,
+                    *fee,
+                    *source,
+                )
+                .await?;
 
-                opt.submit_transaction(&transaction).await?;
+                app.build_and_submit_transaction(plan).await?;
             }
             StakeCmd::Undelegate {
                 amount,
@@ -125,7 +122,8 @@ impl StakeCmd {
                     asset_id,
                 } = amount.parse::<Value>()?;
 
-                let delegation_token: DelegationToken = view
+                let delegation_token: DelegationToken = app
+                    .view()
                     .assets()
                     .await?
                     .get(&asset_id)
@@ -136,7 +134,7 @@ impl StakeCmd {
 
                 let from = delegation_token.validator();
 
-                let mut client = opt.specific_client().await?;
+                let mut client = app.specific_client().await?;
                 let rate_data: RateData = client
                     .next_validator_rate(tonic::Request::new(from.into()))
                     .await?
@@ -144,8 +142,8 @@ impl StakeCmd {
                     .try_into()?;
 
                 let plan = plan::undelegate(
-                    fvk,
-                    view,
+                    &app.fvk,
+                    &mut app.view,
                     OsRng,
                     rate_data,
                     delegation_amount,
@@ -153,17 +151,16 @@ impl StakeCmd {
                     *source,
                 )
                 .await?;
-                let transaction = build_transaction(fvk, view, custody, OsRng, plan).await?;
 
-                opt.submit_transaction(&transaction).await?;
+                app.build_and_submit_transaction(plan).await?;
             }
             StakeCmd::Redelegate { .. } => {
                 todo!()
             }
             StakeCmd::Show => {
-                let mut client = opt.oblivious_client().await?;
+                let mut client = app.oblivious_client().await?;
 
-                let asset_cache = view.assets().await?;
+                let asset_cache = app.view().assets().await?;
 
                 let validators = client
                     .validator_info(ValidatorInfoRequest {
@@ -178,7 +175,11 @@ impl StakeCmd {
                     .map(TryInto::try_into)
                     .collect::<Result<Vec<validator::Info>, _>>()?;
 
-                let notes = view.unspent_notes_by_asset_and_address(fvk.hash()).await?;
+                let fvk_hash = app.fvk.hash();
+                let notes = app
+                    .view()
+                    .unspent_notes_by_asset_and_address(fvk_hash)
+                    .await?;
                 let mut total = 0;
 
                 let mut table = Table::new();
@@ -265,7 +266,7 @@ impl StakeCmd {
                 show_inactive,
                 detailed,
             } => {
-                let mut client = opt.oblivious_client().await?;
+                let mut client = app.oblivious_client().await?;
 
                 let mut validators = client
                     .validator_info(ValidatorInfoRequest {

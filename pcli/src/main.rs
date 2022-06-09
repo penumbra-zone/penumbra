@@ -1,15 +1,15 @@
 // Rust analyzer complains without this (but rustc is happy regardless)
 #![recursion_limit = "256"]
 #![allow(clippy::clone_on_copy)]
-use std::{net::SocketAddr, path::Path};
+use std::net::SocketAddr;
 
 use anyhow::{Context, Result};
 use camino::Utf8PathBuf;
 use clap::Parser;
 use directories::ProjectDirs;
 use futures::StreamExt;
-use penumbra_crypto::{keys::SpendKey, FullViewingKey};
-use penumbra_custody::{CustodyClient, SoftHSM};
+use penumbra_crypto::FullViewingKey;
+use penumbra_custody::SoftHSM;
 use penumbra_proto::{
     custody::{
         custody_protocol_client::CustodyProtocolClient,
@@ -188,7 +188,7 @@ impl Opt {
             let svc = ViewService::load_or_initialize(
                 path,
                 &fvk,
-                self.node.clone(),
+                self.node.to_string(),
                 self.pd_port,
                 self.tendermint_port,
             )
@@ -247,23 +247,13 @@ async fn main() -> Result<()> {
         Command::Sync => {
             // We have already synchronized the wallet above, so we can just return.
         }
-        Command::Tx(tx_cmd) => {
-            tx_cmd
-                .exec(&opt, &app.fvk, &mut app.view, &mut app.custody)
-                .await?
-        }
+        Command::Tx(tx_cmd) => tx_cmd.exec(&mut app).await?,
         Command::Addr(addr_cmd) => addr_cmd.exec(&app.fvk)?,
         Command::Balance(balance_cmd) => balance_cmd.exec(&app.fvk, &mut app.view).await?,
-        Command::Validator(cmd) => {
-            cmd.exec(&opt, &app.wallet.spend_key, &mut app.view, &mut app.custody)
-                .await?
-        }
-        Command::Stake(cmd) => {
-            cmd.exec(&opt, &app.fvk, &mut app.view, &mut app.custody)
-                .await?
-        }
-        Command::Chain(cmd) => cmd.exec(&opt, &app.fvk, &mut app.view).await?,
-        Command::Q(cmd) => cmd.exec(&opt).await?,
+        Command::Validator(cmd) => cmd.exec(&mut app).await?,
+        Command::Stake(cmd) => cmd.exec(&mut app).await?,
+        Command::Chain(cmd) => cmd.exec(&mut app).await?,
+        Command::Q(cmd) => cmd.exec(&mut app).await?,
     }
 
     Ok(())

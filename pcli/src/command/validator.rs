@@ -3,14 +3,12 @@ use std::{fs::File, io::Write};
 use anyhow::{Context, Result};
 use futures::TryStreamExt;
 use penumbra_component::stake::{validator, validator::Validator, FundingStream, FundingStreams};
-use penumbra_crypto::{keys::SpendKey, IdentityKey};
-use penumbra_custody::CustodyClient;
+use penumbra_crypto::IdentityKey;
 use penumbra_proto::{stake::Validator as ProtoValidator, Message};
-use penumbra_view::ViewClient;
-use penumbra_wallet::{build_transaction, plan};
+use penumbra_wallet::plan;
 use rand_core::OsRng;
 
-use crate::Opt;
+use crate::App;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum ValidatorCmd {
@@ -58,13 +56,8 @@ impl ValidatorCmd {
     }
 
     // TODO: move use of sk into custody service
-    pub async fn exec<V: ViewClient, C: CustodyClient>(
-        &self,
-        opt: &Opt,
-        sk: &SpendKey,
-        view: &mut V,
-        custody: &mut C,
-    ) -> Result<()> {
+    pub async fn exec(&self, app: &mut App) -> Result<()> {
+        let sk = app.wallet.spend_key.clone();
         let fvk = sk.full_viewing_key().clone();
         match self {
             ValidatorCmd::Identity => {
@@ -96,10 +89,10 @@ impl ValidatorCmd {
                     auth_sig,
                 };
                 // Construct a new transaction and include the validator definition.
-                let plan = plan::validator_definition(&fvk, view, OsRng, vd, *fee, *source).await?;
-                let transaction = build_transaction(&fvk, view, custody, OsRng, plan).await?;
-
-                opt.submit_transaction(&transaction).await?;
+                let plan =
+                    plan::validator_definition(&app.fvk, &mut app.view, OsRng, vd, *fee, *source)
+                        .await?;
+                app.build_and_submit_transaction(plan).await?;
                 // Only commit the state if the transaction was submitted
                 // successfully, so that we don't store pending notes that will
                 // never appear on-chain.
@@ -158,7 +151,7 @@ impl ValidatorCmd {
                 */
 
                 // Intsead just download everything
-                let mut client = opt.oblivious_client().await?;
+                let mut client = app.oblivious_client().await?;
 
                 use penumbra_proto::client::oblivious::ValidatorInfoRequest;
                 let validators = client

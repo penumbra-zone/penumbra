@@ -3,7 +3,6 @@ use comfy_table::{presets, Table};
 use futures::TryStreamExt;
 use penumbra_chain::Epoch;
 use penumbra_component::stake::validator;
-use penumbra_crypto::FullViewingKey;
 use penumbra_view::ViewClient;
 
 // TODO: remove this subcommand and merge into `pcli q`
@@ -158,20 +157,20 @@ impl ChainCmd {
         })
     }
 
-    pub async fn exec<V: ViewClient>(&self, app: &mut App) -> Result<()> {
+    pub async fn exec(&self, app: &mut App) -> Result<()> {
         match self {
             ChainCmd::Params => {
-                self.print_chain_params(view).await?;
+                self.print_chain_params(&mut app.view).await?;
             }
             // TODO: we could implement this as an RPC call using the metrics
             // subsystems once #829 is complete
             // OR (hdevalence): fold it into pcli q
             ChainCmd::Info { verbose } => {
                 if *verbose {
-                    self.print_chain_params(view).await?;
+                    self.print_chain_params(&mut app.view).await?;
                 }
 
-                let stats = self.get_stats(opt, fvk, view).await?;
+                let stats = self.get_stats(app).await?;
 
                 println!("Chain Info:");
                 let mut table = Table::new();
