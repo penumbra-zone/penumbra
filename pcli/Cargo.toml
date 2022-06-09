@@ -66,6 +66,7 @@ indicatif = "0.16"
 http-body = "0.4.5"
 clap = { version = "3", features = ["derive", "env"] }
 camino = "1"
+url = "2"
 
 [build-dependencies]
 vergen = "5"

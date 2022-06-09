@@ -19,6 +19,7 @@ use penumbra_proto::{
 };
 use penumbra_view::{ViewClient, ViewService};
 use tracing_subscriber::EnvFilter;
+use url::Url;
 
 mod box_grpc_svc;
 mod command;
@@ -42,14 +43,15 @@ use command::*;
     version = env!("VERGEN_GIT_SEMVER"),
 )]
 pub struct Opt {
-    /// The address of the pd+tendermint node.
+    /// The hostname of the pd+tendermint node.
     #[clap(
         short,
         long,
         default_value = "testnet.penumbra.zone",
-        env = "PENUMBRA_NODE_HOSTNAME"
+        env = "PENUMBRA_NODE_HOSTNAME",
+        parse(try_from_str = url::Host::parse)
     )]
-    pub node: String,
+    pub node: url::Host,
     /// The port to use to speak to tendermint's RPC server.
     #[clap(long, default_value_t = 26657, env = "PENUMBRA_TENDERMINT_PORT")]
     pub tendermint_port: u16,
@@ -75,11 +77,15 @@ pub struct App {
     pub custody: CustodyProtocolClient<BoxGrpcService>,
     pub fvk: FullViewingKey,
     pub wallet: Wallet,
-    pub pd_addr: String,
-    pub tendermint_addr: String,
+    pub pd_url: Url,
+    pub tendermint_url: Url,
 }
 
 impl App {
+    pub fn view(&mut self) -> &mut impl ViewClient {
+        &mut self.view
+    }
+
     async fn from_opts(opts: &Opt) -> Result<Self> {
         // Create the data directory if it is missing.
         std::fs::create_dir_all(&opts.data_path).context("Failed to create data directory")?;
@@ -105,16 +111,24 @@ impl App {
         // ...and the view service...
         let view = opts.view_client(&fvk).await?;
 
-        let pd_addr = format!("{}:{}", opts.node, opts.pd_port);
-        let tendermint_addr = format!("{}:{}", opts.node, opts.tendermint_port);
+        let mut tendermint_url = format!("http://{}", opts.node)
+            .parse::<Url>()
+            .with_context(|| format!("Invalid node URL: {}", opts.node))?;
+        let mut pd_url = tendermint_url.clone();
+        pd_url
+            .set_port(Some(opts.pd_port))
+            .expect("pd URL will not be `file://`");
+        tendermint_url
+            .set_port(Some(opts.tendermint_port))
+            .expect("tendermint URL will not be `file://`");
 
         Ok(Self {
             view,
             custody,
             fvk,
             wallet,
-            pd_addr,
-            tendermint_addr,
+            pd_url,
+            tendermint_url,
         })
     }
 

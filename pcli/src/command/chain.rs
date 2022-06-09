@@ -8,7 +8,7 @@ use penumbra_view::ViewClient;
 
 // TODO: remove this subcommand and merge into `pcli q`
 
-use crate::Opt;
+use crate::App;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum ChainCmd {
@@ -97,15 +97,12 @@ impl ChainCmd {
         Ok(())
     }
 
-    pub async fn get_stats<V: ViewClient>(
-        &self,
-        opt: &Opt,
-        fvk: &FullViewingKey,
-        view: &mut V,
-    ) -> Result<Stats> {
+    pub async fn get_stats(&self, app: &mut App) -> Result<Stats> {
         use penumbra_proto::client::oblivious::ValidatorInfoRequest;
 
-        let mut client = opt.oblivious_client().await?;
+        let mut client = app.oblivious_client().await?;
+        let fvk = &app.fvk;
+        let view: &mut dyn ViewClient = &mut app.view;
 
         let current_block_height = view.status(fvk.hash()).await?.sync_height;
         let chain_params = view.chain_params().await?;
@@ -161,12 +158,7 @@ impl ChainCmd {
         })
     }
 
-    pub async fn exec<V: ViewClient>(
-        &self,
-        opt: &Opt,
-        fvk: &FullViewingKey,
-        view: &mut V,
-    ) -> Result<()> {
+    pub async fn exec<V: ViewClient>(&self, app: &mut App) -> Result<()> {
         match self {
             ChainCmd::Params => {
                 self.print_chain_params(view).await?;
