@@ -1,6 +1,6 @@
 use jmt::KeyHash;
 use penumbra_chain::Epoch;
-use penumbra_crypto::{asset, note, IdentityKey, Nullifier};
+use penumbra_crypto::{asset, note, Nullifier};
 use penumbra_tct::Root;
 
 pub fn token_supply(asset_id: &asset::Id) -> KeyHash {
@@ -43,56 +43,10 @@ pub fn quarantined_note_source(note_commitment: &note::Commitment) -> KeyHash {
     format!("shielded_pool/quarantined_note_source/{}", note_commitment).into()
 }
 
-// NOTE: Quarantined notes and nullifiers to apply at a given epoch are keyed by height instead of
-// unbonding epoch. This means it is more expensive to look up all the relevant notes/nullifiers
-// scheduled for unquarantine when we reach an epoch boundary, but cheaper to insert the
-// notes/nullifiers every block, since we don't have to look up and modify a previously extant state
-// value. Since epoch boundaries are less frequent than blocks, this is a good tradeoff.
-
-pub fn quarantined_notes_to_apply(undelegated_height: u64) -> KeyHash {
+pub fn quarantined_to_apply(epoch: Epoch) -> KeyHash {
     format!(
-        "shielded_pool/quarantined_notes_to_apply/{}",
-        undelegated_height
-    )
-    .into()
-}
-
-pub fn quarantined_nullifiers_to_apply(undelegated_height: u64) -> KeyHash {
-    format!(
-        "shielded_pool/quarantined_nullifiers_to_apply/{}",
-        undelegated_height
-    )
-    .into()
-}
-
-// NOTE: Quarantined notes and nullifiers mapped to validators are keyed by height as well as
-// validator identity key. This means that is more expensive to look up all the relevant quarantined
-// notes/nullifiers for a validator when slashing (you need to do a manual range iteration over all
-// the heights from now back through the preceding unbonding period), but it means that it's faster
-// to add more quarantined notes/nullifiers to a validator, which needs to happen in every block. Sot
-// rather than reading a single key with a huge value (all the quarantined notes/nullifiers for the
-// preceding unbonding period) every single block, we write a smaller value (only the
-// notes/nullifiers that were quarantined in this block), and read a whole range of keys, **but
-// only** when slashing.
-
-pub fn quarantined_notes_connected_to_validator(
-    undelegated_height: u64,
-    validator_identity: IdentityKey,
-) -> KeyHash {
-    format!(
-        "shielded_pool/quarantined_notes_connected_to_validator_at/{}/{}",
-        undelegated_height, validator_identity,
-    )
-    .into()
-}
-
-pub fn quarantined_nullifiers_connected_to_validator(
-    undelegated_height: u64,
-    validator_identity: IdentityKey,
-) -> KeyHash {
-    format!(
-        "shielded_pool/quarantined_nullifiers_connected_to_validator_at/{}/{}",
-        undelegated_height, validator_identity,
+        "shielded_pool/quarantined_to_apply_in_epoch/{}",
+        epoch.index
     )
     .into()
 }
