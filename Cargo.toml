@@ -17,4 +17,5 @@ members = [
   "view",
   "pd",
   "pcli",
+  "ibc"
 ]
