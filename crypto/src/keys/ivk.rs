@@ -46,4 +46,40 @@ impl IncomingViewingKey {
     pub fn index_for_diversifier(&self, diversifier: &Diversifier) -> DiversifierIndex {
         self.dk.index_for_diversifier(diversifier)
     }
+
+    /// Check whether this address is viewable by this incoming viewing key.
+    pub fn views_address(&self, address: &Address) -> bool {
+        self.ivk.diversified_public(address.diversified_generator()) == *address.transmission_key()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::keys::{SeedPhrase, SpendKey};
+
+    use super::*;
+
+    #[test]
+    fn views_address_succeeds_on_own_address() {
+        let mut rng = rand::rngs::OsRng;
+        let spend_key = SpendKey::from_seed_phrase(SeedPhrase::generate(&mut rng), 0);
+        let ivk = spend_key.full_viewing_key().incoming();
+        let own_address = ivk.payment_address(DiversifierIndex::from(0u64)).0;
+        assert!(ivk.views_address(&own_address));
+    }
+
+    #[test]
+    fn views_address_fails_on_other_address() {
+        let mut rng = rand::rngs::OsRng;
+        let spend_key = SpendKey::from_seed_phrase(SeedPhrase::generate(&mut rng), 0);
+        let ivk = spend_key.full_viewing_key().incoming();
+
+        let other_address = SpendKey::from_seed_phrase(SeedPhrase::generate(&mut rng), 0)
+            .full_viewing_key()
+            .incoming()
+            .payment_address(DiversifierIndex::from(0u64))
+            .0;
+
+        assert!(!ivk.views_address(&other_address));
+    }
 }
