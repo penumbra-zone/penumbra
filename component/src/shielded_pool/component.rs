@@ -850,13 +850,13 @@ pub trait View: StateExt {
 
     async fn quarantined_to_apply(&self, epoch: Epoch) -> Result<Quarantined> {
         Ok(self
-            .get_domain(state_key::quarantined_to_apply(epoch))
+            .get_domain(state_key::quarantined_to_apply(epoch.index))
             .await?
             .unwrap_or_default())
     }
 
     async fn schedule_unquarantine(&self, epoch: Epoch, quarantined: Quarantined) -> Result<()> {
-        let mut updated_quarantined = self.quarantined_to_apply(epoch.index).await?;
+        let mut updated_quarantined = self.quarantined_to_apply(epoch).await?;
         updated_quarantined.extend(quarantined);
         self.put_domain(
             state_key::quarantined_to_apply(epoch.index),
