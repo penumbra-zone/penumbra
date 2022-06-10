@@ -23,6 +23,11 @@ pub enum ShieldedPool {
         /// The height to query.
         height: u64,
     },
+    /// Queries the scheduled notes and nullifiers to unquarantine at a given epoch.
+    QuarantinedToApply {
+        /// The epoch to query.
+        epoch: u64,
+    },
 }
 
 impl QueryCmd {
@@ -74,6 +79,7 @@ impl ShieldedPool {
         use penumbra_component::shielded_pool::state_key;
         match self {
             ShieldedPool::Anchor { height } => state_key::anchor_by_height(height),
+            ShieldedPool::QuarantinedToApply { epoch } => state_key::quarantined_to_apply(epoch),
         }
     }
 
@@ -82,6 +88,10 @@ impl ShieldedPool {
             ShieldedPool::Anchor { .. } => {
                 let anchor = penumbra_tct::Root::decode(bytes)?;
                 println!("{:#?}", anchor);
+            }
+            ShieldedPool::QuarantinedToApply { .. } => {
+                let notes = penumbra_component::shielded_pool::Quarantined::decode(bytes)?;
+                println!("{:#?}", notes);
             }
         }
         Ok(())

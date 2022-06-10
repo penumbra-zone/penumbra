@@ -856,10 +856,13 @@ pub trait View: StateExt {
     }
 
     async fn schedule_unquarantine(&self, epoch: Epoch, quarantined: Quarantined) -> Result<()> {
-        let mut updated_quarantined = self.quarantined_to_apply(epoch).await?;
+        let mut updated_quarantined = self.quarantined_to_apply(epoch.index).await?;
         updated_quarantined.extend(quarantined);
-        self.put_domain(state_key::quarantined_to_apply(epoch), updated_quarantined)
-            .await;
+        self.put_domain(
+            state_key::quarantined_to_apply(epoch.index),
+            updated_quarantined,
+        )
+        .await;
         Ok(())
     }
 
@@ -874,8 +877,11 @@ pub trait View: StateExt {
             .remove(&identity_key)
             .unwrap_or_default();
         // We're removed all the scheduled notes and nullifiers for this epoch and identity key:
-        self.put_domain(state_key::quarantined_to_apply(epoch), updated_quarantined)
-            .await;
+        self.put_domain(
+            state_key::quarantined_to_apply(epoch.index),
+            updated_quarantined,
+        )
+        .await;
         // Now we also ought to remove these nullifiers and notes from quarantine, but *not* apply them:
         for &nullifier in per_validator.nullifiers.iter() {
             self.try_unquarantine_nullifier(false, nullifier).await?;
