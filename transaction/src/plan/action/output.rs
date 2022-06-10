@@ -1,7 +1,10 @@
 use ark_ff::UniformRand;
 use penumbra_crypto::{
-    ka, keys::OutgoingViewingKey, memo::MemoPlaintext, proofs::transparent::OutputProof, Address,
-    FieldExt, Fq, Fr, Note, NotePayload, Value,
+    ka,
+    keys::{IncomingViewingKey, OutgoingViewingKey},
+    memo::MemoPlaintext,
+    proofs::transparent::OutputProof,
+    Address, FieldExt, Fq, Fr, Note, NotePayload, Value,
 };
 use penumbra_proto::{transaction as pb, Protobuf};
 use rand_core::{CryptoRng, RngCore};
@@ -52,7 +55,7 @@ impl OutputPlan {
         }
     }
 
-    fn output_note(&self) -> Note {
+    pub fn output_note(&self) -> Note {
         let diversifier = self.dest_address.diversifier().clone();
         let transmission_key = self.dest_address.transmission_key().clone();
         Note::from_parts(
@@ -105,6 +108,11 @@ impl OutputPlan {
             encrypted_memo,
             ovk_wrapped_key,
         }
+    }
+
+    /// Checks whether this plan's output is viewed by the given IVK.
+    pub fn is_viewed_by(&self, ivk: &IncomingViewingKey) -> bool {
+        ivk.views_address(&self.dest_address)
     }
 }
 
