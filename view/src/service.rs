@@ -310,6 +310,7 @@ impl ViewProtocol for ViewService {
         self.check_fvk(request.get_ref().fvk_hash.as_ref()).await?;
 
         let include_spent = request.get_ref().include_spent;
+        let include_quarantined = request.get_ref().include_quarantined;
         let asset_id = request
             .get_ref()
             .asset_id
@@ -328,7 +329,13 @@ impl ViewProtocol for ViewService {
 
         let notes = self
             .storage
-            .notes(include_spent, asset_id, diversifier_index, amount_to_spend)
+            .notes(
+                include_spent,
+                include_quarantined,
+                asset_id,
+                diversifier_index,
+                amount_to_spend,
+            )
             .await
             .map_err(|_| tonic::Status::unavailable("database error"))?;
 

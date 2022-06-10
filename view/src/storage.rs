@@ -266,6 +266,7 @@ impl Storage {
     pub async fn notes(
         &self,
         include_spent: bool,
+        include_quarantined: bool,
         asset_id: Option<asset::Id>,
         diversifier_index: Option<penumbra_crypto::keys::DiversifierIndex>,
         amount_to_spend: u64,
@@ -275,6 +276,12 @@ impl Storage {
         let spent_clause = match include_spent {
             false => "NULL",
             true => "height_spent",
+        };
+
+        // If set, return quarantined notes as well as unquarantined notes.
+        let quarantined_clause = match include_quarantined {
+            false => "0",
+            true => "quarantined_until",
         };
 
         // If set, only return notes with the specified asset id.
@@ -296,8 +303,9 @@ impl Storage {
             FROM notes
             WHERE height_spent IS {}
             AND asset_id IS {}
-            AND diversifier_index IS {}",
-                spent_clause, asset_clause, diversifier_clause
+            AND diversifier_index IS {}
+            AND quarantined IS {}",
+                spent_clause, asset_clause, diversifier_clause, quarantined_clause
             )
             .as_str(),
         )
@@ -425,6 +433,11 @@ impl Storage {
             let diversifier_index = note_record.diversifier_index.0.to_vec();
             let nullifier = note_record.nullifier.to_bytes().to_vec();
             let position = (u64::from(note_record.position)) as i64;
+            let quarantined = match note_record.quarantined {
+                true => 1,
+                false => 0,
+            } as i64;
+
             sqlx::query!(
                 "INSERT INTO notes
                     (
@@ -438,12 +451,14 @@ impl Storage {
                         blinding_factor,
                         diversifier_index,
                         nullifier,
-                        position
+                        position,
+                        quarantined
                     )
                     VALUES
                     (
                         ?,
                         NULL,
+                        ?,
                         ?,
                         ?,
                         ?,
@@ -465,6 +480,7 @@ impl Storage {
                 diversifier_index,
                 nullifier,
                 position,
+                quarantined
             )
             .execute(&mut tx)
             .await?;

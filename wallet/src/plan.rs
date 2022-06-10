@@ -56,6 +56,7 @@ where
             diversifier_index: source_index.map(Into::into),
             amount_to_spend: spend_amount,
             include_spent: false,
+            include_quarantined: false,
         })
         .await?;
     for note_record in notes_to_spend {
@@ -142,6 +143,7 @@ where
             diversifier_index: source_index.map(Into::into),
             amount_to_spend: spend_amount,
             include_spent: false,
+            include_quarantined: false,
         })
         .await?;
 
@@ -253,6 +255,7 @@ where
             diversifier_index: source_index.map(Into::into),
             amount_to_spend: spend_amount,
             include_spent: false,
+            include_quarantined: false,
         })
         .await?;
 
@@ -374,6 +377,7 @@ where
                 diversifier_index: source_index.map(Into::into),
                 amount_to_spend: spend_amount,
                 include_spent: false,
+                include_quarantined: false,
             })
             .await?;
         if notes_to_spend.is_empty() {

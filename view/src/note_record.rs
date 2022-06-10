@@ -21,6 +21,7 @@ pub struct NoteRecord {
     pub height_created: u64,
     pub height_spent: Option<u64>,
     pub position: tct::Position,
+    pub quarantined: bool, //should never transition from false to true after initial insertion of note commitment
 }
 
 impl Protobuf<pb::NoteRecord> for NoteRecord {}
@@ -34,6 +35,7 @@ impl From<NoteRecord> for pb::NoteRecord {
             height_created: v.height_created,
             height_spent: v.height_spent,
             position: v.position.into(),
+            quarantined: v.quarantined,
         }
     }
 }
@@ -61,6 +63,7 @@ impl TryFrom<pb::NoteRecord> for NoteRecord {
             height_created: v.height_created,
             height_spent: v.height_spent,
             position: v.position.into(),
+            quarantined: v.quarantined,
         })
     }
 }
@@ -155,6 +158,8 @@ impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for NoteRecord {
                 }
             })?;
 
+        let quarantined = row.get::<'r, bool, _>("quarantined") as bool;
+
         Ok(NoteRecord {
             note_commitment,
             note,
@@ -163,6 +168,7 @@ impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for NoteRecord {
             position,
             height_created,
             height_spent,
+            quarantined,
         })
     }
 }

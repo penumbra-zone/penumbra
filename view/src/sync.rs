@@ -14,6 +14,10 @@ pub struct ScanResult {
     // use to update existing rows
     pub spent_nullifiers: Vec<Nullifier>,
     pub height: u64,
+    // Note commitments identifying quarantined notes (outputs) that have been rolled back - to be deleted.
+    pub rolled_back_note_commitments: Vec<note::Commitment>,
+    // Identifies spent nullifiers (inputs) that have been rolled back - to be marked spendable.
+    pub rolled_back_nullifiers: Vec<Nullifier>,
 }
 
 #[tracing::instrument(skip(fvk, note_commitment_tree, note_payloads, nullifiers))]
@@ -31,9 +35,10 @@ pub fn scan_block(
     }: CompactBlock,
     epoch_duration: u64,
 ) -> ScanResult {
-    // Trial-decrypt the notes in this block, keeping track of the ones that were meant for us
+    // Trial-decrypt the notes (quarantined and unquarantined) in this block, keeping track of the ones that were meant for us
     let mut decrypted_notes: BTreeMap<note::Commitment, Note> = note_payloads
         .iter()
+        .chain(quarantined_note_payloads.iter())
         .filter_map(
             |NotePayload {
                  note_commitment,
@@ -96,6 +101,7 @@ pub fn scan_block(
                         diversifier_index: fvk.incoming().index_for_diversifier(diversifier),
                         nullifier,
                         position,
+                        quarantined: false,
                     };
 
                     Some(record)
@@ -127,11 +133,17 @@ pub fn scan_block(
     // Print the TCT root for debugging
     tracing::debug!(tct_root = %note_commitment_tree.root(), "tct root");
 
-    // TODO: write a query to mark all matching rows as spent
+    // Combine quarantined/unquarantined nullifiers
+
+    let mut combined_nullifiers = nullifiers;
+
+    combined_nullifiers.extend(quarantined_nullifiers.iter());
 
     ScanResult {
         new_notes,
-        spent_nullifiers: nullifiers,
+        spent_nullifiers: combined_nullifiers,
         height,
+        rolled_back_note_commitments,
+        rolled_back_nullifiers,
     }
 }

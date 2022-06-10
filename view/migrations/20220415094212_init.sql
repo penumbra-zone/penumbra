@@ -20,12 +20,14 @@ CREATE TABLE notes (
     -- the nullifier for this note, used to detect when it is spent
     nullifier               BLOB NOT NULL,
     -- the position of the note in the note commitment tree
-    position                BIGINT NOT NULL
+    position                BIGINT NOT NULL,
+    quarantined             BIGINT NOT NULL -- 0 if not quarantined, 1 if quarantined
 );
 
 -- general purpose note queries
 CREATE INDEX notes_idx ON notes (
     height_spent,       -- null if unspent, so spent/unspent is first
+    quarantined,        -- then by quarantine status
     diversifier_index,  -- then filter by account
     asset_id,           -- then by asset
     amount,             -- then by amount

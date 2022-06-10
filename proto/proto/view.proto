@@ -101,6 +101,8 @@ message NoteRecord {
     optional uint64 height_spent = 6;
     // The note position.
     uint64 position = 7;
+    // Note quarantine status
+    bool quarantined = 8;
 }
 
 // A query for notes known by the view service.
@@ -124,6 +126,9 @@ message NotesRequest {
     //
     // Ignored if `asset_id` is unset or if `include_spent` is set.
     uint64 amount_to_spend = 5;
+    
+    // If set, include notes which are currently quarantined.
+    bool include_quarantined = 6;
 }
 
 message WitnessRequest {
