@@ -1,5 +1,5 @@
 [package]
-name = "ibc"
+name = "penumbra-ibc"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 penumbra-crypto = { path = "../crypto" }
-ibc = { git = "https://github.com/penumbra-zone/ibc-rs.git", branch = "with-tendermintrs-24" }
+ibc-rs = { git = "https://github.com/penumbra-zone/ibc-rs.git", branch = "with-tendermintrs-24", package = "ibc" }
 ibc-proto = { git = "https://github.com/penumbra-zone/ibc-rs.git", branch = "with-tendermintrs-24" }
 hex = "0.4"
 sha2 = "0.10.1"

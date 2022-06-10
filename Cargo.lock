@@ -1788,17 +1788,6 @@ dependencies = [
 
 [[package]]
 name = "ibc"
-version = "0.1.0"
-dependencies = [
- "hex",
- "ibc 0.14.0",
- "ibc-proto",
- "penumbra-crypto",
- "sha2 0.10.2",
-]
-
-[[package]]
-name = "ibc"
 version = "0.14.0"
 source = "git+https://github.com/penumbra-zone/ibc-rs.git?branch=with-tendermintrs-24#09a244b77a27ab0510c5c7bda2a0ee5f7d1c127a"
 dependencies = [
@@ -2670,7 +2659,7 @@ dependencies = [
  "futures",
  "hex",
  "http",
- "ibc 0.14.0",
+ "ibc",
  "ibc-proto",
  "ics23",
  "jmt",
@@ -2783,7 +2772,7 @@ dependencies = [
  "decaf377",
  "ed25519-consensus 2.0.1",
  "hex",
- "ibc 0.14.0",
+ "ibc",
  "ibc-proto",
  "jmt",
  "metrics",
@@ -2879,6 +2868,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "penumbra-ibc"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "ibc",
+ "ibc-proto",
+ "penumbra-crypto",
+ "sha2 0.10.2",
+]
+
+[[package]]
 name = "penumbra-proto"
 version = "0.1.0"
 dependencies = [
@@ -2887,7 +2887,7 @@ dependencies = [
  "bytes",
  "decaf377-rdsa",
  "hex",
- "ibc 0.14.0",
+ "ibc",
  "ibc-proto",
  "ics23",
  "prost 0.9.0",
