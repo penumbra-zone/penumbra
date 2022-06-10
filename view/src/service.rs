@@ -294,7 +294,7 @@ impl ViewProtocol for ViewService {
                     latest_known_block_height,
                     sync_height,
                 };
-                if sync_height == latest_known_block_height {
+                if sync_height >= latest_known_block_height {
                     break;
                 }
             }
