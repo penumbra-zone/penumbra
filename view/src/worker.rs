@@ -140,6 +140,7 @@ impl Worker {
         while let Some(block) = stream.message().await? {
             let block = CompactBlock::try_from(block)?;
             let height = block.height;
+            dbg!(height);
 
             // Lock the NCT only while processing this block.
             let mut nct_guard = self.nct.write().await;
@@ -212,7 +213,7 @@ impl Worker {
                 // If the sync returns `Ok` then it means we're shutting down.
                 Ok(()) => return Ok(()),
                 Err(e) => {
-                    tracing::error!(?e);
+                    tracing::warn!(?e);
                     error_count += 1;
                     // Retry a few times and then give up.
                     if error_count > 3 {
