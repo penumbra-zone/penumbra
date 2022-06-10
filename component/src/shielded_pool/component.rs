@@ -555,6 +555,8 @@ impl ShieldedPool {
                 .await
                 .expect("can look up quarantined for this epoch")
             {
+                // For all the note payloads scheduled for unquarantine now, remove them from
+                // quarantine and add them to the proper notes for this block
                 for note_payload in per_validator.notes {
                     if let Some(note_source) = self
                         .state
@@ -563,6 +565,19 @@ impl ShieldedPool {
                         .expect("can try to unquarantine note")
                     {
                         self.add_note(note_payload, note_source).await;
+                    }
+                }
+                // For all the nullifiers scheduled for unquarantine now, remove them from
+                // quarantine and add them to the proper nullifiers for this block
+                for nullifier in per_validator.nullifiers {
+                    if let Some(note_source) = self
+                        .state
+                        .unquarantine_nullifier(nullifier)
+                        .await
+                        .expect("can try to unquarantine nullifier")
+                    {
+                        self.state.spend_nullifier(nullifier, note_source).await;
+                        self.compact_block.nullifiers.push(nullifier);
                     }
                 }
             }
@@ -772,11 +787,7 @@ pub trait View: StateExt {
 
     // Returns the source if the nullifier was in quarantine already
     #[instrument(skip(self))]
-    async fn try_unquarantine_nullifier(
-        &self,
-        apply: bool,
-        nullifier: Nullifier,
-    ) -> Result<Option<NoteSource>> {
+    async fn unquarantine_nullifier(&self, nullifier: Nullifier) -> Result<Option<NoteSource>> {
         tracing::debug!("applying quarantined nullifier");
         // Get the note source of the nullifier (or empty vec if already applied or rolled back)
         let source = self
@@ -802,11 +813,6 @@ pub trait View: StateExt {
                 vec![], // sentinel value meaning "deleted"
             )
             .await;
-
-            // Add it to the main nullifier set if instructed; otherwise, it's just deleted
-            if apply {
-                self.spend_nullifier(nullifier, source).await;
-            }
 
             // We applied this nullifier, because it was not marked as deleted
             Ok(Some(source))
@@ -884,7 +890,7 @@ pub trait View: StateExt {
         .await;
         // Now we also ought to remove these nullifiers and notes from quarantine, but *not* apply them:
         for &nullifier in per_validator.nullifiers.iter() {
-            self.try_unquarantine_nullifier(false, nullifier).await?;
+            self.unquarantine_nullifier(nullifier).await?;
         }
         for note_payload in per_validator.notes.iter() {
             self.unquarantine_note(&note_payload.note_commitment)
