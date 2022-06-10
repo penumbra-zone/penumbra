@@ -1,5 +1,4 @@
 use jmt::KeyHash;
-use penumbra_chain::Epoch;
 use penumbra_crypto::{asset, note, Nullifier};
 use penumbra_tct::Root;
 
@@ -43,12 +42,8 @@ pub fn quarantined_note_source(note_commitment: &note::Commitment) -> KeyHash {
     format!("shielded_pool/quarantined_note_source/{}", note_commitment).into()
 }
 
-pub fn quarantined_to_apply(epoch: Epoch) -> KeyHash {
-    format!(
-        "shielded_pool/quarantined_to_apply_in_epoch/{}",
-        epoch.index
-    )
-    .into()
+pub fn quarantined_to_apply(epoch: u64) -> KeyHash {
+    format!("shielded_pool/quarantined_to_apply_in_epoch/{}", epoch).into()
 }
 
 pub fn quarantined_spent_nullifier_lookup(nullifier: &Nullifier) -> KeyHash {
