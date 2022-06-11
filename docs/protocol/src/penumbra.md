@@ -101,7 +101,7 @@ swaps in each block are executed in a single batch.  Only the total amount in
 each batch is revealed, and only after the batch has been finalized. This
 prevents front-running and provides better execution, but also provides
 long-term privacy for individual swaps.  Users can also provide liquidity by
-anonymously creating Uniswap-v3-style concentrated liquidity positions.  These
+anonymously creating concentrated liquidity positions.  These
 positions reveal the amount of liquidity and the bounds in which it is
 concentrated, but are not otherwise linked to any identity, so that (with some
 care) users can privately approximate arbitrary trading functions without
