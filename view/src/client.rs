@@ -4,7 +4,7 @@ use anyhow::Result;
 use futures::{Stream, StreamExt, TryStreamExt};
 use penumbra_chain::params::ChainParams;
 use penumbra_crypto::keys::FullViewingKeyHash;
-use penumbra_crypto::{asset, keys::DiversifierIndex, Asset};
+use penumbra_crypto::{asset, keys::DiversifierIndex, note, Asset};
 use penumbra_proto::view as pb;
 use penumbra_proto::view::view_protocol_client::ViewProtocolClient;
 use penumbra_transaction::WitnessData;
@@ -41,6 +41,22 @@ pub trait ViewClient {
 
     /// Queries for notes.
     async fn notes(&mut self, request: pb::NotesRequest) -> Result<Vec<NoteRecord>>;
+
+    /// Queries for a specific note by commitment, returning immediately if it is not found.
+    async fn note_by_commitment(
+        &mut self,
+        fvk_hash: FullViewingKeyHash,
+        note_commitment: note::Commitment,
+    ) -> Result<NoteRecord>;
+
+    /// Queries for a specific note by commitment, waiting until the note is detected if it is not found.
+    ///
+    /// This is useful for waiting for a note to be detected by the view service.
+    async fn await_note_by_commitment(
+        &mut self,
+        fvk_hash: FullViewingKeyHash,
+        note_commitment: note::Commitment,
+    ) -> Result<NoteRecord>;
 
     /// Returns authentication paths for the given note commitments.
     ///
@@ -177,6 +193,45 @@ where
             .await?;
 
         pb_notes.into_iter().map(TryInto::try_into).collect()
+    }
+
+    async fn note_by_commitment(
+        &mut self,
+        fvk_hash: FullViewingKeyHash,
+        note_commitment: note::Commitment,
+    ) -> Result<NoteRecord> {
+        ViewProtocolClient::note_by_commitment(
+            self,
+            tonic::Request::new(pb::NoteByCommitmentRequest {
+                fvk_hash: Some(fvk_hash.into()),
+                note_commitment: Some(note_commitment.into()),
+                await_detection: false,
+            }),
+        )
+        .await?
+        .into_inner()
+        .try_into()
+    }
+
+    /// Queries for a specific note by commitment, waiting until the note is detected if it is not found.
+    ///
+    /// This is useful for waiting for a note to be detected by the view service.
+    async fn await_note_by_commitment(
+        &mut self,
+        fvk_hash: FullViewingKeyHash,
+        note_commitment: note::Commitment,
+    ) -> Result<NoteRecord> {
+        ViewProtocolClient::note_by_commitment(
+            self,
+            tonic::Request::new(pb::NoteByCommitmentRequest {
+                fvk_hash: Some(fvk_hash.into()),
+                note_commitment: Some(note_commitment.into()),
+                await_detection: true,
+            }),
+        )
+        .await?
+        .into_inner()
+        .try_into()
     }
 
     async fn witness(&mut self, request: pb::WitnessRequest) -> Result<WitnessData> {
