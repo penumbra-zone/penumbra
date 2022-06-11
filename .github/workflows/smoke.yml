@@ -32,4 +32,4 @@ jobs:
       - name: Run integration tests against localhost.
         run: cargo test --package pcli -- --ignored
         env:
-          PENUMBRA_NODE_HOSTNAME: 192.167.10.10
+          PENUMBRA_NODE_HOSTNAME: 127.0.0.1
