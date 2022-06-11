@@ -3,8 +3,7 @@
 //! These tests are marked with `#[ignore]`, but can be run with:
 //! `cargo test --package pcli -- --ignored`
 //!
-//! Tests against `testnet-preview.penumbra.zone` by default, override with
-//! environmental variable `PENUMBRA_NODE`.
+//! Tests against the network in the `PENUMBRA_NODE_HOSTNAME` environment variable.
 //!
 //! Tests assume that the initial state of the test account is after genesis,
 //! where no tokens have been delegated, and the address with index 0
@@ -58,15 +57,11 @@ fn transaction_send_from_addr_0_to_addr_1() {
 
     // Send to self: tokens were distributed to `TEST_ADDRESS_0`, in our test
     // we'll send `TEST_ASSET` to `TEST_ADDRESS_1` and then check our balance.
-    let server_host = option_env!("PENUMBRA_NODE").unwrap_or("testnet-preview.penumbra.zone");
-
     let mut send_cmd = Command::cargo_bin("pcli").unwrap();
     send_cmd
         .args(&[
             "--data-path",
             tmpdir.path().to_str().unwrap(),
-            "--node",
-            server_host,
             "tx",
             "send",
             TEST_ASSET,
@@ -87,8 +82,6 @@ fn transaction_send_from_addr_0_to_addr_1() {
         .args(&[
             "--data-path",
             tmpdir.path().to_str().unwrap(),
-            "--node",
-            server_host,
             "balance",
             "--by-address",
         ])
@@ -106,8 +99,6 @@ fn transaction_send_from_addr_0_to_addr_1() {
         .args(&[
             "--data-path",
             tmpdir.path().to_str().unwrap(),
-            "--node",
-            server_host,
             "tx",
             "send",
             TEST_ASSET,
