@@ -9,7 +9,7 @@ use penumbra_proto::{
     Protobuf,
 };
 use penumbra_transaction::{plan::TransactionPlan, Transaction};
-use penumbra_view::{NoteRecord, ViewClient};
+use penumbra_view::ViewClient;
 use rand::Rng;
 use rand_core::OsRng;
 use std::future::Future;

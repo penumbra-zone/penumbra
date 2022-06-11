@@ -128,6 +128,7 @@ pub fn aggregate_values(
 }
 
 // compute a look-up-table for the discrete logarithm of the set of values [1, 2, ..., maxval]
+#[allow(dead_code)]
 fn compute_lut(maxval: u64) -> BTreeMap<[u8; 32], u64> {
     let mut res = BTreeMap::new();
     for i in 1..maxval {
