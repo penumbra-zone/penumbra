@@ -89,9 +89,9 @@ async fn main() -> Result<()> {
 
     let mut opt = Opt::parse();
 
-    tracing_subscriber::fmt()
-        .with_env_filter(std::mem::take(&mut opt.trace_filter))
-        .init();
+    // Initialize tracing here, rather than when converting into an `App`, so
+    // that tracing is set up even for wallet commands that don't build the `App`.
+    opt.init_tracing();
 
     // The wallet command takes the data dir directly, since it may need to
     // create the client state, so handle it specially here so that we can have

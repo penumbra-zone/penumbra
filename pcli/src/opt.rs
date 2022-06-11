@@ -54,10 +54,16 @@ pub struct Opt {
     view_address: Option<SocketAddr>,
     /// The filter for `pcli`'s log messages.
     #[clap( long, default_value_t = EnvFilter::new("warn"), env = "RUST_LOG")]
-    pub trace_filter: EnvFilter,
+    trace_filter: EnvFilter,
 }
 
 impl Opt {
+    pub fn init_tracing(&mut self) {
+        tracing_subscriber::fmt()
+            .with_env_filter(std::mem::take(&mut self.trace_filter))
+            .init();
+    }
+
     pub async fn into_app(self) -> Result<(App, Command)> {
         // Create the data directory if it is missing.
         std::fs::create_dir_all(&self.data_path).context("Failed to create data directory")?;
