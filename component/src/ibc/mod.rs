@@ -7,6 +7,10 @@ mod client;
 mod component;
 mod connection;
 pub(crate) mod event;
+
+#[allow(dead_code)]
+pub(crate) mod ibc_token;
+
 mod metrics;
 
 pub use self::metrics::register_metrics;

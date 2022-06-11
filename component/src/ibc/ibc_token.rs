@@ -1,4 +1,4 @@
-use ibc_rs::core::ics24_host::identifier::{ChannelId, PortId};
+use ibc::core::ics24_host::identifier::{ChannelId, PortId};
 use penumbra_crypto::asset;
 use sha2::{Digest, Sha256};
 

@@ -2868,17 +2868,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-ibc"
-version = "0.1.0"
-dependencies = [
- "hex",
- "ibc",
- "ibc-proto",
- "penumbra-crypto",
- "sha2 0.10.2",
-]
-
-[[package]]
 name = "penumbra-proto"
 version = "0.1.0"
 dependencies = [
