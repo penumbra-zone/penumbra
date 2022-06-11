@@ -106,7 +106,8 @@ impl App {
         }
 
         if let Some(note_commitment) = await_detection_of {
-            println!("transaction submitted successfully, waiting for finality...");
+            // putting two spaces in makes the ellipsis line up with the above
+            println!("confirming transaction  ...");
             let fvk_hash = self.fvk.hash();
             tokio::time::timeout(
                 std::time::Duration::from_secs(20),
@@ -116,7 +117,7 @@ impl App {
             .await
             .context("timeout waiting to detect outputs of submitted transaction")?
             .context("error while waiting for detection of submitted transaction")?;
-            println!("successfully detected transaction outputs on-chain");
+            println!("transaction confirmed and detected");
         } else {
             println!("transaction submitted successfully");
         }
