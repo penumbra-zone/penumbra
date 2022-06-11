@@ -253,9 +253,7 @@ impl ViewProtocol for ViewService {
             self.storage
                 .note_by_commitment(note_commitment, request.await_detection)
                 .await
-                .map_err(|_| {
-                    tonic::Status::unknown("unknown error getting requested note record")
-                })?,
+                .map_err(|e| tonic::Status::internal(format!("error: {}", e)))?,
         )))
     }
 
@@ -266,8 +264,8 @@ impl ViewProtocol for ViewService {
         self.check_worker().await?;
         self.check_fvk(request.get_ref().fvk_hash.as_ref()).await?;
 
-        Ok(tonic::Response::new(self.status().await.map_err(|_| {
-            tonic::Status::unknown("unknown error getting status response")
+        Ok(tonic::Response::new(self.status().await.map_err(|e| {
+            tonic::Status::internal(format!("error: {}", e))
         })?))
     }
 
