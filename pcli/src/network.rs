@@ -1,5 +1,6 @@
 use anyhow::{Context as _, Result};
 use penumbra_component::Context;
+use penumbra_crypto::note;
 use penumbra_proto::{
     client::{
         oblivious::oblivious_query_client::ObliviousQueryClient,
@@ -8,6 +9,7 @@ use penumbra_proto::{
     Protobuf,
 };
 use penumbra_transaction::{plan::TransactionPlan, Transaction};
+use penumbra_view::{NoteRecord, ViewClient};
 use rand::Rng;
 use rand_core::OsRng;
 use std::future::Future;
@@ -21,8 +23,14 @@ impl App {
         &mut self,
         plan: TransactionPlan,
     ) -> anyhow::Result<()> {
+        let self_addressed_output = plan
+            .output_plans()
+            .find(|output| output.is_viewed_by(self.fvk.incoming()))
+            .map(|output| output.output_note().commit());
+
         let tx = self.build_transaction(plan).await?;
-        self.submit_transaction(&tx).await
+
+        self.submit_transaction(&tx, self_addressed_output).await
     }
 
     fn build_transaction<'a>(
@@ -38,10 +46,18 @@ impl App {
         )
     }
 
-    /// Submits a transaction to the network, returning `Ok` only when the remote
-    /// node has accepted the transaction, and erroring otherwise.
-    #[instrument(skip(self, transaction))]
-    pub async fn submit_transaction(&self, transaction: &Transaction) -> Result<(), anyhow::Error> {
+    /// Submits a transaction to the network.
+    ///
+    /// # Returns
+    ///
+    /// - if `await_detection_of` is `Some`, returns `Ok` after the specified note has been detected by the view service, implying transaction finality.
+    /// - if `await_detection_of` is `None`, returns `Ok` after the transaction has been accepted by the node it was sent to.
+    #[instrument(skip(self, transaction, await_detection_of))]
+    async fn submit_transaction(
+        &mut self,
+        transaction: &Transaction,
+        await_detection_of: Option<note::Commitment>,
+    ) -> Result<(), anyhow::Error> {
         println!("pre-checking transaction...");
         use penumbra_component::Component;
         let ctx = Context::new();
@@ -76,21 +92,36 @@ impl App {
             .and_then(|c| c.as_i64())
             .ok_or_else(|| anyhow::anyhow!("could not parse JSON response"))?;
 
-        if code == 0 {
-            println!("transaction submitted successfully");
-            Ok(())
-        } else {
+        if code != 0 {
             let log = result
                 .get("log")
                 .and_then(|l| l.as_str())
                 .ok_or_else(|| anyhow::anyhow!("could not parse JSON response"))?;
 
-            Err(anyhow::anyhow!(
+            return Err(anyhow::anyhow!(
                 "Error submitting transaction: code {}, log: {}",
                 code,
                 log
-            ))
+            ));
         }
+
+        if let Some(note_commitment) = await_detection_of {
+            println!("transaction submitted successfully, waiting for finality...");
+            let fvk_hash = self.fvk.hash();
+            tokio::time::timeout(
+                std::time::Duration::from_secs(20),
+                self.view()
+                    .await_note_by_commitment(fvk_hash, note_commitment),
+            )
+            .await
+            .context("timeout waiting to detect outputs of submitted transaction")?
+            .context("error while waiting for detection of submitted transaction")?;
+            println!("successfully detected transaction outputs on-chain");
+        } else {
+            println!("transaction submitted successfully");
+        }
+
+        Ok(())
     }
 
     /// Submits a transaction to the network, returning `Ok` as soon as the
