@@ -42,7 +42,7 @@ use command::*;
     about = "The Penumbra command-line interface.",
     version = env!("VERGEN_GIT_SEMVER"),
 )]
-pub struct Opt {
+struct Opt {
     /// The hostname of the pd+tendermint node.
     #[clap(
         short,
@@ -51,24 +51,24 @@ pub struct Opt {
         env = "PENUMBRA_NODE_HOSTNAME",
         parse(try_from_str = url::Host::parse)
     )]
-    pub node: url::Host,
+    node: url::Host,
     /// The port to use to speak to tendermint's RPC server.
     #[clap(long, default_value_t = 26657, env = "PENUMBRA_TENDERMINT_PORT")]
-    pub tendermint_port: u16,
+    tendermint_port: u16,
     /// The port to use to speak to pd's gRPC server.
     #[clap(long, default_value_t = 8080, env = "PENUMBRA_PD_PORT")]
-    pub pd_port: u16,
+    pd_port: u16,
     #[clap(subcommand)]
-    pub cmd: Command,
+    cmd: Command,
     /// The directory to store the wallet and view data in.
     #[clap(short, long, default_value_t = default_data_dir())]
-    pub data_path: Utf8PathBuf,
+    data_path: Utf8PathBuf,
     /// If set, use a remote view service instead of local synchronization.
     #[clap(short, long, env = "PENUMBRA_VIEW_ADDRESS")]
-    pub view_address: Option<SocketAddr>,
+    view_address: Option<SocketAddr>,
     /// The filter for `pcli`'s log messages.
     #[clap( long, default_value_t = EnvFilter::new("warn"), env = "RUST_LOG")]
-    pub trace_filter: EnvFilter,
+    trace_filter: EnvFilter,
 }
 
 #[derive(Debug)]
