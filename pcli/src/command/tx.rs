@@ -1,11 +1,9 @@
 use anyhow::Result;
-use penumbra_crypto::{FullViewingKey, Value};
-use penumbra_custody::CustodyClient;
-use penumbra_view::ViewClient;
-use penumbra_wallet::{build_transaction, plan};
+use penumbra_crypto::Value;
+use penumbra_wallet::plan;
 use rand_core::OsRng;
 
-use crate::Opt;
+use crate::App;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum TxCmd {
@@ -46,13 +44,7 @@ impl TxCmd {
         }
     }
 
-    pub async fn exec<V: ViewClient, C: CustodyClient>(
-        &self,
-        opt: &Opt,
-        fvk: &FullViewingKey,
-        view: &mut V,
-        custody: &mut C,
-    ) -> Result<()> {
+    pub async fn exec(&self, app: &mut App) -> Result<()> {
         match self {
             TxCmd::Send {
                 values,
@@ -70,12 +62,18 @@ impl TxCmd {
                     .parse()
                     .map_err(|_| anyhow::anyhow!("address is invalid"))?;
 
-                let plan =
-                    plan::send(&fvk, view, OsRng, &values, *fee, to, *from, memo.clone()).await?;
-
-                let transaction = build_transaction(fvk, view, custody, OsRng, plan).await?;
-
-                opt.submit_transaction(&transaction).await?;
+                let plan = plan::send(
+                    &app.fvk,
+                    &mut app.view,
+                    OsRng,
+                    &values,
+                    *fee,
+                    to,
+                    *from,
+                    memo.clone(),
+                )
+                .await?;
+                app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Sweep => {
                 todo!("port to new API");

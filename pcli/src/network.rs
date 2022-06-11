@@ -1,4 +1,4 @@
-use anyhow::Context as _;
+use anyhow::{Context as _, Result};
 use penumbra_component::Context;
 use penumbra_proto::{
     client::{
@@ -7,14 +7,37 @@ use penumbra_proto::{
     },
     Protobuf,
 };
-use penumbra_transaction::Transaction;
+use penumbra_transaction::{plan::TransactionPlan, Transaction};
 use rand::Rng;
+use rand_core::OsRng;
+use std::future::Future;
 use tonic::transport::Channel;
 use tracing::instrument;
 
-use crate::Opt;
+use crate::App;
 
-impl Opt {
+impl App {
+    pub async fn build_and_submit_transaction(
+        &mut self,
+        plan: TransactionPlan,
+    ) -> anyhow::Result<()> {
+        let tx = self.build_transaction(plan).await?;
+        self.submit_transaction(&tx).await
+    }
+
+    fn build_transaction<'a>(
+        &'a mut self,
+        plan: TransactionPlan,
+    ) -> impl Future<Output = Result<Transaction>> + 'a {
+        penumbra_wallet::build_transaction(
+            &self.fvk,
+            &mut self.view,
+            &mut self.custody,
+            OsRng,
+            plan,
+        )
+    }
+
     /// Submits a transaction to the network, returning `Ok` only when the remote
     /// node has accepted the transaction, and erroring otherwise.
     #[instrument(skip(self, transaction))]
@@ -30,7 +53,7 @@ impl Opt {
         let client = reqwest::Client::new();
         let req_id: u8 = rand::thread_rng().gen();
         let rsp: serde_json::Value = client
-            .post(format!(r#"http://{}:{}"#, self.node, self.tendermint_port))
+            .post(self.tendermint_url.clone())
             .json(&serde_json::json!(
                 {
                     "method": "broadcast_tx_sync",
@@ -83,7 +106,7 @@ impl Opt {
         let client = reqwest::Client::new();
         let req_id: u8 = rand::thread_rng().gen();
         let rsp: serde_json::Value = client
-            .post(format!(r#"http://{}:{}"#, self.node, self.tendermint_port))
+            .post(self.tendermint_url.clone())
             .json(&serde_json::json!(
                 {
                     "method": "broadcast_tx_async",
@@ -102,13 +125,13 @@ impl Opt {
     }
 
     pub async fn specific_client(&self) -> Result<SpecificQueryClient<Channel>, anyhow::Error> {
-        SpecificQueryClient::connect(format!("http://{}:{}", self.node, self.pd_port))
+        SpecificQueryClient::connect(self.pd_url.as_ref().to_owned())
             .await
             .map_err(Into::into)
     }
 
     pub async fn oblivious_client(&self) -> Result<ObliviousQueryClient<Channel>, anyhow::Error> {
-        ObliviousQueryClient::connect(format!("http://{}:{}", self.node, self.pd_port))
+        ObliviousQueryClient::connect(self.pd_url.as_ref().to_owned())
             .await
             .map_err(Into::into)
     }

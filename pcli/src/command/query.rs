@@ -2,7 +2,7 @@ use anyhow::Result;
 use jmt::KeyHash;
 use penumbra_proto::Protobuf;
 
-use crate::Opt;
+use crate::App;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum QueryCmd {
@@ -26,8 +26,8 @@ pub enum ShieldedPool {
 }
 
 impl QueryCmd {
-    pub async fn exec(&self, opt: &Opt) -> Result<()> {
-        let mut client = opt.specific_client().await?;
+    pub async fn exec(&self, app: &mut App) -> Result<()> {
+        let mut client = app.specific_client().await?;
 
         let key_hash = self.key_hash();
 

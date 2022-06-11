@@ -2683,6 +2683,7 @@ dependencies = [
  "tower",
  "tracing",
  "tracing-subscriber 0.3.11",
+ "url",
  "vergen",
 ]
 
@@ -3038,6 +3039,7 @@ dependencies = [
  "async-stream 0.2.1",
  "bincode",
  "bytes",
+ "camino",
  "clap 3.1.18",
  "directories",
  "futures",
