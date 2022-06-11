@@ -149,8 +149,8 @@ impl Storage {
                 format!(
                     "SELECT *
                     FROM notes
-                    WHERE note_commitment = {:?}",
-                    note_commitment
+                    WHERE note_commitment = x'{}'",
+                    hex::encode(note_commitment.0.to_bytes())
                 )
                 .as_str(),
             )
