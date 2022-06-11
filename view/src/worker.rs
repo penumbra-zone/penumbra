@@ -140,7 +140,6 @@ impl Worker {
         while let Some(block) = stream.message().await? {
             let block = CompactBlock::try_from(block)?;
             let height = block.height;
-            dbg!(height);
 
             // Lock the NCT only while processing this block.
             let mut nct_guard = self.nct.write().await;
