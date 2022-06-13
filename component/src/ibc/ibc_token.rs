@@ -1,6 +1,5 @@
 use ibc::core::ics24_host::identifier::{ChannelId, PortId};
 use penumbra_crypto::asset;
-use sha2::{Digest, Sha256};
 
 /// IBC token respresents a token that was created through IBC.
 pub struct IBCToken {
@@ -8,23 +7,12 @@ pub struct IBCToken {
     base_denom: asset::Denom,
 }
 
-/// <https://github.com/cosmos/ibc-go/blob/main/docs/architecture/adr-001-coin-source-tracing.md>
-fn derive_ibc_denom(transfer_path: &str) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(transfer_path.as_bytes());
-
-    let denom_bytes = hasher.finalize();
-    let denom_hex = String::from_utf8(hex::encode_upper(denom_bytes).into()).unwrap();
-
-    format!("ibc/{}", denom_hex)
-}
-
 impl IBCToken {
     pub fn new(channel_id: &ChannelId, port_id: &PortId, denom: &str) -> Self {
         let transfer_path = format!("{}/{}/{}", port_id, channel_id, denom);
 
         let base_denom = asset::REGISTRY
-            .parse_denom(&derive_ibc_denom(transfer_path.as_str()))
+            .parse_denom(&transfer_path)
             .expect("IBC denom is invalid");
 
         IBCToken {
@@ -53,5 +41,18 @@ impl IBCToken {
     /// this takes the format of `port_id/channel_id/denom`.
     pub fn transfer_path(&self) -> String {
         self.transfer_path.clone()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_derive_ibc_denom() {
+        let expected_transfer_path = "transfer/channel-31/uatom";
+        let ibctoken = IBCToken::new(&ChannelId::new(31), &PortId::transfer(), "uatom");
+        println!("denom: {}, id: {}", ibctoken.denom(), ibctoken.id());
+        assert_eq!(expected_transfer_path, ibctoken.transfer_path());
     }
 }
