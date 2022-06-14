@@ -27,7 +27,7 @@ pub fn scan_block(
         block_root,
         epoch_root,
         quarantined,
-        slashed
+        slashed,
     }: CompactBlock,
     epoch_duration: u64,
 ) -> ScanResult {
