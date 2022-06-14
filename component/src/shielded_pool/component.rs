@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
 use crate::{
     stake::{validator, View as _},
@@ -8,7 +8,12 @@ use anyhow::{anyhow, Context as _, Result};
 use ark_ff::PrimeField;
 use async_trait::async_trait;
 use decaf377::{Fq, Fr};
-use penumbra_chain::{genesis, sync::CompactBlock, Epoch, KnownAssets, NoteSource, View as _};
+use penumbra_chain::{
+    genesis,
+    quarantined::{self, Slashed},
+    sync::CompactBlock,
+    Epoch, KnownAssets, NoteSource, View as _,
+};
 use penumbra_crypto::{
     asset::{self, Asset, Denom},
     ka, note, Address, IdentityKey, Note, NotePayload, Nullifier, One, Value,
@@ -21,15 +26,13 @@ use penumbra_transaction::{action::Undelegate, Action, Transaction};
 use tendermint::abci;
 use tracing::instrument;
 
-use crate::shielded_pool::{event, state_key, CommissionAmounts, Quarantined};
+use crate::shielded_pool::{event, state_key, CommissionAmounts};
 
 pub struct ShieldedPool {
     state: State,
     note_commitment_tree: tct::Tree,
     /// The in-progress CompactBlock representation of the ShieldedPool changes
     compact_block: CompactBlock,
-    /// The scheduled quarantine actions for notes (processed all at once in end_block)
-    quarantined: Quarantined,
 }
 
 impl ShieldedPool {
@@ -37,15 +40,8 @@ impl ShieldedPool {
     pub async fn new(state: State, note_commitment_tree: tct::Tree) -> Self {
         Self {
             note_commitment_tree,
-            // If a previous component started writing into the compact block (i.e. staking
-            // recording rolled back nullifiers and notes), retrieve it
-            compact_block: state
-                .compact_block(state.get_block_height().await.expect("can get height"))
-                .await
-                .expect("can get compact block")
-                .unwrap_or_default(),
+            compact_block: CompactBlock::default(),
             state,
-            quarantined: Quarantined::default(),
         }
     }
 
@@ -181,41 +177,18 @@ impl Component for ShieldedPool {
 
     #[instrument(name = "shielded_pool", skip(self, ctx, tx))]
     async fn execute_tx(&mut self, ctx: Context, tx: &Transaction) {
-        let mut should_quarantine = tx.transaction_body.actions.iter().find_map(|action| {
-            if let Action::Undelegate(Undelegate {
-                validator_identity, ..
-            }) = action
-            {
-                Some(validator_identity)
-            } else {
-                None
-            }
-        });
-
-        // If the validator is unbonded, undelegations take effect immediately
-        if let Some(identity_key) = should_quarantine {
-            if matches!(
-                self.state
-                    .validator_bonding_state(identity_key)
-                    .await
-                    .expect("validator lookup in state succeeds")
-                    .expect("validator is present in state"),
-                validator::BondingState::Unbonded
-            ) {
-                should_quarantine = None;
-            }
-        }
-
         let source = NoteSource::Transaction { id: tx.id() };
 
-        if let Some(&identity_key) = should_quarantine {
+        if let Some((epoch, identity_key)) = self.should_quarantine(tx).await {
             for quarantined_output in tx.note_payloads() {
-                self.add_quarantined_note(quarantined_output.clone(), source)
-                    .await;
+                self.add_note(quarantined_output.clone(), source).await;
                 // Queue up scheduling this note to be unquarantined: the actual state-writing for
                 // all quarantined notes happens during end_block, to avoid state churn
-                self.quarantined
-                    .insert_note(identity_key, quarantined_output);
+                self.compact_block.quarantined.schedule_note(
+                    epoch,
+                    identity_key,
+                    quarantined_output,
+                );
             }
             for quarantined_spent_nullifier in tx.spent_nullifiers() {
                 // We need to record the nullifier as spent under quarantine in the JMT (to prevent
@@ -224,13 +197,13 @@ impl Component for ShieldedPool {
                 self.state
                     .spend_quarantined_nullifier(quarantined_spent_nullifier, source)
                     .await;
-                self.compact_block
-                    .quarantined_nullifiers
-                    .push(quarantined_spent_nullifier);
                 // Queue up scheduling this nullifier to be unquarantined: the actual state-writing
                 // for all quarantined nullifiers happens during end_block, to avoid state churn
-                self.quarantined
-                    .insert_nullifier(identity_key, quarantined_spent_nullifier);
+                self.compact_block.quarantined.schedule_nullifier(
+                    epoch,
+                    identity_key,
+                    quarantined_spent_nullifier,
+                );
                 ctx.record(event::quarantine_spend(quarantined_spent_nullifier));
             }
         } else {
@@ -286,6 +259,10 @@ impl Component for ShieldedPool {
 
         // Schedule all unquarantining that was set up in this block
         self.schedule_unquarantine().await;
+
+        // Handle any slashing that occurred in this block, unscheduling all affected notes and
+        // nullifiers from future unbonding
+        self.process_slashing().await;
 
         // Process all unquarantining scheduled for this block
         self.process_unquarantine().await;
@@ -399,20 +376,6 @@ impl ShieldedPool {
         self.compact_block.note_payloads.push(note_payload);
     }
 
-    #[instrument(skip(self, source, note_payload), fields(note_commitment = ?note_payload.note_commitment))]
-    async fn add_quarantined_note(&mut self, note_payload: NotePayload, source: NoteSource) {
-        tracing::debug!("adding quarantined note");
-        // 1. Record its source in the JMT
-        self.state
-            .set_quarantined_note_source(&note_payload.note_commitment, source)
-            .await;
-
-        // 2. Finally, record it in the pending compact block.
-        self.compact_block
-            .quarantined_note_payloads
-            .push(note_payload);
-    }
-
     #[instrument(skip(self))]
     async fn write_compactblock_and_nct(&mut self) -> Result<()> {
         // Extract the compact block, resetting it
@@ -495,52 +458,63 @@ impl ShieldedPool {
             .expect("can get epoch duration")
     }
 
-    async fn schedule_unquarantine(&mut self) {
-        let this_epoch = self.epoch().await;
+    /// Returns the epoch and identity key for quarantining a transaction, if it should be
+    /// quarantined, otherwise `None`.
+    async fn should_quarantine(&self, transaction: &Transaction) -> Option<(u64, IdentityKey)> {
+        let validator_identity =
+            transaction
+                .transaction_body
+                .actions
+                .iter()
+                .find_map(|action| {
+                    if let Action::Undelegate(Undelegate {
+                        validator_identity, ..
+                    }) = action
+                    {
+                        Some(validator_identity)
+                    } else {
+                        None
+                    }
+                })?;
 
-        // Get the unbonding epochs
-        let unbonding_epochs = self
+        let validator_bonding_state = self
             .state
-            .get_chain_params()
+            .validator_bonding_state(validator_identity)
             .await
-            .expect("can get chain params")
-            .unbonding_epochs;
+            .expect("validator lookup in state succeeds")
+            .expect("validator is present in state");
 
-        // Process any scheduled quarantined notes and nullifiers in this block: we do this in a
-        // slightly fancy way to ensure that we only write to each key once, rather than potentially
-        // many times
-        let mut per_scheduled_unquarantine = BTreeMap::<Epoch, Quarantined>::new();
+        match validator_bonding_state {
+            validator::BondingState::Unbonded => None,
+            validator::BondingState::Unbonding { unbonding_epoch } => {
+                Some((unbonding_epoch, *validator_identity))
+            }
+            validator::BondingState::Bonded => Some((
+                self.epoch().await.index + self.epoch_duration().await,
+                *validator_identity,
+            )),
+        }
+    }
 
+    async fn schedule_unquarantine(&mut self) {
         // First, we group all the scheduled quarantined notes by unquarantine epoch, in the process
         // resetting the quarantine field of the component
-        for (identity_key, per_validator) in std::mem::take(&mut self.quarantined.quarantined) {
-            let bonding_state = self
-                .state
-                .validator_bonding_state(&identity_key)
-                .await
-                .expect("can do bonding state lookup")
-                .expect("validator is known");
-            let unquarantine_epoch = match bonding_state {
-                validator::BondingState::Unbonded =>
-                    panic!("output of undelegation to unbonded validator shouldn't have been scheduled for unquarantine"),
-                validator::BondingState::Bonded =>
-                    this_epoch + unbonding_epochs,
-                validator::BondingState::Unbonding { unbonding_epoch } =>
-                    Epoch { index: unbonding_epoch, duration: this_epoch.duration },
-            };
-            per_scheduled_unquarantine
-                .entry(unquarantine_epoch)
-                .or_default()
-                .insert_per_validator(identity_key, per_validator);
-        }
-
-        // Then, we write out changes to each epoch that needs its scheduled unquarantines to be updated
-        for (unquarantine_epoch, scheduled) in per_scheduled_unquarantine {
+        for (&unbonding_epoch, scheduled) in self.compact_block.quarantined.iter() {
             self.state
-                .schedule_unquarantine(unquarantine_epoch, scheduled)
+                .schedule_unquarantine(unbonding_epoch, scheduled.clone())
                 .await
                 .expect("scheduling unquarantine must succeed");
         }
+    }
+
+    // Process any slashing that occrred in this block.
+    async fn process_slashing(&mut self) {
+        self.compact_block.slashed.extend(
+            self.state
+                .unschedule_all_slashed()
+                .await
+                .expect("can unschedule slashed"),
+        );
     }
 
     // Process any notes/nullifiers due to be unquarantined in this block, if it's an
@@ -551,16 +525,16 @@ impl ShieldedPool {
         if this_epoch.is_epoch_end(this_epoch.duration) {
             for (_, per_validator) in self
                 .state
-                .quarantined_to_apply(this_epoch)
+                .scheduled_to_apply(this_epoch.index)
                 .await
                 .expect("can look up quarantined for this epoch")
             {
                 // For all the note payloads scheduled for unquarantine now, remove them from
                 // quarantine and add them to the proper notes for this block
-                for note_payload in per_validator.notes {
+                for note_payload in per_validator.note_payloads {
                     if let Some(note_source) = self
                         .state
-                        .unquarantine_note(&note_payload.note_commitment)
+                        .note_source(&note_payload.note_commitment)
                         .await
                         .expect("can try to unquarantine note")
                     {
@@ -673,20 +647,11 @@ pub trait View: StateExt {
             .await
     }
 
-    async fn set_quarantined_note_source(
-        &self,
-        note_commitment: &note::Commitment,
-        source: NoteSource,
-    ) {
-        self.put_domain(state_key::quarantined_note_source(note_commitment), source)
-            .await
-    }
-
     // Returns whether the note was presently quarantined.
-    async fn unquarantine_note(&self, commitment: &note::Commitment) -> Result<Option<NoteSource>> {
+    async fn roll_back_note(&self, commitment: &note::Commitment) -> Result<Option<NoteSource>> {
         // Get the note source of the note (or empty vec if already applied or rolled back)
         let source = self
-            .get_proto::<Vec<_>>(state_key::quarantined_note_source(commitment))
+            .get_proto::<Vec<_>>(state_key::note_source(commitment))
             .await?
             .expect("can't apply note that was never quarantined");
 
@@ -704,7 +669,7 @@ pub trait View: StateExt {
 
             // Delete the note from the quarantine set
             self.put_proto(
-                state_key::quarantined_note_source(commitment),
+                state_key::note_source(commitment),
                 vec![], // sentinel value meaning "deleted"
             )
             .await;
@@ -715,8 +680,17 @@ pub trait View: StateExt {
     }
 
     async fn note_source(&self, note_commitment: &note::Commitment) -> Result<Option<NoteSource>> {
-        self.get_domain(state_key::note_source(note_commitment))
-            .await
+        let source = self
+            .get_proto::<Vec<u8>>(state_key::note_source(note_commitment))
+            .await?
+            .unwrap_or_default();
+
+        // Empty note source means it has been deleted
+        if source.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(NoteSource::decode(&*source)?))
+        }
     }
 
     async fn set_compact_block(&self, compact_block: CompactBlock) {
@@ -854,88 +828,57 @@ pub trait View: StateExt {
         Ok(())
     }
 
-    async fn quarantined_to_apply(&self, epoch: Epoch) -> Result<Quarantined> {
+    async fn scheduled_to_apply(&self, epoch: u64) -> Result<quarantined::Scheduled> {
         Ok(self
-            .get_domain(state_key::quarantined_to_apply(epoch.index))
+            .get_domain(state_key::scheduled_to_apply(epoch))
             .await?
             .unwrap_or_default())
     }
 
-    async fn schedule_unquarantine(&self, epoch: Epoch, quarantined: Quarantined) -> Result<()> {
-        let mut updated_quarantined = self.quarantined_to_apply(epoch).await?;
-        updated_quarantined.extend(quarantined);
-        self.put_domain(
-            state_key::quarantined_to_apply(epoch.index),
-            updated_quarantined,
-        )
-        .await;
-        Ok(())
-    }
-
-    async fn unschedule_unquarantine(
+    async fn schedule_unquarantine(
         &self,
-        epoch: Epoch,
-        identity_key: IdentityKey,
-    ) -> Result<super::quarantined::PerValidator> {
-        let mut updated_quarantined = self.quarantined_to_apply(epoch).await?;
-        let per_validator = updated_quarantined
-            .quarantined
-            .remove(&identity_key)
-            .unwrap_or_default();
-        // We're removed all the scheduled notes and nullifiers for this epoch and identity key:
-        self.put_domain(
-            state_key::quarantined_to_apply(epoch.index),
-            updated_quarantined,
-        )
-        .await;
-        // Now we also ought to remove these nullifiers and notes from quarantine, but *not* apply them:
-        for &nullifier in per_validator.nullifiers.iter() {
-            self.unquarantine_nullifier(nullifier).await?;
-        }
-        for note_payload in per_validator.notes.iter() {
-            self.unquarantine_note(&note_payload.note_commitment)
-                .await?;
-        }
-
-        // Return the per_validator structure so we can use it later
-        Ok(per_validator)
+        epoch: u64,
+        scheduled: quarantined::Scheduled,
+    ) -> Result<()> {
+        let mut updated_quarantined = self.scheduled_to_apply(epoch).await?;
+        updated_quarantined.extend(scheduled);
+        self.put_domain(state_key::scheduled_to_apply(epoch), updated_quarantined)
+            .await;
+        Ok(())
     }
 
     // Unschedule the unquarantining of all notes and nullifiers for the given validator, in any
     // epoch which could possibly still be unbonding
-    async fn unschedule_unquarantine_all(&self, identity_key: IdentityKey) -> Result<()> {
+    async fn unschedule_all_slashed(&self) -> Result<Vec<IdentityKey>> {
         let height = self.get_block_height().await?;
         let epoch_duration = self.get_epoch_duration().await?;
         let this_epoch = Epoch::from_height(height, epoch_duration);
         let unbonding_epochs = self.get_chain_params().await?.unbonding_epochs;
 
-        // We will edit the compact block to note the rolled back nullifiers and commitments
-        let mut compact_block = self.compact_block(height).await?.unwrap_or_default();
+        let slashed: Slashed = self
+            .get_domain(state_key::slashed_validators(height))
+            .await?
+            .unwrap_or_default();
 
-        for index in this_epoch.index.saturating_sub(unbonding_epochs)..=this_epoch.index {
-            let per_validator = self
-                .unschedule_unquarantine(
-                    Epoch {
-                        index,
-                        duration: epoch_duration,
-                    },
-                    identity_key,
-                )
-                .await?;
-
-            // Add the rolled back nullifiers and commitments to the compact block
-            compact_block
-                .rolled_back_nullifiers
-                .extend(per_validator.nullifiers);
-            compact_block
-                .rolled_back_note_commitments
-                .extend(per_validator.notes.iter().map(|n| n.note_commitment));
+        for epoch in this_epoch.index.saturating_sub(unbonding_epochs)..=this_epoch.index {
+            let mut updated_scheduled = self.scheduled_to_apply(epoch).await?;
+            for &identity_key in &slashed.validators {
+                let unbonding = updated_scheduled.unschedule_validator(identity_key);
+                // Now we also ought to remove these nullifiers and notes from quarantine without
+                // applying them:
+                for &nullifier in unbonding.nullifiers.iter() {
+                    self.unquarantine_nullifier(nullifier).await?;
+                }
+                for note_payload in unbonding.note_payloads.iter() {
+                    self.roll_back_note(&note_payload.note_commitment).await?;
+                }
+            }
+            // We're removed all the scheduled notes and nullifiers for this epoch and identity key:
+            self.put_domain(state_key::scheduled_to_apply(epoch), updated_scheduled)
+                .await;
         }
 
-        // Only write the compact block back to the state once
-        self.set_compact_block(compact_block).await;
-
-        Ok(())
+        Ok(slashed.validators)
     }
 
     // TODO: rename to something more generic ("minted notes"?) that can

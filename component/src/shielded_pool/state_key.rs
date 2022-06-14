@@ -38,14 +38,12 @@ pub fn commission_amounts(height: u64) -> KeyHash {
     format!("staking/commission_amounts/{}", height).into()
 }
 
-pub fn quarantined_note_source(note_commitment: &note::Commitment) -> KeyHash {
-    format!("shielded_pool/quarantined_note_source/{}", note_commitment).into()
-}
-
-pub fn quarantined_to_apply(epoch: u64) -> KeyHash {
+pub fn scheduled_to_apply(epoch: u64) -> KeyHash {
     format!("shielded_pool/quarantined_to_apply_in_epoch/{}", epoch).into()
 }
 
 pub fn quarantined_spent_nullifier_lookup(nullifier: &Nullifier) -> KeyHash {
     format!("shielded_pool/quarantined_spent_nullifiers/{}", nullifier).into()
 }
+
+pub use crate::stake::state_key::slashed_validators;

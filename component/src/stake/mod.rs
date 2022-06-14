@@ -8,6 +8,7 @@ mod uptime;
 
 pub mod component;
 pub mod rate;
+pub mod state_key;
 pub mod validator;
 
 pub use self::metrics::register_metrics;

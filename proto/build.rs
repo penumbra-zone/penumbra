@@ -142,6 +142,8 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.chain.NoteSource", SERDE_TRANSPARENT),
     (".penumbra.chain.GenesisAppState", SERIALIZE),
     (".penumbra.chain.GenesisAllocation", SERIALIZE),
+    (".penumbra.chain.Quarantined", SERIALIZE),
+    (".penumbra.chain.QuarantinedPerValidator", SERIALIZE),
     (".penumbra.view.NoteRecord", SERIALIZE),
     (".penumbra.transaction.TransactionPlan", SERIALIZE),
     (".penumbra.transaction.Fee", SERIALIZE),
