@@ -26,10 +26,8 @@ pub fn scan_block(
         nullifiers,
         block_root,
         epoch_root,
-        quarantined_note_payloads,
-        quarantined_nullifiers,
-        rolled_back_note_commitments,
-        rolled_back_nullifiers,
+        quarantined,
+        slashed
     }: CompactBlock,
     epoch_duration: u64,
 ) -> ScanResult {
