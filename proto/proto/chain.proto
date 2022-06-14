@@ -56,14 +56,10 @@ message CompactBlock {
   crypto.MerkleRoot block_root = 4;
   // The epoch root of this epoch (only present when the block is the last in an epoch).
   crypto.MerkleRoot epoch_root = 5;
-  // NotePayloads describing new quarantined notes.
-  repeated crypto.NotePayload quarantined_note_payloads = 6;
-  // Nullifiers identifying quarantined spent notes.
-  repeated crypto.Nullifier quarantined_nullifiers = 7;
-  // Note commitments identifying quarantined notes that have been rolled back.
-  repeated crypto.NoteCommitment rolled_back_note_commitments = 8;
-  // Nullifiers identifying quarantined spent notes that have been rolled back.
-  repeated crypto.Nullifier rolled_back_nullifiers = 9;
+  // Newly quarantined things in this block.
+  Quarantined quarantined = 6;
+  // Validators slashed in this block.
+  repeated crypto.IdentityKey slashed = 7;
 }
 
 message KnownAssets {
@@ -87,12 +83,29 @@ message GenesisAppState {
     repeated Allocation allocations = 3;
 }
 
-message QuarantinedPerValidator {
-  crypto.IdentityKey identity_key = 1;
-  repeated crypto.NotePayload note_payloads = 2;
-  repeated crypto.Nullifier nullifiers = 3;
+message Quarantined {
+  message Unbonding {
+    repeated crypto.NotePayload note_payloads = 1;
+    repeated crypto.Nullifier nullifiers = 2;
+  }
+
+  message ValidatorEntry {
+    crypto.IdentityKey identity_key = 1;
+    Unbonding unbonding = 2;
+  }
+
+  message Scheduled {
+    repeated ValidatorEntry per_validator = 1;
+  }
+
+  message EpochEntry {
+    uint64 unbonding_epoch = 1;
+    Scheduled scheduled = 2;
+  }
+
+  repeated EpochEntry per_epoch = 1;
 }
 
-message Quarantined {
-  repeated QuarantinedPerValidator quarantined = 1;
+message Slashed {
+  repeated crypto.IdentityKey validators = 1;
 }

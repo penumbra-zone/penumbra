@@ -6,6 +6,7 @@ use crate::{Component, Context};
 use ::metrics::{decrement_gauge, gauge, increment_gauge};
 use anyhow::{anyhow, Context as _, Result};
 use async_trait::async_trait;
+use penumbra_chain::quarantined::Slashed;
 use penumbra_chain::{genesis, Epoch, View as _};
 use penumbra_crypto::{DelegationToken, IdentityKey, STAKING_TOKEN_ASSET_ID};
 use penumbra_proto::Protobuf;
@@ -1261,11 +1262,19 @@ pub trait View: StateExt {
         self.set_validator_rates(identity_key, cur_rate, next_rate)
             .await;
 
-        // Whenever a slashing penalty is applied, we need to cancel all pending undelegations that
-        // could possibly have still been pending, because the exchange rate has now changed andt
-        // therefore those undelegations are now invalid:
-        self.unschedule_unquarantine_all(*identity_key).await?;
+        // Whenever a slashing penalty is applied, we need to record that the validator was slashedt
+        // in this block so that the shielded pool can unschedule unquarantines
+        self.record_slashing(identity_key.clone()).await?;
 
+        Ok(())
+    }
+
+    async fn record_slashing(&self, identity_key: IdentityKey) -> Result<()> {
+        let height = self.get_block_height().await?;
+        let key = super::state_key::slashed_validators(height);
+        let mut slashed: Slashed = self.get_domain(key).await?.unwrap_or_default();
+        slashed.validators.push(identity_key);
+        self.put_domain(key, slashed).await;
         Ok(())
     }
 

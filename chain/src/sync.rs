@@ -1,10 +1,12 @@
 use std::convert::TryFrom;
 
 use anyhow::Result;
-use penumbra_crypto::{note, NotePayload, Nullifier};
+use penumbra_crypto::{IdentityKey, NotePayload, Nullifier};
 use penumbra_proto::{chain as pb, Protobuf};
 use penumbra_tct::builder::{block, epoch};
 use serde::{Deserialize, Serialize};
+
+use crate::quarantined::Quarantined;
 
 /// A compressed delta update with the minimal data from a block required to
 /// synchronize private client state.
@@ -20,14 +22,10 @@ pub struct CompactBlock {
     pub block_root: block::Root,
     // The epoch root of this epoch, if this block ends an epoch (`None` otherwise).
     pub epoch_root: Option<epoch::Root>,
-    // Note payloads describing new quarantined notes.
-    pub quarantined_note_payloads: Vec<NotePayload>,
-    // Nullifiers identifying quarantined spent notes.
-    pub quarantined_nullifiers: Vec<Nullifier>,
-    // Note commitments identifying quarantined notes that have been rolled back.
-    pub rolled_back_note_commitments: Vec<note::Commitment>,
-    // Nullifiers identifying quarantined notes that have been rolled back.
-    pub rolled_back_nullifiers: Vec<Nullifier>,
+    // Newly quarantined things in this block.
+    pub quarantined: Quarantined,
+    // Newly slashed validators in this block.
+    pub slashed: Vec<IdentityKey>,
 }
 
 impl Default for CompactBlock {
@@ -38,10 +36,8 @@ impl Default for CompactBlock {
             nullifiers: Vec::new(),
             block_root: block::Finalized::default().root(),
             epoch_root: None,
-            quarantined_note_payloads: Vec::new(),
-            quarantined_nullifiers: Vec::new(),
-            rolled_back_note_commitments: Vec::new(),
-            rolled_back_nullifiers: Vec::new(),
+            quarantined: Quarantined::default(),
+            slashed: Vec::new(),
         }
     }
 }
@@ -68,26 +64,12 @@ impl From<CompactBlock> for pb::CompactBlock {
                 Some(cb.block_root.into())
             },
             epoch_root: cb.epoch_root.map(Into::into),
-            quarantined_note_payloads: cb
-                .quarantined_note_payloads
-                .into_iter()
-                .map(Into::into)
-                .collect(),
-            quarantined_nullifiers: cb
-                .quarantined_nullifiers
-                .into_iter()
-                .map(Into::into)
-                .collect(),
-            rolled_back_note_commitments: cb
-                .rolled_back_note_commitments
-                .into_iter()
-                .map(Into::into)
-                .collect(),
-            rolled_back_nullifiers: cb
-                .rolled_back_nullifiers
-                .into_iter()
-                .map(Into::into)
-                .collect(),
+            quarantined: if cb.quarantined.is_empty() {
+                None
+            } else {
+                Some(cb.quarantined.into())
+            },
+            slashed: cb.slashed.into_iter().map(Into::into).collect(),
         }
     }
 }
@@ -115,26 +97,18 @@ impl TryFrom<pb::CompactBlock> for CompactBlock {
                 // If the block root wasn't present, that means it's the default finalized block root
                 .unwrap_or_else(|| block::Finalized::default().root()),
             epoch_root: value.epoch_root.map(TryInto::try_into).transpose()?,
-            quarantined_note_payloads: value
-                .quarantined_note_payloads
-                .into_iter()
-                .map(NotePayload::try_from)
-                .collect::<Result<Vec<NotePayload>>>()?,
-            quarantined_nullifiers: value
-                .quarantined_nullifiers
-                .into_iter()
+            quarantined: value
+                .quarantined
                 .map(TryInto::try_into)
-                .collect::<Result<Vec<Nullifier>>>()?,
-            rolled_back_note_commitments: value
-                .rolled_back_note_commitments
+                .transpose()?
+                // If the quarantined set wasn't present, that means it contained nothing, so make
+                // it the default, empty set
+                .unwrap_or_default(),
+            slashed: value
+                .slashed
                 .into_iter()
-                .map(TryInto::try_into)
-                .collect::<Result<Vec<note::Commitment>, _>>()?,
-            rolled_back_nullifiers: value
-                .rolled_back_nullifiers
-                .into_iter()
-                .map(TryInto::try_into)
-                .collect::<Result<Vec<Nullifier>>>()?,
+                .map(IdentityKey::try_from)
+                .collect::<Result<Vec<_>>>()?,
         })
     }
 }
