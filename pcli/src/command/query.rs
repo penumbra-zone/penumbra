@@ -79,7 +79,7 @@ impl ShieldedPool {
         use penumbra_component::shielded_pool::state_key;
         match self {
             ShieldedPool::Anchor { height } => state_key::anchor_by_height(height),
-            ShieldedPool::QuarantinedToApply { epoch } => state_key::quarantined_to_apply(*epoch),
+            ShieldedPool::QuarantinedToApply { epoch } => state_key::scheduled_to_apply(*epoch),
         }
     }
 
@@ -90,7 +90,7 @@ impl ShieldedPool {
                 println!("{:#?}", anchor);
             }
             ShieldedPool::QuarantinedToApply { .. } => {
-                let notes = penumbra_component::shielded_pool::Quarantined::decode(bytes)?;
+                let notes = penumbra_chain::quarantined::Quarantined::decode(bytes)?;
                 println!("{:#?}", notes);
             }
         }
