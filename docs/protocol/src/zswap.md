@@ -62,7 +62,7 @@ single batch, first aggregating the amounts in each swap and then executing it
 against the CFMM as a single trade.
 
 ZSwap addresses the second problem by having users encrypt their swap amounts
-using a [flow encryption][flow-enc] key controlled by the
+using a [flow encryption][flow_enc] key controlled by the
 validators, who aggregate the *encrypted* amounts and decrypt only the batch
 trade.  This prevents front-running prior to block inclusion, and provides
 privacy for individual trades (up to the size of the batch) afterwards.
