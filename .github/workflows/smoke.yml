@@ -26,8 +26,9 @@ jobs:
         env:
           TESTNET_RUNTIME: 5m
 
-      - name: Now start testnet again in the background so we can run integration tests.
-        run: docker-compose up --detach pd-node0
+      - name: Now start testnet in the background so we can run integration tests.
+        run: |
+          docker-compose up --detach
 
       - name: Run integration tests against localhost.
         run: cargo test --package pcli -- --ignored
