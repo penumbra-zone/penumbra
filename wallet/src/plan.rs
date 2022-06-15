@@ -61,8 +61,9 @@ where
         .await?;
     for note_record in notes_to_spend {
         spent_amount += note_record.note.amount();
+        let position = note_record.position().unwrap();
         plan.actions
-            .push(SpendPlan::new(&mut rng, note_record.note, note_record.position).into());
+            .push(SpendPlan::new(&mut rng, note_record.note, position).into());
     }
     // Add a change note if we have change left over:
     let change_amount = spent_amount - spend_amount;
@@ -151,8 +152,9 @@ where
     let mut spent_amount = 0;
     for note_record in notes_to_spend {
         spent_amount += note_record.note.amount();
+        let position = note_record.position().unwrap();
         plan.actions
-            .push(SpendPlan::new(&mut rng, note_record.note, note_record.position).into());
+            .push(SpendPlan::new(&mut rng, note_record.note, position).into());
     }
 
     if spent_amount < spend_amount {
@@ -263,8 +265,9 @@ where
     for note_record in notes_to_spend {
         tracing::debug!(?note_record, ?spend_amount);
         spent_amount += note_record.note.amount();
+        let position = note_record.position().unwrap();
         plan.actions
-            .push(SpendPlan::new(&mut rng, note_record.note, note_record.position).into());
+            .push(SpendPlan::new(&mut rng, note_record.note, position).into());
     }
 
     if spent_amount < spend_amount {
@@ -284,7 +287,7 @@ where
                 &mut rng,
                 Value {
                     amount: change_amount,
-                    asset_id: delegation_id.into(),
+                    asset_id: delegation_id,
                 },
                 self_address,
                 MemoPlaintext::default(),
@@ -404,8 +407,9 @@ where
 
         // Spend each of the notes we selected.
         for note_record in notes_to_spend {
+            let position = note_record.position().unwrap();
             plan.actions
-                .push(SpendPlan::new(&mut rng, note_record.note, note_record.position).into());
+                .push(SpendPlan::new(&mut rng, note_record.note, position).into());
         }
 
         // Find out how much change we have and whether to add a change output.

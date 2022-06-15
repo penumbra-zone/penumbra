@@ -7,7 +7,7 @@ CREATE TABLE note_commitment_tree (bytes BLOB NOT NULL);
 -- Minimal data required for balance tracking
 CREATE TABLE notes (
     note_commitment         BLOB PRIMARY KEY NOT NULL,
-    height_spent            BIGINT, --null if unspent, otherwise spent at height_spent 
+    height_spent            BIGINT, -- null iff unspent, otherwise spent at height_spent
     height_created          BIGINT NOT NULL,
     -- note contents themselves:
     diversifier             BLOB NOT NULL,
@@ -18,16 +18,19 @@ CREATE TABLE notes (
     -- precomputed decryption of the diversifier
     diversifier_index       BLOB NOT NULL,
     -- the nullifier for this note, used to detect when it is spent
-    nullifier               BLOB NOT NULL,
+    nullifier               BLOB, -- null iff quarantined
     -- the position of the note in the note commitment tree
-    position                BIGINT NOT NULL,
-    quarantined             BIGINT NOT NULL -- 0 if not quarantined, 1 if quarantined
+    position                BIGINT, -- null iff quarantined
+    -- the quarantine status of the note
+    unbonding_epoch         BIGINT, -- not null iff quarantined
+    identity_key            BLOB -- not null if quarantined, null if not quarantined and not spent
 );
 
 -- general purpose note queries
 CREATE INDEX notes_idx ON notes (
     height_spent,       -- null if unspent, so spent/unspent is first
-    quarantined,        -- then by quarantine status
+    unbonding_epoch,    -- then by quarantine release epoch
+    identity_key,       -- then by identity key
     diversifier_index,  -- then filter by account
     asset_id,           -- then by asset
     amount,             -- then by amount
@@ -36,6 +39,9 @@ CREATE INDEX notes_idx ON notes (
 
 -- used to detect spends
 CREATE INDEX nullifier_idx on notes ( nullifier );
+
+-- used to do slashing
+CREATE INDEX by_validator_index on notes ( identity_key );
 
 -- used for storing a cache of known assets
 CREATE TABLE assets (

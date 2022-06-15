@@ -1,75 +1,66 @@
 {
   "db": "SQLite",
   "00ebf9aa311283f814859965b74865091c6e9bca47f4d95985b2aa63d4e4ac2f": {
-    "query": "INSERT INTO full_viewing_key (bytes) VALUES (?)",
     "describe": {
       "columns": [],
+      "nullable": [],
       "parameters": {
         "Right": 1
-      },
-      "nullable": []
-    }
+      }
+    },
+    "query": "INSERT INTO full_viewing_key (bytes) VALUES (?)"
   },
-  "0c1e5cac042a98a46fbfddf10371f5825ac27596e0834091148011e5b5e297e5": {
-    "query": "INSERT INTO notes\n                    (\n                        note_commitment,\n                        height_spent,\n                        height_created,\n                        diversifier,\n                        amount,\n                        asset_id,\n                        transmission_key,\n                        blinding_factor,\n                        diversifier_index,\n                        nullifier,\n                        position,\n                        quarantined\n                    )\n                    VALUES\n                    (\n                        ?,\n                        NULL,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?\n                    )",
+  "06d990cf053ac58086aa6964cb19b69131933bb8a5cf972559c639bcf2af0210": {
     "describe": {
       "columns": [],
+      "nullable": [],
       "parameters": {
-        "Right": 11
-      },
-      "nullable": []
-    }
-  },
-  "0c9654cf156210edda72a63b80ad55cc1cd772f6ab83660307167aa3d2e8b094": {
-    "query": "UPDATE notes SET height_spent = ? WHERE nullifier = ? RETURNING note_commitment",
-    "describe": {
-      "columns": [
-        {
-          "name": "note_commitment",
-          "ordinal": 0,
-          "type_info": "Blob"
-        }
-      ],
-      "parameters": {
-        "Right": 2
-      },
-      "nullable": [
-        false
-      ]
-    }
+        "Right": 1
+      }
+    },
+    "query": "UPDATE notes SET height_spent = NULL, identity_key = NULL, unbonding_epoch = NULL\n                WHERE identity_key = ? AND height_spent IS NOT NULL AND unbonding_epoch IS NOT NULL"
   },
   "1766574ebf4edffed45f0167f734a5ea5167ef2ec4280ed9710b4e1ec3eeb362": {
-    "query": "INSERT INTO chain_params (bytes) VALUES (?)",
     "describe": {
       "columns": [],
+      "nullable": [],
       "parameters": {
         "Right": 1
-      },
-      "nullable": []
-    }
+      }
+    },
+    "query": "INSERT INTO chain_params (bytes) VALUES (?)"
   },
   "1ace3043077b74682c94e9d1876858fd696a42eac8f7da07d5b4ec43b0d9fc3f": {
-    "query": "INSERT INTO sync_height (height) VALUES (?)",
     "describe": {
       "columns": [],
+      "nullable": [],
       "parameters": {
         "Right": 1
-      },
-      "nullable": []
-    }
+      }
+    },
+    "query": "INSERT INTO sync_height (height) VALUES (?)"
   },
   "2547294717840bcb1bef870394b99cf275bcba98d005f1f18b03c7a3d93909e1": {
-    "query": "INSERT INTO assets\n                    (\n                        asset_id,\n                        denom\n                    )\n                    VALUES\n                    (\n                        ?,\n                        ?\n                    )",
     "describe": {
       "columns": [],
+      "nullable": [],
       "parameters": {
         "Right": 2
-      },
-      "nullable": []
-    }
+      }
+    },
+    "query": "INSERT INTO assets\n                    (\n                        asset_id,\n                        denom\n                    )\n                    VALUES\n                    (\n                        ?,\n                        ?\n                    )"
+  },
+  "31566af0835b30ebd3c70785a72aeb6447985f5140f1e6ba09874a86360ef799": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 12
+      }
+    },
+    "query": "INSERT INTO notes\n                    (\n                        note_commitment,\n                        height_spent,\n                        height_created,\n                        diversifier,\n                        amount,\n                        asset_id,\n                        transmission_key,\n                        blinding_factor,\n                        diversifier_index,\n                        nullifier,\n                        position,\n                        unbonding_epoch,\n                        identity_key\n                    )\n                    VALUES\n                    (\n                        ?,\n                        NULL,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?\n                    )"
   },
   "3381f1580eeac4a2fab83b4d64ae259c964e88dd22872675232f829ebc52a335": {
-    "query": "SELECT *\n            FROM assets",
     "describe": {
       "columns": [
         {
@@ -83,27 +74,37 @@
           "type_info": "Text"
         }
       ],
-      "parameters": {
-        "Right": 0
-      },
       "nullable": [
         false,
         false
-      ]
-    }
+      ],
+      "parameters": {
+        "Right": 0
+      }
+    },
+    "query": "SELECT *\n            FROM assets"
   },
-  "4af503f633659f5e73d7e64f3fb1f1ab5e37299a25dadcd851f4ec86aea0a78b": {
-    "query": "UPDATE sync_height SET height = ?",
+  "4585145e092417be6afa96502611a58add6fd33ed9740080342ae8fc676ab5f1": {
     "describe": {
       "columns": [],
+      "nullable": [],
       "parameters": {
         "Right": 1
-      },
-      "nullable": []
-    }
+      }
+    },
+    "query": "DELETE FROM notes WHERE note_commitment = ?"
+  },
+  "4af503f633659f5e73d7e64f3fb1f1ab5e37299a25dadcd851f4ec86aea0a78b": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "UPDATE sync_height SET height = ?"
   },
   "63aad4faac1ffefd5525595f9ca5a82186181368251da9fbacf65a4d48671a01": {
-    "query": "\n            SELECT bytes\n            FROM full_viewing_key\n            LIMIT 1\n            ",
     "describe": {
       "columns": [
         {
@@ -112,16 +113,16 @@
           "type_info": "Blob"
         }
       ],
-      "parameters": {
-        "Right": 0
-      },
       "nullable": [
         false
-      ]
-    }
+      ],
+      "parameters": {
+        "Right": 0
+      }
+    },
+    "query": "\n            SELECT bytes\n            FROM full_viewing_key\n            LIMIT 1\n            "
   },
   "6684105462e0bba65abb19049c13836941421a0ed4ac59c6355dccdcab50dca7": {
-    "query": "\n            SELECT height\n            FROM sync_height\n            ORDER BY height DESC\n            LIMIT 1\n        ",
     "describe": {
       "columns": [
         {
@@ -130,26 +131,26 @@
           "type_info": "Int64"
         }
       ],
-      "parameters": {
-        "Right": 0
-      },
       "nullable": [
         false
-      ]
-    }
+      ],
+      "parameters": {
+        "Right": 0
+      }
+    },
+    "query": "\n            SELECT height\n            FROM sync_height\n            ORDER BY height DESC\n            LIMIT 1\n        "
   },
   "b4a0b026cd41003d66ec3ff1f104d89aee4ff22f10f1e7d20aa59dab4354b6ed": {
-    "query": "UPDATE note_commitment_tree SET bytes = ?",
     "describe": {
       "columns": [],
+      "nullable": [],
       "parameters": {
         "Right": 1
-      },
-      "nullable": []
-    }
+      }
+    },
+    "query": "UPDATE note_commitment_tree SET bytes = ?"
   },
   "d437ce2946cba91cd0e4fa750f14d227c2caa78e6bd69ed475f7b0679914c897": {
-    "query": "\n            SELECT bytes\n            FROM note_commitment_tree\n            LIMIT 1\n            ",
     "describe": {
       "columns": [
         {
@@ -158,26 +159,44 @@
           "type_info": "Blob"
         }
       ],
-      "parameters": {
-        "Right": 0
-      },
       "nullable": [
         false
-      ]
-    }
+      ],
+      "parameters": {
+        "Right": 0
+      }
+    },
+    "query": "\n            SELECT bytes\n            FROM note_commitment_tree\n            LIMIT 1\n            "
+  },
+  "e4b174a6adac5a0020946b350ed4f5624c62b12c26c5b5cecd90917af160ca7c": {
+    "describe": {
+      "columns": [
+        {
+          "name": "note_commitment",
+          "ordinal": 0,
+          "type_info": "Blob"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 3
+      }
+    },
+    "query": "UPDATE notes SET height_spent = ?, identity_key = ? WHERE nullifier = ? RETURNING note_commitment"
   },
   "e61182e04d553075f4385fda82a0822a04a08b8ada8ac5b5d46154a4c2901626": {
-    "query": "INSERT INTO note_commitment_tree (bytes) VALUES (?)",
     "describe": {
       "columns": [],
+      "nullable": [],
       "parameters": {
         "Right": 1
-      },
-      "nullable": []
-    }
+      }
+    },
+    "query": "INSERT INTO note_commitment_tree (bytes) VALUES (?)"
   },
   "efb5f4932197a38ca134b63d8ea5d2fad9145fb56d03a60351f15b5302905402": {
-    "query": "\n            SELECT bytes\n            FROM chain_params\n            LIMIT 1\n        ",
     "describe": {
       "columns": [
         {
@@ -186,12 +205,23 @@
           "type_info": "Blob"
         }
       ],
-      "parameters": {
-        "Right": 0
-      },
       "nullable": [
         false
-      ]
-    }
+      ],
+      "parameters": {
+        "Right": 0
+      }
+    },
+    "query": "\n            SELECT bytes\n            FROM chain_params\n            LIMIT 1\n        "
+  },
+  "f6ba8e63e4b61fd1c4b2059485d173db9659dca14cf935d51cd45150ff4c8f1d": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "DELETE FROM notes\n                WHERE identity_key = ? AND height_spent IS NULL AND unbonding_epoch IS NOT NULL"
   }
 }

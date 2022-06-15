@@ -93,16 +93,33 @@ message NoteRecord {
     crypto.Note note = 2;
     // A precomputed decryption of the note's diversifier index.
     crypto.DiversifierIndex diversifier_index = 3;
-    // The note's nullifier.
-    crypto.Nullifier nullifier = 4;
     // The height at which the note was created.
     uint64 height_created = 5;
-    // Records whether the note was spent (and if so, at what height).
-    optional uint64 height_spent = 6;
-    // The note position.
-    uint64 position = 7;
-    // Note quarantine status
-    bool quarantined = 8;
+
+    // Note is applied to the state.
+    message Applied {
+        // The note's nullifier.
+        crypto.Nullifier nullifier = 1;
+        // The note position.
+        uint64 position = 2;
+        // Records whether the note was spent (and if so, at what height).
+        optional uint64 height_spent = 3;
+        // Records the identity key and unbonding epoch, if the note was spent as part of a
+        // quarantined transaction.
+        Quarantined spend_status = 4;
+    }
+
+    // Note is quarantined.
+    message Quarantined {
+        crypto.IdentityKey identity_key = 1;
+        uint64 unbonding_epoch = 2;
+    }
+
+    // The status of the note: either quarantined, or applied.
+    oneof status {
+        Quarantined quarantined = 6;
+        Applied applied = 7;
+    };
 }
 
 // A query for notes known by the view service.
@@ -126,7 +143,7 @@ message NotesRequest {
     //
     // Ignored if `asset_id` is unset or if `include_spent` is set.
     uint64 amount_to_spend = 5;
-    
+
     // If set, include notes which are currently quarantined.
     bool include_quarantined = 6;
 }

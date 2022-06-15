@@ -2,7 +2,7 @@ use penumbra_crypto::{
     asset,
     ka::Public,
     keys::{Diversifier, DiversifierIndex},
-    note, FieldExt, Fq, Note, Nullifier, Value,
+    note, FieldExt, Fq, IdentityKey, Note, Nullifier, Value,
 };
 use penumbra_proto::{view as pb, Protobuf};
 use penumbra_tct as tct;
@@ -17,25 +17,202 @@ pub struct NoteRecord {
     pub note_commitment: note::Commitment,
     pub note: Note,
     pub diversifier_index: DiversifierIndex,
-    pub nullifier: Nullifier,
     pub height_created: u64,
-    pub height_spent: Option<u64>,
-    pub position: tct::Position,
-    pub quarantined: bool, //should never transition from false to true after initial insertion of note commitment
+    pub status: Status,
+}
+
+impl NoteRecord {
+    /// Returns the position of the note, or `None` if it is quarantined.
+    pub fn position(&self) -> Option<tct::Position> {
+        match self.status {
+            Status::Applied { position, .. } => Some(position),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum Status {
+    Quarantined {
+        unbonding_epoch: u64,
+        identity_key: IdentityKey,
+    },
+    Applied {
+        nullifier: Nullifier,
+        position: tct::Position,
+        height_spent: Option<(u64, SpendStatus)>,
+    },
+}
+
+impl Status {
+    #[allow(clippy::type_complexity)]
+    pub fn into_parts(
+        self,
+    ) -> (
+        Option<u64>,
+        Option<Nullifier>,
+        Option<tct::Position>,
+        Option<IdentityKey>,
+        Option<u64>,
+    ) {
+        match self {
+            Status::Quarantined {
+                identity_key,
+                unbonding_epoch,
+            } => (None, None, None, Some(identity_key), Some(unbonding_epoch)),
+            Status::Applied {
+                height_spent,
+                nullifier,
+                position,
+            } => {
+                let (height_spent, (unbonding_epoch, identity_key)) =
+                    if let Some((height_spent, spend_status)) = height_spent {
+                        (
+                            Some(height_spent),
+                            match spend_status {
+                                SpendStatus::Committed => (None, None),
+                                SpendStatus::Quarantined {
+                                    unbonding_epoch,
+                                    identity_key,
+                                } => (Some(unbonding_epoch), Some(identity_key)),
+                            },
+                        )
+                    } else {
+                        (None, (None, None))
+                    };
+                (
+                    height_spent,
+                    Some(nullifier),
+                    Some(position),
+                    identity_key,
+                    unbonding_epoch,
+                )
+            }
+        }
+    }
+
+    pub fn try_from_parts(
+        height_spent: Option<u64>,
+        nullifier: Option<Nullifier>,
+        position: Option<tct::Position>,
+        identity_key: Option<IdentityKey>,
+        unbonding_epoch: Option<u64>,
+    ) -> anyhow::Result<Self> {
+        Ok(if let Some(height_spent) = height_spent {
+            Self::Applied {
+                nullifier: nullifier.ok_or_else(|| anyhow::anyhow!("missing nullifier"))?,
+                position: position.ok_or_else(|| anyhow::anyhow!("missing position"))?,
+                height_spent: Some((
+                    height_spent,
+                    if let Some(unbonding_epoch) = unbonding_epoch {
+                        SpendStatus::Quarantined {
+                            unbonding_epoch,
+                            identity_key: identity_key
+                                .ok_or_else(|| anyhow::anyhow!("missing identity key"))?,
+                        }
+                    } else {
+                        SpendStatus::Committed
+                    },
+                )),
+            }
+        } else if let Some(unbonding_epoch) = unbonding_epoch {
+            if nullifier.is_some() {
+                return Err(anyhow::anyhow!(
+                    "nullifier should not be present for quarantined notes"
+                ));
+            }
+            if position.is_some() {
+                return Err(anyhow::anyhow!(
+                    "position should not be present for quarantined notes"
+                ));
+            }
+            Self::Quarantined {
+                unbonding_epoch,
+                identity_key: identity_key
+                    .ok_or_else(|| anyhow::anyhow!("missing identity_key"))?,
+            }
+        } else {
+            if identity_key.is_some() {
+                return Err(anyhow::anyhow!(
+                    "identity_key should not be present for unspent, unquarantined notes"
+                ));
+            }
+            if unbonding_epoch.is_some() {
+                return Err(anyhow::anyhow!(
+                    "unbonding epoch should not be present for unspent, unquarantined notes"
+                ));
+            }
+            Self::Applied {
+                nullifier: nullifier.ok_or_else(|| anyhow::anyhow!("missing nullifier"))?,
+                position: position.ok_or_else(|| anyhow::anyhow!("missing position"))?,
+                height_spent: None,
+            }
+        })
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum SpendStatus {
+    Committed,
+    Quarantined {
+        unbonding_epoch: u64,
+        identity_key: IdentityKey,
+    },
+}
+
+impl Status {
+    /// Indicates that the note has been applied, i.e. it is not quarantined.
+    pub fn is_applied(&self) -> bool {
+        matches!(self, Status::Applied { .. })
+    }
+
+    /// Indicates that the note is quarantined.
+    pub fn is_quarantined(&self) -> bool {
+        matches!(self, Status::Quarantined { .. })
+    }
 }
 
 impl Protobuf<pb::NoteRecord> for NoteRecord {}
+
 impl From<NoteRecord> for pb::NoteRecord {
     fn from(v: NoteRecord) -> Self {
         pb::NoteRecord {
             note_commitment: Some(v.note_commitment.into()),
             note: Some(v.note.into()),
             diversifier_index: Some(v.diversifier_index.into()),
-            nullifier: Some(v.nullifier.into()),
             height_created: v.height_created,
-            height_spent: v.height_spent,
-            position: v.position.into(),
-            quarantined: v.quarantined,
+            status: Some(match v.status {
+                Status::Quarantined {
+                    unbonding_epoch,
+                    identity_key,
+                } => pb::note_record::Status::Quarantined(pb::note_record::Quarantined {
+                    unbonding_epoch,
+                    identity_key: Some(identity_key.into()),
+                }),
+                Status::Applied {
+                    nullifier,
+                    position,
+                    height_spent,
+                } => pb::note_record::Status::Applied(pb::note_record::Applied {
+                    nullifier: Some(nullifier.into()),
+                    position: position.into(),
+                    height_spent: height_spent.map(|p| p.0),
+                    spend_status: height_spent.and_then(|p| {
+                        if let SpendStatus::Quarantined {
+                            identity_key,
+                            unbonding_epoch,
+                        } = p.1
+                        {
+                            Some(pb::note_record::Quarantined {
+                                identity_key: Some(identity_key.into()),
+                                unbonding_epoch,
+                            })
+                        } else {
+                            None
+                        }
+                    }),
+                }),
+            }),
         }
     }
 }
@@ -56,14 +233,57 @@ impl TryFrom<pb::NoteRecord> for NoteRecord {
                 .diversifier_index
                 .ok_or_else(|| anyhow::anyhow!("missing diversifier index"))?
                 .try_into()?,
-            nullifier: v
-                .nullifier
-                .ok_or_else(|| anyhow::anyhow!("missing nullifier"))?
-                .try_into()?,
             height_created: v.height_created,
-            height_spent: v.height_spent,
-            position: v.position.into(),
-            quarantined: v.quarantined,
+            status: if let Some(status) = v.status {
+                match status {
+                    pb::note_record::Status::Quarantined(v) => Status::Quarantined {
+                        unbonding_epoch: v.unbonding_epoch,
+                        identity_key: v
+                            .identity_key
+                            .ok_or_else(|| anyhow::anyhow!("missing identity key"))?
+                            .try_into()?,
+                    },
+                    pb::note_record::Status::Applied(v) => Status::Applied {
+                        nullifier: v
+                            .nullifier
+                            .ok_or_else(|| anyhow::anyhow!("missing nullifier"))?
+                            .try_into()?,
+                        position: v.position.try_into()?,
+                        height_spent: if let Some(height_spent) = v.height_spent {
+                            Some((
+                                height_spent,
+                                v.spend_status
+                                    .map(
+                                        |pb::note_record::Quarantined {
+                                             identity_key,
+                                             unbonding_epoch,
+                                         }| {
+                                            Ok::<_, anyhow::Error>(SpendStatus::Quarantined {
+                                                identity_key: identity_key
+                                                    .map(TryInto::try_into)
+                                                    .transpose()?
+                                                    .ok_or_else(|| {
+                                                        anyhow::anyhow!("missing identity key")
+                                                    })?,
+                                                unbonding_epoch,
+                                            })
+                                        },
+                                    )
+                                    .transpose()?
+                                    .unwrap_or(SpendStatus::Committed),
+                            ))
+                        } else if v.spend_status.is_some() {
+                            return Err(anyhow::anyhow!(
+                                "spend status present but height spent is not"
+                            ));
+                        } else {
+                            None
+                        },
+                    },
+                }
+            } else {
+                return Err(anyhow::anyhow!("missing status"));
+            },
         })
     }
 }
@@ -136,18 +356,7 @@ impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for NoteRecord {
             source: e.into(),
         })?;
 
-        let nullifier = Nullifier::try_from(row.get::<'r, &[u8], _>("nullifier")).map_err(|e| {
-            sqlx::Error::ColumnDecode {
-                index: "nullifier".to_string(),
-                source: e.into(),
-            }
-        })?;
-
         let height_created = row.get::<'r, i64, _>("height_created") as u64;
-        let height_spent = row
-            .get::<'r, Option<i64>, _>("height_spent")
-            .map(|v| v as u64);
-        let position = (row.get::<'r, i64, _>("position") as u64).into();
 
         let value = Value { amount, asset_id };
         let note =
@@ -158,17 +367,59 @@ impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for NoteRecord {
                 }
             })?;
 
-        let quarantined = row.get::<'r, bool, _>("quarantined") as bool;
+        let status = {
+            // Pull all these fields out of the database as optional fields, since any one of them
+            // could be missing for some statuses, then try to construct a status out of them, and
+            // fail if the set of nulls vs. non-nulls is not valid
+            let unbonding_epoch: Option<u64> = row
+                .get::<'r, Option<i64>, _>("unbonding_epoch")
+                .map(|i| i as u64);
+            let identity_key: Option<IdentityKey> = row
+                .get::<'r, Option<&[u8]>, _>("identity_key")
+                .map(IdentityKey::decode)
+                .transpose()
+                .map_err(|e| sqlx::Error::ColumnDecode {
+                    index: "identity_key".to_string(),
+                    source: e.into(),
+                })?;
+            let nullifier: Option<Nullifier> = row
+                .get::<'r, Option<&[u8]>, _>("nullifier")
+                .map(Nullifier::decode)
+                .transpose()
+                .map_err(|e| sqlx::Error::ColumnDecode {
+                    index: "nullifier".to_string(),
+                    source: e.into(),
+                })?;
+            let position: Option<tct::Position> = row
+                .get::<'r, Option<i64>, _>("position")
+                .map(|i| (i as u64).try_into())
+                .transpose()
+                .map_err(
+                    |e: <tct::Position as TryFrom<u64>>::Error| sqlx::Error::ColumnDecode {
+                        index: "position".to_string(),
+                        source: e.into(),
+                    },
+                )?;
+            let height_spent: Option<u64> = row
+                .get::<'r, Option<i64>, _>("height_spent")
+                .map(|v| v as u64);
+
+            Status::try_from_parts(
+                height_spent,
+                nullifier,
+                position,
+                identity_key,
+                unbonding_epoch,
+            )
+            .map_err(|e| sqlx::Error::Decode(e.into()))?
+        };
 
         Ok(NoteRecord {
             note_commitment,
             note,
             diversifier_index,
-            nullifier,
-            position,
             height_created,
-            height_spent,
-            quarantined,
+            status,
         })
     }
 }
