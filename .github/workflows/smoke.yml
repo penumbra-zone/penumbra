@@ -1,7 +1,7 @@
 name: Smoke Test
 on:
-  - pull_request:
-  - push:
+  pull_request:
+  push:
       branches:
         - main
 
