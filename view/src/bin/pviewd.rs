@@ -46,7 +46,7 @@ enum Command {
     /// Start the view service.
     Start {
         /// Bind the view service to this host.
-        #[clap(short, long, default_value = "127.0.0.1")]
+        #[clap(long, default_value = "127.0.0.1")]
         host: String,
         /// Bind the view gRPC server to this port.
         #[clap(long, default_value = "8081")]
