@@ -71,7 +71,7 @@ impl Status {
                             Some(height_spent),
                             match spend_status {
                                 SpendStatus::Committed => (None, None),
-                                SpendStatus::Quarantined {
+                                SpendStatus::Provisional {
                                     unbonding_epoch,
                                     identity_key,
                                 } => (Some(unbonding_epoch), Some(identity_key)),
@@ -105,7 +105,7 @@ impl Status {
                 height_spent: Some((
                     height_spent,
                     if let Some(unbonding_epoch) = unbonding_epoch {
-                        SpendStatus::Quarantined {
+                        SpendStatus::Provisional {
                             unbonding_epoch,
                             identity_key: identity_key
                                 .ok_or_else(|| anyhow::anyhow!("missing identity key"))?,
@@ -154,7 +154,7 @@ impl Status {
 #[derive(Debug, Clone, Copy)]
 pub enum SpendStatus {
     Committed,
-    Quarantined {
+    Provisional {
         unbonding_epoch: u64,
         identity_key: IdentityKey,
     },
@@ -198,7 +198,7 @@ impl From<NoteRecord> for pb::NoteRecord {
                     position: position.into(),
                     height_spent: height_spent.map(|p| p.0),
                     spend_status: height_spent.and_then(|p| {
-                        if let SpendStatus::Quarantined {
+                        if let SpendStatus::Provisional {
                             identity_key,
                             unbonding_epoch,
                         } = p.1
@@ -258,7 +258,7 @@ impl TryFrom<pb::NoteRecord> for NoteRecord {
                                              identity_key,
                                              unbonding_epoch,
                                          }| {
-                                            Ok::<_, anyhow::Error>(SpendStatus::Quarantined {
+                                            Ok::<_, anyhow::Error>(SpendStatus::Provisional {
                                                 identity_key: identity_key
                                                     .map(TryInto::try_into)
                                                     .transpose()?

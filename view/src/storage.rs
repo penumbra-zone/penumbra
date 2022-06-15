@@ -274,37 +274,32 @@ impl Storage {
         // If set, return spent notes as well as unspent notes.
         // bool include_spent = 2;
         let spent_clause = match include_spent {
-            false => "NULL",
-            true => "height_spent",
+            false => "height_spent IS NULL",
+            true => "true",
         };
 
         // If set, return quarantined notes as well as unquarantined notes.
         let quarantined_clause = match include_quarantined {
-            false => "0",
-            true => "quarantined_until",
+            false => "true",
+            true => "unbonding_epoch IS NOT NULL",
         };
 
         // If set, only return notes with the specified asset id.
         // crypto.AssetId asset_id = 3;
 
         let asset_clause = asset_id
-            .map(|id| format!("x'{}'", hex::encode(&id.to_bytes())))
-            .unwrap_or_else(|| "asset_id".to_string());
+            .map(|id| format!("asset_id IS x'{}'", hex::encode(&id.to_bytes())))
+            .unwrap_or_else(|| "true".to_string());
 
         // If set, only return notes with the specified diversifier index.
         // crypto.DiversifierIndex diversifier_index = 4;
         let diversifier_clause = diversifier_index
-            .map(|d| format!("x'{}'", hex::encode(&d.0)))
-            .unwrap_or_else(|| "diversifier_index".to_string());
+            .map(|d| format!("diversifier_index IS x'{}'", hex::encode(&d.0)))
+            .unwrap_or_else(|| "true".to_string());
 
         let result = sqlx::query_as::<_, NoteRecord>(
             format!(
-                "SELECT *
-            FROM notes
-            WHERE height_spent IS {}
-            AND asset_id IS {}
-            AND diversifier_index IS {}
-            AND quarantined IS {}",
+                "SELECT * FROM notes WHERE {} AND {} AND {} AND {}",
                 spent_clause, asset_clause, diversifier_clause, quarantined_clause
             )
             .as_str(),
