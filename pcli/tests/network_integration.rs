@@ -69,9 +69,7 @@ fn transaction_send_from_addr_0_to_addr_1() {
             TEST_ADDRESS_1,
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-    send_cmd.assert().stdout(predicate::str::contains(
-        "transaction submitted successfully",
-    ));
+    send_cmd.assert().success();
 
     // Wait for a couple blocks for the transaction to be confirmed.
     let block_time = time::Duration::from_secs(2 * BLOCK_TIME_SECONDS);
