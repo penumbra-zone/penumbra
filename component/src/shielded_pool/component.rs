@@ -181,7 +181,6 @@ impl Component for ShieldedPool {
 
         if let Some((epoch, identity_key)) = self.should_quarantine(tx).await {
             for quarantined_output in tx.note_payloads() {
-                self.add_note(quarantined_output.clone(), source).await;
                 // Queue up scheduling this note to be unquarantined: the actual state-writing for
                 // all quarantined notes happens during end_block, to avoid state churn
                 self.compact_block.quarantined.schedule_note(
