@@ -2989,6 +2989,7 @@ dependencies = [
  "penumbra-crypto",
  "penumbra-proto",
  "penumbra-tct",
+ "prost 0.9.0",
  "rocksdb",
  "tokio",
  "tonic 0.6.2",
