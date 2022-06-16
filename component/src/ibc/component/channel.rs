@@ -1,5 +1,6 @@
 use crate::ibc::component::client::View as _;
 use crate::ibc::component::connection::View as _;
+use crate::ibc::component::ibc_handler::AppHandler;
 use crate::ibc::event;
 use crate::{Component, Context};
 use anyhow::Result;
@@ -39,19 +40,21 @@ mod execution;
 mod stateful;
 mod stateless;
 
-pub struct ICS4Channel {
+pub struct ICS4Channel<H: AppHandler> {
     state: State,
+
+    app_handler: H,
 }
 
-impl ICS4Channel {
-    #[instrument(name = "ics4_channel", skip(state))]
-    pub async fn new(state: State) -> Self {
-        Self { state }
+impl<H: AppHandler> ICS4Channel<H> {
+    #[instrument(name = "ics4_channel", skip(state, app_handler))]
+    pub async fn new(state: State, app_handler: H) -> Self {
+        Self { state, app_handler }
     }
 }
 
 #[async_trait]
-impl Component for ICS4Channel {
+impl<H: AppHandler> Component for ICS4Channel<H> {
     #[instrument(name = "ics4_channel", skip(self, _app_state))]
     async fn init_chain(&mut self, _app_state: &genesis::AppState) {}
 
@@ -191,54 +194,63 @@ impl Component for ICS4Channel {
                     let msg = MsgChannelOpenInit::try_from(msg.clone()).unwrap();
 
                     self.state.execute(ctx.clone(), &msg).await;
+                    self.app_handler.chan_open_init(&msg).await;
                 }
                 Some(ChannelOpenTry(msg)) => {
                     use execution::channel_open_try::ChannelOpenTryExecute;
                     let msg = MsgChannelOpenTry::try_from(msg.clone()).unwrap();
 
                     self.state.execute(ctx.clone(), &msg).await;
+                    self.app_handler.chan_open_try(&msg).await;
                 }
                 Some(ChannelOpenAck(msg)) => {
                     use execution::channel_open_ack::ChannelOpenAckExecute;
                     let msg = MsgChannelOpenAck::try_from(msg.clone()).unwrap();
 
                     self.state.execute(ctx.clone(), &msg).await;
+                    self.app_handler.chan_open_ack(&msg).await;
                 }
                 Some(ChannelOpenConfirm(msg)) => {
                     use execution::channel_open_confirm::ChannelOpenConfirmExecute;
                     let msg = MsgChannelOpenConfirm::try_from(msg.clone()).unwrap();
 
                     self.state.execute(ctx.clone(), &msg).await;
+                    self.app_handler.chan_open_confirm(&msg).await;
                 }
                 Some(ChannelCloseInit(msg)) => {
                     use execution::channel_close_init::ChannelCloseInitExecute;
                     let msg = MsgChannelCloseInit::try_from(msg.clone()).unwrap();
 
                     self.state.execute(ctx.clone(), &msg).await;
+                    self.app_handler.chan_close_init(&msg).await;
                 }
                 Some(ChannelCloseConfirm(msg)) => {
                     use execution::channel_close_confirm::ChannelCloseConfirmExecute;
                     let msg = MsgChannelCloseConfirm::try_from(msg.clone()).unwrap();
 
                     self.state.execute(ctx.clone(), &msg).await;
+                    self.app_handler.chan_close_confirm(&msg).await;
                 }
                 Some(RecvPacket(msg)) => {
                     use execution::recv_packet::RecvPacketExecute;
                     let msg = MsgRecvPacket::try_from(msg.clone()).unwrap();
 
                     self.state.execute(ctx.clone(), &msg).await;
+                    self.app_handler.recv_packet(&msg).await;
                 }
                 Some(Acknowledgement(msg)) => {
                     use execution::acknowledge_packet::AcknowledgePacketExecute;
                     let msg = MsgAcknowledgement::try_from(msg.clone()).unwrap();
 
                     self.state.execute(ctx.clone(), &msg).await;
+                    self.app_handler.acknowledge_packet(&msg).await;
                 }
                 Some(Timeout(msg)) => {
                     use execution::timeout::TimeoutExecute;
                     let msg = MsgTimeout::try_from(msg.clone()).unwrap();
 
                     self.state.execute(ctx.clone(), &msg).await;
+                    self.app_handler.timeout_packet(&msg).await;
                 }
 
                 // Other IBC messages are not handled by this component.
