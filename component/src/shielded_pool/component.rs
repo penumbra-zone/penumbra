@@ -190,19 +190,13 @@ impl Component for ShieldedPool {
                 );
             }
             for quarantined_spent_nullifier in tx.spent_nullifiers() {
-                // We need to record the nullifier as spent under quarantine in the JMT (to prevent
-                // double spends), as well as in the CompactBlock (so clients can learn their note
-                // was provisionally spent, pending quarantine period).
-                self.state
-                    .spend_quarantined_nullifier(quarantined_spent_nullifier, source)
-                    .await;
-                // Queue up scheduling this nullifier to be unquarantined: the actual state-writing
-                // for all quarantined nullifiers happens during end_block, to avoid state churn
-                self.compact_block.quarantined.schedule_nullifier(
+                self.quarantined_spend_nullifier(
                     epoch,
                     identity_key,
                     quarantined_spent_nullifier,
-                );
+                    source,
+                )
+                .await;
                 ctx.record(event::quarantine_spend(quarantined_spent_nullifier));
             }
         } else {
@@ -210,11 +204,7 @@ impl Component for ShieldedPool {
                 self.add_note(compact_output, source).await;
             }
             for spent_nullifier in tx.spent_nullifiers() {
-                // We need to record the nullifier as spent in the JMT (to prevent
-                // double spends), as well as in the CompactBlock (so that clients
-                // can learn that their note was spent).
-                self.state.spend_nullifier(spent_nullifier, source).await;
-                self.compact_block.nullifiers.push(spent_nullifier);
+                self.spend_nullifier(spent_nullifier, source).await;
                 ctx.record(event::spend(spent_nullifier));
             }
         }
@@ -373,6 +363,52 @@ impl ShieldedPool {
 
         // 3. Finally, record it in the pending compact block.
         self.compact_block.note_payloads.push(note_payload);
+    }
+
+    #[instrument(skip(self, source))]
+    async fn spend_nullifier(&mut self, nullifier: Nullifier, source: NoteSource) {
+        tracing::debug!("marking as spent");
+
+        // We need to record the nullifier as spent in the JMT (to prevent
+        // double spends), as well as in the CompactBlock (so that clients
+        // can learn that their note was spent).
+        self.state
+            .put_domain(
+                state_key::spent_nullifier_lookup(&nullifier),
+                // We don't use the value for validity checks, but writing the source
+                // here lets us find out what transaction spent the nullifier.
+                source,
+            )
+            .await;
+
+        self.compact_block.nullifiers.push(nullifier);
+    }
+
+    #[instrument(skip(self, source))]
+    async fn quarantined_spend_nullifier(
+        &mut self,
+        epoch: u64,
+        identity_key: IdentityKey,
+        nullifier: Nullifier,
+        source: NoteSource,
+    ) {
+        // We need to record the nullifier as spent under quarantine in the JMT (to prevent
+        // double spends), as well as in the CompactBlock (so clients can learn their note
+        // was provisionally spent, pending quarantine period).
+        tracing::debug!("marking as spent (currently quarantined)");
+        self.state
+            .put_domain(
+                state_key::quarantined_spent_nullifier_lookup(&nullifier),
+                // We don't use the value for validity checks, but writing the source
+                // here lets us find out what transaction spent the nullifier.
+                source,
+            )
+            .await;
+        // Queue up scheduling this nullifier to be unquarantined: the actual state-writing
+        // for all quarantined nullifiers happens during end_block, to avoid state churn
+        self.compact_block
+            .quarantined
+            .schedule_nullifier(epoch, identity_key, nullifier);
     }
 
     #[instrument(skip(self))]
@@ -549,8 +585,7 @@ impl ShieldedPool {
                         .await
                         .expect("can try to unquarantine nullifier")
                     {
-                        self.state.spend_nullifier(nullifier, note_source).await;
-                        self.compact_block.nullifiers.push(nullifier);
+                        self.spend_nullifier(nullifier, note_source).await;
                     }
                 }
             }
@@ -732,30 +767,6 @@ pub trait View: StateExt {
                 anchor
             ))
         }
-    }
-
-    #[instrument(skip(self, source))]
-    async fn spend_nullifier(&self, nullifier: Nullifier, source: NoteSource) {
-        tracing::debug!("marking as spent");
-        self.put_domain(
-            state_key::spent_nullifier_lookup(&nullifier),
-            // We don't use the value for validity checks, but writing the source
-            // here lets us find out what transaction spent the nullifier.
-            source,
-        )
-        .await;
-    }
-
-    #[instrument(skip(self, source))]
-    async fn spend_quarantined_nullifier(&self, nullifier: Nullifier, source: NoteSource) {
-        tracing::debug!("marking as spent (currently quarantined)");
-        self.put_domain(
-            state_key::quarantined_spent_nullifier_lookup(&nullifier),
-            // We don't use the value for validity checks, but writing the source
-            // here lets us find out what transaction spent the nullifier.
-            source,
-        )
-        .await;
     }
 
     // Returns the source if the nullifier was in quarantine already
