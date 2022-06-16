@@ -95,3 +95,19 @@ jobs:
         script: |
           cd ~/penumbra
           TESTNET_HOST=$TESTNET_HOST docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+
+    - name: Run integration tests against testnet-preview
+      uses: appleboy/ssh-action@master
+      timeout-minutes: 30
+      env:
+        PENUMBRA_NODE_HOSTNAME: 127.0.0.1
+      with:
+        host: ${{ secrets.TESTNET_HOST }}
+        username: ${{ secrets.TUNNEL_USERNAME }}
+        key: ${{ secrets.ID_ED25519 }}
+        port: ${{ secrets.TUNNEL_PORT }}
+        command_timeout: 30m
+        env: PENUMBRA_NODE_HOSTNAME
+        script: |
+          cd ~/penumbra
+          cargo test --package pcli -- --ignored
