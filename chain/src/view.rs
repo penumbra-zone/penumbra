@@ -92,7 +92,7 @@ pub trait View: StateExt {
         let chain_id = self
             .get_chain_id()
             .await
-            .map_err(|_| tonic::Status::unavailable("database error"))?;
+            .map_err(|e| tonic::Status::unavailable(format!("error getting chain id: {}", e)))?;
         if provided.is_empty() || provided == chain_id {
             Ok(())
         } else {
