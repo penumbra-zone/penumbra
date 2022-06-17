@@ -15,22 +15,26 @@ jobs:
     timeout-minutes: 30
     environment: testnet
     steps:
+    - name: Get the git tag
+      id: get_tag
+      run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
     - name: Update git repository
       uses: appleboy/ssh-action@master
       env:
         TESTNET_HOST: ${{ secrets.TESTNET_HOST }}
+        VERSION: ${{ steps.get_tag.outputs.VERSION }}
       with:
         host: ${{ secrets.TESTNET_HOST }}
         username: ${{ secrets.TUNNEL_USERNAME }}
         key: ${{ secrets.ID_ED25519 }}
         port: ${{ secrets.TUNNEL_PORT }}
         envs: TESTNET_HOST
-        # TODO: `git checkout main` should refer to the tag instead
         script: |
           cd ~/penumbra
           git reset --hard
-          git checkout main
+          git fetch --all --tags
           git pull
+          git checkout ${VERSION}
           cargo update
     - name: Delete existing state
       uses: appleboy/ssh-action@master
