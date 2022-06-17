@@ -17,7 +17,7 @@ use std::{num::NonZeroU64, sync::Arc};
 use tct::Commitment;
 use tokio::sync::broadcast;
 
-use crate::{sync::ScanResult, NoteRecord};
+use crate::{sync::ScanResult, NoteRecord, QuarantinedNoteRecord};
 
 #[derive(Clone)]
 pub struct Storage {
@@ -337,6 +337,14 @@ impl Storage {
         }
 
         Ok(output)
+    }
+
+    pub async fn quarantined_notes(&self) -> anyhow::Result<Vec<QuarantinedNoteRecord>> {
+        let result = sqlx::query_as::<_, QuarantinedNoteRecord>("SELECT * FROM quarantined_notes")
+            .fetch_all(&self.pool)
+            .await?;
+
+        Ok(result)
     }
 
     pub async fn record_asset(&self, asset: Asset) -> anyhow::Result<()> {
