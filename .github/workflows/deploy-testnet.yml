@@ -31,6 +31,8 @@ jobs:
         envs: TESTNET_HOST,VERSION
         script: |
           cd ~/penumbra
+          # Wipe away any existing version of this tag that might exist
+          git tag -d ${VERSION}
           git reset --hard
           git fetch --all --tags
           git pull
