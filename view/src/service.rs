@@ -224,6 +224,9 @@ impl ViewService {
 impl ViewProtocol for ViewService {
     type NotesStream =
         Pin<Box<dyn futures::Stream<Item = Result<pb::NoteRecord, tonic::Status>> + Send>>;
+    type QuarantinedNotesStream = Pin<
+        Box<dyn futures::Stream<Item = Result<pb::QuarantinedNoteRecord, tonic::Status>> + Send>,
+    >;
     type AssetsStream =
         Pin<Box<dyn futures::Stream<Item = Result<pbc::Asset, tonic::Status>> + Send>>;
     type StatusStreamStream = Pin<
@@ -341,6 +344,32 @@ impl ViewProtocol for ViewService {
         Ok(tonic::Response::new(
             stream
                 .map_err(|_: anyhow::Error| tonic::Status::unavailable("database error"))
+                .boxed(),
+        ))
+    }
+
+    async fn quarantined_notes(
+        &self,
+        request: tonic::Request<pb::QuarantinedNotesRequest>,
+    ) -> Result<tonic::Response<Self::QuarantinedNotesStream>, tonic::Status> {
+        self.check_worker().await?;
+        self.check_fvk(request.get_ref().fvk_hash.as_ref()).await?;
+
+        let notes = self.storage.quarantined_notes().await.map_err(|e| {
+            tonic::Status::unavailable(format!("database error: {}", e.to_string()))
+        })?;
+
+        let stream = try_stream! {
+            for note in notes {
+                yield note.into()
+            }
+        };
+
+        Ok(tonic::Response::new(
+            stream
+                .map_err(|e: anyhow::Error| {
+                    tonic::Status::unavailable(format!("database error: {}", e.to_string()))
+                })
                 .boxed(),
         ))
     }
