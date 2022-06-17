@@ -128,54 +128,63 @@ impl Component for ICS4Channel {
                     let msg = MsgChannelOpenInit::try_from(msg.clone())?;
 
                     self.state.validate(&msg).await?;
+                    self.app_handler.chan_open_init_check(&msg).await?;
                 }
                 Some(ChannelOpenTry(msg)) => {
                     use stateful::channel_open_try::ChannelOpenTryCheck;
                     let msg = MsgChannelOpenTry::try_from(msg.clone())?;
 
                     self.state.validate(&msg).await?;
+                    self.app_handler.chan_open_try_check(&msg).await?;
                 }
                 Some(ChannelOpenAck(msg)) => {
                     use stateful::channel_open_ack::ChannelOpenAckCheck;
                     let msg = MsgChannelOpenAck::try_from(msg.clone())?;
 
                     self.state.validate(&msg).await?;
+                    self.app_handler.chan_open_ack_check(&msg).await?;
                 }
                 Some(ChannelOpenConfirm(msg)) => {
                     use stateful::channel_open_confirm::ChannelOpenConfirmCheck;
                     let msg = MsgChannelOpenConfirm::try_from(msg.clone())?;
 
                     self.state.validate(&msg).await?;
+                    self.app_handler.chan_open_confirm_check(&msg).await?;
                 }
                 Some(ChannelCloseInit(msg)) => {
                     use stateful::channel_close_init::ChannelCloseInitCheck;
                     let msg = MsgChannelCloseInit::try_from(msg.clone())?;
 
                     self.state.validate(&msg).await?;
+                    self.app_handler.chan_close_init_check(&msg).await?;
                 }
                 Some(ChannelCloseConfirm(msg)) => {
                     use stateful::channel_close_confirm::ChannelCloseConfirmCheck;
                     let msg = MsgChannelCloseConfirm::try_from(msg.clone())?;
 
                     self.state.validate(&msg).await?;
+                    self.app_handler.chan_close_confirm_check(&msg).await?;
                 }
                 Some(RecvPacket(msg)) => {
                     use stateful::recv_packet::RecvPacketCheck;
                     let msg = MsgRecvPacket::try_from(msg.clone())?;
 
                     self.state.validate(&msg).await?;
+                    self.app_handler.recv_packet_check(&msg).await?;
                 }
                 Some(Acknowledgement(msg)) => {
                     use stateful::acknowledge_packet::AcknowledgePacketCheck;
                     let msg = MsgAcknowledgement::try_from(msg.clone())?;
 
                     self.state.validate(&msg).await?;
+                    self.app_handler.acknowledge_packet_check(&msg).await?;
                 }
                 Some(Timeout(msg)) => {
                     use stateful::timeout::TimeoutCheck;
                     let msg = MsgTimeout::try_from(msg.clone())?;
 
                     self.state.validate(&msg).await?;
+                    self.app_handler.timeout_packet_check(&msg).await?;
                 }
 
                 // Other IBC messages are not handled by this component.
@@ -194,63 +203,63 @@ impl Component for ICS4Channel {
                     let msg = MsgChannelOpenInit::try_from(msg.clone()).unwrap();
 
                     self.state.execute(ctx.clone(), &msg).await;
-                    self.app_handler.chan_open_init(&msg).await;
+                    self.app_handler.chan_open_init_execute(&msg).await;
                 }
                 Some(ChannelOpenTry(msg)) => {
                     use execution::channel_open_try::ChannelOpenTryExecute;
                     let msg = MsgChannelOpenTry::try_from(msg.clone()).unwrap();
 
                     self.state.execute(ctx.clone(), &msg).await;
-                    self.app_handler.chan_open_try(&msg).await;
+                    self.app_handler.chan_open_try_execute(&msg).await;
                 }
                 Some(ChannelOpenAck(msg)) => {
                     use execution::channel_open_ack::ChannelOpenAckExecute;
                     let msg = MsgChannelOpenAck::try_from(msg.clone()).unwrap();
 
                     self.state.execute(ctx.clone(), &msg).await;
-                    self.app_handler.chan_open_ack(&msg).await;
+                    self.app_handler.chan_open_ack_execute(&msg).await;
                 }
                 Some(ChannelOpenConfirm(msg)) => {
                     use execution::channel_open_confirm::ChannelOpenConfirmExecute;
                     let msg = MsgChannelOpenConfirm::try_from(msg.clone()).unwrap();
 
                     self.state.execute(ctx.clone(), &msg).await;
-                    self.app_handler.chan_open_confirm(&msg).await;
+                    self.app_handler.chan_open_confirm_execute(&msg).await;
                 }
                 Some(ChannelCloseInit(msg)) => {
                     use execution::channel_close_init::ChannelCloseInitExecute;
                     let msg = MsgChannelCloseInit::try_from(msg.clone()).unwrap();
 
                     self.state.execute(ctx.clone(), &msg).await;
-                    self.app_handler.chan_close_init(&msg).await;
+                    self.app_handler.chan_close_init_execute(&msg).await;
                 }
                 Some(ChannelCloseConfirm(msg)) => {
                     use execution::channel_close_confirm::ChannelCloseConfirmExecute;
                     let msg = MsgChannelCloseConfirm::try_from(msg.clone()).unwrap();
 
                     self.state.execute(ctx.clone(), &msg).await;
-                    self.app_handler.chan_close_confirm(&msg).await;
+                    self.app_handler.chan_close_confirm_execute(&msg).await;
                 }
                 Some(RecvPacket(msg)) => {
                     use execution::recv_packet::RecvPacketExecute;
                     let msg = MsgRecvPacket::try_from(msg.clone()).unwrap();
 
                     self.state.execute(ctx.clone(), &msg).await;
-                    self.app_handler.recv_packet(&msg).await;
+                    self.app_handler.recv_packet_execute(&msg).await;
                 }
                 Some(Acknowledgement(msg)) => {
                     use execution::acknowledge_packet::AcknowledgePacketExecute;
                     let msg = MsgAcknowledgement::try_from(msg.clone()).unwrap();
 
                     self.state.execute(ctx.clone(), &msg).await;
-                    self.app_handler.acknowledge_packet(&msg).await;
+                    self.app_handler.acknowledge_packet_execute(&msg).await;
                 }
                 Some(Timeout(msg)) => {
                     use execution::timeout::TimeoutExecute;
                     let msg = MsgTimeout::try_from(msg.clone()).unwrap();
 
                     self.state.execute(ctx.clone(), &msg).await;
-                    self.app_handler.timeout_packet(&msg).await;
+                    self.app_handler.timeout_packet_execute(&msg).await;
                 }
 
                 // Other IBC messages are not handled by this component.
