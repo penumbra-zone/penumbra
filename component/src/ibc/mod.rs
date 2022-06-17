@@ -8,8 +8,8 @@ mod component;
 mod connection;
 pub(crate) mod event;
 
-#[allow(dead_code)]
-pub(crate) mod ibc_token;
+mod ibc_token;
+pub use ibc_token::IBCToken;
 
 mod metrics;
 
