@@ -28,7 +28,8 @@ Thursday:
 Monday (release day):
 - [ ] Check for any [tendermint updates](https://github.com/tendermint/tendermint/releases) and update the Dockerfiles, documentation, and relay deployments with the latest desired version
 - [ ] Update the User Guide to mention the git tag
-- [ ] Create new git tag e.g. `006-orthosie`, push to shared remote: `git tag -a <tag_name>` - must be annotated tag for Vergen build. This will begin the release process. Monitor the GitHub action to ensure it completes.
+- [ ] Create new git tag e.g. `006-orthosie`, push to shared remote: `git tag -a <tag_name>` - must be annotated tag for Vergen build. This will create a `Waiting` GitHub Action for deployment.
+- [ ] You must [manually review](https://docs.github.com/en/actions/managing-workflow-runs/reviewing-deployments) the `Waiting` deployment in the GitHub UI before the deployment will begin. Monitor the GitHub action to ensure it completes.
 - [ ] Update peer configuration on our Penumbra validator running on `testnet.penumbra.zone`: in Tendermint's `config.toml`, update the `bootstrap-peers` and `persistent-peers` fields to contain the IPs of the Penumbra-operated full nodes.
 - [ ] On the peers themselves, stop `pd` and `tendermint`, then update `pd` from latest `main` (or the tag), clear rocksdb and existing tendermint state, and copy the new `genesis.json` file in place. Update the `config.toml` to point to `testnet.penumbra.zone` as described [here](https://guide.penumbra.zone/main/pd/join-testnet/fullnode.html). Then start `pd` and `tendermint`. Verify that they both sync with the running testnet.
 - [ ] Update Galileo to run against the correct tag: change [the dependencies in the Cargo.toml](https://github.com/penumbra-zone/galileo/blob/main/Cargo.toml#L11) to reference the new git tag and commit to `main`.
