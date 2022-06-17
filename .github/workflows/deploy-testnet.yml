@@ -28,7 +28,7 @@ jobs:
         username: ${{ secrets.TUNNEL_USERNAME }}
         key: ${{ secrets.ID_ED25519 }}
         port: ${{ secrets.TUNNEL_PORT }}
-        envs: TESTNET_HOST
+        envs: TESTNET_HOST,VERSION
         script: |
           cd ~/penumbra
           git reset --hard
