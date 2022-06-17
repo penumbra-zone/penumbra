@@ -6,26 +6,25 @@
 mod channel;
 mod client;
 mod connection;
-mod ibc_handler;
 pub(crate) mod state_key;
-mod transfer;
 
+use crate::ibc::ibc_handler::AppRouter;
+use crate::ibc::transfer::ICS20Transfer;
 use crate::{Component, Context};
 use anyhow::Result;
 use async_trait::async_trait;
 use client::Ics2Client;
+use ibc::core::ics24_host::identifier::PortId;
 use penumbra_chain::{genesis, View as _};
 use penumbra_storage::State;
 use penumbra_transaction::Transaction;
 use tendermint::abci;
 use tracing::instrument;
 
-use self::ibc_handler::AppRouter;
-
 pub struct IBCComponent {
     client: client::Ics2Client,
     connection: connection::ConnectionComponent,
-    channel: channel::ICS4Channel<AppRouter>,
+    channel: channel::ICS4Channel,
 
     state: State,
 }
@@ -36,11 +35,11 @@ impl IBCComponent {
         let client = Ics2Client::new(state.clone()).await;
         let connection = connection::ConnectionComponent::new(state.clone()).await;
 
-        let router = AppRouter::new();
+        let mut router = AppRouter::new();
+        let transfer = ICS20Transfer::new(state.clone());
+        router.bind(PortId::transfer(), Box::new(transfer));
 
-        // TODO: register `transfer` port handler
-
-        let channel = channel::ICS4Channel::<AppRouter>::new(state.clone()).await;
+        let channel = channel::ICS4Channel::new(state.clone(), Box::new(router)).await;
 
         Self {
             channel,
@@ -59,7 +58,6 @@ impl Component for IBCComponent {
         self.client.init_chain(app_state).await;
         self.connection.init_chain(app_state).await;
         self.channel.init_chain(app_state).await;
-        self.transfer.init_chain(app_state).await;
     }
 
     #[instrument(name = "ibc", skip(self, begin_block, ctx))]
@@ -67,7 +65,6 @@ impl Component for IBCComponent {
         self.client.begin_block(ctx.clone(), begin_block).await;
         self.connection.begin_block(ctx.clone(), begin_block).await;
         self.channel.begin_block(ctx.clone(), begin_block).await;
-        self.transfer.begin_block(ctx.clone(), begin_block).await;
     }
 
     #[instrument(name = "ibc", skip(tx, ctx))]

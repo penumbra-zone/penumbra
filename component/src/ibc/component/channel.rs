@@ -1,7 +1,7 @@
 use crate::ibc::component::client::View as _;
 use crate::ibc::component::connection::View as _;
-use crate::ibc::component::ibc_handler::AppHandler;
 use crate::ibc::event;
+use crate::ibc::ibc_handler::AppHandler;
 use crate::{Component, Context};
 use anyhow::Result;
 use async_trait::async_trait;
@@ -40,21 +40,21 @@ mod execution;
 mod stateful;
 mod stateless;
 
-pub struct ICS4Channel<H: AppHandler> {
+pub struct ICS4Channel {
     state: State,
 
-    app_handler: H,
+    app_handler: Box<dyn AppHandler>,
 }
 
-impl<H: AppHandler> ICS4Channel<H> {
+impl ICS4Channel {
     #[instrument(name = "ics4_channel", skip(state, app_handler))]
-    pub async fn new(state: State, app_handler: H) -> Self {
+    pub async fn new(state: State, app_handler: Box<dyn AppHandler>) -> Self {
         Self { state, app_handler }
     }
 }
 
 #[async_trait]
-impl<H: AppHandler> Component for ICS4Channel<H> {
+impl Component for ICS4Channel {
     #[instrument(name = "ics4_channel", skip(self, _app_state))]
     async fn init_chain(&mut self, _app_state: &genesis::AppState) {}
 
