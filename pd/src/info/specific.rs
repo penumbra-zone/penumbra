@@ -37,7 +37,7 @@ impl SpecificQuery for Info {
         let source = state
             .note_source(&cm)
             .await
-            .map_err(|_| Status::unavailable("database error"))?
+            .map_err(|e| Status::unavailable(format!("error getting note source: {}", e)))?
             .ok_or_else(|| Status::not_found("note commitment not found"))?;
         tracing::debug!(?cm, ?source);
 
@@ -62,7 +62,7 @@ impl SpecificQuery for Info {
         let status = state
             .validator_status(&id)
             .await
-            .map_err(|_| Status::unavailable("database error"))?
+            .map_err(|e| Status::unavailable(format!("error getting validator status: {}", e)))?
             .ok_or_else(|| Status::not_found("validator not found"))?;
 
         Ok(tonic::Response::new(status.into()))

@@ -65,10 +65,9 @@ impl ObliviousQuery for Info {
         let state = self.state_tonic().await?;
         state.check_chain_id(&request.get_ref().chain_id).await?;
 
-        let chain_params = state
-            .get_chain_params()
-            .await
-            .map_err(|_| tonic::Status::unavailable("database error"))?;
+        let chain_params = state.get_chain_params().await.map_err(|e| {
+            tonic::Status::unavailable(format!("error getting chain parameters: {}", e))
+        })?;
 
         Ok(tonic::Response::new(chain_params.into()))
     }
@@ -81,10 +80,9 @@ impl ObliviousQuery for Info {
         let state = self.state_tonic().await?;
         state.check_chain_id(&request.get_ref().chain_id).await?;
 
-        let known_assets = state
-            .known_assets()
-            .await
-            .map_err(|_| tonic::Status::unavailable("database error"))?;
+        let known_assets = state.known_assets().await.map_err(|e| {
+            tonic::Status::unavailable(format!("error getting known assets: {}", e))
+        })?;
         Ok(tonic::Response::new(known_assets.into()))
     }
 
@@ -99,7 +97,7 @@ impl ObliviousQuery for Info {
         let validators = state
             .validator_list()
             .await
-            .map_err(|_| tonic::Status::unavailable("database error"))?;
+            .map_err(|e| tonic::Status::unavailable(format!("error listing validators: {}", e)))?;
 
         let show_inactive = request.get_ref().show_inactive;
         let s = try_stream! {
@@ -116,10 +114,12 @@ impl ObliviousQuery for Info {
         };
 
         Ok(tonic::Response::new(
-            s.map_err(|_: anyhow::Error| tonic::Status::unavailable("database error"))
-                // TODO: how do we instrument a Stream
-                //.instrument(Span::current())
-                .boxed(),
+            s.map_err(|e: anyhow::Error| {
+                tonic::Status::unavailable(format!("error getting validator info: {}", e))
+            })
+            // TODO: how do we instrument a Stream
+            //.instrument(Span::current())
+            .boxed(),
         ))
     }
 
@@ -145,10 +145,9 @@ impl ObliviousQuery for Info {
             ..
         } = request.into_inner();
 
-        let current_height = state
-            .get_block_height()
-            .await
-            .map_err(|_| tonic::Status::unavailable("database error"))?;
+        let current_height = state.get_block_height().await.map_err(|e| {
+            tonic::Status::unavailable(format!("error getting block height: {}", e))
+        })?;
 
         // Treat end_height = 0 as end_height = current_height so that if the
         // end_height is unspecified in the proto, it will be treated as a
