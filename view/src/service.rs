@@ -330,7 +330,7 @@ impl ViewProtocol for ViewService {
             .storage
             .notes(include_spent, asset_id, diversifier_index, amount_to_spend)
             .await
-            .map_err(|_| tonic::Status::unavailable("database error"))?;
+            .map_err(|e| tonic::Status::unavailable(format!("error fetching notes: {}", e)))?;
 
         let stream = try_stream! {
             for note in notes {
@@ -340,7 +340,9 @@ impl ViewProtocol for ViewService {
 
         Ok(tonic::Response::new(
             stream
-                .map_err(|_: anyhow::Error| tonic::Status::unavailable("database error"))
+                .map_err(|e: anyhow::Error| {
+                    tonic::Status::unavailable(format!("error getting notes: {}", e))
+                })
                 .boxed(),
         ))
     }
@@ -356,7 +358,7 @@ impl ViewProtocol for ViewService {
             .storage
             .assets()
             .await
-            .map_err(|_| tonic::Status::unavailable("database error"))?;
+            .map_err(|e| tonic::Status::unavailable(format!("error fetching assets: {}", e)))?;
 
         let stream = try_stream! {
             for asset in assets {
@@ -366,7 +368,9 @@ impl ViewProtocol for ViewService {
 
         Ok(tonic::Response::new(
             stream
-                .map_err(|_: anyhow::Error| tonic::Status::unavailable("database error"))
+                .map_err(|e: anyhow::Error| {
+                    tonic::Status::unavailable(format!("error getting assets: {}", e))
+                })
                 .boxed(),
         ))
     }
@@ -423,11 +427,9 @@ impl ViewProtocol for ViewService {
     ) -> Result<tonic::Response<pbp::ChainParams>, tonic::Status> {
         self.check_worker().await?;
 
-        let params = self
-            .storage
-            .chain_params()
-            .await
-            .map_err(|_| tonic::Status::unavailable("database error"))?;
+        let params = self.storage.chain_params().await.map_err(|e| {
+            tonic::Status::unavailable(format!("error getting chain params: {}", e))
+        })?;
 
         Ok(tonic::Response::new(params.into()))
     }
