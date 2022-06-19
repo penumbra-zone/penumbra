@@ -102,6 +102,16 @@
     },
     "query": "INSERT INTO notes\n                    (\n                        note_commitment,\n                        height_spent,\n                        height_created,\n                        diversifier,\n                        amount,\n                        asset_id,\n                        transmission_key,\n                        blinding_factor,\n                        diversifier_index,\n                        nullifier,\n                        position\n                    )\n                    VALUES\n                    (\n                        ?,\n                        NULL,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?\n                    )"
   },
+  "58e7cd62f2177d2bd0fa3b34c8be3495c9a0d8e331f846b56bf7c756a534ea64": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "DELETE FROM quarantined_notes WHERE note_commitment = ?"
+  },
   "63aad4faac1ffefd5525595f9ca5a82186181368251da9fbacf65a4d48671a01": {
     "describe": {
       "columns": [
@@ -138,6 +148,44 @@
     },
     "query": "\n            SELECT height\n            FROM sync_height\n            ORDER BY height DESC\n            LIMIT 1\n        "
   },
+  "8ecf6591d5fcf8d364e7457ef4b5d927d9c079c23e633dc4475d6c2c60192c8f": {
+    "describe": {
+      "columns": [
+        {
+          "name": "nullifier",
+          "ordinal": 0,
+          "type_info": "Blob"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "DELETE FROM quarantined_nullifiers WHERE identity_key = ? RETURNING nullifier"
+  },
+  "a2d77e7ce1b2de126dc78eb2439260219847f082340db4912a9e71f78f00c2d6": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 10
+      }
+    },
+    "query": "INSERT INTO quarantined_notes\n                    (\n                        note_commitment,\n                        height_created,\n                        diversifier,\n                        amount,\n                        asset_id,\n                        transmission_key,\n                        blinding_factor,\n                        diversifier_index,\n                        unbonding_epoch,\n                        identity_key\n                    )\n                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+  },
+  "a43839bc75670a52de169be6a9c36aa8da0b2efe8c56d68e4e4cd437d63cc2cb": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "DELETE FROM quarantined_nullifiers WHERE nullifier = ?"
+  },
   "b4a0b026cd41003d66ec3ff1f104d89aee4ff22f10f1e7d20aa59dab4354b6ed": {
     "describe": {
       "columns": [],
@@ -147,6 +195,36 @@
       }
     },
     "query": "UPDATE note_commitment_tree SET bytes = ?"
+  },
+  "b8c80b31e23d061d621a5486b84e80b4a4b4fa409bf4510b5ad301ef54a66101": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "DELETE FROM quarantined_notes WHERE identity_key = ?"
+  },
+  "ce4148ecb83f1152688735c4b12d807dcab0d61c96dffefefc8c560315623534": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "INSERT INTO quarantined_nullifiers\n                        (\n                            identity_key,\n                            nullifier\n                        )\n                    VALUES (?, ?)"
+  },
+  "cf12e2860eec12aa6161588cf1dd6d7053e6d3ab678ec095c5322fd4b81b9db4": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "UPDATE notes SET height_spent = NULL WHERE nullifier = ?"
   },
   "d437ce2946cba91cd0e4fa750f14d227c2caa78e6bd69ed475f7b0679914c897": {
     "describe": {
