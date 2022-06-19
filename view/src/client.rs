@@ -11,7 +11,7 @@ use penumbra_transaction::WitnessData;
 use tonic::async_trait;
 use tracing::instrument;
 
-use crate::{NoteRecord, StatusStreamResponse};
+use crate::{NoteRecord, QuarantinedNoteRecord, StatusStreamResponse};
 
 /// The view protocol is used by a view client, who wants to do some
 /// transaction-related actions, to request data from a view service, which is
@@ -41,6 +41,12 @@ pub trait ViewClient {
 
     /// Queries for notes.
     async fn notes(&mut self, request: pb::NotesRequest) -> Result<Vec<NoteRecord>>;
+
+    /// Queries for quarantined notes.
+    async fn quarantined_notes(
+        &mut self,
+        request: pb::QuarantinedNotesRequest,
+    ) -> Result<Vec<QuarantinedNoteRecord>>;
 
     /// Queries for a specific note by commitment, returning immediately if it is not found.
     async fn note_by_commitment(
@@ -128,6 +134,62 @@ pub trait ViewClient {
 
         Ok(notes_by_asset_and_address)
     }
+
+    /// Return quarantined notes, grouped by diversifier index and then by asset id.
+    #[instrument(skip(self, fvk_hash))]
+    async fn quarantined_notes_by_address_and_asset(
+        &mut self,
+        fvk_hash: FullViewingKeyHash,
+    ) -> Result<BTreeMap<DiversifierIndex, BTreeMap<asset::Id, Vec<QuarantinedNoteRecord>>>> {
+        let notes = self
+            .quarantined_notes(pb::QuarantinedNotesRequest {
+                fvk_hash: Some(fvk_hash.into()),
+            })
+            .await?;
+        tracing::trace!(?notes);
+
+        let mut notes_by_address_and_asset = BTreeMap::new();
+
+        for note_record in notes {
+            notes_by_address_and_asset
+                .entry(note_record.diversifier_index)
+                .or_insert_with(BTreeMap::new)
+                .entry(note_record.note.asset_id())
+                .or_insert_with(Vec::new)
+                .push(note_record);
+        }
+        tracing::trace!(?notes_by_address_and_asset);
+
+        Ok(notes_by_address_and_asset)
+    }
+
+    /// Return quarantined notes, grouped by denom and then by diversifier index.
+    #[instrument(skip(self, fvk_hash))]
+    async fn quarantined_notes_by_asset_and_address(
+        &mut self,
+        fvk_hash: FullViewingKeyHash,
+    ) -> Result<BTreeMap<asset::Id, BTreeMap<DiversifierIndex, Vec<QuarantinedNoteRecord>>>> {
+        let notes = self
+            .quarantined_notes(pb::QuarantinedNotesRequest {
+                fvk_hash: Some(fvk_hash.into()),
+            })
+            .await?;
+        tracing::trace!(?notes);
+
+        let mut notes_by_asset_and_address = BTreeMap::new();
+
+        for note_record in notes {
+            notes_by_asset_and_address
+                .entry(note_record.note.asset_id())
+                .or_insert_with(BTreeMap::new)
+                .entry(note_record.diversifier_index)
+                .or_insert_with(Vec::new)
+                .push(note_record);
+        }
+        tracing::trace!(?notes_by_asset_and_address);
+
+        Ok(notes_by_asset_and_address)
+    }
 }
 
 // We need to tell `async_trait` not to add a `Send` bound to the boxed
@@ -187,6 +249,20 @@ where
     async fn notes(&mut self, request: pb::NotesRequest) -> Result<Vec<NoteRecord>> {
         let pb_notes: Vec<_> = self
             .notes(tonic::Request::new(request))
+            .await?
+            .into_inner()
+            .try_collect()
+            .await?;
+
+        pb_notes.into_iter().map(TryInto::try_into).collect()
+    }
+
+    async fn quarantined_notes(
+        &mut self,
+        request: pb::QuarantinedNotesRequest,
+    ) -> Result<Vec<QuarantinedNoteRecord>> {
+        let pb_notes: Vec<_> = self
+            .quarantined_notes(tonic::Request::new(request))
             .await?
             .into_inner()
             .try_collect()
