@@ -1,18 +1,21 @@
 use std::collections::BTreeMap;
 
 use penumbra_chain::{CompactBlock, Epoch};
-use penumbra_crypto::{note, Nullifier};
+use penumbra_crypto::{note, IdentityKey, Nullifier};
 use penumbra_crypto::{FullViewingKey, Note, NotePayload};
 use penumbra_tct as tct;
 
-use crate::NoteRecord;
+use crate::{NoteRecord, QuarantinedNoteRecord};
 
 /// Contains the results of scanning a single block.
 pub struct ScanResult {
     // write as new rows
     pub new_notes: Vec<NoteRecord>,
+    pub new_quarantined_notes: Vec<QuarantinedNoteRecord>,
     // use to update existing rows
     pub spent_nullifiers: Vec<Nullifier>,
+    pub spent_quarantined_nullifiers: BTreeMap<IdentityKey, Vec<Nullifier>>,
+    pub slashed_validators: Vec<IdentityKey>,
     pub height: u64,
 }
 
@@ -31,33 +34,77 @@ pub fn scan_block(
     }: CompactBlock,
     epoch_duration: u64,
 ) -> ScanResult {
+    // Trial-decrypt a note with our own specific viewing key
+    let trial_decrypt = |NotePayload {
+                             note_commitment,
+                             ephemeral_key,
+                             encrypted_note,
+                         }: &NotePayload|
+     -> Option<Note> {
+        // Try to decrypt the encrypted note using the ephemeral key and persistent incoming
+        // viewing key -- if it doesn't decrypt, it wasn't meant for us.
+        if let Ok(note) = Note::decrypt(encrypted_note.as_ref(), fvk.incoming(), ephemeral_key) {
+            tracing::debug!(?note_commitment, ?note, "found note while scanning");
+            Some(note)
+        } else {
+            None
+        }
+    };
+
+    // Notes we've found in this block that are meant for us
+    let new_notes: Vec<NoteRecord>;
+    let mut new_quarantined_notes: Vec<QuarantinedNoteRecord> = Vec::new();
+
+    // Nullifiers we've found in this block
+    let spent_nullifiers: Vec<Nullifier> = nullifiers;
+    let mut spent_quarantined_nullifiers: BTreeMap<IdentityKey, Vec<Nullifier>> = BTreeMap::new();
+
+    // Collect quarantined nullifiers, and add all quarantined notes we can decrypt to the new
+    // quarantined notes set
+    for (unbonding_epoch, mut scheduled) in quarantined {
+        // For any validator slashed in this block, so any quarantined transactions in this block
+        // are immediately reverted; we don't even report them to the state, so that the state can
+        // avoid worrying about update ordering
+        for &identity_key in slashed.iter() {
+            scheduled.unschedule_validator(identity_key);
+        }
+
+        for (identity_key, unbonding) in scheduled {
+            // Remember these nullifiers (not all of them are ours, we have to check the database)
+            for nullifier in unbonding.nullifiers {
+                spent_quarantined_nullifiers
+                    .entry(identity_key)
+                    .or_default()
+                    .push(nullifier);
+            }
+            // Trial-decrypt the quarantined notes, keeping track of the ones that were meant for us
+            new_quarantined_notes.extend(
+                unbonding
+                    .note_payloads
+                    .into_iter()
+                    .filter_map(|note_payload| trial_decrypt(&note_payload))
+                    .map(|note| QuarantinedNoteRecord {
+                        note_commitment: note.commit(),
+                        height_created: height,
+                        diversifier_index: fvk
+                            .incoming()
+                            .index_for_diversifier(&note.diversifier()),
+                        note,
+                        unbonding_epoch,
+                        identity_key,
+                    }),
+            );
+        }
+    }
+
     // Trial-decrypt the notes in this block, keeping track of the ones that were meant for us
-    let mut decrypted_notes: BTreeMap<note::Commitment, Note> = note_payloads
+    let mut decrypted_applied_notes: BTreeMap<note::Commitment, Note> = note_payloads
         .iter()
-        .filter_map(
-            |NotePayload {
-                 note_commitment,
-                 ephemeral_key,
-                 encrypted_note,
-             }| {
-                // Try to decrypt the encrypted note using the ephemeral key and persistent incoming
-                // viewing key -- if it doesn't decrypt, it wasn't meant for us.
-                if let Ok(note) =
-                    Note::decrypt(encrypted_note.as_ref(), fvk.incoming(), ephemeral_key)
-                {
-                    tracing::debug!(?note_commitment, ?note, "found note while scanning");
-                    Some((*note_commitment, note))
-                } else {
-                    None
-                }
-            },
-        )
+        .filter_map(trial_decrypt)
+        .map(|note| (note.commit(), note))
         .collect();
 
-    // Notes we've found for us in this block
-    let new_notes: Vec<NoteRecord>;
-
-    if decrypted_notes.is_empty() {
+    if decrypted_applied_notes.is_empty() {
         // We didn't find any notes for us in this block
         new_notes = Vec::new();
 
@@ -74,15 +121,11 @@ pub fn scan_block(
             .filter_map(|note_payload| {
                 let note_commitment = note_payload.note_commitment;
 
-                if let Some(note) = decrypted_notes.remove(&note_commitment) {
+                if let Some(note) = decrypted_applied_notes.remove(&note_commitment) {
                     // Keep track of this commitment for later witnessing
-                    note_commitment_tree
+                    let position = note_commitment_tree
                         .insert(tct::Witness::Keep, note_commitment)
                         .expect("inserting a commitment must succeed");
-
-                    let position = note_commitment_tree
-                        .position_of(note_commitment)
-                        .expect("witnessed note commitment is present");
 
                     let nullifier = fvk.derive_nullifier(position, &note_commitment);
 
@@ -131,7 +174,10 @@ pub fn scan_block(
 
     ScanResult {
         new_notes,
-        spent_nullifiers: nullifiers,
+        new_quarantined_notes,
+        spent_nullifiers,
+        spent_quarantined_nullifiers,
+        slashed_validators: slashed,
         height,
     }
 }
