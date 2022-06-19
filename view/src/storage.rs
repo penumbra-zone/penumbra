@@ -85,7 +85,7 @@ impl Storage {
         // Create the SQLite database
         sqlx::Sqlite::create_database(storage_path.as_str());
 
-        let pool = Pool::<Sqlite>::connect(&storage_path.as_str()).await?;
+        let pool = Pool::<Sqlite>::connect(storage_path.as_str()).await?;
 
         // Run migrations
         sqlx::migrate!().run(&pool).await?;
