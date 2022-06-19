@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use anyhow::Result;
 use comfy_table::{presets, Table};
 use penumbra_crypto::{keys::DiversifierIndex, FullViewingKey, Value};
@@ -29,8 +31,12 @@ impl BalanceCmd {
 
         if self.by_address {
             let notes = view.unspent_notes_by_address_and_asset(fvk.hash()).await?;
+            let quarantined_notes = view
+                .quarantined_notes_by_address_and_asset(fvk.hash())
+                .await?;
 
-            let rows: Vec<(DiversifierIndex, Value)> = if self.by_note {
+            // `Option<u64>` indicates the unbonding epoch, if any, for a quarantined note
+            let rows: Vec<(DiversifierIndex, Value, Option<u64>)> = if self.by_note {
                 notes
                     .iter()
                     .flat_map(|(index, notes_by_asset)| {
@@ -38,9 +44,25 @@ impl BalanceCmd {
                         notes_by_asset.iter().flat_map(|(asset, notes)| {
                             notes
                                 .iter()
-                                .map(|record| (*index, asset.value(record.note.amount())))
+                                .map(|record| (*index, asset.value(record.note.amount()), None))
                         })
                     })
+                    .chain(
+                        quarantined_notes
+                            .iter()
+                            .flat_map(|(index, notes_by_asset)| {
+                                // Include each note individually:
+                                notes_by_asset.iter().flat_map(|(asset, notes)| {
+                                    notes.iter().map(|record| {
+                                        (
+                                            *index,
+                                            asset.value(record.note.amount()),
+                                            Some(record.unbonding_epoch),
+                                        )
+                                    })
+                                })
+                            }),
+                    )
                     .collect()
             } else {
                 notes
@@ -49,31 +71,76 @@ impl BalanceCmd {
                         // Sum the notes for each asset:
                         notes_by_asset.iter().map(|(asset, notes)| {
                             let sum = notes.iter().map(|record| record.note.amount()).sum();
-                            (*index, asset.value(sum))
+                            (*index, asset.value(sum), None)
                         })
                     })
+                    .chain(
+                        quarantined_notes
+                            .iter()
+                            .flat_map(|(index, notes_by_asset)| {
+                                // Sum the notes for each asset, separating them by unbonding epoch:
+                                notes_by_asset.iter().flat_map(|(asset, records)| {
+                                    let mut sums_by_unbonding_epoch = BTreeMap::<u64, u64>::new();
+                                    for record in records {
+                                        let unbonding_epoch = record.unbonding_epoch;
+                                        *sums_by_unbonding_epoch
+                                            .entry(unbonding_epoch)
+                                            .or_default() += record.note.amount();
+                                    }
+                                    sums_by_unbonding_epoch.into_iter().map(
+                                        |(unbonding_epoch, sum)| {
+                                            (*index, asset.value(sum), Some(unbonding_epoch))
+                                        },
+                                    )
+                                })
+                            }),
+                    )
                     .collect()
             };
 
             table.set_header(vec!["Addr Index", "Amount"]);
-            for (index, value) in rows {
+            for (index, value, quarantined) in rows {
                 table.add_row(vec![
                     format!("{}", u128::from(index)),
-                    value.try_format(&asset_cache).unwrap(),
+                    format!(
+                        "{}{}",
+                        value.try_format(&asset_cache).unwrap(),
+                        if let Some(unbonding_epoch) = quarantined {
+                            format!(" (unbonding until epoch {})", unbonding_epoch)
+                        } else {
+                            "".to_string()
+                        }
+                    ),
                 ]);
             }
         } else {
             let notes = view.unspent_notes_by_asset_and_address(fvk.hash()).await?;
+            let quarantined_notes = view
+                .quarantined_notes_by_asset_and_address(fvk.hash())
+                .await?;
 
-            let rows: Vec<Value> = if self.by_note {
+            let rows: Vec<(Value, Option<u64>)> = if self.by_note {
                 notes
                     .iter()
                     .flat_map(|(asset, notes)| {
                         // Include each note individually:
                         notes.iter().flat_map(|(_index, notes)| {
-                            notes.iter().map(|record| asset.value(record.note.amount()))
+                            notes
+                                .iter()
+                                .map(|record| (asset.value(record.note.amount()), None))
                         })
                     })
+                    .chain(quarantined_notes.iter().flat_map(|(asset, notes)| {
+                        // Include each note individually:
+                        notes.iter().flat_map(|(_index, notes)| {
+                            notes.iter().map(|record| {
+                                (
+                                    asset.value(record.note.amount()),
+                                    Some(record.unbonding_epoch),
+                                )
+                            })
+                        })
+                    }))
                     .collect()
             } else {
                 notes
@@ -84,13 +151,35 @@ impl BalanceCmd {
                             .values()
                             .flat_map(|records| records.iter().map(|record| record.note.amount()))
                             .sum();
-                        asset.value(sum)
+                        (asset.value(sum), None)
                     })
+                    .chain(quarantined_notes.iter().flat_map(|(asset, records)| {
+                        // Sum the notes for each index, separating them by unbonding epoch:
+                        let mut sums_by_unbonding_epoch = BTreeMap::<u64, u64>::new();
+                        for records in records.values() {
+                            for record in records {
+                                let unbonding_epoch = record.unbonding_epoch;
+                                *sums_by_unbonding_epoch.entry(unbonding_epoch).or_default() +=
+                                    record.note.amount();
+                            }
+                        }
+                        sums_by_unbonding_epoch
+                            .into_iter()
+                            .map(|(unbonding_epoch, sum)| (asset.value(sum), Some(unbonding_epoch)))
+                    }))
                     .collect()
             };
             table.set_header(vec!["Amount"]);
-            for value in rows {
-                table.add_row(vec![value.try_format(&asset_cache).unwrap()]);
+            for (value, quarantined) in rows {
+                table.add_row(vec![format!(
+                    "{}{}",
+                    value.try_format(&asset_cache).unwrap(),
+                    if let Some(unbonding_epoch) = quarantined {
+                        format!(" (unbonding until epoch {})", unbonding_epoch)
+                    } else {
+                        "".to_string()
+                    }
+                )]);
             }
         }
 
