@@ -416,7 +416,57 @@ impl Storage {
         }
         let mut tx = self.pool.begin().await?;
 
-        // Insert all new note records into storage & broadcast each to note channel
+        // Insert all quarantined note commitments into storage
+        for quarantined_note_record in &scan_result.new_quarantined_notes {
+            let note_commitment = quarantined_note_record
+                .note_commitment
+                .0
+                .to_bytes()
+                .to_vec();
+            let height_created = scan_result.height as i64;
+            let diversifier = quarantined_note_record.note.diversifier().0.to_vec();
+            let amount = quarantined_note_record.note.amount() as i64;
+            let asset_id = quarantined_note_record.note.asset_id().to_bytes().to_vec();
+            let transmission_key = quarantined_note_record.note.transmission_key().0.to_vec();
+            let blinding_factor = quarantined_note_record
+                .note
+                .note_blinding()
+                .to_bytes()
+                .to_vec();
+            let diversifier_index = quarantined_note_record.diversifier_index.0.to_vec();
+            let unbonding_epoch = quarantined_note_record.unbonding_epoch as i64;
+            let identity_key = quarantined_note_record.identity_key.encode_to_vec();
+            sqlx::query!(
+                "INSERT INTO quarantined_notes
+                    (
+                        note_commitment,
+                        height_created,
+                        diversifier,
+                        amount,
+                        asset_id,
+                        transmission_key,
+                        blinding_factor,
+                        diversifier_index,
+                        unbonding_epoch,
+                        identity_key
+                    )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                note_commitment,
+                height_created,
+                diversifier,
+                amount,
+                asset_id,
+                transmission_key,
+                blinding_factor,
+                diversifier_index,
+                unbonding_epoch,
+                identity_key,
+            )
+            .execute(&mut tx)
+            .await?;
+        }
+
+        // Insert all new note records into storage
         for note_record in &scan_result.new_notes {
             // https://github.com/launchbadge/sqlx/issues/1430
             // https://github.com/launchbadge/sqlx/issues/1151
@@ -476,6 +526,35 @@ impl Storage {
             )
             .execute(&mut tx)
             .await?;
+
+            // If this note corresponded to a previously quarantined note, delete it from quarantine
+            // also, because it is now applied
+            sqlx::query!(
+                "DELETE FROM quarantined_notes WHERE note_commitment = ?",
+                note_commitment,
+            )
+            .execute(&mut tx)
+            .await?;
+        }
+
+        // Add all quarantined nullifiers to storage
+        for (identity_key, quarantined_nullifiers) in scan_result.spent_quarantined_nullifiers {
+            let identity_key = identity_key.encode_to_vec();
+            for quarantined_nullifier in quarantined_nullifiers {
+                let nullifier = quarantined_nullifier.to_bytes().to_vec();
+                sqlx::query!(
+                    "INSERT INTO quarantined_nullifiers
+                        (
+                            identity_key,
+                            nullifier
+                        )
+                    VALUES (?, ?)",
+                    identity_key,
+                    nullifier,
+                )
+                .execute(&mut tx)
+                .await?;
+            }
         }
 
         // Update any rows of the table with matching nullifiers to have height_spent
@@ -499,6 +578,51 @@ impl Storage {
                 // Forget spent note commitments from the NCT
                 let spent_commitment = Commitment::try_from(bytes.note_commitment.as_slice())?;
                 nct.forget(spent_commitment);
+            }
+
+            // If the nullifier was previously quarantined, remove it from the list of quarantined
+            // nullifiers, because it has now been spent
+            sqlx::query!(
+                "DELETE FROM quarantined_nullifiers WHERE nullifier = ?",
+                nullifier,
+            )
+            .execute(&mut tx)
+            .await?;
+        }
+
+        // For any slashed validator, remove all quarantined notes and nullifiers for that
+        // validator, and un-spend all spent notes that were referred to by all rolled back
+        // nullifiers
+        for identity_key in scan_result.slashed_validators {
+            let identity_key = identity_key.encode_to_vec();
+
+            // Delete all quarantined notes for this validator
+            sqlx::query!(
+                "DELETE FROM quarantined_notes WHERE identity_key = ?",
+                identity_key,
+            )
+            .execute(&mut tx)
+            .await?;
+
+            // Collect all the currently quarantined nullifiers for this validator, deleting them in
+            // the process
+            let rolled_back_nullifiers = sqlx::query!(
+                "DELETE FROM quarantined_nullifiers WHERE identity_key = ? RETURNING nullifier",
+                identity_key,
+            )
+            .fetch_all(&mut tx)
+            .await?;
+
+            // For each such nullifier, roll back the spend of the note associated with it, marking
+            // that note as spendable again
+            for rolled_back_nullifier in rolled_back_nullifiers {
+                let rolled_back_nullifier = rolled_back_nullifier.nullifier.to_vec();
+                sqlx::query!(
+                    "UPDATE notes SET height_spent = NULL WHERE nullifier = ?",
+                    rolled_back_nullifier,
+                )
+                .execute(&mut tx)
+                .await?;
             }
         }
 
