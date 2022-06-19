@@ -357,9 +357,11 @@ impl ViewProtocol for ViewService {
         self.check_worker().await?;
         self.check_fvk(request.get_ref().fvk_hash.as_ref()).await?;
 
-        let notes = self.storage.quarantined_notes().await.map_err(|e| {
-            tonic::Status::unavailable(format!("database error: {}", e.to_string()))
-        })?;
+        let notes = self
+            .storage
+            .quarantined_notes()
+            .await
+            .map_err(|e| tonic::Status::unavailable(format!("database error: {}", e)))?;
 
         let stream = try_stream! {
             for note in notes {
@@ -370,7 +372,7 @@ impl ViewProtocol for ViewService {
         Ok(tonic::Response::new(
             stream
                 .map_err(|e: anyhow::Error| {
-                    tonic::Status::unavailable(format!("database error: {}", e.to_string()))
+                    tonic::Status::unavailable(format!("database error: {}", e))
                 })
                 .boxed(),
         ))
