@@ -28,6 +28,8 @@ use tracing::instrument;
 
 use crate::shielded_pool::{event, state_key, CommissionAmounts};
 
+use super::DelibleNoteSource;
+
 pub struct ShieldedPool {
     state: State,
     note_commitment_tree: tct::Tree,
@@ -677,54 +679,38 @@ pub trait View: StateExt {
     }
 
     async fn set_note_source(&self, note_commitment: &note::Commitment, source: NoteSource) {
-        self.put_domain(state_key::note_source(note_commitment), source)
-            .await
+        self.put_domain(
+            state_key::note_source(note_commitment),
+            DelibleNoteSource::Present(source),
+        )
+        .await
     }
 
     // Returns whether the note was presently quarantined.
     async fn roll_back_note(&self, commitment: &note::Commitment) -> Result<Option<NoteSource>> {
         // Get the note source of the note (or empty vec if already applied or rolled back)
         let source = self
-            .get_proto::<Vec<_>>(state_key::note_source(commitment))
+            .get_domain::<DelibleNoteSource, _>(state_key::note_source(commitment))
             .await?
-            .expect("can't apply note that was never quarantined");
+            .expect("can't roll back note that was never created")
+            .into();
 
-        if !source.is_empty() {
-            tracing::debug!(
-                ?source,
-                "note commitment {:?} was already applied or rolled back",
-                commitment
-            );
-            // We did not actually apply this note, because it was marked as deleted
-            Ok(None)
-        } else {
-            // Non-empty source means we should be able to decode it
-            let source = NoteSource::decode(&*source)?;
+        // Delete the note from the set of all notes
+        self.put_domain(
+            state_key::note_source(commitment),
+            DelibleNoteSource::Deleted,
+        )
+        .await;
 
-            // Delete the note from the quarantine set
-            self.put_proto(
-                state_key::note_source(commitment),
-                vec![], // sentinel value meaning "deleted"
-            )
-            .await;
-
-            // We applied or deleted this note, because it was not already marked as deleted
-            Ok(Some(source))
-        }
+        Ok(source)
     }
 
     async fn note_source(&self, note_commitment: &note::Commitment) -> Result<Option<NoteSource>> {
-        let source = self
-            .get_proto::<Vec<u8>>(state_key::note_source(note_commitment))
+        Ok(self
+            .get_domain::<DelibleNoteSource, _>(state_key::note_source(note_commitment))
             .await?
-            .unwrap_or_default();
-
-        // Empty note source means it has been deleted
-        if source.is_empty() {
-            Ok(None)
-        } else {
-            Ok(Some(NoteSource::decode(&*source)?))
-        }
+            .unwrap_or_default()
+            .into())
     }
 
     async fn set_compact_block(&self, compact_block: CompactBlock) {

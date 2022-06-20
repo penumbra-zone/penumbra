@@ -71,6 +71,11 @@ message NoteSource {
   bytes inner = 1;
 }
 
+// A spicier transaction ID: one which can be missing
+message DelibleNoteSource {
+  NoteSource source = 1;
+}
+
 message GenesisAppState {
     message Allocation {
         uint64 amount = 1;
