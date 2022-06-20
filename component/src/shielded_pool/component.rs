@@ -402,7 +402,7 @@ impl ShieldedPool {
                 state_key::quarantined_spent_nullifier_lookup(&nullifier),
                 // We don't use the value for validity checks, but writing the source
                 // here lets us find out what transaction spent the nullifier.
-                source,
+                Delible::Present(source),
             )
             .await;
         // Queue up scheduling this nullifier to be unquarantined: the actual state-writing
