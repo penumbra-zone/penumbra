@@ -204,7 +204,10 @@ impl StakeCmd {
                 )
                 .await?;
 
-                app.build_and_submit_transaction(undelegate_plan).await?;
+                // Pass None as the change to await, since the change will be quarantined, so we won't detect it.
+                // But it's not spendable anyways, so we don't need to detect it.
+                let tx = app.build_transaction(undelegate_plan).await?;
+                app.submit_transaction(&tx, None).await?;
             }
             StakeCmd::Redelegate { .. } => {
                 todo!()
