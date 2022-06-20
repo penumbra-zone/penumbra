@@ -117,8 +117,13 @@ impl StakeCmd {
                 fee,
                 source,
             } => {
-                let Value {
-                    amount: delegation_amount,
+                let (self_address, _dtk) = app
+                    .fvk
+                    .incoming()
+                    .payment_address(source.unwrap_or(0).into());
+
+                let delegation_value @ Value {
+                    amount: _,
                     asset_id,
                 } = amount.parse::<Value>()?;
 
@@ -141,18 +146,65 @@ impl StakeCmd {
                     .into_inner()
                     .try_into()?;
 
-                let plan = plan::undelegate(
+                // first, split the input notes into exact change
+                let split_plan = plan::send(
+                    &app.fvk,
+                    &mut app.view,
+                    OsRng,
+                    &[delegation_value],
+                    *fee,
+                    self_address,
+                    *source,
+                    None,
+                )
+                .await?;
+
+                // find the note commitment corresponding to the delegation value within the split
+                // plan, so that we can use it to create the undelegate plan
+                let delegation_note_commitment = split_plan
+                    .output_plans()
+                    .find_map(|output| {
+                        let note = output.output_note();
+                        // grab the note commitment of whichever output in the spend plan has
+                        // exactly the right amount and asset id, and is also addressed to us
+                        if note.value() == delegation_value
+                        // this check is not necessary currently, because we never construct
+                        // undelegations to a different address than ourselves, but it's good to
+                        // leave it in here so that if we ever change that invariant, it will fail
+                        // here rather than after already executing the plan
+                            && app.fvk.incoming().views_address(&output.dest_address)
+                        {
+                            Some(note.commit())
+                        } else {
+                            None
+                        }
+                    })
+                    .expect("there must be an exact output for the amount we are expecting");
+
+                // we submit the split transaction before building the undelegate plan, because we
+                // need to await the note created by its output
+                app.build_and_submit_transaction(split_plan).await?;
+
+                // await the receipt of the exact note we wish to undelegate
+                let delegation_notes = vec![
+                    app.view
+                        .await_note_by_commitment(app.fvk.hash(), delegation_note_commitment)
+                        .await?,
+                ];
+
+                // now we can plan and submit an exact-change undelegation
+                let undelegate_plan = plan::undelegate(
                     &app.fvk,
                     &mut app.view,
                     OsRng,
                     rate_data,
-                    delegation_amount,
+                    delegation_notes,
                     *fee,
                     *source,
                 )
                 .await?;
 
-                app.build_and_submit_transaction(plan).await?;
+                app.build_and_submit_transaction(undelegate_plan).await?;
             }
             StakeCmd::Redelegate { .. } => {
                 todo!()
@@ -192,7 +244,7 @@ impl StakeCmd {
 
                 for (asset_id, notes_by_address) in notes.iter() {
                     let dt = if let Some(Ok(dt)) = asset_cache
-                        .get(&asset_id)
+                        .get(asset_id)
                         .map(|denom| DelegationToken::try_from(denom.clone()))
                     {
                         dt
