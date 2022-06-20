@@ -4,7 +4,7 @@ use anyhow::Result;
 use penumbra_component::stake::rate::RateData;
 use penumbra_component::stake::validator;
 use penumbra_crypto::{
-    asset::Denom, keys::DiversifierIndex, memo::MemoPlaintext, Address, DelegationToken,
+    asset::Denom, keys::DiversifierIndex, memo::MemoPlaintext, note, Address, DelegationToken,
     FullViewingKey, Value, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
 };
 use penumbra_proto::view::NotesRequest;
@@ -12,7 +12,7 @@ use penumbra_transaction::{
     plan::{ActionPlan, OutputPlan, SpendPlan, TransactionPlan},
     Fee,
 };
-use penumbra_view::ViewClient;
+use penumbra_view::{NoteRecord, ViewClient};
 use rand_core::{CryptoRng, RngCore};
 use tracing::instrument;
 
@@ -190,7 +190,7 @@ pub async fn undelegate<V, R>(
     view: &mut V,
     mut rng: R,
     rate_data: RateData,
-    delegation_amount: u64,
+    delegation_notes: Vec<NoteRecord>,
     fee: u64,
     source_address: Option<u64>,
 ) -> Result<TransactionPlan>
@@ -203,6 +203,13 @@ where
         .payment_address(source_address.unwrap_or(0).into());
 
     let chain_params = view.chain_params().await?;
+
+    let delegation_amount = delegation_notes
+        .iter()
+        .map(|record| record.note.amount())
+        .sum();
+
+    let spend_amount = delegation_amount;
 
     // Because the outputs of an undelegation are quarantined, we want to
     // avoid any unnecessary change outputs, so we pay fees out of the
@@ -241,23 +248,8 @@ where
         .into(),
     );
 
-    let delegation_id = DelegationToken::new(rate_data.identity_key).id();
-
-    // accumulate the list of notes to spend from
-    let spend_amount = delegation_amount;
-    let source_index: Option<DiversifierIndex> = source_address.map(Into::into);
-    let notes_to_spend = view
-        .notes(NotesRequest {
-            fvk_hash: Some(fvk.hash().into()),
-            asset_id: Some(delegation_id.into()),
-            diversifier_index: source_index.map(Into::into),
-            amount_to_spend: spend_amount,
-            include_spent: false,
-        })
-        .await?;
-
     let mut spent_amount = 0;
-    for note_record in notes_to_spend {
+    for note_record in delegation_notes {
         tracing::debug!(?note_record, ?spend_amount);
         spent_amount += note_record.note.amount();
         plan.actions
@@ -270,24 +262,6 @@ where
             spend_amount,
             spent_amount,
         ))?;
-    }
-
-    // Add a change note if we have change left over:
-    let change_amount = spent_amount - spend_amount;
-
-    if change_amount > 0 {
-        plan.actions.push(
-            OutputPlan::new(
-                &mut rng,
-                Value {
-                    amount: change_amount,
-                    asset_id: delegation_id.into(),
-                },
-                self_address,
-                MemoPlaintext::default(),
-            )
-            .into(),
-        );
     }
 
     Ok(plan)
