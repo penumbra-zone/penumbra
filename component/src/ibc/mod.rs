@@ -7,6 +7,10 @@ mod client;
 mod component;
 mod connection;
 pub(crate) mod event;
+
+mod ibc_token;
+pub use ibc_token::IBCToken;
+
 mod metrics;
 
 pub use self::metrics::register_metrics;
