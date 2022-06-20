@@ -33,7 +33,7 @@ impl App {
         self.submit_transaction(&tx, self_addressed_output).await
     }
 
-    fn build_transaction<'a>(
+    pub fn build_transaction<'a>(
         &'a mut self,
         plan: TransactionPlan,
     ) -> impl Future<Output = Result<Transaction>> + 'a {
@@ -53,7 +53,7 @@ impl App {
     /// - if `await_detection_of` is `Some`, returns `Ok` after the specified note has been detected by the view service, implying transaction finality.
     /// - if `await_detection_of` is `None`, returns `Ok` after the transaction has been accepted by the node it was sent to.
     #[instrument(skip(self, transaction, await_detection_of))]
-    async fn submit_transaction(
+    pub async fn submit_transaction(
         &mut self,
         transaction: &Transaction,
         await_detection_of: Option<note::Commitment>,
