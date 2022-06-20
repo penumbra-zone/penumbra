@@ -537,11 +537,15 @@ impl Storage {
             .await?;
         }
 
-        // Add all quarantined nullifiers to storage
+        // Add all quarantined nullifiers to storage and mark notes as spent, *without* forgetting
+        // them from the NCT (because they could be rolled back)
         for (identity_key, quarantined_nullifiers) in scan_result.spent_quarantined_nullifiers {
             let identity_key = identity_key.encode_to_vec();
             for quarantined_nullifier in quarantined_nullifiers {
+                let height_spent = scan_result.height as i64;
                 let nullifier = quarantined_nullifier.to_bytes().to_vec();
+
+                // Track the quarantined nullifier
                 sqlx::query!(
                     "INSERT INTO quarantined_nullifiers
                         (
@@ -550,6 +554,15 @@ impl Storage {
                         )
                     VALUES (?, ?)",
                     identity_key,
+                    nullifier,
+                )
+                .execute(&mut tx)
+                .await?;
+
+                // Mark the note as spent
+                sqlx::query!(
+                    "UPDATE notes SET height_spent = ? WHERE nullifier = ?",
+                    height_spent,
                     nullifier,
                 )
                 .execute(&mut tx)
