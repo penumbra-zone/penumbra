@@ -64,7 +64,7 @@ impl tower::Service<MempoolRequest> for Mempool {
             .boxed();
         }
         let span = req.create_span();
-        let span = error_span!(parent: &span, "MempoolService", worker=?"mempool");
+        let span = error_span!(parent: &span, "app", role=?"mempool");
         let (tx, rx) = oneshot::channel();
 
         let MempoolRequest::CheckTx(CheckTxReq {

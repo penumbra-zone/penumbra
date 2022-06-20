@@ -2240,15 +2240,25 @@ dependencies = [
 ]
 
 [[package]]
-name = "metrics-exporter-prometheus"
-version = "0.8.0"
+name = "metrics"
+version = "0.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb2da0a53ecf563b398350e3c1834ad27dd050eb47977472f2e654ccb39ff75f"
+checksum = "142c53885123b68d94108295a09d4afe1a1388ed95b54d5dacd9a454753030f2"
+dependencies = [
+ "ahash",
+ "metrics-macros",
+]
+
+[[package]]
+name = "metrics-exporter-prometheus"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "953cbbb6f9ba4b9304f4df79b98cdc9d14071ed93065a9fca11c00c5d9181b66"
 dependencies = [
  "hyper",
  "indexmap",
  "ipnet",
- "metrics",
+ "metrics 0.19.0",
  "metrics-util",
  "parking_lot 0.11.2",
  "quanta",
@@ -2270,13 +2280,13 @@ dependencies = [
 
 [[package]]
 name = "metrics-tracing-context"
-version = "0.10.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "487300885ada4d795d6517eaa13fbf15422241bd78ecb6a38760138b639941c1"
+checksum = "91c0b6603313b4625101251a1c0749df7deef27ab410d430d79f2fcb9d8480aa"
 dependencies = [
  "itoa 1.0.2",
  "lockfree-object-pool",
- "metrics",
+ "metrics 0.19.0",
  "metrics-util",
  "once_cell",
  "tracing",
@@ -2286,9 +2296,9 @@ dependencies = [
 
 [[package]]
 name = "metrics-util"
-version = "0.11.1"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0296c9cffd3d72c61d8fcd25efc381fd589f7b155a81f2fa5670010430f60c57"
+checksum = "fd1f4b69bef1e2b392b2d4a12902f2af90bb438ba4a66aa222d1023fa6561b50"
 dependencies = [
  "aho-corasick",
  "atomic-shim",
@@ -2296,7 +2306,7 @@ dependencies = [
  "crossbeam-utils",
  "hashbrown",
  "indexmap",
- "metrics",
+ "metrics 0.19.0",
  "num_cpus",
  "ordered-float",
  "parking_lot 0.11.2",
@@ -2751,7 +2761,7 @@ dependencies = [
  "ibc-proto",
  "ics23",
  "jmt",
- "metrics",
+ "metrics 0.19.0",
  "metrics-exporter-prometheus",
  "metrics-tracing-context",
  "metrics-util",
@@ -2862,7 +2872,7 @@ dependencies = [
  "ibc",
  "ibc-proto",
  "jmt",
- "metrics",
+ "metrics 0.18.1",
  "once_cell",
  "penumbra-chain",
  "penumbra-crypto",
@@ -2985,7 +2995,7 @@ dependencies = [
  "futures",
  "hex",
  "jmt",
- "metrics",
+ "metrics 0.18.1",
  "penumbra-crypto",
  "penumbra-proto",
  "penumbra-tct",
@@ -3082,7 +3092,7 @@ dependencies = [
  "directories",
  "futures",
  "hex",
- "metrics",
+ "metrics 0.18.1",
  "parking_lot 0.12.1",
  "penumbra-chain",
  "penumbra-crypto",
