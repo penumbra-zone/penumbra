@@ -526,10 +526,18 @@ impl ShieldedPool {
             validator::BondingState::Unbonding { unbonding_epoch } => {
                 Some((unbonding_epoch, *validator_identity))
             }
-            validator::BondingState::Bonded => Some((
-                self.epoch().await.index + self.epoch_duration().await,
-                *validator_identity,
-            )),
+            validator::BondingState::Bonded => {
+                let unbonding_epochs = self
+                    .state
+                    .get_chain_params()
+                    .await
+                    .expect("can get chain params")
+                    .unbonding_epochs;
+                Some((
+                    self.epoch().await.index + unbonding_epochs,
+                    *validator_identity,
+                ))
+            }
         }
     }
 
