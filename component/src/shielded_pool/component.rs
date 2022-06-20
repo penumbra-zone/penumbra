@@ -774,7 +774,7 @@ pub trait View: StateExt {
                 &nullifier,
             ))
             .await?
-            .expect("can't apply nullifier that was never quarantined")
+            .expect("can't roll back nullifier that was never quarantined")
             .into();
 
         // Delete the nullifier from the quarantine set
@@ -800,14 +800,12 @@ pub trait View: StateExt {
             ));
         }
 
-        if let Some(source) = Option::from(
-            self.get_domain::<Delible<NoteSource>, _>(
-                state_key::quarantined_spent_nullifier_lookup(&nullifier),
-            )
-            .await?,
-        )
-        // a deleted thing should be treated identically to one never present, so we flatten:
-        .flatten()
+        if let Some(source) = self
+            .get_domain::<Delible<NoteSource>, _>(state_key::quarantined_spent_nullifier_lookup(
+                &nullifier,
+            ))
+            .await?
+            .and_then(<Option<NoteSource>>::from)
         {
             return Err(anyhow!(
                 "nullifier {} was already spent in {:?} (currently quarantined)",
