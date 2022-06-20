@@ -266,6 +266,14 @@ async fn main() -> anyhow::Result<()> {
                 None => canonicalize_path("~/.penumbra/testnet_data"),
             };
 
+            // If the output directory already exists, bail out, rather than overwriting.
+            if output_dir.exists() {
+                return Err(anyhow::anyhow!(
+                    "output directory {:?} already exists, refusing to overwrite it",
+                    output_dir
+                ));
+            }
+
             // Parse allocations from input file or default to latest testnet allocations computed
             // in the build script
             let mut allocations = if let Some(allocations_input_file) = allocations_input_file {
