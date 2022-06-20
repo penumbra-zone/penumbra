@@ -7,11 +7,11 @@ use std::{
 
 use console_subscriber::ConsoleLayer;
 use metrics_tracing_context::{MetricsLayer, TracingContextLayer};
-use metrics_util::{layers::Stack, DebuggingRecorder};
+use metrics_util::layers::Stack;
 
 use anyhow::Context;
 use clap::{Parser, Subcommand};
-use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusRecorder};
+use metrics_exporter_prometheus::PrometheusBuilder;
 use penumbra_chain::{genesis::Allocation, params::ChainParams};
 use penumbra_component::stake::{validator::Validator, FundingStream, FundingStreams};
 use penumbra_crypto::{
@@ -190,7 +190,8 @@ async fn main() -> anyhow::Result<()> {
 
             Stack::new(recorder)
                 // Adding the `TracingContextLayer` will add labels from the tracing span to metrics.
-                .push(TracingContextLayer::all())
+                // The only labels to be included are "chain_id" and "role".
+                .push(TracingContextLayer::only_allow(&["chain_id", "role"]))
                 .install()
                 .expect("global recorder already installed");
 
