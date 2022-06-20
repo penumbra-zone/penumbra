@@ -48,6 +48,16 @@
     },
     "query": "INSERT INTO sync_height (height) VALUES (?)"
   },
+  "1b7d22880c4b35d852a897b3044d07fb448fdc6099c68cd85544c137aad15be8": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "UPDATE notes SET height_spent = ? WHERE nullifier = ?"
+  },
   "2547294717840bcb1bef870394b99cf275bcba98d005f1f18b03c7a3d93909e1": {
     "describe": {
       "columns": [],
