@@ -19,7 +19,6 @@ use penumbra_crypto::{
     ka, note, Address, IdentityKey, Note, NotePayload, Nullifier, One, Value,
     STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_proto::Protobuf;
 use penumbra_storage::{State, StateExt};
 use penumbra_tct as tct;
 use penumbra_transaction::{action::Undelegate, Action, Transaction};
@@ -28,7 +27,7 @@ use tracing::instrument;
 
 use crate::shielded_pool::{event, state_key, CommissionAmounts};
 
-use super::DelibleNoteSource;
+use super::Delible;
 
 pub struct ShieldedPool {
     state: State,
@@ -521,7 +520,7 @@ impl ShieldedPool {
             .expect("validator lookup in state succeeds")
             .expect("validator is present in state");
 
-        match validator_bonding_state {
+        let should_quarantine = match validator_bonding_state {
             validator::BondingState::Unbonded => None,
             validator::BondingState::Unbonding { unbonding_epoch } => {
                 Some((unbonding_epoch, *validator_identity))
@@ -538,7 +537,11 @@ impl ShieldedPool {
                     *validator_identity,
                 ))
             }
-        }
+        };
+
+        tracing::debug!(?should_quarantine, "should quarantine");
+
+        should_quarantine
     }
 
     async fn schedule_unquarantine(&mut self) {
@@ -689,7 +692,7 @@ pub trait View: StateExt {
     async fn set_note_source(&self, note_commitment: &note::Commitment, source: NoteSource) {
         self.put_domain(
             state_key::note_source(note_commitment),
-            DelibleNoteSource::Present(source),
+            Delible::Present(source),
         )
         .await
     }
@@ -698,24 +701,21 @@ pub trait View: StateExt {
     async fn roll_back_note(&self, commitment: &note::Commitment) -> Result<Option<NoteSource>> {
         // Get the note source of the note (or empty vec if already applied or rolled back)
         let source = self
-            .get_domain::<DelibleNoteSource, _>(state_key::note_source(commitment))
+            .get_domain::<Delible<NoteSource>, _>(state_key::note_source(commitment))
             .await?
             .expect("can't roll back note that was never created")
             .into();
 
         // Delete the note from the set of all notes
-        self.put_domain(
-            state_key::note_source(commitment),
-            DelibleNoteSource::Deleted,
-        )
-        .await;
+        self.put_domain(state_key::note_source(commitment), Delible::Deleted)
+            .await;
 
         Ok(source)
     }
 
     async fn note_source(&self, note_commitment: &note::Commitment) -> Result<Option<NoteSource>> {
         Ok(self
-            .get_domain::<DelibleNoteSource, _>(state_key::note_source(note_commitment))
+            .get_domain::<Delible<NoteSource>, _>(state_key::note_source(note_commitment))
             .await?
             .unwrap_or_default()
             .into())
@@ -766,35 +766,25 @@ pub trait View: StateExt {
     // Returns the source if the nullifier was in quarantine already
     #[instrument(skip(self))]
     async fn unquarantine_nullifier(&self, nullifier: Nullifier) -> Result<Option<NoteSource>> {
-        tracing::debug!("applying quarantined nullifier");
+        tracing::debug!("removing quarantined nullifier");
+
         // Get the note source of the nullifier (or empty vec if already applied or rolled back)
         let source = self
-            .get_proto::<Vec<_>>(state_key::quarantined_spent_nullifier_lookup(&nullifier))
+            .get_domain::<Delible<NoteSource>, _>(state_key::quarantined_spent_nullifier_lookup(
+                &nullifier,
+            ))
             .await?
-            .expect("can't apply nullifier that was never quarantined");
+            .expect("can't apply nullifier that was never quarantined")
+            .into();
 
-        if !source.is_empty() {
-            tracing::debug!(
-                ?source,
-                "nullifier {:?} was already applied or rolled back",
-                nullifier
-            );
-            // We did not actually apply this nullifier, because it was marked as deleted
-            Ok(None)
-        } else {
-            // Non-empty source means we should be able to decode it
-            let source = NoteSource::decode(&*source)?;
+        // Delete the nullifier from the quarantine set
+        self.put_domain(
+            state_key::quarantined_spent_nullifier_lookup(&nullifier),
+            Delible::Deleted,
+        )
+        .await;
 
-            // Delete the nullifier from the quarantine set
-            self.put_proto(
-                state_key::quarantined_spent_nullifier_lookup(&nullifier),
-                vec![], // sentinel value meaning "deleted"
-            )
-            .await;
-
-            // We applied this nullifier, because it was not marked as deleted
-            Ok(Some(source))
-        }
+        Ok(source)
     }
 
     #[instrument(skip(self))]
@@ -810,23 +800,20 @@ pub trait View: StateExt {
             ));
         }
 
-        if let Some(source) = self
-            .get_proto::<Vec<u8>>(state_key::quarantined_spent_nullifier_lookup(&nullifier))
-            .await?
+        if let Some(source) = Option::from(
+            self.get_domain::<Delible<NoteSource>, _>(
+                state_key::quarantined_spent_nullifier_lookup(&nullifier),
+            )
+            .await?,
+        )
+        // a deleted thing should be treated identically to one never present, so we flatten:
+        .flatten()
         {
-            // We mark quarantined nullifiers as rolled back or applied by erasing their source to
-            // the empty set of bytes, so if we find an empty value for the key, that means it's
-            // been rolled back and we don't have to care about it here:
-            if !source.is_empty() {
-                // Non-empty source means we should be able to decode it
-                let source = NoteSource::decode(&*source)?;
-
-                return Err(anyhow!(
-                    "nullifier {} was already spent in {:?} (currently quarantined)",
-                    nullifier,
-                    source,
-                ));
-            }
+            return Err(anyhow!(
+                "nullifier {} was already spent in {:?} (currently quarantined)",
+                nullifier,
+                source,
+            ));
         }
 
         Ok(())
