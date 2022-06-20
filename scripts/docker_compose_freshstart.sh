@@ -23,7 +23,6 @@ fi
 printf "\t\tA new genesis has occurred...\n\n"
 printf "Storing configs to ${build_path}/ ...\n\n\n"
 
-mkdir -p ${build_path}
 docker-compose stop
 docker container prune -f
 docker volume rm penumbra_prometheus_data || true
