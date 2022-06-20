@@ -774,7 +774,7 @@ pub trait View: StateExt {
                 &nullifier,
             ))
             .await?
-            .expect("can't roll back nullifier that was never quarantined")
+            .expect("can't unquarantine nullifier that was never quarantined")
             .into();
 
         // Delete the nullifier from the quarantine set
