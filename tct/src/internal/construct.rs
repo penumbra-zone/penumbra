@@ -190,7 +190,6 @@ type Tree = crate::internal::frontier::Top<
 
 /// Build a tree by iterating over a sequence of [`Instruction`]s.
 pub fn build(
-    strict: bool,
     position: u64,
     instructions: impl IntoIterator<Item = Instruction>,
 ) -> Result<Tree, Error> {
@@ -228,8 +227,8 @@ pub fn build(
     match result {
         // If complete, return the output tree
         IResult::Complete(output) => {
-            // If in strict mode, ensure that no more instructions are remaining
-            if strict && instructions.peek().is_some() {
+            // Ensure that no more instructions are remaining
+            if instructions.peek().is_some() {
                 return Err(Error::AlreadyComplete { instruction });
             }
             Ok(output)
