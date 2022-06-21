@@ -1,10 +1,12 @@
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 use penumbra_crypto::{IdentityKey, NotePayload, Nullifier};
 use penumbra_proto::{chain as pb, Protobuf};
 
 /// All the things scheduled for unquarantine, grouped by unbonding epoch.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(into = "pb::Quarantined", try_from = "pb::Quarantined")]
 pub struct Quarantined {
     pub quarantined: BTreeMap<u64, Scheduled>,
 }
@@ -130,7 +132,11 @@ impl From<Quarantined> for pb::Quarantined {
 }
 
 /// All the things scheduled for unquarantine in a single (not specified here) epoch.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(
+    into = "pb::quarantined::Scheduled",
+    try_from = "pb::quarantined::Scheduled"
+)]
 pub struct Scheduled {
     pub scheduled: BTreeMap<IdentityKey, Unbonding>,
 }
@@ -260,7 +266,11 @@ impl From<Scheduled> for pb::quarantined::Scheduled {
 
 /// All the things unbonding from a specific validator (not specified here) in a specific (not
 /// specified here) epoch.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(
+    into = "pb::quarantined::Unbonding",
+    try_from = "pb::quarantined::Unbonding"
+)]
 pub struct Unbonding {
     pub note_payloads: Vec<NotePayload>,
     pub nullifiers: Vec<Nullifier>,

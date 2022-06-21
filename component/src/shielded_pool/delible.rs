@@ -1,9 +1,11 @@
 use penumbra_chain::NoteSource;
 use penumbra_proto::{chain as pb, Protobuf};
+use serde::{Deserialize, Serialize};
 
 /// A thing which can be deleted (we use this in the state because the JMT does not support
 /// deletion).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
 pub enum Delible<T> {
     Deleted,
     Present(T),

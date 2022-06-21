@@ -8,6 +8,7 @@ use penumbra_tct as tct;
 use crate::{NoteRecord, QuarantinedNoteRecord};
 
 /// Contains the results of scanning a single block.
+#[derive(Debug, Clone)]
 pub struct ScanResult {
     // write as new rows
     pub new_notes: Vec<NoteRecord>,
@@ -17,6 +18,16 @@ pub struct ScanResult {
     pub spent_quarantined_nullifiers: BTreeMap<IdentityKey, Vec<Nullifier>>,
     pub slashed_validators: Vec<IdentityKey>,
     pub height: u64,
+}
+
+impl ScanResult {
+    pub fn is_empty(&self) -> bool {
+        self.new_notes.is_empty()
+            && self.new_quarantined_notes.is_empty()
+            && self.spent_nullifiers.is_empty()
+            && self.spent_quarantined_nullifiers.is_empty()
+            && self.slashed_validators.is_empty()
+    }
 }
 
 #[tracing::instrument(skip(fvk, note_commitment_tree, note_payloads, nullifiers))]
@@ -170,14 +181,18 @@ pub fn scan_block(
     // Print the TCT root for debugging
     tracing::debug!(tct_root = %note_commitment_tree.root(), "tct root");
 
-    // TODO: write a query to mark all matching rows as spent
-
-    ScanResult {
+    let result = ScanResult {
         new_notes,
         new_quarantined_notes,
         spent_nullifiers,
         spent_quarantined_nullifiers,
         slashed_validators: slashed,
         height,
+    };
+
+    if !result.is_empty() {
+        tracing::debug!(?result, "scan result");
     }
+
+    result
 }
