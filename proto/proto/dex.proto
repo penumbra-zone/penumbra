@@ -1,0 +1,49 @@
+syntax = "proto3";
+option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
+
+import "crypto.proto";
+
+package penumbra.dex;
+
+// A transaction action that submits a swap to the dex.
+message Swap {
+  bytes zkproof = 1;
+  // Encrypted amount of asset 1 of the trading pair.
+  MockFlowCypherText enc_amount_1 = 2;
+  // Encrypted amount of asset 2 of the trading pair.
+  MockFlowCypherText enc_amount_2 = 3;
+}
+
+message SwapBody {
+  // The trading pair to swap.
+  TradingPair trading_pair = 1;
+  // Commitment to the amount for asset 1 (delta 1).
+  bytes ca1 = 2
+  // Commitment to the amount for asset 2 (delta 2).
+  bytes ca2 = 3
+  // A commitment to the swap's contribution to the transaction's value balance.
+  bytes cv = 4;
+  // Swap NFT recording the user's contribution.
+  crypto.NotePayload swap_nft = 5;
+}
+
+// XXX value fields need to have constant-length encoding
+message SwapPlaintext {
+    uint64 t1 = 1;
+    uint64 t2 = 2;
+    uint64 f = 3;
+    bytes bd = 4;
+    bytes pkd = 5;
+}
+
+message MockFlowCiphertext {
+    uint64 value = 1;
+}
+
+// Holds two asset IDs. Ordering doesn't reflect trading direction.
+message TradingPair {
+  // The first asset of the pair.
+  crypto.AssetId asset_1 = 1;
+  // The second asset of the pair.
+  crypto.AssetId asset_2 = 2;
+}

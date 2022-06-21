@@ -47,6 +47,7 @@ fn main() -> Result<()> {
             "proto/stake.proto",
             "proto/chain.proto",
             "proto/ibc.proto",
+            "proto/dex.proto",
         ],
         &["proto/", "ibc-go-vendor/"],
     )?;
@@ -152,6 +153,8 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.transaction.SpendPlan", SERIALIZE),
     (".penumbra.transaction.OutputPlan", SERIALIZE),
     (".penumbra.ibc.IBCAction", SERIALIZE),
+    (".penumbra.dex.Swap", SERIALIZE),
+    (".penumbra.dex.SwapClaim", SERIALIZE),
 ];
 
 static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
