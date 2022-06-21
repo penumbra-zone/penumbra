@@ -28,4 +28,4 @@ pub struct Incomplete;
 /// the tree.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Error)]
 #[error("attempted to create child at the bottom of the tree")]
-pub struct HitBottom;
+pub struct HitBottom<C>(pub C);
