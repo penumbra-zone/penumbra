@@ -4,7 +4,7 @@ use anyhow::Result;
 use penumbra_component::stake::rate::RateData;
 use penumbra_component::stake::validator;
 use penumbra_crypto::{
-    asset::Denom, keys::DiversifierIndex, memo::MemoPlaintext, note, Address, DelegationToken,
+    asset::Denom, keys::DiversifierIndex, memo::MemoPlaintext, Address, DelegationToken,
     FullViewingKey, Value, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
 };
 use penumbra_proto::view::NotesRequest;

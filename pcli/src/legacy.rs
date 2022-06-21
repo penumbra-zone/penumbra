@@ -4,7 +4,7 @@ use penumbra_crypto::keys::SpendKey;
 use serde::{Deserialize, Serialize};
 
 /// The path to the legacy wallet file (which actually stored a client state, not a wallet...)
-pub const WALLET_FILE_NAME: &'static str = "penumbra_wallet.json";
+pub const WALLET_FILE_NAME: &str = "penumbra_wallet.json";
 
 /// Migrate from a legacy wallet to the current wallet format.
 pub fn migrate(
