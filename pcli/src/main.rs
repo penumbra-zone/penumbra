@@ -26,8 +26,8 @@ use wallet::Wallet;
 use box_grpc_svc::BoxGrpcService;
 use command::*;
 
-const CUSTODY_FILE_NAME: &'static str = "custody.json";
-const VIEW_FILE_NAME: &'static str = "pcli-view.sqlite";
+const CUSTODY_FILE_NAME: &str = "custody.json";
+const VIEW_FILE_NAME: &str = "pcli-view.sqlite";
 
 #[derive(Debug)]
 pub struct App {
