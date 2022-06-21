@@ -2778,6 +2778,7 @@ dependencies = [
  "rand_chacha",
  "rand_core",
  "regex",
+ "reqwest",
  "rocksdb",
  "serde",
  "serde_json",
