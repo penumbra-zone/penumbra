@@ -82,12 +82,10 @@ pub fn scan_block(
 
         for (identity_key, unbonding) in scheduled {
             // Remember these nullifiers (not all of them are ours, we have to check the database)
-            for nullifier in unbonding.nullifiers {
-                spent_quarantined_nullifiers
-                    .entry(identity_key)
-                    .or_default()
-                    .push(nullifier);
-            }
+            spent_quarantined_nullifiers
+                .entry(identity_key)
+                .or_default()
+                .extend(unbonding.nullifiers);
             // Trial-decrypt the quarantined notes, keeping track of the ones that were meant for us
             new_quarantined_notes.extend(
                 unbonding
@@ -190,8 +188,8 @@ pub fn scan_block(
         height,
     };
 
-    if !result.is_empty() {
-        tracing::debug!(?result, "scan result");
+    if !result.spent_quarantined_nullifiers.is_empty() || !result.new_quarantined_notes.is_empty() {
+        tracing::debug!(?result, "scan result contained quarantined things");
     }
 
     result

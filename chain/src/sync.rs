@@ -26,6 +26,9 @@ pub struct CompactBlock {
     pub quarantined: Quarantined,
     // Newly slashed validators in this block.
     pub slashed: Vec<IdentityKey>,
+    // **IMPORTANT NOTE FOR FUTURE HUMANS**: if you want to add new fields to the `CompactBlock`,
+    // you must update `CompactBlock::is_empty` to check for the emptiness of those fields, because
+    // the client will skip processing any compact block that is empty.
 }
 
 impl Default for CompactBlock {
@@ -45,7 +48,10 @@ impl Default for CompactBlock {
 impl CompactBlock {
     /// Returns true if the compact block is empty.
     pub fn is_empty(&self) -> bool {
-        self.note_payloads.is_empty() && self.nullifiers.is_empty()
+        self.note_payloads.is_empty()
+            && self.nullifiers.is_empty()
+            && self.quarantined.is_empty()
+            && self.slashed.is_empty()
     }
 }
 
