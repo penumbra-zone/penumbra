@@ -184,11 +184,8 @@ impl Component for ShieldedPool {
             for quarantined_output in tx.note_payloads() {
                 // Queue up scheduling this note to be unquarantined: the actual state-writing for
                 // all quarantined notes happens during end_block, to avoid state churn
-                self.compact_block.quarantined.schedule_note(
-                    epoch,
-                    identity_key,
-                    quarantined_output,
-                );
+                self.schedule_note(epoch, identity_key, quarantined_output, source)
+                    .await;
             }
             for quarantined_spent_nullifier in tx.spent_nullifiers() {
                 self.quarantined_spend_nullifier(
@@ -352,6 +349,7 @@ impl ShieldedPool {
     #[instrument(skip(self, source, note_payload), fields(note_commitment = ?note_payload.note_commitment))]
     async fn add_note(&mut self, note_payload: NotePayload, source: NoteSource) {
         tracing::debug!("adding note");
+
         // 1. Insert it into the NCT
         self.note_commitment_tree
             .insert(tct::Witness::Forget, note_payload.note_commitment)
@@ -364,6 +362,27 @@ impl ShieldedPool {
 
         // 3. Finally, record it in the pending compact block.
         self.compact_block.note_payloads.push(note_payload);
+    }
+
+    #[instrument(skip(self, source, note_payload), fields(note_commitment = ?note_payload.note_commitment))]
+    async fn schedule_note(
+        &mut self,
+        epoch: u64,
+        identity_key: IdentityKey,
+        note_payload: NotePayload,
+        source: NoteSource,
+    ) {
+        tracing::debug!("scheduling note");
+
+        // 1. Record its source in the JMT
+        self.state
+            .set_note_source(&note_payload.note_commitment, source)
+            .await;
+
+        // 2. Schedule it in the compact block
+        self.compact_block
+            .quarantined
+            .schedule_note(epoch, identity_key, note_payload);
     }
 
     #[instrument(skip(self, source))]
