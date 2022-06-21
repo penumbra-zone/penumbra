@@ -435,9 +435,9 @@ impl Tree {
         let (already_finalized, finalized_root) = self
             .inner
             .update(|epoch| {
-                epoch.update(|tier| {
-                    let already_finalized = tier.finalize();
-                    (already_finalized, block::Root(tier.hash()))
+                epoch.update(|tier| match tier.finalize() {
+                    true => (true, block::Finalized::default().root()),
+                    false => (false, block::Root(tier.hash())),
                 })
             })
             .flatten()
@@ -586,9 +586,9 @@ impl Tree {
         // it is not
         let (already_finalized, finalized_root) = self
             .inner
-            .update(|tier| {
-                let already_finalized = tier.finalize();
-                (already_finalized, epoch::Root(tier.hash()))
+            .update(|tier| match tier.finalize() {
+                true => (true, epoch::Finalized::default().root()),
+                false => (false, epoch::Root(tier.hash())),
             })
             // If there is no focused block, the latest block is considered already finalized
             .unwrap_or((true, epoch::Finalized::default().root()));
