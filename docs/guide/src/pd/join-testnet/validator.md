@@ -57,12 +57,14 @@ and adjust the data like the name, website, description, etc as desired.
 
 The `enabled` field can be used to enable/disable your validator without facing slashing 
 penalties. Disabled validators can not appear in the active validator set and are ineligible for 
-rewards.
+rewards. 
 
 This is useful if, for example, you know your validator will not be online for a period of time, 
 and you want to avoid an uptime violation penalty. If you are uploading your validator for the 
 first time, you will likely want to start with it disabled until your Tendermint & `pd` 
-instances have caught up to the consensus block height.
+instances have caught up to the consensus block height. 
+
+Note that by default the `enabled` field is set to false and will need to be enabled in order to activate one's validator.
 
 #### Setting the consensus key
 
