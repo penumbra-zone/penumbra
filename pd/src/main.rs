@@ -12,18 +12,16 @@ use metrics_util::layers::Stack;
 use anyhow::Context;
 use clap::{Parser, Subcommand};
 use metrics_exporter_prometheus::PrometheusBuilder;
+use pd::testnet::{canonicalize_path, generate_tm_config, write_configs, ValidatorKeys};
 use penumbra_chain::{genesis::Allocation, params::ChainParams};
 use penumbra_component::stake::{validator::Validator, FundingStream, FundingStreams};
-use penumbra_crypto::{
-    keys::{SpendKey, SpendKeyBytes},
-    rdsa::{SigningKey, SpendAuth, VerificationKey},
-    DelegationToken,
-};
+use penumbra_crypto::{keys::SpendKey, DelegationToken};
 use penumbra_proto::client::{
     oblivious::oblivious_query_server::ObliviousQueryServer,
     specific::specific_query_server::SpecificQueryServer,
 };
 use penumbra_storage::Storage;
+use rand::Rng;
 use rand_core::OsRng;
 use tokio::runtime;
 use tonic::transport::Server;
@@ -92,6 +90,15 @@ enum Command {
         /// IP Address to start `tendermint` nodes on. Increments by three to make room for `pd` per node.
         #[clap(long, default_value = "192.167.10.11")]
         starting_ip: Ipv4Addr,
+    },
+
+    /// Like `generate-testnet`, but joins the testnet the specified node is part of.
+    JoinTestnet {
+        #[clap(default_value = "testnet.penumbra.zone")]
+        node: String,
+        /// Path to directory to store output in. Must not exist.
+        #[clap(long)]
+        output_dir: Option<PathBuf>,
     },
 }
 
@@ -224,9 +231,7 @@ async fn main() -> anyhow::Result<()> {
             preserve_chain_id,
         } => {
             use std::{
-                fs,
                 fs::File,
-                io::Write,
                 str::FromStr,
                 time::{Duration, SystemTime, UNIX_EPOCH},
             };
@@ -248,8 +253,7 @@ async fn main() -> anyhow::Result<()> {
             use pd::testnet::*;
             use penumbra_chain::genesis;
             use penumbra_crypto::{Address, IdentityKey};
-            use tendermint::{account::Id, node, public_key::Algorithm, Genesis, Time};
-            use tendermint_config::{NodeKey, PrivValidatorKey};
+            use tendermint::{node, public_key::Algorithm, Genesis, Time};
 
             let genesis_time = Time::from_unix_timestamp(
                 SystemTime::now()
@@ -317,19 +321,6 @@ async fn main() -> anyhow::Result<()> {
                 })?
             };
 
-            struct ValidatorKeys {
-                // Penumbra spending key and viewing key for this node.
-                pub validator_id_sk: SigningKey<SpendAuth>,
-                pub validator_id_vk: VerificationKey<SpendAuth>,
-                // Consensus key for tendermint.
-                pub validator_cons_sk: tendermint::PrivateKey,
-                pub validator_cons_pk: tendermint::PublicKey,
-                // P2P auth key for tendermint.
-                pub node_key_sk: tendermint::PrivateKey,
-                #[allow(unused_variables, dead_code)]
-                pub node_key_pk: tendermint::PublicKey,
-                pub validator_spendseed: SpendKeyBytes,
-            }
             let mut validator_keys = Vec::<ValidatorKeys>::new();
             // Generate a keypair for each validator
             let num_validator_nodes = testnet_validators.len();
@@ -338,34 +329,9 @@ async fn main() -> anyhow::Result<()> {
                 "must have at least one validator node"
             );
             for _ in 0..num_validator_nodes {
-                // Create the spend key for this node.
-                let seed = SpendKeyBytes(OsRng.gen());
-                let spend_key = SpendKey::from(seed.clone());
+                let vk = ValidatorKeys::generate();
 
-                // Create signing key and verification key for this node.
-                let validator_id_sk = spend_key.spend_auth_key();
-                let validator_id_vk = VerificationKey::from(validator_id_sk);
-
-                // generate consensus key for tendermint.
-                let validator_cons_sk =
-                    tendermint::PrivateKey::Ed25519(ed25519_consensus::SigningKey::new(OsRng));
-                let validator_cons_pk = validator_cons_sk.public_key();
-
-                // generate P2P auth key for tendermint.
-                let node_key_sk =
-                    tendermint::PrivateKey::Ed25519(ed25519_consensus::SigningKey::new(OsRng));
-                let node_key_pk = node_key_sk.public_key();
-
-                let vk = ValidatorKeys {
-                    validator_id_sk: validator_id_sk.clone(),
-                    validator_id_vk,
-                    validator_cons_sk,
-                    validator_cons_pk,
-                    node_key_sk,
-                    node_key_pk,
-                    validator_spendseed: seed,
-                };
-
+                let spend_key = SpendKey::from(vk.validator_spend_key.clone());
                 let fvk = spend_key.full_viewing_key();
                 let ivk = fvk.incoming();
                 let (dest, _dtk_d) = ivk.payment_address(0u64.into());
@@ -393,6 +359,7 @@ async fn main() -> anyhow::Result<()> {
                     Ipv4Addr::new(a[0], a[1], a[2], a[3] + (10 * i as u8))
                 })
                 .collect::<Vec<_>>();
+
             let validators = testnet_validators
                 .iter()
                 .enumerate()
@@ -432,92 +399,63 @@ async fn main() -> anyhow::Result<()> {
                     })
                 })
                 .collect::<Result<Vec<Validator>, anyhow::Error>>()?;
+
+            let app_state = genesis::AppState {
+                allocations: allocations.clone(),
+                chain_params: ChainParams {
+                    chain_id: chain_id.clone(),
+                    epoch_duration,
+                    unbonding_epochs,
+                    active_validator_limit,
+                    ..Default::default()
+                },
+                validators: validators.clone().into_iter().map(Into::into).collect(),
+            };
+
+            // Create the genesis data shared by all nodes
+            let validator_genesis = Genesis {
+                genesis_time,
+                chain_id: chain_id
+                    .parse::<tendermint::chain::Id>()
+                    .expect("able to create chain ID"),
+                initial_height: 0,
+                consensus_params: tendermint::consensus::Params {
+                    block: tendermint::block::Size {
+                        max_bytes: 22020096,
+                        max_gas: -1,
+                        // minimum time increment between consecutive blocks
+                        time_iota_ms: 500,
+                    },
+                    // TODO Should these correspond with values used within `pd` for penumbra epochs?
+                    evidence: tendermint::evidence::Params {
+                        max_age_num_blocks: 100000,
+                        // 1 day
+                        max_age_duration: tendermint::evidence::Duration(Duration::new(86400, 0)),
+                        max_bytes: 1048576,
+                    },
+                    validator: tendermint::consensus::params::ValidatorParams {
+                        pub_key_types: vec![Algorithm::Ed25519],
+                    },
+                    version: Some(tendermint::consensus::params::VersionParams { app_version: 0 }),
+                },
+                // always empty in genesis json
+                app_hash: vec![],
+                app_state,
+                // List of initial validators. Note this may be overridden entirely by
+                // the application, and may be left empty to make explicit that the
+                // application will initialize the validator set with ResponseInitChain.
+                // - https://docs.tendermint.com/v0.32/tendermint-core/using-tendermint.html
+                // For penumbra, we can leave this empty since the app_state also contains Validator
+                // configs.
+                validators: vec![],
+            };
+
             for (n, vk) in validator_keys.iter().enumerate() {
                 let node_name = format!("node{}", n);
 
-                let app_state = genesis::AppState {
-                    allocations: allocations.clone(),
-                    chain_params: ChainParams {
-                        chain_id: chain_id.clone(),
-                        epoch_duration,
-                        unbonding_epochs,
-                        active_validator_limit,
-                        ..Default::default()
-                    },
-                    validators: validators.clone().into_iter().map(Into::into).collect(),
-                };
-
                 // Create the directory for this node
                 let mut node_dir = output_dir.clone();
-                node_dir.push(&node_name);
-
-                let mut pd_dir = node_dir.clone();
-                let mut tm_dir = node_dir;
-
-                pd_dir.push("pd");
-                tm_dir.push("tendermint");
-
-                let mut node_config_dir = tm_dir.clone();
-                node_config_dir.push("config");
-
-                let mut node_data_dir = tm_dir.clone();
-                node_data_dir.push("data");
-
-                fs::create_dir_all(&node_config_dir)?;
-                fs::create_dir_all(&node_data_dir)?;
-                fs::create_dir_all(&pd_dir)?;
-
-                // Write this node's tendermint genesis.json file
-                let validator_genesis = Genesis {
-                    genesis_time,
-                    chain_id: chain_id
-                        .parse::<tendermint::chain::Id>()
-                        .expect("able to create chain ID"),
-                    initial_height: 0,
-                    consensus_params: tendermint::consensus::Params {
-                        block: tendermint::block::Size {
-                            max_bytes: 22020096,
-                            max_gas: -1,
-                            // minimum time increment between consecutive blocks
-                            time_iota_ms: 500,
-                        },
-                        // TODO Should these correspond with values used within `pd` for penumbra epochs?
-                        evidence: tendermint::evidence::Params {
-                            max_age_num_blocks: 100000,
-                            // 1 day
-                            max_age_duration: tendermint::evidence::Duration(Duration::new(
-                                86400, 0,
-                            )),
-                            max_bytes: 1048576,
-                        },
-                        validator: tendermint::consensus::params::ValidatorParams {
-                            pub_key_types: vec![Algorithm::Ed25519],
-                        },
-                        version: Some(tendermint::consensus::params::VersionParams {
-                            app_version: 0,
-                        }),
-                    },
-                    // always empty in genesis json
-                    app_hash: vec![],
-                    app_state,
-                    // List of initial validators. Note this may be overridden entirely by
-                    // the application, and may be left empty to make explicit that the
-                    // application will initialize the validator set with ResponseInitChain.
-                    // - https://docs.tendermint.com/v0.32/tendermint-core/using-tendermint.html
-                    // For penumbra, we can leave this empty since the app_state also contains Validator
-                    // configs.
-                    validators: vec![],
-                };
-                let mut genesis_file_path = node_config_dir.clone();
-                genesis_file_path.push("genesis.json");
-                println!(
-                    "Writing {} genesis file to: {}",
-                    &node_name,
-                    genesis_file_path.display()
-                );
-                let mut genesis_file = File::create(genesis_file_path)?;
-                genesis_file
-                    .write_all(serde_json::to_string_pretty(&validator_genesis)?.as_bytes())?;
+                node_dir.push(node_name.clone());
 
                 // Write this node's config.toml
                 // Note that this isn't a re-implementation of the `Config` type from
@@ -533,97 +471,69 @@ async fn main() -> anyhow::Result<()> {
                     .map(|(n, ip)| {
                         (
                             node::Id::from(validator_keys[n].node_key_pk.ed25519().unwrap()),
-                            *ip,
+                            ip.to_string(),
                         )
                     })
                     .collect::<Vec<_>>();
                 let tm_config = generate_tm_config(&node_name, &ips_minus_mine);
-                let mut config_file_path = node_config_dir.clone();
-                config_file_path.push("config.toml");
-                println!(
-                    "Writing {} config file to: {}",
-                    &node_name,
-                    config_file_path.display()
-                );
-                let mut config_file = File::create(config_file_path)?;
-                config_file.write_all(tm_config.as_bytes())?;
 
-                // Write this node's node_key.json
-                // the underlying type doesn't implement Copy or Clone (for the best)
-                let priv_key = tendermint::PrivateKey::Ed25519(
-                    vk.node_key_sk.ed25519_signing_key().unwrap().clone(),
-                );
-                let node_key = NodeKey { priv_key };
-                let mut node_key_file_path = node_config_dir.clone();
-                node_key_file_path.push("node_key.json");
-                println!(
-                    "Writing {} node key file to: {}",
-                    &node_name,
-                    node_key_file_path.display()
-                );
-                let mut node_key_file = File::create(node_key_file_path)?;
-                node_key_file.write_all(serde_json::to_string_pretty(&node_key)?.as_bytes())?;
-
-                // Write this node's priv_validator_key.json
-                let address: Id = vk.validator_cons_pk.into();
-
-                // the underlying type doesn't implement Copy or Clone (for the best)
-                let priv_key = tendermint::PrivateKey::Ed25519(
-                    vk.validator_cons_sk.ed25519_signing_key().unwrap().clone(),
-                );
-                let priv_validator_key = PrivValidatorKey {
-                    address,
-                    pub_key: vk.validator_cons_pk,
-                    priv_key,
-                };
-                let mut priv_validator_key_file_path = node_config_dir.clone();
-                priv_validator_key_file_path.push("priv_validator_key.json");
-                println!(
-                    "Writing {} priv validator key file to: {}",
-                    &node_name,
-                    priv_validator_key_file_path.display()
-                );
-                let mut priv_validator_key_file = File::create(priv_validator_key_file_path)?;
-                priv_validator_key_file
-                    .write_all(serde_json::to_string_pretty(&priv_validator_key)?.as_bytes())?;
-
-                // Write the initial validator state:
-                let mut priv_validator_state_file_path = node_data_dir.clone();
-                priv_validator_state_file_path.push("priv_validator_state.json");
-                println!(
-                    "Writing {} priv validator state file to: {}",
-                    &node_name,
-                    priv_validator_state_file_path.display()
-                );
-                let mut priv_validator_state_file = File::create(priv_validator_state_file_path)?;
-                priv_validator_state_file.write_all(get_validator_state().as_bytes())?;
-
-                // Write the validator's signing key:
-                let mut validator_signingkey_file_path = node_config_dir.clone();
-                validator_signingkey_file_path.push("validator_signingkey.json");
-                println!(
-                    "Writing {} validator signing key file to: {}",
-                    &node_name,
-                    validator_signingkey_file_path.display()
-                );
-                let mut validator_signingkey_file = File::create(validator_signingkey_file_path)?;
-                validator_signingkey_file
-                    .write_all(serde_json::to_string_pretty(&vk.validator_id_sk)?.as_bytes())?;
-
-                // Write the validator's spend seed:
-                let mut validator_spendseed_file_path = node_config_dir.clone();
-                validator_spendseed_file_path.push("validator_spendseed.json");
-                println!(
-                    "Writing {} validator spend seed file to: {}",
-                    &node_name,
-                    validator_spendseed_file_path.display()
-                );
-                let mut validator_spendseed_file = File::create(validator_spendseed_file_path)?;
-                validator_spendseed_file
-                    .write_all(serde_json::to_string_pretty(&vk.validator_spendseed)?.as_bytes())?;
-
-                println!("-------------------------------------");
+                write_configs(node_dir, vk, &validator_genesis, tm_config)?;
             }
+        }
+        Command::JoinTestnet { node, output_dir } => {
+            // By default output directory will be in `~/.penumbra/testnet_data/`
+            let output_dir = match output_dir {
+                Some(o) => o,
+                None => canonicalize_path("~/.penumbra/testnet_data"),
+            };
+
+            // If the output directory already exists, bail out, rather than overwriting.
+            if output_dir.exists() {
+                return Err(anyhow::anyhow!(
+                    "output directory {:?} already exists, refusing to overwrite it",
+                    output_dir
+                ));
+            }
+            let mut node_dir = output_dir;
+            node_dir.push("node0");
+
+            let vk = ValidatorKeys::generate();
+
+            tracing::info!("fetching genesis");
+            // We need to download the genesis data and the node ID from the remote node.
+            let client = reqwest::Client::new();
+            let genesis_json = client
+                .get(format!("http://{}:26657/genesis", node))
+                .send()
+                .await?
+                .json::<serde_json::Value>()
+                .await?
+                .get_mut("result")
+                .and_then(|v| v.get_mut("genesis"))
+                .ok_or_else(|| anyhow::anyhow!("could not parse JSON from response"))?
+                .take();
+            let genesis = serde_json::value::from_value(genesis_json)?;
+            tracing::info!("fetched genesis");
+
+            let node_id = client
+                .get(format!("http://{}:26657/status", node))
+                .send()
+                .await?
+                .json::<serde_json::Value>()
+                .await?
+                .get_mut("result")
+                .and_then(|v| v.get_mut("node_info"))
+                .and_then(|v| v.get_mut("id"))
+                .ok_or_else(|| anyhow::anyhow!("could not parse JSON from response"))?
+                .take();
+            tracing::info!(?node_id);
+            let node_id = serde_json::value::from_value(node_id)?;
+            tracing::info!(?node_id, "fetched node id");
+
+            let node_name = format!("node-{}", hex::encode(OsRng.gen::<u32>().to_le_bytes()));
+            let tm_config = generate_tm_config(&node_name, &[(node_id, node)]);
+
+            write_configs(node_dir, &vk, &genesis, tm_config)?;
         }
     }
 

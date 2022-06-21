@@ -55,6 +55,7 @@ tokio-util = "0.7"
 tower = { version = "0.4", features = ["full"]}
 tracing = "0.1"
 regex = "1.5"
+reqwest = { version = "0.11", features = ["json"] }
 prost-types = "0.9"
 tonic = "0.6.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "ansi"] }
