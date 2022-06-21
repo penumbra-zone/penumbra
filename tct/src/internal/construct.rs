@@ -9,6 +9,8 @@ mod iresult;
 // pub mod packed; // TODO: fix this module
 pub use iresult::{HitBottom, IResult};
 
+use super::frontier::TrackForgotten;
+
 /// In a depth-first traversal, is the next node below, or to the right? If this is the last
 /// represented sibling, then we should go up instead of (illegally) right.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -105,7 +107,7 @@ impl Debug for Size {
 /// build a tree.
 pub trait Construct: Sized {
     /// The output of this constructor.
-    type Output;
+    type Output: Constructed<Builder = Self>;
 
     /// Create a new constructor for a node at the given index, given the global position of the
     /// tree.
@@ -127,4 +129,117 @@ pub trait Construct: Sized {
 
     /// Get the minimum number of instructions necessary to complete construction.
     fn min_required(&self) -> usize;
+}
+
+/// Marker trait uniquely identifying the builder for any given type, if it is constructable.
+pub trait Constructed {
+    /// The builder for this type.
+    type Builder: Construct<Output = Self>;
+}
+
+/// Builders for parts of the frontier.
+pub mod frontier {
+    pub mod item;
+    pub mod leaf;
+    pub mod node;
+    pub mod tier;
+    pub mod top;
+}
+
+/// Builders for parts of the complete tree.
+pub mod complete {
+    pub mod item;
+    pub mod leaf;
+    pub mod node;
+    pub mod tier;
+    pub mod top;
+}
+
+/// An error when constructing something, indicative of an incorrect sequence of instructions.
+pub enum Error {
+    /// Attempted to construct a child of a bottom-most leaf node.
+    HitBottom {
+        /// The instruction at which the error occurred.
+        instruction: usize,
+        /// The index of the node whose child could not be constructed
+        index: u64,
+    },
+    /// Not enough instructions were supplied to construct the object.
+    Incomplete {
+        /// The number of instructions supplied.
+        instruction: usize,
+        /// The height of the node that was currently incomplete when instructions ran out.
+        height: u8,
+        /// The index of the node that was currently incomplete when instructions ran out.
+        index: u64,
+        /// The minimum required number of instructions that would have been needed to complete construction.
+        min_required: usize,
+    },
+    /// Too many instructions were supplied.
+    AlreadyComplete {
+        /// The number of instructions that were used to successfully construct the object.
+        instruction: usize,
+    },
+}
+
+type Tree = crate::internal::frontier::Top<
+    crate::internal::frontier::Tier<
+        crate::internal::frontier::Tier<crate::internal::frontier::Item>,
+    >,
+>;
+
+/// Build a tree by iterating over a sequence of [`Instruction`]s.
+pub fn build(
+    strict: bool,
+    position: u64,
+    instructions: impl IntoIterator<Item = Instruction>,
+) -> Result<Tree, Error> {
+    let mut instructions = instructions.into_iter().peekable();
+    if instructions.peek().is_none() {
+        return Ok(crate::internal::frontier::Top::new(TrackForgotten::Yes));
+    }
+
+    // Count the instructions as we go along, for error reporting
+    let mut instruction: usize = 0;
+
+    // The incremental result, either an incomplete builder or a complete output
+    let mut result = IResult::Incomplete(<Tree as Constructed>::Builder::build(position, 0));
+
+    // For each instruction, tell the builder to use that instruction
+    for this_instruction in &mut instructions {
+        let builder = match result {
+            IResult::Complete(_) => break, // stop if complete, even if instructions aren't
+            IResult::Incomplete(builder) => builder,
+        };
+
+        // Track the current index for error reporting
+        let index = builder.index();
+
+        // Step forward the builder by one instruction
+        result = builder
+            .go(this_instruction)
+            .map_err(|HitBottom| Error::HitBottom { instruction, index })?;
+
+        // Update the instruction count
+        instruction += 1;
+    }
+
+    // Examine whether we successfully constructed the tree
+    match result {
+        // If complete, return the output tree
+        IResult::Complete(output) => {
+            // If in strict mode, ensure that no more instructions are remaining
+            if strict && instructions.peek().is_some() {
+                return Err(Error::AlreadyComplete { instruction });
+            }
+            Ok(output)
+        }
+        // If incomplete, return an error indicating the situation we stopped in
+        IResult::Incomplete(builder) => Err(Error::Incomplete {
+            instruction,
+            height: builder.height(),
+            index: builder.index(),
+            min_required: builder.min_required(),
+        }),
+    }
 }

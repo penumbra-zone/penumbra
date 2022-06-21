@@ -139,7 +139,7 @@ mod arbitrary {
 
         fn arbitrary_with(args: Self::Parameters) -> Self::Strategy {
             FqStrategy(args.into_iter().map(|commitment| commitment.0).collect())
-                .prop_map(|fq| Commitment(fq))
+                .prop_map(Commitment)
         }
 
         type Strategy = proptest::strategy::Map<FqStrategy, fn(Fq) -> Commitment>;
