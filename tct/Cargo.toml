@@ -23,6 +23,7 @@ decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 proptest = { version = "1", optional = true }
 proptest-derive = { version = "0.3", optional = true }
 rand = { version = "0.8", optional = true }
+tracing = { version = "0.1" }
 
 [features]
 internal = []

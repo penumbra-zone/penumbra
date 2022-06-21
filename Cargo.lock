@@ -3029,6 +3029,7 @@ dependencies = [
  "serde_json",
  "static_assertions",
  "thiserror",
+ "tracing",
 ]
 
 [[package]]

@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 
 use decaf377::{FieldExt, Fq};
 use hash_hasher::HashedMap;
@@ -128,8 +128,11 @@ impl Tree {
     ///
     /// Computed hashes are cached so that subsequent calls without further modification are very
     /// fast.
+    #[instrument(skip(self))]
     pub fn root(&self) -> Root {
-        Root(self.inner.hash())
+        let root = Root(self.inner.hash());
+        trace!(?root);
+        root
     }
 
     /// Add a new [`Commitment`] to the most recent block of the most recent epoch of this [`Tree`].
@@ -143,6 +146,7 @@ impl Tree {
     /// - the [`Tree`] is full,
     /// - the current epoch is full, or
     /// - the current block is full.
+    #[instrument(skip(self))]
     pub fn insert(
         &mut self,
         witness: Witness,
@@ -207,14 +211,22 @@ impl Tree {
             }
         }
 
-        Ok(Position(position))
+        let position = Position(position);
+        trace!(?position);
+        Ok(position)
     }
 
     /// Get a [`Proof`] of inclusion for the commitment at this index in the tree.
     ///
     /// If the index is not witnessed in this tree, return `None`.
+    #[instrument(skip(self))]
     pub fn witness(&self, commitment: Commitment) -> Option<Proof> {
-        let index = *self.index.get(&commitment)?;
+        let &index = if let Some(index) = self.index.get(&commitment) {
+            index
+        } else {
+            trace!("not witnessed");
+            return None;
+        };
 
         let (auth_path, leaf) = match self.inner.witness(index) {
             Some(witness) => witness,
@@ -226,17 +238,21 @@ impl Tree {
 
         debug_assert_eq!(leaf, Hash::of(commitment));
 
-        Some(Proof(crate::internal::proof::Proof {
+        let proof = Proof(crate::internal::proof::Proof {
             position: index.into(),
             auth_path,
             leaf: commitment,
-        }))
+        });
+
+        trace!(?index, ?proof);
+        Some(proof)
     }
 
     /// Forget about the witness for the given [`Commitment`].
     ///
     /// Returns `true` if the commitment was previously witnessed (and now is forgotten), and `false` if
     /// it was not witnessed.
+    #[instrument(skip(self))]
     pub fn forget(&mut self, commitment: Commitment) -> bool {
         let mut forgotten = false;
 
@@ -250,12 +266,16 @@ impl Tree {
             self.index.remove(&commitment);
         }
 
+        trace!(?forgotten);
         forgotten
     }
 
     /// Get the position in this [`Tree`] of the given [`Commitment`], if it is currently witnessed.
+    #[instrument(skip(self))]
     pub fn position_of(&self, commitment: Commitment) -> Option<Position> {
-        self.index.get(&commitment).map(|index| Position(*index))
+        let position = self.index.get(&commitment).map(|index| Position(*index));
+        trace!(?position);
+        position
     }
 
     /// Add a new block all at once to the most recently inserted epoch of this [`Tree`], returning
@@ -283,7 +303,19 @@ impl Tree {
     ///
     /// Returns [`InsertBlockError`] containing the inserted block without adding it to the [`Tree`]
     /// if the [`Tree`] is full or the current epoch is full.
+    #[instrument(skip(self, block))]
     pub fn insert_block(
+        &mut self,
+        block: impl Into<block::Finalized>,
+    ) -> Result<block::Root, InsertBlockError> {
+        // We split apart the inside so that we get the right instrumention when this is called as
+        // an inner function in `end_block`
+        let block_root = self.insert_block_uninstrumented(block)?;
+        trace!(?block_root);
+        Ok(block_root)
+    }
+
+    fn insert_block_uninstrumented(
         &mut self,
         block: impl Into<block::Finalized>,
     ) -> Result<block::Root, InsertBlockError> {
@@ -390,6 +422,7 @@ impl Tree {
 
     /// Explicitly mark the end of the current block in this tree, advancing the position to the
     /// next block, and returning the root of the block which was just finalized.
+    #[instrument(skip(self))]
     pub fn end_block(&mut self) -> Result<block::Root, InsertBlockError> {
         // Check to see if the latest block is already finalized, and finalize it if
         // it is not
@@ -409,15 +442,18 @@ impl Tree {
         // If the latest block was already finalized (i.e. we are at the start of an unfinalized
         // empty block), insert an empty finalized block
         if already_finalized {
-            self.insert_block(block::Finalized::default())?;
+            self.insert_block_uninstrumented(block::Finalized::default())?;
         };
 
+        trace!(finalized_block_root = ?finalized_root);
         Ok(finalized_root)
     }
 
     /// Get the root hash of the most recent block in the most recent epoch of this [`Tree`].
+    #[instrument(skip(self))]
     pub fn current_block_root(&self) -> block::Root {
-        self.inner
+        let root = self
+            .inner
             .focus()
             .and_then(|epoch| {
                 let block = epoch.focus()?;
@@ -428,7 +464,9 @@ impl Tree {
                 }
             })
             // If there is no latest unfinalized block, we return the hash of the empty unfinalized block
-            .unwrap_or_else(|| block::Builder::default().root())
+            .unwrap_or_else(|| block::Builder::default().root());
+        trace!(?root);
+        root
     }
 
     /// Add a new epoch all at once to this [`Tree`], returning the root of the finalized epoch
@@ -456,7 +494,19 @@ impl Tree {
     ///
     /// Returns [`InsertEpochError`] containing the epoch without adding it to the [`Tree`] if the
     /// [`Tree`] is full.
+    #[instrument(skip(self, epoch))]
     pub fn insert_epoch(
+        &mut self,
+        epoch: impl Into<epoch::Finalized>,
+    ) -> Result<epoch::Root, InsertEpochError> {
+        // We split apart the inside so that we get the right instrumention when this is called as
+        // an inner function in `end_epoch`
+        let epoch_root = self.insert_epoch_uninstrumented(epoch)?;
+        trace!(?epoch_root);
+        Ok(epoch_root)
+    }
+
+    fn insert_epoch_uninstrumented(
         &mut self,
         epoch: impl Into<epoch::Finalized>,
     ) -> Result<epoch::Root, InsertEpochError> {
@@ -517,6 +567,7 @@ impl Tree {
 
     /// Explicitly mark the end of the current epoch in this tree, advancing the position to the
     /// next epoch, and returning the root of the epoch which was just finalized.
+    #[instrument(skip(self))]
     pub fn end_epoch(&mut self) -> Result<epoch::Root, InsertEpochError> {
         // Check to see if the latest block is already finalized, and finalize it if
         // it is not
@@ -532,15 +583,18 @@ impl Tree {
         // If the latest block was already finalized (i.e. we are at the start of an unfinalized
         // empty block), insert an empty finalized block
         if already_finalized {
-            self.insert_epoch(epoch::Finalized::default())?;
+            self.insert_epoch_uninstrumented(epoch::Finalized::default())?;
         };
 
+        trace!(finalized_epoch_root = ?finalized_root);
         Ok(finalized_root)
     }
 
     /// Get the root hash of the most recent epoch in this [`Tree`].
+    #[instrument(skip(self))]
     pub fn current_epoch_root(&self) -> epoch::Root {
-        self.inner
+        let root = self
+            .inner
             .focus()
             .and_then(|epoch| {
                 if epoch.is_finalized() {
@@ -551,7 +605,9 @@ impl Tree {
             })
             // In the case where there is no latest unfinalized epoch, we return the hash of the
             // empty unfinalized epoch
-            .unwrap_or_else(|| epoch::Builder::default().root())
+            .unwrap_or_else(|| epoch::Builder::default().root());
+        trace!(?root);
+        root
     }
 
     /// The position in this [`Tree`] at which the next [`Commitment`] would be inserted.
@@ -563,8 +619,11 @@ impl Tree {
     ///
     /// Note that [`forget`](Tree::forget)ting a commitment does not decrease this; it only
     /// decreases the [`witnessed_count`](Tree::witnessed_count).
+    #[instrument(skip(self))]
     pub fn position(&self) -> Option<Position> {
-        Some(Position(self.inner.position()?.into()))
+        let position = Position(self.inner.position()?.into());
+        trace!(?position);
+        Some(position)
     }
 
     /// The count of how many commitments have been forgotten explicitly using
@@ -573,28 +632,39 @@ impl Tree {
     ///
     /// This does not include commitments that were inserted using [`Witness::Forget`], only those
     /// forgotten subsequent to their insertion.
+    #[instrument(skip(self))]
     pub fn forgotten(&self) -> Forgotten {
-        self.inner
+        let forgotten = self
+            .inner
             .forgotten()
-            .expect("inner `Top` of `Tree` must always be in forgotten-tracking mode")
+            .expect("inner `Top` of `Tree` must always be in forgotten-tracking mode");
+        trace!(?forgotten);
+        forgotten
     }
 
     /// The number of [`Commitment`]s currently witnessed in this [`Tree`].
     ///
     /// Note that [`forget`](Tree::forget)ting a commitment decreases this count, but does not
     /// decrease the [`position`](Tree::position) of the next inserted [`Commitment`].
+    #[instrument(skip(self))]
     pub fn witnessed_count(&self) -> usize {
-        self.index.len()
+        let count = self.index.len();
+        trace!(?count);
+        count
     }
 
     /// Check whether this [`Tree`] is empty.
+    #[instrument(skip(self))]
     pub fn is_empty(&self) -> bool {
-        self.inner.is_empty()
+        let is_empty = self.inner.is_empty();
+        trace!(?is_empty);
+        is_empty
     }
 
     /// Get an iterator over all commitments currently witnessed in the tree.
     ///
     /// This does not guarantee that commitments will be returned in order.
+    #[instrument(skip(self))]
     pub fn commitments(&self) -> impl Iterator<Item = (Commitment, Position)> + '_ {
         self.index.iter().map(|(c, p)| (*c, Position(*p)))
     }
@@ -602,6 +672,8 @@ impl Tree {
     /// Get a dynamic representation of the internal structure of the tree, which can be traversed
     /// and inspected arbitrarily.
     pub fn structure(&self) -> structure::Node {
+        let _structure_span = trace_span!("structure");
+        // TODO: use the structure span for instrumenting methods of the structure, as it is traversed
         Node::root(&self.inner)
     }
 }

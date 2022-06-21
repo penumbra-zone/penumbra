@@ -43,6 +43,9 @@ extern crate derivative;
 #[macro_use]
 extern crate serde;
 
+#[macro_use]
+extern crate tracing;
+
 mod commitment;
 mod index;
 mod proof;
