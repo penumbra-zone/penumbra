@@ -175,6 +175,14 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.crypto.IdentityKey.ik", AS_BECH32_IDENTITY_KEY),
     (".penumbra.crypto.Note.note_blinding", AS_HEX),
     (".penumbra.crypto.Note.transmission_key", AS_HEX),
+    (
+        ".penumbra.crypto.NotePayload.ephemeral_key",
+        AS_HEX_FOR_BYTES,
+    ),
+    (
+        ".penumbra.crypto.NotePayload.encrypted_note",
+        AS_HEX_FOR_BYTES,
+    ),
     (".penumbra.crypto.Nullifier.inner", AS_HEX),
     (".penumbra.chain.NoteSource.inner", AS_HEX),
     (
