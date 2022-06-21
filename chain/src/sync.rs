@@ -27,8 +27,8 @@ pub struct CompactBlock {
     // Newly slashed validators in this block.
     pub slashed: Vec<IdentityKey>,
     // **IMPORTANT NOTE FOR FUTURE HUMANS**: if you want to add new fields to the `CompactBlock`,
-    // you must update `CompactBlock::is_empty` to check for the emptiness of those fields, because
-    // the client will skip processing any compact block that is empty.
+    // you must update `CompactBlock::requires_scanning` to check for the emptiness of those fields, because
+    // the client will skip processing any compact block that is marked as not requiring scanning.
 }
 
 impl Default for CompactBlock {
@@ -47,11 +47,11 @@ impl Default for CompactBlock {
 
 impl CompactBlock {
     /// Returns true if the compact block is empty.
-    pub fn is_empty(&self) -> bool {
-        self.note_payloads.is_empty()
-            && self.nullifiers.is_empty()
-            && self.quarantined.is_empty()
-            && self.slashed.is_empty()
+    pub fn requires_scanning(&self) -> bool {
+        !self.note_payloads.is_empty() // need to scan notes
+            || !self.nullifiers.is_empty() // need to collect nullifiers
+            || !self.quarantined.is_empty() // need to scan quarantined notes
+            || !self.slashed.is_empty() // need to process slashing
     }
 }
 

@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use crate::{sync::scan_block, Storage};
-use penumbra_chain::sync::CompactBlock;
+use penumbra_chain::{sync::CompactBlock, Epoch};
 use penumbra_crypto::{Asset, FullViewingKey};
 use penumbra_proto::client::oblivious::{
     oblivious_query_client::ObliviousQueryClient, AssetListRequest, CompactBlockRangeRequest,
@@ -144,10 +144,17 @@ impl Worker {
             // Lock the NCT only while processing this block.
             let mut nct_guard = self.nct.write().await;
 
-            if block.is_empty() {
+            if !block.requires_scanning() {
                 // Optimization: if the block is empty, seal the in-memory NCT,
                 // and skip touching the database:
                 nct_guard.end_block().unwrap();
+                // We also need to end the epoch, since if there are no funding streams, then an
+                // epoch boundary won't necessarily require scanning:
+                if Epoch::from_height(height, epoch_duration).is_epoch_end(height) {
+                    nct_guard
+                        .end_epoch()
+                        .expect("ending the epoch must succeed");
+                }
                 self.storage.record_empty_block(height).await?;
                 // Notify all watchers of the new height we just recorded.
                 self.sync_height_tx.send(height)?;
