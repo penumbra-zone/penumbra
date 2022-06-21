@@ -119,7 +119,7 @@ pub trait Construct: Sized {
     ///
     /// Depending on location, the [`Fq`] contained in the instruction may be interpreted either as
     /// a [`Hash`] or as a [`Commitment`].
-    fn go(self, instruction: Instruction) -> Result<IResult<Self>, HitBottom>;
+    fn go(self, instruction: Instruction) -> Result<IResult<Self>, HitBottom<Self>>;
 
     /// Get the current index under construction in the traversal.
     fn index(&self) -> u64;
@@ -191,7 +191,7 @@ type Tree = crate::internal::frontier::Top<
 /// Build a tree by iterating over a sequence of [`Instruction`]s.
 pub fn build(
     position: u64,
-    instructions: impl IntoIterator<Item = Instruction>,
+    instructions: impl IntoIterator<Item = impl Into<Instruction>>,
 ) -> Result<Tree, Error> {
     let mut instructions = instructions.into_iter().peekable();
     if instructions.peek().is_none() {
@@ -211,13 +211,13 @@ pub fn build(
             IResult::Incomplete(builder) => builder,
         };
 
-        // Track the current index for error reporting
-        let index = builder.index();
-
         // Step forward the builder by one instruction
         result = builder
-            .go(this_instruction)
-            .map_err(|HitBottom| Error::HitBottom { instruction, index })?;
+            .go(this_instruction.into())
+            .map_err(|HitBottom(builder)| Error::HitBottom {
+                instruction,
+                index: builder.index(),
+            })?;
 
         // Update the instruction count
         instruction += 1;
