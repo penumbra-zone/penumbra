@@ -7,6 +7,25 @@ use poseidon377::Fq;
 #[serde(into = "pb::NoteCommitment", try_from = "pb::NoteCommitment")]
 pub struct Commitment(pub Fq);
 
+/// An error when decoding a commitment from a hex string.
+#[derive(Clone, Debug, thiserror::Error)]
+pub enum ParseCommitmentError {
+    /// The string was not a hex string.
+    #[error(transparent)]
+    InvalidHex(#[from] hex::FromHexError),
+    /// The bytes did not encode a valid commitment.
+    #[error(transparent)]
+    InvalidCommitment(#[from] InvalidNoteCommitment),
+}
+
+impl Commitment {
+    /// Parse a hex string as a [`Commitment`].
+    pub fn parse_hex(str: &str) -> Result<Commitment, ParseCommitmentError> {
+        let bytes = hex::decode(str)?;
+        Ok(Commitment::try_from(&bytes[..])?)
+    }
+}
+
 impl Protobuf<pb::NoteCommitment> for Commitment {}
 
 #[cfg(test)]
