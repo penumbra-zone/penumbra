@@ -46,6 +46,9 @@ extern crate serde;
 #[macro_use]
 extern crate tracing;
 
+#[macro_use]
+extern crate thiserror;
+
 mod commitment;
 mod index;
 mod proof;

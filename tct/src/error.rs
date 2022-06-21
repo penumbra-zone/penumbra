@@ -1,8 +1,6 @@
 //! Errors that can occur when inserting into a [`Tree`], deserializing [`Proof`](super::Proof)s, or
 //! checking internal invariants.
 
-use thiserror::Error;
-
 use crate::builder;
 #[cfg(doc)]
 use crate::prelude::*;
@@ -21,7 +19,6 @@ pub mod proof {
 
 pub mod block {
     //! Errors for [`block`] builders.
-    use super::*;
 
     /// An error occurred when decoding a [`block::Root`](builder::block::Root) from bytes.
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]

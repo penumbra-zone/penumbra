@@ -5,8 +5,6 @@
 
 use std::fmt::Debug;
 
-use thiserror::Error;
-
 use crate::prelude::*;
 
 /// A proof of inclusion for a single [`Commitment`](crate::Commitment) commitment in a tree.

@@ -3005,12 +3005,15 @@ dependencies = [
 name = "penumbra-tct"
 version = "0.1.0"
 dependencies = [
+ "ark-ed-on-bls12-377",
  "ark-ff",
  "ark-serialize",
+ "async-trait",
  "bincode",
  "blake2b_simd 1.0.0",
  "decaf377",
  "derivative",
+ "futures",
  "hash_hasher",
  "hex",
  "once_cell",

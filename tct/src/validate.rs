@@ -1,7 +1,6 @@
 //! Validation checks to ensure that [`Tree`]s are well-formed.
 
 use std::{collections::HashMap, fmt::Display};
-use thiserror::Error;
 
 use crate::prelude::*;
 
