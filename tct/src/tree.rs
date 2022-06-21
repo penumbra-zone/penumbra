@@ -198,6 +198,9 @@ impl Tree {
                     .insert(frontier::Tier::new(frontier::Tier::new(item)))
                     .expect("inserting a commitment must succeed because we already checked that the tree is not full");
                 Ok(())
+            })
+            .map_err(|error| {
+                trace!(%error); error
             })?;
 
         // Keep track of the position of this just-inserted commitment in the index, if it was
@@ -310,7 +313,10 @@ impl Tree {
     ) -> Result<block::Root, InsertBlockError> {
         // We split apart the inside so that we get the right instrumention when this is called as
         // an inner function in `end_block`
-        let block_root = self.insert_block_uninstrumented(block)?;
+        let block_root = self.insert_block_uninstrumented(block).map_err(|error| {
+            trace!(%error);
+            error
+        })?;
         trace!(?block_root);
         Ok(block_root)
     }
@@ -442,7 +448,11 @@ impl Tree {
         // If the latest block was already finalized (i.e. we are at the start of an unfinalized
         // empty block), insert an empty finalized block
         if already_finalized {
-            self.insert_block_uninstrumented(block::Finalized::default())?;
+            self.insert_block_uninstrumented(block::Finalized::default())
+                .map_err(|error| {
+                    trace!(%error);
+                    error
+                })?;
         };
 
         trace!(finalized_block_root = ?finalized_root);
@@ -501,7 +511,10 @@ impl Tree {
     ) -> Result<epoch::Root, InsertEpochError> {
         // We split apart the inside so that we get the right instrumention when this is called as
         // an inner function in `end_epoch`
-        let epoch_root = self.insert_epoch_uninstrumented(epoch)?;
+        let epoch_root = self.insert_epoch_uninstrumented(epoch).map_err(|error| {
+            trace!(%error);
+            error
+        })?;
         trace!(?epoch_root);
         Ok(epoch_root)
     }
@@ -583,7 +596,11 @@ impl Tree {
         // If the latest block was already finalized (i.e. we are at the start of an unfinalized
         // empty block), insert an empty finalized block
         if already_finalized {
-            self.insert_epoch_uninstrumented(epoch::Finalized::default())?;
+            self.insert_epoch_uninstrumented(epoch::Finalized::default())
+                .map_err(|error| {
+                    trace!(%error);
+                    error
+                })?;
         };
 
         trace!(finalized_epoch_root = ?finalized_root);
@@ -621,9 +638,9 @@ impl Tree {
     /// decreases the [`witnessed_count`](Tree::witnessed_count).
     #[instrument(skip(self))]
     pub fn position(&self) -> Option<Position> {
-        let position = Position(self.inner.position()?.into());
+        let position = self.inner.position().map(|p| Position(p.into()));
         trace!(?position);
-        Some(position)
+        position
     }
 
     /// The count of how many commitments have been forgotten explicitly using
