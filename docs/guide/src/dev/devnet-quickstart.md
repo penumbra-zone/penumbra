@@ -26,7 +26,7 @@ export RUST_LOG="warn,pd=debug,penumbra=debug,jmt=info"
 To run `pd`, run
 
 ```
-cargo run --release --bin pd -- start  -r ~/.penumbra/testnet_data/node0/pd/rocksdb
+cargo run --release --bin pd -- start  --home ~/.penumbra/testnet_data/node0/pd
 ```
 
 This will start but won't do anything yet, because Tendermint isn't running.

@@ -43,9 +43,9 @@ struct Opt {
 enum Command {
     /// Start running the ABCI and wallet services.
     Start {
-        /// The path used to store the Rocks database.
+        /// The path used to store pd-releated data, including the Rocks database.
         #[clap(short, long)]
-        rocks_path: PathBuf,
+        home: PathBuf,
         /// Bind the services to this host.
         #[clap(long, default_value = "127.0.0.1")]
         host: String,
@@ -140,13 +140,16 @@ async fn main() -> anyhow::Result<()> {
 
     match opt.cmd {
         Command::Start {
-            rocks_path,
+            home,
             host,
             abci_port,
             grpc_port,
             metrics_port,
         } => {
             tracing::info!(?host, ?abci_port, ?grpc_port, "starting pd");
+
+            let mut rocks_path = home.clone();
+            rocks_path.push("rocksdb");
 
             let storage = Storage::load(rocks_path)
                 .await

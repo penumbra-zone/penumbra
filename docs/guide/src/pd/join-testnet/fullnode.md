@@ -65,14 +65,14 @@ After configuration is complete, you're ready to start your node.
 If you've run a previous testnet, first wipe your RocksDB with:
 
 ```
-rm -r \$HOME/.rocksdb
+rm -r \$HOME/.pd
 ```
 
 First, start the `pd` binary:
 
 ```console
 export RUST_LOG="warn,pd=debug,penumbra=debug,jmt=info" && \ # or some other logging level
-cargo run --release --bin pd start --rocks-path \$HOME/.rocksdb 
+cargo run --release --bin pd start --home \$HOME/.pd
 ```
 
 Then (perhaps in another terminal) start Tendermint:
@@ -94,7 +94,7 @@ fromProto: validatorSet proposer error: nil validator" closerError=""
 when you run `tendermint start`, try resetting your tendermint state and trying again:
 
 ```console
-rm -rf ~/.rocksdb
+rm -rf ~/.pd
 tendermint unsafe-reset-all
 tendermint start
 ```
