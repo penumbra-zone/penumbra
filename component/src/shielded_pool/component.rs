@@ -586,10 +586,11 @@ impl ShieldedPool {
 
     // Process any notes/nullifiers due to be unquarantined in this block, if it's an
     // epoch-ending block
+    #[instrument(skip(self))]
     async fn process_unquarantine(&mut self) {
         let this_epoch = self.epoch().await;
 
-        if this_epoch.is_epoch_end(this_epoch.duration) {
+        if this_epoch.is_epoch_end(self.height().await) {
             for (_, per_validator) in self
                 .state
                 .scheduled_to_apply(this_epoch.index)
@@ -599,26 +600,26 @@ impl ShieldedPool {
                 // For all the note payloads scheduled for unquarantine now, remove them from
                 // quarantine and add them to the proper notes for this block
                 for note_payload in per_validator.note_payloads {
-                    if let Some(note_source) = self
+                    let note_source = self
                         .state
                         .note_source(&note_payload.note_commitment)
                         .await
                         .expect("can try to unquarantine note")
-                    {
-                        self.add_note(note_payload, note_source).await;
-                    }
+                        .expect("note payload to unquarantine has source");
+                    tracing::debug!(?note_payload, "unquarantining note");
+                    self.add_note(note_payload, note_source).await;
                 }
                 // For all the nullifiers scheduled for unquarantine now, remove them from
                 // quarantine and add them to the proper nullifiers for this block
                 for nullifier in per_validator.nullifiers {
-                    if let Some(note_source) = self
+                    let note_source = self
                         .state
                         .unquarantine_nullifier(nullifier)
                         .await
                         .expect("can try to unquarantine nullifier")
-                    {
-                        self.spend_nullifier(nullifier, note_source).await;
-                    }
+                        .expect("nullifier to unquarantine has source");
+                    tracing::debug!(?nullifier, "unquarantining nullifier");
+                    self.spend_nullifier(nullifier, note_source).await;
                 }
             }
         }
