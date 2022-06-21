@@ -117,27 +117,27 @@ impl ShieldedPool {
         match self {
             ShieldedPool::Anchor { .. } => {
                 let anchor = penumbra_tct::Root::decode(bytes)?;
-                println!("{:#?}", anchor);
+                println!("{}", serde_json::to_string(&anchor)?);
             }
             ShieldedPool::CompactBlock { .. } => {
                 let compact_block = CompactBlock::decode(bytes)?;
-                println!("{:#?}", compact_block);
+                println!("{}", serde_json::to_string(&compact_block)?);
             }
             ShieldedPool::Scheduled { .. } => {
                 let notes = Scheduled::decode(bytes)?;
-                println!("{:#?}", notes.scheduled);
+                println!("{}", serde_json::to_string(&notes.scheduled)?);
             }
             ShieldedPool::Commitment { .. } => {
                 let note_source = Delible::<NoteSource>::decode(bytes)?;
-                println!("{note_source:#?}");
+                println!("{}", serde_json::to_string(&note_source)?);
             }
             ShieldedPool::Nullifier { .. } => {
                 let note_source = NoteSource::decode(bytes)?;
-                println!("{:#?}", note_source);
+                println!("{}", serde_json::to_string(&note_source)?);
             }
             ShieldedPool::QuarantinedNullifier { .. } => {
                 let note_source = Delible::<NoteSource>::decode(bytes)?;
-                println!("{note_source:#?}");
+                println!("{}", serde_json::to_string(&note_source)?);
             }
         }
         Ok(())
