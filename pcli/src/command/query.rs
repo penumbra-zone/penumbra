@@ -1,6 +1,10 @@
 use anyhow::Result;
 use jmt::KeyHash;
+use penumbra_chain::{quarantined::Scheduled, CompactBlock, NoteSource};
+use penumbra_component::shielded_pool::Delible;
+use penumbra_crypto::Nullifier;
 use penumbra_proto::Protobuf;
+use penumbra_tct::Commitment;
 
 use crate::App;
 
@@ -24,10 +28,30 @@ pub enum ShieldedPool {
         height: u64,
     },
     /// Queries the scheduled notes and nullifiers to unquarantine at a given epoch.
-    QuarantinedToApply {
+    Scheduled {
         /// The epoch to query.
         epoch: u64,
     },
+    /// Queries the source of a given commitment.
+    Commitment {
+        /// The commitment to query.
+        #[clap(parse(try_from_str = Commitment::parse_hex))]
+        commitment: Commitment,
+    },
+    /// Queries the note source of a given nullifier.
+    Nullifier {
+        /// The nullifier to query.
+        #[clap(parse(try_from_str = Nullifier::parse_hex))]
+        nullifier: Nullifier,
+    },
+    /// Queries the note source of a given quarantined nullifier.
+    QuarantinedNullifier {
+        /// The nullifier to query.
+        #[clap(parse(try_from_str = Nullifier::parse_hex))]
+        nullifier: Nullifier,
+    },
+    /// Queries the compact block at a given height.
+    CompactBlock { height: u64 },
 }
 
 impl QueryCmd {
@@ -79,7 +103,13 @@ impl ShieldedPool {
         use penumbra_component::shielded_pool::state_key;
         match self {
             ShieldedPool::Anchor { height } => state_key::anchor_by_height(height),
-            ShieldedPool::QuarantinedToApply { epoch } => state_key::scheduled_to_apply(*epoch),
+            ShieldedPool::CompactBlock { height } => state_key::compact_block(*height),
+            ShieldedPool::Scheduled { epoch } => state_key::scheduled_to_apply(*epoch),
+            ShieldedPool::Commitment { commitment } => state_key::note_source(commitment),
+            ShieldedPool::Nullifier { nullifier } => state_key::spent_nullifier_lookup(nullifier),
+            ShieldedPool::QuarantinedNullifier { nullifier } => {
+                state_key::quarantined_spent_nullifier_lookup(nullifier)
+            }
         }
     }
 
@@ -89,9 +119,25 @@ impl ShieldedPool {
                 let anchor = penumbra_tct::Root::decode(bytes)?;
                 println!("{:#?}", anchor);
             }
-            ShieldedPool::QuarantinedToApply { .. } => {
-                let notes = penumbra_chain::quarantined::Quarantined::decode(bytes)?;
-                println!("{:#?}", notes);
+            ShieldedPool::CompactBlock { .. } => {
+                let compact_block = CompactBlock::decode(bytes)?;
+                println!("{:#?}", compact_block);
+            }
+            ShieldedPool::Scheduled { .. } => {
+                let notes = Scheduled::decode(bytes)?;
+                println!("{:#?}", notes.scheduled);
+            }
+            ShieldedPool::Commitment { .. } => {
+                let note_source = Delible::<NoteSource>::decode(bytes)?;
+                println!("{note_source:#?}");
+            }
+            ShieldedPool::Nullifier { .. } => {
+                let note_source = NoteSource::decode(bytes)?;
+                println!("{:#?}", note_source);
+            }
+            ShieldedPool::QuarantinedNullifier { .. } => {
+                let note_source = Delible::<NoteSource>::decode(bytes)?;
+                println!("{note_source:#?}");
             }
         }
         Ok(())

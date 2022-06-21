@@ -12,6 +12,13 @@ use crate::Fq;
 #[serde(try_from = "pb::Nullifier", into = "pb::Nullifier")]
 pub struct Nullifier(pub Fq);
 
+impl Nullifier {
+    pub fn parse_hex(str: &str) -> Result<Nullifier, anyhow::Error> {
+        let bytes = hex::decode(str)?;
+        Nullifier::try_from(&bytes[..])
+    }
+}
+
 impl Protobuf<pb::Nullifier> for Nullifier {}
 
 impl From<Nullifier> for pb::Nullifier {
