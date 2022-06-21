@@ -200,7 +200,7 @@ impl Tree {
                 Ok(())
             })
             .map_err(|error| {
-                trace!(%error); error
+                error!(%error); error
             })?;
 
         // Keep track of the position of this just-inserted commitment in the index, if it was
@@ -314,7 +314,7 @@ impl Tree {
         // We split apart the inside so that we get the right instrumention when this is called as
         // an inner function in `end_block`
         let block_root = self.insert_block_uninstrumented(block).map_err(|error| {
-            trace!(%error);
+            error!(%error);
             error
         })?;
         trace!(?block_root);
@@ -450,7 +450,7 @@ impl Tree {
         if already_finalized {
             self.insert_block_uninstrumented(block::Finalized::default())
                 .map_err(|error| {
-                    trace!(%error);
+                    error!(%error);
                     error
                 })?;
         };
@@ -512,7 +512,7 @@ impl Tree {
         // We split apart the inside so that we get the right instrumention when this is called as
         // an inner function in `end_epoch`
         let epoch_root = self.insert_epoch_uninstrumented(epoch).map_err(|error| {
-            trace!(%error);
+            error!(%error);
             error
         })?;
         trace!(?epoch_root);
@@ -598,7 +598,7 @@ impl Tree {
         if already_finalized {
             self.insert_epoch_uninstrumented(epoch::Finalized::default())
                 .map_err(|error| {
-                    trace!(%error);
+                    error!(%error);
                     error
                 })?;
         };
