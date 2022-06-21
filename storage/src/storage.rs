@@ -3,12 +3,8 @@ use std::{path::PathBuf, sync::Arc};
 use ::metrics::gauge;
 use anyhow::Result;
 use futures::future::BoxFuture;
-use jmt::{
-    storage::{Node, NodeBatch, NodeKey, TreeReader, TreeWriter},
-    WriteOverlay,
-};
+use jmt::storage::{Node, NodeBatch, NodeKey, TreeReader, TreeWriter};
 use rocksdb::{Options, DB};
-use tokio::sync::RwLock;
 use tracing::{instrument, Span};
 
 use penumbra_tct as tct;
@@ -48,18 +44,7 @@ impl Storage {
 
     /// Returns a new [`State`] on top of the latest version of the tree.
     pub async fn state(&self) -> Result<State> {
-        // If the tree is empty, use PRE_GENESIS_VERSION as the version,
-        // so that the first commit will be at version 0.
-        let version = self
-            .latest_version()
-            .await?
-            .unwrap_or(WriteOverlay::<Storage>::PRE_GENESIS_VERSION);
-
-        tracing::debug!("creating state for version {}", version);
-        Ok(Arc::new(RwLock::new(WriteOverlay::new(
-            self.clone(),
-            version,
-        ))))
+        State::new(self.clone()).await
     }
 
     /// Like [`Self::state`], but bundles in a [`tonic`] error conversion.
