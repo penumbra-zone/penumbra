@@ -9,8 +9,6 @@
 //! These are wrapped in more specific domain types by the exposed crate API to make it more
 //! comprehensible.
 
-use thiserror::Error;
-
 use crate::prelude::*;
 
 /// An authentication path into a `Tree`.

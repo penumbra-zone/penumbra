@@ -3,8 +3,6 @@ use std::fmt::{Debug, Display};
 use decaf377::{FieldExt, Fq};
 use hash_hasher::HashedMap;
 use penumbra_proto::{crypto as pb, Protobuf};
-use serde::{Deserialize, Serialize};
-use thiserror::Error;
 
 use crate::error::*;
 use crate::prelude::{Witness as _, *};

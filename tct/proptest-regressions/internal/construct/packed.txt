@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc ca69b7ee24dfad0c9e38d80b65a720f6bd4a7a866dd75f6dd53930450171af4c # shrinks to direction = Down(0), fq = Fp256(BigInteger256([0, 0, 0, 0]))
