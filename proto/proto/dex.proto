@@ -9,18 +9,18 @@ package penumbra.dex;
 message Swap {
   bytes zkproof = 1;
   // Encrypted amount of asset 1 of the trading pair.
-  MockFlowCypherText enc_amount_1 = 2;
+  MockFlowCiphertext enc_amount_1 = 2;
   // Encrypted amount of asset 2 of the trading pair.
-  MockFlowCypherText enc_amount_2 = 3;
+  MockFlowCiphertext enc_amount_2 = 3;
 }
 
 message SwapBody {
   // The trading pair to swap.
   TradingPair trading_pair = 1;
   // Commitment to the amount for asset 1 (delta 1).
-  bytes ca1 = 2
+  bytes ca1 = 2;
   // Commitment to the amount for asset 2 (delta 2).
-  bytes ca2 = 3
+  bytes ca2 = 3;
   // A commitment to the swap's contribution to the transaction's value balance.
   bytes cv = 4;
   // Swap NFT recording the user's contribution.
