@@ -9,8 +9,7 @@ cargo run --quiet --release --bin pcli sync
 
 Syncing is performed automatically, but running the `sync` subcommand will
 ensure that the client state is synced to a recent state, so that future
-invocations of `pcli` commands don't need to wait.  Exporting `RUST_LOG=info`
-will print progres messages.
+invocations of `pcli` commands don't need to wait.
 
 If someone sent you testnet assets, you should be able to see them now by running:
 

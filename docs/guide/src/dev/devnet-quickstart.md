@@ -63,27 +63,16 @@ If not, reset the state as below, and edit the `genesis.json` to add your addres
 
 ## Resetting and restarting
 
-After making changes, you may want to reset and restart the devnet.  This is a
-two-step process, so be sure to do both steps.
-
-First, wipe the `pd` state:
-
+After making changes, you may want to reset and restart the devnet:
 ```
 cargo run --release --bin pd -- testnet unsafe-reset-all
 ```
-
-Next, wipe the `tendermint` state:
-
-```
-tendermint --home ~/.penumbra/testnet_data/node0/tendermint/ unsafe-reset-all
-```
-
-At this point you're ready to restart both `pd` and `tendermint`.  The order
-they're started in doesn't particularly matter for correctness, because
-`tendermint` will retry connecting to the ABCI server until it succeeds.
-
 You'll probably also want to reset your wallet state:
-
 ```
 cargo run --release --bin pcli -- wallet reset
 ```
+
+At this point you're ready to generate new configs, and restart both `pd` and
+`tendermint`.  The order they're started in doesn't particularly matter for
+correctness, because `tendermint` will retry connecting to the ABCI server until
+it succeeds.

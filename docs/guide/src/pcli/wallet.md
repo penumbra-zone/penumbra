@@ -16,7 +16,7 @@ of your wallet addresses, which you can view like this:
 ```bash
 \$ cargo run --quiet --release --bin pcli addr show 0
  Index  Address
- 0      penumbrav1t1
+ 0      penumbrav1t1...
 ```
 
 ### Getting testnet tokens on the [Discord] in the `#testnet-faucet` channel
