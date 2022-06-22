@@ -14,6 +14,19 @@ message Swap {
   MockFlowCiphertext enc_amount_2 = 3;
 }
 
+// A transaction action that obtains assets previously confirmed
+// via a Swap transaction. Does not include a spend authorization
+// signature, as it is only capable of consuming the NFT from a
+// Swap transaction.
+message SwapClaim {
+  // Proves the spent note records 1 unit of the swap NFT.
+  bytes zkproof = 1;
+  // The nullifier for the Swap NFT to be consumed.
+  crypto.Nullifier nullifier = 2;
+  // The fee allows `SwapClaim` without an additional `Spend`.
+  uint64 fee = 3;
+}
+
 message SwapBody {
   // The trading pair to swap.
   TradingPair trading_pair = 1;
@@ -31,7 +44,7 @@ message SwapBody {
 message SwapPlaintext {
     uint64 t1 = 1;
     uint64 t2 = 2;
-    uint64 f = 3;
+    uint64 fee = 3;
     bytes bd = 4;
     bytes pkd = 5;
 }
