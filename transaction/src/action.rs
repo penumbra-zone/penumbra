@@ -26,8 +26,9 @@ pub enum Action {
     Undelegate(Undelegate),
     ValidatorDefinition(pbs::ValidatorDefinition),
     IBCAction(pb_ibc::IbcAction),
-    Swap(Swap),
-    SwapClaim(SwapClaim),
+    // TODO: re-enable when Swap/SwapClaim is ready
+    // Swap(Swap),
+    // SwapClaim(SwapClaim),
 }
 
 impl Action {
@@ -39,8 +40,9 @@ impl Action {
             Action::Spend(spend) => spend.body.value_commitment,
             Action::Delegate(delegate) => delegate.value_commitment(),
             Action::Undelegate(undelegate) => undelegate.value_commitment(),
-            Action::Swap(swap) => swap.value_commitment(),
-            Action::SwapClaim(swap_claim) => swap_claim.value_commitment(),
+            // TODO: re-enable when Swap/SwapClaim is ready
+            // Action::Swap(swap) => swap.value_commitment(),
+            // Action::SwapClaim(swap_claim) => swap_claim.value_commitment(),
             // These actions just post data to the chain, and leave the value balance
             // unchanged.
             Action::ValidatorDefinition(_) => value::Commitment::default(),
