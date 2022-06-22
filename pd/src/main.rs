@@ -36,16 +36,16 @@ use tracing_subscriber::{prelude::*, EnvFilter};
 struct Opt {
     /// Command to run.
     #[clap(subcommand)]
-    cmd: Command,
+    cmd: RootCommand,
 }
 
 #[derive(Debug, Subcommand)]
-enum Command {
+enum RootCommand {
     /// Start running the ABCI and wallet services.
     Start {
-        /// The path used to store the Rocks database.
-        #[clap(short, long)]
-        rocks_path: PathBuf,
+        /// The path used to store pd-releated data, including the Rocks database.
+        #[clap(long)]
+        home: PathBuf,
         /// Bind the services to this host.
         #[clap(long, default_value = "127.0.0.1")]
         host: String,
@@ -60,9 +60,23 @@ enum Command {
         metrics_port: u16,
     },
 
-    /// Generates a directory structure containing necessary files to run a
-    /// testnet based on input configuration.
-    GenerateTestnet {
+    /// Generate, join, or reset a testnet.
+    Testnet {
+        /// Path to directory to store output in. Must not exist. Defaults to
+        /// ~/.penumbra/testnet_data".
+        #[clap(long)]
+        testnet_dir: Option<PathBuf>,
+
+        #[clap(subcommand)]
+        tn_cmd: TestnetCommand,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+enum TestnetCommand {
+    /// Generates a directory structure containing necessary files to run atestnet based on input
+    /// configuration.
+    Generate {
         /// Number of blocks per epoch.
         #[clap(long, default_value = "40")]
         epoch_duration: u64,
@@ -81,9 +95,6 @@ enum Command {
         /// Path to JSON file containing initial validator configs [default: latest testnet].
         #[clap(long, parse(from_os_str))]
         validators_input_file: Option<PathBuf>,
-        /// Path to directory to store output in. Must not exist.
-        #[clap(long)]
-        output_dir: Option<PathBuf>,
         /// Testnet name [default: latest testnet].
         #[clap(long)]
         chain_id: Option<String>,
@@ -92,14 +103,14 @@ enum Command {
         starting_ip: Ipv4Addr,
     },
 
-    /// Like `generate-testnet`, but joins the testnet the specified node is part of.
-    JoinTestnet {
+    /// Like `testnet generate`, but joins the testnet the specified node is part of.
+    Join {
         #[clap(default_value = "testnet.penumbra.zone")]
         node: String,
-        /// Path to directory to store output in. Must not exist.
-        #[clap(long)]
-        output_dir: Option<PathBuf>,
     },
+
+    /// Reset all `pd` testnet state.
+    UnsafeResetAll {},
 }
 
 // Extracted from tonic's remote_addr implementation; we'd like to instrument
@@ -139,14 +150,17 @@ async fn main() -> anyhow::Result<()> {
     let opt = Opt::parse();
 
     match opt.cmd {
-        Command::Start {
-            rocks_path,
+        RootCommand::Start {
+            home,
             host,
             abci_port,
             grpc_port,
             metrics_port,
         } => {
             tracing::info!(?host, ?abci_port, ?grpc_port, "starting pd");
+
+            let mut rocks_path = home.clone();
+            rocks_path.push("rocksdb");
 
             let storage = Storage::load(rocks_path)
                 .await
@@ -215,20 +229,96 @@ async fn main() -> anyhow::Result<()> {
                 x = grpc_server => x?.map_err(|e| anyhow::anyhow!(e))?,
             };
         }
-        Command::GenerateTestnet {
-            // TODO this config is gated on a "populate persistent peers"
-            // setting in the Go tendermint binary. Populating the persistent
-            // peers will be useful in local setups until peer discovery via a seed
-            // works.
-            starting_ip,
-            epoch_duration,
-            unbonding_epochs,
-            active_validator_limit,
-            allocations_input_file,
-            validators_input_file,
-            output_dir,
-            chain_id,
-            preserve_chain_id,
+
+        RootCommand::Testnet {
+            tn_cmd: TestnetCommand::UnsafeResetAll {},
+            testnet_dir,
+        } => {
+            // By default output directory will be in `~/.penumbra/testnet_data/`
+            let testnet_dir = match testnet_dir {
+                Some(o) => o,
+                None => canonicalize_path("~/.penumbra/testnet_data"),
+            };
+
+            std::fs::remove_dir_all(testnet_dir)?;
+        }
+
+        RootCommand::Testnet {
+            tn_cmd: TestnetCommand::Join { node },
+            testnet_dir,
+        } => {
+            // By default output directory will be in `~/.penumbra/testnet_data/`
+            let output_dir = match testnet_dir {
+                Some(o) => o,
+                None => canonicalize_path("~/.penumbra/testnet_data"),
+            };
+
+            // If the output directory already exists, bail out, rather than overwriting.
+            if output_dir.exists() {
+                return Err(anyhow::anyhow!(
+                    "output directory {:?} already exists, refusing to overwrite it",
+                    output_dir
+                ));
+            }
+            let mut node_dir = output_dir;
+            node_dir.push("node0");
+
+            let vk = ValidatorKeys::generate();
+
+            tracing::info!("fetching genesis");
+            // We need to download the genesis data and the node ID from the remote node.
+            let client = reqwest::Client::new();
+            let genesis_json = client
+                .get(format!("http://{}:26657/genesis", node))
+                .send()
+                .await?
+                .json::<serde_json::Value>()
+                .await?
+                .get_mut("result")
+                .and_then(|v| v.get_mut("genesis"))
+                .ok_or_else(|| anyhow::anyhow!("could not parse JSON from response"))?
+                .take();
+            let genesis = serde_json::value::from_value(genesis_json)?;
+            tracing::info!("fetched genesis");
+
+            let node_id = client
+                .get(format!("http://{}:26657/status", node))
+                .send()
+                .await?
+                .json::<serde_json::Value>()
+                .await?
+                .get_mut("result")
+                .and_then(|v| v.get_mut("node_info"))
+                .and_then(|v| v.get_mut("id"))
+                .ok_or_else(|| anyhow::anyhow!("could not parse JSON from response"))?
+                .take();
+            tracing::info!(?node_id);
+            let node_id = serde_json::value::from_value(node_id)?;
+            tracing::info!(?node_id, "fetched node id");
+
+            let node_name = format!("node-{}", hex::encode(OsRng.gen::<u32>().to_le_bytes()));
+            let tm_config = generate_tm_config(&node_name, &[(node_id, node)]);
+
+            write_configs(node_dir, &vk, &genesis, tm_config)?;
+        }
+
+        RootCommand::Testnet {
+            tn_cmd:
+                TestnetCommand::Generate {
+                    // TODO this config is gated on a "populate persistent peers"
+                    // setting in the Go tendermint binary. Populating the persistent
+                    // peers will be useful in local setups until peer discovery via a seed
+                    // works.
+                    starting_ip,
+                    epoch_duration,
+                    unbonding_epochs,
+                    active_validator_limit,
+                    allocations_input_file,
+                    validators_input_file,
+                    chain_id,
+                    preserve_chain_id,
+                },
+            testnet_dir,
         } => {
             use std::{
                 fs::File,
@@ -265,7 +355,7 @@ async fn main() -> anyhow::Result<()> {
             .expect("able to convert current time into Time");
 
             // By default output directory will be in `~/.penumbra/testnet_data/`
-            let output_dir = match output_dir {
+            let output_dir = match testnet_dir {
                 Some(o) => o,
                 None => canonicalize_path("~/.penumbra/testnet_data"),
             };
@@ -479,61 +569,6 @@ async fn main() -> anyhow::Result<()> {
 
                 write_configs(node_dir, vk, &validator_genesis, tm_config)?;
             }
-        }
-        Command::JoinTestnet { node, output_dir } => {
-            // By default output directory will be in `~/.penumbra/testnet_data/`
-            let output_dir = match output_dir {
-                Some(o) => o,
-                None => canonicalize_path("~/.penumbra/testnet_data"),
-            };
-
-            // If the output directory already exists, bail out, rather than overwriting.
-            if output_dir.exists() {
-                return Err(anyhow::anyhow!(
-                    "output directory {:?} already exists, refusing to overwrite it",
-                    output_dir
-                ));
-            }
-            let mut node_dir = output_dir;
-            node_dir.push("node0");
-
-            let vk = ValidatorKeys::generate();
-
-            tracing::info!("fetching genesis");
-            // We need to download the genesis data and the node ID from the remote node.
-            let client = reqwest::Client::new();
-            let genesis_json = client
-                .get(format!("http://{}:26657/genesis", node))
-                .send()
-                .await?
-                .json::<serde_json::Value>()
-                .await?
-                .get_mut("result")
-                .and_then(|v| v.get_mut("genesis"))
-                .ok_or_else(|| anyhow::anyhow!("could not parse JSON from response"))?
-                .take();
-            let genesis = serde_json::value::from_value(genesis_json)?;
-            tracing::info!("fetched genesis");
-
-            let node_id = client
-                .get(format!("http://{}:26657/status", node))
-                .send()
-                .await?
-                .json::<serde_json::Value>()
-                .await?
-                .get_mut("result")
-                .and_then(|v| v.get_mut("node_info"))
-                .and_then(|v| v.get_mut("id"))
-                .ok_or_else(|| anyhow::anyhow!("could not parse JSON from response"))?
-                .take();
-            tracing::info!(?node_id);
-            let node_id = serde_json::value::from_value(node_id)?;
-            tracing::info!(?node_id, "fetched node id");
-
-            let node_name = format!("node-{}", hex::encode(OsRng.gen::<u32>().to_le_bytes()));
-            let tm_config = generate_tm_config(&node_name, &[(node_id, node)]);
-
-            write_configs(node_dir, &vk, &genesis, tm_config)?;
         }
     }
 

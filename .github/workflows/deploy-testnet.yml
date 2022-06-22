@@ -85,7 +85,7 @@ jobs:
         envs: TESTNET_HOST
         script: |
           cd ~/penumbra
-          /root/.cargo/bin/cargo run --release --bin pd -- generate-testnet --preserve-chain-id
+          /root/.cargo/bin/cargo run --release --bin pd -- testnet generate --preserve-chain-id
           chmod -R 777 ~/.penumbra/testnet_data
     - name: Restart deployment
       uses: appleboy/ssh-action@master

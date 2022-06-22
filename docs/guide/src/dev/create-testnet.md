@@ -33,7 +33,7 @@ cargo run --bin pcli -- -w testnet_wallet.json addr new "Test Address 2"
 
 Next, produce a template with
 ```
-cargo run --bin pd -- generate-testnet
+cargo run --bin pd -- testnet generate
 ```
 and copy the `app_state` field of one the genesis files. You'll need to
 edit it to match the key material you'll be using, which includes:
@@ -53,7 +53,7 @@ instance, and the RocksDB instance.
 
 Start the Penumbra instance (you probably want to set `RUST_LOG` to `debug`):
 ```bash
-cargo run --bin pd start --rocks-path \$HOME/.rocksdb
+cargo run --bin pd start --home \$HOME/.pd
 ```
 Start the Tendermint node:
 ```bash
@@ -68,7 +68,7 @@ Resetting the state requires multiple steps:
 
 * To reset the Tendermint state, use `tendermint unsafe-reset-all`.
 * To reset your wallet state (without deleting keys), use `pcli wallet reset`.
-* To reset RocksDB state, delete the RocksDB state file: `\$HOME/.rocksdb`
+* To reset pd state, delete the pd state directory: `\$HOME/.pd`
 
 You need to do **all of these** to fully reset the node, and doing only one will
 result in mysterious errors.

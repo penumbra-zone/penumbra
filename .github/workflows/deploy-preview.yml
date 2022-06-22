@@ -78,7 +78,7 @@ jobs:
         envs: TESTNET_HOST
         script: |
           cd ~/penumbra
-          /root/.cargo/bin/cargo run --release --bin pd -- generate-testnet
+          /root/.cargo/bin/cargo run --release --bin pd -- testnet generate
           chmod -R 777 ~/.penumbra/testnet_data
     - name: Restart deployment
       uses: appleboy/ssh-action@master
