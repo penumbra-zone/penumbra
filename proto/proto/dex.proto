@@ -40,7 +40,9 @@ message MockFlowCiphertext {
     uint64 value = 1;
 }
 
-// Holds two asset IDs. Ordering doesn't reflect trading direction.
+// Holds two asset IDs. Ordering doesn't reflect trading direction, however
+// since the `AssetId` type is `Ord + PartialOrd`, there can be only one
+// `TradingPair` per asset pair.
 message TradingPair {
   // The first asset of the pair.
   crypto.AssetId asset_1 = 1;
