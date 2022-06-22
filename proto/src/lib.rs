@@ -33,6 +33,11 @@ pub mod stake {
     include!(concat!(env!("OUT_DIR"), "/penumbra.stake.rs"));
 }
 
+/// Decentralized exchange structures.
+pub mod dex {
+    include!(concat!(env!("OUT_DIR"), "/penumbra.dex.rs"));
+}
+
 /// Transaction structures.
 pub mod transaction {
     include!(concat!(env!("OUT_DIR"), "/penumbra.transaction.rs"));
