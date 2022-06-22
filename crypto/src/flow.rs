@@ -1,7 +1,7 @@
 use penumbra_proto::{dex as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(try_from = "pb::MockFlowCiphertext", into = "pb::MockFlowCiphertext")]
 // TODO: should not be a raw u64, needs to be constant-length
 pub struct MockFlowCiphertext(u64);

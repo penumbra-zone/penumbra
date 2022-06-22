@@ -1,11 +1,11 @@
-use crate::{
-    stake::{validator, View as _},
-    Component, Context,
-};
+use crate::{Component, Context};
+use anyhow::Result;
+use async_trait::async_trait;
+use penumbra_chain::genesis;
 use penumbra_storage::{State, StateExt};
-use penumbra_tct as tct;
-use penumbra_transaction::{action::Undelegate, Action, Transaction};
+use penumbra_transaction::Transaction;
 use tendermint::abci;
+use tracing::instrument;
 
 pub struct Dex {
     state: State,
@@ -21,7 +21,7 @@ impl Dex {
 #[async_trait]
 impl Component for Dex {
     #[instrument(name = "dex", skip(self, app_state))]
-    async fn init_chain(&mut self, _app_state: &genesis::AppState) {}
+    async fn init_chain(&mut self, app_state: &genesis::AppState) {}
 
     #[instrument(name = "dex", skip(self, _ctx, _begin_block))]
     async fn begin_block(&mut self, _ctx: Context, _begin_block: &abci::request::BeginBlock) {}
@@ -48,5 +48,3 @@ impl Component for Dex {
         // TODO: implement
     }
 }
-
-impl<T: StateExt> View for T {}
