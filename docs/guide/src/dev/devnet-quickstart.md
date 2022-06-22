@@ -10,7 +10,7 @@ To start, you'll need to [install Tendermint `v0.35`](https://docs.tendermint.co
 To generate a clean set of configs, run
 
 ```
-cargo run --release --bin pd -- generate-testnet
+cargo run --release --bin pd -- testnet generate
 ```
 
 This will write configs to `~/.penumbra/testnet_data/`.
@@ -55,7 +55,7 @@ and then pass the `-n` flag to any commands you run to point `pcli` at your loca
 cargo run --bin pcli -- -n 127.0.0.1 balance
 ```
 
-By default, `pd generate-testnet` uses the latest snapshot of the Discord's
+By default, `pd testnet generate` uses the latest snapshot of the Discord's
 faucet channel, so if you posted your address there more than a week or two ago,
 you should already have an allocation in your local devnet.
 
@@ -69,7 +69,7 @@ two-step process, so be sure to do both steps.
 First, wipe the `pd` state:
 
 ```
-rm -rf ~/.penumbra/testnet_data/node0/pd/rocksdb
+cargo run --release --bin pd -- testnet unsafe-reset-all
 ```
 
 Next, wipe the `tendermint` state:

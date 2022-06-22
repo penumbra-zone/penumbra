@@ -33,7 +33,7 @@ cargo run --bin pcli -- -w testnet_wallet.json addr new "Test Address 2"
 
 Next, produce a template with
 ```
-cargo run --bin pd -- generate-testnet
+cargo run --bin pd -- testnet generate
 ```
 and copy the `app_state` field of one the genesis files. You'll need to
 edit it to match the key material you'll be using, which includes:

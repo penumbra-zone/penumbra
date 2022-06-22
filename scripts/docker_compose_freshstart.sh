@@ -27,4 +27,4 @@ docker-compose stop
 docker container prune -f
 docker volume rm penumbra_prometheus_data || true
 
-cargo run --release --bin pd -- generate-testnet --output-dir ${build_path}
+cargo run --release --bin pd -- testnet generate --testnet-dir ${build_path}
