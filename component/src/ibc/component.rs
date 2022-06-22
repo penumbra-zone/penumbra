@@ -8,10 +8,13 @@ mod client;
 mod connection;
 pub(crate) mod state_key;
 
+use crate::ibc::ibc_handler::AppRouter;
+use crate::ibc::transfer::ICS20Transfer;
 use crate::{Component, Context};
 use anyhow::Result;
 use async_trait::async_trait;
 use client::Ics2Client;
+use ibc::core::ics24_host::identifier::PortId;
 use penumbra_chain::{genesis, View as _};
 use penumbra_storage::State;
 use penumbra_transaction::Transaction;
@@ -31,7 +34,12 @@ impl IBCComponent {
     pub async fn new(state: State) -> Self {
         let client = Ics2Client::new(state.clone()).await;
         let connection = connection::ConnectionComponent::new(state.clone()).await;
-        let channel = channel::ICS4Channel::new(state.clone()).await;
+
+        let mut router = AppRouter::new();
+        let transfer = ICS20Transfer::new(state.clone());
+        router.bind(PortId::transfer(), Box::new(transfer));
+
+        let channel = channel::ICS4Channel::new(state.clone(), Box::new(router)).await;
 
         Self {
             channel,
