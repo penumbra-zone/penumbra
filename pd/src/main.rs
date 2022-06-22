@@ -44,7 +44,7 @@ enum RootCommand {
     /// Start running the ABCI and wallet services.
     Start {
         /// The path used to store pd-releated data, including the Rocks database.
-        #[clap(short, long)]
+        #[clap(long)]
         home: PathBuf,
         /// Bind the services to this host.
         #[clap(long, default_value = "127.0.0.1")]
