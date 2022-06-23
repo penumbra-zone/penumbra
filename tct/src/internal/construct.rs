@@ -22,7 +22,7 @@ pub enum Instruction {
         /// this is optional).
         here: Option<Fq>,
         /// The number of children of this node.
-        children: Size,
+        size: Size,
     },
     /// This node is a leaf, with no children and a mandatory value. We should create it, then
     /// return it as completed, to continue the traversal at the parent.
@@ -49,7 +49,7 @@ pub mod arbitrary {
                             if variant {
                                 Instruction::Node {
                                     here: Some(here),
-                                    children,
+                                    size: children,
                                 }
                             } else {
                                 Instruction::Leaf { here }
@@ -57,7 +57,7 @@ pub mod arbitrary {
                         } else {
                             Instruction::Node {
                                 here: None,
-                                children,
+                                size: children,
                             }
                         }
                     })
@@ -105,21 +105,18 @@ impl Debug for Size {
 
 /// A builder that can incrementally consume a pre-order depth-first traversal of node values to
 /// build a tree.
-pub trait Construct: Sized {
+pub trait Build: Sized {
     /// The output of this constructor.
-    type Output: Constructed<Builder = Self>;
-
-    /// Create a new constructor for a node at the given index, given the global position of the
-    /// tree.
-    ///
-    /// The global position and index are used to calculate the location of the frontier.
-    fn build(global_position: u64, index: u64) -> Self;
+    type Output: Built<Builder = Self>;
 
     /// Continue with the traversal using the given [`Instruction`].
     ///
     /// Depending on location, the [`Fq`] contained in the instruction may be interpreted either as
     /// a [`Hash`] or as a [`Commitment`].
     fn go(self, instruction: Instruction) -> Result<IResult<Self>, HitBottom<Self>>;
+
+    /// Checks if the builder has been started, i.e. it has received > 0 instructions.
+    fn is_started(&self) -> bool;
 
     /// Get the current index under construction in the traversal.
     fn index(&self) -> u64;
@@ -131,28 +128,16 @@ pub trait Construct: Sized {
     fn min_required(&self) -> usize;
 }
 
-/// Marker trait uniquely identifying the builder for any given type, if it is constructable.
-pub trait Constructed {
+/// Trait uniquely identifying the builder for any given type, if it is constructable.
+pub trait Built {
     /// The builder for this type.
-    type Builder: Construct<Output = Self>;
-}
+    type Builder: Build<Output = Self>;
 
-/// Builders for parts of the frontier.
-pub mod frontier {
-    pub mod item;
-    pub mod leaf;
-    pub mod node;
-    pub mod tier;
-    pub mod top;
-}
-
-/// Builders for parts of the complete tree.
-pub mod complete {
-    pub mod item;
-    pub mod leaf;
-    pub mod node;
-    pub mod tier;
-    pub mod top;
+    /// Create a new constructor for a node at the given index, given the global position of the
+    /// tree.
+    ///
+    /// The global position and index are used to calculate the location of the frontier.
+    fn build(global_position: u64, index: u64) -> Self::Builder;
 }
 
 /// An error when constructing something, indicative of an incorrect sequence of instructions.
@@ -188,57 +173,57 @@ type Tree = crate::internal::frontier::Top<
     >,
 >;
 
-/// Build a tree by iterating over a sequence of [`Instruction`]s.
-pub fn build(
-    position: u64,
-    instructions: impl IntoIterator<Item = impl Into<Instruction>>,
-) -> Result<Tree, Error> {
-    let mut instructions = instructions.into_iter().peekable();
-    if instructions.peek().is_none() {
-        return Ok(crate::internal::frontier::Top::new(TrackForgotten::Yes));
-    }
+// Build a tree by iterating over a sequence of [`Instruction`]s.
+// pub fn build(
+//     position: u64,
+//     instructions: impl IntoIterator<Item = impl Into<Instruction>>,
+// ) -> Result<Tree, Error> {
+//     let mut instructions = instructions.into_iter().peekable();
+//     if instructions.peek().is_none() {
+//         return Ok(crate::internal::frontier::Top::new(TrackForgotten::Yes));
+//     }
 
-    // Count the instructions as we go along, for error reporting
-    let mut instruction: usize = 0;
+//     // Count the instructions as we go along, for error reporting
+//     let mut instruction: usize = 0;
 
-    // The incremental result, either an incomplete builder or a complete output
-    let mut result = IResult::Incomplete(<Tree as Constructed>::Builder::build(position, 0));
+//     // The incremental result, either an incomplete builder or a complete output
+//     let mut result = IResult::Incomplete(Tree::build(position, 0));
 
-    // For each instruction, tell the builder to use that instruction
-    for this_instruction in &mut instructions {
-        let builder = match result {
-            IResult::Complete(_) => break, // stop if complete, even if instructions aren't
-            IResult::Incomplete(builder) => builder,
-        };
+//     // For each instruction, tell the builder to use that instruction
+//     for this_instruction in &mut instructions {
+//         let builder = match result {
+//             IResult::Complete(_) => break, // stop if complete, even if instructions aren't
+//             IResult::Incomplete(builder) => builder,
+//         };
 
-        // Step forward the builder by one instruction
-        result = builder
-            .go(this_instruction.into())
-            .map_err(|HitBottom(builder)| Error::HitBottom {
-                instruction,
-                index: builder.index(),
-            })?;
+//         // Step forward the builder by one instruction
+//         result = builder
+//             .go(this_instruction.into())
+//             .map_err(|HitBottom(builder)| Error::HitBottom {
+//                 instruction,
+//                 index: builder.index(),
+//             })?;
 
-        // Update the instruction count
-        instruction += 1;
-    }
+//         // Update the instruction count
+//         instruction += 1;
+//     }
 
-    // Examine whether we successfully constructed the tree
-    match result {
-        // If complete, return the output tree
-        IResult::Complete(output) => {
-            // Ensure that no more instructions are remaining
-            if instructions.peek().is_some() {
-                return Err(Error::AlreadyComplete { instruction });
-            }
-            Ok(output)
-        }
-        // If incomplete, return an error indicating the situation we stopped in
-        IResult::Incomplete(builder) => Err(Error::Incomplete {
-            instruction,
-            height: builder.height(),
-            index: builder.index(),
-            min_required: builder.min_required(),
-        }),
-    }
-}
+//     // Examine whether we successfully constructed the tree
+//     match result {
+//         // If complete, return the output tree
+//         IResult::Complete(output) => {
+//             // Ensure that no more instructions are remaining
+//             if instructions.peek().is_some() {
+//                 return Err(Error::AlreadyComplete { instruction });
+//             }
+//             Ok(output)
+//         }
+//         // If incomplete, return an error indicating the situation we stopped in
+//         IResult::Incomplete(builder) => Err(Error::Incomplete {
+//             instruction,
+//             height: builder.height(),
+//             index: builder.index(),
+//             min_required: builder.min_required(),
+//         }),
+//     }
+// }

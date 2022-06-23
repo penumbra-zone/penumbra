@@ -90,7 +90,7 @@ mod prelude {
         index,
         internal::{
             complete::{self, Complete, ForgetOwned},
-            construct::{self, Construct, Constructed, HitBottom, IResult, Instruction},
+            construct::{self, Build, Built, HitBottom, IResult, Instruction, Size},
             frontier::{self, Focus, Forget, Frontier, Full, GetPosition, Insert, Item},
             hash::{CachedHash, Forgotten, GetHash, Hash, OptionHash},
             height::{Height, IsHeight, Succ, Zero},

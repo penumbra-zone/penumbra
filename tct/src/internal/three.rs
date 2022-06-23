@@ -46,6 +46,16 @@ impl<T> Three<T> {
         }
     }
 
+    /// Push a new item into this [`Three`], or panic if it would overfill it.
+    #[inline]
+    pub fn push_mut(&mut self, item: T) -> Self {
+        if let Ok(three) = std::mem::take(self).push(item) {
+            three
+        } else {
+            panic!("Three::push_unchecked: already full");
+        }
+    }
+
     /// Determine if this [`Three`] is full.
     ///
     /// If this returns `true`, then [`Self::push`] will return `Err`; otherwise, [`Self::push`]
