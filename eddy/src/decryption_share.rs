@@ -19,8 +19,6 @@ pub struct DecryptionShare<S: VerificationState> {
     pub(crate) share1: limb::DecryptionShare<S>,
     pub(crate) share2: limb::DecryptionShare<S>,
     pub(crate) share3: limb::DecryptionShare<S>,
-
-    marker: std::marker::PhantomData<S>,
 }
 
 impl PrivateKeyShare {
@@ -45,7 +43,6 @@ impl PrivateKeyShare {
             share1,
             share2,
             share3,
-            marker: std::marker::PhantomData,
         }
     }
 }
@@ -83,8 +80,6 @@ impl DecryptionShare<Unverified> {
             share1,
             share2,
             share3,
-
-            marker: std::marker::PhantomData,
         })
     }
 }
