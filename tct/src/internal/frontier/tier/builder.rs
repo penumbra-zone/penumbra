@@ -6,10 +6,10 @@ where
 {
     index: u64,
     global_position: u64,
-    inner: Option<InnerBuilder<Item>>,
+    inner: Option<Inner<Item>>,
 }
 
-enum InnerBuilder<Item: Built + Focus>
+enum Inner<Item: Built + Focus>
 where
     Item::Complete: Built,
 {
@@ -44,26 +44,26 @@ where
         if let Some(inner) = self.inner {
             // If we're already building something, pass the instruction along to the inside:
             match inner {
-                InnerBuilder::Frontier(builder) => match builder.go(instruction) {
+                Inner::Frontier(builder) => match builder.go(instruction) {
                     Err(HitBottom(builder)) => {
-                        self.inner = Some(InnerBuilder::Frontier(builder));
+                        self.inner = Some(Inner::Frontier(builder));
                         Err(HitBottom(self))
                     }
                     Ok(Incomplete(builder)) => {
-                        self.inner = Some(InnerBuilder::Frontier(builder));
+                        self.inner = Some(Inner::Frontier(builder));
                         Ok(Incomplete(self))
                     }
                     Ok(Complete(frontier)) => Ok(Complete(Tier {
                         inner: Inner::Frontier(Box::new(frontier)),
                     })),
                 },
-                InnerBuilder::Complete(builder) => match builder.go(instruction) {
+                Inner::Complete(builder) => match builder.go(instruction) {
                     Err(HitBottom(builder)) => {
-                        self.inner = Some(InnerBuilder::Complete(builder));
+                        self.inner = Some(Inner::Complete(builder));
                         Err(HitBottom(self))
                     }
                     Ok(Incomplete(builder)) => {
-                        self.inner = Some(InnerBuilder::Complete(builder));
+                        self.inner = Some(Inner::Complete(builder));
                         Ok(Incomplete(self))
                     }
                     Ok(Complete(complete)) => Ok(Complete(Tier {
@@ -96,12 +96,12 @@ where
                 (start_position..end_position_non_inclusive).contains(&self.global_position);
 
             self.inner = if frontier {
-                Some(InnerBuilder::Frontier(Item::build(
+                Some(Inner::Frontier(Item::build(
                     self.global_position,
                     self.index,
                 )))
             } else {
-                Some(InnerBuilder::Complete(Item::Complete::build(
+                Some(Inner::Complete(Item::Complete::build(
                     self.global_position,
                     self.index,
                 )))
@@ -119,8 +119,8 @@ where
     fn index(&self) -> u64 {
         if let Some(inner) = &self.inner {
             match inner {
-                InnerBuilder::Frontier(frontier) => frontier.index(),
-                InnerBuilder::Complete(complete) => complete.index(),
+                Inner::Frontier(frontier) => frontier.index(),
+                Inner::Complete(complete) => complete.index(),
             }
         } else {
             self.index
@@ -130,8 +130,8 @@ where
     fn height(&self) -> u8 {
         if let Some(inner) = &self.inner {
             match inner {
-                InnerBuilder::Frontier(frontier) => frontier.height(),
-                InnerBuilder::Complete(complete) => complete.height(),
+                Inner::Frontier(frontier) => frontier.height(),
+                Inner::Complete(complete) => complete.height(),
             }
         } else {
             <Self::Output as Height>::Height::HEIGHT
@@ -141,8 +141,8 @@ where
     fn min_required(&self) -> usize {
         if let Some(inner) = &self.inner {
             match inner {
-                InnerBuilder::Frontier(frontier) => frontier.min_required(),
-                InnerBuilder::Complete(complete) => complete.min_required(),
+                Inner::Frontier(frontier) => frontier.min_required(),
+                Inner::Complete(complete) => complete.min_required(),
             }
         } else {
             1
