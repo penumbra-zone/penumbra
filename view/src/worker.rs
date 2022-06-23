@@ -160,7 +160,14 @@ impl Worker {
                 self.sync_height_tx.send(height)?;
             } else {
                 // Otherwise, scan the block and commit its changes:
-                let scan_result = scan_block(&self.fvk, &mut nct_guard, block, epoch_duration);
+                let scan_result = scan_block(
+                    &self.fvk,
+                    &mut nct_guard,
+                    block,
+                    epoch_duration,
+                    &self.storage,
+                )
+                .await?;
                 let height = scan_result.height;
 
                 self.storage
