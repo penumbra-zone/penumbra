@@ -5,11 +5,11 @@ use penumbra_crypto::{note, IdentityKey, Nullifier};
 use penumbra_crypto::{FullViewingKey, Note, NotePayload};
 use penumbra_tct as tct;
 
-use crate::{NoteRecord, QuarantinedNoteRecord};
+use crate::{NoteRecord, QuarantinedNoteRecord, Storage};
 
 /// Contains the results of scanning a single block.
 #[derive(Debug, Clone)]
-pub struct ScanResult {
+pub struct FilteredBlock {
     // write as new rows
     pub new_notes: Vec<NoteRecord>,
     pub new_quarantined_notes: Vec<QuarantinedNoteRecord>,
@@ -20,7 +20,7 @@ pub struct ScanResult {
     pub height: u64,
 }
 
-impl ScanResult {
+impl FilteredBlock {
     pub fn is_empty(&self) -> bool {
         self.new_notes.is_empty()
             && self.new_quarantined_notes.is_empty()
@@ -30,8 +30,8 @@ impl ScanResult {
     }
 }
 
-#[tracing::instrument(skip(fvk, note_commitment_tree, note_payloads, nullifiers))]
-pub fn scan_block(
+#[tracing::instrument(skip(fvk, note_commitment_tree, note_payloads, nullifiers, storage))]
+pub async fn scan_block(
     fvk: &FullViewingKey,
     note_commitment_tree: &mut tct::Tree,
     CompactBlock {
@@ -44,7 +44,8 @@ pub fn scan_block(
         slashed,
     }: CompactBlock,
     epoch_duration: u64,
-) -> ScanResult {
+    storage: &Storage,
+) -> anyhow::Result<FilteredBlock> {
     // Trial-decrypt a note with our own specific viewing key
     let trial_decrypt = |NotePayload {
                              note_commitment,
@@ -179,10 +180,16 @@ pub fn scan_block(
     // Print the TCT root for debugging
     tracing::debug!(tct_root = %note_commitment_tree.root(), "tct root");
 
-    let result = ScanResult {
+    //Filter nullifiers to remove any without matching note commitments
+
+    let matched_nullifiers = storage.filter_nullifiers(spent_nullifiers).await?;
+
+    // Construct filtered block
+
+    let result = FilteredBlock {
         new_notes,
         new_quarantined_notes,
-        spent_nullifiers,
+        spent_nullifiers: matched_nullifiers,
         spent_quarantined_nullifiers,
         slashed_validators: slashed,
         height,
@@ -192,5 +199,5 @@ pub fn scan_block(
         tracing::debug!(?result, "scan result contained quarantined things");
     }
 
-    result
+    Ok(result)
 }

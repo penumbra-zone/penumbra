@@ -5,7 +5,7 @@ use parking_lot::Mutex;
 use penumbra_chain::params::ChainParams;
 use penumbra_crypto::{
     asset::{self, Id},
-    Asset, FieldExt, FullViewingKey,
+    Asset, FieldExt, FullViewingKey, Nullifier,
 };
 use penumbra_proto::{
     client::oblivious::{oblivious_query_client::ObliviousQueryClient, ChainParamsRequest},
@@ -17,7 +17,7 @@ use std::{num::NonZeroU64, sync::Arc};
 use tct::Commitment;
 use tokio::sync::broadcast;
 
-use crate::{sync::ScanResult, NoteRecord, QuarantinedNoteRecord};
+use crate::{sync::FilteredBlock, NoteRecord, QuarantinedNoteRecord};
 
 #[derive(Clone)]
 pub struct Storage {
@@ -391,10 +391,34 @@ impl Storage {
         *self.uncommitted_height.lock() = Some(height.try_into().unwrap());
         Ok(())
     }
+    /// Takes a Vec of nullifiers and returns a Vec of those nullifiers with matching notes in storage
+    pub async fn filter_nullifiers(
+        &self,
+        nullifiers: Vec<Nullifier>,
+    ) -> anyhow::Result<Vec<Nullifier>> {
+        Ok(sqlx::query_as::<_, NoteRecord>(
+            format!(
+                "SELECT nullifier
+                    FROM notes
+                    WHERE nullifier IN ({})",
+                nullifiers
+                    .iter()
+                    .map(|x| format!("x'{}'", hex::encode(x.0.to_bytes())))
+                    .collect::<Vec<String>>()
+                    .join(",")
+            )
+            .as_str(),
+        )
+        .fetch_all(&self.pool)
+        .await?
+        .iter()
+        .map(|x| x.nullifier)
+        .collect())
+    }
 
     pub async fn record_block(
         &self,
-        scan_result: ScanResult,
+        scan_result: FilteredBlock,
         nct: &mut tct::Tree,
     ) -> anyhow::Result<()> {
         //Check that the incoming block height follows the latest recorded height

@@ -75,3 +75,18 @@ CREATE TABLE quarantined_nullifiers (
 CREATE INDEX identity_key_idx ON quarantined_nullifiers (
     identity_key
 );
+
+CREATE TABLE tx_by_nullifier (
+    nullifier               BLOB PRIMARY KEY NOT NULL,
+    tx_hash                 BLOB NOT NULL
+);
+
+CREATE TABLE tx_by_note_commitment (
+    note_commitment         BLOB PRIMARY KEY NOT NULL,
+    tx_hash                 BLOB NOT NULL
+);
+
+CREATE TABLE tx (
+    tx_hash                 BLOB PRIMARY KEY NOT NULL,
+    tx_body                 BLOB NOT NULL
+);
