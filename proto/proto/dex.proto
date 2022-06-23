@@ -13,6 +13,7 @@ message Swap {
   MockFlowCiphertext enc_amount_1 = 2;
   // Encrypted amount of asset 2 of the trading pair.
   MockFlowCiphertext enc_amount_2 = 3;
+  SwapBody body = 4;
 }
 
 // A transaction action that obtains assets previously confirmed
@@ -26,6 +27,16 @@ message SwapClaim {
   crypto.Nullifier nullifier = 2;
   // The fee allows `SwapClaim` without an additional `Spend`.
   transaction.Fee fee = 3;
+  // Note output for asset 1.
+  crypto.NotePayload output_1 = 4;
+  // Note output for asset 2.
+  crypto.NotePayload output_2 = 5;
+  // Root for the associated `Swap` action.
+  crypto.MerkleRoot anchor = 6;
+  // Price for asset 1 in the associated `Swap`.
+  uint64 price_1 = 7;
+  // Price for asset 2 in the associated `Swap`.
+  uint64 price_2 = 8;
 }
 
 message SwapBody {
@@ -39,6 +50,8 @@ message SwapBody {
   bytes cv = 4;
   // Swap NFT recording the user's contribution.
   crypto.NotePayload swap_nft = 5;
+  // Encrypted version of the original `Swap`, symmetrically encrypted w/ viewing key.
+  bytes swap_ciphertext = 6;
 }
 
 // XXX value fields need to have constant-length encoding

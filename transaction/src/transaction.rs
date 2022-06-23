@@ -78,6 +78,7 @@ impl Transaction {
         })
     }
 
+    // TODO: make sure payloads from Swap actions included
     pub fn note_payloads(&self) -> Vec<NotePayload> {
         self.transaction_body
             .actions
@@ -92,6 +93,7 @@ impl Transaction {
             .collect()
     }
 
+    // TODO: make sure nullifiers from SwapClaim actions included
     pub fn spent_nullifiers(&self) -> Vec<Nullifier> {
         self.transaction_body
             .actions

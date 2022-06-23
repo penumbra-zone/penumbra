@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(try_from = "pb::MockFlowCiphertext", into = "pb::MockFlowCiphertext")]
-// TODO: should not be a raw u64, needs to be constant-length
 pub struct MockFlowCiphertext(u64);
 
 // Fake implementation for now, TODO: replace w/ additively homomorphic encryption impl
