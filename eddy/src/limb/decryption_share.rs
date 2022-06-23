@@ -4,13 +4,13 @@ use rand_core::{CryptoRng, RngCore};
 
 use super::Ciphertext;
 use crate::{
-    decryption_share::{Unverified, Verified},
+    decryption_share::{Unverified, VerificationStatus, Verified},
     PrivateKeyShare, PublicKeyShare, TranscriptProtocol,
 };
 
 /// Threshold decryption share of a given encrypted value.
 #[derive(Debug, Clone)]
-pub struct DecryptionShare<S> {
+pub struct DecryptionShare<S: VerificationStatus> {
     pub(crate) decryption_share: decaf377::Element,
     proof: DecryptionShareProof,
     pub(crate) participant_index: u32, // used for threshold decryption
