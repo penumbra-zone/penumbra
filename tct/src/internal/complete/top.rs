@@ -1,5 +1,8 @@
 use crate::prelude::*;
 
+mod builder;
+pub use builder::Builder;
+
 use complete::Nested;
 
 /// A complete top-level tier of the tiered commitment tree, being an 8-deep sparse quad-tree.

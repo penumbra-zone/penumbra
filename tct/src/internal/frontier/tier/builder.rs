@@ -54,7 +54,7 @@ where
                         Ok(Incomplete(self))
                     }
                     Ok(Complete(frontier)) => Ok(Complete(Tier {
-                        inner: Inner::Frontier(Box::new(frontier)),
+                        inner: super::Inner::Frontier(Box::new(frontier)),
                     })),
                 },
                 Inner::Complete(builder) => match builder.go(instruction) {
@@ -67,7 +67,7 @@ where
                         Ok(Incomplete(self))
                     }
                     Ok(Complete(complete)) => Ok(Complete(Tier {
-                        inner: Inner::Complete(Box::new(complete)),
+                        inner: super::Inner::Complete(complete),
                     })),
                 },
             }
@@ -75,7 +75,7 @@ where
             // If we're not yet building anything and we receive our first instruction as a `Leaf`,
             // then immediately return a completed hashed tier
             Ok(Complete(Tier {
-                inner: Inner::Hash(Hash::new(here)),
+                inner: super::Inner::Hash(Hash::new(here)),
             }))
         } else {
             // Otherwise, our instruction is to builder a witnessed tier, so set that up
@@ -96,12 +96,12 @@ where
                 (start_position..end_position_non_inclusive).contains(&self.global_position);
 
             self.inner = if frontier {
-                Some(Inner::Frontier(Item::build(
+                Some(Inner::Frontier(<Nested<Item>>::build(
                     self.global_position,
                     self.index,
                 )))
             } else {
-                Some(Inner::Complete(Item::Complete::build(
+                Some(Inner::Complete(<Nested<Item> as Focus>::Complete::build(
                     self.global_position,
                     self.index,
                 )))

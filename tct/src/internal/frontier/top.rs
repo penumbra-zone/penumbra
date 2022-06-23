@@ -6,6 +6,9 @@ use crate::prelude::*;
 
 use frontier::tier::Nested;
 
+mod builder;
+pub use builder::Builder;
+
 /// The frontier of the top level of some part of the commitment tree, which may be empty, but may
 /// not be finalized or hashed.
 #[derive(Derivative, Serialize, Deserialize)]
