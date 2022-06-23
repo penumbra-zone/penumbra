@@ -7,6 +7,9 @@ use super::super::frontier;
 pub mod children;
 pub use children::Children;
 
+pub mod builder;
+pub use builder::Builder;
+
 /// A complete sparse node in a tree, storing only the witnessed subtrees.
 #[derive(Clone, Debug)]
 pub struct Node<Child> {

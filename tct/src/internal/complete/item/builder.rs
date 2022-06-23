@@ -1,5 +1,6 @@
 use super::*;
 
+/// A builder for a complete item.
 pub struct Builder {
     index: u64,
     inner: Inner,
@@ -28,7 +29,9 @@ impl Build for Builder {
         use {IResult::*, Inner::*, Instruction::*};
 
         match (&self.inner, instruction) {
-            (Init, Leaf { here }) => Ok(Complete(Hash::new(here).into())),
+            (Init, Leaf { .. }) => {
+                unreachable!("complete item builder never initialized with a leaf")
+            }
             (Init, Node { here, .. }) => {
                 self.inner = AwaitingCommitment {
                     hash: here.map(Hash::new),
@@ -36,10 +39,14 @@ impl Build for Builder {
                 Ok(Incomplete(self))
             }
             (AwaitingCommitment { hash: None }, Leaf { here }) => {
-                Ok(Complete(Commitment(here).into()))
+                let commitment = Commitment(here);
+                Ok(Complete(Item {
+                    hash: Hash::of(commitment),
+                    commitment,
+                }))
             }
             (AwaitingCommitment { hash: Some(hash) }, Leaf { here }) => Ok(Complete(Item {
-                hash,
+                hash: *hash,
                 commitment: Commitment(here),
             })),
             (AwaitingCommitment { .. }, Node { .. }) => Err(HitBottom(self)),
