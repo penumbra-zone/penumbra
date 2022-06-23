@@ -34,6 +34,7 @@ COPY tct ./tct
 COPY decaf377-fmd ./decaf377-fmd
 COPY decaf377-ka ./decaf377-ka
 COPY measure ./measure
+COPY eddy ./eddy
 COPY tct-property-test ./tct-property-test
 COPY transaction ./transaction
 COPY wallet ./wallet
