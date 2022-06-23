@@ -103,17 +103,20 @@ pub mod frontier {
     //! hash.
     #[doc(inline)]
     pub use super::interface::{Focus, Forget, Frontier, Full, GetPosition};
-    pub(super) mod item;
-    pub(super) mod leaf;
-    pub(super) mod node;
-    pub(super) mod tier;
-    pub(super) mod top;
+    pub mod item;
+    pub mod leaf;
+    pub mod node;
+    pub mod tier;
+    pub mod top;
     pub use super::insert::Insert;
-    pub use item::Item;
-    pub use leaf::Leaf;
-    pub use node::Node;
-    pub use tier::{Nested, Tier};
-    pub use top::{Top, TrackForgotten};
+    #[doc(inline)]
+    pub use {
+        item::Item,
+        leaf::Leaf,
+        node::Node,
+        tier::{Nested, Tier},
+        top::{Top, TrackForgotten},
+    };
 }
 
 pub mod complete {
@@ -137,15 +140,17 @@ pub mod complete {
     //! [`Commitment`](crate::Commitment).
     #[doc(inline)]
     pub use super::interface::{Complete, ForgetOwned};
-    pub(super) mod item;
-    pub(super) mod leaf;
-    pub(super) mod node;
-    pub(super) mod tier;
-    pub(super) mod top;
-    pub use item::Item;
-    pub use leaf::Leaf;
-    pub use node::children;
-    pub use node::Node;
-    pub use tier::{Nested, Tier};
-    pub use top::Top;
+    pub mod item;
+    pub mod leaf;
+    pub mod node;
+    pub mod tier;
+    pub mod top;
+    #[doc(inline)]
+    pub use {
+        item::Item,
+        leaf::Leaf,
+        node::Node,
+        tier::{Nested, Tier},
+        top::Top,
+    };
 }

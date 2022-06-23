@@ -2,14 +2,14 @@ pub use super::*;
 
 /// An incremental result of a construction of a tree from a depth-first preorder traversal.
 #[derive(Debug)]
-pub enum IResult<C: Construct> {
+pub enum IResult<C: Build> {
     /// The tree is complete.
     Complete(C::Output),
     /// The tree is incomplete, and the last instruction may or may not have had an error.
     Incomplete(C),
 }
 
-impl<C: Construct> IResult<C> {
+impl<C: Build> IResult<C> {
     /// Finalize the [`IResult`] if it is complete, or return an error if it is not yet complete.
     pub fn finish(self) -> Result<C::Output, Incomplete> {
         match self {
