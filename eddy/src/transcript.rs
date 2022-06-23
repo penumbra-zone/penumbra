@@ -20,7 +20,7 @@ impl TranscriptProtocol for merlin::Transcript {
     }
     fn append_public_key_share(&mut self, share: &PublicKeyShare) {
         self.append_message(b"dom-sep", b"public-key-share");
-        self.append_message(b"index", &share.index.to_le_bytes());
+        self.append_message(b"index", &share.participant_index.to_le_bytes());
         self.append_message(b"public-key-share", &share.pub_key_share.compress().0);
     }
     fn append_limb_ciphertext(&mut self, ciphertext: &limb::Ciphertext) {

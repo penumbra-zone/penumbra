@@ -11,7 +11,7 @@ pub struct Ciphertext {
 
 // compute the lagrange coefficient for the participant given by `participant_index` in the set of
 // participants given by participant_indices
-fn lagrange_coefficient(participant_index: u32, participant_indices: Vec<u32>) -> decaf377::Fr {
+fn lagrange_coefficient(participant_index: u32, participant_indices: &[u32]) -> decaf377::Fr {
     participant_indices
         .iter()
         .filter(|x| **x != participant_index)
@@ -30,17 +30,10 @@ impl Ciphertext {
             .map(|s| s.participant_index)
             .collect::<Vec<_>>();
 
-        let coeffs = indices
-            .iter()
-            .map(|i| lagrange_coefficient(*i, indices))
-            .collect::<Vec<_>>();
-
-        let d = shares
-            .iter()
-            .zip(coeffs)
-            .fold(decaf377::Element::default(), |d, (share, coeff)| {
-                d + share.decryption_share * coeff
-            });
+        let mut d = decaf377::Element::default();
+        for share in shares {
+            d += share.decryption_share * lagrange_coefficient(share.participant_index, &indices);
+        }
 
         -d + self.c2
     }

@@ -4,18 +4,18 @@ use rand_core::{CryptoRng, RngCore};
 
 use super::Ciphertext;
 use crate::{
-    decryption_share::{Unverified, VerificationState, Verified},
+    decryption_share::{Unverified, Verified},
     PrivateKeyShare, PublicKeyShare, TranscriptProtocol,
 };
 
 /// Threshold decryption share of a given encrypted value.
 #[derive(Debug, Clone)]
-pub struct DecryptionShare<S: VerificationState> {
+pub struct DecryptionShare<S> {
     pub(crate) decryption_share: decaf377::Element,
     proof: DecryptionShareProof,
     pub(crate) participant_index: u32, // used for threshold decryption
 
-    marker: std::marker::PhantomData<S>,
+    _marker: std::marker::PhantomData<S>,
 }
 
 #[derive(Debug, Clone)]
@@ -79,7 +79,7 @@ impl PrivateKeyShare {
                 r: response,
             },
             participant_index: self.participant_index,
-            marker: std::marker::PhantomData,
+            _marker: std::marker::PhantomData,
         }
     }
 }
@@ -110,7 +110,7 @@ impl DecryptionShare<Unverified> {
                 decryption_share: self.decryption_share,
                 participant_index: pub_key_share.participant_index,
                 proof: self.proof.clone(),
-                marker: std::marker::PhantomData,
+                _marker: std::marker::PhantomData,
             })
         } else {
             Err(anyhow::anyhow!(
