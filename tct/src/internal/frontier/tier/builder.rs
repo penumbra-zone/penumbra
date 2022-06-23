@@ -1,5 +1,6 @@
 use super::*;
 
+/// A builder for a frontier tier.
 pub struct Builder<Item: Built + Focus>
 where
     Item::Complete: Built,

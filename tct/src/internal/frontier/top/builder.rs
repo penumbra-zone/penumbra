@@ -1,38 +1,55 @@
 use super::*;
 
-pub struct Builder<T>(T);
+/// A builder for a top of a frontier.
+pub struct Builder<Item: Built + Focus>(<Nested<Item> as Built>::Builder)
+where
+    Item::Complete: Built;
 
-impl<Item: Focus + Built> Built for Top<Item> {
-    type Builder = Builder<<Item as Built>::Builder>;
+impl<Item: Focus + Built> Built for Top<Item>
+where
+    Item::Complete: Built,
+{
+    type Builder = Builder<Item>;
 
     fn build(global_position: u64, index: u64) -> Self::Builder {
-        todo!()
+        Builder(Nested::build(global_position, index))
     }
 }
 
-impl<T: Build> Build for Builder<T>
+impl<Item: Built + Focus> Build for Builder<Item>
 where
-    T::Output: Focus,
+    Item::Complete: Built,
 {
-    type Output = Top<T::Output>;
+    type Output = Top<Item>;
 
     fn go(self, instruction: Instruction) -> Result<IResult<Self>, HitBottom<Self>> {
-        todo!()
+        use IResult::*;
+
+        self.0
+            .go(instruction)
+            .map(|r| match r {
+                Complete(inner) => Complete(Top {
+                    inner: Some(inner),
+                    track_forgotten: TrackForgotten::Yes,
+                }),
+                Incomplete(builder) => Incomplete(Builder(builder)),
+            })
+            .map_err(|HitBottom(builder)| HitBottom(Builder(builder)))
     }
 
     fn is_started(&self) -> bool {
-        todo!()
+        self.0.is_started()
     }
 
     fn index(&self) -> u64 {
-        todo!()
+        self.0.index()
     }
 
     fn height(&self) -> u8 {
-        todo!()
+        self.0.height()
     }
 
     fn min_required(&self) -> usize {
-        todo!()
+        self.0.min_required()
     }
 }
