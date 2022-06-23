@@ -40,7 +40,7 @@ cargo run --bin pd --release -- start --home ~/.penumbra/testnet_data/node0/pd
 
 Then (perhaps in another terminal), run Tendermint, also specifying `--home`:
 ```
-tendermint --home ~/.penumbra/testnet_data/node0/tendermint
+tendermint start --home ~/.penumbra/testnet_data/node0/tendermint
 ```
 
 Alternatively, `pd` and `tendermint` can be orchestrated with `docker-compose`:
