@@ -3,13 +3,18 @@ use decaf377::{FieldExt, Fr};
 use rand_core::{CryptoRng, RngCore};
 
 use super::Ciphertext;
-use crate::{PrivateKeyShare, PublicKeyShare, TranscriptProtocol};
+use crate::{
+    decryption_share::{Unverified, VerificationState, Verified},
+    PrivateKeyShare, PublicKeyShare, TranscriptProtocol,
+};
 
 /// Threshold decryption share of a given encrypted value.
 #[derive(Debug, Clone)]
-pub struct DecryptionShare {
+pub struct DecryptionShare<S: VerificationState> {
     decryption_share: decaf377::Element,
     proof: DecryptionShareProof,
+
+    marker: std::marker::PhantomData<S>,
 }
 
 #[derive(Debug, Clone)]
@@ -27,7 +32,7 @@ impl PrivateKeyShare {
         ciphertext: &Ciphertext,
         transcript: &mut merlin::Transcript,
         mut rng: R,
-    ) -> DecryptionShare {
+    ) -> DecryptionShare<Unverified> {
         // compute the decryption share (self.key_share * ciphertext.c1)
         let decryption_share = self.key_share * ciphertext.c1;
 
@@ -66,24 +71,25 @@ impl PrivateKeyShare {
         let challenge = transcript.challenge_scalar(b"c");
         let response = k - self.key_share * challenge;
 
-        DecryptionShare {
+        DecryptionShare::<Unverified> {
             decryption_share,
             proof: DecryptionShareProof {
                 c: challenge,
                 r: response,
             },
+            marker: std::marker::PhantomData,
         }
     }
 }
 
-impl DecryptionShare {
+impl DecryptionShare<Unverified> {
     #[allow(non_snake_case)]
     pub fn verify(
         &self,
         ciphertext: &Ciphertext,
         pub_key_share: &PublicKeyShare,
         transcript: &mut merlin::Transcript,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<DecryptionShare<Verified>> {
         let kB = decaf377::basepoint() * self.proof.r + pub_key_share.pub_key_share * self.proof.c;
         let kC_1 = ciphertext.c1 * self.proof.r + self.decryption_share * self.proof.c;
 
@@ -98,7 +104,11 @@ impl DecryptionShare {
         let challenge = transcript.challenge_scalar(b"c");
 
         if self.proof.c == challenge {
-            Ok(())
+            Ok(DecryptionShare::<Verified> {
+                decryption_share: self.decryption_share,
+                proof: self.proof.clone(),
+                marker: std::marker::PhantomData,
+            })
         } else {
             Err(anyhow::anyhow!(
                 "Recomputed challenge {:?} did not match expected challenge {:?}",

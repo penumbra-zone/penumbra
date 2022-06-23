@@ -13,7 +13,7 @@ pub mod dkg;
 pub mod proofs;
 
 pub use ciphertext::Ciphertext;
-pub use decryption_share::DecryptionShare;
+pub use decryption_share::{DecryptionShare, Unverified};
 pub use decryption_table::{DecryptionTable, MockDecryptionTable};
 pub use encryption_key::EncryptionKey;
 pub use key_share::{PrivateKeyShare, PublicKeyShare};

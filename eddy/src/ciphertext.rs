@@ -1,4 +1,4 @@
-use crate::{dkg, limb, DecryptionShare, DecryptionTable, Value};
+use crate::{decryption_share::Verified, dkg, limb, DecryptionShare, DecryptionTable, Value};
 
 /// A flow encryption ciphertext.
 pub struct Ciphertext {
@@ -9,17 +9,12 @@ pub struct Ciphertext {
 }
 
 impl Ciphertext {
-    /// Assumes decryption shares are validated already
+    /// Assumes decryption shares are verified already.
     pub async fn decrypt(
         &self,
-        shares: Vec<DecryptionShare>,
+        shares: Vec<DecryptionShare<Verified>>,
         table: &dyn DecryptionTable,
     ) -> anyhow::Result<Value> {
-        // Steps:
-
-        // For each limb:
-        // - verify all of the
-
         todo!()
     }
 }

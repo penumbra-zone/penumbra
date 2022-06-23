@@ -2,15 +2,22 @@ use rand_core::{CryptoRng, RngCore};
 
 use crate::{limb, Ciphertext, PrivateKeyShare, PublicKeyShare, TranscriptProtocol};
 
+pub enum Verified {}
+pub enum Unverified {}
+
+pub trait VerificationState {}
+impl VerificationState for Verified {}
+impl VerificationState for Unverified {}
+
 /// A share of a decryption of a particular [`Ciphertext`].
-///
-/// TODO: use some kind of typestate to record verification state?
-pub struct DecryptionShare {
-    participant_index: u32,
-    share0: limb::DecryptionShare,
-    share1: limb::DecryptionShare,
-    share2: limb::DecryptionShare,
-    share3: limb::DecryptionShare,
+pub struct DecryptionShare<S: VerificationState> {
+    pub(crate) participant_index: u32,
+    share0: limb::DecryptionShare<S>,
+    share1: limb::DecryptionShare<S>,
+    share2: limb::DecryptionShare<S>,
+    share3: limb::DecryptionShare<S>,
+
+    marker: std::marker::PhantomData<S>,
 }
 
 impl PrivateKeyShare {
@@ -20,7 +27,7 @@ impl PrivateKeyShare {
         ciphertext: &Ciphertext,
         transcript: &mut merlin::Transcript,
         mut rng: R,
-    ) -> DecryptionShare {
+    ) -> DecryptionShare<Unverified> {
         transcript.begin_decryption();
         transcript.append_public_key_share(&self.cached_pub);
 
@@ -29,24 +36,25 @@ impl PrivateKeyShare {
         let share2 = self.limb_decryption_share(&ciphertext.c2, transcript, &mut rng);
         let share3 = self.limb_decryption_share(&ciphertext.c3, transcript, &mut rng);
 
-        DecryptionShare {
+        DecryptionShare::<Unverified> {
             participant_index: self.index,
             share0,
             share1,
             share2,
             share3,
+            marker: std::marker::PhantomData,
         }
     }
 }
 
-impl DecryptionShare {
+impl DecryptionShare<Unverified> {
     #[allow(non_snake_case)]
     pub fn verify(
         &self,
         ctxt: &Ciphertext,
         pub_key_share: &PublicKeyShare,
         transcript: &mut merlin::Transcript,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<DecryptionShare<Verified>> {
         // This check isn't essential for security, because if we have the wrong
         // key share, the transcript won't match anyways, but it's a helpful
         // check against misuse.
@@ -61,11 +69,19 @@ impl DecryptionShare {
         transcript.begin_decryption();
         transcript.append_public_key_share(pub_key_share);
 
-        self.share0.verify(&ctxt.c0, pub_key_share, transcript)?;
-        self.share1.verify(&ctxt.c1, pub_key_share, transcript)?;
-        self.share2.verify(&ctxt.c2, pub_key_share, transcript)?;
-        self.share3.verify(&ctxt.c3, pub_key_share, transcript)?;
+        let share0 = self.share0.verify(&ctxt.c0, pub_key_share, transcript)?;
+        let share1 = self.share1.verify(&ctxt.c1, pub_key_share, transcript)?;
+        let share2 = self.share2.verify(&ctxt.c2, pub_key_share, transcript)?;
+        let share3 = self.share3.verify(&ctxt.c3, pub_key_share, transcript)?;
 
-        Ok(())
+        Ok(DecryptionShare::<Verified> {
+            participant_index: self.participant_index,
+            share0,
+            share1,
+            share2,
+            share3,
+
+            marker: std::marker::PhantomData,
+        })
     }
 }
