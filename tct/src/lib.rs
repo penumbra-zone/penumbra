@@ -89,8 +89,8 @@ mod prelude {
         error::proof::VerifyError,
         index,
         internal::{
+            build::{self, Build, Built, HitBottom, IResult, Instruction, Size},
             complete::{self, Complete, ForgetOwned},
-            construct::{self, Build, Built, HitBottom, IResult, Instruction, Size},
             frontier::{self, Focus, Forget, Frontier, Full, GetPosition, Insert, Item},
             hash::{CachedHash, Forgotten, GetHash, Hash, OptionHash},
             height::{Height, IsHeight, Succ, Zero},
