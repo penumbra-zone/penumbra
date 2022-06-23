@@ -20,7 +20,6 @@ pub struct DecryptionShare<S: VerificationState> {
     pub(crate) share2: limb::DecryptionShare<S>,
     pub(crate) share3: limb::DecryptionShare<S>,
 }
-
 impl PrivateKeyShare {
     #[allow(non_snake_case)]
     pub fn decryption_share<R: RngCore + CryptoRng>(
@@ -38,7 +37,7 @@ impl PrivateKeyShare {
         let share3 = self.limb_decryption_share(&ciphertext.c3, transcript, &mut rng);
 
         DecryptionShare::<Unverified> {
-            participant_index: self.index,
+            participant_index: self.participant_index,
             share0,
             share1,
             share2,
@@ -58,11 +57,11 @@ impl DecryptionShare<Unverified> {
         // This check isn't essential for security, because if we have the wrong
         // key share, the transcript won't match anyways, but it's a helpful
         // check against misuse.
-        if self.participant_index != pub_key_share.index {
+        if self.participant_index != pub_key_share.participant_index {
             return Err(anyhow::anyhow!(
                 "decryption share participant index {} does not match public key share index {}",
                 self.participant_index,
-                pub_key_share.index
+                pub_key_share.participant_index
             ));
         }
 

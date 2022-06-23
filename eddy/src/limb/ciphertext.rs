@@ -2,7 +2,7 @@ use crate::decryption_share::Verified;
 use crate::limb::DecryptionShare;
 use ark_ff::One;
 
-// an Elgamal ciphertext (c1, c2).
+/// an Elgamal ciphertext (c1, c2).
 #[derive(Clone, Copy)]
 pub struct Ciphertext {
     pub(crate) c1: decaf377::Element,
@@ -11,7 +11,7 @@ pub struct Ciphertext {
 
 // compute the lagrange coefficient for the participant given by `participant_index` in the set of
 // participants given by participant_indices
-fn lagrange_coefficient(participant_index: u32, participant_indices: &[u32]) -> decaf377::Fr {
+fn lagrange_coefficient(participant_index: u32, participant_indices: Vec<u32>) -> decaf377::Fr {
     participant_indices
         .iter()
         .filter(|x| **x != participant_index)
@@ -24,12 +24,23 @@ fn lagrange_coefficient(participant_index: u32, participant_indices: &[u32]) -> 
 }
 
 impl Ciphertext {
-    pub fn decrypt(&self, shares: Vec<(u32, DecryptionShare<Verified>)>) -> decaf377::Element {
-        let indices = shares.iter().map(|(i, _)| *i).collect::<Vec<_>>();
-        let mut d = decaf377::Element::default();
-        for share in shares {
-            d += share.1.decryption_share * lagrange_coefficient(share.0, &indices);
-        }
+    pub fn decrypt(&self, shares: Vec<&DecryptionShare<Verified>>) -> decaf377::Element {
+        let indices = shares
+            .iter()
+            .map(|s| s.participant_index)
+            .collect::<Vec<_>>();
+
+        let coeffs = indices
+            .iter()
+            .map(|i| lagrange_coefficient(*i, indices))
+            .collect::<Vec<_>>();
+
+        let d = shares
+            .iter()
+            .zip(coeffs)
+            .fold(decaf377::Element::default(), |d, (share, coeff)| {
+                d + share.decryption_share * coeff
+            });
 
         -d + self.c2
     }
