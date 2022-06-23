@@ -398,7 +398,7 @@ impl Storage {
     ) -> anyhow::Result<Vec<Nullifier>> {
         Ok(sqlx::query_as::<_, NoteRecord>(
             format!(
-                "SELECT nullifier
+                "SELECT *
                     FROM notes
                     WHERE nullifier IN ({})",
                 nullifiers
