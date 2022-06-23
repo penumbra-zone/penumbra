@@ -53,3 +53,11 @@ impl CachedHash {
         *self.mutex.lock() = OptionHash::from(None);
     }
 }
+
+impl From<Hash> for CachedHash {
+    fn from(hash: Hash) -> Self {
+        Self {
+            mutex: Mutex::new(OptionHash::from(Some(hash))),
+        }
+    }
+}
