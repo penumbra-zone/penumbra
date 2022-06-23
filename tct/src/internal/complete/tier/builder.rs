@@ -1,5 +1,6 @@
 use super::*;
 
+/// A builder for a complete tier.
 pub struct Builder<Item: Built + Height>(<Nested<Item> as Built>::Builder);
 
 impl<Item: GetHash + Height + Built> Built for Tier<Item> {
