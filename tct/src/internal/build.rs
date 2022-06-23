@@ -135,6 +135,9 @@ pub trait Built {
     /// The builder for this type.
     type Builder: Build<Output = Self>;
 
+    // TODO: remove the global position; always construct frontier tiers; nudge the frontier after
+    // the fact by checking the position!
+
     /// Create a new constructor for a node at the given index, given the global position of the
     /// tree.
     ///
