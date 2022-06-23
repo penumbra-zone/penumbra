@@ -5,6 +5,8 @@
 use decaf377::Fq;
 use std::fmt::Debug;
 
+use crate::prelude::*;
+
 mod iresult;
 // pub mod packed; // TODO: fix this module
 pub use iresult::{HitBottom, IResult};
@@ -167,63 +169,59 @@ pub enum Error {
     },
 }
 
-type Tree = crate::internal::frontier::Top<
-    crate::internal::frontier::Tier<
-        crate::internal::frontier::Tier<crate::internal::frontier::Item>,
-    >,
->;
+type Tree = frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>>;
 
-// Build a tree by iterating over a sequence of [`Instruction`]s.
-// pub fn build(
-//     position: u64,
-//     instructions: impl IntoIterator<Item = impl Into<Instruction>>,
-// ) -> Result<Tree, Error> {
-//     let mut instructions = instructions.into_iter().peekable();
-//     if instructions.peek().is_none() {
-//         return Ok(crate::internal::frontier::Top::new(TrackForgotten::Yes));
-//     }
+/// Build a tree by iterating over a sequence of [`Instruction`]s.
+pub fn build(
+    position: u64,
+    instructions: impl IntoIterator<Item = impl Into<Instruction>>,
+) -> Result<Tree, Error> {
+    let mut instructions = instructions.into_iter().peekable();
+    if instructions.peek().is_none() {
+        return Ok(crate::internal::frontier::Top::new(TrackForgotten::Yes));
+    }
 
-//     // Count the instructions as we go along, for error reporting
-//     let mut instruction: usize = 0;
+    // Count the instructions as we go along, for error reporting
+    let mut instruction: usize = 0;
 
-//     // The incremental result, either an incomplete builder or a complete output
-//     let mut result = IResult::Incomplete(Tree::build(position, 0));
+    // The incremental result, either an incomplete builder or a complete output
+    let mut result = IResult::Incomplete(<Tree as Built>::build(position, 0));
 
-//     // For each instruction, tell the builder to use that instruction
-//     for this_instruction in &mut instructions {
-//         let builder = match result {
-//             IResult::Complete(_) => break, // stop if complete, even if instructions aren't
-//             IResult::Incomplete(builder) => builder,
-//         };
+    // For each instruction, tell the builder to use that instruction
+    for this_instruction in &mut instructions {
+        let builder = match result {
+            IResult::Complete(_) => break, // stop if complete, even if instructions aren't
+            IResult::Incomplete(builder) => builder,
+        };
 
-//         // Step forward the builder by one instruction
-//         result = builder
-//             .go(this_instruction.into())
-//             .map_err(|HitBottom(builder)| Error::HitBottom {
-//                 instruction,
-//                 index: builder.index(),
-//             })?;
+        // Step forward the builder by one instruction
+        result = builder
+            .go(this_instruction.into())
+            .map_err(|HitBottom(builder)| Error::HitBottom {
+                instruction,
+                index: builder.index(),
+            })?;
 
-//         // Update the instruction count
-//         instruction += 1;
-//     }
+        // Update the instruction count
+        instruction += 1;
+    }
 
-//     // Examine whether we successfully constructed the tree
-//     match result {
-//         // If complete, return the output tree
-//         IResult::Complete(output) => {
-//             // Ensure that no more instructions are remaining
-//             if instructions.peek().is_some() {
-//                 return Err(Error::AlreadyComplete { instruction });
-//             }
-//             Ok(output)
-//         }
-//         // If incomplete, return an error indicating the situation we stopped in
-//         IResult::Incomplete(builder) => Err(Error::Incomplete {
-//             instruction,
-//             height: builder.height(),
-//             index: builder.index(),
-//             min_required: builder.min_required(),
-//         }),
-//     }
-// }
+    // Examine whether we successfully constructed the tree
+    match result {
+        // If complete, return the output tree
+        IResult::Complete(output) => {
+            // Ensure that no more instructions are remaining
+            if instructions.peek().is_some() {
+                return Err(Error::AlreadyComplete { instruction });
+            }
+            Ok(output)
+        }
+        // If incomplete, return an error indicating the situation we stopped in
+        IResult::Incomplete(builder) => Err(Error::Incomplete {
+            instruction,
+            height: builder.height(),
+            index: builder.index(),
+            min_required: builder.min_required(),
+        }),
+    }
+}
