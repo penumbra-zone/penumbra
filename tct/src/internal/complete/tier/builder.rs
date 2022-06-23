@@ -11,7 +11,7 @@ impl<Item: GetHash + Height + Built> Built for Tier<Item> {
 }
 
 impl<Item: GetHash + Height + Built> Build for Builder<Item> {
-type Output = Tier<Item>;
+    type Output = Tier<Item>;
 
     fn go(self, instruction: Instruction) -> Result<IResult<Self>, HitBottom<Self>> {
         use IResult::*;
@@ -40,5 +40,4 @@ type Output = Tier<Item>;
     fn min_required(&self) -> usize {
         self.0.min_required()
     }
-
 }
