@@ -2,7 +2,9 @@ use rand_core::{CryptoRng, RngCore};
 
 use crate::{limb, Ciphertext, PrivateKeyShare, PublicKeyShare, TranscriptProtocol};
 
+#[derive(Debug, Clone)]
 pub enum Verified {}
+#[derive(Debug, Clone)]
 pub enum Unverified {}
 
 pub trait VerificationState {}
@@ -10,12 +12,13 @@ impl VerificationState for Verified {}
 impl VerificationState for Unverified {}
 
 /// A share of a decryption of a particular [`Ciphertext`].
+#[derive(Debug, Clone)]
 pub struct DecryptionShare<S: VerificationState> {
     pub(crate) participant_index: u32,
-    share0: limb::DecryptionShare<S>,
-    share1: limb::DecryptionShare<S>,
-    share2: limb::DecryptionShare<S>,
-    share3: limb::DecryptionShare<S>,
+    pub(crate) share0: limb::DecryptionShare<S>,
+    pub(crate) share1: limb::DecryptionShare<S>,
+    pub(crate) share2: limb::DecryptionShare<S>,
+    pub(crate) share3: limb::DecryptionShare<S>,
 
     marker: std::marker::PhantomData<S>,
 }

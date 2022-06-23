@@ -11,7 +11,7 @@ use crate::{
 /// Threshold decryption share of a given encrypted value.
 #[derive(Debug, Clone)]
 pub struct DecryptionShare<S: VerificationState> {
-    decryption_share: decaf377::Element,
+    pub(crate) decryption_share: decaf377::Element,
     proof: DecryptionShareProof,
 
     marker: std::marker::PhantomData<S>,
