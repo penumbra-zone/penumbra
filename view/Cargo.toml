@@ -43,7 +43,7 @@ bytes = { version = "1", features = ["serde"] }
 prost = "0.9"
 futures = "0.3"
 hex = "0.4"
-metrics = "0.18"
+metrics = "0.19.0"
 async-stream = "0.2"
 reqwest = { version = "0.11", features = ["json"] }
 parking_lot = "0.12"
