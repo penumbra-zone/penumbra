@@ -3,6 +3,8 @@ wallet-next/pwalletd-db.sqlite
 wallet-next/pwalletd-db.sqlite-shm
 wallet-next/pwalletd-db.sqlite-wal
 
+*.DS_STORE
+
 book
 .firebase/
 # For some reason mdbook dumps this here because the main page is ../README.md
