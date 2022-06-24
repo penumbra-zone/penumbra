@@ -12,7 +12,7 @@ mod iresult;
 // pub mod packed; // TODO: fix this module
 pub use iresult::{IResult, Unexpected};
 
-use super::frontier::TrackForgotten;
+use crate::internal::frontier::TrackForgotten;
 
 /// In a depth-first traversal, is the next node below, or to the right? If this is the last
 /// represented sibling, then we should go up instead of (illegally) right.
