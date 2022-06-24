@@ -37,38 +37,7 @@ pub enum Instruction {
 
 /// Proptest generators for things relevant to construction.
 #[cfg(feature = "arbitrary")]
-pub mod arbitrary {
-    use super::*;
-
-    /// Generate an arbitrary instruction.
-    pub fn instruction() -> impl proptest::prelude::Strategy<Value = Instruction> {
-        use proptest::prelude::*;
-
-        proptest::option::of(crate::commitment::FqStrategy::arbitrary()).prop_flat_map(
-            |option_fq| {
-                Size::arbitrary().prop_flat_map(move |children| {
-                    bool::arbitrary().prop_map(move |variant| {
-                        if let Some(here) = option_fq {
-                            if variant {
-                                Instruction::Node {
-                                    here: Some(here),
-                                    size: children,
-                                }
-                            } else {
-                                Instruction::Leaf { here }
-                            }
-                        } else {
-                            Instruction::Node {
-                                here: None,
-                                size: children,
-                            }
-                        }
-                    })
-                })
-            },
-        )
-    }
-}
+pub mod arbitrary;
 
 /// The number of children of a node we're creating.
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -104,46 +73,6 @@ impl Debug for Size {
             Size::Four => write!(f, "4"),
         }
     }
-}
-
-/// A builder that can incrementally consume a pre-order depth-first traversal of node values to
-/// build a tree.
-pub trait Build: Sized {
-    /// The output of this constructor.
-    type Output: Built<Builder = Self>;
-
-    /// Continue with the traversal using the given [`Instruction`].
-    ///
-    /// Depending on location, the [`Fq`] contained in the instruction may be interpreted either as
-    /// a [`Hash`] or as a [`Commitment`].
-    fn go(self, instruction: Instruction) -> Result<IResult<Self>, Unexpected>;
-
-    /// Checks if the builder has been started, i.e. it has received > 0 instructions.
-    fn is_started(&self) -> bool;
-
-    /// Get the current index under construction in the traversal.
-    fn index(&self) -> u64;
-
-    /// Get the current height under construction in the traversal.
-    fn height(&self) -> u8;
-
-    /// Get the minimum number of instructions necessary to complete construction.
-    fn min_required(&self) -> usize;
-}
-
-/// Trait uniquely identifying the builder for any given type, if it is constructable.
-pub trait Built {
-    /// The builder for this type.
-    type Builder: Build<Output = Self>;
-
-    // TODO: remove the global position; always construct frontier tiers; nudge the frontier after
-    // the fact by checking the position!
-
-    /// Create a new constructor for a node at the given index, given the global position of the
-    /// tree.
-    ///
-    /// The global position and index are used to calculate the location of the frontier.
-    fn build(global_position: u64, index: u64) -> Self::Builder;
 }
 
 /// An error when constructing something, indicative of an incorrect sequence of instructions.
@@ -196,10 +125,10 @@ type Tree = frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>>;
 pub async fn build<E>(
     position: u64,
     instructions: impl Stream<Item = Result<impl Into<Instruction>, E>> + Unpin,
-) -> Result<Tree, Error<E>> {
+) -> Result<crate::Tree, Error<E>> {
     let mut instructions = instructions.peekable();
     if Pin::new(&mut instructions).peek().await.is_none() {
-        return Ok(crate::internal::frontier::Top::new(TrackForgotten::Yes));
+        return Ok(crate::internal::frontier::Top::new(TrackForgotten::Yes).into());
     }
 
     // Count the instructions as we go along, for error reporting
@@ -239,7 +168,7 @@ pub async fn build<E>(
             if Pin::new(&mut instructions).peek().await.is_some() {
                 return Err(Error::AlreadyComplete { instruction });
             }
-            Ok(output)
+            Ok(output.into())
         }
         // If incomplete, return an error indicating the situation we stopped in
         IResult::Incomplete(builder) => Err(Error::Incomplete {
@@ -255,7 +184,7 @@ pub async fn build<E>(
 pub fn build_sync<E>(
     position: u64,
     instructions: impl IntoIterator<Item = Result<impl Into<Instruction>, E>> + Unpin,
-) -> Result<Tree, Error<E>> {
+) -> Result<crate::Tree, Error<E>> {
     let future = build(position, stream::iter(instructions.into_iter()));
     futures::executor::block_on(future)
 }

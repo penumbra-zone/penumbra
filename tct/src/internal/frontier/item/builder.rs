@@ -1,6 +1,6 @@
 use super::*;
 
-use build::{Build, Built, IResult, Instruction, Unexpected};
+use deserialize::{IResult, Instruction, Unexpected};
 
 /// A builder for the tip of the frontier.
 pub struct Builder {

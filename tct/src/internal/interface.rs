@@ -104,3 +104,45 @@ pub trait ForgetOwned: Height + Sized {
         index: impl Into<u64>,
     ) -> (Insert<Self>, bool);
 }
+
+use crate::deserialize::{IResult, Instruction, Unexpected};
+
+/// A builder that can incrementally consume a pre-order depth-first traversal of node values to
+/// build a tree.
+pub trait Build: Sized {
+    /// The output of this constructor.
+    type Output: Built<Builder = Self>;
+
+    /// Continue with the traversal using the given [`Instruction`].
+    ///
+    /// Depending on location, the [`Fq`] contained in the instruction may be interpreted either
+    /// as a [`Hash`] or as a [`Commitment`].
+    fn go(self, instruction: Instruction) -> Result<IResult<Self>, Unexpected>;
+
+    /// Checks if the builder has been started, i.e. it has received > 0 instructions.
+    fn is_started(&self) -> bool;
+
+    /// Get the current index under construction in the traversal.
+    fn index(&self) -> u64;
+
+    /// Get the current height under construction in the traversal.
+    fn height(&self) -> u8;
+
+    /// Get the minimum number of instructions necessary to complete construction.
+    fn min_required(&self) -> usize;
+}
+
+/// Trait uniquely identifying the builder for any given type, if it is constructable.
+pub trait Built {
+    /// The builder for this type.
+    type Builder: Build<Output = Self>;
+
+    // TODO: remove the global position; always construct frontier tiers; nudge the frontier after
+    // the fact by checking the position!
+
+    /// Create a new constructor for a node at the given index, given the global position of the
+    /// tree.
+    ///
+    /// The global position and index are used to calculate the location of the frontier.
+    fn build(global_position: u64, index: u64) -> Self::Builder;
+}
