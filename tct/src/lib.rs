@@ -52,6 +52,9 @@ extern crate thiserror;
 #[macro_use]
 extern crate async_trait;
 
+#[macro_use]
+extern crate async_stream;
+
 mod commitment;
 mod index;
 mod proof;
