@@ -3,7 +3,8 @@
 //! Interface for constructing trees from depth-first traversals of them.
 
 use decaf377::Fq;
-use std::fmt::Debug;
+use futures::{stream, Stream, StreamExt};
+use std::{fmt::Debug, pin::Pin};
 
 use crate::prelude::*;
 
@@ -146,8 +147,12 @@ pub trait Built {
 }
 
 /// An error when constructing something, indicative of an incorrect sequence of instructions.
-pub enum Error {
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Error)]
+pub enum Error<E> {
     /// An unexpected instruction was provided.
+    #[error(
+        "instruction {instruction} building node at index {index}, height {height}: {unexpected}"
+    )]
     Unexpected {
         /// The instruction at which the error occurred.
         instruction: usize,
@@ -159,6 +164,7 @@ pub enum Error {
         unexpected: Unexpected,
     },
     /// Not enough instructions were supplied to construct the object.
+    #[error("instruction {instruction} building node at index {index}, height {height}: not enough instructions supplied, needed at least {min_required} more")]
     Incomplete {
         /// The number of instructions supplied.
         instruction: usize,
@@ -170,21 +176,29 @@ pub enum Error {
         min_required: usize,
     },
     /// Too many instructions were supplied.
+    #[error("instruction {instruction}: already completed construction")]
     AlreadyComplete {
         /// The number of instructions that were used to successfully construct the object.
         instruction: usize,
+    },
+    /// An underlying error in the stream of instructions occurred.
+    #[error("{error}")]
+    Underlying {
+        /// The underlying error.
+        #[from]
+        error: E,
     },
 }
 
 type Tree = frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>>;
 
-/// Build a tree by iterating over a sequence of [`Instruction`]s.
-pub fn build(
+/// Build a tree by iterating over a sequence of [`Instruction`]s, asynchronously.
+pub async fn build<E>(
     position: u64,
-    instructions: impl IntoIterator<Item = impl Into<Instruction>>,
-) -> Result<Tree, Error> {
-    let mut instructions = instructions.into_iter().peekable();
-    if instructions.peek().is_none() {
+    instructions: impl Stream<Item = Result<impl Into<Instruction>, E>> + Unpin,
+) -> Result<Tree, Error<E>> {
+    let mut instructions = instructions.peekable();
+    if Pin::new(&mut instructions).peek().await.is_none() {
         return Ok(crate::internal::frontier::Top::new(TrackForgotten::Yes));
     }
 
@@ -195,7 +209,7 @@ pub fn build(
     let mut result = IResult::Incomplete(<Tree as Built>::build(position, 0));
 
     // For each instruction, tell the builder to use that instruction
-    for this_instruction in &mut instructions {
+    while let Some(this_instruction) = Pin::new(&mut instructions).next().await {
         let builder = match result {
             IResult::Complete(_) => break, // stop if complete, even if instructions aren't
             IResult::Incomplete(builder) => builder,
@@ -205,7 +219,7 @@ pub fn build(
         let index = builder.index();
         let height = builder.height();
         result = builder
-            .go(this_instruction.into())
+            .go(this_instruction?.into())
             .map_err(|unexpected| Error::Unexpected {
                 instruction,
                 unexpected,
@@ -222,7 +236,7 @@ pub fn build(
         // If complete, return the output tree
         IResult::Complete(output) => {
             // Ensure that no more instructions are remaining
-            if instructions.peek().is_some() {
+            if Pin::new(&mut instructions).peek().await.is_some() {
                 return Err(Error::AlreadyComplete { instruction });
             }
             Ok(output)
@@ -235,4 +249,13 @@ pub fn build(
             min_required: builder.min_required(),
         }),
     }
+}
+
+/// Build a tree by iterating over a sequence of [`Instruction`]s, synchronously.
+pub fn build_sync<E>(
+    position: u64,
+    instructions: impl IntoIterator<Item = Result<impl Into<Instruction>, E>> + Unpin,
+) -> Result<Tree, Error<E>> {
+    let future = build(position, stream::iter(instructions.into_iter()));
+    futures::executor::block_on(future)
 }
