@@ -39,16 +39,16 @@ where
 {
     type Output = Tier<Item>;
 
-    fn go(mut self, instruction: Instruction) -> Result<IResult<Self>, HitBottom<Self>> {
+    fn go(mut self, instruction: Instruction) -> Result<IResult<Self>, InvalidInstruction<Self>> {
         use {IResult::*, Instruction::*};
 
         if let Some(inner) = self.inner {
             // If we're already building something, pass the instruction along to the inside:
             match inner {
                 Inner::Frontier(builder) => match builder.go(instruction) {
-                    Err(HitBottom(builder)) => {
-                        self.inner = Some(Inner::Frontier(builder));
-                        Err(HitBottom(self))
+                    Err(InvalidInstruction { incomplete, unexpected }) => {
+                        self.inner = Some(Inner::Frontier(incomplete));
+                        Err(InvalidInstruction { incomplete: self, unexpected })
                     }
                     Ok(Incomplete(builder)) => {
                         self.inner = Some(Inner::Frontier(builder));
@@ -59,9 +59,9 @@ where
                     })),
                 },
                 Inner::Complete(builder) => match builder.go(instruction) {
-                    Err(HitBottom(builder)) => {
-                        self.inner = Some(Inner::Complete(builder));
-                        Err(HitBottom(self))
+                    Err(InvalidInstruction { incomplete, unexpected }) => {
+                        self.inner = Some(Inner::Complete(incomplete));
+                        Err(InvalidInstruction { incomplete: self, unexpected })
                     }
                     Ok(Incomplete(builder)) => {
                         self.inner = Some(Inner::Complete(builder));

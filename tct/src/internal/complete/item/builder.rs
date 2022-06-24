@@ -25,13 +25,14 @@ impl Built for Item {
 impl Build for Builder {
     type Output = Item;
 
-    fn go(mut self, instruction: Instruction) -> Result<IResult<Self>, HitBottom<Self>> {
+    fn go(mut self, instruction: Instruction) -> Result<IResult<Self>, InvalidInstruction<Self>> {
         use {IResult::*, Inner::*, Instruction::*};
 
         match (&self.inner, instruction) {
-            (Init, Leaf { .. }) => {
-                unreachable!("complete item builder never initialized with a leaf")
-            }
+            (Init, Leaf { .. }) => Err(InvalidInstruction {
+                incomplete: self,
+                unexpected: build::Unexpected::Leaf,
+            }),
             (Init, Node { here, .. }) => {
                 self.inner = AwaitingCommitment {
                     hash: here.map(Hash::new),
@@ -49,7 +50,10 @@ impl Build for Builder {
                 hash: *hash,
                 commitment: Commitment(here),
             })),
-            (AwaitingCommitment { .. }, Node { .. }) => Err(HitBottom(self)),
+            (AwaitingCommitment { .. }, Node { .. }) => Err(InvalidInstruction {
+                incomplete: self,
+                unexpected: build::Unexpected::Node,
+            }),
         }
     }
 

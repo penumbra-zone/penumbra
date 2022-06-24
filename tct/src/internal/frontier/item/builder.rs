@@ -25,7 +25,7 @@ impl Built for Item {
 impl Build for Builder {
     type Output = Item;
 
-    fn go(mut self, instruction: Instruction) -> Result<IResult<Self>, HitBottom<Self>> {
+    fn go(mut self, instruction: Instruction) -> Result<IResult<Self>, InvalidInstruction<Self>> {
         use {IResult::*, Inner::*, Instruction::*};
 
         match (&self.inner, instruction) {
@@ -40,7 +40,10 @@ impl Build for Builder {
             (Witnessed { hash: Some(hash) }, Leaf { here }) => Ok(Complete(Item {
                 item: Insert::Keep((Commitment(here), *hash)),
             })),
-            (Witnessed { .. }, Node { .. }) => Err(HitBottom(self)),
+            (Witnessed { .. }, Node { .. }) => Err(InvalidInstruction {
+                incomplete: self,
+                unexpected: build::Unexpected::Node,
+            }),
         }
     }
 

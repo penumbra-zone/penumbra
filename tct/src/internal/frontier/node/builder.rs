@@ -46,7 +46,7 @@ where
 {
     type Output = Node<Child>;
 
-    fn go(mut self, instruction: Instruction) -> Result<IResult<Self>, HitBottom<Self>> {
+    fn go(mut self, instruction: Instruction) -> Result<IResult<Self>, InvalidInstruction<Self>> {
         use {IResult::*, Instruction::*};
 
         // We have started construction of the children...
@@ -69,10 +69,10 @@ where
                 // instruction to the front sibling builder
                 if !skipped {
                     match front_sibling.go(instruction) {
-                        Err(HitBottom(incomplete)) => {
+                        Err(InvalidInstruction{ incomplete, unexpected }) => {
                             // We bounced off the bottom, so restore this sibling builder and error
                             remaining.siblings.push_front(incomplete);
-                            return Err(HitBottom(self));
+                            return Err(InvalidInstruction { incomplete: self, unexpected });
                         }
                         Ok(Incomplete(incomplete)) => {
                             // We haven't finished with this sibling builder, so push it back onto
@@ -98,10 +98,10 @@ where
                     .expect("focus builder is present")
                     .go(instruction)
                 {
-                    Err(HitBottom(incomplete)) => {
+                    Err(InvalidInstruction { incomplete, unexpected }) => {
                         // We bounced off the bottom, so restore the focus builder and error
                         remaining.focus = Some(incomplete);
-                        Err(HitBottom(self))
+                        Err(InvalidInstruction { incomplete: self, unexpected })
                     }
                     Ok(Incomplete(incomplete)) => {
                         // We haven't finished building the focus, so restore it so we'll pop it off
@@ -122,7 +122,12 @@ where
         } else {
             self.remaining = Some(match instruction {
                 Leaf { .. } => {
-                    unreachable!("leaf instruction is never given as first instruction to a node")
+                    // A `Leaf` instruction is not valid as the first instruction when constructing
+                    // a frontier node, because the frontier is always fully represented
+                    return Err(InvalidInstruction {
+                        incomplete: self,
+                        unexpected: build::Unexpected::Leaf,
+                    });
                 }
                 Node { here, size } => {
                     let hash = here.map(Hash::new);

@@ -33,7 +33,7 @@ impl<Child: Height + Built> Built for Node<Child> {
 impl<Child: Height + Built> Build for Builder<Child> {
     type Output = Node<Child>;
 
-    fn go(mut self, instruction: Instruction) -> Result<IResult<Self>, HitBottom<Self>> {
+    fn go(mut self, instruction: Instruction) -> Result<IResult<Self>, InvalidInstruction<Self>> {
         use {IResult::*, Instruction::*};
 
         todo!();
