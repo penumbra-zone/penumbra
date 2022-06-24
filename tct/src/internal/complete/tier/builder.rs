@@ -14,7 +14,7 @@ impl<Item: GetHash + Height + Built> Built for Tier<Item> {
 impl<Item: GetHash + Height + Built> Build for Builder<Item> {
     type Output = Tier<Item>;
 
-    fn go(self, instruction: Instruction) -> Result<IResult<Self>, HitBottom<Self>> {
+    fn go(self, instruction: Instruction) -> Result<IResult<Self>, InvalidInstruction<Self>> {
         use IResult::*;
 
         self.0
@@ -23,7 +23,7 @@ impl<Item: GetHash + Height + Built> Build for Builder<Item> {
                 Complete(inner) => Complete(Tier { inner }),
                 Incomplete(builder) => Incomplete(Builder(builder)),
             })
-            .map_err(|HitBottom(builder)| HitBottom(Builder(builder)))
+            .map_err(|unexpected| unexpected.map(Builder))
     }
 
     fn is_started(&self) -> bool {

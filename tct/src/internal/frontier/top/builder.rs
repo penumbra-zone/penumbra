@@ -22,7 +22,7 @@ where
 {
     type Output = Top<Item>;
 
-    fn go(self, instruction: Instruction) -> Result<IResult<Self>, HitBottom<Self>> {
+    fn go(self, instruction: Instruction) -> Result<IResult<Self>, InvalidInstruction<Self>> {
         use IResult::*;
 
         self.0
@@ -34,7 +34,7 @@ where
                 }),
                 Incomplete(builder) => Incomplete(Builder(builder)),
             })
-            .map_err(|HitBottom(builder)| HitBottom(Builder(builder)))
+            .map_err(|unexpected| unexpected.map(Builder))
     }
 
     fn is_started(&self) -> bool {
