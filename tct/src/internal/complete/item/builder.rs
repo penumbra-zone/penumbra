@@ -1,6 +1,6 @@
 use super::*;
 
-use build::{Build, Built, IResult, Instruction, Unexpected};
+use deserialize::{IResult, Instruction, Unexpected};
 
 /// A builder for a complete item.
 pub struct Builder {

@@ -1,6 +1,6 @@
 use super::*;
 
-use build::{Build, Built, IResult, Instruction, Unexpected};
+use deserialize::{IResult, Instruction, Unexpected};
 
 /// A builder for a top of a frontier.
 pub struct Builder<Item: Built + Focus>(<Nested<Item> as Built>::Builder)
