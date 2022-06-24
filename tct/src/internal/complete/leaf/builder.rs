@@ -1,6 +1,6 @@
 use super::*;
 
-use build::{Build, Built, IResult, Instruction, Unexpected};
+use deserialize::{IResult, Instruction, Unexpected};
 
 /// A builder for a leaf.
 pub struct Builder<Item: Built>(Item::Builder);

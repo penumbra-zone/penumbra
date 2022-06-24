@@ -1,6 +1,6 @@
 use super::*;
 
-use build::{Build, Built, IResult, Instruction, Unexpected};
+use deserialize::{IResult, Instruction, Unexpected};
 
 /// A builder for a complete tier.
 pub struct Builder<Item: GetHash + Built + Height>(<Nested<Item> as Built>::Builder);
