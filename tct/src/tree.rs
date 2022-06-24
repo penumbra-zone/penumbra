@@ -692,3 +692,21 @@ impl Tree {
         Node::root(&self.inner)
     }
 }
+
+impl From<frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>>> for Tree {
+    fn from(inner: frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>>) -> Self {
+        let mut index = HashedMap::default();
+
+        // Traverse the tree to reconstruct the index
+        structure::traverse(Node::root(&inner), &mut |node: Node| {
+            if let structure::Kind::Leaf {
+                commitment: Some(commitment),
+            } = node.kind()
+            {
+                index.insert(commitment, node.position().0);
+            }
+        });
+
+        Self { inner, index }
+    }
+}
