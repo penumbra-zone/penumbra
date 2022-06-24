@@ -128,10 +128,7 @@ impl<Child: GetHash + Height + Built> Build for Builder<Child> {
                         children.push_back(Child::build(self.global_position, index));
                     }
 
-                    Remaining {
-                        hash,
-                        children,
-                    }
+                    Remaining { hash, children }
                 }
             });
 
