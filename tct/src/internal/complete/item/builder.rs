@@ -1,5 +1,7 @@
 use super::*;
 
+use build::{Build, Built, IResult, Instruction, Unexpected};
+
 /// A builder for a complete item.
 pub struct Builder {
     index: u64,
@@ -25,14 +27,11 @@ impl Built for Item {
 impl Build for Builder {
     type Output = Item;
 
-    fn go(mut self, instruction: Instruction) -> Result<IResult<Self>, InvalidInstruction<Self>> {
+    fn go(mut self, instruction: Instruction) -> Result<IResult<Self>, Unexpected> {
         use {IResult::*, Inner::*, Instruction::*};
 
         match (&self.inner, instruction) {
-            (Init, Leaf { .. }) => Err(InvalidInstruction {
-                incomplete: self,
-                unexpected: build::Unexpected::Leaf,
-            }),
+            (Init, Leaf { .. }) => Err(Unexpected::Leaf),
             (Init, Node { here, .. }) => {
                 self.inner = AwaitingCommitment {
                     hash: here.map(Hash::new),
@@ -50,10 +49,7 @@ impl Build for Builder {
                 hash: *hash,
                 commitment: Commitment(here),
             })),
-            (AwaitingCommitment { .. }, Node { .. }) => Err(InvalidInstruction {
-                incomplete: self,
-                unexpected: build::Unexpected::Node,
-            }),
+            (AwaitingCommitment { .. }, Node { .. }) => Err(Unexpected::Node),
         }
     }
 

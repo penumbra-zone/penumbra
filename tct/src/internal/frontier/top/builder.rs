@@ -1,5 +1,7 @@
 use super::*;
 
+use build::{Build, Built, IResult, Instruction, Unexpected};
+
 /// A builder for a top of a frontier.
 pub struct Builder<Item: Built + Focus>(<Nested<Item> as Built>::Builder)
 where
@@ -22,19 +24,13 @@ where
 {
     type Output = Top<Item>;
 
-    fn go(self, instruction: Instruction) -> Result<IResult<Self>, InvalidInstruction<Self>> {
-        use IResult::*;
-
-        self.0
-            .go(instruction)
-            .map(|r| match r {
-                Complete(inner) => Complete(Top {
-                    inner: Some(inner),
-                    track_forgotten: TrackForgotten::Yes,
-                }),
-                Incomplete(builder) => Incomplete(Builder(builder)),
+    fn go(self, instruction: Instruction) -> Result<IResult<Self>, Unexpected> {
+        self.0.go(instruction).map(|r| {
+            r.map(Builder, |inner| Top {
+                inner: Some(inner),
+                track_forgotten: TrackForgotten::Yes,
             })
-            .map_err(|unexpected| unexpected.map(Builder))
+        })
     }
 
     fn is_started(&self) -> bool {
