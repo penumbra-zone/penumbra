@@ -1,3 +1,4 @@
+use crate::dex::component::Dex;
 use crate::ibc::IBCComponent;
 use crate::shielded_pool::ShieldedPool;
 use crate::stake::component::Staking;
@@ -24,6 +25,7 @@ pub struct App {
     shielded_pool: ShieldedPool,
     ibc: IBCComponent,
     staking: Staking,
+    dex: Dex,
 }
 
 impl App {
@@ -40,6 +42,7 @@ impl App {
 
         let staking = Staking::new(state.clone()).await;
         let ibc = IBCComponent::new(state.clone()).await;
+        let dex = DexComponent::new(state.clone()).await;
         let shielded_pool = ShieldedPool::new(state.clone(), nct).await;
 
         Self {
@@ -47,6 +50,7 @@ impl App {
             shielded_pool,
             staking,
             ibc,
+            dex,
         }
     }
 
@@ -73,6 +77,7 @@ impl App {
         // Now re-instantiate all of the components so they all have the same shared state.
         self.staking = Staking::new(self.state.clone()).await;
         self.ibc = IBCComponent::new(self.state.clone()).await;
+        self.dex = DexComponent::new(self.state.clone()).await;
         self.shielded_pool = ShieldedPool::new(self.state.clone(), nct.clone()).await;
 
         Ok((root_hash, version))
@@ -100,6 +105,7 @@ impl Component for App {
 
         self.staking.init_chain(app_state).await;
         self.ibc.init_chain(app_state).await;
+        self.dex.init_chain(app_state).await;
 
         // Shielded pool always executes last.
         self.shielded_pool.init_chain(app_state).await;
@@ -118,6 +124,7 @@ impl Component for App {
 
         self.staking.begin_block(ctx.clone(), begin_block).await;
         self.ibc.begin_block(ctx.clone(), begin_block).await;
+        self.dex.begin_block(ctx.clone(), begin_block).await;
         // Shielded pool always executes last.
         self.shielded_pool
             .begin_block(ctx.clone(), begin_block)
@@ -128,6 +135,7 @@ impl Component for App {
     fn check_tx_stateless(ctx: Context, tx: &Transaction) -> Result<()> {
         Staking::check_tx_stateless(ctx.clone(), tx)?;
         IBCComponent::check_tx_stateless(ctx.clone(), tx)?;
+        DexComponent::check_tx_stateless(ctx.clone(), tx)?;
         ShieldedPool::check_tx_stateless(ctx, tx)?;
         Ok(())
     }
@@ -136,6 +144,7 @@ impl Component for App {
     async fn check_tx_stateful(&self, ctx: Context, tx: &Transaction) -> Result<()> {
         self.staking.check_tx_stateful(ctx.clone(), tx).await?;
         self.ibc.check_tx_stateful(ctx.clone(), tx).await?;
+        self.dex.check_tx_stateful(ctx.clone(), tx).await?;
 
         // Shielded pool always executes last.
         self.shielded_pool
@@ -148,6 +157,7 @@ impl Component for App {
     async fn execute_tx(&mut self, ctx: Context, tx: &Transaction) {
         self.staking.execute_tx(ctx.clone(), tx).await;
         self.ibc.execute_tx(ctx.clone(), tx).await;
+        self.dex.execute_tx(ctx.clone(), tx).await;
         // Shielded pool always executes last.
         self.shielded_pool.execute_tx(ctx.clone(), tx).await;
     }
@@ -156,6 +166,7 @@ impl Component for App {
     async fn end_block(&mut self, ctx: Context, end_block: &abci::request::EndBlock) {
         self.staking.end_block(ctx.clone(), end_block).await;
         self.ibc.end_block(ctx.clone(), end_block).await;
+        self.dex.end_block(ctx.clone(), end_block).await;
 
         // Shielded pool always executes last.
         self.shielded_pool.end_block(ctx.clone(), end_block).await;
