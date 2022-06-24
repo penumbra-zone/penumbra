@@ -9,7 +9,7 @@ use crate::prelude::*;
 
 mod iresult;
 // pub mod packed; // TODO: fix this module
-pub use iresult::{HitBottom, IResult};
+pub use iresult::{IResult, InvalidInstruction, Unexpected};
 
 use super::frontier::TrackForgotten;
 
@@ -115,7 +115,7 @@ pub trait Build: Sized {
     ///
     /// Depending on location, the [`Fq`] contained in the instruction may be interpreted either as
     /// a [`Hash`] or as a [`Commitment`].
-    fn go(self, instruction: Instruction) -> Result<IResult<Self>, HitBottom<Self>>;
+    fn go(self, instruction: Instruction) -> Result<IResult<Self>, InvalidInstruction<Self>>;
 
     /// Checks if the builder has been started, i.e. it has received > 0 instructions.
     fn is_started(&self) -> bool;
@@ -148,11 +148,13 @@ pub trait Built {
 /// An error when constructing something, indicative of an incorrect sequence of instructions.
 pub enum Error {
     /// Attempted to construct a child of a bottom-most leaf node.
-    HitBottom {
+    Unexpected {
         /// The instruction at which the error occurred.
         instruction: usize,
-        /// The index of the node whose child could not be constructed
+        /// The index of the node whose child could not be constructed.
         index: u64,
+        /// The unexpected instruction.
+        unexpected: Unexpected,
     },
     /// Not enough instructions were supplied to construct the object.
     Incomplete {
@@ -198,12 +200,13 @@ pub fn build(
         };
 
         // Step forward the builder by one instruction
-        result = builder
-            .go(this_instruction.into())
-            .map_err(|HitBottom(builder)| Error::HitBottom {
+        result = builder.go(this_instruction.into()).map_err(
+            |InvalidInstruction { unexpected, incomplete }| Error::Unexpected {
                 instruction,
-                index: builder.index(),
-            })?;
+                unexpected,
+                index: incomplete.index(),
+            },
+        )?;
 
         // Update the instruction count
         instruction += 1;
