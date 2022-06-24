@@ -12,6 +12,8 @@ mod iresult;
 // pub mod packed; // TODO: fix this module
 pub use iresult::{IResult, Unexpected};
 
+pub mod read;
+
 use crate::internal::frontier::TrackForgotten;
 
 /// In a depth-first traversal, is the next node below, or to the right? If this is the last
