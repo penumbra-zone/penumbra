@@ -89,7 +89,7 @@ mod prelude {
         error::proof::VerifyError,
         index,
         internal::{
-            build::{self, Build, Built, IResult, Instruction, InvalidInstruction, Size},
+            build,
             complete::{self, Complete, ForgetOwned},
             frontier::{self, Focus, Forget, Frontier, Full, GetPosition, Insert, Item},
             hash::{CachedHash, Forgotten, GetHash, Hash, OptionHash},

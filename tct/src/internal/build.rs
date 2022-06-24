@@ -9,7 +9,7 @@ use crate::prelude::*;
 
 mod iresult;
 // pub mod packed; // TODO: fix this module
-pub use iresult::{IResult, InvalidInstruction, Unexpected};
+pub use iresult::{IResult, Unexpected};
 
 use super::frontier::TrackForgotten;
 
@@ -115,7 +115,7 @@ pub trait Build: Sized {
     ///
     /// Depending on location, the [`Fq`] contained in the instruction may be interpreted either as
     /// a [`Hash`] or as a [`Commitment`].
-    fn go(self, instruction: Instruction) -> Result<IResult<Self>, InvalidInstruction<Self>>;
+    fn go(self, instruction: Instruction) -> Result<IResult<Self>, Unexpected>;
 
     /// Checks if the builder has been started, i.e. it has received > 0 instructions.
     fn is_started(&self) -> bool;
@@ -147,12 +147,14 @@ pub trait Built {
 
 /// An error when constructing something, indicative of an incorrect sequence of instructions.
 pub enum Error {
-    /// Attempted to construct a child of a bottom-most leaf node.
+    /// An unexpected instruction was provided.
     Unexpected {
         /// The instruction at which the error occurred.
         instruction: usize,
-        /// The index of the node whose child could not be constructed.
+        /// The index of the node in question.
         index: u64,
+        /// The height of the node in question.
+        height: u8,
         /// The unexpected instruction.
         unexpected: Unexpected,
     },
@@ -200,13 +202,16 @@ pub fn build(
         };
 
         // Step forward the builder by one instruction
-        result = builder.go(this_instruction.into()).map_err(
-            |InvalidInstruction { unexpected, incomplete }| Error::Unexpected {
+        let index = builder.index();
+        let height = builder.height();
+        result = builder
+            .go(this_instruction.into())
+            .map_err(|unexpected| Error::Unexpected {
                 instruction,
                 unexpected,
-                index: incomplete.index(),
-            },
-        )?;
+                index,
+                height,
+            })?;
 
         // Update the instruction count
         instruction += 1;

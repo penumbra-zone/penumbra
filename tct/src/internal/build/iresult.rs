@@ -37,28 +37,12 @@ impl<C: Build> IResult<C> {
 #[error("traversal incomplete, awaiting more instructions")]
 pub struct Incomplete;
 
-/// The traversal said to continue down, but the thing under construction is the bottom of
-/// the tree.
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Error)]
-#[error("{}", .unexpected)]
-pub struct InvalidInstruction<C> {
-    pub incomplete: C,
-    pub unexpected: Unexpected,
-}
-
-impl<C> InvalidInstruction<C> {
-    pub fn map<D>(self, f: impl FnOnce(C) -> D) -> InvalidInstruction<D> {
-        InvalidInstruction {
-            incomplete: f(self.incomplete),
-            unexpected: self.unexpected,
-        }
-    }
-}
-
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Error)]
 pub enum Unexpected {
-    #[error("unexpected `Node` instruction")]
+    #[error("unexpected `Node` instruction; expected `Leaf`")]
     Node,
-    #[error("unexpected `Leaf` instruction")]
+    #[error("unexpected `Leaf` instruction; expected `Node`")]
     Leaf,
+    #[error("unexpected: at least one child of internal node must be witnessed")]
+    Unwitnessed,
 }

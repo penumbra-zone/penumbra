@@ -2,6 +2,8 @@ use std::collections::VecDeque;
 
 use super::*;
 
+use build::{Build, Built, IResult, Instruction, Unexpected};
+
 /// A builder for a frontier node.
 pub struct Builder<Child: Built + Focus>
 where
@@ -46,7 +48,7 @@ where
 {
     type Output = Node<Child>;
 
-    fn go(mut self, instruction: Instruction) -> Result<IResult<Self>, InvalidInstruction<Self>> {
+    fn go(mut self, instruction: Instruction) -> Result<IResult<Self>, Unexpected> {
         use {IResult::*, Instruction::*};
 
         // We have started construction of the children...
@@ -68,18 +70,13 @@ where
                 // If we didn't skip constructing this sibling, then we should forward the
                 // instruction to the front sibling builder
                 if !skipped {
-                    match front_sibling.go(instruction) {
-                        Err(InvalidInstruction{ incomplete, unexpected }) => {
-                            // We bounced off the bottom, so restore this sibling builder and error
-                            remaining.siblings.push_front(incomplete);
-                            return Err(InvalidInstruction { incomplete: self, unexpected });
-                        }
-                        Ok(Incomplete(incomplete)) => {
+                    match front_sibling.go(instruction)? {
+                        Incomplete(incomplete) => {
                             // We haven't finished with this sibling builder, so push it back onto
                             // the front, so we'll pop it off again next instruction
                             remaining.siblings.push_front(incomplete);
                         }
-                        Ok(Complete(complete)) => {
+                        Complete(complete) => {
                             // We finished building the sibling, so push it into list of siblings
                             self.siblings.push_mut(Insert::Keep(complete));
                         }
@@ -96,21 +93,16 @@ where
                     .focus
                     .take()
                     .expect("focus builder is present")
-                    .go(instruction)
+                    .go(instruction)?
                 {
-                    Err(InvalidInstruction { incomplete, unexpected }) => {
-                        // We bounced off the bottom, so restore the focus builder and error
-                        remaining.focus = Some(incomplete);
-                        Err(InvalidInstruction { incomplete: self, unexpected })
-                    }
-                    Ok(Incomplete(incomplete)) => {
+                    Incomplete(incomplete) => {
                         // We haven't finished building the focus, so restore it so we'll pop it off
                         // and keep building it next time
                         remaining.focus = Some(incomplete);
                         Ok(Incomplete(self))
                     }
                     // The completion of the builder: map everything into a node
-                    Ok(Complete(focus)) => Ok(Complete(self::Node {
+                    Complete(focus) => Ok(Complete(self::Node {
                         hash: remaining.hash.map(Into::into).unwrap_or_default(),
                         forgotten: [Forgotten::default(); 4],
                         siblings: self.siblings,
@@ -124,10 +116,7 @@ where
                 Leaf { .. } => {
                     // A `Leaf` instruction is not valid as the first instruction when constructing
                     // a frontier node, because the frontier is always fully represented
-                    return Err(InvalidInstruction {
-                        incomplete: self,
-                        unexpected: build::Unexpected::Leaf,
-                    });
+                    return Err(Unexpected::Leaf);
                 }
                 Node { here, size } => {
                     let hash = here.map(Hash::new);

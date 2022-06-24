@@ -1,5 +1,7 @@
 use super::*;
 
+use build::{Build, Built, IResult, Instruction, Unexpected};
+
 /// A builder for a frontier tier.
 pub struct Builder<Item: Built + Focus>
 where
@@ -39,35 +41,27 @@ where
 {
     type Output = Tier<Item>;
 
-    fn go(mut self, instruction: Instruction) -> Result<IResult<Self>, InvalidInstruction<Self>> {
+    fn go(mut self, instruction: Instruction) -> Result<IResult<Self>, Unexpected> {
         use {IResult::*, Instruction::*};
 
         if let Some(inner) = self.inner {
             // If we're already building something, pass the instruction along to the inside:
             match inner {
-                Inner::Frontier(builder) => match builder.go(instruction) {
-                    Err(InvalidInstruction { incomplete, unexpected }) => {
-                        self.inner = Some(Inner::Frontier(incomplete));
-                        Err(InvalidInstruction { incomplete: self, unexpected })
-                    }
-                    Ok(Incomplete(builder)) => {
+                Inner::Frontier(builder) => match builder.go(instruction)? {
+                    Incomplete(builder) => {
                         self.inner = Some(Inner::Frontier(builder));
                         Ok(Incomplete(self))
                     }
-                    Ok(Complete(frontier)) => Ok(Complete(Tier {
+                    Complete(frontier) => Ok(Complete(Tier {
                         inner: super::Inner::Frontier(Box::new(frontier)),
                     })),
                 },
-                Inner::Complete(builder) => match builder.go(instruction) {
-                    Err(InvalidInstruction { incomplete, unexpected }) => {
-                        self.inner = Some(Inner::Complete(incomplete));
-                        Err(InvalidInstruction { incomplete: self, unexpected })
-                    }
-                    Ok(Incomplete(builder)) => {
+                Inner::Complete(builder) => match builder.go(instruction)? {
+                    Incomplete(builder) => {
                         self.inner = Some(Inner::Complete(builder));
                         Ok(Incomplete(self))
                     }
-                    Ok(Complete(complete)) => Ok(Complete(Tier {
+                    Complete(complete) => Ok(Complete(Tier {
                         inner: super::Inner::Complete(complete),
                     })),
                 },

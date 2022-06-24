@@ -1,7 +1,9 @@
 use super::*;
 
+use build::{Build, Built, IResult, Instruction, Unexpected};
+
 /// A builder for a complete tier.
-pub struct Builder<Item: Built + Height>(<Nested<Item> as Built>::Builder);
+pub struct Builder<Item: GetHash + Built + Height>(<Nested<Item> as Built>::Builder);
 
 impl<Item: GetHash + Height + Built> Built for Tier<Item> {
     type Builder = Builder<Item>;
@@ -14,16 +16,13 @@ impl<Item: GetHash + Height + Built> Built for Tier<Item> {
 impl<Item: GetHash + Height + Built> Build for Builder<Item> {
     type Output = Tier<Item>;
 
-    fn go(self, instruction: Instruction) -> Result<IResult<Self>, InvalidInstruction<Self>> {
+    fn go(self, instruction: Instruction) -> Result<IResult<Self>, Unexpected> {
         use IResult::*;
 
-        self.0
-            .go(instruction)
-            .map(|r| match r {
-                Complete(inner) => Complete(Tier { inner }),
-                Incomplete(builder) => Incomplete(Builder(builder)),
-            })
-            .map_err(|unexpected| unexpected.map(Builder))
+        self.0.go(instruction).map(|r| match r {
+            Complete(inner) => Complete(Tier { inner }),
+            Incomplete(builder) => Incomplete(Builder(builder)),
+        })
     }
 
     fn is_started(&self) -> bool {
