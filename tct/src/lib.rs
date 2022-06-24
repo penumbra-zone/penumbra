@@ -55,6 +55,7 @@ mod proof;
 mod serialize;
 mod tree;
 
+pub mod build;
 pub mod error;
 pub mod structure;
 pub mod validate;
@@ -86,10 +87,10 @@ pub mod builder {
 // A crate-internal prelude to make things easier to import
 mod prelude {
     pub(crate) use super::{
+        build,
         error::proof::VerifyError,
         index,
         internal::{
-            build,
             complete::{self, Complete, ForgetOwned},
             frontier::{self, Focus, Forget, Frontier, Full, GetPosition, Insert, Item},
             hash::{CachedHash, Forgotten, GetHash, Hash, OptionHash},
