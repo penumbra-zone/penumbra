@@ -1,5 +1,7 @@
 use super::*;
 
+use build::{Build, Built, IResult, Instruction, Unexpected};
+
 /// A builder for a leaf.
 pub struct Builder<Item: Built>(Item::Builder);
 
@@ -14,16 +16,10 @@ impl<Item: Built> Built for Leaf<Item> {
 impl<Item: Built> Build for Builder<Item> {
     type Output = Leaf<Item>;
 
-    fn go(self, instruction: Instruction) -> Result<IResult<Self>, InvalidInstruction<Self>> {
-        use IResult::*;
-
+    fn go(self, instruction: Instruction) -> Result<IResult<Self>, Unexpected> {
         self.0
             .go(instruction)
-            .map(|r| match r {
-                Complete(item) => Complete(Leaf { item }),
-                Incomplete(builder) => Incomplete(Builder(builder)),
-            })
-            .map_err(|unexpected| unexpected.map(Builder))
+            .map(|r| r.map(Builder, |item| Leaf { item }))
     }
 
     fn is_started(&self) -> bool {
