@@ -1,3 +1,9 @@
+//! Read from ordered traversals of the tree's contents into instructions for constructing the tree.
+//!
+//! This module serves as a bridge between an arbitrary storage backend keyed by (position, depth),
+//! holding [`Fq`] values, and the sequence of [`Instruction`]s required to build the tree with
+//! [`deserialize::from_stream`](from_stream).
+
 use super::*;
 
 /// A reader that converts a stream of [`Fq`] values lexicographically ordered by (position, depth)
@@ -77,6 +83,15 @@ where
             position: 0,
             depth: 0,
             peek: None,
+        })
+    }
+
+    /// Convert this into a stream of instructions, suitable to be read in using [`from_stream`].
+    pub fn stream(mut self) -> impl Stream<Item = Result<Instruction, Error<E>>> + Unpin {
+        Box::pin(try_stream! {
+            while let Some(instruction) = self.next().await? {
+                yield instruction;
+            }
         })
     }
 
