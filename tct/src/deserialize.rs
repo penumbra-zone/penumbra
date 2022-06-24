@@ -122,7 +122,7 @@ pub enum Error<E> {
 type Tree = frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>>;
 
 /// Build a tree by iterating over a sequence of [`Instruction`]s, asynchronously.
-pub async fn build<E>(
+pub async fn from_stream<E>(
     position: u64,
     instructions: impl Stream<Item = Result<impl Into<Instruction>, E>> + Unpin,
 ) -> Result<crate::Tree, Error<E>> {
@@ -181,10 +181,10 @@ pub async fn build<E>(
 }
 
 /// Build a tree by iterating over a sequence of [`Instruction`]s, synchronously.
-pub fn build_sync<E>(
+pub fn from_iter<E>(
     position: u64,
     instructions: impl IntoIterator<Item = Result<impl Into<Instruction>, E>> + Unpin,
 ) -> Result<crate::Tree, Error<E>> {
-    let future = build(position, stream::iter(instructions.into_iter()));
+    let future = from_stream(position, stream::iter(instructions.into_iter()));
     futures::executor::block_on(future)
 }
