@@ -77,13 +77,13 @@ where
     R: Stream<Item = Result<Point, E>> + Unpin,
 {
     /// Create a new reader from an underlying stream.
-    pub fn new(reader: R) -> Result<Self, E> {
-        Ok(Self {
+    pub fn new(reader: R) -> Self {
+        Self {
             reader,
             position: 0,
             depth: 0,
             peek: None,
-        })
+        }
     }
 
     /// Convert this into a stream of instructions, suitable to be read in using [`from_stream`].

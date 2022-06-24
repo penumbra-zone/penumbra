@@ -13,6 +13,7 @@ mod iresult;
 pub use iresult::{IResult, Unexpected};
 
 pub mod read;
+pub use read::Point;
 
 use crate::internal::frontier::TrackForgotten;
 
@@ -189,4 +190,18 @@ pub fn from_iter<E>(
 ) -> Result<crate::Tree, Error<E>> {
     let future = from_stream(position, stream::iter(instructions.into_iter()));
     futures::executor::block_on(future)
+}
+
+/// Build a tree by iterating over a stream of (position, depth) pairs, asynchronously.
+///
+/// # Errors
+///
+/// The stream of points must be in lexicographic order by (position, depth), and the instruction
+/// stream represented by the points must be a valid pre-order depth-first traversal of some
+/// [`Tree`]. Otherwise, an error will be thrown.
+pub async fn from_points<E>(
+    position: u64,
+    points: impl Stream<Item = Result<Point, E>> + Unpin,
+) -> Result<crate::Tree, Error<read::Error<E>>> {
+    from_stream(position, read::Reader::new(points).stream()).await
 }
