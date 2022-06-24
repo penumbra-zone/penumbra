@@ -1,16 +1,19 @@
-use penumbra_crypto::{proofs::transparent::OutputProof, MockFlowCiphertext};
-use penumbra_proto::{dex as pb, Protobuf};
-use serde::{Deserialize, Serialize};
+use penumbra_crypto::rdsa::{Signature, SpendAuth};
+use penumbra_crypto::NotePayload;
+use penumbra_crypto::{proofs::transparent::SpendProof, MockFlowCiphertext};
+use penumbra_proto::dex::TradingPair;
+use penumbra_proto::{crypto::NoteCommitment, dex as pb, Protobuf};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(try_from = "pb::Swap", into = "pb::Swap")]
+#[derive(Clone, Debug)]
 pub struct Swap {
     // A proof that this is a valid state change.
-    proof: OutputProof,
+    pub proof: SpendProof,
     // The encrypted amount of asset 1 to be swapped.
-    enc_amount_1: MockFlowCiphertext,
+    pub enc_amount_1: MockFlowCiphertext,
     // The encrypted amount of asset 2 to be swapped.
-    enc_amount_2: MockFlowCiphertext,
+    pub enc_amount_2: MockFlowCiphertext,
+    pub body: Body,
+    pub auth_sig: Signature<SpendAuth>,
 }
 
 impl Protobuf<pb::Swap> for Swap {}
@@ -21,6 +24,8 @@ impl From<Swap> for pb::Swap {
             zkproof: s.proof.into(),
             enc_amount_1: Some(s.enc_amount_1.into()),
             enc_amount_2: Some(s.enc_amount_2.into()),
+            body: Some(s.body.into()),
+            auth_sig: Some(s.auth_sig.into()),
         }
     }
 }
@@ -39,6 +44,75 @@ impl TryFrom<pb::Swap> for Swap {
             enc_amount_2: s
                 .enc_amount_2
                 .ok_or_else(|| anyhow::anyhow!("missing enc_amount_2"))?
+                .try_into()?,
+            body: s
+                .body
+                .ok_or_else(|| anyhow::anyhow!("missing body"))?
+                .try_into()?,
+            auth_sig: s
+                .auth_sig
+                .ok_or_else(|| anyhow::anyhow!("missing auth_sig"))?
+                .try_into()?,
+        })
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct SwapCiphertext(Vec<u8>);
+
+#[derive(Debug, Clone)]
+pub struct Body {
+    pub trading_pair: TradingPair,
+    pub ca1: NoteCommitment,
+    pub ca2: NoteCommitment,
+    // TODO: is NoteCommitment the right type here?
+    pub cv: NoteCommitment,
+    pub swap_nft: NotePayload,
+    pub swap_ciphertext: SwapCiphertext,
+}
+
+impl Protobuf<pb::SwapBody> for Body {}
+
+impl From<Body> for pb::SwapBody {
+    fn from(s: Body) -> Self {
+        pb::SwapBody {
+            trading_pair: s.trading_pair.into(),
+            ca1: s.ca1.into_bytes(),
+            ca2: s.ca2.into(),
+            cv: s.cv.into(),
+            swap_nft: s.swap_nft.into(),
+            swap_ciphertext: s.swap_ciphertext.into(),
+        }
+    }
+}
+
+impl TryFrom<pb::SwapBody> for Body {
+    type Error = anyhow::Error;
+    fn try_from(s: pb::SwapBody) -> Result<Self, Self::Error> {
+        Ok(Self {
+            trading_pair: s
+                .trading_pair
+                .ok_or_else(|| anyhow::anyhow!("missing trading_pair"))?
+                .try_into()?,
+            ca1: s
+                .ca1
+                .ok_or_else(|| anyhow::anyhow!("missing ca1"))?
+                .try_into()?,
+            ca2: s
+                .ca2
+                .ok_or_else(|| anyhow::anyhow!("missing ca2"))?
+                .try_into()?,
+            cv: s
+                .cv
+                .ok_or_else(|| anyhow::anyhow!("missing cv"))?
+                .try_into()?,
+            swap_nft: s
+                .swap_nft
+                .ok_or_else(|| anyhow::anyhow!("missing swap_nft"))?
+                .try_into()?,
+            swap_ciphertext: s
+                .swap_ciphertext
+                .ok_or_else(|| anyhow::anyhow!("missing swap_ciphertext"))?
                 .try_into()?,
         })
     }

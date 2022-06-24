@@ -155,9 +155,6 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.ibc.IBCAction", SERIALIZE),
     (".penumbra.dex.MockFlowCiphertext", SERIALIZE),
     (".penumbra.dex.MockFlowCiphertext", SERDE_TRANSPARENT),
-    (".penumbra.dex.Swap", SERIALIZE),
-    (".penumbra.dex.SwapClaim", SERIALIZE),
-    (".penumbra.dex.SwapPlaintext", SERIALIZE),
     (".penumbra.dex.TradingPair", SERIALIZE),
 ];
 
