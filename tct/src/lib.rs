@@ -58,11 +58,11 @@ extern crate async_stream;
 mod commitment;
 mod index;
 mod proof;
-mod serialize;
 mod tree;
 
 pub mod deserialize;
 pub mod error;
+pub mod serialize;
 pub mod structure;
 pub mod validate;
 pub use commitment::Commitment;
