@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use anyhow::Result;
 use penumbra_component::stake::rate::RateData;
@@ -397,4 +397,82 @@ where
     }
 
     Ok(plan)
+}
+
+#[instrument(skip(fvk, view, rng))]
+pub async fn sweep<V, R>(
+    fvk: &FullViewingKey,
+    view: &mut V,
+    mut rng: R,
+) -> Result<Vec<TransactionPlan>, anyhow::Error>
+where
+    V: ViewClient,
+    R: RngCore + CryptoRng,
+{
+    const SWEEP_COUNT: usize = 8;
+
+    let chain_id = view.chain_params().await?.chain_id;
+
+    let all_notes = view
+        .notes(NotesRequest {
+            fvk_hash: Some(fvk.hash().into()),
+            ..Default::default()
+        })
+        .await?;
+
+    let mut notes_by_addr_and_denom: BTreeMap<DiversifierIndex, BTreeMap<_, Vec<NoteRecord>>> =
+        BTreeMap::new();
+
+    for record in all_notes {
+        notes_by_addr_and_denom
+            .entry(record.diversifier_index)
+            .or_default()
+            .entry(record.note.asset_id())
+            .or_default()
+            .push(record);
+    }
+
+    let mut plans = Vec::new();
+
+    for (index, notes_by_denom) in notes_by_addr_and_denom {
+        tracing::info!(?index, "processing address");
+        let (addr, _dtk) = fvk.incoming().payment_address(index);
+
+        for (asset_id, mut records) in notes_by_denom {
+            // Sort notes by amount, ascending, so the biggest notes are at the end...
+            records.sort_by(|a, b| a.note.value().amount.cmp(&b.note.value().amount));
+            // ... so that when we use chunks_exact, we get SWEEP_COUNT sized
+            // chunks, ignoring the biggest notes in the remainder.
+            for group in records.chunks_exact(SWEEP_COUNT) {
+                let mut plan = TransactionPlan {
+                    chain_id: chain_id.clone(),
+                    fee: Fee(0),
+                    ..Default::default()
+                };
+
+                for record in group {
+                    plan.actions.push(
+                        SpendPlan::new(&mut rng, record.note.clone(), record.position).into(),
+                    );
+                }
+                plan.actions.push(
+                    OutputPlan::new(
+                        &mut rng,
+                        Value {
+                            amount: group.iter().map(|record| record.note.amount()).sum(),
+                            asset_id,
+                        },
+                        addr,
+                        MemoPlaintext::default(),
+                    )
+                    .into(),
+                );
+
+                tracing::debug!(?plan);
+                plans.push(plan);
+            }
+        }
+    }
+
+    Ok(plans)
 }

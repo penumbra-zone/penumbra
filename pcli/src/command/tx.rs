@@ -75,106 +75,24 @@ impl TxCmd {
                 .await?;
                 app.build_and_submit_transaction(plan).await?;
             }
-            TxCmd::Sweep => {
-                todo!("port to new API");
-                //sweep(opt, state).await?;
-            }
+            TxCmd::Sweep => loop {
+                let plans = plan::sweep(&app.fvk, &mut app.view, OsRng).await?;
+                let num_plans = plans.len();
+
+                for (i, plan) in plans.into_iter().enumerate() {
+                    println!("building sweep {} of {}", i, num_plans);
+                    let tx = app.build_transaction(plan).await?;
+                    app.submit_transaction_unconfirmed(&tx).await?;
+                }
+                if num_plans == 0 {
+                    println!("finished sweeping");
+                    break;
+                } else {
+                    println!("awaiting confirmations...");
+                    tokio::time::sleep(std::time::Duration::from_secs(6)).await;
+                }
+            },
         }
         Ok(())
     }
 }
-
-// TODO: port to new API
-/*
-
-// This code is done outside of the client state as a test case for whether it's
-// possible to use that interface to implement bespoke note handling.
-//
-// For each (account, denom) pair, we do a parallel, SWEEP_COUNT-to-1 sweep of
-// as many of that denom's notes as possible.  This command can be run multiple
-// times, and tells the user about the results of sweeping.
-//
-// The original implementation counted an estimate of the number of notes
-// following the sweep and used it to decide whether to recurse, but doing so
-// requires async recursion, and working that out didn't seem like a great
-// effort/benefit tradeoff.
-async fn sweep(opt: &Opt, state: &mut ClientStateFile) -> Result<()> {
-    const SWEEP_COUNT: usize = 8;
-    let mut transactions = Vec::new();
-    // The UnspentNote struct owns a borrow of a note, preventing use of
-    // any mutable methods on the ClientState, so we have to accumulate
-    // changes to be applied later.
-    let unspent = state.unspent_notes_by_address_and_denom();
-    for (id, label, addr) in state.wallet().addresses() {
-        if unspent.get(&(id as u64)).is_none() {
-            continue;
-        }
-        tracing::info!(?id, ?label, "processing address");
-        for (denom, notes) in unspent.get(&(id as u64)).unwrap().iter() {
-            // Extract only the ready notes of this denomination.
-            let mut notes = notes
-                .iter()
-                .filter_map(|n| n.as_ready())
-                .collect::<Vec<_>>();
-            // Sort notes by amount, ascending, so the biggest notes are at the end...
-            notes.sort_by(|a, b| a.value().amount.cmp(&b.value().amount));
-            // ... so that when we use chunks_exact, we get SWEEP_COUNT sized
-            // chunks, ignoring the biggest notes in the remainder.
-            for group in notes.chunks_exact(SWEEP_COUNT) {
-                tracing::info!(?denom, "building sweep transaction");
-                let mut plan = TransactionPlan {
-                    chain_id: state
-                        .chain_id()
-                        .ok_or_else(|| anyhow!("missing chain_id"))?,
-                    fee: Fee(0),
-                    ..Default::default()
-                };
-
-                for note in group {
-                    plan.actions.push(
-                        SpendPlan::new(&mut OsRng, (**note).clone(), state.position(note).unwrap())
-                            .into(),
-                    );
-                }
-                plan.actions.push(
-                    OutputPlan::new(
-                        &mut OsRng,
-                        Value {
-                            amount: group.iter().map(|n| n.amount()).sum(),
-                            asset_id: denom.id(),
-                        },
-                        addr,
-                        MemoPlaintext::default(),
-                    )
-                    .into(),
-                );
-
-                transactions.push(state.build_transaction(OsRng, plan)?);
-            }
-        }
-    }
-
-    let num_sweeps = transactions.len();
-    tracing::info!(num_sweeps, "submitting sweeps");
-    for transaction in transactions {
-        opt.submit_transaction_unconfirmed(&transaction).await?;
-    }
-
-    // Print a message to the user, so they can find out what we did.
-    if num_sweeps > 0 {
-        println!(
-            "swept {} notes into {} new outputs; rerun to sweep further",
-            num_sweeps * SWEEP_COUNT,
-            num_sweeps,
-        );
-    } else {
-        println!("finished sweeping");
-        // Terminate with a non-zero exit code so it's easy to script
-        // sweeping in a loop
-        std::process::exit(9);
-    }
-
-    Ok(())
-}
-
- */

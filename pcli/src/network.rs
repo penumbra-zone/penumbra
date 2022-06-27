@@ -133,7 +133,7 @@ impl App {
         &self,
         transaction: &Transaction,
     ) -> Result<(), anyhow::Error> {
-        tracing::info!("broadcasting transaction...");
+        println!("broadcasting transaction...");
 
         let client = reqwest::Client::new();
         let req_id: u8 = rand::thread_rng().gen();
