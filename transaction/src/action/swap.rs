@@ -1,8 +1,11 @@
+use bytes::Bytes;
+
 use penumbra_crypto::rdsa::{Signature, SpendAuth};
+use penumbra_crypto::value;
 use penumbra_crypto::NotePayload;
 use penumbra_crypto::{proofs::transparent::SpendProof, MockFlowCiphertext};
 use penumbra_proto::dex::TradingPair;
-use penumbra_proto::{crypto::NoteCommitment, dex as pb, Protobuf};
+use penumbra_proto::{dex as pb, Protobuf};
 
 #[derive(Clone, Debug)]
 pub struct Swap {
@@ -63,10 +66,9 @@ pub struct SwapCiphertext(Vec<u8>);
 #[derive(Debug, Clone)]
 pub struct Body {
     pub trading_pair: TradingPair,
-    pub ca1: NoteCommitment,
-    pub ca2: NoteCommitment,
-    // TODO: is NoteCommitment the right type here?
-    pub cv: NoteCommitment,
+    pub ca1: value::Commitment,
+    pub ca2: value::Commitment,
+    pub cf: value::Commitment,
     pub swap_nft: NotePayload,
     pub swap_ciphertext: SwapCiphertext,
 }
@@ -77,9 +79,9 @@ impl From<Body> for pb::SwapBody {
     fn from(s: Body) -> Self {
         pb::SwapBody {
             trading_pair: s.trading_pair.into(),
-            ca1: s.ca1.into_bytes(),
-            ca2: s.ca2.into(),
-            cv: s.cv.into(),
+            ca1: Bytes::copy_from_slice(&s.ca1),
+            ca2: Bytes::copy_from_slice(&s.ca2),
+            cf: Bytes::copy_from_slice(&s.cf),
             swap_nft: s.swap_nft.into(),
             swap_ciphertext: s.swap_ciphertext.into(),
         }
@@ -103,8 +105,8 @@ impl TryFrom<pb::SwapBody> for Body {
                 .ok_or_else(|| anyhow::anyhow!("missing ca2"))?
                 .try_into()?,
             cv: s
-                .cv
-                .ok_or_else(|| anyhow::anyhow!("missing cv"))?
+                .cf
+                .ok_or_else(|| anyhow::anyhow!("missing cf"))?
                 .try_into()?,
             swap_nft: s
                 .swap_nft
