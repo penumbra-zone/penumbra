@@ -10,7 +10,13 @@ pub struct MockFlowCiphertext(u64);
 // Fake implementation for now, TODO: replace w/ additively homomorphic encryption impl
 // once Eddy impl available
 impl MockFlowCiphertext {
+    pub fn new(plaintext: u64) -> Self {
+        // TODO: do encryption stuff here
+        Self(plaintext)
+    }
+
     pub fn mock_decrypt(&self) -> u64 {
+        // TODO: do decryption stuff here
         self.0
     }
 }
