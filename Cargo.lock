@@ -3358,7 +3358,7 @@ dependencies = [
 [[package]]
 name = "poseidon-paramgen"
 version = "0.1.0"
-source = "git+https://github.com/penumbra-zone/poseidon377?branch=oldparams#81deff2ce0207f73f47d4ffa746bb208728582a6"
+source = "git+https://github.com/penumbra-zone/poseidon377?branch=oldparams#7455423c2d34b1aac4a4e3ef1484aa093857ab22"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -3370,27 +3370,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "poseidon-permutation"
-version = "0.1.0"
-source = "git+https://github.com/penumbra-zone/poseidon377?branch=oldparams#81deff2ce0207f73f47d4ffa746bb208728582a6"
-dependencies = [
- "ark-ff",
- "once_cell",
- "poseidon-paramgen",
-]
-
-[[package]]
 name = "poseidon377"
 version = "0.1.0"
-source = "git+https://github.com/penumbra-zone/poseidon377?branch=oldparams#81deff2ce0207f73f47d4ffa746bb208728582a6"
+source = "git+https://github.com/penumbra-zone/poseidon377?branch=oldparams#7455423c2d34b1aac4a4e3ef1484aa093857ab22"
 dependencies = [
  "ark-ed-on-bls12-377",
  "ark-ff",
  "ark-sponge",
  "num-bigint",
  "once_cell",
- "poseidon-paramgen",
- "poseidon-permutation",
 ]
 
 [[package]]
