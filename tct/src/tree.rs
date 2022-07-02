@@ -29,6 +29,16 @@ impl Default for Tree {
     }
 }
 
+impl PartialEq for Tree {
+    fn eq(&self, other: &Tree) -> bool {
+        self.position() == other.position() // two trees could have identical contents but different positions
+            && self.root() == other.root()  // if the roots match, they represent the same commitments, but may witness different ones
+            && self.index == other.index // we ensure they witness the same commitments by checking equality of indices
+    }
+}
+
+impl Eq for Tree {}
+
 /// The root hash of a [`Tree`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(try_from = "pb::MerkleRoot", into = "pb::MerkleRoot")]
