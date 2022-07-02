@@ -65,6 +65,7 @@ pub mod storage;
 pub mod structure;
 pub mod validate;
 pub use commitment::Commitment;
+pub use internal::hash::Forgotten;
 pub use proof::Proof;
 pub use tree::{Position, Root, Tree};
 
