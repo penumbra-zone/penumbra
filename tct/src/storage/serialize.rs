@@ -1,11 +1,13 @@
+//! Incremental serialization for the [`Tree`](crate::Tree).
+
 use decaf377::FieldExt;
 use futures::{Stream, StreamExt};
 use poseidon377::Fq;
 use serde::de::Visitor;
 use std::pin::Pin;
 
-use crate::deserialize::{Instruction, Point, Size};
 use crate::prelude::*;
+use crate::storage::{Instruction, Point, Size};
 use crate::structure::{Kind, Place};
 use crate::tree::Position;
 

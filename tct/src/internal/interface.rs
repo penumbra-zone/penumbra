@@ -105,7 +105,10 @@ pub trait ForgetOwned: Height + Sized {
     ) -> (Insert<Self>, bool);
 }
 
-use crate::deserialize::{IResult, Instruction, Unexpected};
+use crate::storage::{
+    deserialize::{IResult, Unexpected},
+    Instruction,
+};
 
 /// A builder that can incrementally consume a pre-order depth-first traversal of node values to
 /// build a tree.

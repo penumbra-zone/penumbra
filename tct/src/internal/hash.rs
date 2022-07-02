@@ -70,7 +70,7 @@ impl<T: GetHash> GetHash for &mut T {
 
 /// The hash of an individual [`Commitment`] or internal node in the tree.
 #[derive(Clone, Copy, PartialEq, Eq, std::hash::Hash, Serialize, Deserialize)]
-pub struct Hash(#[serde(with = "crate::serialize::fq")] Fq);
+pub struct Hash(#[serde(with = "crate::storage::serialize::fq")] Fq);
 
 impl From<Hash> for Fq {
     #[inline]

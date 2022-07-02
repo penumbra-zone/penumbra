@@ -1,82 +1,20 @@
 #![allow(clippy::unusual_byte_groupings)]
 
-//! Interface for constructing trees from depth-first traversals of them.
+//! Non-incremental deserialization for the [`Tree`](crate::Tree).
 
-use decaf377::Fq;
 use futures::{stream, Stream, StreamExt};
 use std::{fmt::Debug, pin::Pin};
 
 use crate::prelude::*;
+use crate::storage::{Instruction, Point, Read};
 
 mod iresult;
 // pub mod packed; // TODO: fix this module
 pub use iresult::{IResult, Unexpected};
 
 pub mod read;
-pub use read::Point;
 
 use crate::internal::frontier::TrackForgotten;
-
-/// In a depth-first traversal, is the next node below, or to the right? If this is the last
-/// represented sibling, then we should go up instead of (illegally) right.
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Instruction {
-    /// This node is an internal node, with a non-zero number of children and an optional cached
-    /// value. We should create it, then continue the traversal to create its children.
-    Node {
-        /// The element at this leaf, if any (internal nodes can always calculate their element, so
-        /// this is optional).
-        here: Option<Fq>,
-        /// The number of children of this node.
-        size: Size,
-    },
-    /// This node is a leaf, with no children and a mandatory value. We should create it, then
-    /// return it as completed, to continue the traversal at the parent.
-    Leaf {
-        /// The element at this leaf.
-        here: Fq,
-    },
-}
-
-/// Proptest generators for things relevant to construction.
-#[cfg(feature = "arbitrary")]
-pub mod arbitrary;
-
-/// The number of children of a node we're creating.
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[cfg_attr(feature = "arbitrary", derive(proptest_derive::Arbitrary))]
-pub enum Size {
-    /// 1 child.
-    One,
-    /// 2 children.
-    Two,
-    /// 3 children.
-    Three,
-    /// 4 children.
-    Four,
-}
-
-impl From<Size> for usize {
-    fn from(size: Size) -> Self {
-        match size {
-            Size::One => 1,
-            Size::Two => 2,
-            Size::Three => 3,
-            Size::Four => 4,
-        }
-    }
-}
-
-impl Debug for Size {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match *self {
-            Size::One => write!(f, "1"),
-            Size::Two => write!(f, "2"),
-            Size::Three => write!(f, "3"),
-            Size::Four => write!(f, "4"),
-        }
-    }
-}
 
 /// An error when constructing something, indicative of an incorrect sequence of instructions.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Error)]
@@ -204,4 +142,15 @@ pub async fn from_points<E>(
     points: impl Stream<Item = Result<Point, E>> + Unpin,
 ) -> Result<crate::Tree, Error<read::Error<E>>> {
     from_instructions_stream(position, read::Reader::new(points).stream()).await
+}
+
+/// Build a tree from a reader that provides an enumeration of the points stored.
+pub async fn from_reader<R: Read>(
+    reader: &mut R,
+) -> Result<crate::Tree, Error<read::Error<R::Error>>> {
+    let position = reader
+        .position()
+        .await
+        .map_err(|error| read::Error::Underlying { error })?;
+    from_points(position, reader.points()).await
 }

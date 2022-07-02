@@ -4,7 +4,14 @@
 //! holding [`Fq`] values, and the sequence of [`Instruction`]s required to build the tree with
 //! [`deserialize::from_stream`](from_stream).
 
-use super::*;
+use std::pin::Pin;
+
+use ark_ed_on_bls12_377::Fq;
+use futures::{Stream, StreamExt};
+
+use crate::prelude::*;
+
+use crate::storage::{Instruction, Point, Size};
 
 /// A reader that converts a stream of [`Fq`] values lexicographically ordered by (position, depth)
 /// into a sequence of [`Instruction`]s to follow to reconstruct the represented tree.
@@ -13,24 +20,6 @@ pub struct Reader<R> {
     position: u64,
     depth: u8,
     peek: Option<Point>,
-}
-
-/// A point in the serialized tree: the hash or commitment (represented by an [`Fq`]), and its
-/// position and depth in the tree.
-///
-/// The depth is the distance from the root, so leaf hashes have depth 24, and commitments
-/// themselves have depth 25.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Point {
-    /// The position of the value.
-    pub position: u64,
-    /// The depth of the value from the root of the tree.
-    ///
-    /// Note that this representation means that leaf hashes have depth 24, and commitments
-    /// themselves have depth 25.
-    pub depth: u8,
-    /// The value at this point.
-    pub here: Fq,
 }
 
 /// An error while reading a tree point from a stream.
