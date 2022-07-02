@@ -42,7 +42,9 @@ impl Serializer {
         // A node is complete if it's not on the frontier
         let is_complete = !is_frontier;
 
-        is_essential || (is_frontier && self.options.keep_frontier) || (is_complete && self.options.keep_complete)
+        is_essential
+            || (is_frontier && self.options.keep_frontier)
+            || (is_complete && self.options.keep_complete)
     }
 
     fn should_keep_children(&self, node: &structure::Node) -> bool {
@@ -396,7 +398,14 @@ pub async fn to_writer<W: Write>(
     // Delete all the forgotten points
     let mut forgotten_points = serializer.forgotten_stream(tree);
     while let Some(point) = forgotten_points.next().await {
-        writer.delete_range(point.depth + 1, point.range()).await?;
+        writer
+            .delete_range(
+                // We delete all points *below* the forgotten point, because the forgotten point itself
+                // should be preserved, since it holds now an essential hash
+                point.depth + 1,
+                point.range(),
+            )
+            .await?;
     }
 
     // Update the position
