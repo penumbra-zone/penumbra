@@ -3042,11 +3042,13 @@ name = "penumbra-tct-property-test"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "futures",
  "penumbra-tct",
  "proptest",
  "proptest-derive",
  "sqlx",
  "static_assertions",
+ "tokio",
 ]
 
 [[package]]

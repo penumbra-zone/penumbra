@@ -1,8 +1,6 @@
 #[macro_use]
 extern crate proptest_derive;
 
-use std::collections::HashSet;
-
 use proptest::{arbitrary::*, prelude::*};
 
 use penumbra_tct::{
@@ -23,6 +21,7 @@ enum Action {
     Serialize,
 }
 
+#[derive(Debug, Clone, Default)]
 struct State {
     last_forgotten: Forgotten,
     storage: InMemory,
@@ -57,5 +56,26 @@ impl Action {
         };
 
         Ok(())
+    }
+}
+
+proptest! {
+    #[test]
+    fn incremental_serialize(
+        actions in
+            prop::collection::vec(any::<Commitment>(), 1..MAX_USED_COMMITMENTS)
+                .prop_flat_map(|commitments| {
+                    prop::collection::vec(any_with::<Action>(commitments), 1..MAX_TIER_ACTIONS)
+                })
+    ) {
+        futures::executor::block_on(async move {
+            let mut tree = Tree::new();
+            let mut state = State::default();
+            for action in actions {
+                action.apply(&mut state, &mut tree).await.unwrap();
+            }
+            let deserialized = deserialize::from_reader(&mut state.storage).await.unwrap();
+            assert_eq!(tree, deserialized);
+        })
     }
 }
