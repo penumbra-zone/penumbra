@@ -30,6 +30,15 @@ pub struct Point {
     pub here: Fq,
 }
 
+impl Point {
+    /// Get the range of positions "beneath" this point.
+    pub fn range(&self) -> Range<u64> {
+        let height = 24u8.saturating_sub(self.depth);
+        let stride = 4u64.pow(height.into());
+        self.position..(self.position + stride).min(4u64.pow(24) - 1)
+    }
+}
+
 /// In a depth-first traversal, is the next node below, or to the right? If this is the last
 /// represented sibling, then we should go up instead of (illegally) right.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -118,4 +127,7 @@ pub trait Write: Read {
         minimum_depth: u8,
         positions: Range<u64>,
     ) -> Result<(), Self::Error>;
+
+    /// Set the stored position of the tree.
+    async fn set_position(&mut self, position: u64) -> Result<(), Self::Error>;
 }
