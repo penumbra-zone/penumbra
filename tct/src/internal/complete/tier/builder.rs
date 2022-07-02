@@ -1,6 +1,9 @@
 use super::*;
 
-use deserialize::{IResult, Instruction, Unexpected};
+use crate::storage::{
+    deserialize::{IResult, Unexpected},
+    Instruction,
+};
 
 /// A builder for a complete tier.
 pub struct Builder<Item: GetHash + Built + Height>(<Nested<Item> as Built>::Builder);

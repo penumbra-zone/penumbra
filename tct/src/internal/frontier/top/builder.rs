@@ -1,6 +1,9 @@
 use super::*;
 
-use deserialize::{IResult, Instruction, Unexpected};
+use crate::storage::{
+    deserialize::{IResult, Unexpected},
+    Instruction,
+};
 
 /// A builder for a top of a frontier.
 pub struct Builder<Item: Built + Focus>(<Nested<Item> as Built>::Builder)

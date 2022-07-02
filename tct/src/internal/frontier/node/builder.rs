@@ -2,7 +2,10 @@ use std::collections::VecDeque;
 
 use super::*;
 
-use deserialize::{IResult, Instruction, Unexpected};
+use crate::storage::{
+    deserialize::{IResult, Unexpected},
+    Instruction,
+};
 
 /// A builder for a frontier node.
 pub struct Builder<Child: Built + Focus>
