@@ -75,6 +75,7 @@ pub mod three;
 
 mod insert;
 
+#[allow(missing_docs)]
 pub mod frontier {
     //! [`Frontier`] things can be inserted into and updated, always representing the rightmost
     //! (most recently inserted) element of a tree.
@@ -118,6 +119,7 @@ pub mod frontier {
     };
 }
 
+#[allow(missing_docs)]
 pub mod complete {
     //! [`Complete`] things are sparse representations of only the data that was inserted using
     //! [`Witness::Keep`](crate::Witness::Keep), with the data that was inserted using
