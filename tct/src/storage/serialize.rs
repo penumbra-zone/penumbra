@@ -7,34 +7,21 @@ use serde::de::Visitor;
 use std::pin::Pin;
 
 use crate::prelude::*;
-use crate::storage::{Instruction, Point, Size};
+use crate::storage::{Instruction, Point, Size, Write};
 use crate::structure::{Kind, Place};
 use crate::tree::Position;
 
 pub(crate) mod fq;
 
 /// Options for serializing a tree.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct Serializer {
-    /// Should the internal hashes of complete nodes be preserved?
-    keep_complete: bool,
-    /// Should the internal hashes of frontier nodes be preserved?
-    keep_frontier: bool,
+    /// The options for the serialization.
+    options: Options,
     /// The minimum position of node which should be included in the serialization.
     minimum_position: Position,
     /// The minimum forgotten version which should be reported for deletion.
-    minimum_forgotten: Forgotten,
-}
-
-impl Default for Serializer {
-    fn default() -> Self {
-        Self {
-            keep_frontier: false,
-            keep_complete: true,
-            minimum_position: 0.into(),
-            minimum_forgotten: Forgotten::default(),
-        }
-    }
+    last_forgotten: Forgotten,
 }
 
 impl Serializer {
@@ -55,7 +42,7 @@ impl Serializer {
         // A node is complete if it's not on the frontier
         let is_complete = !is_frontier;
 
-        is_essential || (is_frontier && self.keep_frontier) || (is_complete && self.keep_complete)
+        is_essential || (is_frontier && self.options.keep_frontier) || (is_complete && self.options.keep_complete)
     }
 
     fn should_keep_children(&self, node: &structure::Node) -> bool {
@@ -73,9 +60,9 @@ impl Serializer {
         self
     }
 
-    /// Set the minimum forgotten version to include in the serialization of forgettable locations.
-    pub fn forgotten(&mut self, forgotten: Forgotten) -> &mut Self {
-        self.minimum_forgotten = forgotten;
+    /// Set the last forgotten version to include in the serialization of forgettable locations.
+    pub fn last_forgotten(&mut self, forgotten: Forgotten) -> &mut Self {
+        self.last_forgotten = forgotten;
         self
     }
 
@@ -84,7 +71,7 @@ impl Serializer {
     /// If frontier hashes are kept, this slightly reduces the amount of computation upon
     /// deserialization, but imposes a constant space overhead on incremental serialization.
     pub fn omit_frontier(&mut self) -> &mut Self {
-        self.keep_frontier = false;
+        self.options.omit_frontier();
         self
     }
 
@@ -94,7 +81,7 @@ impl Serializer {
     /// deserialization, but imposes a constant space overhead each time incremental serialization
     /// is performed.
     pub fn keep_frontier(&mut self) -> &mut Self {
-        self.keep_frontier = true;
+        self.options.keep_frontier();
         self
     }
 
@@ -105,7 +92,7 @@ impl Serializer {
     /// number of witnessed commitments need to be recomputed. However, this also imposes a linear
     /// space overhead on the total amount of serialized data.
     pub fn keep_complete(&mut self) -> &mut Self {
-        self.keep_complete = true;
+        self.options.keep_complete();
         self
     }
 
@@ -116,7 +103,7 @@ impl Serializer {
     /// number of witnessed commitments need to be recomputed. However, this also imposes a linear
     /// space overhead on the total amount of serialized data.
     pub fn omit_complete(&mut self) -> &mut Self {
-        self.keep_complete = false;
+        self.options.omit_complete();
         self
     }
 
@@ -284,7 +271,7 @@ impl Serializer {
                 // (because those greater will not have yet been serialized to storage) and greater
                 // than or equal to the minimum forgotten version (because those lesser will already
                 // have been deleted from storage)
-                if node.position() < options.minimum_position && node.forgotten() >= options.minimum_forgotten {
+                if node.position() < options.minimum_position && node.forgotten() > options.last_forgotten {
                     let children = node.children();
                     if children.is_empty() {
                         // If there are no children, report the point
@@ -321,4 +308,106 @@ impl Serializer {
     ) -> impl Iterator<Item = Point> + 'tree {
         futures::executor::block_on_stream(self.forgotten_stream(tree))
     }
+}
+
+/// Options for serializing a tree to a writer.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Options {
+    /// Should the internal hashes of complete nodes be preserved?
+    keep_complete: bool,
+    /// Should the internal hashes of frontier nodes be preserved?
+    keep_frontier: bool,
+}
+
+impl Default for Options {
+    fn default() -> Self {
+        Self {
+            keep_frontier: false,
+            keep_complete: true,
+        }
+    }
+}
+
+impl Options {
+    /// Set the serializer to omit the frontier hashes in the output (this is the default).
+    ///
+    /// If frontier hashes are kept, this slightly reduces the amount of computation upon
+    /// deserialization, but imposes a constant space overhead on incremental serialization.
+    pub fn omit_frontier(&mut self) -> &mut Self {
+        self.keep_frontier = false;
+        self
+    }
+
+    /// Set the serializer to keep the frontier hashes in the output.
+    ///
+    /// If frontier hashes are kept, this slightly reduces the amount of computation upon
+    /// deserialization, but imposes a constant space overhead each time incremental serialization
+    /// is performed.
+    pub fn keep_frontier(&mut self) -> &mut Self {
+        self.keep_frontier = true;
+        self
+    }
+
+    /// Set the serializer to keep internal complete hashes in the output (this is the default).
+    ///
+    /// If complete internal hashes are kept, this significantly reduces the amount of computation
+    /// upon deserialization, since if they are not cached, a number of hashes proportionate to the
+    /// number of witnessed commitments need to be recomputed. However, this also imposes a linear
+    /// space overhead on the total amount of serialized data.
+    pub fn keep_complete(&mut self) -> &mut Self {
+        self.keep_complete = true;
+        self
+    }
+
+    /// Set the serializer to omit internal complete hashes in the output.
+    ///
+    /// If complete internal hashes are kept, this significantly reduces the amount of computation
+    /// upon deserialization, since if they are not cached, a number of hashes proportionate to the
+    /// number of witnessed commitments need to be recomputed. However, this also imposes a linear
+    /// space overhead on the total amount of serialized data.
+    pub fn omit_complete(&mut self) -> &mut Self {
+        self.keep_complete = false;
+        self
+    }
+}
+
+/// Serialize the changes to a [`Tree`](crate::Tree) into a writer, deleting all forgotten nodes and
+/// adding all new nodes.
+pub async fn to_writer<W: Write>(
+    options: Options,
+    last_forgotten: Forgotten,
+    writer: &mut W,
+    tree: &crate::Tree,
+) -> Result<(), W::Error> {
+    // Grab the current position stored in storage
+    let minimum_position = writer.position().await?.into();
+    let serializer = Serializer {
+        options,
+        last_forgotten,
+        minimum_position,
+    };
+
+    // Write all the new points
+    let mut new_points = serializer.points_stream(tree);
+    while let Some(point) = new_points.next().await {
+        writer.write(point).await?;
+    }
+
+    // Delete all the forgotten points
+    let mut forgotten_points = serializer.forgotten_stream(tree);
+    while let Some(point) = forgotten_points.next().await {
+        writer.delete_range(point.depth + 1, point.range()).await?;
+    }
+
+    // Update the position
+    writer
+        .set_position(
+            tree.position()
+                .map(Into::into)
+                // If the tree can't be inserted into anymore, write the max position
+                .unwrap_or_else(|| 4u64.pow(24)),
+        )
+        .await?;
+
+    Ok(())
 }
