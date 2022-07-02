@@ -11,8 +11,9 @@ use ark_ed_on_bls12_377::Fq;
 use futures::{stream, Stream};
 
 pub mod deserialize;
-pub mod serialize;
 pub mod in_memory;
+pub mod serialize;
+pub use in_memory::InMemory;
 
 /// Proptest generators for things relevant to construction.
 #[cfg(feature = "arbitrary")]
