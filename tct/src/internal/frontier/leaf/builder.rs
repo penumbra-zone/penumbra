@@ -1,6 +1,9 @@
 use super::*;
 
-use deserialize::{IResult, Instruction, Unexpected};
+use crate::storage::{
+    deserialize::{IResult, Unexpected},
+    Instruction,
+};
 
 /// A builder for a leaf.
 pub struct Builder<Item: Built>(Item::Builder);

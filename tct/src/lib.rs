@@ -60,9 +60,8 @@ mod index;
 mod proof;
 mod tree;
 
-pub mod deserialize;
 pub mod error;
-pub mod serialize;
+pub mod storage;
 pub mod structure;
 pub mod validate;
 pub use commitment::Commitment;
@@ -93,7 +92,6 @@ pub mod builder {
 // A crate-internal prelude to make things easier to import
 mod prelude {
     pub(crate) use super::{
-        deserialize,
         error::proof::VerifyError,
         index,
         internal::{
