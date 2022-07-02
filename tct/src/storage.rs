@@ -1,12 +1,18 @@
 //! Incremental serialization and non-incremental deserialization for the [`Tree`](crate::Tree).
 
-use std::{fmt::Debug, ops::Range, pin::Pin};
+use std::{
+    collections::{btree_map::Entry, BTreeMap},
+    fmt::Debug,
+    ops::Range,
+    pin::Pin,
+};
 
 use ark_ed_on_bls12_377::Fq;
-use futures::Stream;
+use futures::{stream, Stream};
 
 pub mod deserialize;
 pub mod serialize;
+pub mod in_memory;
 
 /// Proptest generators for things relevant to construction.
 #[cfg(feature = "arbitrary")]
