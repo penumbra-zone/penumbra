@@ -1,3 +1,5 @@
+#![recursion_limit = "256"]
+
 #[macro_use]
 extern crate proptest_derive;
 
@@ -67,15 +69,22 @@ proptest! {
                 .prop_flat_map(|commitments| {
                     prop::collection::vec(any_with::<Action>(commitments), 1..MAX_TIER_ACTIONS)
                 })
+                .prop_map(|mut actions| {
+                    // Ensure that every sequence of actions ends in a serialization
+                    actions.push(Action::Serialize);
+                    actions
+                })
     ) {
         futures::executor::block_on(async move {
             let mut tree = Tree::new();
             let mut state = State::default();
+
             for action in actions {
                 action.apply(&mut state, &mut tree).await.unwrap();
             }
+
             let deserialized = deserialize::from_reader(&mut state.storage).await.unwrap();
-            assert_eq!(tree, deserialized);
+            assert_eq!(tree, deserialized, "mismatch when deserializing from storage: {:?}", state.storage);
         })
     }
 }
