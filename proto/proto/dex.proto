@@ -58,12 +58,20 @@ message SwapBody {
 }
 
 // XXX value fields need to have constant-length encoding
+// ? or probably not, since this is a plaintext
 message SwapPlaintext {
-    uint64 t1 = 1;
-    uint64 t2 = 2;
-    transaction.Fee fee = 3;
-    bytes bd = 4;
-    bytes pkd = 5;
+    // The trading pair to swap.
+    TradingPair trading_pair = 1;
+    // Amount of asset 1
+    uint64 t1 = 2;
+    // Amount of asset 2
+    uint64 t2 = 3;
+    // Fee
+    transaction.Fee fee = 4;
+    // Diversified basepoint
+    bytes b_d = 5;
+    // Diversified public key
+    bytes pk_d = 6;
 }
 
 message MockFlowCiphertext {
