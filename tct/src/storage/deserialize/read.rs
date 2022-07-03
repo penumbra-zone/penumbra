@@ -141,7 +141,7 @@ where
         } else {
             Size::Four
         };
-        self.depth -= 1;
+        self.depth += 1;
         Ok(Some(Instruction::Node { here, size }))
     }
 
@@ -170,7 +170,7 @@ where
             ) = point
             {
                 if self.position == point.position {
-                    if self.depth > point.depth {
+                    if self.depth < point.depth {
                         self.peek = Some(point);
                     } else {
                         return Err(Error::DepthNonIncreasing {
