@@ -61,7 +61,8 @@ impl TryFrom<pb::Swap> for Swap {
 }
 
 #[derive(Debug, Clone)]
-pub struct SwapCiphertext(Vec<u8>);
+// TODO: unsure yet what size needs to be here
+pub struct SwapCiphertext([u8; 128]);
 
 #[derive(Debug, Clone)]
 pub struct Body {
