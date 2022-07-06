@@ -1,6 +1,7 @@
 use crate::{decryption_share::Verified, limb, DecryptionShare, DecryptionTable, Value};
 
 /// A flow encryption ciphertext.
+#[derive(Default, Debug, Clone, Copy)]
 pub struct Ciphertext {
     pub(crate) c0: limb::Ciphertext,
     pub(crate) c1: limb::Ciphertext,
