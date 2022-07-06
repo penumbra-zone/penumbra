@@ -1,10 +1,9 @@
 use anyhow::Error;
-use bytes::Bytes;
 
 use penumbra_crypto::rdsa::{Signature, SpendAuth};
-use penumbra_crypto::value;
 use penumbra_crypto::NotePayload;
 use penumbra_crypto::{proofs::transparent::SpendProof, MockFlowCiphertext};
+use penumbra_crypto::{value, SwapCiphertext};
 use penumbra_proto::dex::TradingPair;
 use penumbra_proto::{dex as pb, Protobuf};
 
@@ -62,32 +61,6 @@ impl TryFrom<pb::Swap> for Swap {
 }
 
 #[derive(Debug, Clone)]
-// TODO: unsure yet what size needs to be here
-pub struct SwapCiphertext([u8; 128]);
-
-// TODO: update size here as well
-impl TryFrom<[u8; 128]> for SwapCiphertext {
-    type Error = Error;
-
-    fn try_from(bytes: [u8; 128]) -> Result<SwapCiphertext, Self::Error> {
-        Ok(SwapCiphertext(bytes))
-    }
-}
-
-impl TryFrom<&[u8]> for SwapCiphertext {
-    type Error = Error;
-
-    fn try_from(slice: &[u8]) -> Result<SwapCiphertext, Self::Error> {
-        let bytes = slice[..]
-            .try_into()
-            // TODO: should we use typed errors here?
-            .map_err(|_| anyhow::anyhow!("Invalid SwapCiphertext"))?;
-
-        Ok(SwapCiphertext(bytes))
-    }
-}
-
-#[derive(Debug, Clone)]
 pub struct Body {
     pub trading_pair: TradingPair,
     pub ca1: value::Commitment,
@@ -118,8 +91,7 @@ impl TryFrom<pb::SwapBody> for Body {
         Ok(Self {
             trading_pair: s
                 .trading_pair
-                .ok_or_else(|| anyhow::anyhow!("missing trading_pair"))?
-                .try_into()?,
+                .ok_or_else(|| anyhow::anyhow!("missing trading_pair"))?,
             ca1: (&s.ca1[..]).try_into()?,
             ca2: (&s.ca1[..]).try_into()?,
             cf: (&s.cf[..]).try_into()?,

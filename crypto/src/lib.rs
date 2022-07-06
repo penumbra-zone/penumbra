@@ -18,6 +18,7 @@ mod note_payload;
 mod nullifier;
 mod prf;
 pub mod proofs;
+mod swap;
 pub mod value;
 
 pub use address::Address;
@@ -29,6 +30,7 @@ pub use keys::FullViewingKey;
 pub use note::Note;
 pub use note_payload::NotePayload;
 pub use nullifier::Nullifier;
+pub use swap::{SwapCiphertext, SwapPlaintext};
 pub use value::Value;
 
 // Temporary for v0 to v1 testnet address migration.
