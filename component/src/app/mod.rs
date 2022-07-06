@@ -1,4 +1,4 @@
-use crate::dex::component::Dex;
+use crate::dex::Dex;
 use crate::ibc::IBCComponent;
 use crate::shielded_pool::ShieldedPool;
 use crate::stake::component::Staking;
@@ -42,7 +42,7 @@ impl App {
 
         let staking = Staking::new(state.clone()).await;
         let ibc = IBCComponent::new(state.clone()).await;
-        let dex = DexComponent::new(state.clone()).await;
+        let dex = Dex::new(state.clone()).await;
         let shielded_pool = ShieldedPool::new(state.clone(), nct).await;
 
         Self {
@@ -77,7 +77,7 @@ impl App {
         // Now re-instantiate all of the components so they all have the same shared state.
         self.staking = Staking::new(self.state.clone()).await;
         self.ibc = IBCComponent::new(self.state.clone()).await;
-        self.dex = DexComponent::new(self.state.clone()).await;
+        self.dex = Dex::new(self.state.clone()).await;
         self.shielded_pool = ShieldedPool::new(self.state.clone(), nct.clone()).await;
 
         Ok((root_hash, version))
@@ -135,7 +135,7 @@ impl Component for App {
     fn check_tx_stateless(ctx: Context, tx: &Transaction) -> Result<()> {
         Staking::check_tx_stateless(ctx.clone(), tx)?;
         IBCComponent::check_tx_stateless(ctx.clone(), tx)?;
-        DexComponent::check_tx_stateless(ctx.clone(), tx)?;
+        Dex::check_tx_stateless(ctx.clone(), tx)?;
         ShieldedPool::check_tx_stateless(ctx, tx)?;
         Ok(())
     }

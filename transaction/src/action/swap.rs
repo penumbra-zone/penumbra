@@ -1,3 +1,4 @@
+use anyhow::Error;
 use bytes::Bytes;
 
 use penumbra_crypto::rdsa::{Signature, SpendAuth};
@@ -64,6 +65,28 @@ impl TryFrom<pb::Swap> for Swap {
 // TODO: unsure yet what size needs to be here
 pub struct SwapCiphertext([u8; 128]);
 
+// TODO: update size here as well
+impl TryFrom<[u8; 128]> for SwapCiphertext {
+    type Error = Error;
+
+    fn try_from(bytes: [u8; 128]) -> Result<SwapCiphertext, Self::Error> {
+        Ok(SwapCiphertext(bytes))
+    }
+}
+
+impl TryFrom<&[u8]> for SwapCiphertext {
+    type Error = Error;
+
+    fn try_from(slice: &[u8]) -> Result<SwapCiphertext, Self::Error> {
+        let bytes = slice[..]
+            .try_into()
+            // TODO: should we use typed errors here?
+            .map_err(|_| anyhow::anyhow!("Invalid SwapCiphertext"))?;
+
+        Ok(SwapCiphertext(bytes))
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Body {
     pub trading_pair: TradingPair,
@@ -80,11 +103,11 @@ impl From<Body> for pb::SwapBody {
     fn from(s: Body) -> Self {
         pb::SwapBody {
             trading_pair: s.trading_pair.into(),
-            ca1: Bytes::copy_from_slice(&s.ca1),
-            ca2: Bytes::copy_from_slice(&s.ca2),
-            cf: Bytes::copy_from_slice(&s.cf),
-            swap_nft: s.swap_nft.into(),
-            swap_ciphertext: s.swap_ciphertext.into(),
+            ca1: (&s.ca1.to_bytes()).to_vec(),
+            ca2: (&s.ca2.to_bytes()).to_vec(),
+            cf: (&s.cf.to_bytes()).to_vec(),
+            swap_nft: Some(s.swap_nft.into()),
+            swap_ciphertext: s.swap_ciphertext.0.to_vec(),
         }
     }
 }
@@ -97,26 +120,14 @@ impl TryFrom<pb::SwapBody> for Body {
                 .trading_pair
                 .ok_or_else(|| anyhow::anyhow!("missing trading_pair"))?
                 .try_into()?,
-            ca1: s
-                .ca1
-                .ok_or_else(|| anyhow::anyhow!("missing ca1"))?
-                .try_into()?,
-            ca2: s
-                .ca2
-                .ok_or_else(|| anyhow::anyhow!("missing ca2"))?
-                .try_into()?,
-            cv: s
-                .cf
-                .ok_or_else(|| anyhow::anyhow!("missing cf"))?
-                .try_into()?,
+            ca1: (&s.ca1[..]).try_into()?,
+            ca2: (&s.ca1[..]).try_into()?,
+            cf: (&s.cf[..]).try_into()?,
             swap_nft: s
                 .swap_nft
                 .ok_or_else(|| anyhow::anyhow!("missing swap_nft"))?
                 .try_into()?,
-            swap_ciphertext: s
-                .swap_ciphertext
-                .ok_or_else(|| anyhow::anyhow!("missing swap_ciphertext"))?
-                .try_into()?,
+            swap_ciphertext: (&s.swap_ciphertext[..]).try_into()?,
         })
     }
 }
