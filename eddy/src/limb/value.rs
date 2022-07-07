@@ -17,12 +17,14 @@ impl From<u32> for Value {
     }
 }
 
+type Blinding = decaf377::Fr;
+
 impl Value {
     pub fn transparent_encrypt<R: RngCore + CryptoRng>(
         &self,
         encryption_key: &EncryptionKey,
         mut rng: R,
-    ) -> (Ciphertext, decaf377::Fr) {
+    ) -> (Ciphertext, Blinding) {
         let elgamal_blind = decaf377::Fr::rand(&mut rng);
         let c1 = elgamal_blind * decaf377::basepoint();
         let c2 =

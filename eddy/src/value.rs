@@ -36,7 +36,7 @@ impl Value {
         let x1 = x1.0 as u128;
         let x2 = x2.0 as u128;
         let x3 = x3.0 as u128;
-        Value(x0 | (x1 << 16) | (x2 << 32) | (x3 << 48))
+        Value(x0 + (x1 << 16) + (x2 << 32) + (x3 << 48))
     }
 
     pub fn transparent_encrypt<R: RngCore + CryptoRng>(
@@ -51,8 +51,8 @@ impl Value {
             .collect::<Vec<_>>();
 
         let mut blindings: [decaf377::Fr; 4] = Default::default();
-        for (i, limb) in encrypted_limbs.iter().enumerate() {
-            blindings[i] = limb.1;
+        for (i, (_, blinding)) in encrypted_limbs.iter().enumerate() {
+            blindings[i] = *blinding;
         }
 
         let ciphertext = Ciphertext {
@@ -73,24 +73,43 @@ mod tests {
     use super::*;
 
     use ark_ff::UniformRand;
+    use proptest::prelude::*;
 
-    #[test]
-    fn test_limb_decomposition() {
-        let value = Value(6545536u128);
-        let limbs = value.to_limbs();
-        let val_back = Value::from_limbs(limbs[0], limbs[1], limbs[2], limbs[3]);
-        assert_eq!(value.0, val_back.0);
-    }
+    proptest! {
+        #[test]
+        fn limb_value_addition_roundtrip(value1: u64, value2: u64) {
+            let value = Value::from(value1);
+            let value2 = Value::from(value2);
+            let limbs = value.to_limbs();
+            let limbs2 = value2.to_limbs();
+            let limbs3 = [
+                limbs[0].0 + limbs2[0].0,
+                limbs[1].0 + limbs2[1].0,
+                limbs[2].0 + limbs2[2].0,
+                limbs[3].0 + limbs2[3].0,
+            ];
+            let value3 = Value::from_limbs(limbs3[0].into(), limbs3[1].into(), limbs3[2].into(), limbs3[3].into());
+            assert_eq!(value3.0, value.0 + value2.0);
+        }
 
-    #[test]
-    fn test_encrypt_verify_transparent() {
-        let mut rng = rand::thread_rng();
-        let value = Value::from(0x12345678);
-        let encryption_key = EncryptionKey(decaf377::basepoint() * decaf377::Fr::rand(&mut rng));
-        let (ciphertext, proof) = value
-            .transparent_encrypt(&encryption_key, &mut rng)
-            .unwrap();
+        #[test]
+        fn limb_value_roundtrip(value: u64) {
+            let value = Value::from(value);
+            let limbs = value.to_limbs();
+            let value2 = Value::from_limbs(limbs[0], limbs[1], limbs[2], limbs[3]);
+            assert_eq!(value.0, value2.0);
+        }
 
-        assert!(proof.verify(&ciphertext, &encryption_key).is_ok());
+        #[test]
+        fn encrypt_verify_roundtrip(value: u64) {
+            let mut rng = rand::thread_rng();
+            let encryption_key = EncryptionKey(decaf377::basepoint() * decaf377::Fr::rand(&mut rng));
+            let value = Value::from(value);
+            let (ciphertext, proof) = value
+                .transparent_encrypt(&encryption_key, &mut rng)
+                .unwrap();
+
+            assert!(proof.verify(&ciphertext, &encryption_key).is_ok());
+        }
     }
 }

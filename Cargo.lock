@@ -3056,6 +3056,7 @@ dependencies = [
  "futures",
  "merlin",
  "parking_lot 0.12.1",
+ "proptest",
  "rand",
  "rand_core",
 ]
