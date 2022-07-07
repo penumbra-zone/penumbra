@@ -54,6 +54,8 @@ impl Action {
                 .await?;
 
                 state.last_forgotten = tree.forgotten();
+
+                dbg!(&state.storage);
             }
         };
 

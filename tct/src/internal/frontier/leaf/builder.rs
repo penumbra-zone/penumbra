@@ -6,6 +6,7 @@ use crate::storage::{
 };
 
 /// A builder for a leaf.
+#[derive(Debug)]
 pub struct Builder<Item: Built>(Item::Builder);
 
 impl<Item: Built> Built for Leaf<Item> {

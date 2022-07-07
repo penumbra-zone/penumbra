@@ -6,11 +6,13 @@ use crate::storage::{
 };
 
 /// A builder for a complete item.
+#[derive(Debug)]
 pub struct Builder {
     index: u64,
     inner: Inner,
 }
 
+#[derive(Debug)]
 enum Inner {
     Init,
     AwaitingCommitment { hash: Option<Hash> },
