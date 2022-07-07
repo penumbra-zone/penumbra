@@ -168,6 +168,16 @@ impl Note {
         op.extend_from_slice(&esk.to_bytes());
 
         let cipher = ChaCha20Poly1305::new(ock);
+
+        // Note: Here we use the same nonce as note encryption, however the keys are different.
+        // For note encryption we derive a symmetric key from the shared secret and epk.
+        // However, for encrypting the outgoing cipher key, we derive a symmetric key from the
+        // sender's OVK, value commitment, note commitment, and the epk. Since the keys are
+        // different, it is safe to use the same nonce.
+        //
+        // References:
+        // * Section 5.4.3 of the ZCash protocol spec
+        // * Section 2.3 RFC 7539
         let nonce = Nonce::from_slice(&*NOTE_ENCRYPTION_NONCE);
 
         let encryption_result = cipher
@@ -182,7 +192,7 @@ impl Note {
     }
 
     /// Decrypt wrapped OVK to generate the transmission key and ephemeral secret
-    fn decrypt_key(
+    pub(crate) fn decrypt_key(
         wrapped_ovk: [u8; OVK_WRAPPED_LEN_BYTES],
         cm: Commitment,
         cv: value::Commitment,
