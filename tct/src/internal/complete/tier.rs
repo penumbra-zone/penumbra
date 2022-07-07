@@ -1,8 +1,5 @@
 use crate::prelude::*;
 
-mod builder;
-pub use builder::Builder;
-
 type N<Child> = super::super::complete::Node<Child>;
 type L<Item> = super::super::complete::Leaf<Item>;
 

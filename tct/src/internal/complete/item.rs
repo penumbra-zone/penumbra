@@ -1,8 +1,5 @@
 use crate::prelude::*;
 
-mod builder;
-pub use builder::Builder;
-
 /// A witnessed hash of a commitment at the true leaf of a complete tree.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Derivative, Serialize, Deserialize)]
 pub struct Item {

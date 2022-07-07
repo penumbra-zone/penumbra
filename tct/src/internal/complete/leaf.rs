@@ -1,8 +1,5 @@
 use crate::prelude::*;
 
-mod builder;
-pub use builder::Builder;
-
 /// A complete, witnessed leaf of a tree.
 #[derive(Clone, Copy, Derivative, Serialize, Deserialize)]
 #[derivative(Debug = "transparent")]

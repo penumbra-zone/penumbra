@@ -1,8 +1,5 @@
 use crate::prelude::*;
 
-mod builder;
-pub use builder::Builder;
-
 /// The frontier (rightmost) leaf in a frontier of a tree.
 ///
 /// Insertion into a leaf always fails, causing the tree above it to insert a new leaf to contain

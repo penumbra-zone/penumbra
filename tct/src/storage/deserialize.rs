@@ -8,13 +8,34 @@ use std::{fmt::Debug, pin::Pin};
 use crate::prelude::*;
 use crate::storage::{Instruction, Point, Read};
 
-mod iresult;
 // pub mod packed; // TODO: fix this module
-pub use iresult::{IResult, Unexpected};
 
 pub mod read;
 
 use crate::internal::frontier::TrackForgotten;
+
+/// An error occurred when constructing a tree from a depth-first preorder traversal.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Error)]
+#[error("traversal incomplete, awaiting more instructions")]
+pub struct Incomplete;
+
+/// An instruction for constructing the tree was given which was not valid.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Error)]
+pub enum Unexpected {
+    /// The instruction said to construct a node, but only a leaf could be constructed.
+    #[error("unexpected `Node` instruction; expected `Leaf`")]
+    Node,
+    /// The instruction said to construct a leaf, but only a node could be constructed.
+    #[error("unexpected `Leaf` instruction; expected `Node`")]
+    Leaf,
+    /// A sequence of instructions tried to construct an internal node which didn't have any children.
+    ///
+    /// One structural invariant of the tree is that all internal nodes have at least one child,
+    /// which preserves the fact that the tree is _maximally pruned_: no dangling internal nodes
+    /// exist without witnessed children beneath them.
+    #[error("unexpected: at least one child of internal node must be witnessed")]
+    Unwitnessed,
+}
 
 /// An error when constructing something, indicative of an incorrect sequence of instructions.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Error)]
@@ -61,100 +82,3 @@ pub enum Error<E> {
 }
 
 type Tree = frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>>;
-
-/// Build a tree by iterating over a sequence of [`Instruction`]s, asynchronously.
-pub async fn from_instructions_stream<E>(
-    position: u64,
-    instructions: impl Stream<Item = Result<Instruction, E>> + Unpin,
-) -> Result<crate::Tree, Error<E>> {
-    let mut instructions = instructions.peekable();
-    if Pin::new(&mut instructions).peek().await.is_none() {
-        return Ok(crate::internal::frontier::Top::new(TrackForgotten::Yes).into());
-    }
-
-    // Count the instructions as we go along, for error reporting
-    let mut instruction: usize = 0;
-
-    // The incremental result, either an incomplete builder or a complete output
-    let mut result = IResult::Incomplete(<Tree as Built>::build(position, 0));
-
-    // For each instruction, tell the builder to use that instruction
-    while let Some(this_instruction) = Pin::new(&mut instructions).next().await {
-        let this_instruction = dbg!(this_instruction?);
-
-        let builder = match result {
-            IResult::Complete(_) => break, // stop if complete, even if instructions aren't
-            IResult::Incomplete(builder) => builder,
-        };
-
-        dbg!(&builder);
-
-        // Step forward the builder by one instruction
-        let index = builder.index();
-        let height = builder.height();
-        result = builder
-            .go(this_instruction)
-            .map_err(|unexpected| Error::Unexpected {
-                instruction,
-                unexpected,
-                index,
-                height,
-            })?;
-
-        // Update the instruction count
-        instruction += 1;
-    }
-
-    // Examine whether we successfully constructed the tree
-    match result {
-        // If complete, return the output tree
-        IResult::Complete(output) => {
-            // Ensure that no more instructions are remaining
-            if Pin::new(&mut instructions).peek().await.is_some() {
-                return Err(Error::AlreadyComplete { instruction });
-            }
-            Ok(output.into())
-        }
-        // If incomplete, return an error indicating the situation we stopped in
-        IResult::Incomplete(builder) => Err(Error::Incomplete {
-            instruction,
-            height: builder.height(),
-            index: builder.index(),
-            min_required: builder.min_required(),
-        }),
-    }
-}
-
-/// Build a tree by iterating over a sequence of [`Instruction`]s, synchronously.
-pub fn from_instructions_iter<E>(
-    position: u64,
-    instructions: impl IntoIterator<Item = Result<Instruction, E>> + Unpin,
-) -> Result<crate::Tree, Error<E>> {
-    let future = from_instructions_stream(position, stream::iter(instructions.into_iter()));
-    futures::executor::block_on(future)
-}
-
-/// Build a tree by iterating over a stream of (position, depth) pairs, asynchronously.
-///
-/// # Errors
-///
-/// The stream of points must be in lexicographic order by (position, depth), and the instruction
-/// stream represented by the points must be a valid pre-order depth-first traversal of some
-/// [`Tree`]. Otherwise, an error will be thrown.
-pub async fn from_points<E>(
-    position: u64,
-    points: impl Stream<Item = Result<Point, E>> + Unpin,
-) -> Result<crate::Tree, Error<read::Error<E>>> {
-    from_instructions_stream(position, read::Reader::new(position, points).stream()).await
-}
-
-/// Build a tree from a reader that provides an enumeration of the points stored.
-pub async fn from_reader<R: Read>(
-    reader: &mut R,
-) -> Result<crate::Tree, Error<read::Error<R::Error>>> {
-    let position = reader
-        .position()
-        .await
-        .map_err(|error| read::Error::Underlying { error })?;
-    from_points(position, reader.points()).await
-}
