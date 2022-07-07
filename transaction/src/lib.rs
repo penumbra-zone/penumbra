@@ -13,5 +13,5 @@ pub use action::Action;
 pub use auth_data::AuthorizationData;
 pub use auth_hash::AuthHash;
 pub use error::Error;
-pub use transaction::{Fee, Transaction, TransactionBody};
+pub use transaction::{Transaction, TransactionBody};
 pub use witness_data::WitnessData;

@@ -1,9 +1,9 @@
 syntax = "proto3";
+package penumbra.dex;
 option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
 
 import "crypto.proto";
-
-package penumbra.dex;
+import "transaction.proto";
 
 // A transaction action that submits a swap to the dex.
 message Swap {
@@ -12,8 +12,34 @@ message Swap {
   MockFlowCiphertext enc_amount_1 = 2;
   // Encrypted amount of asset 2 of the trading pair.
   MockFlowCiphertext enc_amount_2 = 3;
+  // Encapsulates the authorized fields of the Swap transaction, used in signing.
+  SwapBody body = 4;
 }
 
+// A transaction action that obtains assets previously confirmed
+// via a Swap transaction. Does not include a spend authorization
+// signature, as it is only capable of consuming the NFT from a
+// Swap transaction.
+message SwapClaim {
+  // Proves the spent note records 1 unit of the swap NFT.
+  bytes zkproof = 1;
+  // The nullifier for the Swap NFT to be consumed.
+  crypto.Nullifier nullifier = 2;
+  // The fee allows `SwapClaim` without an additional `Spend`.
+  transaction.Fee fee = 3;
+  // Note output for asset 1.
+  crypto.NotePayload output_1 = 4;
+  // Note output for asset 2.
+  crypto.NotePayload output_2 = 5;
+  // Block root for the associated `Swap` action, identifying the block the `Swap` was included in.
+  crypto.MerkleRoot anchor = 6;
+  // Price for asset 1 in the associated `Swap`.
+  uint64 price_1 = 7;
+  // Price for asset 2 in the associated `Swap`.
+  uint64 price_2 = 8;
+}
+
+// The authorized data of a Swap transaction.
 message SwapBody {
   // The trading pair to swap.
   TradingPair trading_pair = 1;
@@ -21,19 +47,27 @@ message SwapBody {
   bytes ca1 = 2;
   // Commitment to the amount for asset 2 (delta 2).
   bytes ca2 = 3;
-  // A commitment to the swap's contribution to the transaction's value balance.
-  bytes cv = 4;
+  // A commitment to the fee's contribution to the transaction's value balance.
+  bytes cf = 4;
   // Swap NFT recording the user's contribution.
   crypto.NotePayload swap_nft = 5;
+  // Encrypted version of the original `Swap`, symmetrically encrypted w/ viewing key.
+  bytes swap_ciphertext = 6;
 }
 
-// XXX value fields need to have constant-length encoding
 message SwapPlaintext {
-    uint64 t1 = 1;
-    uint64 t2 = 2;
-    uint64 f = 3;
-    bytes bd = 4;
-    bytes pkd = 5;
+    // The trading pair to swap.
+    TradingPair trading_pair = 1;
+    // Amount of asset 1
+    uint64 t1 = 2;
+    // Amount of asset 2
+    uint64 t2 = 3;
+    // Fee
+    transaction.Fee fee = 4;
+    // Diversified basepoint
+    bytes b_d = 5;
+    // Diversified public key
+    bytes pk_d = 6;
 }
 
 message MockFlowCiphertext {

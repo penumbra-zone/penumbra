@@ -2,13 +2,11 @@
 //! creation.
 
 use anyhow::Result;
+use penumbra_crypto::transaction::Fee;
 use penumbra_proto::{ibc as pb_ibc, stake as pb_stake, transaction as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    action::{Delegate, Undelegate},
-    Fee,
-};
+use crate::action::{Delegate, Undelegate};
 
 mod action;
 mod auth;

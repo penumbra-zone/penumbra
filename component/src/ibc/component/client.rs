@@ -669,12 +669,13 @@ mod tests {
     use super::*;
     use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
     use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
+    use penumbra_crypto::transaction::Fee;
     use penumbra_proto::ibc::ibc_action::Action as IbcActionInner;
     use penumbra_proto::ibc::IbcAction;
     use penumbra_proto::Message;
     use penumbra_storage::Storage;
     use penumbra_tct as tct;
-    use penumbra_transaction::{Action, Fee, Transaction, TransactionBody};
+    use penumbra_transaction::{Action, Transaction, TransactionBody};
     use tempfile::tempdir;
     use tendermint::Time;
 

@@ -153,12 +153,9 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.transaction.SpendPlan", SERIALIZE),
     (".penumbra.transaction.OutputPlan", SERIALIZE),
     (".penumbra.ibc.IBCAction", SERIALIZE),
-    (".penumbra.dex.Swap", SERIALIZE),
-    (".penumbra.dex.SwapClaim", SERIALIZE),
     (".penumbra.dex.MockFlowCiphertext", SERIALIZE),
     (".penumbra.dex.MockFlowCiphertext", SERDE_TRANSPARENT),
     (".penumbra.dex.TradingPair", SERIALIZE),
-    (".penumbra.dex.SwapPlaintext", SERIALIZE),
 ];
 
 static FIELD_ATTRIBUTES: &[(&str, &str)] = &[

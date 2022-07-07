@@ -3,7 +3,7 @@ use std::ops::Add;
 use penumbra_proto::{dex as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(try_from = "pb::MockFlowCiphertext", into = "pb::MockFlowCiphertext")]
 pub struct MockFlowCiphertext(u64);
 

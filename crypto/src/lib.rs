@@ -18,6 +18,8 @@ mod note_payload;
 mod nullifier;
 mod prf;
 pub mod proofs;
+pub mod swap;
+pub mod transaction;
 pub mod value;
 
 pub use address::Address;
