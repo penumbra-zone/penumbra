@@ -383,6 +383,206 @@ impl TryFrom<&[u8]> for OutputProof {
     }
 }
 
+/// Transparent proof for swapping assets.
+///
+/// This structure keeps track of the auxiliary (private) inputs.
+/// TODO: currently a placeholder
+#[derive(Clone, Debug)]
+pub struct SwapProof {
+    // Inclusion proof for the note commitment.
+    pub note_commitment_proof: tct::Proof,
+    // The diversified base for the address.
+    pub g_d: decaf377::Element,
+    // The transmission key for the address.
+    pub pk_d: ka::Public,
+    // The value of the note.
+    pub value: Value,
+    // The blinding factor used for generating the value commitment.
+    pub v_blinding: Fr,
+    // The blinding factor used for generating the note commitment.
+    pub note_blinding: Fq,
+    // The randomizer used for generating the randomized spend auth key.
+    pub spend_auth_randomizer: Fr,
+    // The spend authorization key.
+    pub ak: VerificationKey<SpendAuth>,
+    // The nullifier deriving key.
+    pub nk: keys::NullifierKey,
+}
+
+impl SwapProof {
+    /// Called to verify the proof using the provided public inputs.
+    ///
+    /// The public inputs are:
+    /// * the merkle root of the note commitment tree,
+    /// * value commitment of the note to be spent,
+    /// * nullifier of the note to be spent,
+    /// * the randomized verification spend key,
+    pub fn verify(
+        &self,
+        anchor: tct::Root,
+        value_commitment: value::Commitment,
+        nullifier: Nullifier,
+        rk: VerificationKey<SpendAuth>,
+    ) -> anyhow::Result<(), Error> {
+        // Note commitment integrity.
+        let s_component_transmission_key = Fq::from_bytes(self.pk_d.0);
+        if let Ok(transmission_key_s) = s_component_transmission_key {
+            let note_commitment_test =
+                note::commitment(self.note_blinding, self.value, self.g_d, transmission_key_s);
+
+            if self.note_commitment_proof.commitment() != note_commitment_test {
+                return Err(Error::NoteCommitmentMismatch);
+            }
+        } else {
+            return Err(Error::TransmissionKeyMismatch);
+        }
+
+        // Merkle path integrity.
+        self.note_commitment_proof
+            .verify(anchor)
+            .map_err(|_| Error::MerkleRootMismatch)?;
+
+        // Value commitment integrity.
+        if self.value.commit(self.v_blinding) != value_commitment {
+            return Err(Error::ValueCommitmentMismatch);
+        }
+
+        // The use of decaf means that we do not need to check that the
+        // diversified basepoint is of small order. However we instead
+        // check it is not identity.
+        if self.g_d.is_identity() || self.ak.is_identity() {
+            return Err(Error::IdentityUnexpected);
+        }
+
+        // Nullifier integrity.
+        if nullifier
+            != self.nk.derive_nullifier(
+                self.note_commitment_proof.position(),
+                &self.note_commitment_proof.commitment(),
+            )
+        {
+            return Err(Error::BadNullifier);
+        }
+
+        // Spend authority.
+        let rk_bytes: [u8; 32] = rk.into();
+        let rk_test = self.ak.randomize(&self.spend_auth_randomizer);
+        let rk_test_bytes: [u8; 32] = rk_test.into();
+        if rk_bytes != rk_test_bytes {
+            return Err(Error::InvalidSpendAuthRandomizer);
+        }
+
+        // Diversified address integrity.
+        let fvk = keys::FullViewingKey::from_components(self.ak, self.nk);
+        let ivk = fvk.incoming();
+        if self.pk_d != ivk.diversified_public(&self.g_d) {
+            return Err(Error::InvalidDiversifiedAddress);
+        }
+
+        Ok(())
+    }
+}
+
+impl From<SwapProof> for Vec<u8> {
+    fn from(swap_proof: SwapProof) -> Vec<u8> {
+        let protobuf_serialized_proof: transparent_proofs::SwapProof = swap_proof.into();
+        protobuf_serialized_proof.encode_to_vec()
+    }
+}
+
+impl TryFrom<&[u8]> for SwapProof {
+    type Error = Error;
+
+    fn try_from(bytes: &[u8]) -> Result<SwapProof, Self::Error> {
+        let protobuf_serialized_proof =
+            transparent_proofs::SwapProof::decode(bytes).map_err(|_| Error::ProtoMalformed)?;
+        protobuf_serialized_proof
+            .try_into()
+            .map_err(|_| Error::ProtoMalformed)
+    }
+}
+
+impl Protobuf<transparent_proofs::SwapProof> for SwapProof {}
+
+impl From<SwapProof> for transparent_proofs::SwapProof {
+    fn from(msg: SwapProof) -> Self {
+        let ak_bytes: [u8; 32] = msg.ak.into();
+        let nk_bytes: [u8; 32] = msg.nk.0.to_bytes();
+        transparent_proofs::SwapProof {
+            note_commitment_proof: Some(msg.note_commitment_proof.into()),
+            g_d: msg.g_d.compress().0.to_vec(),
+            pk_d: msg.pk_d.0.to_vec(),
+            value_amount: msg.value.amount,
+            value_asset_id: msg.value.asset_id.0.to_bytes().to_vec(),
+            v_blinding: msg.v_blinding.to_bytes().to_vec(),
+            note_blinding: msg.note_blinding.to_bytes().to_vec(),
+            spend_auth_randomizer: msg.spend_auth_randomizer.to_bytes().to_vec(),
+            ak: ak_bytes.into(),
+            nk: nk_bytes.into(),
+        }
+    }
+}
+
+impl TryFrom<transparent_proofs::SwapProof> for SwapProof {
+    type Error = Error;
+
+    fn try_from(proto: transparent_proofs::SwapProof) -> anyhow::Result<Self, Self::Error> {
+        let g_d_bytes: [u8; 32] = proto.g_d.try_into().map_err(|_| Error::ProtoMalformed)?;
+        let g_d_encoding = decaf377::Encoding(g_d_bytes);
+
+        let v_blinding_bytes: [u8; 32] = proto.v_blinding[..]
+            .try_into()
+            .map_err(|_| Error::ProtoMalformed)?;
+
+        let ak_bytes: [u8; 32] = (proto.ak[..])
+            .try_into()
+            .map_err(|_| Error::ProtoMalformed)?;
+        let ak = ak_bytes.try_into().map_err(|_| Error::ProtoMalformed)?;
+
+        Ok(SwapProof {
+            note_commitment_proof: proto
+                .note_commitment_proof
+                .ok_or(Error::ProtoMalformed)?
+                .try_into()
+                .map_err(|_| Error::ProtoMalformed)?,
+            g_d: g_d_encoding
+                .decompress()
+                .map_err(|_| Error::ProtoMalformed)?,
+            pk_d: ka::Public(proto.pk_d.try_into().map_err(|_| Error::ProtoMalformed)?),
+            value: Value {
+                amount: proto.value_amount,
+                asset_id: asset::Id(
+                    Fq::from_bytes(
+                        proto
+                            .value_asset_id
+                            .try_into()
+                            .map_err(|_| Error::ProtoMalformed)?,
+                    )
+                    .map_err(|_| Error::ProtoMalformed)?,
+                ),
+            },
+            v_blinding: Fr::from_bytes(v_blinding_bytes).map_err(|_| Error::ProtoMalformed)?,
+            note_blinding: Fq::from_bytes(
+                proto.note_blinding[..]
+                    .try_into()
+                    .map_err(|_| Error::ProtoMalformed)?,
+            )
+            .map_err(|_| Error::ProtoMalformed)?,
+            spend_auth_randomizer: Fr::from_bytes(
+                proto.spend_auth_randomizer[..]
+                    .try_into()
+                    .map_err(|_| Error::ProtoMalformed)?,
+            )
+            .map_err(|_| Error::ProtoMalformed)?,
+            ak,
+            nk: keys::NullifierKey(
+                Fq::from_bytes(proto.nk[..].try_into().map_err(|_| Error::ProtoMalformed)?)
+                    .map_err(|_| Error::ProtoMalformed)?,
+            ),
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use ark_ff::UniformRand;

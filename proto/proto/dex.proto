@@ -14,8 +14,6 @@ message Swap {
   MockFlowCiphertext enc_amount_2 = 3;
   // Encapsulates the authorized fields of the Swap transaction, used in signing.
   SwapBody body = 4;
-  // The spend authorization signature is effecting data.
-  crypto.SpendAuthSignature auth_sig = 5;
 }
 
 // A transaction action that obtains assets previously confirmed
@@ -33,7 +31,7 @@ message SwapClaim {
   crypto.NotePayload output_1 = 4;
   // Note output for asset 2.
   crypto.NotePayload output_2 = 5;
-  // Root for the associated `Swap` action.
+  // Block root for the associated `Swap` action, identifying the block the `Swap` was included in.
   crypto.MerkleRoot anchor = 6;
   // Price for asset 1 in the associated `Swap`.
   uint64 price_1 = 7;
@@ -57,8 +55,6 @@ message SwapBody {
   bytes swap_ciphertext = 6;
 }
 
-// XXX value fields need to have constant-length encoding
-// ? or probably not, since this is a plaintext
 message SwapPlaintext {
     // The trading pair to swap.
     TradingPair trading_pair = 1;

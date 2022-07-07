@@ -30,3 +30,19 @@ message OutputProof {
   bytes note_blinding = 6;
   bytes esk = 7;
 }
+
+// A Penumbra transparent Swap Proof.
+// TODO: placeholder
+message SwapProof {
+  // Auxiliary inputs
+  crypto.NoteCommitmentProof note_commitment_proof = 1;
+  bytes g_d = 2;
+  bytes pk_d = 3;
+  uint64 value_amount = 4;
+  bytes value_asset_id = 5;
+  bytes v_blinding = 6;
+  bytes note_blinding = 8;
+  bytes spend_auth_randomizer = 9;
+  bytes ak = 10;
+  bytes nk = 11;
+}

@@ -26,6 +26,7 @@ pub struct SwapPlaintext {
 }
 
 impl SwapPlaintext {
+    // TODO: needs to be constant-length
     pub fn encrypt(&self, ovk: &OutgoingViewingKey) -> SwapCiphertext {
         // TODO: implement
         todo!()
@@ -85,6 +86,7 @@ impl From<SwapPlaintext> for pb::SwapPlaintext {
 pub struct SwapCiphertext(pub [u8; SWAP_CIPHERTEXT_BYTES]);
 
 impl SwapCiphertext {
+    // TODO: needs to be constant-length
     pub fn decrypt(&self, ovk: &OutgoingViewingKey) -> Result<SwapPlaintext> {
         // TODO: implement
         Err(anyhow::anyhow!("not implemented"))

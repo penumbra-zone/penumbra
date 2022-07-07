@@ -1,6 +1,6 @@
 use penumbra_crypto::rdsa::{Signature, SpendAuth};
 use penumbra_crypto::NotePayload;
-use penumbra_crypto::{proofs::transparent::SpendProof, MockFlowCiphertext};
+use penumbra_crypto::{proofs::transparent::SwapProof, MockFlowCiphertext};
 use penumbra_crypto::{swap::SwapCiphertext, value};
 use penumbra_proto::dex::TradingPair;
 use penumbra_proto::{dex as pb, Protobuf};
@@ -8,13 +8,12 @@ use penumbra_proto::{dex as pb, Protobuf};
 #[derive(Clone, Debug)]
 pub struct Swap {
     // A proof that this is a valid state change.
-    pub proof: SpendProof,
+    pub proof: SwapProof,
     // The encrypted amount of asset 1 to be swapped.
     pub enc_amount_1: MockFlowCiphertext,
     // The encrypted amount of asset 2 to be swapped.
     pub enc_amount_2: MockFlowCiphertext,
     pub body: Body,
-    pub auth_sig: Signature<SpendAuth>,
 }
 
 impl Protobuf<pb::Swap> for Swap {}
@@ -26,7 +25,6 @@ impl From<Swap> for pb::Swap {
             enc_amount_1: Some(s.enc_amount_1.into()),
             enc_amount_2: Some(s.enc_amount_2.into()),
             body: Some(s.body.into()),
-            auth_sig: Some(s.auth_sig.into()),
         }
     }
 }
@@ -49,10 +47,6 @@ impl TryFrom<pb::Swap> for Swap {
             body: s
                 .body
                 .ok_or_else(|| anyhow::anyhow!("missing body"))?
-                .try_into()?,
-            auth_sig: s
-                .auth_sig
-                .ok_or_else(|| anyhow::anyhow!("missing auth_sig"))?
                 .try_into()?,
         })
     }
