@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::{fmt::Debug, collections::VecDeque};
 
 use super::*;
 
@@ -8,6 +8,8 @@ use crate::storage::{
 };
 
 /// A builder for a frontier node.
+#[derive(Derivative)]
+#[derivative(Debug(bound = "Child: Built + Debug, Child::Builder: Debug"))]
 pub struct Builder<Child: Built> {
     index: u64,
     global_position: u64,
@@ -17,6 +19,7 @@ pub struct Builder<Child: Built> {
     children: Three<Insert<Child>>,
 }
 
+#[derive(Debug)]
 struct Remaining<Child: Built> {
     hash: Option<Hash>,
     children: VecDeque<Child::Builder>,

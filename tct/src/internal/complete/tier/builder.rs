@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use super::*;
 
 use crate::storage::{
@@ -6,6 +8,8 @@ use crate::storage::{
 };
 
 /// A builder for a complete tier.
+#[derive(Derivative)]
+#[derivative(Debug(bound = "Item: GetHash + Built + Height + Debug, Item::Builder: Debug"))]
 pub struct Builder<Item: GetHash + Built + Height>(<Nested<Item> as Built>::Builder);
 
 impl<Item: GetHash + Height + Built> Built for Tier<Item> {

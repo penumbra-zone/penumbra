@@ -80,16 +80,20 @@ pub async fn from_instructions_stream<E>(
 
     // For each instruction, tell the builder to use that instruction
     while let Some(this_instruction) = Pin::new(&mut instructions).next().await {
+        let this_instruction = dbg!(this_instruction?);
+
         let builder = match result {
             IResult::Complete(_) => break, // stop if complete, even if instructions aren't
             IResult::Incomplete(builder) => builder,
         };
 
+        dbg!(&builder);
+
         // Step forward the builder by one instruction
         let index = builder.index();
         let height = builder.height();
         result = builder
-            .go(this_instruction?)
+            .go(this_instruction)
             .map_err(|unexpected| Error::Unexpected {
                 instruction,
                 unexpected,
@@ -141,7 +145,7 @@ pub async fn from_points<E>(
     position: u64,
     points: impl Stream<Item = Result<Point, E>> + Unpin,
 ) -> Result<crate::Tree, Error<read::Error<E>>> {
-    from_instructions_stream(position, read::Reader::new(points).stream()).await
+    from_instructions_stream(position, read::Reader::new(position, points).stream()).await
 }
 
 /// Build a tree from a reader that provides an enumeration of the points stored.

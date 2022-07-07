@@ -8,6 +8,8 @@ use crate::storage::{
 };
 
 /// A builder for a frontier node.
+#[derive(Derivative)]
+#[derivative(Debug(bound = "Child: Built + Focus, Child::Complete: Debug, Child::Builder: Debug, <<Child as Focus>::Complete as Built>::Builder: Debug"))]
 pub struct Builder<Child: Built + Focus>
 where
     Child::Complete: Built,
@@ -20,6 +22,8 @@ where
     siblings: Three<Insert<Child::Complete>>,
 }
 
+#[derive(Derivative)]
+#[derivative(Debug(bound = "Child: Built + Focus, Child::Builder: Debug, <<Child as Focus>::Complete as Built>::Builder: Debug"))]
 struct Remaining<Child: Built + Focus>
 where
     Child::Complete: Built,
