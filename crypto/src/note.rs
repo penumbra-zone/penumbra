@@ -158,20 +158,9 @@ impl Note {
         ovk: &OutgoingViewingKey,
         cv: value::Commitment,
     ) -> [u8; OVK_WRAPPED_LEN_BYTES] {
-        let cv_bytes: [u8; 32] = cv.into();
-        let cm_bytes: [u8; 32] = self.commit().into();
         let epk = esk.diversified_public(&self.diversified_generator());
+        let kdf_output = derive_ock(ovk, cv, self.commit(), &epk);
 
-        // Use Blake2b-256 to derive an encryption key `ock` from the value commitment,
-        // note commitment, the ephemeral public key, and the outgoing viewing key.
-        let mut kdf_params = blake2b_simd::Params::new();
-        kdf_params.hash_length(32);
-        let mut kdf = kdf_params.to_state();
-        kdf.update(&ovk.0);
-        kdf.update(&cv_bytes);
-        kdf.update(&cm_bytes);
-        kdf.update(&epk.0);
-        let kdf_output = kdf.finalize();
         let ock = Key::from_slice(kdf_output.as_bytes());
 
         let mut op = Vec::new();
@@ -192,7 +181,70 @@ impl Note {
         wrapped_ovk
     }
 
-    /// Decrypt a note ciphertext to generate a plaintext `Note`.
+    /// Decrypt wrapped OVK to generate the transmission key and ephemeral secret
+    fn decrypt_key(
+        wrapped_ovk: [u8; OVK_WRAPPED_LEN_BYTES],
+        cm: Commitment,
+        cv: value::Commitment,
+        ovk: &OutgoingViewingKey,
+        epk: &ka::Public,
+    ) -> Result<(ka::Secret, ka::Public), Error> {
+        let kdf_output = derive_ock(ovk, cv, cm, epk);
+        let ock = Key::from_slice(kdf_output.as_bytes());
+
+        let cipher = ChaCha20Poly1305::new(ock);
+        let nonce = Nonce::from_slice(&*NOTE_ENCRYPTION_NONCE);
+
+        let plaintext = cipher
+            .decrypt(nonce, wrapped_ovk.as_ref())
+            .expect("OVK decryption succeeded");
+
+        let transmission_key_bytes: [u8; 32] = plaintext[0..32]
+            .try_into()
+            .map_err(|_| Error::DecryptionError)?;
+        let esk_bytes: [u8; 32] = plaintext[32..64]
+            .try_into()
+            .map_err(|_| Error::DecryptionError)?;
+        let esk: ka::Secret = esk_bytes.try_into().map_err(|_| Error::DecryptionError)?;
+
+        Ok((esk, ka::Public(transmission_key_bytes)))
+    }
+
+    /// Decrypt a note ciphertext using the wrapped OVK to generate a plaintext `Note`.
+    pub fn decrypt_outgoing(
+        ciphertext: &[u8],
+        wrapped_ovk: [u8; OVK_WRAPPED_LEN_BYTES],
+        cm: Commitment,
+        cv: value::Commitment,
+        ovk: &OutgoingViewingKey,
+        epk: &ka::Public,
+    ) -> Result<Note, Error> {
+        if ciphertext.len() != NOTE_CIPHERTEXT_BYTES {
+            return Err(Error::DecryptionError);
+        }
+
+        let (esk, transmission_key) =
+            Note::decrypt_key(wrapped_ovk, cm, cv, ovk, epk).map_err(|_| Error::DecryptionError)?;
+        let shared_secret = esk
+            .key_agreement_with(&transmission_key)
+            .map_err(|_| Error::DecryptionError)?;
+        let key = derive_symmetric_key(&shared_secret, epk);
+        let cipher = ChaCha20Poly1305::new(Key::from_slice(key.as_bytes()));
+        let nonce = Nonce::from_slice(&[0u8; 12]);
+
+        let plaintext = cipher
+            .decrypt(nonce, ciphertext.as_ref())
+            .map_err(|_| Error::DecryptionError)?;
+
+        let plaintext_bytes: [u8; NOTE_LEN_BYTES] =
+            plaintext.try_into().map_err(|_| Error::DecryptionError)?;
+
+        plaintext_bytes
+            .try_into()
+            .map_err(|_| Error::DecryptionError)
+    }
+
+    /// Decrypt a note ciphertext using the IVK and ephemeral public key to generate a plaintext `Note`.
     pub fn decrypt(
         ciphertext: &[u8],
         ivk: &IncomingViewingKey,
@@ -266,6 +318,27 @@ pub(crate) fn derive_symmetric_key(
     kdf_params.hash_length(32);
     let mut kdf = kdf_params.to_state();
     kdf.update(&shared_secret.0);
+    kdf.update(&epk.0);
+
+    kdf.finalize()
+}
+
+/// Use Blake2b-256 to derive an encryption key `ock` from the OVK and public fields.
+pub(crate) fn derive_ock(
+    ovk: &OutgoingViewingKey,
+    cv: value::Commitment,
+    cm: Commitment,
+    epk: &ka::Public,
+) -> blake2b_simd::Hash {
+    let cv_bytes: [u8; 32] = cv.into();
+    let cm_bytes: [u8; 32] = cm.into();
+
+    let mut kdf_params = blake2b_simd::Params::new();
+    kdf_params.hash_length(32);
+    let mut kdf = kdf_params.to_state();
+    kdf.update(&ovk.0);
+    kdf.update(&cv_bytes);
+    kdf.update(&cm_bytes);
     kdf.update(&epk.0);
 
     kdf.finalize()
@@ -397,13 +470,14 @@ impl TryFrom<[u8; NOTE_LEN_BYTES]> for Note {
 
 #[cfg(test)]
 mod tests {
+    use decaf377::Fr;
     use rand_core::OsRng;
 
     use super::*;
     use crate::keys::{SeedPhrase, SpendKey};
 
     #[test]
-    fn test_note_encryption_and_decryption() {
+    fn note_encryption_and_decryption() {
         let mut rng = OsRng;
 
         let seed_phrase = SeedPhrase::generate(&mut rng);
@@ -432,5 +506,37 @@ mod tests {
         let ivk2 = fvk2.incoming();
 
         assert!(Note::decrypt(&ciphertext, ivk2, &epk).is_err());
+    }
+
+    #[test]
+    fn note_encryption_and_sender_decryption() {
+        let mut rng = OsRng;
+
+        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let sk = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let fvk = sk.full_viewing_key();
+        let ivk = fvk.incoming();
+        let ovk = fvk.outgoing();
+        let (dest, _dtk_d) = ivk.payment_address(0u64.into());
+
+        let value = Value {
+            amount: 10,
+            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+        };
+        let note = Note::generate(&mut rng, &dest, value);
+        let esk = ka::Secret::new(&mut rng);
+
+        let value_blinding = Fr::rand(&mut rng);
+        let cv = note.value.commit(value_blinding);
+
+        let wrapped_ovk = note.encrypt_key(&esk, ovk, cv);
+        let ciphertext = note.encrypt(&esk);
+
+        let epk = esk.diversified_public(dest.diversified_generator());
+        let plaintext =
+            Note::decrypt_outgoing(&ciphertext, wrapped_ovk, note.commit(), cv, ovk, &epk)
+                .expect("can decrypt note");
+
+        assert_eq!(plaintext, note);
     }
 }
