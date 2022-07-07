@@ -5,6 +5,7 @@ use ark_ff::Zero;
 use bytes::Bytes;
 use penumbra_crypto::{
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
+    transaction::Fee,
     Fr, NotePayload, Nullifier, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_proto::{ibc as pb_ibc, stake as pbs, transaction as pbt, Message, Protobuf};
@@ -22,9 +23,6 @@ pub struct TransactionBody {
     pub chain_id: String,
     pub fee: Fee,
 }
-
-#[derive(Clone, Debug)]
-pub struct Fee(pub u64);
 
 #[derive(Clone, Debug)]
 pub struct Transaction {
@@ -281,19 +279,5 @@ impl From<&Transaction> for Vec<u8> {
     fn from(transaction: &Transaction) -> Vec<u8> {
         let protobuf_serialized: pbt::Transaction = transaction.into();
         protobuf_serialized.encode_to_vec()
-    }
-}
-
-impl Protobuf<pbt::Fee> for Fee {}
-
-impl From<Fee> for pbt::Fee {
-    fn from(fee: Fee) -> Self {
-        pbt::Fee { amount: fee.0 }
-    }
-}
-
-impl From<pbt::Fee> for Fee {
-    fn from(proto: pbt::Fee) -> Self {
-        Fee(proto.amount)
     }
 }

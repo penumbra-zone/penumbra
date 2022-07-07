@@ -1,12 +1,13 @@
 use blake2b_simd::{Hash, Params};
 use decaf377::FieldExt;
+use penumbra_crypto::transaction::Fee;
 use penumbra_crypto::FullViewingKey;
 use penumbra_proto::{transaction as pb, Message, Protobuf};
 
 use crate::{
     action::{output, spend, Delegate, Undelegate},
     plan::TransactionPlan,
-    Action, Fee, Transaction, TransactionBody,
+    Action, Transaction, TransactionBody,
 };
 
 #[derive(Clone, Copy, Eq, PartialEq)]
@@ -135,14 +136,6 @@ fn chain_id_auth_hash(chain_id: &str) -> Hash {
         .hash(chain_id.as_bytes())
 }
 
-impl Fee {
-    fn auth_hash(&self) -> Hash {
-        blake2b_simd::Params::default()
-            .personal(b"PAH:fee")
-            .hash(&self.0.to_le_bytes())
-    }
-}
-
 impl Action {
     fn auth_hash(&self) -> Hash {
         match self {
@@ -236,6 +229,7 @@ mod tests {
     use penumbra_crypto::{
         keys::{SeedPhrase, SpendKey},
         memo::MemoPlaintext,
+        transaction::Fee,
         Note, Value, STAKING_TOKEN_ASSET_ID,
     };
     use penumbra_tct as tct;
@@ -243,7 +237,7 @@ mod tests {
 
     use crate::{
         plan::{OutputPlan, SpendPlan, TransactionPlan},
-        Fee, WitnessData,
+        WitnessData,
     };
 
     /// This isn't an exhaustive test, but we don't currently have a

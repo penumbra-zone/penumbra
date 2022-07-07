@@ -1,9 +1,7 @@
-use anyhow::Error;
-
 use penumbra_crypto::rdsa::{Signature, SpendAuth};
 use penumbra_crypto::NotePayload;
 use penumbra_crypto::{proofs::transparent::SpendProof, MockFlowCiphertext};
-use penumbra_crypto::{value, SwapCiphertext};
+use penumbra_crypto::{swap::SwapCiphertext, value};
 use penumbra_proto::dex::TradingPair;
 use penumbra_proto::{dex as pb, Protobuf};
 

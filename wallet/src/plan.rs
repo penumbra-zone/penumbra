@@ -4,14 +4,11 @@ use anyhow::Result;
 use penumbra_component::stake::rate::RateData;
 use penumbra_component::stake::validator;
 use penumbra_crypto::{
-    asset::Denom, keys::DiversifierIndex, memo::MemoPlaintext, Address, DelegationToken,
-    FullViewingKey, Value, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
+    asset::Denom, keys::DiversifierIndex, memo::MemoPlaintext, transaction::Fee, Address,
+    DelegationToken, FullViewingKey, Value, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
 };
 use penumbra_proto::view::NotesRequest;
-use penumbra_transaction::{
-    plan::{ActionPlan, OutputPlan, SpendPlan, TransactionPlan},
-    Fee,
-};
+use penumbra_transaction::plan::{ActionPlan, OutputPlan, SpendPlan, TransactionPlan};
 use penumbra_view::{NoteRecord, ViewClient};
 use rand_core::{CryptoRng, RngCore};
 use tracing::instrument;

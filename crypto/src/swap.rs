@@ -1,4 +1,5 @@
 use crate::ka;
+use crate::transaction::Fee;
 use anyhow::Result;
 use penumbra_proto::{dex as pb, Protobuf};
 
@@ -17,8 +18,7 @@ pub struct SwapPlaintext {
     // Amount of asset 2
     pub t2: u64,
     // Fee
-    // TODO: ideally would be transaction::Fee but this causes cyclic import issues
-    pub fee: u64,
+    pub fee: Fee,
     // Diversified basepoint
     pub b_d: decaf377::Element,
     // Diversified public key
@@ -46,10 +46,10 @@ impl TryFrom<pb::SwapPlaintext> for SwapPlaintext {
         Ok(Self {
             t1: plaintext.t1,
             t2: plaintext.t2,
-            fee: plaintext
+            fee: Fee(plaintext
                 .fee
                 .ok_or_else(|| anyhow::anyhow!("missing SwapPlaintext fee"))?
-                .amount,
+                .amount),
             b_d: b_d_encoding.decompress().map_err(|_| {
                 anyhow::anyhow!("error decompressing diversified basepoint in SwapPlaintext")
             })?,
@@ -72,7 +72,7 @@ impl From<SwapPlaintext> for pb::SwapPlaintext {
             t1: plaintext.t1,
             t2: plaintext.t2,
             fee: Some(penumbra_proto::transaction::Fee {
-                amount: plaintext.fee,
+                amount: plaintext.fee.0,
             }),
             b_d: plaintext.b_d.compress().0.to_vec(),
             pk_d: plaintext.pk_d.0.to_vec(),

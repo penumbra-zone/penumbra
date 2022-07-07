@@ -1,9 +1,8 @@
+use penumbra_crypto::transaction::Fee;
 use penumbra_crypto::Nullifier;
 use penumbra_crypto::{proofs::transparent::OutputProof, NotePayload};
 use penumbra_proto::{dex as pb, Protobuf};
 use penumbra_tct as tct;
-
-use crate::Fee;
 
 #[derive(Debug, Clone)]
 pub struct SwapClaim {
