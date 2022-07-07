@@ -6,6 +6,8 @@ use crate::storage::{
 };
 
 /// A builder for a top of a frontier.
+#[derive(Derivative)]
+#[derivative(Debug(bound = "Item: Debug + Built + Focus, Item::Complete: Debug, Item::Builder: Debug, <<Item as Focus>::Complete as Built>::Builder: Debug"))]
 pub struct Builder<Item: Built + Focus>(<Nested<Item> as Built>::Builder)
 where
     Item::Complete: Built;

@@ -4,6 +4,7 @@
 //! holding [`Fq`] values, and the sequence of [`Instruction`]s required to build the tree with
 //! [`deserialize::from_stream`](from_stream).
 
+use std::ops::Range;
 use std::pin::Pin;
 
 use ark_ed_on_bls12_377::Fq;
@@ -18,6 +19,7 @@ use crate::storage::{Instruction, Point, Size};
 pub struct Reader<R> {
     reader: R,
     position: u64,
+    global_position: u64,
     depth: u8,
     peek: Option<Point>,
 }
@@ -66,10 +68,11 @@ where
     R: Stream<Item = Result<Point, E>> + Unpin,
 {
     /// Create a new reader from an underlying stream.
-    pub fn new(reader: R) -> Self {
+    pub fn new(position: u64, reader: R) -> Self {
         Self {
             reader,
             position: 0,
+            global_position: position,
             depth: 0,
             peek: None,
         }
@@ -135,10 +138,23 @@ where
     // Advance the position down by one level, returning the appropriate instruction to represent
     // the action taken.
     fn down(&mut self, here: Option<Fq>) -> Result<Option<Instruction>, Error<E>> {
-        // Internal nodes have size 4; leaves have only one child
         let size = if self.depth >= 24 {
+            // Going down from a leaf node means providing a single commitment
             Size::One
+        } else if self.is_frontier() {
+            // Going down from a frontier node means providing a variable number of children,
+            // dependent on the frontier's position
+            match (self.global_position >> (self.height() * 2)) & 0b11 {
+                0 => Size::One,
+                1 => Size::Two,
+                2 => Size::Three,
+                3 => Size::Four,
+                _ => unreachable!("masked off first two bits only, so result can't be > 3"),
+            }
         } else {
+            // Going down from a complete node means providing all four children, even if they are
+            // not actually present in the input points (we will synthesize all missing ones as
+            // `Hash::one()`)
             Size::Four
         };
         self.depth += 1;
@@ -199,5 +215,13 @@ where
 
     fn stride(&self) -> u64 {
         4u64.pow(self.height().into())
+    }
+
+    fn range(&self) -> Range<u64> {
+        self.position..(self.position + self.stride()).min(4u64.pow(24) - 1)
+    }
+
+    fn is_frontier(&self) -> bool {
+        self.range().contains(&self.global_position)
     }
 }

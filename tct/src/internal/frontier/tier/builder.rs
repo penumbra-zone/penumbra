@@ -6,6 +6,8 @@ use crate::storage::{
 };
 
 /// A builder for a frontier tier.
+#[derive(Derivative)]
+#[derivative(Debug(bound = "Item: Debug + Built + Focus, Item::Complete: Debug, Item::Builder: Debug, <<Item as Focus>::Complete as Built>::Builder: Debug"))]
 pub struct Builder<Item: Built + Focus>
 where
     Item::Complete: Built,
@@ -15,6 +17,8 @@ where
     inner: Option<Inner<Item>>,
 }
 
+#[derive(Derivative)]
+#[derivative(Debug(bound = "Item: Debug + Built + Focus, Item::Complete: Debug, Item::Builder: Debug, <<Item as Focus>::Complete as Built>::Builder: Debug"))]
 enum Inner<Item: Built + Focus>
 where
     Item::Complete: Built,
