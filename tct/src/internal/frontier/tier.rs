@@ -4,9 +4,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
 
-mod builder;
-pub use builder::Builder;
-
 /// A frontier of a tier of the tiered commitment tree, being an 8-deep quad-tree of items.
 #[derive(Derivative, Serialize, Deserialize)]
 #[derivative(

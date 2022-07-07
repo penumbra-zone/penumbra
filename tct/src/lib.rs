@@ -100,7 +100,7 @@ mod prelude {
             frontier::{self, Focus, Forget, Frontier, Full, GetPosition, Insert, Item},
             hash::{CachedHash, Forgotten, GetHash, Hash, OptionHash},
             height::{Height, IsHeight, Succ, Zero},
-            interface::{Build, Built, Witness},
+            interface::Witness,
             path::{self, AuthPath, Path, WhichWay},
             three::{Elems, ElemsMut, IntoElems, Three},
         },

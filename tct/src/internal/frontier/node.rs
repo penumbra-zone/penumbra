@@ -4,9 +4,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
 
-mod builder;
-pub use builder::Builder;
-
 /// A frontier of a node in a tree, into which items can be inserted.
 #[derive(Clone, Derivative, Serialize, Deserialize)]
 #[serde(bound(serialize = "Child: Serialize, Child::Complete: Serialize"))]

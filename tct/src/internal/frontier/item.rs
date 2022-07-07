@@ -1,8 +1,5 @@
 use crate::prelude::*;
 
-mod builder;
-pub use builder::Builder;
-
 /// The hash of the most-recently-inserted item, stored at the tip of the frontier.
 #[derive(Debug, Clone, Copy, Derivative, Serialize, Deserialize)]
 pub struct Item {
