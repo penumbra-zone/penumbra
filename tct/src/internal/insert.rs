@@ -14,6 +14,17 @@ pub enum Insert<T> {
     Hash(Hash),
 }
 
+/// The mutable-reference version of an [`Insert<T>`](Insert), distinct from `Insert<&mut T>`
+/// because it also allows mutation of the contained hash.
+#[derive(Eq, Derivative)]
+#[derivative(Debug)]
+pub enum InsertMut<'a, T> {
+    /// A mutable reference to the item.
+    Keep(&'a mut T),
+    /// A mutable reference to the hash of the item.
+    Hash(&'a mut Hash),
+}
+
 impl<T> Insert<T> {
     /// Transform a `&Insert<T>` into a `Insert<&T>`.
     pub fn as_ref(&self) -> Insert<&T> {
@@ -24,10 +35,10 @@ impl<T> Insert<T> {
     }
 
     /// Transform a `&mut Insert<T>` into a `Insert<&mut T>`.
-    pub fn as_mut(&mut self) -> Insert<&mut T> {
+    pub fn as_mut(&mut self) -> InsertMut<'_, T> {
         match self {
-            Insert::Keep(item) => Insert::Keep(item),
-            Insert::Hash(hash) => Insert::Hash(*hash),
+            Insert::Keep(item) => InsertMut::Keep(item),
+            Insert::Hash(hash) => InsertMut::Hash(hash),
         }
     }
 
@@ -66,11 +77,66 @@ impl<T> Insert<T> {
     }
 }
 
+impl<'a, T> InsertMut<'a, T> {
+    /// Transform a `&InsertMut<T>` into a `InsertMut<&T>`.
+    pub fn as_ref(&self) -> Insert<&T> {
+        match self {
+            InsertMut::Keep(item) => Insert::Keep(item),
+            InsertMut::Hash(hash) => Insert::Hash(**hash),
+        }
+    }
+
+    /// Test if this [`InsertMut`] is a [`InsertMut::Keep`].
+    pub fn is_keep(&self) -> bool {
+        matches!(self, InsertMut::Keep(_))
+    }
+
+    /// Test if this [`InsertMut`] is a [`InsertMut::Hash`].
+    pub fn is_hash(&self) -> bool {
+        matches!(self, InsertMut::Hash(_))
+    }
+
+    /// Map a function over the [`InsertMut::Keep`] part of an `InsertMut<'_, T>`.
+    pub fn map<U, F: FnOnce(&mut T) -> U>(self, f: F) -> Insert<U> {
+        match self {
+            InsertMut::Keep(item) => Insert::Keep(f(item)),
+            InsertMut::Hash(hash) => Insert::Hash(*hash),
+        }
+    }
+
+    /// Map a function returning an `Insert<U>` over the [`InsertMut::Keep`] part of an
+    /// `InsertMut<T>`.
+    pub fn and_then<U, F: FnOnce(&mut T) -> Insert<U>>(self, f: F) -> Insert<U> {
+        match self {
+            InsertMut::Keep(item) => f(item),
+            InsertMut::Hash(hash) => Insert::Hash(*hash),
+        }
+    }
+
+    /// Get the kept `T` out of this [`Insert<T>`] or return `None`.
+    pub fn keep(self) -> Option<&'a mut T> {
+        match self {
+            InsertMut::Keep(item) => Some(item),
+            InsertMut::Hash(_) => None,
+        }
+    }
+}
+
 impl<T: PartialEq<S>, S> PartialEq<Insert<S>> for Insert<T> {
     fn eq(&self, other: &Insert<S>) -> bool {
         match (self, other) {
             (Insert::Keep(item), Insert::Keep(other)) => item == other,
             (Insert::Hash(hash), Insert::Hash(other)) => hash == other,
+            _ => false,
+        }
+    }
+}
+
+impl<T: PartialEq<S>, S> PartialEq<InsertMut<'_, S>> for InsertMut<'_, T> {
+    fn eq(&self, other: &InsertMut<S>) -> bool {
+        match (self, other) {
+            (InsertMut::Keep(item), InsertMut::Keep(other)) => item == other,
+            (InsertMut::Hash(hash), InsertMut::Hash(other)) => hash == other,
             _ => false,
         }
     }

@@ -133,25 +133,95 @@ impl<Child> Children<Child> {
     }
 
     /// Get an array of references to the children or hashes stored in this [`Children`].
-    pub fn children_mut(&mut self) -> [Insert<&mut Child>; 4] {
+    pub fn children_mut(&mut self) -> [InsertMut<'_, Child>; 4] {
         use Children::*;
-        use Insert::*;
+        use InsertMut::*;
 
         match self {
-            ___C(c) => [Hash(c.0), Hash(c.1), Hash(c.2), Keep(&mut c.3)],
-            __C_(c) => [Hash(c.0), Hash(c.1), Keep(&mut c.2), Hash(c.3)],
-            __CC(c) => [Hash(c.0), Hash(c.1), Keep(&mut c.2), Keep(&mut c.3)],
-            _C__(c) => [Hash(c.0), Keep(&mut c.1), Hash(c.2), Hash(c.3)],
-            _C_C(c) => [Hash(c.0), Keep(&mut c.1), Hash(c.2), Keep(&mut c.3)],
-            _CC_(c) => [Hash(c.0), Keep(&mut c.1), Keep(&mut c.2), Hash(c.3)],
-            _CCC(c) => [Hash(c.0), Keep(&mut c.1), Keep(&mut c.2), Keep(&mut c.3)],
-            C___(c) => [Keep(&mut c.0), Hash(c.1), Hash(c.2), Hash(c.3)],
-            C__C(c) => [Keep(&mut c.0), Hash(c.1), Hash(c.2), Keep(&mut c.3)],
-            C_C_(c) => [Keep(&mut c.0), Hash(c.1), Keep(&mut c.2), Hash(c.3)],
-            C_CC(c) => [Keep(&mut c.0), Hash(c.1), Keep(&mut c.2), Keep(&mut c.3)],
-            CC__(c) => [Keep(&mut c.0), Keep(&mut c.1), Hash(c.2), Hash(c.3)],
-            CC_C(c) => [Keep(&mut c.0), Keep(&mut c.1), Hash(c.2), Keep(&mut c.3)],
-            CCC_(c) => [Keep(&mut c.0), Keep(&mut c.1), Keep(&mut c.2), Hash(c.3)],
+            ___C(c) => [
+                Hash(&mut c.0),
+                Hash(&mut c.1),
+                Hash(&mut c.2),
+                Keep(&mut c.3),
+            ],
+            __C_(c) => [
+                Hash(&mut c.0),
+                Hash(&mut c.1),
+                Keep(&mut c.2),
+                Hash(&mut c.3),
+            ],
+            __CC(c) => [
+                Hash(&mut c.0),
+                Hash(&mut c.1),
+                Keep(&mut c.2),
+                Keep(&mut c.3),
+            ],
+            _C__(c) => [
+                Hash(&mut c.0),
+                Keep(&mut c.1),
+                Hash(&mut c.2),
+                Hash(&mut c.3),
+            ],
+            _C_C(c) => [
+                Hash(&mut c.0),
+                Keep(&mut c.1),
+                Hash(&mut c.2),
+                Keep(&mut c.3),
+            ],
+            _CC_(c) => [
+                Hash(&mut c.0),
+                Keep(&mut c.1),
+                Keep(&mut c.2),
+                Hash(&mut c.3),
+            ],
+            _CCC(c) => [
+                Hash(&mut c.0),
+                Keep(&mut c.1),
+                Keep(&mut c.2),
+                Keep(&mut c.3),
+            ],
+            C___(c) => [
+                Keep(&mut c.0),
+                Hash(&mut c.1),
+                Hash(&mut c.2),
+                Hash(&mut c.3),
+            ],
+            C__C(c) => [
+                Keep(&mut c.0),
+                Hash(&mut c.1),
+                Hash(&mut c.2),
+                Keep(&mut c.3),
+            ],
+            C_C_(c) => [
+                Keep(&mut c.0),
+                Hash(&mut c.1),
+                Keep(&mut c.2),
+                Hash(&mut c.3),
+            ],
+            C_CC(c) => [
+                Keep(&mut c.0),
+                Hash(&mut c.1),
+                Keep(&mut c.2),
+                Keep(&mut c.3),
+            ],
+            CC__(c) => [
+                Keep(&mut c.0),
+                Keep(&mut c.1),
+                Hash(&mut c.2),
+                Hash(&mut c.3),
+            ],
+            CC_C(c) => [
+                Keep(&mut c.0),
+                Keep(&mut c.1),
+                Hash(&mut c.2),
+                Keep(&mut c.3),
+            ],
+            CCC_(c) => [
+                Keep(&mut c.0),
+                Keep(&mut c.1),
+                Keep(&mut c.2),
+                Hash(&mut c.3),
+            ],
             CCCC(c) => [
                 Keep(&mut c.0),
                 Keep(&mut c.1),

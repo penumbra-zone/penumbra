@@ -101,6 +101,7 @@ pub mod frontier {
     //! Commitments can be inserted either with the intent to remember them, or with the intent to
     //! immediately forget them; this determines whether the [`Item`] is a commitment or merely its
     //! hash.
+    pub(crate) use super::interface::OutOfOrder;
     #[doc(inline)]
     pub use super::interface::{Focus, Forget, Frontier, Full, GetPosition};
     pub mod item;
@@ -108,7 +109,7 @@ pub mod frontier {
     pub mod node;
     pub mod tier;
     pub mod top;
-    pub use super::insert::Insert;
+    pub use super::insert::{Insert, InsertMut};
     #[doc(inline)]
     pub use {
         item::Item,
@@ -139,6 +140,7 @@ pub mod complete {
     //! At the bottom of the bottom-most tier (perhaps at the bottom of multiple [`Tier`]s), there
     //! are [`Item`]s, each of which is merely a wrapper for a single
     //! [`Commitment`](crate::Commitment).
+    pub(crate) use super::interface::OutOfOrderOwned;
     #[doc(inline)]
     pub use super::interface::{Complete, ForgetOwned};
     pub mod item;
@@ -155,3 +157,5 @@ pub mod complete {
         top::Top,
     };
 }
+
+pub(crate) use interface::UncheckedSetHash;
