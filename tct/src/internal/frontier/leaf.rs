@@ -107,3 +107,25 @@ impl<Item: GetPosition + Height + structure::Any> structure::Any for Leaf<Item> 
         self.item.children()
     }
 }
+
+impl<Item: OutOfOrder> OutOfOrder for Leaf<Item> {
+    fn uninitialized(position: u64) -> Self {
+        Self {
+            item: Item::uninitialized(position),
+        }
+    }
+
+    fn insert_commitment(&mut self, index: u64, commitment: Commitment) {
+        self.item.insert_commitment(index, commitment)
+    }
+}
+
+impl<Item: UncheckedSetHash> UncheckedSetHash for Leaf<Item> {
+    fn set_hash(&mut self, index: u64, height: u8, hash: Hash) {
+        self.item.set_hash(index, height, hash)
+    }
+
+    fn finish(&mut self) {
+        self.item.finish()
+    }
+}

@@ -73,3 +73,23 @@ impl<Item: Height + structure::Any> structure::Any for Leaf<Item> {
         self.0.children()
     }
 }
+
+impl<Item: OutOfOrderOwned> OutOfOrderOwned for Leaf<Item> {
+    fn insert_commitment_owned(this: Insert<Self>, index: u64, commitment: Commitment) -> Self {
+        Leaf(Item::insert_commitment_owned(
+            this.map(|leaf| leaf.0),
+            index,
+            commitment,
+        ))
+    }
+}
+
+impl<Item: UncheckedSetHash> UncheckedSetHash for Leaf<Item> {
+    fn set_hash(&mut self, index: u64, height: u8, hash: Hash) {
+        self.0.set_hash(index, height, hash)
+    }
+
+    fn finish(&mut self) {
+        self.0.finish()
+    }
+}

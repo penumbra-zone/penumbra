@@ -101,3 +101,55 @@ impl structure::Any for Item {
         vec![]
     }
 }
+
+impl OutOfOrder for Item {
+    fn uninitialized(_position: u64) -> Self {
+        Self {
+            item: Insert::Hash(Hash::uninitialized()),
+        }
+    }
+
+    fn insert_commitment(&mut self, index: u64, commitment: Commitment) {
+        if index == 0 {
+            let hash = match self.item {
+                Insert::Keep((_drop_old_commitment, hash)) => hash,
+                Insert::Hash(hash) => hash,
+            };
+            self.item = Insert::Keep((commitment, hash));
+        } else {
+            panic!("non-zero index when inserting commitment");
+        }
+    }
+}
+
+impl UncheckedSetHash for Item {
+    fn set_hash(&mut self, index: u64, height: u8, hash: Hash) {
+        if index != 0 {
+            panic!("non-zero index when setting hash");
+        }
+        if height != 0 {
+            panic!("non-zero height when setting hash");
+        }
+        self.item = match self.item {
+            Insert::Keep((commitment, _drop_old_hash)) => Insert::Keep((commitment, hash)),
+            Insert::Hash(_drop_old_hash) => Insert::Hash(hash),
+        }
+    }
+
+    fn finish(&mut self) {
+        match self.item {
+            Insert::Keep((commitment, ref mut hash)) => {
+                if hash.is_uninitialized() {
+                    *hash = Hash::of(commitment);
+                }
+            }
+            Insert::Hash(ref mut hash) => {
+                if hash.is_uninitialized() {
+                    // An uninitialized frontier hash should be set to the zero hash, which is the
+                    // empty hash for the frontier
+                    *hash = Hash::zero();
+                }
+            }
+        }
+    }
+}

@@ -4,7 +4,7 @@
 
 use std::fmt::Debug;
 
-use ark_ff::{fields::PrimeField, One, Zero};
+use ark_ff::{fields::PrimeField, BigInteger256, Fp256, One, Zero};
 use decaf377::FieldExt;
 use once_cell::sync::Lazy;
 use poseidon377::{hash_1, hash_4, Fq};
@@ -114,9 +114,30 @@ impl Hash {
         Self(Fq::zero())
     }
 
+    /// Checks if the hash is zero.
+    pub fn is_zero(&self) -> bool {
+        self.0.is_zero()
+    }
+
     /// The one hash, used for padding of complete nodes.
     pub fn one() -> Hash {
         Self(Fq::one())
+    }
+
+    /// Checks if the hash is one.
+    pub fn is_one(&self) -> bool {
+        self.0.is_one()
+    }
+
+    /// A stand-in hash that is out-of-range for `Fq`, to be used during intermediate construction
+    /// of the tree as a sentinel value for uninitialized nodes.
+    pub(crate) fn uninitialized() -> Hash {
+        Self(Fp256::new(BigInteger256([u64::MAX; 4])))
+    }
+
+    /// Checks if the hash is uninitialized.
+    pub(crate) fn is_uninitialized(&self) -> bool {
+        *self == Self::uninitialized()
     }
 
     /// Hash an individual commitment to be inserted into the tree.

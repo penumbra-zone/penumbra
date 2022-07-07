@@ -104,3 +104,49 @@ pub trait ForgetOwned: Height + Sized {
         index: impl Into<u64>,
     ) -> (Insert<Self>, bool);
 }
+
+/// When deserializing, we need to insert into an initially empty structure filled with
+/// uninitialized interior hashes, then insert all the commitments into the leaves of that
+/// structure, filling its shape out correctly. Then, we can use [`UncheckedSetHash`] to set the
+/// internal hashes of the structure, and finalize it.
+pub(crate) trait OutOfOrder: Focus {
+    /// Create a new frontier which has the given position, with all frontier hashes filled in with
+    /// `Hash::uninitialized()`.
+    fn uninitialized(position: u64) -> Self;
+
+    /// Sets the commitment at the position to the given commitment, creating uninitialized internal
+    /// nodes as necessary.
+    ///
+    /// If the commitment is already set, overwrites it. If the index is outside the bounds of the
+    /// structure, does nothing.
+    fn insert_commitment(&mut self, index: u64, commitment: Commitment);
+}
+
+/// Owned version of [`OutOfOrder::insert_commitment`], used for complete nodes.
+pub(crate) trait OutOfOrderOwned: Sized {
+    /// Sets the commitment at the position to the given commitment, creating uninitialized internal
+    /// nodes as necessary.
+    ///
+    /// This takes an `Insert<Self>` and returns `Self` to accurately model that internal nodes may
+    /// be abbreviated by a hash, but once a commitment is witnessed beneath them, they are not.
+    ///
+    /// If the commitment is already set, overwrites it. If the index is outside of the bounds of
+    /// the structure, does nothing.
+    fn insert_commitment_owned(this: Insert<Self>, index: u64, commitment: Commitment) -> Self;
+}
+
+/// When deserializing, we need to insert all the commitments, then set all the cached hashes, then
+/// recalculate any hashes that weren't cached.
+pub(crate) trait UncheckedSetHash: Height {
+    /// Sets the hash at the position and height to the given hash.
+    ///
+    /// If the hash is already set, overwrites it. If there is not a node at the given position and
+    /// height to set the hash of, does nothing.
+    fn set_hash(&mut self, index: u64, height: u8, hash: Hash);
+
+    /// For all hashes in the tree, converts uninitialized leaf hashes to the appropriate
+    /// (un)finalized empty hash (`Hash::one()` or `Hash::zero()` depending on position), and
+    /// calculates and sets the hash for internal nodes, meaning that the internal structure no
+    /// longer contains any `Hash::uninitialized()` anywhere.
+    fn finish(&mut self);
+}

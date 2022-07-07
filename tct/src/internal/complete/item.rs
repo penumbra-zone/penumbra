@@ -78,3 +78,34 @@ impl structure::Any for Item {
         vec![]
     }
 }
+
+impl OutOfOrderOwned for Item {
+    fn insert_commitment_owned(this: Insert<Self>, index: u64, commitment: Commitment) -> Self {
+        if index != 0 {
+            panic!("non-zero index when inserting commitment");
+        }
+        let hash = match this {
+            Insert::Keep(Item { hash, .. }) => hash,
+            Insert::Hash(hash) => hash,
+        };
+        Item { hash, commitment }
+    }
+}
+
+impl UncheckedSetHash for Item {
+    fn set_hash(&mut self, index: u64, height: u8, hash: Hash) {
+        if index != 0 {
+            panic!("non-zero index when setting hash");
+        }
+        if height != 0 {
+            panic!("non-zero height when setting hash");
+        }
+        self.hash = hash;
+    }
+
+    fn finish(&mut self) {
+        if self.hash.is_uninitialized() {
+            self.hash = Hash::of(self.commitment);
+        }
+    }
+}
