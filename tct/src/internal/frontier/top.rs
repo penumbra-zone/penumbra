@@ -239,6 +239,51 @@ where
     }
 }
 
+impl<Item: Focus + Height + OutOfOrder> OutOfOrder for Top<Item>
+where
+    Item::Complete: OutOfOrderOwned,
+{
+    fn uninitialized(position: u64) -> Self {
+        let inner = if position == 0 {
+            // If the position is zero, there's no frontier to manifest
+            None
+        } else {
+            // Otherwise, create a frontier
+            Some(Nested::uninitialized(position))
+        };
+
+        Self {
+            inner,
+            // Track forgotten things by default (we only deserialize entire full trees, which
+            // always have this flipped on)
+            track_forgotten: TrackForgotten::Yes,
+        }
+    }
+
+    fn insert_commitment(&mut self, index: u64, commitment: Commitment) {
+        if let Some(ref mut inner) = self.inner {
+            inner.insert_commitment(index, commitment);
+        }
+    }
+}
+
+impl<Item: Focus + Height + UncheckedSetHash> UncheckedSetHash for Top<Item>
+where
+    Item::Complete: UncheckedSetHash,
+{
+    fn set_hash(&mut self, index: u64, height: u8, hash: Hash) {
+        if let Some(ref mut inner) = self.inner {
+            inner.set_hash(index, height, hash);
+        }
+    }
+
+    fn finish(&mut self) {
+        if let Some(ref mut inner) = self.inner {
+            inner.finish();
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
