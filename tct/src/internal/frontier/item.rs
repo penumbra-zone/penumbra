@@ -103,13 +103,13 @@ impl structure::Any for Item {
 }
 
 impl OutOfOrder for Item {
-    fn uninitialized(_position: u64) -> Self {
+    fn uninitialized(_position: Option<u64>) -> Self {
         Self {
             item: Insert::Hash(Hash::uninitialized()),
         }
     }
 
-    fn insert_commitment(&mut self, index: u64, commitment: Commitment) {
+    fn uninitialized_out_of_order_insert_commitment(&mut self, index: u64, commitment: Commitment) {
         if index == 0 {
             let hash = match self.item {
                 Insert::Keep((_drop_old_commitment, hash)) => hash,
@@ -123,7 +123,7 @@ impl OutOfOrder for Item {
 }
 
 impl UncheckedSetHash for Item {
-    fn set_hash(&mut self, index: u64, height: u8, hash: Hash) {
+    fn unchecked_set_hash(&mut self, index: u64, height: u8, hash: Hash) {
         if index != 0 {
             panic!("non-zero index when setting hash");
         }
@@ -136,7 +136,7 @@ impl UncheckedSetHash for Item {
         }
     }
 
-    fn finish(&mut self) {
+    fn finish_initialize(&mut self) {
         match self.item {
             Insert::Keep((commitment, ref mut hash)) => {
                 if hash.is_uninitialized() {

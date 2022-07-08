@@ -80,7 +80,11 @@ impl structure::Any for Item {
 }
 
 impl OutOfOrderOwned for Item {
-    fn insert_commitment_owned(this: Insert<Self>, index: u64, commitment: Commitment) -> Self {
+    fn uninitialized_out_of_order_insert_commitment_owned(
+        this: Insert<Self>,
+        index: u64,
+        commitment: Commitment,
+    ) -> Self {
         if index != 0 {
             panic!("non-zero index when inserting commitment");
         }
@@ -93,7 +97,7 @@ impl OutOfOrderOwned for Item {
 }
 
 impl UncheckedSetHash for Item {
-    fn set_hash(&mut self, index: u64, height: u8, hash: Hash) {
+    fn unchecked_set_hash(&mut self, index: u64, height: u8, hash: Hash) {
         if index != 0 {
             panic!("non-zero index when setting hash");
         }
@@ -103,7 +107,7 @@ impl UncheckedSetHash for Item {
         self.hash = hash;
     }
 
-    fn finish(&mut self) {
+    fn finish_initialize(&mut self) {
         if self.hash.is_uninitialized() {
             self.hash = Hash::of(self.commitment);
         }

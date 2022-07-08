@@ -48,6 +48,7 @@ impl<T> Three<T> {
 
     /// Push a new item into this [`Three`], or panic if it would overfill it.
     #[inline]
+    #[cfg_attr(not(feature = "internal"), allow(unused))]
     pub fn push_mut(&mut self, item: T) -> Self {
         if let Ok(three) = std::mem::take(self).push(item) {
             three

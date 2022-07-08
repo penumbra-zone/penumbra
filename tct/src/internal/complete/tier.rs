@@ -82,19 +82,27 @@ impl<Item: Height + structure::Any> structure::Any for Tier<Item> {
 }
 
 impl<Item: GetHash + Height + OutOfOrderOwned> OutOfOrderOwned for Tier<Item> {
-    fn insert_commitment_owned(this: Insert<Self>, index: u64, commitment: Commitment) -> Self {
+    fn uninitialized_out_of_order_insert_commitment_owned(
+        this: Insert<Self>,
+        index: u64,
+        commitment: Commitment,
+    ) -> Self {
         Tier {
-            inner: Nested::insert_commitment_owned(this.map(|tier| tier.inner), index, commitment),
+            inner: Nested::uninitialized_out_of_order_insert_commitment_owned(
+                this.map(|tier| tier.inner),
+                index,
+                commitment,
+            ),
         }
     }
 }
 
 impl<Item: GetHash + UncheckedSetHash> UncheckedSetHash for Tier<Item> {
-    fn set_hash(&mut self, index: u64, height: u8, hash: Hash) {
-        self.inner.set_hash(index, height, hash)
+    fn unchecked_set_hash(&mut self, index: u64, height: u8, hash: Hash) {
+        self.inner.unchecked_set_hash(index, height, hash)
     }
 
-    fn finish(&mut self) {
-        self.inner.finish()
+    fn finish_initialize(&mut self) {
+        self.inner.finish_initialize()
     }
 }

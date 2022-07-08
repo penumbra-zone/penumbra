@@ -130,6 +130,14 @@ impl Tree {
         Self::default()
     }
 
+    // Assemble a tree from its two parts without checking any invariants.
+    pub(crate) fn unchecked_from_parts(
+        index: HashedMap<Commitment, index::within::Tree>,
+        inner: frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>>,
+    ) -> Self {
+        Self { index, inner }
+    }
+
     /// Get the root hash of this [`Tree`].
     ///
     /// Internal hashing is performed lazily to prevent unnecessary intermediary hashes from being
