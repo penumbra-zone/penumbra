@@ -7,7 +7,6 @@ use std::{
     pin::Pin,
 };
 
-use ark_ed_on_bls12_377::Fq;
 use futures::{stream, Stream};
 
 use crate::prelude::*;
@@ -17,59 +16,19 @@ pub mod in_memory;
 pub mod serialize;
 pub use in_memory::InMemory;
 
-/// Proptest generators for things relevant to construction.
-#[cfg(feature = "arbitrary")]
-pub mod arbitrary;
-
-/// In a depth-first traversal, is the next node below, or to the right? If this is the last
-/// represented sibling, then we should go up instead of (illegally) right.
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Instruction {
-    /// This node is an internal node, with a non-zero number of children and an optional cached
-    /// value. We should create it, then continue the traversal to create its children.
-    Node {
-        /// The element at this leaf, if any (internal nodes can always calculate their element, so
-        /// this is optional).
-        here: Option<Fq>,
-        /// The number of children of this node.
-        size: Size,
-    },
-    /// This node is a leaf, with no children and a mandatory value. We should create it, then
-    /// return it as completed, to continue the traversal at the parent.
-    Leaf {
-        /// The element at this leaf.
-        here: Fq,
-    },
+/// A stored position for the tree: either the position of the tree, or a marker indicating that it
+/// is full, and therefore does not have a position.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum StoredPosition {
+    /// The tree has the given position.
+    Position(Position),
+    /// The tree is full.
+    Full,
 }
 
-/// The number of children of a node we're creating.
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[cfg_attr(feature = "arbitrary", derive(proptest_derive::Arbitrary))]
-pub enum Size {
-    /// 1 child.
-    One,
-    /// 2 children.
-    Two,
-    /// 3 children.
-    Three,
-    /// 4 children.
-    Four,
-}
-
-impl From<Size> for usize {
-    fn from(size: Size) -> Self {
-        match size {
-            Size::One => 1,
-            Size::Two => 2,
-            Size::Three => 3,
-            Size::Four => 4,
-        }
-    }
-}
-
-impl Debug for Size {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        usize::from(*self).fmt(f)
+impl Default for StoredPosition {
+    fn default() -> Self {
+        StoredPosition::Position(Position::default())
     }
 }
 
@@ -80,7 +39,7 @@ pub trait Read {
     type Error;
 
     /// Fetch the current position stored.
-    async fn position(&mut self) -> Result<Option<Position>, Self::Error>;
+    async fn position(&mut self) -> Result<StoredPosition, Self::Error>;
 
     /// Read a particular hash in the storage, or return `None` if it is not represented.
     ///
@@ -115,9 +74,6 @@ pub trait Read {
 #[async_trait]
 pub trait Write: Read {
     /// Write a single hash into storage.
-    ///
-    /// This should return an error if a hash is already present at that location; no location's
-    /// value should ever be overwritten.
     async fn add_hash(
         &mut self,
         position: Position,
@@ -135,7 +91,7 @@ pub trait Write: Read {
         commitment: Commitment,
     ) -> Result<(), Self::Error>;
 
-    /// Delete every stored [`Point`] whose height is greater than `below_height` and whose
+    /// Delete every stored [`Point`] whose height is less than `below_height` and whose
     /// position is within the half-open [`Range`] of `positions`.
     async fn delete_range(
         &mut self,
@@ -144,5 +100,5 @@ pub trait Write: Read {
     ) -> Result<(), Self::Error>;
 
     /// Set the stored position of the tree.
-    async fn set_position(&mut self, position: Option<Position>) -> Result<(), Self::Error>;
+    async fn set_position(&mut self, position: StoredPosition) -> Result<(), Self::Error>;
 }

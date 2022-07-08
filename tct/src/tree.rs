@@ -32,7 +32,7 @@ impl Default for Tree {
 impl PartialEq for Tree {
     fn eq(&self, other: &Tree) -> bool {
         self.position() == other.position() // two trees could have identical contents but different positions
-            && self.root() == other.root()  // if the roots match, they represent the same commitments, but may witness different ones
+            && self.root() == other.root() // if the roots match, they represent the same commitments, but may witness different ones
             && self.index == other.index // we ensure they witness the same commitments by checking equality of indices
     }
 }
@@ -93,6 +93,7 @@ impl Display for Root {
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Default,
 )]
+#[cfg_attr(any(test, feature = "arbitrary"), derive(proptest_derive::Arbitrary))]
 pub struct Position(index::within::Tree);
 
 impl Position {

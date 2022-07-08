@@ -3,34 +3,16 @@
 use super::*;
 
 /// An in-memory storage backend, useful for testing.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 pub struct InMemory {
-    position: Option<Position>,
+    position: StoredPosition,
     hashes: BTreeMap<Position, BTreeMap<u8, Hash>>,
     commitments: BTreeMap<Position, Commitment>,
-}
-
-impl Default for InMemory {
-    fn default() -> Self {
-        Self {
-            position: Some(0.into()),
-            hashes: BTreeMap::new(),
-            commitments: BTreeMap::new(),
-        }
-    }
 }
 
 /// An error which can occur when using the in-memory storage backend.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Error)]
 pub enum Error {
-    /// A write was attempted over an existing hash.
-    #[error("refusing to overwrite existing hash at position {position:?}, height {height}")]
-    DuplicateWriteHash {
-        /// The position of the existing hash.
-        position: Position,
-        /// The height of the existing hash.
-        height: u8,
-    },
     /// A write was attempted over an existing commitment.
     #[error("refusing to overwrite existing commitment at position {position:?}")]
     DuplicateWriteCommitment {
@@ -43,7 +25,7 @@ pub enum Error {
 impl Read for InMemory {
     type Error = Error;
 
-    async fn position(&mut self) -> Result<Option<Position>, Self::Error> {
+    async fn position(&mut self) -> Result<StoredPosition, Self::Error> {
         Ok(self.position)
     }
 
@@ -99,8 +81,13 @@ impl Write for InMemory {
         let column = self.hashes.entry(position).or_default();
         // Only insert if nothing is already there
         match column.entry(height) {
-            Entry::Vacant(e) => e.insert(hash),
-            Entry::Occupied(_) => return Err(Error::DuplicateWriteHash { position, height }),
+            Entry::Vacant(e) => {
+                println!(
+                    "INSERTING INTO STORAGE: position: {position:?}, height: {height}, hash: {hash:?}"
+                );
+                e.insert(hash);
+            }
+            Entry::Occupied(_) => { /* do nothing */ }
         };
         Ok(())
     }
@@ -121,26 +108,26 @@ impl Write for InMemory {
     async fn delete_range(
         &mut self,
         below_height: u8,
-        positions: Range<Position>,
+        range: Range<Position>,
     ) -> Result<(), Self::Error> {
         // TODO: this could be faster if there was a way to iterate over a range of a `BTreeMap`
         // rather than traversing the entire thing each time
 
         // Remove all the inner hashes below and in range
         for (position, column) in self.hashes.iter_mut() {
-            if positions.contains(position) {
+            if range.contains(position) {
                 column.retain(|&height, _| height >= below_height);
             }
         }
 
         // Remove all the commitments within the range
         self.commitments
-            .retain(|position, _| !positions.contains(position));
+            .retain(|position, _| !range.contains(position));
 
         Ok(())
     }
 
-    async fn set_position(&mut self, position: Option<Position>) -> Result<(), Self::Error> {
+    async fn set_position(&mut self, position: StoredPosition) -> Result<(), Self::Error> {
         self.position = position;
         Ok(())
     }

@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 6ba82bcaacae48aac0a9e464b3ff1fde438d1c598fbd78aa54539e3b2b985dff # shrinks to init_position = Some(Position(Tree { epoch: 0, block: 0, commitment: 2 }))

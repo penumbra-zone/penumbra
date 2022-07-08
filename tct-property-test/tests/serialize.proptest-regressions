@@ -5,3 +5,7 @@
 # It is recommended to check this file in to source control so that
 # everyone who runs the test benefits from these saved cases.
 cc 708a7aa7181ddd2ae826776f7b3331ed78d207c9f8ec8782b990048aa598f735 # shrinks to actions = [EndBlock]
+cc 2ea142d8f2df47784b78cd30d09f62679aa5de365730090a762364bcd0ad5570 # shrinks to actions = [EndBlock, EndBlock, Serialize]
+cc 493fc2468e325c7dee3cff52694cc116e6eba6d1cb9e78be53b3771f57938a00 # shrinks to actions = [EndBlock, Insert(Forget, note::Commitment(f3bcf59af2587d3d3e40865215d157bae6158a3aeca52e0101d3e8500decbd04)), Serialize]
+cc 8619b833b7e7a539e37d7dd0b1e194b3dece907e49674492cbbd623680e35834 # shrinks to actions = [Insert(Forget, note::Commitment(e2b94a34c0c88b7b3ebadf6415108102e261778a4a48b0027640f452c359c501)), Serialize, Serialize]
+cc 0c32bbbce1056f187de693cf35ca552e66126e0c7a9ec4da2d3f6a0d554a9ffd # shrinks to actions = [Insert(Forget, note::Commitment(00500048c3153cfcce42a22031989588a1627d215b405f8d4ad2e187296f5400)), Serialize, EndBlock, Serialize]

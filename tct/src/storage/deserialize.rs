@@ -8,11 +8,17 @@ use hash_hasher::HashedMap;
 use crate::prelude::*;
 use crate::storage::Read;
 
+use super::StoredPosition;
+
 /// Deserialize a [`Tree`] from a storage backend.
 pub async fn from_reader<R: Read>(reader: &mut R) -> Result<Tree, R::Error> {
     // Make an uninitialized tree with the correct position
+    let position = match reader.position().await? {
+        StoredPosition::Position(position) => Some(position.into()),
+        StoredPosition::Full => None,
+    };
     let mut inner: frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>> =
-        OutOfOrder::uninitialized(reader.position().await?.map(Into::into));
+        OutOfOrder::uninitialized(position);
 
     // Make an index to track the commitments (we'll assemble this into the final tree)
     let mut index = HashedMap::default();
@@ -36,4 +42,19 @@ pub async fn from_reader<R: Read>(reader: &mut R) -> Result<Tree, R::Error> {
     inner.finish_initialize();
 
     Ok(Tree::unchecked_from_parts(index, inner))
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use proptest::{arbitrary::*, prelude::*};
+
+    proptest::proptest! {
+        #[test]
+        fn uninitialized_produces_correct_position(init_position in prop::option::of(any::<Position>())) {
+            let tree: frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>> =
+                OutOfOrder::uninitialized(init_position.map(Into::into));
+            assert_eq!(init_position, tree.position().map(Into::into));
+        }
+    }
 }
