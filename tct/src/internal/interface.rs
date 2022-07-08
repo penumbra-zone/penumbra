@@ -109,7 +109,7 @@ pub trait ForgetOwned: Height + Sized {
 /// uninitialized interior hashes, then insert all the commitments into the leaves of that
 /// structure, filling its shape out correctly. Then, we can use [`UncheckedSetHash`] to set the
 /// internal hashes of the structure, and finalize it.
-pub(crate) trait OutOfOrder: Focus {
+pub(crate) trait OutOfOrder {
     /// Create a new frontier which has the given position, with all frontier hashes filled in with
     /// `Hash::uninitialized()`.
     fn uninitialized(position: u64) -> Self;

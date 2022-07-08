@@ -317,6 +317,96 @@ where
     }
 }
 
+impl<Item: Focus + OutOfOrder> OutOfOrder for Tier<Item>
+where
+    Item::Complete: OutOfOrderOwned,
+{
+    fn uninitialized(position: u64) -> Self {
+        // This tier is finalized if the position relative to its own height is 0 (because a
+        // frontier cannot represent a 0 position)
+        let is_finalized =
+            // This calculation checks whether the position "below" here is all zeros, which would
+            // mean that no frontier can be instantiated here, because any non-finalized tier would
+            // contribute at least 1 to the position, since tiers cannot be empty
+            position.trailing_zeros() >= (<Self as Height>::Height::HEIGHT as u32 * 2);
+
+        Self {
+            inner: if is_finalized {
+                // We can't generate an uninitialized complete tier, so we use the uninitialized
+                // hash, which will be replaced with `Hash::one()` in the case when nothing is
+                // inserted into it, and with a complete tier in the case when something is inserted
+                // into it
+                Inner::Hash(Hash::uninitialized())
+            } else {
+                // In the case when we are a non-finalized tier, we recursively continue generating
+                // the frontier
+                Inner::Frontier(Box::new(Nested::uninitialized(position)))
+            },
+        }
+    }
+
+    fn insert_commitment(&mut self, index: u64, commitment: Commitment) {
+        // We very temporarily swap the inner for the uninitialized hash, so we can manipulate it as
+        // an owned value, then we put the real thing immediately back
+        let inner = std::mem::replace(&mut self.inner, Inner::Hash(Hash::uninitialized()));
+        self.inner = match inner {
+            Inner::Frontier(mut frontier) => {
+                // Insert into the frontier and return it
+                frontier.insert_commitment(index, commitment);
+                Inner::Frontier(frontier)
+            }
+            Inner::Complete(complete) => {
+                // Insert into the complete tier and return it, using the `OutOfOrderOwned` impl for
+                // the inner nested complete structure
+                Inner::Complete(<Nested<Item> as Focus>::Complete::insert_commitment_owned(
+                    Insert::Keep(complete),
+                    index,
+                    commitment,
+                ))
+            }
+            Inner::Hash(hash) => {
+                // Do just as above, using the `OutOfOrderOwned` impl for the inner nested complete
+                // structure, except starting from the given hash
+                Inner::Complete(<Nested<Item> as Focus>::Complete::insert_commitment_owned(
+                    Insert::Hash(hash),
+                    index,
+                    commitment,
+                ))
+            }
+        };
+    }
+}
+
+impl<Item: Focus + UncheckedSetHash> UncheckedSetHash for Tier<Item>
+where
+    Item::Complete: UncheckedSetHash,
+{
+    fn set_hash(&mut self, index: u64, height: u8, hash: Hash) {
+        match &mut self.inner {
+            Inner::Frontier(frontier) => frontier.set_hash(index, height, hash),
+            Inner::Complete(complete) => complete.set_hash(index, height, hash),
+            Inner::Hash(this_hash) => {
+                if height == Self::Height::HEIGHT {
+                    *this_hash = hash;
+                }
+            }
+        }
+    }
+
+    fn finish(&mut self) {
+        match &mut self.inner {
+            Inner::Frontier(frontier) => frontier.finish(),
+            Inner::Complete(complete) => complete.finish(),
+            Inner::Hash(hash) => {
+                if hash.is_uninitialized() {
+                    // A hashed tier is complete, so its hash should be `Hash::one()`
+                    *hash = Hash::one();
+                }
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

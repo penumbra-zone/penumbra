@@ -80,3 +80,21 @@ impl<Item: Height + structure::Any> structure::Any for Tier<Item> {
         (&self.inner as &dyn structure::Any).children()
     }
 }
+
+impl<Item: GetHash + Height + OutOfOrderOwned> OutOfOrderOwned for Tier<Item> {
+    fn insert_commitment_owned(this: Insert<Self>, index: u64, commitment: Commitment) -> Self {
+        Tier {
+            inner: Nested::insert_commitment_owned(this.map(|tier| tier.inner), index, commitment),
+        }
+    }
+}
+
+impl<Item: GetHash + UncheckedSetHash> UncheckedSetHash for Tier<Item> {
+    fn set_hash(&mut self, index: u64, height: u8, hash: Hash) {
+        self.inner.set_hash(index, height, hash)
+    }
+
+    fn finish(&mut self) {
+        self.inner.finish()
+    }
+}

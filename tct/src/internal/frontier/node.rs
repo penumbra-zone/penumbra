@@ -393,3 +393,168 @@ where
             .collect()
     }
 }
+
+impl<Child: Height + Focus + OutOfOrder> OutOfOrder for Node<Child>
+where
+    Child::Complete: OutOfOrderOwned,
+{
+    fn uninitialized(position: u64) -> Self {
+        // The number of siblings is the bits of the position at this node's height
+        let siblings_len = (position >> (<Self as Height>::Height::HEIGHT * 2)) & 0b11;
+
+        let mut siblings = Three::new();
+        for _ in 0..siblings_len {
+            siblings = if let Ok(siblings) = siblings.push(Insert::Hash(Hash::uninitialized())) {
+                siblings
+            } else {
+                unreachable!("for all x, 0b11 & x < 4, so siblings can't overflow")
+            }
+        }
+
+        let focus = Child::uninitialized(position);
+        let hash = CachedHash::default();
+        let forgotten = [Forgotten::default(); 4];
+
+        Node {
+            siblings,
+            focus,
+            hash,
+            forgotten,
+        }
+    }
+
+    fn insert_commitment(&mut self, index: u64, commitment: Commitment) {
+        use ElemsMut::*;
+        use WhichWay::*;
+
+        let (which_way, index) = WhichWay::at(<Self as Height>::Height::HEIGHT, index);
+
+        // When we recur down into a sibling, we invoke the owned version of `insert_commitment`,
+        // and we need a little wrapper to handle the impedance mismatch between `&mut` and owned
+        // calling convention:
+        fn recur_sibling<Sibling>(sibling: &mut Insert<Sibling>, index: u64, commitment: Commitment)
+        where
+            Sibling: OutOfOrderOwned,
+        {
+            *sibling = Insert::Keep(Sibling::insert_commitment_owned(
+                // Very temporarily swap out sibling for the uninitialized hash, so we can
+                // manipulate it as an owned value (we immediately put something legit back into it,
+                // in this very line)
+                std::mem::replace(sibling, Insert::Hash(Hash::uninitialized())),
+                index,
+                commitment,
+            ));
+        }
+
+        match (self.siblings.elems_mut(), &mut self.focus) {
+            (_0([]), a) => match which_way {
+                Leftmost => a.insert_commitment(index, commitment),
+                Left | Right | Rightmost => {}
+            },
+            (_1([a]), b) => match which_way {
+                Leftmost => recur_sibling(a, index, commitment),
+                Left => b.insert_commitment(index, commitment),
+                Right | Rightmost => {}
+            },
+            (_2([a, b]), c) => match which_way {
+                Leftmost => recur_sibling(a, index, commitment),
+                Left => recur_sibling(b, index, commitment),
+                Right => c.insert_commitment(index, commitment),
+                Rightmost => {}
+            },
+            (_3([a, b, c]), d) => match which_way {
+                Leftmost => recur_sibling(a, index, commitment),
+                Left => recur_sibling(b, index, commitment),
+                Right => recur_sibling(c, index, commitment),
+                Rightmost => d.insert_commitment(index, commitment),
+            },
+        }
+    }
+}
+
+impl<Child: Focus + UncheckedSetHash> UncheckedSetHash for Node<Child>
+where
+    Child::Complete: UncheckedSetHash,
+{
+    fn set_hash(&mut self, index: u64, height: u8, hash: Hash) {
+        use std::cmp::Ordering::*;
+        use ElemsMut::*;
+        use WhichWay::*;
+
+        // For a sibling, which may be hashed, we need to handle both the possibility that it
+        // exists, or it is hashed
+        fn recur_sibling<T: Height + UncheckedSetHash>(
+            insert: &mut Insert<T>,
+            index: u64,
+            height: u8,
+            hash: Hash,
+        ) {
+            match insert {
+                // Recur normally if the sibling exists
+                Insert::Keep(item) => item.set_hash(index, height, hash),
+                // If the sibling is hashed and the height is right, set the hash there
+                Insert::Hash(this_hash) => {
+                    if height == <T as Height>::Height::HEIGHT {
+                        *this_hash = hash;
+                    }
+                }
+            };
+        }
+
+        match height.cmp(&Self::Height::HEIGHT) {
+            Greater => panic!("height too large when setting hash: {}", height),
+            // Set the hash here
+            Equal => self.hash = hash.into(),
+            // Set the hash below
+            Less => {
+                let (which_way, index) = WhichWay::at(Self::Height::HEIGHT, index);
+
+                match (self.siblings.elems_mut(), &mut self.focus) {
+                    (_0([]), a) => match which_way {
+                        Leftmost => a.set_hash(index, height, hash),
+                        Left | Right | Rightmost => {}
+                    },
+                    (_1([a]), b) => match which_way {
+                        Leftmost => recur_sibling(a, index, height, hash),
+                        Left => b.set_hash(index, height, hash),
+                        Right | Rightmost => {}
+                    },
+                    (_2([a, b]), c) => match which_way {
+                        Leftmost => recur_sibling(a, index, height, hash),
+                        Left => recur_sibling(b, index, height, hash),
+                        Right => c.set_hash(index, height, hash),
+                        Rightmost => {}
+                    },
+                    (_3([a, b, c]), d) => match which_way {
+                        Leftmost => recur_sibling(a, index, height, hash),
+                        Left => recur_sibling(b, index, height, hash),
+                        Right => recur_sibling(c, index, height, hash),
+                        Rightmost => d.set_hash(index, height, hash),
+                    },
+                }
+            }
+        }
+    }
+
+    fn finish(&mut self) {
+        // Finish the focus
+        self.focus.finish();
+
+        // Finish each of the siblings
+        for sibling in self.siblings.iter_mut() {
+            match sibling {
+                Insert::Keep(item) => item.finish(),
+                Insert::Hash(hash) => {
+                    if hash.is_uninitialized() {
+                        // Siblings are complete, so we finish them using `Hash::one()`
+                        *hash = Hash::one();
+                    }
+                }
+            }
+        }
+
+        // Unlike in the complete case, we don't need to touch the hash, because it's a
+        // `CachedHash`, so we've never set it to an uninitialized value; we've only ever touched it
+        // if we've set it to a real hash
+    }
+}
