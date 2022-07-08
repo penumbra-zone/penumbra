@@ -243,8 +243,8 @@ impl<Item: Focus + Height + OutOfOrder> OutOfOrder for Top<Item>
 where
     Item::Complete: OutOfOrderOwned,
 {
-    fn uninitialized(position: u64) -> Self {
-        let inner = if position == 0 {
+    fn uninitialized(position: Option<u64>) -> Self {
+        let inner = if position == Some(0) {
             // If the position is zero, there's no frontier to manifest
             None
         } else {
@@ -260,9 +260,9 @@ where
         }
     }
 
-    fn insert_commitment(&mut self, index: u64, commitment: Commitment) {
+    fn uninitialized_out_of_order_insert_commitment(&mut self, index: u64, commitment: Commitment) {
         if let Some(ref mut inner) = self.inner {
-            inner.insert_commitment(index, commitment);
+            inner.uninitialized_out_of_order_insert_commitment(index, commitment);
         }
     }
 }
@@ -271,15 +271,15 @@ impl<Item: Focus + Height + UncheckedSetHash> UncheckedSetHash for Top<Item>
 where
     Item::Complete: UncheckedSetHash,
 {
-    fn set_hash(&mut self, index: u64, height: u8, hash: Hash) {
+    fn unchecked_set_hash(&mut self, index: u64, height: u8, hash: Hash) {
         if let Some(ref mut inner) = self.inner {
-            inner.set_hash(index, height, hash);
+            inner.unchecked_set_hash(index, height, hash);
         }
     }
 
-    fn finish(&mut self) {
+    fn finish_initialize(&mut self) {
         if let Some(ref mut inner) = self.inner {
-            inner.finish();
+            inner.finish_initialize();
         }
     }
 }

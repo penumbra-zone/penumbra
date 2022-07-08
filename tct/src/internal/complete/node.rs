@@ -216,7 +216,11 @@ impl<Item: Height + structure::Any> structure::Any for Node<Item> {
 }
 
 impl<Child: Height + OutOfOrderOwned> OutOfOrderOwned for Node<Child> {
-    fn insert_commitment_owned(this: Insert<Self>, index: u64, commitment: Commitment) -> Self {
+    fn uninitialized_out_of_order_insert_commitment_owned(
+        this: Insert<Self>,
+        index: u64,
+        commitment: Commitment,
+    ) -> Self {
         let (which_way, index) = WhichWay::at(<Self as Height>::Height::HEIGHT, index);
 
         let (hash, forgotten, mut children) = match this {
@@ -245,8 +249,9 @@ impl<Child: Height + OutOfOrderOwned> OutOfOrderOwned for Node<Child> {
         );
 
         // Set that same child back to the result of inserting the commitment
-        children[which_way] =
-            Insert::Keep(Child::insert_commitment_owned(child, index, commitment));
+        children[which_way] = Insert::Keep(
+            Child::uninitialized_out_of_order_insert_commitment_owned(child, index, commitment),
+        );
 
         // Convert the children back into a `Children`, which will always succeed
         // because we've guaranteed that we have at least one `Keep` child: the one we
@@ -264,7 +269,7 @@ impl<Child: Height + OutOfOrderOwned> OutOfOrderOwned for Node<Child> {
 }
 
 impl<Child: GetHash + UncheckedSetHash> UncheckedSetHash for Node<Child> {
-    fn set_hash(&mut self, index: u64, height: u8, hash: Hash) {
+    fn unchecked_set_hash(&mut self, index: u64, height: u8, hash: Hash) {
         use std::cmp::Ordering::*;
 
         match height.cmp(&Self::Height::HEIGHT) {
@@ -277,17 +282,17 @@ impl<Child: GetHash + UncheckedSetHash> UncheckedSetHash for Node<Child> {
                 let (child, _) = which_way.pick(self.children.children_mut());
                 if let Some(child) = child.keep() {
                     // We can only set the hash for the appropriate child if the child exists
-                    child.set_hash(index, height, hash);
+                    child.unchecked_set_hash(index, height, hash);
                 }
             }
         }
     }
 
-    fn finish(&mut self) {
+    fn finish_initialize(&mut self) {
         // Finish all the children
         for child in self.children.children_mut() {
             match child {
-                InsertMut::Keep(child) => child.finish(),
+                InsertMut::Keep(child) => child.finish_initialize(),
                 InsertMut::Hash(hash) => {
                     if hash.is_uninitialized() {
                         // If the hash is not initialized, we set it to the empty finalized hash

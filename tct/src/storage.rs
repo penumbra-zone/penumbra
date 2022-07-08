@@ -10,6 +10,8 @@ use std::{
 use ark_ed_on_bls12_377::Fq;
 use futures::{stream, Stream};
 
+use crate::prelude::*;
+
 pub mod deserialize;
 pub mod in_memory;
 pub mod serialize;
@@ -18,33 +20,6 @@ pub use in_memory::InMemory;
 /// Proptest generators for things relevant to construction.
 #[cfg(feature = "arbitrary")]
 pub mod arbitrary;
-
-/// A point in the serialized tree: the hash or commitment (represented by an [`Fq`]), and its
-/// position and depth in the tree.
-///
-/// The depth is the distance from the root, so leaf hashes have depth 24, and commitments
-/// themselves have depth 25.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Point {
-    /// The position of the value.
-    pub position: u64,
-    /// The depth of the value from the root of the tree.
-    ///
-    /// Note that this representation means that leaf hashes have depth 24, and commitments
-    /// themselves have depth 25.
-    pub depth: u8,
-    /// The value at this point.
-    pub here: Fq,
-}
-
-impl Point {
-    /// Get the range of positions "beneath" this point.
-    pub fn range(&self) -> Range<u64> {
-        let height = 24u8.saturating_sub(self.depth);
-        let stride = 4u64.pow(height.into());
-        self.position..(self.position + stride).min(4u64.pow(24) - 1)
-    }
-}
 
 /// In a depth-first traversal, is the next node below, or to the right? If this is the last
 /// represented sibling, then we should go up instead of (illegally) right.
@@ -105,36 +80,69 @@ pub trait Read {
     type Error;
 
     /// Fetch the current position stored.
-    async fn position(&mut self) -> Result<u64, Self::Error>;
+    async fn position(&mut self) -> Result<Option<Position>, Self::Error>;
 
-    /// Read a particular point in the storage, or return `None` if it is not represented.
+    /// Read a particular hash in the storage, or return `None` if it is not represented.
     ///
     /// This is not used for batch deserialization; it's used only for testing and error checking.
-    async fn read(&mut self, position: u64, depth: u8) -> Result<Option<Fq>, Self::Error>;
+    async fn get_hash(
+        &mut self,
+        position: Position,
+        height: u8,
+    ) -> Result<Option<Hash>, Self::Error>;
 
-    /// Get the full list of all [`Point`]s stored, ordered lexicographically by **position** and
-    /// then by **depth**.
-    fn points(&mut self) -> Pin<Box<dyn Stream<Item = Result<Point, Self::Error>> + '_>>;
+    /// Read a particular commitment in the storage, or return `None` if it is not represented.
+    ///
+    /// This is not used for batch deserialization; it's used only for testing and error checking.
+    async fn get_commitment(
+        &mut self,
+        position: Position,
+    ) -> Result<Option<Commitment>, Self::Error>;
+
+    /// Get the full list of all internal hashes stored, indexed by position and height.
+    fn hashes(
+        &mut self,
+    ) -> Pin<Box<dyn Stream<Item = Result<(Position, u8, Hash), Self::Error>> + '_>>;
+
+    /// Get the full list of all commitments stored, indexed by position.
+    fn commitments(
+        &mut self,
+    ) -> Pin<Box<dyn Stream<Item = Result<(Position, Commitment), Self::Error>> + '_>>;
 }
 
 /// A storage backend capable of writing [`Point`]s, and garbage-collecting those which have been
 /// forgotten.
 #[async_trait]
 pub trait Write: Read {
-    /// Write a single point into storage.
+    /// Write a single hash into storage.
     ///
-    /// This should return an error if the point is already present; no point's value should ever
-    /// be overwritten.
-    async fn write(&mut self, point: Point) -> Result<(), Self::Error>;
+    /// This should return an error if a hash is already present at that location; no location's
+    /// value should ever be overwritten.
+    async fn add_hash(
+        &mut self,
+        position: Position,
+        height: u8,
+        hash: Hash,
+    ) -> Result<(), Self::Error>;
 
-    /// Delete every stored [`Point`] whose *depth* is greater than `minimum_depth` and whose
-    /// **position** is within the half-open [`Range`] of `positions`.
+    /// Write a single commitment into storage.
+    ///
+    /// This should return an error if a commitment is already present at that location; no
+    /// location's value should ever be overwritten.
+    async fn add_commitment(
+        &mut self,
+        position: Position,
+        commitment: Commitment,
+    ) -> Result<(), Self::Error>;
+
+    /// Delete every stored [`Point`] whose height is greater than `below_height` and whose
+    /// position is within the half-open [`Range`] of `positions`.
     async fn delete_range(
         &mut self,
-        minimum_depth: u8,
-        positions: Range<u64>,
+        below_height: u8,
+        positions: Range<Position>,
     ) -> Result<(), Self::Error>;
 
     /// Set the stored position of the tree.
-    async fn set_position(&mut self, position: u64) -> Result<(), Self::Error>;
+    async fn set_position(&mut self, position: Option<Position>) -> Result<(), Self::Error>;
 }
