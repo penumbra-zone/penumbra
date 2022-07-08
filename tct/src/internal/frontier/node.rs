@@ -401,7 +401,13 @@ where
     fn uninitialized(position: Option<u64>) -> Self {
         // The number of siblings is the bits of the position at this node's height
         let siblings_len = if let Some(position) = position {
-            (position >> (<Self as Height>::Height::HEIGHT * 2)) & 0b11
+            // We subtract 1 from the position, because the position is 1 + the position of the
+            // latest commitment, and we want to know what the arity of this node is, not the
+            // arity it will have after adding something -- note that the position for a node will
+            // never be zero, because tiers and tops steal these cases
+            debug_assert!(position > 0, "position for frontier node is never zero");
+            let path_bits = position - 1;
+            (path_bits >> (Child::Height::HEIGHT * 2)) & 0b11
         } else {
             // When the position is `None`, we add all siblings, because the tree is entirely full
             0b11

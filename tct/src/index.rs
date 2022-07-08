@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 #[derive(
     Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Derivative, Serialize, Deserialize,
 )]
+#[cfg_attr(any(test, feature = "arbitrary"), derive(proptest_derive::Arbitrary))]
 #[derivative(Debug = "transparent")]
 pub struct Commitment(u16);
 
@@ -47,6 +48,7 @@ impl From<Commitment> for u16 {
     Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Derivative, Serialize, Deserialize,
 )]
 #[derivative(Debug = "transparent")]
+#[cfg_attr(any(test, feature = "arbitrary"), derive(proptest_derive::Arbitrary))]
 pub struct Block(u16);
 
 impl From<u16> for Block {
@@ -79,6 +81,7 @@ impl Block {
 #[derive(
     Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Derivative, Serialize, Deserialize,
 )]
+#[cfg_attr(any(test, feature = "arbitrary"), derive(proptest_derive::Arbitrary))]
 #[derivative(Debug = "transparent")]
 pub struct Epoch(u16);
 
@@ -114,6 +117,7 @@ pub mod within {
     #[derive(
         Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize,
     )]
+    #[cfg_attr(any(test, feature = "arbitrary"), derive(proptest_derive::Arbitrary))]
     pub struct Block {
         /// The index of the item within its block.
         pub commitment: super::Commitment,
@@ -154,6 +158,7 @@ pub mod within {
     #[derive(
         Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize,
     )]
+    #[cfg_attr(any(test, feature = "arbitrary"), derive(proptest_derive::Arbitrary))]
     pub struct Epoch {
         /// The index of the block within its epoch.
         pub block: super::Block,
@@ -201,6 +206,7 @@ pub mod within {
     #[derive(
         Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize,
     )]
+    #[cfg_attr(any(test, feature = "arbitrary"), derive(proptest_derive::Arbitrary))]
     pub struct Tree {
         /// The index of the epoch within its tree.
         pub epoch: super::Epoch,

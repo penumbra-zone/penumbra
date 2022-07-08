@@ -11,6 +11,8 @@ use crate::storage::Write;
 use crate::structure::{Kind, Place};
 use crate::tree::Position;
 
+use super::StoredPosition;
+
 pub(crate) mod fq;
 
 /// Options for serializing a tree.
@@ -18,15 +20,22 @@ pub(crate) mod fq;
 pub struct Serializer {
     /// The options for the serialization.
     options: Options,
-    /// The minimum position of node which should be included in the serialization.
-    ///
-    /// If this is `None` then the minimum position does not exist, i.e. the tree is totally full.
-    minimum_position: Option<Position>,
+    /// The last position stored in storage, to allow for incremental serialization.
+    last_stored_position: StoredPosition,
     /// The minimum forgotten version which should be reported for deletion.
     last_forgotten: Forgotten,
 }
 
 impl Serializer {
+    fn is_node_fresh(&self, node: &structure::Node) -> bool {
+        match self.last_stored_position {
+            StoredPosition::Position(last_stored_position) => {
+                node.position() >= last_stored_position
+            }
+            StoredPosition::Full => false,
+        }
+    }
+
     fn should_keep_hash(&self, node: &structure::Node, children: usize) -> bool {
         // A node's hash is recalculable if it has children or if it has a witnessed commitment
         let is_recalculable = children > 0
@@ -44,18 +53,17 @@ impl Serializer {
         // A node is complete if it's not on the frontier
         let is_complete = !is_frontier;
 
-        is_essential || (is_complete && self.options.keep_internal)
+        self.is_node_fresh(node) && (is_essential || (is_complete && self.options.keep_internal))
     }
 
-    fn should_keep_children(&self, node: &structure::Node) -> bool {
-        if let Some(minimum_position) = self.minimum_position {
-            node.range().contains(&minimum_position)
-        } else {
-            // If the minimum position in the serializer is not specified, then that means we should
-            // just abort serialization of internal commitments and hashes, because we've already
-            // serialized all we will ever need to
-            false
-        }
+    fn node_has_fresh_children(&self, node: &structure::Node) -> bool {
+        self.is_node_fresh(node)
+            || match self.last_stored_position {
+                StoredPosition::Position(last_stored_position) => {
+                    node.range().contains(&last_stored_position)
+                }
+                StoredPosition::Full => false,
+            }
     }
 
     /// Create a new default serializer.
@@ -64,8 +72,8 @@ impl Serializer {
     }
 
     /// Set the minimum position to include in the serialization.
-    pub fn position(&mut self, position: Option<Position>) -> &mut Self {
-        self.minimum_position = position;
+    pub fn position(&mut self, position: StoredPosition) -> &mut Self {
+        self.last_stored_position = position;
         self
     }
 
@@ -113,20 +121,18 @@ impl Serializer {
 
                 // If the minimum position is too high, then don't keep this node (but maybe some of
                 // its children will be kept)
-                if u64::from(position)
-                    // If the minimum position is `None`, then we never consider this as a possible
-                    // hash to emit, because the stored position already contains every
-                    // possible hash it ever will
-                    >= options.minimum_position.map(Into::into).unwrap_or(u64::MAX) {
-                    if options.should_keep_hash(&node, children.len()) {
-                        if let Some(hash) = node.cached_hash() {
+                if options.should_keep_hash(&node, children.len()) {
+                    if let Some(hash) = node.cached_hash() {
+                        // Optimization: don't write any complete hashes that are equal to
+                        // `Hash::one()`, because they will be filled in automatically
+                        if !(hash == Hash::one() && node.place() == Place::Complete) {
                             yield (position, height, hash);
                         }
                     }
                 }
 
                 // Traverse the children in order, provided that the minimum position doesn't preclude this
-                if options.should_keep_children(&node) {
+                if options.node_has_fresh_children(&node) {
                     for child in children {
                         let mut stream = hashes_inner(options, child);
                         while let Some(point) = stream.next().await {
@@ -149,7 +155,7 @@ impl Serializer {
         futures::executor::block_on_stream(self.hashes_stream(tree))
     }
 
-    /// Serialize a tree's structure into a depth-first pre-order traversal of hashes within it.
+    /// Serialize a tree's structure into its commitments, in right-to-left order.
     pub fn commitments_stream<'tree>(
         &self,
         tree: &'tree crate::Tree,
@@ -164,12 +170,7 @@ impl Serializer {
 
                 // If the minimum position is too high, then don't keep this node (but maybe some of
                 // its children will be kept)
-                if u64::from(position)
-                    // If the minimum position is `None`, then we never consider this as a possible
-                    // commitment to emit, because the stored position already contains every
-                    // possible commitment it ever will
-                    >= options.minimum_position.map(Into::into).unwrap_or(u64::MAX)
-                {
+                if options.is_node_fresh(&node) {
                     // If we're at a witnessed commitment, yield it
                     if let Kind::Leaf {
                         commitment: Some(commitment),
@@ -180,7 +181,7 @@ impl Serializer {
                 }
 
                 // Traverse the children in order, provided that the minimum position doesn't preclude this
-                if options.should_keep_children(&node) {
+                if options.node_has_fresh_children(&node) {
                     for child in children {
                         let mut stream = commitments_inner(options, child);
                         while let Some(point) = stream.next().await {
@@ -217,10 +218,7 @@ impl Serializer {
                 // (because those greater will not have yet been serialized to storage) and greater
                 // than or equal to the minimum forgotten version (because those lesser will already
                 // have been deleted from storage)
-                if u64::from(node.position())
-                    // If the minimum position is `None`, then we always consider this as
-                    // potentially forgotten, since `None` is the maximum position + 1
-                    < options.minimum_position.map(Into::into).unwrap_or(u64::MAX)
+                if !options.is_node_fresh(&node) // only report **not** fresh nodes
                     && node.forgotten() > options.last_forgotten
                 {
                     let children = node.children();
@@ -308,24 +306,47 @@ pub async fn to_writer<W: Write>(
     writer: &mut W,
     tree: &crate::Tree,
 ) -> Result<(), W::Error> {
+    // If the tree is empty, skip doing anything
+    if tree.is_empty() {
+        return Ok(());
+    }
+
     // Grab the current position stored in storage
-    let minimum_position = writer.position().await?;
+    let last_stored_position = writer.position().await?;
 
     let serializer = Serializer {
         options,
         last_forgotten,
-        minimum_position,
+        last_stored_position,
     };
 
-    // Write all the new points
+    // Update the position
+    let position = if let Some(position) = tree.position() {
+        StoredPosition::Position(position)
+    } else {
+        StoredPosition::Full
+    };
+    writer.set_position(position).await?;
+
+    // Write all the new hashes
     let mut new_hashes = serializer.hashes_stream(tree);
     while let Some((position, height, hash)) = new_hashes.next().await {
         writer.add_hash(position, height, hash).await?;
     }
 
+    // Write all the new commitments
+    let mut new_commitments = serializer.commitments_stream(tree);
+    while let Some((position, commitment)) = new_commitments.next().await {
+        writer.add_commitment(position, commitment).await?;
+    }
+
     // Delete all the forgotten points
     let mut forgotten_points = serializer.forgotten_stream(tree);
-    while let Some((position, below_height, _hash)) = forgotten_points.next().await {
+    while let Some((position, below_height, hash)) = forgotten_points.next().await {
+        // Add the hash that was pruned, because previously it may have been skipped, but now it
+        // needs to be represented
+        writer.add_hash(position, below_height, hash).await?;
+
         // Calculate the range of positions to delete, based on the height
         let position = u64::from(position);
         let stride = 4u64.pow(below_height.into());
@@ -334,9 +355,6 @@ pub async fn to_writer<W: Write>(
         // Delete the range of positions
         writer.delete_range(below_height, range).await?;
     }
-
-    // Update the position
-    writer.set_position(tree.position().map(Into::into)).await?;
 
     Ok(())
 }

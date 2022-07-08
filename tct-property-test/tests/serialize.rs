@@ -16,10 +16,10 @@ const MAX_TIER_ACTIONS: usize = 10;
 #[derive(Debug, Copy, Clone, Arbitrary)]
 #[proptest(params("Vec<Commitment>"))]
 enum Action {
+    Insert(Witness, Commitment),
     EndBlock,
     EndEpoch,
     Forget(Commitment),
-    Insert(Witness, Commitment),
     Serialize,
 }
 
@@ -54,8 +54,6 @@ impl Action {
                 .await?;
 
                 state.last_forgotten = tree.forgotten();
-
-                dbg!(&state.storage);
             }
         };
 
