@@ -104,11 +104,11 @@ pub mod frontier {
     pub(crate) use super::interface::OutOfOrder;
     #[doc(inline)]
     pub use super::interface::{Focus, Forget, Frontier, Full, GetPosition};
-    pub mod item;
-    pub mod leaf;
-    pub mod node;
-    pub mod tier;
-    pub mod top;
+    pub(super) mod item;
+    pub(super) mod leaf;
+    pub(super) mod node;
+    pub(super) mod tier;
+    pub(super) mod top;
     pub use super::insert::{Insert, InsertMut};
     #[doc(inline)]
     pub use {
@@ -143,11 +143,11 @@ pub mod complete {
     pub(crate) use super::interface::OutOfOrderOwned;
     #[doc(inline)]
     pub use super::interface::{Complete, ForgetOwned};
-    pub mod item;
-    pub mod leaf;
-    pub mod node;
-    pub mod tier;
-    pub mod top;
+    pub(super) mod item;
+    pub(super) mod leaf;
+    pub(super) mod node;
+    pub(super) mod tier;
+    pub(super) mod top;
     #[doc(inline)]
     pub use {
         item::Item,
