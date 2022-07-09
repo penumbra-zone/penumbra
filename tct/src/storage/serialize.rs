@@ -29,6 +29,7 @@ pub struct Serializer {
 impl Serializer {
     fn is_node_fresh(&self, node: &structure::Node) -> bool {
         match self.last_stored_position {
+            StoredPosition::Full => false,
             StoredPosition::Position(last_stored_position) => {
                 let node_position: u64 = node.position().into();
                 let last_stored_position: u64 = last_stored_position.into();
@@ -52,7 +53,6 @@ impl Serializer {
                         && node_position >> (height * 2) == last_stored_position >> (height * 2)
                     }
             }
-            StoredPosition::Full => false,
         }
     }
 
@@ -238,23 +238,36 @@ impl Serializer {
             node: structure::Node,
         ) -> Pin<Box<dyn Stream<Item = (Position, u8, Hash)> + '_>> {
             Box::pin(stream! {
-                // Only report nodes (and their children) which are less than the minimum position
+                // Only report nodes (and their children) which are less than the last stored position
                 // (because those greater will not have yet been serialized to storage) and greater
                 // than or equal to the minimum forgotten version (because those lesser will already
                 // have been deleted from storage)
-                if !options.is_node_fresh(&node) // only report **not** fresh nodes
-                    && node.forgotten() > options.last_forgotten
-                {
+                let before_last_stored_position = match options.last_stored_position {
+                    StoredPosition::Full => true,
+                    StoredPosition::Position(last_stored_position) =>
+                        // We don't do anything at all if the node position is greater than or equal
+                        // to the last stored position, because in that case, it, *as well as its
+                        // children* have never been persisted into storage, so no deletions are
+                        // necessary to deal with any things that have been forgotten within them
+                        node.position() < last_stored_position,
+                };
+
+                if before_last_stored_position && node.forgotten() > options.last_forgotten {
                     let children = node.children();
                     if children.is_empty() {
                         // If there are no children, report the point
-                        yield (
-                            node.position().into(),
-                            node.height(),
-                            // A node with no children definitely has a precalculated hash, so this
-                            // is not evaluating any extra hashes
-                            node.hash().into(),
-                        );
+                        // A node with no children definitely has a precalculated hash, so this
+                        // is not evaluating any extra hashes
+                        let hash = node.hash().into();
+                        // Optimization: don't write any complete hashes that are equal to
+                        // `Hash::one()`, because they will be filled in automatically
+                        if !(hash == Hash::one() && node.place() == Place::Complete) {
+                            yield (
+                                node.position().into(),
+                                node.height(),
+                                hash,
+                            );
+                        }
                     } else {
                         // If there are children, this node was not yet forgotten, but because the
                         // node's forgotten version is greater than the minimum forgotten specified
