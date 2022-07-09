@@ -30,7 +30,27 @@ impl Serializer {
     fn is_node_fresh(&self, node: &structure::Node) -> bool {
         match self.last_stored_position {
             StoredPosition::Position(last_stored_position) => {
-                node.position() >= last_stored_position
+                let node_position: u64 = node.position().into();
+                let last_stored_position: u64 = last_stored_position.into();
+
+                // If the node is ahead of the last stored position, we need to serialize it
+                node_position >= last_stored_position
+                // The harder part: if the node is not ahead of the last stored position, we omitted
+                // serializing it if it was at that time on the frontier, but we can't skip that now
+                    || {
+                         let height = node.height();
+                        // If the height is 0 then we don't need to care, because the node already
+                        // would have been serialized, since the tip of the frontier is always
+                        // serialized
+                        height > 0
+                        // This is true precisely when the node *was* on the frontier at the time
+                        // when the position was `last_stored_position`: because frontier nodes are
+                        // not serialized unless they are the leaf, we need to take care of these
+                        // also: Shift by height * 2 and compare to compare the leading prefixes of
+                        // the position, *down to* the height, indicating whether the node was on
+                        // the frontier
+                        && node_position >> (height * 2) == last_stored_position >> (height * 2)
+                    }
             }
             StoredPosition::Full => false,
         }
@@ -53,7 +73,11 @@ impl Serializer {
         // A node is complete if it's not on the frontier
         let is_complete = !is_frontier;
 
-        self.is_node_fresh(node) && (is_essential || (is_complete && self.options.keep_internal))
+        // A node is fresh if we wouldn't have previously serialized its hash (and commitment, if it
+        // has one) by the last stored position
+        let is_fresh = self.is_node_fresh(node);
+
+        is_fresh && (is_essential || (is_complete && self.options.keep_internal))
     }
 
     fn node_has_fresh_children(&self, node: &structure::Node) -> bool {
