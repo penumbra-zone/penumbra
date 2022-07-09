@@ -53,11 +53,10 @@ impl Serializer {
                 // The harder part: if the node is not ahead of the last stored position, we omitted
                 // serializing it if it was at that time on the frontier, but we can't skip that now
                     || if let Some(last_frontier_tip) = last_stored_position.checked_sub(1) {
-                         let height = node.height();
-                        // If the height is 0 then we don't need to care, because the node already
-                        // would have been serialized, since the tip of the frontier is always
-                        // serialized
-                        height > 0
+                        let height = node.height();
+                        // If the height is zero, we don't need to care because the frontier tip is
+                        // always serialized
+                        height > 0 &&
                         // This is true precisely when the node *was* on the frontier at the time
                         // when the position was `last_stored_position`: because frontier nodes are
                         // not serialized unless they are the leaf, we need to take care of these
@@ -65,7 +64,7 @@ impl Serializer {
                         // the position of the hypothetical frontier tip node as of the last stored
                         // position, but only *down to* the height, indicating whether the node we
                         // are examining was on the frontier
-                        && node_position >> (height * 2) == last_frontier_tip >> (height * 2)
+                        node_position >> (height * 2) == last_frontier_tip >> (height * 2)
                     } else {
                         false
                     }

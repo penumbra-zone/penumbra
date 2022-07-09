@@ -280,9 +280,13 @@ impl<Child: GetHash + UncheckedSetHash> UncheckedSetHash for Node<Child> {
             Less => {
                 let (which_way, index) = WhichWay::at(Self::Height::HEIGHT, index);
                 let (child, _) = which_way.pick(self.children.children_mut());
-                if let Some(child) = child.keep() {
-                    // We can only set the hash for the appropriate child if the child exists
-                    child.unchecked_set_hash(index, height, hash);
+                match child {
+                    InsertMut::Keep(child) => child.unchecked_set_hash(index, height, hash),
+                    InsertMut::Hash(child_hash) => {
+                        if <Child as Height>::Height::HEIGHT == height {
+                            *child_hash = hash
+                        }
+                    }
                 }
             }
         }
