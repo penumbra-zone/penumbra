@@ -19,7 +19,6 @@ pub trait Frontier: Focus + Sized {
     /// Insert a new [`Hash`](struct@Hash) or `Self::Item` into this [`Frontier`], returning either
     /// `Self` with the thing inserted, or the un-inserted thing and the [`Complete`] of this
     /// [`Frontier`].
-    // TODO: have this take an `Option<Forgotten>` and propagate implicit forgessions
     fn insert_owned(self, item: Self::Item) -> Result<Self, Full<Self>>;
 
     /// Update the currently focused `Insert<Self::Item>` (i.e. the most-recently
