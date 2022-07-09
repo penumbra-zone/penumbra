@@ -5,9 +5,27 @@ use super::*;
 /// An in-memory storage backend, useful for testing.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 pub struct InMemory {
+    sparse: bool,
     position: StoredPosition,
     hashes: BTreeMap<Position, BTreeMap<u8, Hash>>,
     commitments: BTreeMap<Position, Commitment>,
+}
+
+impl InMemory {
+    /// Create a new in-memory storage backend.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Create a new in-memory storage backend that only stores essential hashes.
+    pub fn new_sparse() -> Self {
+        Self {
+            sparse: true,
+            position: StoredPosition::default(),
+            hashes: BTreeMap::new(),
+            commitments: BTreeMap::new(),
+        }
+    }
 }
 
 /// An error which can occur when using the in-memory storage backend.
@@ -77,7 +95,13 @@ impl Write for InMemory {
         position: Position,
         height: u8,
         hash: Hash,
+        essential: bool,
     ) -> Result<(), Self::Error> {
+        if !essential && self.sparse {
+            // If running in sparse mode, non-essential hashes are not persisted
+            return Ok(());
+        }
+
         let column = self.hashes.entry(position).or_default();
         // Only insert if nothing is already there
         match column.entry(height) {

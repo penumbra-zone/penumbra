@@ -48,7 +48,6 @@ impl Action {
             }
             Action::Serialize => {
                 serialize::to_writer(state.last_forgotten, &mut state.storage, tree).await?;
-
                 state.last_forgotten = tree.forgotten();
             }
         };
@@ -60,6 +59,7 @@ impl Action {
 proptest! {
     #[test]
     fn incremental_serialize(
+        sparse in any::<bool>(),
         actions in
             prop::collection::vec(any::<Commitment>(), 1..MAX_USED_COMMITMENTS)
                 .prop_flat_map(|commitments| {
@@ -73,7 +73,14 @@ proptest! {
     ) {
         futures::executor::block_on(async move {
             let mut tree = Tree::new();
-            let mut state = State::default();
+            let mut state = State {
+                last_forgotten: Forgotten::default(),
+                storage: if sparse {
+                    InMemory::new_sparse()
+                } else {
+                    InMemory::new()
+                },
+            };
 
             // Run all the actions in sequence
             for action in actions {
@@ -90,7 +97,11 @@ proptest! {
 
             // It should also hold that the result of any sequence of incremental serialization is
             // the same as merely serializing the result all at once, after the fact
-            let mut non_incremental = InMemory::default();
+            let mut non_incremental = if sparse {
+                InMemory::new_sparse()
+            } else {
+                InMemory::new()
+            };
 
             // To check this, we first serialize to a new in-memory storage instance
             serialize::to_writer(
