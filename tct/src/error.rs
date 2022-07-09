@@ -18,15 +18,15 @@ pub mod proof {
 }
 
 pub mod block {
-    //! Errors for [`block`] builders.
+    //! Errors for [`block`](self) builders.
 
-    /// An error occurred when decoding a [`block::Root`](builder::block::Root) from bytes.
+    /// An error occurred when decoding a [`block::Root`](crate::builder::block::Root) from bytes.
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
     #[error("could not decode block root")]
     pub struct RootDecodeError;
 
-    /// When inserting into a [`block::Builder`](builder::block::Builder), this error is returned
-    /// when it is full.
+    /// When inserting into a [`block::Builder`](crate::builder::block::Builder), this error is
+    /// returned when it is full.
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
     #[error("block is full")]
     #[non_exhaustive]
