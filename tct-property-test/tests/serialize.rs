@@ -8,7 +8,7 @@ use std::fmt::{Debug, Display};
 use proptest::{arbitrary::*, prelude::*};
 
 use penumbra_tct::{
-    storage::{deserialize, serialize, InMemory},
+    storage::{self, InMemory},
     validate, Commitment, Forgotten, Tree, Witness,
 };
 
@@ -19,6 +19,7 @@ const MAX_TIER_ACTIONS: usize = 10;
 #[proptest(params("Vec<Commitment>"))]
 enum Action {
     Serialize,
+    EvaluateRoot,
     EndEpoch,
     EndBlock,
     Insert(Witness, Commitment),
@@ -43,11 +44,14 @@ impl Action {
             Action::EndEpoch => {
                 tree.end_epoch()?;
             }
+            Action::EvaluateRoot => {
+                let _ = tree.root();
+            }
             Action::Forget(commitment) => {
                 tree.forget(*commitment);
             }
             Action::Serialize => {
-                serialize::to_writer(state.last_forgotten, &mut state.storage, tree).await?;
+                storage::to_writer(state.last_forgotten, &mut state.storage, tree).await?;
                 state.last_forgotten = tree.forgotten();
             }
         };
@@ -88,7 +92,7 @@ proptest! {
             }
 
             // Make a new copy of the tree by deserializing from the storage
-            let deserialized = deserialize::from_reader(&mut state.storage).await.unwrap();
+            let deserialized = storage::from_reader(&mut state.storage).await.unwrap();
 
            // After running all the actions, the deserialization of the stored tree should match
             // our in-memory tree (this only holds because we ensured that the last action is always
@@ -104,7 +108,7 @@ proptest! {
             };
 
             // To check this, we first serialize to a new in-memory storage instance
-            serialize::to_writer(
+            storage::to_writer(
                 Forgotten::default(),
                 &mut non_incremental,
                 &tree,
