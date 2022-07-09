@@ -11,10 +11,14 @@ use futures::{stream, Stream};
 
 use crate::prelude::*;
 
-pub mod deserialize;
+pub(crate) mod deserialize;
+pub use deserialize::from_reader;
+
 pub mod in_memory;
-pub mod serialize;
 pub use in_memory::InMemory;
+
+pub(crate) mod serialize;
+pub use serialize::to_writer;
 
 /// A stored position for the tree: either the position of the tree, or a marker indicating that it
 /// is full, and therefore does not have a position.
@@ -32,7 +36,8 @@ impl Default for StoredPosition {
     }
 }
 
-/// A storage backend capable of reading [`Point`]s, as well as storing the current position.
+/// A storage backend capable of reading stored [`struct@Hash`]es and [`Commitment`]s as well as
+/// storing the current [`Position`].
 #[async_trait]
 pub trait Read {
     /// The error returned when something goes wrong in a request.
@@ -59,18 +64,20 @@ pub trait Read {
     ) -> Result<Option<Commitment>, Self::Error>;
 
     /// Get the full list of all internal hashes stored, indexed by position and height.
+    #[allow(clippy::type_complexity)]
     fn hashes(
         &mut self,
     ) -> Pin<Box<dyn Stream<Item = Result<(Position, u8, Hash), Self::Error>> + '_>>;
 
     /// Get the full list of all commitments stored, indexed by position.
+    #[allow(clippy::type_complexity)]
     fn commitments(
         &mut self,
     ) -> Pin<Box<dyn Stream<Item = Result<(Position, Commitment), Self::Error>> + '_>>;
 }
 
-/// A storage backend capable of writing [`Point`]s, and garbage-collecting those which have been
-/// forgotten.
+/// A storage backend capable of writing [`struct@Hash`]es and [`Commitment`]s, and
+/// garbage-collecting those which have been forgotten.
 #[async_trait]
 pub trait Write: Read {
     /// Write a single hash into storage.
@@ -97,8 +104,9 @@ pub trait Write: Read {
         commitment: Commitment,
     ) -> Result<(), Self::Error>;
 
-    /// Delete every stored [`Point`] whose height is less than `below_height` and whose
-    /// position is within the half-open [`Range`] of `positions`.
+    /// Delete every stored [`struct@Hash`] whose height is less than `below_height` and whose
+    /// position is within the half-open [`Range`] of `positions`, as well as every [`Commitment`]
+    /// whose position is within the range.
     async fn delete_range(
         &mut self,
         below_height: u8,
