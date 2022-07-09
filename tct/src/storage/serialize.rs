@@ -17,7 +17,7 @@ pub(crate) mod fq;
 
 /// Options for serializing a tree.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
-pub struct Serializer {
+pub(crate) struct Serializer {
     /// The last position stored in storage, to allow for incremental serialization.
     last_stored_position: StoredPosition,
     /// The minimum forgotten version which should be reported for deletion.
@@ -26,7 +26,7 @@ pub struct Serializer {
 
 /// Data about an internal hash at a particular point in the tree.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct InternalHash {
+pub(crate) struct InternalHash {
     /// The position of the hash.
     pub position: Position,
     /// The height of the hash.
@@ -101,23 +101,6 @@ impl Serializer {
             }
     }
 
-    /// Create a new default serializer.
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Set the minimum position to include in the serialization.
-    pub fn position(&mut self, position: StoredPosition) -> &mut Self {
-        self.last_stored_position = position;
-        self
-    }
-
-    /// Set the last forgotten version to include in the serialization of forgettable locations.
-    pub fn last_forgotten(&mut self, forgotten: Forgotten) -> &mut Self {
-        self.last_forgotten = forgotten;
-        self
-    }
-
     /// Serialize a tree's structure into a depth-first pre-order traversal of hashes within it.
     pub fn hashes_stream<'tree>(
         &self,
@@ -185,15 +168,6 @@ impl Serializer {
         }
 
         hashes_inner(*self, tree.structure())
-    }
-
-    /// Serialize a tree's structure into an iterator of hashes within it, for use in synchronous
-    /// contexts.
-    pub fn hashes_iter<'tree>(
-        &self,
-        tree: &'tree crate::Tree,
-    ) -> impl Iterator<Item = InternalHash> + 'tree {
-        futures::executor::block_on_stream(self.hashes_stream(tree))
     }
 
     /// Serialize a tree's structure into its commitments, in right-to-left order.
@@ -302,15 +276,6 @@ impl Serializer {
         }
 
         forgotten_inner(*self, tree.structure())
-    }
-
-    /// Get an iterator of forgotten locations, which can be deleted from incremental storage., for
-    /// use in synchronous contexts.
-    pub fn forgotten_iter<'tree>(
-        &self,
-        tree: &'tree crate::Tree,
-    ) -> impl Iterator<Item = InternalHash> + 'tree {
-        futures::executor::block_on_stream(self.forgotten_stream(tree))
     }
 }
 
