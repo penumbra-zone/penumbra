@@ -82,9 +82,6 @@ impl Write for InMemory {
         // Only insert if nothing is already there
         match column.entry(height) {
             Entry::Vacant(e) => {
-                println!(
-                    "INSERTING INTO STORAGE: position: {position:?}, height: {height}, hash: {hash:?}"
-                );
                 e.insert(hash);
             }
             Entry::Occupied(_) => { /* do nothing */ }
@@ -114,11 +111,14 @@ impl Write for InMemory {
         // rather than traversing the entire thing each time
 
         // Remove all the inner hashes below and in range
-        for (position, column) in self.hashes.iter_mut() {
+        self.hashes.retain(|position, column| {
             if range.contains(position) {
                 column.retain(|&height, _| height >= below_height);
             }
-        }
+
+            // Retain the column only if it's not empty (prune empty entries)
+            !column.is_empty()
+        });
 
         // Remove all the commitments within the range
         self.commitments
