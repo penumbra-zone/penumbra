@@ -18,11 +18,11 @@ const MAX_TIER_ACTIONS: usize = 10;
 #[derive(Debug, Copy, Clone, Arbitrary)]
 #[proptest(params("Vec<Commitment>"))]
 enum Action {
-    Insert(Witness, Commitment),
-    EndBlock,
-    EndEpoch,
-    Forget(Commitment),
     Serialize,
+    EndEpoch,
+    EndBlock,
+    Insert(Witness, Commitment),
+    Forget(Commitment),
 }
 
 #[derive(Debug, Clone, Default)]
@@ -96,7 +96,7 @@ proptest! {
             serialize::to_writer(
                 Forgotten::default(),
                 &mut non_incremental,
-                &deserialized,
+                &tree,
             )
             .await
             .unwrap();
@@ -105,9 +105,9 @@ proptest! {
             assert_eq!(state.storage, non_incremental, "incremental storage mismatches non-incremental storage");
 
             // Higher-order helper function to factor out common behavior of validation assertions
-            fn v<E: Display + Debug + 'static>(validate: fn(&Tree) -> Result<(), E>) -> Box<dyn Fn(&Tree, &InMemory)> {
-                Box::new(move |deserialized, storage| if let Err(error) = validate(deserialized) {
-                    panic!("{error}:\n\nERROR: {error:?}\n\nDESERIALIZED: {deserialized:?}\n\nSTORAGE: {:?}", storage);
+            fn v<E: Display + Debug + 'static>(validate: fn(&Tree) -> Result<(), E>) -> Box<dyn Fn(&Tree, &Tree, &InMemory)> {
+                Box::new(move |original, deserialized, storage| if let Err(error) = validate(deserialized) {
+                    panic!("{error}:\n\nERROR: {error:?}\n\nORIGINAL: {original:?}\n\nDESERIALIZED: {deserialized:?}\n\nSTORAGE: {:?}", storage);
                 })
             }
 
@@ -118,7 +118,7 @@ proptest! {
                 v(validate::cached_hashes),
                 v(validate::forgotten)
             ] {
-                validate(&deserialized, &state.storage);
+                validate(&tree, &deserialized, &state.storage);
             }
         })
     }
