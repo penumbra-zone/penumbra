@@ -18,12 +18,26 @@ pub(crate) mod fq;
 /// Options for serializing a tree.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct Serializer {
-    /// The options for the serialization.
-    options: Options,
     /// The last position stored in storage, to allow for incremental serialization.
     last_stored_position: StoredPosition,
     /// The minimum forgotten version which should be reported for deletion.
     last_forgotten: Forgotten,
+}
+
+/// Data about an internal hash at a particular point in the tree.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct InternalHash {
+    /// The position of the hash.
+    pub position: Position,
+    /// The height of the hash.
+    pub height: u8,
+    /// The hash.
+    pub hash: Hash,
+    /// Whether the hash is essential to be serialized.
+    ///
+    /// If this is `false`, that means this hash could be omitted and deserialization would be
+    /// correct, but slower.
+    pub essential: bool,
 }
 
 impl Serializer {
@@ -59,30 +73,6 @@ impl Serializer {
         }
     }
 
-    fn should_keep_hash(&self, node: &structure::Node, children: usize) -> bool {
-        // A node's hash is recalculable if it has children or if it has a witnessed commitment
-        let is_recalculable = children > 0
-            || matches!(
-                node.kind(),
-                Kind::Leaf {
-                    commitment: Some(_)
-                }
-            );
-        // A node's hash is essential (cannot be recalculated from other information) if it is not
-        // recalculable
-        let is_essential = !is_recalculable;
-        // A node is on the frontier if its place matches `Place::Frontier`
-        let is_frontier = matches!(node.place(), Place::Frontier);
-        // A node is complete if it's not on the frontier
-        let is_complete = !is_frontier;
-
-        // A node is fresh if we wouldn't have previously serialized its hash (and commitment, if it
-        // has one) by the last stored position
-        let is_fresh = self.is_node_fresh(node);
-
-        is_fresh && (is_essential || (is_complete && self.options.keep_internal))
-    }
-
     fn node_has_fresh_children(&self, node: &structure::Node) -> bool {
         self.is_node_fresh(node)
             || match self.last_stored_position {
@@ -110,51 +100,50 @@ impl Serializer {
         self
     }
 
-    /// Set the serializer to keep internal complete hashes in the output (this is the default).
-    ///
-    /// If complete internal hashes are kept, this significantly reduces the amount of computation
-    /// upon deserialization, since if they are not cached, a number of hashes proportionate to the
-    /// number of witnessed commitments need to be recomputed. However, this also imposes a linear
-    /// space overhead on the total amount of serialized data.
-    pub fn keep_internal(&mut self) -> &mut Self {
-        self.options.keep_internal();
-        self
-    }
-
-    /// Set the serializer to omit internal complete hashes in the output.
-    ///
-    /// If complete internal hashes are kept, this significantly reduces the amount of computation
-    /// upon deserialization, since if they are not cached, a number of hashes proportionate to the
-    /// number of witnessed commitments need to be recomputed. However, this also imposes a linear
-    /// space overhead on the total amount of serialized data.
-    pub fn omit_internal(&mut self) -> &mut Self {
-        self.options.omit_internal();
-        self
-    }
-
     /// Serialize a tree's structure into a depth-first pre-order traversal of hashes within it.
     pub fn hashes_stream<'tree>(
         &self,
         tree: &'tree crate::Tree,
-    ) -> impl Stream<Item = (Position, u8, Hash)> + Unpin + 'tree {
+    ) -> impl Stream<Item = InternalHash> + Unpin + 'tree {
         fn hashes_inner(
             options: Serializer,
             node: structure::Node,
-        ) -> Pin<Box<dyn Stream<Item = (Position, u8, Hash)> + '_>> {
+        ) -> Pin<Box<dyn Stream<Item = InternalHash> + '_>> {
             Box::pin(stream! {
                 let position = node.position();
                 let height = node.height();
                 let children = node.children();
 
-                // If the minimum position is too high, then don't keep this node (but maybe some of
-                // its children will be kept)
-                if options.should_keep_hash(&node, children.len()) {
-                    if let Some(hash) = node.cached_hash() {
-                        // Optimization: don't write any complete hashes that are equal to
-                        // `Hash::one()`, because they will be filled in automatically
-                        if !(hash == Hash::one() && node.place() == Place::Complete) {
-                            yield (position, height, hash);
-                        }
+                if let Some(hash) = node.cached_hash() {
+                    // A node's hash is essential if the node has no children and it is either an
+                    // internal node, or a leaf node with no witnessed commitment
+                    let essential = children.is_empty()
+                        && matches!(
+                            node.kind(),
+                            Kind::Internal { .. } | Kind::Leaf {
+                                commitment: None,
+                            }
+                        );
+
+                    // A node is complete if it's not on the frontier
+                    let complete = node.place() == Place::Complete;
+
+                    // Optimization: don't write any complete hashes that are equal to
+                    // `Hash::one()`, because they will be filled in automatically
+                    let default = hash == Hash::one() && complete;
+
+                    // A node is fresh if it couldn't have been serialized to storage yet
+                    let fresh = options.is_node_fresh(&node);
+
+                    // If a node is not default, fresh, and either essential (i.e. the frontier
+                    // leaf) or complete, then we should emit a hash for it
+                    if !default && fresh && (essential || complete) {
+                        yield InternalHash {
+                            position,
+                            height,
+                            hash,
+                            essential,
+                        };
                     }
                 }
 
@@ -178,7 +167,7 @@ impl Serializer {
     pub fn hashes_iter<'tree>(
         &self,
         tree: &'tree crate::Tree,
-    ) -> impl Iterator<Item = (Position, u8, Hash)> + 'tree {
+    ) -> impl Iterator<Item = InternalHash> + 'tree {
         futures::executor::block_on_stream(self.hashes_stream(tree))
     }
 
@@ -235,11 +224,11 @@ impl Serializer {
     pub fn forgotten_stream<'tree>(
         &self,
         tree: &'tree crate::Tree,
-    ) -> impl Stream<Item = (Position, u8, Hash)> + Unpin + 'tree {
+    ) -> impl Stream<Item = InternalHash> + Unpin + 'tree {
         fn forgotten_inner(
             options: Serializer,
             node: structure::Node,
-        ) -> Pin<Box<dyn Stream<Item = (Position, u8, Hash)> + '_>> {
+        ) -> Pin<Box<dyn Stream<Item = InternalHash> + '_>> {
             Box::pin(stream! {
                 // Only report nodes (and their children) which are less than the last stored position
                 // (because those greater will not have yet been serialized to storage) and greater
@@ -265,11 +254,14 @@ impl Serializer {
                         // Optimization: don't write any complete hashes that are equal to
                         // `Hash::one()`, because they will be filled in automatically
                         if !(hash == Hash::one() && node.place() == Place::Complete) {
-                            yield (
-                                node.position().into(),
-                                node.height(),
+                            yield InternalHash {
+                                position: node.position(),
+                                height: node.height(),
                                 hash,
-                            );
+                                // All forgotten nodes are essential, because they have nothing
+                                // beneath them to witness them
+                                essential: true,
+                            };
                         }
                     } else {
                         // If there are children, this node was not yet forgotten, but because the
@@ -294,54 +286,14 @@ impl Serializer {
     pub fn forgotten_iter<'tree>(
         &self,
         tree: &'tree crate::Tree,
-    ) -> impl Iterator<Item = (Position, u8, Hash)> + 'tree {
+    ) -> impl Iterator<Item = InternalHash> + 'tree {
         futures::executor::block_on_stream(self.forgotten_stream(tree))
-    }
-}
-
-/// Options for serializing a tree to a writer.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Options {
-    /// Should the internal hashes of complete nodes be preserved?
-    keep_internal: bool,
-}
-
-impl Default for Options {
-    fn default() -> Self {
-        Self {
-            keep_internal: true,
-        }
-    }
-}
-
-impl Options {
-    /// Set the serializer to keep internal complete hashes in the output (this is the default).
-    ///
-    /// If complete internal hashes are kept, this significantly reduces the amount of computation
-    /// upon deserialization, since if they are not cached, a number of hashes proportionate to the
-    /// number of witnessed commitments need to be recomputed. However, this also imposes a linear
-    /// space overhead on the total amount of serialized data.
-    pub fn keep_internal(&mut self) -> &mut Self {
-        self.keep_internal = true;
-        self
-    }
-
-    /// Set the serializer to omit internal complete hashes in the output.
-    ///
-    /// If complete internal hashes are kept, this significantly reduces the amount of computation
-    /// upon deserialization, since if they are not cached, a number of hashes proportionate to the
-    /// number of witnessed commitments need to be recomputed. However, this also imposes a linear
-    /// space overhead on the total amount of serialized data.
-    pub fn omit_internal(&mut self) -> &mut Self {
-        self.keep_internal = false;
-        self
     }
 }
 
 /// Serialize the changes to a [`Tree`](crate::Tree) into a writer, deleting all forgotten nodes and
 /// adding all new nodes.
 pub async fn to_writer<W: Write>(
-    options: Options,
     last_forgotten: Forgotten,
     writer: &mut W,
     tree: &crate::Tree,
@@ -355,7 +307,6 @@ pub async fn to_writer<W: Write>(
     let last_stored_position = writer.position().await?;
 
     let serializer = Serializer {
-        options,
         last_forgotten,
         last_stored_position,
     };
@@ -368,32 +319,40 @@ pub async fn to_writer<W: Write>(
     };
     writer.set_position(position).await?;
 
-    // Write all the new hashes
-    let mut new_hashes = serializer.hashes_stream(tree);
-    while let Some((position, height, hash)) = new_hashes.next().await {
-        writer.add_hash(position, height, hash).await?;
-    }
-
     // Write all the new commitments
     let mut new_commitments = serializer.commitments_stream(tree);
     while let Some((position, commitment)) = new_commitments.next().await {
         writer.add_commitment(position, commitment).await?;
     }
 
-    // Delete all the forgotten points
-    let mut forgotten_points = serializer.forgotten_stream(tree);
-    while let Some((position, below_height, hash)) = forgotten_points.next().await {
-        // Add the hash that was pruned, because previously it may have been skipped, but now it
-        // needs to be represented
-        writer.add_hash(position, below_height, hash).await?;
+    // Add all the new hashes and delete all the forgotten points: this is a unified stream, because
+    // we process forgotten points and new points identically
+    let mut points = serializer
+        .hashes_stream(tree)
+        .chain(serializer.forgotten_stream(tree));
 
-        // Calculate the range of positions to delete, based on the height
-        let position = u64::from(position);
-        let stride = 4u64.pow(below_height.into());
-        let range = position.into()..(position + stride).min(4u64.pow(24) - 1).into();
+    while let Some(InternalHash {
+        position,
+        height,
+        hash,
+        essential,
+    }) = points.next().await
+    {
+        // Add the hash, if it wasn't already present (in the case of forgetting things, this serves
+        // to ensure that omitted internal hashes are stored when necessary)
+        writer.add_hash(position, height, hash).await?;
 
-        // Delete the range of positions
-        writer.delete_range(below_height, range).await?;
+        // If the hash is essential, that means any remaining hashes or commitments beneath it
+        // should be removed, because they are no longer present in the tree
+        if essential {
+            // Calculate the range of positions to delete, based on the height
+            let position = u64::from(position);
+            let stride = 4u64.pow(height.into());
+            let range = position.into()..(position + stride).min(4u64.pow(24) - 1).into();
+
+            // Delete the range of positions
+            writer.delete_range(height, range).await?;
+        }
     }
 
     Ok(())

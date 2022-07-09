@@ -699,10 +699,21 @@ impl Tree {
 
     /// Get an iterator over all commitments currently witnessed in the tree.
     ///
-    /// This does not guarantee that commitments will be returned in order.
+    /// Unlike [`commitments_ordered`](Tree::commitments_ordered), this **does not** guarantee that
+    /// commitments will be returned in order, but it may be faster by a constant factor.
     #[instrument(skip(self))]
     pub fn commitments(&self) -> impl Iterator<Item = (Commitment, Position)> + '_ {
         self.index.iter().map(|(c, p)| (*c, Position(*p)))
+    }
+
+    /// Get an iterator over all commitments currently witnessed in the tree, **ordered by
+    /// position**.
+    ///
+    /// Unlike [`commitments`](Tree::commitments), this guarantees that commitments will be returned
+    /// in order, but it may be slower by a constant factor.
+    #[instrument(skip(self))]
+    pub fn commitments_ordered(&self) -> impl Iterator<Item = (Position, Commitment)> + '_ {
+        crate::storage::serialize::Serializer::default().commitments_iter(self)
     }
 
     /// Get a dynamic representation of the internal structure of the tree, which can be traversed
