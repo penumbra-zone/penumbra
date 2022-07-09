@@ -74,11 +74,17 @@ pub trait Read {
 #[async_trait]
 pub trait Write: Read {
     /// Write a single hash into storage.
+    ///
+    /// Backends are only *required* to persist hashes marked as `essential`. They may choose to
+    /// persist other hashes, and the choice of which non-essential hashes to persist is
+    /// unconstrained. However, choosing not to persist non-essential hashes imposes computational
+    /// overhead upon deserialization.
     async fn add_hash(
         &mut self,
         position: Position,
         height: u8,
         hash: Hash,
+        essential: bool,
     ) -> Result<(), Self::Error>;
 
     /// Write a single commitment into storage.

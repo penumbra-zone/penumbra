@@ -38,6 +38,8 @@ pub struct InternalHash {
     /// If this is `false`, that means this hash could be omitted and deserialization would be
     /// correct, but slower.
     pub essential: bool,
+    /// Whether the children of the node should be deleted.
+    pub delete_children: bool,
 }
 
 impl Serializer {
@@ -50,25 +52,39 @@ impl Serializer {
 
                 // If the node is ahead of the last stored position, we need to serialize it
                 node_position >= last_stored_position
-                // The harder part: if the node is not ahead of the last stored position, we omitted
-                // serializing it if it was at that time on the frontier, but we can't skip that now
-                    || if let Some(last_frontier_tip) = last_stored_position.checked_sub(1) {
-                        let height = node.height();
+                    || (
                         // If the height is zero, we don't need to care because the frontier tip is
                         // always serialized
-                        height > 0 &&
-                        // This is true precisely when the node *was* on the frontier at the time
-                        // when the position was `last_stored_position`: because frontier nodes are
-                        // not serialized unless they are the leaf, we need to take care of these
-                        // also: Shift by height * 2 and compare to compare the leading prefixes of
-                        // the position of the hypothetical frontier tip node as of the last stored
-                        // position, but only *down to* the height, indicating whether the node we
-                        // are examining was on the frontier
-                        node_position >> (height * 2) == last_frontier_tip >> (height * 2)
-                    } else {
-                        false
-                    }
+                        node.height() > 0
+                        // The harder part: if the node is not ahead of the last stored position, we omitted
+                        // serializing it if it was at that time on the frontier, but we can't skip that now
+                        && self.was_node_on_previous_frontier(node)
+                    )
             }
+        }
+    }
+
+    fn was_node_on_previous_frontier(&self, node: &structure::Node) -> bool {
+        if let StoredPosition::Position(last_stored_position) = self.last_stored_position {
+            let last_stored_position: u64 = last_stored_position.into();
+
+            if let Some(last_frontier_tip) = last_stored_position.checked_sub(1) {
+                let height = node.height();
+                let node_position: u64 = node.position().into();
+
+                // This is true precisely when the node *was* on the frontier at the time
+                // when the position was `last_stored_position`: because frontier nodes are
+                // not serialized unless they are the leaf, we need to take care of these
+                // also: Shift by height * 2 and compare to compare the leading prefixes of
+                // the position of the hypothetical frontier tip node as of the last stored
+                // position, but only *down to* the height, indicating whether the node we
+                // are examining was on the frontier
+                node_position >> (height * 2) == last_frontier_tip >> (height * 2)
+            } else {
+                false
+            }
+        } else {
+            false
         }
     }
 
@@ -139,6 +155,10 @@ impl Serializer {
                     // because it's not going to change
                     let frontier_leaf = !complete && matches!(node.kind(), Kind::Leaf { .. });
 
+                    // We only need to issue an instruction to delete the children if the node
+                    // is both essential and also was previously on the frontier
+                    let delete_children = essential && options.was_node_on_previous_frontier(&node);
+
                     // If a node is not default, fresh, and either essential (i.e. the frontier
                     // leaf) or complete, then we should emit a hash for it
                     if fresh && (essential || complete || frontier_leaf) {
@@ -147,6 +167,7 @@ impl Serializer {
                             height,
                             hash,
                             essential,
+                            delete_children,
                         };
                     }
                 }
@@ -262,6 +283,8 @@ impl Serializer {
                             // All forgotten nodes are essential, because they have nothing
                             // beneath them to witness them
                             essential: true,
+                            // All forgotten nodes should cause their children to be deleted
+                            delete_children: true,
                         };
                     } else {
                         // If there are children, this node was not yet forgotten, but because the
@@ -328,26 +351,27 @@ pub async fn to_writer<W: Write>(
     // Add all the new hashes and delete all the forgotten points: this is a unified stream, because
     // we process forgotten points and new points identically
     let mut points = serializer
-        .hashes_stream(tree)
-        .chain(serializer.forgotten_stream(tree));
+        .forgotten_stream(tree)
+        .chain(serializer.hashes_stream(tree));
 
     while let Some(InternalHash {
         position,
         height,
         hash,
         essential,
+        delete_children,
     }) = points.next().await
     {
         // Add the hash, if it wasn't already present (in the case of forgetting things, this serves
         // to ensure that omitted internal hashes are stored when necessary)
         if hash != Hash::one() {
             // Optimization: don't serialize `Hash::one()`, because it will be filled in automatically
-            writer.add_hash(position, height, hash).await?;
+            writer.add_hash(position, height, hash, essential).await?;
         }
 
-        // If the hash is essential, that means any remaining hashes or commitments beneath it
-        // should be removed, because they are no longer present in the tree
-        if essential {
+        // If the hash's children need deletion, that means any remaining hashes or commitments
+        // beneath it should be removed, because they are no longer present in the tree
+        if delete_children {
             // Calculate the range of positions to delete, based on the height
             let position = u64::from(position);
             let stride = 4u64.pow(height.into());
