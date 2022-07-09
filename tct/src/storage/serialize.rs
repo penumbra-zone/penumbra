@@ -75,9 +75,12 @@ impl Serializer {
     fn node_has_fresh_children(&self, node: &structure::Node) -> bool {
         self.is_node_fresh(node)
             || match self.last_stored_position {
-                StoredPosition::Position(last_stored_position) => {
-                    node.range().contains(&last_stored_position)
-                }
+                StoredPosition::Position(last_stored_position) => node
+                    .range()
+                    // Subtract one from the last-stored position to get the frontier tip as of the
+                    // last serialization: if this is in range, some of the node's children might be
+                    // worth investigating
+                    .contains(&u64::from(last_stored_position).saturating_sub(1).into()),
                 StoredPosition::Full => false,
             }
     }
@@ -129,16 +132,16 @@ impl Serializer {
                     // A node is complete if it's not on the frontier
                     let complete = node.place() == Place::Complete;
 
-                    // Optimization: don't write any complete hashes that are equal to
-                    // `Hash::one()`, because they will be filled in automatically
-                    let default = hash == Hash::one() && complete;
-
                     // A node is fresh if it couldn't have been serialized to storage yet
                     let fresh = options.is_node_fresh(&node);
 
+                    // We always serialize the frontier leaf hash, even though it's not essential,
+                    // because it's not going to change
+                    let frontier_leaf = !complete && matches!(node.kind(), Kind::Leaf { .. });
+
                     // If a node is not default, fresh, and either essential (i.e. the frontier
                     // leaf) or complete, then we should emit a hash for it
-                    if !default && fresh && (essential || complete) {
+                    if fresh && (essential || complete || frontier_leaf) {
                         yield InternalHash {
                             position,
                             height,
@@ -252,18 +255,14 @@ impl Serializer {
                         // A node with no children definitely has a precalculated hash, so this
                         // is not evaluating any extra hashes
                         let hash = node.hash().into();
-                        // Optimization: don't write any complete hashes that are equal to
-                        // `Hash::one()`, because they will be filled in automatically
-                        if !(hash == Hash::one() && node.place() == Place::Complete) {
-                            yield InternalHash {
-                                position: node.position(),
-                                height: node.height(),
-                                hash,
-                                // All forgotten nodes are essential, because they have nothing
-                                // beneath them to witness them
-                                essential: true,
-                            };
-                        }
+                        yield InternalHash {
+                            position: node.position(),
+                            height: node.height(),
+                            hash,
+                            // All forgotten nodes are essential, because they have nothing
+                            // beneath them to witness them
+                            essential: true,
+                        };
                     } else {
                         // If there are children, this node was not yet forgotten, but because the
                         // node's forgotten version is greater than the minimum forgotten specified
@@ -341,7 +340,10 @@ pub async fn to_writer<W: Write>(
     {
         // Add the hash, if it wasn't already present (in the case of forgetting things, this serves
         // to ensure that omitted internal hashes are stored when necessary)
-        writer.add_hash(position, height, hash).await?;
+        if hash != Hash::one() {
+            // Optimization: don't serialize `Hash::one()`, because it will be filled in automatically
+            writer.add_hash(position, height, hash).await?;
+        }
 
         // If the hash is essential, that means any remaining hashes or commitments beneath it
         // should be removed, because they are no longer present in the tree
