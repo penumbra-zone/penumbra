@@ -115,15 +115,17 @@ impl Serializer {
                 let children = node.children();
 
                 if let Some(hash) = node.cached_hash() {
-                    // A node's hash is essential if the node has no children and it is either an
-                    // internal node, or a leaf node with no witnessed commitment
-                    let essential = children.is_empty()
-                        && matches!(
+                    // A node's hash is recalculable if it has children or if it has a witnessed commitment
+                    let recalculable = children.len() > 0
+                        || matches!(
                             node.kind(),
-                            Kind::Internal { .. } | Kind::Leaf {
-                                commitment: None,
+                            Kind::Leaf {
+                                commitment: Some(_)
                             }
                         );
+
+                    // A node's hash is essential if it is not recalculable
+                    let essential = !recalculable;
 
                     // A node is complete if it's not on the frontier
                     let complete = node.place() == Place::Complete;

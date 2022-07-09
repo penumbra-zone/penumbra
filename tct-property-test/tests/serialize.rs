@@ -3,11 +3,13 @@
 #[macro_use]
 extern crate proptest_derive;
 
+use std::fmt::{Debug, Display};
+
 use proptest::{arbitrary::*, prelude::*};
 
 use penumbra_tct::{
     storage::{deserialize, serialize, InMemory},
-    Commitment, Forgotten, Tree, Witness,
+    validate, Commitment, Forgotten, Tree, Witness,
 };
 
 const MAX_USED_COMMITMENTS: usize = 3;
@@ -81,12 +83,6 @@ proptest! {
             // Make a new copy of the tree by deserializing from the storage
             let deserialized = deserialize::from_reader(&mut state.storage).await.unwrap();
 
-            // Validate the internal structure of the deserialized tree
-            penumbra_tct::validate::index(&deserialized).unwrap();
-            penumbra_tct::validate::all_proofs(&deserialized).unwrap();
-            penumbra_tct::validate::cached_hashes(&deserialized).unwrap();
-            penumbra_tct::validate::forgotten(&deserialized).unwrap();
-
            // After running all the actions, the deserialization of the stored tree should match
             // our in-memory tree (this only holds because we ensured that the last action is always
             // a `Serialize`)
@@ -107,6 +103,23 @@ proptest! {
 
             // Then we check both that the storage matches the incrementally-built one
             assert_eq!(state.storage, non_incremental, "incremental storage mismatches non-incremental storage");
+
+            // Higher-order helper function to factor out common behavior of validation assertions
+            fn v<E: Display + Debug + 'static>(validate: fn(&Tree) -> Result<(), E>) -> Box<dyn Fn(&Tree, &InMemory)> {
+                Box::new(move |deserialized, storage| if let Err(error) = validate(deserialized) {
+                    panic!("{error}:\n\nERROR: {error:?}\n\nDESERIALIZED: {deserialized:?}\n\nSTORAGE: {:?}", storage);
+                })
+            }
+
+             // Validate the internal structure of the deserialized tree
+            for validate in [
+                v(validate::index),
+                v(validate::all_proofs),
+                v(validate::cached_hashes),
+                v(validate::forgotten)
+            ] {
+                validate(&deserialized, &state.storage);
+            }
         })
     }
 }
