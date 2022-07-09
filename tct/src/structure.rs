@@ -261,12 +261,25 @@ impl<'a> Node<'a> {
     /// The place on the tree where this node occurs.
     pub fn place(&self) -> Place {
         if let Some(global_position) = self.global_position() {
-            if self.range().contains(&global_position) {
-                Place::Frontier
+            if let Some(frontier_tip) = u64::from(global_position).checked_sub(1) {
+                let height = self.height();
+                let position = u64::from(self.position());
+                if position >> (height * 2) == frontier_tip >> (height * 2) {
+                    // The prefix of the position down to this height matches the path to the
+                    // frontier tip, which means that this node is on the frontier
+                    Place::Frontier
+                } else {
+                    // The prefix doesn't match (the node's position is less than the frontier, even
+                    // considering only the prefix), so it's complete
+                    Place::Complete
+                }
             } else {
-                Place::Complete
+                // The global position is zero (the tree is empty, i.e. all nodes, that is, none,
+                // are frontier nodes, vacuously)
+                Place::Frontier
             }
         } else {
+            // There is no global position (the tree is full, i.e. all nodes are complete)
             Place::Complete
         }
     }
@@ -521,5 +534,44 @@ mod test {
 
         let root = Node::root(&top);
         check(root);
+    }
+
+    #[test]
+    fn place_correct() {
+        const MAX_SIZE_TO_TEST: u16 = 100;
+
+        let mut top: frontier::Top<Item> = frontier::Top::new(frontier::TrackForgotten::No);
+        for i in 0..MAX_SIZE_TO_TEST {
+            top.insert(Commitment(i.into()).into()).unwrap();
+        }
+
+        fn check(node: Node, expected: Place) {
+            assert_eq!(node.place(), expected);
+            match node.children().as_slice() {
+                [] => {}
+                [a] => {
+                    check(*a, expected);
+                }
+                [a, b] => {
+                    check(*a, Place::Complete);
+                    check(*b, expected);
+                }
+                [a, b, c] => {
+                    check(*a, Place::Complete);
+                    check(*b, Place::Complete);
+                    check(*c, expected);
+                }
+                [a, b, c, d] => {
+                    check(*a, Place::Complete);
+                    check(*b, Place::Complete);
+                    check(*c, Place::Complete);
+                    check(*d, expected);
+                }
+                _ => unreachable!("nodes can't have > 4 children"),
+            }
+        }
+
+        let root = Node::root(&top);
+        check(root, Place::Frontier);
     }
 }
