@@ -723,6 +723,26 @@ impl Tree {
         // TODO: use the structure span for instrumenting methods of the structure, as it is traversed
         Node::root(&self.inner)
     }
+
+    /// Deserialize a tree from a [`storage::Read`] backend.
+    ///
+    /// While trees can be [`serialize`]d incrementally, they can only be deserialized all at once.
+    pub async fn deserialize<R: Read>(reader: &mut R) -> Result<Tree, R::Error> {
+        storage::from_reader(reader).await
+    }
+
+    /// Serialize the tree incrementally to a [`storage::Write`] backend.
+    ///
+    /// This performs only the operations necessary to serialize the changes to the tree,
+    /// synchronizing the in-memory representation with what is stored.
+    ///
+    /// # Errors
+    ///
+    /// If the tree stored in the writer is not a prior version of this tree, the writer may throw
+    /// errors, in addition to any backend-specific errors related to the storage medium.
+    pub async fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), W::Error> {
+        storage::to_writer(writer, self).await
+    }
 }
 
 impl From<frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>>> for Tree {

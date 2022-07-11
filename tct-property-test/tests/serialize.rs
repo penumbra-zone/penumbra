@@ -7,10 +7,7 @@ use std::fmt::{Debug, Display};
 
 use proptest::{arbitrary::*, prelude::*};
 
-use penumbra_tct::{
-    storage::{self, InMemory},
-    validate, Commitment, Forgotten, Tree, Witness,
-};
+use penumbra_tct::{storage::InMemory, validate, Commitment, Tree, Witness};
 
 const MAX_USED_COMMITMENTS: usize = 3;
 const MAX_TIER_ACTIONS: usize = 10;
@@ -26,14 +23,8 @@ enum Action {
     Forget(Commitment),
 }
 
-#[derive(Debug, Clone, Default)]
-struct State {
-    last_forgotten: Forgotten,
-    storage: InMemory,
-}
-
 impl Action {
-    async fn apply(&self, state: &mut State, tree: &mut Tree) -> anyhow::Result<()> {
+    async fn apply(&self, state: &mut InMemory, tree: &mut Tree) -> anyhow::Result<()> {
         match self {
             Action::Insert(witness, commitment) => {
                 tree.insert(*witness, *commitment)?;
@@ -51,8 +42,7 @@ impl Action {
                 tree.forget(*commitment);
             }
             Action::Serialize => {
-                storage::to_writer(state.last_forgotten, &mut state.storage, tree).await?;
-                state.last_forgotten = tree.forgotten();
+                tree.serialize(state).await?;
             }
         };
 
@@ -77,27 +67,24 @@ proptest! {
     ) {
         futures::executor::block_on(async move {
             let mut tree = Tree::new();
-            let mut state = State {
-                last_forgotten: Forgotten::default(),
-                storage: if sparse {
-                    InMemory::new_sparse()
-                } else {
-                    InMemory::new()
-                },
+            let mut incremental = if sparse {
+                InMemory::new_sparse()
+            } else {
+                InMemory::new()
             };
 
             // Run all the actions in sequence
             for action in actions {
-                action.apply(&mut state, &mut tree).await.unwrap();
+                action.apply(&mut incremental, &mut tree).await.unwrap();
             }
 
             // Make a new copy of the tree by deserializing from the storage
-            let deserialized = storage::from_reader(&mut state.storage).await.unwrap();
+            let deserialized = Tree::deserialize(&mut incremental).await.unwrap();
 
            // After running all the actions, the deserialization of the stored tree should match
             // our in-memory tree (this only holds because we ensured that the last action is always
             // a `Serialize`)
-            assert_eq!(tree, deserialized, "mismatch when deserializing from storage: {:?}", state.storage);
+            assert_eq!(tree, deserialized, "mismatch when deserializing from storage: {:?}", incremental);
 
             // It should also hold that the result of any sequence of incremental serialization is
             // the same as merely serializing the result all at once, after the fact
@@ -108,16 +95,10 @@ proptest! {
             };
 
             // To check this, we first serialize to a new in-memory storage instance
-            storage::to_writer(
-                Forgotten::default(),
-                &mut non_incremental,
-                &tree,
-            )
-            .await
-            .unwrap();
+            tree.serialize(&mut non_incremental).await.unwrap();
 
             // Then we check both that the storage matches the incrementally-built one
-            assert_eq!(state.storage, non_incremental, "incremental storage mismatches non-incremental storage");
+            assert_eq!(incremental, non_incremental, "incremental storage mismatches non-incremental storage");
 
             // Higher-order helper function to factor out common behavior of validation assertions
             fn v<E: Display + Debug + 'static>(validate: fn(&Tree) -> Result<(), E>) -> Box<dyn Fn(&Tree, &Tree, &InMemory)> {
@@ -133,7 +114,7 @@ proptest! {
                 v(validate::cached_hashes),
                 v(validate::forgotten)
             ] {
-                validate(&tree, &deserialized, &state.storage);
+                validate(&tree, &deserialized, &incremental);
             }
         })
     }

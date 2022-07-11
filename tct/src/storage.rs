@@ -12,13 +12,13 @@ use futures::{stream, Stream};
 use crate::prelude::*;
 
 pub(crate) mod deserialize;
-pub use deserialize::from_reader;
+pub(crate) use deserialize::from_reader;
 
 pub mod in_memory;
 pub use in_memory::InMemory;
 
 pub(crate) mod serialize;
-pub use serialize::to_writer;
+pub(crate) use serialize::to_writer;
 
 /// A stored position for the tree: either the position of the tree, or a marker indicating that it
 /// is full, and therefore does not have a position.
@@ -46,22 +46,8 @@ pub trait Read {
     /// Fetch the current position stored.
     async fn position(&mut self) -> Result<StoredPosition, Self::Error>;
 
-    /// Read a particular hash in the storage, or return `None` if it is not represented.
-    ///
-    /// This is not used for batch deserialization; it's used only for testing and error checking.
-    async fn get_hash(
-        &mut self,
-        position: Position,
-        height: u8,
-    ) -> Result<Option<Hash>, Self::Error>;
-
-    /// Read a particular commitment in the storage, or return `None` if it is not represented.
-    ///
-    /// This is not used for batch deserialization; it's used only for testing and error checking.
-    async fn get_commitment(
-        &mut self,
-        position: Position,
-    ) -> Result<Option<Commitment>, Self::Error>;
+    /// Fetch the current forgotten version.
+    async fn forgotten(&mut self) -> Result<Forgotten, Self::Error>;
 
     /// Get the full list of all internal hashes stored, indexed by position and height.
     #[allow(clippy::type_complexity)]
@@ -114,5 +100,12 @@ pub trait Write: Read {
     ) -> Result<(), Self::Error>;
 
     /// Set the stored position of the tree.
+    ///
+    /// This should return an error if the position goes backwards.
     async fn set_position(&mut self, position: StoredPosition) -> Result<(), Self::Error>;
+
+    /// Set the forgotten version of the tree.
+    ///
+    /// This should return an error if the version goes backwards.
+    async fn set_forgotten(&mut self, forgotten: Forgotten) -> Result<(), Self::Error>;
 }

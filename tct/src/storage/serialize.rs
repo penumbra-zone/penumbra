@@ -281,11 +281,7 @@ impl Serializer {
 
 /// Serialize the changes to a [`Tree`](crate::Tree) into a writer, deleting all forgotten nodes and
 /// adding all new nodes.
-pub async fn to_writer<W: Write>(
-    last_forgotten: Forgotten,
-    writer: &mut W,
-    tree: &crate::Tree,
-) -> Result<(), W::Error> {
+pub async fn to_writer<W: Write>(writer: &mut W, tree: &crate::Tree) -> Result<(), W::Error> {
     // If the tree is empty, skip doing anything
     if tree.is_empty() {
         return Ok(());
@@ -293,6 +289,9 @@ pub async fn to_writer<W: Write>(
 
     // Grab the current position stored in storage
     let last_stored_position = writer.position().await?;
+
+    // Grab the last forgotten version stored in storage
+    let last_forgotten = writer.forgotten().await?;
 
     let serializer = Serializer {
         last_forgotten,
@@ -305,7 +304,15 @@ pub async fn to_writer<W: Write>(
     } else {
         StoredPosition::Full
     };
-    writer.set_position(position).await?;
+    if position != last_stored_position {
+        writer.set_position(position).await?;
+    }
+
+    // Update the forgotten version
+    let forgotten = tree.forgotten();
+    if forgotten != last_forgotten {
+        writer.set_forgotten(forgotten).await?;
+    }
 
     // Write all the new commitments
     let mut new_commitments = serializer.commitments_stream(tree);
@@ -327,13 +334,6 @@ pub async fn to_writer<W: Write>(
         delete_children,
     }) = points.next().await
     {
-        // Add the hash, if it wasn't already present (in the case of forgetting things, this serves
-        // to ensure that omitted internal hashes are stored when necessary)
-        if hash != Hash::one() {
-            // Optimization: don't serialize `Hash::one()`, because it will be filled in automatically
-            writer.add_hash(position, height, hash, essential).await?;
-        }
-
         // If the hash's children need deletion, that means any remaining hashes or commitments
         // beneath it should be removed, because they are no longer present in the tree
         if delete_children {
@@ -344,6 +344,16 @@ pub async fn to_writer<W: Write>(
 
             // Delete the range of positions
             writer.delete_range(height, range).await?;
+        }
+
+        // Deleting children, then adding the hash allows the backend to do a sensibility check that
+        // there are no children of essential hashes, if it chooses to.
+
+        // Add the hash, if it wasn't already present (in the case of forgetting things, this serves
+        // to ensure that omitted internal hashes are stored when necessary)
+        if hash != Hash::one() {
+            // Optimization: don't serialize `Hash::one()`, because it will be filled in automatically
+            writer.add_hash(position, height, hash, essential).await?;
         }
     }
 

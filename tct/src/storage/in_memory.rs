@@ -1,4 +1,4 @@
-//! An in-memory but not necessarily very fast storage backend, useful for testing.
+//! An in-memory storage backend, useful for testing.
 
 use super::*;
 
@@ -7,6 +7,7 @@ use super::*;
 pub struct InMemory {
     sparse: bool,
     position: StoredPosition,
+    forgotten: Forgotten,
     hashes: BTreeMap<Position, BTreeMap<u8, Hash>>,
     commitments: BTreeMap<Position, Commitment>,
 }
@@ -19,12 +20,9 @@ impl InMemory {
 
     /// Create a new in-memory storage backend that only stores essential hashes.
     pub fn new_sparse() -> Self {
-        Self {
-            sparse: true,
-            position: StoredPosition::default(),
-            hashes: BTreeMap::new(),
-            commitments: BTreeMap::new(),
-        }
+        let mut new = Self::new();
+        new.sparse = true;
+        new
     }
 }
 
@@ -37,6 +35,46 @@ pub enum Error {
         /// The position of the existing commitment.
         position: Position,
     },
+    /// An unnecessary write was performed.
+    #[error("repeated write of hash at position {position:?}, height {height}")]
+    RepeatedWriteHash {
+        /// The position of the hash.
+        position: Position,
+        /// The height of the hash.
+        height: u8,
+    },
+    /// A hash was overwritten with a different hash.
+    #[error("hash overwritten with different hash at position {position:?}, height {height}")]
+    OverwrittenHash {
+        /// The position of the hash.
+        position: Position,
+        /// The height of the hash.
+        height: u8,
+    },
+    /// A hash was marked essential, but it still had children.
+    #[error("recalculable hash marked essential at position {position:?}, height {height}")]
+    EssentialHashHasChildren {
+        /// The position of the hash.
+        position: Position,
+        /// The height of the hash.
+        height: u8,
+    },
+    /// The position was set, but it did not increase.
+    #[error("set position did not increase from {previous:?} to {new:?}")]
+    PositionDidNotIncrease {
+        /// The previous position.
+        previous: StoredPosition,
+        /// The new position.
+        new: StoredPosition,
+    },
+    /// The forgotten version was set, but it did not increase.
+    #[error("set forgotten version did not increase from {previous:?} to {new:?}")]
+    ForgottenDidNotIncrease {
+        /// The previous forgotten version.
+        previous: Forgotten,
+        /// The new forgotten version.
+        new: Forgotten,
+    },
 }
 
 #[async_trait]
@@ -47,22 +85,8 @@ impl Read for InMemory {
         Ok(self.position)
     }
 
-    async fn get_hash(
-        &mut self,
-        position: Position,
-        height: u8,
-    ) -> Result<Option<Hash>, Self::Error> {
-        Ok(self
-            .hashes
-            .get(&position)
-            .and_then(|column| column.get(&height).copied()))
-    }
-
-    async fn get_commitment(
-        &mut self,
-        position: Position,
-    ) -> Result<Option<Commitment>, Self::Error> {
-        Ok(self.commitments.get(&position).copied())
+    async fn forgotten(&mut self) -> Result<Forgotten, Self::Error> {
+        Ok(self.forgotten)
     }
 
     fn hashes(
@@ -108,7 +132,14 @@ impl Write for InMemory {
             Entry::Vacant(e) => {
                 e.insert(hash);
             }
-            Entry::Occupied(_) => { /* do nothing */ }
+            Entry::Occupied(e) => {
+                if !essential {
+                    return Err(Error::RepeatedWriteHash { position, height });
+                }
+                if *e.into_mut() != hash {
+                    return Err(Error::OverwrittenHash { position, height });
+                }
+            }
         };
         Ok(())
     }
@@ -131,28 +162,59 @@ impl Write for InMemory {
         below_height: u8,
         range: Range<Position>,
     ) -> Result<(), Self::Error> {
-        // TODO: this could be faster if there was a way to iterate over a range of a `BTreeMap`
-        // rather than traversing the entire thing each time
-
         // Remove all the inner hashes below and in range
-        self.hashes.retain(|position, column| {
-            if range.contains(position) {
-                column.retain(|&height, _| height >= below_height);
-            }
+        let empty_columns: Vec<Position> = self
+            .hashes
+            .range_mut(range.clone())
+            .filter_map(|(&position, column)| {
+                *column = column.split_off(&below_height);
+                if column.is_empty() {
+                    Some(position)
+                } else {
+                    None
+                }
+            })
+            .collect();
 
-            // Retain the column only if it's not empty (prune empty entries)
-            !column.is_empty()
-        });
+        // Remove all the now-empty columns
+        for position in empty_columns {
+            self.hashes.remove(&position);
+        }
+
+        // Find the positions of the commitments within the range
+        let commitments_to_delete: Vec<Position> = self
+            .commitments
+            .range(range)
+            .map(|(&position, _)| position)
+            .collect();
 
         // Remove all the commitments within the range
-        self.commitments
-            .retain(|position, _| !range.contains(position));
+        for position in commitments_to_delete {
+            self.commitments.remove(&position);
+        }
 
         Ok(())
     }
 
     async fn set_position(&mut self, position: StoredPosition) -> Result<(), Self::Error> {
+        if self.position >= position {
+            return Err(Error::PositionDidNotIncrease {
+                previous: self.position,
+                new: position,
+            });
+        }
         self.position = position;
+        Ok(())
+    }
+
+    async fn set_forgotten(&mut self, forgotten: Forgotten) -> Result<(), Self::Error> {
+        if self.forgotten >= forgotten {
+            return Err(Error::ForgottenDidNotIncrease {
+                previous: self.forgotten,
+                new: forgotten,
+            });
+        }
+        self.forgotten = forgotten;
         Ok(())
     }
 }
