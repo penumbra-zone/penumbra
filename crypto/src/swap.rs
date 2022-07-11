@@ -27,9 +27,25 @@ pub struct SwapPlaintext {
 
 impl SwapPlaintext {
     // TODO: needs to be constant-length
-    pub fn encrypt(&self, _ovk: &OutgoingViewingKey) -> SwapCiphertext {
-        // TODO: implement
-        todo!()
+    pub fn encrypt(&self, ovk: &OutgoingViewingKey) -> SwapCiphertext {
+        let shared_secret = ovk
+            .key_agreement_with(&self.transmission_key())
+            .expect("key agreement succeeded");
+
+        let key = derive_symmetric_key(&shared_secret, &epk);
+        let cipher = ChaCha20Poly1305::new(Key::from_slice(key.as_bytes()));
+        let nonce = Nonce::from_slice(&*NOTE_ENCRYPTION_NONCE);
+
+        let note_plaintext: Vec<u8> = self.into();
+        let encryption_result = cipher
+            .encrypt(nonce, note_plaintext.as_ref())
+            .expect("note encryption succeeded");
+
+        let ciphertext: [u8; NOTE_CIPHERTEXT_BYTES] = encryption_result
+            .try_into()
+            .expect("note encryption result fits in ciphertext len");
+
+        ciphertext
     }
 }
 
