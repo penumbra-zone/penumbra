@@ -5,7 +5,7 @@ DROP TABLE IF EXISTS note_commitment_tree;
 CREATE TABLE nct_position ( position BIGINT );
 INSERT INTO nct_position VALUES ( 0 ); -- starting position is 0
 
-CREATE TABLE nct_forgotten ( forgotten BIGINT );
+CREATE TABLE nct_forgotten ( forgotten BIGINT NOT NULL );
 INSERT INTO nct_forgotten VALUES ( 0 ); -- starting forgotten version is 0
 
 -- the hashes for nodes in the nct

@@ -10,6 +10,24 @@
     },
     "query": "INSERT INTO full_viewing_key (bytes) VALUES (?)"
   },
+  "02a70ba8f6259880d717d74751d6464ccf1243bb2118b845e99cd85e21d6d44d": {
+    "describe": {
+      "columns": [
+        {
+          "name": "forgotten",
+          "ordinal": 0,
+          "type_info": "Int64"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 0
+      }
+    },
+    "query": "SELECT forgotten FROM nct_forgotten LIMIT 1"
+  },
   "0c9654cf156210edda72a63b80ad55cc1cd772f6ab83660307167aa3d2e8b094": {
     "describe": {
       "columns": [
@@ -91,6 +109,56 @@
       }
     },
     "query": "SELECT *\n            FROM assets"
+  },
+  "39905177bbb87af59ee5e3768e0dac39437076fb5895b551b20f96879d64e9a5": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "UPDATE nct_forgotten SET forgotten = ?"
+  },
+  "431fd2181535cadf11756fab3ae43691e4a3d90fb8f989e84cd544758ae750c6": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "INSERT INTO nct_commitments (position, commitment) VALUES (?, ?)"
+  },
+  "45cafd5caf13a2ed5fe183be95f29a13df5cfe1068cccbe01742270d18a33a93": {
+    "describe": {
+      "columns": [
+        {
+          "name": "position",
+          "ordinal": 0,
+          "type_info": "Int64"
+        },
+        {
+          "name": "height",
+          "ordinal": 1,
+          "type_info": "Int64"
+        },
+        {
+          "name": "hash",
+          "ordinal": 2,
+          "type_info": "Blob"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 0
+      }
+    },
+    "query": "SELECT position, height, hash FROM nct_hashes ORDER BY position ASC, height ASC"
   },
   "4af503f633659f5e73d7e64f3fb1f1ab5e37299a25dadcd851f4ec86aea0a78b": {
     "describe": {
@@ -196,6 +264,16 @@
     },
     "query": "DELETE FROM quarantined_nullifiers WHERE nullifier = ?"
   },
+  "a96e4094367da72f81a656389748b9bac9f1931178dfc74bcc92e8f32b581b98": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "UPDATE nct_position SET position = ?"
+  },
   "b8c80b31e23d061d621a5486b84e80b4a4b4fa409bf4510b5ad301ef54a66101": {
     "describe": {
       "columns": [],
@@ -225,6 +303,68 @@
       }
     },
     "query": "UPDATE notes SET height_spent = NULL WHERE nullifier = ?"
+  },
+  "daff647dbffe8b4636492d39b99e0e22fcbfc9f5e61623d859ebc2be50c45d2d": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 3
+      }
+    },
+    "query": "DELETE FROM nct_hashes WHERE position >= ? AND position < ? AND height < ?"
+  },
+  "e7a1c5d2f1b78a12d50436092b7219e900ae6e9c52d81f84a14c765340d0f0c9": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 3
+      }
+    },
+    "query": "INSERT INTO nct_hashes (position, height, hash) VALUES (?, ?, ?)"
+  },
+  "e8b7f018bebc8de0926899cdf60942f338de46928b6e70120622d7828075a8cb": {
+    "describe": {
+      "columns": [
+        {
+          "name": "position",
+          "ordinal": 0,
+          "type_info": "Int64"
+        },
+        {
+          "name": "commitment",
+          "ordinal": 1,
+          "type_info": "Blob"
+        }
+      ],
+      "nullable": [
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 0
+      }
+    },
+    "query": "SELECT position, commitment FROM nct_commitments ORDER BY position ASC"
+  },
+  "ea78fd2a11683801c7ea96c3564e1103446663e51894e99ef42610ba87e3e152": {
+    "describe": {
+      "columns": [
+        {
+          "name": "position",
+          "ordinal": 0,
+          "type_info": "Int64"
+        }
+      ],
+      "nullable": [
+        true
+      ],
+      "parameters": {
+        "Right": 0
+      }
+    },
+    "query": "SELECT position FROM nct_position LIMIT 1"
   },
   "efb5f4932197a38ca134b63d8ea5d2fad9145fb56d03a60351f15b5302905402": {
     "describe": {
