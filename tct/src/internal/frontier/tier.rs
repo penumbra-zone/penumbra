@@ -321,7 +321,7 @@ impl<Item: Focus + OutOfOrder> OutOfOrder for Tier<Item>
 where
     Item::Complete: OutOfOrderOwned,
 {
-    fn uninitialized(position: Option<u64>) -> Self {
+    fn uninitialized(position: Option<u64>, forgotten: Forgotten) -> Self {
         // This tier is finalized if the position relative to its own height is 0 (because a
         // frontier cannot represent a 0 position)
         let is_finalized = if let Some(position) = position {
@@ -348,7 +348,7 @@ where
             } else {
                 // In the case when we are a non-finalized tier, we recursively continue generating
                 // the frontier
-                Inner::Frontier(Box::new(Nested::uninitialized(position)))
+                Inner::Frontier(Box::new(Nested::uninitialized(position, forgotten)))
             },
         }
     }

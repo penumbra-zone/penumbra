@@ -103,7 +103,7 @@ impl structure::Any for Item {
 }
 
 impl OutOfOrder for Item {
-    fn uninitialized(_position: Option<u64>) -> Self {
+    fn uninitialized(_position: Option<u64>, _forgotten: Forgotten) -> Self {
         Self {
             item: Insert::Hash(Hash::uninitialized()),
         }

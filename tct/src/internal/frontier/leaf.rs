@@ -109,9 +109,9 @@ impl<Item: GetPosition + Height + structure::Any> structure::Any for Leaf<Item> 
 }
 
 impl<Item: OutOfOrder> OutOfOrder for Leaf<Item> {
-    fn uninitialized(position: Option<u64>) -> Self {
+    fn uninitialized(position: Option<u64>, forgotten: Forgotten) -> Self {
         Self {
-            item: Item::uninitialized(position),
+            item: Item::uninitialized(position, forgotten),
         }
     }
 

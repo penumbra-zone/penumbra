@@ -243,13 +243,13 @@ impl<Item: Focus + Height + OutOfOrder> OutOfOrder for Top<Item>
 where
     Item::Complete: OutOfOrderOwned,
 {
-    fn uninitialized(position: Option<u64>) -> Self {
+    fn uninitialized(position: Option<u64>, forgotten: Forgotten) -> Self {
         let inner = if position == Some(0) {
             // If the position is zero, there's no frontier to manifest
             None
         } else {
             // Otherwise, create a frontier
-            Some(Nested::uninitialized(position))
+            Some(Nested::uninitialized(position, forgotten))
         };
 
         Self {

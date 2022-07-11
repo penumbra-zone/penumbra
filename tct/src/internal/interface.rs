@@ -116,7 +116,7 @@ pub trait ForgetOwned: Height + Sized {
 pub(crate) trait OutOfOrder {
     /// Create a new frontier which has the given position, with all frontier hashes filled in with
     /// `Hash::uninitialized()`.
-    fn uninitialized(position: Option<u64>) -> Self;
+    fn uninitialized(position: Option<u64>, forgotten: Forgotten) -> Self;
 
     /// Sets the commitment at the position to the given commitment, creating uninitialized internal
     /// nodes as necessary.

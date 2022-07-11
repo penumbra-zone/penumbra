@@ -398,7 +398,7 @@ impl<Child: Height + Focus + OutOfOrder> OutOfOrder for Node<Child>
 where
     Child::Complete: OutOfOrderOwned,
 {
-    fn uninitialized(position: Option<u64>) -> Self {
+    fn uninitialized(position: Option<u64>, forgotten: Forgotten) -> Self {
         // The number of siblings is the bits of the position at this node's height
         let siblings_len = if let Some(position) = position {
             // We subtract 1 from the position, because the position is 1 + the position of the
@@ -422,9 +422,9 @@ where
             }
         }
 
-        let focus = Child::uninitialized(position);
+        let focus = Child::uninitialized(position, forgotten);
         let hash = CachedHash::default();
-        let forgotten = [Forgotten::default(); 4];
+        let forgotten = [forgotten; 4];
 
         Node {
             siblings,

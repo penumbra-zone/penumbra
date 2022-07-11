@@ -12,13 +12,14 @@ use super::StoredPosition;
 
 /// Deserialize a [`Tree`] from a storage backend.
 pub async fn from_reader<R: Read>(reader: &mut R) -> Result<Tree, R::Error> {
-    // Make an uninitialized tree with the correct position
+    // Make an uninitialized tree with the correct position and forgotten version
     let position = match reader.position().await? {
         StoredPosition::Position(position) => Some(position.into()),
         StoredPosition::Full => None,
     };
+    let forgotten = reader.forgotten().await?;
     let mut inner: frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>> =
-        OutOfOrder::uninitialized(position);
+        OutOfOrder::uninitialized(position, forgotten);
 
     // Make an index to track the commitments (we'll assemble this into the final tree)
     let mut index = HashedMap::default();
@@ -51,10 +52,11 @@ mod test {
 
     proptest::proptest! {
         #[test]
-        fn uninitialized_produces_correct_position(init_position in prop::option::of(any::<Position>())) {
+        fn uninitialized_produces_correct_position_and_forgotten(init_position in prop::option::of(any::<Position>()), init_forgotten in any::<Forgotten>()) {
             let tree: frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>> =
-                OutOfOrder::uninitialized(init_position.map(Into::into));
+                OutOfOrder::uninitialized(init_position.map(Into::into), init_forgotten);
             assert_eq!(init_position, tree.position().map(Into::into));
+            assert_eq!(init_forgotten, tree.forgotten().unwrap());
         }
     }
 }

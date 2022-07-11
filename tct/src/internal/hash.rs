@@ -170,6 +170,7 @@ impl Hash {
     Default,
 )]
 #[derivative(Debug = "transparent")]
+#[cfg_attr(any(test, feature = "arbitrary"), derive(proptest_derive::Arbitrary))]
 pub struct Forgotten(u64);
 
 impl Forgotten {
