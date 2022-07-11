@@ -105,11 +105,11 @@ impl Serializer {
     pub fn hashes_stream<'tree>(
         &self,
         tree: &'tree crate::Tree,
-    ) -> impl Stream<Item = InternalHash> + Unpin + 'tree {
+    ) -> impl Stream<Item = InternalHash> + Send + Unpin + 'tree {
         fn hashes_inner(
             options: Serializer,
             node: structure::Node,
-        ) -> Pin<Box<dyn Stream<Item = InternalHash> + '_>> {
+        ) -> Pin<Box<dyn Stream<Item = InternalHash> + Send + '_>> {
             Box::pin(stream! {
                 let position = node.position();
                 let height = node.height();
@@ -174,11 +174,11 @@ impl Serializer {
     pub fn commitments_stream<'tree>(
         &self,
         tree: &'tree crate::Tree,
-    ) -> impl Stream<Item = (Position, Commitment)> + Unpin + 'tree {
+    ) -> impl Stream<Item = (Position, Commitment)> + Send + Unpin + 'tree {
         fn commitments_inner(
             options: Serializer,
             node: structure::Node,
-        ) -> Pin<Box<dyn Stream<Item = (Position, Commitment)> + '_>> {
+        ) -> Pin<Box<dyn Stream<Item = (Position, Commitment)> + Send + '_>> {
             Box::pin(stream! {
                 let position = node.position();
                 let children = node.children();
@@ -215,7 +215,7 @@ impl Serializer {
     pub fn commitments_iter<'tree>(
         &self,
         tree: &'tree crate::Tree,
-    ) -> impl Iterator<Item = (Position, Commitment)> + 'tree {
+    ) -> impl Iterator<Item = (Position, Commitment)> + Send + 'tree {
         futures::executor::block_on_stream(self.commitments_stream(tree))
     }
 
@@ -223,11 +223,11 @@ impl Serializer {
     pub fn forgotten_stream<'tree>(
         &self,
         tree: &'tree crate::Tree,
-    ) -> impl Stream<Item = InternalHash> + Unpin + 'tree {
+    ) -> impl Stream<Item = InternalHash> + Send + Unpin + 'tree {
         fn forgotten_inner(
             options: Serializer,
             node: structure::Node,
-        ) -> Pin<Box<dyn Stream<Item = InternalHash> + '_>> {
+        ) -> Pin<Box<dyn Stream<Item = InternalHash> + Send + '_>> {
             Box::pin(stream! {
                 // Only report nodes (and their children) which are less than the last stored position
                 // (because those greater will not have yet been serialized to storage) and greater

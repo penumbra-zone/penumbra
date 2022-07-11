@@ -53,13 +53,13 @@ pub trait Read {
     #[allow(clippy::type_complexity)]
     fn hashes(
         &mut self,
-    ) -> Pin<Box<dyn Stream<Item = Result<(Position, u8, Hash), Self::Error>> + '_>>;
+    ) -> Pin<Box<dyn Stream<Item = Result<(Position, u8, Hash), Self::Error>> + Send + '_>>;
 
     /// Get the full list of all commitments stored, indexed by position.
     #[allow(clippy::type_complexity)]
     fn commitments(
         &mut self,
-    ) -> Pin<Box<dyn Stream<Item = Result<(Position, Commitment), Self::Error>> + '_>>;
+    ) -> Pin<Box<dyn Stream<Item = Result<(Position, Commitment), Self::Error>> + Send + '_>>;
 }
 
 /// A storage backend capable of writing [`struct@Hash`]es and [`Commitment`]s, and

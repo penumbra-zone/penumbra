@@ -91,7 +91,7 @@ impl Read for InMemory {
 
     fn hashes(
         &mut self,
-    ) -> Pin<Box<dyn Stream<Item = Result<(Position, u8, Hash), Self::Error>> + '_>> {
+    ) -> Pin<Box<dyn Stream<Item = Result<(Position, u8, Hash), Self::Error>> + Send + '_>> {
         Box::pin(stream::iter(self.hashes.iter().flat_map(
             |(&position, column)| {
                 column
@@ -103,7 +103,7 @@ impl Read for InMemory {
 
     fn commitments(
         &mut self,
-    ) -> Pin<Box<dyn Stream<Item = Result<(Position, Commitment), Self::Error>> + '_>> {
+    ) -> Pin<Box<dyn Stream<Item = Result<(Position, Commitment), Self::Error>> + Send + '_>> {
         Box::pin(stream::iter(
             self.commitments
                 .iter()
