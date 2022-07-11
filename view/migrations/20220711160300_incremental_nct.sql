@@ -12,16 +12,15 @@ INSERT INTO nct_forgotten VALUES ( 0 ); -- starting forgotten version is 0
 CREATE TABLE nct_hashes (
     position BIGINT NOT NULL,
     height   TINYINT NOT NULL,
-    hash     BLOB NOT NULL,
-    PRIMARY KEY ( position, height )
+    hash     BLOB NOT NULL
 );
 
 -- these indices may help with 2-dimensional range deletion
 CREATE INDEX hash_position_idx ON nct_hashes ( position );
-CREATE INDEX hash_height_idx ON nct_hashes ( height );
+--CREATE INDEX hash_height_idx ON nct_hashes ( height );
 
 -- all the commitments stored in the nct
 CREATE TABLE nct_commitments (
-    position BIGINT PRIMARY KEY NOT NULL,
+    position BIGINT NOT NULL,
     commitment BLOB NOT NULL
 );

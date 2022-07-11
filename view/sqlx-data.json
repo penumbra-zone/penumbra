@@ -46,6 +46,16 @@
     },
     "query": "UPDATE notes SET height_spent = ? WHERE nullifier = ? RETURNING note_commitment"
   },
+  "0d54948d12668be85b0f07c99ced57fee51972271c5c854495cd0d95bf0e48c9": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 3
+      }
+    },
+    "query": "INSERT INTO nct_hashes (position, height, hash) VALUES (?, ?, ?) ON CONFLICT DO NOTHING"
+  },
   "1766574ebf4edffed45f0167f734a5ea5167ef2ec4280ed9710b4e1ec3eeb362": {
     "describe": {
       "columns": [],
@@ -120,46 +130,6 @@
     },
     "query": "UPDATE nct_forgotten SET forgotten = ?"
   },
-  "431fd2181535cadf11756fab3ae43691e4a3d90fb8f989e84cd544758ae750c6": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 2
-      }
-    },
-    "query": "INSERT INTO nct_commitments (position, commitment) VALUES (?, ?)"
-  },
-  "45cafd5caf13a2ed5fe183be95f29a13df5cfe1068cccbe01742270d18a33a93": {
-    "describe": {
-      "columns": [
-        {
-          "name": "position",
-          "ordinal": 0,
-          "type_info": "Int64"
-        },
-        {
-          "name": "height",
-          "ordinal": 1,
-          "type_info": "Int64"
-        },
-        {
-          "name": "hash",
-          "ordinal": 2,
-          "type_info": "Blob"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Right": 0
-      }
-    },
-    "query": "SELECT position, height, hash FROM nct_hashes ORDER BY position ASC, height ASC"
-  },
   "4af503f633659f5e73d7e64f3fb1f1ab5e37299a25dadcd851f4ec86aea0a78b": {
     "describe": {
       "columns": [],
@@ -226,6 +196,16 @@
     },
     "query": "\n            SELECT height\n            FROM sync_height\n            ORDER BY height DESC\n            LIMIT 1\n        "
   },
+  "6fbdcaea60547ae9c260428c23ddd835986cdd03553e485df2fe4ad31ccaa8d6": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "INSERT INTO nct_commitments (position, commitment) VALUES (?, ?) ON CONFLICT DO NOTHING"
+  },
   "8ecf6591d5fcf8d364e7457ef4b5d927d9c079c23e633dc4475d6c2c60192c8f": {
     "describe": {
       "columns": [
@@ -243,6 +223,60 @@
       }
     },
     "query": "DELETE FROM quarantined_nullifiers WHERE identity_key = ? RETURNING nullifier"
+  },
+  "916844d5f99c975bd2bfcac3956625f040ea91697c4f0c0a9cb4f48e472b302d": {
+    "describe": {
+      "columns": [
+        {
+          "name": "position",
+          "ordinal": 0,
+          "type_info": "Int64"
+        },
+        {
+          "name": "height",
+          "ordinal": 1,
+          "type_info": "Int64"
+        },
+        {
+          "name": "hash",
+          "ordinal": 2,
+          "type_info": "Blob"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 0
+      }
+    },
+    "query": "SELECT position, height, hash FROM nct_hashes"
+  },
+  "9d43e7b6d12a9610329e29651fa0d8134ebf18735ba93630b5f8a987dc17642f": {
+    "describe": {
+      "columns": [
+        {
+          "name": "position",
+          "ordinal": 0,
+          "type_info": "Int64"
+        },
+        {
+          "name": "commitment",
+          "ordinal": 1,
+          "type_info": "Blob"
+        }
+      ],
+      "nullable": [
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 0
+      }
+    },
+    "query": "SELECT position, commitment FROM nct_commitments"
   },
   "a2d77e7ce1b2de126dc78eb2439260219847f082340db4912a9e71f78f00c2d6": {
     "describe": {
@@ -313,40 +347,6 @@
       }
     },
     "query": "DELETE FROM nct_hashes WHERE position >= ? AND position < ? AND height < ?"
-  },
-  "e7a1c5d2f1b78a12d50436092b7219e900ae6e9c52d81f84a14c765340d0f0c9": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 3
-      }
-    },
-    "query": "INSERT INTO nct_hashes (position, height, hash) VALUES (?, ?, ?)"
-  },
-  "e8b7f018bebc8de0926899cdf60942f338de46928b6e70120622d7828075a8cb": {
-    "describe": {
-      "columns": [
-        {
-          "name": "position",
-          "ordinal": 0,
-          "type_info": "Int64"
-        },
-        {
-          "name": "commitment",
-          "ordinal": 1,
-          "type_info": "Blob"
-        }
-      ],
-      "nullable": [
-        false,
-        false
-      ],
-      "parameters": {
-        "Right": 0
-      }
-    },
-    "query": "SELECT position, commitment FROM nct_commitments ORDER BY position ASC"
   },
   "ea78fd2a11683801c7ea96c3564e1103446663e51894e99ef42610ba87e3e152": {
     "describe": {
