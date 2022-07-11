@@ -63,9 +63,32 @@ impl Storage {
         }
     }
 
+    async fn connect(path: &str) -> anyhow::Result<Pool<Sqlite>> {
+        use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqliteSynchronous};
+        use std::str::FromStr;
+
+        /*
+        // "yolo" options for testing
+        let options = SqliteConnectOptions::from_str(path)?
+            .journal_mode(SqliteJournalMode::Memory)
+            .synchronous(SqliteSynchronous::Off);
+        */
+        let options = SqliteConnectOptions::from_str(path)?
+            .journal_mode(SqliteJournalMode::Wal)
+            // "Normal" will be consistent, but potentially not durable.
+            // Since our data is coming from the chain, durability is not
+            // a concern -- if we lose some database transactions, it's as
+            // if we rewound syncing a few blocks.
+            .synchronous(SqliteSynchronous::Normal);
+
+        let pool = Pool::<Sqlite>::connect_with(options).await?;
+
+        Ok(pool)
+    }
+
     pub async fn load(path: impl AsRef<Utf8Path>) -> anyhow::Result<Self> {
         Ok(Self {
-            pool: Pool::<Sqlite>::connect(path.as_ref().as_str()).await?,
+            pool: Self::connect(path.as_ref().as_str()).await?,
             uncommitted_height: Arc::new(Mutex::new(None)),
             scanned_notes_tx: broadcast::channel(10).0,
         })
@@ -88,7 +111,7 @@ impl Storage {
         // Create the SQLite database
         sqlx::Sqlite::create_database(storage_path.as_str());
 
-        let pool = Pool::<Sqlite>::connect(storage_path.as_str()).await?;
+        let pool = Self::connect(storage_path.as_str()).await?;
 
         // Run migrations
         sqlx::migrate!().run(&pool).await?;
