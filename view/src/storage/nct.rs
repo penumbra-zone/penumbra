@@ -37,28 +37,26 @@ impl Read for TreeStore<'_, '_> {
         &mut self,
     ) -> Pin<Box<dyn Stream<Item = Result<(Position, u8, Hash), Self::Error>> + Send + '_>> {
         Box::pin(
-            sqlx::query!(
-                "SELECT position, height, hash FROM nct_hashes ORDER BY position ASC, height ASC"
-            )
-            .fetch_many(&mut *self.0)
-            .map(|row| {
-                let row = row?;
-                if let Either::Right(row) = row {
-                    Ok::<_, Self::Error>(Some((
-                        Position::from(row.position as u64),
-                        row.height as u8,
-                        Hash::from_bytes(
-                            row.hash
-                                .try_into()
-                                .map_err(|_| anyhow::anyhow!("hash was of incorrect length"))?,
-                        )?,
-                    )))
-                    .context("could not decode hash from local database")
-                } else {
-                    Ok(None)
-                }
-            })
-            .filter_map(|item| async move { item.transpose() }),
+            sqlx::query!("SELECT position, height, hash FROM nct_hashes")
+                .fetch_many(&mut *self.0)
+                .map(|row| {
+                    let row = row?;
+                    if let Either::Right(row) = row {
+                        Ok::<_, Self::Error>(Some((
+                            Position::from(row.position as u64),
+                            row.height as u8,
+                            Hash::from_bytes(
+                                row.hash
+                                    .try_into()
+                                    .map_err(|_| anyhow::anyhow!("hash was of incorrect length"))?,
+                            )?,
+                        )))
+                        .context("could not decode hash from local database")
+                    } else {
+                        Ok(None)
+                    }
+                })
+                .filter_map(|item| async move { item.transpose() }),
         )
     }
 
@@ -66,7 +64,7 @@ impl Read for TreeStore<'_, '_> {
         &mut self,
     ) -> Pin<Box<dyn Stream<Item = Result<(Position, Commitment), Self::Error>> + Send + '_>> {
         Box::pin(
-            sqlx::query!("SELECT position, commitment FROM nct_commitments ORDER BY position ASC")
+            sqlx::query!("SELECT position, commitment FROM nct_commitments")
                 .fetch_many(&mut *self.0)
                 .map(|row| {
                     let row = row?;
@@ -114,14 +112,14 @@ impl Write for TreeStore<'_, '_> {
     ) -> Result<(), Self::Error> {
         let position = u64::from(position) as i64;
         let hash = hash.to_bytes().to_vec();
+
         sqlx::query!(
-            "INSERT INTO nct_hashes (position, height, hash) VALUES (?, ?, ?)",
+            "INSERT INTO nct_hashes (position, height, hash) VALUES (?, ?, ?) ON CONFLICT DO NOTHING",
             position,
             height,
             hash
         )
-        .execute(&mut *self.0)
-        .await?;
+        .execute(&mut *self.0).await?;
         Ok(())
     }
 
@@ -133,7 +131,7 @@ impl Write for TreeStore<'_, '_> {
         let position = u64::from(position) as i64;
         let commitment = <[u8; 32]>::from(commitment).to_vec();
         sqlx::query!(
-            "INSERT INTO nct_commitments (position, commitment) VALUES (?, ?)",
+            "INSERT INTO nct_commitments (position, commitment) VALUES (?, ?) ON CONFLICT DO NOTHING",
             position,
             commitment
         )
