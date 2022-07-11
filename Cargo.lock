@@ -3094,6 +3094,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-stream 0.2.1",
+ "async-trait",
  "bincode",
  "bytes",
  "camino",
