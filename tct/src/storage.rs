@@ -36,6 +36,24 @@ impl Default for StoredPosition {
     }
 }
 
+impl From<StoredPosition> for Option<Position> {
+    fn from(stored: StoredPosition) -> Self {
+        match stored {
+            StoredPosition::Position(position) => Some(position),
+            StoredPosition::Full => None,
+        }
+    }
+}
+
+impl From<Option<Position>> for StoredPosition {
+    fn from(position: Option<Position>) -> Self {
+        match position {
+            Some(position) => StoredPosition::Position(position),
+            None => StoredPosition::Full,
+        }
+    }
+}
+
 /// A storage backend capable of reading stored [`struct@Hash`]es and [`Commitment`]s as well as
 /// storing the current [`Position`].
 #[async_trait]

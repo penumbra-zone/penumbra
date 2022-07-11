@@ -109,6 +109,11 @@ impl Hash {
         self.0.to_bytes()
     }
 
+    /// Decode a hash from bytes representing it
+    pub fn from_bytes(bytes: [u8; 32]) -> Result<Self, decaf377::EncodingError> {
+        Ok(Self(Fq::from_bytes(bytes)?))
+    }
+
     /// The zero hash, used for padding of frontier nodes.
     pub fn zero() -> Hash {
         Self(Fq::zero())
@@ -187,6 +192,12 @@ impl Forgotten {
 impl From<Forgotten> for u64 {
     fn from(forgotten: Forgotten) -> Self {
         forgotten.0
+    }
+}
+
+impl From<u64> for Forgotten {
+    fn from(u: u64) -> Self {
+        Self(u)
     }
 }
 
