@@ -19,6 +19,9 @@ use tokio::sync::broadcast;
 
 use crate::{sync::FilteredBlock, NoteRecord, QuarantinedNoteRecord};
 
+mod nct;
+use nct::TreeStore;
+
 #[derive(Clone)]
 pub struct Storage {
     pool: Pool<Sqlite>,
@@ -93,16 +96,8 @@ impl Storage {
         // Initialize the database state with: empty NCT, chain params, FVK
         let mut tx = pool.begin().await?;
 
-        let nct_bytes = bincode::serialize(&tct::Tree::new())?;
         let chain_params_bytes = &ChainParams::encode_to_vec(&params)[..];
         let fvk_bytes = &FullViewingKey::encode_to_vec(&fvk)[..];
-
-        sqlx::query!(
-            "INSERT INTO note_commitment_tree (bytes) VALUES (?)",
-            nct_bytes
-        )
-        .execute(&mut tx)
-        .await?;
 
         sqlx::query!(
             "INSERT INTO chain_params (bytes) VALUES (?)",
@@ -227,17 +222,10 @@ impl Storage {
     }
 
     pub async fn note_commitment_tree(&self) -> anyhow::Result<tct::Tree> {
-        let result = query!(
-            r#"
-            SELECT bytes
-            FROM note_commitment_tree
-            LIMIT 1
-            "#
-        )
-        .fetch_one(&self.pool)
-        .await?;
-
-        Ok(bincode::deserialize(result.bytes.as_slice())?)
+        let mut tx = self.pool.begin().await?;
+        let tree = tct::Tree::deserialize(&mut TreeStore(&mut tx)).await?;
+        tx.commit().await?;
+        Ok(tree)
     }
 
     pub async fn assets(&self) -> anyhow::Result<Vec<Asset>> {
@@ -664,11 +652,7 @@ impl Storage {
         }
 
         // Update NCT table with current NCT state
-
-        let nct_bytes = bincode::serialize(nct)?;
-        sqlx::query!("UPDATE note_commitment_tree SET bytes = ?", nct_bytes)
-            .execute(&mut tx)
-            .await?;
+        nct.serialize(&mut TreeStore(&mut tx)).await?;
 
         // Record block height as latest synced height
 
