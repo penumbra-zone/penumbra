@@ -1,14 +1,12 @@
 #[macro_use]
-extern crate anyhow;
+extern crate tracing;
 
-#[macro_use]
-extern crate clap;
-
+use clap::Parser;
 use tracing_subscriber::EnvFilter;
-use url::Url;
 
+use penumbra_chain::{params::ChainParams, sync::CompactBlock};
 use penumbra_proto::client::oblivious::{
-    oblivious_query_client::ObliviousQueryClient, ChainParamsRequest,
+    oblivious_query_client::ObliviousQueryClient, ChainParamsRequest, CompactBlockRangeRequest,
 };
 
 #[derive(Debug, Parser)]
@@ -48,29 +46,118 @@ impl Opt {
     }
 }
 
-#[derive(Parser)]
-enum Command {
+#[derive(Debug, Parser)]
+pub enum Command {
     /// Measure the performance of downloading compact blocks without parsing them.
     StreamBlocks,
 }
 
-#[derive(Debug)]
-struct App {
-    pub pd_url: Url,
-    pub tendermint_url: Url,
+impl Opt {
+    pub async fn run(&self) -> anyhow::Result<()> {
+        match self.cmd {
+            Command::StreamBlocks => {
+                let mut client =
+                    ObliviousQueryClient::connect(format!("http://{}:{}", self.node, self.pd_port))
+                        .await?;
+
+                let params: ChainParams = client
+                    .chain_params(tonic::Request::new(ChainParamsRequest {
+                        chain_id: String::new(),
+                    }))
+                    .await?
+                    .into_inner()
+                    .try_into()?;
+
+                let end_height = self.latest_known_block_height().await?.0;
+
+                let mut stream = client
+                    .compact_block_range(tonic::Request::new(CompactBlockRangeRequest {
+                        chain_id: params.chain_id,
+                        start_height: 0,
+                        end_height,
+                        // Instruct the server to keep feeding us blocks as they're created.
+                        keep_alive: false,
+                    }))
+                    .await?
+                    .into_inner();
+
+                use indicatif::{ProgressBar, ProgressDrawTarget, ProgressStyle};
+                let progress_bar =
+                    ProgressBar::with_draw_target(end_height, ProgressDrawTarget::stderr())
+                        .with_style(ProgressStyle::default_bar().template(
+                            "[{elapsed}] {bar:50.cyan/blue} {pos:>7}/{len:7} {per_sec} ETA: {eta}",
+                        ));
+                progress_bar.set_position(0);
+
+                while let Some(block) = stream.message().await? {
+                    let block = CompactBlock::try_from(block)?;
+                    progress_bar.set_position(block.height);
+                }
+                progress_bar.finish();
+            }
+        }
+
+        Ok(())
+    }
+
+    // This code is ripped from the view service code, and could be split out into something common.
+    #[instrument(skip(self))]
+    pub async fn latest_known_block_height(&self) -> Result<(u64, bool), anyhow::Error> {
+        let client = reqwest::Client::new();
+
+        let rsp: serde_json::Value = client
+            .get(format!(
+                r#"http://{}:{}/status"#,
+                self.node, self.tendermint_port
+            ))
+            .send()
+            .await?
+            .json()
+            .await?;
+
+        tracing::debug!("{}", rsp);
+
+        let sync_info = rsp
+            .get("result")
+            .and_then(|r| r.get("sync_info"))
+            .ok_or_else(|| anyhow::anyhow!("could not parse sync_info in JSON response"))?;
+
+        let latest_block_height = sync_info
+            .get("latest_block_height")
+            .and_then(|c| c.as_str())
+            .ok_or_else(|| anyhow::anyhow!("could not parse latest_block_height in JSON response"))?
+            .parse()?;
+
+        let max_peer_block_height = sync_info
+            .get("max_peer_block_height")
+            .and_then(|c| c.as_str())
+            .ok_or_else(|| {
+                anyhow::anyhow!("could not parse max_peer_block_height in JSON response")
+            })?
+            .parse()?;
+
+        let node_catching_up = sync_info
+            .get("catching_up")
+            .and_then(|c| c.as_bool())
+            .ok_or_else(|| anyhow::anyhow!("could not parse catching_up in JSON response"))?;
+
+        let latest_known_block_height = std::cmp::max(latest_block_height, max_peer_block_height);
+
+        tracing::debug!(
+            ?latest_block_height,
+            ?max_peer_block_height,
+            ?node_catching_up,
+            ?latest_known_block_height
+        );
+
+        Ok((latest_known_block_height, node_catching_up))
+    }
 }
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let mut client = ObliviousQueryClient::connect(format!("http://{}:{}", node, pd_port)).await?;
-
-    let params = client
-        .chain_params(tonic::Request::new(ChainParamsRequest {
-            chain_id: String::new(),
-        }))
-        .await?
-        .into_inner()
-        .try_into()?;
-
+    let mut opt = Opt::parse();
+    opt.init_tracing();
+    opt.run().await?;
     Ok(())
 }

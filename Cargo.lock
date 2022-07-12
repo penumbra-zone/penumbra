@@ -2972,12 +2972,17 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap 3.2.10",
+ "indicatif",
+ "penumbra-chain",
  "penumbra-proto",
+ "reqwest",
+ "serde_json",
  "tokio",
- "tonic 0.7.2",
+ "tonic 0.6.2",
  "tracing",
  "tracing-subscriber 0.3.14",
  "url",
+ "vergen",
 ]
 
 [[package]]
