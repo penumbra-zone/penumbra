@@ -48,7 +48,7 @@ cd penumbra && git fetch && git checkout 020-aitne && cargo update
 Then, build the `pcli` tool using `cargo`:
 
 ```bash
-cargo build --quiet --release --bin pcli
+cargo build --release --bin pcli
 ```
 
 Because you are building a work-in-progress version of the client, you may see compilation warnings,
