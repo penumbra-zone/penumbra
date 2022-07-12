@@ -75,7 +75,6 @@ impl Opt {
                         chain_id: params.chain_id,
                         start_height: 0,
                         end_height,
-                        // Instruct the server to keep feeding us blocks as they're created.
                         keep_alive: false,
                     }))
                     .await?
