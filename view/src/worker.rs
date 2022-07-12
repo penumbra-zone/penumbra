@@ -137,8 +137,20 @@ impl Worker {
             .await?
             .into_inner();
 
-        while let Some(block) = stream.message().await? {
-            let block = CompactBlock::try_from(block)?;
+        // Spawn a task to consume items from the stream (somewhat)
+        // independently of the execution of the block scanning.  This has two
+        // purposes: first, it allows buffering to smooth performance; second,
+        // it makes it slightly more difficult for a remote server to observe
+        // the exact timings of the scanning of each CompactBlock.
+        let (tx, mut buffered_stream) = tokio::sync::mpsc::channel(1000);
+        tokio::spawn(async move {
+            while let Some(block) = stream.message().await.transpose() {
+                tx.send(block).await;
+            }
+        });
+
+        while let Some(block) = buffered_stream.recv().await {
+            let block = CompactBlock::try_from(block?)?;
             let height = block.height;
 
             // Lock the NCT only while processing this block.
