@@ -744,9 +744,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "3.2.8"
+version = "3.2.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "190814073e85d238f31ff738fcb0bf6910cedeb73376c87cd69291028966fd83"
+checksum = "69c5a7f9997be616e47f0577ee38c91decb33392c5be4866494f34cdf329a9aa"
 dependencies = [
  "atty",
  "bitflags",
@@ -2692,7 +2692,7 @@ dependencies = [
  "blake2b_simd 0.5.11",
  "bytes",
  "camino",
- "clap 3.2.8",
+ "clap 3.2.10",
  "comfy-table",
  "decaf377",
  "directories",
@@ -2749,7 +2749,7 @@ dependencies = [
  "blake2b_simd 0.5.11",
  "bytes",
  "chrono",
- "clap 3.2.8",
+ "clap 3.2.10",
  "console-subscriber",
  "csv",
  "decaf377",
@@ -2967,6 +2967,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "penumbra-measure"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap 3.2.10",
+ "indicatif",
+ "penumbra-chain",
+ "penumbra-proto",
+ "reqwest",
+ "serde_json",
+ "tokio",
+ "tonic 0.6.2",
+ "tracing",
+ "tracing-subscriber 0.3.14",
+ "url",
+ "vergen",
+]
+
+[[package]]
 name = "penumbra-proto"
 version = "0.1.0"
 dependencies = [
@@ -3098,7 +3117,7 @@ dependencies = [
  "bincode",
  "bytes",
  "camino",
- "clap 3.2.8",
+ "clap 3.2.10",
  "directories",
  "futures",
  "hex",

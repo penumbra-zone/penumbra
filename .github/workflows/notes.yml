@@ -59,6 +59,7 @@ jobs:
             -p penumbra-component \
             -p penumbra-crypto \
             -p penumbra-custody \
+            -p penumbra-measure \
             -p penumbra-storage \
             -p penumbra-tct \
             -p penumbra-transaction \

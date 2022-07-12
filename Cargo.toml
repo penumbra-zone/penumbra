@@ -9,6 +9,7 @@ members = [
   "component",
   "crypto",
   "custody",
+  "measure",
   "storage",
   "tct",
   "tct-property-test",
