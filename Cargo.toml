@@ -4,6 +4,7 @@
 members = [
   "decaf377-fmd",
   "decaf377-ka",
+  "eddy",
   "proto",
   "chain",
   "component",
