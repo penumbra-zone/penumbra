@@ -391,6 +391,8 @@ impl TryFrom<&[u8]> for OutputProof {
 pub struct SwapProof {
     // Block inclusion proof for the note commitment.
     pub note_commitment_block_proof: tct::builder::block::Proof,
+    // Global position for the note commitment.
+    pub note_commitment_position: tct::Position,
     // The diversified base for the address.
     pub g_d: decaf377::Element,
     // The transmission key for the address.
@@ -457,7 +459,7 @@ impl SwapProof {
         // Nullifier integrity.
         if nullifier
             != self.nk.derive_nullifier(
-                self.note_commitment_block_proof.position(),
+                self.note_commitment_position,
                 &self.note_commitment_block_proof.commitment(),
             )
         {
@@ -510,6 +512,7 @@ impl From<SwapProof> for transparent_proofs::SwapProof {
         let nk_bytes: [u8; 32] = msg.nk.0.to_bytes();
         transparent_proofs::SwapProof {
             note_commitment_block_proof: Some(msg.note_commitment_block_proof.into()),
+            note_commitment_position: msg.note_commitment_position.into(),
             g_d: msg.g_d.compress().0.to_vec(),
             pk_d: msg.pk_d.0.to_vec(),
             value_amount: msg.value.amount,
@@ -545,6 +548,7 @@ impl TryFrom<transparent_proofs::SwapProof> for SwapProof {
                 .ok_or(Error::ProtoMalformed)?
                 .try_into()
                 .map_err(|_| Error::ProtoMalformed)?,
+            note_commitment_position: proto.note_commitment_position.into(),
             g_d: g_d_encoding
                 .decompress()
                 .map_err(|_| Error::ProtoMalformed)?,
