@@ -145,7 +145,9 @@ impl Worker {
         let (tx, mut buffered_stream) = tokio::sync::mpsc::channel(1000);
         tokio::spawn(async move {
             while let Some(block) = stream.message().await.transpose() {
-                tx.send(block).await;
+                if tx.send(block).await.is_err() {
+                    break;
+                }
             }
         });
 

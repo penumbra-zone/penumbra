@@ -1,6 +1,5 @@
 use blake2b_simd::{Hash, Params};
 use decaf377::FieldExt;
-use penumbra_crypto::transaction::Fee;
 use penumbra_crypto::FullViewingKey;
 use penumbra_proto::{transaction as pb, Message, Protobuf};
 

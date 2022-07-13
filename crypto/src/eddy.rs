@@ -108,7 +108,7 @@ pub fn decrypt_value(
 
     let mut d = decaf377::Element::default();
     for share in decryption_shares {
-        d = d + share.share * lagrange_coefficient(share.participant_index, &indices);
+        d += share.share * lagrange_coefficient(share.participant_index, &indices);
     }
     Ok(-d + encrypted_value.c2)
 }
@@ -256,7 +256,7 @@ mod tests {
 
         assert!(encrypted.verify(pubkey).is_ok());
         let alt_pubkey = decaf377::Fr::rand(&mut rng) * decaf377::basepoint();
-        assert!(!encrypted.verify(alt_pubkey).is_ok());
+        assert!(encrypted.verify(alt_pubkey).is_err());
 
         let decrypted = -privkey * encrypted.c1 + encrypted.c2;
         assert_eq!(
@@ -368,11 +368,13 @@ mod tests {
                 .enumerate()
                 .choose(&mut rand::thread_rng())
                 .unwrap();
-            if !seen_shares.contains_key(&random_share.participant_index) {
-                subset.push(random_share.clone());
-                subset_pubkey_commitments.push(pubkey_commitments[i as usize]);
-                seen_shares.insert(random_share.participant_index, true);
-            }
+            seen_shares
+                .entry(random_share.participant_index)
+                .or_insert_with(|| {
+                    subset.push(random_share.clone());
+                    subset_pubkey_commitments.push(pubkey_commitments[i as usize]);
+                    true
+                });
         }
 
         // try threshold decryption with randomly selected t/n shares

@@ -499,7 +499,7 @@ async fn main() -> anyhow::Result<()> {
                     active_validator_limit,
                     ..Default::default()
                 },
-                validators: validators.clone().into_iter().map(Into::into).collect(),
+                validators: validators.into_iter().map(Into::into).collect(),
             };
 
             // Create the genesis data shared by all nodes

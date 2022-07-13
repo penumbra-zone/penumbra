@@ -264,6 +264,7 @@ where
     Ok(plan)
 }
 
+#[allow(clippy::too_many_arguments)]
 #[instrument(skip(fvk, view, rng, values, fee, dest_address, source_address, tx_memo))]
 pub async fn send<V, R>(
     fvk: &FullViewingKey,
