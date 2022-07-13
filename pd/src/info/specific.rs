@@ -35,7 +35,7 @@ impl SpecificQuery for Info {
             .try_into()
             .map_err(|_| Status::invalid_argument("invalid commitment"))?;
         let source = state
-            .note_source(&cm)
+            .note_source(cm)
             .await
             .map_err(|e| Status::unavailable(format!("error getting note source: {}", e)))?
             .ok_or_else(|| Status::not_found("note commitment not found"))?;

@@ -112,15 +112,15 @@ impl ShieldedPool {
     fn key_hash(&self) -> KeyHash {
         use penumbra_component::shielded_pool::state_key;
         match self {
-            ShieldedPool::Anchor { height } => state_key::anchor_by_height(height),
-            ShieldedPool::BlockAnchor { height } => state_key::block_anchor_by_height(height),
-            ShieldedPool::EpochAnchor { epoch } => state_key::epoch_anchor_by_index(epoch),
+            ShieldedPool::Anchor { height } => state_key::anchor_by_height(*height),
+            ShieldedPool::BlockAnchor { height } => state_key::block_anchor_by_height(*height),
+            ShieldedPool::EpochAnchor { epoch } => state_key::epoch_anchor_by_index(*epoch),
             ShieldedPool::CompactBlock { height } => state_key::compact_block(*height),
             ShieldedPool::Scheduled { epoch } => state_key::scheduled_to_apply(*epoch),
-            ShieldedPool::Commitment { commitment } => state_key::note_source(commitment),
-            ShieldedPool::Nullifier { nullifier } => state_key::spent_nullifier_lookup(nullifier),
+            ShieldedPool::Commitment { commitment } => state_key::note_source(*commitment),
+            ShieldedPool::Nullifier { nullifier } => state_key::spent_nullifier_lookup(*nullifier),
             ShieldedPool::QuarantinedNullifier { nullifier } => {
-                state_key::quarantined_spent_nullifier_lookup(nullifier)
+                state_key::quarantined_spent_nullifier_lookup(*nullifier)
             }
         }
     }
