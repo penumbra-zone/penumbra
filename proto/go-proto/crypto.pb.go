@@ -67,6 +67,53 @@ func (x *Address) GetInner() []byte {
 	return nil
 }
 
+type SpendKey struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Inner []byte `protobuf:"bytes,1,opt,name=inner,proto3" json:"inner,omitempty"`
+}
+
+func (x *SpendKey) Reset() {
+	*x = SpendKey{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_crypto_proto_msgTypes[1]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *SpendKey) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SpendKey) ProtoMessage() {}
+
+func (x *SpendKey) ProtoReflect() protoreflect.Message {
+	mi := &file_crypto_proto_msgTypes[1]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SpendKey.ProtoReflect.Descriptor instead.
+func (*SpendKey) Descriptor() ([]byte, []int) {
+	return file_crypto_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *SpendKey) GetInner() []byte {
+	if x != nil {
+		return x.Inner
+	}
+	return nil
+}
+
 type FullViewingKey struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -78,7 +125,7 @@ type FullViewingKey struct {
 func (x *FullViewingKey) Reset() {
 	*x = FullViewingKey{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_crypto_proto_msgTypes[1]
+		mi := &file_crypto_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -91,7 +138,7 @@ func (x *FullViewingKey) String() string {
 func (*FullViewingKey) ProtoMessage() {}
 
 func (x *FullViewingKey) ProtoReflect() protoreflect.Message {
-	mi := &file_crypto_proto_msgTypes[1]
+	mi := &file_crypto_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -104,7 +151,7 @@ func (x *FullViewingKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FullViewingKey.ProtoReflect.Descriptor instead.
 func (*FullViewingKey) Descriptor() ([]byte, []int) {
-	return file_crypto_proto_rawDescGZIP(), []int{1}
+	return file_crypto_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *FullViewingKey) GetInner() []byte {
@@ -125,7 +172,7 @@ type FullViewingKeyHash struct {
 func (x *FullViewingKeyHash) Reset() {
 	*x = FullViewingKeyHash{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_crypto_proto_msgTypes[2]
+		mi := &file_crypto_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -138,7 +185,7 @@ func (x *FullViewingKeyHash) String() string {
 func (*FullViewingKeyHash) ProtoMessage() {}
 
 func (x *FullViewingKeyHash) ProtoReflect() protoreflect.Message {
-	mi := &file_crypto_proto_msgTypes[2]
+	mi := &file_crypto_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -151,7 +198,7 @@ func (x *FullViewingKeyHash) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FullViewingKeyHash.ProtoReflect.Descriptor instead.
 func (*FullViewingKeyHash) Descriptor() ([]byte, []int) {
-	return file_crypto_proto_rawDescGZIP(), []int{2}
+	return file_crypto_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *FullViewingKeyHash) GetInner() []byte {
@@ -172,7 +219,7 @@ type Diversifier struct {
 func (x *Diversifier) Reset() {
 	*x = Diversifier{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_crypto_proto_msgTypes[3]
+		mi := &file_crypto_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -185,7 +232,7 @@ func (x *Diversifier) String() string {
 func (*Diversifier) ProtoMessage() {}
 
 func (x *Diversifier) ProtoReflect() protoreflect.Message {
-	mi := &file_crypto_proto_msgTypes[3]
+	mi := &file_crypto_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -198,7 +245,7 @@ func (x *Diversifier) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Diversifier.ProtoReflect.Descriptor instead.
 func (*Diversifier) Descriptor() ([]byte, []int) {
-	return file_crypto_proto_rawDescGZIP(), []int{3}
+	return file_crypto_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Diversifier) GetInner() []byte {
@@ -219,7 +266,7 @@ type DiversifierIndex struct {
 func (x *DiversifierIndex) Reset() {
 	*x = DiversifierIndex{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_crypto_proto_msgTypes[4]
+		mi := &file_crypto_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -232,7 +279,7 @@ func (x *DiversifierIndex) String() string {
 func (*DiversifierIndex) ProtoMessage() {}
 
 func (x *DiversifierIndex) ProtoReflect() protoreflect.Message {
-	mi := &file_crypto_proto_msgTypes[4]
+	mi := &file_crypto_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -245,7 +292,7 @@ func (x *DiversifierIndex) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DiversifierIndex.ProtoReflect.Descriptor instead.
 func (*DiversifierIndex) Descriptor() ([]byte, []int) {
-	return file_crypto_proto_rawDescGZIP(), []int{4}
+	return file_crypto_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *DiversifierIndex) GetInner() []byte {
@@ -266,7 +313,7 @@ type NoteCommitment struct {
 func (x *NoteCommitment) Reset() {
 	*x = NoteCommitment{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_crypto_proto_msgTypes[5]
+		mi := &file_crypto_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -279,7 +326,7 @@ func (x *NoteCommitment) String() string {
 func (*NoteCommitment) ProtoMessage() {}
 
 func (x *NoteCommitment) ProtoReflect() protoreflect.Message {
-	mi := &file_crypto_proto_msgTypes[5]
+	mi := &file_crypto_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -292,7 +339,7 @@ func (x *NoteCommitment) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NoteCommitment.ProtoReflect.Descriptor instead.
 func (*NoteCommitment) Descriptor() ([]byte, []int) {
-	return file_crypto_proto_rawDescGZIP(), []int{5}
+	return file_crypto_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *NoteCommitment) GetInner() []byte {
@@ -313,7 +360,7 @@ type AssetId struct {
 func (x *AssetId) Reset() {
 	*x = AssetId{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_crypto_proto_msgTypes[6]
+		mi := &file_crypto_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -326,7 +373,7 @@ func (x *AssetId) String() string {
 func (*AssetId) ProtoMessage() {}
 
 func (x *AssetId) ProtoReflect() protoreflect.Message {
-	mi := &file_crypto_proto_msgTypes[6]
+	mi := &file_crypto_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -339,7 +386,7 @@ func (x *AssetId) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AssetId.ProtoReflect.Descriptor instead.
 func (*AssetId) Descriptor() ([]byte, []int) {
-	return file_crypto_proto_rawDescGZIP(), []int{6}
+	return file_crypto_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *AssetId) GetInner() []byte {
@@ -360,7 +407,7 @@ type Denom struct {
 func (x *Denom) Reset() {
 	*x = Denom{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_crypto_proto_msgTypes[7]
+		mi := &file_crypto_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -373,7 +420,7 @@ func (x *Denom) String() string {
 func (*Denom) ProtoMessage() {}
 
 func (x *Denom) ProtoReflect() protoreflect.Message {
-	mi := &file_crypto_proto_msgTypes[7]
+	mi := &file_crypto_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -386,7 +433,7 @@ func (x *Denom) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Denom.ProtoReflect.Descriptor instead.
 func (*Denom) Descriptor() ([]byte, []int) {
-	return file_crypto_proto_rawDescGZIP(), []int{7}
+	return file_crypto_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *Denom) GetDenom() string {
@@ -408,7 +455,7 @@ type Value struct {
 func (x *Value) Reset() {
 	*x = Value{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_crypto_proto_msgTypes[8]
+		mi := &file_crypto_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -421,7 +468,7 @@ func (x *Value) String() string {
 func (*Value) ProtoMessage() {}
 
 func (x *Value) ProtoReflect() protoreflect.Message {
-	mi := &file_crypto_proto_msgTypes[8]
+	mi := &file_crypto_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -434,7 +481,7 @@ func (x *Value) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Value.ProtoReflect.Descriptor instead.
 func (*Value) Descriptor() ([]byte, []int) {
-	return file_crypto_proto_rawDescGZIP(), []int{8}
+	return file_crypto_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *Value) GetAmount() uint64 {
@@ -462,7 +509,7 @@ type MerkleRoot struct {
 func (x *MerkleRoot) Reset() {
 	*x = MerkleRoot{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_crypto_proto_msgTypes[9]
+		mi := &file_crypto_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -475,7 +522,7 @@ func (x *MerkleRoot) String() string {
 func (*MerkleRoot) ProtoMessage() {}
 
 func (x *MerkleRoot) ProtoReflect() protoreflect.Message {
-	mi := &file_crypto_proto_msgTypes[9]
+	mi := &file_crypto_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -488,7 +535,7 @@ func (x *MerkleRoot) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MerkleRoot.ProtoReflect.Descriptor instead.
 func (*MerkleRoot) Descriptor() ([]byte, []int) {
-	return file_crypto_proto_rawDescGZIP(), []int{9}
+	return file_crypto_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *MerkleRoot) GetInner() []byte {
@@ -510,7 +557,7 @@ type Asset struct {
 func (x *Asset) Reset() {
 	*x = Asset{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_crypto_proto_msgTypes[10]
+		mi := &file_crypto_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -523,7 +570,7 @@ func (x *Asset) String() string {
 func (*Asset) ProtoMessage() {}
 
 func (x *Asset) ProtoReflect() protoreflect.Message {
-	mi := &file_crypto_proto_msgTypes[10]
+	mi := &file_crypto_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -536,7 +583,7 @@ func (x *Asset) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Asset.ProtoReflect.Descriptor instead.
 func (*Asset) Descriptor() ([]byte, []int) {
-	return file_crypto_proto_rawDescGZIP(), []int{10}
+	return file_crypto_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *Asset) GetId() *AssetId {
@@ -565,7 +612,7 @@ type IdentityKey struct {
 func (x *IdentityKey) Reset() {
 	*x = IdentityKey{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_crypto_proto_msgTypes[11]
+		mi := &file_crypto_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -578,7 +625,7 @@ func (x *IdentityKey) String() string {
 func (*IdentityKey) ProtoMessage() {}
 
 func (x *IdentityKey) ProtoReflect() protoreflect.Message {
-	mi := &file_crypto_proto_msgTypes[11]
+	mi := &file_crypto_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -591,7 +638,7 @@ func (x *IdentityKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IdentityKey.ProtoReflect.Descriptor instead.
 func (*IdentityKey) Descriptor() ([]byte, []int) {
-	return file_crypto_proto_rawDescGZIP(), []int{11}
+	return file_crypto_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *IdentityKey) GetIk() []byte {
@@ -606,19 +653,16 @@ type Note struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// We have a hand-rolled binary encoding for note contents that's more
-	// compact than a proto and guaranteed to be constant-size (unlike a proto,
-	// which uses variable-length encodings).  We use it here, so the "real"
-	// parsing will happen in the conversion to the domain type.
-	//
-	// TODO(hdevalence) -- plausible justification, is it actually a good one?
-	Inner []byte `protobuf:"bytes,1,opt,name=inner,proto3" json:"inner,omitempty"`
+	Value           *Value       `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
+	NoteBlinding    []byte       `protobuf:"bytes,2,opt,name=note_blinding,json=noteBlinding,proto3" json:"note_blinding,omitempty"`
+	Diversifier     *Diversifier `protobuf:"bytes,3,opt,name=diversifier,proto3" json:"diversifier,omitempty"`
+	TransmissionKey []byte       `protobuf:"bytes,4,opt,name=transmission_key,json=transmissionKey,proto3" json:"transmission_key,omitempty"`
 }
 
 func (x *Note) Reset() {
 	*x = Note{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_crypto_proto_msgTypes[12]
+		mi := &file_crypto_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -631,7 +675,7 @@ func (x *Note) String() string {
 func (*Note) ProtoMessage() {}
 
 func (x *Note) ProtoReflect() protoreflect.Message {
-	mi := &file_crypto_proto_msgTypes[12]
+	mi := &file_crypto_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -644,12 +688,33 @@ func (x *Note) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Note.ProtoReflect.Descriptor instead.
 func (*Note) Descriptor() ([]byte, []int) {
-	return file_crypto_proto_rawDescGZIP(), []int{12}
+	return file_crypto_proto_rawDescGZIP(), []int{13}
 }
 
-func (x *Note) GetInner() []byte {
+func (x *Note) GetValue() *Value {
 	if x != nil {
-		return x.Inner
+		return x.Value
+	}
+	return nil
+}
+
+func (x *Note) GetNoteBlinding() []byte {
+	if x != nil {
+		return x.NoteBlinding
+	}
+	return nil
+}
+
+func (x *Note) GetDiversifier() *Diversifier {
+	if x != nil {
+		return x.Diversifier
+	}
+	return nil
+}
+
+func (x *Note) GetTransmissionKey() []byte {
+	if x != nil {
+		return x.TransmissionKey
 	}
 	return nil
 }
@@ -665,7 +730,7 @@ type Nullifier struct {
 func (x *Nullifier) Reset() {
 	*x = Nullifier{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_crypto_proto_msgTypes[13]
+		mi := &file_crypto_proto_msgTypes[14]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -678,7 +743,7 @@ func (x *Nullifier) String() string {
 func (*Nullifier) ProtoMessage() {}
 
 func (x *Nullifier) ProtoReflect() protoreflect.Message {
-	mi := &file_crypto_proto_msgTypes[13]
+	mi := &file_crypto_proto_msgTypes[14]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -691,7 +756,7 @@ func (x *Nullifier) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Nullifier.ProtoReflect.Descriptor instead.
 func (*Nullifier) Descriptor() ([]byte, []int) {
-	return file_crypto_proto_rawDescGZIP(), []int{13}
+	return file_crypto_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *Nullifier) GetInner() []byte {
@@ -701,37 +766,31 @@ func (x *Nullifier) GetInner() []byte {
 	return nil
 }
 
-// An authentication path from a note commitment to the root of the note commitment tree.
-//
-// TODO: update this when migrating to TCT
-// copied from transparent_proofs
-type AuthPath struct {
+type SpendAuthSignature struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	NoteCommitment *NoteCommitment   `protobuf:"bytes,1,opt,name=note_commitment,json=noteCommitment,proto3" json:"note_commitment,omitempty"`
-	Position       uint32            `protobuf:"varint,2,opt,name=position,proto3" json:"position,omitempty"`
-	Path           []*NoteCommitment `protobuf:"bytes,3,rep,name=path,proto3" json:"path,omitempty"`
+	Inner []byte `protobuf:"bytes,1,opt,name=inner,proto3" json:"inner,omitempty"`
 }
 
-func (x *AuthPath) Reset() {
-	*x = AuthPath{}
+func (x *SpendAuthSignature) Reset() {
+	*x = SpendAuthSignature{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_crypto_proto_msgTypes[14]
+		mi := &file_crypto_proto_msgTypes[15]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *AuthPath) String() string {
+func (x *SpendAuthSignature) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*AuthPath) ProtoMessage() {}
+func (*SpendAuthSignature) ProtoMessage() {}
 
-func (x *AuthPath) ProtoReflect() protoreflect.Message {
-	mi := &file_crypto_proto_msgTypes[14]
+func (x *SpendAuthSignature) ProtoReflect() protoreflect.Message {
+	mi := &file_crypto_proto_msgTypes[15]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -742,28 +801,258 @@ func (x *AuthPath) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use AuthPath.ProtoReflect.Descriptor instead.
-func (*AuthPath) Descriptor() ([]byte, []int) {
-	return file_crypto_proto_rawDescGZIP(), []int{14}
+// Deprecated: Use SpendAuthSignature.ProtoReflect.Descriptor instead.
+func (*SpendAuthSignature) Descriptor() ([]byte, []int) {
+	return file_crypto_proto_rawDescGZIP(), []int{15}
 }
 
-func (x *AuthPath) GetNoteCommitment() *NoteCommitment {
+func (x *SpendAuthSignature) GetInner() []byte {
+	if x != nil {
+		return x.Inner
+	}
+	return nil
+}
+
+type BindingSignature struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Inner []byte `protobuf:"bytes,1,opt,name=inner,proto3" json:"inner,omitempty"`
+}
+
+func (x *BindingSignature) Reset() {
+	*x = BindingSignature{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_crypto_proto_msgTypes[16]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *BindingSignature) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BindingSignature) ProtoMessage() {}
+
+func (x *BindingSignature) ProtoReflect() protoreflect.Message {
+	mi := &file_crypto_proto_msgTypes[16]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BindingSignature.ProtoReflect.Descriptor instead.
+func (*BindingSignature) Descriptor() ([]byte, []int) {
+	return file_crypto_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *BindingSignature) GetInner() []byte {
+	if x != nil {
+		return x.Inner
+	}
+	return nil
+}
+
+// The body of an output description, including only the minimal
+// data required to scan and process the output.
+type NotePayload struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The note commitment for the output note. 32 bytes.
+	NoteCommitment *NoteCommitment `protobuf:"bytes,1,opt,name=note_commitment,json=noteCommitment,proto3" json:"note_commitment,omitempty"`
+	// The encoding of an ephemeral public key. 32 bytes.
+	EphemeralKey []byte `protobuf:"bytes,2,opt,name=ephemeral_key,json=ephemeralKey,proto3" json:"ephemeral_key,omitempty"`
+	// An encryption of the newly created note.
+	// 132 = 1(type) + 11(d) + 8(amount) + 32(asset_id) + 32(rcm) + 32(pk_d) + 16(MAC) bytes.
+	EncryptedNote []byte `protobuf:"bytes,3,opt,name=encrypted_note,json=encryptedNote,proto3" json:"encrypted_note,omitempty"`
+}
+
+func (x *NotePayload) Reset() {
+	*x = NotePayload{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_crypto_proto_msgTypes[17]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *NotePayload) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NotePayload) ProtoMessage() {}
+
+func (x *NotePayload) ProtoReflect() protoreflect.Message {
+	mi := &file_crypto_proto_msgTypes[17]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NotePayload.ProtoReflect.Descriptor instead.
+func (*NotePayload) Descriptor() ([]byte, []int) {
+	return file_crypto_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *NotePayload) GetNoteCommitment() *NoteCommitment {
 	if x != nil {
 		return x.NoteCommitment
 	}
 	return nil
 }
 
-func (x *AuthPath) GetPosition() uint32 {
+func (x *NotePayload) GetEphemeralKey() []byte {
+	if x != nil {
+		return x.EphemeralKey
+	}
+	return nil
+}
+
+func (x *NotePayload) GetEncryptedNote() []byte {
+	if x != nil {
+		return x.EncryptedNote
+	}
+	return nil
+}
+
+// An authentication path from a note commitment to the root of the note commitment tree.
+type NoteCommitmentProof struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	NoteCommitment *NoteCommitment    `protobuf:"bytes,1,opt,name=note_commitment,json=noteCommitment,proto3" json:"note_commitment,omitempty"`
+	Position       uint64             `protobuf:"varint,2,opt,name=position,proto3" json:"position,omitempty"`
+	AuthPath       []*MerklePathChunk `protobuf:"bytes,3,rep,name=auth_path,json=authPath,proto3" json:"auth_path,omitempty"` // always length 24
+}
+
+func (x *NoteCommitmentProof) Reset() {
+	*x = NoteCommitmentProof{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_crypto_proto_msgTypes[18]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *NoteCommitmentProof) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NoteCommitmentProof) ProtoMessage() {}
+
+func (x *NoteCommitmentProof) ProtoReflect() protoreflect.Message {
+	mi := &file_crypto_proto_msgTypes[18]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NoteCommitmentProof.ProtoReflect.Descriptor instead.
+func (*NoteCommitmentProof) Descriptor() ([]byte, []int) {
+	return file_crypto_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *NoteCommitmentProof) GetNoteCommitment() *NoteCommitment {
+	if x != nil {
+		return x.NoteCommitment
+	}
+	return nil
+}
+
+func (x *NoteCommitmentProof) GetPosition() uint64 {
 	if x != nil {
 		return x.Position
 	}
 	return 0
 }
 
-func (x *AuthPath) GetPath() []*NoteCommitment {
+func (x *NoteCommitmentProof) GetAuthPath() []*MerklePathChunk {
 	if x != nil {
-		return x.Path
+		return x.AuthPath
+	}
+	return nil
+}
+
+// A set of 3 sibling hashes in the auth path for some note commitment.
+type MerklePathChunk struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Sibling_1 []byte `protobuf:"bytes,1,opt,name=sibling_1,json=sibling1,proto3" json:"sibling_1,omitempty"`
+	Sibling_2 []byte `protobuf:"bytes,2,opt,name=sibling_2,json=sibling2,proto3" json:"sibling_2,omitempty"`
+	Sibling_3 []byte `protobuf:"bytes,3,opt,name=sibling_3,json=sibling3,proto3" json:"sibling_3,omitempty"`
+}
+
+func (x *MerklePathChunk) Reset() {
+	*x = MerklePathChunk{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_crypto_proto_msgTypes[19]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *MerklePathChunk) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MerklePathChunk) ProtoMessage() {}
+
+func (x *MerklePathChunk) ProtoReflect() protoreflect.Message {
+	mi := &file_crypto_proto_msgTypes[19]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MerklePathChunk.ProtoReflect.Descriptor instead.
+func (*MerklePathChunk) Descriptor() ([]byte, []int) {
+	return file_crypto_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *MerklePathChunk) GetSibling_1() []byte {
+	if x != nil {
+		return x.Sibling_1
+	}
+	return nil
+}
+
+func (x *MerklePathChunk) GetSibling_2() []byte {
+	if x != nil {
+		return x.Sibling_2
+	}
+	return nil
+}
+
+func (x *MerklePathChunk) GetSibling_3() []byte {
+	if x != nil {
+		return x.Sibling_3
 	}
 	return nil
 }
@@ -775,57 +1064,93 @@ var file_crypto_proto_rawDesc = []byte{
 	0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x72, 0x79, 0x70, 0x74, 0x6f, 0x22,
 	0x1f, 0x0a, 0x07, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x12, 0x14, 0x0a, 0x05, 0x69, 0x6e,
 	0x6e, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x05, 0x69, 0x6e, 0x6e, 0x65, 0x72,
-	0x22, 0x26, 0x0a, 0x0e, 0x46, 0x75, 0x6c, 0x6c, 0x56, 0x69, 0x65, 0x77, 0x69, 0x6e, 0x67, 0x4b,
-	0x65, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x69, 0x6e, 0x6e, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x0c, 0x52, 0x05, 0x69, 0x6e, 0x6e, 0x65, 0x72, 0x22, 0x2a, 0x0a, 0x12, 0x46, 0x75, 0x6c, 0x6c,
-	0x56, 0x69, 0x65, 0x77, 0x69, 0x6e, 0x67, 0x4b, 0x65, 0x79, 0x48, 0x61, 0x73, 0x68, 0x12, 0x14,
-	0x0a, 0x05, 0x69, 0x6e, 0x6e, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x05, 0x69,
-	0x6e, 0x6e, 0x65, 0x72, 0x22, 0x23, 0x0a, 0x0b, 0x44, 0x69, 0x76, 0x65, 0x72, 0x73, 0x69, 0x66,
-	0x69, 0x65, 0x72, 0x12, 0x14, 0x0a, 0x05, 0x69, 0x6e, 0x6e, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01,
-	0x28, 0x0c, 0x52, 0x05, 0x69, 0x6e, 0x6e, 0x65, 0x72, 0x22, 0x28, 0x0a, 0x10, 0x44, 0x69, 0x76,
-	0x65, 0x72, 0x73, 0x69, 0x66, 0x69, 0x65, 0x72, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x12, 0x14, 0x0a,
-	0x05, 0x69, 0x6e, 0x6e, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x05, 0x69, 0x6e,
-	0x6e, 0x65, 0x72, 0x22, 0x26, 0x0a, 0x0e, 0x4e, 0x6f, 0x74, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x69,
-	0x74, 0x6d, 0x65, 0x6e, 0x74, 0x12, 0x14, 0x0a, 0x05, 0x69, 0x6e, 0x6e, 0x65, 0x72, 0x18, 0x01,
-	0x20, 0x01, 0x28, 0x0c, 0x52, 0x05, 0x69, 0x6e, 0x6e, 0x65, 0x72, 0x22, 0x1f, 0x0a, 0x07, 0x41,
-	0x73, 0x73, 0x65, 0x74, 0x49, 0x64, 0x12, 0x14, 0x0a, 0x05, 0x69, 0x6e, 0x6e, 0x65, 0x72, 0x18,
-	0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x05, 0x69, 0x6e, 0x6e, 0x65, 0x72, 0x22, 0x1d, 0x0a, 0x05,
-	0x44, 0x65, 0x6e, 0x6f, 0x6d, 0x12, 0x14, 0x0a, 0x05, 0x64, 0x65, 0x6e, 0x6f, 0x6d, 0x18, 0x01,
-	0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x64, 0x65, 0x6e, 0x6f, 0x6d, 0x22, 0x54, 0x0a, 0x05, 0x56,
-	0x61, 0x6c, 0x75, 0x65, 0x12, 0x16, 0x0a, 0x06, 0x61, 0x6d, 0x6f, 0x75, 0x6e, 0x74, 0x18, 0x01,
-	0x20, 0x01, 0x28, 0x04, 0x52, 0x06, 0x61, 0x6d, 0x6f, 0x75, 0x6e, 0x74, 0x12, 0x33, 0x0a, 0x08,
-	0x61, 0x73, 0x73, 0x65, 0x74, 0x5f, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x18,
-	0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x72, 0x79, 0x70, 0x74, 0x6f,
-	0x2e, 0x41, 0x73, 0x73, 0x65, 0x74, 0x49, 0x64, 0x52, 0x07, 0x61, 0x73, 0x73, 0x65, 0x74, 0x49,
-	0x64, 0x22, 0x22, 0x0a, 0x0a, 0x4d, 0x65, 0x72, 0x6b, 0x6c, 0x65, 0x52, 0x6f, 0x6f, 0x74, 0x12,
-	0x14, 0x0a, 0x05, 0x69, 0x6e, 0x6e, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x05,
-	0x69, 0x6e, 0x6e, 0x65, 0x72, 0x22, 0x5f, 0x0a, 0x05, 0x41, 0x73, 0x73, 0x65, 0x74, 0x12, 0x28,
-	0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x18, 0x2e, 0x70, 0x65, 0x6e,
-	0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x72, 0x79, 0x70, 0x74, 0x6f, 0x2e, 0x41, 0x73, 0x73,
-	0x65, 0x74, 0x49, 0x64, 0x52, 0x02, 0x69, 0x64, 0x12, 0x2c, 0x0a, 0x05, 0x64, 0x65, 0x6e, 0x6f,
-	0x6d, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62,
-	0x72, 0x61, 0x2e, 0x63, 0x72, 0x79, 0x70, 0x74, 0x6f, 0x2e, 0x44, 0x65, 0x6e, 0x6f, 0x6d, 0x52,
-	0x05, 0x64, 0x65, 0x6e, 0x6f, 0x6d, 0x22, 0x1d, 0x0a, 0x0b, 0x49, 0x64, 0x65, 0x6e, 0x74, 0x69,
-	0x74, 0x79, 0x4b, 0x65, 0x79, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x6b, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x0c, 0x52, 0x02, 0x69, 0x6b, 0x22, 0x1c, 0x0a, 0x04, 0x4e, 0x6f, 0x74, 0x65, 0x12, 0x14, 0x0a,
-	0x05, 0x69, 0x6e, 0x6e, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x05, 0x69, 0x6e,
-	0x6e, 0x65, 0x72, 0x22, 0x21, 0x0a, 0x09, 0x4e, 0x75, 0x6c, 0x6c, 0x69, 0x66, 0x69, 0x65, 0x72,
+	0x22, 0x20, 0x0a, 0x08, 0x53, 0x70, 0x65, 0x6e, 0x64, 0x4b, 0x65, 0x79, 0x12, 0x14, 0x0a, 0x05,
+	0x69, 0x6e, 0x6e, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x05, 0x69, 0x6e, 0x6e,
+	0x65, 0x72, 0x22, 0x26, 0x0a, 0x0e, 0x46, 0x75, 0x6c, 0x6c, 0x56, 0x69, 0x65, 0x77, 0x69, 0x6e,
+	0x67, 0x4b, 0x65, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x69, 0x6e, 0x6e, 0x65, 0x72, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x0c, 0x52, 0x05, 0x69, 0x6e, 0x6e, 0x65, 0x72, 0x22, 0x2a, 0x0a, 0x12, 0x46, 0x75,
+	0x6c, 0x6c, 0x56, 0x69, 0x65, 0x77, 0x69, 0x6e, 0x67, 0x4b, 0x65, 0x79, 0x48, 0x61, 0x73, 0x68,
 	0x12, 0x14, 0x0a, 0x05, 0x69, 0x6e, 0x6e, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52,
-	0x05, 0x69, 0x6e, 0x6e, 0x65, 0x72, 0x22, 0xa5, 0x01, 0x0a, 0x08, 0x41, 0x75, 0x74, 0x68, 0x50,
-	0x61, 0x74, 0x68, 0x12, 0x48, 0x0a, 0x0f, 0x6e, 0x6f, 0x74, 0x65, 0x5f, 0x63, 0x6f, 0x6d, 0x6d,
-	0x69, 0x74, 0x6d, 0x65, 0x6e, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1f, 0x2e, 0x70,
-	0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x72, 0x79, 0x70, 0x74, 0x6f, 0x2e, 0x4e,
-	0x6f, 0x74, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x6d, 0x65, 0x6e, 0x74, 0x52, 0x0e, 0x6e,
-	0x6f, 0x74, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x6d, 0x65, 0x6e, 0x74, 0x12, 0x1a, 0x0a,
-	0x08, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0d, 0x52,
-	0x08, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x33, 0x0a, 0x04, 0x70, 0x61, 0x74,
-	0x68, 0x18, 0x03, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1f, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62,
-	0x72, 0x61, 0x2e, 0x63, 0x72, 0x79, 0x70, 0x74, 0x6f, 0x2e, 0x4e, 0x6f, 0x74, 0x65, 0x43, 0x6f,
-	0x6d, 0x6d, 0x69, 0x74, 0x6d, 0x65, 0x6e, 0x74, 0x52, 0x04, 0x70, 0x61, 0x74, 0x68, 0x42, 0x32,
-	0x5a, 0x30, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x70, 0x65, 0x6e,
-	0x75, 0x6d, 0x62, 0x72, 0x61, 0x2d, 0x7a, 0x6f, 0x6e, 0x65, 0x2f, 0x70, 0x65, 0x6e, 0x75, 0x6d,
-	0x62, 0x72, 0x61, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x67, 0x6f, 0x2d, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x05, 0x69, 0x6e, 0x6e, 0x65, 0x72, 0x22, 0x23, 0x0a, 0x0b, 0x44, 0x69, 0x76, 0x65, 0x72, 0x73,
+	0x69, 0x66, 0x69, 0x65, 0x72, 0x12, 0x14, 0x0a, 0x05, 0x69, 0x6e, 0x6e, 0x65, 0x72, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x0c, 0x52, 0x05, 0x69, 0x6e, 0x6e, 0x65, 0x72, 0x22, 0x28, 0x0a, 0x10, 0x44,
+	0x69, 0x76, 0x65, 0x72, 0x73, 0x69, 0x66, 0x69, 0x65, 0x72, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x12,
+	0x14, 0x0a, 0x05, 0x69, 0x6e, 0x6e, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x05,
+	0x69, 0x6e, 0x6e, 0x65, 0x72, 0x22, 0x26, 0x0a, 0x0e, 0x4e, 0x6f, 0x74, 0x65, 0x43, 0x6f, 0x6d,
+	0x6d, 0x69, 0x74, 0x6d, 0x65, 0x6e, 0x74, 0x12, 0x14, 0x0a, 0x05, 0x69, 0x6e, 0x6e, 0x65, 0x72,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x05, 0x69, 0x6e, 0x6e, 0x65, 0x72, 0x22, 0x1f, 0x0a,
+	0x07, 0x41, 0x73, 0x73, 0x65, 0x74, 0x49, 0x64, 0x12, 0x14, 0x0a, 0x05, 0x69, 0x6e, 0x6e, 0x65,
+	0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x05, 0x69, 0x6e, 0x6e, 0x65, 0x72, 0x22, 0x1d,
+	0x0a, 0x05, 0x44, 0x65, 0x6e, 0x6f, 0x6d, 0x12, 0x14, 0x0a, 0x05, 0x64, 0x65, 0x6e, 0x6f, 0x6d,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x64, 0x65, 0x6e, 0x6f, 0x6d, 0x22, 0x54, 0x0a,
+	0x05, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x12, 0x16, 0x0a, 0x06, 0x61, 0x6d, 0x6f, 0x75, 0x6e, 0x74,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x06, 0x61, 0x6d, 0x6f, 0x75, 0x6e, 0x74, 0x12, 0x33,
+	0x0a, 0x08, 0x61, 0x73, 0x73, 0x65, 0x74, 0x5f, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x18, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x72, 0x79, 0x70,
+	0x74, 0x6f, 0x2e, 0x41, 0x73, 0x73, 0x65, 0x74, 0x49, 0x64, 0x52, 0x07, 0x61, 0x73, 0x73, 0x65,
+	0x74, 0x49, 0x64, 0x22, 0x22, 0x0a, 0x0a, 0x4d, 0x65, 0x72, 0x6b, 0x6c, 0x65, 0x52, 0x6f, 0x6f,
+	0x74, 0x12, 0x14, 0x0a, 0x05, 0x69, 0x6e, 0x6e, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c,
+	0x52, 0x05, 0x69, 0x6e, 0x6e, 0x65, 0x72, 0x22, 0x5f, 0x0a, 0x05, 0x41, 0x73, 0x73, 0x65, 0x74,
+	0x12, 0x28, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x18, 0x2e, 0x70,
+	0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x72, 0x79, 0x70, 0x74, 0x6f, 0x2e, 0x41,
+	0x73, 0x73, 0x65, 0x74, 0x49, 0x64, 0x52, 0x02, 0x69, 0x64, 0x12, 0x2c, 0x0a, 0x05, 0x64, 0x65,
+	0x6e, 0x6f, 0x6d, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x70, 0x65, 0x6e, 0x75,
+	0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x72, 0x79, 0x70, 0x74, 0x6f, 0x2e, 0x44, 0x65, 0x6e, 0x6f,
+	0x6d, 0x52, 0x05, 0x64, 0x65, 0x6e, 0x6f, 0x6d, 0x22, 0x1d, 0x0a, 0x0b, 0x49, 0x64, 0x65, 0x6e,
+	0x74, 0x69, 0x74, 0x79, 0x4b, 0x65, 0x79, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x6b, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x0c, 0x52, 0x02, 0x69, 0x6b, 0x22, 0xc4, 0x01, 0x0a, 0x04, 0x4e, 0x6f, 0x74, 0x65,
+	0x12, 0x2c, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32,
+	0x16, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x72, 0x79, 0x70, 0x74,
+	0x6f, 0x2e, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x12, 0x23,
+	0x0a, 0x0d, 0x6e, 0x6f, 0x74, 0x65, 0x5f, 0x62, 0x6c, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x0c, 0x6e, 0x6f, 0x74, 0x65, 0x42, 0x6c, 0x69, 0x6e, 0x64,
+	0x69, 0x6e, 0x67, 0x12, 0x3e, 0x0a, 0x0b, 0x64, 0x69, 0x76, 0x65, 0x72, 0x73, 0x69, 0x66, 0x69,
+	0x65, 0x72, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d,
+	0x62, 0x72, 0x61, 0x2e, 0x63, 0x72, 0x79, 0x70, 0x74, 0x6f, 0x2e, 0x44, 0x69, 0x76, 0x65, 0x72,
+	0x73, 0x69, 0x66, 0x69, 0x65, 0x72, 0x52, 0x0b, 0x64, 0x69, 0x76, 0x65, 0x72, 0x73, 0x69, 0x66,
+	0x69, 0x65, 0x72, 0x12, 0x29, 0x0a, 0x10, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x6d, 0x69, 0x73, 0x73,
+	0x69, 0x6f, 0x6e, 0x5f, 0x6b, 0x65, 0x79, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x0f, 0x74,
+	0x72, 0x61, 0x6e, 0x73, 0x6d, 0x69, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x4b, 0x65, 0x79, 0x22, 0x21,
+	0x0a, 0x09, 0x4e, 0x75, 0x6c, 0x6c, 0x69, 0x66, 0x69, 0x65, 0x72, 0x12, 0x14, 0x0a, 0x05, 0x69,
+	0x6e, 0x6e, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x05, 0x69, 0x6e, 0x6e, 0x65,
+	0x72, 0x22, 0x2a, 0x0a, 0x12, 0x53, 0x70, 0x65, 0x6e, 0x64, 0x41, 0x75, 0x74, 0x68, 0x53, 0x69,
+	0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x69, 0x6e, 0x6e, 0x65, 0x72,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x05, 0x69, 0x6e, 0x6e, 0x65, 0x72, 0x22, 0x28, 0x0a,
+	0x10, 0x42, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x53, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72,
+	0x65, 0x12, 0x14, 0x0a, 0x05, 0x69, 0x6e, 0x6e, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c,
+	0x52, 0x05, 0x69, 0x6e, 0x6e, 0x65, 0x72, 0x22, 0xa3, 0x01, 0x0a, 0x0b, 0x4e, 0x6f, 0x74, 0x65,
+	0x50, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x12, 0x48, 0x0a, 0x0f, 0x6e, 0x6f, 0x74, 0x65, 0x5f,
+	0x63, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x6d, 0x65, 0x6e, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x1f, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x72, 0x79, 0x70,
+	0x74, 0x6f, 0x2e, 0x4e, 0x6f, 0x74, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x6d, 0x65, 0x6e,
+	0x74, 0x52, 0x0e, 0x6e, 0x6f, 0x74, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x6d, 0x65, 0x6e,
+	0x74, 0x12, 0x23, 0x0a, 0x0d, 0x65, 0x70, 0x68, 0x65, 0x6d, 0x65, 0x72, 0x61, 0x6c, 0x5f, 0x6b,
+	0x65, 0x79, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x0c, 0x65, 0x70, 0x68, 0x65, 0x6d, 0x65,
+	0x72, 0x61, 0x6c, 0x4b, 0x65, 0x79, 0x12, 0x25, 0x0a, 0x0e, 0x65, 0x6e, 0x63, 0x72, 0x79, 0x70,
+	0x74, 0x65, 0x64, 0x5f, 0x6e, 0x6f, 0x74, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x0d,
+	0x65, 0x6e, 0x63, 0x72, 0x79, 0x70, 0x74, 0x65, 0x64, 0x4e, 0x6f, 0x74, 0x65, 0x22, 0xba, 0x01,
+	0x0a, 0x13, 0x4e, 0x6f, 0x74, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x6d, 0x65, 0x6e, 0x74,
+	0x50, 0x72, 0x6f, 0x6f, 0x66, 0x12, 0x48, 0x0a, 0x0f, 0x6e, 0x6f, 0x74, 0x65, 0x5f, 0x63, 0x6f,
+	0x6d, 0x6d, 0x69, 0x74, 0x6d, 0x65, 0x6e, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1f,
+	0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x72, 0x79, 0x70, 0x74, 0x6f,
+	0x2e, 0x4e, 0x6f, 0x74, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x6d, 0x65, 0x6e, 0x74, 0x52,
+	0x0e, 0x6e, 0x6f, 0x74, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x6d, 0x65, 0x6e, 0x74, 0x12,
+	0x1a, 0x0a, 0x08, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28,
+	0x04, 0x52, 0x08, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x3d, 0x0a, 0x09, 0x61,
+	0x75, 0x74, 0x68, 0x5f, 0x70, 0x61, 0x74, 0x68, 0x18, 0x03, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x20,
+	0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x72, 0x79, 0x70, 0x74, 0x6f,
+	0x2e, 0x4d, 0x65, 0x72, 0x6b, 0x6c, 0x65, 0x50, 0x61, 0x74, 0x68, 0x43, 0x68, 0x75, 0x6e, 0x6b,
+	0x52, 0x08, 0x61, 0x75, 0x74, 0x68, 0x50, 0x61, 0x74, 0x68, 0x22, 0x68, 0x0a, 0x0f, 0x4d, 0x65,
+	0x72, 0x6b, 0x6c, 0x65, 0x50, 0x61, 0x74, 0x68, 0x43, 0x68, 0x75, 0x6e, 0x6b, 0x12, 0x1b, 0x0a,
+	0x09, 0x73, 0x69, 0x62, 0x6c, 0x69, 0x6e, 0x67, 0x5f, 0x31, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c,
+	0x52, 0x08, 0x73, 0x69, 0x62, 0x6c, 0x69, 0x6e, 0x67, 0x31, 0x12, 0x1b, 0x0a, 0x09, 0x73, 0x69,
+	0x62, 0x6c, 0x69, 0x6e, 0x67, 0x5f, 0x32, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x08, 0x73,
+	0x69, 0x62, 0x6c, 0x69, 0x6e, 0x67, 0x32, 0x12, 0x1b, 0x0a, 0x09, 0x73, 0x69, 0x62, 0x6c, 0x69,
+	0x6e, 0x67, 0x5f, 0x33, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x08, 0x73, 0x69, 0x62, 0x6c,
+	0x69, 0x6e, 0x67, 0x33, 0x42, 0x32, 0x5a, 0x30, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63,
+	0x6f, 0x6d, 0x2f, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2d, 0x7a, 0x6f, 0x6e, 0x65,
+	0x2f, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f,
+	0x67, 0x6f, 0x2d, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -840,35 +1165,43 @@ func file_crypto_proto_rawDescGZIP() []byte {
 	return file_crypto_proto_rawDescData
 }
 
-var file_crypto_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_crypto_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_crypto_proto_goTypes = []interface{}{
-	(*Address)(nil),            // 0: penumbra.crypto.Address
-	(*FullViewingKey)(nil),     // 1: penumbra.crypto.FullViewingKey
-	(*FullViewingKeyHash)(nil), // 2: penumbra.crypto.FullViewingKeyHash
-	(*Diversifier)(nil),        // 3: penumbra.crypto.Diversifier
-	(*DiversifierIndex)(nil),   // 4: penumbra.crypto.DiversifierIndex
-	(*NoteCommitment)(nil),     // 5: penumbra.crypto.NoteCommitment
-	(*AssetId)(nil),            // 6: penumbra.crypto.AssetId
-	(*Denom)(nil),              // 7: penumbra.crypto.Denom
-	(*Value)(nil),              // 8: penumbra.crypto.Value
-	(*MerkleRoot)(nil),         // 9: penumbra.crypto.MerkleRoot
-	(*Asset)(nil),              // 10: penumbra.crypto.Asset
-	(*IdentityKey)(nil),        // 11: penumbra.crypto.IdentityKey
-	(*Note)(nil),               // 12: penumbra.crypto.Note
-	(*Nullifier)(nil),          // 13: penumbra.crypto.Nullifier
-	(*AuthPath)(nil),           // 14: penumbra.crypto.AuthPath
+	(*Address)(nil),             // 0: penumbra.crypto.Address
+	(*SpendKey)(nil),            // 1: penumbra.crypto.SpendKey
+	(*FullViewingKey)(nil),      // 2: penumbra.crypto.FullViewingKey
+	(*FullViewingKeyHash)(nil),  // 3: penumbra.crypto.FullViewingKeyHash
+	(*Diversifier)(nil),         // 4: penumbra.crypto.Diversifier
+	(*DiversifierIndex)(nil),    // 5: penumbra.crypto.DiversifierIndex
+	(*NoteCommitment)(nil),      // 6: penumbra.crypto.NoteCommitment
+	(*AssetId)(nil),             // 7: penumbra.crypto.AssetId
+	(*Denom)(nil),               // 8: penumbra.crypto.Denom
+	(*Value)(nil),               // 9: penumbra.crypto.Value
+	(*MerkleRoot)(nil),          // 10: penumbra.crypto.MerkleRoot
+	(*Asset)(nil),               // 11: penumbra.crypto.Asset
+	(*IdentityKey)(nil),         // 12: penumbra.crypto.IdentityKey
+	(*Note)(nil),                // 13: penumbra.crypto.Note
+	(*Nullifier)(nil),           // 14: penumbra.crypto.Nullifier
+	(*SpendAuthSignature)(nil),  // 15: penumbra.crypto.SpendAuthSignature
+	(*BindingSignature)(nil),    // 16: penumbra.crypto.BindingSignature
+	(*NotePayload)(nil),         // 17: penumbra.crypto.NotePayload
+	(*NoteCommitmentProof)(nil), // 18: penumbra.crypto.NoteCommitmentProof
+	(*MerklePathChunk)(nil),     // 19: penumbra.crypto.MerklePathChunk
 }
 var file_crypto_proto_depIdxs = []int32{
-	6, // 0: penumbra.crypto.Value.asset_id:type_name -> penumbra.crypto.AssetId
-	6, // 1: penumbra.crypto.Asset.id:type_name -> penumbra.crypto.AssetId
-	7, // 2: penumbra.crypto.Asset.denom:type_name -> penumbra.crypto.Denom
-	5, // 3: penumbra.crypto.AuthPath.note_commitment:type_name -> penumbra.crypto.NoteCommitment
-	5, // 4: penumbra.crypto.AuthPath.path:type_name -> penumbra.crypto.NoteCommitment
-	5, // [5:5] is the sub-list for method output_type
-	5, // [5:5] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	7,  // 0: penumbra.crypto.Value.asset_id:type_name -> penumbra.crypto.AssetId
+	7,  // 1: penumbra.crypto.Asset.id:type_name -> penumbra.crypto.AssetId
+	8,  // 2: penumbra.crypto.Asset.denom:type_name -> penumbra.crypto.Denom
+	9,  // 3: penumbra.crypto.Note.value:type_name -> penumbra.crypto.Value
+	4,  // 4: penumbra.crypto.Note.diversifier:type_name -> penumbra.crypto.Diversifier
+	6,  // 5: penumbra.crypto.NotePayload.note_commitment:type_name -> penumbra.crypto.NoteCommitment
+	6,  // 6: penumbra.crypto.NoteCommitmentProof.note_commitment:type_name -> penumbra.crypto.NoteCommitment
+	19, // 7: penumbra.crypto.NoteCommitmentProof.auth_path:type_name -> penumbra.crypto.MerklePathChunk
+	8,  // [8:8] is the sub-list for method output_type
+	8,  // [8:8] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_crypto_proto_init() }
@@ -890,7 +1223,7 @@ func file_crypto_proto_init() {
 			}
 		}
 		file_crypto_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*FullViewingKey); i {
+			switch v := v.(*SpendKey); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -902,7 +1235,7 @@ func file_crypto_proto_init() {
 			}
 		}
 		file_crypto_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*FullViewingKeyHash); i {
+			switch v := v.(*FullViewingKey); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -914,7 +1247,7 @@ func file_crypto_proto_init() {
 			}
 		}
 		file_crypto_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Diversifier); i {
+			switch v := v.(*FullViewingKeyHash); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -926,7 +1259,7 @@ func file_crypto_proto_init() {
 			}
 		}
 		file_crypto_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DiversifierIndex); i {
+			switch v := v.(*Diversifier); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -938,7 +1271,7 @@ func file_crypto_proto_init() {
 			}
 		}
 		file_crypto_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*NoteCommitment); i {
+			switch v := v.(*DiversifierIndex); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -950,7 +1283,7 @@ func file_crypto_proto_init() {
 			}
 		}
 		file_crypto_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*AssetId); i {
+			switch v := v.(*NoteCommitment); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -962,7 +1295,7 @@ func file_crypto_proto_init() {
 			}
 		}
 		file_crypto_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Denom); i {
+			switch v := v.(*AssetId); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -974,7 +1307,7 @@ func file_crypto_proto_init() {
 			}
 		}
 		file_crypto_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Value); i {
+			switch v := v.(*Denom); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -986,7 +1319,7 @@ func file_crypto_proto_init() {
 			}
 		}
 		file_crypto_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MerkleRoot); i {
+			switch v := v.(*Value); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -998,7 +1331,7 @@ func file_crypto_proto_init() {
 			}
 		}
 		file_crypto_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Asset); i {
+			switch v := v.(*MerkleRoot); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1010,7 +1343,7 @@ func file_crypto_proto_init() {
 			}
 		}
 		file_crypto_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*IdentityKey); i {
+			switch v := v.(*Asset); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1022,7 +1355,7 @@ func file_crypto_proto_init() {
 			}
 		}
 		file_crypto_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Note); i {
+			switch v := v.(*IdentityKey); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1034,7 +1367,7 @@ func file_crypto_proto_init() {
 			}
 		}
 		file_crypto_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Nullifier); i {
+			switch v := v.(*Note); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1046,7 +1379,67 @@ func file_crypto_proto_init() {
 			}
 		}
 		file_crypto_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*AuthPath); i {
+			switch v := v.(*Nullifier); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_crypto_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SpendAuthSignature); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_crypto_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*BindingSignature); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_crypto_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*NotePayload); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_crypto_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*NoteCommitmentProof); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_crypto_proto_msgTypes[19].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*MerklePathChunk); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1064,7 +1457,7 @@ func file_crypto_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_crypto_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   15,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
