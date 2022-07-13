@@ -437,12 +437,23 @@ impl ShieldedPool {
         let compact_block = std::mem::take(&mut self.compact_block);
         let height = self.height().await;
 
-        // Write the CompactBlock:
-        self.state.set_compact_block(compact_block).await;
-        // and the note commitment tree data and anchor:
+        // Write the note commitment tree anchor:
         self.state
             .set_nct_anchor(height, self.note_commitment_tree.root())
             .await;
+        // Write the current block anchor:
+        self.state
+            .set_nct_block_anchor(height, compact_block.block_root)
+            .await;
+        // Write the current epoch anchor, if on an epoch boundary:
+        if let Some(epoch_root) = compact_block.epoch_root {
+            let epoch_duration = self.epoch_duration().await;
+            let index = Epoch::from_height(height, epoch_duration).index;
+            self.state.set_nct_epoch_anchor(index, epoch_root).await;
+        }
+
+        // Write the CompactBlock:
+        self.state.set_compact_block(compact_block).await;
 
         Ok(())
     }
@@ -763,6 +774,38 @@ pub trait View: StateExt {
             // We don't use the value for validity checks, but writing the height
             // here lets us find out what height the anchor was for.
             height,
+        )
+        .await;
+    }
+
+    async fn set_nct_block_anchor(&self, height: u64, nct_block_anchor: tct::builder::block::Root) {
+        tracing::debug!(?height, ?nct_block_anchor, "writing block anchor");
+
+        // Write the NCT block anchor both as a value, so we can look it up,
+        self.put_domain(state_key::block_anchor_by_height(height), nct_block_anchor)
+            .await;
+        // and as a key, so we can query for it.
+        self.put_proto(
+            state_key::block_anchor_lookup(nct_block_anchor),
+            // We don't use the value for validity checks, but writing the height
+            // here lets us find out what height the anchor was for.
+            height,
+        )
+        .await;
+    }
+
+    async fn set_nct_epoch_anchor(&self, index: u64, nct_block_anchor: tct::builder::epoch::Root) {
+        tracing::debug!(?index, ?nct_block_anchor, "writing epoch anchor");
+
+        // Write the NCT epoch anchor both as a value, so we can look it up,
+        self.put_domain(state_key::epoch_anchor_by_index(index), nct_block_anchor)
+            .await;
+        // and as a key, so we can query for it.
+        self.put_proto(
+            state_key::epoch_anchor_lookup(nct_block_anchor),
+            // We don't use the value for validity checks, but writing the height
+            // here lets us find out what height the anchor was for.
+            index,
         )
         .await;
     }

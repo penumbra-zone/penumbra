@@ -33,8 +33,8 @@ pub fn anchor_lookup(anchor: Root) -> KeyHash {
     format!("shielded_pool/valid_anchors/{}", anchor).into()
 }
 
-pub fn epoch_anchor_by_height(height: u64) -> KeyHash {
-    format!("shielded_pool/epoch_anchor/{}", height).into()
+pub fn epoch_anchor_by_index(index: u64) -> KeyHash {
+    format!("shielded_pool/epoch_anchor/{}", index).into()
 }
 
 pub fn epoch_anchor_lookup(anchor: epoch::Root) -> KeyHash {
