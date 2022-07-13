@@ -389,8 +389,8 @@ impl TryFrom<&[u8]> for OutputProof {
 /// TODO: currently a placeholder
 #[derive(Clone, Debug)]
 pub struct SwapProof {
-    // Inclusion proof for the note commitment.
-    pub note_commitment_proof: tct::Proof,
+    // Block inclusion proof for the note commitment.
+    pub note_commitment_block_proof: tct::builder::block::Proof,
     // The diversified base for the address.
     pub g_d: decaf377::Element,
     // The transmission key for the address.
@@ -419,7 +419,7 @@ impl SwapProof {
     /// * the randomized verification spend key,
     pub fn verify(
         &self,
-        anchor: tct::Root,
+        anchor: tct::builder::block::Root,
         value_commitment: value::Commitment,
         nullifier: Nullifier,
         rk: VerificationKey<SpendAuth>,
@@ -430,7 +430,7 @@ impl SwapProof {
             let note_commitment_test =
                 note::commitment(self.note_blinding, self.value, self.g_d, transmission_key_s);
 
-            if self.note_commitment_proof.commitment() != note_commitment_test {
+            if self.note_commitment_block_proof.commitment() != note_commitment_test {
                 return Err(Error::NoteCommitmentMismatch);
             }
         } else {
@@ -438,7 +438,7 @@ impl SwapProof {
         }
 
         // Merkle path integrity.
-        self.note_commitment_proof
+        self.note_commitment_block_proof
             .verify(anchor)
             .map_err(|_| Error::MerkleRootMismatch)?;
 
@@ -457,8 +457,8 @@ impl SwapProof {
         // Nullifier integrity.
         if nullifier
             != self.nk.derive_nullifier(
-                self.note_commitment_proof.position(),
-                &self.note_commitment_proof.commitment(),
+                self.note_commitment_block_proof.position(),
+                &self.note_commitment_block_proof.commitment(),
             )
         {
             return Err(Error::BadNullifier);
@@ -509,7 +509,7 @@ impl From<SwapProof> for transparent_proofs::SwapProof {
         let ak_bytes: [u8; 32] = msg.ak.into();
         let nk_bytes: [u8; 32] = msg.nk.0.to_bytes();
         transparent_proofs::SwapProof {
-            note_commitment_proof: Some(msg.note_commitment_proof.into()),
+            note_commitment_block_proof: Some(msg.note_commitment_block_proof.into()),
             g_d: msg.g_d.compress().0.to_vec(),
             pk_d: msg.pk_d.0.to_vec(),
             value_amount: msg.value.amount,
@@ -540,8 +540,8 @@ impl TryFrom<transparent_proofs::SwapProof> for SwapProof {
         let ak = ak_bytes.try_into().map_err(|_| Error::ProtoMalformed)?;
 
         Ok(SwapProof {
-            note_commitment_proof: proto
-                .note_commitment_proof
+            note_commitment_block_proof: proto
+                .note_commitment_block_proof
                 .ok_or(Error::ProtoMalformed)?
                 .try_into()
                 .map_err(|_| Error::ProtoMalformed)?,

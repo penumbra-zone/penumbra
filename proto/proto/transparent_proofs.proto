@@ -35,7 +35,7 @@ message OutputProof {
 // TODO: placeholder
 message SwapProof {
   // Auxiliary inputs
-  crypto.NoteCommitmentProof note_commitment_proof = 1;
+  crypto.NoteCommitmentBlockProof note_commitment_block_proof = 1;
   bytes g_d = 2;
   bytes pk_d = 3;
   uint64 value_amount = 4;
