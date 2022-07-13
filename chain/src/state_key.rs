@@ -1,13 +1,13 @@
 use jmt::KeyHash;
 
 pub fn chain_params() -> KeyHash {
-    format!("chain_params").into()
+    "chain_params".to_string().into()
 }
 
 pub fn block_height() -> KeyHash {
-    format!("block_height").into()
+    "block_height".to_string().into()
 }
 
 pub fn block_timestamp() -> KeyHash {
-    format!("block_timestamp").into()
+    "block_timestamp".to_string().into()
 }

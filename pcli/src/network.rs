@@ -33,10 +33,10 @@ impl App {
         self.submit_transaction(&tx, self_addressed_output).await
     }
 
-    pub fn build_transaction<'a>(
-        &'a mut self,
+    pub fn build_transaction(
+        &mut self,
         plan: TransactionPlan,
-    ) -> impl Future<Output = Result<Transaction>> + 'a {
+    ) -> impl Future<Output = Result<Transaction>> + '_ {
         penumbra_wallet::build_transaction(
             &self.fvk,
             &mut self.view,

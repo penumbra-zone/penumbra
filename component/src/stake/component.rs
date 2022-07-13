@@ -391,7 +391,7 @@ impl Staking {
             );
 
             let abs_unbonded_amount =
-                current_rate.unbonded_amount(delegation_delta.abs() as u64) as i64;
+                current_rate.unbonded_amount(delegation_delta.unsigned_abs()) as i64;
             let staking_delta = if delegation_delta >= 0 {
                 // Net delegation: subtract the unbonded amount from the staking token supply
                 -abs_unbonded_amount

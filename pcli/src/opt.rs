@@ -129,7 +129,7 @@ impl Opt {
 
             let svc = ViewService::load_or_initialize(
                 path,
-                &fvk,
+                fvk,
                 self.node.to_string(),
                 self.pd_port,
                 self.tendermint_port,
