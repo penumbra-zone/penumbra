@@ -2,7 +2,7 @@
 //! [`GetHash`] trait for computing and caching hashes of things, and the [`CachedHash`] type, which
 //! is used internally for lazy evaluation of hashes.
 
-use std::fmt::Debug;
+use std::{fmt::Debug, ops::RangeInclusive};
 
 use ark_ff::{fields::PrimeField, BigInteger256, Fp256, One, Zero};
 use decaf377::FieldExt;
@@ -155,8 +155,52 @@ impl Hash {
     /// four children.
     #[inline]
     pub fn node(height: u8, a: Hash, b: Hash, c: Hash, d: Hash) -> Hash {
-        let height = Fq::from_le_bytes_mod_order(&height.to_le_bytes());
-        Self(hash_4(&(*DOMAIN_SEPARATOR + height), (a.0, b.0, c.0, d.0)))
+        // Definition of hash of node without cache optimization
+        fn hash_node(height: u8, a: Hash, b: Hash, c: Hash, d: Hash) -> Hash {
+            let height = Fq::from_le_bytes_mod_order(&height.to_le_bytes());
+            Self(hash_4(&(*DOMAIN_SEPARATOR + height), (a.0, b.0, c.0, d.0)))
+        }
+
+        // The range of hashes to precompute: this captures hashes starting at the first internal node
+        // above the epoch leaf, and up to the epoch root. These are the only useful hashes to
+        // precompute, because commitments are expected to be cryptographically random, so
+        // precomputing internal hashes within blocks won't save work, and epochs are extremely
+        // unlikely to be entirely filled with empty blocks. However, in the middle, we can save
+        // work by remembering how to hash power-of-4-aligned sequences of empty blocks.
+        const PRECOMPUTE_HEIGHTS: RangeInclusive<u8> = 9..=16;
+
+        const TOTAL_PRECOMPUTED: usize =
+            *PRECOMPUTE_HEIGHTS.end() as usize - *PRECOMPUTE_HEIGHTS.start() as usize + 1;
+
+        // Precompute internal node hashes lying above sequences of empty blocks within epochs
+        static PRECOMPUTED_HASH_PAIRS: Lazy<[(Hash, Hash); TOTAL_PRECOMPUTED]> = Lazy::new(|| {
+            let mut hashes: Vec<(Hash, Hash)> = Vec::with_capacity(PRECOMPUTE_HEIGHTS.len());
+
+            for height in PRECOMPUTE_HEIGHTS {
+                let below = hashes.last().map(|below| below.1).unwrap_or_else(Hash::one);
+                hashes.push((below, hash_node(height, below, below, below, below)));
+            }
+
+            hashes.try_into().unwrap()
+        });
+
+        // If the height is in the range of the precomputed hashes, check if all the inputs are
+        // equal to the singular precomputed input for that height, and return the output if so
+        if PRECOMPUTE_HEIGHTS.contains(&height) {
+            let index = usize::from(height - PRECOMPUTE_HEIGHTS.start());
+            let (input, output) = PRECOMPUTED_HASH_PAIRS[index];
+            if [a, b, c, d] == [input, input, input, input] {
+                debug_assert_eq!(
+                    output,
+                    hash_node(height, a, b, c, d),
+                    "precomputed hash mismatched calculated hash"
+                );
+                return output;
+            }
+        }
+
+        // Otherwise, hash the node normally
+        hash_node(height, a, b, c, d)
     }
 }
 
