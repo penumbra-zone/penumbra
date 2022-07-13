@@ -27,6 +27,16 @@ pub enum ShieldedPool {
         /// The height to query.
         height: u64,
     },
+    /// Queries the note commitment tree's block anchor for a given height.
+    BlockAnchor {
+        /// The height to query.
+        height: u64,
+    },
+    /// Queries the note commitment tree's epoch anchor for a given epoch index.
+    EpochAnchor {
+        /// The epoch to query.
+        epoch: u64,
+    },
     /// Queries the scheduled notes and nullifiers to unquarantine at a given epoch.
     Scheduled {
         /// The epoch to query.
@@ -103,6 +113,8 @@ impl ShieldedPool {
         use penumbra_component::shielded_pool::state_key;
         match self {
             ShieldedPool::Anchor { height } => state_key::anchor_by_height(height),
+            ShieldedPool::BlockAnchor { height } => state_key::block_anchor_by_height(height),
+            ShieldedPool::EpochAnchor { epoch } => state_key::epoch_anchor_by_index(epoch),
             ShieldedPool::CompactBlock { height } => state_key::compact_block(*height),
             ShieldedPool::Scheduled { epoch } => state_key::scheduled_to_apply(*epoch),
             ShieldedPool::Commitment { commitment } => state_key::note_source(commitment),
@@ -117,6 +129,14 @@ impl ShieldedPool {
         match self {
             ShieldedPool::Anchor { .. } => {
                 let anchor = penumbra_tct::Root::decode(bytes)?;
+                println!("{}", serde_json::to_string_pretty(&anchor)?);
+            }
+            ShieldedPool::BlockAnchor { .. } => {
+                let anchor = penumbra_tct::builder::block::Root::decode(bytes)?;
+                println!("{}", serde_json::to_string_pretty(&anchor)?);
+            }
+            ShieldedPool::EpochAnchor { .. } => {
+                let anchor = penumbra_tct::builder::epoch::Root::decode(bytes)?;
                 println!("{}", serde_json::to_string_pretty(&anchor)?);
             }
             ShieldedPool::CompactBlock { .. } => {
