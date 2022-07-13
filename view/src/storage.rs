@@ -12,10 +12,12 @@ use penumbra_proto::{
     Protobuf,
 };
 use penumbra_tct as tct;
+use sha2::Digest;
 use sqlx::{migrate::MigrateDatabase, query, Pool, Sqlite};
 use std::{num::NonZeroU64, sync::Arc};
 use tct::Commitment;
 use tokio::sync::broadcast;
+use tracing::instrument;
 
 use crate::{sync::FilteredBlock, NoteRecord, QuarantinedNoteRecord};
 
@@ -402,11 +404,16 @@ impl Storage {
         *self.uncommitted_height.lock() = Some(height.try_into().unwrap());
         Ok(())
     }
-    /// Takes a Vec of nullifiers and returns a Vec of those nullifiers with matching notes in storage
+
+    /// Filters for nullifiers whose notes we control
     pub async fn filter_nullifiers(
         &self,
         nullifiers: Vec<Nullifier>,
     ) -> anyhow::Result<Vec<Nullifier>> {
+        if nullifiers.len() == 0 {
+            return Ok(Vec::new());
+        }
+
         Ok(sqlx::query_as::<_, NoteRecord>(
             format!(
                 "SELECT *
@@ -429,7 +436,7 @@ impl Storage {
 
     pub async fn record_block(
         &self,
-        scan_result: FilteredBlock,
+        filtered_block: FilteredBlock,
         nct: &mut tct::Tree,
     ) -> anyhow::Result<()> {
         //Check that the incoming block height follows the latest recorded height
@@ -437,28 +444,28 @@ impl Storage {
 
         let correct_height = match last_sync_height {
             // Require that the new block follows the last one we scanned.
-            Some(cur_height) => scan_result.height == cur_height + 1,
+            Some(cur_height) => filtered_block.height == cur_height + 1,
             // Require that the new block represents the initial chain state.
-            None => scan_result.height == 0,
+            None => filtered_block.height == 0,
         };
 
         if !correct_height {
             return Err(anyhow::anyhow!(
                 "Wrong block height {} for latest sync height {:?}",
-                scan_result.height,
+                filtered_block.height,
                 last_sync_height
             ));
         }
         let mut tx = self.pool.begin().await?;
 
         // Insert all quarantined note commitments into storage
-        for quarantined_note_record in &scan_result.new_quarantined_notes {
+        for quarantined_note_record in &filtered_block.new_quarantined_notes {
             let note_commitment = quarantined_note_record
                 .note_commitment
                 .0
                 .to_bytes()
                 .to_vec();
-            let height_created = scan_result.height as i64;
+            let height_created = filtered_block.height as i64;
             let diversifier = quarantined_note_record.note.diversifier().0.to_vec();
             let amount = quarantined_note_record.note.amount() as i64;
             let asset_id = quarantined_note_record.note.asset_id().to_bytes().to_vec();
@@ -505,14 +512,14 @@ impl Storage {
         }
 
         // Insert all new note records into storage
-        for note_record in &scan_result.new_notes {
+        for note_record in &filtered_block.new_notes {
             // https://github.com/launchbadge/sqlx/issues/1430
             // https://github.com/launchbadge/sqlx/issues/1151
             // For some reason we can't use any temporaries with the query! macro
             // any more, even though we did so just fine in the past, e.g.,
             // https://github.com/penumbra-zone/penumbra/blob/e857a7ae2b11b36514a5ac83f8e0b174fa10a65f/pd/src/state/writer.rs#L201-L207
             let note_commitment = note_record.note_commitment.0.to_bytes().to_vec();
-            let height_created = scan_result.height as i64;
+            let height_created = filtered_block.height as i64;
             let diversifier = note_record.note.diversifier().0.to_vec();
             let amount = note_record.note.amount() as i64;
             let asset_id = note_record.note.asset_id().to_bytes().to_vec();
@@ -581,10 +588,10 @@ impl Storage {
 
         // Add all quarantined nullifiers to storage and mark notes as spent, *without* forgetting
         // them from the NCT (because they could be rolled back)
-        for (identity_key, quarantined_nullifiers) in scan_result.spent_quarantined_nullifiers {
+        for (identity_key, quarantined_nullifiers) in &filtered_block.spent_quarantined_nullifiers {
             let identity_key = identity_key.encode_to_vec();
             for quarantined_nullifier in quarantined_nullifiers {
-                let height_spent = scan_result.height as i64;
+                let height_spent = filtered_block.height as i64;
                 let nullifier = quarantined_nullifier.to_bytes().to_vec();
 
                 // Track the quarantined nullifier
@@ -613,13 +620,13 @@ impl Storage {
         }
 
         // Update any rows of the table with matching nullifiers to have height_spent
-        for nullifier in scan_result.spent_nullifiers {
+        for nullifier in &filtered_block.spent_nullifiers {
             // https://github.com/launchbadge/sqlx/issues/1430
             // https://github.com/launchbadge/sqlx/issues/1151
             // For some reason we can't use any temporaries with the query! macro
             // any more, even though we did so just fine in the past, e.g.,
             // https://github.com/penumbra-zone/penumbra/blob/e857a7ae2b11b36514a5ac83f8e0b174fa10a65f/pd/src/state/writer.rs#L201-L207
-            let height_spent = scan_result.height as i64;
+            let height_spent = filtered_block.height as i64;
             let nullifier = nullifier.to_bytes().to_vec();
             let spent_commitment_bytes = sqlx::query!(
                 "UPDATE notes SET height_spent = ? WHERE nullifier = ? RETURNING note_commitment",
@@ -648,7 +655,7 @@ impl Storage {
         // For any slashed validator, remove all quarantined notes and nullifiers for that
         // validator, and un-spend all spent notes that were referred to by all rolled back
         // nullifiers
-        for identity_key in scan_result.slashed_validators {
+        for identity_key in &filtered_block.slashed_validators {
             let identity_key = identity_key.encode_to_vec();
 
             // Delete all quarantined notes for this validator
@@ -686,7 +693,7 @@ impl Storage {
 
         // Record block height as latest synced height
 
-        let latest_sync_height = scan_result.height as i64;
+        let latest_sync_height = filtered_block.height as i64;
         sqlx::query!("UPDATE sync_height SET height = ?", latest_sync_height)
             .execute(&mut tx)
             .await?;
@@ -699,11 +706,50 @@ impl Storage {
         // Broadcast all committed note records to channel
         // Done following tx.commit() to avoid notifying of a new NoteRecord before it is actually committed to the database
 
-        for note_record in scan_result.new_notes {
+        for note_record in &filtered_block.new_notes {
             // This will fail to be broadcast if there is no active receiver (such as on initial sync)
             // The error is ignored, as this isn't a problem, because if there is no active receiver there is nothing to do
-            let _ = self.scanned_notes_tx.send(note_record);
+            let _ = self.scanned_notes_tx.send(note_record.clone());
         }
+
+        Ok(())
+    }
+
+    #[instrument(skip(self, tx))]
+    pub(crate) async fn record_transaction(
+        &self,
+        tx: penumbra_transaction::Transaction,
+    ) -> anyhow::Result<()> {
+        let tx_bytes = tx.encode_to_vec();
+        // We have to create an explicit temporary borrow, because the sqlx api is bad (see above)
+        let tx_hash_owned = sha2::Sha256::digest(&tx_bytes);
+        let tx_hash = tx_hash_owned.as_slice();
+
+        tracing::debug!(tx_hash = ?hex::encode(tx_hash), "recording extended transaction");
+
+        let mut dbtx = self.pool.begin().await?;
+
+        sqlx::query!(
+            "INSERT INTO tx (tx_hash, tx_bytes) VALUES (?, ?)",
+            tx_hash,
+            tx_bytes,
+        )
+        .execute(&mut dbtx)
+        .await?;
+
+        // Associate all of the spent nullifiers with the transaction by hash.
+        for nf in tx.spent_nullifiers() {
+            let nf_bytes = nf.0.to_bytes().to_vec();
+            sqlx::query!(
+                "INSERT INTO tx_by_nullifier (nullifier, tx_hash) VALUES (?, ?)",
+                nf_bytes,
+                tx_hash,
+            )
+            .execute(&mut dbtx)
+            .await?;
+        }
+
+        dbtx.commit().await?;
 
         Ok(())
     }

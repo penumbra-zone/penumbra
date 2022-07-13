@@ -1,15 +1,21 @@
 use std::sync::{Arc, Mutex};
 
-use crate::{sync::scan_block, Storage};
 use penumbra_chain::{sync::CompactBlock, Epoch};
 use penumbra_crypto::{Asset, FullViewingKey};
 use penumbra_proto::client::oblivious::{
     oblivious_query_client::ObliviousQueryClient, AssetListRequest, CompactBlockRangeRequest,
 };
+use tokio::sync::{mpsc, watch, RwLock};
+use tonic::transport::Channel;
+
 #[cfg(feature = "nct-divergence-check")]
 use penumbra_proto::client::specific::specific_query_client::SpecificQueryClient;
-use tokio::sync::{watch, RwLock};
-use tonic::transport::Channel;
+
+use crate::{
+    sync::{scan_block, FilteredBlock},
+    Storage, TransactionFetcher,
+};
+
 pub struct Worker {
     storage: Storage,
     client: ObliviousQueryClient<Channel>,
@@ -17,6 +23,7 @@ pub struct Worker {
     fvk: FullViewingKey, // TODO: notifications (see TODOs on ViewService)
     error_slot: Arc<Mutex<Option<anyhow::Error>>>,
     sync_height_tx: watch::Sender<u64>,
+    filtered_block_tx: mpsc::Sender<FilteredBlock>,
     #[cfg(feature = "nct-divergence-check")]
     specific_client: SpecificQueryClient<Channel>,
 }
@@ -32,6 +39,7 @@ impl Worker {
         storage: Storage,
         node: String,
         pd_port: u16,
+        tendermint_port: u16,
     ) -> Result<
         (
             Self,
@@ -58,6 +66,18 @@ impl Worker {
         let specific_client =
             SpecificQueryClient::connect(format!("http://{}:{}", node, pd_port)).await?;
 
+        // Create a channel for the worker to notify the transaction fetcher...
+        let (filtered_block_tx, filtered_block_rx) = mpsc::channel(500);
+        // ... then spawn the fetcher itself.
+        tokio::spawn(
+            TransactionFetcher::new(
+                storage.clone(),
+                filtered_block_rx,
+                format!("http://{}:{}", node, tendermint_port),
+            )?
+            .run(),
+        );
+
         Ok((
             Self {
                 storage,
@@ -66,6 +86,7 @@ impl Worker {
                 fvk,
                 error_slot: error_slot.clone(),
                 sync_height_tx,
+                filtered_block_tx,
                 #[cfg(feature = "nct-divergence-check")]
                 specific_client,
             },
@@ -174,7 +195,7 @@ impl Worker {
                 self.sync_height_tx.send(height)?;
             } else {
                 // Otherwise, scan the block and commit its changes:
-                let scan_result = scan_block(
+                let filtered_block = scan_block(
                     &self.fvk,
                     &mut nct_guard,
                     block,
@@ -182,13 +203,14 @@ impl Worker {
                     &self.storage,
                 )
                 .await?;
-                let height = scan_result.height;
 
                 self.storage
-                    .record_block(scan_result, &mut nct_guard)
+                    .record_block(filtered_block.clone(), &mut nct_guard)
                     .await?;
                 // Notify all watchers of the new height we just recorded.
-                self.sync_height_tx.send(height)?;
+                self.sync_height_tx.send(filtered_block.height)?;
+                // Notify the transaction fetcher of the filtered block.
+                let _ = self.filtered_block_tx.send(filtered_block).await;
             }
             #[cfg(feature = "nct-divergence-check")]
             nct_divergence_check(&mut self.specific_client, height, nct_guard.root()).await?;
@@ -206,13 +228,10 @@ impl Worker {
         Ok(())
     }
 
-    //TODO: should this actually be looping? seems worth revisiting, because right now it either breaks or errors once.
-    #[allow(clippy::never_loop)]
     pub async fn run(mut self) -> Result<(), anyhow::Error> {
         self.run_inner().await.map_err(|e| {
             tracing::info!(?e, "view worker error");
             self.error_slot.lock().unwrap().replace(e);
-            // Exit the worker to avoid looping endlessly.
             anyhow::anyhow!("view worker error")
         })
     }

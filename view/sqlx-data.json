@@ -96,6 +96,16 @@
     },
     "query": "INSERT INTO assets\n                    (\n                        asset_id,\n                        denom\n                    )\n                    VALUES\n                    (\n                        ?,\n                        ?\n                    )"
   },
+  "3330ad89b630f87f1ed502363de779624f72710fb59f2133c5db2c1dc8d30b2d": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "INSERT INTO tx_by_nullifier (nullifier, tx_hash) VALUES (?, ?)"
+  },
   "3381f1580eeac4a2fab83b4d64ae259c964e88dd22872675232f829ebc52a335": {
     "describe": {
       "columns": [
@@ -149,6 +159,16 @@
       }
     },
     "query": "DELETE FROM quarantined_notes WHERE note_commitment = ?"
+  },
+  "59c0260b5066a0efa28577ff907a6bb85c50df20a62c10fded2b5cde926770a5": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "INSERT INTO tx (tx_hash, tx_bytes) VALUES (?, ?)"
   },
   "63aad4faac1ffefd5525595f9ca5a82186181368251da9fbacf65a4d48671a01": {
     "describe": {

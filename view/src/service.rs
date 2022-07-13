@@ -79,7 +79,7 @@ impl ViewService {
         tendermint_port: u16,
     ) -> Result<Self, anyhow::Error> {
         let (worker, nct, error_slot, sync_height_rx) =
-            Worker::new(storage.clone(), node.clone(), pd_port).await?;
+            Worker::new(storage.clone(), node.clone(), pd_port, tendermint_port).await?;
 
         tokio::spawn(worker.run());
 

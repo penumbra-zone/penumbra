@@ -50,6 +50,9 @@ parking_lot = "0.12"
 clap = { version = "3", features = ["derive"] }
 camino = "1"
 async-trait = "0.1"
+tendermint = "0.24.0-pre.1"
+tendermint-rpc = { version = "0.24.0-pre.1", features = ["http-client"] }
+sha2 = "0.10.1"
 
 [build-dependencies]
 vergen = "5"
