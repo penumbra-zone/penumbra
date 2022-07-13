@@ -166,7 +166,7 @@ impl Component for ShieldedPool {
     #[instrument(name = "shielded_pool", skip(self, _ctx, tx))]
     async fn check_tx_stateful(&self, _ctx: Context, tx: &Transaction) -> Result<()> {
         // TODO: rename transaction_body.merkle_root now that we have 2 merkle trees
-        self.state.check_claimed_anchor(&tx.anchor).await?;
+        self.state.check_claimed_anchor(tx.anchor).await?;
 
         for spent_nullifier in tx.spent_nullifiers() {
             self.state.check_nullifier_unspent(spent_nullifier).await?;
@@ -357,7 +357,7 @@ impl ShieldedPool {
 
         // 2. Record its source in the JMT
         self.state
-            .set_note_source(&note_payload.note_commitment, source)
+            .set_note_source(note_payload.note_commitment, source)
             .await;
 
         // 3. Finally, record it in the pending compact block.
@@ -376,7 +376,7 @@ impl ShieldedPool {
 
         // 1. Record its source in the JMT
         self.state
-            .set_note_source(&note_payload.note_commitment, source)
+            .set_note_source(note_payload.note_commitment, source)
             .await;
 
         // 2. Schedule it in the compact block
@@ -394,7 +394,7 @@ impl ShieldedPool {
         // can learn that their note was spent).
         self.state
             .put_domain(
-                state_key::spent_nullifier_lookup(&nullifier),
+                state_key::spent_nullifier_lookup(nullifier),
                 // We don't use the value for validity checks, but writing the source
                 // here lets us find out what transaction spent the nullifier.
                 source,
@@ -418,7 +418,7 @@ impl ShieldedPool {
         tracing::debug!("marking as spent (currently quarantined)");
         self.state
             .put_domain(
-                state_key::quarantined_spent_nullifier_lookup(&nullifier),
+                state_key::quarantined_spent_nullifier_lookup(nullifier),
                 // We don't use the value for validity checks, but writing the source
                 // here lets us find out what transaction spent the nullifier.
                 Delible::Present(source),
@@ -602,7 +602,7 @@ impl ShieldedPool {
                 for note_payload in per_validator.note_payloads {
                     let note_source = self
                         .state
-                        .note_source(&note_payload.note_commitment)
+                        .note_source(note_payload.note_commitment)
                         .await
                         .expect("can try to unquarantine note")
                         .expect("note payload to unquarantine has source");
@@ -650,7 +650,7 @@ pub trait View: StateExt {
         // TODO: replace with a single checked_add_signed call when mixed_integer_ops lands in stable
         let new_supply = if change < 0 {
             current_supply
-                .checked_sub(change.abs() as u64)
+                .checked_sub(change.unsigned_abs())
                 .ok_or_else(|| {
                     anyhow!(
                         "underflow updating token supply {} with delta {}",
@@ -709,7 +709,7 @@ pub trait View: StateExt {
         }
     }
 
-    async fn set_note_source(&self, note_commitment: &note::Commitment, source: NoteSource) {
+    async fn set_note_source(&self, note_commitment: note::Commitment, source: NoteSource) {
         self.put_domain(
             state_key::note_source(note_commitment),
             Delible::Present(source),
@@ -718,7 +718,7 @@ pub trait View: StateExt {
     }
 
     // Returns whether the note was presently quarantined.
-    async fn roll_back_note(&self, commitment: &note::Commitment) -> Result<Option<NoteSource>> {
+    async fn roll_back_note(&self, commitment: note::Commitment) -> Result<Option<NoteSource>> {
         // Get the note source of the note (or empty vec if already applied or rolled back)
         let source = self
             .get_domain::<Delible<NoteSource>, _>(state_key::note_source(commitment))
@@ -733,7 +733,7 @@ pub trait View: StateExt {
         Ok(source)
     }
 
-    async fn note_source(&self, note_commitment: &note::Commitment) -> Result<Option<NoteSource>> {
+    async fn note_source(&self, note_commitment: note::Commitment) -> Result<Option<NoteSource>> {
         Ok(self
             .get_domain::<Delible<NoteSource>, _>(state_key::note_source(note_commitment))
             .await?
@@ -755,11 +755,11 @@ pub trait View: StateExt {
         tracing::debug!(?height, ?nct_anchor, "writing anchor");
 
         // Write the NCT anchor both as a value, so we can look it up,
-        self.put_domain(state_key::anchor_by_height(&height), nct_anchor)
+        self.put_domain(state_key::anchor_by_height(height), nct_anchor)
             .await;
         // and as a key, so we can query for it.
         self.put_proto(
-            state_key::anchor_lookup(&nct_anchor),
+            state_key::anchor_lookup(nct_anchor),
             // We don't use the value for validity checks, but writing the height
             // here lets us find out what height the anchor was for.
             height,
@@ -768,7 +768,7 @@ pub trait View: StateExt {
     }
 
     /// Checks whether a claimed NCT anchor is a previous valid state root.
-    async fn check_claimed_anchor(&self, anchor: &tct::Root) -> Result<()> {
+    async fn check_claimed_anchor(&self, anchor: tct::Root) -> Result<()> {
         if let Some(anchor_height) = self
             .get_proto::<u64>(state_key::anchor_lookup(anchor))
             .await?
@@ -791,7 +791,7 @@ pub trait View: StateExt {
         // Get the note source of the nullifier (or empty vec if already applied or rolled back)
         let source = self
             .get_domain::<Delible<NoteSource>, _>(state_key::quarantined_spent_nullifier_lookup(
-                &nullifier,
+                nullifier,
             ))
             .await?
             .expect("can't unquarantine nullifier that was never quarantined")
@@ -799,7 +799,7 @@ pub trait View: StateExt {
 
         // Delete the nullifier from the quarantine set
         self.put_domain(
-            state_key::quarantined_spent_nullifier_lookup(&nullifier),
+            state_key::quarantined_spent_nullifier_lookup(nullifier),
             Delible::Deleted,
         )
         .await;
@@ -810,7 +810,7 @@ pub trait View: StateExt {
     #[instrument(skip(self))]
     async fn check_nullifier_unspent(&self, nullifier: Nullifier) -> Result<()> {
         if let Some(source) = self
-            .get_domain::<NoteSource, _>(state_key::spent_nullifier_lookup(&nullifier))
+            .get_domain::<NoteSource, _>(state_key::spent_nullifier_lookup(nullifier))
             .await?
         {
             return Err(anyhow!(
@@ -822,7 +822,7 @@ pub trait View: StateExt {
 
         if let Some(source) = self
             .get_domain::<Delible<NoteSource>, _>(state_key::quarantined_spent_nullifier_lookup(
-                &nullifier,
+                nullifier,
             ))
             .await?
             .and_then(<Option<NoteSource>>::from)
@@ -879,7 +879,7 @@ pub trait View: StateExt {
                     self.unquarantine_nullifier(nullifier).await?;
                 }
                 for note_payload in unbonding.note_payloads.iter() {
-                    self.roll_back_note(&note_payload.note_commitment).await?;
+                    self.roll_back_note(note_payload.note_commitment).await?;
                 }
             }
             // We're removed all the scheduled notes and nullifiers for this epoch and identity key:
