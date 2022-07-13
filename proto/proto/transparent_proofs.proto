@@ -31,9 +31,9 @@ message OutputProof {
   bytes esk = 7;
 }
 
-// A Penumbra transparent Swap Proof.
+// A Penumbra transparent SwapClaimProof.
 // TODO: placeholder
-message SwapProof {
+message SwapClaimProof {
   // Auxiliary inputs
   crypto.NoteCommitmentBlockProof note_commitment_block_proof = 1;
   uint64 note_commitment_position = 12;
