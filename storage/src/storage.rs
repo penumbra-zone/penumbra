@@ -9,7 +9,7 @@ use jmt::{
 };
 use rocksdb::{Options, DB};
 use tokio::sync::RwLock;
-use tracing::{instrument, Span};
+use tracing::Span;
 
 use penumbra_tct as tct;
 
@@ -117,7 +117,6 @@ impl Storage {
 impl TreeWriter for Storage {
     /// Writes a node batch into storage.
     //TODO: Change JMT traits to remove/simplify lifetimes & accept owned NodeBatch
-    #[instrument(skip(self, node_batch))]
     fn write_node_batch<'future, 'a: 'future, 'n: 'future>(
         &'a mut self,
         node_batch: &'n NodeBatch,
@@ -157,7 +156,6 @@ impl TreeWriter for Storage {
 /// rocksdb::DB handle and any write batches that may be applied through the writer interface.
 impl TreeReader for Storage {
     /// Gets node given a node key. Returns `None` if the node does not exist.
-    #[instrument(skip(self))]
     fn get_node_option<'future, 'a: 'future, 'n: 'future>(
         &'a self,
         node_key: &'n NodeKey,
