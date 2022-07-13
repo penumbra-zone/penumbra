@@ -1,12 +1,12 @@
 use crate::prelude::*;
 
-/// A proof of the inclusion of some [`Commitment`] in a [`Tree`] with a particular (non-global) [`Root`].
+/// A proof of the inclusion of some [`Commitment`] in a block with a particular (non-global) [`Root`](super::Root).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Proof(crate::internal::proof::Proof<frontier::Top<frontier::Item>>);
 
 impl Proof {
-    /// Construct a new [`Proof`] of inclusion for a given [`Commitment`], index, and authentication
-    /// path from root to leaf.
+    /// Construct a new [`Proof`] of inclusion for a given [`Commitment`], position within the
+    /// block, and authentication path from block root to leaf.
     pub fn new(commitment: Commitment, block_position: u16, auth_path: [[Hash; 3]; 8]) -> Self {
         use crate::internal::path::{Leaf, Node};
 
@@ -29,11 +29,11 @@ impl Proof {
         })
     }
 
-    /// Verify a [`Proof`] of inclusion against the [`Root`] of a [`Tree`].
+    /// Verify a [`Proof`] of inclusion against the [`Root`](super::Root) of a block.
     ///
     /// # Errors
     ///
-    /// Returns [`VerifyError`] if the proof is invalid for that [`Root`].
+    /// Returns [`VerifyError`] if the proof is invalid for that [`Root`](super::Root).
     pub fn verify(&self, root: super::Root) -> Result<(), VerifyError> {
         self.0.verify(root.0)
     }
@@ -44,11 +44,14 @@ impl Proof {
     }
 
     /// Get the position of the witnessed commitment.
-    pub fn position(&self) -> crate::Position {
-        self.0.index().into()
+    pub fn position(&self) -> u16 {
+        self.0
+            .index()
+            .try_into()
+            .expect("position for a block proof is never greater than `u16::MAX`")
     }
 
-    /// Get the authentication path for this proof, order from root to leaf.
+    /// Get the authentication path for this proof, in order from root to leaf.
     pub fn auth_path(&self) -> [&[Hash; 3]; 8] {
         use crate::internal::path::{Leaf, Node};
         let child = self.0.auth_path();
