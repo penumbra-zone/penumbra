@@ -20,16 +20,6 @@ pub struct FilteredBlock {
     pub height: u64,
 }
 
-impl FilteredBlock {
-    pub fn is_empty(&self) -> bool {
-        self.new_notes.is_empty()
-            && self.new_quarantined_notes.is_empty()
-            && self.spent_nullifiers.is_empty()
-            && self.spent_quarantined_nullifiers.is_empty()
-            && self.slashed_validators.is_empty()
-    }
-}
-
 #[tracing::instrument(skip(fvk, note_commitment_tree, note_payloads, nullifiers, storage))]
 pub async fn scan_block(
     fvk: &FullViewingKey,
@@ -181,15 +171,21 @@ pub async fn scan_block(
 
     //Filter nullifiers to remove any without matching note commitments
 
-    let matched_nullifiers = storage.filter_nullifiers(spent_nullifiers).await?;
+    let filtered_nullifiers = storage.filter_nullifiers(spent_nullifiers).await?;
+
+    let mut filtered_quarantined_nullifiers = BTreeMap::new();
+
+    for (id, nullifiers) in spent_quarantined_nullifiers {
+        filtered_quarantined_nullifiers.insert(id, storage.filter_nullifiers(nullifiers).await?);
+    }
 
     // Construct filtered block
 
     let result = FilteredBlock {
         new_notes,
         new_quarantined_notes,
-        spent_nullifiers: matched_nullifiers,
-        spent_quarantined_nullifiers,
+        spent_nullifiers: filtered_nullifiers,
+        spent_quarantined_nullifiers: filtered_quarantined_nullifiers,
         slashed_validators: slashed,
         height,
     };

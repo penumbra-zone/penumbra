@@ -9,8 +9,10 @@ mod service;
 mod status;
 mod storage;
 mod sync;
+mod transaction_fetcher;
 mod worker;
 
+use transaction_fetcher::TransactionFetcher;
 use worker::Worker;
 
 pub use crate::metrics::register_metrics;
