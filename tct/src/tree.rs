@@ -147,7 +147,7 @@ impl Tree {
     ///
     /// Computed hashes are cached so that subsequent calls without further modification are very
     /// fast.
-    #[instrument(skip(self))]
+    #[instrument(level = "trace", skip(self))]
     pub fn root(&self) -> Root {
         let root = Root(self.inner.hash());
         trace!(?root);
@@ -165,7 +165,7 @@ impl Tree {
     /// - the [`Tree`] is full,
     /// - the current epoch is full, or
     /// - the current block is full.
-    #[instrument(skip(self))]
+    #[instrument(level = "trace", skip(self))]
     pub fn insert(
         &mut self,
         witness: Witness,
@@ -241,7 +241,7 @@ impl Tree {
     /// Get a [`Proof`] of inclusion for the commitment at this index in the tree.
     ///
     /// If the index is not witnessed in this tree, return `None`.
-    #[instrument(skip(self))]
+    #[instrument(level = "trace", skip(self))]
     pub fn witness(&self, commitment: Commitment) -> Option<Proof> {
         let &index = if let Some(index) = self.index.get(&commitment) {
             index
@@ -274,7 +274,7 @@ impl Tree {
     ///
     /// Returns `true` if the commitment was previously witnessed (and now is forgotten), and `false` if
     /// it was not witnessed.
-    #[instrument(skip(self))]
+    #[instrument(level = "trace", skip(self))]
     pub fn forget(&mut self, commitment: Commitment) -> bool {
         let mut forgotten = false;
 
@@ -293,7 +293,7 @@ impl Tree {
     }
 
     /// Get the position in this [`Tree`] of the given [`Commitment`], if it is currently witnessed.
-    #[instrument(skip(self))]
+    #[instrument(level = "trace", skip(self))]
     pub fn position_of(&self, commitment: Commitment) -> Option<Position> {
         let position = self.index.get(&commitment).map(|index| Position(*index));
         trace!(?position);
@@ -325,7 +325,7 @@ impl Tree {
     ///
     /// Returns [`InsertBlockError`] containing the inserted block without adding it to the [`Tree`]
     /// if the [`Tree`] is full or the current epoch is full.
-    #[instrument(skip(self, block))]
+    #[instrument(level = "trace", skip(self, block))]
     pub fn insert_block(
         &mut self,
         block: impl Into<block::Finalized>,
@@ -447,7 +447,7 @@ impl Tree {
 
     /// Explicitly mark the end of the current block in this tree, advancing the position to the
     /// next block, and returning the root of the block which was just finalized.
-    #[instrument(skip(self))]
+    #[instrument(level = "trace", skip(self))]
     pub fn end_block(&mut self) -> Result<block::Root, InsertBlockError> {
         // Check to see if the latest block is already finalized, and finalize it if
         // it is not
@@ -479,7 +479,7 @@ impl Tree {
     }
 
     /// Get the root hash of the most recent block in the most recent epoch of this [`Tree`].
-    #[instrument(skip(self))]
+    #[instrument(level = "trace", skip(self))]
     pub fn current_block_root(&self) -> block::Root {
         let root = self
             .inner
@@ -523,7 +523,7 @@ impl Tree {
     ///
     /// Returns [`InsertEpochError`] containing the epoch without adding it to the [`Tree`] if the
     /// [`Tree`] is full.
-    #[instrument(skip(self, epoch))]
+    #[instrument(level = "trace", skip(self, epoch))]
     pub fn insert_epoch(
         &mut self,
         epoch: impl Into<epoch::Finalized>,
@@ -599,7 +599,7 @@ impl Tree {
 
     /// Explicitly mark the end of the current epoch in this tree, advancing the position to the
     /// next epoch, and returning the root of the epoch which was just finalized.
-    #[instrument(skip(self))]
+    #[instrument(level = "trace", skip(self))]
     pub fn end_epoch(&mut self) -> Result<epoch::Root, InsertEpochError> {
         // Check to see if the latest block is already finalized, and finalize it if
         // it is not
@@ -627,7 +627,7 @@ impl Tree {
     }
 
     /// Get the root hash of the most recent epoch in this [`Tree`].
-    #[instrument(skip(self))]
+    #[instrument(level = "trace", skip(self))]
     pub fn current_epoch_root(&self) -> epoch::Root {
         let root = self
             .inner
@@ -655,7 +655,7 @@ impl Tree {
     ///
     /// Note that [`forget`](Tree::forget)ting a commitment does not decrease this; it only
     /// decreases the [`witnessed_count`](Tree::witnessed_count).
-    #[instrument(skip(self))]
+    #[instrument(level = "trace", skip(self))]
     pub fn position(&self) -> Option<Position> {
         let position = self.inner.position().map(|p| Position(p.into()));
         trace!(?position);
@@ -668,7 +668,7 @@ impl Tree {
     ///
     /// This does not include commitments that were inserted using [`Witness::Forget`], only those
     /// forgotten subsequent to their insertion.
-    #[instrument(skip(self))]
+    #[instrument(level = "trace", skip(self))]
     pub fn forgotten(&self) -> Forgotten {
         let forgotten = self
             .inner
@@ -682,7 +682,7 @@ impl Tree {
     ///
     /// Note that [`forget`](Tree::forget)ting a commitment decreases this count, but does not
     /// decrease the [`position`](Tree::position) of the next inserted [`Commitment`].
-    #[instrument(skip(self))]
+    #[instrument(level = "trace", skip(self))]
     pub fn witnessed_count(&self) -> usize {
         let count = self.index.len();
         trace!(?count);
@@ -690,7 +690,7 @@ impl Tree {
     }
 
     /// Check whether this [`Tree`] is empty.
-    #[instrument(skip(self))]
+    #[instrument(level = "trace", skip(self))]
     pub fn is_empty(&self) -> bool {
         let is_empty = self.inner.is_empty();
         trace!(?is_empty);
@@ -701,7 +701,7 @@ impl Tree {
     ///
     /// Unlike [`commitments_ordered`](Tree::commitments_ordered), this **does not** guarantee that
     /// commitments will be returned in order, but it may be faster by a constant factor.
-    #[instrument(skip(self))]
+    #[instrument(level = "trace", skip(self))]
     pub fn commitments(&self) -> impl Iterator<Item = (Commitment, Position)> + '_ {
         self.index.iter().map(|(c, p)| (*c, Position(*p)))
     }
@@ -711,7 +711,7 @@ impl Tree {
     ///
     /// Unlike [`commitments`](Tree::commitments), this guarantees that commitments will be returned
     /// in order, but it may be slower by a constant factor.
-    #[instrument(skip(self))]
+    #[instrument(level = "trace", skip(self))]
     pub fn commitments_ordered(&self) -> impl Iterator<Item = (Position, Commitment)> + '_ {
         crate::storage::serialize::Serializer::default().commitments_iter(self)
     }
