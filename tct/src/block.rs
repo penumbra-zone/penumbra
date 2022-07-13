@@ -8,6 +8,10 @@ use serde::{Deserialize, Serialize};
 use crate::error::block::*;
 use crate::{prelude::*, Witness};
 
+#[path = "block/proof.rs"]
+mod proof;
+pub use proof::Proof;
+
 /// A sparse merkle tree to witness up to 65,536 individual [`Commitment`]s.
 ///
 /// This is one block in an [`epoch`](crate::builder::epoch), which is one epoch in a [`Tree`].

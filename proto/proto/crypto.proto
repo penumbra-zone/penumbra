@@ -96,6 +96,13 @@ message NoteCommitmentProof {
   repeated MerklePathChunk auth_path = 3; // always length 24
 }
 
+// An authentication path from a note commitment to a block root of the note commitment tree.
+message NoteCommitmentBlockProof {
+  NoteCommitment note_commitment = 1;
+  uint64 position = 2;
+  repeated MerklePathChunk auth_path = 3; // always length 8
+}
+
 // A set of 3 sibling hashes in the auth path for some note commitment.
 message MerklePathChunk {
     bytes sibling_1 = 1;
