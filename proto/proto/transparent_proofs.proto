@@ -38,13 +38,12 @@ message SwapClaimProof {
   uint64 note_commitment_position = 12;
   bytes g_d = 2;
   bytes pk_d = 3;
-  uint64 value_amount = 4;
-  bytes value_asset_id = 5;
+  uint64 swap_nft_amount = 4;
+  bytes swap_nft_asset_id = 5;
   bytes v_blinding = 6;
   bytes note_blinding = 8;
   bytes spend_auth_randomizer = 9;
-  bytes ak = 10;
-  bytes nk = 11;
+  bytes nk = 10;
 }
 
 // A Penumbra transparent SwapProof.
