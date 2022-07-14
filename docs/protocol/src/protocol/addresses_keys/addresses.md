@@ -13,7 +13,7 @@ scanning service.
 Addresses are parameterized by *diversifiers*, 11-byte tags used to derive up to
 $2^{88}$ distinct addresses for each spending authority.  The diversifier is
 included in the address, so it should be uniformly random.  To ensure this,
-diversifiers are indexed by a *diversifier index* $i \in \{0, \ldots, 2^{88} -
+diversifiers are indexed by a *address index* $i \in \{0, \ldots, 2^{88} -
 1\}$; the $i$-th diversifier $d_i$ is the encryption of $i$ using [AES-FF1] with
 the diversifier key $\mathsf{dk}$.[^1]
 
@@ -54,7 +54,7 @@ Each payment address has three components:
 * the *transmission key* $\mathsf{pk_d}$, a `decaf377` element;
 * the *clue key* $\mathsf{ck_d}$, a `decaf377` element.
 
-The diversifier is derived from a diversifier index as described above.  The
+The diversifier is derived from a address index as described above.  The
 diversifier $d_0$ with index $0$ is the *default diversifier*, and corresponds
 to the *default payment address*.
 

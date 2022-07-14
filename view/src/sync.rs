@@ -96,9 +96,7 @@ pub async fn scan_block(
                     .map(|note| QuarantinedNoteRecord {
                         note_commitment: note.commit(),
                         height_created: height,
-                        diversifier_index: fvk
-                            .incoming()
-                            .index_for_diversifier(&note.diversifier()),
+                        address_index: fvk.incoming().index_for_diversifier(&note.diversifier()),
                         note,
                         unbonding_epoch,
                         identity_key,
@@ -146,7 +144,7 @@ pub async fn scan_block(
                         height_spent: None,
                         height_created: height,
                         note,
-                        diversifier_index: fvk.incoming().index_for_diversifier(diversifier),
+                        address_index: fvk.incoming().index_for_diversifier(diversifier),
                         nullifier,
                         position,
                     };

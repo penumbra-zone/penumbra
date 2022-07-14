@@ -4,7 +4,7 @@ use anyhow::Result;
 use futures::{Stream, StreamExt, TryStreamExt};
 use penumbra_chain::params::ChainParams;
 use penumbra_crypto::keys::FullViewingKeyHash;
-use penumbra_crypto::{asset, keys::DiversifierIndex, note, Asset};
+use penumbra_crypto::{asset, keys::AddressIndex, note, Asset};
 use penumbra_proto::view as pb;
 use penumbra_proto::view::view_protocol_client::ViewProtocolClient;
 use penumbra_transaction::WitnessData;
@@ -75,12 +75,12 @@ pub trait ViewClient {
     /// Queries for all known assets.
     async fn assets(&mut self) -> Result<asset::Cache>;
 
-    /// Return unspent notes, grouped by diversifier index and then by asset id.
+    /// Return unspent notes, grouped by address index and then by asset id.
     #[instrument(skip(self, fvk_hash))]
     async fn unspent_notes_by_address_and_asset(
         &mut self,
         fvk_hash: FullViewingKeyHash,
-    ) -> Result<BTreeMap<DiversifierIndex, BTreeMap<asset::Id, Vec<NoteRecord>>>> {
+    ) -> Result<BTreeMap<AddressIndex, BTreeMap<asset::Id, Vec<NoteRecord>>>> {
         let notes = self
             .notes(pb::NotesRequest {
                 fvk_hash: Some(fvk_hash.into()),
@@ -94,7 +94,7 @@ pub trait ViewClient {
 
         for note_record in notes {
             notes_by_address_and_asset
-                .entry(note_record.diversifier_index)
+                .entry(note_record.address_index)
                 .or_insert_with(BTreeMap::new)
                 .entry(note_record.note.asset_id())
                 .or_insert_with(Vec::new)
@@ -105,12 +105,12 @@ pub trait ViewClient {
         Ok(notes_by_address_and_asset)
     }
 
-    /// Return unspent notes, grouped by denom and then by diversifier index.
+    /// Return unspent notes, grouped by denom and then by address index.
     #[instrument(skip(self, fvk_hash))]
     async fn unspent_notes_by_asset_and_address(
         &mut self,
         fvk_hash: FullViewingKeyHash,
-    ) -> Result<BTreeMap<asset::Id, BTreeMap<DiversifierIndex, Vec<NoteRecord>>>> {
+    ) -> Result<BTreeMap<asset::Id, BTreeMap<AddressIndex, Vec<NoteRecord>>>> {
         let notes = self
             .notes(pb::NotesRequest {
                 fvk_hash: Some(fvk_hash.into()),
@@ -126,7 +126,7 @@ pub trait ViewClient {
             notes_by_asset_and_address
                 .entry(note_record.note.asset_id())
                 .or_insert_with(BTreeMap::new)
-                .entry(note_record.diversifier_index)
+                .entry(note_record.address_index)
                 .or_insert_with(Vec::new)
                 .push(note_record);
         }
@@ -135,12 +135,12 @@ pub trait ViewClient {
         Ok(notes_by_asset_and_address)
     }
 
-    /// Return quarantined notes, grouped by diversifier index and then by asset id.
+    /// Return quarantined notes, grouped by address index and then by asset id.
     #[instrument(skip(self, fvk_hash))]
     async fn quarantined_notes_by_address_and_asset(
         &mut self,
         fvk_hash: FullViewingKeyHash,
-    ) -> Result<BTreeMap<DiversifierIndex, BTreeMap<asset::Id, Vec<QuarantinedNoteRecord>>>> {
+    ) -> Result<BTreeMap<AddressIndex, BTreeMap<asset::Id, Vec<QuarantinedNoteRecord>>>> {
         let notes = self
             .quarantined_notes(pb::QuarantinedNotesRequest {
                 fvk_hash: Some(fvk_hash.into()),
@@ -152,7 +152,7 @@ pub trait ViewClient {
 
         for note_record in notes {
             notes_by_address_and_asset
-                .entry(note_record.diversifier_index)
+                .entry(note_record.address_index)
                 .or_insert_with(BTreeMap::new)
                 .entry(note_record.note.asset_id())
                 .or_insert_with(Vec::new)
@@ -163,12 +163,12 @@ pub trait ViewClient {
         Ok(notes_by_address_and_asset)
     }
 
-    /// Return quarantined notes, grouped by denom and then by diversifier index.
+    /// Return quarantined notes, grouped by denom and then by address index.
     #[instrument(skip(self, fvk_hash))]
     async fn quarantined_notes_by_asset_and_address(
         &mut self,
         fvk_hash: FullViewingKeyHash,
-    ) -> Result<BTreeMap<asset::Id, BTreeMap<DiversifierIndex, Vec<QuarantinedNoteRecord>>>> {
+    ) -> Result<BTreeMap<asset::Id, BTreeMap<AddressIndex, Vec<QuarantinedNoteRecord>>>> {
         let notes = self
             .quarantined_notes(pb::QuarantinedNotesRequest {
                 fvk_hash: Some(fvk_hash.into()),
@@ -182,7 +182,7 @@ pub trait ViewClient {
             notes_by_asset_and_address
                 .entry(note_record.note.asset_id())
                 .or_insert_with(BTreeMap::new)
-                .entry(note_record.diversifier_index)
+                .entry(note_record.address_index)
                 .or_insert_with(Vec::new)
                 .push(note_record);
         }

@@ -1,7 +1,7 @@
 use penumbra_crypto::{
     asset,
     ka::Public,
-    keys::{Diversifier, DiversifierIndex},
+    keys::{AddressIndex, Diversifier},
     note, FieldExt, Fq, IdentityKey, Note, Value,
 };
 use penumbra_proto::{view as pb, Protobuf};
@@ -18,7 +18,7 @@ use sqlx::Row;
 pub struct QuarantinedNoteRecord {
     pub note_commitment: note::Commitment,
     pub note: Note,
-    pub diversifier_index: DiversifierIndex,
+    pub address_index: AddressIndex,
     pub height_created: u64,
     pub unbonding_epoch: u64,
     pub identity_key: IdentityKey,
@@ -30,7 +30,7 @@ impl From<QuarantinedNoteRecord> for pb::QuarantinedNoteRecord {
         pb::QuarantinedNoteRecord {
             note_commitment: Some(v.note_commitment.into()),
             note: Some(v.note.into()),
-            diversifier_index: Some(v.diversifier_index.into()),
+            address_index: Some(v.address_index.into()),
             height_created: v.height_created,
             unbonding_epoch: v.unbonding_epoch,
             identity_key: Some(v.identity_key.into()),
@@ -50,9 +50,9 @@ impl TryFrom<pb::QuarantinedNoteRecord> for QuarantinedNoteRecord {
                 .note
                 .ok_or_else(|| anyhow::anyhow!("missing note"))?
                 .try_into()?,
-            diversifier_index: v
-                .diversifier_index
-                .ok_or_else(|| anyhow::anyhow!("missing diversifier index"))?
+            address_index: v
+                .address_index
+                .ok_or_else(|| anyhow::anyhow!("missing address index"))?
                 .try_into()?,
             height_created: v.height_created,
             unbonding_epoch: v.unbonding_epoch,
@@ -77,13 +77,11 @@ impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for QuarantinedNoteRecord {
                 }
             })?;
 
-        let diversifier_index = DiversifierIndex::try_from(
-            row.get::<'r, &[u8], _>("diversifier_index"),
-        )
-        .map_err(|e| sqlx::Error::ColumnDecode {
-            index: "diversifier_index".to_string(),
-            source: e.into(),
-        })?;
+        let address_index = AddressIndex::try_from(row.get::<'r, &[u8], _>("address_index"))
+            .map_err(|e| sqlx::Error::ColumnDecode {
+                index: "address_index".to_string(),
+                source: e.into(),
+            })?;
 
         let transmission_key = Public(
             <[u8; 32]>::try_from(row.get::<'r, &[u8], _>("transmission_key")).map_err(|e| {
@@ -156,7 +154,7 @@ impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for QuarantinedNoteRecord {
         Ok(QuarantinedNoteRecord {
             note_commitment,
             note,
-            diversifier_index,
+            address_index,
             height_created,
             unbonding_epoch,
             identity_key,

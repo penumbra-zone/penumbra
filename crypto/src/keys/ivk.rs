@@ -1,6 +1,6 @@
 use ark_ff::PrimeField;
 
-use super::{Diversifier, DiversifierIndex, DiversifierKey};
+use super::{AddressIndex, Diversifier, DiversifierKey};
 use crate::{fmd, ka, prf, Address, Fr};
 
 pub const IVK_LEN_BYTES: usize = 64;
@@ -14,8 +14,8 @@ pub struct IncomingViewingKey {
 }
 
 impl IncomingViewingKey {
-    /// Derive a shielded payment address with the given [`DiversifierIndex`].
-    pub fn payment_address(&self, index: DiversifierIndex) -> (Address, fmd::DetectionKey) {
+    /// Derive a shielded payment address with the given [`AddressIndex`].
+    pub fn payment_address(&self, index: AddressIndex) -> (Address, fmd::DetectionKey) {
         let d = self.dk.diversifier_for_index(&index);
         let g_d = d.diversified_generator();
         let pk_d = self.ivk.diversified_public(&g_d);
@@ -43,7 +43,7 @@ impl IncomingViewingKey {
 
     /// Returns the index used to create the given diversifier (if it was
     /// created using this incoming viewing key)
-    pub fn index_for_diversifier(&self, diversifier: &Diversifier) -> DiversifierIndex {
+    pub fn index_for_diversifier(&self, diversifier: &Diversifier) -> AddressIndex {
         self.dk.index_for_diversifier(diversifier)
     }
 
@@ -64,7 +64,7 @@ mod test {
         let mut rng = rand::rngs::OsRng;
         let spend_key = SpendKey::from_seed_phrase(SeedPhrase::generate(&mut rng), 0);
         let ivk = spend_key.full_viewing_key().incoming();
-        let own_address = ivk.payment_address(DiversifierIndex::from(0u64)).0;
+        let own_address = ivk.payment_address(AddressIndex::from(0u64)).0;
         assert!(ivk.views_address(&own_address));
     }
 
@@ -77,7 +77,7 @@ mod test {
         let other_address = SpendKey::from_seed_phrase(SeedPhrase::generate(&mut rng), 0)
             .full_viewing_key()
             .incoming()
-            .payment_address(DiversifierIndex::from(0u64))
+            .payment_address(AddressIndex::from(0u64))
             .0;
 
         assert!(!ivk.views_address(&other_address));

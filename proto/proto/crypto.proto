@@ -23,7 +23,7 @@ message Diversifier {
     bytes inner = 1;
 }
 
-message DiversifierIndex {
+message AddressIndex {
     bytes inner = 1;
 }
 

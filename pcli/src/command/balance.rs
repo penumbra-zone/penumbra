@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use anyhow::Result;
 use comfy_table::{presets, Table};
-use penumbra_crypto::{keys::DiversifierIndex, FullViewingKey, Value};
+use penumbra_crypto::{keys::AddressIndex, FullViewingKey, Value};
 use penumbra_view::ViewClient;
 #[derive(Debug, clap::Args)]
 pub struct BalanceCmd {
@@ -36,7 +36,7 @@ impl BalanceCmd {
                 .await?;
 
             // `Option<u64>` indicates the unbonding epoch, if any, for a quarantined note
-            let rows: Vec<(DiversifierIndex, Value, Option<u64>)> = if self.by_note {
+            let rows: Vec<(AddressIndex, Value, Option<u64>)> = if self.by_note {
                 notes
                     .iter()
                     .flat_map(|(index, notes_by_asset)| {

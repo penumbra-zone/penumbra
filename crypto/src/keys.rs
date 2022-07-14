@@ -1,5 +1,5 @@
 mod diversifier;
-pub use diversifier::{Diversifier, DiversifierIndex, DiversifierKey, DIVERSIFIER_LEN_BYTES};
+pub use diversifier::{AddressIndex, Diversifier, DiversifierKey, DIVERSIFIER_LEN_BYTES};
 
 mod nullifier;
 pub use nullifier::{NullifierKey, NK_LEN_BYTES};

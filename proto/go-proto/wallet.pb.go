@@ -146,8 +146,8 @@ type NoteRecord struct {
 	NoteCommitment *NoteCommitment `protobuf:"bytes,1,opt,name=note_commitment,json=noteCommitment,proto3" json:"note_commitment,omitempty"`
 	// The note plaintext itself.
 	Note *Note `protobuf:"bytes,2,opt,name=note,proto3" json:"note,omitempty"`
-	// A precomputed decryption of the note's diversifier index.
-	DiversifierIndex *DiversifierIndex `protobuf:"bytes,3,opt,name=diversifier_index,json=diversifierIndex,proto3" json:"diversifier_index,omitempty"`
+	// A precomputed decryption of the note's address index.
+	AddressIndex *AddressIndex `protobuf:"bytes,3,opt,name=address_index,json=AddressIndex,proto3" json:"address_index,omitempty"`
 	// The note's nullifier.
 	Nullifier *Nullifier `protobuf:"bytes,4,opt,name=nullifier,proto3" json:"nullifier,omitempty"`
 	// The height at which the note was created.
@@ -202,9 +202,9 @@ func (x *NoteRecord) GetNote() *Note {
 	return nil
 }
 
-func (x *NoteRecord) GetDiversifierIndex() *DiversifierIndex {
+func (x *NoteRecord) GetAddressIndex() *AddressIndex {
 	if x != nil {
-		return x.DiversifierIndex
+		return x.AddressIndex
 	}
 	return nil
 }
@@ -245,8 +245,8 @@ type NotesRequest struct {
 	IncludeSpent bool `protobuf:"varint,2,opt,name=include_spent,json=includeSpent,proto3" json:"include_spent,omitempty"`
 	// If set, only return notes with the specified asset id.
 	AssetId *AssetId `protobuf:"bytes,3,opt,name=asset_id,json=assetId,proto3" json:"asset_id,omitempty"`
-	// If set, only return notes with the specified diversifier index.
-	DiversifierIndex *DiversifierIndex `protobuf:"bytes,4,opt,name=diversifier_index,json=diversifierIndex,proto3" json:"diversifier_index,omitempty"`
+	// If set, only return notes with the specified address index.
+	AddressIndex *AddressIndex `protobuf:"bytes,4,opt,name=address_index,json=AddressIndex,proto3" json:"address_index,omitempty"`
 	// If set, stop returning notes once the total exceeds this amount.
 	//
 	// Ignored if `asset_id` is unset or if `include_spent` is set.
@@ -306,9 +306,9 @@ func (x *NotesRequest) GetAssetId() *AssetId {
 	return nil
 }
 
-func (x *NotesRequest) GetDiversifierIndex() *DiversifierIndex {
+func (x *NotesRequest) GetAddressIndex() *AddressIndex {
 	if x != nil {
-		return x.DiversifierIndex
+		return x.AddressIndex
 	}
 	return nil
 }
@@ -556,7 +556,7 @@ var file_wallet_proto_goTypes = []interface{}{
 	(*FullViewingKeyHash)(nil), // 6: penumbra.crypto.FullViewingKeyHash
 	(*NoteCommitment)(nil),     // 7: penumbra.crypto.NoteCommitment
 	(*Note)(nil),               // 8: penumbra.crypto.Note
-	(*DiversifierIndex)(nil),   // 9: penumbra.crypto.DiversifierIndex
+	(*AddressIndex)(nil),   // 9: penumbra.crypto.AddressIndex
 	(*Nullifier)(nil),          // 10: penumbra.crypto.Nullifier
 	(*AssetId)(nil),            // 11: penumbra.crypto.AssetId
 	(*MerkleRoot)(nil),         // 12: penumbra.crypto.MerkleRoot
@@ -566,11 +566,11 @@ var file_wallet_proto_depIdxs = []int32{
 	6,  // 0: penumbra.wallet.StatusRequest.fvk_hash:type_name -> penumbra.crypto.FullViewingKeyHash
 	7,  // 1: penumbra.wallet.NoteRecord.note_commitment:type_name -> penumbra.crypto.NoteCommitment
 	8,  // 2: penumbra.wallet.NoteRecord.note:type_name -> penumbra.crypto.Note
-	9,  // 3: penumbra.wallet.NoteRecord.diversifier_index:type_name -> penumbra.crypto.DiversifierIndex
+	9,  // 3: penumbra.wallet.NoteRecord.address_index:type_name -> penumbra.crypto.AddressIndex
 	10, // 4: penumbra.wallet.NoteRecord.nullifier:type_name -> penumbra.crypto.Nullifier
 	6,  // 5: penumbra.wallet.NotesRequest.fvk_hash:type_name -> penumbra.crypto.FullViewingKeyHash
 	11, // 6: penumbra.wallet.NotesRequest.asset_id:type_name -> penumbra.crypto.AssetId
-	9,  // 7: penumbra.wallet.NotesRequest.diversifier_index:type_name -> penumbra.crypto.DiversifierIndex
+	9,  // 7: penumbra.wallet.NotesRequest.address_index:type_name -> penumbra.crypto.AddressIndex
 	6,  // 8: penumbra.wallet.AuthPathsRequest.fvk_hash:type_name -> penumbra.crypto.FullViewingKeyHash
 	7,  // 9: penumbra.wallet.AuthPathsRequest.notes:type_name -> penumbra.crypto.NoteCommitment
 	12, // 10: penumbra.wallet.AuthPathsResponse.root:type_name -> penumbra.crypto.MerkleRoot

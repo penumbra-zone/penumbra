@@ -278,7 +278,7 @@ impl Storage {
         &self,
         include_spent: bool,
         asset_id: Option<asset::Id>,
-        diversifier_index: Option<penumbra_crypto::keys::DiversifierIndex>,
+        address_index: Option<penumbra_crypto::keys::AddressIndex>,
         amount_to_spend: u64,
     ) -> anyhow::Result<Vec<NoteRecord>> {
         // If set, return spent notes as well as unspent notes.
@@ -295,11 +295,11 @@ impl Storage {
             .map(|id| format!("x'{}'", hex::encode(&id.to_bytes())))
             .unwrap_or_else(|| "asset_id".to_string());
 
-        // If set, only return notes with the specified diversifier index.
-        // crypto.DiversifierIndex diversifier_index = 4;
-        let diversifier_clause = diversifier_index
+        // If set, only return notes with the specified address index.
+        // crypto.AddressIndex address_index = 4;
+        let address_clause = address_index
             .map(|d| format!("x'{}'", hex::encode(&d.0)))
-            .unwrap_or_else(|| "diversifier_index".to_string());
+            .unwrap_or_else(|| "address_index".to_string());
 
         let result = sqlx::query_as::<_, NoteRecord>(
             format!(
@@ -307,8 +307,8 @@ impl Storage {
             FROM notes
             WHERE height_spent IS {}
             AND asset_id IS {}
-            AND diversifier_index IS {}",
-                spent_clause, asset_clause, diversifier_clause
+            AND address_index IS {}",
+                spent_clause, asset_clause, address_clause
             )
             .as_str(),
         )
@@ -468,7 +468,7 @@ impl Storage {
                 .note_blinding()
                 .to_bytes()
                 .to_vec();
-            let diversifier_index = quarantined_note_record.diversifier_index.0.to_vec();
+            let address_index = quarantined_note_record.address_index.0.to_vec();
             let unbonding_epoch = quarantined_note_record.unbonding_epoch as i64;
             let identity_key = quarantined_note_record.identity_key.encode_to_vec();
             sqlx::query!(
@@ -481,7 +481,7 @@ impl Storage {
                         asset_id,
                         transmission_key,
                         blinding_factor,
-                        diversifier_index,
+                        address_index,
                         unbonding_epoch,
                         identity_key
                     )
@@ -493,7 +493,7 @@ impl Storage {
                 asset_id,
                 transmission_key,
                 blinding_factor,
-                diversifier_index,
+                address_index,
                 unbonding_epoch,
                 identity_key,
             )
@@ -515,7 +515,7 @@ impl Storage {
             let asset_id = note_record.note.asset_id().to_bytes().to_vec();
             let transmission_key = note_record.note.transmission_key().0.to_vec();
             let blinding_factor = note_record.note.note_blinding().to_bytes().to_vec();
-            let diversifier_index = note_record.diversifier_index.0.to_vec();
+            let address_index = note_record.address_index.0.to_vec();
             let nullifier = note_record.nullifier.to_bytes().to_vec();
             let position = (u64::from(note_record.position)) as i64;
             sqlx::query!(
@@ -529,7 +529,7 @@ impl Storage {
                         asset_id,
                         transmission_key,
                         blinding_factor,
-                        diversifier_index,
+                        address_index,
                         nullifier,
                         position
                     )
@@ -555,7 +555,7 @@ impl Storage {
                 asset_id,
                 transmission_key,
                 blinding_factor,
-                diversifier_index,
+                address_index,
                 nullifier,
                 position,
             )

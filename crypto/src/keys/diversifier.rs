@@ -78,7 +78,7 @@ pub struct DiversifierKey(
 );
 
 impl DiversifierKey {
-    pub fn diversifier_for_index(&self, index: &DiversifierIndex) -> Diversifier {
+    pub fn diversifier_for_index(&self, index: &AddressIndex) -> Diversifier {
         let enc_index = ff1::FF1::<Aes256>::new(&self.0, 2)
             .expect("radix 2 is in range")
             .encrypt(b"", &ff1::BinaryNumeralString::from_bytes_le(&index.0))
@@ -89,7 +89,7 @@ impl DiversifierKey {
         Diversifier(diversifier_bytes)
     }
 
-    pub fn index_for_diversifier(&self, diversifier: &Diversifier) -> DiversifierIndex {
+    pub fn index_for_diversifier(&self, diversifier: &Diversifier) -> AddressIndex {
         let index = ff1::FF1::<Aes256>::new(&self.0, 2)
             .expect("radix 2 is in range")
             .decrypt(
@@ -100,18 +100,18 @@ impl DiversifierKey {
 
         let mut index_bytes = [0; 11];
         index_bytes.copy_from_slice(&index.to_bytes_le());
-        DiversifierIndex(index_bytes)
+        AddressIndex(index_bytes)
     }
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Derivative, Serialize, Deserialize)]
-#[serde(try_from = "pb::DiversifierIndex", into = "pb::DiversifierIndex")]
+#[serde(try_from = "pb::AddressIndex", into = "pb::AddressIndex")]
 #[derivative(Debug)]
-pub struct DiversifierIndex(
+pub struct AddressIndex(
     #[derivative(Debug(bound = "", format_with = "crate::fmt_hex"))] pub [u8; 11],
 );
 
-impl From<u8> for DiversifierIndex {
+impl From<u8> for AddressIndex {
     fn from(x: u8) -> Self {
         let mut bytes = [0; 11];
         bytes[0] = x;
@@ -119,7 +119,7 @@ impl From<u8> for DiversifierIndex {
     }
 }
 
-impl From<u16> for DiversifierIndex {
+impl From<u16> for AddressIndex {
     fn from(x: u16) -> Self {
         let mut bytes = [0; 11];
         bytes[0..2].copy_from_slice(&x.to_le_bytes());
@@ -127,7 +127,7 @@ impl From<u16> for DiversifierIndex {
     }
 }
 
-impl From<u32> for DiversifierIndex {
+impl From<u32> for AddressIndex {
     fn from(x: u32) -> Self {
         let mut bytes = [0; 11];
         bytes[0..4].copy_from_slice(&x.to_le_bytes());
@@ -135,7 +135,7 @@ impl From<u32> for DiversifierIndex {
     }
 }
 
-impl From<u64> for DiversifierIndex {
+impl From<u64> for AddressIndex {
     fn from(x: u64) -> Self {
         let mut bytes = [0; 11];
         bytes[0..8].copy_from_slice(&x.to_le_bytes());
@@ -143,24 +143,24 @@ impl From<u64> for DiversifierIndex {
     }
 }
 
-impl From<usize> for DiversifierIndex {
+impl From<usize> for AddressIndex {
     fn from(x: usize) -> Self {
         (x as u64).into()
     }
 }
 
-impl From<DiversifierIndex> for u128 {
-    fn from(x: DiversifierIndex) -> Self {
+impl From<AddressIndex> for u128 {
+    fn from(x: AddressIndex) -> Self {
         let mut bytes = [0; 16];
         bytes[0..11].copy_from_slice(&x.0);
         u128::from_le_bytes(bytes)
     }
 }
 
-impl TryFrom<DiversifierIndex> for u64 {
+impl TryFrom<AddressIndex> for u64 {
     type Error = anyhow::Error;
-    fn try_from(diversifier_index: DiversifierIndex) -> Result<Self, Self::Error> {
-        let bytes = &diversifier_index.0;
+    fn try_from(address_index: AddressIndex) -> Result<Self, Self::Error> {
+        let bytes = &address_index.0;
         if bytes[8] == 0 && bytes[9] == 0 && bytes[10] == 0 {
             Ok(u64::from_le_bytes(
                 bytes[0..8]
@@ -168,43 +168,43 @@ impl TryFrom<DiversifierIndex> for u64 {
                     .expect("can take first 8 bytes of 11-byte array"),
             ))
         } else {
-            Err(anyhow::anyhow!("diversifier index out of range"))
+            Err(anyhow::anyhow!("address index out of range"))
         }
     }
 }
 
-impl TryFrom<&[u8]> for DiversifierIndex {
+impl TryFrom<&[u8]> for AddressIndex {
     type Error = anyhow::Error;
 
-    fn try_from(slice: &[u8]) -> Result<DiversifierIndex, Self::Error> {
+    fn try_from(slice: &[u8]) -> Result<AddressIndex, Self::Error> {
         if slice.len() != DIVERSIFIER_LEN_BYTES {
             return Err(anyhow!(
-                "diversifier index must be 11 bytes, got {:?}",
+                "address index must be 11 bytes, got {:?}",
                 slice.len()
             ));
         }
 
         let mut bytes = [0u8; DIVERSIFIER_LEN_BYTES];
         bytes.copy_from_slice(&slice[0..11]);
-        Ok(DiversifierIndex(bytes))
+        Ok(AddressIndex(bytes))
     }
 }
 
-impl Protobuf<pb::DiversifierIndex> for DiversifierIndex {}
+impl Protobuf<pb::AddressIndex> for AddressIndex {}
 
-impl From<DiversifierIndex> for pb::DiversifierIndex {
-    fn from(d: DiversifierIndex) -> pb::DiversifierIndex {
-        pb::DiversifierIndex {
+impl From<AddressIndex> for pb::AddressIndex {
+    fn from(d: AddressIndex) -> pb::AddressIndex {
+        pb::AddressIndex {
             inner: d.0.to_vec(),
         }
     }
 }
 
-impl TryFrom<pb::DiversifierIndex> for DiversifierIndex {
+impl TryFrom<pb::AddressIndex> for AddressIndex {
     type Error = anyhow::Error;
 
-    fn try_from(d: pb::DiversifierIndex) -> Result<DiversifierIndex, Self::Error> {
-        Ok(DiversifierIndex(d.inner.as_slice().try_into()?))
+    fn try_from(d: pb::AddressIndex) -> Result<AddressIndex, Self::Error> {
+        Ok(AddressIndex(d.inner.as_slice().try_into()?))
     }
 }
 
@@ -214,8 +214,8 @@ mod tests {
 
     use super::*;
 
-    fn diversifier_index_strategy() -> BoxedStrategy<DiversifierIndex> {
-        any::<[u8; 11]>().prop_map(DiversifierIndex).boxed()
+    fn address_index_strategy() -> BoxedStrategy<AddressIndex> {
+        any::<[u8; 11]>().prop_map(AddressIndex).boxed()
     }
 
     fn diversifier_key_strategy() -> BoxedStrategy<DiversifierKey> {
@@ -226,7 +226,7 @@ mod tests {
         #[test]
         fn diversifier_encryption_roundtrip(
             key in diversifier_key_strategy(),
-            index in diversifier_index_strategy(),
+            index in address_index_strategy(),
         ) {
             let diversifier = key.diversifier_for_index(&index);
             let index2 = key.index_for_diversifier(&diversifier);
