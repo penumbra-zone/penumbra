@@ -15,6 +15,7 @@ service ObliviousQuery {
   rpc ChainParams(ChainParamsRequest) returns (chain.ChainParams);
   rpc ValidatorInfo(ValidatorInfoRequest) returns (stream stake.ValidatorInfo);
   rpc AssetList(AssetListRequest) returns (chain.KnownAssets);
+  rpc Status(StatusRequest) returns (StatusResponse);
 }
 
 // Lists all assets in Asset Registry
@@ -50,4 +51,16 @@ message ValidatorInfoRequest {
   string chain_id = 1;
   // Whether or not to return inactive validators
   bool show_inactive = 2;
+}
+
+// Requests chain status
+message StatusRequest {
+    
+}
+
+// Returns the chain status
+message StatusResponse {
+    // The current chain height
+    uint64 height = 1;
+
 }
