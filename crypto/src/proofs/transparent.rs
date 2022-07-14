@@ -601,11 +601,20 @@ pub struct SwapProof {
     pub g_d: decaf377::Element,
     // The transmission key for the destination address.
     pub pk_d: ka::Public,
-    // The value of the newly created Swap NFT (should be 1).
-    pub value: Value,
+    // The value of asset 1 in the swap.
+    pub value_t1: Value,
+    // The value of asset 2 in the swap.
+    pub value_t2: Value,
+    // The fee value associated with the swap.
+    // TODO: should always be of penumbra token type, maybe this should
+    // be uint64 or a hardcoded value?
+    pub value_fee: Value,
+    // The asset ID of the Swap NFT.
+    pub swap_nft_asset_id: asset::Id,
     // The blinding factor used for generating the value commitment.
+    // TODO: can this be shared amongst t1/t2/fee or is this unsafe?
     pub v_blinding: Fr,
-    // The blinding factor used for generating the note commitment.
+    // The blinding factor used for generating the note commitment for the Swap NFT.
     pub note_blinding: Fq,
     // The ephemeral secret key that corresponds to the public key.
     pub esk: ka::Secret,
@@ -615,20 +624,33 @@ impl SwapProof {
     /// Called to verify the proof using the provided public inputs.
     ///
     /// The public inputs are:
-    /// * value commitment of the new note,
-    /// * note commitment of the new note,
-    /// * the ephemeral public key used to generate the new note.
+    /// * value commitment of the asset 1's contribution to the transaction,
+    /// * value commitment of the asset 2's contribution to the transaction,
+    /// * value commitment of the fee's contribution to the transaction,
+    /// * note commitment of the new swap NFT note,
+    /// * the ephemeral public key used to generate the new swap NFT note.
     pub fn verify(
         &self,
-        value_commitment: value::Commitment,
+        value_1_commitment: value::Commitment,
+        value_2_commitment: value::Commitment,
+        value_fee_commitment: value::Commitment,
         note_commitment: note::Commitment,
         epk: ka::Public,
     ) -> anyhow::Result<(), Error> {
         // Note commitment integrity.
         let s_component_transmission_key = Fq::from_bytes(self.pk_d.0);
         if let Ok(transmission_key_s) = s_component_transmission_key {
-            let note_commitment_test =
-                note::commitment(self.note_blinding, self.value, self.g_d, transmission_key_s);
+            // Checks the note commitment of the Swap NFT.
+            let note_commitment_test = note::commitment(
+                self.note_blinding,
+                Value {
+                    // The swap NFT is always amount 1.
+                    amount: 1,
+                    asset_id: self.swap_nft_asset_id,
+                },
+                self.g_d,
+                transmission_key_s,
+            );
 
             if note_commitment != note_commitment_test {
                 return Err(Error::NoteCommitmentMismatch);
@@ -638,7 +660,15 @@ impl SwapProof {
         }
 
         // Value commitment integrity.
-        if value_commitment != -self.value.commit(self.v_blinding) {
+        if value_1_commitment != -self.value_t1.commit(self.v_blinding) {
+            return Err(Error::ValueCommitmentMismatch);
+        }
+
+        if value_2_commitment != -self.value_t2.commit(self.v_blinding) {
+            return Err(Error::ValueCommitmentMismatch);
+        }
+
+        if value_fee_commitment != -self.value_fee.commit(self.v_blinding) {
             return Err(Error::ValueCommitmentMismatch);
         }
 
@@ -665,8 +695,12 @@ impl From<SwapProof> for transparent_proofs::SwapProof {
         transparent_proofs::SwapProof {
             g_d: msg.g_d.compress().0.to_vec(),
             pk_d: msg.pk_d.0.to_vec(),
-            value_amount: msg.value.amount,
-            value_asset_id: msg.value.asset_id.0.to_bytes().to_vec(),
+            value_amount_t1: msg.value_t1.amount,
+            value_asset_id_t1: msg.value_t1.asset_id.0.to_bytes().to_vec(),
+            value_amount_t2: msg.value_t2.amount,
+            value_asset_id_t2: msg.value_t2.asset_id.0.to_bytes().to_vec(),
+            value_amount_fee: msg.value_fee.amount,
+            swap_nft_asset_id: msg.swap_nft_asset_id.0.to_bytes().to_vec(),
             v_blinding: msg.v_blinding.to_bytes().to_vec(),
             note_blinding: msg.note_blinding.to_bytes().to_vec(),
             esk: msg.esk.to_bytes().to_vec(),
@@ -692,23 +726,50 @@ impl TryFrom<transparent_proofs::SwapProof> for SwapProof {
             Fr::from_bytes(esk_bytes).map_err(|_| Error::ProtoMalformed)?,
         );
 
+        let pen_denom = asset::REGISTRY.parse_denom("upenumbra").unwrap();
+
         Ok(SwapProof {
             g_d: g_d_encoding
                 .decompress()
                 .map_err(|_| Error::ProtoMalformed)?,
             pk_d: ka::Public(proto.pk_d.try_into().map_err(|_| Error::ProtoMalformed)?),
-            value: Value {
-                amount: proto.value_amount,
+            value_t1: Value {
+                amount: proto.value_amount_t1,
                 asset_id: asset::Id(
                     Fq::from_bytes(
                         proto
-                            .value_asset_id
+                            .value_asset_id_t1
                             .try_into()
                             .map_err(|_| Error::ProtoMalformed)?,
                     )
                     .map_err(|_| Error::ProtoMalformed)?,
                 ),
             },
+            value_t2: Value {
+                amount: proto.value_amount_t2,
+                asset_id: asset::Id(
+                    Fq::from_bytes(
+                        proto
+                            .value_asset_id_t2
+                            .try_into()
+                            .map_err(|_| Error::ProtoMalformed)?,
+                    )
+                    .map_err(|_| Error::ProtoMalformed)?,
+                ),
+            },
+            value_fee: Value {
+                amount: proto.value_amount_fee,
+                asset_id: asset::Id::from(pen_denom),
+            },
+            swap_nft_asset_id: asset::Id(
+                Fq::from_bytes(
+                    proto
+                        .swap_nft_asset_id
+                        .try_into()
+                        .map_err(|_| Error::ProtoMalformed)?,
+                )
+                .map_err(|_| Error::ProtoMalformed)?,
+            ),
             v_blinding: Fr::from_bytes(v_blinding_bytes).map_err(|_| Error::ProtoMalformed)?,
             note_blinding: Fq::from_bytes(
                 proto.note_blinding[..]
