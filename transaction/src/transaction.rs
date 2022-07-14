@@ -10,6 +10,7 @@ use penumbra_crypto::{
 };
 use penumbra_proto::{ibc as pb_ibc, stake as pbs, transaction as pbt, Message, Protobuf};
 use penumbra_tct as tct;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     action::{Delegate, Undelegate},
@@ -24,7 +25,8 @@ pub struct TransactionBody {
     pub fee: Fee,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(try_from = "pbt::Transaction", into = "pbt::Transaction")]
 pub struct Transaction {
     pub transaction_body: TransactionBody,
     pub binding_sig: Signature<Binding>,

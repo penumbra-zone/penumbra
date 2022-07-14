@@ -8,5 +8,6 @@ pub mod hexstr;
 pub mod hexstr_bytes;
 
 pub mod base64str;
+pub mod base64str_bytes;
 
 pub mod bech32str;
