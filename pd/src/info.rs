@@ -67,7 +67,7 @@ impl Info {
         match query.path.as_str() {
             "state/key" => {
                 let height: u64 = query.height.into();
-                let key = query.data.to_vec();
+                let key = hex::decode(query.data.to_vec()).unwrap_or(query.data.to_vec());
 
                 let jmt_proof = jmt::JellyfishMerkleTree::new(&self.storage)
                     .get_with_ics23_proof(key.clone(), height)
