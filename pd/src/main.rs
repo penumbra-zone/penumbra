@@ -34,6 +34,9 @@ use tracing_subscriber::{prelude::*, EnvFilter};
     version = env!("VERGEN_GIT_SEMVER"),
 )]
 struct Opt {
+    /// Enable Tokio Console support.
+    #[clap(long, default_value = "false")]
+    tokio_console: bool,
     /// Command to run.
     #[clap(subcommand)]
     cmd: RootCommand,
@@ -140,14 +143,18 @@ async fn main() -> anyhow::Result<()> {
         .or_else(|_| EnvFilter::try_new("info"))
         .unwrap();
 
-    tracing_subscriber::registry()
+    let opt = Opt::parse();
+
+    // Register the tracing subscribers, conditionally enabling tokio console support
+    let registry = tracing_subscriber::registry()
         .with(filter_layer)
         .with(fmt_layer)
-        .with(metrics_layer)
-        .with(console_layer)
-        .init();
-
-    let opt = Opt::parse();
+        .with(metrics_layer);
+    if opt.tokio_console {
+        registry.with(console_layer).init();
+    } else {
+        registry.init();
+    }
 
     match opt.cmd {
         RootCommand::Start {
