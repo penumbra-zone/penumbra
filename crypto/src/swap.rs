@@ -18,8 +18,9 @@ pub const SWAP_CIPHERTEXT_BYTES: usize = 169;
 pub const SWAP_LEN_BYTES: usize = 153;
 
 /// The nonce used for swap encryption.
-/// TODO: copied this from note encryption, it looks like the nonce
-/// is always going to be `[0u8; 12]` unless I'm missing something?
+///
+/// The nonce will always be `[0u8; 12]` which is okay since we use a new
+/// ephemeral key each time.
 pub static SWAP_ENCRYPTION_NONCE: Lazy<[u8; 12]> = Lazy::new(|| [0u8; 12]);
 
 // Can add to this/make this an enum when we add additional types of swaps.
@@ -73,6 +74,7 @@ impl SwapPlaintext {
     }
 
     pub fn encrypt(&self, ovk: &OutgoingViewingKey) -> SwapCiphertext {
+        // TODO: this should use a new ephemeral key each time, similar to memo encryption
         let key = SwapPlaintext::derive_symmetric_key(ovk);
         let cipher = ChaCha20Poly1305::new(Key::from_slice(key.as_bytes()));
         let nonce = Nonce::from_slice(&*SWAP_ENCRYPTION_NONCE);

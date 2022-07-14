@@ -383,12 +383,12 @@ impl TryFrom<&[u8]> for OutputProof {
     }
 }
 
-/// Transparent proof for swapping assets.
+/// Transparent proof for claiming swapped assets.
 ///
 /// This structure keeps track of the auxiliary (private) inputs.
 /// TODO: currently a placeholder
 #[derive(Clone, Debug)]
-pub struct SwapProof {
+pub struct SwapClaimProof {
     // Block inclusion proof for the note commitment.
     pub note_commitment_block_proof: tct::builder::block::Proof,
     // Global position for the note commitment.
@@ -411,7 +411,7 @@ pub struct SwapProof {
     pub nk: keys::NullifierKey,
 }
 
-impl SwapProof {
+impl SwapClaimProof {
     /// Called to verify the proof using the provided public inputs.
     ///
     /// The public inputs are:
@@ -485,32 +485,32 @@ impl SwapProof {
     }
 }
 
-impl From<SwapProof> for Vec<u8> {
-    fn from(swap_proof: SwapProof) -> Vec<u8> {
-        let protobuf_serialized_proof: transparent_proofs::SwapProof = swap_proof.into();
+impl From<SwapClaimProof> for Vec<u8> {
+    fn from(swap_proof: SwapClaimProof) -> Vec<u8> {
+        let protobuf_serialized_proof: transparent_proofs::SwapClaimProof = swap_proof.into();
         protobuf_serialized_proof.encode_to_vec()
     }
 }
 
-impl TryFrom<&[u8]> for SwapProof {
+impl TryFrom<&[u8]> for SwapClaimProof {
     type Error = Error;
 
-    fn try_from(bytes: &[u8]) -> Result<SwapProof, Self::Error> {
+    fn try_from(bytes: &[u8]) -> Result<SwapClaimProof, Self::Error> {
         let protobuf_serialized_proof =
-            transparent_proofs::SwapProof::decode(bytes).map_err(|_| Error::ProtoMalformed)?;
+            transparent_proofs::SwapClaimProof::decode(bytes).map_err(|_| Error::ProtoMalformed)?;
         protobuf_serialized_proof
             .try_into()
             .map_err(|_| Error::ProtoMalformed)
     }
 }
 
-impl Protobuf<transparent_proofs::SwapProof> for SwapProof {}
+impl Protobuf<transparent_proofs::SwapClaimProof> for SwapClaimProof {}
 
-impl From<SwapProof> for transparent_proofs::SwapProof {
-    fn from(msg: SwapProof) -> Self {
+impl From<SwapClaimProof> for transparent_proofs::SwapClaimProof {
+    fn from(msg: SwapClaimProof) -> Self {
         let ak_bytes: [u8; 32] = msg.ak.into();
         let nk_bytes: [u8; 32] = msg.nk.0.to_bytes();
-        transparent_proofs::SwapProof {
+        transparent_proofs::SwapClaimProof {
             note_commitment_block_proof: Some(msg.note_commitment_block_proof.into()),
             note_commitment_position: msg.note_commitment_position.into(),
             g_d: msg.g_d.compress().0.to_vec(),
@@ -526,10 +526,10 @@ impl From<SwapProof> for transparent_proofs::SwapProof {
     }
 }
 
-impl TryFrom<transparent_proofs::SwapProof> for SwapProof {
+impl TryFrom<transparent_proofs::SwapClaimProof> for SwapClaimProof {
     type Error = Error;
 
-    fn try_from(proto: transparent_proofs::SwapProof) -> anyhow::Result<Self, Self::Error> {
+    fn try_from(proto: transparent_proofs::SwapClaimProof) -> anyhow::Result<Self, Self::Error> {
         let g_d_bytes: [u8; 32] = proto.g_d.try_into().map_err(|_| Error::ProtoMalformed)?;
         let g_d_encoding = decaf377::Encoding(g_d_bytes);
 
@@ -542,7 +542,7 @@ impl TryFrom<transparent_proofs::SwapProof> for SwapProof {
             .map_err(|_| Error::ProtoMalformed)?;
         let ak = ak_bytes.try_into().map_err(|_| Error::ProtoMalformed)?;
 
-        Ok(SwapProof {
+        Ok(SwapClaimProof {
             note_commitment_block_proof: proto
                 .note_commitment_block_proof
                 .ok_or(Error::ProtoMalformed)?
