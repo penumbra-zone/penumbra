@@ -1,7 +1,7 @@
 use penumbra_crypto::{
     asset,
     ka::Public,
-    keys::{Diversifier, DiversifierIndex},
+    keys::{AddressIndex, Diversifier},
     note, FieldExt, Fq, Note, Nullifier, Value,
 };
 use penumbra_proto::{view as pb, Protobuf};
@@ -16,7 +16,7 @@ use sqlx::Row;
 pub struct NoteRecord {
     pub note_commitment: note::Commitment,
     pub note: Note,
-    pub diversifier_index: DiversifierIndex,
+    pub address_index: AddressIndex,
     pub nullifier: Nullifier,
     pub height_created: u64,
     pub height_spent: Option<u64>,
@@ -29,7 +29,7 @@ impl From<NoteRecord> for pb::NoteRecord {
         pb::NoteRecord {
             note_commitment: Some(v.note_commitment.into()),
             note: Some(v.note.into()),
-            diversifier_index: Some(v.diversifier_index.into()),
+            address_index: Some(v.address_index.into()),
             nullifier: Some(v.nullifier.into()),
             height_created: v.height_created,
             height_spent: v.height_spent,
@@ -50,9 +50,9 @@ impl TryFrom<pb::NoteRecord> for NoteRecord {
                 .note
                 .ok_or_else(|| anyhow::anyhow!("missing note"))?
                 .try_into()?,
-            diversifier_index: v
-                .diversifier_index
-                .ok_or_else(|| anyhow::anyhow!("missing diversifier index"))?
+            address_index: v
+                .address_index
+                .ok_or_else(|| anyhow::anyhow!("missing address index"))?
                 .try_into()?,
             nullifier: v
                 .nullifier
@@ -78,13 +78,11 @@ impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for NoteRecord {
                 }
             })?;
 
-        let diversifier_index = DiversifierIndex::try_from(
-            row.get::<'r, &[u8], _>("diversifier_index"),
-        )
-        .map_err(|e| sqlx::Error::ColumnDecode {
-            index: "diversifier_index".to_string(),
-            source: e.into(),
-        })?;
+        let address_index = AddressIndex::try_from(row.get::<'r, &[u8], _>("address_index"))
+            .map_err(|e| sqlx::Error::ColumnDecode {
+                index: "address_index".to_string(),
+                source: e.into(),
+            })?;
 
         let transmission_key = Public(
             <[u8; 32]>::try_from(row.get::<'r, &[u8], _>("transmission_key")).map_err(|e| {
@@ -158,7 +156,7 @@ impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for NoteRecord {
         Ok(NoteRecord {
             note_commitment,
             note,
-            diversifier_index,
+            address_index,
             nullifier,
             position,
             height_created,

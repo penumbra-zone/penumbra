@@ -17,7 +17,7 @@ CREATE TABLE notes (
     transmission_key        BLOB NOT NULL,
     blinding_factor         BLOB NOT NULL,
     -- precomputed decryption of the diversifier
-    diversifier_index       BLOB NOT NULL,
+    address_index       BLOB NOT NULL,
     -- the nullifier for this note, used to detect when it is spent
     nullifier               BLOB NOT NULL,
     -- the position of the note in the note commitment tree
@@ -27,7 +27,7 @@ CREATE TABLE notes (
 -- general purpose note queries
 CREATE INDEX notes_idx ON notes (
     height_spent,       -- null if unspent, so spent/unspent is first
-    diversifier_index,  -- then filter by account
+    address_index,  -- then filter by account
     asset_id,           -- then by asset
     amount,             -- then by amount
     height_created      -- we don't really care about this, except informationally
@@ -52,7 +52,7 @@ CREATE TABLE quarantined_notes (
     transmission_key        BLOB NOT NULL,
     blinding_factor         BLOB NOT NULL,
     -- precomputed decryption of the diversifier
-    diversifier_index       BLOB NOT NULL,
+    address_index       BLOB NOT NULL,
     -- the quarantine status of the note
     unbonding_epoch         BIGINT NOT NULL,
     identity_key            BLOB NOT NULL
@@ -61,7 +61,7 @@ CREATE TABLE quarantined_notes (
 CREATE INDEX quarantined_notes_idx ON quarantined_notes (
     identity_key,       -- first by identity key
     unbonding_epoch,    -- then by unbonding epoch
-    diversifier_index,  -- then filter by account
+    address_index,  -- then filter by account
     amount,             -- then by amount
     height_created      -- we don't really care about this, except informationally
 );

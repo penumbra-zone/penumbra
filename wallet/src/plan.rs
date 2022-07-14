@@ -4,7 +4,7 @@ use anyhow::Result;
 use penumbra_component::stake::rate::RateData;
 use penumbra_component::stake::validator;
 use penumbra_crypto::{
-    asset::Denom, keys::DiversifierIndex, memo::MemoPlaintext, transaction::Fee, Address,
+    asset::Denom, keys::AddressIndex, memo::MemoPlaintext, transaction::Fee, Address,
     DelegationToken, FullViewingKey, Value, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
 };
 use penumbra_proto::view::NotesRequest;
@@ -45,12 +45,12 @@ where
     // Add the required spends, and track change:
     let spend_amount = fee;
     let mut spent_amount = 0;
-    let source_index: Option<DiversifierIndex> = source_address.map(Into::into);
+    let source_index: Option<AddressIndex> = source_address.map(Into::into);
     let notes_to_spend = view
         .notes(NotesRequest {
             fvk_hash: Some(fvk.hash().into()),
             asset_id: Some((*STAKING_TOKEN_ASSET_ID).into()),
-            diversifier_index: source_index.map(Into::into),
+            address_index: source_index.map(Into::into),
             amount_to_spend: spend_amount,
             include_spent: false,
         })
@@ -131,12 +131,12 @@ where
 
     // Get a list of notes to spend from the view service:
     let spend_amount = unbonded_amount + fee;
-    let source_index: Option<DiversifierIndex> = source_address.map(Into::into);
+    let source_index: Option<AddressIndex> = source_address.map(Into::into);
     let notes_to_spend = view
         .notes(NotesRequest {
             fvk_hash: Some(fvk.hash().into()),
             asset_id: Some((*STAKING_TOKEN_ASSET_ID).into()),
-            diversifier_index: source_index.map(Into::into),
+            address_index: source_index.map(Into::into),
             amount_to_spend: spend_amount,
             include_spent: false,
         })
@@ -337,13 +337,13 @@ where
             continue;
         }
 
-        let source_index: Option<DiversifierIndex> = source_address.map(Into::into);
+        let source_index: Option<AddressIndex> = source_address.map(Into::into);
         // Select a list of notes that provides at least the required amount.
         let notes_to_spend = view
             .notes(NotesRequest {
                 fvk_hash: Some(fvk.hash().into()),
                 asset_id: Some(denom.id().into()),
-                diversifier_index: source_index.map(Into::into),
+                address_index: source_index.map(Into::into),
                 amount_to_spend: spend_amount,
                 include_spent: false,
             })
@@ -418,12 +418,12 @@ where
         })
         .await?;
 
-    let mut notes_by_addr_and_denom: BTreeMap<DiversifierIndex, BTreeMap<_, Vec<NoteRecord>>> =
+    let mut notes_by_addr_and_denom: BTreeMap<AddressIndex, BTreeMap<_, Vec<NoteRecord>>> =
         BTreeMap::new();
 
     for record in all_notes {
         notes_by_addr_and_denom
-            .entry(record.diversifier_index)
+            .entry(record.address_index)
             .or_default()
             .entry(record.note.asset_id())
             .or_default()

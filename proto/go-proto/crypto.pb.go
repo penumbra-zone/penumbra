@@ -255,7 +255,7 @@ func (x *Diversifier) GetInner() []byte {
 	return nil
 }
 
-type DiversifierIndex struct {
+type AddressIndex struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -263,8 +263,8 @@ type DiversifierIndex struct {
 	Inner []byte `protobuf:"bytes,1,opt,name=inner,proto3" json:"inner,omitempty"`
 }
 
-func (x *DiversifierIndex) Reset() {
-	*x = DiversifierIndex{}
+func (x *AddressIndex) Reset() {
+	*x = AddressIndex{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_crypto_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -272,13 +272,13 @@ func (x *DiversifierIndex) Reset() {
 	}
 }
 
-func (x *DiversifierIndex) String() string {
+func (x *AddressIndex) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*DiversifierIndex) ProtoMessage() {}
+func (*AddressIndex) ProtoMessage() {}
 
-func (x *DiversifierIndex) ProtoReflect() protoreflect.Message {
+func (x *AddressIndex) ProtoReflect() protoreflect.Message {
 	mi := &file_crypto_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -290,12 +290,12 @@ func (x *DiversifierIndex) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use DiversifierIndex.ProtoReflect.Descriptor instead.
-func (*DiversifierIndex) Descriptor() ([]byte, []int) {
+// Deprecated: Use AddressIndex.ProtoReflect.Descriptor instead.
+func (*AddressIndex) Descriptor() ([]byte, []int) {
 	return file_crypto_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *DiversifierIndex) GetInner() []byte {
+func (x *AddressIndex) GetInner() []byte {
 	if x != nil {
 		return x.Inner
 	}
@@ -1172,7 +1172,7 @@ var file_crypto_proto_goTypes = []interface{}{
 	(*FullViewingKey)(nil),      // 2: penumbra.crypto.FullViewingKey
 	(*FullViewingKeyHash)(nil),  // 3: penumbra.crypto.FullViewingKeyHash
 	(*Diversifier)(nil),         // 4: penumbra.crypto.Diversifier
-	(*DiversifierIndex)(nil),    // 5: penumbra.crypto.DiversifierIndex
+	(*AddressIndex)(nil),    // 5: penumbra.crypto.AddressIndex
 	(*NoteCommitment)(nil),      // 6: penumbra.crypto.NoteCommitment
 	(*AssetId)(nil),             // 7: penumbra.crypto.AssetId
 	(*Denom)(nil),               // 8: penumbra.crypto.Denom
@@ -1271,7 +1271,7 @@ func file_crypto_proto_init() {
 			}
 		}
 		file_crypto_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DiversifierIndex); i {
+			switch v := v.(*AddressIndex); i {
 			case 0:
 				return &v.state
 			case 1:

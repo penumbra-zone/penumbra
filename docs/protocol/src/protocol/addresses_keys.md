@@ -60,7 +60,7 @@ flowchart BT
     fvk_blake --> ovk & dk;
     fvk_poseidon --> ivk;
 
-    index(Diversifier Index);
+    index(address index);
     d1[d];
 
     d1 --- d2;

@@ -19,7 +19,7 @@ flowchart BT
     subgraph SK[Spending Key]
     end;
 
-    index(Diversifier Index);
+    index(address index);
     div{ };
 
     SK --> FVK;
@@ -40,8 +40,8 @@ From bottom to top:
 - the *incoming viewing key* represents the capability to view only incoming transactions, and is used to scan the block chain for incoming transactions.
 
 Penumbra allows the same spending authority to present multiple, publicly
-unlinkable addresses, keyed by an 11-byte *diversifier index*.  Each choice of
-diversifier index gives a distinct shielded payment address. Because these
+unlinkable addresses, keyed by an 11-byte *address index*.  Each choice of
+address index gives a distinct shielded payment address. Because these
 addresses share a common incoming viewing key, the cost of scanning the
 blockchain does not increase with the number of addresses in use.
 

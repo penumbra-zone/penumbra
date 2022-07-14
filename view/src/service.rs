@@ -9,7 +9,7 @@ use camino::Utf8Path;
 use futures::stream::{StreamExt, TryStreamExt};
 use penumbra_crypto::{
     asset,
-    keys::{DiversifierIndex, FullViewingKey, FullViewingKeyHash},
+    keys::{AddressIndex, FullViewingKey, FullViewingKeyHash},
 };
 use penumbra_proto::{
     chain as pbp,
@@ -320,18 +320,18 @@ impl ViewProtocol for ViewService {
             .map(asset::Id::try_from)
             .map_or(Ok(None), |v| v.map(Some))
             .map_err(|_| tonic::Status::invalid_argument("invalid asset id"))?;
-        let diversifier_index = request
+        let address_index = request
             .get_ref()
-            .diversifier_index
+            .address_index
             .to_owned()
-            .map(DiversifierIndex::try_from)
+            .map(AddressIndex::try_from)
             .map_or(Ok(None), |v| v.map(Some))
-            .map_err(|_| tonic::Status::invalid_argument("invalid diversifier index"))?;
+            .map_err(|_| tonic::Status::invalid_argument("invalid address index"))?;
         let amount_to_spend = request.get_ref().amount_to_spend;
 
         let notes = self
             .storage
-            .notes(include_spent, asset_id, diversifier_index, amount_to_spend)
+            .notes(include_spent, asset_id, address_index, amount_to_spend)
             .await
             .map_err(|e| tonic::Status::unavailable(format!("error fetching notes: {}", e)))?;
 
