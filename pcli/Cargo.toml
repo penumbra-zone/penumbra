@@ -33,6 +33,8 @@ pd = { path = "../pd" }
 # Penumbra dependencies
 decaf377 = { git = "https://github.com/penumbra-zone/decaf377" }
 tendermint = "0.24.0-pre.1"
+tendermint-rpc = { version = "0.24.0-pre.1", features = ["http-client"] }
+
 # External dependencies
 ark-ff = "0.3"
 ed25519-consensus = "1.2" # 1.2 required because tendermint 0.24.0-pre.1 uses it
@@ -67,6 +69,7 @@ http-body = "0.4.5"
 clap = { version = "3", features = ["derive", "env"] }
 camino = "1"
 url = "2"
+colored_json = "2.1"
 
 [build-dependencies]
 vergen = "5"

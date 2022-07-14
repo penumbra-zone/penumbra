@@ -80,6 +80,7 @@ static SERDE_TRANSPARENT: &str = r#"#[serde(transparent)]"#;
 static AS_HEX: &str = r#"#[serde(with = "crate::serializers::hexstr")]"#;
 static AS_HEX_FOR_BYTES: &str = r#"#[serde(with = "crate::serializers::hexstr_bytes")]"#;
 static AS_BASE64: &str = r#"#[serde(with = "crate::serializers::base64str")]"#;
+static AS_BASE64_FOR_BYTES: &str = r#"#[serde(with = "crate::serializers::base64str_bytes")]"#;
 static AS_BECH32_IDENTITY_KEY: &str =
     r#"#[serde(with = "crate::serializers::bech32str::validator_identity_key")]"#;
 static AS_BECH32_ADDRESS: &str = r#"#[serde(with = "crate::serializers::bech32str::address")]"#;
@@ -135,6 +136,8 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.crypto.Nullifier", SERIALIZE),
     (".penumbra.crypto.Nullifier", SERDE_TRANSPARENT),
     (".penumbra.crypto.AuthPath", SERIALIZE),
+    (".penumbra.crypto.SpendAuthSignature", SERIALIZE),
+    (".penumbra.crypto.SpendAuthSignature", SERDE_TRANSPARENT),
     (".penumbra.chain.ChainParams", SERIALIZE),
     (".penumbra.chain.CompactBlock", SERIALIZE),
     (".penumbra.chain.KnownAssets", SERIALIZE),
@@ -152,6 +155,13 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.transaction.ActionPlan", SERIALIZE),
     (".penumbra.transaction.SpendPlan", SERIALIZE),
     (".penumbra.transaction.OutputPlan", SERIALIZE),
+    (".penumbra.transaction.Transaction", SERIALIZE),
+    (".penumbra.transaction.TransactionBody", SERIALIZE),
+    (".penumbra.transaction.Action", SERIALIZE),
+    (".penumbra.transaction.Spend", SERIALIZE),
+    (".penumbra.transaction.SpendBody", SERIALIZE),
+    (".penumbra.transaction.Output", SERIALIZE),
+    (".penumbra.transaction.OutputBody", SERIALIZE),
     (".penumbra.ibc.IBCAction", SERIALIZE),
     (".penumbra.dex.MockFlowCiphertext", SERIALIZE),
     (".penumbra.dex.MockFlowCiphertext", SERDE_TRANSPARENT),
@@ -188,7 +198,9 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         AS_HEX_FOR_BYTES,
     ),
     (".penumbra.crypto.Nullifier.inner", AS_HEX),
+    (".penumbra.crypto.SpendAuthSignature.inner", AS_HEX),
     (".penumbra.chain.NoteSource.inner", AS_HEX),
+    // TransactionPlan formatting
     (
         ".penumbra.transaction.SpendPlan.randomizer",
         AS_HEX_FOR_BYTES,
@@ -208,4 +220,26 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.transaction.OutputPlan.esk", AS_HEX_FOR_BYTES),
     // TODO: replace if we use UTF-8 memos
     (".penumbra.transaction.OutputPlan.memo", AS_HEX_FOR_BYTES),
+    // Transaction formatting
+    (
+        ".penumbra.transaction.Transaction.binding_sig",
+        AS_HEX_FOR_BYTES,
+    ),
+    (".penumbra.transaction.Output.zkproof", AS_BASE64_FOR_BYTES),
+    (".penumbra.transaction.OutputBody.cv", AS_HEX_FOR_BYTES),
+    (
+        ".penumbra.transaction.OutputBody.encrypted_memo",
+        AS_BASE64_FOR_BYTES,
+    ),
+    (
+        ".penumbra.transaction.OutputBody.ovk_wrapped_key",
+        AS_BASE64_FOR_BYTES,
+    ),
+    (".penumbra.transaction.Spend.zkproof", AS_BASE64_FOR_BYTES),
+    (".penumbra.transaction.SpendBody.cv", AS_HEX_FOR_BYTES),
+    (".penumbra.transaction.SpendBody.rk", AS_HEX_FOR_BYTES),
+    (
+        ".penumbra.transaction.SpendBody.nullifier",
+        AS_HEX_FOR_BYTES,
+    ),
 ];
