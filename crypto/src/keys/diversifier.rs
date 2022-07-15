@@ -1,4 +1,5 @@
 use std::convert::{TryFrom, TryInto};
+use std::fmt::Debug;
 
 use aes::Aes256;
 use anyhow::anyhow;
@@ -81,7 +82,10 @@ impl DiversifierKey {
     pub fn diversifier_for_index(&self, index: &AddressIndex) -> Diversifier {
         let enc_index = ff1::FF1::<Aes256>::new(&self.0, 2)
             .expect("radix 2 is in range")
-            .encrypt(b"", &ff1::BinaryNumeralString::from_bytes_le(&index.0))
+            .encrypt(
+                b"",
+                &ff1::BinaryNumeralString::from_bytes_le(&index.to_bytes()),
+            )
             .expect("binary string is the configured radix (2)");
 
         let mut diversifier_bytes = [0; 11];
@@ -100,46 +104,74 @@ impl DiversifierKey {
 
         let mut index_bytes = [0; 11];
         index_bytes.copy_from_slice(&index.to_bytes_le());
-        AddressIndex(index_bytes)
+        if index_bytes[8] == 0 && index_bytes[9] == 0 && index_bytes[10] == 0 {
+            AddressIndex::Numeric(u64::from_le_bytes(
+                index_bytes[0..8].try_into().expect("can form 8 byte array"),
+            ))
+        } else {
+            AddressIndex::Random(index_bytes)
+        }
     }
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Derivative, Serialize, Deserialize)]
 #[serde(try_from = "pb::AddressIndex", into = "pb::AddressIndex")]
-#[derivative(Debug)]
-pub struct AddressIndex(
-    #[derivative(Debug(bound = "", format_with = "crate::fmt_hex"))] pub [u8; 11],
-);
+pub enum AddressIndex {
+    /// Reserved for client applications.
+    Numeric(u64),
+    /// Randomly generated.
+    Random([u8; 11]),
+}
+
+// Workaround for https://github.com/mcarton/rust-derivative/issues/91
+impl Debug for AddressIndex {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        crate::fmt_hex(self.to_bytes(), f)
+    }
+}
+
+impl AddressIndex {
+    pub fn to_bytes(&self) -> [u8; 11] {
+        match self {
+            Self::Numeric(x) => {
+                let mut bytes = [0; 11];
+                bytes[0..8].copy_from_slice(&x.to_le_bytes());
+                bytes
+            }
+            Self::Random(bytes) => bytes.clone(),
+        }
+    }
+}
 
 impl From<u8> for AddressIndex {
     fn from(x: u8) -> Self {
-        let mut bytes = [0; 11];
+        let mut bytes = [0; 8];
         bytes[0] = x;
-        Self(bytes)
+        AddressIndex::Numeric(u64::from_le_bytes(bytes))
     }
 }
 
 impl From<u16> for AddressIndex {
     fn from(x: u16) -> Self {
-        let mut bytes = [0; 11];
+        let mut bytes = [0; 8];
         bytes[0..2].copy_from_slice(&x.to_le_bytes());
-        Self(bytes)
+        AddressIndex::Numeric(u64::from_le_bytes(bytes))
     }
 }
 
 impl From<u32> for AddressIndex {
     fn from(x: u32) -> Self {
-        let mut bytes = [0; 11];
+        let mut bytes = [0; 8];
         bytes[0..4].copy_from_slice(&x.to_le_bytes());
-        Self(bytes)
+        AddressIndex::Numeric(u64::from_le_bytes(bytes))
     }
 }
 
 impl From<u64> for AddressIndex {
     fn from(x: u64) -> Self {
-        let mut bytes = [0; 11];
+        let mut bytes = [0; 8];
         bytes[0..8].copy_from_slice(&x.to_le_bytes());
-        Self(bytes)
+        AddressIndex::Numeric(u64::from_le_bytes(bytes))
     }
 }
 
@@ -151,24 +183,33 @@ impl From<usize> for AddressIndex {
 
 impl From<AddressIndex> for u128 {
     fn from(x: AddressIndex) -> Self {
-        let mut bytes = [0; 16];
-        bytes[0..11].copy_from_slice(&x.0);
-        u128::from_le_bytes(bytes)
+        match x {
+            AddressIndex::Numeric(x) => u128::from(x),
+            AddressIndex::Random(x) => {
+                let mut bytes = [0; 16];
+                bytes[0..11].copy_from_slice(&x);
+                u128::from_le_bytes(bytes)
+            }
+        }
     }
 }
 
 impl TryFrom<AddressIndex> for u64 {
     type Error = anyhow::Error;
     fn try_from(address_index: AddressIndex) -> Result<Self, Self::Error> {
-        let bytes = &address_index.0;
-        if bytes[8] == 0 && bytes[9] == 0 && bytes[10] == 0 {
-            Ok(u64::from_le_bytes(
-                bytes[0..8]
-                    .try_into()
-                    .expect("can take first 8 bytes of 11-byte array"),
-            ))
-        } else {
-            Err(anyhow::anyhow!("address index out of range"))
+        match address_index {
+            AddressIndex::Numeric(x) => Ok(x),
+            AddressIndex::Random(bytes) => {
+                if bytes[8] == 0 && bytes[9] == 0 && bytes[10] == 0 {
+                    Ok(u64::from_le_bytes(
+                        bytes[0..8]
+                            .try_into()
+                            .expect("can take first 8 bytes of 11-byte array"),
+                    ))
+                } else {
+                    Err(anyhow::anyhow!("address index out of range"))
+                }
+            }
         }
     }
 }
@@ -184,9 +225,16 @@ impl TryFrom<&[u8]> for AddressIndex {
             ));
         }
 
-        let mut bytes = [0u8; DIVERSIFIER_LEN_BYTES];
-        bytes.copy_from_slice(&slice[0..11]);
-        Ok(AddressIndex(bytes))
+        // Numeric addresses have the last three bytes as zero.
+        if slice[8] == 0 && slice[9] == 0 && slice[10] == 0 {
+            let mut bytes = [0; 8];
+            bytes[0..8].copy_from_slice(&slice[0..8]);
+            Ok(AddressIndex::Numeric(u64::from_le_bytes(bytes)))
+        } else {
+            let mut bytes = [0u8; DIVERSIFIER_LEN_BYTES];
+            bytes.copy_from_slice(&slice[0..11]);
+            Ok(AddressIndex::Random(bytes))
+        }
     }
 }
 
@@ -194,8 +242,15 @@ impl Protobuf<pb::AddressIndex> for AddressIndex {}
 
 impl From<AddressIndex> for pb::AddressIndex {
     fn from(d: AddressIndex) -> pb::AddressIndex {
-        pb::AddressIndex {
-            inner: d.0.to_vec(),
+        match d {
+            AddressIndex::Numeric(x) => {
+                let mut bytes = [0; 11];
+                bytes[0..8].copy_from_slice(&x.to_le_bytes());
+                pb::AddressIndex {
+                    inner: bytes.to_vec(),
+                }
+            }
+            AddressIndex::Random(x) => pb::AddressIndex { inner: x.to_vec() },
         }
     }
 }
@@ -204,7 +259,7 @@ impl TryFrom<pb::AddressIndex> for AddressIndex {
     type Error = anyhow::Error;
 
     fn try_from(d: pb::AddressIndex) -> Result<AddressIndex, Self::Error> {
-        Ok(AddressIndex(d.inner.as_slice().try_into()?))
+        d.inner.as_slice().try_into()
     }
 }
 
@@ -214,8 +269,12 @@ mod tests {
 
     use super::*;
 
-    fn address_index_strategy() -> BoxedStrategy<AddressIndex> {
-        any::<[u8; 11]>().prop_map(AddressIndex).boxed()
+    fn address_index_strategy_numeric() -> BoxedStrategy<AddressIndex> {
+        any::<u64>().prop_map(AddressIndex::Numeric).boxed()
+    }
+
+    fn address_index_strategy_random() -> BoxedStrategy<AddressIndex> {
+        any::<[u8; 11]>().prop_map(AddressIndex::Random).boxed()
     }
 
     fn diversifier_key_strategy() -> BoxedStrategy<DiversifierKey> {
@@ -226,7 +285,17 @@ mod tests {
         #[test]
         fn diversifier_encryption_roundtrip(
             key in diversifier_key_strategy(),
-            index in address_index_strategy(),
+            index in address_index_strategy_numeric(),
+        ) {
+            let diversifier = key.diversifier_for_index(&index);
+            let index2 = key.index_for_diversifier(&diversifier);
+            assert_eq!(index2, index );
+        }
+
+        #[test]
+        fn diversifier_encryption_roundtrip_numeric(
+            key in diversifier_key_strategy(),
+            index in address_index_strategy_random(),
         ) {
             let diversifier = key.diversifier_for_index(&index);
             let index2 = key.index_for_diversifier(&diversifier);

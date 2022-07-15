@@ -298,7 +298,7 @@ impl Storage {
         // If set, only return notes with the specified address index.
         // crypto.AddressIndex address_index = 4;
         let address_clause = address_index
-            .map(|d| format!("x'{}'", hex::encode(&d.0)))
+            .map(|d| format!("x'{}'", hex::encode(&d.to_bytes())))
             .unwrap_or_else(|| "address_index".to_string());
 
         let result = sqlx::query_as::<_, NoteRecord>(
@@ -468,7 +468,7 @@ impl Storage {
                 .note_blinding()
                 .to_bytes()
                 .to_vec();
-            let address_index = quarantined_note_record.address_index.0.to_vec();
+            let address_index = quarantined_note_record.address_index.to_bytes().to_vec();
             let unbonding_epoch = quarantined_note_record.unbonding_epoch as i64;
             let identity_key = quarantined_note_record.identity_key.encode_to_vec();
             sqlx::query!(
@@ -515,7 +515,7 @@ impl Storage {
             let asset_id = note_record.note.asset_id().to_bytes().to_vec();
             let transmission_key = note_record.note.transmission_key().0.to_vec();
             let blinding_factor = note_record.note.note_blinding().to_bytes().to_vec();
-            let address_index = note_record.address_index.0.to_vec();
+            let address_index = note_record.address_index.to_bytes().to_vec();
             let nullifier = note_record.nullifier.to_bytes().to_vec();
             let position = (u64::from(note_record.position)) as i64;
             sqlx::query!(
