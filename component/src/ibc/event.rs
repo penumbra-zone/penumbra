@@ -51,8 +51,11 @@ pub fn connection_open_init(
             )
                 .index(),
             (
-                "counterparty_conneciton_id",
-                counterparty.connection_id().unwrap().to_string(),
+                "counterparty_connection_id",
+                counterparty
+                    .connection_id()
+                    .map(|id| id.to_string())
+                    .unwrap_or_default(),
             )
                 .index(),
         ],
@@ -75,8 +78,11 @@ pub fn connection_open_try(
             )
                 .index(),
             (
-                "counterparty_conneciton_id",
-                counterparty.connection_id().unwrap().to_string(),
+                "counterparty_connection_id",
+                counterparty
+                    .connection_id()
+                    .map(|id| id.to_string())
+                    .unwrap_or_default(),
             )
                 .index(),
         ],
@@ -99,8 +105,8 @@ pub fn connection_open_ack(connection_id: &ConnectionId, connection_end: &Connec
                 connection_end
                     .counterparty()
                     .connection_id()
-                    .unwrap()
-                    .to_string(),
+                    .map(|id| id.to_string())
+                    .unwrap_or_default(),
             )
                 .index(),
         ],
@@ -126,8 +132,8 @@ pub fn connection_open_confirm(
                 connection_end
                     .counterparty()
                     .connection_id()
-                    .unwrap()
-                    .to_string(),
+                    .map(|id| id.to_string())
+                    .unwrap_or_default(),
             )
                 .index(),
         ],
@@ -147,7 +153,11 @@ pub fn channel_open_init(port_id: &PortId, channel_id: &ChannelId, channel: &Cha
                 .index(),
             (
                 "counterparty_channel_id",
-                channel.counterparty().channel_id().unwrap().to_string(),
+                channel
+                    .counterparty()
+                    .channel_id()
+                    .map(|id| id.to_string())
+                    .unwrap_or_default(),
             )
                 .index(),
             ("connection_id", channel.connection_hops[0].to_string()).index(),
@@ -168,7 +178,11 @@ pub fn channel_open_try(port_id: &PortId, channel_id: &ChannelId, channel: &Chan
                 .index(),
             (
                 "counterparty_channel_id",
-                channel.counterparty().channel_id().unwrap().to_string(),
+                channel
+                    .counterparty()
+                    .channel_id()
+                    .map(|id| id.to_string())
+                    .unwrap_or_default(),
             )
                 .index(),
             ("connection_id", channel.connection_hops[0].to_string()).index(),
@@ -189,7 +203,11 @@ pub fn channel_open_ack(port_id: &PortId, channel_id: &ChannelId, channel: &Chan
                 .index(),
             (
                 "counterparty_channel_id",
-                channel.counterparty().channel_id().unwrap().to_string(),
+                channel
+                    .counterparty()
+                    .channel_id()
+                    .map(|id| id.to_string())
+                    .unwrap_or_default(),
             )
                 .index(),
             ("connection_id", channel.connection_hops[0].to_string()).index(),
@@ -214,7 +232,11 @@ pub fn channel_open_confirm(
                 .index(),
             (
                 "counterparty_channel_id",
-                channel.counterparty().channel_id().unwrap().to_string(),
+                channel
+                    .counterparty()
+                    .channel_id()
+                    .map(|id| id.to_string())
+                    .unwrap_or_default(),
             )
                 .index(),
             ("connection_id", channel.connection_hops[0].to_string()).index(),
@@ -235,7 +257,11 @@ pub fn channel_close_init(port_id: &PortId, channel_id: &ChannelId, channel: &Ch
                 .index(),
             (
                 "counterparty_channel_id",
-                channel.counterparty().channel_id().unwrap().to_string(),
+                channel
+                    .counterparty()
+                    .channel_id()
+                    .map(|id| id.to_string())
+                    .unwrap_or_default(),
             )
                 .index(),
             ("connection_id", channel.connection_hops[0].to_string()).index(),
@@ -260,7 +286,11 @@ pub fn channel_close_confirm(
                 .index(),
             (
                 "counterparty_channel_id",
-                channel.counterparty().channel_id().unwrap().to_string(),
+                channel
+                    .counterparty()
+                    .channel_id()
+                    .map(|id| id.to_string())
+                    .unwrap_or_default(),
             )
                 .index(),
             ("connection_id", channel.connection_hops[0].to_string()).index(),
