@@ -1,8 +1,8 @@
-use std::pin::Pin;
+use std::{collections::VecDeque, pin::Pin};
 
 use async_stream::try_stream;
 use futures::{
-    stream::{StreamExt, TryStreamExt},
+    stream::{FuturesOrdered, StreamExt, TryStreamExt},
     TryFutureExt,
 };
 use penumbra_chain::View as _;
@@ -175,39 +175,58 @@ impl ObliviousQuery for Info {
                     "catching up from start height to current end height"
                 );
 
-                // We need to send block responses in order, but fetching the
-                // compact block involves disk I/O, so we want to look ahead and
-                // start fetching compact blocks, rather than waiting for each
-                // state query to complete sequentially.
+                // We need to send block responses in order, but fetching the compact block involves
+                // disk I/O, so we want to look ahead and start fetching compact blocks, rather than
+                // waiting for each state query to complete sequentially.
                 //
-                // To do this, we spawn a task that runs ahead and queues block
-                // fetches from the state.  Each block fetch is also spawned as
-                // a new task, so they execute independently, and those tasks'
-                // JoinHandles are sent back to this task using a bounded
-                // channel.  The channel bound prevents the queueing task from
-                // running too far ahead.
+                // To do this, we run ahead and queue block fetches from the state in a
+                // `FuturesOrdered`, so that they execute concurrently, but return results in order.
+                // We use a bounded channel as a buffer to impose a bound on the otherwise unbounded
+                // `FuturesOrdered`, ensuring that fetching does not overrun sending.
                 let (block_fetch_tx, mut block_fetch_rx) = mpsc::channel(8);
 
-                let state2 = state.clone();
-                tokio::spawn(async move {
-                    for height in start_height..=end_height {
-                        let state3 = state2.clone();
-                        let _ = block_fetch_tx
-                            .send(tokio::spawn(
-                                async move { state3.compact_block(height).await },
-                            ))
-                            .await;
-                    }
-                });
+                // The range of heights to iterate over
+                let mut heights = start_height..=end_height;
 
-                while let Some(block_fetch) = block_fetch_rx.recv().await {
-                    let block = block_fetch
-                        .await??
-                        .expect("compact block for in-range height must be present");
-                    tx.send(Ok(block.to_proto())).await?;
-                    metrics::increment_counter!(
-                        metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL
-                    );
+                // The futures of fetching all the compact blocks in the range in order, and the
+                // permits required to begin fetching another compact block (to bound the otherwise
+                // unbounded `FuturesOrdered` stream).
+                let (mut futures, mut permits) = (FuturesOrdered::new(), VecDeque::new());
+
+                loop {
+                    tokio::select! {
+                        // If there's available space in set of fetch tasks, start another fetch for
+                        // the next block to fetch from storage
+                        Ok((permit, Some(height))) = async {
+                            // Get a permit for a new block fetch, and generate the height to fetch
+                            let permit = block_fetch_tx.reserve().await?;
+                            Ok::<_, anyhow::Error>((permit, heights.next()))
+                        } => {
+                            let state = state.clone();
+                            permits.push_back(permit);
+                            futures.push(async move {
+                                state.compact_block(height)
+                                    .await
+                                    .transpose()
+                                    .expect("compact block is present for in-range height")
+                            });
+                        }
+                        // If a block has been fetched, put it in the bounded buffer using an
+                        // already-reserved permit
+                        Some(block_or_error) = futures.next() => {
+                            permits.pop_front().expect("permit always exists when there is a future").send(block_or_error?);
+                        }
+                        // If the bounded buffer contains anything to be sent out over the network,
+                        // send it out
+                        Some(block) = block_fetch_rx.recv() => {
+                            tx.send(Ok(block.to_proto())).await?;
+                            metrics::increment_counter!(
+                                metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL
+                            );
+                        }
+                        // If the whole pipeline has concluded, we're done
+                        else => break,
+                    }
                 }
 
                 // If the client didn't request a keep-alive, we're done.
