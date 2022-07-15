@@ -1,8 +1,10 @@
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
-use penumbra_crypto::{IdentityKey, NotePayload, Nullifier};
+use penumbra_crypto::{IdentityKey, Nullifier};
 use penumbra_proto::{chain as pb, Protobuf};
+
+use crate::sync::AnnotatedNotePayload;
 
 /// All the things scheduled for unquarantine, grouped by unbonding epoch.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -17,7 +19,7 @@ impl Quarantined {
         &mut self,
         epoch: u64,
         identity_key: IdentityKey,
-        note_payload: NotePayload,
+        note_payload: AnnotatedNotePayload,
     ) {
         self.quarantined
             .entry(epoch)
@@ -143,7 +145,7 @@ pub struct Scheduled {
 
 impl Scheduled {
     /// Schedule a note for unquarantine, tied to a given validator.
-    pub fn schedule_note(&mut self, identity_key: IdentityKey, note_payload: NotePayload) {
+    pub fn schedule_note(&mut self, identity_key: IdentityKey, note_payload: AnnotatedNotePayload) {
         self.scheduled
             .entry(identity_key)
             .or_default()
@@ -272,13 +274,13 @@ impl From<Scheduled> for pb::quarantined::Scheduled {
     try_from = "pb::quarantined::Unbonding"
 )]
 pub struct Unbonding {
-    pub note_payloads: Vec<NotePayload>,
+    pub note_payloads: Vec<AnnotatedNotePayload>,
     pub nullifiers: Vec<Nullifier>,
 }
 
 impl Unbonding {
     /// Add a new note.
-    pub fn schedule_note(&mut self, note_payload: NotePayload) {
+    pub fn schedule_note(&mut self, note_payload: AnnotatedNotePayload) {
         self.note_payloads.push(note_payload)
     }
 
@@ -293,8 +295,8 @@ impl Unbonding {
     }
 }
 
-impl Extend<NotePayload> for Unbonding {
-    fn extend<T: IntoIterator<Item = NotePayload>>(&mut self, iter: T) {
+impl Extend<AnnotatedNotePayload> for Unbonding {
+    fn extend<T: IntoIterator<Item = AnnotatedNotePayload>>(&mut self, iter: T) {
         self.note_payloads.extend(iter);
     }
 }
@@ -305,8 +307,8 @@ impl Extend<Nullifier> for Unbonding {
     }
 }
 
-impl FromIterator<NotePayload> for Unbonding {
-    fn from_iter<T: IntoIterator<Item = NotePayload>>(iter: T) -> Self {
+impl FromIterator<AnnotatedNotePayload> for Unbonding {
+    fn from_iter<T: IntoIterator<Item = AnnotatedNotePayload>>(iter: T) -> Self {
         let mut unbonding = Unbonding::default();
         unbonding.extend(iter);
         unbonding
@@ -331,7 +333,7 @@ impl TryFrom<pb::quarantined::Unbonding> for Unbonding {
             note_payloads: value
                 .note_payloads
                 .into_iter()
-                .map(NotePayload::try_from)
+                .map(AnnotatedNotePayload::try_from)
                 .collect::<Result<Vec<_>, _>>()?,
             nullifiers: value
                 .nullifiers

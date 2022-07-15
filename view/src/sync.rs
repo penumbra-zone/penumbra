@@ -92,7 +92,7 @@ pub async fn scan_block(
                 unbonding
                     .note_payloads
                     .into_iter()
-                    .filter_map(|note_payload| trial_decrypt(&note_payload))
+                    .filter_map(|note_payload| trial_decrypt(&note_payload.payload))
                     .map(|note| QuarantinedNoteRecord {
                         note_commitment: note.commit(),
                         height_created: height,
@@ -108,6 +108,7 @@ pub async fn scan_block(
     // Trial-decrypt the notes in this block, keeping track of the ones that were meant for us
     let mut decrypted_applied_notes: BTreeMap<note::Commitment, Note> = note_payloads
         .iter()
+        .map(|annotated| &annotated.payload)
         .filter_map(trial_decrypt)
         .map(|note| (note.commit(), note))
         .collect();
@@ -127,7 +128,7 @@ pub async fn scan_block(
         new_notes = note_payloads
             .iter()
             .filter_map(|note_payload| {
-                let note_commitment = note_payload.note_commitment;
+                let note_commitment = note_payload.payload.note_commitment;
 
                 if let Some(note) = decrypted_applied_notes.remove(&note_commitment) {
                     // Keep track of this commitment for later witnessing

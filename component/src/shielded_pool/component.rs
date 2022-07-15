@@ -11,7 +11,7 @@ use decaf377::{Fq, Fr};
 use penumbra_chain::{
     genesis,
     quarantined::{self, Slashed},
-    sync::CompactBlock,
+    sync::{AnnotatedNotePayload, CompactBlock},
     Epoch, KnownAssets, NoteSource, View as _,
 };
 use penumbra_crypto::{
@@ -198,8 +198,9 @@ impl Component for ShieldedPool {
                 ctx.record(event::quarantine_spend(quarantined_spent_nullifier));
             }
         } else {
-            for compact_output in tx.note_payloads() {
-                self.add_note(compact_output, source).await;
+            for payload in tx.note_payloads() {
+                self.add_note(AnnotatedNotePayload { payload, source })
+                    .await;
             }
             for spent_nullifier in tx.spent_nullifiers() {
                 self.spend_nullifier(spent_nullifier, source).await;
@@ -333,56 +334,60 @@ impl ShieldedPool {
         self.state
             .update_token_supply(&value.asset_id, value.amount as i64)
             .await?;
-        self.add_note(
-            NotePayload {
+        self.add_note(AnnotatedNotePayload {
+            payload: NotePayload {
                 note_commitment,
                 ephemeral_key,
                 encrypted_note,
             },
             source,
-        )
+        })
         .await;
 
         Ok(())
     }
 
-    #[instrument(skip(self, source, note_payload), fields(note_commitment = ?note_payload.note_commitment))]
-    async fn add_note(&mut self, note_payload: NotePayload, source: NoteSource) {
+    #[instrument(skip(self, source, payload), fields(note_commitment = ?payload.note_commitment))]
+    async fn add_note(&mut self, AnnotatedNotePayload { payload, source }: AnnotatedNotePayload) {
         tracing::debug!("adding note");
 
         // 1. Insert it into the NCT
         self.note_commitment_tree
-            .insert(tct::Witness::Forget, note_payload.note_commitment)
+            .insert(tct::Witness::Forget, payload.note_commitment)
             .expect("inserting into the note commitment tree never fails");
 
         // 2. Record its source in the JMT
         self.state
-            .set_note_source(note_payload.note_commitment, source)
+            .set_note_source(payload.note_commitment, source)
             .await;
 
         // 3. Finally, record it in the pending compact block.
-        self.compact_block.note_payloads.push(note_payload);
+        self.compact_block
+            .note_payloads
+            .push(AnnotatedNotePayload { payload, source });
     }
 
-    #[instrument(skip(self, source, note_payload), fields(note_commitment = ?note_payload.note_commitment))]
+    #[instrument(skip(self, source, payload), fields(note_commitment = ?payload.note_commitment))]
     async fn schedule_note(
         &mut self,
         epoch: u64,
         identity_key: IdentityKey,
-        note_payload: NotePayload,
+        payload: NotePayload,
         source: NoteSource,
     ) {
         tracing::debug!("scheduling note");
 
         // 1. Record its source in the JMT
         self.state
-            .set_note_source(note_payload.note_commitment, source)
+            .set_note_source(payload.note_commitment, source)
             .await;
 
         // 2. Schedule it in the compact block
-        self.compact_block
-            .quarantined
-            .schedule_note(epoch, identity_key, note_payload);
+        self.compact_block.quarantined.schedule_note(
+            epoch,
+            identity_key,
+            AnnotatedNotePayload { payload, source },
+        );
     }
 
     #[instrument(skip(self, source))]
@@ -611,14 +616,8 @@ impl ShieldedPool {
                 // For all the note payloads scheduled for unquarantine now, remove them from
                 // quarantine and add them to the proper notes for this block
                 for note_payload in per_validator.note_payloads {
-                    let note_source = self
-                        .state
-                        .note_source(note_payload.note_commitment)
-                        .await
-                        .expect("can try to unquarantine note")
-                        .expect("note payload to unquarantine has source");
                     tracing::debug!(?note_payload, "unquarantining note");
-                    self.add_note(note_payload, note_source).await;
+                    self.add_note(note_payload).await;
                 }
                 // For all the nullifiers scheduled for unquarantine now, remove them from
                 // quarantine and add them to the proper nullifiers for this block
@@ -922,7 +921,8 @@ pub trait View: StateExt {
                     self.unquarantine_nullifier(nullifier).await?;
                 }
                 for note_payload in unbonding.note_payloads.iter() {
-                    self.roll_back_note(note_payload.note_commitment).await?;
+                    self.roll_back_note(note_payload.payload.note_commitment)
+                        .await?;
                 }
             }
             // We're removed all the scheduled notes and nullifiers for this epoch and identity key:

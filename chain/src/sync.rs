@@ -6,7 +6,18 @@ use penumbra_proto::{chain as pb, Protobuf};
 use penumbra_tct::builder::{block, epoch};
 use serde::{Deserialize, Serialize};
 
-use crate::quarantined::Quarantined;
+use crate::{quarantined::Quarantined, NoteSource};
+
+/// A note payload annotated with the source of the note.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(
+    try_from = "pb::AnnotatedNotePayload",
+    into = "pb::AnnotatedNotePayload"
+)]
+pub struct AnnotatedNotePayload {
+    pub payload: NotePayload,
+    pub source: NoteSource,
+}
 
 /// A compressed delta update with the minimal data from a block required to
 /// synchronize private client state.
@@ -14,8 +25,8 @@ use crate::quarantined::Quarantined;
 #[serde(try_from = "pb::CompactBlock", into = "pb::CompactBlock")]
 pub struct CompactBlock {
     pub height: u64,
-    // Note payloads describing new notes.
-    pub note_payloads: Vec<NotePayload>,
+    // Annotated note payloads describing new notes.
+    pub note_payloads: Vec<AnnotatedNotePayload>,
     // Nullifiers identifying spent notes.
     pub nullifiers: Vec<Nullifier>,
     // The block root of this block.
@@ -55,6 +66,34 @@ impl CompactBlock {
     }
 }
 
+impl Protobuf<pb::AnnotatedNotePayload> for AnnotatedNotePayload {}
+
+impl From<AnnotatedNotePayload> for pb::AnnotatedNotePayload {
+    fn from(v: AnnotatedNotePayload) -> Self {
+        pb::AnnotatedNotePayload {
+            payload: Some(v.payload.into()),
+            source: Some(v.source.into()),
+        }
+    }
+}
+
+impl TryFrom<pb::AnnotatedNotePayload> for AnnotatedNotePayload {
+    type Error = anyhow::Error;
+
+    fn try_from(value: pb::AnnotatedNotePayload) -> Result<Self, Self::Error> {
+        Ok(AnnotatedNotePayload {
+            payload: value
+                .payload
+                .ok_or_else(|| anyhow::anyhow!("missing note payload"))?
+                .try_into()?,
+            source: value
+                .source
+                .ok_or_else(|| anyhow::anyhow!("missing note source"))?
+                .try_into()?,
+        })
+    }
+}
+
 impl Protobuf<pb::CompactBlock> for CompactBlock {}
 
 impl From<CompactBlock> for pb::CompactBlock {
@@ -89,8 +128,8 @@ impl TryFrom<pb::CompactBlock> for CompactBlock {
             note_payloads: value
                 .note_payloads
                 .into_iter()
-                .map(NotePayload::try_from)
-                .collect::<Result<Vec<NotePayload>>>()?,
+                .map(AnnotatedNotePayload::try_from)
+                .collect::<Result<Vec<AnnotatedNotePayload>>>()?,
             nullifiers: value
                 .nullifiers
                 .into_iter()
