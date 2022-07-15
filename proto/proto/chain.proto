@@ -49,7 +49,7 @@ message AssetInfo {
 message CompactBlock {
   uint64 height = 1;
   // NotePayloads describing new notes.
-  repeated crypto.NotePayload note_payloads = 2;
+  repeated AnnotatedNotePayload note_payloads = 2;
   // Nullifiers identifying spent notes.
   repeated crypto.Nullifier nullifiers = 3;
   // The block root of this block.
@@ -59,7 +59,13 @@ message CompactBlock {
   // Newly quarantined things in this block.
   Quarantined quarantined = 6;
   // Validators slashed in this block.
-  repeated crypto.IdentityKey slashed = 7;
+  repeated crypto.IdentityKey slashed = 16;
+}
+
+// A note payload, annotated with the note source.
+message AnnotatedNotePayload {
+  crypto.NotePayload payload = 1;
+  NoteSource source = 2;
 }
 
 message KnownAssets {
@@ -90,7 +96,7 @@ message GenesisAppState {
 
 message Quarantined {
   message Unbonding {
-    repeated crypto.NotePayload note_payloads = 1;
+    repeated AnnotatedNotePayload note_payloads = 1;
     repeated crypto.Nullifier nullifiers = 2;
   }
 
