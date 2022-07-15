@@ -635,15 +635,6 @@ checksum = "869119e97797867fd90f5e22af7d0bd274bd4635ebb9eb68c04f3f513ae6c412"
 
 [[package]]
 name = "cast"
-version = "0.2.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c24dab4283a142afa2fdca129b80ad2c6284e073930f964c3a1293c225ee39a"
-dependencies = [
- "rustc_version 0.4.0",
-]
-
-[[package]]
-name = "cast"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "37b2a672a2cb129a2e41c10b1224bb368f9f37a2b16b612598138befd7b37eb5"
@@ -744,9 +735,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "3.2.10"
+version = "3.2.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69c5a7f9997be616e47f0577ee38c91decb33392c5be4866494f34cdf329a9aa"
+checksum = "ab8b79fe3946ceb4a0b1c080b4018992b8d27e9ff363644c1c9b6387c854614d"
 dependencies = [
  "atty",
  "bitflags",
@@ -917,7 +908,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b01d6de93b2b6c65e17c634a26653a29d107b3c98c607c765bf38d041531cd8f"
 dependencies = [
  "atty",
- "cast 0.3.0",
+ "cast",
  "clap 2.34.0",
  "criterion-plot",
  "csv",
@@ -938,11 +929,11 @@ dependencies = [
 
 [[package]]
 name = "criterion-plot"
-version = "0.4.4"
+version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d00996de9f2f7559f7f4dc286073197f83e92256a59ed395f9aac01fe717da57"
+checksum = "2673cc8207403546f45f5fd319a974b1e6983ad1a3ee7e6041650013be041876"
 dependencies = [
- "cast 0.2.7",
+ "cast",
  "itertools",
 ]
 
@@ -1438,7 +1429,7 @@ dependencies = [
  "futures-core",
  "futures-sink",
  "pin-project",
- "spin 0.9.3",
+ "spin 0.9.4",
 ]
 
 [[package]]
@@ -2092,7 +2083,7 @@ checksum = "112c678d4050afce233f4f2852bb2eb519230b3cf12f33585275537d7e41578d"
 [[package]]
 name = "jmt"
 version = "0.1.0"
-source = "git+https://github.com/penumbra-zone/jellyfish-merkle.git?branch=main#0f216e2dcd3219c58f1bc4a584c373416cbef5cd"
+source = "git+https://github.com/penumbra-zone/jellyfish-merkle.git?branch=main#11925d61e9d12980baacb5facee71aaf8456db2d"
 dependencies = [
  "anyhow",
  "async-recursion",
@@ -2776,7 +2767,7 @@ dependencies = [
  "blake2b_simd 0.5.11",
  "bytes",
  "camino",
- "clap 3.2.10",
+ "clap 3.2.12",
  "colored_json",
  "comfy-table",
  "decaf377",
@@ -2835,7 +2826,7 @@ dependencies = [
  "blake2b_simd 0.5.11",
  "bytes",
  "chrono",
- "clap 3.2.10",
+ "clap 3.2.12",
  "console-subscriber",
  "csv",
  "decaf377",
@@ -3057,7 +3048,7 @@ name = "penumbra-measure"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "clap 3.2.10",
+ "clap 3.2.12",
  "indicatif",
  "penumbra-chain",
  "penumbra-proto",
@@ -3203,7 +3194,7 @@ dependencies = [
  "bincode",
  "bytes",
  "camino",
- "clap 3.2.10",
+ "clap 3.2.12",
  "directories",
  "futures",
  "hex",
@@ -3364,7 +3355,7 @@ dependencies = [
 [[package]]
 name = "poseidon-paramgen"
 version = "0.1.0"
-source = "git+https://github.com/penumbra-zone/poseidon377?branch=main#7455423c2d34b1aac4a4e3ef1484aa093857ab22"
+source = "git+https://github.com/penumbra-zone/poseidon377?branch=main#4644790145ba79d5025db538ced59bee41bae55a"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -4309,9 +4300,9 @@ checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 
 [[package]]
 name = "spin"
-version = "0.9.3"
+version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c530c2b0d0bf8b69304b39fe2001993e267461948b890cd037d8ad4293fa1a0d"
+checksum = "7f6002a767bff9e83f8eeecf883ecb8011875a21ae8da43bffb817a57e78cc09"
 dependencies = [
  "lock_api",
 ]
@@ -4794,10 +4785,11 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "tokio"
-version = "1.19.2"
+version = "1.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c51a52ed6686dd62c320f9b89299e9dfb46f730c7a48e635c19f21d116cb1439"
+checksum = "57aec3cfa4c296db7255446efb4928a6be304b431a806216105542a67b6ca82e"
 dependencies = [
+ "autocfg",
  "bytes",
  "libc",
  "memchr",

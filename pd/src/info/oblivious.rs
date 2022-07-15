@@ -174,10 +174,35 @@ impl ObliviousQuery for Info {
                     ?end_height,
                     "catching up from start height to current end height"
                 );
-                for height in start_height..=end_height {
-                    let block = state
-                        .compact_block(height)
-                        .await?
+
+                // We need to send block responses in order, but fetching the
+                // compact block involves disk I/O, so we want to look ahead and
+                // start fetching compact blocks, rather than waiting for each
+                // state query to complete sequentially.
+                //
+                // To do this, we spawn a task that runs ahead and queues block
+                // fetches from the state.  Each block fetch is also spawned as
+                // a new task, so they execute independently, and those tasks'
+                // JoinHandles are sent back to this task using a bounded
+                // channel.  The channel bound prevents the queueing task from
+                // running too far ahead.
+                let (block_fetch_tx, mut block_fetch_rx) = mpsc::channel(8);
+
+                let state2 = state.clone();
+                tokio::spawn(async move {
+                    for height in start_height..=end_height {
+                        let state3 = state2.clone();
+                        let _ = block_fetch_tx
+                            .send(tokio::spawn(
+                                async move { state3.compact_block(height).await },
+                            ))
+                            .await;
+                    }
+                });
+
+                while let Some(block_fetch) = block_fetch_rx.recv().await {
+                    let block = block_fetch
+                        .await??
                         .expect("compact block for in-range height must be present");
                     tx.send(Ok(block.to_proto())).await?;
                     metrics::increment_counter!(
