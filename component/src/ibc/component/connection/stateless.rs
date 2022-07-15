@@ -4,6 +4,12 @@ pub mod connection_open_init {
     pub fn version_is_supported(msg: &MsgConnectionOpenInit) -> anyhow::Result<()> {
         // check if the version is supported (we use the same versions as the cosmos SDK)
         // TODO: should we be storing the compatible versions in our state instead?
+
+        // NOTE: version can be nil in MsgConnectionOpenInit
+        if msg.version.is_none() {
+            return Ok(());
+        }
+
         if !SUPPORTED_VERSIONS.contains(
             msg.version
                 .as_ref()
