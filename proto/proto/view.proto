@@ -104,6 +104,8 @@ message NoteRecord {
     optional uint64 height_spent = 6;
     // The note position.
     uint64 position = 7;
+    // The source of the note (a tx hash or otherwise)
+    chain.NoteSource source = 8;
 }
 
 // A query for notes known by the view service.
@@ -151,6 +153,8 @@ message QuarantinedNoteRecord {
     uint64 unbonding_epoch = 5;
     // The validator identity the quarantining is bound to.
     crypto.IdentityKey identity_key = 6;
+    // The source of the note (a tx hash or otherwise)
+    chain.NoteSource source = 7;
 }
 
 // A query for quarantined notes known by the view service.

@@ -54,6 +54,13 @@ impl TryFrom<[u8; 32]> for NoteSource {
     }
 }
 
+impl TryFrom<&[u8]> for NoteSource {
+    type Error = anyhow::Error;
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        <[u8; 32]>::try_from(value)?.try_into()
+    }
+}
+
 impl Protobuf<pb::NoteSource> for NoteSource {}
 
 impl TryFrom<pb::NoteSource> for NoteSource {

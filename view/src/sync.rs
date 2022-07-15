@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use penumbra_chain::{CompactBlock, Epoch};
+use penumbra_chain::{AnnotatedNotePayload, CompactBlock, Epoch};
 use penumbra_crypto::{note, IdentityKey, Nullifier};
 use penumbra_crypto::{FullViewingKey, Note, NotePayload};
 use penumbra_tct as tct;
@@ -88,20 +88,19 @@ pub async fn scan_block(
                 .or_default()
                 .extend(unbonding.nullifiers);
             // Trial-decrypt the quarantined notes, keeping track of the ones that were meant for us
-            new_quarantined_notes.extend(
-                unbonding
-                    .note_payloads
-                    .into_iter()
-                    .filter_map(|note_payload| trial_decrypt(&note_payload.payload))
-                    .map(|note| QuarantinedNoteRecord {
+            for AnnotatedNotePayload { payload, source } in unbonding.note_payloads {
+                if let Some(note) = trial_decrypt(&payload) {
+                    new_quarantined_notes.push(QuarantinedNoteRecord {
                         note_commitment: note.commit(),
                         height_created: height,
                         address_index: fvk.incoming().index_for_diversifier(&note.diversifier()),
                         note,
                         unbonding_epoch,
                         identity_key,
-                    }),
-            );
+                        source,
+                    });
+                }
+            }
         }
     }
 
@@ -126,9 +125,9 @@ pub async fn scan_block(
         // If we found at least one note for us in this block, we have to explicitly construct the
         // whole block in the NCT by inserting each commitment one at a time
         new_notes = note_payloads
-            .iter()
-            .filter_map(|note_payload| {
-                let note_commitment = note_payload.payload.note_commitment;
+            .into_iter()
+            .filter_map(|AnnotatedNotePayload { payload, source }| {
+                let note_commitment = payload.note_commitment;
 
                 if let Some(note) = decrypted_applied_notes.remove(&note_commitment) {
                     // Keep track of this commitment for later witnessing
@@ -148,6 +147,7 @@ pub async fn scan_block(
                         address_index: fvk.incoming().index_for_diversifier(diversifier),
                         nullifier,
                         position,
+                        source,
                     };
 
                     Some(record)

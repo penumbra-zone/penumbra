@@ -1,3 +1,4 @@
+use penumbra_chain::NoteSource;
 use penumbra_crypto::{
     asset,
     ka::Public,
@@ -22,6 +23,7 @@ pub struct QuarantinedNoteRecord {
     pub height_created: u64,
     pub unbonding_epoch: u64,
     pub identity_key: IdentityKey,
+    pub source: NoteSource,
 }
 
 impl Protobuf<pb::QuarantinedNoteRecord> for QuarantinedNoteRecord {}
@@ -34,6 +36,7 @@ impl From<QuarantinedNoteRecord> for pb::QuarantinedNoteRecord {
             height_created: v.height_created,
             unbonding_epoch: v.unbonding_epoch,
             identity_key: Some(v.identity_key.into()),
+            source: Some(v.source.into()),
         }
     }
 }
@@ -59,6 +62,10 @@ impl TryFrom<pb::QuarantinedNoteRecord> for QuarantinedNoteRecord {
             identity_key: v
                 .identity_key
                 .ok_or_else(|| anyhow::anyhow!("missing identity key"))?
+                .try_into()?,
+            source: v
+                .source
+                .ok_or_else(|| anyhow::anyhow!("missing note source"))?
                 .try_into()?,
         })
     }
@@ -151,6 +158,13 @@ impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for QuarantinedNoteRecord {
                 }
             })?;
 
+        let source = NoteSource::try_from(row.get::<'r, &[u8], _>("source")).map_err(|e| {
+            sqlx::Error::ColumnDecode {
+                index: "source".to_string(),
+                source: e.into(),
+            }
+        })?;
+
         Ok(QuarantinedNoteRecord {
             note_commitment,
             note,
@@ -158,6 +172,7 @@ impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for QuarantinedNoteRecord {
             height_created,
             unbonding_epoch,
             identity_key,
+            source,
         })
     }
 }

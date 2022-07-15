@@ -1,3 +1,4 @@
+use penumbra_chain::NoteSource;
 use penumbra_crypto::{
     asset,
     ka::Public,
@@ -21,6 +22,7 @@ pub struct NoteRecord {
     pub height_created: u64,
     pub height_spent: Option<u64>,
     pub position: tct::Position,
+    pub source: NoteSource,
 }
 
 impl Protobuf<pb::NoteRecord> for NoteRecord {}
@@ -34,6 +36,7 @@ impl From<NoteRecord> for pb::NoteRecord {
             height_created: v.height_created,
             height_spent: v.height_spent,
             position: v.position.into(),
+            source: Some(v.source.into()),
         }
     }
 }
@@ -61,6 +64,10 @@ impl TryFrom<pb::NoteRecord> for NoteRecord {
             height_created: v.height_created,
             height_spent: v.height_spent,
             position: v.position.into(),
+            source: v
+                .source
+                .ok_or_else(|| anyhow::anyhow!("missing note source"))?
+                .try_into()?,
         })
     }
 }
@@ -153,6 +160,13 @@ impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for NoteRecord {
                 }
             })?;
 
+        let source = NoteSource::try_from(row.get::<'r, &[u8], _>("source")).map_err(|e| {
+            sqlx::Error::ColumnDecode {
+                index: "source".to_string(),
+                source: e.into(),
+            }
+        })?;
+
         Ok(NoteRecord {
             note_commitment,
             note,
@@ -161,6 +175,7 @@ impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for NoteRecord {
             position,
             height_created,
             height_spent,
+            source,
         })
     }
 }

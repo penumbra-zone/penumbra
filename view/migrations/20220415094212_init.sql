@@ -21,7 +21,9 @@ CREATE TABLE notes (
     -- the nullifier for this note, used to detect when it is spent
     nullifier               BLOB NOT NULL,
     -- the position of the note in the note commitment tree
-    position                BIGINT NOT NULL
+    position                BIGINT NOT NULL,
+    -- the source of the note (a tx hash or structured data jammed into one)
+    source                  BLOB NOT NULL
 );
 
 -- general purpose note queries
@@ -35,6 +37,9 @@ CREATE INDEX notes_idx ON notes (
 
 -- used to detect spends
 CREATE INDEX nullifier_idx on notes ( nullifier );
+
+-- used to crossreference transactions
+CREATE INDEX notes_source_index on notes ( source );
 
 -- used for storing a cache of known assets
 CREATE TABLE assets (
@@ -55,7 +60,9 @@ CREATE TABLE quarantined_notes (
     address_index       BLOB NOT NULL,
     -- the quarantine status of the note
     unbonding_epoch         BIGINT NOT NULL,
-    identity_key            BLOB NOT NULL
+    identity_key            BLOB NOT NULL,
+    -- the source of the note (a tx hash or structured data jammed into one)
+    source                  BLOB NOT NULL
 );
 
 CREATE INDEX quarantined_notes_idx ON quarantined_notes (
@@ -76,17 +83,5 @@ CREATE INDEX identity_key_idx ON quarantined_nullifiers (
     identity_key
 );
 
-CREATE TABLE tx_by_nullifier (
-    nullifier               BLOB PRIMARY KEY NOT NULL,
-    tx_hash                 BLOB NOT NULL
-);
-
-CREATE TABLE tx_by_note_commitment (
-    note_commitment         BLOB PRIMARY KEY NOT NULL,
-    tx_hash                 BLOB NOT NULL
-);
-
-CREATE TABLE tx (
-    tx_hash                 BLOB PRIMARY KEY NOT NULL,
-    tx_body                 BLOB NOT NULL
-);
+-- used to crossreference transactions
+CREATE INDEX quarantined_notes_source_index on quarantined_notes ( source );

@@ -471,6 +471,7 @@ impl Storage {
             let address_index = quarantined_note_record.address_index.to_bytes().to_vec();
             let unbonding_epoch = quarantined_note_record.unbonding_epoch as i64;
             let identity_key = quarantined_note_record.identity_key.encode_to_vec();
+            let source = quarantined_note_record.source.to_bytes().to_vec();
             sqlx::query!(
                 "INSERT INTO quarantined_notes
                     (
@@ -483,9 +484,10 @@ impl Storage {
                         blinding_factor,
                         address_index,
                         unbonding_epoch,
-                        identity_key
+                        identity_key,
+                        source
                     )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 note_commitment,
                 height_created,
                 diversifier,
@@ -496,6 +498,7 @@ impl Storage {
                 address_index,
                 unbonding_epoch,
                 identity_key,
+                source,
             )
             .execute(&mut tx)
             .await?;
@@ -518,6 +521,7 @@ impl Storage {
             let address_index = note_record.address_index.to_bytes().to_vec();
             let nullifier = note_record.nullifier.to_bytes().to_vec();
             let position = (u64::from(note_record.position)) as i64;
+            let source = note_record.source.to_bytes().to_vec();
             sqlx::query!(
                 "INSERT INTO notes
                     (
@@ -531,12 +535,14 @@ impl Storage {
                         blinding_factor,
                         address_index,
                         nullifier,
-                        position
+                        position,
+                        source
                     )
                     VALUES
                     (
                         ?,
                         NULL,
+                        ?,
                         ?,
                         ?,
                         ?,
@@ -558,6 +564,7 @@ impl Storage {
                 address_index,
                 nullifier,
                 position,
+                source
             )
             .execute(&mut tx)
             .await?;
