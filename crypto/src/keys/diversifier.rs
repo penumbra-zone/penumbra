@@ -145,39 +145,31 @@ impl AddressIndex {
 
 impl From<u8> for AddressIndex {
     fn from(x: u8) -> Self {
-        let mut bytes = [0; 8];
-        bytes[0] = x;
-        AddressIndex::Numeric(u64::from_le_bytes(bytes))
+        AddressIndex::Numeric(x as u64)
     }
 }
 
 impl From<u16> for AddressIndex {
     fn from(x: u16) -> Self {
-        let mut bytes = [0; 8];
-        bytes[0..2].copy_from_slice(&x.to_le_bytes());
-        AddressIndex::Numeric(u64::from_le_bytes(bytes))
+        AddressIndex::Numeric(x as u64)
     }
 }
 
 impl From<u32> for AddressIndex {
     fn from(x: u32) -> Self {
-        let mut bytes = [0; 8];
-        bytes[0..4].copy_from_slice(&x.to_le_bytes());
-        AddressIndex::Numeric(u64::from_le_bytes(bytes))
+        AddressIndex::Numeric(x as u64)
     }
 }
 
 impl From<u64> for AddressIndex {
     fn from(x: u64) -> Self {
-        let mut bytes = [0; 8];
-        bytes[0..8].copy_from_slice(&x.to_le_bytes());
-        AddressIndex::Numeric(u64::from_le_bytes(bytes))
+        AddressIndex::Numeric(x)
     }
 }
 
 impl From<usize> for AddressIndex {
     fn from(x: usize) -> Self {
-        (x as u64).into()
+        AddressIndex::Numeric(x as u64)
     }
 }
 
