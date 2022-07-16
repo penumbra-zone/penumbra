@@ -1,6 +1,6 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
-use penumbra_chain::{AnnotatedNotePayload, CompactBlock, Epoch};
+use penumbra_chain::{AnnotatedNotePayload, CompactBlock, Epoch, NoteSource};
 use penumbra_crypto::{note, IdentityKey, Nullifier};
 use penumbra_crypto::{FullViewingKey, Note, NotePayload};
 use penumbra_tct as tct;
@@ -10,14 +10,33 @@ use crate::{NoteRecord, QuarantinedNoteRecord, Storage};
 /// Contains the results of scanning a single block.
 #[derive(Debug, Clone)]
 pub struct FilteredBlock {
-    // write as new rows
     pub new_notes: Vec<NoteRecord>,
     pub new_quarantined_notes: Vec<QuarantinedNoteRecord>,
-    // use to update existing rows
     pub spent_nullifiers: Vec<Nullifier>,
     pub spent_quarantined_nullifiers: BTreeMap<IdentityKey, Vec<Nullifier>>,
     pub slashed_validators: Vec<IdentityKey>,
     pub height: u64,
+}
+
+impl FilteredBlock {
+    pub fn all_nullifiers(&self) -> impl Iterator<Item = &Nullifier> {
+        self.spent_quarantined_nullifiers
+            .values()
+            .flat_map(|v| v.iter())
+            .chain(self.spent_nullifiers.iter())
+    }
+
+    pub fn inbound_transaction_ids(&self) -> BTreeSet<[u8; 32]> {
+        let mut ids = BTreeSet::new();
+        let sources = self.new_notes.iter().map(|n| n.source);
+        //.chain(self.new_quarantined_notes.iter().map(|n| n.source));
+        for source in sources {
+            if let NoteSource::Transaction { id } = source {
+                ids.insert(id);
+            }
+        }
+        ids
+    }
 }
 
 #[tracing::instrument(skip(fvk, note_commitment_tree, note_payloads, nullifiers, storage))]

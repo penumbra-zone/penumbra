@@ -1,10 +1,8 @@
 use std::collections::BTreeSet;
 
-use anyhow::Context;
 use penumbra_crypto::Nullifier;
 
 use penumbra_proto::Protobuf;
-use penumbra_tct::Commitment;
 use penumbra_transaction::Transaction;
 use sha2::Digest;
 use tokio::sync::mpsc;
@@ -36,10 +34,10 @@ impl TransactionFetcher {
                     continue;
                 }
 
-                // Only fetch full blocks if we detect spends.
+                // Only fetch full blocks if we detect transactions.
                 // TODO: in the future, we could consider chaff downloads.
-                if filtered_block.spent_nullifiers.is_empty()
-                    && filtered_block.spent_quarantined_nullifiers.is_empty()
+                if filtered_block.all_nullifiers().next().is_none()
+                    && filtered_block.inbound_transaction_ids().is_empty()
                 {
                     continue;
                 }
@@ -83,29 +81,28 @@ impl TransactionFetcher {
 
     pub async fn run(mut self) -> anyhow::Result<()> {
         while let Some((filtered_block, block)) = self.block_rx.recv().await {
-            // Build list of nullifiers (final or quarantined) from filtered block
-            let mut nullifiers: BTreeSet<Nullifier> = filtered_block
-                .spent_nullifiers
-                .iter()
-                .map(|x| x.to_owned())
-                .collect();
-            for nfs in filtered_block.spent_quarantined_nullifiers.values() {
-                nullifiers.extend(nfs);
-            }
+            let nullifiers = filtered_block
+                .all_nullifiers()
+                .cloned()
+                .collect::<BTreeSet<Nullifier>>();
+            let inbound_tx_ids = filtered_block.inbound_transaction_ids();
 
             for transaction in block.data.iter() {
+                let tx_id: [u8; 32] = sha2::Sha256::digest(transaction.as_slice())
+                    .as_slice()
+                    .try_into()
+                    .unwrap();
+
                 // TODO: error handling story?
                 let transaction = Transaction::decode(transaction.as_slice())?;
 
-                // Check if each parsed Transaction contains any of the above note commitments or nullifiers
-
-                let mut matched = false;
-
-                for nf in transaction.spent_nullifiers() {
-                    if nullifiers.contains(&nf) {
-                        matched = true;
-                    }
-                }
+                // Check if the transaction is a known inbound transaction or spends one
+                // of our nullifiers.
+                let matched = inbound_tx_ids.contains(&tx_id)
+                    || transaction
+                        .spent_nullifiers()
+                        .iter()
+                        .any(|nf| nullifiers.contains(nf));
 
                 // If it does contain any of these, insert the Transaction data into the appropriate tables
                 if matched {
