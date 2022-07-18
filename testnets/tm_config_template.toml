@@ -201,7 +201,7 @@ pprof-laddr = ":6060"
 use-legacy = false
 
 # Select the p2p internal queue
-queue-type = "priority"
+queue-type = "simple-priority"
 
 # Address to listen for incoming connections
 laddr = "tcp://0.0.0.0:26656"
