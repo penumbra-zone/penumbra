@@ -1,8 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use penumbra_chain::{AnnotatedNotePayload, CompactBlock, Epoch, NoteSource};
-use penumbra_crypto::{note, IdentityKey, Nullifier};
-use penumbra_crypto::{FullViewingKey, Note, NotePayload};
+use penumbra_crypto::{FullViewingKey, IdentityKey, Note, NotePayload, Nullifier};
 use penumbra_tct as tct;
 
 use crate::{NoteRecord, QuarantinedNoteRecord, Storage};
@@ -60,16 +59,23 @@ pub async fn scan_block(
                              note_commitment,
                              ephemeral_key,
                              encrypted_note,
-                         }: &NotePayload|
-     -> Option<Note> {
-        // Try to decrypt the encrypted note using the ephemeral key and persistent incoming
-        // viewing key -- if it doesn't decrypt, it wasn't meant for us.
-        if let Ok(note) = Note::decrypt(encrypted_note.as_ref(), fvk.incoming(), ephemeral_key) {
-            tracing::debug!(?note_commitment, ?note, "found note while scanning");
-            Some(note)
-        } else {
-            None
-        }
+                         }: NotePayload|
+     -> tokio::task::JoinHandle<Option<Note>> {
+        // TODO: change fvk to Arc<FVK> in Worker and pass to scan_block as Arc
+        // need this so the task is 'static and not dependent on key lifetime
+        let fvk2 = fvk.clone();
+        tokio::spawn(async move {
+            // Try to decrypt the encrypted note using the ephemeral key and persistent incoming
+            // viewing key -- if it doesn't decrypt, it wasn't meant for us.
+            if let Ok(note) =
+                Note::decrypt(encrypted_note.as_ref(), fvk2.incoming(), &ephemeral_key)
+            {
+                tracing::debug!(?note_commitment, ?note, "found note while scanning");
+                Some(note)
+            } else {
+                None
+            }
+        })
     };
 
     // Notes we've found in this block that are meant for us
@@ -97,8 +103,13 @@ pub async fn scan_block(
                 .or_default()
                 .extend(unbonding.nullifiers);
             // Trial-decrypt the quarantined notes, keeping track of the ones that were meant for us
-            for AnnotatedNotePayload { payload, source } in unbonding.note_payloads {
-                if let Some(note) = trial_decrypt(&payload) {
+            let decryptions = unbonding
+                .note_payloads
+                .into_iter()
+                .map(|AnnotatedNotePayload { payload, source }| (trial_decrypt(payload), source))
+                .collect::<Vec<_>>();
+            for (decryption, source) in decryptions {
+                if let Some(note) = decryption.await.unwrap() {
                     new_quarantined_notes.push(QuarantinedNoteRecord {
                         note_commitment: note.commit(),
                         height_created: height,
@@ -114,12 +125,16 @@ pub async fn scan_block(
     }
 
     // Trial-decrypt the notes in this block, keeping track of the ones that were meant for us
-    let mut decrypted_applied_notes: BTreeMap<note::Commitment, Note> = note_payloads
+    let decryptions = note_payloads
         .iter()
-        .map(|annotated| &annotated.payload)
-        .filter_map(trial_decrypt)
-        .map(|note| (note.commit(), note))
-        .collect();
+        .map(|annotated| trial_decrypt(annotated.payload.clone()))
+        .collect::<Vec<_>>();
+    let mut decrypted_applied_notes = BTreeMap::new();
+    for decryption in decryptions {
+        if let Some(note) = decryption.await.unwrap() {
+            decrypted_applied_notes.insert(note.commit(), note);
+        }
+    }
 
     if decrypted_applied_notes.is_empty() {
         // We didn't find any notes for us in this block
