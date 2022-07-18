@@ -1,4 +1,5 @@
 use ark_ff::PrimeField;
+use rand_core::{CryptoRng, RngCore};
 
 use super::{AddressIndex, Diversifier, DiversifierKey};
 use crate::{fmd, ka, prf, Address, Fr};
@@ -29,6 +30,17 @@ impl IncomingViewingKey {
             Address::from_components(d, g_d, pk_d, ck_d).expect("pk_d is valid"),
             dtk_d,
         )
+    }
+
+    /// Derive a random ephemeral address.
+    pub fn ephemeral_address<R: RngCore + CryptoRng>(
+        &self,
+        mut rng: R,
+    ) -> (Address, fmd::DetectionKey) {
+        let mut random_index = [0u8; 11];
+        rng.fill_bytes(&mut random_index);
+        let index = AddressIndex::Random(random_index);
+        self.payment_address(index)
     }
 
     /// Perform key agreement with a given public key.

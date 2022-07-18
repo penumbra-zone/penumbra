@@ -1,5 +1,7 @@
 use anyhow::Result;
 use comfy_table::{presets, Table};
+use rand_core::OsRng;
+
 use penumbra_crypto::FullViewingKey;
 
 #[derive(Debug, clap::Subcommand)]
@@ -14,6 +16,8 @@ pub enum AddrCmd {
         #[clap(short, long)]
         addr_only: bool,
     },
+    /// Generates an ephemeral address and prints it.
+    Ephemeral,
 }
 
 impl AddrCmd {
@@ -21,6 +25,7 @@ impl AddrCmd {
     pub fn needs_sync(&self) -> bool {
         match self {
             AddrCmd::Show { .. } => false,
+            AddrCmd::Ephemeral => false,
         }
     }
 
@@ -40,6 +45,11 @@ impl AddrCmd {
                 } else {
                     table.add_row(vec![index.to_string(), address.to_string()]);
                 }
+            }
+            AddrCmd::Ephemeral => {
+                let (address, _dtk) = fvk.incoming().ephemeral_address(OsRng);
+                println!("{}", address);
+                return Ok(());
             }
         }
 
