@@ -32,8 +32,8 @@ jobs:
       
       - name: Install protobuf compiler
         run: |
-          curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v3.21.2/protoc-3.21.2-linux-x86_64.zip
-          unzip protoc-3.21.2-linux-x86_64.zip -d $HOME/.local
+          curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v21.2/protoc-21.2-linux-x86_64.zip
+          unzip protoc-21.2-linux-x86_64.zip -d $HOME/.local
 
       - name: Install Golang toolchain
         uses: actions/setup-go@v3
