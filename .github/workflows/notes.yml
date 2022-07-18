@@ -45,11 +45,11 @@ jobs:
       - name: Build proto docs
         run: |
           export PATH=$PATH:~/go/bin
-          mkdir ./protodoc
-          protoc --doc_out=./protobuf --doc_opt=html,index.html -I ./proto/proto:proto/ibc-go-vendor proto/proto/**/*.proto
+          mkdir -P ./docs/protobuf
+          protoc --doc_out=./docs/protobuf --doc_opt=html,index.html -I ./proto/proto:proto/ibc-go-vendor proto/proto/**/*.proto
           if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
           mkdir firebase-tmp
-          mv protobuf firebase-tmp/${{ steps.get_version.outputs.version }}
+          cp -R ./docs/protobuf firebase-tmp/${{ steps.get_version.outputs.version }}
       - name: Deploy proto docs to firebase
         uses: w9jds/firebase-action@v2.0.0
         with:
