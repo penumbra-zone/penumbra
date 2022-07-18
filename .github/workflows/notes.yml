@@ -32,7 +32,7 @@ jobs:
       
       - name: Install protobuf compiler
         run: |
-          apt install -y protobuf-compiler
+          sudo apt install -y protobuf-compiler
 
       - name: Install Golang toolchain
         uses: actions/setup-go@v3
