@@ -1,6 +1,6 @@
 use jmt::KeyHash;
 use penumbra_crypto::IdentityKey;
-use tendermint::{PublicKey, block};
+use tendermint::{block, PublicKey};
 
 pub fn validators(id: &IdentityKey) -> KeyHash {
     format!("staking/validators/{}", id).into()
