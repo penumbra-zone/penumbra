@@ -46,7 +46,7 @@ jobs:
         run: |
           export PATH=$PATH:~/go/bin
           mkdir ./protodoc
-          protoc --doc_out=./protobuf --doc_opt=html,index.html -I ./:../ibc-go-vendor proto/proto/**/*.proto
+          protoc --doc_out=./protobuf --doc_opt=html,index.html -I ./:proto/ibc-go-vendor proto/proto/**/*.proto
           if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
           mkdir firebase-tmp
           mv protobuf firebase-tmp/${{ steps.get_version.outputs.version }}
