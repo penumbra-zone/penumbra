@@ -28,6 +28,11 @@ pub mod crypto {
     include!(concat!(env!("OUT_DIR"), "/penumbra.crypto.rs"));
 }
 
+/// Governance structures.
+pub mod governance {
+    include!(concat!(env!("OUT_DIR"), "/penumbra.governance.rs"));
+}
+
 /// Staking structures.
 pub mod stake {
     include!(concat!(env!("OUT_DIR"), "/penumbra.stake.rs"));
