@@ -1,0 +1,18 @@
+{
+  "hosting": {
+    "public": "firebase-tmp",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "redirects": [
+      {
+        "source": "/",
+        "destination": "/main/index.html",
+        "type": 301
+      }
+    ]
+  }
+}
+
