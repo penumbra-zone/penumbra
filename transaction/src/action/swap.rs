@@ -1,4 +1,3 @@
-use penumbra_crypto::rdsa::{Signature, SpendAuth};
 use penumbra_crypto::NotePayload;
 use penumbra_crypto::{proofs::transparent::SwapProof, MockFlowCiphertext};
 use penumbra_crypto::{swap::SwapCiphertext, value};
