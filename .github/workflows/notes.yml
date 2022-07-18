@@ -32,8 +32,7 @@ jobs:
       
       - name: Install protobuf compiler
         run: |
-          PB_REL="https://github.com/protocolbuffers/protobuf/releases"
-          curl -LO $PB_REL/download/v3.21.2/protoc-3.21.2-linux-x86_64.zip
+          curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v3.21.2/protoc-3.21.2-linux-x86_64.zip
           unzip protoc-3.21.2-linux-x86_64.zip -d $HOME/.local
 
       - name: Install Golang toolchain
