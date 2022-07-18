@@ -15,6 +15,8 @@ The (evolving) protocol spec is rendered at [protocol.penumbra.zone][protocol].
 
 The (evolving) API documentation is rendered at [rustdoc.penumbra.zone][rustdoc].
 
+The (evolving) protobuf documentation is rendered at [protobuf.penumbra.zone][protobuf].
+
 To participate in our test network, use Penumbra command line client [`pcli`][pcli].
 
 To join the test network as a full node, follow setup instructions for Penumbra node implementation [`pd`][pd].
@@ -28,4 +30,5 @@ To join the test network as a full node, follow setup instructions for Penumbra 
 [pd]: https://guide.penumbra.zone/main/pd.html
 [mdBook]: https://github.com/rust-lang/mdBook
 [rustdoc]: https://rustdoc.penumbra.zone
+[protobuf]: https://protobuf.penumbra.zone
 [tm-install]: https://github.com/tendermint/tendermint/blob/master/docs/introduction/install.md#from-source
