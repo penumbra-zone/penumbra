@@ -64,17 +64,31 @@ message Proposal {
   // cancel.
   message DaoSpend {
     // The sequence of transactions to schedule for execution.
-    repeated ScheduledTransaction schedule_transactions = 1;
+    repeated ScheduleTransaction schedule_transactions = 1;
 
-    // A set of previously-scheduled transactions to cancel before they are executed.
-    repeated ScheduledTransaction cancel_transactions = 2;
+    // A sequence of previously-scheduled transactions to cancel before they are executed.
+    repeated CancelTransaction cancel_transactions = 2;
 
-    // A transaction to be executed (or canceled) as a consequence of this proposal.
-    message ScheduledTransaction {
+    // A transaction to be executed as a consequence of this proposal.
+    //
+    // It is permissible for there to be duplicate transactions scheduled for a given height; they
+    // will both be executed.
+    message ScheduleTransaction {
       // The height at which the transaction should be executed.
-      uint64 execution_height = 1;
+      uint64 execute_at_height = 1;
       // The transaction to be executed.
       transaction.Transaction transaction = 2;
+    }
+
+    // A transaction to be canceled as a consequence of this proposal.
+    //
+    // If there are multiple duplicate transactions at the height, this cancels only the first.
+    // To cancel more of them, specify duplicate cancellations.
+    message CancelTransaction {
+      // The height for which the transaction was scheduled.
+      uint64 scheduled_at_height = 1;
+      // The auth hash of the transaction to cancel.
+      transaction.AuthHash auth_hash = 2;
     }
   }
 }
