@@ -28,9 +28,9 @@ use tracing::{instrument, Instrument};
 use crate::stake::{
     metrics,
     rate::{BaseRateData, RateData},
+    state_key,
     validator::{self, Validator},
     DelegationChanges, Uptime,
-    state_key,
 };
 
 // Max validator power is 1152921504606846975 (i64::MAX / 8)
@@ -1181,11 +1181,8 @@ pub trait View: StateExt {
             return Err(anyhow::anyhow!("invalid voting power"));
         }
 
-        self.put_proto(
-            state_key::power_by_validator(identity_key),
-            voting_power,
-        )
-        .await;
+        self.put_proto(state_key::power_by_validator(identity_key), voting_power)
+            .await;
 
         Ok(())
     }
@@ -1209,16 +1206,12 @@ pub trait View: StateExt {
             current_rates,
         )
         .await;
-        self.put_domain(
-            state_key::next_rate_by_validator(identity_key),
-            next_rates,
-        )
-        .await;
+        self.put_domain(state_key::next_rate_by_validator(identity_key), next_rates)
+            .await;
     }
 
     async fn validator(&self, identity_key: &IdentityKey) -> Result<Option<Validator>> {
-        self.get_domain(state_key::validators(identity_key))
-            .await
+        self.get_domain(state_key::validators(identity_key)).await
     }
 
     // Tendermint validators are referenced to us by their Tendermint consensus key,
@@ -1226,9 +1219,8 @@ pub trait View: StateExt {
     async fn validator_by_consensus_key(&self, ck: &PublicKey) -> Result<Option<Validator>> {
         // We maintain an internal mapping of consensus keys to identity keys to make this
         // lookup more efficient.
-        let identity_key: Option<IdentityKey> = self
-            .get_domain(state_key::consensus_key(ck))
-            .await?;
+        let identity_key: Option<IdentityKey> =
+            self.get_domain(state_key::consensus_key(ck)).await?;
 
         if identity_key.is_none() {
             return Ok(None);
@@ -1294,8 +1286,7 @@ pub trait View: StateExt {
         tracing::debug!(?validator);
         let id = validator.identity_key.clone();
 
-        self.put_domain(state_key::validators(&id), validator)
-            .await;
+        self.put_domain(state_key::validators(&id), validator).await;
         self.register_denom(&DelegationToken::from(&id).denom())
             .await?;
 
@@ -1416,11 +1407,8 @@ pub trait View: StateExt {
     }
 
     async fn set_validator_uptime(&self, identity_key: &IdentityKey, uptime: Uptime) {
-        self.put_domain(
-            state_key::uptime_by_validator(identity_key),
-            uptime,
-        )
-        .await
+        self.put_domain(state_key::uptime_by_validator(identity_key), uptime)
+            .await
     }
 
     async fn set_validator_bonding_state(
@@ -1429,11 +1417,8 @@ pub trait View: StateExt {
         state: validator::BondingState,
     ) {
         tracing::debug!(?state, "set bonding state");
-        self.put_domain(
-            state_key::bonding_state_by_validator(identity_key),
-            state,
-        )
-        .await
+        self.put_domain(state_key::bonding_state_by_validator(identity_key), state)
+            .await
     }
 
     async fn signed_blocks_window_len(&self) -> Result<u64> {
