@@ -78,3 +78,26 @@ message Proposal {
     }
   }
 }
+
+// A vote on a proposal.
+message Vote {
+  // The vote.
+  oneof vote {
+    Yes yes = 1;
+    No no = 2;
+    Abstain abstain = 3;
+    NoWithVeto no_with_veto = 4;
+  }
+
+  // A yes vote.
+  message Yes {}
+
+  // A no vote.
+  message No {}
+
+  // An abstain vote.
+  message Abstain {}
+
+  // A veto vote.
+  message NoWithVeto {}
+}
