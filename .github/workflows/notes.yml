@@ -46,7 +46,7 @@ jobs:
       - name: Build proto docs
         run: |
           export PATH="$PATH:~/go/bin:$HOME/.local/bin"
-          protoc --doc_out=./docs/protobuf --doc_opt=html,index.html -I ./proto/proto:proto/ibc-go-vendor proto/proto/**/*.proto
+          protoc --doc_out=./docs/protobuf --doc_opt=html,index.html -I ./proto/proto:proto/ibc-go-vendor proto/proto/**/*.proto proto/proto/*.proto
           cd docs/protobuf
           if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
           mkdir -p firebase-tmp/${{ steps.get_version.outputs.version }}
