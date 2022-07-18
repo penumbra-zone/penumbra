@@ -49,7 +49,7 @@ jobs:
           protoc --doc_out=./docs/protobuf --doc_opt=html,index.html -I ./proto/proto:proto/ibc-go-vendor proto/proto/**/*.proto
           cd docs/protobuf
           if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
-          mkdir firebase-tmp
+          mkdir -p firebase-tmp/${{ steps.get_version.outputs.version }}
           cp index.html firebase-tmp/${{ steps.get_version.outputs.version }}
       - name: Deploy proto docs to firebase
         uses: w9jds/firebase-action@v2.0.0
