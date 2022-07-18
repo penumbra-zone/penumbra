@@ -154,6 +154,11 @@ message ActionPlan {
         stake.ValidatorDefinition validator_definition = 16;
         // This is just a message relayed to the chain.
         ibc.IBCAction ibc_action = 17;
+        // Governance:
+        ProposePlan propose = 18;
+        WithdrawProposal withdraw = 19;
+        ValidatorVotePlan validator_vote = 20;
+        DelegatorVotePlan delegator_vote = 21;
     }
 }
 
@@ -181,4 +186,38 @@ message OutputPlan {
     bytes value_blinding = 5;
     // The ephemeral secret key to use for the note encryption.
     bytes esk = 6;
+}
+
+message ProposePlan {
+    // The proposal to be submitted.
+    governance.Proposal proposal = 1;
+    // The transparent refund address for the refund of the proposal deposit.
+    crypto.Address deposit_refund_address = 2;
+}
+
+message WithdrawProposalPlan {
+    // The proposal to be withdrawn.
+    uint64 proposal = 1;
+}
+
+message ValidatorVotePlan {
+    // The proposal to vote on.
+    uint64 proposal = 1;
+    // The vote to cast.
+    governance.Vote vote = 2;
+    // The identity of the validator who is voting.
+    stake.IdentityKey validator_identity = 3;
+}
+
+message DelegatorVotePlan {
+    // The proposal to vote on.
+    uint64 proposal = 1;
+    // The vote to cast.
+    governance.Vote vote = 2;
+    // The delegation note to prove that we can vote.
+    crypto.Note note = 3;
+    // The position of that delegation note.
+    uint64 position = 4;
+    // The randomizer to use for the proof of spend capability.
+    bytes randomizer = 5;
 }
