@@ -43,6 +43,7 @@ fn main() -> Result<()> {
     config.compile_protos(
         &[
             "proto/crypto.proto",
+            "proto/governance.proto",
             "proto/transaction.proto",
             "proto/stake.proto",
             "proto/chain.proto",
@@ -138,6 +139,7 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.crypto.AuthPath", SERIALIZE),
     (".penumbra.crypto.SpendAuthSignature", SERIALIZE),
     (".penumbra.crypto.SpendAuthSignature", SERDE_TRANSPARENT),
+    (".penumbra.governance.Proposal", SERIALIZE),
     (".penumbra.chain.ChainParams", SERIALIZE),
     (".penumbra.chain.CompactBlock", SERIALIZE),
     (".penumbra.chain.AnnotatedNotePayload", SERIALIZE),
