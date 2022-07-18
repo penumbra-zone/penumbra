@@ -32,7 +32,9 @@ jobs:
       
       - name: Install protobuf compiler
         run: |
-          sudo apt install -y protobuf-compiler
+          PB_REL="https://github.com/protocolbuffers/protobuf/releases"
+          curl -LO $PB_REL/download/v3.21.2/protoc-3.21.2-linux-x86_64.zip
+          unzip protoc-3.21.2-linux-x86_64.zip -d $HOME/.local
 
       - name: Install Golang toolchain
         uses: actions/setup-go@v3
@@ -44,7 +46,7 @@ jobs:
 
       - name: Build proto docs
         run: |
-          export PATH=$PATH:~/go/bin
+          export PATH="$PATH:~/go/bin:$HOME/.local/bin"
           mkdir -p ./docs/protobuf
           protoc --doc_out=./docs/protobuf --doc_opt=html,index.html -I ./proto/proto:proto/ibc-go-vendor proto/proto/**/*.proto
           if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
