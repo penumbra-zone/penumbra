@@ -30,6 +30,7 @@ use crate::stake::{
     rate::{BaseRateData, RateData},
     validator::{self, Validator},
     DelegationChanges, Uptime,
+    state_key,
 };
 
 // Max validator power is 1152921504606846975 (i64::MAX / 8)
@@ -92,7 +93,7 @@ impl Staking {
         cur_state: validator::State,
         new_state: validator::State,
     ) -> Result<()> {
-        let state_key = format!("staking/validators/{}/state", identity_key).into();
+        let state_key = state_key::state_by_validator(identity_key);
 
         // Update metrics
         match cur_state {
@@ -754,7 +755,7 @@ impl Staking {
         }
 
         self.state
-            .put_domain(format!("staking/validators/{}", id).into(), validator)
+            .put_domain(state_key::validators(id), validator)
             .await;
 
         Ok(())
@@ -1160,12 +1161,12 @@ pub trait View: StateExt {
     }
 
     async fn current_validator_rate(&self, identity_key: &IdentityKey) -> Result<Option<RateData>> {
-        self.get_domain(format!("staking/validators/{}/rate/current", identity_key).into())
+        self.get_domain(state_key::current_rate_by_validator(identity_key))
             .await
     }
 
     async fn next_validator_rate(&self, identity_key: &IdentityKey) -> Result<Option<RateData>> {
-        self.get_domain(format!("staking/validators/{}/rate/next", identity_key).into())
+        self.get_domain(state_key::next_rate_by_validator(identity_key))
             .await
     }
 
@@ -1181,7 +1182,7 @@ pub trait View: StateExt {
         }
 
         self.put_proto(
-            format!("staking/validators/{}/power", identity_key).into(),
+            state_key::power_by_validator(identity_key),
             voting_power,
         )
         .await;
@@ -1191,7 +1192,7 @@ pub trait View: StateExt {
 
     #[instrument(skip(self))]
     async fn validator_power(&self, identity_key: &IdentityKey) -> Result<Option<u64>> {
-        self.get_proto(format!("staking/validators/{}/power", identity_key).into())
+        self.get_proto(state_key::power_by_validator(identity_key))
             .await
     }
 
@@ -1204,19 +1205,19 @@ pub trait View: StateExt {
     ) {
         tracing::debug!("setting validator rates");
         self.put_domain(
-            format!("staking/validators/{}/rate/current", identity_key).into(),
+            state_key::current_rate_by_validator(identity_key),
             current_rates,
         )
         .await;
         self.put_domain(
-            format!("staking/validators/{}/rate/next", identity_key).into(),
+            state_key::next_rate_by_validator(identity_key),
             next_rates,
         )
         .await;
     }
 
     async fn validator(&self, identity_key: &IdentityKey) -> Result<Option<Validator>> {
-        self.get_domain(format!("staking/validators/{}", identity_key).into())
+        self.get_domain(state_key::validators(identity_key))
             .await
     }
 
@@ -1226,7 +1227,7 @@ pub trait View: StateExt {
         // We maintain an internal mapping of consensus keys to identity keys to make this
         // lookup more efficient.
         let identity_key: Option<IdentityKey> = self
-            .get_domain(format!("staking/consensus_key/{}", ck.to_hex()).into())
+            .get_domain(state_key::consensus_key(ck))
             .await?;
 
         if identity_key.is_none() {
@@ -1293,7 +1294,7 @@ pub trait View: StateExt {
         tracing::debug!(?validator);
         let id = validator.identity_key.clone();
 
-        self.put_domain(format!("staking/validators/{}", id).into(), validator)
+        self.put_domain(state_key::validators(&id), validator)
             .await;
         self.register_denom(&DelegationToken::from(&id).denom())
             .await?;
@@ -1303,7 +1304,7 @@ pub trait View: StateExt {
 
         // We can't call `set_validator_state` here because it requires an existing validator state,
         // so we manually initialize the state for new validators.
-        self.put_domain(format!("staking/validators/{}/state", &id).into(), state)
+        self.put_domain(state_key::state_by_validator(&id), state)
             .await;
         self.set_validator_power(&id, power).await?;
         self.set_validator_bonding_state(&id, bonding_state).await;
@@ -1346,7 +1347,7 @@ pub trait View: StateExt {
         &self,
         identity_key: &IdentityKey,
     ) -> Result<Option<validator::State>> {
-        self.get_domain(format!("staking/validators/{}/state", identity_key).into())
+        self.get_domain(state_key::state_by_validator(identity_key))
             .await
     }
 
@@ -1354,7 +1355,7 @@ pub trait View: StateExt {
         &self,
         identity_key: &IdentityKey,
     ) -> Result<Option<validator::BondingState>> {
-        self.get_domain(format!("staking/validators/{}/bonding_state", identity_key).into())
+        self.get_domain(state_key::bonding_state_by_validator(identity_key))
             .await
     }
 
@@ -1396,27 +1397,27 @@ pub trait View: StateExt {
 
     async fn delegation_changes(&self, height: block::Height) -> Result<DelegationChanges> {
         Ok(self
-            .get_domain(format!("staking/delegation_changes/{}", height.value()).into())
+            .get_domain(state_key::delegation_changes_by_height(height.value()))
             .await?
             .ok_or_else(|| anyhow!("missing delegation changes for block {}", height))?)
     }
 
     async fn set_delegation_changes(&self, height: block::Height, changes: DelegationChanges) {
         self.put_domain(
-            format!("staking/delegation_changes/{}", height.value()).into(),
+            state_key::delegation_changes_by_height(height.value()),
             changes,
         )
         .await
     }
 
     async fn validator_uptime(&self, identity_key: &IdentityKey) -> Result<Option<Uptime>> {
-        self.get_domain(format!("staking/validator_uptime/{}", identity_key).into())
+        self.get_domain(state_key::uptime_by_validator(identity_key))
             .await
     }
 
     async fn set_validator_uptime(&self, identity_key: &IdentityKey, uptime: Uptime) {
         self.put_domain(
-            format!("staking/validator_uptime/{}", identity_key).into(),
+            state_key::uptime_by_validator(identity_key),
             uptime,
         )
         .await
@@ -1429,7 +1430,7 @@ pub trait View: StateExt {
     ) {
         tracing::debug!(?state, "set bonding state");
         self.put_domain(
-            format!("staking/validators/{}/bonding_state", identity_key).into(),
+            state_key::bonding_state_by_validator(identity_key),
             state,
         )
         .await
