@@ -1,7 +1,5 @@
 use crate::ibc::component::client::View as _;
-use crate::ibc::{
-    event, validate_penumbra_client_state, ConnectionCounter, COMMITMENT_PREFIX, SUPPORTED_VERSIONS,
-};
+use crate::ibc::{event, validate_penumbra_client_state, ConnectionCounter, SUPPORTED_VERSIONS};
 use crate::{Component, Context};
 use anyhow::Result;
 use async_trait::async_trait;

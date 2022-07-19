@@ -1,3 +1,4 @@
+use super::state_key;
 use crate::ibc::component::client::View as _;
 use crate::ibc::component::connection::View as _;
 use crate::ibc::event;
@@ -330,102 +331,47 @@ pub trait View: StateExt {
         channel_id: &ChannelId,
         port_id: &PortId,
     ) -> Result<Option<ChannelEnd>> {
-        self.get_domain(format!("channelEnds/ports/{}/channels/{}", port_id, channel_id).into())
+        self.get_domain(state_key::channel(channel_id, port_id))
             .await
     }
     async fn put_channel(&mut self, channel_id: &ChannelId, port_id: &PortId, channel: ChannelEnd) {
-        self.put_domain(
-            format!("channelEnds/ports/{}/channels/{}", port_id, channel_id).into(),
-            channel,
-        )
-        .await;
+        self.put_domain(state_key::channel(channel_id, port_id), channel)
+            .await;
     }
     async fn get_recv_sequence(&self, channel_id: &ChannelId, port_id: &PortId) -> Result<u64> {
-        self.get_proto::<u64>(
-            format!(
-                "seqRecvs/ports/{}/channels/{}/nextSequenceRecv",
-                port_id, channel_id
-            )
-            .into(),
-        )
-        .await
-        .map(|sequence| sequence.unwrap_or(0))
+        self.get_proto::<u64>(state_key::seq_recv(channel_id, port_id))
+            .await
+            .map(|sequence| sequence.unwrap_or(0))
     }
     async fn get_ack_sequence(&self, channel_id: &ChannelId, port_id: &PortId) -> Result<u64> {
-        self.get_proto::<u64>(
-            format!(
-                "seqAcks/ports/{}/channels/{}/nextSequenceAck",
-                port_id, channel_id
-            )
-            .into(),
-        )
-        .await
-        .map(|sequence| sequence.unwrap_or(0))
+        self.get_proto::<u64>(state_key::seq_ack(channel_id, port_id))
+            .await
+            .map(|sequence| sequence.unwrap_or(0))
     }
     async fn put_ack_sequence(&mut self, channel_id: &ChannelId, port_id: &PortId, sequence: u64) {
-        self.put_proto::<u64>(
-            format!(
-                "seqAcks/ports/{}/channels/{}/nextSequenceAck",
-                port_id, channel_id
-            )
-            .into(),
-            sequence,
-        )
-        .await;
+        self.put_proto::<u64>(state_key::seq_ack(channel_id, port_id), sequence)
+            .await;
     }
     async fn put_recv_sequence(&mut self, channel_id: &ChannelId, port_id: &PortId, sequence: u64) {
-        self.put_proto::<u64>(
-            format!(
-                "seqRecvs/ports/{}/channels/{}/nextSequenceRecv",
-                port_id, channel_id
-            )
-            .into(),
-            sequence,
-        )
-        .await;
+        self.put_proto::<u64>(state_key::seq_recv(channel_id, port_id), sequence)
+            .await;
     }
     async fn put_send_sequence(&mut self, channel_id: &ChannelId, port_id: &PortId, sequence: u64) {
-        self.put_proto::<u64>(
-            format!(
-                "seqSends/ports/{}/channels/{}/nextSequenceSend",
-                port_id, channel_id
-            )
-            .into(),
-            sequence,
-        )
-        .await;
+        self.put_proto::<u64>(state_key::seq_send(channel_id, port_id), sequence)
+            .await;
     }
     async fn put_packet_receipt(&mut self, packet: &Packet) {
-        self.put_proto::<String>(
-            format!(
-                "receipts/ports/{}/channels/{}/receipts/{}",
-                packet.destination_port, packet.destination_channel, packet.sequence
-            )
-            .into(),
-            "1".to_string(),
-        )
-        .await;
+        self.put_proto::<String>(state_key::packet_receipt(packet), "1".to_string())
+            .await;
     }
     async fn seen_packet(&self, packet: &Packet) -> Result<bool> {
-        self.get_proto::<String>(
-            format!(
-                "receipts/ports/{}/channels/{}/receipts/{}",
-                packet.destination_port, packet.destination_channel, packet.sequence
-            )
-            .into(),
-        )
-        .await
-        .map(|res| res.is_some())
+        self.get_proto::<String>(state_key::packet_receipt(packet))
+            .await
+            .map(|res| res.is_some())
     }
     async fn get_packet_commitment(&self, packet: &Packet) -> Result<Option<Vec<u8>>> {
         let commitment = self
-            .get_proto::<Vec<u8>>(
-                format!(
-                    "commitments/ports/{}/channels/{}/packets/{}",
-                    packet.source_port, packet.source_channel, packet.sequence
-                )
-                .into(),
-            )
+            .get_proto::<Vec<u8>>(state_key::packet_commitment(packet))
             .await?;
 
         // this is for the special case where the commitment is empty, we consider this None.
@@ -444,11 +390,7 @@ pub trait View: StateExt {
         sequence: u64,
     ) {
         self.put_proto::<Vec<u8>>(
-            format!(
-                "commitments/ports/{}/channels/{}/packets/{}",
-                port_id, channel_id, sequence
-            )
-            .into(),
+            state_key::packet_commitment_by_port(port_id, channel_id, sequence),
             vec![],
         )
         .await;
