@@ -18,7 +18,14 @@ To join a testnet as a fullnode, check out the tag for the current testnet, run
 
 ### Generating configs
 
-To generate a set of configs for the current testnet, run
+First, reset the testnet data from any prior testnet you may have joined:
+
+```
+cargo run --bin pd --release -- testnet unsafe-reset-all
+```
+This will delete the entire testnet data directory.
+
+Next, generate a set of configs for the current testnet:
 ```
 cargo run --bin pd --release -- testnet join
 ```
@@ -48,13 +55,6 @@ Alternatively, `pd` and `tendermint` can be orchestrated with `docker-compose`:
 docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
 
-### Resetting state
-
-To reset the testnet data, run
-```
-cargo run --bin pd --release -- testnet unsafe-reset-all
-```
-This will delete the entire testnet data directory.
 
 ## Joining as a validator
 
