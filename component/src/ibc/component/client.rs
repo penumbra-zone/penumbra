@@ -461,7 +461,7 @@ pub trait View: StateExt {
     ) -> Result<AnyConsensusState> {
         self.get_domain(
             format!(
-                "{}/{}/consensusStates/{}",
+                "{}/clients/{}/consensusStates/{}",
                 COMMITMENT_PREFIX, client_id, height
             )
             .into(),
@@ -514,7 +514,7 @@ pub trait View: StateExt {
     ) -> Result<()> {
         self.put_domain(
             format!(
-                "{}/{}/consensusStates/{}",
+                "{}/clients/{}/consensusStates/{}",
                 COMMITMENT_PREFIX, client_id, height
             )
             .into(),
