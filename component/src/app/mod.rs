@@ -5,16 +5,15 @@ use crate::stake::component::Staking;
 use crate::{Component, Context};
 use anyhow::Result;
 use async_trait::async_trait;
-use jmt::{RootHash, Version};
+use jmt::Version;
 use penumbra_chain::{genesis, View as _};
-use penumbra_storage::{State, StateExt, Storage};
+use penumbra_storage::{AppHash, State, StateExt, Storage};
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, types::ValidatorUpdate};
 
 use tracing::instrument;
 
 pub mod state_key;
-
 /// The Penumbra application, written as a bundle of [`Component`]s.
 ///
 /// The [`App`] is also a [`Component`], but as the top-level component,
@@ -60,7 +59,7 @@ impl App {
     /// This method also resets `self` as if it were constructed
     /// as an empty state over top of the newly written storage.
     #[instrument(skip(self, storage))]
-    pub async fn commit(&mut self, storage: Storage) -> Result<(RootHash, Version)> {
+    pub async fn commit(&mut self, storage: Storage) -> Result<(AppHash, Version)> {
         // We want to store the latest NCT in a sidecar part of the storage,
         // rather than the Penumbra state, because the serialization format for
         // the NCT should not be consensus-critical.  We need to grab a copy of
@@ -68,8 +67,8 @@ impl App {
         let nct = self.shielded_pool.note_commitment_tree();
         storage.put_nct(nct).await?;
         // Commit the pending writes, clearing the state.
-        let (root_hash, version) = self.state.write().await.commit(storage.clone()).await?;
-        tracing::debug!(?root_hash, version, "finished committing state");
+        let (jmt_root, version) = self.state.write().await.commit(storage.clone()).await?;
+        tracing::debug!(?jmt_root, version, "finished committing state");
 
         // Get the latest version of the state, now that we've committed it.
         self.state = storage.state().await?;
@@ -80,7 +79,7 @@ impl App {
         self.dex = Dex::new(self.state.clone()).await;
         self.shielded_pool = ShieldedPool::new(self.state.clone(), nct.clone()).await;
 
-        Ok((root_hash, version))
+        Ok((jmt_root.into(), version))
     }
 
     // TODO: should this just be returned by `commit`? both are called during every `EndBlock`

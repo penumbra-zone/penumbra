@@ -135,21 +135,19 @@ impl Worker {
         let validators = self.app.tm_validator_updates().await?;
 
         // Note: App::commit resets internal components, so we don't need to do that ourselves.
-        let (jmt_root, _) = self.app.commit(self.storage.clone()).await?;
-
-        let app_hash = jmt_root.0.to_vec();
+        let (app_hash, _) = self.app.commit(self.storage.clone()).await?;
 
         tracing::info!(
             consensus_params = ?init_chain.consensus_params,
             ?validators,
-            app_hash = ?jmt_root,
+            app_hash = ?app_hash,
             "finished init_chain"
         );
 
         Ok(abci::response::InitChain {
             consensus_params: Some(init_chain.consensus_params),
             validators,
-            app_hash: app_hash.into(),
+            app_hash: app_hash.0.to_vec().into(),
         })
     }
 
