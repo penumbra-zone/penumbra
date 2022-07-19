@@ -40,7 +40,7 @@ pub static PENUMBRA_PROOF_SPECS: Lazy<ProofSpecs> =
 pub static PENUMBRA_COMMITMENT_PREFIX: Lazy<CommitmentPrefix> =
     Lazy::new(|| CommitmentPrefix::try_from(APPHASH_DOMSEP.as_bytes().to_vec()).unwrap());
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq)]
 pub struct AppHash(pub [u8; 32]);
 
 // the app hash of penumbra's state is defined as SHA256("PenumbraAppHash" || jmt.root_hash())
@@ -51,6 +51,14 @@ impl From<RootHash> for AppHash {
         h.update(r.0);
 
         AppHash(h.finalize().into())
+    }
+}
+
+impl std::fmt::Debug for AppHash {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("AppHash")
+            .field(&hex::encode(&self.0))
+            .finish()
     }
 }
 

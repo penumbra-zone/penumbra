@@ -68,7 +68,9 @@ impl App {
         storage.put_nct(nct).await?;
         // Commit the pending writes, clearing the state.
         let (jmt_root, version) = self.state.write().await.commit(storage.clone()).await?;
-        tracing::debug!(?jmt_root, version, "finished committing state");
+        let app_hash: AppHash = jmt_root.into();
+
+        tracing::debug!(?app_hash, version, "finished committing state");
 
         // Get the latest version of the state, now that we've committed it.
         self.state = storage.state().await?;
@@ -79,7 +81,7 @@ impl App {
         self.dex = Dex::new(self.state.clone()).await;
         self.shielded_pool = ShieldedPool::new(self.state.clone(), nct.clone()).await;
 
-        Ok((jmt_root.into(), version))
+        Ok((app_hash, version))
     }
 
     // TODO: should this just be returned by `commit`? both are called during every `EndBlock`
