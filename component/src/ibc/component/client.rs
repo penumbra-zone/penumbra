@@ -36,7 +36,9 @@ use tendermint_light_client_verifier::{
 };
 use tracing::instrument;
 
-use crate::ibc::{event, ClientConnections, ClientCounter, VerifiedHeights, COMMITMENT_PREFIX};
+use crate::ibc::{event, ClientConnections, ClientCounter, VerifiedHeights};
+
+use super::state_key;
 
 mod stateful;
 mod stateless;
@@ -370,21 +372,18 @@ pub trait View: StateExt {
 
     async fn put_client(&mut self, client_id: &ClientId, client_state: AnyClientState) {
         self.put_proto(
-            format!("{}/clients/{}/clientType", COMMITMENT_PREFIX, client_id).into(),
+            state_key::client_type(client_id),
             client_state.client_type().as_str().to_string(),
         )
         .await;
 
-        self.put_domain(
-            format!("{}/clients/{}/clientState", COMMITMENT_PREFIX, client_id).into(),
-            client_state,
-        )
-        .await;
+        self.put_domain(state_key::client_state(client_id), client_state)
+            .await;
     }
 
     async fn get_client_type(&self, client_id: &ClientId) -> Result<ClientType> {
         let client_type_str: String = self
-            .get_proto(format!("{}/clients/{}/clientType", COMMITMENT_PREFIX, client_id).into())
+            .get_proto(state_key::client_type(client_id))
             .await?
             .ok_or_else(|| anyhow::anyhow!("client not found"))?;
 
@@ -392,9 +391,7 @@ pub trait View: StateExt {
     }
 
     async fn get_client_state(&self, client_id: &ClientId) -> Result<AnyClientState> {
-        let client_state = self
-            .get_domain(format!("{}/clients/{}/clientState", COMMITMENT_PREFIX, client_id).into())
-            .await?;
+        let client_state = self.get_domain(state_key::client_state(client_id)).await?;
 
         client_state.ok_or_else(|| anyhow::anyhow!("client not found"))
     }
@@ -459,13 +456,9 @@ pub trait View: StateExt {
         height: Height,
         client_id: ClientId,
     ) -> Result<AnyConsensusState> {
-        self.get_domain(
-            format!(
-                "{}/clients/{}/consensusStates/{}",
-                COMMITMENT_PREFIX, client_id, height
-            )
-            .into(),
-        )
+        self.get_domain(state_key::verified_client_consensus_state(
+            &client_id, &height,
+        ))
         .await?
         .ok_or_else(|| anyhow::anyhow!("consensus state not found"))
     }
@@ -475,15 +468,9 @@ pub trait View: StateExt {
         client_id: &ClientId,
         height: &Height,
     ) -> Result<ibc::Height> {
-        self.get_domain(
-            format!(
-                "{}/clients/{}/processedHeights/{}",
-                COMMITMENT_PREFIX, client_id, height
-            )
-            .into(),
-        )
-        .await?
-        .ok_or_else(|| anyhow::anyhow!("client update time not found"))
+        self.get_domain(state_key::client_processed_heights(client_id, height))
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("client update time not found"))
     }
 
     async fn get_client_update_time(
@@ -492,13 +479,7 @@ pub trait View: StateExt {
         height: &Height,
     ) -> Result<ibc::timestamp::Timestamp> {
         let timestamp_nanos = self
-            .get_proto::<u64>(
-                format!(
-                    "{}/clients/{}/processedTimes/{}",
-                    COMMITMENT_PREFIX, client_id, height
-                )
-                .into(),
-            )
+            .get_proto::<u64>(state_key::client_processed_times(client_id, height))
             .await?
             .ok_or_else(|| anyhow::anyhow!("client update time not found"))?;
 
@@ -513,11 +494,7 @@ pub trait View: StateExt {
         consensus_state: AnyConsensusState,
     ) -> Result<()> {
         self.put_domain(
-            format!(
-                "{}/clients/{}/consensusStates/{}",
-                COMMITMENT_PREFIX, client_id, height
-            )
-            .into(),
+            state_key::verified_client_consensus_state(&client_id, &height),
             consensus_state,
         )
         .await;
@@ -526,21 +503,13 @@ pub trait View: StateExt {
         let current_time: ibc::timestamp::Timestamp = self.get_block_timestamp().await?.into();
 
         self.put_proto::<u64>(
-            format!(
-                "{}/clients/{}/processedTimes/{}",
-                COMMITMENT_PREFIX, client_id, height
-            )
-            .into(),
+            state_key::client_processed_times(&client_id, &height),
             current_time.nanoseconds(),
         )
         .await;
 
         self.put_domain(
-            format!(
-                "{}/clients/{}/processedHeights/{}",
-                COMMITMENT_PREFIX, client_id, height
-            )
-            .into(),
+            state_key::client_processed_heights(&client_id, &height),
             ibc::Height::zero().with_revision_height(current_height),
         )
         .await;
@@ -634,29 +603,14 @@ pub trait View: StateExt {
         self.get_client_type(client_id).await?;
 
         let mut connections: ClientConnections = self
-            .get_domain(
-                format!(
-                    "{}/clients/{}/connections",
-                    COMMITMENT_PREFIX,
-                    hex::encode(client_id.as_bytes())
-                )
-                .into(),
-            )
+            .get_domain(state_key::client_connections(client_id))
             .await?
             .unwrap_or_default();
 
         connections.connection_ids.push(connection_id.clone());
 
-        self.put_domain(
-            format!(
-                "{}/clients/{}/connections",
-                COMMITMENT_PREFIX,
-                hex::encode(client_id.as_bytes())
-            )
-            .into(),
-            connections,
-        )
-        .await;
+        self.put_domain(state_key::client_connections(client_id), connections)
+            .await;
 
         Ok(())
     }

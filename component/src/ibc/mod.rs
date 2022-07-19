@@ -20,5 +20,3 @@ pub use client::{
 };
 pub use component::IBCComponent;
 pub use connection::{ConnectionCounter, SUPPORTED_VERSIONS};
-
-pub static COMMITMENT_PREFIX: &str = "penumbra-ibc-commitment";
