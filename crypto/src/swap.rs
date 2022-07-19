@@ -80,7 +80,7 @@ impl SwapPlaintext {
         self.b_d
     }
 
-    pub fn swap_key(&self) -> ka::Public {
+    pub fn transmission_key(&self) -> ka::Public {
         self.pk_d
     }
 
@@ -114,7 +114,7 @@ impl SwapPlaintext {
         let ock = Key::from_slice(kdf_output.as_bytes());
 
         let mut op = Vec::new();
-        op.extend_from_slice(&self.swap_key().0);
+        op.extend_from_slice(&self.transmission_key().0);
         op.extend_from_slice(&esk.to_bytes());
 
         let cipher = ChaCha20Poly1305::new(ock);
@@ -144,7 +144,7 @@ impl SwapPlaintext {
     pub fn encrypt(&self, esk: &ka::Secret) -> SwapCiphertext {
         let epk = esk.diversified_public(&self.diversified_generator());
         let shared_secret = esk
-            .key_agreement_with(&self.swap_key())
+            .key_agreement_with(&self.transmission_key())
             .expect("key agreement succeeds");
 
         let key = SwapPlaintext::derive_symmetric_key(&shared_secret, &epk);
@@ -326,11 +326,11 @@ impl SwapCiphertext {
     pub fn decrypt(
         &self,
         esk: &ka::Secret,
-        swap_key: ka::Public,
+        transmission_key: ka::Public,
         diversified_basepoint: decaf377::Element,
     ) -> Result<SwapPlaintext> {
         let shared_secret = esk
-            .key_agreement_with(&swap_key)
+            .key_agreement_with(&transmission_key)
             .expect("key agreement succeeds");
         let epk = esk.diversified_public(&diversified_basepoint);
         let key = SwapPlaintext::derive_symmetric_key(&shared_secret, &epk);
