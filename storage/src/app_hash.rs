@@ -4,10 +4,46 @@ use once_cell::sync::Lazy;
 use penumbra_proto::Message;
 use sha2::{Digest, Sha256};
 
+/// this is a proof spec for computing Penumbra's AppHash, which is defined as
+/// SHA256("PenumbraAppHash" || jmt.root()). In ICS/IBC terms, this applies a single global prefix
+/// to Penumbra's state. Having a stable merkle prefix is currently required for our IBC
+/// counterparties to verify our proofs.
+fn apphash_spec() -> ics23::ProofSpec {
+    ics23::ProofSpec {
+        // the leaf hash is simply H(key || value)
+        leaf_spec: Some(ics23::LeafOp {
+            prefix: vec![],
+            hash: ics23::HashOp::Sha256.into(),
+            length: ics23::LengthOp::NoPrefix.into(),
+            prehash_key: ics23::HashOp::NoHash.into(),
+            prehash_value: ics23::HashOp::NoHash.into(),
+        }),
+        // NOTE: we don't actually use any InnerOps.
+        inner_spec: Some(ics23::InnerSpec {
+            hash: ics23::HashOp::Sha256.into(),
+            child_order: vec![0, 1],
+            child_size: 32,
+            empty_child: vec![],
+            min_prefix_length: 0,
+            max_prefix_length: 0,
+        }),
+        min_depth: 0,
+        max_depth: 1,
+    }
+}
+
+static APPHASH_DOMSEP: &str = "PenumbraAppHash";
+
+pub static PENUMBRA_PROOF_SPECS: Lazy<ProofSpecs> =
+    Lazy::new(|| ProofSpecs::from(vec![jmt::ics23_spec(), apphash_spec()]));
+
+pub static PENUMBRA_COMMITMENT_PREFIX: Lazy<CommitmentPrefix> =
+    Lazy::new(|| CommitmentPrefix::try_from(APPHASH_DOMSEP.as_bytes().to_vec()).unwrap());
+
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct AppHash(pub [u8; 32]);
 
-// the app hash of penumbra's state is defined as SHA256("penumbra-root" || jmt.root_hash())
+// the app hash of penumbra's state is defined as SHA256("PenumbraAppHash" || jmt.root_hash())
 impl From<RootHash> for AppHash {
     fn from(r: RootHash) -> Self {
         let mut h = Sha256::new();
@@ -17,36 +53,6 @@ impl From<RootHash> for AppHash {
         AppHash(h.finalize().into())
     }
 }
-
-fn apphash_spec() -> ics23::ProofSpec {
-    ics23::ProofSpec {
-        leaf_spec: Some(ics23::LeafOp {
-            prefix: vec![],
-            hash: ics23::HashOp::Sha256.into(),
-            length: ics23::LengthOp::NoPrefix.into(),
-            prehash_key: ics23::HashOp::NoHash.into(),
-            prehash_value: ics23::HashOp::NoHash.into(),
-        }),
-        inner_spec: Some(ics23::InnerSpec {
-            hash: ics23::HashOp::NoHash.into(),
-            child_order: vec![0, 1],
-            child_size: 32,
-            empty_child: vec![],
-            min_prefix_length: 0,
-            max_prefix_length: 0,
-        }),
-        min_depth: 0,
-        max_depth: 2,
-    }
-}
-
-static APPHASH_DOMSEP: &str = "penumbra_root";
-
-pub static PENUMBRA_PROOF_SPECS: Lazy<ProofSpecs> =
-    Lazy::new(|| ProofSpecs::from(vec![jmt::ics23_spec(), apphash_spec()]));
-
-pub static PENUMBRA_COMMITMENT_PREFIX: Lazy<CommitmentPrefix> =
-    Lazy::new(|| CommitmentPrefix::try_from(APPHASH_DOMSEP.as_bytes().to_vec()).unwrap());
 
 /// given a JMT, a key, and a height, return a tendermint::Proof of the value all the way up to the
 /// AppHash.
