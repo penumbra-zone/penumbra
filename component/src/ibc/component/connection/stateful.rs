@@ -41,7 +41,7 @@ pub mod connection_open_confirm {
                 Counterparty::new(
                     connection.client_id().clone(),
                     Some(msg.connection_id.clone()),
-                    COMMITMENT_PREFIX.as_bytes().to_vec().try_into().unwrap(),
+                    penumbra_storage::PENUMBRA_COMMITMENT_PREFIX.clone(),
                 ),
                 connection.versions().to_vec(),
                 connection.delay_period(),
@@ -141,7 +141,7 @@ pub mod connection_open_ack {
             let penumbra_counterparty = Counterparty::new(
                 connection.client_id().clone(),
                 Some(msg.counterparty_connection_id.clone()),
-                COMMITMENT_PREFIX.as_bytes().to_vec().try_into().unwrap(),
+                penumbra_storage::PENUMBRA_COMMITMENT_PREFIX.clone(),
             );
 
             // the connection we expect the counterparty to have committed
@@ -334,7 +334,7 @@ pub mod connection_open_try {
                 Counterparty::new(
                     msg.client_id.clone(),
                     None,
-                    COMMITMENT_PREFIX.as_bytes().to_vec().try_into().unwrap(),
+                    penumbra_storage::PENUMBRA_COMMITMENT_PREFIX.clone(),
                 ),
                 msg.counterparty_versions.clone(),
                 msg.delay_period,
