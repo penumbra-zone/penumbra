@@ -5,8 +5,7 @@ use std::{
 };
 
 use futures::FutureExt;
-use penumbra_proto::Message;
-use penumbra_storage::{State, Storage};
+use penumbra_storage::{get_with_proof, AppHash, State, Storage};
 use tendermint::{
     abci::{self, response::Echo, InfoRequest, InfoResponse},
     block,
@@ -44,7 +43,7 @@ impl Info {
         let last_block_app_hash = jmt::JellyfishMerkleTree::new(&self.storage)
             .get_root_hash_option(last_block_height)
             .await?
-            .map(|rh| rh.0)
+            .map(|rh| AppHash::from(rh).0)
             .unwrap_or([0u8; 32])
             .to_vec()
             .into();
@@ -67,30 +66,17 @@ impl Info {
         match query.path.as_str() {
             "state/key" => {
                 let height: u64 = query.height.into();
-                let key = hex::decode(query.data.to_vec()).unwrap_or(query.data.to_vec());
+                let key = hex::decode(&query.data).unwrap_or_else(|_| query.data.to_vec());
+                let store = jmt::JellyfishMerkleTree::new(&self.storage);
 
-                let jmt_proof = jmt::JellyfishMerkleTree::new(&self.storage)
-                    .get_with_ics23_proof(key.clone(), height)
-                    .await?;
-                let value = jmt_proof.value.clone();
-
-                let commitment_proof = ics23::CommitmentProof {
-                    proof: Some(ics23::commitment_proof::Proof::Exist(jmt_proof)),
-                };
-
-                let op = tendermint::merkle::proof::ProofOp {
-                    field_type: "jmt:v".to_string(),
-                    key,
-                    data: commitment_proof.encode_to_vec(),
-                };
-                let proof = Some(tendermint::merkle::proof::Proof { ops: vec![op] });
+                let (value, proof) = get_with_proof(&store, key, height).await?;
 
                 Ok(abci::response::Query {
                     code: 0,
                     key: query.data,
                     log: "".to_string(),
                     value: value.into(),
-                    proof,
+                    proof: Some(proof),
                     height: height.try_into().unwrap(),
                     codespace: "".to_string(),
                     info: "".to_string(),
