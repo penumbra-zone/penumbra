@@ -178,10 +178,7 @@ pub mod connection_open_ack {
                     connection.counterparty().prefix(),
                     msg.proofs.object_proof(),
                     trusted_consensus_state.root(),
-                    connection
-                        .counterparty()
-                        .connection_id()
-                        .ok_or_else(|| anyhow::anyhow!("missing counterparty connection id"))?,
+                    &msg.counterparty_connection_id,
                     &expected_conn,
                 )
                 .map_err(|e| anyhow::anyhow!("couldn't verify connection state: {}", e))?;
