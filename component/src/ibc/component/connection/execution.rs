@@ -119,7 +119,7 @@ pub mod connection_open_ack {
             let prev_counterparty = connection.counterparty();
             let counterparty = Counterparty::new(
                 prev_counterparty.client_id().clone(),
-                Some(msg.connection_id.clone()),
+                Some(msg.counterparty_connection_id.clone()),
                 prev_counterparty.prefix().clone(),
             );
             connection.set_state(ConnectionState::Open);
