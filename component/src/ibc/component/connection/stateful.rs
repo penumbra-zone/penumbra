@@ -138,17 +138,17 @@ pub mod connection_open_ack {
 
             // verify that the counterparty committed a TRYOPEN connection with us as the
             // counterparty
-            let penumbra_counterparty = Counterparty::new(
-                connection.client_id().clone(),
-                Some(msg.counterparty_connection_id.clone()),
-                penumbra_storage::PENUMBRA_COMMITMENT_PREFIX.clone(),
+            let expected_counterparty = Counterparty::new(
+                connection.client_id().clone(),  // client ID (local)
+                Some(msg.connection_id.clone()), // connection ID (local)
+                penumbra_storage::PENUMBRA_COMMITMENT_PREFIX.clone(), // commitment prefix (local)
             );
 
             // the connection we expect the counterparty to have committed
             let expected_conn = ConnectionEnd::new(
                 ConnectionState::TryOpen,
                 connection.counterparty().client_id().clone(),
-                penumbra_counterparty.clone(),
+                expected_counterparty.clone(),
                 vec![msg.version.clone()],
                 connection.delay_period(),
             );
@@ -171,34 +171,38 @@ pub mod connection_open_ack {
 
             // PROOF VERIFICATION
             // 1. verify that the counterparty chain committed the expected_conn to its state
-            client_def.verify_connection_state(
-                &trusted_client_state,
-                msg.proofs.height(),
-                connection.counterparty().prefix(),
-                msg.proofs.object_proof(),
-                trusted_consensus_state.root(),
-                penumbra_counterparty
-                    .connection_id
-                    .as_ref()
-                    .ok_or_else(|| anyhow::anyhow!("no connection id"))?,
-                &expected_conn,
-            )?;
+            client_def
+                .verify_connection_state(
+                    &trusted_client_state,
+                    msg.proofs.height(),
+                    connection.counterparty().prefix(),
+                    msg.proofs.object_proof(),
+                    trusted_consensus_state.root(),
+                    connection
+                        .counterparty()
+                        .connection_id()
+                        .ok_or_else(|| anyhow::anyhow!("missing counterparty connection id"))?,
+                    &expected_conn,
+                )
+                .map_err(|e| anyhow::anyhow!("couldn't verify connection state: {}", e))?;
 
             // 2. verify that the counterparty chain committed the correct ClientState (that was
             //    provided in the msg)
-            client_def.verify_client_full_state(
-                &trusted_client_state,
-                msg.proofs.height(),
-                connection.counterparty().prefix(),
-                msg.proofs.client_proof().as_ref().ok_or_else(|| {
-                    anyhow::anyhow!("client proof not provided in the connectionOpenTry")
-                })?,
-                trusted_consensus_state.root(),
-                penumbra_counterparty.client_id(),
-                msg.client_state.as_ref().ok_or_else(|| {
-                    anyhow::anyhow!("client state not provided in the connectionOpenTry")
-                })?,
-            )?;
+            client_def
+                .verify_client_full_state(
+                    &trusted_client_state,
+                    msg.proofs.height(),
+                    connection.counterparty().prefix(),
+                    msg.proofs.client_proof().as_ref().ok_or_else(|| {
+                        anyhow::anyhow!("client proof not provided in the connectionOpenTry")
+                    })?,
+                    trusted_consensus_state.root(),
+                    connection.counterparty().client_id(),
+                    msg.client_state.as_ref().ok_or_else(|| {
+                        anyhow::anyhow!("client state not provided in the connectionOpenTry")
+                    })?,
+                )
+                .map_err(|e| anyhow::anyhow!("couldn't verify client state: {}", e))?;
 
             let cons_proof = msg.proofs.consensus_proof().ok_or_else(|| {
                 anyhow::anyhow!("consensus proof not provided in the connectionOpenTry")
@@ -209,16 +213,18 @@ pub mod connection_open_ack {
 
             // 3. verify that the counterparty chain stored the correct consensus state of Penumbra at
             //    the given consensus height
-            client_def.verify_client_consensus_state(
-                &trusted_client_state,
-                msg.proofs.height(),
-                connection.counterparty().prefix(),
-                cons_proof.proof(),
-                trusted_consensus_state.root(),
-                penumbra_counterparty.client_id(),
-                cons_proof.height(),
-                &expected_consensus,
-            )?;
+            client_def
+                .verify_client_consensus_state(
+                    &trusted_client_state,
+                    msg.proofs.height(),
+                    connection.counterparty().prefix(),
+                    cons_proof.proof(),
+                    trusted_consensus_state.root(),
+                    connection.counterparty().client_id(),
+                    cons_proof.height(),
+                    &expected_consensus,
+                )
+                .map_err(|e| anyhow::anyhow!("couldn't verify client consensus state: {}", e))?;
 
             Ok(())
         }
