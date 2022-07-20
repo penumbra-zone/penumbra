@@ -174,7 +174,7 @@ pub mod connection_open_ack {
             client_def.verify_connection_state(
                 &trusted_client_state,
                 msg.proofs.height(),
-                penumbra_counterparty.prefix(),
+                connection.counterparty().prefix(),
                 msg.proofs.object_proof(),
                 trusted_consensus_state.root(),
                 penumbra_counterparty
@@ -189,7 +189,7 @@ pub mod connection_open_ack {
             client_def.verify_client_full_state(
                 &trusted_client_state,
                 msg.proofs.height(),
-                penumbra_counterparty.prefix(),
+                connection.counterparty().prefix(),
                 msg.proofs.client_proof().as_ref().ok_or_else(|| {
                     anyhow::anyhow!("client proof not provided in the connectionOpenTry")
                 })?,
@@ -212,7 +212,7 @@ pub mod connection_open_ack {
             client_def.verify_client_consensus_state(
                 &trusted_client_state,
                 msg.proofs.height(),
-                penumbra_counterparty.prefix(),
+                connection.counterparty().prefix(),
                 cons_proof.proof(),
                 trusted_consensus_state.root(),
                 penumbra_counterparty.client_id(),
