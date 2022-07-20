@@ -92,7 +92,7 @@ fn latest_testnet(testnets_path: impl AsRef<Path>) -> anyhow::Result<(String, St
     testnets
         .into_iter()
         .max_by_key(|(index, _, _)| *index)
-        .map(|(_, name, dir_name)| ("penumbra-".to_string() + &name, dir_name))
+        .map(|(_, name, dir_name)| ("penumbra-testnet-".to_string() + &name, dir_name))
         .ok_or_else(|| {
             anyhow::anyhow!(
                 "no testnets found in directory {:?}",
