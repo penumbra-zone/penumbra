@@ -16,14 +16,16 @@ To join a testnet as a fullnode, check out the tag for the current testnet, run
 `pd testnet join` to generate configs, then use those configs to run `pd` and
 `tendermint`. In more detail:
 
-### Generating configs
-
 First, reset the testnet data from any prior testnet you may have joined:
+
+### Resetting state
 
 ```
 cargo run --bin pd --release -- testnet unsafe-reset-all
 ```
 This will delete the entire testnet data directory.
+
+### Generating configs
 
 Next, generate a set of configs for the current testnet:
 ```
