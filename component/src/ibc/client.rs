@@ -1,6 +1,5 @@
 use ibc::core::ics02_client::trust_threshold::TrustThreshold;
 use ibc::core::ics02_client::{client_state::AnyClientState, height::Height};
-use ibc::core::ics23_commitment::specs::ProofSpecs;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::core::ics24_host::identifier::ConnectionId;
 use ibc::downcast;
