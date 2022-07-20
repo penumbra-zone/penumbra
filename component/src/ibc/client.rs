@@ -146,8 +146,7 @@ pub fn validate_penumbra_client_state(
     }
 
     // check client proof specs match penumbra proof specs
-    let penumbra_proof_specs: ProofSpecs = vec![jmt::ics23_spec()].into();
-    if penumbra_proof_specs != tm_client_state.proof_specs {
+    if penumbra_storage::PENUMBRA_PROOF_SPECS.clone() != tm_client_state.proof_specs {
         return Err(anyhow::anyhow!(
             "invalid client state: proof specs do not match"
         ));
