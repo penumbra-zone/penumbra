@@ -241,24 +241,8 @@ impl Worker {
         // created at genesis. In the future, we'll want to have a way for
         // clients to learn about assets as they're created.
         self.fetch_assets().await?;
-
-        let mut error_count = 0;
-        loop {
-            match self.sync().await {
-                // If the sync returns `Ok` then it means we're shutting down.
-                Ok(()) => return Ok(()),
-                Err(e) => {
-                    tracing::warn!(?e);
-                    error_count += 1;
-                    // Retry a few times and then give up.
-                    if error_count > 3 {
-                        return Err(e);
-                    }
-                }
-            }
-            // Wait a bit before restarting
-            tokio::time::sleep(std::time::Duration::from_millis(1729)).await;
-        }
+        self.sync().await?;
+        Ok(())
     }
 }
 

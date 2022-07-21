@@ -81,7 +81,10 @@ impl Storage {
             // Since our data is coming from the chain, durability is not
             // a concern -- if we lose some database transactions, it's as
             // if we rewound syncing a few blocks.
-            .synchronous(SqliteSynchronous::Normal);
+            .synchronous(SqliteSynchronous::Normal)
+            // The shared cache allows table-level locking, which makes things faster in concurrent
+            // cases, and eliminates database lock errors.
+            .shared_cache(true);
 
         let pool = Pool::<Sqlite>::connect_with(options).await?;
 
