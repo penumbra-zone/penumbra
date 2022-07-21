@@ -1,11 +1,20 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    collections::BTreeSet,
+    sync::{Arc, Mutex},
+};
 
 use penumbra_chain::{sync::CompactBlock, Epoch};
-use penumbra_crypto::{Asset, FullViewingKey};
-use penumbra_proto::client::oblivious::{
-    oblivious_query_client::ObliviousQueryClient, AssetListRequest, CompactBlockRangeRequest,
+use penumbra_crypto::{Asset, FullViewingKey, Nullifier};
+use penumbra_proto::{
+    client::oblivious::{
+        oblivious_query_client::ObliviousQueryClient, AssetListRequest, CompactBlockRangeRequest,
+    },
+    Protobuf,
 };
-use tokio::sync::{mpsc, watch, RwLock};
+use penumbra_transaction::Transaction;
+use sha2::Digest;
+use tendermint_rpc::Client;
+use tokio::sync::{watch, RwLock};
 use tonic::transport::Channel;
 
 #[cfg(feature = "nct-divergence-check")]
@@ -13,7 +22,7 @@ use penumbra_proto::client::specific::specific_query_client::SpecificQueryClient
 
 use crate::{
     sync::{scan_block, FilteredBlock},
-    Storage, TransactionFetcher,
+    Storage,
 };
 
 pub struct Worker {
@@ -23,7 +32,7 @@ pub struct Worker {
     fvk: FullViewingKey, // TODO: notifications (see TODOs on ViewService)
     error_slot: Arc<Mutex<Option<anyhow::Error>>>,
     sync_height_tx: watch::Sender<u64>,
-    filtered_block_tx: mpsc::Sender<FilteredBlock>,
+    tm_client: tendermint_rpc::HttpClient,
     #[cfg(feature = "nct-divergence-check")]
     specific_client: SpecificQueryClient<Channel>,
 }
@@ -66,17 +75,9 @@ impl Worker {
         let specific_client =
             SpecificQueryClient::connect(format!("http://{}:{}", node, pd_port)).await?;
 
-        // Create a channel for the worker to notify the transaction fetcher...
-        let (filtered_block_tx, filtered_block_rx) = mpsc::channel(500);
-        // ... then spawn the fetcher itself.
-        tokio::spawn(
-            TransactionFetcher::new(
-                storage.clone(),
-                filtered_block_rx,
-                format!("http://{}:{}", node, tendermint_port),
-            )?
-            .run(),
-        );
+        let tm_client = tendermint_rpc::HttpClient::new(
+            format!("http://{}:{}", node, tendermint_port).as_str(),
+        )?;
 
         Ok((
             Self {
@@ -86,7 +87,7 @@ impl Worker {
                 fvk,
                 error_slot: error_slot.clone(),
                 sync_height_tx,
-                filtered_block_tx,
+                tm_client,
                 #[cfg(feature = "nct-divergence-check")]
                 specific_client,
             },
@@ -131,6 +132,65 @@ impl Worker {
         tracing::info!("updated asset cache");
 
         Ok(())
+    }
+
+    pub async fn fetch_transactions(
+        &self,
+        filtered_block: &FilteredBlock,
+    ) -> anyhow::Result<Vec<Transaction>> {
+        let inbound_transaction_ids = filtered_block.inbound_transaction_ids();
+        let spent_nullifiers = filtered_block
+            .all_nullifiers()
+            .cloned()
+            .collect::<BTreeSet<Nullifier>>();
+
+        // Only make a block request if we detected transactions in the FilteredBlock.
+        // TODO: in the future, we could perform chaff downloads.
+        if spent_nullifiers.is_empty() && inbound_transaction_ids.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        tracing::debug!(
+            height = filtered_block.height,
+            "fetching full transaction data"
+        );
+
+        let block = self
+            .tm_client
+            .block(
+                tendermint::block::Height::try_from(filtered_block.height)
+                    .expect("height should be less than 2^63"),
+            )
+            .await?
+            .block;
+
+        let mut transactions = Vec::new();
+
+        for tx_bytes in block.data.iter() {
+            let tx_id: [u8; 32] = sha2::Sha256::digest(tx_bytes.as_slice())
+                .as_slice()
+                .try_into()
+                .unwrap();
+
+            let transaction = Transaction::decode(tx_bytes.as_slice())?;
+
+            // Check if the transaction is a known inbound transaction or spends one of our nullifiers.
+            if inbound_transaction_ids.contains(&tx_id)
+                || transaction
+                    .spent_nullifiers()
+                    .iter()
+                    .any(|nf| spent_nullifiers.contains(nf))
+            {
+                transactions.push(transaction)
+            }
+        }
+        tracing::debug!(
+            transactions_in_block = block.data.len(),
+            matched = transactions.len(),
+            "filtered relevant transactions"
+        );
+
+        Ok(transactions)
     }
 
     pub async fn sync(&mut self) -> Result<(), anyhow::Error> {
@@ -204,13 +264,14 @@ impl Worker {
                 )
                 .await?;
 
+                // Download any transactions we detected.
+                let transactions = self.fetch_transactions(&filtered_block).await?;
+
                 self.storage
-                    .record_block(filtered_block.clone(), &mut nct_guard)
+                    .record_block(filtered_block.clone(), transactions, &mut nct_guard)
                     .await?;
                 // Notify all watchers of the new height we just recorded.
                 self.sync_height_tx.send(filtered_block.height)?;
-                // Notify the transaction fetcher of the filtered block.
-                let _ = self.filtered_block_tx.send(filtered_block).await;
             }
             #[cfg(feature = "nct-divergence-check")]
             nct_divergence_check(&mut self.specific_client, height, nct_guard.root()).await?;

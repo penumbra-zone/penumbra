@@ -12,12 +12,12 @@ use penumbra_proto::{
     Protobuf,
 };
 use penumbra_tct as tct;
+use penumbra_transaction::Transaction;
 use sha2::Digest;
 use sqlx::{migrate::MigrateDatabase, query, Pool, Sqlite};
 use std::{num::NonZeroU64, sync::Arc};
 use tct::Commitment;
 use tokio::sync::broadcast;
-use tracing::instrument;
 
 use crate::{sync::FilteredBlock, NoteRecord, QuarantinedNoteRecord};
 
@@ -437,6 +437,7 @@ impl Storage {
     pub async fn record_block(
         &self,
         filtered_block: FilteredBlock,
+        transactions: Vec<Transaction>,
         nct: &mut tct::Tree,
     ) -> anyhow::Result<()> {
         //Check that the incoming block height follows the latest recorded height
@@ -456,7 +457,7 @@ impl Storage {
                 last_sync_height
             ));
         }
-        let mut tx = self.pool.begin().await?;
+        let mut dbtx = self.pool.begin().await?;
 
         // Insert all quarantined note commitments into storage
         for quarantined_note_record in &filtered_block.new_quarantined_notes {
@@ -507,7 +508,7 @@ impl Storage {
                 identity_key,
                 source,
             )
-            .execute(&mut tx)
+            .execute(&mut dbtx)
             .await?;
         }
 
@@ -573,7 +574,7 @@ impl Storage {
                 position,
                 source
             )
-            .execute(&mut tx)
+            .execute(&mut dbtx)
             .await?;
 
             // If this note corresponded to a previously quarantined note, delete it from quarantine
@@ -582,7 +583,7 @@ impl Storage {
                 "DELETE FROM quarantined_notes WHERE note_commitment = ?",
                 note_commitment,
             )
-            .execute(&mut tx)
+            .execute(&mut dbtx)
             .await?;
         }
 
@@ -605,7 +606,7 @@ impl Storage {
                     identity_key,
                     nullifier,
                 )
-                .execute(&mut tx)
+                .execute(&mut dbtx)
                 .await?;
 
                 // Mark the note as spent
@@ -614,7 +615,7 @@ impl Storage {
                     height_spent,
                     nullifier,
                 )
-                .execute(&mut tx)
+                .execute(&mut dbtx)
                 .await?;
             }
         }
@@ -633,7 +634,7 @@ impl Storage {
                 height_spent,
                 nullifier,
             )
-            .fetch_optional(&mut tx)
+            .fetch_optional(&mut dbtx)
             .await?;
 
             if let Some(bytes) = spent_commitment_bytes {
@@ -648,7 +649,7 @@ impl Storage {
                 "DELETE FROM quarantined_nullifiers WHERE nullifier = ?",
                 nullifier,
             )
-            .execute(&mut tx)
+            .execute(&mut dbtx)
             .await?;
         }
 
@@ -663,7 +664,7 @@ impl Storage {
                 "DELETE FROM quarantined_notes WHERE identity_key = ?",
                 identity_key,
             )
-            .execute(&mut tx)
+            .execute(&mut dbtx)
             .await?;
 
             // Collect all the currently quarantined nullifiers for this validator, deleting them in
@@ -672,7 +673,7 @@ impl Storage {
                 "DELETE FROM quarantined_nullifiers WHERE identity_key = ? RETURNING nullifier",
                 identity_key,
             )
-            .fetch_all(&mut tx)
+            .fetch_all(&mut dbtx)
             .await?;
 
             // For each such nullifier, roll back the spend of the note associated with it, marking
@@ -683,22 +684,52 @@ impl Storage {
                     "UPDATE notes SET height_spent = NULL WHERE nullifier = ?",
                     rolled_back_nullifier,
                 )
-                .execute(&mut tx)
+                .execute(&mut dbtx)
                 .await?;
             }
         }
 
         // Update NCT table with current NCT state
-        nct.serialize(&mut TreeStore(&mut tx)).await?;
+        nct.serialize(&mut TreeStore(&mut dbtx)).await?;
+
+        // Record all transactions
+        for transaction in transactions {
+            let tx_bytes = transaction.encode_to_vec();
+            // We have to create an explicit temporary borrow, because the sqlx api is bad (see above)
+            let tx_hash_owned = sha2::Sha256::digest(&tx_bytes);
+            let tx_hash = tx_hash_owned.as_slice();
+
+            tracing::debug!(tx_hash = ?hex::encode(tx_hash), "recording extended transaction");
+
+            sqlx::query!(
+                "INSERT INTO tx (tx_hash, tx_bytes) VALUES (?, ?)",
+                tx_hash,
+                tx_bytes,
+            )
+            .execute(&mut dbtx)
+            .await?;
+
+            // Associate all of the spent nullifiers with the transaction by hash.
+            for nf in transaction.spent_nullifiers() {
+                let nf_bytes = nf.0.to_bytes().to_vec();
+                sqlx::query!(
+                    "INSERT INTO tx_by_nullifier (nullifier, tx_hash) VALUES (?, ?)",
+                    nf_bytes,
+                    tx_hash,
+                )
+                .execute(&mut dbtx)
+                .await?;
+            }
+        }
 
         // Record block height as latest synced height
 
         let latest_sync_height = filtered_block.height as i64;
         sqlx::query!("UPDATE sync_height SET height = ?", latest_sync_height)
-            .execute(&mut tx)
+            .execute(&mut dbtx)
             .await?;
 
-        tx.commit().await?;
+        dbtx.commit().await?;
         // It's critical to reset the uncommitted height here, since we've just
         // invalidated it by committing.
         self.uncommitted_height.lock().take();
@@ -711,45 +742,6 @@ impl Storage {
             // The error is ignored, as this isn't a problem, because if there is no active receiver there is nothing to do
             let _ = self.scanned_notes_tx.send(note_record.clone());
         }
-
-        Ok(())
-    }
-
-    #[instrument(skip(self, tx))]
-    pub(crate) async fn record_transaction(
-        &self,
-        tx: penumbra_transaction::Transaction,
-    ) -> anyhow::Result<()> {
-        let tx_bytes = tx.encode_to_vec();
-        // We have to create an explicit temporary borrow, because the sqlx api is bad (see above)
-        let tx_hash_owned = sha2::Sha256::digest(&tx_bytes);
-        let tx_hash = tx_hash_owned.as_slice();
-
-        tracing::debug!(tx_hash = ?hex::encode(tx_hash), "recording extended transaction");
-
-        let mut dbtx = self.pool.begin().await?;
-
-        sqlx::query!(
-            "INSERT INTO tx (tx_hash, tx_bytes) VALUES (?, ?)",
-            tx_hash,
-            tx_bytes,
-        )
-        .execute(&mut dbtx)
-        .await?;
-
-        // Associate all of the spent nullifiers with the transaction by hash.
-        for nf in tx.spent_nullifiers() {
-            let nf_bytes = nf.0.to_bytes().to_vec();
-            sqlx::query!(
-                "INSERT INTO tx_by_nullifier (nullifier, tx_hash) VALUES (?, ?)",
-                nf_bytes,
-                tx_hash,
-            )
-            .execute(&mut dbtx)
-            .await?;
-        }
-
-        dbtx.commit().await?;
 
         Ok(())
     }
