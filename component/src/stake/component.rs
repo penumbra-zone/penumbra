@@ -1041,53 +1041,44 @@ impl Component for Staking {
             let v = validator::Definition::try_from(v.clone())
                 .context("supplied proto is not a valid definition")?;
 
-            let existing_v_by_id = self.state.validator(&v.validator.identity_key).await?;
-            let existing_v_by_ck = self
+            // Check whether we are redefining an existing validator.
+            if let Some(existing_v) = self.state.validator(&v.validator.identity_key).await? {
+                // Ensure that the highest existing sequence number is less than
+                // the new sequence number.
+                let current_seq = existing_v.sequence_number;
+                if v.validator.sequence_number <= current_seq {
+                    return Err(anyhow::anyhow!(
+                        "expected sequence numbers to be increasing: current sequence number is {}",
+                        current_seq
+                    ));
+                }
+            }
+
+            // Check whether the consensus key has already been used by another validator.
+            if let Some(existing_v) = self
                 .state
                 .validator_by_consensus_key(&v.validator.consensus_key)
-                .await?;
-
-            tracing::debug!(
-                ?v,
-                ?existing_v_by_id,
-                ?existing_v_by_ck,
-                "checking validator definition"
-            );
-
-            match (existing_v_by_id, existing_v_by_ck) {
-                // This is a redefinition of an existing validator.  Ensure that
-                // the highest existing sequence number is less than the new
-                // sequence number.
-                (Some(existing_v), _) => {
-                    let current_seq = existing_v.sequence_number;
-                    if v.validator.sequence_number <= current_seq {
-                        return Err(anyhow::anyhow!(
-                            "expected sequence numbers to be increasing: current sequence number is {}",
-                            current_seq
-                        ));
-                    }
-                }
-                // This is a new validator definition, but the consensus
-                // key it declares is already in use by another validator.
-                //
-                // Rejecting this is important for two reasons:
-                //
-                // 1. It prevents someone from declaring an (app-level)
-                // validator that "piggybacks" on the actual behavior of someone
-                // else's validator.
-                //
-                // 2. If we submit a validator update to Tendermint that
-                // includes duplicate consensus keys, Tendermint gets confused
-                // and hangs.
-                (None, Some(existing_v)) => {
+                .await?
+            {
+                if v.validator.identity_key != existing_v.identity_key {
+                    // This is a new validator definition, but the consensus
+                    // key it declares is already in use by another validator.
+                    //
+                    // Rejecting this is important for two reasons:
+                    //
+                    // 1. It prevents someone from declaring an (app-level)
+                    // validator that "piggybacks" on the actual behavior of someone
+                    // else's validator.
+                    //
+                    // 2. If we submit a validator update to Tendermint that
+                    // includes duplicate consensus keys, Tendermint gets confused
+                    // and hangs.
                     return Err(anyhow::anyhow!(
                         "consensus key {:?} is already in use by validator {}",
                         v.validator.consensus_key,
                         existing_v.identity_key,
                     ));
                 }
-                // This is a new validator definition, with a new consensus key.
-                (None, None) => {}
             }
 
             // the validator definition has now passed all verification checks
