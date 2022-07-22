@@ -156,7 +156,7 @@ message ActionPlan {
         ibc.IBCAction ibc_action = 17;
         // Governance:
         ProposePlan propose = 18;
-        WithdrawProposalPlan withdraw = 19;
+        WithdrawProposalPlan withdraw_proposal = 19;
         ValidatorVotePlan validator_vote = 20;
         DelegatorVotePlan delegator_vote = 21;
     }
@@ -215,7 +215,7 @@ message DelegatorVotePlan {
     // The vote to cast.
     Vote vote = 2;
     // The delegation note to prove that we can vote.
-    crypto.Note note = 3;
+    crypto.Note staked_note = 3;
     // The position of that delegation note.
     uint64 position = 4;
     // The randomizer to use for the proof of spend capability.
@@ -299,7 +299,7 @@ message Proposal {
       // The height at which the transaction should be executed.
       uint64 execute_at_height = 1;
       // The transaction to be executed.
-      Transaction transaction = 2;
+      TransactionPlan transaction = 2;
     }
 
     // A transaction to be canceled as a consequence of this proposal.

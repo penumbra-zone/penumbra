@@ -2,10 +2,14 @@ use penumbra_proto::{ibc as pb_ibc, stake as pb_stake, transaction as pb_t, Prot
 use serde::{Deserialize, Serialize};
 
 mod output;
+mod propose;
 mod spend;
+mod vote;
 
 pub use output::OutputPlan;
+pub use propose::{Proposal, ProposalKind, ProposePlan, WithdrawProposalPlan};
 pub use spend::SpendPlan;
+pub use vote::{DelegatorVotePlan, ValidatorVotePlan, Vote};
 
 use crate::action::{Delegate, Undelegate};
 
@@ -29,6 +33,14 @@ pub enum ActionPlan {
     Undelegate(Undelegate),
     ValidatorDefinition(pb_stake::ValidatorDefinition),
     IBCAction(pb_ibc::IbcAction),
+    /// Propose a governance vote.
+    Propose(ProposePlan),
+    /// Withdraw a proposed vote.
+    WithdrawProposal(WithdrawProposalPlan),
+    /// Vote on a proposal as a delegator.
+    DelegatorVote(DelegatorVotePlan),
+    /// Vote on a proposal as a validator.
+    ValidatorVote(ValidatorVotePlan),
 }
 
 // Convenience impls that make declarative transaction construction easier.
@@ -69,6 +81,18 @@ impl From<pb_ibc::IbcAction> for ActionPlan {
     }
 }
 
+impl From<ProposePlan> for ActionPlan {
+    fn from(inner: ProposePlan) -> ActionPlan {
+        ActionPlan::Propose(inner)
+    }
+}
+
+impl From<WithdrawProposalPlan> for ActionPlan {
+    fn from(inner: WithdrawProposalPlan) -> ActionPlan {
+        ActionPlan::WithdrawProposal(inner)
+    }
+}
+
 impl Protobuf<pb_t::ActionPlan> for ActionPlan {}
 
 impl From<ActionPlan> for pb_t::ActionPlan {
@@ -91,6 +115,18 @@ impl From<ActionPlan> for pb_t::ActionPlan {
             },
             ActionPlan::IBCAction(inner) => pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::IbcAction(inner)),
+            },
+            ActionPlan::Propose(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::Propose(inner.into())),
+            },
+            ActionPlan::WithdrawProposal(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::WithdrawProposal(inner.into())),
+            },
+            ActionPlan::DelegatorVote(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::DelegatorVote(inner.into())),
+            },
+            ActionPlan::ValidatorVote(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::ValidatorVote(inner.into())),
             },
         }
     }
@@ -117,6 +153,16 @@ impl TryFrom<pb_t::ActionPlan> for ActionPlan {
                 Ok(ActionPlan::ValidatorDefinition(inner))
             }
             pb_t::action_plan::Action::IbcAction(inner) => Ok(ActionPlan::IBCAction(inner)),
+            pb_t::action_plan::Action::Propose(inner) => Ok(ActionPlan::Propose(inner.try_into()?)),
+            pb_t::action_plan::Action::WithdrawProposal(inner) => {
+                Ok(ActionPlan::WithdrawProposal(inner.try_into()?))
+            }
+            pb_t::action_plan::Action::ValidatorVote(inner) => {
+                Ok(ActionPlan::ValidatorVote(inner.try_into()?))
+            }
+            pb_t::action_plan::Action::DelegatorVote(inner) => {
+                Ok(ActionPlan::DelegatorVote(inner.try_into()?))
+            }
         }
     }
 }
