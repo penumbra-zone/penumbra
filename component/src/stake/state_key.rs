@@ -2,12 +2,24 @@ use jmt::KeyHash;
 use penumbra_crypto::IdentityKey;
 use tendermint::PublicKey;
 
-pub fn validators(id: &IdentityKey) -> KeyHash {
+pub fn validator_list() -> KeyHash {
+    "staking/validators".into()
+}
+
+pub fn validator_by_id(id: &IdentityKey) -> KeyHash {
     format!("staking/validators/{}", id).into()
 }
 
 pub fn state_by_validator(id: &IdentityKey) -> KeyHash {
     format!("staking/validators/{}/state", id).into()
+}
+
+pub fn current_base_rate() -> KeyHash {
+    "staking/base_rate/current".into()
+}
+
+pub fn next_base_rate() -> KeyHash {
+    "staking/base_rate/next".into()
 }
 
 pub fn current_rate_by_validator(id: &IdentityKey) -> KeyHash {
