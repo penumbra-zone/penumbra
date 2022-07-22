@@ -1031,21 +1031,46 @@ impl Component for Staking {
         for v in tx.validator_definitions() {
             let v = validator::Definition::try_from(v.clone())
                 .context("supplied proto is not a valid definition")?;
-            let existing_v = self.state.validator(&v.validator.identity_key).await?;
+            let existing_v_by_id = self.state.validator(&v.validator.identity_key).await?;
+            let existing_v_by_ck = self
+                .state
+                .validator_by_consensus_key(&v.validator.consensus_key)
+                .await?;
 
-            if let Some(existing_v) = existing_v {
-                // This is an existing validator definition. Ensure that the highest
-                // existing sequence number is less than the new sequence number.
-                let current_seq = existing_v.sequence_number;
-                if v.validator.sequence_number <= current_seq {
+            match (existing_v_by_id, existing_v_by_ck) {
+                // This is a redefinition of an existing validator.  Ensure that
+                // the highest existing sequence number is less than the new
+                // sequence number.
+                (Some(existing_v), _) => {
+                    let current_seq = existing_v.sequence_number;
+                    if v.validator.sequence_number <= current_seq {
+                        return Err(anyhow::anyhow!(
+                            "expected sequence numbers to be increasing: current sequence number is {}",
+                            current_seq
+                        ));
+                    }
+                }
+                // This is a new validator definition, but the consensus
+                // key it declares is already in use by another validator.
+                //
+                // Rejecting this is important for two reasons:
+                //
+                // 1. It prevents someone from declaring an (app-level)
+                // validator that "piggybacks" on the actual behavior of someone
+                // else's validator.
+                //
+                // 2. If we submit a validator update to Tendermint that
+                // includes duplicate consensus keys, Tendermint gets confused
+                // and hangs.
+                (None, Some(existing_v)) => {
                     return Err(anyhow::anyhow!(
-                        "expected sequence numbers to be increasing: current sequence number is {}",
-                        current_seq
+                        "consensus key {:?} is already in use by validator {}",
+                        v.validator.consensus_key,
+                        existing_v.identity_key,
                     ));
                 }
-            } else {
-                // This is a new validator definition.
-                continue;
+                // This is a new validator definition, with a new consensus key.
+                (None, None) => {}
             }
 
             // the validator definition has now passed all verification checks
