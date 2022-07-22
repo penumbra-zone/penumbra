@@ -4,7 +4,7 @@ use penumbra_crypto::FullViewingKey;
 use penumbra_proto::{transaction as pb, Message, Protobuf};
 
 use crate::{
-    action::{output, spend, Delegate, Undelegate},
+    action::{output, spend, Delegate, Undelegate, ValidatorVote, Vote},
     plan::TransactionPlan,
     Action, Transaction, TransactionBody,
 };
@@ -110,6 +110,12 @@ impl TransactionPlan {
         for undelegation in self.undelegations() {
             state.update(undelegation.auth_hash().as_bytes());
         }
+        for validator_vote in self.validator_votes() {
+            state.update(validator_vote.auth_hash().as_bytes());
+        }
+        for _delegator_vote in self.delegator_vote_plans() {
+            // TODO: get the authorization hash of the delegator vote body for each plan
+        }
         // These are data payloads, so just hash them directly,
         // since we consider them authorizing data.
         for payload in self.validator_definitions() {
@@ -121,6 +127,18 @@ impl TransactionPlan {
         for payload in self.ibc_actions() {
             let auth_hash = Params::default()
                 .personal(b"PAH:ibc_action")
+                .hash(&payload.encode_to_vec());
+            state.update(auth_hash.as_bytes());
+        }
+        for payload in self.proposals() {
+            let auth_hash = Params::default()
+                .personal(b"PAH:propose")
+                .hash(&payload.encode_to_vec());
+            state.update(auth_hash.as_bytes());
+        }
+        for payload in self.withdraw_proposals() {
+            let auth_hash = Params::default()
+                .personal(b"PAH:withdrawproposal")
                 .hash(&payload.encode_to_vec());
             state.update(auth_hash.as_bytes());
         }
@@ -218,6 +236,28 @@ impl Undelegate {
         state.update(&self.epoch_index.to_le_bytes());
         state.update(&self.unbonded_amount.to_le_bytes());
         state.update(&self.delegation_amount.to_le_bytes());
+
+        state.finalize()
+    }
+}
+
+impl ValidatorVote {
+    pub fn auth_hash(&self) -> Hash {
+        let mut state = blake2b_simd::Params::default()
+            .personal(b"PAH:validatorvote")
+            .to_state();
+
+        // All of these fields are fixed-length, so we can just throw them in the hash one after the
+        // other.
+        state.update(&self.proposal.to_le_bytes());
+        state.update(match self.vote {
+            // Manually choose a distinct byte for each vote type
+            Vote::Yes => b"Y",
+            Vote::No => b"N",
+            Vote::Abstain => b"A",
+            Vote::NoWithVeto => b"V",
+        });
+        state.update(&self.validator_identity.0.to_bytes());
 
         state.finalize()
     }
