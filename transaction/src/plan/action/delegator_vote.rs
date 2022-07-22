@@ -44,7 +44,7 @@ impl TryFrom<pb::DelegatorVotePlan> for DelegatorVotePlan {
                 .try_into()?,
             staked_note: value
                 .staked_note
-                .ok_or_else(|| anyhow::anyhow!("missing staked_note in `DelegatorVotePlan`"))?
+                .ok_or_else(|| anyhow::anyhow!("missing staked note in `DelegatorVotePlan`"))?
                 .try_into()?,
             position: value.position.into(),
             randomizer: Fr::from_bytes(value.randomizer.as_ref().try_into()?)?,

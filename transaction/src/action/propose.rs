@@ -172,7 +172,7 @@ impl TryFrom<pb::proposal::Kind> for ProposalKind {
                             inner
                                 .auth_hash
                                 .ok_or_else(|| {
-                                    anyhow::anyhow!("missing auth_hash in `DaoSpend` cancel")
+                                    anyhow::anyhow!("missing auth hash in `DaoSpend` cancel")
                                 })?
                                 .try_into()?,
                         ))
@@ -214,7 +214,7 @@ impl TryFrom<pb::ProposePlan> for Propose {
                 .try_into()?,
             deposit_refund_address: msg
                 .deposit_refund_address
-                .ok_or_else(|| anyhow::anyhow!("missing deposit_refund_address in `ProposePlan`"))?
+                .ok_or_else(|| anyhow::anyhow!("missing deposit refund address in `ProposePlan`"))?
                 .try_into()?,
         })
     }
