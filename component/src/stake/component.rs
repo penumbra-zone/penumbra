@@ -1031,11 +1031,19 @@ impl Component for Staking {
         for v in tx.validator_definitions() {
             let v = validator::Definition::try_from(v.clone())
                 .context("supplied proto is not a valid definition")?;
+
             let existing_v_by_id = self.state.validator(&v.validator.identity_key).await?;
             let existing_v_by_ck = self
                 .state
                 .validator_by_consensus_key(&v.validator.consensus_key)
                 .await?;
+
+            tracing::debug!(
+                ?v,
+                ?existing_v_by_id,
+                ?existing_v_by_ck,
+                "checking validator definition"
+            );
 
             match (existing_v_by_id, existing_v_by_ck) {
                 // This is a redefinition of an existing validator.  Ensure that
