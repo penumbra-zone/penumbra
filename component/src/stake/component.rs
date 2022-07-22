@@ -754,6 +754,15 @@ impl Staking {
             }
         }
 
+        // Update the consensus key lookup, in case the validator rotated their
+        // consensus key.
+        self.state
+            .put_domain(
+                state_key::validator_id_by_consensus_key(&validator.consensus_key),
+                validator.identity_key.clone(),
+            )
+            .await;
+
         self.state
             .put_domain(state_key::validators(id), validator)
             .await;
@@ -1252,8 +1261,9 @@ pub trait View: StateExt {
     async fn validator_by_consensus_key(&self, ck: &PublicKey) -> Result<Option<Validator>> {
         // We maintain an internal mapping of consensus keys to identity keys to make this
         // lookup more efficient.
-        let identity_key: Option<IdentityKey> =
-            self.get_domain(state_key::consensus_key(ck)).await?;
+        let identity_key: Option<IdentityKey> = self
+            .get_domain(state_key::validator_id_by_consensus_key(ck))
+            .await?;
 
         if identity_key.is_none() {
             return Ok(None);
@@ -1319,7 +1329,13 @@ pub trait View: StateExt {
         tracing::debug!(?validator);
         let id = validator.identity_key.clone();
 
-        self.put_domain(state_key::validators(&id), validator).await;
+        self.put_domain(state_key::validators(&id), validator.clone())
+            .await;
+        self.put_domain(
+            state_key::validator_id_by_consensus_key(&validator.consensus_key),
+            id,
+        )
+        .await;
         self.register_denom(&DelegationToken::from(&id).denom())
             .await?;
 

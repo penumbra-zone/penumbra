@@ -34,8 +34,8 @@ pub fn slashed_validators(height: u64) -> KeyHash {
     format!("staking/slashed_validators/{}", height).into()
 }
 
-pub fn consensus_key(pk: &PublicKey) -> KeyHash {
-    format!("staking/consensus_key/{}", pk.to_hex()).into()
+pub fn validator_id_by_consensus_key(pk: &PublicKey) -> KeyHash {
+    format!("staking/validator_id_by_consensus_key/{}", pk.to_hex()).into()
 }
 
 pub fn delegation_changes_by_height(height: u64) -> KeyHash {
