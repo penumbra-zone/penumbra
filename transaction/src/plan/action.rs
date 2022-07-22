@@ -93,6 +93,18 @@ impl From<WithdrawProposalPlan> for ActionPlan {
     }
 }
 
+impl From<DelegatorVotePlan> for ActionPlan {
+    fn from(inner: DelegatorVotePlan) -> ActionPlan {
+        ActionPlan::DelegatorVote(inner)
+    }
+}
+
+impl From<ValidatorVotePlan> for ActionPlan {
+    fn from(inner: ValidatorVotePlan) -> ActionPlan {
+        ActionPlan::ValidatorVote(inner)
+    }
+}
+
 impl Protobuf<pb_t::ActionPlan> for ActionPlan {}
 
 impl From<ActionPlan> for pb_t::ActionPlan {
