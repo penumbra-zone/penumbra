@@ -79,35 +79,27 @@ impl Transaction {
     }
 
     // TODO: make sure payloads from Swap actions included
-    pub fn note_payloads(&self) -> Vec<NotePayload> {
-        self.transaction_body
-            .actions
-            .iter()
-            .filter_map(|action| {
-                if let Action::Output(output) = action {
-                    Some(output.body.note_payload.clone())
-                } else {
-                    None
-                }
-            })
-            .collect()
+    pub fn note_payloads(&self) -> impl Iterator<Item = &NotePayload> {
+        self.actions().filter_map(|action| {
+            if let Action::Output(output) = action {
+                Some(&output.body.note_payload)
+            } else {
+                None
+            }
+        })
     }
 
     // TODO: make sure nullifiers from SwapClaim actions included
-    pub fn spent_nullifiers(&self) -> Vec<Nullifier> {
-        self.transaction_body
-            .actions
-            .iter()
-            .filter_map(|action| {
-                // Note: adding future actions that include nullifiers
-                // will need to be matched here as well as Spends
-                if let Action::Spend(spend) = action {
-                    Some(spend.body.nullifier.clone())
-                } else {
-                    None
-                }
-            })
-            .collect()
+    pub fn spent_nullifiers(&self) -> impl Iterator<Item = Nullifier> + '_ {
+        self.actions().filter_map(|action| {
+            // Note: adding future actions that include nullifiers
+            // will need to be matched here as well as Spends
+            if let Action::Spend(spend) = action {
+                Some(spend.body.nullifier)
+            } else {
+                None
+            }
+        })
     }
 
     pub fn transaction_body(&self) -> TransactionBody {

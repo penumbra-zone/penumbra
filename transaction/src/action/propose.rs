@@ -187,15 +187,15 @@ impl TryFrom<pb::proposal::Kind> for ProposalKind {
 /// address for the proposal deposit.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::ProposePlan", into = "pb::ProposePlan")]
-pub struct ProposePlan {
+pub struct Propose {
     /// The proposal to propose.
     pub proposal: Proposal,
     /// The refund address for the proposal's proposer.
     pub deposit_refund_address: Address,
 }
 
-impl From<ProposePlan> for pb::ProposePlan {
-    fn from(value: ProposePlan) -> pb::ProposePlan {
+impl From<Propose> for pb::ProposePlan {
+    fn from(value: Propose) -> pb::ProposePlan {
         pb::ProposePlan {
             proposal: Some(value.proposal.into()),
             deposit_refund_address: Some(value.deposit_refund_address.into()),
@@ -203,11 +203,11 @@ impl From<ProposePlan> for pb::ProposePlan {
     }
 }
 
-impl TryFrom<pb::ProposePlan> for ProposePlan {
+impl TryFrom<pb::ProposePlan> for Propose {
     type Error = anyhow::Error;
 
     fn try_from(msg: pb::ProposePlan) -> Result<Self, Self::Error> {
-        Ok(ProposePlan {
+        Ok(Propose {
             proposal: msg
                 .proposal
                 .ok_or_else(|| anyhow::anyhow!("missing proposal in `ProposePlan`"))?
@@ -220,7 +220,7 @@ impl TryFrom<pb::ProposePlan> for ProposePlan {
     }
 }
 
-impl Protobuf<pb::ProposePlan> for ProposePlan {}
+impl Protobuf<pb::ProposePlan> for Propose {}
 
 /// A withdraw-proposal plan describes the original proposer's intent to withdraw their proposal.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -228,25 +228,25 @@ impl Protobuf<pb::ProposePlan> for ProposePlan {}
     try_from = "pb::WithdrawProposalPlan",
     into = "pb::WithdrawProposalPlan"
 )]
-pub struct WithdrawProposalPlan {
+pub struct WithdrawProposal {
     /// The proposal ID to withdraw.
     pub proposal: u64,
 }
 
-impl From<WithdrawProposalPlan> for pb::WithdrawProposalPlan {
-    fn from(value: WithdrawProposalPlan) -> pb::WithdrawProposalPlan {
+impl From<WithdrawProposal> for pb::WithdrawProposalPlan {
+    fn from(value: WithdrawProposal) -> pb::WithdrawProposalPlan {
         pb::WithdrawProposalPlan {
             proposal: value.proposal,
         }
     }
 }
 
-impl From<pb::WithdrawProposalPlan> for WithdrawProposalPlan {
+impl From<pb::WithdrawProposalPlan> for WithdrawProposal {
     fn from(msg: pb::WithdrawProposalPlan) -> Self {
-        WithdrawProposalPlan {
+        WithdrawProposal {
             proposal: msg.proposal,
         }
     }
 }
 
-impl Protobuf<pb::WithdrawProposalPlan> for WithdrawProposalPlan {}
+impl Protobuf<pb::WithdrawProposalPlan> for WithdrawProposal {}
