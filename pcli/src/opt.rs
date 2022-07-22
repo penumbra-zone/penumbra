@@ -1,8 +1,6 @@
 use crate::{
     box_grpc_svc::{self, BoxGrpcService},
-    legacy,
-    wallet::Wallet,
-    App, Command,
+    legacy, App, Command,
 };
 use anyhow::{Context, Result};
 use camino::Utf8PathBuf;
@@ -18,6 +16,7 @@ use penumbra_proto::{
     view::{view_protocol_client::ViewProtocolClient, view_protocol_server::ViewProtocolServer},
 };
 use penumbra_view::ViewService;
+use penumbra_wallet::Wallet;
 use std::net::SocketAddr;
 use tracing_subscriber::EnvFilter;
 use url::Url;

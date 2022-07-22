@@ -17,11 +17,10 @@ mod command;
 mod legacy;
 mod network;
 mod opt;
-mod wallet;
 mod warning;
 
 use opt::Opt;
-use wallet::Wallet;
+use penumbra_wallet::Wallet;
 
 use box_grpc_svc::BoxGrpcService;
 use command::*;
