@@ -5,17 +5,21 @@ use penumbra_proto::{ibc as pb_ibc, stake as pbs, transaction as pb, Protobuf};
 
 mod delegate;
 pub mod output;
+mod propose;
 pub mod spend;
 mod swap;
 mod swap_claim;
 mod undelegate;
+mod vote;
 
 pub use delegate::Delegate;
 pub use output::Output;
+pub use propose::{Proposal, ProposalKind, Propose, WithdrawProposal};
 pub use spend::Spend;
 pub use swap::Swap;
 pub use swap_claim::SwapClaim;
 pub use undelegate::Undelegate;
+pub use vote::{ValidatorVote, Vote};
 
 /// An action performed by a Penumbra transaction.
 #[derive(Clone, Debug)]

@@ -177,8 +177,7 @@ impl Worker {
             if inbound_transaction_ids.contains(&tx_id)
                 || transaction
                     .spent_nullifiers()
-                    .iter()
-                    .any(|nf| spent_nullifiers.contains(nf))
+                    .any(|nf| spent_nullifiers.contains(&nf))
             {
                 transactions.push(transaction)
             }

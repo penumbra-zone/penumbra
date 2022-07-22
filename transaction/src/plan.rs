@@ -6,13 +6,13 @@ use penumbra_crypto::transaction::Fee;
 use penumbra_proto::{ibc as pb_ibc, stake as pb_stake, transaction as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
-use crate::action::{Delegate, Undelegate};
+use crate::action::{Delegate, Propose, Undelegate, ValidatorVote, WithdrawProposal};
 
 mod action;
 mod auth;
 mod build;
 
-pub use action::{ActionPlan, OutputPlan, SpendPlan};
+pub use action::{ActionPlan, DelegatorVotePlan, OutputPlan, SpendPlan};
 
 /// A declaration of a planned [`Transaction`](crate::Transaction),
 /// for use in transaction authorization and creation.
@@ -92,6 +92,46 @@ impl TransactionPlan {
         self.actions.iter().filter_map(|action| {
             if let ActionPlan::ValidatorDefinition(d) = action {
                 Some(d)
+            } else {
+                None
+            }
+        })
+    }
+
+    pub fn proposals(&self) -> impl Iterator<Item = &Propose> {
+        self.actions.iter().filter_map(|action| {
+            if let ActionPlan::Propose(p) = action {
+                Some(p)
+            } else {
+                None
+            }
+        })
+    }
+
+    pub fn withdraw_proposals(&self) -> impl Iterator<Item = &WithdrawProposal> {
+        self.actions.iter().filter_map(|action| {
+            if let ActionPlan::WithdrawProposal(p) = action {
+                Some(p)
+            } else {
+                None
+            }
+        })
+    }
+
+    pub fn delegator_vote_plans(&self) -> impl Iterator<Item = &DelegatorVotePlan> {
+        self.actions.iter().filter_map(|action| {
+            if let ActionPlan::DelegatorVote(v) = action {
+                Some(v)
+            } else {
+                None
+            }
+        })
+    }
+
+    pub fn validator_votes(&self) -> impl Iterator<Item = &ValidatorVote> {
+        self.actions.iter().filter_map(|action| {
+            if let ActionPlan::ValidatorVote(v) = action {
+                Some(v)
             } else {
                 None
             }

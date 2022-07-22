@@ -1,17 +1,15 @@
 use penumbra_proto::{ibc as pb_ibc, stake as pb_stake, transaction as pb_t, Protobuf};
 use serde::{Deserialize, Serialize};
 
+mod delegator_vote;
 mod output;
-mod propose;
 mod spend;
-mod vote;
 
+pub use delegator_vote::DelegatorVotePlan;
 pub use output::OutputPlan;
-pub use propose::{Proposal, ProposalKind, ProposePlan, WithdrawProposalPlan};
 pub use spend::SpendPlan;
-pub use vote::{DelegatorVotePlan, ValidatorVotePlan, Vote};
 
-use crate::action::{Delegate, Undelegate};
+use crate::action::{Delegate, Propose, Undelegate, ValidatorVote, WithdrawProposal};
 
 /// A declaration of a planned [`Action`], for use in transaction creation.
 ///
@@ -34,13 +32,13 @@ pub enum ActionPlan {
     ValidatorDefinition(pb_stake::ValidatorDefinition),
     IBCAction(pb_ibc::IbcAction),
     /// Propose a governance vote.
-    Propose(ProposePlan),
+    Propose(Propose),
     /// Withdraw a proposed vote.
-    WithdrawProposal(WithdrawProposalPlan),
+    WithdrawProposal(WithdrawProposal),
     /// Vote on a proposal as a delegator.
     DelegatorVote(DelegatorVotePlan),
     /// Vote on a proposal as a validator.
-    ValidatorVote(ValidatorVotePlan),
+    ValidatorVote(ValidatorVote),
 }
 
 // Convenience impls that make declarative transaction construction easier.
@@ -81,14 +79,14 @@ impl From<pb_ibc::IbcAction> for ActionPlan {
     }
 }
 
-impl From<ProposePlan> for ActionPlan {
-    fn from(inner: ProposePlan) -> ActionPlan {
+impl From<Propose> for ActionPlan {
+    fn from(inner: Propose) -> ActionPlan {
         ActionPlan::Propose(inner)
     }
 }
 
-impl From<WithdrawProposalPlan> for ActionPlan {
-    fn from(inner: WithdrawProposalPlan) -> ActionPlan {
+impl From<WithdrawProposal> for ActionPlan {
+    fn from(inner: WithdrawProposal) -> ActionPlan {
         ActionPlan::WithdrawProposal(inner)
     }
 }
@@ -99,8 +97,8 @@ impl From<DelegatorVotePlan> for ActionPlan {
     }
 }
 
-impl From<ValidatorVotePlan> for ActionPlan {
-    fn from(inner: ValidatorVotePlan) -> ActionPlan {
+impl From<ValidatorVote> for ActionPlan {
+    fn from(inner: ValidatorVote) -> ActionPlan {
         ActionPlan::ValidatorVote(inner)
     }
 }
