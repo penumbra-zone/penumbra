@@ -764,7 +764,7 @@ impl Staking {
             .await;
 
         self.state
-            .put_domain(state_key::validators(id), validator)
+            .put_domain(state_key::validator_by_id(id), validator)
             .await;
 
         Ok(())
@@ -1183,13 +1183,13 @@ impl Component for Staking {
 #[async_trait]
 pub trait View: StateExt {
     async fn current_base_rate(&self) -> Result<BaseRateData> {
-        self.get_domain("staking/base_rate/current".into())
+        self.get_domain(state_key::current_base_rate())
             .await
             .map(|rate_data| rate_data.expect("rate data must be set after init_chain"))
     }
 
     async fn next_base_rate(&self) -> Result<BaseRateData> {
-        self.get_domain("staking/base_rate/next".into())
+        self.get_domain(state_key::next_base_rate())
             .await
             .map(|rate_data| rate_data.expect("rate data must be set after init_chain"))
     }
@@ -1197,9 +1197,9 @@ pub trait View: StateExt {
     #[instrument(skip(self))]
     async fn set_base_rates(&self, current: BaseRateData, next: BaseRateData) {
         tracing::debug!("setting base rates");
-        self.put_domain("staking/base_rate/current".into(), current)
+        self.put_domain(state_key::current_base_rate(), current)
             .await;
-        self.put_domain("staking/base_rate/next".into(), next).await;
+        self.put_domain(state_key::next_base_rate(), next).await;
     }
 
     async fn current_validator_rate(&self, identity_key: &IdentityKey) -> Result<Option<RateData>> {
@@ -1253,7 +1253,8 @@ pub trait View: StateExt {
     }
 
     async fn validator(&self, identity_key: &IdentityKey) -> Result<Option<Validator>> {
-        self.get_domain(state_key::validators(identity_key)).await
+        self.get_domain(state_key::validator_by_id(identity_key))
+            .await
     }
 
     // Tendermint validators are referenced to us by their Tendermint consensus key,
@@ -1329,7 +1330,7 @@ pub trait View: StateExt {
         tracing::debug!(?validator);
         let id = validator.identity_key.clone();
 
-        self.put_domain(state_key::validators(&id), validator.clone())
+        self.put_domain(state_key::validator_by_id(&id), validator.clone())
             .await;
         self.put_domain(
             state_key::validator_id_by_consensus_key(&validator.consensus_key),
@@ -1421,18 +1422,15 @@ pub trait View: StateExt {
 
     async fn validator_list(&self) -> Result<Vec<IdentityKey>> {
         Ok(self
-            .get_domain("staking/validators/list".into())
+            .get_domain(state_key::validator_list())
             .await?
             .map(|list: validator::List| list.0)
             .unwrap_or_default())
     }
 
     async fn set_validator_list(&self, validators: Vec<IdentityKey>) {
-        self.put_domain(
-            "staking/validators/list".into(),
-            validator::List(validators),
-        )
-        .await;
+        self.put_domain(state_key::validator_list(), validator::List(validators))
+            .await;
     }
 
     async fn delegation_changes(&self, height: block::Height) -> Result<DelegationChanges> {
