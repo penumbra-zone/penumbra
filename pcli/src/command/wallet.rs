@@ -6,7 +6,7 @@ use penumbra_crypto::keys::SeedPhrase;
 use rand_core::OsRng;
 use sha2::{Digest, Sha256};
 
-use crate::Wallet;
+use crate::KeyStore;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum WalletCmd {
@@ -37,7 +37,7 @@ impl WalletCmd {
         }
     }
 
-    fn archive_wallet(&self, wallet: &Wallet) -> Result<()> {
+    fn archive_wallet(&self, wallet: &KeyStore) -> Result<()> {
         // Archive the newly generated state
         let archive_dir = ProjectDirs::from("zone", "penumbra", "penumbra-testnet-archive")
             .expect("can access penumbra-testnet-archive dir");
@@ -70,17 +70,17 @@ impl WalletCmd {
                     seed_phrase
                 );
 
-                let wallet = Wallet::from_seed_phrase(seed_phrase);
+                let wallet = KeyStore::from_seed_phrase(seed_phrase);
                 wallet.save(data_dir.join(crate::CUSTODY_FILE_NAME))?;
                 self.archive_wallet(&wallet)?;
             }
             WalletCmd::ImportFromPhrase { seed_phrase } => {
-                let wallet = Wallet::from_seed_phrase(SeedPhrase::from_str(seed_phrase)?);
+                let wallet = KeyStore::from_seed_phrase(SeedPhrase::from_str(seed_phrase)?);
                 wallet.save(data_dir.join(crate::CUSTODY_FILE_NAME))?;
                 self.archive_wallet(&wallet)?;
             }
             WalletCmd::ExportFvk => {
-                let wallet = Wallet::load(data_dir.join(crate::CUSTODY_FILE_NAME))?;
+                let wallet = KeyStore::load(data_dir.join(crate::CUSTODY_FILE_NAME))?;
                 println!("{}", wallet.spend_key.full_viewing_key());
             }
             WalletCmd::Delete => {

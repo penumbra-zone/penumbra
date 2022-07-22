@@ -3,11 +3,11 @@ use serde::{Deserialize, Serialize};
 
 /// A wallet file storing a single spend authority.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Wallet {
+pub struct KeyStore {
     pub spend_key: SpendKey,
 }
 
-impl Wallet {
+impl KeyStore {
     /// Write the wallet data to the provided path.
     pub fn save(&self, path: impl AsRef<std::path::Path>) -> anyhow::Result<()> {
         if path.as_ref().exists() {

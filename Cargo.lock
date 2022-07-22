@@ -2850,6 +2850,7 @@ dependencies = [
  "penumbra-proto",
  "penumbra-storage",
  "penumbra-transaction",
+ "penumbra-wallet",
  "pin-project",
  "prost-types 0.9.0",
  "rand",

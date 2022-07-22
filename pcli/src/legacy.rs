@@ -18,13 +18,13 @@ pub fn migrate(
     let legacy_wallet: ClientState =
         serde_json::from_slice(std::fs::read(legacy_wallet_path)?.as_slice())?;
 
-    let new_wallet = crate::Wallet {
+    let new_wallet = crate::KeyStore {
         spend_key: legacy_wallet.wallet.spend_key,
     };
     new_wallet.save(custody_path)?;
 
     // Load the new wallet, to check we really did save it:
-    let new_wallet_2 = crate::Wallet::load(custody_path)?;
+    let new_wallet_2 = crate::KeyStore::load(custody_path)?;
     if new_wallet_2.spend_key.to_bytes().0 != new_wallet.spend_key.to_bytes().0 {
         return Err(anyhow::anyhow!("Failed to save wallet"));
     } else {
