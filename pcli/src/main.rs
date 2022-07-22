@@ -20,7 +20,7 @@ mod opt;
 mod warning;
 
 use opt::Opt;
-use penumbra_wallet::Wallet;
+use penumbra_wallet::KeyStore;
 
 use box_grpc_svc::BoxGrpcService;
 use command::*;
@@ -33,7 +33,7 @@ pub struct App {
     pub view: ViewProtocolClient<BoxGrpcService>,
     pub custody: CustodyProtocolClient<BoxGrpcService>,
     pub fvk: FullViewingKey,
-    pub wallet: Wallet,
+    pub wallet: KeyStore,
     pub pd_url: Url,
     pub tendermint_url: Url,
 }

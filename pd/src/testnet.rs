@@ -15,7 +15,7 @@ use penumbra_crypto::{
     rdsa::{SigningKey, SpendAuth, VerificationKey},
     Address,
 };
-use penumbra_wallet::Wallet;
+use penumbra_wallet::KeyStore;
 use rand::Rng;
 use rand_core::OsRng;
 use regex::{Captures, Regex};
@@ -304,7 +304,7 @@ pub fn write_configs(
     validator_spend_key_file_path.push("validator_custody.json");
     tracing::info!(validator_spend_key_file_path = %validator_spend_key_file_path.display(), "writing validator custody file");
     let mut validator_spend_key_file = File::create(validator_spend_key_file_path)?;
-    let validator_wallet = Wallet {
+    let validator_wallet = KeyStore {
         spend_key: vk.validator_spend_key.clone().into(),
     };
     validator_spend_key_file

@@ -2,8 +2,8 @@
 #![recursion_limit = "256"]
 
 mod build;
-mod wallet;
+mod key_store;
 pub use build::build_transaction;
-pub use wallet::Wallet;
+pub use key_store::KeyStore;
 
 pub mod plan;
