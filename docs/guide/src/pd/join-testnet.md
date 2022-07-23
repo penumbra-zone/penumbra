@@ -116,7 +116,7 @@ enabled in order to activate one's validator.
 By default `template-definition` will use a random consensus key that you won't have access to. Make sure to **set the `consensus_key` correctly** otherwise your instance of `tendermint` won't be using the key expected in the validator definition. You can get the correct value for `consensus_key` from your `tendermint` configs:
 
 ```console
-\$ grep -A3 pub_key ~/.tendermint/config/priv_validator_key.json
+\$ grep -A3 pub_key ~/.penumbra/testnet_data/node0/tendermint/config/priv_validator_key.json
   "pub_key": {
     "type": "tendermint/PubKeyEd25519",
     "value": "Fodjg0m1kF/6uzcAZpRcLJswGf3EeNShLP2A+UCz8lw="
