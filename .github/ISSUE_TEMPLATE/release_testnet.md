@@ -36,12 +36,12 @@ Monday (release day):
 - [ ] You must [manually review](https://docs.github.com/en/actions/managing-workflow-runs/reviewing-deployments) the `Waiting` deployment in the GitHub Action UI before the deployment will begin. Monitor the GitHub action to ensure it completes after it is approved.
 - [ ] Update Galileo to run against the correct tag: change [the dependencies in the Cargo.toml](https://github.com/penumbra-zone/galileo/blob/main/Cargo.toml#L11) to reference the new git tag and commit to `main`.
 - [ ] `ssh root@galileo.penumbra.zone`and bounce Galileo via the following steps:
-- [ ] `git checkout` latest tag in `~/penumbra`
-- [ ] `tmux attach` and navigate to the session running galileo
-- [ ] stop the running galileo process
-- [ ] `git pull origin main` in `~/galileo` to update the checkout
-- [ ] `cargo run --release --bin pcli -- wallet reset` to reset the client state for the new testnet
-- [ ] start Galileo again: `RUST_LOG=galileo=info DISCORD_TOKEN={token} cargo run --release -- serve 100penumbra  --catch-up https://discord.com/channels/824484045370818580/915710851917439060/968238177229897789`
-- [ ] Confirm that Galileo is dispensing tokens, resupply Galileo wallet as needed.
+  - [ ] `git checkout` latest tag in `~/penumbra`
+  - [ ] `tmux attach` and navigate to the session running galileo
+  - [ ] stop the running galileo process
+  - [ ] `git pull origin main` in `~/galileo` to update the checkout
+  - [ ] `cargo run --release --bin pcli -- wallet reset` to reset the client state for the new testnet
+  - [ ] start Galileo again: `RUST_LOG=galileo=info DISCORD_TOKEN={token} cargo run --release -- serve 100penumbra  --catch-up https://discord.com/channels/824484045370818580/915710851917439060/968238177229897789`
+  - [ ] Confirm that Galileo is dispensing tokens, resupply Galileo wallet as needed.
 - [ ] Make GitHub release object and draft an announcement for peer review to ensure major changes included are comprehensive.
 - [ ] Make the announcement to Discord! 🎉🎉🎉
