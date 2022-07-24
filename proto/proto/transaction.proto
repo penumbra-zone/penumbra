@@ -43,9 +43,20 @@ message Action {
     Output output = 2;
     stake.Delegate delegate = 3;
     stake.Undelegate undelegate = 4;
+    /*
+    Swap swap = 5;
+    SwapClaim swap_claim = 6;
+    */
 
     stake.ValidatorDefinition validator_definition = 16;
     ibc.IBCAction ibc_action = 17;
+
+    /*
+    PositionOpen position_open = 30;
+    PositionClose position_close = 31;
+    PositionWithdraw position_withdraw = 32;
+    PositionRewardClaim position_reward_claim = 34;
+    */
   }
 }
 

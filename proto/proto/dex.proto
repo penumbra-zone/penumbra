@@ -83,3 +83,137 @@ message TradingPair {
   // The second asset of the pair.
   crypto.AssetId asset_2 = 2;
 }
+
+// The data describing a trading function.
+//
+// This implicitly treats the trading function as being between assets 1 and 2,
+// without specifying what those assets are, to avoid duplicating data (each
+// asset ID alone is twice the size of the trading function).
+//
+// The trading function is `phi(R) = p*R_1 + q*R_2`.
+// This is used as a CFMM with constant `k` and fee `fee` (gamma).
+message TradingFunction {
+  // NOTE: the use of floats here is a placeholder, so we can stub out the
+  // implementation and then decide what type of fixed-point, deterministic
+  // arithmetic should be used.
+  double fee = 2;
+  double k = 3;
+  double p = 4;
+  double q = 5;
+}
+
+// The reserves of a position.
+message Reserves {
+  uint64 r1 = 1;
+  uint64 r2 = 2;
+}
+
+// Data identifying a position.
+message PositionData {
+  TradingPair pair = 1;
+  TradingFunction phi = 2;
+  // A random value used to disambiguate different positions with the exact same
+  // trading function.  The chain should reject newly created positions with the
+  // same nonce as an existing position.  This ensures that `PositionId`s will
+  // be unique, and allows us to track position ownership with a
+  // sequence of stateful NFTs based on the `PositionId`.
+  bytes nonce = 3;
+}
+
+// A hash of a `PositionData`.
+message PositionId {
+  bytes inner = 1;
+}
+
+// The state of a position.
+message PositionState {
+  enum PositionStateEnum {
+    // The position has been opened, is active, has reserves and accumulated
+    // fees, and can be traded against.
+    OPENED = 0;
+    // The position has been closed, is inactive and can no longer be traded
+    // against, but still has reserves and accumulated fees.
+    CLOSED = 1;
+    // The final reserves and accumulated fees have been withdrawn, leaving an
+    // empty, inactive position awaiting (possible) retroactive rewards.
+    WITHDRAWN = 2;
+    // Any retroactive rewards have been claimed. The position is now an inert,
+    // historical artefact.
+    CLAIMED = 3;
+  }
+  PositionStateEnum state = 1;
+}
+
+// The denomination of an LPNFT tracking both ownership and state of a position.
+//
+// Tracking the state as part of the LPNFT means that all LP-related actions can
+// be authorized by spending funds: a state transition (e.g., closing a
+// position) is modeled as spending an "open position LPNFT" and minting a
+// "closed position LPNFT" for the same (globally unique) position ID.
+//
+// This means that the LP mechanics can be agnostic to the mechanism used to
+// record custody and spend authorization.  For instance, they can be recorded
+// in the shielded pool, where custody is based on off-chain keys, or they could
+// be recorded in a programmatic on-chain account (in the future, e.g., to
+// support interchain accounts).  This also means that LP-related actions don't
+// require any cryptographic implementation (proofs, signatures, etc), other
+// than hooking into the value commitment mechanism used for transaction
+// balances.
+message PositionDenom {
+  PositionId id = 1;
+  PositionState state = 2;
+}
+
+// A transaction action that opens a new position.
+//
+// This action's contribution to the transaction's value balance is to consume
+// the initial reserves and contribute an opened position NFT.
+message PositionOpen {
+  // Contains the data defining the position, sufficient to compute its `PositionId`.
+  //
+  // Positions are immutable, so the `PositionData` (and hence the `PositionId`)
+  // are unchanged over the entire lifetime of the position.
+  PositionData position = 1;
+  // The initial reserves of the position.  Unlike the `PositionData`, the
+  // reserves evolve over time as trades are executed against the position.
+  Reserves initial_reserves = 2;
+}
+
+// A transaction action that closes a position.
+//
+// This action's contribution to the transaction's value balance is to consume
+// an opened position NFT and contribute a closed position NFT.
+//
+// Closing a position does not immediately withdraw funds, because Penumbra
+// transactions (like any ZK transaction model) are early-binding: the prover
+// must know the state transition they prove knowledge of, and they cannot know
+// the final reserves with certainty until after the position has been deactivated.
+message PositionClose {
+  PositionId id = 1;
+}
+
+// A transaction action that withdraws funds from a closed position.
+//
+// This action's contribution to the transaction's value balance is to consume a
+// closed position NFT and contribute a withdrawn position NFT, as well as all
+// of the funds that were in the position at the time of closing.
+message PositionWithdraw {
+  PositionId id = 1;
+  // A transparent (zero blinding factor) commitment to the position's final reserves and fees.
+  //
+  // The chain will check this commitment by recomputing it with the on-chain state.
+  bytes cv = 2;
+}
+
+// A transaction action that claims retroactive rewards for a historical
+// position.
+//
+// This action's contribution to the transaction's value balance is to consume a
+// withdrawn position NFT and contribute its reward balance.
+message PositionRewardClaim {
+  PositionId id = 1;
+  // A transparent (zero blinding factor) commitment to the position's accumulated rewards.
+  //
+  // The chain will check this commitment by recomputing it with the on-chain state.
+  bytes cv = 2;
+}
