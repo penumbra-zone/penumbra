@@ -1,3 +1,5 @@
+use std::ops::{Add, AddAssign};
+
 use crate::decryption_share::Verified;
 use crate::limb::DecryptionShare;
 use ark_ff::One;
@@ -36,5 +38,22 @@ impl Ciphertext {
         }
 
         -d + self.c2
+    }
+}
+
+impl Add<&Ciphertext> for &Ciphertext {
+    type Output = Ciphertext;
+    fn add(self, rhs: &Ciphertext) -> Self::Output {
+        Ciphertext {
+            c1: self.c1 + rhs.c1,
+            c2: self.c2 + rhs.c2,
+        }
+    }
+}
+
+impl AddAssign<&Ciphertext> for Ciphertext {
+    fn add_assign(&mut self, rhs: &Ciphertext) {
+        self.c1 += rhs.c1;
+        self.c2 += rhs.c2;
     }
 }

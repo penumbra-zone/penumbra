@@ -1,3 +1,5 @@
+//! Types used to perform distributed key generation (WIP).
+
 use crate::PublicKeyShare;
 
 pub struct Committee {

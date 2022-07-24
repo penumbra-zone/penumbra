@@ -28,7 +28,7 @@ struct DecryptionShareProof {
 
 impl PrivateKeyShare {
     #[allow(non_snake_case)]
-    pub fn limb_decryption_share<R: RngCore + CryptoRng>(
+    pub(crate) fn limb_decryption_share<R: RngCore + CryptoRng>(
         &self,
         ciphertext: &Ciphertext,
         transcript: &mut merlin::Transcript,

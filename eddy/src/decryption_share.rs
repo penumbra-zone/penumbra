@@ -2,12 +2,16 @@ use rand_core::{CryptoRng, RngCore};
 
 use crate::{limb, Ciphertext, PrivateKeyShare, PublicKeyShare, TranscriptProtocol};
 
+/// A type-level enum recording verification status, ensuring that using an
+/// unverified [`DecryptionShare`] is a compile-time error.
 pub trait VerificationStatus: private::Sealed {}
 
+/// A marker type indicating that a [`DecryptionShare`] has been verified.
 #[derive(Debug, Clone)]
 pub enum Verified {}
 impl VerificationStatus for Verified {}
 
+/// A marker type indicating that a [`DecryptionShare`] has not been verified.
 #[derive(Debug, Clone)]
 pub enum Unverified {}
 impl VerificationStatus for Unverified {}
@@ -21,6 +25,10 @@ mod private {
 }
 
 /// A share of a decryption of a particular [`Ciphertext`].
+///
+/// The [`VerificationStatus`] type parameter tracks whether the decryption has
+/// been verified, so that attempting to perform decryption with unverified
+/// shares is a compile error.
 #[derive(Debug, Clone)]
 pub struct DecryptionShare<S: VerificationStatus> {
     pub(crate) participant_index: u32,
@@ -29,7 +37,9 @@ pub struct DecryptionShare<S: VerificationStatus> {
     pub(crate) share2: limb::DecryptionShare<S>,
     pub(crate) share3: limb::DecryptionShare<S>,
 }
+
 impl PrivateKeyShare {
+    /// Generate this private key share's contribution to a decryption ceremony.
     #[allow(non_snake_case)]
     pub fn decryption_share<R: RngCore + CryptoRng>(
         &self,
@@ -56,6 +66,8 @@ impl PrivateKeyShare {
 }
 
 impl DecryptionShare<Unverified> {
+    /// Verify this decryption share against the [`PublicKeyShare`] that
+    /// (supposedly) generated it, so that it can be used in decryption.
     #[allow(non_snake_case)]
     pub fn verify(
         &self,

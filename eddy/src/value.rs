@@ -17,13 +17,14 @@ impl From<u64> for Value {
 }
 
 impl Value {
-    pub(crate) fn to_limbs(&self) -> [limb::Value; 4] {
-        [
-            ((self.0 & 0xffff) as u32).into(),
-            (((self.0 >> 16) & 0xffff) as u32).into(),
-            (((self.0 >> 32) & 0xffff) as u32).into(),
-            (((self.0 >> 48) & 0xffff) as u32).into(),
-        ]
+    pub(crate) fn to_limbs(&self) -> anyhow::Result<[limb::Value; 4]> {
+        let v = u64::try_from(self.0)?;
+        Ok([
+            ((v & 0xffff) as u32).into(),
+            (((v >> 16) & 0xffff) as u32).into(),
+            (((v >> 32) & 0xffff) as u32).into(),
+            (((v >> 48) & 0xffff) as u32).into(),
+        ])
     }
 
     pub(crate) fn from_limbs(
@@ -39,13 +40,19 @@ impl Value {
         Value(x0 + (x1 << 16) + (x2 << 32) + (x3 << 48))
     }
 
+    /// Encrypt this value to the given [`EncryptionKey`], producing a
+    /// [`Ciphertext`] and a (transparent) encryption proof.
+    ///
+    /// While the transparent encryption proof reveals the ciphertext, the rest
+    /// of the encryption should be secure -- this is a stub interface prior to
+    /// implementing ZK-SNARK based encryption proofs.
     pub fn transparent_encrypt<R: RngCore + CryptoRng>(
         &self,
         encryption_key: &EncryptionKey,
         mut rng: R,
     ) -> anyhow::Result<(Ciphertext, proofs::TransparentEncryptionProof)> {
         let encrypted_limbs = self
-            .to_limbs()
+            .to_limbs()?
             .iter()
             .map(|limb| limb.transparent_encrypt(encryption_key, &mut rng))
             .collect::<Vec<_>>();
@@ -80,8 +87,8 @@ mod tests {
         fn limb_value_addition_roundtrip(value1: u64, value2: u64) {
             let value = Value::from(value1);
             let value2 = Value::from(value2);
-            let limbs = value.to_limbs();
-            let limbs2 = value2.to_limbs();
+            let limbs = value.to_limbs().unwrap();
+            let limbs2 = value2.to_limbs().unwrap();
             let limbs3 = [
                 limbs[0].0 + limbs2[0].0,
                 limbs[1].0 + limbs2[1].0,
@@ -95,7 +102,7 @@ mod tests {
         #[test]
         fn limb_value_roundtrip(value: u64) {
             let value = Value::from(value);
-            let limbs = value.to_limbs();
+            let limbs = value.to_limbs().unwrap();
             let value2 = Value::from_limbs(limbs[0], limbs[1], limbs[2], limbs[3]);
             assert_eq!(value.0, value2.0);
         }

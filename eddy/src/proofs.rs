@@ -1,3 +1,6 @@
+//! Encryption correctness proofs (WIP: currently, only placeholder "transparent
+//! proofs").
+
 use crate::{Ciphertext, EncryptionKey, Value};
 
 /// Placeholder for a zk-SNARK proof that the encryption is well-formed.
@@ -14,7 +17,7 @@ impl TransparentEncryptionProof {
     }
 
     pub fn verify(&self, ctxt: &Ciphertext, encryption_key: &EncryptionKey) -> anyhow::Result<()> {
-        let limbs = Value::from(self.value as u64).to_limbs();
+        let limbs = Value::from(self.value as u64).to_limbs()?;
         let ctxts = [ctxt.c0, ctxt.c1, ctxt.c2, ctxt.c3];
 
         for i in 0..4 {
