@@ -1,6 +1,6 @@
 use penumbra_crypto::NotePayload;
+use penumbra_crypto::{dex::swap::SwapCiphertext, value};
 use penumbra_crypto::{proofs::transparent::SwapProof, MockFlowCiphertext};
-use penumbra_crypto::{swap::SwapCiphertext, value};
 use penumbra_proto::dex::TradingPair;
 use penumbra_proto::{dex as pb, Protobuf};
 
