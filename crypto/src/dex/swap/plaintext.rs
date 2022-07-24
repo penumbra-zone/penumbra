@@ -5,39 +5,15 @@ use chacha20poly1305::{
     aead::{Aead, NewAead},
     ChaCha20Poly1305, Key, Nonce,
 };
-use decaf377::FieldExt;
-use once_cell::sync::Lazy;
 use penumbra_proto::{dex as pb, Protobuf};
 
-use crate::asset::Id as AssetId;
+use crate::dex::TradingPair;
 use crate::keys::OutgoingViewingKey;
 
-// Swap ciphertext byte length
-pub const SWAP_CIPHERTEXT_BYTES: usize = 169;
-// Swap plaintext byte length
-pub const SWAP_LEN_BYTES: usize = 153;
-pub const OVK_WRAPPED_LEN_BYTES: usize = 80;
-
-/// The nonce used for swap encryption.
-///
-/// The nonce will always be `[0u8; 12]` which is okay since we use a new
-/// ephemeral key each time.
-pub static SWAP_ENCRYPTION_NONCE: Lazy<[u8; 12]> = Lazy::new(|| [0u8; 12]);
-
-// Can add to this/make this an enum when we add additional types of swaps.
-// TODO: is this actually something we would do? suppose it doesn't hurt to build this
-// in early.
-pub const SWAP_TYPE: u8 = 0;
-
-#[derive(thiserror::Error, Debug)]
-pub enum Error {
-    #[error("Swap type unsupported")]
-    SwapTypeUnsupported,
-    #[error("Swap deserialization error")]
-    SwapDeserializationError,
-    #[error("Decryption error")]
-    DecryptionError,
-}
+use super::{
+    Error, SwapCiphertext, OVK_WRAPPED_LEN_BYTES, SWAP_CIPHERTEXT_BYTES, SWAP_ENCRYPTION_NONCE,
+    SWAP_LEN_BYTES, SWAP_TYPE,
+};
 
 #[derive(Clone)]
 pub struct SwapPlaintext {
@@ -63,7 +39,7 @@ impl SwapPlaintext {
     // Theoretically, if a paranoid user did want to achieve forward secrecy, they could choose to encrypt
     // nonsense bytes as the swap plaintext as the swap ciphertext does not need to be valid for the
     // swap to succeed, however this is unsupported by the official client.
-    fn derive_symmetric_key(
+    pub(super) fn derive_symmetric_key(
         shared_secret: &ka::SharedSecret,
         epk: &ka::Public,
     ) -> blake2b_simd::Hash {
@@ -316,113 +292,5 @@ impl TryFrom<[u8; SWAP_LEN_BYTES]> for SwapPlaintext {
 
     fn try_from(bytes: [u8; SWAP_LEN_BYTES]) -> Result<SwapPlaintext, Self::Error> {
         (&bytes[..]).try_into()
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct SwapCiphertext(pub [u8; SWAP_CIPHERTEXT_BYTES]);
-
-impl SwapCiphertext {
-    pub fn decrypt(
-        &self,
-        esk: &ka::Secret,
-        transmission_key: ka::Public,
-        diversified_basepoint: decaf377::Element,
-    ) -> Result<SwapPlaintext> {
-        let shared_secret = esk
-            .key_agreement_with(&transmission_key)
-            .expect("key agreement succeeds");
-        let epk = esk.diversified_public(&diversified_basepoint);
-        let key = SwapPlaintext::derive_symmetric_key(&shared_secret, &epk);
-        let cipher = ChaCha20Poly1305::new(Key::from_slice(key.as_bytes()));
-        let nonce = Nonce::from_slice(&*SWAP_ENCRYPTION_NONCE);
-
-        let swap_ciphertext = self.0;
-        let decryption_result = cipher
-            .decrypt(nonce, swap_ciphertext.as_ref())
-            .map_err(|_| anyhow::anyhow!("unable to decrypt swap ciphertext"))?;
-
-        let plaintext: [u8; SWAP_LEN_BYTES] = decryption_result
-            .try_into()
-            .map_err(|_| anyhow::anyhow!("swap decryption result did not fit in plaintext len"))?;
-
-        plaintext.try_into().map_err(|_| {
-            anyhow::anyhow!("unable to convert swap plaintext bytes into SwapPlaintext")
-        })
-    }
-}
-
-impl TryFrom<[u8; SWAP_CIPHERTEXT_BYTES]> for SwapCiphertext {
-    type Error = anyhow::Error;
-
-    fn try_from(bytes: [u8; SWAP_CIPHERTEXT_BYTES]) -> Result<SwapCiphertext, Self::Error> {
-        Ok(SwapCiphertext(bytes))
-    }
-}
-
-impl TryFrom<&[u8]> for SwapCiphertext {
-    type Error = anyhow::Error;
-
-    fn try_from(slice: &[u8]) -> Result<SwapCiphertext, Self::Error> {
-        Ok(SwapCiphertext(slice[..].try_into()?))
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct TradingPair {
-    pub asset_1: AssetId,
-    pub asset_2: AssetId,
-}
-
-impl TradingPair {
-    /// Convert the trading pair to bytes.
-    pub fn to_bytes(&self) -> [u8; 64] {
-        let mut result: [u8; 64] = [0; 64];
-        result[0..32].copy_from_slice(&self.asset_1.0.to_bytes());
-        result[32..64].copy_from_slice(&self.asset_2.0.to_bytes());
-        result
-    }
-}
-
-impl TryFrom<[u8; 64]> for TradingPair {
-    type Error = anyhow::Error;
-    fn try_from(bytes: [u8; 64]) -> anyhow::Result<Self> {
-        let asset_1_bytes = &bytes[0..32];
-        let asset_2_bytes = &bytes[32..64];
-        Ok(Self {
-            asset_1: asset_1_bytes
-                .try_into()
-                .map_err(|_| anyhow::anyhow!("invalid asset_1 bytes in TradingPair"))?,
-            asset_2: asset_2_bytes
-                .try_into()
-                .map_err(|_| anyhow::anyhow!("invalid asset_2 bytes in TradingPair"))?,
-        })
-    }
-}
-
-impl Protobuf<pb::TradingPair> for TradingPair {}
-
-impl TryFrom<pb::TradingPair> for TradingPair {
-    type Error = anyhow::Error;
-    fn try_from(tp: pb::TradingPair) -> anyhow::Result<Self> {
-        Ok(Self {
-            asset_1: tp
-                .asset_1
-                .ok_or_else(|| anyhow::anyhow!("missing trading pair asset1"))?
-                .try_into()?,
-            asset_2: tp
-                .asset_2
-                .ok_or_else(|| anyhow::anyhow!("missing trading pair asset2"))?
-                .try_into()?,
-        })
-    }
-}
-
-impl From<TradingPair> for pb::TradingPair {
-    fn from(tp: TradingPair) -> Self {
-        Self {
-            asset_1: Some(tp.asset_1.into()),
-            asset_2: Some(tp.asset_2.into()),
-        }
     }
 }
