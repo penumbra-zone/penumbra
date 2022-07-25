@@ -89,6 +89,10 @@ impl ChainCmd {
             .add_row(vec![
                 "Outbound ICS-20 Enabled",
                 &format!("{}", params.outbound_ics20_transfers_enabled),
+            ])
+            .add_row(vec![
+                "FMD Precision (bits)",
+                &format!("{}", params.fmd_precision_bits),
             ]);
 
         println!("{}", table);

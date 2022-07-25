@@ -62,6 +62,9 @@ pub struct ChainParams {
     pub inbound_ics20_transfers_enabled: bool,
     /// Whether outbound ICS-20 transfers are enabled
     pub outbound_ics20_transfers_enabled: bool,
+
+    /// Number of bits of precision for Fuzzy Message Detection
+    pub fmd_precision_bits: u8,
 }
 
 impl Protobuf<pb::ChainParams> for ChainParams {}
@@ -81,6 +84,10 @@ impl From<pb::ChainParams> for ChainParams {
             ibc_enabled: msg.ibc_enabled,
             inbound_ics20_transfers_enabled: msg.inbound_ics20_transfers_enabled,
             outbound_ics20_transfers_enabled: msg.outbound_ics20_transfers_enabled,
+            fmd_precision_bits: msg
+                .fmd_precision_bits
+                .try_into()
+                .expect("number of bits of FMD precision should fit in u8"),
         }
     }
 }
@@ -100,6 +107,10 @@ impl From<ChainParams> for pb::ChainParams {
             ibc_enabled: params.ibc_enabled,
             inbound_ics20_transfers_enabled: params.inbound_ics20_transfers_enabled,
             outbound_ics20_transfers_enabled: params.outbound_ics20_transfers_enabled,
+            fmd_precision_bits: params
+                .fmd_precision_bits
+                .try_into()
+                .expect("number of bits of FMD precision should fit in u8"),
         }
     }
 }
@@ -125,6 +136,7 @@ impl Default for ChainParams {
             ibc_enabled: true,
             inbound_ics20_transfers_enabled: false,
             outbound_ics20_transfers_enabled: false,
+            fmd_precision_bits: 1,
         }
     }
 }

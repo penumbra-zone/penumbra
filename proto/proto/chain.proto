@@ -33,6 +33,9 @@ message ChainParams {
   bool inbound_ics20_transfers_enabled = 7;
   /// Whether outbound ICS-20 transfers are enabled
   bool outbound_ics20_transfers_enabled = 8;
+
+  /// Number of bits of precision for Fuzzy Message Detection
+  uint32 fmd_precision_bits = 13;
 }
 
 // TODO: delete with legacy code
