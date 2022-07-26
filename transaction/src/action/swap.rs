@@ -1,6 +1,6 @@
+use penumbra_crypto::proofs::transparent::SwapProof;
 use penumbra_crypto::NotePayload;
 use penumbra_crypto::{dex::swap::SwapCiphertext, value};
-use penumbra_crypto::{proofs::transparent::SwapProof, MockFlowCiphertext};
 use penumbra_proto::dex::TradingPair;
 use penumbra_proto::{dex as pb, Protobuf};
 
@@ -8,10 +8,11 @@ use penumbra_proto::{dex as pb, Protobuf};
 pub struct Swap {
     // A proof that this is a valid state change.
     pub proof: SwapProof,
-    // The encrypted amount of asset 1 to be swapped.
-    pub enc_amount_1: MockFlowCiphertext,
-    // The encrypted amount of asset 2 to be swapped.
-    pub enc_amount_2: MockFlowCiphertext,
+    // Amounts will be plaintext until flow encryption is available.
+    // // The encrypted amount of asset 1 to be swapped.
+    // pub enc_amount_1: MockFlowCiphertext,
+    // // The encrypted amount of asset 2 to be swapped.
+    // pub enc_amount_2: MockFlowCiphertext,
     pub body: Body,
 }
 
@@ -21,8 +22,6 @@ impl From<Swap> for pb::Swap {
     fn from(s: Swap) -> Self {
         pb::Swap {
             zkproof: s.proof.into(),
-            enc_amount_1: Some(s.enc_amount_1.into()),
-            enc_amount_2: Some(s.enc_amount_2.into()),
             body: Some(s.body.into()),
         }
     }
@@ -35,14 +34,6 @@ impl TryFrom<pb::Swap> for Swap {
             proof: s.zkproof[..]
                 .try_into()
                 .map_err(|_| anyhow::anyhow!("Swap proof malformed"))?,
-            enc_amount_1: s
-                .enc_amount_1
-                .ok_or_else(|| anyhow::anyhow!("missing enc_amount_1"))?
-                .try_into()?,
-            enc_amount_2: s
-                .enc_amount_2
-                .ok_or_else(|| anyhow::anyhow!("missing enc_amount_2"))?
-                .try_into()?,
             body: s
                 .body
                 .ok_or_else(|| anyhow::anyhow!("missing body"))?
@@ -54,8 +45,12 @@ impl TryFrom<pb::Swap> for Swap {
 #[derive(Debug, Clone)]
 pub struct Body {
     pub trading_pair: TradingPair,
-    pub asset_1_commitment: value::Commitment,
-    pub asset_2_commitment: value::Commitment,
+    // No commitments for the values, as they're plaintext
+    // until flow encryption is available
+    // pub asset_1_commitment: value::Commitment,
+    // pub asset_2_commitment: value::Commitment,
+    pub delta_1: u64,
+    pub delta_2: u64,
     pub fee_commitment: value::Commitment,
     pub swap_nft: NotePayload,
     pub swap_ciphertext: SwapCiphertext,
@@ -67,8 +62,8 @@ impl From<Body> for pb::SwapBody {
     fn from(s: Body) -> Self {
         pb::SwapBody {
             trading_pair: s.trading_pair.into(),
-            asset_1_commitment: (&s.asset_1_commitment.to_bytes()).to_vec(),
-            asset_2_commitment: (&s.asset_2_commitment.to_bytes()).to_vec(),
+            delta_1: s.delta_1,
+            delta_2: s.delta_2,
             fee_commitment: (&s.fee_commitment.to_bytes()).to_vec(),
             swap_nft: Some(s.swap_nft.into()),
             swap_ciphertext: s.swap_ciphertext.0.to_vec(),
@@ -83,8 +78,8 @@ impl TryFrom<pb::SwapBody> for Body {
             trading_pair: s
                 .trading_pair
                 .ok_or_else(|| anyhow::anyhow!("missing trading_pair"))?,
-            asset_1_commitment: (&s.asset_1_commitment[..]).try_into()?,
-            asset_2_commitment: (&s.asset_2_commitment[..]).try_into()?,
+            delta_1: s.delta_1,
+            delta_2: s.delta_2,
             fee_commitment: (&s.fee_commitment[..]).try_into()?,
             swap_nft: s
                 .swap_nft

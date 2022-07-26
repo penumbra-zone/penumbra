@@ -3,13 +3,20 @@ package penumbra.transparent_proofs;
 option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
 
 import "crypto.proto";
+import "dex.proto";
 
 // A Penumbra transparent Spend Proof.
 message SpendProof {
   // Auxiliary inputs
   crypto.NoteCommitmentProof note_commitment_proof = 1;
+
+  /**
+   * @exclude
+   * From the note being spent
+  */
   bytes g_d = 2;
   bytes pk_d = 3;
+
   uint64 value_amount = 4;
   bytes value_asset_id = 5;
   bytes v_blinding = 6;
@@ -33,31 +40,83 @@ message OutputProof {
 
 // A Penumbra transparent SwapClaimProof.
 message SwapClaimProof {
-  // Auxiliary inputs
-  crypto.NoteCommitmentBlockProof note_commitment_block_proof = 1;
-  uint64 note_commitment_position = 12;
-  bytes g_d = 2;
+  /**
+   * @exclude
+   * Describes the input note with the Swap NFT
+   */
+  bytes swap_nft_asset_id = 1;
+  bytes b_d = 2;
   bytes pk_d = 3;
-  uint64 swap_nft_amount = 4;
-  bytes swap_nft_asset_id = 5;
-  bytes v_blinding = 6;
-  bytes note_blinding = 8;
-  bytes spend_auth_randomizer = 9;
-  bytes nk = 10;
+  // Inclusion proof for the Swap NFT
+  crypto.NoteCommitmentProof note_commitment_proof = 4;
+  bytes note_blinding = 5;
+  bytes nk = 6;
+
+  /**
+   * @exclude
+   * Describes opening of Swap NFT asset ID for commitment verification
+  */
+  dex.TradingPair trading_pair = 10;
+  // uint64 fee = 7; // fee is public data so not included in client's submitted SwapClaimProof
+  uint64 delta_1 = 11;
+  uint64 delta_2 = 12;
+
+  /**
+   * @exclude
+   * Describes output amounts
+  */
+  uint64 lambda_1 = 20;
+  uint64 lambda_2 = 21;
+
+  /**
+   * @exclude
+   * Describes first output note (lambda 1)
+  */
+  bytes note_blinding_1 = 30;
+  bytes esk_1 = 31;
+
+  /**
+   * @exclude
+   * Describes second output note (lambda 2)
+  */
+  bytes note_blinding_2 = 40;
+  bytes esk_2 = 41;
 }
 
 // A Penumbra transparent SwapProof.
 message SwapProof {
-  // Auxiliary inputs
-  bytes g_d = 1;
-  bytes pk_d = 2;
-  uint64 value_amount_t1 = 3;
-  bytes value_asset_id_t1 = 4;
-  uint64 value_amount_t2 = 5;
-  bytes value_asset_id_t2 = 6;
-  uint64 value_amount_fee = 7;
-  bytes v_blinding = 8;
-  bytes note_blinding = 9;
-  bytes esk = 10;
-  bytes swap_nft_asset_id = 11;
+  /**
+   * @exclude
+   * Describes swap inputs
+  */
+  uint64 delta_1 = 1;
+  bytes t1 = 2;
+  uint64 delta_2 = 3;
+  bytes t2 = 4;
+
+  // Fee
+  uint64 fee = 10;
+
+  /**
+   * @exclude
+   * Blinding factors for value commitments
+  */
+  bytes delta_1_blinding = 20;
+  bytes delta_2_blinding = 21;
+  bytes fee_blinding = 22;
+
+  /**
+   * @exclude
+   * Asset ID of the Swap NFT.
+  */
+  bytes swap_nft_asset_id = 30;
+
+  /**
+   * @exclude
+   * Data about the output note recording the Swap NFT.
+  */
+  bytes b_d = 40;
+  bytes pk_d = 41;
+  bytes note_blinding = 42;
+  bytes esk = 43;
 }
