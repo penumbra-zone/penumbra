@@ -1,38 +1,14 @@
 //! Transparent proofs for `MVP1` of the Penumbra system.
 
+use anyhow::{anyhow, Error, Result};
 use std::convert::{TryFrom, TryInto};
 
 use decaf377::FieldExt;
 use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_proto::{transparent_proofs, Message, Protobuf};
 use penumbra_tct as tct;
-use thiserror;
 
 use crate::{asset, ka, keys, note, value, Fq, Fr, Nullifier, Value};
-
-#[derive(thiserror::Error, Debug)]
-pub enum Error {
-    #[error("Invalid spend auth randomizer")]
-    InvalidSpendAuthRandomizer,
-    #[error("Note commitment mismatch")]
-    NoteCommitmentMismatch,
-    #[error("Transmission key mismatch")]
-    TransmissionKeyMismatch,
-    #[error("Value commitment mismatch")]
-    ValueCommitmentMismatch,
-    #[error("Ephemeral public key mismatch")]
-    EphemeralPublicKeyMismatch,
-    #[error("Must not be an identity")]
-    IdentityUnexpected,
-    #[error("Merkle root mismatch")]
-    MerkleRootMismatch,
-    #[error("Invalid diversified address")]
-    InvalidDiversifiedAddress,
-    #[error("Bad nullifier")]
-    BadNullifier,
-    #[error("Transparent proof proto malformed")]
-    ProtoMalformed,
-}
 
 /// Transparent proof for spending existing notes.
 ///
@@ -73,7 +49,7 @@ impl SpendProof {
         value_commitment: value::Commitment,
         nullifier: Nullifier,
         rk: VerificationKey<SpendAuth>,
-    ) -> anyhow::Result<(), Error> {
+    ) -> anyhow::Result<()> {
         // Note commitment integrity.
         let s_component_transmission_key = Fq::from_bytes(self.pk_d.0);
         if let Ok(transmission_key_s) = s_component_transmission_key {
@@ -81,27 +57,27 @@ impl SpendProof {
                 note::commitment(self.note_blinding, self.value, self.g_d, transmission_key_s);
 
             if self.note_commitment_proof.commitment() != note_commitment_test {
-                return Err(Error::NoteCommitmentMismatch);
+                return Err(anyhow!("note commitment mismatch"));
             }
         } else {
-            return Err(Error::TransmissionKeyMismatch);
+            return Err(anyhow!("transmission key mismatch"));
         }
 
         // Merkle path integrity.
         self.note_commitment_proof
             .verify(anchor)
-            .map_err(|_| Error::MerkleRootMismatch)?;
+            .map_err(|_| anyhow!("merkle root mismatch"))?;
 
         // Value commitment integrity.
         if self.value.commit(self.v_blinding) != value_commitment {
-            return Err(Error::ValueCommitmentMismatch);
+            return Err(anyhow!("value commitment mismatch"));
         }
 
         // The use of decaf means that we do not need to check that the
         // diversified basepoint is of small order. However we instead
         // check it is not identity.
         if self.g_d.is_identity() || self.ak.is_identity() {
-            return Err(Error::IdentityUnexpected);
+            return Err(anyhow!("unexpected identity"));
         }
 
         // Nullifier integrity.
@@ -111,7 +87,7 @@ impl SpendProof {
                 &self.note_commitment_proof.commitment(),
             )
         {
-            return Err(Error::BadNullifier);
+            return Err(anyhow!("bad nullifier"));
         }
 
         // Spend authority.
@@ -119,14 +95,14 @@ impl SpendProof {
         let rk_test = self.ak.randomize(&self.spend_auth_randomizer);
         let rk_test_bytes: [u8; 32] = rk_test.into();
         if rk_bytes != rk_test_bytes {
-            return Err(Error::InvalidSpendAuthRandomizer);
+            return Err(anyhow!("invalid spend auth randomizer"));
         }
 
         // Diversified address integrity.
         let fvk = keys::FullViewingKey::from_components(self.ak, self.nk);
         let ivk = fvk.incoming();
         if self.pk_d != ivk.diversified_public(&self.g_d) {
-            return Err(Error::InvalidDiversifiedAddress);
+            return Err(anyhow!("invalid diversified address"));
         }
 
         Ok(())
@@ -164,7 +140,7 @@ impl OutputProof {
         value_commitment: value::Commitment,
         note_commitment: note::Commitment,
         epk: ka::Public,
-    ) -> anyhow::Result<(), Error> {
+    ) -> anyhow::Result<()> {
         // Note commitment integrity.
         let s_component_transmission_key = Fq::from_bytes(self.pk_d.0);
         if let Ok(transmission_key_s) = s_component_transmission_key {
@@ -172,27 +148,27 @@ impl OutputProof {
                 note::commitment(self.note_blinding, self.value, self.g_d, transmission_key_s);
 
             if note_commitment != note_commitment_test {
-                return Err(Error::NoteCommitmentMismatch);
+                return Err(anyhow!("note commitment mismatch"));
             }
         } else {
-            return Err(Error::TransmissionKeyMismatch);
+            return Err(anyhow!("transmission key mismatch"));
         }
 
         // Value commitment integrity.
         if value_commitment != -self.value.commit(self.v_blinding) {
-            return Err(Error::ValueCommitmentMismatch);
+            return Err(anyhow!("value commitment mismatch"));
         }
 
         // Ephemeral public key integrity.
         if self.esk.diversified_public(&self.g_d) != epk {
-            return Err(Error::EphemeralPublicKeyMismatch);
+            return Err(anyhow!("ephemeral public key mismatch"));
         }
 
         // The use of decaf means that we do not need to check that the
         // diversified basepoint is of small order. However we instead
         // check it is not identity.
         if self.g_d.is_identity() {
-            return Err(Error::IdentityUnexpected);
+            return Err(anyhow!("unexpected identity"));
         }
 
         Ok(())
@@ -226,28 +202,38 @@ impl TryFrom<transparent_proofs::SpendProof> for SpendProof {
     type Error = Error;
 
     fn try_from(proto: transparent_proofs::SpendProof) -> anyhow::Result<Self, Self::Error> {
-        let g_d_bytes: [u8; 32] = proto.g_d.try_into().map_err(|_| Error::ProtoMalformed)?;
+        let g_d_bytes: [u8; 32] = proto
+            .g_d
+            .try_into()
+            .map_err(|_| anyhow!("proto malformed"))?;
         let g_d_encoding = decaf377::Encoding(g_d_bytes);
 
         let v_blinding_bytes: [u8; 32] = proto.v_blinding[..]
             .try_into()
-            .map_err(|_| Error::ProtoMalformed)?;
+            .map_err(|_| anyhow!("proto malformed"))?;
 
         let ak_bytes: [u8; 32] = (proto.ak[..])
             .try_into()
-            .map_err(|_| Error::ProtoMalformed)?;
-        let ak = ak_bytes.try_into().map_err(|_| Error::ProtoMalformed)?;
+            .map_err(|_| anyhow!("proto malformed"))?;
+        let ak = ak_bytes
+            .try_into()
+            .map_err(|_| anyhow!("proto malformed"))?;
 
         Ok(SpendProof {
             note_commitment_proof: proto
                 .note_commitment_proof
-                .ok_or(Error::ProtoMalformed)?
+                .ok_or(anyhow!("proto malformed"))?
                 .try_into()
-                .map_err(|_| Error::ProtoMalformed)?,
+                .map_err(|_| anyhow!("proto malformed"))?,
             g_d: g_d_encoding
                 .decompress()
-                .map_err(|_| Error::ProtoMalformed)?,
-            pk_d: ka::Public(proto.pk_d.try_into().map_err(|_| Error::ProtoMalformed)?),
+                .map_err(|_| anyhow!("proto malformed"))?,
+            pk_d: ka::Public(
+                proto
+                    .pk_d
+                    .try_into()
+                    .map_err(|_| anyhow!("proto malformed"))?,
+            ),
             value: Value {
                 amount: proto.value_amount,
                 asset_id: asset::Id(
@@ -255,28 +241,32 @@ impl TryFrom<transparent_proofs::SpendProof> for SpendProof {
                         proto
                             .value_asset_id
                             .try_into()
-                            .map_err(|_| Error::ProtoMalformed)?,
+                            .map_err(|_| anyhow!("proto malformed"))?,
                     )
-                    .map_err(|_| Error::ProtoMalformed)?,
+                    .map_err(|_| anyhow!("proto malformed"))?,
                 ),
             },
-            v_blinding: Fr::from_bytes(v_blinding_bytes).map_err(|_| Error::ProtoMalformed)?,
+            v_blinding: Fr::from_bytes(v_blinding_bytes).map_err(|_| anyhow!("proto malformed"))?,
             note_blinding: Fq::from_bytes(
                 proto.note_blinding[..]
                     .try_into()
-                    .map_err(|_| Error::ProtoMalformed)?,
+                    .map_err(|_| anyhow!("proto malformed"))?,
             )
-            .map_err(|_| Error::ProtoMalformed)?,
+            .map_err(|_| anyhow!("proto malformed"))?,
             spend_auth_randomizer: Fr::from_bytes(
                 proto.spend_auth_randomizer[..]
                     .try_into()
-                    .map_err(|_| Error::ProtoMalformed)?,
+                    .map_err(|_| anyhow!("proto malformed"))?,
             )
-            .map_err(|_| Error::ProtoMalformed)?,
+            .map_err(|_| anyhow!("proto malformed"))?,
             ak,
             nk: keys::NullifierKey(
-                Fq::from_bytes(proto.nk[..].try_into().map_err(|_| Error::ProtoMalformed)?)
-                    .map_err(|_| Error::ProtoMalformed)?,
+                Fq::from_bytes(
+                    proto.nk[..]
+                        .try_into()
+                        .map_err(|_| anyhow!("proto malformed"))?,
+                )
+                .map_err(|_| anyhow!("proto malformed"))?,
             ),
         })
     }
@@ -302,25 +292,33 @@ impl TryFrom<transparent_proofs::OutputProof> for OutputProof {
     type Error = Error;
 
     fn try_from(proto: transparent_proofs::OutputProof) -> anyhow::Result<Self, Self::Error> {
-        let g_d_bytes: [u8; 32] = proto.g_d.try_into().map_err(|_| Error::ProtoMalformed)?;
+        let g_d_bytes: [u8; 32] = proto
+            .g_d
+            .try_into()
+            .map_err(|_| anyhow!("proto malformed"))?;
         let g_d_encoding = decaf377::Encoding(g_d_bytes);
 
         let v_blinding_bytes: [u8; 32] = proto.v_blinding[..]
             .try_into()
-            .map_err(|_| Error::ProtoMalformed)?;
+            .map_err(|_| anyhow!("proto malformed"))?;
 
         let esk_bytes: [u8; 32] = proto.esk[..]
             .try_into()
-            .map_err(|_| Error::ProtoMalformed)?;
+            .map_err(|_| anyhow!("proto malformed"))?;
         let esk = ka::Secret::new_from_field(
-            Fr::from_bytes(esk_bytes).map_err(|_| Error::ProtoMalformed)?,
+            Fr::from_bytes(esk_bytes).map_err(|_| anyhow!("proto malformed"))?,
         );
 
         Ok(OutputProof {
             g_d: g_d_encoding
                 .decompress()
-                .map_err(|_| Error::ProtoMalformed)?,
-            pk_d: ka::Public(proto.pk_d.try_into().map_err(|_| Error::ProtoMalformed)?),
+                .map_err(|_| anyhow!("proto malformed"))?,
+            pk_d: ka::Public(
+                proto
+                    .pk_d
+                    .try_into()
+                    .map_err(|_| anyhow!("proto malformed"))?,
+            ),
             value: Value {
                 amount: proto.value_amount,
                 asset_id: asset::Id(
@@ -328,18 +326,18 @@ impl TryFrom<transparent_proofs::OutputProof> for OutputProof {
                         proto
                             .value_asset_id
                             .try_into()
-                            .map_err(|_| Error::ProtoMalformed)?,
+                            .map_err(|_| anyhow!("proto malformed"))?,
                     )
-                    .map_err(|_| Error::ProtoMalformed)?,
+                    .map_err(|_| anyhow!("proto malformed"))?,
                 ),
             },
-            v_blinding: Fr::from_bytes(v_blinding_bytes).map_err(|_| Error::ProtoMalformed)?,
+            v_blinding: Fr::from_bytes(v_blinding_bytes).map_err(|_| anyhow!("proto malformed"))?,
             note_blinding: Fq::from_bytes(
                 proto.note_blinding[..]
                     .try_into()
-                    .map_err(|_| Error::ProtoMalformed)?,
+                    .map_err(|_| anyhow!("proto malformed"))?,
             )
-            .map_err(|_| Error::ProtoMalformed)?,
+            .map_err(|_| anyhow!("proto malformed"))?,
             esk,
         })
     }
@@ -356,11 +354,11 @@ impl TryFrom<&[u8]> for SpendProof {
     type Error = Error;
 
     fn try_from(bytes: &[u8]) -> Result<SpendProof, Self::Error> {
-        let protobuf_serialized_proof =
-            transparent_proofs::SpendProof::decode(bytes).map_err(|_| Error::ProtoMalformed)?;
+        let protobuf_serialized_proof = transparent_proofs::SpendProof::decode(bytes)
+            .map_err(|_| anyhow!("proto malformed"))?;
         protobuf_serialized_proof
             .try_into()
-            .map_err(|_| Error::ProtoMalformed)
+            .map_err(|_| anyhow!("proto malformed"))
     }
 }
 
@@ -375,11 +373,11 @@ impl TryFrom<&[u8]> for OutputProof {
     type Error = Error;
 
     fn try_from(bytes: &[u8]) -> Result<OutputProof, Self::Error> {
-        let protobuf_serialized_proof =
-            transparent_proofs::OutputProof::decode(bytes).map_err(|_| Error::ProtoMalformed)?;
+        let protobuf_serialized_proof = transparent_proofs::OutputProof::decode(bytes)
+            .map_err(|_| anyhow!("proto malformed"))?;
         protobuf_serialized_proof
             .try_into()
-            .map_err(|_| Error::ProtoMalformed)
+            .map_err(|_| anyhow!("proto malformed"))
     }
 }
 
@@ -392,10 +390,14 @@ impl TryFrom<&[u8]> for OutputProof {
 /// This structure keeps track of the auxiliary (private) inputs.
 #[derive(Clone, Debug)]
 pub struct SwapClaimProof {
-    // Block inclusion proof for the note commitment.
-    pub note_commitment_block_proof: tct::builder::block::Proof,
-    // Global position for the note commitment.
-    pub note_commitment_position: tct::Position,
+    // // Block inclusion proof for the note commitment.
+    // pub note_commitment_block_proof: tct::builder::block::Proof,
+    // Proves the note commitment was included in the TCT.
+    pub note_commitment_proof: tct::Proof,
+    // // Height at which the Swap NFT was included in the TCT.
+    // pub swap_height: u64,
+    // // Global position for the note commitment.
+    // pub note_commitment_position: tct::Position,
     // The diversified base for the address.
     pub g_d: decaf377::Element,
     // The transmission key for the address.
@@ -406,8 +408,8 @@ pub struct SwapClaimProof {
     pub v_blinding: Fr,
     // The blinding factor used for generating the note commitment.
     pub note_blinding: Fq,
-    // The randomizer used for generating the randomized spend auth key.
-    pub spend_auth_randomizer: Fr,
+    // // The randomizer used for generating the randomized spend auth key.
+    // pub spend_auth_randomizer: Fr,
     // The nullifier deriving key.
     pub nk: keys::NullifierKey,
 }
@@ -422,10 +424,15 @@ impl SwapClaimProof {
     /// * the randomized verification spend key,
     pub fn verify(
         &self,
-        anchor: tct::builder::block::Root,
-        swap_nft_value_commitment: value::Commitment,
+        anchor: tct::Root,
+        // Value commitment to the fees for the swap claim
+        value_commitment: value::Commitment,
         nullifier: Nullifier,
-    ) -> anyhow::Result<(), Error> {
+        clearing_price_1: u64,
+        clearing_price_2: u64,
+        clearing_price_height: u64,
+        epoch_duration: u64,
+    ) -> anyhow::Result<()> {
         // Swap NFT note commitment integrity.
         let s_component_transmission_key = Fq::from_bytes(self.pk_d.0);
         if let Ok(transmission_key_s) = s_component_transmission_key {
@@ -436,23 +443,34 @@ impl SwapClaimProof {
                 transmission_key_s,
             );
 
-            if self.note_commitment_block_proof.commitment() != note_commitment_test {
-                return Err(Error::NoteCommitmentMismatch);
+            if self.note_commitment_proof.commitment() != note_commitment_test {
+                return Err(anyhow!("note commitment mismatch"));
             }
         } else {
-            return Err(Error::TransmissionKeyMismatch);
+            return Err(anyhow!("transmission key mismatch"));
         }
 
         // TODO: do we need to check the swap NFT Asset ID is properly constructed here?
 
         // Merkle path integrity.
-        self.note_commitment_block_proof
+        self.note_commitment_proof
             .verify(anchor)
-            .map_err(|_| Error::MerkleRootMismatch)?;
+            .map_err(|_| anyhow!("merkle root mismatch"))?;
+
+        // Validate the note commitment was for the proper block height.
+        let position = self.note_commitment_proof.position();
+        let block = position.block();
+        let epoch = position.epoch();
+        let note_commitment_block_height = epoch_duration * epoch.into() + block.into();
+        if note_commitment_block_height != clearing_price_height {
+            return Err(anyhow::anyhow!(
+                "note commitment was not for clearing price height"
+            ));
+        }
 
         // Value commitment integrity.
-        if self.swap_nft_value.commit(self.v_blinding) != swap_nft_value_commitment {
-            return Err(Error::ValueCommitmentMismatch);
+        if self.swap_nft_value.commit(self.v_blinding) != value_commitment {
+            return Err(anyhow!("value commitment mismatch"));
         }
 
         // Nullifier integrity.
@@ -462,7 +480,7 @@ impl SwapClaimProof {
                 &self.note_commitment_block_proof.commitment(),
             )
         {
-            return Err(Error::BadNullifier);
+            return Err(anyhow!("bad nullifier"));
         }
 
         // TODO: is there an address check that needs to occur?
@@ -482,11 +500,11 @@ impl TryFrom<&[u8]> for SwapClaimProof {
     type Error = Error;
 
     fn try_from(bytes: &[u8]) -> Result<SwapClaimProof, Self::Error> {
-        let protobuf_serialized_proof =
-            transparent_proofs::SwapClaimProof::decode(bytes).map_err(|_| Error::ProtoMalformed)?;
+        let protobuf_serialized_proof = transparent_proofs::SwapClaimProof::decode(bytes)
+            .map_err(|_| anyhow!("proto malformed"))?;
         protobuf_serialized_proof
             .try_into()
-            .map_err(|_| Error::ProtoMalformed)
+            .map_err(|_| anyhow!("proto malformed"))
     }
 }
 
@@ -514,24 +532,31 @@ impl TryFrom<transparent_proofs::SwapClaimProof> for SwapClaimProof {
     type Error = Error;
 
     fn try_from(proto: transparent_proofs::SwapClaimProof) -> anyhow::Result<Self, Self::Error> {
-        let g_d_bytes: [u8; 32] = proto.g_d.try_into().map_err(|_| Error::ProtoMalformed)?;
+        let g_d_bytes: [u8; 32] = proto
+            .g_d
+            .try_into()
+            .map_err(|_| anyhow!("proto malformed"))?;
         let g_d_encoding = decaf377::Encoding(g_d_bytes);
 
         let v_blinding_bytes: [u8; 32] = proto.v_blinding[..]
             .try_into()
-            .map_err(|_| Error::ProtoMalformed)?;
+            .map_err(|_| anyhow!("proto malformed"))?;
 
         Ok(SwapClaimProof {
-            note_commitment_block_proof: proto
-                .note_commitment_block_proof
-                .ok_or(Error::ProtoMalformed)?
+            note_commitment_proof: proto
+                .note_commitment_proof
+                .ok_or(anyhow!("proto malformed"))?
                 .try_into()
-                .map_err(|_| Error::ProtoMalformed)?,
-            note_commitment_position: proto.note_commitment_position.into(),
+                .map_err(|_| anyhow!("proto malformed"))?,
             g_d: g_d_encoding
                 .decompress()
-                .map_err(|_| Error::ProtoMalformed)?,
-            pk_d: ka::Public(proto.pk_d.try_into().map_err(|_| Error::ProtoMalformed)?),
+                .map_err(|_| anyhow!("proto malformed"))?,
+            pk_d: ka::Public(
+                proto
+                    .pk_d
+                    .try_into()
+                    .map_err(|_| anyhow!("proto malformed"))?,
+            ),
             swap_nft_value: Value {
                 amount: proto.swap_nft_amount,
                 asset_id: asset::Id(
@@ -539,27 +564,31 @@ impl TryFrom<transparent_proofs::SwapClaimProof> for SwapClaimProof {
                         proto
                             .swap_nft_asset_id
                             .try_into()
-                            .map_err(|_| Error::ProtoMalformed)?,
+                            .map_err(|_| anyhow!("proto malformed"))?,
                     )
-                    .map_err(|_| Error::ProtoMalformed)?,
+                    .map_err(|_| anyhow!("proto malformed"))?,
                 ),
             },
-            v_blinding: Fr::from_bytes(v_blinding_bytes).map_err(|_| Error::ProtoMalformed)?,
+            v_blinding: Fr::from_bytes(v_blinding_bytes).map_err(|_| anyhow!("proto malformed"))?,
             note_blinding: Fq::from_bytes(
                 proto.note_blinding[..]
                     .try_into()
-                    .map_err(|_| Error::ProtoMalformed)?,
+                    .map_err(|_| anyhow!("proto malformed"))?,
             )
-            .map_err(|_| Error::ProtoMalformed)?,
+            .map_err(|_| anyhow!("proto malformed"))?,
             spend_auth_randomizer: Fr::from_bytes(
                 proto.spend_auth_randomizer[..]
                     .try_into()
-                    .map_err(|_| Error::ProtoMalformed)?,
+                    .map_err(|_| anyhow!("proto malformed"))?,
             )
-            .map_err(|_| Error::ProtoMalformed)?,
+            .map_err(|_| anyhow!("proto malformed"))?,
             nk: keys::NullifierKey(
-                Fq::from_bytes(proto.nk[..].try_into().map_err(|_| Error::ProtoMalformed)?)
-                    .map_err(|_| Error::ProtoMalformed)?,
+                Fq::from_bytes(
+                    proto.nk[..]
+                        .try_into()
+                        .map_err(|_| anyhow!("proto malformed"))?,
+                )
+                .map_err(|_| anyhow!("proto malformed"))?,
             ),
         })
     }
@@ -628,35 +657,35 @@ impl SwapProof {
             );
 
             if note_commitment != note_commitment_test {
-                return Err(Error::NoteCommitmentMismatch);
+                return Err(anyhow!("note commitment mismatch"));
             }
         } else {
-            return Err(Error::TransmissionKeyMismatch);
+            return Err(anyhow!("transmission key mismatch"));
         }
 
         // Value commitment integrity.
         if value_1_commitment != -self.value_t1.commit(self.v_blinding) {
-            return Err(Error::ValueCommitmentMismatch);
+            return Err(anyhow!("value commitment mismatch"));
         }
 
         if value_2_commitment != -self.value_t2.commit(self.v_blinding) {
-            return Err(Error::ValueCommitmentMismatch);
+            return Err(anyhow!("value commitment mismatch"));
         }
 
         if value_fee_commitment != -self.value_fee.commit(self.v_blinding) {
-            return Err(Error::ValueCommitmentMismatch);
+            return Err(anyhow!("value commitment mismatch"));
         }
 
         // Ephemeral public key integrity.
         if self.esk.diversified_public(&self.g_d) != epk {
-            return Err(Error::EphemeralPublicKeyMismatch);
+            return Err(anyhow!("ephemeral public key mismatch"));
         }
 
         // The use of decaf means that we do not need to check that the
         // diversified basepoint is of small order. However we instead
         // check it is not identity.
         if self.g_d.is_identity() {
-            return Err(Error::IdentityUnexpected);
+            return Err(anyhow!("unexpected identity"));
         }
 
         Ok(())
@@ -687,18 +716,21 @@ impl TryFrom<transparent_proofs::SwapProof> for SwapProof {
     type Error = Error;
 
     fn try_from(proto: transparent_proofs::SwapProof) -> anyhow::Result<Self, Self::Error> {
-        let g_d_bytes: [u8; 32] = proto.g_d.try_into().map_err(|_| Error::ProtoMalformed)?;
+        let g_d_bytes: [u8; 32] = proto
+            .g_d
+            .try_into()
+            .map_err(|_| anyhow!("proto malformed"))?;
         let g_d_encoding = decaf377::Encoding(g_d_bytes);
 
         let v_blinding_bytes: [u8; 32] = proto.v_blinding[..]
             .try_into()
-            .map_err(|_| Error::ProtoMalformed)?;
+            .map_err(|_| anyhow!("proto malformed"))?;
 
         let esk_bytes: [u8; 32] = proto.esk[..]
             .try_into()
-            .map_err(|_| Error::ProtoMalformed)?;
+            .map_err(|_| anyhow!("proto malformed"))?;
         let esk = ka::Secret::new_from_field(
-            Fr::from_bytes(esk_bytes).map_err(|_| Error::ProtoMalformed)?,
+            Fr::from_bytes(esk_bytes).map_err(|_| anyhow!("proto malformed"))?,
         );
 
         let pen_denom = asset::REGISTRY.parse_denom("upenumbra").unwrap();
@@ -706,8 +738,13 @@ impl TryFrom<transparent_proofs::SwapProof> for SwapProof {
         Ok(SwapProof {
             g_d: g_d_encoding
                 .decompress()
-                .map_err(|_| Error::ProtoMalformed)?,
-            pk_d: ka::Public(proto.pk_d.try_into().map_err(|_| Error::ProtoMalformed)?),
+                .map_err(|_| anyhow!("proto malformed"))?,
+            pk_d: ka::Public(
+                proto
+                    .pk_d
+                    .try_into()
+                    .map_err(|_| anyhow!("proto malformed"))?,
+            ),
             value_t1: Value {
                 amount: proto.value_amount_t1,
                 asset_id: asset::Id(
@@ -715,9 +752,9 @@ impl TryFrom<transparent_proofs::SwapProof> for SwapProof {
                         proto
                             .value_asset_id_t1
                             .try_into()
-                            .map_err(|_| Error::ProtoMalformed)?,
+                            .map_err(|_| anyhow!("proto malformed"))?,
                     )
-                    .map_err(|_| Error::ProtoMalformed)?,
+                    .map_err(|_| anyhow!("proto malformed"))?,
                 ),
             },
             value_t2: Value {
@@ -727,9 +764,9 @@ impl TryFrom<transparent_proofs::SwapProof> for SwapProof {
                         proto
                             .value_asset_id_t2
                             .try_into()
-                            .map_err(|_| Error::ProtoMalformed)?,
+                            .map_err(|_| anyhow!("proto malformed"))?,
                     )
-                    .map_err(|_| Error::ProtoMalformed)?,
+                    .map_err(|_| anyhow!("proto malformed"))?,
                 ),
             },
             value_fee: Value {
@@ -741,17 +778,17 @@ impl TryFrom<transparent_proofs::SwapProof> for SwapProof {
                     proto
                         .swap_nft_asset_id
                         .try_into()
-                        .map_err(|_| Error::ProtoMalformed)?,
+                        .map_err(|_| anyhow!("proto malformed"))?,
                 )
-                .map_err(|_| Error::ProtoMalformed)?,
+                .map_err(|_| anyhow!("proto malformed"))?,
             ),
-            v_blinding: Fr::from_bytes(v_blinding_bytes).map_err(|_| Error::ProtoMalformed)?,
+            v_blinding: Fr::from_bytes(v_blinding_bytes).map_err(|_| anyhow!("proto malformed"))?,
             note_blinding: Fq::from_bytes(
                 proto.note_blinding[..]
                     .try_into()
-                    .map_err(|_| Error::ProtoMalformed)?,
+                    .map_err(|_| anyhow!("proto malformed"))?,
             )
-            .map_err(|_| Error::ProtoMalformed)?,
+            .map_err(|_| anyhow!("proto malformed"))?,
             esk,
         })
     }
@@ -769,10 +806,10 @@ impl TryFrom<&[u8]> for SwapProof {
 
     fn try_from(bytes: &[u8]) -> Result<SwapProof, Self::Error> {
         let protobuf_serialized_proof =
-            transparent_proofs::SwapProof::decode(bytes).map_err(|_| Error::ProtoMalformed)?;
+            transparent_proofs::SwapProof::decode(bytes).map_err(|_| anyhow!("proto malformed"))?;
         protobuf_serialized_proof
             .try_into()
-            .map_err(|_| Error::ProtoMalformed)
+            .map_err(|_| anyhow!("proto malformed"))
     }
 }
 
