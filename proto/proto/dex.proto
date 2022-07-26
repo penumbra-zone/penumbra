@@ -44,11 +44,11 @@ message SwapBody {
   // The trading pair to swap.
   TradingPair trading_pair = 1;
   // Commitment to the amount for asset 1 (delta 1).
-  bytes ca1 = 2;
+  bytes asset_1_commitment = 2;
   // Commitment to the amount for asset 2 (delta 2).
-  bytes ca2 = 3;
+  bytes asset_2_commitment = 3;
   // A commitment to the fee's contribution to the transaction's value balance.
-  bytes cf = 4;
+  bytes fee_commitment = 4;
   // Swap NFT recording the user's contribution.
   crypto.NotePayload swap_nft = 5;
   // Encrypted version of the original `Swap`, symmetrically encrypted w/ viewing key.

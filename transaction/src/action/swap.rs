@@ -54,9 +54,9 @@ impl TryFrom<pb::Swap> for Swap {
 #[derive(Debug, Clone)]
 pub struct Body {
     pub trading_pair: TradingPair,
-    pub ca1: value::Commitment,
-    pub ca2: value::Commitment,
-    pub cf: value::Commitment,
+    pub asset_1_commitment: value::Commitment,
+    pub asset_2_commitment: value::Commitment,
+    pub fee_commitment: value::Commitment,
     pub swap_nft: NotePayload,
     pub swap_ciphertext: SwapCiphertext,
 }
@@ -67,9 +67,9 @@ impl From<Body> for pb::SwapBody {
     fn from(s: Body) -> Self {
         pb::SwapBody {
             trading_pair: s.trading_pair.into(),
-            ca1: (&s.ca1.to_bytes()).to_vec(),
-            ca2: (&s.ca2.to_bytes()).to_vec(),
-            cf: (&s.cf.to_bytes()).to_vec(),
+            asset_1_commitment: (&s.asset_1_commitment.to_bytes()).to_vec(),
+            asset_2_commitment: (&s.asset_2_commitment.to_bytes()).to_vec(),
+            fee_commitment: (&s.fee_commitment.to_bytes()).to_vec(),
             swap_nft: Some(s.swap_nft.into()),
             swap_ciphertext: s.swap_ciphertext.0.to_vec(),
         }
@@ -83,9 +83,9 @@ impl TryFrom<pb::SwapBody> for Body {
             trading_pair: s
                 .trading_pair
                 .ok_or_else(|| anyhow::anyhow!("missing trading_pair"))?,
-            ca1: (&s.ca1[..]).try_into()?,
-            ca2: (&s.ca1[..]).try_into()?,
-            cf: (&s.cf[..]).try_into()?,
+            asset_1_commitment: (&s.asset_1_commitment[..]).try_into()?,
+            asset_2_commitment: (&s.asset_2_commitment[..]).try_into()?,
+            fee_commitment: (&s.fee_commitment[..]).try_into()?,
             swap_nft: s
                 .swap_nft
                 .ok_or_else(|| anyhow::anyhow!("missing swap_nft"))?
