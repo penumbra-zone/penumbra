@@ -6,7 +6,9 @@ use penumbra_tct as tct;
 
 #[derive(Debug, Clone)]
 pub struct SwapClaim {
-    proof: OutputProof,
+    // TODO: @hdevalence do we need two output proofs?
+    output_1_proof: OutputProof,
+    output_2_proof: OutputProof,
     nullifier: Nullifier,
     fee: Fee,
     output_1: NotePayload,

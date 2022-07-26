@@ -390,10 +390,14 @@ impl TryFrom<&[u8]> for OutputProof {
 /// This structure keeps track of the auxiliary (private) inputs.
 #[derive(Clone, Debug)]
 pub struct SwapClaimProof {
-    // Block inclusion proof for the note commitment.
-    pub note_commitment_block_proof: tct::builder::block::Proof,
-    // Global position for the note commitment.
-    pub note_commitment_position: tct::Position,
+    // // Block inclusion proof for the note commitment.
+    // pub note_commitment_block_proof: tct::builder::block::Proof,
+    // Proves the note commitment was included in the TCT.
+    pub note_commitment_proof: tct::Proof,
+    // // Height at which the Swap NFT was included in the TCT.
+    // pub swap_height: u64,
+    // // Global position for the note commitment.
+    // pub note_commitment_position: tct::Position,
     // The diversified base for the address.
     pub g_d: decaf377::Element,
     // The transmission key for the address.
@@ -404,8 +408,8 @@ pub struct SwapClaimProof {
     pub v_blinding: Fr,
     // The blinding factor used for generating the note commitment.
     pub note_blinding: Fq,
-    // The randomizer used for generating the randomized spend auth key.
-    pub spend_auth_randomizer: Fr,
+    // // The randomizer used for generating the randomized spend auth key.
+    // pub spend_auth_randomizer: Fr,
     // The nullifier deriving key.
     pub nk: keys::NullifierKey,
 }
@@ -420,7 +424,7 @@ impl SwapClaimProof {
     /// * the randomized verification spend key,
     pub fn verify(
         &self,
-        anchor: tct::builder::block::Root,
+        anchor: tct::Root,
         // Value commitment to the fees for the swap claim
         value_commitment: value::Commitment,
         nullifier: Nullifier,
@@ -439,7 +443,7 @@ impl SwapClaimProof {
                 transmission_key_s,
             );
 
-            if self.note_commitment_block_proof.commitment() != note_commitment_test {
+            if self.note_commitment_proof.commitment() != note_commitment_test {
                 return Err(anyhow!("note commitment mismatch"));
             }
         } else {
@@ -449,9 +453,20 @@ impl SwapClaimProof {
         // TODO: do we need to check the swap NFT Asset ID is properly constructed here?
 
         // Merkle path integrity.
-        self.note_commitment_block_proof
+        self.note_commitment_proof
             .verify(anchor)
             .map_err(|_| anyhow!("merkle root mismatch"))?;
+
+        // Validate the note commitment was for the proper block height.
+        let position = self.note_commitment_proof.position();
+        let block = position.block();
+        let epoch = position.epoch();
+        let note_commitment_block_height = epoch_duration * epoch.into() + block.into();
+        if note_commitment_block_height != clearing_price_height {
+            return Err(anyhow::anyhow!(
+                "note commitment was not for clearing price height"
+            ));
+        }
 
         // Value commitment integrity.
         if self.swap_nft_value.commit(self.v_blinding) != value_commitment {
@@ -528,12 +543,11 @@ impl TryFrom<transparent_proofs::SwapClaimProof> for SwapClaimProof {
             .map_err(|_| anyhow!("proto malformed"))?;
 
         Ok(SwapClaimProof {
-            note_commitment_block_proof: proto
-                .note_commitment_block_proof
-                .ok_or_else(|| anyhow!("proto malformed"))?
+            note_commitment_proof: proto
+                .note_commitment_proof
+                .ok_or(anyhow!("proto malformed"))?
                 .try_into()
                 .map_err(|_| anyhow!("proto malformed"))?,
-            note_commitment_position: proto.note_commitment_position.into(),
             g_d: g_d_encoding
                 .decompress()
                 .map_err(|_| anyhow!("proto malformed"))?,
