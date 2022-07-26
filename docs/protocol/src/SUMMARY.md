@@ -57,7 +57,7 @@
   - [Value Commitments](./protocol/value_commitments.md)
   - [Notes](./protocol/notes.md)
     - [Note Plaintexts](./protocol/notes/note_plaintexts.md)
-    - [Note Commitments]()
+    - [Note Commitments](./protocol/notes/note_commitments.md)
     - [Note Ciphertexts]()
     - [Nullifiers]()
   - [Action Descriptions]()
