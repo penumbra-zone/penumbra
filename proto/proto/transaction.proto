@@ -127,8 +127,6 @@ message DelegatorVote {
 message DelegatorVoteBody {
   // The proposal being voted on.
   uint64 proposal = 1;
-  // A commitment to the value of the input note.
-  bytes cv = 2;
   // The nullifier of the input note.
   bytes nullifier = 3;
   // The randomized validating key for the spend authorization signature.
@@ -229,16 +227,20 @@ message OutputPlan {
     bytes esk = 6;
 }
 
-message Propose {
+message ProposePlan {
     // The proposal to be submitted.
     Proposal proposal = 1;
     // The transparent refund address for the refund of the proposal deposit.
     crypto.Address deposit_refund_address = 2;
+    // A verification key to be used when withdrawing the proposal.
+    crypto.VerificationKey withdraw_proposal_key = 3;
 }
 
-message WithdrawProposal {
+message WithdrawProposalPlan {
     // The proposal to be withdrawn.
     uint64 proposal = 1;
+    // A signature with the authorizing key from the proposer.
+    crypto.SpendAuthSignature auth_sig = 2;
 }
 
 message ValidatorVote {

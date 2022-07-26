@@ -35,7 +35,7 @@ pub enum Action {
     // SwapClaim(SwapClaim),
     Propose(Propose),
     WithdrawProposal(WithdrawProposal),
-    DelegatorVote(DelegatorVote),
+    // DelegatorVote(DelegatorVote),
     ValidatorVote(ValidatorVote),
 }
 
@@ -57,7 +57,7 @@ impl Action {
             Action::IBCAction(_) => value::Commitment::default(),
             Action::Propose(_) => todo!("subtract proposal deposit amount from value balance"),
             Action::WithdrawProposal(_) => value::Commitment::default(),
-            Action::DelegatorVote(_) => value::Commitment::default(),
+            // Action::DelegatorVote(_) => value::Commitment::default(),
             Action::ValidatorVote(_) => value::Commitment::default(),
         }
     }
@@ -92,14 +92,11 @@ impl From<Action> for pb::Action {
             Action::WithdrawProposal(inner) => pb::Action {
                 action: Some(pb::action::Action::WithdrawProposal(inner.into())),
             },
-            Action::DelegatorVote(inner) => pb::Action {
-                action: Some(pb::action::Action::DelegatorVote(inner.into())),
-            },
+            // Action::DelegatorVote(inner) => pb::Action {
+            //     action: Some(pb::action::Action::DelegatorVote(inner.into())),
+            // },
             Action::ValidatorVote(inner) => pb::Action {
                 action: Some(pb::action::Action::ValidatorVote(inner.into())),
-            },
-            Action::DelegatorVote(inner) => pb::Action {
-                action: Some(pb::action::Action::DelegatorVote(inner.into())),
             },
         }
     }
@@ -126,14 +123,11 @@ impl TryFrom<pb::Action> for Action {
             pb::action::Action::WithdrawProposal(inner) => {
                 Ok(Action::WithdrawProposal(inner.try_into()?))
             }
-            pb::action::Action::DelegatorVote(inner) => {
-                Ok(Action::DelegatorVote(inner.try_into()?))
-            }
+            // pb::action::Action::DelegatorVote(inner) => {
+            //     Ok(Action::DelegatorVote(inner.try_into()?))
+            // }
             pb::action::Action::ValidatorVote(inner) => {
                 Ok(Action::ValidatorVote(inner.try_into()?))
-            }
-            pb::action::Action::DelegatorVote(inner) => {
-                Ok(Action::DelegatorVote(inner.try_into()?))
             }
         }
     }
