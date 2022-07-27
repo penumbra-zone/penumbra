@@ -51,9 +51,9 @@ impl TryFrom<pb::Vote> for Vote {
 
 impl Protobuf<pb::Vote> for Vote {}
 
-/// A plan to vote as a validator.
+/// A public vote as a validator.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(try_from = "pb::ValidatorVotePlan", into = "pb::ValidatorVotePlan")]
+#[serde(try_from = "pb::ValidatorVote", into = "pb::ValidatorVote")]
 pub struct ValidatorVote {
     /// The proposal ID to vote on.
     pub proposal: u64,
@@ -63,9 +63,9 @@ pub struct ValidatorVote {
     pub validator_identity: IdentityKey,
 }
 
-impl From<ValidatorVote> for pb::ValidatorVotePlan {
+impl From<ValidatorVote> for pb::ValidatorVote {
     fn from(value: ValidatorVote) -> Self {
-        pb::ValidatorVotePlan {
+        pb::ValidatorVote {
             proposal: value.proposal,
             vote: Some(value.vote.into()),
             validator_identity: Some(value.validator_identity.into()),
@@ -73,24 +73,32 @@ impl From<ValidatorVote> for pb::ValidatorVotePlan {
     }
 }
 
-impl TryFrom<pb::ValidatorVotePlan> for ValidatorVote {
+impl TryFrom<pb::ValidatorVote> for ValidatorVote {
     type Error = anyhow::Error;
 
-    fn try_from(msg: pb::ValidatorVotePlan) -> Result<Self, Self::Error> {
+    fn try_from(msg: pb::ValidatorVote) -> Result<Self, Self::Error> {
         Ok(ValidatorVote {
             proposal: msg.proposal,
             vote: msg
                 .vote
-                .ok_or_else(|| anyhow::anyhow!("missing vote in `ValidatorVotePlan`"))?
+                .ok_or_else(|| anyhow::anyhow!("missing vote in `ValidatorVote`"))?
                 .try_into()?,
             validator_identity: msg
                 .validator_identity
-                .ok_or_else(|| {
-                    anyhow::anyhow!("missing validator identity in `ValidatorVotePlan`")
-                })?
+                .ok_or_else(|| anyhow::anyhow!("missing validator identity in `ValidatorVote`"))?
                 .try_into()?,
         })
     }
 }
 
-impl Protobuf<pb::ValidatorVotePlan> for ValidatorVote {}
+impl Protobuf<pb::ValidatorVote> for ValidatorVote {}
+
+pub struct DelegatorVote {
+    // TODO: fill this in
+}
+
+pub mod delegator_vote {
+    pub struct Body {
+        // TODO: fill this in
+    }
+}

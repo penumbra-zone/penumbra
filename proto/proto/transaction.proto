@@ -57,6 +57,11 @@ message Action {
     PositionWithdraw position_withdraw = 32;
     PositionRewardClaim position_reward_claim = 34;
     */
+    // Governance:
+    Propose propose = 18;
+    WithdrawProposal withdraw_proposal = 19;
+    ValidatorVote validator_vote = 20;
+    DelegatorVote delegator_vote = 21;
   }
 }
 
@@ -110,6 +115,42 @@ message OutputBody {
   bytes ovk_wrapped_key = 4;
 }
 
+message DelegatorVote {
+  // The authorizing data for the vote, which is included in the authorization hash used for signing.
+  DelegatorVoteBody body = 1;
+  // The vote authorization signature is effecting data.
+  crypto.SpendAuthSignature auth_sig = 2;
+  // The vote proof is effecting data.
+  bytes zkproof = 3;
+}
+
+message DelegatorVoteBody {
+  // The proposal being voted on.
+  uint64 proposal = 1;
+  // A commitment to the value of the input note.
+  bytes cv = 2;
+  // The nullifier of the input note.
+  bytes nullifier = 3;
+  // The randomized validating key for the spend authorization signature.
+  bytes rk = 4;
+  // A commitment to the value voted for "yes".
+  //
+  // A rational voter will place all their voting weight on one vote.
+  bytes yes_cv = 5;
+  // A commitment to the value voted for "no".
+  //
+  // A rational voter will place all their voting weight on one vote.
+  bytes no_cv = 6;
+  // A commitment to the value voted for "abstain".
+  //
+  // A rational voter will place all their voting weight on one vote.
+  bytes abstain_cv = 7;
+  // A commitment to the value voted for "no with veto".
+  //
+  // A rational voter will place all their voting weight on one vote.
+  bytes no_with_veto_cv = 8;
+}
+
 // The data required to authorize a transaction plan.
 message AuthorizationData {
     // The computed auth hash for the approved transaction plan.
@@ -155,9 +196,9 @@ message ActionPlan {
         // This is just a message relayed to the chain.
         ibc.IBCAction ibc_action = 17;
         // Governance:
-        ProposePlan propose = 18;
-        WithdrawProposalPlan withdraw_proposal = 19;
-        ValidatorVotePlan validator_vote = 20;
+        Propose propose = 18;
+        WithdrawProposal withdraw_proposal = 19;
+        ValidatorVote validator_vote = 20;
         DelegatorVotePlan delegator_vote = 21;
     }
 }
@@ -188,19 +229,19 @@ message OutputPlan {
     bytes esk = 6;
 }
 
-message ProposePlan {
+message Propose {
     // The proposal to be submitted.
     Proposal proposal = 1;
     // The transparent refund address for the refund of the proposal deposit.
     crypto.Address deposit_refund_address = 2;
 }
 
-message WithdrawProposalPlan {
+message WithdrawProposal {
     // The proposal to be withdrawn.
     uint64 proposal = 1;
 }
 
-message ValidatorVotePlan {
+message ValidatorVote {
     // The proposal to vote on.
     uint64 proposal = 1;
     // The vote to cast.
