@@ -93,6 +93,7 @@ impl TryFrom<pb::ValidatorVote> for ValidatorVote {
 
 impl Protobuf<pb::ValidatorVote> for ValidatorVote {}
 
+#[derive(Debug, Clone)]
 pub struct DelegatorVote {
     // TODO: fill this in
 }
