@@ -186,7 +186,7 @@ impl TryFrom<pb::proposal::Kind> for ProposalKind {
 /// A proposal plan describes the proposal to propose, and the (transparent, ephemeral) refund
 /// address for the proposal deposit.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(try_from = "pb::ProposePlan", into = "pb::ProposePlan")]
+#[serde(try_from = "pb::Propose", into = "pb::Propose")]
 pub struct Propose {
     /// The proposal to propose.
     pub proposal: Proposal,
@@ -194,59 +194,56 @@ pub struct Propose {
     pub deposit_refund_address: Address,
 }
 
-impl From<Propose> for pb::ProposePlan {
-    fn from(value: Propose) -> pb::ProposePlan {
-        pb::ProposePlan {
+impl From<Propose> for pb::Propose {
+    fn from(value: Propose) -> pb::Propose {
+        pb::Propose {
             proposal: Some(value.proposal.into()),
             deposit_refund_address: Some(value.deposit_refund_address.into()),
         }
     }
 }
 
-impl TryFrom<pb::ProposePlan> for Propose {
+impl TryFrom<pb::Propose> for Propose {
     type Error = anyhow::Error;
 
-    fn try_from(msg: pb::ProposePlan) -> Result<Self, Self::Error> {
+    fn try_from(msg: pb::Propose) -> Result<Self, Self::Error> {
         Ok(Propose {
             proposal: msg
                 .proposal
-                .ok_or_else(|| anyhow::anyhow!("missing proposal in `ProposePlan`"))?
+                .ok_or_else(|| anyhow::anyhow!("missing proposal in `Propose`"))?
                 .try_into()?,
             deposit_refund_address: msg
                 .deposit_refund_address
-                .ok_or_else(|| anyhow::anyhow!("missing deposit refund address in `ProposePlan`"))?
+                .ok_or_else(|| anyhow::anyhow!("missing deposit refund address in `Propose`"))?
                 .try_into()?,
         })
     }
 }
 
-impl Protobuf<pb::ProposePlan> for Propose {}
+impl Protobuf<pb::Propose> for Propose {}
 
 /// A withdraw-proposal plan describes the original proposer's intent to withdraw their proposal.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(
-    try_from = "pb::WithdrawProposalPlan",
-    into = "pb::WithdrawProposalPlan"
-)]
+#[serde(try_from = "pb::WithdrawProposal", into = "pb::WithdrawProposal")]
 pub struct WithdrawProposal {
     /// The proposal ID to withdraw.
     pub proposal: u64,
 }
 
-impl From<WithdrawProposal> for pb::WithdrawProposalPlan {
-    fn from(value: WithdrawProposal) -> pb::WithdrawProposalPlan {
-        pb::WithdrawProposalPlan {
+impl From<WithdrawProposal> for pb::WithdrawProposal {
+    fn from(value: WithdrawProposal) -> pb::WithdrawProposal {
+        pb::WithdrawProposal {
             proposal: value.proposal,
         }
     }
 }
 
-impl From<pb::WithdrawProposalPlan> for WithdrawProposal {
-    fn from(msg: pb::WithdrawProposalPlan) -> Self {
+impl From<pb::WithdrawProposal> for WithdrawProposal {
+    fn from(msg: pb::WithdrawProposal) -> Self {
         WithdrawProposal {
             proposal: msg.proposal,
         }
     }
 }
 
-impl Protobuf<pb::WithdrawProposalPlan> for WithdrawProposal {}
+impl Protobuf<pb::WithdrawProposal> for WithdrawProposal {}
