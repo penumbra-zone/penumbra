@@ -356,7 +356,7 @@ where
             tonic::Request::new(pb::NullifierStatusRequest {
                 fvk_hash: Some(fvk_hash.into()),
                 nullifier: Some(nullifier.into()),
-                await_detection: false,
+                await_detection: true,
             }),
         )
         .await?;
