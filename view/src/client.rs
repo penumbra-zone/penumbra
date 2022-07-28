@@ -304,6 +304,27 @@ where
         .try_into()
     }
 
+    /// Queries for a specific note by commitment, waiting until the note is detected if it is not found.
+    ///
+    /// This is useful for waiting for a note to be detected by the view service.
+    async fn await_note_by_commitment(
+        &mut self,
+        fvk_hash: FullViewingKeyHash,
+        note_commitment: note::Commitment,
+    ) -> Result<NoteRecord> {
+        ViewProtocolClient::note_by_commitment(
+            self,
+            tonic::Request::new(pb::NoteByCommitmentRequest {
+                fvk_hash: Some(fvk_hash.into()),
+                note_commitment: Some(note_commitment.into()),
+                await_detection: true,
+            }),
+        )
+        .await?
+        .into_inner()
+        .try_into()
+    }
+
     /// Queries for a specific nullifier's status, returning immediately if it is not found.
     async fn nullifier_status(
         &mut self,
@@ -341,27 +362,6 @@ where
         .await?;
 
         Ok(())
-    }
-
-    /// Queries for a specific note by commitment, waiting until the note is detected if it is not found.
-    ///
-    /// This is useful for waiting for a note to be detected by the view service.
-    async fn await_note_by_commitment(
-        &mut self,
-        fvk_hash: FullViewingKeyHash,
-        note_commitment: note::Commitment,
-    ) -> Result<NoteRecord> {
-        ViewProtocolClient::note_by_commitment(
-            self,
-            tonic::Request::new(pb::NoteByCommitmentRequest {
-                fvk_hash: Some(fvk_hash.into()),
-                note_commitment: Some(note_commitment.into()),
-                await_detection: true,
-            }),
-        )
-        .await?
-        .into_inner()
-        .try_into()
     }
 
     async fn witness(&mut self, request: pb::WitnessRequest) -> Result<WitnessData> {
