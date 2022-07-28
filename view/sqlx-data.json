@@ -28,6 +28,30 @@
     },
     "query": "SELECT forgotten FROM nct_forgotten LIMIT 1"
   },
+  "03b4465d241eefab0f7115211d50a95096ad95b38cea50cd121a3e2885944cb1": {
+    "describe": {
+      "columns": [
+        {
+          "name": "nullifier",
+          "ordinal": 0,
+          "type_info": "Blob"
+        },
+        {
+          "name": "height_spent",
+          "ordinal": 1,
+          "type_info": "Int64"
+        }
+      ],
+      "nullable": [
+        false,
+        true
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "SELECT nullifier, height_spent FROM notes WHERE nullifier = ?"
+  },
   "0c9654cf156210edda72a63b80ad55cc1cd772f6ab83660307167aa3d2e8b094": {
     "describe": {
       "columns": [

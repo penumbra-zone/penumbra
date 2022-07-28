@@ -106,7 +106,6 @@ impl Worker {
         // the query, it will give a duplicate key error, so just manually load
         // them all into memory.  better -- fix the sql query
 
-        use std::collections::BTreeSet;
         let known_assets = self
             .storage
             .assets()
@@ -313,8 +312,6 @@ async fn nct_divergence_check(
     height: u64,
     actual_root: penumbra_tct::Root,
 ) -> anyhow::Result<()> {
-    use penumbra_proto::Protobuf;
-
     let value = client
         .key_value(penumbra_proto::client::specific::KeyValueRequest {
             key: format!("shielded_pool/anchor/{}", height).into_bytes(),

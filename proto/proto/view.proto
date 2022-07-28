@@ -45,6 +45,9 @@ service ViewProtocol {
 
     // Query for a note by its note commitment, optionally waiting until the note is detected.
     rpc NoteByCommitment(NoteByCommitmentRequest) returns (NoteRecord);
+
+    // Query for whether a nullifier has been spent, optionally waiting until it is spent.
+    rpc NullifierStatus(NullifierStatusRequest) returns (NullifierStatusResponse);
 }
 
 message NoteByCommitmentRequest {
@@ -161,4 +164,14 @@ message QuarantinedNoteRecord {
 message QuarantinedNotesRequest {
     // Identifies the FVK for the notes to query.
     crypto.FullViewingKeyHash fvk_hash = 1;
+}
+
+message NullifierStatusRequest {
+  crypto.FullViewingKeyHash fvk_hash = 1;
+  crypto.Nullifier nullifier = 2;
+  bool await_detection = 3;
+}
+
+message NullifierStatusResponse {
+  bool spent = 1;
 }

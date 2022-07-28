@@ -38,6 +38,7 @@ pub struct Storage {
     uncommitted_height: Arc<Mutex<Option<NonZeroU64>>>,
 
     scanned_notes_tx: tokio::sync::broadcast::Sender<NoteRecord>,
+    scanned_nullifiers_tx: tokio::sync::broadcast::Sender<Nullifier>,
 }
 
 impl Storage {
@@ -96,6 +97,7 @@ impl Storage {
             pool: Self::connect(path.as_ref().as_str()).await?,
             uncommitted_height: Arc::new(Mutex::new(None)),
             scanned_notes_tx: broadcast::channel(10).0,
+            scanned_nullifiers_tx: broadcast::channel(10).0,
         })
     }
 
@@ -151,6 +153,7 @@ impl Storage {
             pool,
             uncommitted_height: Arc::new(Mutex::new(None)),
             scanned_notes_tx: broadcast::channel(10).0,
+            scanned_nullifiers_tx: broadcast::channel(10).0,
         })
     }
 
@@ -194,6 +197,49 @@ impl Storage {
 
                 if record.note_commitment == note_commitment {
                     return Ok(record);
+                }
+            }
+        }
+    }
+
+    /// Query for a nullifier's status, optionally waiting until the nullifier is detected.
+    pub fn nullifier_status(
+        &self,
+        nullifier: Nullifier,
+        await_detection: bool,
+    ) -> impl Future<Output = anyhow::Result<bool>> {
+        // Start subscribing now, before querying for whether we already have the nullifier, so we
+        // can't miss it if we race a write.
+        let mut rx = self.scanned_nullifiers_tx.subscribe();
+
+        // Clone the pool handle so that the returned future is 'static
+        let pool = self.pool.clone();
+
+        let nullifier_bytes = nullifier.0.to_bytes().to_vec();
+
+        async move {
+            // Check if we already have the nullifier
+            if let Some(record) = sqlx::query!(
+                "SELECT nullifier, height_spent FROM notes WHERE nullifier = ?",
+                nullifier_bytes,
+            )
+            .fetch_optional(&pool)
+            .await?
+            {
+                return Ok(record.height_spent.is_some());
+            }
+
+            if !await_detection {
+                return Ok(false);
+            }
+
+            // Otherwise, wait for newly detected nullifiers and check whether they're the requested
+            // one.
+            loop {
+                let new_nullifier = rx.recv().await.context("Change subscriber failed")?;
+
+                if new_nullifier == nullifier {
+                    return Ok(true);
                 }
             }
         }
@@ -413,7 +459,7 @@ impl Storage {
         &self,
         nullifiers: Vec<Nullifier>,
     ) -> anyhow::Result<Vec<Nullifier>> {
-        if nullifiers.len() == 0 {
+        if nullifiers.is_empty() {
             return Ok(Vec::new());
         }
 
