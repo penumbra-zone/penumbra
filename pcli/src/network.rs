@@ -1,6 +1,6 @@
 use anyhow::{Context as _, Result};
 use penumbra_component::Context;
-use penumbra_crypto::note;
+use penumbra_crypto::Nullifier;
 use penumbra_proto::{
     client::{
         oblivious::oblivious_query_client::ObliviousQueryClient,
@@ -23,14 +23,16 @@ impl App {
         &mut self,
         plan: TransactionPlan,
     ) -> anyhow::Result<()> {
-        let self_addressed_output = plan
-            .output_plans()
-            .find(|output| output.is_viewed_by(self.fvk.incoming()))
-            .map(|output| output.output_note().commit());
+        let await_detection_of = plan.spend_plans().next().map(|spend_plan| {
+            // If we spend at least one note, then we should await detecting it (it doesn't matter
+            // which nullifier we wait for, since any will work)
+            self.fvk
+                .derive_nullifier(spend_plan.position, &spend_plan.note.commit())
+        });
 
         let tx = self.build_transaction(plan).await?;
 
-        self.submit_transaction(&tx, self_addressed_output).await
+        self.submit_transaction(&tx, await_detection_of).await
     }
 
     pub fn build_transaction(
@@ -56,7 +58,7 @@ impl App {
     pub async fn submit_transaction(
         &mut self,
         transaction: &Transaction,
-        await_detection_of: Option<note::Commitment>,
+        await_detection_of: Option<Nullifier>,
     ) -> Result<(), anyhow::Error> {
         println!("pre-checking transaction...");
         use penumbra_component::Component;
@@ -105,14 +107,13 @@ impl App {
             ));
         }
 
-        if let Some(note_commitment) = await_detection_of {
+        if let Some(nullifier) = await_detection_of {
             // putting two spaces in makes the ellipsis line up with the above
             println!("confirming transaction  ...");
             let fvk_hash = self.fvk.hash();
             tokio::time::timeout(
                 std::time::Duration::from_secs(20),
-                self.view()
-                    .await_note_by_commitment(fvk_hash, note_commitment),
+                self.view().await_nullifier(fvk_hash, nullifier),
             )
             .await
             .context("timeout waiting to detect outputs of submitted transaction")?
