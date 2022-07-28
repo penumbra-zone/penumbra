@@ -260,6 +260,30 @@ impl ViewProtocol for ViewService {
         )))
     }
 
+    async fn nullifier_status(
+        &self,
+        request: tonic::Request<pb::NullifierStatusRequest>,
+    ) -> Result<tonic::Response<pb::NullifierStatusResponse>, tonic::Status> {
+        self.check_worker().await?;
+        self.check_fvk(request.get_ref().fvk_hash.as_ref()).await?;
+
+        let request = request.into_inner();
+
+        let nullifier = request
+            .nullifier
+            .ok_or_else(|| tonic::Status::failed_precondition("Missing nullifier in request"))?
+            .try_into()
+            .map_err(|_| tonic::Status::failed_precondition("Invalid nullifier in request"))?;
+
+        Ok(tonic::Response::new(pb::NullifierStatusResponse {
+            spent: self
+                .storage
+                .nullifier_status(nullifier, request.await_detection)
+                .await
+                .map_err(|e| tonic::Status::internal(format!("error: {}", e)))?,
+        }))
+    }
+
     async fn status(
         &self,
         request: tonic::Request<pb::StatusRequest>,
