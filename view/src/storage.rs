@@ -218,7 +218,7 @@ impl Storage {
         let nullifier_bytes = nullifier.0.to_bytes().to_vec();
 
         async move {
-            // Check if we already have the nullifier in the non-quarantined set of notes
+            // Check if we already have the nullifier in the set of spent notes
             if let Some(record) = sqlx::query!(
                 "SELECT nullifier, height_spent FROM notes WHERE nullifier = ?",
                 nullifier_bytes,
@@ -232,18 +232,6 @@ impl Storage {
                 if !await_detection || spent {
                     return Ok(spent);
                 }
-            }
-
-            // Check if we already have the nullifier in the quarantined set of nullifiers
-            if sqlx::query!(
-                "SELECT nullifier FROM quarantined_nullifiers WHERE nullifier = ?",
-                nullifier_bytes,
-            )
-            .fetch_optional(&pool)
-            .await?
-            .is_some()
-            {
-                return Ok(true);
             }
 
             // After checking the database, if we didn't find it, return `false` unless we are to
