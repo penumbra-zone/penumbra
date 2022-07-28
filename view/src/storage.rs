@@ -218,7 +218,7 @@ impl Storage {
         let nullifier_bytes = nullifier.0.to_bytes().to_vec();
 
         async move {
-            // Check if we already have the nullifier
+            // Check if we already have the nullifier in the non-quarantined set of notes
             if let Some(record) = sqlx::query!(
                 "SELECT nullifier, height_spent FROM notes WHERE nullifier = ?",
                 nullifier_bytes,
@@ -229,6 +229,20 @@ impl Storage {
                 return Ok(record.height_spent.is_some());
             }
 
+            // Check if we already have the nullifier in the quarantined set of nullifiers
+            if sqlx::query!(
+                "SELECT nullifier FROM quarantined_nullifiers WHERE nullifier = ?",
+                nullifier_bytes,
+            )
+            .fetch_optional(&pool)
+            .await?
+            .is_some()
+            {
+                return Ok(true);
+            }
+
+            // After checking the database, if we didn't find it, return `false` unless we are to
+            // await detection
             if !await_detection {
                 return Ok(false);
             }
@@ -790,6 +804,17 @@ impl Storage {
             // This will fail to be broadcast if there is no active receiver (such as on initial sync)
             // The error is ignored, as this isn't a problem, because if there is no active receiver there is nothing to do
             let _ = self.scanned_notes_tx.send(note_record.clone());
+        }
+
+        for nullifier in filtered_block.spent_nullifiers.iter().chain(
+            filtered_block
+                .spent_quarantined_nullifiers
+                .values()
+                .flatten(),
+        ) {
+            // This will fail to be broadcast if there is no active receiver (such as on initial sync)
+            // The error is ignored, as this isn't a problem, because if there is no active receiver there is nothing to do
+            let _ = self.scanned_nullifiers_tx.send(*nullifier);
         }
 
         Ok(())
