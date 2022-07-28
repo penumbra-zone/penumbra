@@ -185,7 +185,9 @@ impl StakeCmd {
                 // need to await the note created by its output
                 app.build_and_submit_transaction(split_plan).await?;
 
-                // await the receipt of the exact note we wish to undelegate
+                // await the receipt of the exact note we wish to undelegate (this should complete
+                // immediately, because the spend in the split plan is awaited when we submit the
+                // transaction)
                 let delegation_notes = vec![
                     app.view
                         .await_note_by_commitment(app.fvk.hash(), delegation_note_commitment)
