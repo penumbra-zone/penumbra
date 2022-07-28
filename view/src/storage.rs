@@ -226,7 +226,12 @@ impl Storage {
             .fetch_optional(&pool)
             .await?
             {
-                return Ok(record.height_spent.is_some());
+                let spent = record.height_spent.is_some();
+
+                // If we're awaiting detection and the nullifier isn't yet spent, don't return just yet
+                if !await_detection || spent {
+                    return Ok(spent);
+                }
             }
 
             // Check if we already have the nullifier in the quarantined set of nullifiers

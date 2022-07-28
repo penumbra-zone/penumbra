@@ -4,7 +4,7 @@ use anyhow::Result;
 use futures::{Stream, StreamExt, TryStreamExt};
 use penumbra_chain::params::ChainParams;
 use penumbra_crypto::keys::FullViewingKeyHash;
-use penumbra_crypto::{asset, keys::AddressIndex, note, Asset};
+use penumbra_crypto::{asset, keys::AddressIndex, note, Asset, Nullifier};
 use penumbra_proto::view as pb;
 use penumbra_proto::view::view_protocol_client::ViewProtocolClient;
 use penumbra_transaction::WitnessData;
@@ -54,6 +54,21 @@ pub trait ViewClient {
         fvk_hash: FullViewingKeyHash,
         note_commitment: note::Commitment,
     ) -> Result<NoteRecord>;
+
+    /// Queries for a specific nullifier's status, returning immediately if it is not found.
+    async fn nullifier_status(
+        &mut self,
+        fvk_hash: FullViewingKeyHash,
+        nullifier: Nullifier,
+    ) -> Result<bool>;
+
+    /// Waits for a specific nullifier to be detected, returning immediately if it is already
+    /// present, but waiting otherwise.
+    async fn await_nullifier(
+        &mut self,
+        fvk_hash: FullViewingKeyHash,
+        nullifier: Nullifier,
+    ) -> Result<()>;
 
     /// Queries for a specific note by commitment, waiting until the note is detected if it is not found.
     ///
@@ -287,6 +302,45 @@ where
         .await?
         .into_inner()
         .try_into()
+    }
+
+    /// Queries for a specific nullifier's status, returning immediately if it is not found.
+    async fn nullifier_status(
+        &mut self,
+        fvk_hash: FullViewingKeyHash,
+        nullifier: Nullifier,
+    ) -> Result<bool> {
+        Ok(ViewProtocolClient::nullifier_status(
+            self,
+            tonic::Request::new(pb::NullifierStatusRequest {
+                fvk_hash: Some(fvk_hash.into()),
+                nullifier: Some(nullifier.into()),
+                await_detection: false,
+            }),
+        )
+        .await?
+        .into_inner()
+        .spent)
+    }
+
+    /// Waits for a specific nullifier to be detected, returning immediately if it is already
+    /// present, but waiting otherwise.
+    async fn await_nullifier(
+        &mut self,
+        fvk_hash: FullViewingKeyHash,
+        nullifier: Nullifier,
+    ) -> Result<()> {
+        ViewProtocolClient::nullifier_status(
+            self,
+            tonic::Request::new(pb::NullifierStatusRequest {
+                fvk_hash: Some(fvk_hash.into()),
+                nullifier: Some(nullifier.into()),
+                await_detection: false,
+            }),
+        )
+        .await?;
+
+        Ok(())
     }
 
     /// Queries for a specific note by commitment, waiting until the note is detected if it is not found.
