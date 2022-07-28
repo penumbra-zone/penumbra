@@ -120,6 +120,24 @@
     },
     "query": "INSERT INTO assets\n                    (\n                        asset_id,\n                        denom\n                    )\n                    VALUES\n                    (\n                        ?,\n                        ?\n                    )"
   },
+  "314f84f9fb30f93e8fe358d7477ea617b4419b0411364b8734c1ba0ced6707aa": {
+    "describe": {
+      "columns": [
+        {
+          "name": "nullifier",
+          "ordinal": 0,
+          "type_info": "Blob"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "SELECT nullifier FROM quarantined_nullifiers WHERE nullifier = ?"
+  },
   "3330ad89b630f87f1ed502363de779624f72710fb59f2133c5db2c1dc8d30b2d": {
     "describe": {
       "columns": [],
