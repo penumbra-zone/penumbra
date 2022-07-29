@@ -1,5 +1,4 @@
 use anyhow::Result;
-use jmt::KeyHash;
 
 mod shielded_pool;
 use shielded_pool::ShieldedPool;
@@ -29,35 +28,26 @@ impl QueryCmd {
             return tx.exec(app).await;
         }
 
-        let mut client = app.specific_client().await?;
-
-        let key_hash = self.key_hash();
-
-        let req = if let QueryCmd::Key { key } = self {
-            penumbra_proto::client::specific::KeyValueRequest {
-                key: key.as_bytes().to_vec(),
-                ..Default::default()
+        let key = match self {
+            QueryCmd::Tx(_) => {
+                unreachable!("tx query handled in guard");
             }
-        } else {
-            penumbra_proto::client::specific::KeyValueRequest {
-                key_hash: key_hash.0.to_vec(),
-                ..Default::default()
-            }
+            QueryCmd::ShieldedPool(p) => p.key().as_bytes().to_vec(),
+            QueryCmd::Key { key } => key.as_bytes().to_vec(),
         };
+
+        let mut client = app.specific_client().await?;
+        let req = penumbra_proto::client::specific::KeyValueRequest {
+            key,
+            ..Default::default()
+        };
+
         tracing::debug!(?req);
 
         let rsp = client.key_value(req).await?.into_inner();
 
         self.display_value(&rsp.value)?;
         Ok(())
-    }
-
-    fn key_hash(&self) -> KeyHash {
-        match self {
-            QueryCmd::Key { key } => key.as_bytes().into(),
-            QueryCmd::ShieldedPool(sp) => sp.key_hash(),
-            QueryCmd::Tx { .. } => unreachable!("query tx is special cased"),
-        }
     }
 
     fn display_value(&self, bytes: &[u8]) -> Result<()> {
