@@ -23,7 +23,8 @@ pub trait View: StateExt {
 
     /// Writes the provided chain parameters to the JMT.
     async fn put_chain_params(&self, params: ChainParams) {
-        self.put_domain(state_key::chain_params().into(), params).await
+        self.put_domain(state_key::chain_params().into(), params)
+            .await
     }
 
     /// Gets the current epoch for the chain.
