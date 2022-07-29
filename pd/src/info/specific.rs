@@ -101,63 +101,28 @@ impl SpecificQuery for Info {
         let request = request.into_inner();
         tracing::debug!(?request);
 
-        if request.proof {
-            if request.key.is_empty() {
-                return Err(Status::invalid_argument("key is empty"));
-            }
-            if !request.key_hash.is_empty() {
-                return Err(Status::invalid_argument(
-                    "key_hash is nonempty but proof was requested",
-                ));
-            }
-
-            let (value, proof) = state
-                .read()
-                .await
-                .get_with_proof(request.key)
-                .await
-                .map_err(|e| tonic::Status::internal(e.to_string()))?;
-
-            let commitment_proof = ics23::CommitmentProof {
-                proof: Some(ics23::commitment_proof::Proof::Exist(proof)),
-            };
-
-            Ok(tonic::Response::new(KeyValueResponse {
-                value,
-                proof: Some(commitment_proof),
-            }))
-        } else {
-            let key_hash = match (!request.key.is_empty(), !request.key_hash.is_empty()) {
-                (false, true) => jmt::KeyHash(
-                    request
-                        .key_hash
-                        .try_into()
-                        .map_err(|_| Status::invalid_argument("invalid key_hash"))?,
-                ),
-                (true, false) => request.key.as_slice().into(),
-                (false, false) => {
-                    return Err(Status::invalid_argument("key and key_hash are both empty"))
-                }
-                (true, true) => {
-                    return Err(Status::invalid_argument(
-                        "key and key_hash were both provided",
-                    ))
-                }
-            };
-            tracing::debug!(?key_hash);
-
-            let value = state
-                .read()
-                .await
-                .get(key_hash)
-                .await
-                .map_err(|e| Status::internal(e.to_string()))?
-                .ok_or_else(|| Status::not_found("requested key not found in state"))?;
-
-            Ok(tonic::Response::new(KeyValueResponse {
-                value,
-                proof: None,
-            }))
+        if request.key.is_empty() {
+            return Err(Status::invalid_argument("key is empty"));
         }
+
+        let (value, proof) = state
+            .read()
+            .await
+            .get_with_proof(request.key)
+            .await
+            .map_err(|e| tonic::Status::internal(e.to_string()))?;
+
+        let commitment_proof = ics23::CommitmentProof {
+            proof: Some(ics23::commitment_proof::Proof::Exist(proof)),
+        };
+
+        Ok(tonic::Response::new(KeyValueResponse {
+            value,
+            proof: if request.proof {
+                Some(commitment_proof)
+            } else {
+                None
+            },
+        }))
     }
 }
