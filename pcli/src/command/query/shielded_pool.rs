@@ -1,6 +1,5 @@
 use anyhow::Result;
 use colored_json::prelude::*;
-use jmt::KeyHash;
 use penumbra_chain::{quarantined::Scheduled, CompactBlock, NoteSource};
 use penumbra_component::shielded_pool::Delible;
 use penumbra_crypto::Nullifier;
@@ -52,22 +51,22 @@ pub enum ShieldedPool {
 }
 
 impl ShieldedPool {
-    pub fn key_hash(&self) -> KeyHash {
+    pub fn key(&self) -> String {
         use penumbra_component::shielded_pool::state_key;
         match self {
-            ShieldedPool::Anchor { height } => state_key::anchor_by_height(*height).into(),
+            ShieldedPool::Anchor { height } => state_key::anchor_by_height(*height),
             ShieldedPool::BlockAnchor { height } => {
-                state_key::block_anchor_by_height(*height).into()
+                state_key::block_anchor_by_height(*height)
             }
-            ShieldedPool::EpochAnchor { epoch } => state_key::epoch_anchor_by_index(*epoch).into(),
-            ShieldedPool::CompactBlock { height } => state_key::compact_block(*height).into(),
-            ShieldedPool::Scheduled { epoch } => state_key::scheduled_to_apply(*epoch).into(),
-            ShieldedPool::Commitment { commitment } => state_key::note_source(*commitment).into(),
+            ShieldedPool::EpochAnchor { epoch } => state_key::epoch_anchor_by_index(*epoch),
+            ShieldedPool::CompactBlock { height } => state_key::compact_block(*height),
+            ShieldedPool::Scheduled { epoch } => state_key::scheduled_to_apply(*epoch),
+            ShieldedPool::Commitment { commitment } => state_key::note_source(*commitment),
             ShieldedPool::Nullifier { nullifier } => {
-                state_key::spent_nullifier_lookup(*nullifier).into()
+                state_key::spent_nullifier_lookup(*nullifier)
             }
             ShieldedPool::QuarantinedNullifier { nullifier } => {
-                state_key::quarantined_spent_nullifier_lookup(*nullifier).into()
+                state_key::quarantined_spent_nullifier_lookup(*nullifier)
             }
         }
     }
