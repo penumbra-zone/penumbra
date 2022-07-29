@@ -1,3 +1,3 @@
-pub fn app_state() -> jmt::KeyHash {
-    "genesis/app_state".into()
+pub fn app_state() -> &'static str {
+    "genesis/app_state"
 }

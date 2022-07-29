@@ -1,55 +1,55 @@
-use jmt::KeyHash;
 use penumbra_crypto::IdentityKey;
+use std::string::String;
 use tendermint::PublicKey;
 
-pub fn validator_list() -> KeyHash {
-    "staking/validators".into()
+pub fn validator_list() -> &'static str {
+    "staking/validators"
 }
 
-pub fn current_base_rate() -> KeyHash {
-    "staking/base_rate/current".into()
+pub fn current_base_rate() -> &'static str {
+    "staking/base_rate/current"
 }
 
-pub fn next_base_rate() -> KeyHash {
-    "staking/base_rate/next".into()
+pub fn next_base_rate() -> &'static str {
+    "staking/base_rate/next"
 }
 
-pub fn validator_by_id(id: &IdentityKey) -> KeyHash {
-    format!("staking/validator/{}", id).into()
+pub fn validator_by_id(id: &IdentityKey) -> String {
+    format!("staking/validator/{}", id)
 }
 
-pub fn state_by_validator(id: &IdentityKey) -> KeyHash {
-    format!("staking/validator/{}/state", id).into()
+pub fn state_by_validator(id: &IdentityKey) -> String {
+    format!("staking/validator/{}/state", id)
 }
 
-pub fn current_rate_by_validator(id: &IdentityKey) -> KeyHash {
-    format!("staking/validator/{}/rate/current", id).into()
+pub fn current_rate_by_validator(id: &IdentityKey) -> String {
+    format!("staking/validator/{}/rate/current", id)
 }
 
-pub fn next_rate_by_validator(id: &IdentityKey) -> KeyHash {
-    format!("staking/validator/{}/rate/next", id).into()
+pub fn next_rate_by_validator(id: &IdentityKey) -> String {
+    format!("staking/validator/{}/rate/next", id)
 }
 
-pub fn power_by_validator(id: &IdentityKey) -> KeyHash {
-    format!("staking/validator/{}/power", id).into()
+pub fn power_by_validator(id: &IdentityKey) -> String {
+    format!("staking/validator/{}/power", id)
 }
 
-pub fn bonding_state_by_validator(id: &IdentityKey) -> KeyHash {
-    format!("staking/validator/{}/bonding_state", id).into()
+pub fn bonding_state_by_validator(id: &IdentityKey) -> String {
+    format!("staking/validator/{}/bonding_state", id)
 }
 
-pub fn uptime_by_validator(id: &IdentityKey) -> KeyHash {
-    format!("staking/validator/{}/uptime", id).into()
+pub fn uptime_by_validator(id: &IdentityKey) -> String {
+    format!("staking/validator/{}/uptime", id)
 }
 
-pub fn slashed_validators(height: u64) -> KeyHash {
-    format!("staking/slashed_validators/{}", height).into()
+pub fn slashed_validators(height: u64) -> String {
+    format!("staking/slashed_validators/{}", height)
 }
 
-pub fn validator_id_by_consensus_key(pk: &PublicKey) -> KeyHash {
-    format!("staking/validator_id_by_consensus_key/{}", pk.to_hex()).into()
+pub fn validator_id_by_consensus_key(pk: &PublicKey) -> String {
+    format!("staking/validator_id_by_consensus_key/{}", pk.to_hex())
 }
 
-pub fn delegation_changes_by_height(height: u64) -> KeyHash {
-    format!("staking/delegation_changes/{}", height).into()
+pub fn delegation_changes_by_height(height: u64) -> String {
+    format!("staking/delegation_changes/{}", height)
 }
