@@ -36,8 +36,6 @@ message KeyValueRequest {
   string chain_id = 1;
   // If set, the key to fetch from storage.
   bytes key = 2;
-  // If set, the hash of the key to fetch from storage.
-  bytes key_hash = 4;
   // whether to return a proof
   bool proof = 3;
 }
