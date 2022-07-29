@@ -399,7 +399,7 @@ impl ShieldedPool {
         // can learn that their note was spent).
         self.state
             .put_domain(
-                state_key::spent_nullifier_lookup(nullifier),
+                state_key::spent_nullifier_lookup(nullifier).into(),
                 // We don't use the value for validity checks, but writing the source
                 // here lets us find out what transaction spent the nullifier.
                 source,
@@ -423,7 +423,7 @@ impl ShieldedPool {
         tracing::debug!("marking as spent (currently quarantined)");
         self.state
             .put_domain(
-                state_key::quarantined_spent_nullifier_lookup(nullifier),
+                state_key::quarantined_spent_nullifier_lookup(nullifier).into(),
                 // We don't use the value for validity checks, but writing the source
                 // here lets us find out what transaction spent the nullifier.
                 Delible::Present(source),
@@ -642,7 +642,8 @@ impl ShieldedPool {
 #[async_trait]
 pub trait View: StateExt {
     async fn token_supply(&self, asset_id: &asset::Id) -> Result<Option<u64>> {
-        self.get_proto(state_key::token_supply(asset_id)).await
+        self.get_proto(state_key::token_supply(asset_id).into())
+            .await
     }
 
     #[instrument(skip(self, change))]
@@ -685,13 +686,14 @@ pub trait View: StateExt {
 
     async fn known_assets(&self) -> Result<KnownAssets> {
         Ok(self
-            .get_domain(state_key::known_assets())
+            .get_domain(state_key::known_assets().into())
             .await?
             .unwrap_or_default())
     }
 
     async fn denom_by_asset(&self, asset_id: &asset::Id) -> Result<Option<Denom>> {
-        self.get_domain(state_key::denom_by_asset(asset_id)).await
+        self.get_domain(state_key::denom_by_asset(asset_id).into())
+            .await
     }
 
     #[instrument(skip(self))]
@@ -703,7 +705,7 @@ pub trait View: StateExt {
         } else {
             tracing::debug!(?denom, ?id, "registering new denom");
             // We want to be able to query for the denom by asset ID...
-            self.put_domain(state_key::denom_by_asset(&id), denom.clone())
+            self.put_domain(state_key::denom_by_asset(&id).into(), denom.clone())
                 .await;
             // ... and we want to record it in the list of known asset IDs
             // (this requires reading the whole list, which is sad, but hopefully
@@ -713,7 +715,7 @@ pub trait View: StateExt {
                 id,
                 denom: denom.clone(),
             });
-            self.put_domain(state_key::known_assets(), known_assets)
+            self.put_domain(state_key::known_assets().into(), known_assets)
                 .await;
             Ok(())
         }
@@ -721,7 +723,7 @@ pub trait View: StateExt {
 
     async fn set_note_source(&self, note_commitment: note::Commitment, source: NoteSource) {
         self.put_domain(
-            state_key::note_source(note_commitment),
+            state_key::note_source(note_commitment).into(),
             Delible::Present(source),
         )
         .await
@@ -731,13 +733,13 @@ pub trait View: StateExt {
     async fn roll_back_note(&self, commitment: note::Commitment) -> Result<Option<NoteSource>> {
         // Get the note source of the note (or empty vec if already applied or rolled back)
         let source = self
-            .get_domain::<Delible<NoteSource>, _>(state_key::note_source(commitment))
+            .get_domain::<Delible<NoteSource>, _>(state_key::note_source(commitment).into())
             .await?
             .expect("can't roll back note that was never created")
             .into();
 
         // Delete the note from the set of all notes
-        self.put_domain(state_key::note_source(commitment), Delible::Deleted)
+        self.put_domain(state_key::note_source(commitment).into(), Delible::Deleted)
             .await;
 
         Ok(source)
@@ -745,7 +747,7 @@ pub trait View: StateExt {
 
     async fn note_source(&self, note_commitment: note::Commitment) -> Result<Option<NoteSource>> {
         Ok(self
-            .get_domain::<Delible<NoteSource>, _>(state_key::note_source(note_commitment))
+            .get_domain::<Delible<NoteSource>, _>(state_key::note_source(note_commitment).into())
             .await?
             .unwrap_or_default()
             .into())
@@ -753,23 +755,24 @@ pub trait View: StateExt {
 
     async fn set_compact_block(&self, compact_block: CompactBlock) {
         let height = compact_block.height;
-        self.put_domain(state_key::compact_block(height), compact_block)
+        self.put_domain(state_key::compact_block(height).into(), compact_block)
             .await
     }
 
     async fn compact_block(&self, height: u64) -> Result<Option<CompactBlock>> {
-        self.get_domain(state_key::compact_block(height)).await
+        self.get_domain(state_key::compact_block(height).into())
+            .await
     }
 
     async fn set_nct_anchor(&self, height: u64, nct_anchor: tct::Root) {
         tracing::debug!(?height, ?nct_anchor, "writing anchor");
 
         // Write the NCT anchor both as a value, so we can look it up,
-        self.put_domain(state_key::anchor_by_height(height), nct_anchor)
+        self.put_domain(state_key::anchor_by_height(height).into(), nct_anchor)
             .await;
         // and as a key, so we can query for it.
         self.put_proto(
-            state_key::anchor_lookup(nct_anchor),
+            state_key::anchor_lookup(nct_anchor).into(),
             // We don't use the value for validity checks, but writing the height
             // here lets us find out what height the anchor was for.
             height,
@@ -781,11 +784,14 @@ pub trait View: StateExt {
         tracing::debug!(?height, ?nct_block_anchor, "writing block anchor");
 
         // Write the NCT block anchor both as a value, so we can look it up,
-        self.put_domain(state_key::block_anchor_by_height(height), nct_block_anchor)
-            .await;
+        self.put_domain(
+            state_key::block_anchor_by_height(height).into(),
+            nct_block_anchor,
+        )
+        .await;
         // and as a key, so we can query for it.
         self.put_proto(
-            state_key::block_anchor_lookup(nct_block_anchor),
+            state_key::block_anchor_lookup(nct_block_anchor).into(),
             // We don't use the value for validity checks, but writing the height
             // here lets us find out what height the anchor was for.
             height,
@@ -797,11 +803,14 @@ pub trait View: StateExt {
         tracing::debug!(?index, ?nct_block_anchor, "writing epoch anchor");
 
         // Write the NCT epoch anchor both as a value, so we can look it up,
-        self.put_domain(state_key::epoch_anchor_by_index(index), nct_block_anchor)
-            .await;
+        self.put_domain(
+            state_key::epoch_anchor_by_index(index).into(),
+            nct_block_anchor,
+        )
+        .await;
         // and as a key, so we can query for it.
         self.put_proto(
-            state_key::epoch_anchor_lookup(nct_block_anchor),
+            state_key::epoch_anchor_lookup(nct_block_anchor).into(),
             // We don't use the value for validity checks, but writing the height
             // here lets us find out what height the anchor was for.
             index,
@@ -812,7 +821,7 @@ pub trait View: StateExt {
     /// Checks whether a claimed NCT anchor is a previous valid state root.
     async fn check_claimed_anchor(&self, anchor: tct::Root) -> Result<()> {
         if let Some(anchor_height) = self
-            .get_proto::<u64>(state_key::anchor_lookup(anchor))
+            .get_proto::<u64>(state_key::anchor_lookup(anchor).into())
             .await?
         {
             tracing::debug!(?anchor, ?anchor_height, "anchor is valid");
@@ -832,16 +841,16 @@ pub trait View: StateExt {
 
         // Get the note source of the nullifier (or empty vec if already applied or rolled back)
         let source = self
-            .get_domain::<Delible<NoteSource>, _>(state_key::quarantined_spent_nullifier_lookup(
-                nullifier,
-            ))
+            .get_domain::<Delible<NoteSource>, _>(
+                state_key::quarantined_spent_nullifier_lookup(nullifier).into(),
+            )
             .await?
             .expect("can't unquarantine nullifier that was never quarantined")
             .into();
 
         // Delete the nullifier from the quarantine set
         self.put_domain(
-            state_key::quarantined_spent_nullifier_lookup(nullifier),
+            state_key::quarantined_spent_nullifier_lookup(nullifier).into(),
             Delible::Deleted,
         )
         .await;
@@ -852,7 +861,7 @@ pub trait View: StateExt {
     #[instrument(skip(self))]
     async fn check_nullifier_unspent(&self, nullifier: Nullifier) -> Result<()> {
         if let Some(source) = self
-            .get_domain::<NoteSource, _>(state_key::spent_nullifier_lookup(nullifier))
+            .get_domain::<NoteSource, _>(state_key::spent_nullifier_lookup(nullifier).into())
             .await?
         {
             return Err(anyhow!(
@@ -863,9 +872,9 @@ pub trait View: StateExt {
         }
 
         if let Some(source) = self
-            .get_domain::<Delible<NoteSource>, _>(state_key::quarantined_spent_nullifier_lookup(
-                nullifier,
-            ))
+            .get_domain::<Delible<NoteSource>, _>(
+                state_key::quarantined_spent_nullifier_lookup(nullifier).into(),
+            )
             .await?
             .and_then(<Option<NoteSource>>::from)
         {
@@ -881,7 +890,7 @@ pub trait View: StateExt {
 
     async fn scheduled_to_apply(&self, epoch: u64) -> Result<quarantined::Scheduled> {
         Ok(self
-            .get_domain(state_key::scheduled_to_apply(epoch))
+            .get_domain(state_key::scheduled_to_apply(epoch).into())
             .await?
             .unwrap_or_default())
     }
@@ -893,8 +902,11 @@ pub trait View: StateExt {
     ) -> Result<()> {
         let mut updated_quarantined = self.scheduled_to_apply(epoch).await?;
         updated_quarantined.extend(scheduled);
-        self.put_domain(state_key::scheduled_to_apply(epoch), updated_quarantined)
-            .await;
+        self.put_domain(
+            state_key::scheduled_to_apply(epoch).into(),
+            updated_quarantined,
+        )
+        .await;
         Ok(())
     }
 
@@ -907,7 +919,7 @@ pub trait View: StateExt {
         let unbonding_epochs = self.get_chain_params().await?.unbonding_epochs;
 
         let slashed: Slashed = self
-            .get_domain(state_key::slashed_validators(height))
+            .get_domain(state_key::slashed_validators(height).into())
             .await?
             .unwrap_or_default();
 
@@ -926,8 +938,11 @@ pub trait View: StateExt {
                 }
             }
             // We're removed all the scheduled notes and nullifiers for this epoch and identity key:
-            self.put_domain(state_key::scheduled_to_apply(epoch), updated_scheduled)
-                .await;
+            self.put_domain(
+                state_key::scheduled_to_apply(epoch).into(),
+                updated_scheduled,
+            )
+            .await;
         }
 
         Ok(slashed.validators)
@@ -937,11 +952,12 @@ pub trait View: StateExt {
     // be used with IBC transfers, and fix up the path and proto
 
     async fn commission_amounts(&self, height: u64) -> Result<Option<CommissionAmounts>> {
-        self.get_domain(state_key::commission_amounts(height)).await
+        self.get_domain(state_key::commission_amounts(height).into())
+            .await
     }
 
     async fn set_commission_amounts(&self, height: u64, notes: CommissionAmounts) {
-        self.put_domain(state_key::commission_amounts(height), notes)
+        self.put_domain(state_key::commission_amounts(height).into(), notes)
             .await
     }
 }

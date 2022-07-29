@@ -6,91 +6,85 @@ use ibc::{
     Height,
 };
 
-use jmt::KeyHash;
+use std::string::String;
 
-pub fn client_type(client_id: &ClientId) -> KeyHash {
-    format!("clients/{}/clientType", client_id).into()
+pub fn client_type(client_id: &ClientId) -> String {
+    format!("clients/{}/clientType", client_id)
 }
 
-pub fn client_state(client_id: &ClientId) -> KeyHash {
-    format!("clients/{}/clientState", client_id).into()
+pub fn client_state(client_id: &ClientId) -> String {
+    format!("clients/{}/clientState", client_id)
 }
 
-pub fn verified_client_consensus_state(client_id: &ClientId, height: &Height) -> KeyHash {
-    format!("clients/{}/consensusStates/{}", client_id, height).into()
+pub fn verified_client_consensus_state(client_id: &ClientId, height: &Height) -> String {
+    format!("clients/{}/consensusStates/{}", client_id, height)
 }
 
-pub fn client_processed_heights(client_id: &ClientId, height: &Height) -> KeyHash {
-    format!("clients/{}/processedHeights/{}", client_id, height).into()
+pub fn client_processed_heights(client_id: &ClientId, height: &Height) -> String {
+    format!("clients/{}/processedHeights/{}", client_id, height)
 }
-pub fn client_processed_times(client_id: &ClientId, height: &Height) -> KeyHash {
-    format!("clients/{}/processedTimes/{}", client_id, height).into()
-}
-
-pub fn client_connections(client_id: &ClientId) -> KeyHash {
-    format!("clients/{}/connections", client_id).into()
+pub fn client_processed_times(client_id: &ClientId, height: &Height) -> String {
+    format!("clients/{}/processedTimes/{}", client_id, height)
 }
 
-pub fn connection(connection_id: &ConnectionId) -> KeyHash {
-    format!("connections/{}", connection_id.as_str()).into()
+pub fn client_connections(client_id: &ClientId) -> String {
+    format!("clients/{}/connections", client_id)
 }
 
-pub fn connection_counter() -> KeyHash {
-    "ibc/ics03-connection/connection_counter".into()
+pub fn connection(connection_id: &ConnectionId) -> String {
+    format!("connections/{}", connection_id.as_str())
 }
 
-pub fn channel(channel_id: &ChannelId, port_id: &PortId) -> KeyHash {
-    format!("channelEnds/ports/{}/channels/{}", port_id, channel_id).into()
+pub fn connection_counter() -> &'static str {
+    "ibc/ics03-connection/connection_counter"
 }
 
-pub fn seq_recv(channel_id: &ChannelId, port_id: &PortId) -> KeyHash {
+pub fn channel(channel_id: &ChannelId, port_id: &PortId) -> String {
+    format!("channelEnds/ports/{}/channels/{}", port_id, channel_id)
+}
+
+pub fn seq_recv(channel_id: &ChannelId, port_id: &PortId) -> String {
     format!(
         "seqRecvs/ports/{}/channels/{}/nextSequenceRecv",
         port_id, channel_id
     )
-    .into()
 }
 
-pub fn seq_ack(channel_id: &ChannelId, port_id: &PortId) -> KeyHash {
+pub fn seq_ack(channel_id: &ChannelId, port_id: &PortId) -> String {
     format!(
         "seqAcks/ports/{}/channels/{}/nextSequenceAck",
         port_id, channel_id
     )
-    .into()
 }
 
-pub fn seq_send(channel_id: &ChannelId, port_id: &PortId) -> KeyHash {
+pub fn seq_send(channel_id: &ChannelId, port_id: &PortId) -> String {
     format!(
         "seqSends/ports/{}/channels/{}/nextSequenceSend",
         port_id, channel_id
     )
-    .into()
 }
 
-pub fn packet_receipt(packet: &Packet) -> KeyHash {
+pub fn packet_receipt(packet: &Packet) -> String {
     format!(
         "receipts/ports/{}/channels/{}/receipts/{}",
         packet.destination_port, packet.destination_channel, packet.sequence
     )
-    .into()
 }
 
-pub fn packet_commitment(packet: &Packet) -> KeyHash {
+pub fn packet_commitment(packet: &Packet) -> String {
     format!(
         "commitments/ports/{}/channels/{}/packets/{}",
         packet.source_port, packet.source_channel, packet.sequence
     )
-    .into()
 }
 
 pub fn packet_commitment_by_port(
     port_id: &PortId,
     channel_id: &ChannelId,
     sequence: u64,
-) -> KeyHash {
+) -> String {
     format!(
         "commitments/ports/{}/channels/{}/packets/{}",
         port_id, channel_id, sequence
     )
-    .into()
 }

@@ -168,13 +168,13 @@ impl Component for ConnectionComponent {
 #[async_trait]
 pub trait View: StateExt + Send + Sync {
     async fn get_connection_counter(&self) -> Result<ConnectionCounter> {
-        self.get_domain(state_key::connection_counter())
+        self.get_domain(state_key::connection_counter().into())
             .await
             .map(|counter| counter.unwrap_or(ConnectionCounter(0)))
     }
 
     async fn put_connection_counter(&self, counter: ConnectionCounter) {
-        self.put_domain(state_key::connection_counter(), counter)
+        self.put_domain(state_key::connection_counter().into(), counter)
             .await;
     }
 
@@ -185,7 +185,7 @@ pub trait View: StateExt + Send + Sync {
         connection_id: &ConnectionId,
         connection: ConnectionEnd,
     ) -> Result<()> {
-        self.put_domain(state_key::connection(connection_id), connection.clone())
+        self.put_domain(state_key::connection(connection_id).into(), connection.clone())
             .await;
         let counter = self
             .get_connection_counter()
@@ -201,11 +201,11 @@ pub trait View: StateExt + Send + Sync {
     }
 
     async fn get_connection(&self, connection_id: &ConnectionId) -> Result<Option<ConnectionEnd>> {
-        self.get_domain(state_key::connection(connection_id)).await
+        self.get_domain(state_key::connection(connection_id).into()).await
     }
 
     async fn update_connection(&self, connection_id: &ConnectionId, connection: ConnectionEnd) {
-        self.put_domain(state_key::connection(connection_id), connection)
+        self.put_domain(state_key::connection(connection_id).into(), connection)
             .await;
     }
 }
