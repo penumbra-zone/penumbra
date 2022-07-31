@@ -6,7 +6,9 @@ use penumbra_crypto::transaction::Fee;
 use penumbra_proto::{ibc as pb_ibc, stake as pb_stake, transaction as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
-use crate::action::{Delegate, Propose, Undelegate, ValidatorVote, WithdrawProposal};
+use crate::action::{
+    Delegate, ProposalSubmit, ProposalWithdrawBody, Undelegate, ValidatorVoteBody,
+};
 
 mod action;
 mod auth;
@@ -98,9 +100,9 @@ impl TransactionPlan {
         })
     }
 
-    pub fn proposals(&self) -> impl Iterator<Item = &Propose> {
+    pub fn proposal_submits(&self) -> impl Iterator<Item = &ProposalSubmit> {
         self.actions.iter().filter_map(|action| {
-            if let ActionPlan::Propose(p) = action {
+            if let ActionPlan::ProposalSubmit(p) = action {
                 Some(p)
             } else {
                 None
@@ -108,9 +110,9 @@ impl TransactionPlan {
         })
     }
 
-    pub fn withdraw_proposals(&self) -> impl Iterator<Item = &WithdrawProposal> {
+    pub fn proposal_withdraws(&self) -> impl Iterator<Item = &ProposalWithdrawBody> {
         self.actions.iter().filter_map(|action| {
-            if let ActionPlan::WithdrawProposal(p) = action {
+            if let ActionPlan::ProposalWithdraw(p) = action {
                 Some(p)
             } else {
                 None
@@ -128,7 +130,7 @@ impl TransactionPlan {
         })
     }
 
-    pub fn validator_votes(&self) -> impl Iterator<Item = &ValidatorVote> {
+    pub fn validator_votes(&self) -> impl Iterator<Item = &ValidatorVoteBody> {
         self.actions.iter().filter_map(|action| {
             if let ActionPlan::ValidatorVote(v) = action {
                 Some(v)

@@ -9,7 +9,9 @@ pub use delegator_vote::DelegatorVotePlan;
 pub use output::OutputPlan;
 pub use spend::SpendPlan;
 
-use crate::action::{Delegate, Propose, Undelegate, ValidatorVote, WithdrawProposal};
+use crate::action::{
+    Delegate, ProposalSubmit, ProposalWithdrawBody, Undelegate, ValidatorVoteBody,
+};
 
 /// A declaration of a planned [`Action`], for use in transaction creation.
 ///
@@ -32,13 +34,13 @@ pub enum ActionPlan {
     ValidatorDefinition(pb_stake::ValidatorDefinition),
     IBCAction(pb_ibc::IbcAction),
     /// Propose a governance vote.
-    Propose(Propose),
+    ProposalSubmit(ProposalSubmit),
     /// Withdraw a proposed vote.
-    WithdrawProposal(WithdrawProposal),
+    ProposalWithdraw(ProposalWithdrawBody),
     /// Vote on a proposal as a delegator.
     DelegatorVote(DelegatorVotePlan),
     /// Vote on a proposal as a validator.
-    ValidatorVote(ValidatorVote),
+    ValidatorVote(ValidatorVoteBody),
 }
 
 // Convenience impls that make declarative transaction construction easier.
@@ -79,15 +81,15 @@ impl From<pb_ibc::IbcAction> for ActionPlan {
     }
 }
 
-impl From<Propose> for ActionPlan {
-    fn from(inner: Propose) -> ActionPlan {
-        ActionPlan::Propose(inner)
+impl From<ProposalSubmit> for ActionPlan {
+    fn from(inner: ProposalSubmit) -> ActionPlan {
+        ActionPlan::ProposalSubmit(inner)
     }
 }
 
-impl From<WithdrawProposal> for ActionPlan {
-    fn from(inner: WithdrawProposal) -> ActionPlan {
-        ActionPlan::WithdrawProposal(inner)
+impl From<ProposalWithdrawBody> for ActionPlan {
+    fn from(inner: ProposalWithdrawBody) -> ActionPlan {
+        ActionPlan::ProposalWithdraw(inner)
     }
 }
 
@@ -97,8 +99,8 @@ impl From<DelegatorVotePlan> for ActionPlan {
     }
 }
 
-impl From<ValidatorVote> for ActionPlan {
-    fn from(inner: ValidatorVote) -> ActionPlan {
+impl From<ValidatorVoteBody> for ActionPlan {
+    fn from(inner: ValidatorVoteBody) -> ActionPlan {
         ActionPlan::ValidatorVote(inner)
     }
 }
@@ -126,11 +128,11 @@ impl From<ActionPlan> for pb_t::ActionPlan {
             ActionPlan::IBCAction(inner) => pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::IbcAction(inner)),
             },
-            ActionPlan::Propose(inner) => pb_t::ActionPlan {
-                action: Some(pb_t::action_plan::Action::Propose(inner.into())),
+            ActionPlan::ProposalSubmit(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::ProposalSubmit(inner.into())),
             },
-            ActionPlan::WithdrawProposal(inner) => pb_t::ActionPlan {
-                action: Some(pb_t::action_plan::Action::WithdrawProposal(inner.into())),
+            ActionPlan::ProposalWithdraw(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::ProposalWithdraw(inner.into())),
             },
             ActionPlan::DelegatorVote(inner) => pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::DelegatorVote(inner.into())),
@@ -163,9 +165,11 @@ impl TryFrom<pb_t::ActionPlan> for ActionPlan {
                 Ok(ActionPlan::ValidatorDefinition(inner))
             }
             pb_t::action_plan::Action::IbcAction(inner) => Ok(ActionPlan::IBCAction(inner)),
-            pb_t::action_plan::Action::Propose(inner) => Ok(ActionPlan::Propose(inner.try_into()?)),
-            pb_t::action_plan::Action::WithdrawProposal(inner) => {
-                Ok(ActionPlan::WithdrawProposal(inner.try_into()?))
+            pb_t::action_plan::Action::ProposalSubmit(inner) => {
+                Ok(ActionPlan::ProposalSubmit(inner.try_into()?))
+            }
+            pb_t::action_plan::Action::ProposalWithdraw(inner) => {
+                Ok(ActionPlan::ProposalWithdraw(inner.try_into()?))
             }
             pb_t::action_plan::Action::ValidatorVote(inner) => {
                 Ok(ActionPlan::ValidatorVote(inner.try_into()?))

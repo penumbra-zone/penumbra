@@ -127,12 +127,17 @@ message ProposalSubmit {
 }
 
 message ProposalWithdraw {
+  // The body of the proposal withdraw message.
+  ProposalWithdrawBody body = 1;
+  // The signature with the randomized proposer key of the withdrawal.
+  crypto.SpendAuthSignature auth_sig = 2;
+}
+
+message ProposalWithdrawBody {
   // The proposal to be withdrawn.
   uint64 proposal = 1;
   // The randomized proposer key from the submission of the proposal.
   bytes rk = 2;
-  // The signature with the randomized proposer key of the withdrawal.
-  crypto.SpendAuthSignature auth_sig = 3;
 }
 
 message ValidatorVote {
@@ -231,7 +236,7 @@ message ActionPlan {
         ibc.IBCAction ibc_action = 17;
         // Governance:
         ProposalSubmit proposal_submit = 18;
-        ProposalWithdrawPlan proposal_withdraw = 19;
+        ProposalWithdrawBody proposal_withdraw = 19;
         ValidatorVoteBody validator_vote = 20;
         DelegatorVotePlan delegator_vote = 21;
     }
@@ -261,31 +266,6 @@ message OutputPlan {
     bytes value_blinding = 5;
     // The ephemeral secret key to use for the note encryption.
     bytes esk = 6;
-}
-
-message ProposalSubmitPlan {
-    // The proposal to be submitted.
-    Proposal proposal = 1;
-    // The transparent refund address for the refund of the proposal deposit.
-    crypto.Address deposit_refund_address = 2;
-    // A verification key to be used when withdrawing the proposal.
-    crypto.VerificationKey withdraw_proposal_key = 3;
-}
-
-message ProposalWithdrawPlan {
-    // The proposal to be withdrawn.
-    uint64 proposal = 1;
-    // The randomizer used to compute the randomization of the auth key.
-    bytes randomizer = 2;
-}
-
-message ValidatorVote {
-    // The proposal to vote on.
-    uint64 proposal = 1;
-    // The vote to cast.
-    Vote vote = 2;
-    // The identity of the validator who is voting.
-    crypto.IdentityKey validator_identity = 3;
 }
 
 message DelegatorVotePlan {
