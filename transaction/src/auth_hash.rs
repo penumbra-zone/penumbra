@@ -113,6 +113,12 @@ impl TransactionPlan {
         for undelegation in self.undelegations() {
             state.update(undelegation.auth_hash().as_bytes());
         }
+        for proposal_submit in self.proposal_submits() {
+            state.update(proposal_submit.auth_hash().as_bytes());
+        }
+        for proposal_withdraw in self.proposal_withdraws() {
+            state.update(proposal_withdraw.auth_hash().as_bytes());
+        }
         for validator_vote in self.validator_votes() {
             state.update(validator_vote.auth_hash().as_bytes());
         }
@@ -130,18 +136,6 @@ impl TransactionPlan {
         for payload in self.ibc_actions() {
             let auth_hash = Params::default()
                 .personal(b"PAH:ibc_action")
-                .hash(&payload.encode_to_vec());
-            state.update(auth_hash.as_bytes());
-        }
-        for payload in self.proposal_submits() {
-            let auth_hash = Params::default()
-                .personal(b"PAH:proposal_submit")
-                .hash(&payload.encode_to_vec());
-            state.update(auth_hash.as_bytes());
-        }
-        for payload in self.proposal_withdraws() {
-            let auth_hash = Params::default()
-                .personal(b"PAH:proposal_withdraw")
                 .hash(&payload.encode_to_vec());
             state.update(auth_hash.as_bytes());
         }
