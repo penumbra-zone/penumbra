@@ -1,8 +1,10 @@
+use ark_ff::Zero;
+use decaf377::Fr;
+use decaf377_rdsa::{Signature, SpendAuth, VerificationKey};
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
-use penumbra_crypto::Address;
-use serde::{Deserialize, Serialize};
-
+use penumbra_crypto::{value, Address, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_proto::{transaction as pb, Protobuf};
 
 use crate::{plan::TransactionPlan, AuthHash};
@@ -183,31 +185,59 @@ impl TryFrom<pb::proposal::Kind> for ProposalKind {
     }
 }
 
-/// A proposal plan describes the proposal to propose, and the (transparent, ephemeral) refund
-/// address for the proposal deposit.
+/// A proposal submission describes the proposal to propose, and the (transparent, ephemeral) refund
+/// address for the proposal deposit, along with a key to be used to verify the signature for a
+/// withdrawal of that proposal.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(try_from = "pb::Propose", into = "pb::Propose")]
-pub struct Propose {
+#[serde(try_from = "pb::ProposalSubmit", into = "pb::ProposalSubmit")]
+pub struct ProposalSubmit {
     /// The proposal to propose.
     pub proposal: Proposal,
     /// The refund address for the proposal's proposer.
     pub deposit_refund_address: Address,
+    /// The amount deposited for the proposal.
+    pub deposit_amount: u64,
+    /// The verification key to be used when withdrawing the proposal.
+    pub withdraw_proposal_key: VerificationKey<SpendAuth>,
 }
 
-impl From<Propose> for pb::Propose {
-    fn from(value: Propose) -> pb::Propose {
-        pb::Propose {
+impl ProposalSubmit {
+    /// Compute a commitment to the value contributed to a transaction by this proposal submission.
+    pub fn value_commitment(&self) -> value::Commitment {
+        let deposit = Value {
+            amount: self.deposit_amount,
+            asset_id: STAKING_TOKEN_ASSET_ID.clone(),
+        }
+        .commit(Fr::zero());
+
+        let zero = Value {
+            amount: 0,
+            asset_id: STAKING_TOKEN_ASSET_ID.clone(),
+        }
+        .commit(Fr::zero());
+
+        // Proposal submissions *require* the deposit amount in order to be accepted, so they
+        // contribute (-deposit) to the value balance of the transaction
+        zero - deposit
+    }
+}
+
+impl From<ProposalSubmit> for pb::ProposalSubmit {
+    fn from(value: ProposalSubmit) -> pb::ProposalSubmit {
+        pb::ProposalSubmit {
             proposal: Some(value.proposal.into()),
             deposit_refund_address: Some(value.deposit_refund_address.into()),
+            deposit_amount: value.deposit_amount,
+            rk: value.withdraw_proposal_key.to_bytes().to_vec().into(),
         }
     }
 }
 
-impl TryFrom<pb::Propose> for Propose {
+impl TryFrom<pb::ProposalSubmit> for ProposalSubmit {
     type Error = anyhow::Error;
 
-    fn try_from(msg: pb::Propose) -> Result<Self, Self::Error> {
-        Ok(Propose {
+    fn try_from(msg: pb::ProposalSubmit) -> Result<Self, Self::Error> {
+        Ok(ProposalSubmit {
             proposal: msg
                 .proposal
                 .ok_or_else(|| anyhow::anyhow!("missing proposal in `Propose`"))?
@@ -216,34 +246,83 @@ impl TryFrom<pb::Propose> for Propose {
                 .deposit_refund_address
                 .ok_or_else(|| anyhow::anyhow!("missing deposit refund address in `Propose`"))?
                 .try_into()?,
+            deposit_amount: msg.deposit_amount,
+            withdraw_proposal_key: <[u8; 32]>::try_from(msg.rk.to_vec())
+                .map_err(|_| anyhow::anyhow!("invalid length for withdraw proposal key"))?
+                .try_into()?,
         })
     }
 }
 
-impl Protobuf<pb::Propose> for Propose {}
+impl Protobuf<pb::ProposalSubmit> for ProposalSubmit {}
 
-/// A withdraw-proposal plan describes the original proposer's intent to withdraw their proposal.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(try_from = "pb::WithdrawProposal", into = "pb::WithdrawProposal")]
-pub struct WithdrawProposal {
+#[serde(try_from = "pb::ProposalWithdraw", into = "pb::ProposalWithdraw")]
+pub struct ProposalWithdraw {
+    /// The proposal withdraw body.
+    pub body: ProposalWithdrawBody,
+    /// The signature authorizing the withdrawal.
+    pub auth_sig: Signature<SpendAuth>,
+}
+
+impl From<ProposalWithdraw> for pb::ProposalWithdraw {
+    fn from(value: ProposalWithdraw) -> pb::ProposalWithdraw {
+        pb::ProposalWithdraw {
+            body: Some(value.body.into()),
+            auth_sig: Some(value.auth_sig.into()),
+        }
+    }
+}
+
+impl TryFrom<pb::ProposalWithdraw> for ProposalWithdraw {
+    type Error = anyhow::Error;
+
+    fn try_from(msg: pb::ProposalWithdraw) -> Result<Self, Self::Error> {
+        Ok(ProposalWithdraw {
+            body: msg
+                .body
+                .ok_or_else(|| anyhow::anyhow!("missing body in `ProposalWithdraw`"))?
+                .try_into()?,
+            auth_sig: msg
+                .auth_sig
+                .ok_or_else(|| anyhow::anyhow!("missing auth sig in `ProposalWithdraw`"))?
+                .try_into()?,
+        })
+    }
+}
+
+/// A withdraw-proposal body describes the original proposer's intent to withdraw their proposal
+/// (this is the body, absent the signature).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(
+    try_from = "pb::ProposalWithdrawBody",
+    into = "pb::ProposalWithdrawBody"
+)]
+pub struct ProposalWithdrawBody {
     /// The proposal ID to withdraw.
     pub proposal: u64,
+    /// The randomized proposal key from the original proposal.
+    pub withdraw_proposal_key: VerificationKey<SpendAuth>,
 }
 
-impl From<WithdrawProposal> for pb::WithdrawProposal {
-    fn from(value: WithdrawProposal) -> pb::WithdrawProposal {
-        pb::WithdrawProposal {
+impl From<ProposalWithdrawBody> for pb::ProposalWithdrawBody {
+    fn from(value: ProposalWithdrawBody) -> pb::ProposalWithdrawBody {
+        pb::ProposalWithdrawBody {
             proposal: value.proposal,
+            rk: value.withdraw_proposal_key.to_bytes().to_vec().into(),
         }
     }
 }
 
-impl From<pb::WithdrawProposal> for WithdrawProposal {
-    fn from(msg: pb::WithdrawProposal) -> Self {
-        WithdrawProposal {
+impl TryFrom<pb::ProposalWithdrawBody> for ProposalWithdrawBody {
+    type Error = anyhow::Error;
+
+    fn try_from(msg: pb::ProposalWithdrawBody) -> Result<Self, Self::Error> {
+        Ok(ProposalWithdrawBody {
             proposal: msg.proposal,
-        }
+            withdraw_proposal_key: msg.rk.to_vec()[..].try_into()?,
+        })
     }
 }
 
-impl Protobuf<pb::WithdrawProposal> for WithdrawProposal {}
+impl Protobuf<pb::ProposalWithdrawBody> for ProposalWithdrawBody {}

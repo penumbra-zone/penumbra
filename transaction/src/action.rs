@@ -14,12 +14,12 @@ mod vote;
 
 pub use delegate::Delegate;
 pub use output::Output;
-pub use propose::{Proposal, ProposalKind, Propose, WithdrawProposal};
+pub use propose::{Proposal, ProposalKind, ProposalSubmit, ProposalWithdraw, ProposalWithdrawBody};
 pub use spend::Spend;
 pub use swap::Swap;
 pub use swap_claim::SwapClaim;
 pub use undelegate::Undelegate;
-pub use vote::{DelegatorVote, ValidatorVote, Vote};
+pub use vote::{DelegatorVote, ValidatorVote, ValidatorVoteBody, Vote};
 
 /// An action performed by a Penumbra transaction.
 #[derive(Clone, Debug)]
@@ -33,8 +33,8 @@ pub enum Action {
     // TODO: re-enable when Swap/SwapClaim is ready
     // Swap(Swap),
     // SwapClaim(SwapClaim),
-    Propose(Propose),
-    WithdrawProposal(WithdrawProposal),
+    ProposalSubmit(ProposalSubmit),
+    ProposalWithdraw(ProposalWithdraw),
     // DelegatorVote(DelegatorVote),
     ValidatorVote(ValidatorVote),
 }
@@ -55,8 +55,8 @@ impl Action {
             // unchanged.
             Action::ValidatorDefinition(_) => value::Commitment::default(),
             Action::IBCAction(_) => value::Commitment::default(),
-            Action::Propose(_) => todo!("subtract proposal deposit amount from value balance"),
-            Action::WithdrawProposal(_) => value::Commitment::default(),
+            Action::ProposalSubmit(submit) => submit.value_commitment(),
+            Action::ProposalWithdraw(_) => value::Commitment::default(),
             // Action::DelegatorVote(_) => value::Commitment::default(),
             Action::ValidatorVote(_) => value::Commitment::default(),
         }
@@ -86,11 +86,11 @@ impl From<Action> for pb::Action {
             Action::IBCAction(inner) => pb::Action {
                 action: Some(pb::action::Action::IbcAction(inner)),
             },
-            Action::Propose(inner) => pb::Action {
-                action: Some(pb::action::Action::Propose(inner.into())),
+            Action::ProposalSubmit(inner) => pb::Action {
+                action: Some(pb::action::Action::ProposalSubmit(inner.into())),
             },
-            Action::WithdrawProposal(inner) => pb::Action {
-                action: Some(pb::action::Action::WithdrawProposal(inner.into())),
+            Action::ProposalWithdraw(inner) => pb::Action {
+                action: Some(pb::action::Action::ProposalWithdraw(inner.into())),
             },
             // Action::DelegatorVote(inner) => pb::Action {
             //     action: Some(pb::action::Action::DelegatorVote(inner.into())),
@@ -119,9 +119,11 @@ impl TryFrom<pb::Action> for Action {
                 Ok(Action::ValidatorDefinition(inner))
             }
             pb::action::Action::IbcAction(inner) => Ok(Action::IBCAction(inner)),
-            pb::action::Action::Propose(inner) => Ok(Action::Propose(inner.try_into()?)),
-            pb::action::Action::WithdrawProposal(inner) => {
-                Ok(Action::WithdrawProposal(inner.try_into()?))
+            pb::action::Action::ProposalSubmit(inner) => {
+                Ok(Action::ProposalSubmit(inner.try_into()?))
+            }
+            pb::action::Action::ProposalWithdraw(inner) => {
+                Ok(Action::ProposalWithdraw(inner.try_into()?))
             }
             // pb::action::Action::DelegatorVote(inner) => {
             //     Ok(Action::DelegatorVote(inner.try_into()?))

@@ -1,3 +1,4 @@
+use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_crypto::IdentityKey;
 use penumbra_proto::{transaction as pb, Protobuf};
 use serde::{Deserialize, Serialize};
@@ -51,24 +52,21 @@ impl TryFrom<pb::Vote> for Vote {
 
 impl Protobuf<pb::Vote> for Vote {}
 
-/// A public vote as a validator.
+/// A vote by a validator.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::ValidatorVote", into = "pb::ValidatorVote")]
 pub struct ValidatorVote {
-    /// The proposal ID to vote on.
-    pub proposal: u64,
-    /// The vote to cast.
-    pub vote: Vote,
-    /// The identity of the validator who is voting.
-    pub validator_identity: IdentityKey,
+    /// The body of the validator vote.
+    pub body: ValidatorVoteBody,
+    /// The signature authorizing the vote.
+    pub auth_sig: Signature<SpendAuth>,
 }
 
 impl From<ValidatorVote> for pb::ValidatorVote {
-    fn from(value: ValidatorVote) -> Self {
-        pb::ValidatorVote {
-            proposal: value.proposal,
-            vote: Some(value.vote.into()),
-            validator_identity: Some(value.validator_identity.into()),
+    fn from(msg: ValidatorVote) -> Self {
+        Self {
+            body: Some(msg.body.into()),
+            auth_sig: Some(msg.auth_sig.into()),
         }
     }
 }
@@ -77,29 +75,68 @@ impl TryFrom<pb::ValidatorVote> for ValidatorVote {
     type Error = anyhow::Error;
 
     fn try_from(msg: pb::ValidatorVote) -> Result<Self, Self::Error> {
-        Ok(ValidatorVote {
+        Ok(Self {
+            body: msg
+                .body
+                .ok_or_else(|| anyhow::anyhow!("missing validator vote body"))?
+                .try_into()?,
+            auth_sig: msg
+                .auth_sig
+                .ok_or_else(|| anyhow::anyhow!("missing validator auth sig"))?
+                .try_into()?,
+        })
+    }
+}
+
+/// A public vote as a validator.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(try_from = "pb::ValidatorVoteBody", into = "pb::ValidatorVoteBody")]
+pub struct ValidatorVoteBody {
+    /// The proposal ID to vote on.
+    pub proposal: u64,
+    /// The vote to cast.
+    pub vote: Vote,
+    /// The identity of the validator who is voting.
+    pub identity_key: IdentityKey,
+}
+
+impl From<ValidatorVoteBody> for pb::ValidatorVoteBody {
+    fn from(value: ValidatorVoteBody) -> Self {
+        pb::ValidatorVoteBody {
+            proposal: value.proposal,
+            vote: Some(value.vote.into()),
+            identity_key: Some(value.identity_key.into()),
+        }
+    }
+}
+
+impl TryFrom<pb::ValidatorVoteBody> for ValidatorVoteBody {
+    type Error = anyhow::Error;
+
+    fn try_from(msg: pb::ValidatorVoteBody) -> Result<Self, Self::Error> {
+        Ok(ValidatorVoteBody {
             proposal: msg.proposal,
             vote: msg
                 .vote
                 .ok_or_else(|| anyhow::anyhow!("missing vote in `ValidatorVote`"))?
                 .try_into()?,
-            validator_identity: msg
-                .validator_identity
+            identity_key: msg
+                .identity_key
                 .ok_or_else(|| anyhow::anyhow!("missing validator identity in `ValidatorVote`"))?
                 .try_into()?,
         })
     }
 }
 
-impl Protobuf<pb::ValidatorVote> for ValidatorVote {}
+impl Protobuf<pb::ValidatorVoteBody> for ValidatorVoteBody {}
 
 #[derive(Debug, Clone)]
 pub struct DelegatorVote {
     // TODO: fill this in
+    pub body: DelegatorVoteBody,
 }
 
-pub mod delegator_vote {
-    pub struct Body {
-        // TODO: fill this in
-    }
+#[derive(Debug, Clone)]
+pub struct DelegatorVoteBody {
+    // TODO: fill this in
 }

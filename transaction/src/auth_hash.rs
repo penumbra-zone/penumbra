@@ -4,7 +4,10 @@ use penumbra_crypto::FullViewingKey;
 use penumbra_proto::{transaction as pb, Message, Protobuf};
 
 use crate::{
-    action::{output, spend, Delegate, Undelegate, ValidatorVote, Vote},
+    action::{
+        output, spend, Delegate, ProposalSubmit, ProposalWithdraw, ProposalWithdrawBody,
+        Undelegate, ValidatorVote, ValidatorVoteBody, Vote,
+    },
     plan::TransactionPlan,
     Action, Transaction, TransactionBody,
 };
@@ -130,15 +133,15 @@ impl TransactionPlan {
                 .hash(&payload.encode_to_vec());
             state.update(auth_hash.as_bytes());
         }
-        for payload in self.proposals() {
+        for payload in self.proposal_submits() {
             let auth_hash = Params::default()
-                .personal(b"PAH:propose")
+                .personal(b"PAH:proposal_submit")
                 .hash(&payload.encode_to_vec());
             state.update(auth_hash.as_bytes());
         }
-        for payload in self.withdraw_proposals() {
+        for payload in self.proposal_withdraws() {
             let auth_hash = Params::default()
-                .personal(b"PAH:withdrawproposal")
+                .personal(b"PAH:proposal_withdraw")
                 .hash(&payload.encode_to_vec());
             state.update(auth_hash.as_bytes());
         }
@@ -160,6 +163,9 @@ impl Action {
             Action::Spend(spend) => spend.body.auth_hash(),
             Action::Delegate(delegate) => delegate.auth_hash(),
             Action::Undelegate(undelegate) => undelegate.auth_hash(),
+            Action::ProposalSubmit(submit) => submit.auth_hash(),
+            Action::ProposalWithdraw(withdraw) => withdraw.auth_hash(),
+            Action::ValidatorVote(vote) => vote.auth_hash(),
             // These are data payloads, so just hash them directly,
             // since we consider them authorizing data.
             Action::ValidatorDefinition(payload) => Params::default()
@@ -241,10 +247,42 @@ impl Undelegate {
     }
 }
 
-impl ValidatorVote {
+impl ProposalSubmit {
     pub fn auth_hash(&self) -> Hash {
         let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:validatorvote")
+            .personal(b"PAH:proposal_submit")
+            .to_state();
+        state.update(&self.encode_to_vec());
+        state.finalize()
+    }
+}
+
+impl ProposalWithdraw {
+    pub fn auth_hash(&self) -> Hash {
+        self.body.auth_hash()
+    }
+}
+
+impl ProposalWithdrawBody {
+    pub fn auth_hash(&self) -> Hash {
+        let mut state = blake2b_simd::Params::default()
+            .personal(b"PAH:proposal_withdraw")
+            .to_state();
+        state.update(&self.encode_to_vec());
+        state.finalize()
+    }
+}
+
+impl ValidatorVote {
+    pub fn auth_hash(&self) -> Hash {
+        self.body.auth_hash()
+    }
+}
+
+impl ValidatorVoteBody {
+    pub fn auth_hash(&self) -> Hash {
+        let mut state = blake2b_simd::Params::default()
+            .personal(b"PAH:validator_vote")
             .to_state();
 
         // All of these fields are fixed-length, so we can just throw them in the hash one after the
@@ -257,7 +295,7 @@ impl ValidatorVote {
             Vote::Abstain => b"A",
             Vote::NoWithVeto => b"V",
         });
-        state.update(&self.validator_identity.0.to_bytes());
+        state.update(&self.identity_key.0.to_bytes());
 
         state.finalize()
     }
