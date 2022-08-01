@@ -29,7 +29,7 @@ pub struct LpNft {
 impl LpNft {
     pub fn new(position_id: Id, state: State) -> Self {
         let base_denom = asset::REGISTRY
-            .parse_denom(&format!("lpnft_{}_{}", position_id, state))
+            .parse_denom(&format!("lpnft_{}_{}", state, position_id))
             .expect("base denom format is valid");
 
         Self {
@@ -63,7 +63,7 @@ impl TryFrom<asset::Denom> for LpNft {
         // Note: this regex must be in sync with both asset::REGISTRY
         // and the bech32 prefix for LP IDs defined in the proto crate.
         let base_denom_string = base_denom.to_string();
-        let captures = Regex::new("^lpnft_(?P<id>plpid1[a-zA-HJ-NP-Z0-9]+)_(?P<state>[a-z]+)$")
+        let captures = Regex::new("^lpnft_(?P<state>[a-z]+)_(?P<id>plpid1[a-zA-HJ-NP-Z0-9]+)$")
             .expect("regex is valid")
             .captures(&base_denom_string)
             .ok_or_else(|| {
@@ -89,7 +89,6 @@ impl TryFrom<asset::Denom> for LpNft {
             state,
             base_denom,
         })
-        // Note: this
     }
 }
 
