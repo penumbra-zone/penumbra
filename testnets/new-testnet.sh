@@ -14,6 +14,6 @@ cp $PREVIOUS_TESTNET_DIRECTORY/validators.json $NEW_TESTNET_DIRECTORY/validators
 
 echo "Setting up allocations for new testnet..."
 
-cut -d , -f 6 < discord_history.csv | sed -e 's/^/"1_000__000_000","upenumbra","/; s/$/"/' | cat base_allocations.csv - > $NEW_TESTNET_DIRECTORY/allocations.csv
+cut -d , -f 6 < discord_history.csv | tail +2 | sed -e 's/^/"1_000__000_000","upenumbra","/; s/$/"/' | cat base_allocations.csv - > $NEW_TESTNET_DIRECTORY/allocations.csv
 
 echo "All done!"
