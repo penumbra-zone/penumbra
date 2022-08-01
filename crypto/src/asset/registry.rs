@@ -216,5 +216,16 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
                 )
             }) as for<'r> fn(&'r str) -> _,
         )
+        .add_asset(
+            // Note: this regex must be in sync with LpNft::try_from
+            // and the bech32 prefix for LP IDs defined in the proto crate.
+            // TODO: this doesn't restrict the length of the bech32 encoding
+            "^lpnft_(?P<data>plpid1[a-zA-HJ-NP-Z0-9]+_[a-z]+)$",
+            &[ /* no display units - nft, unit 1 */ ],
+            (|data: &str| {
+                assert!(!data.is_empty());
+                denom::Inner::new(format!("lpnft_{}", data), vec![])
+            }) as for<'r> fn(&'r str) -> _,
+        )
         .build()
 });

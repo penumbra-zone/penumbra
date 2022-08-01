@@ -1,3 +1,4 @@
+pub mod lp;
 pub mod swap;
 
 mod trading_pair;
