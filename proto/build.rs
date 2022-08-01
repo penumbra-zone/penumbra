@@ -88,6 +88,7 @@ static AS_BECH32_ASSET_ID: &str = r#"#[serde(with = "crate::serializers::bech32s
 static AS_BECH32_SPEND_KEY: &str = r#"#[serde(with = "crate::serializers::bech32str::spend_key")]"#;
 static AS_BECH32_FULL_VIEWING_KEY: &str =
     r#"#[serde(with = "crate::serializers::bech32str::full_viewing_key")]"#;
+static AS_BECH32_LP_ID: &str = r#"#[serde(with = "crate::serializers::bech32str::lp_id")]"#;
 
 static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.stake.Validator", SERIALIZE),
@@ -178,6 +179,11 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.dex.MockFlowCiphertext", SERIALIZE),
     (".penumbra.dex.MockFlowCiphertext", SERDE_TRANSPARENT),
     (".penumbra.dex.TradingPair", SERIALIZE),
+    (".penumbra.dex.TradingFunction", SERIALIZE),
+    (".penumbra.dex.Position", SERIALIZE),
+    (".penumbra.dex.PositionId", SERIALIZE),
+    (".penumbra.dex.PositionId", SERDE_TRANSPARENT),
+    (".penumbra.dex.PositionState", SERIALIZE),
 ];
 
 static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
@@ -254,4 +260,6 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         ".penumbra.transaction.SpendBody.nullifier",
         AS_HEX_FOR_BYTES,
     ),
+    (".penumbra.dex.Position.nonce", AS_HEX),
+    (".penumbra.dex.PositionId.inner", AS_BECH32_LP_ID),
 ];
