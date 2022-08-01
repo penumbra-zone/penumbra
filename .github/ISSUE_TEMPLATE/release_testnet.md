@@ -19,9 +19,13 @@ Testnet release manager: X
 Monday (week before release):
 
 - [ ] Create GitHub milestone, work with team to populate the milestone with tickets targeted for the release.
-- [ ] Create new testnet directory with initial genesis allocations for this testnet (make sure all current team members and the Galileo bot have some assets!)
-- [ ] Update `discord-addresses` file using the Galileo bot (`cargo run --release history --channel <channel>`)
-- [ ] Update `testnet/<moon>/allocations.csv` file with the above Discord faucet addresses
+- [ ] Update `discord_history.csv` file using the Galileo bot (`cd galileo && cargo run --release history
+  --channel https://discord.com/channels/824484045370818580/915710851917439060 >
+  ../penumbra/testnets/discord_history.csv`, assuming that the galileo and penumbra repos are
+  sitting side-by-side in the file system)
+- [ ] Create new testnet directory with initial genesis allocations for this testnet (make sure all
+  current team members and the Galileo bot have some assets in the `base_allocations.csv` file!) by
+  running `cd testnets && ./new-testnet.sh`
 
 Thursday:
 
