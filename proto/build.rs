@@ -2,6 +2,7 @@ use std::io::Result;
 
 fn main() -> Result<()> {
     let mut config = prost_build::Config::new();
+    println!("{:?}", config);
 
     // Specify which parts of the protos should have their `bytes` fields
     // converted to Rust `Bytes` (= zero-copy view into a shared buffer) rather
@@ -50,6 +51,14 @@ fn main() -> Result<()> {
             "proto/dex.proto",
         ],
         &["proto/", "ibc-go-vendor/"],
+    )?;
+
+    config.compile_protos(
+        &[
+            "ibc-go-vendor/cosmos/base/tendermint/v1beta1/types.proto",
+            "ibc-go-vendor/cosmos/base/tendermint/v1beta1/query.proto",
+        ],
+        &["ibc-go-vendor/"],
     )?;
 
     // These should disappear, eventually.

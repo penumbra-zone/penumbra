@@ -80,3 +80,11 @@ pub mod custody {
 pub mod transparent_proofs {
     include!(concat!(env!("OUT_DIR"), "/penumbra.transparent_proofs.rs"));
 }
+
+
+/// Tendermint RPCs.
+// TODO(erwan): figure out path to upstream those. maybe they should be in their own crate or repo?
+pub mod tendermint {
+    pub mod query {
+    }
+}
