@@ -53,8 +53,8 @@ pub fn generate_swap_asset_id(
     let asset_id_hash = hash_5(
         &DOMAIN_SEPARATOR,
         (
-            trading_pair.asset_1.0,
-            trading_pair.asset_2.0,
+            trading_pair.asset_1().0,
+            trading_pair.asset_2().0,
             packed_values,
             b_d.compress_to_field(),
             Fq::from_bytes(pk_d.0)?,
