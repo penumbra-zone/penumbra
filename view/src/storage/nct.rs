@@ -1,6 +1,6 @@
 use anyhow::Context as _;
 use async_trait::async_trait;
-use futures::Stream;
+use futures::{Stream, StreamExt};
 use sqlx::Either;
 use std::{ops::Range, pin::Pin};
 
