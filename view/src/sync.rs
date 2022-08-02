@@ -55,27 +55,11 @@ pub async fn scan_block(
     storage: &Storage,
 ) -> anyhow::Result<FilteredBlock> {
     // Trial-decrypt a note with our own specific viewing key
-    let trial_decrypt = |NotePayload {
-                             note_commitment,
-                             ephemeral_key,
-                             encrypted_note,
-                         }: NotePayload|
-     -> tokio::task::JoinHandle<Option<Note>> {
+    let trial_decrypt = |note_payload: NotePayload| -> tokio::task::JoinHandle<Option<Note>> {
         // TODO: change fvk to Arc<FVK> in Worker and pass to scan_block as Arc
         // need this so the task is 'static and not dependent on key lifetime
         let fvk2 = fvk.clone();
-        tokio::spawn(async move {
-            // Try to decrypt the encrypted note using the ephemeral key and persistent incoming
-            // viewing key -- if it doesn't decrypt, it wasn't meant for us.
-            if let Ok(note) =
-                Note::decrypt(encrypted_note.as_ref(), fvk2.incoming(), &ephemeral_key)
-            {
-                tracing::debug!(?note_commitment, ?note, "found note while scanning");
-                Some(note)
-            } else {
-                None
-            }
-        })
+        tokio::spawn(async move { note_payload.trial_decrypt(&fvk2) })
     };
 
     // Notes we've found in this block that are meant for us

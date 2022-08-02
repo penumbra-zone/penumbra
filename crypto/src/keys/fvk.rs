@@ -10,7 +10,7 @@ use super::{DiversifierKey, IncomingViewingKey, NullifierKey, OutgoingViewingKey
 use crate::{
     ka, note, prf,
     rdsa::{SpendAuth, VerificationKey},
-    Fq, Fr, Nullifier,
+    Fq, Fr, Note, Nullifier,
 };
 
 static IVK_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| Fq::from_le_bytes_mod_order(b"penumbra.derive.ivk"));
@@ -31,6 +31,13 @@ pub struct FullViewingKey {
 pub struct FullViewingKeyHash(pub [u8; 32]);
 
 impl FullViewingKey {
+    pub fn controls(&self, note: &Note) -> bool {
+        note.transmission_key()
+            == self
+                .incoming()
+                .diversified_public(&note.diversified_generator())
+    }
+
     /// Construct a full viewing key from its components.
     pub fn from_components(ak: VerificationKey<SpendAuth>, nk: NullifierKey) -> Self {
         let (ovk, dk) = {
