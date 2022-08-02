@@ -46,7 +46,7 @@ pub struct Staking {
     delegation_changes: DelegationChanges,
     /// List of changes to the tendermint validator set accumulated throughout
     /// this block, to be returned during `EndBlock`.
-    tm_validator_updates: BTreeMap<IdentityKey, u64>,
+    tm_validator_updates: BTreeMap<PublicKey, u64>,
 }
 
 impl Staking {
@@ -94,6 +94,14 @@ impl Staking {
         new_state: validator::State,
     ) -> Result<()> {
         let state_key = state_key::state_by_validator(identity_key).into();
+        let consensus_key = self
+            .state
+            .validator(identity_key)
+            .await?
+            .ok_or_else(|| {
+                anyhow::anyhow!("validator to have state change did not have state in JMT")
+            })?
+            .consensus_key;
 
         // Update metrics
         match cur_state {
@@ -130,7 +138,7 @@ impl Staking {
                     .expect("active validator did not have power recorded");
 
                 self.tm_validator_updates
-                    .insert(identity_key.clone(), power);
+                    .insert(consensus_key.clone(), power);
 
                 tracing::debug!(?power, "queued tendermint update");
                 Ok(())
@@ -161,7 +169,7 @@ impl Staking {
                     .await?
                     .expect("validator that became active did not have power recorded");
                 self.tm_validator_updates
-                    .insert(identity_key.clone(), power);
+                    .insert(consensus_key.clone(), power);
 
                 // Finally, set the validator to be active.
                 self.state.put_domain(state_key, Active).await;
@@ -186,7 +194,7 @@ impl Staking {
                     .await;
 
                 // Inform tendermint that the validator is no longer active.
-                self.tm_validator_updates.insert(identity_key.clone(), 0);
+                self.tm_validator_updates.insert(consensus_key.clone(), 0);
 
                 // Finally, set the validator to be inactive or disabled.
                 self.state.put_domain(state_key, new_state).await;
@@ -247,7 +255,7 @@ impl Staking {
                     .await;
 
                 // Inform tendermint that the validator is no longer active.
-                self.tm_validator_updates.insert(identity_key.clone(), 0);
+                self.tm_validator_updates.insert(consensus_key.clone(), 0);
 
                 // Finally, set the validator to be jailed.
                 self.state.put_domain(state_key, Jailed).await;
@@ -277,7 +285,7 @@ impl Staking {
                 // Tendermint gets confused about deletions for validators it doesn't
                 // know about, so only send an update if the validator was active.
                 if let Active = cur_state {
-                    self.tm_validator_updates.insert(identity_key.clone(), 0);
+                    self.tm_validator_updates.insert(consensus_key.clone(), 0);
                 }
 
                 // Finally, set the validator to be tombstoned.
@@ -549,18 +557,10 @@ impl Staking {
 
     /// Returns the list of validator updates formatted for inclusion in the Tendermint `EndBlockResponse`
     pub async fn tm_validator_updates(&self) -> Result<Vec<ValidatorUpdate>> {
-        // Tracking validator updates by identity key rather than by consensus
-        // key is convenient internally, but to create the Tendermint update, we
-        // now need to look up the consensus key for each validator.
         let mut updates = Vec::new();
-        for (identity_key, power) in &self.tm_validator_updates {
-            let validator = self
-                .state
-                .validator(identity_key)
-                .await?
-                .ok_or_else(|| anyhow::anyhow!("queued update for missing validator"))?;
+        for (consensus_key, power) in &self.tm_validator_updates {
             updates.push(ValidatorUpdate {
-                pub_key: validator.consensus_key,
+                pub_key: *consensus_key,
                 power: (*power).try_into().unwrap(),
             });
         }
@@ -664,7 +664,7 @@ impl Staking {
 
         // Update the validator to return its power to Tendermint for this block.
         self.tm_validator_updates
-            .insert(validator.identity_key.clone(), power);
+            .insert(validator.consensus_key.clone(), power);
 
         self.state
             .add_validator_inner(
@@ -754,14 +754,33 @@ impl Staking {
             }
         }
 
-        // Update the consensus key lookup, in case the validator rotated their
-        // consensus key.
-        self.state
-            .put_domain(
-                state_key::validator_id_by_consensus_key(&validator.consensus_key).into(),
-                validator.identity_key.clone(),
-            )
-            .await;
+        // If the consensus key changed, then the old consensus key's voting power drops
+        // to 0, and the new one isn't recorded (since a newly added validator can
+        // never be active, and Tendermint can't handle receiving a new validator with 0
+        // power).
+        let old_consensus_key = self
+            .state
+            .validator(id)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("updated validator not found in JMT"))?
+            .consensus_key;
+        if old_consensus_key != validator.consensus_key {
+            // Old consensus key gets 0 power so it drops from the active set.
+            self.tm_validator_updates.insert(old_consensus_key, 0);
+
+            // Current consensus key shouldn't be reported to tendermint during the block
+            // it was changed.
+            self.tm_validator_updates.remove(&validator.consensus_key);
+
+            // Update the consensus key lookup, since the validator rotated their
+            // consensus key.
+            self.state
+                .put_domain(
+                    state_key::validator_id_by_consensus_key(&validator.consensus_key).into(),
+                    validator.identity_key.clone(),
+                )
+                .await;
+        }
 
         self.state
             .put_domain(state_key::validator_by_id(id).into(), validator)
