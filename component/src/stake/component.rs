@@ -779,6 +779,18 @@ impl Staking {
             // Old consensus key gets 0 power so it drops from the active set.
             self.tm_validator_updates.insert(old_consensus_key, 0);
 
+            // If the validator is currently active, tendermint should receive its
+            // voting power associated with its new consensus key so it remains
+            // in the active set.
+            if cur_state == Active && validator.enabled {
+                let power =
+                    self.state.validator_power(id).await?.ok_or_else(|| {
+                        anyhow::anyhow!("updated validator power not found in JMT")
+                    })?;
+                self.tm_validator_updates
+                    .insert(validator.consensus_key, power);
+            }
+
             // Tendermint gets confused if it receives a 0 voting power for
             // a consensus key it hasn't seen before.
             //
