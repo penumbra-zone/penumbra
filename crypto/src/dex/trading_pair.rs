@@ -28,7 +28,7 @@ impl TradingPair {
     }
 
     /// Convert the trading pair to bytes.
-    pub fn to_bytes(&self) -> [u8; 64] {
+    pub(crate) fn to_bytes(&self) -> [u8; 64] {
         let mut result: [u8; 64] = [0; 64];
         result[0..32].copy_from_slice(&self.asset_1.0.to_bytes());
         result[32..64].copy_from_slice(&self.asset_2.0.to_bytes());
