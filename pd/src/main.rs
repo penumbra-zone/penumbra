@@ -61,6 +61,12 @@ enum RootCommand {
         /// Bind the metrics endpoint to this port.
         #[clap(short, long, default_value = "9000")]
         metrics_port: u16,
+        /// The port of the tendermint instance.
+        #[clap(short, long, default_value = "26656")]
+        tendermint_port: u16,
+        /// The address of the tendermint instance.
+        #[clap(short, long, default_value = "127.0.0.1")]
+        tendermint_host: String,
     },
 
     /// Generate, join, or reset a testnet.
