@@ -1,3 +1,5 @@
+use penumbra_crypto::dex::BatchSwapOutputData;
+use penumbra_crypto::dex::TradingPair;
 use penumbra_crypto::transaction::Fee;
 use penumbra_crypto::Nullifier;
 use penumbra_crypto::{proofs::transparent::OutputProof, NotePayload};
@@ -6,14 +8,8 @@ use penumbra_tct as tct;
 
 #[derive(Debug, Clone)]
 pub struct SwapClaim {
-    proof: OutputProof,
-    nullifier: Nullifier,
-    fee: Fee,
-    output_1: NotePayload,
-    output_2: NotePayload,
-    anchor: tct::Root,
-    price_1: u64,
-    price_2: u64,
+    zkproof: OutputProof,
+    body: Body,
 }
 
 impl Protobuf<pb::SwapClaim> for SwapClaim {}
@@ -21,14 +17,8 @@ impl Protobuf<pb::SwapClaim> for SwapClaim {}
 impl From<SwapClaim> for pb::SwapClaim {
     fn from(sc: SwapClaim) -> Self {
         pb::SwapClaim {
-            zkproof: sc.proof.into(),
-            nullifier: Some(sc.nullifier.into()),
-            fee: Some(sc.fee.into()),
-            output_1: Some(sc.output_1.into()),
-            output_2: Some(sc.output_2.into()),
-            anchor: Some(sc.anchor.into()),
-            price_1: sc.price_1,
-            price_2: sc.price_2,
+            zkproof: sc.zkproof.into(),
+            body: Some(sc.body.into()),
         }
     }
 }
@@ -37,9 +27,48 @@ impl TryFrom<pb::SwapClaim> for SwapClaim {
     type Error = anyhow::Error;
     fn try_from(sc: pb::SwapClaim) -> Result<Self, Self::Error> {
         Ok(Self {
-            proof: sc.zkproof[..]
+            zkproof: sc.zkproof[..]
                 .try_into()
                 .map_err(|_| anyhow::anyhow!("SwapClaim proof malformed"))?,
+            body: sc
+                .body
+                .ok_or_else(|| anyhow::anyhow!("missing nullifier"))?
+                .try_into()?,
+        })
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Body {
+    pub nullifier: Nullifier,
+    pub fee: Fee,
+    pub output_1: NotePayload,
+    pub output_2: NotePayload,
+    pub output_data: BatchSwapOutputData,
+    pub anchor: tct::Root,
+    pub trading_pair: TradingPair,
+}
+
+impl Protobuf<pb::SwapClaimBody> for Body {}
+
+impl From<Body> for pb::SwapClaimBody {
+    fn from(s: Body) -> Self {
+        pb::SwapClaimBody {
+            trading_pair: Some(s.trading_pair.into()),
+            nullifier: Some(s.nullifier.into()),
+            fee: Some(s.fee.into()),
+            output_1: Some(s.output_1.into()),
+            output_2: Some(s.output_2.into()),
+            anchor: Some(s.anchor.into()),
+            output_data: Some(s.output_data.into()),
+        }
+    }
+}
+
+impl TryFrom<pb::SwapClaimBody> for Body {
+    type Error = anyhow::Error;
+    fn try_from(sc: pb::SwapClaimBody) -> Result<Self, Self::Error> {
+        Ok(Self {
             nullifier: sc
                 .nullifier
                 .ok_or_else(|| anyhow::anyhow!("missing nullifier"))?
@@ -57,8 +86,14 @@ impl TryFrom<pb::SwapClaim> for SwapClaim {
                 .anchor
                 .ok_or_else(|| anyhow::anyhow!("missing anchor"))?
                 .try_into()?,
-            price_1: sc.price_1,
-            price_2: sc.price_2,
+            output_data: sc
+                .output_data
+                .ok_or_else(|| anyhow::anyhow!("missing anchor"))?
+                .try_into()?,
+            trading_pair: sc
+                .trading_pair
+                .ok_or_else(|| anyhow::anyhow!("missing anchor"))?
+                .try_into()?,
         })
     }
 }

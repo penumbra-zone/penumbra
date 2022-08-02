@@ -1,17 +1,34 @@
+use anyhow::{anyhow, Result};
 use decaf377::FieldExt;
 use penumbra_proto::{dex as pb, Protobuf};
 
 use crate::asset;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct TradingPair {
-    pub asset_1: asset::Id,
-    pub asset_2: asset::Id,
+    pub(crate) asset_1: asset::Id,
+    pub(crate) asset_2: asset::Id,
 }
 
 impl TradingPair {
+    pub fn new(asset_1: asset::Id, asset_2: asset::Id) -> Result<Self> {
+        if asset_2 < asset_1 {
+            return Err(anyhow!("asset_2 must be greater than asset_1"));
+        }
+
+        Ok(Self { asset_1, asset_2 })
+    }
+
+    pub fn asset_1(&self) -> asset::Id {
+        self.asset_1
+    }
+
+    pub fn asset_2(&self) -> asset::Id {
+        self.asset_2
+    }
+
     /// Convert the trading pair to bytes.
-    pub fn to_bytes(&self) -> [u8; 64] {
+    pub(crate) fn to_bytes(&self) -> [u8; 64] {
         let mut result: [u8; 64] = [0; 64];
         result[0..32].copy_from_slice(&self.asset_1.0.to_bytes());
         result[32..64].copy_from_slice(&self.asset_2.0.to_bytes());

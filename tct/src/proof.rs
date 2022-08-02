@@ -58,25 +58,6 @@ impl Proof {
         self.0.verify(root.0)
     }
 
-    /// Truncate this proof to prove only that the witnessed commitment is present
-    /// within its block.
-    pub fn within_block(&self) -> crate::builder::block::Proof {
-        let commitment = self.commitment();
-        let block_position = self.position().commitment();
-        let auth_path = &self.auth_path()[16..24];
-
-        crate::builder::block::Proof::new(
-            commitment,
-            block_position,
-            auth_path
-                .iter()
-                .map(|x| **x)
-                .collect::<Vec<_>>()
-                .try_into()
-                .expect("able to convert slice"),
-        )
-    }
-
     /// Get the commitment whose inclusion is witnessed by the proof.
     pub fn commitment(&self) -> Commitment {
         self.0.leaf
