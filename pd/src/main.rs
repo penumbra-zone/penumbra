@@ -172,7 +172,14 @@ async fn main() -> anyhow::Result<()> {
             tendermint_port,
             tendermint_host,
         } => {
-            tracing::info!(?host, ?abci_port, ?grpc_port, ?tendermint_host, ?tendermint_port, "starting pd");
+            tracing::info!(
+                ?host,
+                ?abci_port,
+                ?grpc_port,
+                ?tendermint_host,
+                ?tendermint_port,
+                "starting pd"
+            );
 
             let mut rocks_path = home.clone();
             rocks_path.push("rocksdb");

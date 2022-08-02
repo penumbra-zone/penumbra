@@ -2,7 +2,6 @@ use std::io::Result;
 
 fn main() -> Result<()> {
     let mut config = prost_build::Config::new();
-    println!("{:?}", config);
 
     // Specify which parts of the protos should have their `bytes` fields
     // converted to Rust `Bytes` (= zero-copy view into a shared buffer) rather
