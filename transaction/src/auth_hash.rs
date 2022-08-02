@@ -244,7 +244,7 @@ impl Undelegate {
 impl ProposalSubmit {
     pub fn auth_hash(&self) -> Hash {
         let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:proposal_submit")
+            .personal(b"PAH:prop_submit")
             .to_state();
         state.update(&self.encode_to_vec());
         state.finalize()
@@ -260,7 +260,7 @@ impl ProposalWithdraw {
 impl ProposalWithdrawBody {
     pub fn auth_hash(&self) -> Hash {
         let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:proposal_withdraw")
+            .personal(b"PAH:prop_withdrw")
             .to_state();
         state.update(&self.encode_to_vec());
         state.finalize()
@@ -276,7 +276,7 @@ impl ValidatorVote {
 impl ValidatorVoteBody {
     pub fn auth_hash(&self) -> Hash {
         let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:validator_vote")
+            .personal(b"PAH:val_vote")
             .to_state();
 
         // All of these fields are fixed-length, so we can just throw them in the hash one after the
