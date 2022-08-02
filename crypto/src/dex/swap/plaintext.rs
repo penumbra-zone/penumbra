@@ -159,18 +159,6 @@ impl Protobuf<pb::SwapPlaintext> for SwapPlaintext {}
 impl TryFrom<pb::SwapPlaintext> for SwapPlaintext {
     type Error = anyhow::Error;
     fn try_from(plaintext: pb::SwapPlaintext) -> anyhow::Result<Self> {
-        // let b_d_bytes: [u8; 32] = plaintext
-        //     .b_d
-        //     .try_into()
-        //     .map_err(|_| anyhow::anyhow!("invalid diversified basepoint in SwapPlaintext"))?;
-        // let b_d_encoding = decaf377::Encoding(b_d_bytes);
-        // let encoded_addr = format!(
-        //     "{}",
-        //     plaintext
-        //         .claim_address
-        //         .ok_or_else(|| anyhow::anyhow!("missing SwapPlaintext claim_address"))
-        // );
-
         Ok(Self {
             delta_1: plaintext.delta_1,
             delta_2: plaintext.delta_2,
@@ -183,14 +171,6 @@ impl TryFrom<pb::SwapPlaintext> for SwapPlaintext {
                 .fee
                 .ok_or_else(|| anyhow::anyhow!("missing SwapPlaintext fee"))?
                 .amount),
-            // b_d: b_d_encoding.decompress().map_err(|_| {
-            //     anyhow::anyhow!("error decompressing diversified basepoint in SwapPlaintext")
-            // })?,
-            // pk_d: ka::Public(
-            //     plaintext.pk_d.try_into().map_err(|_| {
-            //         anyhow::anyhow!("invalid diversified publickey in SwapPlaintext")
-            //     })?,
-            // ),
             trading_pair: plaintext
                 .trading_pair
                 .ok_or_else(|| anyhow::anyhow!("missing trading pair in SwapPlaintext"))?
