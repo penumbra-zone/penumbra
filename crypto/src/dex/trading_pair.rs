@@ -6,8 +6,8 @@ use crate::asset;
 
 #[derive(Debug, Clone, Copy)]
 pub struct TradingPair {
-    asset_1: asset::Id,
-    asset_2: asset::Id,
+    pub(crate) asset_1: asset::Id,
+    pub(crate) asset_2: asset::Id,
 }
 
 impl TradingPair {
