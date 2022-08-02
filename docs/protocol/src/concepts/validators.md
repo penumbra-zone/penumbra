@@ -39,7 +39,7 @@ First, the validator could be slashed.  This can happen in any block, not just a
 Second, the validator could be displaced from the validator set by another validator with more stake in its delegation pool. The validator is then in the unbonding state.  It does not participate in consensus, and the stake in its delegation pool does not earn rewards (the validator's rates are held constant).  However, the stake in its delegation pool is still bonded.  Undelegations from an unbonding validator are quarantined with an unbonding period that starts when the undelegation was performed, *not* when the validator began unbonding.  Unbonding validators have three possible state transitions:
 
 1. they can become active again, if new delegations boost its weight back into the top N;
-2. they can be slashed, if evidence of misbehavior arises during the unbending period;
+2. they can be slashed, if evidence of misbehavior arises during the unbonding period;
 3. they can become inactive, if neither (1) nor (2) occurs before the unbonding period passes.
 
 If (2) occurs, the same state transitions as in regular slashing occur: all pending undelegations are cancelled, etc.
