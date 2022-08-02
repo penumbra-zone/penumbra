@@ -47,6 +47,10 @@ pub struct Staking {
     /// List of changes to the tendermint validator set accumulated throughout
     /// this block, to be returned during `EndBlock`.
     tm_validator_updates: BTreeMap<PublicKey, u64>,
+    /// List of updated consensus keys tracked during this block. Used to filter
+    /// the `tm_validator_updates` to avoid reporting 0 voting power for new
+    /// consensus keys.
+    new_consensus_keys: Vec<PublicKey>,
 }
 
 impl Staking {
@@ -56,6 +60,7 @@ impl Staking {
             state,
             delegation_changes: Default::default(),
             tm_validator_updates: Default::default(),
+            new_consensus_keys: Default::default(),
         }
     }
 
@@ -559,6 +564,12 @@ impl Staking {
     pub async fn tm_validator_updates(&self) -> Result<Vec<ValidatorUpdate>> {
         let mut updates = Vec::new();
         for (consensus_key, power) in &self.tm_validator_updates {
+            if self.new_consensus_keys.contains(consensus_key) && *power == 0 {
+                // tendermint can't handle receiving 0 voting power for a new
+                // consensus key
+                continue;
+            }
+
             updates.push(ValidatorUpdate {
                 pub_key: *consensus_key,
                 power: (*power).try_into().unwrap(),
@@ -768,9 +779,13 @@ impl Staking {
             // Old consensus key gets 0 power so it drops from the active set.
             self.tm_validator_updates.insert(old_consensus_key, 0);
 
-            // Current consensus key shouldn't be reported to tendermint during the block
-            // it was changed.
-            self.tm_validator_updates.remove(&validator.consensus_key);
+            // Tendermint gets confused if it receives a 0 voting power for
+            // a consensus key it hasn't seen before.
+            //
+            // Since `end_epoch` occurs _after_ this, we need to track the fact
+            // that this validator experienced a consensus key change, to avoid
+            // reporting 0 voting power for a never-before-seen consensus key.
+            self.new_consensus_keys.push(validator.consensus_key);
 
             // Update the consensus key lookup, since the validator rotated their
             // consensus key.
