@@ -568,7 +568,7 @@ impl Storage {
             .await?;
         }
 
-        // Insert all new note records into storage
+        // Insert new note records into storage
         for note_record in &filtered_block.new_notes {
             // https://github.com/launchbadge/sqlx/issues/1430
             // https://github.com/launchbadge/sqlx/issues/1151
