@@ -105,7 +105,7 @@ both require two sign checks.  Decoding from bits costs c. $73C + 326C \cong
 encoding costs c. $750C$ regardless of whether the output is encoded as bits or
 as a field element.
 
-For `decaf377`, we choose the LSB tests for sign checks.
+For `decaf377`, we choose the LSB test for sign checks.
 
 ## Alternative approaches to handling cofactors
 
