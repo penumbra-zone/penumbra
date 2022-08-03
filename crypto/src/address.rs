@@ -68,25 +68,26 @@ impl Address {
     pub fn clue_key(&self) -> &fmd::ClueKey {
         &self.ck_d
     }
+
+    pub fn to_vec(&self) -> Vec<u8> {
+        let mut bytes = std::io::Cursor::new(Vec::new());
+        bytes
+            .write_all(&self.diversifier().0)
+            .expect("can write diversifier into vec");
+        bytes
+            .write_all(&self.transmission_key().0)
+            .expect("can write transmission key into vec");
+        bytes
+            .write_all(&self.clue_key().0)
+            .expect("can write clue key into vec");
+
+        f4jumble(bytes.get_ref()).expect("can jumble")
+    }
 }
 
 impl From<Address> for pb::Address {
     fn from(a: Address) -> Self {
-        let mut bytes = std::io::Cursor::new(Vec::new());
-        bytes
-            .write_all(&a.diversifier().0)
-            .expect("can write diversifier into vec");
-        bytes
-            .write_all(&a.transmission_key().0)
-            .expect("can write transmission key into vec");
-        bytes
-            .write_all(&a.clue_key().0)
-            .expect("can write clue key into vec");
-
-        let jumbled_bytes = f4jumble(bytes.get_ref()).expect("can jumble");
-        pb::Address {
-            inner: jumbled_bytes,
-        }
+        pb::Address { inner: a.to_vec() }
     }
 }
 

@@ -3250,6 +3250,8 @@ dependencies = [
  "derivative",
  "fpe",
  "hex",
+ "ibc",
+ "ibc-proto",
  "num-bigint",
  "once_cell",
  "penumbra-crypto",

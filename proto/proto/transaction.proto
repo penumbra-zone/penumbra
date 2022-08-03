@@ -54,16 +54,6 @@ message Action {
     stake.ValidatorDefinition validator_definition = 16;
     ibc.IBCAction ibc_action = 17;
 
-    /*
-    ICS20Withdrawal withdrawal = 18;
-    */
-
-    /*
-    PositionOpen position_open = 30;
-    PositionClose position_close = 31;
-    PositionWithdraw position_withdraw = 32;
-    PositionRewardClaim position_reward_claim = 34;
-    */
     // Governance:
     ProposalSubmit proposal_submit = 18;
     ProposalWithdraw proposal_withdraw = 19;
@@ -74,6 +64,9 @@ message Action {
     dex.PositionClose position_close = 31;
     dex.PositionWithdraw position_withdraw = 32;
     dex.PositionRewardClaim position_reward_claim = 34;
+
+    ibc.ICS20Withdrawal ics20_withdrawal = 200;
+
   }
 }
 
