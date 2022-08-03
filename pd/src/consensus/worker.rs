@@ -132,7 +132,7 @@ impl Worker {
         // to be provided inside the initial app genesis state (`GenesisAppState`). Returning those
         // validators in InitChain::Response tells Tendermint that they are the initial validator
         // set. See https://docs.tendermint.com/master/spec/abci/abci.html#initchain
-        let validators = self.app.tm_validator_updates().await?;
+        let validators = self.app.tendermint_validator_set().await?;
 
         // Note: App::commit resets internal components, so we don't need to do that ourselves.
         let (app_hash, _) = self.app.commit(self.storage.clone()).await?;
@@ -200,7 +200,7 @@ impl Worker {
         // validators and voting power. This must be the last step performed,
         // after all voting power calculations and validator state transitions have
         // been completed.
-        let validator_updates = self.app.tm_validator_updates().await?;
+        let validator_updates = self.app.tendermint_validator_set().await?;
 
         tracing::debug!(
             ?validator_updates,

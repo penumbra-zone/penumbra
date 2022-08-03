@@ -37,6 +37,19 @@ use crate::stake::{
 // https://github.com/tendermint/tendermint/blob/master/types/validator_set.go#L25
 const MAX_VOTING_POWER: i64 = 1152921504606846975;
 
+/// Translates from consensus keys to the truncated sha256 hashes in last_commit_info
+/// This should really be a refined type upstream, but we can't currently upstream
+/// to tendermint-rs, for process reasons, and shouldn't do our own tendermint data
+/// modeling, so this is an interim hack.
+fn validator_address(ck: &PublicKey) -> [u8; 20] {
+    let ck_bytes = ck.to_bytes();
+    let addr: [u8; 20] = Sha256::digest(&ck_bytes).as_slice()[0..20]
+        .try_into()
+        .unwrap();
+
+    addr
+}
+
 // Staking component
 pub struct Staking {
     state: State,
@@ -44,9 +57,7 @@ pub struct Staking {
     /// persisted at the end of the block for processing at the end of the next
     /// epoch.
     delegation_changes: DelegationChanges,
-    /// List of changes to the tendermint validator set accumulated throughout
-    /// this block, to be returned during `EndBlock`.
-    tm_validator_updates: BTreeMap<IdentityKey, u64>,
+    tm_known_consensus_keys: BTreeSet<PublicKey>,
 }
 
 impl Staking {
@@ -55,7 +66,7 @@ impl Staking {
         Self {
             state,
             delegation_changes: Default::default(),
-            tm_validator_updates: Default::default(),
+            tm_known_consensus_keys: Default::default(),
         }
     }
 
@@ -118,23 +129,7 @@ impl Staking {
         match (cur_state, new_state) {
             (Inactive, Inactive) => Ok(()), // no-op
             (Disabled, Disabled) => Ok(()), // no-op
-            (Active, Active) => {
-                // This is a no-op from the point of view of the staking
-                // component, but we should send a validator update to the
-                // tendermint validator set, to propagate changes to the voting
-                // power.
-                let power = self
-                    .state
-                    .validator_power(identity_key)
-                    .await?
-                    .expect("active validator did not have power recorded");
-
-                self.tm_validator_updates
-                    .insert(identity_key.clone(), power);
-
-                tracing::debug!(?power, "queued tendermint update");
-                Ok(())
-            }
+            (Active, Active) => Ok(()),     // no-op
             (Inactive, Active) => {
                 // The validator's delegation pool becomes bonded.
                 self.state
@@ -160,8 +155,6 @@ impl Staking {
                     .validator_power(identity_key)
                     .await?
                     .expect("validator that became active did not have power recorded");
-                self.tm_validator_updates
-                    .insert(identity_key.clone(), power);
 
                 // Finally, set the validator to be active.
                 self.state.put_domain(state_key, Active).await;
@@ -184,9 +177,6 @@ impl Staking {
                         },
                     )
                     .await;
-
-                // Inform tendermint that the validator is no longer active.
-                self.tm_validator_updates.insert(identity_key.clone(), 0);
 
                 // Finally, set the validator to be inactive or disabled.
                 self.state.put_domain(state_key, new_state).await;
@@ -246,15 +236,12 @@ impl Staking {
                     )
                     .await;
 
-                // Inform tendermint that the validator is no longer active.
-                self.tm_validator_updates.insert(identity_key.clone(), 0);
-
                 // Finally, set the validator to be jailed.
                 self.state.put_domain(state_key, Jailed).await;
 
                 Ok(())
             }
-            (cur_state @ (Active | Inactive | Disabled | Jailed), Tombstoned) => {
+            (Active | Inactive | Disabled | Jailed, Tombstoned) => {
                 let penalty = self
                     .state
                     .get_chain_params()
@@ -273,12 +260,6 @@ impl Staking {
                 self.state
                     .set_validator_bonding_state(identity_key, Unbonded)
                     .await;
-
-                // Tendermint gets confused about deletions for validators it doesn't
-                // know about, so only send an update if the validator was active.
-                if let Active = cur_state {
-                    self.tm_validator_updates.insert(identity_key.clone(), 0);
-                }
 
                 // Finally, set the validator to be tombstoned.
                 self.state.put_domain(state_key, Tombstoned).await;
@@ -547,24 +528,56 @@ impl Staking {
         Ok(())
     }
 
-    /// Returns the list of validator updates formatted for inclusion in the Tendermint `EndBlockResponse`
-    pub async fn tm_validator_updates(&self) -> Result<Vec<ValidatorUpdate>> {
-        // Tracking validator updates by identity key rather than by consensus
-        // key is convenient internally, but to create the Tendermint update, we
-        // now need to look up the consensus key for each validator.
-        let mut updates = Vec::new();
-        for (identity_key, power) in &self.tm_validator_updates {
-            let validator = self
+    /// Materializes the entire current validator set as a Tendermint update.
+    ///
+    /// This re-defines all validators every time, to simplify the code compared to
+    /// trying to track delta updates.
+    pub async fn tendermint_validator_set(&self) -> Result<Vec<ValidatorUpdate>> {
+        let mut voting_power_by_consensus_key = BTreeMap::<PublicKey, u64>::new();
+
+        // First, build a mapping of consensus key to voting power for all known validators.
+        for v in self.state.validator_list().await?.iter() {
+            let info = self
                 .state
-                .validator(identity_key)
+                .validator_info(v)
                 .await?
-                .ok_or_else(|| anyhow::anyhow!("queued update for missing validator"))?;
-            updates.push(ValidatorUpdate {
-                pub_key: validator.consensus_key,
-                power: (*power).try_into().unwrap(),
-            });
+                .ok_or_else(|| anyhow::anyhow!("validator missing info"))?;
+
+            // Compute the effective power of this validator; this is the
+            // validator power, clamped to zero for all non-Active validators.
+            let effective_power = if info.status.state == validator::State::Active {
+                let info = self
+                    .state
+                    .validator_info(v)
+                    .await?
+                    .expect("validator is in state");
+
+                info.status.voting_power
+            } else {
+                0
+            };
+
+            voting_power_by_consensus_key.insert(info.validator.consensus_key, effective_power);
         }
-        Ok(updates)
+
+        // Next, filter that mapping to exclude any zero-power validators, UNLESS they
+        // were already known to Tendermint.
+        voting_power_by_consensus_key.retain(|consensus_key, voting_power| {
+            *voting_power > 0 || self.tm_known_consensus_keys.contains(consensus_key)
+        });
+
+        // Finally, tell tendermint to delete any known consensus keys not otherwise updated
+        for ck in &self.tm_known_consensus_keys {
+            voting_power_by_consensus_key.entry(*ck).or_insert(0);
+        }
+
+        Ok(voting_power_by_consensus_key
+            .into_iter()
+            .map(|(ck, power)| ValidatorUpdate {
+                pub_key: ck,
+                power: power.try_into().unwrap(),
+            })
+            .collect())
     }
 
     #[instrument(skip(self, last_commit_info))]
@@ -661,10 +674,6 @@ impl Staking {
             .copied()
             .unwrap_or(0);
         let power = cur_rate_data.voting_power(total_delegation_tokens, genesis_base_rate);
-
-        // Update the validator to return its power to Tendermint for this block.
-        self.tm_validator_updates
-            .insert(validator.identity_key.clone(), power);
 
         self.state
             .add_validator_inner(
@@ -842,6 +851,41 @@ impl Component for Staking {
 
     #[instrument(name = "staking", skip(self, _ctx, begin_block))]
     async fn begin_block(&mut self, _ctx: Context, begin_block: &abci::request::BeginBlock) {
+        // We should do this first, before potentially touching any other validator state.
+        // Build the list of consensus keys that are currently known to Tendermint.
+        let mut known_addresses = begin_block
+            .last_commit_info
+            .votes
+            .iter()
+            .map(|v| v.validator.address)
+            .collect::<BTreeSet<[u8; 20]>>();
+
+        self.tm_known_consensus_keys = Default::default();
+        // Since we don't have a lookup from "addresses" to identity keys,
+        // iterate over our app's validators, and match them up with the vote data.
+        for v in self.state.validator_list().await.unwrap().iter() {
+            let info = self
+                .state
+                .validator_info(v)
+                .await
+                .unwrap()
+                .expect("validator should have info present");
+
+            let addr = validator_address(&info.validator.consensus_key);
+            if known_addresses.contains(&addr) {
+                self.tm_known_consensus_keys
+                    .insert(info.validator.consensus_key.clone());
+                // Remove the address from the set, so we can check that we got all of them.
+                known_addresses.remove(&addr);
+            }
+        }
+        assert!(
+            known_addresses.is_empty(),
+            "tendermint sent us a validator address we didn't know about"
+        );
+        // Now self.tm_known_consensus_keys is initialized with all of the consensus
+        // keys known to Tendermint as active validators.
+
         // For each validator identified as byzantine by tendermint, update its
         // state to be slashed
         for evidence in begin_block.byzantine_validators.iter() {
