@@ -5,7 +5,7 @@ use penumbra_proto::{transaction as pb, Message, Protobuf};
 
 use crate::{
     action::{
-        output, spend, Delegate, PositionClose, PositionOpen, PositionRewardClaim,
+        output, spend, Delegate, ICS20Withdrawal, PositionClose, PositionOpen, PositionRewardClaim,
         PositionWithdraw, ProposalSubmit, ProposalWithdraw, ProposalWithdrawBody, Undelegate,
         ValidatorVote, ValidatorVoteBody, Vote,
     },
@@ -174,6 +174,7 @@ impl Action {
             Action::PositionClose(p) => p.auth_hash(),
             Action::PositionWithdraw(p) => p.auth_hash(),
             Action::PositionRewardClaim(p) => p.auth_hash(),
+            Action::ICS20Withdrawal(w) => w.auth_hash(),
         }
     }
 }
@@ -351,6 +352,29 @@ impl PositionRewardClaim {
         state.update(&self.position_id.0);
         state.update(&self.rewards_commitment.to_bytes());
 
+        state.finalize()
+    }
+}
+
+impl ICS20Withdrawal {
+    pub fn auth_hash(&self) -> Hash {
+        let mut state = blake2b_simd::Params::default()
+            .personal(b"PAH:ics20wthdrwl")
+            .to_state();
+
+        let destination_chain_id_hash =
+            blake2b_simd::Params::default().hash(self.destination_chain_id.as_bytes());
+        let destination_chain_address_hash =
+            blake2b_simd::Params::default().hash(self.destination_chain_address.as_bytes());
+
+        state.update(destination_chain_id_hash.as_bytes());
+        state.update(&self.value.amount.to_le_bytes());
+        state.update(&self.value.asset_id.to_bytes());
+        state.update(destination_chain_address_hash.as_bytes());
+        //This is safe because the return address has a constant length of 80 bytes.
+        state.update(&self.return_address.to_vec());
+        state.update(&self.timeout_height.to_le_bytes());
+        state.update(&self.timeout_time.to_le_bytes());
         state.finalize()
     }
 }

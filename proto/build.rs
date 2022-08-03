@@ -184,6 +184,7 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.transaction.DelegatorVotePlan", SERIALIZE),
     (".penumbra.transaction.DelegatorVoteBody", SERIALIZE),
     (".penumbra.ibc.IBCAction", SERIALIZE),
+    (".penumbra.ibc.ICS20Withdrawal", SERIALIZE),
     (".penumbra.dex.MockFlowCiphertext", SERIALIZE),
     (".penumbra.dex.MockFlowCiphertext", SERDE_TRANSPARENT),
     (".penumbra.dex.TradingPair", SERIALIZE),

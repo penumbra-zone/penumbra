@@ -59,6 +59,7 @@ impl AppHandlerCheck for ICS20Transfer {
         Ok(())
     }
     async fn timeout_packet_check(&self, _ctx: Context, _msg: &MsgTimeout) -> Result<()> {
+        // TODO: confirm that this is handled to our satisfaction chain-side
         Ok(())
     }
     async fn acknowledge_packet_check(

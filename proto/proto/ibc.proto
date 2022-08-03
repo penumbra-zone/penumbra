@@ -8,6 +8,7 @@ import "ibc/core/channel/v1/tx.proto";
 
 import "ibc/core/client/v1/tx.proto";
 import "ibc/core/client/v1/client.proto";
+import "crypto.proto";
 
 import "google/protobuf/any.proto";
 
@@ -50,14 +51,14 @@ message ICS20Withdrawal {
 
   // a "sender" penumbra address to use to return funds from this withdrawal.
   // this should be an ephemeral address
-  crypto.Address sender = 5;
+  crypto.Address return_address = 5;
 
   // the height (on Penumbra) at which this transfer expires (and funds are sent
   // back to the sender address?). NOTE: if funds are sent back to the sender,
   // we MUST verify a nonexistence proof before accepting the timeout, to
   // prevent relayer censorship attacks. The core IBC implementation does this
   // in its handling of validation of timeouts.
-  .ibc.core.client.v1.Height timeout_height = 6;
+  uint64 timeout_height = 6;
 
   // the timestamp at which this transfer expires.
   uint64 timeout_time = 7;

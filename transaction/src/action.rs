@@ -4,6 +4,7 @@ use penumbra_crypto::value;
 use penumbra_proto::{ibc as pb_ibc, stake as pbs, transaction as pb, Protobuf};
 
 mod delegate;
+mod ibc;
 pub mod output;
 mod position;
 mod propose;
@@ -13,6 +14,7 @@ mod swap_claim;
 mod undelegate;
 mod vote;
 
+pub use self::ibc::ICS20Withdrawal;
 pub use delegate::Delegate;
 pub use output::Output;
 pub use position::{PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw};
@@ -25,6 +27,7 @@ pub use vote::{DelegatorVote, ValidatorVote, ValidatorVoteBody, Vote};
 
 /// An action performed by a Penumbra transaction.
 #[derive(Clone, Debug)]
+#[allow(clippy::large_enum_variant)]
 pub enum Action {
     Output(output::Output),
     Spend(spend::Spend),
@@ -44,6 +47,8 @@ pub enum Action {
     PositionClose(PositionClose),
     PositionWithdraw(PositionWithdraw),
     PositionRewardClaim(PositionRewardClaim),
+
+    ICS20Withdrawal(ICS20Withdrawal),
 }
 
 impl Action {
@@ -71,6 +76,7 @@ impl Action {
             Action::PositionClose(p) => p.value_commitment(),
             Action::PositionWithdraw(p) => p.value_commitment(),
             Action::PositionRewardClaim(p) => p.value_commitment(),
+            Action::ICS20Withdrawal(withdrawal) => withdrawal.value_commitment(),
         }
     }
 }
@@ -110,7 +116,6 @@ impl From<Action> for pb::Action {
             Action::ValidatorVote(inner) => pb::Action {
                 action: Some(pb::action::Action::ValidatorVote(inner.into())),
             },
-
             Action::PositionOpen(inner) => pb::Action {
                 action: Some(pb::action::Action::PositionOpen(inner.into())),
             },
@@ -123,18 +128,19 @@ impl From<Action> for pb::Action {
             Action::PositionRewardClaim(inner) => pb::Action {
                 action: Some(pb::action::Action::PositionRewardClaim(inner.into())),
             },
+            Action::ICS20Withdrawal(withdrawal) => pb::Action {
+                action: Some(pb::action::Action::Ics20Withdrawal(withdrawal.into())),
+            },
         }
     }
 }
 
 impl TryFrom<pb::Action> for Action {
     type Error = anyhow::Error;
-
     fn try_from(proto: pb::Action) -> anyhow::Result<Self, Self::Error> {
         if proto.action.is_none() {
             return Err(anyhow::anyhow!("missing action content"));
         }
-
         match proto.action.unwrap() {
             pb::action::Action::Output(inner) => Ok(Action::Output(inner.try_into()?)),
             pb::action::Action::Spend(inner) => Ok(Action::Spend(inner.try_into()?)),
@@ -166,6 +172,9 @@ impl TryFrom<pb::Action> for Action {
             }
             pb::action::Action::PositionRewardClaim(inner) => {
                 Ok(Action::PositionRewardClaim(inner.try_into()?))
+            }
+            pb::action::Action::Ics20Withdrawal(inner) => {
+                Ok(Action::ICS20Withdrawal(inner.try_into()?))
             }
         }
     }
