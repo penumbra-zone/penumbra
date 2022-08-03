@@ -79,7 +79,9 @@ impl AppHandlerExecute for ICS20Transfer {
     async fn chan_close_confirm_execute(&mut self, _ctx: Context, _msg: &MsgChannelCloseConfirm) {}
     async fn chan_close_init_execute(&mut self, _ctx: Context, _msg: &MsgChannelCloseInit) {}
     async fn recv_packet_execute(&mut self, _ctx: Context, _msg: &MsgRecvPacket) {}
-    async fn timeout_packet_execute(&mut self, _ctx: Context, _msg: &MsgTimeout) {}
+    async fn timeout_packet_execute(&mut self, _ctx: Context, _msg: &MsgTimeout) {
+        // refund tokens to sender
+    }
     async fn acknowledge_packet_execute(&mut self, _ctx: Context, _msg: &MsgAcknowledgement) {}
 }
 

@@ -38,6 +38,31 @@ message IBCAction {
   }
 }
 
+message ICS20Withdrawal {
+  // the chain ID of the destination chain for this ICS20 transfer
+  string destination_chain_id = 1;
+
+  // a transparent value consisting of an amount and an asset ID.
+  crypto.Value value = 2;
+
+  // the address on the destination chain to send the transfer to 
+  string destination_chain_address = 3;
+
+  // a "sender" penumbra address to use to return funds from this withdrawal.
+  // this should be an ephemeral address
+  crypto.Address sender = 5;
+
+  // the height (on Penumbra) at which this transfer expires (and funds are sent
+  // back to the sender address?). NOTE: if funds are sent back to the sender,
+  // we MUST verify a nonexistence proof before accepting the timeout, to
+  // prevent relayer censorship attacks. The core IBC implementation does this
+  // in its handling of validation of timeouts.
+  .ibc.core.client.v1.Height timeout_height = 6;
+
+  // the timestamp at which this transfer expires.
+  uint64 timeout_time = 7;
+}
+
 message ClientData {
   string clientID = 1;
   google.protobuf.Any clientState = 2; // NOTE: left as Any to allow us to add more client types later
