@@ -22,10 +22,22 @@ The Elligator map is applied as follows to a field element $r_0$:
 
 8. If ($s < 0$ and $m$ is true) or ($s > 0$ and $m$ is false) then $s = -s$.
 
-The Jacobi quartic representation of the resulting point is given by $(s, t)$. The resulting point can be converted from its Jacobi quartic representation to affine Edwards coordinates via: 
+The Jacobi quartic representation of the resulting point is given by $(s, t)$. The resulting point can be converted from its Jacobi quartic representation to extended projective coordinates via:
 
-$x \gets 2s / (1 + as^2)$
+$E \gets 2s$
 
-$y \gets (1 - as^2) / t$ 
+$F \gets 1 + as^2$
+
+$G \gets 1 - as^2$
+
+$H \gets t$
+
+$X \gets EH$
+
+$Y \gets FG$
+
+$Z \gets FH$
+
+$T \gets EG$
 
 For single-width hash-to-group (`map_to_group_cdh`), we apply the above map once. For double-width (`map_to_group_uniform`) we apply the map to two field elements and add the resulting curve points.
