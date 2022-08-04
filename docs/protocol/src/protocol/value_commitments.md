@@ -54,7 +54,7 @@ We use the value generator associated to an asset ID to construct homomorphic
 commitments to (typed) value.  To do this, we first define the *blinding
 generator* $\tilde V$ as
 ```
-V_tilde = decaf377_map_to_group_cdh(from_le_bytes(blake2b(b"decaf377-rdsa-binding")))
+V_tilde = decaf377_encode_to_curve(from_le_bytes(blake2b(b"decaf377-rdsa-binding")))
 ```
 
 The commitment to value $(v, \mathsf a)$, i.e., amount $v$ of asset $\mathsf a$,

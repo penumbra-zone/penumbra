@@ -40,4 +40,4 @@ $Z \gets FH$
 
 $T \gets EG$
 
-For single-width hash-to-group (`map_to_group_cdh`), we apply the above map once. For double-width (`map_to_group_uniform`) we apply the map to two field elements and add the resulting curve points.
+For single-width hash-to-group (`encode_to_curve`), we apply the above map once. For double-width (`hash_to_curve`) we apply the map to two field elements and add the resulting curve points.

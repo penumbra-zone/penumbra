@@ -28,7 +28,7 @@ impl Diversifier {
             .personal(b"Penumbra_Divrsfy")
             .hash(&self.0);
 
-        decaf377::Element::map_to_group_cdh(&Fq::from_le_bytes_mod_order(hash.as_bytes()))
+        decaf377::Element::encode_to_curve(&Fq::from_le_bytes_mod_order(hash.as_bytes()))
     }
 }
 

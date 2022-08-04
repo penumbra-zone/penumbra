@@ -42,8 +42,8 @@ proptest! {
         let alice_sk = ka::Secret::new_from_field(alice_sk);
         let bob_sk = ka::Secret::new_from_field(bob_sk);
 
-        let gen1 = decaf377::Element::map_to_group_cdh(&div1);
-        let gen2 = decaf377::Element::map_to_group_cdh(&div2);
+        let gen1 = decaf377::Element::encode_to_curve(&div1);
+        let gen2 = decaf377::Element::encode_to_curve(&div2);
 
         let alice_pk1 = alice_sk.diversified_public(&gen1);
         let alice_pk2 = alice_sk.diversified_public(&gen2);
