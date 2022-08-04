@@ -18,20 +18,6 @@ square.  Note that **unlike** the similar function in the
 `ristretto255`/`decaf448` [internet-draft], this function does not make any
 claims about the sign of its output.
 
-Define `isqrt(x)` as a function that internally invokes `sqrt_ratio_zeta` and computes the inverse square root of a field element $x$:
-
-- (True, $0$) if $x$ is zero;
-- (True, $1/\sqrt{x}$) if $x$ is nonzero, and $x$ is square;
-- (False, $1/\sqrt{ \zeta x}$) if $x$ is nonzero, and $x$ is nonsquare.
-
-In pseudocode:
-
-```
-def isqrt(x):
-    (wns, y) = sqrt_ratio_zeta(1, zeta*x)
-    return (not(wns), y)
-```
-
 To compute `sqrt_ratio_zeta` we use a table-based method adapted from [Sarkar 2020] and [zcash-pasta], which is described in the remainder of this section.
 
 ## Constants
