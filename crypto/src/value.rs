@@ -56,7 +56,7 @@ impl Commitment {
 
 pub static VALUE_BLINDING_GENERATOR: Lazy<decaf377::Element> = Lazy::new(|| {
     let s = Fq::from_le_bytes_mod_order(blake2b_simd::blake2b(b"decaf377-rdsa-binding").as_bytes());
-    decaf377::Element::map_to_group_cdh(&s)
+    decaf377::Element::encode_to_curve(&s)
 });
 
 #[derive(thiserror::Error, Debug)]
