@@ -14,7 +14,8 @@ import "tendermint/types/block.proto";
 option go_package = "github.com/cosmos/cosmos-sdk/client/grpc/tmservice";
 
 // Service defines the gRPC querier service for tendermint queries.
-service Service {
+// TODO(erwan): rename this back to Service, investigate the ramifications of not doing so
+service TendermintQuery {
   // GetNodeInfo queries the current node info.
   rpc GetNodeInfo(GetNodeInfoRequest) returns (GetNodeInfoResponse) {
     option (google.api.http).get = "/cosmos/base/tendermint/v1beta1/node_info";
