@@ -937,6 +937,11 @@ impl Component for Staking {
             }
 
             // Check whether the delegation is allowed
+            let validator = self
+                .state
+                .validator(&d.validator_identity)
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("missing definition for validator"))?;
             let validator_state = self
                 .state
                 .validator_state(&d.validator_identity)
@@ -944,6 +949,12 @@ impl Component for Staking {
                 .ok_or_else(|| anyhow::anyhow!("missing state for validator"))?;
 
             use validator::State::*;
+            if !validator.enabled {
+                return Err(anyhow::anyhow!(
+                    "delegations are only allowed to enabled validators, but {} is disabled",
+                    d.validator_identity,
+                ));
+            }
             if !matches!(validator_state, Inactive | Active) {
                 return Err(anyhow::anyhow!(
                     "delegations are only allowed to active or inactive validators, but {} is in state {:?}",
