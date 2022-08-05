@@ -31,6 +31,10 @@ message NoteCommitment {
     bytes inner = 1;
 }
 
+message ValueCommitment {
+    bytes inner = 1;
+}
+
 message AssetId {
     bytes inner = 1;
 }
