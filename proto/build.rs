@@ -115,6 +115,8 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.crypto.Note", SERIALIZE),
     (".penumbra.crypto.NoteCommitment", SERIALIZE),
     (".penumbra.crypto.NoteCommitment", SERDE_TRANSPARENT),
+    (".penumbra.crypto.ValueCommitment", SERIALIZE),
+    (".penumbra.crypto.ValueCommitment", SERDE_TRANSPARENT),
     (".penumbra.crypto.NotePayload", SERIALIZE),
     (".penumbra.crypto.AssetId", SERIALIZE),
     (".penumbra.crypto.AssetId", SERDE_TRANSPARENT),
@@ -195,6 +197,7 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.crypto.Address.inner", AS_BECH32_ADDRESS),
     (".penumbra.crypto.AssetId.inner", AS_BECH32_ASSET_ID),
     (".penumbra.crypto.NoteCommitment.inner", AS_HEX),
+    (".penumbra.crypto.ValueCommitment.inner", AS_HEX),
     (".penumbra.crypto.MerkleRoot.inner", AS_HEX),
     (".penumbra.crypto.SpendKey.inner", AS_BECH32_SPEND_KEY),
     (
@@ -244,7 +247,6 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         AS_HEX_FOR_BYTES,
     ),
     (".penumbra.transaction.Output.zkproof", AS_BASE64_FOR_BYTES),
-    (".penumbra.transaction.OutputBody.cv", AS_HEX_FOR_BYTES),
     (
         ".penumbra.transaction.OutputBody.encrypted_memo",
         AS_BASE64_FOR_BYTES,
@@ -254,7 +256,6 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         AS_BASE64_FOR_BYTES,
     ),
     (".penumbra.transaction.Spend.zkproof", AS_BASE64_FOR_BYTES),
-    (".penumbra.transaction.SpendBody.cv", AS_HEX_FOR_BYTES),
     (".penumbra.transaction.SpendBody.rk", AS_HEX_FOR_BYTES),
     (
         ".penumbra.transaction.SpendBody.nullifier",

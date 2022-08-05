@@ -85,7 +85,7 @@ message Spend {
 // data which is bound to the authorizing data by some other means.
 message SpendBody {
   // A commitment to the value of the input note.
-  bytes cv = 1;
+  crypto.ValueCommitment value_commitment = 1;
   // The nullifier of the input note.
   bytes nullifier = 3;
   // The randomized validating key for the spend authorization signature.
@@ -107,7 +107,7 @@ message OutputBody {
   // The minimal data required to scan and process the new output note.
   crypto.NotePayload note_payload = 1;
   // A commitment to the value of the output note. 32 bytes.
-  bytes cv = 2;
+  crypto.ValueCommitment value_commitment = 2;
   // An encrypted memo. 528 bytes.
   bytes encrypted_memo = 3;
   // The key material used for note encryption, wrapped in encryption to the
@@ -175,19 +175,19 @@ message DelegatorVoteBody {
   // A commitment to the value voted for "yes".
   //
   // A rational voter will place all their voting weight on one vote.
-  bytes yes_cv = 5;
+  crypto.ValueCommitment yes_value_commitment = 5;
   // A commitment to the value voted for "no".
   //
   // A rational voter will place all their voting weight on one vote.
-  bytes no_cv = 6;
+  crypto.ValueCommitment no_value_commitment = 6;
   // A commitment to the value voted for "abstain".
   //
   // A rational voter will place all their voting weight on one vote.
-  bytes abstain_cv = 7;
+  crypto.ValueCommitment abstain_value_commitment = 7;
   // A commitment to the value voted for "no with veto".
   //
   // A rational voter will place all their voting weight on one vote.
-  bytes no_with_veto_cv = 8;
+  crypto.ValueCommitment no_with_veto_value_commitment = 8;
 }
 
 // The data required to authorize a transaction plan.

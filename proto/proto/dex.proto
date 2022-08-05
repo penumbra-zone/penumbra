@@ -236,7 +236,7 @@ message PositionWithdraw {
   // A transparent (zero blinding factor) commitment to the position's final reserves and fees.
   //
   // The chain will check this commitment by recomputing it with the on-chain state.
-  bytes cv = 2;
+  crypto.ValueCommitment value_commitment = 2;
 }
 
 // A transaction action that claims retroactive rewards for a historical
@@ -249,5 +249,5 @@ message PositionRewardClaim {
   // A transparent (zero blinding factor) commitment to the position's accumulated rewards.
   //
   // The chain will check this commitment by recomputing it with the on-chain state.
-  bytes cv = 2;
+  crypto.ValueCommitment value_commitment = 2;
 }
