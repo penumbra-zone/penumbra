@@ -20,12 +20,15 @@ use penumbra_proto::client::{
     oblivious::oblivious_query_server::ObliviousQueryServer,
     specific::specific_query_server::SpecificQueryServer,
 };
+use penumbra_proto::tendermint_proxy::tendermint_query_server::TendermintQueryServer;
 use penumbra_storage::Storage;
 use rand::Rng;
 use rand_core::OsRng;
 use tokio::runtime;
 use tonic::transport::Server;
 use tracing_subscriber::{prelude::*, EnvFilter};
+
+mod proxy;
 
 #[derive(Debug, Parser)]
 #[clap(
@@ -193,6 +196,9 @@ async fn main() -> anyhow::Result<()> {
             let info = pd::Info::new(storage.clone(), height_rx);
             let snapshot = pd::Snapshot {};
 
+            let tendermint_proxy =
+                TendermintQueryServer::new(proxy::tendermint::TendermintProxyStub::default());
+
             let abci_server = tokio::task::Builder::new().name("abci_server").spawn(
                 tower_abci::Server::builder()
                     .consensus(consensus)
@@ -214,6 +220,7 @@ async fn main() -> anyhow::Result<()> {
                     })
                     .add_service(ObliviousQueryServer::new(info.clone()))
                     .add_service(SpecificQueryServer::new(info.clone()))
+                    .add_service(tendermint_proxy)
                     .serve(
                         format!("{}:{}", host, grpc_port)
                             .parse()
