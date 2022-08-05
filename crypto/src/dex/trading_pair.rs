@@ -27,6 +27,24 @@ impl TradingPair {
         self.asset_2
     }
 
+    /// Constructs the canonical representation of the provided pair.
+    pub fn canonical_order_for(pair: (asset::Id, asset::Id)) -> Result<Self> {
+        if pair.0 == pair.1 {
+            return Err(anyhow!("TradingPair must consist of different assets"));
+        }
+        if pair.0 < pair.1 {
+            return Ok(Self {
+                asset_1: pair.0,
+                asset_2: pair.1,
+            });
+        }
+
+        Ok(Self {
+            asset_1: pair.1,
+            asset_2: pair.0,
+        })
+    }
+
     /// Convert the trading pair to bytes.
     pub(crate) fn to_bytes(&self) -> [u8; 64] {
         let mut result: [u8; 64] = [0; 64];
