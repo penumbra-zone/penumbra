@@ -223,7 +223,7 @@ message PositionOpen {
 // must know the state transition they prove knowledge of, and they cannot know
 // the final reserves with certainty until after the position has been deactivated.
 message PositionClose {
-  PositionId id = 1;
+  PositionId position_id = 1;
 }
 
 // A transaction action that withdraws funds from a closed position.
@@ -232,11 +232,11 @@ message PositionClose {
 // closed position NFT and contribute a withdrawn position NFT, as well as all
 // of the funds that were in the position at the time of closing.
 message PositionWithdraw {
-  PositionId id = 1;
+  PositionId position_id = 1;
   // A transparent (zero blinding factor) commitment to the position's final reserves and fees.
   //
   // The chain will check this commitment by recomputing it with the on-chain state.
-  crypto.ValueCommitment value_commitment = 2;
+  crypto.ValueCommitment reserves_commitment = 2;
 }
 
 // A transaction action that claims retroactive rewards for a historical
@@ -245,9 +245,9 @@ message PositionWithdraw {
 // This action's contribution to the transaction's value balance is to consume a
 // withdrawn position NFT and contribute its reward balance.
 message PositionRewardClaim {
-  PositionId id = 1;
+  PositionId position_id = 1;
   // A transparent (zero blinding factor) commitment to the position's accumulated rewards.
   //
   // The chain will check this commitment by recomputing it with the on-chain state.
-  crypto.ValueCommitment value_commitment = 2;
+  crypto.ValueCommitment rewards_commitment = 2;
 }
