@@ -85,8 +85,8 @@ impl App {
     }
 
     // TODO: should this just be returned by `commit`? both are called during every `EndBlock`
-    pub async fn tendermint_validator_set(&self) -> Result<Vec<ValidatorUpdate>> {
-        self.staking.tendermint_validator_set().await
+    pub fn tendermint_validator_updates(&self) -> Vec<ValidatorUpdate> {
+        self.staking.tendermint_validator_updates()
     }
 }
 

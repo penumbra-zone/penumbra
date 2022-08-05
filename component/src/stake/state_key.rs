@@ -60,3 +60,7 @@ pub fn consensus_key_by_tendermint_address(address: &[u8; 20]) -> String {
 pub fn delegation_changes_by_height(height: u64) -> String {
     format!("staking/delegation_changes/{}", height)
 }
+
+pub fn current_consensus_keys() -> &'static str {
+    "staking/current_consensus_keys"
+}
