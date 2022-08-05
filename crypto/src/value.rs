@@ -8,7 +8,7 @@ use std::{
 
 use ark_ff::PrimeField;
 use once_cell::sync::Lazy;
-use penumbra_proto::crypto as pb;
+use penumbra_proto::{crypto as pb, Protobuf};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use thiserror;
@@ -168,6 +168,23 @@ impl TryFrom<&[u8]> for Commitment {
             .map_err(|_| Error::InvalidValueCommitment)?;
 
         Ok(Commitment(inner))
+    }
+}
+
+impl Protobuf<pb::ValueCommitment> for Commitment {}
+
+impl From<Commitment> for pb::ValueCommitment {
+    fn from(cv: Commitment) -> Self {
+        Self {
+            inner: cv.to_bytes().to_vec(),
+        }
+    }
+}
+
+impl TryFrom<pb::ValueCommitment> for Commitment {
+    type Error = anyhow::Error;
+    fn try_from(value: pb::ValueCommitment) -> Result<Self, Self::Error> {
+        value.inner.as_slice().try_into().map_err(Into::into)
     }
 }
 

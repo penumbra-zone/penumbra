@@ -53,10 +53,9 @@ impl Protobuf<pb::OutputBody> for Body {}
 
 impl From<Body> for pb::OutputBody {
     fn from(output: Body) -> Self {
-        let cv_bytes: [u8; 32] = output.value_commitment.into();
         pb::OutputBody {
             note_payload: Some(output.note_payload.into()),
-            cv: cv_bytes.to_vec().into(),
+            value_commitment: Some(output.value_commitment.into()),
             encrypted_memo: Bytes::copy_from_slice(&output.encrypted_memo.0),
             ovk_wrapped_key: Bytes::copy_from_slice(&output.ovk_wrapped_key),
         }
@@ -69,7 +68,7 @@ impl TryFrom<pb::OutputBody> for Body {
     fn try_from(proto: pb::OutputBody) -> anyhow::Result<Self, Self::Error> {
         let note_payload = proto
             .note_payload
-            .ok_or_else(|| anyhow::anyhow!("missing output body"))?
+            .ok_or_else(|| anyhow::anyhow!("missing note payload"))?
             .try_into()
             .map_err(|e: Error| e.context("output body malformed"))?;
 
@@ -83,13 +82,16 @@ impl TryFrom<pb::OutputBody> for Body {
             .try_into()
             .map_err(|_| anyhow::anyhow!("output malformed"))?;
 
+        let value_commitment = proto
+            .value_commitment
+            .ok_or_else(|| anyhow::anyhow!("missing value commitment"))?
+            .try_into()?;
+
         Ok(Body {
             note_payload,
             encrypted_memo,
             ovk_wrapped_key,
-            value_commitment: (proto.cv[..])
-                .try_into()
-                .map_err(|_| anyhow::anyhow!("output body malformed"))?,
+            value_commitment,
         })
     }
 }
