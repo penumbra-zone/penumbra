@@ -68,6 +68,30 @@ impl TryFrom<BindingSignature> for Signature<Binding> {
     }
 }
 
+// Consensus key
+//
+// The tendermint-rs PublicKey type already has a tendermint-proto type;
+// this redefines its proto, because the encodings are consensus-critical
+// and we don't vendor all of the tendermint protos.
+
+impl Protobuf<crate::crypto::ConsensusKey> for tendermint::PublicKey {}
+
+impl From<tendermint::PublicKey> for crate::crypto::ConsensusKey {
+    fn from(v: tendermint::PublicKey) -> Self {
+        Self {
+            inner: v.to_bytes(),
+        }
+    }
+}
+
+impl TryFrom<crate::crypto::ConsensusKey> for tendermint::PublicKey {
+    type Error = anyhow::Error;
+    fn try_from(value: crate::crypto::ConsensusKey) -> Result<Self, Self::Error> {
+        Self::from_raw_ed25519(value.inner.as_slice())
+            .ok_or_else(|| anyhow::anyhow!("invalid ed25519 key"))
+    }
+}
+
 // IBC-rs impls
 
 extern crate ibc as ibc_rs;

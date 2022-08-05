@@ -62,6 +62,10 @@ message IdentityKey {
   bytes ik = 1;
 }
 
+message ConsensusKey {
+    bytes inner = 1;
+}
+
 message Note {
     Value value = 1;
     bytes note_blinding = 2;
