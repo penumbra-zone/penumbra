@@ -13,7 +13,7 @@ use anyhow::Context;
 use clap::{Parser, Subcommand};
 use metrics_exporter_prometheus::PrometheusBuilder;
 use pd::testnet::{canonicalize_path, generate_tm_config, write_configs, ValidatorKeys};
-use penumbra_chain::{genesis::Allocation, params::ChainParams};
+use penumbra_chain::{genesis::Allocation, params::ChainParameters};
 use penumbra_component::stake::{validator::Validator, FundingStream, FundingStreams};
 use penumbra_crypto::{keys::SpendKey, DelegationToken};
 use penumbra_proto::client::{
@@ -499,7 +499,7 @@ async fn main() -> anyhow::Result<()> {
 
             let app_state = genesis::AppState {
                 allocations: allocations.clone(),
-                chain_params: ChainParams {
+                chain_params: ChainParameters {
                     chain_id: chain_id.clone(),
                     epoch_duration,
                     unbonding_epochs,

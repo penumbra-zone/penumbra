@@ -65,7 +65,7 @@ async fn main() -> Result<()> {
                     .await?;
 
             let params = client
-                .chain_params(tonic::Request::new(ChainParamsRequest {
+                .chain_parameters(tonic::Request::new(ChainParamsRequest {
                     chain_id: String::new(),
                 }))
                 .await?

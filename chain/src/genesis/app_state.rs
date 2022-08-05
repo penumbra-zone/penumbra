@@ -2,14 +2,14 @@ use penumbra_proto::{chain as pb, stake as pb_stake, Protobuf};
 use serde::{Deserialize, Serialize};
 
 use super::Allocation;
-use crate::params::ChainParams;
+use crate::params::ChainParameters;
 
 /// The application state at genesis.
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 #[serde(try_from = "pb::GenesisAppState", into = "pb::GenesisAppState")]
 pub struct AppState {
     /// Global configuration for the chain, such as chain ID and epoch duration.
-    pub chain_params: ChainParams,
+    pub chain_params: ChainParameters,
     /// The initial validator set.
     pub validators: Vec<pb_stake::Validator>,
     /// The initial token allocations.

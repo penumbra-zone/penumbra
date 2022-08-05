@@ -2,7 +2,7 @@ use std::{collections::BTreeMap, pin::Pin};
 
 use anyhow::Result;
 use futures::{Stream, StreamExt, TryStreamExt};
-use penumbra_chain::params::ChainParams;
+use penumbra_chain::params::ChainParameters;
 use penumbra_crypto::keys::FullViewingKeyHash;
 use penumbra_crypto::{asset, keys::AddressIndex, note, Asset, Nullifier};
 use penumbra_proto::view as pb;
@@ -37,7 +37,7 @@ pub trait ViewClient {
     ) -> Result<Pin<Box<dyn Stream<Item = Result<StatusStreamResponse>> + Send + 'static>>>;
 
     /// Get a copy of the chain parameters.
-    async fn chain_params(&mut self) -> Result<ChainParams>;
+    async fn chain_params(&mut self) -> Result<ChainParameters>;
 
     /// Queries for notes.
     async fn notes(&mut self, request: pb::NotesRequest) -> Result<Vec<NoteRecord>>;
@@ -249,14 +249,16 @@ where
             .boxed())
     }
 
-    async fn chain_params(&mut self) -> Result<ChainParams> {
+    async fn chain_params(&mut self) -> Result<ChainParameters> {
         // We have to manually invoke the method on the type, because it has the
         // same name as the one we're implementing.
-        let params =
-            ViewProtocolClient::chain_params(self, tonic::Request::new(pb::ChainParamsRequest {}))
-                .await?
-                .into_inner()
-                .try_into()?;
+        let params = ViewProtocolClient::chain_parameters(
+            self,
+            tonic::Request::new(pb::ChainParamsRequest {}),
+        )
+        .await?
+        .into_inner()
+        .try_into()?;
 
         Ok(params)
     }
