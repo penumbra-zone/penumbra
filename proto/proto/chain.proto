@@ -6,7 +6,7 @@ import "crypto.proto";
 import "stake.proto";
 
 // Global chain configuration data, such as chain ID, epoch duration, etc.
-message ChainParams {
+message ChainParameters {
   // The identifier of the chain.
   string chain_id = 1;
   // The duration of each epoch, in number of blocks.
@@ -89,7 +89,7 @@ message GenesisAppState {
         crypto.Address address = 3;
     }
 
-    chain.ChainParams chain_params = 1;
+    chain.ChainParameters chain_params = 1;
     repeated stake.Validator validators = 2;
     repeated Allocation allocations = 3;
 }

@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use penumbra_storage::StateExt;
 use tendermint::Time;
 
-use crate::{params::ChainParams, state_key, Epoch};
+use crate::{params::ChainParameters, state_key, Epoch};
 
 /// This trait provides read and write access to common parts of the Penumbra
 /// state store.
@@ -15,14 +15,14 @@ use crate::{params::ChainParams, state_key, Epoch};
 #[async_trait]
 pub trait View: StateExt {
     /// Gets the chain parameters from the JMT.
-    async fn get_chain_params(&self) -> Result<ChainParams> {
+    async fn get_chain_params(&self) -> Result<ChainParameters> {
         self.get_domain(state_key::chain_params().into())
             .await?
-            .ok_or_else(|| anyhow!("Missing ChainParams"))
+            .ok_or_else(|| anyhow!("Missing ChainParameters"))
     }
 
     /// Writes the provided chain parameters to the JMT.
-    async fn put_chain_params(&self, params: ChainParams) {
+    async fn put_chain_params(&self, params: ChainParameters) {
         self.put_domain(state_key::chain_params().into(), params)
             .await
     }

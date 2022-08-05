@@ -4,7 +4,7 @@ extern crate tracing;
 use clap::Parser;
 use tracing_subscriber::EnvFilter;
 
-use penumbra_chain::{params::ChainParams, sync::CompactBlock};
+use penumbra_chain::{params::ChainParameters, sync::CompactBlock};
 use penumbra_proto::client::oblivious::{
     oblivious_query_client::ObliviousQueryClient, ChainParamsRequest, CompactBlockRangeRequest,
 };
@@ -60,8 +60,8 @@ impl Opt {
                     ObliviousQueryClient::connect(format!("http://{}:{}", self.node, self.pd_port))
                         .await?;
 
-                let params: ChainParams = client
-                    .chain_params(tonic::Request::new(ChainParamsRequest {
+                let params: ChainParameters = client
+                    .chain_parameters(tonic::Request::new(ChainParamsRequest {
                         chain_id: String::new(),
                     }))
                     .await?

@@ -41,7 +41,7 @@ service ViewProtocol {
     rpc Assets(AssetRequest) returns (stream crypto.Asset);
 
     // Query for the current chain parameters.
-    rpc ChainParams(ChainParamsRequest) returns (chain.ChainParams);
+    rpc ChainParameters(ChainParamsRequest) returns (chain.ChainParameters);
 
     // Query for a note by its note commitment, optionally waiting until the note is detected.
     rpc NoteByCommitment(NoteByCommitmentRequest) returns (NoteRecord);

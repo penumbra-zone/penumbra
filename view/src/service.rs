@@ -476,10 +476,10 @@ impl ViewProtocol for ViewService {
         Ok(tonic::Response::new(witness_data.into()))
     }
 
-    async fn chain_params(
+    async fn chain_parameters(
         &self,
         _request: tonic::Request<pb::ChainParamsRequest>,
-    ) -> Result<tonic::Response<pbp::ChainParams>, tonic::Status> {
+    ) -> Result<tonic::Response<pbp::ChainParameters>, tonic::Status> {
         self.check_worker().await?;
 
         let params = self.storage.chain_params().await.map_err(|e| {

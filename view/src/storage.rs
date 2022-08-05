@@ -2,7 +2,7 @@ use anyhow::{anyhow, Context};
 use camino::Utf8Path;
 use futures::Future;
 use parking_lot::Mutex;
-use penumbra_chain::params::ChainParams;
+use penumbra_chain::params::ChainParameters;
 use penumbra_crypto::{
     asset::{self, Id},
     Asset, FieldExt, FullViewingKey, Nullifier,
@@ -56,7 +56,7 @@ impl Storage {
             let mut client =
                 ObliviousQueryClient::connect(format!("http://{}:{}", node, pd_port)).await?;
             let params = client
-                .chain_params(tonic::Request::new(ChainParamsRequest {
+                .chain_parameters(tonic::Request::new(ChainParamsRequest {
                     chain_id: String::new(),
                 }))
                 .await?
@@ -104,7 +104,7 @@ impl Storage {
     pub async fn initialize(
         storage_path: impl AsRef<Utf8Path>,
         fvk: FullViewingKey,
-        params: ChainParams,
+        params: ChainParameters,
     ) -> anyhow::Result<Self> {
         let storage_path = storage_path.as_ref();
         tracing::debug!(%storage_path, ?fvk, ?params);
@@ -126,7 +126,7 @@ impl Storage {
         // Initialize the database state with: empty NCT, chain params, FVK
         let mut tx = pool.begin().await?;
 
-        let chain_params_bytes = &ChainParams::encode_to_vec(&params)[..];
+        let chain_params_bytes = &ChainParameters::encode_to_vec(&params)[..];
         let fvk_bytes = &FullViewingKey::encode_to_vec(&fvk)[..];
 
         sqlx::query!(
@@ -274,7 +274,7 @@ impl Storage {
         Ok(u64::try_from(result.height).ok())
     }
 
-    pub async fn chain_params(&self) -> anyhow::Result<ChainParams> {
+    pub async fn chain_params(&self) -> anyhow::Result<ChainParameters> {
         let result = query!(
             r#"
             SELECT bytes
@@ -285,7 +285,7 @@ impl Storage {
         .fetch_one(&self.pool)
         .await?;
 
-        ChainParams::decode(result.bytes.as_slice())
+        ChainParameters::decode(result.bytes.as_slice())
     }
 
     pub async fn full_viewing_key(&self) -> anyhow::Result<FullViewingKey> {
