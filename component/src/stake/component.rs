@@ -766,10 +766,7 @@ impl Staking {
         // Update the consensus key lookup, in case the validator rotated their
         // consensus key.
         self.state
-            .put_domain(
-                state_key::validator_id_by_consensus_key(&validator.consensus_key).into(),
-                validator.identity_key.clone(),
-            )
+            .register_consensus_key(&validator.identity_key, &validator.consensus_key)
             .await;
 
         self.state
@@ -780,15 +777,11 @@ impl Staking {
     }
 
     async fn process_evidence(&mut self, evidence: &Evidence) -> Result<()> {
-        let ck = tendermint::PublicKey::from_raw_ed25519(&evidence.validator.address)
-            .ok_or_else(|| anyhow::anyhow!("invalid ed25519 consensus pubkey from tendermint"))
-            .unwrap();
-
         let validator = self
             .state
-            .validator_by_consensus_key(&ck)
+            .validator_by_tendermint_address(&evidence.validator.address)
             .await?
-            .ok_or_else(|| anyhow::anyhow!("attempted to slash validator not found in JMT"))?;
+            .ok_or_else(|| anyhow::anyhow!("attempted to slash unknown validator"))?;
 
         self.set_validator_state(&validator.identity_key, validator::State::Tombstoned)
             .await
@@ -853,36 +846,18 @@ impl Component for Staking {
     async fn begin_block(&mut self, _ctx: Context, begin_block: &abci::request::BeginBlock) {
         // We should do this first, before potentially touching any other validator state.
         // Build the list of consensus keys that are currently known to Tendermint.
-        let mut known_addresses = begin_block
-            .last_commit_info
-            .votes
-            .iter()
-            .map(|v| v.validator.address)
-            .collect::<BTreeSet<[u8; 20]>>();
-
-        self.tm_known_consensus_keys = Default::default();
-        // Since we don't have a lookup from "addresses" to identity keys,
-        // iterate over our app's validators, and match them up with the vote data.
-        for v in self.state.validator_list().await.unwrap().iter() {
-            let info = self
+        self.tm_known_consensus_keys = BTreeSet::<PublicKey>::default();
+        for v in &begin_block.last_commit_info.votes {
+            let ck = self
                 .state
-                .validator_info(v)
+                .get_domain(
+                    state_key::consensus_key_by_tendermint_address(&v.validator.address).into(),
+                )
                 .await
                 .unwrap()
-                .expect("validator should have info present");
-
-            let addr = validator_address(&info.validator.consensus_key);
-            if known_addresses.contains(&addr) {
-                self.tm_known_consensus_keys
-                    .insert(info.validator.consensus_key.clone());
-                // Remove the address from the set, so we can check that we got all of them.
-                known_addresses.remove(&addr);
-            }
+                .expect("tendermint sent us a validator address we didn't know about");
+            self.tm_known_consensus_keys.insert(ck);
         }
-        assert!(
-            known_addresses.is_empty(),
-            "tendermint sent us a validator address we didn't know about"
-        );
         // Now self.tm_known_consensus_keys is initialized with all of the consensus
         // keys known to Tendermint as active validators.
 
@@ -1310,22 +1285,46 @@ pub trait View: StateExt {
             .await
     }
 
+    async fn register_consensus_key(&self, identity_key: &IdentityKey, consensus_key: &PublicKey) {
+        let address = validator_address(consensus_key);
+        tracing::debug!(?identity_key, ?consensus_key, hash = ?hex::encode(&address), "registering consensus key");
+        self.put_domain(
+            state_key::consensus_key_by_tendermint_address(&address).into(),
+            consensus_key.clone(),
+        )
+        .await;
+        self.put_domain(
+            state_key::validator_id_by_consensus_key(&consensus_key).into(),
+            identity_key.clone(),
+        )
+        .await;
+    }
+
     // Tendermint validators are referenced to us by their Tendermint consensus key,
     // but we reference them by their Penumbra identity key.
     async fn validator_by_consensus_key(&self, ck: &PublicKey) -> Result<Option<Validator>> {
-        // We maintain an internal mapping of consensus keys to identity keys to make this
-        // lookup more efficient.
-        let identity_key: Option<IdentityKey> = self
+        if let Some(identity_key) = self
             .get_domain(state_key::validator_id_by_consensus_key(ck).into())
-            .await?;
-
-        if identity_key.is_none() {
+            .await?
+        {
+            self.validator(&identity_key).await
+        } else {
             return Ok(None);
         }
+    }
 
-        let identity_key = identity_key.unwrap();
-
-        self.validator(&identity_key).await
+    async fn validator_by_tendermint_address(
+        &self,
+        address: &[u8; 20],
+    ) -> Result<Option<Validator>> {
+        if let Some(consensus_key) = self
+            .get_domain(state_key::consensus_key_by_tendermint_address(address).into())
+            .await?
+        {
+            self.validator_by_consensus_key(&consensus_key).await
+        } else {
+            return Ok(None);
+        }
     }
 
     async fn apply_slashing_penalty(
@@ -1385,11 +1384,8 @@ pub trait View: StateExt {
 
         self.put_domain(state_key::validator_by_id(&id).into(), validator.clone())
             .await;
-        self.put_domain(
-            state_key::validator_id_by_consensus_key(&validator.consensus_key).into(),
-            id,
-        )
-        .await;
+        self.register_consensus_key(&validator.identity_key, &validator.consensus_key)
+            .await;
         self.register_denom(&DelegationToken::from(&id).denom())
             .await?;
 

@@ -50,6 +50,13 @@ pub fn validator_id_by_consensus_key(pk: &PublicKey) -> String {
     format!("staking/validator_id_by_consensus_key/{}", pk.to_hex())
 }
 
+pub fn consensus_key_by_tendermint_address(address: &[u8; 20]) -> String {
+    format!(
+        "staking/consensus_key_by_tendermint_address/{}",
+        hex::encode(&address)
+    )
+}
+
 pub fn delegation_changes_by_height(height: u64) -> String {
     format!("staking/delegation_changes/{}", height)
 }
