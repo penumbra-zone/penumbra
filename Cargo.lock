@@ -3018,6 +3018,7 @@ dependencies = [
  "serde_with",
  "sha2 0.10.2",
  "thiserror",
+ "tracing",
 ]
 
 [[package]]
