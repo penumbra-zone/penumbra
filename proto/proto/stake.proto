@@ -161,3 +161,9 @@ message Uptime {
   uint32 window_len = 2;
   bytes bitvec = 3;
 }
+
+// Tracks our view of Tendermint's view of the validator set, so we can keep it
+// from getting confused.
+message CurrentConsensusKeys {
+  repeated crypto.ConsensusKey consensus_keys = 1;
+}

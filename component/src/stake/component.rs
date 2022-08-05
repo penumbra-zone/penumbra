@@ -33,6 +33,8 @@ use crate::stake::{
     DelegationChanges, Uptime,
 };
 
+use super::CurrentConsensusKeys;
+
 // Max validator power is 1152921504606846975 (i64::MAX / 8)
 // https://github.com/tendermint/tendermint/blob/master/types/validator_set.go#L25
 const MAX_VOTING_POWER: i64 = 1152921504606846975;
@@ -57,7 +59,7 @@ pub struct Staking {
     /// persisted at the end of the block for processing at the end of the next
     /// epoch.
     delegation_changes: DelegationChanges,
-    tm_known_consensus_keys: BTreeSet<PublicKey>,
+    tendermint_validator_updates: Option<Vec<ValidatorUpdate>>,
 }
 
 impl Staking {
@@ -66,7 +68,7 @@ impl Staking {
         Self {
             state,
             delegation_changes: Default::default(),
-            tm_known_consensus_keys: Default::default(),
+            tendermint_validator_updates: None,
         }
     }
 
@@ -528,11 +530,31 @@ impl Staking {
         Ok(())
     }
 
+    /// Returns a list of validator updates to send to Tendermint.
+    ///
+    /// This should only be called after `end_block`.
+    pub fn tendermint_validator_updates(&self) -> Vec<ValidatorUpdate> {
+        self.tendermint_validator_updates
+            .clone()
+            .expect("called tendermint_validator_updates before end_block")
+    }
+
     /// Materializes the entire current validator set as a Tendermint update.
     ///
     /// This re-defines all validators every time, to simplify the code compared to
     /// trying to track delta updates.
-    pub async fn tendermint_validator_set(&self) -> Result<Vec<ValidatorUpdate>> {
+    #[instrument(skip(self))]
+    pub async fn build_tendermint_validator_updates(&mut self) -> Result<()> {
+        let current_consensus_keys: CurrentConsensusKeys = self
+            .state
+            .get_domain(state_key::current_consensus_keys().into())
+            .await?
+            .expect("current consensus keys must be present");
+        let current_consensus_keys = current_consensus_keys
+            .consensus_keys
+            .into_iter()
+            .collect::<BTreeSet<_>>();
+
         let mut voting_power_by_consensus_key = BTreeMap::<PublicKey, u64>::new();
 
         // First, build a mapping of consensus key to voting power for all known validators.
@@ -563,21 +585,41 @@ impl Staking {
         // Next, filter that mapping to exclude any zero-power validators, UNLESS they
         // were already known to Tendermint.
         voting_power_by_consensus_key.retain(|consensus_key, voting_power| {
-            *voting_power > 0 || self.tm_known_consensus_keys.contains(consensus_key)
+            *voting_power > 0 || current_consensus_keys.contains(consensus_key)
         });
 
         // Finally, tell tendermint to delete any known consensus keys not otherwise updated
-        for ck in &self.tm_known_consensus_keys {
+        for ck in current_consensus_keys.iter() {
             voting_power_by_consensus_key.entry(*ck).or_insert(0);
         }
 
-        Ok(voting_power_by_consensus_key
-            .into_iter()
-            .map(|(ck, power)| ValidatorUpdate {
-                pub_key: ck,
-                power: power.try_into().unwrap(),
-            })
-            .collect())
+        // Save the validator updates to send to Tendermint.
+        self.tendermint_validator_updates = Some(
+            voting_power_by_consensus_key
+                .iter()
+                .map(|(ck, power)| ValidatorUpdate {
+                    pub_key: *ck,
+                    power: (*power).try_into().unwrap(),
+                })
+                .collect(),
+        );
+
+        // Record the new consensus keys we will have told tendermint about.
+        let updated_consensus_keys = CurrentConsensusKeys {
+            consensus_keys: voting_power_by_consensus_key
+                .iter()
+                .filter_map(|(ck, power)| if *power != 0 { Some(*ck) } else { None })
+                .collect(),
+        };
+        tracing::debug!(?updated_consensus_keys);
+        self.state
+            .put_domain(
+                state_key::current_consensus_keys().into(),
+                updated_consensus_keys,
+            )
+            .await;
+
+        Ok(())
     }
 
     #[instrument(skip(self, last_commit_info))]
@@ -840,27 +882,20 @@ impl Component for Staking {
         self.state
             .set_delegation_changes(starting_height.try_into().unwrap(), Default::default())
             .await;
+
+        // Build the initial validator set update.
+        // First, "prime" the state with an empty set, so the build_ function can read it.
+        self.state
+            .put_domain(
+                state_key::current_consensus_keys().into(),
+                CurrentConsensusKeys::default(),
+            )
+            .await;
+        self.build_tendermint_validator_updates().await.unwrap();
     }
 
     #[instrument(name = "staking", skip(self, _ctx, begin_block))]
     async fn begin_block(&mut self, _ctx: Context, begin_block: &abci::request::BeginBlock) {
-        // We should do this first, before potentially touching any other validator state.
-        // Build the list of consensus keys that are currently known to Tendermint.
-        self.tm_known_consensus_keys = BTreeSet::<PublicKey>::default();
-        for v in &begin_block.last_commit_info.votes {
-            let ck = self
-                .state
-                .get_domain(
-                    state_key::consensus_key_by_tendermint_address(&v.validator.address).into(),
-                )
-                .await
-                .unwrap()
-                .expect("tendermint sent us a validator address we didn't know about");
-            self.tm_known_consensus_keys.insert(ck);
-        }
-        // Now self.tm_known_consensus_keys is initialized with all of the consensus
-        // keys known to Tendermint as active validators.
-
         // For each validator identified as byzantine by tendermint, update its
         // state to be slashed
         for evidence in begin_block.byzantine_validators.iter() {
@@ -1195,6 +1230,8 @@ impl Component for Staking {
         if cur_epoch.is_epoch_end(cur_height) {
             self.end_epoch(cur_epoch).await.unwrap();
         }
+
+        self.build_tendermint_validator_updates().await.unwrap();
     }
 }
 
