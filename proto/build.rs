@@ -185,10 +185,15 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.dex.MockFlowCiphertext", SERDE_TRANSPARENT),
     (".penumbra.dex.TradingPair", SERIALIZE),
     (".penumbra.dex.TradingFunction", SERIALIZE),
+    (".penumbra.dex.Reserves", SERIALIZE),
     (".penumbra.dex.Position", SERIALIZE),
     (".penumbra.dex.PositionId", SERIALIZE),
     (".penumbra.dex.PositionId", SERDE_TRANSPARENT),
     (".penumbra.dex.PositionState", SERIALIZE),
+    (".penumbra.dex.PositionOpen", SERIALIZE),
+    (".penumbra.dex.PositionClose", SERIALIZE),
+    (".penumbra.dex.PositionWithdraw", SERIALIZE),
+    (".penumbra.dex.PositionRewardClaim", SERIALIZE),
 ];
 
 static FIELD_ATTRIBUTES: &[(&str, &str)] = &[

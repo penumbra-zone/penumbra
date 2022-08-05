@@ -5,6 +5,7 @@ use penumbra_proto::{ibc as pb_ibc, stake as pbs, transaction as pb, Protobuf};
 
 mod delegate;
 pub mod output;
+mod position;
 mod propose;
 pub mod spend;
 mod swap;
