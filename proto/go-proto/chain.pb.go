@@ -21,7 +21,7 @@ const (
 )
 
 // Global chain configuration data, such as chain ID, epoch duration, etc.
-type ChainParams struct {
+type ChainParameters struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -52,8 +52,8 @@ type ChainParams struct {
 	OutboundIcs20TransfersEnabled bool `protobuf:"varint,8,opt,name=outbound_ics20_transfers_enabled,json=outboundIcs20TransfersEnabled,proto3" json:"outbound_ics20_transfers_enabled,omitempty"`
 }
 
-func (x *ChainParams) Reset() {
-	*x = ChainParams{}
+func (x *ChainParameters) Reset() {
+	*x = ChainParameters{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_chain_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -61,13 +61,13 @@ func (x *ChainParams) Reset() {
 	}
 }
 
-func (x *ChainParams) String() string {
+func (x *ChainParameters) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ChainParams) ProtoMessage() {}
+func (*ChainParameters) ProtoMessage() {}
 
-func (x *ChainParams) ProtoReflect() protoreflect.Message {
+func (x *ChainParameters) ProtoReflect() protoreflect.Message {
 	mi := &file_chain_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -79,89 +79,89 @@ func (x *ChainParams) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ChainParams.ProtoReflect.Descriptor instead.
-func (*ChainParams) Descriptor() ([]byte, []int) {
+// Deprecated: Use ChainParameters.ProtoReflect.Descriptor instead.
+func (*ChainParameters) Descriptor() ([]byte, []int) {
 	return file_chain_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *ChainParams) GetChainId() string {
+func (x *ChainParameters) GetChainId() string {
 	if x != nil {
 		return x.ChainId
 	}
 	return ""
 }
 
-func (x *ChainParams) GetEpochDuration() uint64 {
+func (x *ChainParameters) GetEpochDuration() uint64 {
 	if x != nil {
 		return x.EpochDuration
 	}
 	return 0
 }
 
-func (x *ChainParams) GetUnbondingEpochs() uint64 {
+func (x *ChainParameters) GetUnbondingEpochs() uint64 {
 	if x != nil {
 		return x.UnbondingEpochs
 	}
 	return 0
 }
 
-func (x *ChainParams) GetActiveValidatorLimit() uint64 {
+func (x *ChainParameters) GetActiveValidatorLimit() uint64 {
 	if x != nil {
 		return x.ActiveValidatorLimit
 	}
 	return 0
 }
 
-func (x *ChainParams) GetBaseRewardRate() uint64 {
+func (x *ChainParameters) GetBaseRewardRate() uint64 {
 	if x != nil {
 		return x.BaseRewardRate
 	}
 	return 0
 }
 
-func (x *ChainParams) GetSlashingPenaltyMisbehaviorBps() uint64 {
+func (x *ChainParameters) GetSlashingPenaltyMisbehaviorBps() uint64 {
 	if x != nil {
 		return x.SlashingPenaltyMisbehaviorBps
 	}
 	return 0
 }
 
-func (x *ChainParams) GetSlashingPenaltyDowntimeBps() uint64 {
+func (x *ChainParameters) GetSlashingPenaltyDowntimeBps() uint64 {
 	if x != nil {
 		return x.SlashingPenaltyDowntimeBps
 	}
 	return 0
 }
 
-func (x *ChainParams) GetSignedBlocksWindowLen() uint64 {
+func (x *ChainParameters) GetSignedBlocksWindowLen() uint64 {
 	if x != nil {
 		return x.SignedBlocksWindowLen
 	}
 	return 0
 }
 
-func (x *ChainParams) GetMissedBlocksMaximum() uint64 {
+func (x *ChainParameters) GetMissedBlocksMaximum() uint64 {
 	if x != nil {
 		return x.MissedBlocksMaximum
 	}
 	return 0
 }
 
-func (x *ChainParams) GetIbcEnabled() bool {
+func (x *ChainParameters) GetIbcEnabled() bool {
 	if x != nil {
 		return x.IbcEnabled
 	}
 	return false
 }
 
-func (x *ChainParams) GetInboundIcs20TransfersEnabled() bool {
+func (x *ChainParameters) GetInboundIcs20TransfersEnabled() bool {
 	if x != nil {
 		return x.InboundIcs20TransfersEnabled
 	}
 	return false
 }
 
-func (x *ChainParams) GetOutboundIcs20TransfersEnabled() bool {
+func (x *ChainParameters) GetOutboundIcs20TransfersEnabled() bool {
 	if x != nil {
 		return x.OutboundIcs20TransfersEnabled
 	}
@@ -492,7 +492,7 @@ type GenesisAppState struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ChainParams *ChainParams                  `protobuf:"bytes,1,opt,name=chain_params,json=chainParams,proto3" json:"chain_params,omitempty"`
+	ChainParameters *ChainParameters                  `protobuf:"bytes,1,opt,name=chain_params,json=ChainParameters,proto3" json:"chain_params,omitempty"`
 	Validators  []*Validator                  `protobuf:"bytes,2,rep,name=validators,proto3" json:"validators,omitempty"`
 	Allocations []*GenesisAppState_Allocation `protobuf:"bytes,3,rep,name=allocations,proto3" json:"allocations,omitempty"`
 }
@@ -529,9 +529,9 @@ func (*GenesisAppState) Descriptor() ([]byte, []int) {
 	return file_chain_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *GenesisAppState) GetChainParams() *ChainParams {
+func (x *GenesisAppState) GetChainParams() *ChainParameters {
 	if x != nil {
-		return x.ChainParams
+		return x.ChainParameters
 	}
 	return nil
 }
@@ -1097,7 +1097,7 @@ func file_chain_proto_rawDescGZIP() []byte {
 
 var file_chain_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_chain_proto_goTypes = []interface{}{
-	(*ChainParams)(nil),                // 0: penumbra.chain.ChainParams
+	(*ChainParameters)(nil),                // 0: penumbra.chain.ChainParameters
 	(*AssetInfo)(nil),                  // 1: penumbra.chain.AssetInfo
 	(*CompactBlock)(nil),               // 2: penumbra.chain.CompactBlock
 	(*KnownAssets)(nil),                // 3: penumbra.chain.KnownAssets
@@ -1132,7 +1132,7 @@ var file_chain_proto_depIdxs = []int32{
 	19, // 7: penumbra.chain.CompactBlock.slashed:type_name -> penumbra.crypto.IdentityKey
 	20, // 8: penumbra.chain.KnownAssets.assets:type_name -> penumbra.crypto.Asset
 	4,  // 9: penumbra.chain.DelibleNoteSource.source:type_name -> penumbra.chain.NoteSource
-	0,  // 10: penumbra.chain.GenesisAppState.chain_params:type_name -> penumbra.chain.ChainParams
+	0,  // 10: penumbra.chain.GenesisAppState.chain_params:type_name -> penumbra.chain.ChainParameters
 	21, // 11: penumbra.chain.GenesisAppState.validators:type_name -> penumbra.stake.Validator
 	9,  // 12: penumbra.chain.GenesisAppState.allocations:type_name -> penumbra.chain.GenesisAppState.Allocation
 	13, // 13: penumbra.chain.Quarantined.per_epoch:type_name -> penumbra.chain.Quarantined.EpochEntry
@@ -1160,7 +1160,7 @@ func file_chain_proto_init() {
 	file_stake_proto_init()
 	if !protoimpl.UnsafeEnabled {
 		file_chain_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ChainParams); i {
+			switch v := v.(*ChainParameters); i {
 			case 0:
 				return &v.state
 			case 1:

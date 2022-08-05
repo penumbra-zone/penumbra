@@ -37,8 +37,8 @@ impl From<AssetInfo> for pb::AssetInfo {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(try_from = "pb::ChainParams", into = "pb::ChainParams")]
-pub struct ChainParams {
+#[serde(try_from = "pb::ChainParameters", into = "pb::ChainParameters")]
+pub struct ChainParameters {
     pub chain_id: String,
     pub epoch_duration: u64,
 
@@ -64,11 +64,11 @@ pub struct ChainParams {
     pub outbound_ics20_transfers_enabled: bool,
 }
 
-impl Protobuf<pb::ChainParams> for ChainParams {}
+impl Protobuf<pb::ChainParameters> for ChainParameters {}
 
-impl From<pb::ChainParams> for ChainParams {
-    fn from(msg: pb::ChainParams) -> Self {
-        ChainParams {
+impl From<pb::ChainParameters> for ChainParameters {
+    fn from(msg: pb::ChainParameters) -> Self {
+        ChainParameters {
             chain_id: msg.chain_id,
             epoch_duration: msg.epoch_duration,
             unbonding_epochs: msg.unbonding_epochs,
@@ -85,9 +85,9 @@ impl From<pb::ChainParams> for ChainParams {
     }
 }
 
-impl From<ChainParams> for pb::ChainParams {
-    fn from(params: ChainParams) -> Self {
-        pb::ChainParams {
+impl From<ChainParameters> for pb::ChainParameters {
+    fn from(params: ChainParameters) -> Self {
+        pb::ChainParameters {
             chain_id: params.chain_id,
             epoch_duration: params.epoch_duration,
             unbonding_epochs: params.unbonding_epochs,
@@ -106,7 +106,7 @@ impl From<ChainParams> for pb::ChainParams {
 
 // TODO: defaults are implemented here as well as in the
 // `pd::main`
-impl Default for ChainParams {
+impl Default for ChainParameters {
     fn default() -> Self {
         Self {
             chain_id: String::new(),

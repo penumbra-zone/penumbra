@@ -9,7 +9,7 @@ use penumbra_chain::View as _;
 use penumbra_component::shielded_pool::View as _;
 use penumbra_component::stake::{validator, View as _};
 use penumbra_proto::{
-    chain::{ChainParams, CompactBlock, KnownAssets},
+    chain::{ChainParameters, CompactBlock, KnownAssets},
     client::oblivious::{
         oblivious_query_server::ObliviousQuery, AssetListRequest, ChainParamsRequest,
         CompactBlockRangeRequest, ValidatorInfoRequest,
@@ -58,10 +58,10 @@ impl ObliviousQuery for Info {
         Pin<Box<dyn futures::Stream<Item = Result<ValidatorInfo, tonic::Status>> + Send>>;
 
     #[instrument(skip(self, request))]
-    async fn chain_params(
+    async fn chain_parameters(
         &self,
         request: tonic::Request<ChainParamsRequest>,
-    ) -> Result<tonic::Response<ChainParams>, Status> {
+    ) -> Result<tonic::Response<ChainParameters>, Status> {
         let state = self.state_tonic().await?;
         state.check_chain_id(&request.get_ref().chain_id).await?;
 

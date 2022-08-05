@@ -974,7 +974,7 @@ var file_view_proto_goTypes = []interface{}{
 	(*IdentityKey)(nil),             // 18: penumbra.crypto.IdentityKey
 	(*WitnessData)(nil),             // 19: penumbra.transaction.WitnessData
 	(*Asset)(nil),                   // 20: penumbra.crypto.Asset
-	(*ChainParams)(nil),             // 21: penumbra.chain.ChainParams
+	(*ChainParameters)(nil),             // 21: penumbra.chain.ChainParameters
 }
 var file_view_proto_depIdxs = []int32{
 	12, // 0: penumbra.view.NoteByCommitmentRequest.fvk_hash:type_name -> penumbra.crypto.FullViewingKeyHash
@@ -1001,7 +1001,7 @@ var file_view_proto_depIdxs = []int32{
 	11, // 21: penumbra.view.ViewProtocol.QuarantinedNotes:input_type -> penumbra.view.QuarantinedNotesRequest
 	9,  // 22: penumbra.view.ViewProtocol.Witness:input_type -> penumbra.view.WitnessRequest
 	2,  // 23: penumbra.view.ViewProtocol.Assets:input_type -> penumbra.view.AssetRequest
-	1,  // 24: penumbra.view.ViewProtocol.ChainParams:input_type -> penumbra.view.ChainParamsRequest
+	1,  // 24: penumbra.view.ViewProtocol.ChainParameters:input_type -> penumbra.view.ChainParamsRequest
 	0,  // 25: penumbra.view.ViewProtocol.NoteByCommitment:input_type -> penumbra.view.NoteByCommitmentRequest
 	4,  // 26: penumbra.view.ViewProtocol.Status:output_type -> penumbra.view.StatusResponse
 	6,  // 27: penumbra.view.ViewProtocol.StatusStream:output_type -> penumbra.view.StatusStreamResponse
@@ -1009,7 +1009,7 @@ var file_view_proto_depIdxs = []int32{
 	10, // 29: penumbra.view.ViewProtocol.QuarantinedNotes:output_type -> penumbra.view.QuarantinedNoteRecord
 	19, // 30: penumbra.view.ViewProtocol.Witness:output_type -> penumbra.transaction.WitnessData
 	20, // 31: penumbra.view.ViewProtocol.Assets:output_type -> penumbra.crypto.Asset
-	21, // 32: penumbra.view.ViewProtocol.ChainParams:output_type -> penumbra.chain.ChainParams
+	21, // 32: penumbra.view.ViewProtocol.ChainParameters:output_type -> penumbra.chain.ChainParameters
 	7,  // 33: penumbra.view.ViewProtocol.NoteByCommitment:output_type -> penumbra.view.NoteRecord
 	26, // [26:34] is the sub-list for method output_type
 	18, // [18:26] is the sub-list for method input_type

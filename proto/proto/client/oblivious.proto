@@ -12,7 +12,7 @@ import "stake.proto";
 // it reveals that the client has an interest in that asset specifically.
 service ObliviousQuery {
   rpc CompactBlockRange(CompactBlockRangeRequest) returns (stream chain.CompactBlock);
-  rpc ChainParams(ChainParamsRequest) returns (chain.ChainParams);
+  rpc ChainParameters(ChainParamsRequest) returns (chain.ChainParameters);
   rpc ValidatorInfo(ValidatorInfoRequest) returns (stream stake.ValidatorInfo);
   rpc AssetList(AssetListRequest) returns (chain.KnownAssets);
 }
