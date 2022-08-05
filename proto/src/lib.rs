@@ -14,7 +14,6 @@
 //!
 //! The [`Protobuf`] marker trait can be implemented on a domain type to ensure
 //! these conversions exist.
-
 pub use prost::Message;
 
 /// Helper methods used for shaping the JSON (and other Serde) formats derived from the protos.
@@ -81,8 +80,43 @@ pub mod transparent_proofs {
     include!(concat!(env!("OUT_DIR"), "/penumbra.transparent_proofs.rs"));
 }
 
+// TODO(erwan): explore ways to provide a flatter namespace for clients
 /// Tendermint RPCs.
-// TODO(erwan): figure out path to upstream those. maybe they should be in their own crate or repo?
 pub mod tendermint {
-    pub mod query {}
+    pub mod crypto {
+        tonic::include_proto!("tendermint.crypto");
+    }
+
+    pub mod types {
+        tonic::include_proto!("tendermint.types");
+    }
+
+    pub mod version {
+        tonic::include_proto!("tendermint.version");
+    }
+
+    pub mod p2p {
+        tonic::include_proto!("tendermint.p2p");
+    }
+}
+// TODO(erwan): figure out path to upstream those. maybe they should be in their own crate or repo?
+pub mod cosmos {
+    pub mod base {
+        pub mod query {
+            pub mod v1beta1 {
+                tonic::include_proto!("cosmos.base.query.v1beta1");
+            }
+        }
+
+        pub mod tendermint {
+            pub mod v1beta1 {
+                tonic::include_proto!("cosmos.base.tendermint.v1beta1");
+            }
+        }
+    }
+}
+
+// TODO(erwan): this is one way to flatten the complex proto hierarchy, should be easy to lift
+pub mod tendermint_proxy {
+    pub use crate::cosmos::base::tendermint::v1beta1::*;
 }
