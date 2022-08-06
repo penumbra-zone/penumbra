@@ -5,8 +5,9 @@ use penumbra_proto::{transaction as pb, Message, Protobuf};
 
 use crate::{
     action::{
-        output, spend, Delegate, ProposalSubmit, ProposalWithdraw, ProposalWithdrawBody,
-        Undelegate, ValidatorVote, ValidatorVoteBody, Vote,
+        output, spend, Delegate, PositionClose, PositionOpen, PositionRewardClaim,
+        PositionWithdraw, ProposalSubmit, ProposalWithdraw, ProposalWithdrawBody, Undelegate,
+        ValidatorVote, ValidatorVoteBody, Vote,
     },
     plan::TransactionPlan,
     Action, Transaction, TransactionBody,
@@ -290,6 +291,60 @@ impl ValidatorVoteBody {
             Vote::NoWithVeto => b"V",
         });
         state.update(&self.identity_key.0.to_bytes());
+
+        state.finalize()
+    }
+}
+
+impl PositionOpen {
+    pub fn auth_hash(&self) -> Hash {
+        let mut state = blake2b_simd::Params::default()
+            .personal(b"PAH:pos_open")
+            .to_state();
+
+        // All of these fields are fixed-length, so we can just throw them in the hash one after the
+        // other.
+        state.update(&self.position.id().0);
+        state.update(&self.initial_reserves.r1.to_le_bytes());
+        state.update(&self.initial_reserves.r2.to_le_bytes());
+
+        state.finalize()
+    }
+}
+
+impl PositionClose {
+    pub fn auth_hash(&self) -> Hash {
+        let mut state = blake2b_simd::Params::default()
+            .personal(b"PAH:pos_close")
+            .to_state();
+
+        state.update(&self.position_id.0);
+
+        state.finalize()
+    }
+}
+
+impl PositionWithdraw {
+    pub fn auth_hash(&self) -> Hash {
+        let mut state = blake2b_simd::Params::default()
+            .personal(b"PAH:pos_withdraw")
+            .to_state();
+
+        state.update(&self.position_id.0);
+        state.update(&self.reserves_commitment.to_bytes());
+
+        state.finalize()
+    }
+}
+
+impl PositionRewardClaim {
+    pub fn auth_hash(&self) -> Hash {
+        let mut state = blake2b_simd::Params::default()
+            .personal(b"PAH:pos_rewrdclm")
+            .to_state();
+
+        state.update(&self.position_id.0);
+        state.update(&self.rewards_commitment.to_bytes());
 
         state.finalize()
     }
