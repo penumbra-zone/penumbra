@@ -184,7 +184,7 @@ impl From<SwapPlaintext> for pb::SwapPlaintext {
         Self {
             delta_1: plaintext.delta_1,
             delta_2: plaintext.delta_2,
-            fee: Some(penumbra_proto::transaction::Fee {
+            fee: Some(pb_crypto::Fee {
                 amount: plaintext.fee.0,
             }),
             claim_address: Some(plaintext.claim_address.into()),
