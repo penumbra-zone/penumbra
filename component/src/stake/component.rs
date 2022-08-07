@@ -1331,7 +1331,7 @@ pub trait View: StateExt {
         )
         .await;
         self.put_domain(
-            state_key::validator_id_by_consensus_key(&consensus_key).into(),
+            state_key::validator_id_by_consensus_key(consensus_key).into(),
             identity_key.clone(),
         )
         .await;

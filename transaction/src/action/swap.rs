@@ -64,7 +64,7 @@ impl From<Body> for pb::SwapBody {
             trading_pair: s.trading_pair.into(),
             delta_1: s.delta_1,
             delta_2: s.delta_2,
-            fee_commitment: (&s.fee_commitment.to_bytes()).to_vec(),
+            fee_commitment: s.fee_commitment.to_bytes().to_vec(),
             swap_nft: Some(s.swap_nft.into()),
             swap_ciphertext: s.swap_ciphertext.0.to_vec(),
         }

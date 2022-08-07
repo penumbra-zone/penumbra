@@ -40,7 +40,7 @@ pub static PENUMBRA_PROOF_SPECS: Lazy<ProofSpecs> =
 pub static PENUMBRA_COMMITMENT_PREFIX: Lazy<CommitmentPrefix> =
     Lazy::new(|| CommitmentPrefix::try_from(APPHASH_DOMSEP.as_bytes().to_vec()).unwrap());
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub struct AppHash(pub [u8; 32]);
 
 // the app hash of penumbra's state is defined as SHA256("PenumbraAppHash" || jmt.root_hash())
