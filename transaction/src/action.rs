@@ -39,6 +39,11 @@ pub enum Action {
     ProposalWithdraw(ProposalWithdraw),
     // DelegatorVote(DelegatorVote),
     ValidatorVote(ValidatorVote),
+
+    PositionOpen(PositionOpen),
+    PositionClose(PositionClose),
+    PositionWithdraw(PositionWithdraw),
+    PositionRewardClaim(PositionRewardClaim),
 }
 
 impl Action {
@@ -61,6 +66,11 @@ impl Action {
             Action::ProposalWithdraw(_) => value::Commitment::default(),
             // Action::DelegatorVote(_) => value::Commitment::default(),
             Action::ValidatorVote(_) => value::Commitment::default(),
+
+            Action::PositionOpen(p) => p.value_commitment(),
+            Action::PositionClose(p) => p.value_commitment(),
+            Action::PositionWithdraw(p) => p.value_commitment(),
+            Action::PositionRewardClaim(p) => p.value_commitment(),
         }
     }
 }
@@ -100,6 +110,19 @@ impl From<Action> for pb::Action {
             Action::ValidatorVote(inner) => pb::Action {
                 action: Some(pb::action::Action::ValidatorVote(inner.into())),
             },
+
+            Action::PositionOpen(inner) => pb::Action {
+                action: Some(pb::action::Action::PositionOpen(inner.into())),
+            },
+            Action::PositionClose(inner) => pb::Action {
+                action: Some(pb::action::Action::PositionClose(inner.into())),
+            },
+            Action::PositionWithdraw(inner) => pb::Action {
+                action: Some(pb::action::Action::PositionWithdraw(inner.into())),
+            },
+            Action::PositionRewardClaim(inner) => pb::Action {
+                action: Some(pb::action::Action::PositionRewardClaim(inner.into())),
+            },
         }
     }
 }
@@ -132,6 +155,17 @@ impl TryFrom<pb::Action> for Action {
             // }
             pb::action::Action::ValidatorVote(inner) => {
                 Ok(Action::ValidatorVote(inner.try_into()?))
+            }
+
+            pb::action::Action::PositionOpen(inner) => Ok(Action::PositionOpen(inner.try_into()?)),
+            pb::action::Action::PositionClose(inner) => {
+                Ok(Action::PositionClose(inner.try_into()?))
+            }
+            pb::action::Action::PositionWithdraw(inner) => {
+                Ok(Action::PositionWithdraw(inner.try_into()?))
+            }
+            pb::action::Action::PositionRewardClaim(inner) => {
+                Ok(Action::PositionRewardClaim(inner.try_into()?))
             }
         }
     }
