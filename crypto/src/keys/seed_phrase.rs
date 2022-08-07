@@ -80,7 +80,7 @@ impl SeedPhrase {
         let mut hasher = sha2::Sha256::new();
         hasher.update(randomness);
         if hasher.finalize()[0] != checksum {
-            return Err(anyhow::anyhow!("seed phrase checksum did not validate"));
+            Err(anyhow::anyhow!("seed phrase checksum did not validate"))
         } else {
             Ok(())
         }

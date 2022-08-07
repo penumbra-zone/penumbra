@@ -229,7 +229,7 @@ impl Unit {
     pub fn parse_value(&self, value: &str) -> Result<u64, anyhow::Error> {
         let split: Vec<&str> = value.split('.').collect();
         if split.len() > 2 {
-            return Err(anyhow::anyhow!("expected only one decimal point"));
+            Err(anyhow::anyhow!("expected only one decimal point"))
         } else {
             let left = split[0];
 
