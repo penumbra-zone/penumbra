@@ -3,7 +3,6 @@ package penumbra.dex;
 option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
 
 import "crypto.proto";
-import "transaction.proto";
 
 // A transaction action that submits a swap to the dex.
 message Swap {
@@ -34,7 +33,7 @@ message SwapClaimBody {
   // The nullifier for the Swap NFT to be consumed.
   crypto.Nullifier nullifier = 1;
   // The fee allows `SwapClaim` without an additional `Spend`.
-  transaction.Fee fee = 2;
+  crypto.Fee fee = 2;
   // Note output for asset 1.
   crypto.NotePayload output_1 = 3;
   // Note output for asset 2.
@@ -76,7 +75,7 @@ message SwapPlaintext {
     // Input amount of asset 2
     uint64 delta_2 = 3;
     // Fee
-    transaction.Fee fee = 4;
+    crypto.Fee fee = 4;
     // Address that will claim the swap outputs via SwapClaim.
     crypto.Address claim_address = 5;
 }

@@ -1,20 +1,20 @@
 use blake2b_simd::Hash;
 
-use penumbra_proto::{transaction as pbt, Protobuf};
+use penumbra_proto::{crypto as pb, Protobuf};
 
 #[derive(Clone, Debug)]
 pub struct Fee(pub u64);
 
-impl Protobuf<pbt::Fee> for Fee {}
+impl Protobuf<pb::Fee> for Fee {}
 
-impl From<Fee> for pbt::Fee {
+impl From<Fee> for pb::Fee {
     fn from(fee: Fee) -> Self {
-        pbt::Fee { amount: fee.0 }
+        pb::Fee { amount: fee.0 }
     }
 }
 
-impl From<pbt::Fee> for Fee {
-    fn from(proto: pbt::Fee) -> Self {
+impl From<pb::Fee> for Fee {
+    fn from(proto: pb::Fee) -> Self {
         Fee(proto.amount)
     }
 }

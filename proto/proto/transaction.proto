@@ -33,7 +33,7 @@ message TransactionBody {
   // replaying a transaction on one chain onto a different chain.
   string chain_id = 3;
   // The transaction fee.
-  Fee fee = 4;
+  crypto.Fee fee = 4;
 }
 
 // A state change performed by a transaction.
@@ -63,11 +63,6 @@ message Action {
     ValidatorVote validator_vote = 20;
     // DelegatorVote delegator_vote = 21;
   }
-}
-
-// Specifies fees paid by a transaction.
-message Fee {
-    uint64 amount = 1;
 }
 
 // Spends a shielded note.
@@ -213,7 +208,7 @@ message TransactionPlan {
     repeated ActionPlan actions = 1;
     uint64 expiry_height = 2;
     string chain_id = 3;
-    transaction.Fee fee = 4;
+    crypto.Fee fee = 4;
 }
 
 // Describes a planned transaction action.
