@@ -3,6 +3,11 @@ syntax = "proto3";
 option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
 package penumbra.crypto;
 
+// Specifies fees paid by a transaction.
+message Fee {
+    uint64 amount = 1;
+}
+
 message Address {
     bytes inner = 1;
 }
