@@ -15,9 +15,9 @@ pub mod connection_open_init {
                 .as_ref()
                 .ok_or_else(|| anyhow::anyhow!("invalid version"))?,
         ) {
-            return Err(anyhow::anyhow!(
+            Err(anyhow::anyhow!(
                 "unsupported version: in ConnectionOpenInit",
-            ));
+            ))
         } else {
             Ok(())
         }
@@ -29,7 +29,7 @@ pub mod connection_open_ack {
 
     pub fn has_client_proof(msg: &MsgConnectionOpenAck) -> anyhow::Result<()> {
         if msg.proofs.client_proof().is_none() {
-            return Err(anyhow::anyhow!("missing client_proof"));
+            Err(anyhow::anyhow!("missing client_proof"))
         } else {
             Ok(())
         }
@@ -37,7 +37,7 @@ pub mod connection_open_ack {
 
     pub fn has_client_state(msg: &MsgConnectionOpenAck) -> anyhow::Result<()> {
         if msg.client_state.is_none() {
-            return Err(anyhow::anyhow!("missing client_state"));
+            Err(anyhow::anyhow!("missing client_state"))
         } else {
             Ok(())
         }
@@ -45,7 +45,7 @@ pub mod connection_open_ack {
 
     pub fn has_consensus_proof(msg: &MsgConnectionOpenAck) -> anyhow::Result<()> {
         if msg.proofs.consensus_proof().is_none() {
-            return Err(anyhow::anyhow!("missing consensus_proof"));
+            Err(anyhow::anyhow!("missing consensus_proof"))
         } else {
             Ok(())
         }
@@ -57,7 +57,7 @@ pub mod connection_open_try {
 
     pub fn has_client_proof(msg: &MsgConnectionOpenTry) -> anyhow::Result<()> {
         if msg.proofs.client_proof().is_none() {
-            return Err(anyhow::anyhow!("missing client_proof"));
+            Err(anyhow::anyhow!("missing client_proof"))
         } else {
             Ok(())
         }
@@ -65,7 +65,7 @@ pub mod connection_open_try {
 
     pub fn has_client_state(msg: &MsgConnectionOpenTry) -> anyhow::Result<()> {
         if msg.client_state.is_none() {
-            return Err(anyhow::anyhow!("missing client_state"));
+            Err(anyhow::anyhow!("missing client_state"))
         } else {
             Ok(())
         }
@@ -73,7 +73,7 @@ pub mod connection_open_try {
 
     pub fn has_consensus_proof(msg: &MsgConnectionOpenTry) -> anyhow::Result<()> {
         if msg.proofs.consensus_proof().is_none() {
-            return Err(anyhow::anyhow!("missing consensus_proof"));
+            Err(anyhow::anyhow!("missing consensus_proof"))
         } else {
             Ok(())
         }

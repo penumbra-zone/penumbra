@@ -7,7 +7,7 @@ use crate::{limb, proofs, Ciphertext, EncryptionKey};
 /// While only encryptions of 64-bit values are supported, the `Value` type
 /// holds a `u128` internally, because the sum of 64-bit values may exceed 64
 /// bits.  Attempting to encrypt a `Value` bigger than 64 bits will fail.
-#[derive(Default, PartialEq)]
+#[derive(Default, PartialEq, Eq)]
 pub struct Value(pub u128);
 
 impl From<u64> for Value {
