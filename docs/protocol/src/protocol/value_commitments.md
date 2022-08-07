@@ -1,4 +1,4 @@
-# Value Commitments
+# Asset IDs and Value Commitments
 
 Penumbra's shielded pool can record arbitrary assets.  These assets either
 originate on Penumbra itself, or, more commonly, originate on other
@@ -10,30 +10,33 @@ adapt them to the Cosmos context.
 
 To be precise, we define: 
 
-- an *amount* to be an untyped quantity of some asset;
-- an *asset type* to be an [ADR001]-style denomination trace uniquely identifying a cross-chain asset and its provenance, such as:
-  - `denom` (native chain A asset)
-  - `transfer/channelToA/denom` (chain B representation of chain A asset)
-  - `transfer/channelToB/transfer/channelToA/denom` (chain C representation of chain B representation of chain A asset)
-- an *asset ID* to be a fixed-size hash of an asset type;
-- a *value* to be a typed quantity, i.e., an amount and an asset id.
+- an *amount* to be an untyped `u64` quantity of some asset;
+- an *asset ID* to be an $\mathbb F_q$ element;
+- a *value* to be a typed quantity, i.e., an amount and an asset ID.
 
-Penumbra deviates slightly from ADR001 in the definition of the asset ID. While
-ADR001 defines the IBC asset ID as the SHA-256 hash of the denomination trace,
-Penumbra hashes to a field element, so that asset IDs can be more easily used
-inside of a zk-SNARK circuit.  Specifically, define `from_le_bytes(bytes)` as
-the function that interprets its input bytes as an integer in little-endian
-order, and `hash(label, input)` as BLAKE2b-512 with personalization `label` on
-input `input`.  Then asset IDs are computed as
+Some asset IDs correspond to a *denomination*, an [ADR001]-style denomination
+trace uniquely identifying a cross-chain asset and its provenance, such as:
+- `denom` (native chain A asset)
+- `transfer/channelToA/denom` (chain B representation of chain A asset)
+- `transfer/channelToB/transfer/channelToA/denom` (chain C representation of chain B representation of chain A asset)
+
+However, Penumbra deviates slightly from ADR001 in the definition of the asset
+ID. While ADR001 defines the IBC asset ID as the SHA-256 hash of the
+denomination trace, Penumbra hashes to a field element, so that asset IDs can be
+more easily used inside of a zk-SNARK circuit.  Specifically, define
+`from_le_bytes(bytes)` as the function that interprets its input bytes as an
+integer in little-endian order, and `hash(label, input)` as BLAKE2b-512 with
+personalization `label` on input `input`.  Then asset IDs are computed as
 ```
 asset_id = from_le_bytes(hash(b"Penumbra_AssetID", asset_type)) mod q
 ```
 
-Asset IDs are used in internal data structures, but users should be presented
-with asset names.  To avoid having to reverse the hash function, the chain
-maintains a lookup table of known asset IDs and the corresponding asset types.
-This table can be exhaustive, since new assets either moved into the chain via
-IBC transfers from a transparent zone, or were created at genesis.
+Other asset IDs do not correspond to denominations, but are computed as hashes
+of other state data.  By making the asset ID itself be a hash of extended state
+data, a note recording value of that type also binds to that extended data, even
+though it has the same size as any other note.  For instance:
+- [The ZSwap mechanism](../zswap/swap.md) has the `Swap` action form a *Swap NFT*, whose asset ID is a Poseidon hash of the user's secret input values address, so that when the `SwapClaim` action spends the NFT, it can (zk)prove consistency of the newly minted swap outputs with the user's inputs and the chain's clearing prices, and that the newly minted outputs are sent to the user's own address.
+- [The LPNFT mechanism](../zswap/lpnft.md) creates asset IDs that bind both a liquidity position ID and the position state, so that the value balance mechanism described below can track state changes to concentrated liquidity positions.
 
 ## Value Generators
 
