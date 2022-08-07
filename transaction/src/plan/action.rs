@@ -10,7 +10,8 @@ pub use output::OutputPlan;
 pub use spend::SpendPlan;
 
 use crate::action::{
-    Delegate, ProposalSubmit, ProposalWithdrawBody, Undelegate, ValidatorVoteBody,
+    Delegate, PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw, ProposalSubmit,
+    ProposalWithdrawBody, Undelegate, ValidatorVoteBody,
 };
 
 /// A declaration of a planned [`Action`], for use in transaction creation.
@@ -23,7 +24,7 @@ use crate::action::{
 pub enum ActionPlan {
     /// Describes a proposed spend.
     Spend(SpendPlan),
-    /// We don't need any extra information to understand well-formed outputs, since we can decrypt with the OVK.
+    /// Describes a proposed output.
     Output(OutputPlan),
     /// We don't need any extra information (yet) to understand delegations,
     /// because we don't yet use flow encryption.
@@ -41,6 +42,11 @@ pub enum ActionPlan {
     DelegatorVote(DelegatorVotePlan),
     /// Vote on a proposal as a validator.
     ValidatorVote(ValidatorVoteBody),
+
+    PositionOpen(PositionOpen),
+    PositionClose(PositionClose),
+    PositionWithdraw(PositionWithdraw),
+    PositionRewardClaim(PositionRewardClaim),
 }
 
 // Convenience impls that make declarative transaction construction easier.
@@ -105,6 +111,30 @@ impl From<ValidatorVoteBody> for ActionPlan {
     }
 }
 
+impl From<PositionOpen> for ActionPlan {
+    fn from(inner: PositionOpen) -> ActionPlan {
+        ActionPlan::PositionOpen(inner)
+    }
+}
+
+impl From<PositionClose> for ActionPlan {
+    fn from(inner: PositionClose) -> ActionPlan {
+        ActionPlan::PositionClose(inner)
+    }
+}
+
+impl From<PositionWithdraw> for ActionPlan {
+    fn from(inner: PositionWithdraw) -> ActionPlan {
+        ActionPlan::PositionWithdraw(inner)
+    }
+}
+
+impl From<PositionRewardClaim> for ActionPlan {
+    fn from(inner: PositionRewardClaim) -> ActionPlan {
+        ActionPlan::PositionRewardClaim(inner)
+    }
+}
+
 impl Protobuf<pb_t::ActionPlan> for ActionPlan {}
 
 impl From<ActionPlan> for pb_t::ActionPlan {
@@ -139,6 +169,18 @@ impl From<ActionPlan> for pb_t::ActionPlan {
             },
             ActionPlan::ValidatorVote(inner) => pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::ValidatorVote(inner.into())),
+            },
+            ActionPlan::PositionOpen(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::PositionOpen(inner.into())),
+            },
+            ActionPlan::PositionClose(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::PositionClose(inner.into())),
+            },
+            ActionPlan::PositionWithdraw(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::PositionWithdraw(inner.into())),
+            },
+            ActionPlan::PositionRewardClaim(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::PositionRewardClaim(inner.into())),
             },
         }
     }
@@ -176,6 +218,18 @@ impl TryFrom<pb_t::ActionPlan> for ActionPlan {
             }
             pb_t::action_plan::Action::DelegatorVote(inner) => {
                 Ok(ActionPlan::DelegatorVote(inner.try_into()?))
+            }
+            pb_t::action_plan::Action::PositionOpen(inner) => {
+                Ok(ActionPlan::PositionOpen(inner.try_into()?))
+            }
+            pb_t::action_plan::Action::PositionClose(inner) => {
+                Ok(ActionPlan::PositionClose(inner.try_into()?))
+            }
+            pb_t::action_plan::Action::PositionWithdraw(inner) => {
+                Ok(ActionPlan::PositionWithdraw(inner.try_into()?))
+            }
+            pb_t::action_plan::Action::PositionRewardClaim(inner) => {
+                Ok(ActionPlan::PositionRewardClaim(inner.try_into()?))
             }
         }
     }

@@ -5,6 +5,7 @@ option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
 import "crypto.proto";
 import "stake.proto";
 import "ibc.proto";
+import "dex.proto";
 
 // An authorization hash for a Penumbra transaction.
 message AuthHash {
@@ -51,17 +52,16 @@ message Action {
     stake.ValidatorDefinition validator_definition = 16;
     ibc.IBCAction ibc_action = 17;
 
-    /*
-    PositionOpen position_open = 30;
-    PositionClose position_close = 31;
-    PositionWithdraw position_withdraw = 32;
-    PositionRewardClaim position_reward_claim = 34;
-    */
     // Governance:
     ProposalSubmit proposal_submit = 18;
     ProposalWithdraw proposal_withdraw = 19;
     ValidatorVote validator_vote = 20;
     // DelegatorVote delegator_vote = 21;
+
+    dex.PositionOpen position_open = 30;
+    dex.PositionClose position_close = 31;
+    dex.PositionWithdraw position_withdraw = 32;
+    dex.PositionRewardClaim position_reward_claim = 34;
   }
 }
 
@@ -234,6 +234,11 @@ message ActionPlan {
         ProposalWithdrawBody proposal_withdraw = 19;
         ValidatorVoteBody validator_vote = 20;
         DelegatorVotePlan delegator_vote = 21;
+
+        dex.PositionOpen position_open = 30;
+        dex.PositionClose position_close = 31;
+        dex.PositionWithdraw position_withdraw = 32;
+        dex.PositionRewardClaim position_reward_claim = 34;
     }
 }
 

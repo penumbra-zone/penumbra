@@ -169,6 +169,11 @@ impl Action {
             Action::IBCAction(payload) => Params::default()
                 .personal(b"PAH:ibc_action")
                 .hash(&payload.encode_to_vec()),
+
+            Action::PositionOpen(p) => p.auth_hash(),
+            Action::PositionClose(p) => p.auth_hash(),
+            Action::PositionWithdraw(p) => p.auth_hash(),
+            Action::PositionRewardClaim(p) => p.auth_hash(),
         }
     }
 }
