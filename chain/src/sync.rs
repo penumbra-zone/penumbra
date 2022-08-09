@@ -6,7 +6,7 @@ use penumbra_proto::{chain as pb, Protobuf};
 use penumbra_tct::builder::{block, epoch};
 use serde::{Deserialize, Serialize};
 
-use crate::{quarantined::Quarantined, NoteSource};
+use crate::{params::FmdParameters, quarantined::Quarantined, NoteSource};
 
 /// A note payload annotated with the source of the note.
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -37,6 +37,8 @@ pub struct CompactBlock {
     pub quarantined: Quarantined,
     // Newly slashed validators in this block.
     pub slashed: Vec<IdentityKey>,
+    // Latest FMD parameters. `None` if unchanged.
+    pub fmd_parameters: Option<FmdParameters>,
     // **IMPORTANT NOTE FOR FUTURE HUMANS**: if you want to add new fields to the `CompactBlock`,
     // you must update `CompactBlock::requires_scanning` to check for the emptiness of those fields, because
     // the client will skip processing any compact block that is marked as not requiring scanning.
@@ -52,6 +54,7 @@ impl Default for CompactBlock {
             epoch_root: None,
             quarantined: Quarantined::default(),
             slashed: Vec::new(),
+            fmd_parameters: None,
         }
     }
 }
@@ -63,6 +66,7 @@ impl CompactBlock {
             || !self.nullifiers.is_empty() // need to collect nullifiers
             || !self.quarantined.is_empty() // need to scan quarantined notes
             || !self.slashed.is_empty() // need to process slashing
+            || self.fmd_parameters.is_some() // need to save latest FMD parameters
     }
 }
 
@@ -115,6 +119,11 @@ impl From<CompactBlock> for pb::CompactBlock {
                 Some(cb.quarantined.into())
             },
             slashed: cb.slashed.into_iter().map(Into::into).collect(),
+            fmd_parameters: if cb.fmd_parameters.is_some() {
+                Some(cb.fmd_parameters.unwrap().into())
+            } else {
+                None
+            },
         }
     }
 }
@@ -154,6 +163,7 @@ impl TryFrom<pb::CompactBlock> for CompactBlock {
                 .into_iter()
                 .map(IdentityKey::try_from)
                 .collect::<Result<Vec<_>>>()?,
+            fmd_parameters: value.fmd_parameters.map(TryInto::try_into).transpose()?,
         })
     }
 }

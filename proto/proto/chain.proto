@@ -35,6 +35,11 @@ message ChainParameters {
   bool outbound_ics20_transfers_enabled = 8;
 }
 
+// Parameters for Fuzzy Message Detection
+message FmdParameters {
+  uint32 precision_bits = 1;
+}
+
 // TODO: delete with legacy code
 // Information about a given asset at a given time (as specified by block
 // height). Currently this only contains the total supply.
@@ -60,6 +65,8 @@ message CompactBlock {
   Quarantined quarantined = 6;
   // Validators slashed in this block.
   repeated crypto.IdentityKey slashed = 16;
+  // Latest Fuzzy Message Detection parameters.
+  FmdParameters fmd_parameters = 100;
 }
 
 // A note payload, annotated with the note source.

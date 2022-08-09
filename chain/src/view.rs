@@ -5,7 +5,10 @@ use async_trait::async_trait;
 use penumbra_storage::StateExt;
 use tendermint::Time;
 
-use crate::{params::ChainParameters, state_key, Epoch};
+use crate::{
+    params::{ChainParameters, FmdParameters},
+    state_key, Epoch,
+};
 
 /// This trait provides read and write access to common parts of the Penumbra
 /// state store.
@@ -102,6 +105,32 @@ pub trait View: StateExt {
                 provided, chain_id
             )))
         }
+    }
+
+    /// Gets the current FMD parameters from the JMT.
+    async fn get_current_fmd_parameters(&self) -> Result<FmdParameters> {
+        self.get_domain(state_key::fmd_parameters_current().into())
+            .await?
+            .ok_or_else(|| anyhow!("Missing FmdParameters"))
+    }
+
+    /// Writes the current FMD parameters to the JMT.
+    async fn put_current_fmd_parameters(&self, params: FmdParameters) {
+        self.put_domain(state_key::fmd_parameters_current().into(), params)
+            .await
+    }
+
+    /// Gets the previous FMD parameters from the JMT.
+    async fn get_previous_fmd_parameters(&self) -> Result<FmdParameters> {
+        self.get_domain(state_key::fmd_parameters_previous().into())
+            .await?
+            .ok_or_else(|| anyhow!("Missing FmdParameters"))
+    }
+
+    /// Writes the previous FMD parameters to the JMT.
+    async fn put_previous_fmd_parameters(&self, params: FmdParameters) {
+        self.put_domain(state_key::fmd_parameters_previous().into(), params)
+            .await
     }
 }
 

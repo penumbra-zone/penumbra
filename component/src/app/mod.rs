@@ -6,6 +6,7 @@ use crate::{Component, Context};
 use anyhow::Result;
 use async_trait::async_trait;
 use jmt::Version;
+use penumbra_chain::params::FmdParameters;
 use penumbra_chain::{genesis, View as _};
 use penumbra_storage::{AppHash, State, StateExt, Storage};
 use penumbra_transaction::Transaction;
@@ -97,6 +98,15 @@ impl Component for App {
         self.state
             .put_chain_params(app_state.chain_params.clone())
             .await;
+
+        // TEMP: Hardcoding FMD parameters until we have a mechanism to change them. See issue #1226.
+        self.state
+            .put_current_fmd_parameters(FmdParameters::default())
+            .await;
+        self.state
+            .put_previous_fmd_parameters(FmdParameters::default())
+            .await;
+
         // TODO: do we actually need to store the app state here?
         self.state
             .put_domain(state_key::app_state().into(), app_state.clone())

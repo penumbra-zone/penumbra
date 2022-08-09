@@ -2,7 +2,7 @@ use anyhow::{anyhow, Context};
 use camino::Utf8Path;
 use futures::Future;
 use parking_lot::Mutex;
-use penumbra_chain::params::ChainParameters;
+use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_crypto::{
     asset::{self, Id},
     Asset, FieldExt, FullViewingKey, Nullifier,
@@ -286,6 +286,20 @@ impl Storage {
         .await?;
 
         ChainParameters::decode(result.bytes.as_slice())
+    }
+
+    pub async fn fmd_parameters(&self) -> anyhow::Result<FmdParameters> {
+        let result = query!(
+            r#"
+            SELECT bytes
+            FROM fmd_parameters
+            LIMIT 1
+        "#
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        FmdParameters::decode(result.bytes.as_slice())
     }
 
     pub async fn full_viewing_key(&self) -> anyhow::Result<FullViewingKey> {
@@ -776,6 +790,19 @@ impl Storage {
                 .execute(&mut dbtx)
                 .await?;
             }
+        }
+
+        // Update FMD parameters if they've changed.
+        if filtered_block.fmd_parameters.is_some() {
+            let fmd_parameters_bytes =
+                &FmdParameters::encode_to_vec(&filtered_block.fmd_parameters.unwrap())[..];
+
+            sqlx::query!(
+                "INSERT INTO fmd_parameters (bytes) VALUES (?)",
+                fmd_parameters_bytes
+            )
+            .execute(&mut dbtx)
+            .await?;
         }
 
         // Record block height as latest synced height

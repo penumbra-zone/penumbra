@@ -2,7 +2,7 @@ use std::{collections::BTreeMap, pin::Pin};
 
 use anyhow::Result;
 use futures::{Stream, StreamExt, TryStreamExt};
-use penumbra_chain::params::ChainParameters;
+use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_crypto::keys::FullViewingKeyHash;
 use penumbra_crypto::{asset, keys::AddressIndex, note, Asset, Nullifier};
 use penumbra_proto::view as pb;
@@ -38,6 +38,9 @@ pub trait ViewClient {
 
     /// Get a copy of the chain parameters.
     async fn chain_params(&mut self) -> Result<ChainParameters>;
+
+    /// Get a copy of the FMD parameters.
+    async fn fmd_parameters(&mut self) -> Result<FmdParameters>;
 
     /// Queries for notes.
     async fn notes(&mut self, request: pb::NotesRequest) -> Result<Vec<NoteRecord>>;
@@ -255,6 +258,18 @@ where
         let params = ViewProtocolClient::chain_parameters(
             self,
             tonic::Request::new(pb::ChainParamsRequest {}),
+        )
+        .await?
+        .into_inner()
+        .try_into()?;
+
+        Ok(params)
+    }
+
+    async fn fmd_parameters(&mut self) -> Result<FmdParameters> {
+        let params = ViewProtocolClient::fmd_parameters(
+            self,
+            tonic::Request::new(pb::FmdParametersRequest {}),
         )
         .await?
         .into_inner()

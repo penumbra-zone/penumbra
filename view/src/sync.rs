@@ -1,6 +1,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use penumbra_chain::{AnnotatedNotePayload, CompactBlock, Epoch, NoteSource};
+use penumbra_chain::{
+    params::FmdParameters, AnnotatedNotePayload, CompactBlock, Epoch, NoteSource,
+};
 use penumbra_crypto::{FullViewingKey, IdentityKey, Note, NotePayload, Nullifier};
 use penumbra_tct as tct;
 
@@ -15,6 +17,7 @@ pub struct FilteredBlock {
     pub spent_quarantined_nullifiers: BTreeMap<IdentityKey, Vec<Nullifier>>,
     pub slashed_validators: Vec<IdentityKey>,
     pub height: u64,
+    pub fmd_parameters: Option<FmdParameters>,
 }
 
 impl FilteredBlock {
@@ -50,10 +53,13 @@ pub async fn scan_block(
         epoch_root,
         quarantined,
         slashed,
+        fmd_parameters,
     }: CompactBlock,
     epoch_duration: u64,
     storage: &Storage,
 ) -> anyhow::Result<FilteredBlock> {
+    // TODO: Validation of FMD parameters?
+
     // Trial-decrypt a note with our own specific viewing key
     let trial_decrypt = |note_payload: NotePayload| -> tokio::task::JoinHandle<Option<Note>> {
         // TODO: change fvk to Arc<FVK> in Worker and pass to scan_block as Arc
@@ -206,6 +212,7 @@ pub async fn scan_block(
         spent_quarantined_nullifiers: filtered_quarantined_nullifiers,
         slashed_validators: slashed,
         height,
+        fmd_parameters,
     };
 
     if !result.spent_quarantined_nullifiers.is_empty() || !result.new_quarantined_notes.is_empty() {

@@ -488,4 +488,18 @@ impl ViewProtocol for ViewService {
 
         Ok(tonic::Response::new(params.into()))
     }
+
+    async fn fmd_parameters(
+        &self,
+        _request: tonic::Request<pb::FmdParametersRequest>,
+    ) -> Result<tonic::Response<pbp::FmdParameters>, tonic::Status> {
+        self.check_worker().await?;
+
+        let params =
+            self.storage.fmd_parameters().await.map_err(|e| {
+                tonic::Status::unavailable(format!("error getting FMD params: {}", e))
+            })?;
+
+        Ok(tonic::Response::new(params.into()))
+    }
 }
