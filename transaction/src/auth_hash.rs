@@ -7,7 +7,7 @@ use penumbra_proto::{transaction as pb, Message, Protobuf};
 use crate::{
     action::{
         output, spend, swap, swap_claim, Delegate, ICS20Withdrawal, PositionClose, PositionOpen,
-        PositionRewardClaim, PositionWithdraw, ProposalSubmit, ProposalWithdraw,
+        PositionRewardClaim, PositionWithdraw, Proposal, ProposalSubmit, ProposalWithdraw,
         ProposalWithdrawBody, Undelegate, ValidatorVote, ValidatorVoteBody, Vote,
     },
     plan::TransactionPlan,
@@ -321,12 +321,31 @@ impl AuthorizingData for Undelegate {
     }
 }
 
-impl AuthorizingData for ProposalSubmit {
-    fn auth_hash(&self) -> Hash {
+impl Proposal {
+    pub fn auth_hash(&self) -> Hash {
+        let mut state = blake2b_simd::Params::default()
+            .personal(b"PAH:proposal")
+            .to_state();
+        state.update(&self.encode_to_vec());
+        state.finalize()
+    }
+}
+
+impl ProposalSubmit {
+    pub fn auth_hash(&self) -> Hash {
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:prop_submit")
             .to_state();
-        state.update(&self.encode_to_vec());
+
+        // These fields are all fixed-size
+        state.update(&self.deposit_amount.to_le_bytes());
+        // The address is hashed as a string, which is the canonical bech32 encoding of the address
+        state.update(self.deposit_refund_address.to_string().as_bytes());
+        state.update(&self.withdraw_proposal_key.to_bytes());
+
+        // The proposal itself is variable-length, so we hash it, and then hash its hash in
+        state.update(self.proposal.auth_hash().as_bytes());
+
         state.finalize()
     }
 }
@@ -362,15 +381,24 @@ impl AuthorizingData for ValidatorVoteBody {
         // All of these fields are fixed-length, so we can just throw them in the hash one after the
         // other.
         state.update(&self.proposal.to_le_bytes());
-        state.update(match self.vote {
-            // Manually choose a distinct byte for each vote type
+        state.update(self.vote.auth_hash().as_bytes());
+        state.update(&self.identity_key.0.to_bytes());
+
+        state.finalize()
+    }
+}
+
+impl AuthorizingData for Vote {
+    fn auth_hash(&self) -> Hash {
+        let mut state = blake2b_simd::Params::default()
+            .personal(b"PAH:vote")
+            .to_state();
+        state.update(match self {
             Vote::Yes => b"Y",
             Vote::No => b"N",
             Vote::Abstain => b"A",
             Vote::NoWithVeto => b"V",
         });
-        state.update(&self.identity_key.0.to_bytes());
-
         state.finalize()
     }
 }
@@ -458,7 +486,7 @@ impl AuthorizingData for Clue {
             .personal(b"PAH:decaffmdclue")
             .to_state();
 
-        state.update(&self.0.to_vec());
+        state.update(&self.0);
         state.finalize()
     }
 }
