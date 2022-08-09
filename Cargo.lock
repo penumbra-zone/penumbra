@@ -3007,8 +3007,8 @@ dependencies = [
  "pbkdf2",
  "penumbra-proto",
  "penumbra-tct",
- "poseidon-paramgen",
- "poseidon377",
+ "poseidon-paramgen 0.1.0 (git+https://github.com/penumbra-zone/poseidon377?branch=main)",
+ "poseidon377 0.1.0 (git+https://github.com/penumbra-zone/poseidon377?branch=main)",
  "proptest",
  "rand",
  "rand_core",
@@ -3152,7 +3152,7 @@ dependencies = [
  "parking_lot 0.12.1",
  "penumbra-proto",
  "penumbra-tct",
- "poseidon377",
+ "poseidon377 0.1.0 (git+https://github.com/penumbra-zone/poseidon377?branch=oldparams)",
  "proptest",
  "proptest-derive",
  "rand",
@@ -3201,7 +3201,7 @@ dependencies = [
  "penumbra-crypto",
  "penumbra-proto",
  "penumbra-tct",
- "poseidon377",
+ "poseidon377 0.1.0 (git+https://github.com/penumbra-zone/poseidon377?branch=oldparams)",
  "proptest",
  "rand",
  "rand_core",
@@ -3388,6 +3388,20 @@ dependencies = [
 [[package]]
 name = "poseidon-paramgen"
 version = "0.1.0"
+source = "git+https://github.com/penumbra-zone/poseidon377?branch=main#10115121e7f00ca66cab6ef0479b4b26bfb62013"
+dependencies = [
+ "anyhow",
+ "ark-ff",
+ "ark-sponge",
+ "merlin",
+ "num",
+ "num-bigint",
+ "rand_core",
+]
+
+[[package]]
+name = "poseidon-paramgen"
+version = "0.1.0"
 source = "git+https://github.com/penumbra-zone/poseidon377?branch=oldparams#c8a1ca416a54e02326474379c76d54d87917328c"
 dependencies = [
  "anyhow",
@@ -3402,11 +3416,35 @@ dependencies = [
 [[package]]
 name = "poseidon-permutation"
 version = "0.1.0"
+source = "git+https://github.com/penumbra-zone/poseidon377?branch=main#10115121e7f00ca66cab6ef0479b4b26bfb62013"
+dependencies = [
+ "ark-ff",
+ "once_cell",
+ "poseidon-paramgen 0.1.0 (git+https://github.com/penumbra-zone/poseidon377?branch=main)",
+]
+
+[[package]]
+name = "poseidon-permutation"
+version = "0.1.0"
 source = "git+https://github.com/penumbra-zone/poseidon377?branch=oldparams#c8a1ca416a54e02326474379c76d54d87917328c"
 dependencies = [
  "ark-ff",
  "once_cell",
- "poseidon-paramgen",
+ "poseidon-paramgen 0.1.0 (git+https://github.com/penumbra-zone/poseidon377?branch=oldparams)",
+]
+
+[[package]]
+name = "poseidon377"
+version = "0.1.0"
+source = "git+https://github.com/penumbra-zone/poseidon377?branch=main#10115121e7f00ca66cab6ef0479b4b26bfb62013"
+dependencies = [
+ "ark-ed-on-bls12-377",
+ "ark-ff",
+ "ark-sponge",
+ "num-bigint",
+ "once_cell",
+ "poseidon-paramgen 0.1.0 (git+https://github.com/penumbra-zone/poseidon377?branch=main)",
+ "poseidon-permutation 0.1.0 (git+https://github.com/penumbra-zone/poseidon377?branch=main)",
 ]
 
 [[package]]
@@ -3419,8 +3457,8 @@ dependencies = [
  "ark-sponge",
  "num-bigint",
  "once_cell",
- "poseidon-paramgen",
- "poseidon-permutation",
+ "poseidon-paramgen 0.1.0 (git+https://github.com/penumbra-zone/poseidon377?branch=oldparams)",
+ "poseidon-permutation 0.1.0 (git+https://github.com/penumbra-zone/poseidon377?branch=oldparams)",
 ]
 
 [[package]]
