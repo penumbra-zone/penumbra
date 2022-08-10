@@ -7,10 +7,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::{fmd, ka, keys::Diversifier, Fq};
 
-// We pad addresses to 80 bytes (before jumbling and Bech32m encoding)
-// using this 5 byte padding.
-const ADDR_PADDING: &[u8] = "pen00".as_bytes();
-
 /// A valid payment address.
 #[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "pb::Address", into = "pb::Address")]
@@ -86,9 +82,6 @@ impl From<Address> for pb::Address {
         bytes
             .write_all(&a.clue_key().0)
             .expect("can write clue key into vec");
-        bytes
-            .write_all(ADDR_PADDING)
-            .expect("can write padding into vec");
 
         let jumbled_bytes = f4jumble(bytes.get_ref()).expect("can jumble");
         pb::Address {
@@ -104,7 +97,7 @@ impl TryFrom<pb::Address> for Address {
             f4jumble_inv(&value.inner).ok_or_else(|| anyhow::anyhow!("invalid address"))?;
         let mut bytes = Cursor::new(unjumbled_bytes);
 
-        let mut diversifier_bytes = [0u8; 11];
+        let mut diversifier_bytes = [0u8; 16];
         bytes.read_exact(&mut diversifier_bytes)?;
 
         let mut pk_d_bytes = [0u8; 32];
@@ -112,13 +105,6 @@ impl TryFrom<pb::Address> for Address {
 
         let mut clue_key_bytes = [0; 32];
         bytes.read_exact(&mut clue_key_bytes)?;
-
-        let mut padding_bytes = [0; 5];
-        bytes.read_exact(&mut padding_bytes)?;
-
-        if padding_bytes != ADDR_PADDING {
-            return Err(anyhow::anyhow!("invalid address"));
-        }
 
         let diversifier = Diversifier(diversifier_bytes);
         Address::from_components(
@@ -157,30 +143,6 @@ impl std::str::FromStr for Address {
         }
         .try_into()
     }
-}
-
-/// Parse v0 testnet address string (temporary migration used in `pcli`)
-pub fn parse_v0_testnet_address(v0_address: String) -> Result<Address, anyhow::Error> {
-    let decoded_bytes = &bech32str::decode(&v0_address, "penumbrav0t", bech32str::Bech32m)?;
-
-    let mut bytes = Cursor::new(decoded_bytes);
-    let mut diversifier_bytes = [0u8; 11];
-    bytes.read_exact(&mut diversifier_bytes)?;
-    let mut pk_d_bytes = [0u8; 32];
-    bytes.read_exact(&mut pk_d_bytes)?;
-    let mut clue_key_bytes = [0; 32];
-    bytes.read_exact(&mut clue_key_bytes)?;
-
-    let diversifier = Diversifier(diversifier_bytes);
-    let addr = Address::from_components(
-        diversifier,
-        diversifier.diversified_generator(),
-        ka::Public(pk_d_bytes),
-        fmd::ClueKey(clue_key_bytes),
-    )
-    .ok_or_else(|| anyhow::anyhow!("invalid address"))?;
-
-    Ok(addr)
 }
 
 #[cfg(test)]

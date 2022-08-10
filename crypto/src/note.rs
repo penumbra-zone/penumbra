@@ -21,8 +21,8 @@ use crate::{
     value, Fq, Value,
 };
 
-pub const NOTE_LEN_BYTES: usize = 116;
-pub const NOTE_CIPHERTEXT_BYTES: usize = 132;
+pub const NOTE_LEN_BYTES: usize = 121;
+pub const NOTE_CIPHERTEXT_BYTES: usize = 137;
 pub const OVK_WRAPPED_LEN_BYTES: usize = 80;
 
 /// The nonce used for note encryption.
@@ -403,11 +403,11 @@ impl From<&Note> for [u8; NOTE_LEN_BYTES] {
     fn from(note: &Note) -> [u8; NOTE_LEN_BYTES] {
         let mut bytes = [0u8; NOTE_LEN_BYTES];
         bytes[0] = NOTE_TYPE;
-        bytes[1..12].copy_from_slice(&note.diversifier.0);
-        bytes[12..20].copy_from_slice(&note.value.amount.to_le_bytes());
-        bytes[20..52].copy_from_slice(&note.value.asset_id.0.to_bytes());
-        bytes[52..84].copy_from_slice(&note.note_blinding.to_bytes());
-        bytes[84..116].copy_from_slice(&note.transmission_key.0);
+        bytes[1..17].copy_from_slice(&note.diversifier.0);
+        bytes[17..25].copy_from_slice(&note.value.amount.to_le_bytes());
+        bytes[25..57].copy_from_slice(&note.value.asset_id.0.to_bytes());
+        bytes[57..89].copy_from_slice(&note.note_blinding.to_bytes());
+        bytes[89..121].copy_from_slice(&note.transmission_key.0);
         bytes
     }
 }
@@ -442,21 +442,21 @@ impl TryFrom<&[u8]> for Note {
             return Err(Error::NoteTypeUnsupported);
         }
 
-        let amount_bytes: [u8; 8] = bytes[12..20]
+        let amount_bytes: [u8; 8] = bytes[17..25]
             .try_into()
             .map_err(|_| Error::NoteDeserializationError)?;
-        let asset_id_bytes: [u8; 32] = bytes[20..52]
+        let asset_id_bytes: [u8; 32] = bytes[25..57]
             .try_into()
             .map_err(|_| Error::NoteDeserializationError)?;
-        let note_blinding_bytes: [u8; 32] = bytes[52..84]
+        let note_blinding_bytes: [u8; 32] = bytes[57..89]
             .try_into()
             .map_err(|_| Error::NoteDeserializationError)?;
 
         Note::from_parts(
-            bytes[1..12]
+            bytes[1..17]
                 .try_into()
                 .map_err(|_| Error::NoteDeserializationError)?,
-            bytes[84..116]
+            bytes[89..121]
                 .try_into()
                 .map_err(|_| Error::NoteDeserializationError)?,
             Value {
