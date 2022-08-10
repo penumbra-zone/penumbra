@@ -1,3 +1,4 @@
+use num_rational::Ratio;
 use penumbra_crypto::asset;
 use penumbra_proto::{chain as pb, crypto as pbc, Protobuf};
 use serde::{Deserialize, Serialize};
@@ -62,13 +63,28 @@ pub struct ChainParameters {
     pub inbound_ics20_transfers_enabled: bool,
     /// Whether outbound ICS-20 transfers are enabled
     pub outbound_ics20_transfers_enabled: bool,
+
+    /// The number of epochs during which a proposal is voted on.
+    pub proposal_voting_epochs: u64,
+    /// The deposit required to create a proposal.
+    pub proposal_deposit_amount: u64,
+    /// The quorum required for a proposal to be considered valid, as a fraction of the total stake
+    /// weight of the network.
+    pub proposal_valid_quorum: Ratio<u64>,
+    /// The threshold for a proposal to pass voting, as a ratio of "yes" votes over "no" votes.
+    pub proposal_pass_threshold: Ratio<u64>,
+    /// The threshold for a proposal to be vetoed, regardless of whether the "yes" and "no" votes
+    /// would have passed it, as a ratio of "no with veto" votes over all total votes.
+    pub proposal_veto_threshold: Ratio<u64>,
 }
 
 impl Protobuf<pb::ChainParameters> for ChainParameters {}
 
-impl From<pb::ChainParameters> for ChainParameters {
-    fn from(msg: pb::ChainParameters) -> Self {
-        ChainParameters {
+impl TryFrom<pb::ChainParameters> for ChainParameters {
+    type Error = anyhow::Error;
+
+    fn try_from(msg: pb::ChainParameters) -> anyhow::Result<Self> {
+        Ok(ChainParameters {
             chain_id: msg.chain_id,
             epoch_duration: msg.epoch_duration,
             unbonding_epochs: msg.unbonding_epochs,
@@ -81,7 +97,21 @@ impl From<pb::ChainParameters> for ChainParameters {
             ibc_enabled: msg.ibc_enabled,
             inbound_ics20_transfers_enabled: msg.inbound_ics20_transfers_enabled,
             outbound_ics20_transfers_enabled: msg.outbound_ics20_transfers_enabled,
-        }
+            proposal_voting_epochs: msg.proposal_voting_epochs,
+            proposal_deposit_amount: msg.proposal_deposit_amount,
+            proposal_valid_quorum: msg
+                .proposal_valid_quorum
+                .ok_or_else(|| anyhow::anyhow!("missing `proposal_valid_quorum`"))?
+                .into(),
+            proposal_pass_threshold: msg
+                .proposal_pass_threshold
+                .ok_or_else(|| anyhow::anyhow!("missing `proposal_pass_threshold`"))?
+                .into(),
+            proposal_veto_threshold: msg
+                .proposal_veto_threshold
+                .ok_or_else(|| anyhow::anyhow!("missing `proposal_veto_threshold`"))?
+                .into(),
+        })
     }
 }
 
@@ -100,6 +130,11 @@ impl From<ChainParameters> for pb::ChainParameters {
             ibc_enabled: params.ibc_enabled,
             inbound_ics20_transfers_enabled: params.inbound_ics20_transfers_enabled,
             outbound_ics20_transfers_enabled: params.outbound_ics20_transfers_enabled,
+            proposal_voting_epochs: params.proposal_voting_epochs,
+            proposal_deposit_amount: params.proposal_deposit_amount,
+            proposal_valid_quorum: Some(params.proposal_valid_quorum.into()),
+            proposal_pass_threshold: Some(params.proposal_pass_threshold.into()),
+            proposal_veto_threshold: Some(params.proposal_veto_threshold.into()),
         }
     }
 }
@@ -125,6 +160,13 @@ impl Default for ChainParameters {
             ibc_enabled: true,
             inbound_ics20_transfers_enabled: false,
             outbound_ics20_transfers_enabled: false,
+            // governance
+            proposal_voting_epochs: 2,
+            proposal_deposit_amount: 10_000_000, // 10,000,000 upenumbra = 10 penumbra
+            // governance parameters copied from cosmos hub
+            proposal_valid_quorum: Ratio::new(2, 5),
+            proposal_pass_threshold: Ratio::new(1, 2),
+            proposal_veto_threshold: Ratio::new(1, 3),
         }
     }
 }

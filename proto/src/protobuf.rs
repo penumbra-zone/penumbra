@@ -118,6 +118,23 @@ impl TryFrom<crate::crypto::ConsensusKey> for tendermint::PublicKey {
     }
 }
 
+impl Protobuf<crate::chain::Ratio> for num_rational::Ratio<u64> {}
+
+impl From<num_rational::Ratio<u64>> for crate::chain::Ratio {
+    fn from(v: num_rational::Ratio<u64>) -> Self {
+        Self {
+            numerator: *v.numer(),
+            denominator: *v.denom(),
+        }
+    }
+}
+
+impl From<crate::chain::Ratio> for num_rational::Ratio<u64> {
+    fn from(value: crate::chain::Ratio) -> Self {
+        Self::new(value.numerator, value.denominator)
+    }
+}
+
 // IBC-rs impls
 
 extern crate ibc as ibc_rs;

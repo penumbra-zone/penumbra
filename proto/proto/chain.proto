@@ -27,12 +27,33 @@ message ChainParameters {
   // The maximum number of blocks in the window each validator can miss signing without slashing.
   uint64 missed_blocks_maximum = 12;
 
-  /// Whether IBC (forming connections, processing IBC packets) is enabled.
+  // Whether IBC (forming connections, processing IBC packets) is enabled.
   bool ibc_enabled = 6;
-  /// Whether inbound ICS-20 transfers are enabled
+  // Whether inbound ICS-20 transfers are enabled
   bool inbound_ics20_transfers_enabled = 7;
-  /// Whether outbound ICS-20 transfers are enabled
+  // Whether outbound ICS-20 transfers are enabled
   bool outbound_ics20_transfers_enabled = 8;
+
+  // The number of epochs during which a proposal is voted on.
+  uint64 proposal_voting_epochs = 20;
+  // The deposit required to create a proposal.
+  uint64 proposal_deposit_amount = 21;
+  // The quorum required for a proposal to be considered valid, as a fraction of the total stake
+  // weight of the network.
+  Ratio proposal_valid_quorum = 22;
+  // The threshold for a proposal to pass voting, as a ratio of "yes" votes over "no" votes.
+  Ratio proposal_pass_threshold = 23;
+  // The threshold for a proposal to be vetoed, regardless of whether the "yes" and "no" votes would
+  // have passed it, as a ratio of "no with veto" votes over all total votes.
+  Ratio proposal_veto_threshold = 24;
+}
+
+// The ratio between two numbers, used in governance to describe vote thresholds and quorums.
+message Ratio {
+  // The numerator.
+  uint64 numerator = 1;
+  // The denominator.
+  uint64 denominator = 2;
 }
 
 // Parameters for Fuzzy Message Detection

@@ -31,7 +31,7 @@ impl TryFrom<pb::GenesisAppState> for AppState {
 
     fn try_from(msg: pb::GenesisAppState) -> Result<Self, Self::Error> {
         Ok(AppState {
-            chain_params: msg.chain_params.unwrap().into(),
+            chain_params: msg.chain_params.unwrap().try_into()?,
             validators: msg
                 .validators
                 .into_iter()
