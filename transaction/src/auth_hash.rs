@@ -5,9 +5,9 @@ use penumbra_proto::{transaction as pb, Message, Protobuf};
 
 use crate::{
     action::{
-        output, spend, Delegate, ICS20Withdrawal, PositionClose, PositionOpen, PositionRewardClaim,
-        PositionWithdraw, ProposalSubmit, ProposalWithdraw, ProposalWithdrawBody, Undelegate,
-        ValidatorVote, ValidatorVoteBody, Vote,
+        output, spend, swap, Delegate, ICS20Withdrawal, PositionClose, PositionOpen,
+        PositionRewardClaim, PositionWithdraw, ProposalSubmit, ProposalWithdraw,
+        ProposalWithdrawBody, Undelegate, ValidatorVote, ValidatorVoteBody, Vote,
     },
     plan::TransactionPlan,
     Action, Transaction, TransactionBody,
@@ -161,6 +161,11 @@ impl Action {
             Action::ProposalSubmit(submit) => submit.auth_hash(),
             Action::ProposalWithdraw(withdraw) => withdraw.auth_hash(),
             Action::ValidatorVote(vote) => vote.auth_hash(),
+            // SwapClaim actions are pre-authorized and don't require a spend auth sig
+            Action::SwapClaim(swap_claim) => Params::default()
+                .personal(b"PAH:swapclaim")
+                .hash(&swap_claim.encode_to_vec()),
+            Action::Swap(swap) => swap.body.auth_hash(),
             // These are data payloads, so just hash them directly,
             // since we consider them authorizing data.
             Action::ValidatorDefinition(payload) => Params::default()
@@ -209,6 +214,27 @@ impl spend::Body {
         state.update(&self.value_commitment.to_bytes());
         state.update(&self.nullifier.0.to_bytes());
         state.update(&self.rk.to_bytes());
+
+        state.finalize()
+    }
+}
+
+impl swap::Body {
+    fn auth_hash(&self) -> Hash {
+        let mut state = blake2b_simd::Params::default()
+            .personal(b"PAH:swap_body")
+            .to_state();
+
+        // All of these fields are fixed-length, so we can just throw them
+        // in the hash one after the other.
+        state.update(&self.delta_1.to_le_bytes());
+        state.update(&self.delta_2.to_le_bytes());
+        state.update(&self.fee_commitment.to_bytes());
+        // TODO: actually the trading pair isn't necessarily fixed-length
+        // right now, does this have implications?
+        state.update(&self.trading_pair.encode_to_vec());
+        state.update(&self.swap_nft.encode_to_vec());
+        state.update(&self.swap_ciphertext.0);
 
         state.finalize()
     }

@@ -9,7 +9,7 @@ pub mod output;
 mod position;
 mod propose;
 pub mod spend;
-mod swap;
+pub mod swap;
 mod swap_claim;
 mod undelegate;
 mod vote;
@@ -35,9 +35,8 @@ pub enum Action {
     Undelegate(Undelegate),
     ValidatorDefinition(pbs::ValidatorDefinition),
     IBCAction(pb_ibc::IbcAction),
-    // TODO: re-enable when Swap/SwapClaim is ready
-    // Swap(Swap),
-    // SwapClaim(SwapClaim),
+    Swap(Swap),
+    SwapClaim(SwapClaim),
     ProposalSubmit(ProposalSubmit),
     ProposalWithdraw(ProposalWithdraw),
     // DelegatorVote(DelegatorVote),
@@ -60,9 +59,11 @@ impl Action {
             Action::Spend(spend) => spend.body.value_commitment,
             Action::Delegate(delegate) => delegate.value_commitment(),
             Action::Undelegate(undelegate) => undelegate.value_commitment(),
-            // TODO: re-enable when Swap/SwapClaim is ready
-            // Action::Swap(swap) => swap.value_commitment(),
-            // Action::SwapClaim(swap_claim) => swap_claim.value_commitment(),
+            // A Swap action's only contribution to the transaction's value balance is from the fee
+            Action::Swap(swap) => swap.body.fee_commitment,
+            // A SwapClaim action has no impact on the transaction's value balance as the
+            // outputs are handled internally to the action.
+            Action::SwapClaim(_) => value::Commitment::default(),
             // These actions just post data to the chain, and leave the value balance
             // unchanged.
             Action::ValidatorDefinition(_) => value::Commitment::default(),
@@ -100,6 +101,12 @@ impl From<Action> for pb::Action {
             },
             Action::ValidatorDefinition(inner) => pb::Action {
                 action: Some(pb::action::Action::ValidatorDefinition(inner)),
+            },
+            Action::SwapClaim(inner) => pb::Action {
+                action: Some(pb::action::Action::SwapClaim(inner.into())),
+            },
+            Action::Swap(inner) => pb::Action {
+                action: Some(pb::action::Action::Swap(inner.into())),
             },
             Action::IBCAction(inner) => pb::Action {
                 action: Some(pb::action::Action::IbcAction(inner)),
@@ -149,6 +156,8 @@ impl TryFrom<pb::Action> for Action {
             pb::action::Action::ValidatorDefinition(inner) => {
                 Ok(Action::ValidatorDefinition(inner))
             }
+            pb::action::Action::SwapClaim(inner) => Ok(Action::SwapClaim(inner.try_into()?)),
+            pb::action::Action::Swap(inner) => Ok(Action::Swap(inner.try_into()?)),
             pb::action::Action::IbcAction(inner) => Ok(Action::IBCAction(inner)),
             pb::action::Action::ProposalSubmit(inner) => {
                 Ok(Action::ProposalSubmit(inner.try_into()?))
