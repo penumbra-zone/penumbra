@@ -159,6 +159,7 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.chain.GenesisAllocation", SERIALIZE),
     (".penumbra.chain.Quarantined", SERIALIZE),
     (".penumbra.chain.QuarantinedPerValidator", SERIALIZE),
+    (".penumbra.chain.Ratio", SERIALIZE),
     (".penumbra.view.SpendableNoteRecord", SERIALIZE),
     (".penumbra.view.QuarantinedNoteRecord", SERIALIZE),
     (".penumbra.transaction.AuthHash", SERIALIZE),
