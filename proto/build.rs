@@ -198,6 +198,11 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.dex.PositionClose", SERIALIZE),
     (".penumbra.dex.PositionWithdraw", SERIALIZE),
     (".penumbra.dex.PositionRewardClaim", SERIALIZE),
+    (".penumbra.dex.Swap", SERIALIZE),
+    (".penumbra.dex.SwapBody", SERIALIZE),
+    (".penumbra.dex.SwapClaim", SERIALIZE),
+    (".penumbra.dex.SwapClaimBody", SERIALIZE),
+    (".penumbra.dex.BatchSwapOutputData", SERIALIZE),
 ];
 
 static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
