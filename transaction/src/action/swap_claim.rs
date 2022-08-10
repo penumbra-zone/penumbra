@@ -2,14 +2,14 @@ use penumbra_crypto::dex::BatchSwapOutputData;
 use penumbra_crypto::dex::TradingPair;
 use penumbra_crypto::transaction::Fee;
 use penumbra_crypto::Nullifier;
-use penumbra_crypto::{proofs::transparent::OutputProof, NotePayload};
+use penumbra_crypto::{proofs::transparent::SwapClaimProof, NotePayload};
 use penumbra_proto::{dex as pb, Protobuf};
 use penumbra_tct as tct;
 
 #[derive(Debug, Clone)]
 pub struct SwapClaim {
-    zkproof: OutputProof,
-    body: Body,
+    zkproof: SwapClaimProof,
+    pub body: Body,
 }
 
 impl Protobuf<pb::SwapClaim> for SwapClaim {}

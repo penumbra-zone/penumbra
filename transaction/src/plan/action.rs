@@ -4,10 +4,14 @@ use serde::{Deserialize, Serialize};
 mod delegator_vote;
 mod output;
 mod spend;
+mod swap;
+mod swap_claim;
 
 pub use delegator_vote::DelegatorVotePlan;
 pub use output::OutputPlan;
 pub use spend::SpendPlan;
+pub use swap::SwapPlan;
+pub use swap_claim::SwapClaimPlan;
 
 use crate::action::{
     Delegate, PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw, ProposalSubmit,
@@ -33,6 +37,10 @@ pub enum ActionPlan {
     /// because we don't yet use flow encryption.
     Undelegate(Undelegate),
     ValidatorDefinition(pb_stake::ValidatorDefinition),
+    /// Describes a proposed swap.
+    Swap(SwapPlan),
+    /// Describes a swap claim.
+    SwapClaim(SwapClaimPlan),
     IBCAction(pb_ibc::IbcAction),
     /// Propose a governance vote.
     ProposalSubmit(ProposalSubmit),
@@ -155,6 +163,12 @@ impl From<ActionPlan> for pb_t::ActionPlan {
             ActionPlan::ValidatorDefinition(inner) => pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::ValidatorDefinition(inner)),
             },
+            ActionPlan::SwapClaim(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::SwapClaim(inner.into())),
+            },
+            ActionPlan::Swap(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::Swap(inner.into())),
+            },
             ActionPlan::IBCAction(inner) => pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::IbcAction(inner)),
             },
@@ -205,6 +219,10 @@ impl TryFrom<pb_t::ActionPlan> for ActionPlan {
             }
             pb_t::action_plan::Action::ValidatorDefinition(inner) => {
                 Ok(ActionPlan::ValidatorDefinition(inner))
+            }
+            pb_t::action_plan::Action::Swap(inner) => Ok(ActionPlan::Swap(inner.try_into()?)),
+            pb_t::action_plan::Action::SwapClaim(inner) => {
+                Ok(ActionPlan::SwapClaim(inner.try_into()?))
             }
             pb_t::action_plan::Action::IbcAction(inner) => Ok(ActionPlan::IBCAction(inner)),
             pb_t::action_plan::Action::ProposalSubmit(inner) => {

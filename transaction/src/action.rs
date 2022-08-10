@@ -10,7 +10,7 @@ mod position;
 mod propose;
 pub mod spend;
 pub mod swap;
-mod swap_claim;
+pub mod swap_claim;
 mod undelegate;
 mod vote;
 
