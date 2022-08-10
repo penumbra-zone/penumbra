@@ -37,7 +37,7 @@ impl IncomingViewingKey {
         &self,
         mut rng: R,
     ) -> (Address, fmd::DetectionKey) {
-        let mut random_index = [0u8; 11];
+        let mut random_index = [0u8; 16];
         rng.fill_bytes(&mut random_index);
         let index = AddressIndex::Random(random_index);
         self.payment_address(index)

@@ -33,9 +33,6 @@ pub use note_payload::NotePayload;
 pub use nullifier::Nullifier;
 pub use value::Value;
 
-// Temporary for v0 to v1 testnet address migration.
-pub use address::parse_v0_testnet_address;
-
 fn fmt_hex<T: AsRef<[u8]>>(data: T, f: &mut std::fmt::Formatter) -> std::fmt::Result {
     write!(f, "{}", hex::encode(data))
 }

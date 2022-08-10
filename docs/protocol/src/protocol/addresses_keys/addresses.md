@@ -10,17 +10,17 @@ scanning service.
 
 ## Diversifiers
 
-Addresses are parameterized by *diversifiers*, 11-byte tags used to derive up to
-$2^{88}$ distinct addresses for each spending authority.  The diversifier is
+Addresses are parameterized by *diversifiers*, 16-byte tags used to derive up to
+$2^{128}$ distinct addresses for each spending authority.  The diversifier is
 included in the address, so it should be uniformly random.  To ensure this,
-diversifiers are indexed by a *address index* $i \in \{0, \ldots, 2^{88} -
+diversifiers are indexed by a *address index* $i \in \{0, \ldots, 2^{128} -
 1\}$; the $i$-th diversifier $d_i$ is the encryption of $i$ using [AES-FF1] with
 the diversifier key $\mathsf{dk}$.[^1]
 
 Each diversifier $d$ is used to generate a *diversified basepoint* $B_d$ as
 $$B_d = H_{\mathbb G}^{\mathsf d}(d),$$
 where 
-$$H_{\mathbb G}^{\mathsf d} : \{0, 1\}^{88} \rightarrow \mathbb G$$
+$$H_{\mathbb G}^{\mathsf d} : \{0, 1\}^{128} \rightarrow \mathbb G$$
 performs [hash-to-group] for `decaf377` as follows: first, apply BLAKE2b-512
 with personalization `b"Penumbra_Divrsfy"` to the input, then, interpret the
 64-byte output as an integer in little-endian byte order and reduce it modulo
@@ -67,9 +67,9 @@ The clue key is $\mathsf{ck_d}$ is derived as $\mathsf{ck_d} =
 
 ### Address Encodings
 
-The raw binary encoding of a payment address is the 75-byte string `d || pk_d ||
-ck_d`.  We pad this string to 80 bytes, then apply the [F4Jumble] algorithm to
-this padded string. This mitigates attacks where an attacker replaces a valid
+The raw binary encoding of a payment address is the 80-byte string `d || pk_d ||
+ck_d`.  We then apply the [F4Jumble] algorithm to
+this string. This mitigates attacks where an attacker replaces a valid
 address with one derived from an attacker controlled key that encodes to an
 address with a subset of characters that collide with the target valid address.
 For example, an attacker may try to generate an address with the first

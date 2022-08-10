@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::Fq;
 
-pub const DIVERSIFIER_LEN_BYTES: usize = 11;
+pub const DIVERSIFIER_LEN_BYTES: usize = 16;
 
 #[derive(Copy, Clone, PartialEq, Eq, Derivative, Serialize, Deserialize)]
 #[derivative(Debug)]
@@ -43,13 +43,13 @@ impl TryFrom<&[u8]> for Diversifier {
     fn try_from(slice: &[u8]) -> Result<Diversifier, Self::Error> {
         if slice.len() != DIVERSIFIER_LEN_BYTES {
             return Err(anyhow!(
-                "diversifier must be 11 bytes, got {:?}",
+                "diversifier must be 16 bytes, got {:?}",
                 slice.len()
             ));
         }
 
         let mut bytes = [0u8; DIVERSIFIER_LEN_BYTES];
-        bytes.copy_from_slice(&slice[0..11]);
+        bytes.copy_from_slice(&slice[0..16]);
         Ok(Diversifier(bytes))
     }
 }
@@ -88,7 +88,7 @@ impl DiversifierKey {
             )
             .expect("binary string is the configured radix (2)");
 
-        let mut diversifier_bytes = [0; 11];
+        let mut diversifier_bytes = [0; DIVERSIFIER_LEN_BYTES];
         diversifier_bytes.copy_from_slice(&enc_index.to_bytes_le());
         Diversifier(diversifier_bytes)
     }
@@ -102,9 +102,9 @@ impl DiversifierKey {
             )
             .expect("binary string is in the configured radix (2)");
 
-        let mut index_bytes = [0; 11];
+        let mut index_bytes = [0; DIVERSIFIER_LEN_BYTES];
         index_bytes.copy_from_slice(&index.to_bytes_le());
-        if index_bytes[8] == 0 && index_bytes[9] == 0 && index_bytes[10] == 0 {
+        if index_bytes[8..16] == [0u8; 8] {
             AddressIndex::Numeric(u64::from_le_bytes(
                 index_bytes[0..8].try_into().expect("can form 8 byte array"),
             ))
@@ -120,7 +120,7 @@ pub enum AddressIndex {
     /// Reserved for client applications.
     Numeric(u64),
     /// Randomly generated.
-    Random([u8; 11]),
+    Random([u8; 16]),
 }
 
 // Workaround for https://github.com/mcarton/rust-derivative/issues/91
@@ -131,10 +131,10 @@ impl Debug for AddressIndex {
 }
 
 impl AddressIndex {
-    pub fn to_bytes(&self) -> [u8; 11] {
+    pub fn to_bytes(&self) -> [u8; 16] {
         match self {
             Self::Numeric(x) => {
-                let mut bytes = [0; 11];
+                let mut bytes = [0; DIVERSIFIER_LEN_BYTES];
                 bytes[0..8].copy_from_slice(&x.to_le_bytes());
                 bytes
             }
@@ -163,7 +163,7 @@ impl From<u32> for AddressIndex {
 
 impl From<u64> for AddressIndex {
     fn from(x: u64) -> Self {
-        AddressIndex::Numeric(x)
+        AddressIndex::Numeric(x as u64)
     }
 }
 
@@ -177,11 +177,7 @@ impl From<AddressIndex> for u128 {
     fn from(x: AddressIndex) -> Self {
         match x {
             AddressIndex::Numeric(x) => u128::from(x),
-            AddressIndex::Random(x) => {
-                let mut bytes = [0; 16];
-                bytes[0..11].copy_from_slice(&x);
-                u128::from_le_bytes(bytes)
-            }
+            AddressIndex::Random(x) => u128::from_le_bytes(x),
         }
     }
 }
@@ -192,11 +188,11 @@ impl TryFrom<AddressIndex> for u64 {
         match address_index {
             AddressIndex::Numeric(x) => Ok(x),
             AddressIndex::Random(bytes) => {
-                if bytes[8] == 0 && bytes[9] == 0 && bytes[10] == 0 {
+                if bytes[8..16] == [0u8; 8] {
                     Ok(u64::from_le_bytes(
                         bytes[0..8]
                             .try_into()
-                            .expect("can take first 8 bytes of 11-byte array"),
+                            .expect("can take first 8 bytes of 16-byte array"),
                     ))
                 } else {
                     Err(anyhow::anyhow!("address index out of range"))
@@ -212,19 +208,19 @@ impl TryFrom<&[u8]> for AddressIndex {
     fn try_from(slice: &[u8]) -> Result<AddressIndex, Self::Error> {
         if slice.len() != DIVERSIFIER_LEN_BYTES {
             return Err(anyhow!(
-                "address index must be 11 bytes, got {:?}",
+                "address index must be 16 bytes, got {:?}",
                 slice.len()
             ));
         }
 
-        // Numeric addresses have the last three bytes as zero.
-        if slice[8] == 0 && slice[9] == 0 && slice[10] == 0 {
+        // Numeric addresses have the last eight bytes as zero.
+        if slice[8..16] == [0u8; 8] {
             let mut bytes = [0; 8];
             bytes[0..8].copy_from_slice(&slice[0..8]);
             Ok(AddressIndex::Numeric(u64::from_le_bytes(bytes)))
         } else {
             let mut bytes = [0u8; DIVERSIFIER_LEN_BYTES];
-            bytes.copy_from_slice(&slice[0..11]);
+            bytes.copy_from_slice(&slice[0..16]);
             Ok(AddressIndex::Random(bytes))
         }
     }
@@ -236,7 +232,7 @@ impl From<AddressIndex> for pb::AddressIndex {
     fn from(d: AddressIndex) -> pb::AddressIndex {
         match d {
             AddressIndex::Numeric(x) => {
-                let mut bytes = [0; 11];
+                let mut bytes = [0; DIVERSIFIER_LEN_BYTES];
                 bytes[0..8].copy_from_slice(&x.to_le_bytes());
                 pb::AddressIndex {
                     inner: bytes.to_vec(),
@@ -266,7 +262,7 @@ mod tests {
     }
 
     fn address_index_strategy_random() -> BoxedStrategy<AddressIndex> {
-        any::<[u8; 11]>().prop_map(AddressIndex::Random).boxed()
+        any::<[u8; 16]>().prop_map(AddressIndex::Random).boxed()
     }
 
     fn diversifier_key_strategy() -> BoxedStrategy<DiversifierKey> {
@@ -281,7 +277,7 @@ mod tests {
         ) {
             let diversifier = key.diversifier_for_index(&index);
             let index2 = key.index_for_diversifier(&diversifier);
-            assert_eq!(index2, index );
+            assert_eq!(index2, index);
         }
 
         #[test]
