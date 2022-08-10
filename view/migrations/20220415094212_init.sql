@@ -1,5 +1,6 @@
 -- Application state, stored in single-row tables
 CREATE TABLE chain_params (bytes BLOB NOT NULL);
+CREATE TABLE fmd_parameters (bytes BLOB NOT NULL);
 CREATE TABLE full_viewing_key (bytes BLOB NOT NULL);
 CREATE TABLE sync_height (height BIGINT NOT NULL);
 CREATE TABLE note_commitment_tree (bytes BLOB NOT NULL);

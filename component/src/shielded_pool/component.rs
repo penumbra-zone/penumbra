@@ -88,6 +88,10 @@ impl Component for ShieldedPool {
             .unwrap();
         }
 
+        // Add current FMD parameters to the initial block.
+        self.compact_block.fmd_parameters =
+            Some(self.state.get_current_fmd_parameters().await.unwrap());
+
         // Close the genesis block
         self.finish_nct_block().await;
 
@@ -490,6 +494,8 @@ impl ShieldedPool {
         .is_epoch_end(height)
         {
             tracing::debug!(?height, "end of epoch");
+
+            // TODO: Put updated FMD parameters in the compact block
 
             let epoch_root = self
                 .note_commitment_tree

@@ -1,6 +1,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use penumbra_chain::{AnnotatedNotePayload, CompactBlock, Epoch, NoteSource};
+use penumbra_chain::{
+    params::FmdParameters, AnnotatedNotePayload, CompactBlock, Epoch, NoteSource,
+};
 use penumbra_crypto::{FullViewingKey, IdentityKey, Note, NotePayload, Nullifier};
 use penumbra_tct as tct;
 
@@ -15,6 +17,7 @@ pub struct FilteredBlock {
     pub spent_quarantined_nullifiers: BTreeMap<IdentityKey, Vec<Nullifier>>,
     pub slashed_validators: Vec<IdentityKey>,
     pub height: u64,
+    pub fmd_parameters: Option<FmdParameters>,
 }
 
 impl FilteredBlock {
@@ -50,6 +53,7 @@ pub async fn scan_block(
         epoch_root,
         quarantined,
         slashed,
+        fmd_parameters,
     }: CompactBlock,
     epoch_duration: u64,
     storage: &Storage,
@@ -206,6 +210,7 @@ pub async fn scan_block(
         spent_quarantined_nullifiers: filtered_quarantined_nullifiers,
         slashed_validators: slashed,
         height,
+        fmd_parameters,
     };
 
     if !result.spent_quarantined_nullifiers.is_empty() || !result.new_quarantined_notes.is_empty() {

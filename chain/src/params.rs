@@ -128,3 +128,35 @@ impl Default for ChainParameters {
         }
     }
 }
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(try_from = "pb::FmdParameters", into = "pb::FmdParameters")]
+pub struct FmdParameters {
+    pub precision_bits: u8,
+}
+
+impl Protobuf<pb::FmdParameters> for FmdParameters {}
+
+impl TryFrom<pb::FmdParameters> for FmdParameters {
+    type Error = anyhow::Error;
+
+    fn try_from(msg: pb::FmdParameters) -> Result<Self, Self::Error> {
+        Ok(FmdParameters {
+            precision_bits: msg.precision_bits.try_into()?,
+        })
+    }
+}
+
+impl From<FmdParameters> for pb::FmdParameters {
+    fn from(params: FmdParameters) -> Self {
+        pb::FmdParameters {
+            precision_bits: u32::from(params.precision_bits),
+        }
+    }
+}
+
+impl Default for FmdParameters {
+    fn default() -> Self {
+        Self { precision_bits: 0 }
+    }
+}

@@ -43,6 +43,9 @@ service ViewProtocol {
     // Query for the current chain parameters.
     rpc ChainParameters(ChainParamsRequest) returns (chain.ChainParameters);
 
+    // Query for the current FMD parameters.
+    rpc FMDParameters(FMDParametersRequest) returns (chain.FmdParameters);
+
     // Query for a note by its note commitment, optionally waiting until the note is detected.
     rpc NoteByCommitment(NoteByCommitmentRequest) returns (NoteRecord);
 
@@ -59,6 +62,10 @@ message NoteByCommitmentRequest {
 
 // Requests the current chain parameters from the view service.
 message ChainParamsRequest {
+}
+
+// Requests the current FMD parameters from the view service.
+message FMDParametersRequest {
 }
 
 // Requests all assets known to the view service.
