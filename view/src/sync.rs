@@ -58,8 +58,6 @@ pub async fn scan_block(
     epoch_duration: u64,
     storage: &Storage,
 ) -> anyhow::Result<FilteredBlock> {
-    // TODO: Validation of FMD parameters?
-
     // Trial-decrypt a note with our own specific viewing key
     let trial_decrypt = |note_payload: NotePayload| -> tokio::task::JoinHandle<Option<Note>> {
         // TODO: change fvk to Arc<FVK> in Worker and pass to scan_block as Arc

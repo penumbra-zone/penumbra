@@ -119,11 +119,7 @@ impl From<CompactBlock> for pb::CompactBlock {
                 Some(cb.quarantined.into())
             },
             slashed: cb.slashed.into_iter().map(Into::into).collect(),
-            fmd_parameters: if cb.fmd_parameters.is_some() {
-                Some(cb.fmd_parameters.unwrap().into())
-            } else {
-                None
-            },
+            fmd_parameters: cb.fmd_parameters.map(Into::into),
         }
     }
 }

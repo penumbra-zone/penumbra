@@ -157,6 +157,6 @@ impl From<FmdParameters> for pb::FmdParameters {
 
 impl Default for FmdParameters {
     fn default() -> Self {
-        Self { precision_bits: 1 }
+        Self { precision_bits: 0 }
     }
 }
