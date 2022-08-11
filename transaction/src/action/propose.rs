@@ -208,17 +208,12 @@ impl ProposalSubmit {
             amount: self.deposit_amount,
             asset_id: STAKING_TOKEN_ASSET_ID.clone(),
         }
-        .commit(Fr::zero());
-
-        let zero = Value {
-            amount: 0,
-            asset_id: STAKING_TOKEN_ASSET_ID.clone(),
-        }
+        // We can use the zero blinding factor for the value commitment because the value is public.
         .commit(Fr::zero());
 
         // Proposal submissions *require* the deposit amount in order to be accepted, so they
         // contribute (-deposit) to the value balance of the transaction
-        zero - deposit
+        -deposit
     }
 }
 
