@@ -3,6 +3,7 @@ mod component;
 pub(crate) mod event;
 mod metrics;
 
+pub mod proposal;
 pub mod state_key;
 
 pub use self::metrics::register_metrics;

@@ -17,14 +17,14 @@ pub struct Proposal {
     pub description: String,
 
     /// The specific kind and attributes of the proposal.
-    pub kind: ProposalKind,
+    pub payload: ProposalPayload,
 }
 
 impl From<Proposal> for pb::Proposal {
     fn from(inner: Proposal) -> pb::Proposal {
         pb::Proposal {
             description: inner.description,
-            kind: Some(inner.kind.into()),
+            payload: Some(inner.payload.into()),
         }
     }
 }
@@ -35,8 +35,8 @@ impl TryFrom<pb::Proposal> for Proposal {
     fn try_from(inner: pb::Proposal) -> Result<Proposal, Self::Error> {
         Ok(Proposal {
             description: inner.description,
-            kind: inner
-                .kind
+            payload: inner
+                .payload
                 .ok_or_else(|| anyhow::anyhow!("missing proposal kind"))?
                 .try_into()?,
         })
@@ -47,8 +47,8 @@ impl Protobuf<pb::Proposal> for Proposal {}
 
 /// The machine-interpretable body of a proposal.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(try_from = "pb::proposal::Kind", into = "pb::proposal::Kind")]
-pub enum ProposalKind {
+#[serde(try_from = "pb::proposal::Payload", into = "pb::proposal::Payload")]
+pub enum ProposalPayload {
     /// A signaling proposal is merely for coordination; it does not enact anything automatically by
     /// itself.
     Signaling {
@@ -79,19 +79,19 @@ pub enum ProposalKind {
     },
 }
 
-impl From<ProposalKind> for pb::proposal::Kind {
-    fn from(value: ProposalKind) -> pb::proposal::Kind {
+impl From<ProposalPayload> for pb::proposal::Payload {
+    fn from(value: ProposalPayload) -> pb::proposal::Payload {
         match value {
-            ProposalKind::Signaling { commit } => {
-                pb::proposal::Kind::Signaling(pb::proposal::Signaling { commit })
+            ProposalPayload::Signaling { commit } => {
+                pb::proposal::Payload::Signaling(pb::proposal::Signaling { commit })
             }
-            ProposalKind::Emergency { halt_chain } => {
-                pb::proposal::Kind::Emergency(pb::proposal::Emergency { halt_chain })
+            ProposalPayload::Emergency { halt_chain } => {
+                pb::proposal::Payload::Emergency(pb::proposal::Emergency { halt_chain })
             }
-            ProposalKind::ParameterChange {
+            ProposalPayload::ParameterChange {
                 effective_height,
                 new_parameters,
-            } => pb::proposal::Kind::ParameterChange(pb::proposal::ParameterChange {
+            } => pb::proposal::Payload::ParameterChange(pb::proposal::ParameterChange {
                 effective_height,
                 new_parameters: new_parameters
                     .into_iter()
@@ -103,10 +103,10 @@ impl From<ProposalKind> for pb::proposal::Kind {
                     )
                     .collect(),
             }),
-            ProposalKind::DaoSpend {
+            ProposalPayload::DaoSpend {
                 schedule_transactions,
                 cancel_transactions,
-            } => pb::proposal::Kind::DaoSpend(pb::proposal::DaoSpend {
+            } => pb::proposal::Payload::DaoSpend(pb::proposal::DaoSpend {
                 schedule_transactions: schedule_transactions
                     .into_iter()
                     .map(|(execute_at_height, transaction)| {
@@ -130,18 +130,18 @@ impl From<ProposalKind> for pb::proposal::Kind {
     }
 }
 
-impl TryFrom<pb::proposal::Kind> for ProposalKind {
+impl TryFrom<pb::proposal::Payload> for ProposalPayload {
     type Error = anyhow::Error;
 
-    fn try_from(msg: pb::proposal::Kind) -> Result<Self, Self::Error> {
+    fn try_from(msg: pb::proposal::Payload) -> Result<Self, Self::Error> {
         match msg {
-            pb::proposal::Kind::Signaling(inner) => Ok(ProposalKind::Signaling {
+            pb::proposal::Payload::Signaling(inner) => Ok(ProposalPayload::Signaling {
                 commit: inner.commit,
             }),
-            pb::proposal::Kind::Emergency(inner) => Ok(ProposalKind::Emergency {
+            pb::proposal::Payload::Emergency(inner) => Ok(ProposalPayload::Emergency {
                 halt_chain: inner.halt_chain,
             }),
-            pb::proposal::Kind::ParameterChange(inner) => Ok(ProposalKind::ParameterChange {
+            pb::proposal::Payload::ParameterChange(inner) => Ok(ProposalPayload::ParameterChange {
                 effective_height: inner.effective_height,
                 new_parameters: inner
                     .new_parameters
@@ -149,7 +149,7 @@ impl TryFrom<pb::proposal::Kind> for ProposalKind {
                     .map(|inner| (inner.parameter, inner.value))
                     .collect(),
             }),
-            pb::proposal::Kind::DaoSpend(inner) => Ok(ProposalKind::DaoSpend {
+            pb::proposal::Payload::DaoSpend(inner) => Ok(ProposalPayload::DaoSpend {
                 schedule_transactions: inner
                     .schedule_transactions
                     .into_iter()

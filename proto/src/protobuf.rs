@@ -32,11 +32,12 @@ where
 // This should only be done here in cases where the domain type lives in a crate
 // that shouldn't depend on the Penumbra proto framework.
 
-use crate::crypto::{BindingSignature, SpendAuthSignature};
-use decaf377_rdsa::{Binding, Signature, SpendAuth};
+use crate::crypto::{BindingSignature, SpendAuthSignature, SpendVerificationKey};
+use decaf377_rdsa::{Binding, Signature, SpendAuth, VerificationKey};
 
 impl Protobuf<SpendAuthSignature> for Signature<SpendAuth> {}
 impl Protobuf<BindingSignature> for Signature<Binding> {}
+impl Protobuf<SpendVerificationKey> for VerificationKey<SpendAuth> {}
 
 impl From<Signature<SpendAuth>> for SpendAuthSignature {
     fn from(sig: Signature<SpendAuth>) -> Self {
@@ -54,6 +55,14 @@ impl From<Signature<Binding>> for BindingSignature {
     }
 }
 
+impl From<VerificationKey<SpendAuth>> for SpendVerificationKey {
+    fn from(key: VerificationKey<SpendAuth>) -> Self {
+        Self {
+            inner: key.to_bytes().to_vec(),
+        }
+    }
+}
+
 impl TryFrom<SpendAuthSignature> for Signature<SpendAuth> {
     type Error = anyhow::Error;
     fn try_from(value: SpendAuthSignature) -> Result<Self, Self::Error> {
@@ -64,6 +73,13 @@ impl TryFrom<SpendAuthSignature> for Signature<SpendAuth> {
 impl TryFrom<BindingSignature> for Signature<Binding> {
     type Error = anyhow::Error;
     fn try_from(value: BindingSignature) -> Result<Self, Self::Error> {
+        Ok(value.inner.as_slice().try_into()?)
+    }
+}
+
+impl TryFrom<SpendVerificationKey> for VerificationKey<SpendAuth> {
+    type Error = anyhow::Error;
+    fn try_from(value: SpendVerificationKey) -> Result<Self, Self::Error> {
         Ok(value.inner.as_slice().try_into()?)
     }
 }
