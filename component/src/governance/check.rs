@@ -45,17 +45,7 @@ pub mod stateless {
     }
 
     pub fn proposal_withdraw(ProposalWithdraw { body, auth_sig }: &ProposalWithdraw) -> Result<()> {
-        // Check the signature:
-        let body_bytes = body.encode_to_vec();
-        body.withdraw_proposal_key
-            .verify(&body_bytes, auth_sig)
-            .context("proposal withdraw signature failed to verify")?;
-
-        // This is stateless verification, so we still need to check that the verification key
-        // provided is the *same* as the one submitted when the proposal was created, that the
-        // proposal exists in the first place, and that it is either pre-voting or during the voting
-        // period.
-
+        // All the checks are stateful.
         Ok(())
     }
 
@@ -77,27 +67,48 @@ pub mod stateless {
 pub mod stateful {
     use super::super::View as _;
     use super::*;
-    use penumbra_crypto::IdentityKey;
+    use penumbra_chain::View as _;
+    use penumbra_crypto::{IdentityKey, STAKING_TOKEN_DENOM};
+    use penumbra_proto::Protobuf;
     use penumbra_storage::State;
 
-    pub async fn proposal_submit(_state: &State, _proposal_submit: &ProposalSubmit) -> Result<()> {
-        // No stateful checks necessary for proposal submit
+    pub async fn proposal_submit(
+        state: &State,
+        ProposalSubmit {
+            deposit_amount,
+            proposal: _,               // statelessly verified
+            deposit_refund_address: _, // can be anything
+            withdraw_proposal_key: _,  // can be any valid key
+        }: &ProposalSubmit,
+    ) -> Result<()> {
+        // Check that the deposit amount agrees with the chain parameters
+        let chain_parameters = state.get_chain_params().await?;
+        if *deposit_amount != chain_parameters.proposal_deposit_amount {
+            anyhow::bail!(
+                "submitted proposal deposit of {}{} does not match required proposal deposit of {}{}",
+                deposit_amount,
+                *STAKING_TOKEN_DENOM,
+                chain_parameters.proposal_deposit_amount,
+                *STAKING_TOKEN_DENOM,
+            );
+        }
+
         Ok(())
     }
 
     pub async fn proposal_withdraw(
         state: &State,
-        ProposalWithdraw {
+        proposal_withdraw @ ProposalWithdraw {
             body:
                 ProposalWithdrawBody {
                     proposal,
-                    withdraw_proposal_key,
+                    reason: _, // Nothing is done here
                 },
             auth_sig: _, // We already checked this in stateless verification
         }: &ProposalWithdraw,
     ) -> Result<()> {
         proposal_withdrawable(state, *proposal).await?;
-        proposal_withdraw_key_matches(state, *proposal, withdraw_proposal_key).await?;
+        proposal_withdraw_key_verifies(state, proposal_withdraw).await?;
         Ok(())
     }
 
@@ -120,20 +131,18 @@ pub mod stateful {
         Ok(())
     }
 
-    async fn proposal_withdraw_key_matches(
+    async fn proposal_withdraw_key_verifies(
         state: &State,
-        proposal_id: u64,
-        withdraw_proposal_key: &VerificationKey<SpendAuth>,
+        ProposalWithdraw { body, auth_sig }: &ProposalWithdraw,
     ) -> Result<()> {
-        if let Some(stored_key) = state.proposal_withdraw_key(proposal_id).await? {
-            if stored_key != *withdraw_proposal_key {
-                anyhow::bail!(
-                    "withdrawal key for proposal {} does not match signature on withdrawal",
-                    proposal_id
-                );
-            }
+        if let Some(withdraw_proposal_key) = state.proposal_withdraw_key(body.proposal).await? {
+            // Check the signature using the verification key submitted when the proposal was submitted:
+            let body_bytes = body.encode_to_vec();
+            withdraw_proposal_key
+                .verify(&body_bytes, auth_sig)
+                .context("proposal withdraw signature failed to verify")?;
         } else {
-            anyhow::bail!("proposal {} does not exist", proposal_id);
+            anyhow::bail!("proposal {} does not exist", body.proposal);
         }
 
         Ok(())

@@ -6,6 +6,7 @@ import "crypto.proto";
 import "stake.proto";
 import "ibc.proto";
 import "dex.proto";
+import "governance.proto";
 
 // An authorization hash for a Penumbra transaction.
 message AuthHash {
@@ -134,8 +135,8 @@ message ProposalWithdraw {
 message ProposalWithdrawBody {
   // The proposal to be withdrawn.
   uint64 proposal = 1;
-  // The randomized proposer key from the submission of the proposal.
-  bytes rk = 2;
+  // The reason for the proposal being withdrawn.
+  string reason = 2;
 }
 
 message ValidatorVote {
@@ -149,7 +150,7 @@ message ValidatorVoteBody {
   // The proposal being voted on.
   uint64 proposal = 1;
   // The vote.
-  Vote vote = 2;
+  governance.Vote vote = 2;
   // The validator identity.
   crypto.IdentityKey identity_key = 3;
 }
@@ -325,7 +326,7 @@ message DelegatorVotePlan {
     // The proposal to vote on.
     uint64 proposal = 1;
     // The vote to cast.
-    Vote vote = 2;
+    governance.Vote vote = 2;
     // The delegation note to prove that we can vote.
     crypto.Note staked_note = 3;
     // The position of that delegation note.
@@ -425,27 +426,4 @@ message Proposal {
       AuthHash auth_hash = 2;
     }
   }
-}
-
-// A vote on a proposal.
-message Vote {
-  // The vote.
-  oneof vote {
-    Yes yes = 1;
-    No no = 2;
-    Abstain abstain = 3;
-    NoWithVeto no_with_veto = 4;
-  }
-
-  // A yes vote.
-  message Yes {}
-
-  // A no vote.
-  message No {}
-
-  // An abstain vote.
-  message Abstain {}
-
-  // A veto vote.
-  message NoWithVeto {}
 }
