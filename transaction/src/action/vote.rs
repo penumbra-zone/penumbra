@@ -1,11 +1,11 @@
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_crypto::IdentityKey;
-use penumbra_proto::{transaction as pb, Protobuf};
+use penumbra_proto::{governance as pb_g, transaction as pb_t, Protobuf};
 use serde::{Deserialize, Serialize};
 
 /// A vote on a proposal.
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
-#[serde(try_from = "pb::Vote", into = "pb::Vote")]
+#[serde(try_from = "pb_g::Vote", into = "pb_g::Vote")]
 pub enum Vote {
     /// The vote is to approve the proposal.
     Yes,
@@ -17,44 +17,44 @@ pub enum Vote {
     NoWithVeto,
 }
 
-impl From<Vote> for pb::Vote {
+impl From<Vote> for pb_g::Vote {
     fn from(value: Vote) -> Self {
         match value {
-            Vote::Yes => pb::Vote {
-                vote: Some(pb::vote::Vote::Yes(pb::vote::Yes {})),
+            Vote::Yes => pb_g::Vote {
+                vote: Some(pb_g::vote::Vote::Yes(pb_g::vote::Yes {})),
             },
-            Vote::No => pb::Vote {
-                vote: Some(pb::vote::Vote::No(pb::vote::No {})),
+            Vote::No => pb_g::Vote {
+                vote: Some(pb_g::vote::Vote::No(pb_g::vote::No {})),
             },
-            Vote::Abstain => pb::Vote {
-                vote: Some(pb::vote::Vote::Abstain(pb::vote::Abstain {})),
+            Vote::Abstain => pb_g::Vote {
+                vote: Some(pb_g::vote::Vote::Abstain(pb_g::vote::Abstain {})),
             },
-            Vote::NoWithVeto => pb::Vote {
-                vote: Some(pb::vote::Vote::NoWithVeto(pb::vote::NoWithVeto {})),
+            Vote::NoWithVeto => pb_g::Vote {
+                vote: Some(pb_g::vote::Vote::NoWithVeto(pb_g::vote::NoWithVeto {})),
             },
         }
     }
 }
 
-impl TryFrom<pb::Vote> for Vote {
+impl TryFrom<pb_g::Vote> for Vote {
     type Error = anyhow::Error;
 
-    fn try_from(msg: pb::Vote) -> Result<Self, Self::Error> {
+    fn try_from(msg: pb_g::Vote) -> Result<Self, Self::Error> {
         match msg.vote {
-            Some(pb::vote::Vote::Yes(_)) => Ok(Vote::Yes),
-            Some(pb::vote::Vote::No(_)) => Ok(Vote::No),
-            Some(pb::vote::Vote::Abstain(_)) => Ok(Vote::Abstain),
-            Some(pb::vote::Vote::NoWithVeto(_)) => Ok(Vote::NoWithVeto),
+            Some(pb_g::vote::Vote::Yes(_)) => Ok(Vote::Yes),
+            Some(pb_g::vote::Vote::No(_)) => Ok(Vote::No),
+            Some(pb_g::vote::Vote::Abstain(_)) => Ok(Vote::Abstain),
+            Some(pb_g::vote::Vote::NoWithVeto(_)) => Ok(Vote::NoWithVeto),
             None => Err(anyhow::anyhow!("missing vote in `Vote`")),
         }
     }
 }
 
-impl Protobuf<pb::Vote> for Vote {}
+impl Protobuf<pb_g::Vote> for Vote {}
 
 /// A vote by a validator.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(try_from = "pb::ValidatorVote", into = "pb::ValidatorVote")]
+#[serde(try_from = "pb_t::ValidatorVote", into = "pb_t::ValidatorVote")]
 pub struct ValidatorVote {
     /// The body of the validator vote.
     pub body: ValidatorVoteBody,
@@ -62,7 +62,7 @@ pub struct ValidatorVote {
     pub auth_sig: Signature<SpendAuth>,
 }
 
-impl From<ValidatorVote> for pb::ValidatorVote {
+impl From<ValidatorVote> for pb_t::ValidatorVote {
     fn from(msg: ValidatorVote) -> Self {
         Self {
             body: Some(msg.body.into()),
@@ -71,10 +71,10 @@ impl From<ValidatorVote> for pb::ValidatorVote {
     }
 }
 
-impl TryFrom<pb::ValidatorVote> for ValidatorVote {
+impl TryFrom<pb_t::ValidatorVote> for ValidatorVote {
     type Error = anyhow::Error;
 
-    fn try_from(msg: pb::ValidatorVote) -> Result<Self, Self::Error> {
+    fn try_from(msg: pb_t::ValidatorVote) -> Result<Self, Self::Error> {
         Ok(Self {
             body: msg
                 .body
@@ -90,7 +90,7 @@ impl TryFrom<pb::ValidatorVote> for ValidatorVote {
 
 /// A public vote as a validator.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(try_from = "pb::ValidatorVoteBody", into = "pb::ValidatorVoteBody")]
+#[serde(try_from = "pb_t::ValidatorVoteBody", into = "pb_t::ValidatorVoteBody")]
 pub struct ValidatorVoteBody {
     /// The proposal ID to vote on.
     pub proposal: u64,
@@ -100,9 +100,9 @@ pub struct ValidatorVoteBody {
     pub identity_key: IdentityKey,
 }
 
-impl From<ValidatorVoteBody> for pb::ValidatorVoteBody {
+impl From<ValidatorVoteBody> for pb_t::ValidatorVoteBody {
     fn from(value: ValidatorVoteBody) -> Self {
-        pb::ValidatorVoteBody {
+        pb_t::ValidatorVoteBody {
             proposal: value.proposal,
             vote: Some(value.vote.into()),
             identity_key: Some(value.identity_key.into()),
@@ -110,10 +110,10 @@ impl From<ValidatorVoteBody> for pb::ValidatorVoteBody {
     }
 }
 
-impl TryFrom<pb::ValidatorVoteBody> for ValidatorVoteBody {
+impl TryFrom<pb_t::ValidatorVoteBody> for ValidatorVoteBody {
     type Error = anyhow::Error;
 
-    fn try_from(msg: pb::ValidatorVoteBody) -> Result<Self, Self::Error> {
+    fn try_from(msg: pb_t::ValidatorVoteBody) -> Result<Self, Self::Error> {
         Ok(ValidatorVoteBody {
             proposal: msg.proposal,
             vote: msg
@@ -128,7 +128,7 @@ impl TryFrom<pb::ValidatorVoteBody> for ValidatorVoteBody {
     }
 }
 
-impl Protobuf<pb::ValidatorVoteBody> for ValidatorVoteBody {}
+impl Protobuf<pb_t::ValidatorVoteBody> for ValidatorVoteBody {}
 
 #[derive(Debug, Clone)]
 pub struct DelegatorVote {

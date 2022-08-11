@@ -296,15 +296,15 @@ impl TryFrom<pb::ProposalWithdraw> for ProposalWithdraw {
 pub struct ProposalWithdrawBody {
     /// The proposal ID to withdraw.
     pub proposal: u64,
-    /// The randomized proposal key from the original proposal.
-    pub withdraw_proposal_key: VerificationKey<SpendAuth>,
+    // The reason the proposal was withdrawn.
+    pub reason: String,
 }
 
 impl From<ProposalWithdrawBody> for pb::ProposalWithdrawBody {
     fn from(value: ProposalWithdrawBody) -> pb::ProposalWithdrawBody {
         pb::ProposalWithdrawBody {
             proposal: value.proposal,
-            rk: value.withdraw_proposal_key.to_bytes().to_vec().into(),
+            reason: value.reason,
         }
     }
 }
@@ -315,7 +315,7 @@ impl TryFrom<pb::ProposalWithdrawBody> for ProposalWithdrawBody {
     fn try_from(msg: pb::ProposalWithdrawBody) -> Result<Self, Self::Error> {
         Ok(ProposalWithdrawBody {
             proposal: msg.proposal,
-            withdraw_proposal_key: msg.rk.to_vec()[..].try_into()?,
+            reason: msg.reason,
         })
     }
 }
