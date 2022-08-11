@@ -34,8 +34,8 @@ message ChainParameters {
   // Whether outbound ICS-20 transfers are enabled
   bool outbound_ics20_transfers_enabled = 8;
 
-  // The number of epochs during which a proposal is voted on.
-  uint64 proposal_voting_epochs = 20;
+  // The number of blocks during which a proposal is voted on.
+  uint64 proposal_voting_blocks = 20;
   // The deposit required to create a proposal.
   uint64 proposal_deposit_amount = 21;
   // The quorum required for a proposal to be considered valid, as a fraction of the total stake

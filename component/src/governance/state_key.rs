@@ -24,7 +24,7 @@ pub fn proposal_voting_end(proposal_id: u64) -> String {
     format!("governance/proposal/{}/voting_end", proposal_id)
 }
 
-pub fn active_proposals() -> &'static str {
+pub fn unfinished_proposals() -> &'static str {
     "governance/unfinished_proposals"
 }
 

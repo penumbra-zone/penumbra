@@ -64,8 +64,8 @@ pub struct ChainParameters {
     /// Whether outbound ICS-20 transfers are enabled
     pub outbound_ics20_transfers_enabled: bool,
 
-    /// The number of epochs during which a proposal is voted on.
-    pub proposal_voting_epochs: u64,
+    /// The number of blocks during which a proposal is voted on.
+    pub proposal_voting_blocks: u64,
     /// The deposit required to create a proposal.
     pub proposal_deposit_amount: u64,
     /// The quorum required for a proposal to be considered valid, as a fraction of the total stake
@@ -97,7 +97,7 @@ impl TryFrom<pb::ChainParameters> for ChainParameters {
             ibc_enabled: msg.ibc_enabled,
             inbound_ics20_transfers_enabled: msg.inbound_ics20_transfers_enabled,
             outbound_ics20_transfers_enabled: msg.outbound_ics20_transfers_enabled,
-            proposal_voting_epochs: msg.proposal_voting_epochs,
+            proposal_voting_blocks: msg.proposal_voting_blocks,
             proposal_deposit_amount: msg.proposal_deposit_amount,
             proposal_valid_quorum: msg
                 .proposal_valid_quorum
@@ -130,7 +130,7 @@ impl From<ChainParameters> for pb::ChainParameters {
             ibc_enabled: params.ibc_enabled,
             inbound_ics20_transfers_enabled: params.inbound_ics20_transfers_enabled,
             outbound_ics20_transfers_enabled: params.outbound_ics20_transfers_enabled,
-            proposal_voting_epochs: params.proposal_voting_epochs,
+            proposal_voting_blocks: params.proposal_voting_blocks,
             proposal_deposit_amount: params.proposal_deposit_amount,
             proposal_valid_quorum: Some(params.proposal_valid_quorum.into()),
             proposal_pass_threshold: Some(params.proposal_pass_threshold.into()),
@@ -161,7 +161,7 @@ impl Default for ChainParameters {
             inbound_ics20_transfers_enabled: false,
             outbound_ics20_transfers_enabled: false,
             // governance
-            proposal_voting_epochs: 2,
+            proposal_voting_blocks: 100,
             proposal_deposit_amount: 10_000_000, // 10,000,000 upenumbra = 10 penumbra
             // governance parameters copied from cosmos hub
             proposal_valid_quorum: Ratio::new(2, 5),

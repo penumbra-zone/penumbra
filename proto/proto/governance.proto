@@ -26,9 +26,6 @@ message Vote {
 
 // The current state of a proposal.
 message ProposalState {
-    // The proposal has been proposed but voting hasn't started.
-    message Proposed {}
-
     // Voting is in progress and the proposal has not yet concluded voting or been withdrawn.
     message Voting {}
 
@@ -42,7 +39,6 @@ message ProposalState {
 
     // The state of the proposal.
     oneof state {
-        Proposed proposed = 1;
         Voting voting = 2;
         Withdrawn withdrawn = 3;
         Finished finished = 4;

@@ -116,8 +116,8 @@ pub mod stateful {
         if let Some(proposal_state) = state.proposal_state(proposal_id).await? {
             use proposal::State::*;
             match proposal_state {
-                Proposed | Voting => {
-                    // You can withdraw a proposal that is either proposed or in voting period presently
+                Voting => {
+                    // You can withdraw a proposal that is currently voting
                 }
                 Withdrawn => anyhow::bail!("proposal {} has already been withdrawn", proposal_id),
                 Finished { .. } => {
