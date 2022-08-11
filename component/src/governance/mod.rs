@@ -1,6 +1,7 @@
 mod check;
 mod component;
 pub(crate) mod event;
+mod execute;
 mod metrics;
 
 pub mod proposal;

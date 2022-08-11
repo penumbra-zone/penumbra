@@ -12,7 +12,7 @@ use tracing::instrument;
 
 use crate::{Component, Context};
 
-use super::{check, event, metrics, proposal, state_key};
+use super::{check, event, execute, metrics, proposal, state_key};
 
 pub struct Governance {
     state: State,
@@ -65,7 +65,21 @@ impl Component for Governance {
     }
 
     #[instrument(name = "governance", skip(self, ctx, tx))]
-    async fn execute_tx(&mut self, ctx: Context, tx: &Transaction) {}
+    async fn execute_tx(&mut self, ctx: Context, tx: &Transaction) {
+        for proposal_submit in tx.proposal_submits() {
+            execute::proposal_submit(&self.state, proposal_submit).await;
+        }
+        for proposal_withdraw in tx.proposal_withdraws() {
+            execute::proposal_withdraw(&self.state, proposal_withdraw).await;
+        }
+        for validator_vote in tx.validator_votes() {
+            execute::validator_vote(&self.state, validator_vote).await;
+        }
+        // TODO: fill in when delegator votes happen
+        // for delegator_vote in tx.delegator_votes() {
+        //     execute::delegator_vote(&self.state, delegator_vote).await;
+        // }
+    }
 
     #[instrument(name = "governance", skip(self, _ctx, _end_block))]
     async fn end_block(&mut self, _ctx: Context, _end_block: &abci::request::EndBlock) {
