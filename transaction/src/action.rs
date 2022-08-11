@@ -18,7 +18,9 @@ pub use self::ibc::ICS20Withdrawal;
 pub use delegate::Delegate;
 pub use output::Output;
 pub use position::{PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw};
-pub use propose::{Proposal, ProposalKind, ProposalSubmit, ProposalWithdraw, ProposalWithdrawBody};
+pub use propose::{
+    Proposal, ProposalPayload, ProposalSubmit, ProposalWithdraw, ProposalWithdrawBody,
+};
 pub use spend::Spend;
 pub use swap::Swap;
 pub use swap_claim::SwapClaim;

@@ -38,6 +38,11 @@ pub mod dex {
     include!(concat!(env!("OUT_DIR"), "/penumbra.dex.rs"));
 }
 
+/// Governance structures.
+pub mod governance {
+    include!(concat!(env!("OUT_DIR"), "/penumbra.governance.rs"));
+}
+
 /// Transaction structures.
 pub mod transaction {
     include!(concat!(env!("OUT_DIR"), "/penumbra.transaction.rs"));

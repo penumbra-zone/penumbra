@@ -48,6 +48,7 @@ fn main() -> Result<()> {
             "proto/chain.proto",
             "proto/ibc.proto",
             "proto/dex.proto",
+            "proto/governance.proto",
         ],
         &["proto/", "ibc-go-vendor/"],
     )?;
@@ -208,6 +209,9 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.dex.SwapClaimBody", SERIALIZE),
     (".penumbra.dex.SwapPlaintext", SERIALIZE),
     (".penumbra.dex.BatchSwapOutputData", SERIALIZE),
+    (".penumbra.governance.Vote", SERIALIZE),
+    (".penumbra.governance.ProposalState", SERIALIZE),
+    (".penumbra.governance.ProposalOutcome", SERIALIZE),
 ];
 
 static FIELD_ATTRIBUTES: &[(&str, &str)] = &[

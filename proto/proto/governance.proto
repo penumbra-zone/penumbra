@@ -1,0 +1,78 @@
+syntax = "proto3";
+package penumbra.governance;
+
+// A vote on a proposal.
+message Vote {
+  // The vote.
+  oneof vote {
+    Yes yes = 1;
+    No no = 2;
+    Abstain abstain = 3;
+    NoWithVeto no_with_veto = 4;
+  }
+
+  // A yes vote.
+  message Yes {}
+
+  // A no vote.
+  message No {}
+
+  // An abstain vote.
+  message Abstain {}
+
+  // A veto vote.
+  message NoWithVeto {}
+}
+
+// The current state of a proposal.
+message ProposalState {
+    // The proposal has been proposed but voting hasn't started.
+    message Proposed {}
+
+    // Voting is in progress and the proposal has not yet concluded voting or been withdrawn.
+    message Voting {}
+
+    // The proposal has been withdrawn but the voting period is not yet concluded.
+    message Withdrawn {}
+
+    // The voting period has ended, and the proposal has been assigned an outcome.
+    message Finished {
+        ProposalOutcome outcome = 1;
+    }
+
+    // The state of the proposal.
+    oneof state {
+        Proposed proposed = 1;
+        Voting voting = 2;
+        Withdrawn withdrawn = 3;
+        Finished finished = 4;
+    }
+}
+
+// The outcome of a concluded proposal.
+message ProposalOutcome {
+    // The proposal was passed.
+    message Passed {}
+
+    // The proposal did not pass.
+    message Failed {
+        // The proposal was withdrawn during the voting period.
+        bool withdrawn = 1;
+    }
+
+    // The proposal did not pass, and was vetoed.
+    message Vetoed {
+        // The proposal was withdrawn during the voting period.
+        bool withdrawn = 1;
+    }
+
+    // The proposal was withdrawn before the voting period started.
+    message WithdrawnBeforeVote {}
+
+    oneof outcome {
+        Passed passed = 1;
+        Failed failed = 2;
+        Vetoed vetoed = 3;
+        WithdrawnBeforeVote withdrawn_before_vote = 4;
+    }
+}

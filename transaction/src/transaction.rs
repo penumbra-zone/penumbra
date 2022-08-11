@@ -14,7 +14,9 @@ use penumbra_tct as tct;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    action::{Delegate, Undelegate},
+    action::{
+        Delegate, DelegatorVote, ProposalSubmit, ProposalWithdraw, Undelegate, ValidatorVote,
+    },
     Action,
 };
 
@@ -59,6 +61,46 @@ impl Transaction {
             }
         })
     }
+
+    pub fn proposal_submits(&self) -> impl Iterator<Item = &ProposalSubmit> {
+        self.actions().filter_map(|action| {
+            if let Action::ProposalSubmit(s) = action {
+                Some(s)
+            } else {
+                None
+            }
+        })
+    }
+
+    pub fn proposal_withdraws(&self) -> impl Iterator<Item = &ProposalWithdraw> {
+        self.actions().filter_map(|action| {
+            if let Action::ProposalWithdraw(w) = action {
+                Some(w)
+            } else {
+                None
+            }
+        })
+    }
+
+    pub fn validator_votes(&self) -> impl Iterator<Item = &ValidatorVote> {
+        self.actions().filter_map(|action| {
+            if let Action::ValidatorVote(v) = action {
+                Some(v)
+            } else {
+                None
+            }
+        })
+    }
+
+    // pub fn delegator_votes(&self) -> impl Iterator<Item = &DelegatorVote> {
+    //     self.actions().filter_map(|action| {
+    //         if let Action::DelegatorVote(v) = action {
+    //             Some(v)
+    //         } else {
+    //             None
+    //         }
+    //     })
+    // }
 
     pub fn ibc_actions(&self) -> impl Iterator<Item = &pb_ibc::IbcAction> {
         self.actions().filter_map(|action| {

@@ -344,7 +344,7 @@ message Proposal {
   string description = 1;
 
   // The kind of the proposal and details relevant only to that kind of proposal.
-  oneof kind {
+  oneof payload {
     // A signaling proposal.
     Signaling signaling = 2;
     // An emergency proposal.

@@ -16,6 +16,10 @@ message SpendKey {
     bytes inner = 1;
 }
 
+message SpendVerificationKey {
+    bytes inner = 1;
+}
+
 message FullViewingKey {
     bytes inner = 1;
 }
