@@ -65,9 +65,9 @@ flowchart BT
 
     d1 --- d2;
 
-    index --> aes_ff1{ };
-    dk ---> aes_ff1{ };
-    aes_ff1 --> d1;
+    index --> aes{ };
+    dk ---> aes{ };
+    aes --> d1;
 
     d1 & ivk --> scmul_ivk{ };
     scmul_ivk --> pk_d;

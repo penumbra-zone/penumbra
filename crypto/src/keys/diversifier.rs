@@ -1,11 +1,12 @@
 use std::convert::{TryFrom, TryInto};
 use std::fmt::Debug;
 
-use aes::Aes256;
+use aes::cipher::{generic_array::GenericArray, BlockDecrypt, BlockEncrypt, KeyInit};
+use aes::Aes128;
+
 use anyhow::anyhow;
 use ark_ff::PrimeField;
 use derivative::Derivative;
-use fpe::ff1;
 use penumbra_proto::{crypto as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
@@ -75,35 +76,39 @@ impl TryFrom<pb::Diversifier> for Diversifier {
 #[derive(Clone, Derivative)]
 #[derivative(Debug)]
 pub struct DiversifierKey(
-    #[derivative(Debug(bound = "", format_with = "crate::fmt_hex"))] pub(super) [u8; 32],
+    #[derivative(Debug(bound = "", format_with = "crate::fmt_hex"))] pub(super) [u8; 16],
 );
 
 impl DiversifierKey {
     pub fn diversifier_for_index(&self, index: &AddressIndex) -> Diversifier {
-        let enc_index = ff1::FF1::<Aes256>::new(&self.0, 2)
-            .expect("radix 2 is in range")
-            .encrypt(
-                b"",
-                &ff1::BinaryNumeralString::from_bytes_le(&index.to_bytes()),
-            )
-            .expect("binary string is the configured radix (2)");
+        let mut key_bytes = [0u8; 16];
+        key_bytes.copy_from_slice(&self.0);
+        let key = GenericArray::from(key_bytes);
 
-        let mut diversifier_bytes = [0; DIVERSIFIER_LEN_BYTES];
-        diversifier_bytes.copy_from_slice(&enc_index.to_bytes_le());
-        Diversifier(diversifier_bytes)
+        let mut plaintext_bytes = [0u8; 16];
+        plaintext_bytes.copy_from_slice(&index.to_bytes());
+        let mut block = GenericArray::from(plaintext_bytes);
+
+        let cipher = Aes128::new(&key);
+        cipher.encrypt_block(&mut block);
+
+        let mut ciphertext_bytes = [0u8; 16];
+        ciphertext_bytes.copy_from_slice(&*block);
+        Diversifier(ciphertext_bytes)
     }
 
     pub fn index_for_diversifier(&self, diversifier: &Diversifier) -> AddressIndex {
-        let index = ff1::FF1::<Aes256>::new(&self.0, 2)
-            .expect("radix 2 is in range")
-            .decrypt(
-                b"",
-                &ff1::BinaryNumeralString::from_bytes_le(&diversifier.0),
-            )
-            .expect("binary string is in the configured radix (2)");
+        let mut key_bytes = [0u8; 16];
+        key_bytes.copy_from_slice(&self.0);
+        let key = GenericArray::from(key_bytes);
+
+        let mut block = GenericArray::from(diversifier.0);
+
+        let cipher = Aes128::new(&key);
+        cipher.decrypt_block(&mut block);
 
         let mut index_bytes = [0; DIVERSIFIER_LEN_BYTES];
-        index_bytes.copy_from_slice(&index.to_bytes_le());
+        index_bytes.copy_from_slice(&*block);
         if index_bytes[8..16] == [0u8; 8] {
             AddressIndex::Numeric(u64::from_le_bytes(
                 index_bytes[0..8].try_into().expect("can form 8 byte array"),
@@ -266,7 +271,7 @@ mod tests {
     }
 
     fn diversifier_key_strategy() -> BoxedStrategy<DiversifierKey> {
-        any::<[u8; 32]>().prop_map(DiversifierKey).boxed()
+        any::<[u8; 16]>().prop_map(DiversifierKey).boxed()
     }
 
     proptest! {
