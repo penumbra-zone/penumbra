@@ -68,6 +68,32 @@ impl TryFrom<BindingSignature> for Signature<Binding> {
     }
 }
 
+// Fuzzy Message Detection
+use crate::crypto::Clue as ProtoClue;
+use decaf377_fmd::Clue;
+
+impl Protobuf<ProtoClue> for Clue {}
+
+impl From<Clue> for ProtoClue {
+    fn from(msg: Clue) -> Self {
+        ProtoClue {
+            inner: bytes::Bytes::copy_from_slice(&msg.0).to_vec(),
+        }
+    }
+}
+
+impl TryFrom<ProtoClue> for Clue {
+    type Error = anyhow::Error;
+
+    fn try_from(proto: ProtoClue) -> anyhow::Result<Self, Self::Error> {
+        let clue: [u8; 68] = proto.inner[..]
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("clue malformed"))?;
+
+        Ok(Clue(clue))
+    }
+}
+
 // Consensus key
 //
 // The tendermint-rs PublicKey type already has a tendermint-proto type;

@@ -97,6 +97,7 @@ impl TransactionPlan {
                 expiry_height: self.expiry_height,
                 chain_id: self.chain_id,
                 fee: self.fee,
+                fmd_clues: vec![],
             },
             anchor: witness_data.anchor,
             binding_sig,
