@@ -3143,6 +3143,7 @@ dependencies = [
  "anyhow",
  "bech32",
  "bytes",
+ "decaf377-fmd",
  "decaf377-rdsa",
  "hex",
  "ibc",

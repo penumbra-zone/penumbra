@@ -35,6 +35,8 @@ message TransactionBody {
   string chain_id = 3;
   // The transaction fee.
   crypto.Fee fee = 4;
+  // A list of clues for use with Fuzzy Message Detection.
+  repeated crypto.Clue fmd_clues = 5;
 }
 
 // A state change performed by a transaction.

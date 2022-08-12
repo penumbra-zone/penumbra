@@ -115,3 +115,8 @@ message MerklePathChunk {
     bytes sibling_2 = 2;
     bytes sibling_3 = 3;
 }
+
+// A clue for use with Fuzzy Message Detection.
+message Clue {
+  bytes inner = 1;
+}

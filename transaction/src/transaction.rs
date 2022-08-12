@@ -3,6 +3,7 @@ use std::convert::{TryFrom, TryInto};
 use anyhow::Error;
 use ark_ff::Zero;
 use bytes::Bytes;
+use decaf377_fmd::Clue;
 use penumbra_crypto::{
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
     transaction::Fee,
@@ -23,6 +24,7 @@ pub struct TransactionBody {
     pub expiry_height: u64,
     pub chain_id: String,
     pub fee: Fee,
+    pub fmd_clues: Vec<Clue>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -161,6 +163,7 @@ impl From<TransactionBody> for pbt::TransactionBody {
             expiry_height: msg.expiry_height,
             chain_id: msg.chain_id,
             fee: Some(msg.fee.into()),
+            fmd_clues: msg.fmd_clues.into_iter().map(|x| x.into()).collect(),
         }
     }
 }
@@ -187,11 +190,21 @@ impl TryFrom<pbt::TransactionBody> for TransactionBody {
             .ok_or_else(|| anyhow::anyhow!("transaction body malformed"))?
             .into();
 
+        let mut fmd_clues = Vec::<Clue>::new();
+        for fmd_clue in proto.fmd_clues {
+            fmd_clues.push(
+                fmd_clue
+                    .try_into()
+                    .map_err(|_| anyhow::anyhow!("clue malformed"))?,
+            );
+        }
+
         Ok(TransactionBody {
             actions,
             expiry_height,
             chain_id,
             fee,
+            fmd_clues,
         })
     }
 }
