@@ -24,9 +24,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e8b47f52ea9bae42228d07ec09eb676433d7c4ed1ebdf0f1d1c29ed446f1ab8"
 dependencies = [
  "cfg-if",
- "cipher",
+ "cipher 0.3.0",
  "cpufeatures",
  "opaque-debug",
+]
+
+[[package]]
+name = "aes"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bfe0133578c0986e1fe3dfcd4af1cc5b2dd6c3dbf534d69916ce16a2701d40ba"
+dependencies = [
+ "cfg-if",
+ "cipher 0.4.3",
+ "cpufeatures",
 ]
 
 [[package]]
@@ -583,7 +594,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2cb03d1bed155d89dce0f845b7899b18a9a163e148fd004e1c28421a783e2d8e"
 dependencies = [
  "block-padding",
- "cipher",
+ "cipher 0.3.0",
 ]
 
 [[package]]
@@ -679,7 +690,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5c80e5460aa66fe3b91d40bcbdab953a597b60053e34d684ac6903f863b680a6"
 dependencies = [
  "cfg-if",
- "cipher",
+ "cipher 0.3.0",
  "cpufeatures",
  "zeroize",
 ]
@@ -692,7 +703,7 @@ checksum = "a18446b09be63d457bbec447509e85f662f32952b035ce892290396bc0b0cff5"
 dependencies = [
  "aead",
  "chacha20",
- "cipher",
+ "cipher 0.3.0",
  "poly1305",
  "zeroize",
 ]
@@ -720,6 +731,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7ee52072ec15386f770805afd189a01c8841be8696bed250fa2f13c4c0d6dfb7"
 dependencies = [
  "generic-array",
+]
+
+[[package]]
+name = "cipher"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d1873270f8f7942c191139cb8a40fd228da6c3fd2fc376d7e92d47aa14aeb59e"
+dependencies = [
+ "crypto-common",
+ "inout",
 ]
 
 [[package]]
@@ -1481,7 +1502,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cd910db5f9ca4dc3116f8c46367825807aa2b942f72565f16b4be0b208a00a9e"
 dependencies = [
  "block-modes",
- "cipher",
+ "cipher 0.3.0",
  "libm",
  "num-bigint",
  "num-integer",
@@ -2066,6 +2087,15 @@ dependencies = [
  "lazy_static",
  "number_prefix",
  "regex",
+]
+
+[[package]]
+name = "inout"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a0c10553d664a4d0bcff9f4215d0aac67a639cc68ef660840afe309b807bc9f5"
+dependencies = [
+ "generic-array",
 ]
 
 [[package]]
@@ -3005,7 +3035,7 @@ dependencies = [
 name = "penumbra-crypto"
 version = "0.1.0"
 dependencies = [
- "aes",
+ "aes 0.8.1",
  "anyhow",
  "ark-ff",
  "ark-serialize",
@@ -3021,7 +3051,6 @@ dependencies = [
  "decaf377-rdsa",
  "derivative",
  "f4jumble",
- "fpe",
  "frost377",
  "hex",
  "hmac",
@@ -3205,7 +3234,7 @@ dependencies = [
 name = "penumbra-transaction"
 version = "0.1.0"
 dependencies = [
- "aes",
+ "aes 0.7.5",
  "anyhow",
  "ark-ff",
  "ark-serialize",

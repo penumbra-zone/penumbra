@@ -14,7 +14,7 @@ Addresses are parameterized by *diversifiers*, 16-byte tags used to derive up to
 $2^{128}$ distinct addresses for each spending authority.  The diversifier is
 included in the address, so it should be uniformly random.  To ensure this,
 diversifiers are indexed by a *address index* $i \in \{0, \ldots, 2^{128} -
-1\}$; the $i$-th diversifier $d_i$ is the encryption of $i$ using [AES-FF1] with
+1\}$; the $i$-th diversifier $d_i$ is the encryption of $i$ using [AES] with
 the diversifier key $\mathsf{dk}$.[^1]
 
 Each diversifier $d$ is used to generate a *diversified basepoint* $B_d$ as
@@ -90,7 +90,7 @@ mechanism risks compromising privacy.
 [^2]: As in the previous section, we use the modifier "component" to distinguish
 between the internal key component and the external, opaque key.
 
-[AES-FF1]: https://github.com/str4d/fpe
+[AES]: https://docs.rs/aes/latest/aes/
 [Bech32m]: https://github.com/bitcoin/bips/blob/master/bip-0350.mediawiki
 [hash-to-group]: ../../crypto/decaf377/group_hash.md
 [F4Jumble]: https://zips.z.cash/zip-0316#jumbling

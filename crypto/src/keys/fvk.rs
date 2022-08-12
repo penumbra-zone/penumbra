@@ -44,9 +44,9 @@ impl FullViewingKey {
             let hash_result = prf::expand(b"Penumbra_ExpndVK", &nk.0.to_bytes(), ak.as_ref());
 
             let mut ovk = [0; 32];
-            let mut dk = [0; 32];
+            let mut dk = [0; 16];
             ovk.copy_from_slice(&hash_result.as_bytes()[0..32]);
-            dk.copy_from_slice(&hash_result.as_bytes()[32..64]);
+            dk.copy_from_slice(&hash_result.as_bytes()[32..48]);
 
             (ovk, dk)
         };
