@@ -18,15 +18,13 @@ pub use penumbra_tct::Commitment;
 use crate::{
     asset, ka,
     keys::{Diversifier, IncomingViewingKey, OutgoingViewingKey},
+    symmetric::{PayloadKey, NOTE_ENCRYPTION_NONCE},
     value, Fq, Value,
 };
 
 pub const NOTE_LEN_BYTES: usize = 120;
 pub const NOTE_CIPHERTEXT_BYTES: usize = 136;
 pub const OVK_WRAPPED_LEN_BYTES: usize = 80;
-
-/// The nonce used for note encryption.
-pub static NOTE_ENCRYPTION_NONCE: Lazy<[u8; 12]> = Lazy::new(|| [0u8; 12]);
 
 /// A plaintext Penumbra note.
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -132,14 +130,9 @@ impl Note {
             .key_agreement_with(&self.transmission_key())
             .expect("key agreement succeeded");
 
-        let key = derive_symmetric_key(&shared_secret, &epk);
-        let cipher = ChaCha20Poly1305::new(Key::from_slice(key.as_bytes()));
-        let nonce = Nonce::from_slice(&*NOTE_ENCRYPTION_NONCE);
-
+        let key = PayloadKey::derive(&shared_secret, &epk);
         let note_plaintext: Vec<u8> = self.into();
-        let encryption_result = cipher
-            .encrypt(nonce, note_plaintext.as_ref())
-            .expect("note encryption succeeded");
+        let encryption_result = key.encrypt(note_plaintext, *NOTE_ENCRYPTION_NONCE);
 
         let ciphertext: [u8; NOTE_CIPHERTEXT_BYTES] = encryption_result
             .try_into()
@@ -235,14 +228,10 @@ impl Note {
         let shared_secret = esk
             .key_agreement_with(&transmission_key)
             .map_err(|_| Error::DecryptionError)?;
-        let key = derive_symmetric_key(&shared_secret, epk);
-        let cipher = ChaCha20Poly1305::new(Key::from_slice(key.as_bytes()));
-        let nonce = Nonce::from_slice(&[0u8; 12]);
-
-        let plaintext = cipher
-            .decrypt(nonce, ciphertext.as_ref())
+        let key = PayloadKey::derive(&shared_secret, &epk);
+        let plaintext = key
+            .decrypt(ciphertext.to_vec(), *NOTE_ENCRYPTION_NONCE)
             .map_err(|_| Error::DecryptionError)?;
-
         let plaintext_bytes: [u8; NOTE_LEN_BYTES] =
             plaintext.try_into().map_err(|_| Error::DecryptionError)?;
 
@@ -265,11 +254,9 @@ impl Note {
             .key_agreement_with(epk)
             .map_err(|_| Error::DecryptionError)?;
 
-        let key = derive_symmetric_key(&shared_secret, epk);
-        let cipher = ChaCha20Poly1305::new(Key::from_slice(key.as_bytes()));
-        let nonce = Nonce::from_slice(&[0u8; 12]);
-        let plaintext = cipher
-            .decrypt(nonce, ciphertext.as_ref())
+        let key = PayloadKey::derive(&shared_secret, &epk);
+        let plaintext = key
+            .decrypt(ciphertext.to_vec(), *NOTE_ENCRYPTION_NONCE)
             .map_err(|_| Error::DecryptionError)?;
 
         let plaintext_bytes: [u8; NOTE_LEN_BYTES] =
@@ -314,20 +301,6 @@ pub fn commitment(
     );
 
     Commitment(commit)
-}
-
-/// Use Blake2b-256 to derive the symmetric key material for note and memo encryption.
-pub(crate) fn derive_symmetric_key(
-    shared_secret: &ka::SharedSecret,
-    epk: &ka::Public,
-) -> blake2b_simd::Hash {
-    let mut kdf_params = blake2b_simd::Params::new();
-    kdf_params.hash_length(32);
-    let mut kdf = kdf_params.to_state();
-    kdf.update(&shared_secret.0);
-    kdf.update(&epk.0);
-
-    kdf.finalize()
 }
 
 /// Use Blake2b-256 to derive an encryption key `ock` from the OVK and public fields.

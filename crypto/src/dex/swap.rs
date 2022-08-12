@@ -20,13 +20,8 @@ use super::TradingPair;
 pub const SWAP_CIPHERTEXT_BYTES: usize = 184;
 // Swap plaintext byte length
 pub const SWAP_LEN_BYTES: usize = 168;
-pub const OVK_WRAPPED_LEN_BYTES: usize = 80;
 
-/// The nonce used for swap encryption.
-///
-/// The nonce will always be `[9u8; 12]` which is okay since we use a new
-/// ephemeral key each time.
-pub static SWAP_ENCRYPTION_NONCE: Lazy<[u8; 12]> = Lazy::new(|| [9u8; 12]);
+pub const OVK_WRAPPED_LEN_BYTES: usize = 80;
 
 pub static DOMAIN_SEPARATOR: Lazy<Fq> =
     Lazy::new(|| Fq::from_le_bytes_mod_order(blake2b_simd::blake2b(b"penumbra.swap").as_bytes()));

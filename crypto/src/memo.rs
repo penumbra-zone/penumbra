@@ -1,17 +1,13 @@
 use std::convert::{TryFrom, TryInto};
 
 use anyhow::anyhow;
-use chacha20poly1305::{
-    aead::{Aead, NewAead},
-    ChaCha20Poly1305, Key, Nonce,
-};
-use once_cell::sync::Lazy;
 
 use crate::{
     ka,
     keys::{IncomingViewingKey, OutgoingViewingKey},
     note,
-    note::{derive_symmetric_key, OVK_WRAPPED_LEN_BYTES},
+    note::OVK_WRAPPED_LEN_BYTES,
+    symmetric::{PayloadKey, MEMO_ENCRYPTION_NONCE},
     value, Address, Note,
 };
 
@@ -19,12 +15,6 @@ pub const MEMO_CIPHERTEXT_LEN_BYTES: usize = 528;
 
 // This is the `MEMO_CIPHERTEXT_LEN_BYTES` - MAC size (16 bytes).
 pub const MEMO_LEN_BYTES: usize = 512;
-
-/// The nonce used for memo encryption.
-pub static MEMO_ENCRYPTION_NONCE: Lazy<[u8; 12]> = Lazy::new(|| {
-    let nonce_bytes = 1u128.to_le_bytes();
-    nonce_bytes[0..12].try_into().expect("nonce fits in array")
-});
 
 // The memo is stored separately from the `Note`.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -58,14 +48,8 @@ impl MemoPlaintext {
             .key_agreement_with(address.transmission_key())
             .expect("key agreement succeeds");
 
-        let key = derive_symmetric_key(&shared_secret, &epk);
-        let cipher = ChaCha20Poly1305::new(Key::from_slice(key.as_bytes()));
-        let nonce = Nonce::from_slice(&*MEMO_ENCRYPTION_NONCE);
-
-        let encryption_result = cipher
-            .encrypt(nonce, self.0.as_ref())
-            .expect("memo encryption succeeded");
-
+        let key = PayloadKey::derive(&shared_secret, &epk);
+        let encryption_result = key.encrypt(self.0.to_vec(), *MEMO_ENCRYPTION_NONCE);
         let ciphertext: [u8; MEMO_CIPHERTEXT_LEN_BYTES] = encryption_result
             .try_into()
             .expect("memo encryption result fits in ciphertext len");
@@ -83,11 +67,9 @@ impl MemoPlaintext {
             .key_agreement_with(epk)
             .map_err(|_| anyhow!("could not perform key agreement"))?;
 
-        let key = derive_symmetric_key(&shared_secret, epk);
-        let cipher = ChaCha20Poly1305::new(Key::from_slice(key.as_bytes()));
-        let nonce = Nonce::from_slice(&*MEMO_ENCRYPTION_NONCE);
-        let plaintext = cipher
-            .decrypt(nonce, ciphertext.0.as_ref())
+        let key = PayloadKey::derive(&shared_secret, &epk);
+        let plaintext = key
+            .decrypt(ciphertext.0.to_vec(), *MEMO_ENCRYPTION_NONCE)
             .map_err(|_| anyhow!("decryption error"))?;
 
         let plaintext_bytes: [u8; MEMO_LEN_BYTES] = plaintext
@@ -111,12 +93,9 @@ impl MemoPlaintext {
         let shared_secret = esk
             .key_agreement_with(&transmission_key)
             .map_err(|_| anyhow!("could not perform key agreement"))?;
-        let key = derive_symmetric_key(&shared_secret, epk);
-        let cipher = ChaCha20Poly1305::new(Key::from_slice(key.as_bytes()));
-        let nonce = Nonce::from_slice(&*MEMO_ENCRYPTION_NONCE);
-
-        let plaintext = cipher
-            .decrypt(nonce, ciphertext.0.as_ref())
+        let key = PayloadKey::derive(&shared_secret, &epk);
+        let plaintext = key
+            .decrypt(ciphertext.0.to_vec(), *MEMO_ENCRYPTION_NONCE)
             .map_err(|_| anyhow!("decryption error"))?;
 
         let plaintext_bytes: [u8; MEMO_LEN_BYTES] = plaintext
