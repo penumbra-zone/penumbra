@@ -8,12 +8,12 @@ use chacha20poly1305::{
 use penumbra_proto::{crypto as pb_crypto, dex as pb, Protobuf};
 
 use crate::dex::TradingPair;
-use crate::keys::OutgoingViewingKey;
-
-use super::{
-    SwapCiphertext, OVK_WRAPPED_LEN_BYTES, SWAP_CIPHERTEXT_BYTES, SWAP_ENCRYPTION_NONCE,
-    SWAP_LEN_BYTES,
+use crate::{
+    keys::OutgoingViewingKey,
+    symmetric::{PayloadKey, SWAP_ENCRYPTION_NONCE},
 };
+
+use super::{SwapCiphertext, OVK_WRAPPED_LEN_BYTES, SWAP_CIPHERTEXT_BYTES, SWAP_LEN_BYTES};
 
 #[derive(Clone)]
 pub struct SwapPlaintext {
@@ -30,26 +30,6 @@ pub struct SwapPlaintext {
 }
 
 impl SwapPlaintext {
-    // Create a new hash based on the ephemeral public key and shared secret suitable for use as a key for symmetric encryption.
-    //
-    // Implementing this way allows recovery of all swap plaintexts via the seed phrase.
-    //
-    // Theoretically, if a paranoid user did want to achieve forward secrecy, they could choose to encrypt
-    // nonsense bytes as the swap plaintext as the swap ciphertext does not need to be valid for the
-    // swap to succeed, however this is unsupported by the official client.
-    pub(super) fn derive_symmetric_key(
-        shared_secret: &ka::SharedSecret,
-        epk: &ka::Public,
-    ) -> blake2b_simd::Hash {
-        let mut kdf_params = blake2b_simd::Params::new();
-        kdf_params.hash_length(32);
-        let mut kdf = kdf_params.to_state();
-        kdf.update(&shared_secret.0);
-        kdf.update(&epk.0);
-
-        kdf.finalize()
-    }
-
     pub fn diversified_generator(&self) -> &decaf377::Element {
         self.claim_address.diversified_generator()
     }
@@ -121,14 +101,9 @@ impl SwapPlaintext {
             .key_agreement_with(self.transmission_key())
             .expect("key agreement succeeds");
 
-        let key = SwapPlaintext::derive_symmetric_key(&shared_secret, &epk);
-        let cipher = ChaCha20Poly1305::new(Key::from_slice(key.as_bytes()));
-        let nonce = Nonce::from_slice(&*SWAP_ENCRYPTION_NONCE);
-
+        let key = PayloadKey::derive(&shared_secret, &epk);
         let swap_plaintext: [u8; SWAP_LEN_BYTES] = self.into();
-        let encryption_result = cipher
-            .encrypt(nonce, swap_plaintext.as_ref())
-            .expect("swap encryption succeeded");
+        let encryption_result = key.encrypt(swap_plaintext.to_vec(), *SWAP_ENCRYPTION_NONCE);
 
         let ciphertext: [u8; SWAP_CIPHERTEXT_BYTES] = encryption_result
             .try_into()

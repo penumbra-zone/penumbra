@@ -1,12 +1,11 @@
 use anyhow::Result;
-use chacha20poly1305::{
-    aead::{Aead, NewAead},
-    ChaCha20Poly1305, Key, Nonce,
+
+use crate::{
+    ka,
+    symmetric::{PayloadKey, SWAP_ENCRYPTION_NONCE},
 };
 
-use crate::ka;
-
-use super::{SwapPlaintext, SWAP_CIPHERTEXT_BYTES, SWAP_ENCRYPTION_NONCE, SWAP_LEN_BYTES};
+use super::{SwapPlaintext, SWAP_CIPHERTEXT_BYTES, SWAP_LEN_BYTES};
 
 #[derive(Debug, Clone)]
 pub struct SwapCiphertext(pub [u8; SWAP_CIPHERTEXT_BYTES]);
@@ -22,13 +21,10 @@ impl SwapCiphertext {
             .key_agreement_with(&transmission_key)
             .expect("key agreement succeeds");
         let epk = esk.diversified_public(&diversified_basepoint);
-        let key = SwapPlaintext::derive_symmetric_key(&shared_secret, &epk);
-        let cipher = ChaCha20Poly1305::new(Key::from_slice(key.as_bytes()));
-        let nonce = Nonce::from_slice(&*SWAP_ENCRYPTION_NONCE);
-
+        let key = PayloadKey::derive(&shared_secret, &epk);
         let swap_ciphertext = self.0;
-        let decryption_result = cipher
-            .decrypt(nonce, swap_ciphertext.as_ref())
+        let decryption_result = key
+            .decrypt(swap_ciphertext.to_vec(), *SWAP_ENCRYPTION_NONCE)
             .map_err(|_| anyhow::anyhow!("unable to decrypt swap ciphertext"))?;
 
         let plaintext: [u8; SWAP_LEN_BYTES] = decryption_result
