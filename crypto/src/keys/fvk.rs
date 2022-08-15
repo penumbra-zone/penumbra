@@ -40,15 +40,18 @@ impl FullViewingKey {
 
     /// Construct a full viewing key from its components.
     pub fn from_components(ak: VerificationKey<SpendAuth>, nk: NullifierKey) -> Self {
-        let (ovk, dk) = {
-            let hash_result = prf::expand(b"Penumbra_ExpndVK", &nk.0.to_bytes(), ak.as_ref());
-
+        let ovk = {
+            let hash_result = prf::expand(b"Penumbra_DeriOVK", &nk.0.to_bytes(), ak.as_ref());
             let mut ovk = [0; 32];
-            let mut dk = [0; 16];
             ovk.copy_from_slice(&hash_result.as_bytes()[0..32]);
-            dk.copy_from_slice(&hash_result.as_bytes()[32..48]);
+            ovk
+        };
 
-            (ovk, dk)
+        let dk = {
+            let hash_result = prf::expand(b"Penumbra_DerivDK", &nk.0.to_bytes(), ak.as_ref());
+            let mut dk = [0; 16];
+            dk.copy_from_slice(&hash_result.as_bytes()[0..16]);
+            dk
         };
 
         let ivk = {
