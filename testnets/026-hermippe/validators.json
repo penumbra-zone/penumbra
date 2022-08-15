@@ -1,0 +1,14 @@
+[
+    {
+        "name": "Penumbra Labs CI 1",
+        "website": "https://penumbra.zone",
+        "description": "This is a validator run by Penumbra Labs, using testnets as a public CI",
+        "funding_streams": [
+            [
+                50,
+                "penumbrav2t1fcy6crf6u4r450k8y4nye43puxet2ytfh7s0dzxsxjk68czej9mp37xv49np0clv4dc8cwg4re0xfs79uwlfehnja4p0revmlek0drezxfse8spg3qc6gux6vyuzuuls6v6mmr"
+            ]
+        ],
+        "sequence_number": 0
+    }
+]
