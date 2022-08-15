@@ -40,7 +40,7 @@ To build the version of `pcli` compatible with the current testnet, check out th
 the current test net:
 
 ```bash
-cd penumbra && git fetch && git checkout 024-dia && cargo update
+cd penumbra && git fetch && git checkout 025-helike && cargo update
 ```
 
 ### Building the `pcli` client software
