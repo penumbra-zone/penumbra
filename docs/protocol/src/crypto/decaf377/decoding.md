@@ -3,8 +3,9 @@
 Decoding to a point works as follows where $a$ and $d$ are the curve parameters as described [here](../decaf377.md#curve-parameters).
 
 1. Decode `s_bytes` to a field element $s$. We interpret these bytes as unsigned
-little-endian bytes. We check if the length has 32 bytes, even though
-the top 3 bits of the last byte are not used. The 253 bits are verified to be canonical, and rejected if not (If the input is already a field element in the circuit case, skip this step).
+little-endian bytes. We check if the length has 32 bytes, where the top 3 bits
+of the last byte are 0. The 32 bytes are verified to be canonical, and rejected if
+not (if the input is already a field element in the circuit case, skip this step).
 
 2. Check that $s$ is nonnegative, or reject (sign check 1).
 
