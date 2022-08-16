@@ -224,12 +224,13 @@ impl swap::Body {
 
         // All of these fields are fixed-length, so we can just throw them
         // in the hash one after the other.
-        state.update(&self.delta_1.to_le_bytes());
-        state.update(&self.delta_2.to_le_bytes());
-        state.update(&self.fee_commitment.to_bytes());
         // TODO: actually the trading pair isn't necessarily fixed-length
         // right now, does this have implications?
         state.update(&self.trading_pair.encode_to_vec());
+        state.update(&self.delta_1.to_le_bytes());
+        state.update(&self.delta_2.to_le_bytes());
+        state.update(&self.fee_commitment.to_bytes());
+        // TODO: use common NotePayload auth_hash here
         state.update(&self.swap_nft.encode_to_vec());
         state.update(&self.swap_ciphertext.0);
 
@@ -247,6 +248,9 @@ impl swap_claim::Body {
         // in the hash one after the other.
         state.update(&self.nullifier.0.to_bytes());
         state.update(&self.fee.auth_hash().as_bytes());
+        // TODO: write an `auth_hash` method for `NotePayload` et al
+        // to ensure fixed-length encoding as well as non-usage of protobuf
+        // encoding in auth hashes
         state.update(&self.output_1.note_commitment.0.to_bytes());
         state.update(&self.output_1.ephemeral_key.0);
         state.update(&self.output_1.encrypted_note);

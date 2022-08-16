@@ -689,10 +689,11 @@ pub struct SwapProof {
     pub note_blinding: Fq,
     // The ephemeral secret key that corresponds to the public key.
     pub esk: ka::Secret,
-    // The blinding factor used for generating the value commitment for delta 1.
-    pub delta_1_blinding: Fr,
-    // The blinding factor used for generating the value commitment for delta 2.
-    pub delta_2_blinding: Fr,
+    // TODO: no value commitments for delta 1/delta 2 until flow encryption is available
+    // // The blinding factor used for generating the value commitment for delta 1.
+    // pub delta_1_blinding: Fr,
+    // // The blinding factor used for generating the value commitment for delta 2.
+    // pub delta_2_blinding: Fr,
 }
 
 impl SwapProof {
@@ -734,14 +735,15 @@ impl SwapProof {
             return Err(anyhow!("transmission key mismatch"));
         }
 
-        // Value commitment integrity.
-        if value_1_commitment != -self.value_t1.commit(self.delta_1_blinding) {
-            return Err(anyhow!("value commitment mismatch"));
-        }
+        // TODO: no value commitment checks until flow encryption is available
+        // // Value commitment integrity.
+        // if value_1_commitment != -self.value_t1.commit(self.delta_1_blinding) {
+        //     return Err(anyhow!("value commitment mismatch"));
+        // }
 
-        if value_2_commitment != -self.value_t2.commit(self.delta_2_blinding) {
-            return Err(anyhow!("value commitment mismatch"));
-        }
+        // if value_2_commitment != -self.value_t2.commit(self.delta_2_blinding) {
+        //     return Err(anyhow!("value commitment mismatch"));
+        // }
 
         let pen_denom = asset::REGISTRY.parse_denom("upenumbra").unwrap();
         let value_fee = Value {
@@ -782,8 +784,9 @@ impl From<SwapProof> for transparent_proofs::SwapProof {
             t2: msg.value_t2.asset_id.0.to_bytes().to_vec(),
             fee: msg.fee_delta,
             swap_nft_asset_id: msg.swap_nft_asset_id.0.to_bytes().to_vec(),
-            delta_1_blinding: msg.delta_1_blinding.to_bytes().to_vec(),
-            delta_2_blinding: msg.delta_2_blinding.to_bytes().to_vec(),
+            // TODO: no value commitments for delta 1/delta 2 until flow encryption is available
+            // delta_1_blinding: msg.delta_1_blinding.to_bytes().to_vec(),
+            // delta_2_blinding: msg.delta_2_blinding.to_bytes().to_vec(),
             note_blinding: msg.note_blinding.to_bytes().to_vec(),
             esk: msg.esk.to_bytes().to_vec(),
         }
@@ -800,12 +803,12 @@ impl TryFrom<transparent_proofs::SwapProof> for SwapProof {
             .map_err(|_| anyhow!("proto malformed"))?;
         let b_d_encoding = decaf377::Encoding(b_d_bytes);
 
-        let delta_1_blinding_bytes: [u8; 32] = proto.delta_1_blinding[..]
-            .try_into()
-            .map_err(|_| anyhow!("proto malformed"))?;
-        let delta_2_blinding_bytes: [u8; 32] = proto.delta_2_blinding[..]
-            .try_into()
-            .map_err(|_| anyhow!("proto malformed"))?;
+        // let delta_1_blinding_bytes: [u8; 32] = proto.delta_1_blinding[..]
+        //     .try_into()
+        //     .map_err(|_| anyhow!("proto malformed"))?;
+        // let delta_2_blinding_bytes: [u8; 32] = proto.delta_2_blinding[..]
+        //     .try_into()
+        //     .map_err(|_| anyhow!("proto malformed"))?;
 
         let esk_bytes: [u8; 32] = proto.esk[..]
             .try_into()
@@ -860,10 +863,11 @@ impl TryFrom<transparent_proofs::SwapProof> for SwapProof {
                 )
                 .map_err(|_| anyhow!("proto malformed"))?,
             ),
-            delta_1_blinding: Fr::from_bytes(delta_1_blinding_bytes)
-                .map_err(|_| anyhow!("proto malformed"))?,
-            delta_2_blinding: Fr::from_bytes(delta_2_blinding_bytes)
-                .map_err(|_| anyhow!("proto malformed"))?,
+            // TODO: no value commitment checks until flow encryption is available
+            // delta_1_blinding: Fr::from_bytes(delta_1_blinding_bytes)
+            //     .map_err(|_| anyhow!("proto malformed"))?,
+            // delta_2_blinding: Fr::from_bytes(delta_2_blinding_bytes)
+            //     .map_err(|_| anyhow!("proto malformed"))?,
             note_blinding: Fq::from_bytes(
                 proto.note_blinding[..]
                     .try_into()

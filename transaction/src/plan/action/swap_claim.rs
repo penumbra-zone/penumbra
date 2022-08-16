@@ -1,12 +1,16 @@
 use ark_ff::UniformRand;
 use penumbra_crypto::{
+    dex::{BatchSwapOutputData, TradingPair},
     ka,
-    keys::{IncomingViewingKey, OutgoingViewingKey},
+    keys::IncomingViewingKey,
     memo::MemoPlaintext,
+    note,
     proofs::transparent::SwapClaimProof,
-    Address, FieldExt, Fq, Fr, Note, NotePayload, Value,
+    transaction::Fee,
+    Address, FieldExt, Fq, Fr, FullViewingKey, Note, NotePayload, Nullifier, Value,
 };
 use penumbra_proto::{transaction as pb, Protobuf};
+use penumbra_tct as tct;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
@@ -18,55 +22,52 @@ use crate::action::{swap_claim, SwapClaim};
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(try_from = "pb::SwapClaimPlan", into = "pb::SwapClaimPlan")]
 pub struct SwapClaimPlan {
-    pub value: Value,
-    pub dest_address: Address,
-    pub memo: MemoPlaintext,
-    pub note_blinding: Fq,
-    pub value_blinding: Fr,
-    pub esk: ka::Secret,
+    pub nullifier: Nullifier,
+    pub fee: Fee,
+    pub output_data: BatchSwapOutputData,
+    pub anchor: tct::Root,
+    pub trading_pair: TradingPair,
+    pub claim_address: Address,
+    pub output_1_blinding: Fq,
+    pub output_2_blinding: Fq,
+    pub esk_1: ka::Secret,
+    pub esk_2: ka::Secret,
+    pub ovk_wrapped_key_1: [u8; note::OVK_WRAPPED_LEN_BYTES],
+    pub ovk_wrapped_key_2: [u8; note::OVK_WRAPPED_LEN_BYTES],
 }
 
 impl SwapClaimPlan {
-    /// Create a new [`SwapClaimPlan`] that sends `value` to `dest_address` with
-    /// the provided `memo`.
+    /// Create a new [`SwapClaimPlan`] that redeems output notes to `claim_address` using
+    /// the associated swap NFT.
     pub fn new<R: RngCore + CryptoRng>(
         rng: &mut R,
         value: Value,
-        dest_address: Address,
-        memo: MemoPlaintext,
+        claim_address: Address,
     ) -> SwapClaimPlan {
-        let note_blinding = Fq::rand(rng);
+        let output_1_blinding = Fq::rand(rng);
+        let output_2_blinding = Fq::rand(rng);
         let value_blinding = Fr::rand(rng);
-        let esk = ka::Secret::new(rng);
+        let esk_1 = ka::Secret::new(rng);
+        let esk_2 = ka::Secret::new(rng);
         Self {
             value,
-            dest_address,
-            memo,
+            claim_address,
             note_blinding,
             value_blinding,
-            esk,
+            esk_1,
+            esk_2,
+            output_1_blinding,
+            output_2_blinding,
         }
     }
 
     /// Convenience method to construct the [`SwapClaim`] described by this
     /// [`SwapClaimPlan`].
-    pub fn swap_claim(&self, ovk: &OutgoingViewingKey) -> SwapClaim {
+    pub fn swap_claim(&self, fvk: &FullViewingKey) -> SwapClaim {
         SwapClaim {
-            body: self.swap_claim_body(ovk),
+            body: self.swap_claim_body(fvk),
             zkproof: self.swap_claim_proof(),
         }
-    }
-
-    pub fn swap_claim_note(&self) -> Note {
-        let diversifier = self.dest_address.diversifier().clone();
-        let transmission_key = self.dest_address.transmission_key().clone();
-        Note::from_parts(
-            diversifier,
-            transmission_key,
-            self.value,
-            self.note_blinding,
-        )
-        .expect("transmission key in address is always valid")
     }
 
     /// Construct the [`SwapClaimProof`] required by the [`swap_claim::Body`] described
@@ -92,31 +93,50 @@ impl SwapClaimPlan {
     }
 
     /// Construct the [`swap_claim::Body`] described by this plan.
-    pub fn swap_claim_body(&self, ovk: &OutgoingViewingKey) -> swap_claim::Body {
-        // Prepare the output note and commitment.
-        let note = self.output_note();
-        let note_commitment = note.commit();
+    pub fn swap_claim_body(&self, fvk: &FullViewingKey) -> swap_claim::Body {
+        let diversifier = self.claim_address.diversifier().clone();
+        let transmission_key = self.claim_address.transmission_key().clone();
 
-        // Prepare the value commitment.  Outputs subtract from the transaction
-        // value balance, so flip the sign of the commitment.
-        let value_commitment = -self.value.commit(self.value_blinding);
+        let output_1_note = Note::from_parts(
+            diversifier,
+            transmission_key,
+            Value {
+                amount: self.output_data.lambda_1,
+                asset_id: self.trading_pair.asset_1(),
+            },
+            self.output_1_blinding,
+        )
+        .expect("transmission key in address is always valid");
+        let output_2_note = Note::from_parts(
+            diversifier,
+            transmission_key,
+            Value {
+                amount: self.output_data.lambda_2,
+                asset_id: self.trading_pair.asset_2(),
+            },
+            self.output_2_blinding,
+        )
+        .expect("transmission key in address is always valid");
 
-        // Encrypt the note to the recipient...
-        let diversified_generator = note.diversified_generator();
-        let ephemeral_key = self.esk.diversified_public(&diversified_generator);
-        let encrypted_note = note.encrypt(&self.esk);
-        let encrypted_memo = self.memo.encrypt(&self.esk, &self.dest_address);
-        // ... and wrap the encryption key to ourselves.
-        let ovk_wrapped_key = note.encrypt_key(&self.esk, ovk, value_commitment);
+        let output_1 = NotePayload {
+            note_commitment: output_1_note.commit(),
+            ephemeral_key: self.esk_1.public(),
+            encrypted_note: output_1_note.encrypt(&self.esk_1),
+        };
+        let output_2 = NotePayload {
+            note_commitment: output_2_note.commit(),
+            ephemeral_key: self.esk_2.public(),
+            encrypted_note: output_2_note.encrypt(&self.esk_2),
+        };
 
         swap_claim::Body {
-            nullifier: todo!(),
-            fee: todo!(),
-            output_1: todo!(),
-            output_2: todo!(),
-            output_data: todo!(),
-            anchor: todo!(),
-            trading_pair: todo!(),
+            nullifier: self.nullifier,
+            fee: self.fee,
+            output_1,
+            output_2,
+            output_data: self.output_data,
+            anchor: self.anchor,
+            trading_pair: self.trading_pair,
         }
     }
 

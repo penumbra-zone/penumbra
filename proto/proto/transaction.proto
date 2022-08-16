@@ -281,45 +281,31 @@ message SwapPlan {
     uint64 delta_1 = 2;
     // The amount for asset 2.
     uint64 delta_2 = 3;
-    // A commitment to a prepaid fee for the future SwapClaim.
-    bytes fee_commitment = 4;
     // The fee to be pre-paid for the SwapClaim.
-    crypto.Fee fee = 5;
-    // Swap NFT recording the user's contribution to the Swap to be added to the TCT.
-    crypto.NotePayload swap_nft = 6;
-    
-    // A note to be spent for the input amount of asset 1.
-    crypto.Note note_1 = 10;
-    // The position of the asset 1 note we plan to burn as input.
-    uint64 note_1_position = 11;
-    // The randomizer to use for the burn of note 1.
-    bytes note_1_randomizer = 12;
-    // The blinding factor to use for the value commitment of note 1.
-    bytes note_1_value_blinding = 13;
-    
-    // A note to be spent for the input amount of asset 2.
-    crypto.Note note_2 = 20;
-    // The position of the asset 2 note we plan to burn as input.
-    uint64 note_2_position = 21;
-    // The randomizer to use for the burn of note 2.
-    bytes note_2_randomizer = 22;
-    // The blinding factor to use for the value commitment of note 2.
-    bytes note_2_value_blinding = 23;
+    crypto.Fee fee = 4;
+    // The blinding factor for the fee commitment. The fee in the SwapPlan is private to prevent linkability with the SwapClaim.
+    bytes fee_blinding = 5;
+    // The address that can claim the swap NFT and receive the outputs.
+    crypto.Address claim_address = 6;
+    // The blinding factor to use for the new swap NFT note.
+    bytes note_blinding = 7;
+    // The ephemeral secret key to use for the swap NFT note encryption.
+    bytes esk = 8;
 }
 
 message SwapClaimPlan {
-    // The value to send to this output.
-    crypto.Value value = 1;
-    // The destination address to send it to.
-    crypto.Address dest_address = 2;
-    // The memo describing the output.
-    bytes memo = 3;
-    // The blinding factor to use for the new note.
-    bytes note_blinding = 4;
-    // The blinding factor to use for the value commitment.
-    bytes value_blinding = 5;
-    // The ephemeral secret key to use for the note encryption.
-    bytes esk = 6;
+    // The nullifier of the input swap NFT note.
+    bytes nullifier = 1;
+    // The fee that was pre-paid for the SwapClaim.
+    crypto.Fee fee = 2;
+    // Input and output amounts for the Swap.
+    dex.BatchSwapOutputData output_data = 5;
+    // The root anchor for the block the Swap occurred in.
+    crypto.MerkleRoot anchor = 6;
+    // The trading pair associated with the SwapClaim.
+    dex.TradingPair trading_pair = 7;
+    // The address that is claiming the swap NFT and receiving the new output notes.
+    crypto.Address claim_address = 8;
 }
 
 

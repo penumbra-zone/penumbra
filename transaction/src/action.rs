@@ -59,8 +59,7 @@ impl Action {
             Action::Spend(spend) => spend.body.value_commitment,
             Action::Delegate(delegate) => delegate.value_commitment(),
             Action::Undelegate(undelegate) => undelegate.value_commitment(),
-            // A Swap action's only contribution to the transaction's value balance is from the fee
-            Action::Swap(swap) => swap.body.fee_commitment,
+            Action::Swap(swap) => swap.value_commitment(),
             // A SwapClaim action has no impact on the transaction's value balance as the
             // outputs are handled internally to the action.
             Action::SwapClaim(_) => value::Commitment::default(),
