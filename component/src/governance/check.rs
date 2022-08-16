@@ -1,7 +1,6 @@
 use anyhow::{Context as _, Result};
 
 use super::proposal;
-use penumbra_crypto::rdsa::{SpendAuth, VerificationKey};
 use penumbra_transaction::action::{
     ProposalSubmit, ProposalWithdraw, ProposalWithdrawBody, ValidatorVote, ValidatorVoteBody,
 };
@@ -44,7 +43,7 @@ pub mod stateless {
         Ok(())
     }
 
-    pub fn proposal_withdraw(ProposalWithdraw { body, auth_sig }: &ProposalWithdraw) -> Result<()> {
+    pub fn proposal_withdraw(_proposal_withdraw: &ProposalWithdraw) -> Result<()> {
         // All the checks are stateful.
         Ok(())
     }
@@ -119,7 +118,9 @@ pub mod stateful {
                 Voting => {
                     // You can withdraw a proposal that is currently voting
                 }
-                Withdrawn => anyhow::bail!("proposal {} has already been withdrawn", proposal_id),
+                Withdrawn { .. } => {
+                    anyhow::bail!("proposal {} has already been withdrawn", proposal_id)
+                }
                 Finished { .. } => {
                     anyhow::bail!("voting on proposal {} has already concluded", proposal_id)
                 }
@@ -169,14 +170,12 @@ pub mod stateful {
         if let Some(proposal_state) = state.proposal_state(proposal_id).await? {
             use proposal::State::*;
             match proposal_state {
-                Proposed => anyhow::bail!(
-                    "proposal {} has not yet started its voting period",
-                    proposal_id
-                ),
                 Voting => {
                     // This is when you can vote on a proposal
                 }
-                Withdrawn => anyhow::bail!("proposal {} has already been withdrawn", proposal_id),
+                Withdrawn { .. } => {
+                    anyhow::bail!("proposal {} has already been withdrawn", proposal_id)
+                }
                 Finished { .. } => {
                     anyhow::bail!("voting on proposal {} has already concluded", proposal_id)
                 }

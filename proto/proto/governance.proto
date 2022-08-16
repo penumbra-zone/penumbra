@@ -30,7 +30,10 @@ message ProposalState {
     message Voting {}
 
     // The proposal has been withdrawn but the voting period is not yet concluded.
-    message Withdrawn {}
+    message Withdrawn {
+        // The reason for the withdrawal.
+        string reason = 1;
+    }
 
     // The voting period has ended, and the proposal has been assigned an outcome.
     message Finished {
@@ -53,23 +56,19 @@ message ProposalOutcome {
     // The proposal did not pass.
     message Failed {
         // The proposal was withdrawn during the voting period.
-        bool withdrawn = 1;
+        optional string withdrawn_with_reason = 1;
     }
 
     // The proposal did not pass, and was vetoed.
     message Vetoed {
         // The proposal was withdrawn during the voting period.
-        bool withdrawn = 1;
+        optional string withdrawn_with_reason = 1;
     }
-
-    // The proposal was withdrawn before the voting period started.
-    message WithdrawnBeforeVote {}
 
     oneof outcome {
         Passed passed = 1;
         Failed failed = 2;
         Vetoed vetoed = 3;
-        WithdrawnBeforeVote withdrawn_before_vote = 4;
     }
 }
 

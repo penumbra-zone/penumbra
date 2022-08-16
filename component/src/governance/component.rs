@@ -9,15 +9,18 @@ use penumbra_crypto::{
 };
 use penumbra_storage::{State, StateExt};
 use penumbra_transaction::{
-    action::{Proposal, Vote},
+    action::{Proposal, ProposalPayload, Vote},
     Transaction,
 };
 use tendermint::abci;
 use tracing::instrument;
 
-use crate::{Component, Context};
+use crate::{
+    stake::{self, View as _},
+    Component, Context,
+};
 
-use super::{check, event, execute, metrics, proposal, state_key};
+use super::{check, event, execute, metrics, proposal, state_key, tally};
 
 pub struct Governance {
     state: State,
@@ -86,9 +89,15 @@ impl Component for Governance {
         // }
     }
 
-    #[instrument(name = "governance", skip(self, _ctx, end_block))]
-    async fn end_block(&mut self, _ctx: Context, end_block: &abci::request::EndBlock) {
-        let height: u64 = end_block.height.try_into().unwrap();
+    #[instrument(name = "governance", skip(self, _ctx, _end_block))]
+    async fn end_block(&mut self, _ctx: Context, _end_block: &abci::request::EndBlock) {
+        let parameters = tally::Parameters::new(&self.state)
+            .await
+            .expect("can generate tally parameters");
+
+        let circumstance = tally::Circumstance::new(&self.state)
+            .await
+            .expect("can generate tally circumstance");
 
         // For every unfinished proposal, conclude those that finish in this block
         for proposal_id in self
@@ -97,14 +106,16 @@ impl Component for Governance {
             .await
             .expect("can get unfinished proposals")
         {
-            let proposal_end_block = self
-                .state
-                .proposal_voting_end(proposal_id)
+            // TODO: tally delegator votes
+            if let Some(outcome) = parameters
+                .tally(&self.state, circumstance, proposal_id)
                 .await
-                .expect("can read proposal end block")
-                .expect("proposal exists");
-            if proposal_end_block == height {
-                execute::conclude_proposal(&self.state, proposal_id).await;
+                .expect("can tally proposal")
+            {
+                self.state
+                    .put_proposal_state(proposal_id, proposal::State::Finished { outcome })
+                    .await
+                    .expect("can put finished proposal outcome");
             }
         }
 
@@ -155,6 +166,12 @@ pub trait View: StateExt {
         Ok(proposal_id)
     }
 
+    /// Get the proposal payload for a proposal.
+    async fn proposal_payload(&self, proposal_id: u64) -> Result<Option<ProposalPayload>> {
+        self.get_domain(state_key::proposal_payload(proposal_id).into())
+            .await
+    }
+
     /// Store the deposit refund address for a proposal.
     async fn put_refund_address(&self, proposal_id: u64, address: Address) {
         self.put_domain(
@@ -189,7 +206,7 @@ pub trait View: StateExt {
     /// Set the state of a proposal.
     async fn put_proposal_state(&self, proposal_id: u64, state: proposal::State) -> Result<()> {
         // Set the state of the proposal
-        self.put_domain(state_key::proposal_state(proposal_id).into(), state)
+        self.put_domain(state_key::proposal_state(proposal_id).into(), state.clone())
             .await;
 
         // Track the index
@@ -197,8 +214,8 @@ pub trait View: StateExt {
             .get_domain::<proposal::ProposalList, _>(state_key::unfinished_proposals().into())
             .await?
             .unwrap_or_default();
-        match state {
-            proposal::State::Voting | proposal::State::Withdrawn => {
+        match &state {
+            proposal::State::Voting | proposal::State::Withdrawn { .. } => {
                 // If we're setting the proposal to a non-finished state, track it in our list of
                 // proposals that are not finished
                 unfinished_proposals.proposals.insert(proposal_id);
@@ -232,6 +249,17 @@ pub trait View: StateExt {
             .await?)
     }
 
+    /// Get the list of validators who voted on a proposal.
+    async fn voting_validators(&self, proposal_id: u64) -> Result<Vec<IdentityKey>> {
+        Ok(self
+            .get_domain::<stake::validator::List, _>(
+                state_key::voting_validators(proposal_id).into(),
+            )
+            .await?
+            .unwrap_or_default()
+            .0)
+    }
+
     /// Get the vote of a validator on a particular proposal.
     async fn validator_vote(
         &self,
@@ -241,6 +269,31 @@ pub trait View: StateExt {
         Ok(self
             .get_domain::<Vote, _>(state_key::validator_vote(proposal_id, identity_key).into())
             .await?)
+    }
+
+    /// Record a validator vote for a proposal.
+    async fn cast_validator_vote(&self, proposal_id: u64, identity_key: IdentityKey, vote: Vote) {
+        // Record the vote
+        self.put_domain(
+            state_key::validator_vote(proposal_id, identity_key).into(),
+            vote,
+        )
+        .await;
+
+        // Record the fact that this validator has voted on this proposal
+        let mut voting_validators = self
+            .get_domain::<stake::validator::List, _>(
+                state_key::voting_validators(proposal_id).into(),
+            )
+            .await
+            .expect("can fetch voting validators")
+            .unwrap_or_default();
+        voting_validators.0.push(identity_key);
+        self.put_domain(
+            state_key::voting_validators(proposal_id).into(),
+            voting_validators,
+        )
+        .await;
     }
 
     /// Get the proposal voting end block for a given proposal.
@@ -257,6 +310,20 @@ pub trait View: StateExt {
             end_block,
         )
         .await
+    }
+
+    /// Get the total voting power across all validators.
+    async fn total_voting_power(&self) -> Result<u64> {
+        let mut total = 0;
+
+        for identity_key in self.validator_list().await? {
+            total += self
+                .validator_power(&identity_key)
+                .await?
+                .unwrap_or_default();
+        }
+
+        Ok(total)
     }
 }
 

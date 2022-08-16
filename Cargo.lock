@@ -3008,6 +3008,7 @@ dependencies = [
  "ibc-proto",
  "jmt",
  "metrics",
+ "num-rational",
  "once_cell",
  "penumbra-chain",
  "penumbra-crypto",

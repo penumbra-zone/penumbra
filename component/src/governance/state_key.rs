@@ -32,6 +32,10 @@ pub fn proposal_withdrawal_key(proposal_id: u64) -> String {
     format!("governance/proposal/{}/withdraw_key", proposal_id)
 }
 
+pub fn proposal_withdrawal_reason(proposal_id: u64) -> String {
+    format!("governance/proposal/{}/withdraw_reason", proposal_id)
+}
+
 pub fn voting_validators(proposal_id: u64) -> String {
     format!("governance/proposal/{}/voting_validators", proposal_id)
 }
