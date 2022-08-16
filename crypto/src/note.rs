@@ -21,15 +21,12 @@ use crate::{
     value, Fq, Value,
 };
 
-pub const NOTE_LEN_BYTES: usize = 121;
-pub const NOTE_CIPHERTEXT_BYTES: usize = 137;
+pub const NOTE_LEN_BYTES: usize = 120;
+pub const NOTE_CIPHERTEXT_BYTES: usize = 136;
 pub const OVK_WRAPPED_LEN_BYTES: usize = 80;
 
 /// The nonce used for note encryption.
 pub static NOTE_ENCRYPTION_NONCE: Lazy<[u8; 12]> = Lazy::new(|| [0u8; 12]);
-
-// Can add to this/make this an enum when we add additional types of notes.
-pub const NOTE_TYPE: u8 = 0;
 
 /// A plaintext Penumbra note.
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -402,12 +399,11 @@ impl From<Note> for pb::Note {
 impl From<&Note> for [u8; NOTE_LEN_BYTES] {
     fn from(note: &Note) -> [u8; NOTE_LEN_BYTES] {
         let mut bytes = [0u8; NOTE_LEN_BYTES];
-        bytes[0] = NOTE_TYPE;
-        bytes[1..17].copy_from_slice(&note.diversifier.0);
-        bytes[17..25].copy_from_slice(&note.value.amount.to_le_bytes());
-        bytes[25..57].copy_from_slice(&note.value.asset_id.0.to_bytes());
-        bytes[57..89].copy_from_slice(&note.note_blinding.to_bytes());
-        bytes[89..121].copy_from_slice(&note.transmission_key.0);
+        bytes[0..16].copy_from_slice(&note.diversifier.0);
+        bytes[16..24].copy_from_slice(&note.value.amount.to_le_bytes());
+        bytes[24..56].copy_from_slice(&note.value.asset_id.0.to_bytes());
+        bytes[56..88].copy_from_slice(&note.note_blinding.to_bytes());
+        bytes[88..120].copy_from_slice(&note.transmission_key.0);
         bytes
     }
 }
@@ -420,7 +416,7 @@ impl From<Note> for [u8; NOTE_LEN_BYTES] {
 
 impl From<&Note> for Vec<u8> {
     fn from(note: &Note) -> Vec<u8> {
-        let mut bytes = vec![NOTE_TYPE];
+        let mut bytes = vec![];
         bytes.extend_from_slice(&note.diversifier.0);
         bytes.extend_from_slice(&note.value.amount.to_le_bytes());
         bytes.extend_from_slice(&note.value.asset_id.0.to_bytes());
@@ -438,25 +434,21 @@ impl TryFrom<&[u8]> for Note {
             return Err(Error::NoteDeserializationError);
         }
 
-        if bytes[0] != NOTE_TYPE {
-            return Err(Error::NoteTypeUnsupported);
-        }
-
-        let amount_bytes: [u8; 8] = bytes[17..25]
+        let amount_bytes: [u8; 8] = bytes[16..24]
             .try_into()
             .map_err(|_| Error::NoteDeserializationError)?;
-        let asset_id_bytes: [u8; 32] = bytes[25..57]
+        let asset_id_bytes: [u8; 32] = bytes[24..56]
             .try_into()
             .map_err(|_| Error::NoteDeserializationError)?;
-        let note_blinding_bytes: [u8; 32] = bytes[57..89]
+        let note_blinding_bytes: [u8; 32] = bytes[56..88]
             .try_into()
             .map_err(|_| Error::NoteDeserializationError)?;
 
         Note::from_parts(
-            bytes[1..17]
+            bytes[0..16]
                 .try_into()
                 .map_err(|_| Error::NoteDeserializationError)?,
-            bytes[89..121]
+            bytes[88..120]
                 .try_into()
                 .map_err(|_| Error::NoteDeserializationError)?,
             Value {
