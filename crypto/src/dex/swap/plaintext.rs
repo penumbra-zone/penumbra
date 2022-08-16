@@ -10,7 +10,7 @@ use penumbra_proto::{crypto as pb_crypto, dex as pb, Protobuf};
 use crate::dex::TradingPair;
 use crate::{
     keys::OutgoingViewingKey,
-    symmetric::{PayloadKey, SWAP_ENCRYPTION_NONCE},
+    symmetric::{PayloadKey, PayloadKind},
 };
 
 use super::{SwapCiphertext, OVK_WRAPPED_LEN_BYTES, SWAP_CIPHERTEXT_BYTES, SWAP_LEN_BYTES};
@@ -82,7 +82,9 @@ impl SwapPlaintext {
         // References:
         // * Section 5.4.3 of the ZCash protocol spec
         // * Section 2.3 RFC 7539
-        let nonce = Nonce::from_slice(&*SWAP_ENCRYPTION_NONCE);
+        let payload_kind = PayloadKind::Swap;
+        let nonce_bytes = payload_kind.nonce();
+        let nonce = Nonce::from_slice(&nonce_bytes);
 
         let encryption_result = cipher
             .encrypt(nonce, op.as_ref())
@@ -103,7 +105,7 @@ impl SwapPlaintext {
 
         let key = PayloadKey::derive(&shared_secret, &epk);
         let swap_plaintext: [u8; SWAP_LEN_BYTES] = self.into();
-        let encryption_result = key.encrypt(swap_plaintext.to_vec(), *SWAP_ENCRYPTION_NONCE);
+        let encryption_result = key.encrypt(swap_plaintext.to_vec(), PayloadKind::Swap);
 
         let ciphertext: [u8; SWAP_CIPHERTEXT_BYTES] = encryption_result
             .try_into()

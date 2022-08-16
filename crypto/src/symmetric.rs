@@ -3,21 +3,25 @@ use chacha20poly1305::{
     aead::{Aead, NewAead},
     ChaCha20Poly1305, Key, Nonce,
 };
-use once_cell::sync::Lazy;
 
 use crate::ka;
 
-/// The nonce used for note encryption.
-pub static NOTE_ENCRYPTION_NONCE: Lazy<[u8; 12]> = Lazy::new(|| [0u8; 12]);
+/// Represents the item to be encrypted/decrypted with the [`PayloadKey`].
+pub enum PayloadKind {
+    Note,
+    Memo,
+    Swap,
+}
 
-/// The nonce used for memo encryption.
-pub static MEMO_ENCRYPTION_NONCE: Lazy<[u8; 12]> = Lazy::new(|| {
-    let nonce_bytes = 1u128.to_le_bytes();
-    nonce_bytes[0..12].try_into().expect("nonce fits in array")
-});
-
-/// The nonce used for swap encryption.
-pub static SWAP_ENCRYPTION_NONCE: Lazy<[u8; 12]> = Lazy::new(|| [9u8; 12]);
+impl PayloadKind {
+    pub(crate) fn nonce(&self) -> [u8; 12] {
+        match self {
+            Self::Note => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            Self::Memo => [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            Self::Swap => [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        }
+    }
+}
 
 /// Represents a symmetric `ChaCha20Poly1305` key.
 ///
@@ -38,9 +42,10 @@ impl PayloadKey {
     }
 
     /// Encrypt a note, swap, or memo using the `PayloadKey`.
-    pub fn encrypt(&self, plaintext: Vec<u8>, nonce: [u8; 12]) -> Vec<u8> {
+    pub fn encrypt(&self, plaintext: Vec<u8>, kind: PayloadKind) -> Vec<u8> {
         let cipher = ChaCha20Poly1305::new(&self.0);
-        let nonce = Nonce::from_slice(&nonce);
+        let nonce_bytes = kind.nonce();
+        let nonce = Nonce::from_slice(&nonce_bytes);
 
         cipher
             .encrypt(nonce, plaintext.as_ref())
@@ -48,9 +53,10 @@ impl PayloadKey {
     }
 
     /// Decrypt a note, swap, or memo using the `PayloadKey`.
-    pub fn decrypt(&self, ciphertext: Vec<u8>, nonce: [u8; 12]) -> Result<Vec<u8>> {
+    pub fn decrypt(&self, ciphertext: Vec<u8>, kind: PayloadKind) -> Result<Vec<u8>> {
         let cipher = ChaCha20Poly1305::new(&self.0);
-        let nonce = Nonce::from_slice(&nonce);
+        let nonce_bytes = kind.nonce();
+        let nonce = Nonce::from_slice(&nonce_bytes);
 
         cipher
             .decrypt(nonce, ciphertext.as_ref())

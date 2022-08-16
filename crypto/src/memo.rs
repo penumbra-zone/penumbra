@@ -7,7 +7,7 @@ use crate::{
     keys::{IncomingViewingKey, OutgoingViewingKey},
     note,
     note::OVK_WRAPPED_LEN_BYTES,
-    symmetric::{PayloadKey, MEMO_ENCRYPTION_NONCE},
+    symmetric::{PayloadKey, PayloadKind},
     value, Address, Note,
 };
 
@@ -49,7 +49,7 @@ impl MemoPlaintext {
             .expect("key agreement succeeds");
 
         let key = PayloadKey::derive(&shared_secret, &epk);
-        let encryption_result = key.encrypt(self.0.to_vec(), *MEMO_ENCRYPTION_NONCE);
+        let encryption_result = key.encrypt(self.0.to_vec(), PayloadKind::Memo);
         let ciphertext: [u8; MEMO_CIPHERTEXT_LEN_BYTES] = encryption_result
             .try_into()
             .expect("memo encryption result fits in ciphertext len");
@@ -69,7 +69,7 @@ impl MemoPlaintext {
 
         let key = PayloadKey::derive(&shared_secret, &epk);
         let plaintext = key
-            .decrypt(ciphertext.0.to_vec(), *MEMO_ENCRYPTION_NONCE)
+            .decrypt(ciphertext.0.to_vec(), PayloadKind::Memo)
             .map_err(|_| anyhow!("decryption error"))?;
 
         let plaintext_bytes: [u8; MEMO_LEN_BYTES] = plaintext
@@ -95,7 +95,7 @@ impl MemoPlaintext {
             .map_err(|_| anyhow!("could not perform key agreement"))?;
         let key = PayloadKey::derive(&shared_secret, &epk);
         let plaintext = key
-            .decrypt(ciphertext.0.to_vec(), *MEMO_ENCRYPTION_NONCE)
+            .decrypt(ciphertext.0.to_vec(), PayloadKind::Memo)
             .map_err(|_| anyhow!("decryption error"))?;
 
         let plaintext_bytes: [u8; MEMO_LEN_BYTES] = plaintext

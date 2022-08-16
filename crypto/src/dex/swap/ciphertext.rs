@@ -2,7 +2,7 @@ use anyhow::Result;
 
 use crate::{
     ka,
-    symmetric::{PayloadKey, SWAP_ENCRYPTION_NONCE},
+    symmetric::{PayloadKey, PayloadKind},
 };
 
 use super::{SwapPlaintext, SWAP_CIPHERTEXT_BYTES, SWAP_LEN_BYTES};
@@ -24,7 +24,7 @@ impl SwapCiphertext {
         let key = PayloadKey::derive(&shared_secret, &epk);
         let swap_ciphertext = self.0;
         let decryption_result = key
-            .decrypt(swap_ciphertext.to_vec(), *SWAP_ENCRYPTION_NONCE)
+            .decrypt(swap_ciphertext.to_vec(), PayloadKind::Swap)
             .map_err(|_| anyhow::anyhow!("unable to decrypt swap ciphertext"))?;
 
         let plaintext: [u8; SWAP_LEN_BYTES] = decryption_result
