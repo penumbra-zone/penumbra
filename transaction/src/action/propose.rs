@@ -79,52 +79,57 @@ pub enum ProposalPayload {
     },
 }
 
+impl Protobuf<pb::proposal::Payload> for ProposalPayload {}
+
 impl From<ProposalPayload> for pb::proposal::Payload {
     fn from(value: ProposalPayload) -> pb::proposal::Payload {
-        match value {
-            ProposalPayload::Signaling { commit } => {
-                pb::proposal::Payload::Signaling(pb::proposal::Signaling { commit })
-            }
-            ProposalPayload::Emergency { halt_chain } => {
-                pb::proposal::Payload::Emergency(pb::proposal::Emergency { halt_chain })
-            }
-            ProposalPayload::ParameterChange {
-                effective_height,
-                new_parameters,
-            } => pb::proposal::Payload::ParameterChange(pb::proposal::ParameterChange {
-                effective_height,
-                new_parameters: new_parameters
-                    .into_iter()
-                    .map(
-                        |(parameter, value)| pb::proposal::parameter_change::SetParameter {
-                            parameter,
-                            value,
-                        },
-                    )
-                    .collect(),
-            }),
-            ProposalPayload::DaoSpend {
-                schedule_transactions,
-                cancel_transactions,
-            } => pb::proposal::Payload::DaoSpend(pb::proposal::DaoSpend {
-                schedule_transactions: schedule_transactions
-                    .into_iter()
-                    .map(|(execute_at_height, transaction)| {
-                        pb::proposal::dao_spend::ScheduleTransaction {
-                            execute_at_height,
-                            transaction: Some(transaction.into()),
-                        }
+        pb::proposal::Payload {
+            payload: Some(match value {
+                ProposalPayload::Signaling { commit } => {
+                    pb::proposal::payload::Payload::Signaling(pb::proposal::Signaling { commit })
+                }
+                ProposalPayload::Emergency { halt_chain } => {
+                    pb::proposal::payload::Payload::Emergency(pb::proposal::Emergency {
+                        halt_chain,
                     })
-                    .collect(),
-                cancel_transactions: cancel_transactions
-                    .into_iter()
-                    .map(|(scheduled_at_height, auth_hash)| {
-                        pb::proposal::dao_spend::CancelTransaction {
-                            scheduled_at_height,
-                            auth_hash: Some(auth_hash.into()),
-                        }
+                }
+                ProposalPayload::ParameterChange {
+                    effective_height,
+                    new_parameters,
+                } => {
+                    pb::proposal::payload::Payload::ParameterChange(pb::proposal::ParameterChange {
+                        effective_height,
+                        new_parameters: new_parameters
+                            .into_iter()
+                            .map(|(parameter, value)| {
+                                pb::proposal::parameter_change::SetParameter { parameter, value }
+                            })
+                            .collect(),
                     })
-                    .collect(),
+                }
+                ProposalPayload::DaoSpend {
+                    schedule_transactions,
+                    cancel_transactions,
+                } => pb::proposal::payload::Payload::DaoSpend(pb::proposal::DaoSpend {
+                    schedule_transactions: schedule_transactions
+                        .into_iter()
+                        .map(|(execute_at_height, transaction)| {
+                            pb::proposal::dao_spend::ScheduleTransaction {
+                                execute_at_height,
+                                transaction: Some(transaction.into()),
+                            }
+                        })
+                        .collect(),
+                    cancel_transactions: cancel_transactions
+                        .into_iter()
+                        .map(|(scheduled_at_height, auth_hash)| {
+                            pb::proposal::dao_spend::CancelTransaction {
+                                scheduled_at_height,
+                                auth_hash: Some(auth_hash.into()),
+                            }
+                        })
+                        .collect(),
+                }),
             }),
         }
     }
@@ -134,22 +139,28 @@ impl TryFrom<pb::proposal::Payload> for ProposalPayload {
     type Error = anyhow::Error;
 
     fn try_from(msg: pb::proposal::Payload) -> Result<Self, Self::Error> {
-        match msg {
-            pb::proposal::Payload::Signaling(inner) => Ok(ProposalPayload::Signaling {
+        let payload = msg
+            .payload
+            .ok_or_else(|| anyhow::anyhow!("missing proposal payload"))?;
+
+        match payload {
+            pb::proposal::payload::Payload::Signaling(inner) => Ok(ProposalPayload::Signaling {
                 commit: inner.commit,
             }),
-            pb::proposal::Payload::Emergency(inner) => Ok(ProposalPayload::Emergency {
+            pb::proposal::payload::Payload::Emergency(inner) => Ok(ProposalPayload::Emergency {
                 halt_chain: inner.halt_chain,
             }),
-            pb::proposal::Payload::ParameterChange(inner) => Ok(ProposalPayload::ParameterChange {
-                effective_height: inner.effective_height,
-                new_parameters: inner
-                    .new_parameters
-                    .into_iter()
-                    .map(|inner| (inner.parameter, inner.value))
-                    .collect(),
-            }),
-            pb::proposal::Payload::DaoSpend(inner) => Ok(ProposalPayload::DaoSpend {
+            pb::proposal::payload::Payload::ParameterChange(inner) => {
+                Ok(ProposalPayload::ParameterChange {
+                    effective_height: inner.effective_height,
+                    new_parameters: inner
+                        .new_parameters
+                        .into_iter()
+                        .map(|inner| (inner.parameter, inner.value))
+                        .collect(),
+                })
+            }
+            pb::proposal::payload::Payload::DaoSpend(inner) => Ok(ProposalPayload::DaoSpend {
                 schedule_transactions: inner
                     .schedule_transactions
                     .into_iter()
