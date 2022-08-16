@@ -1,6 +1,5 @@
 use super::{proposal, View as _};
 use penumbra_chain::View as _;
-use penumbra_crypto::rdsa::{SpendAuth, VerificationKey};
 use penumbra_storage::State;
 use penumbra_transaction::action::{
     ProposalSubmit, ProposalWithdraw, ProposalWithdrawBody, ValidatorVote, ValidatorVoteBody,
@@ -53,20 +52,39 @@ pub async fn proposal_submit(
     tracing::debug!(proposal = %proposal_id, "created proposal");
 }
 
-pub async fn proposal_withdraw(state: &State, proposal_withdraw: &ProposalWithdraw) {
-    // TODO: mark the proposal as withdrawn
-    // TODO: handle distinction of pre-voting vs. post-voting withdrawal?
+pub async fn proposal_withdraw(
+    state: &State,
+    ProposalWithdraw {
+        auth_sig: _,
+        body: ProposalWithdrawBody { proposal, reason },
+    }: &ProposalWithdraw,
+) {
+    state
+        .put_proposal_state(
+            *proposal,
+            proposal::State::Withdrawn {
+                reason: reason.clone(),
+            },
+        )
+        .await
+        .expect("proposal withdraw succeeds");
 }
 
-pub async fn validator_vote(state: &State, validator_vote: &ValidatorVote) {
-    // TODO: record the vote
-    // TODO: update the table of validators who voted on this proposal
-}
-
-pub async fn conclude_proposal(state: &State, proposal_id: u64) {
-    // TODO: tally delegator votes
-    // TODO: tally weighted validator votes
-    // TODO: write the outcome of the proposal into the state
+pub async fn validator_vote(
+    state: &State,
+    ValidatorVote {
+        auth_sig: _,
+        body:
+            ValidatorVoteBody {
+                proposal,
+                vote,
+                identity_key,
+            },
+    }: &ValidatorVote,
+) {
+    state
+        .cast_validator_vote(*proposal, *identity_key, *vote)
+        .await;
 }
 
 // TODO: fill in when delegator votes happen

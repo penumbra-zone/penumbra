@@ -44,6 +44,7 @@ prost = "0.9"
 ibc = { git = "https://github.com/penumbra-zone/ibc-rs.git", branch = "with-tendermintrs-24" }
 ibc-proto = { git = "https://github.com/penumbra-zone/ibc-rs.git", branch = "with-tendermintrs-24" }
 tendermint-light-client-verifier = "0.24.0-pre.1"
+num-rational = "0.4"
 
 [dev-dependencies]
 ed25519-consensus = "2"

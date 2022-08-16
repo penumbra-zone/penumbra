@@ -6,6 +6,7 @@ mod metrics;
 
 pub mod proposal;
 pub mod state_key;
+pub mod tally;
 
 pub use self::metrics::register_metrics;
 pub use component::{Governance, View};

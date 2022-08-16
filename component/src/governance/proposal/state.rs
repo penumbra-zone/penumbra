@@ -2,12 +2,25 @@ use serde::{Deserialize, Serialize};
 
 use penumbra_proto::{governance as pb, Protobuf};
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::ProposalState", into = "pb::ProposalState")]
 pub enum State {
     Voting,
-    Withdrawn,
+    Withdrawn { reason: String },
     Finished { outcome: Outcome },
+}
+
+impl State {
+    pub fn withdrawn(self) -> Withdrawn {
+        match self {
+            State::Voting => Withdrawn::No,
+            State::Withdrawn { reason } => Withdrawn::WithReason { reason },
+            State::Finished { outcome } => match outcome {
+                Outcome::Passed => Withdrawn::No,
+                Outcome::Failed { withdrawn } | Outcome::Vetoed { withdrawn } => withdrawn,
+            },
+        }
+    }
 }
 
 impl Protobuf<pb::ProposalState> for State {}
@@ -16,8 +29,8 @@ impl From<State> for pb::ProposalState {
     fn from(s: State) -> Self {
         let state = match s {
             State::Voting => pb::proposal_state::State::Voting(pb::proposal_state::Voting {}),
-            State::Withdrawn => {
-                pb::proposal_state::State::Withdrawn(pb::proposal_state::Withdrawn {})
+            State::Withdrawn { reason } => {
+                pb::proposal_state::State::Withdrawn(pb::proposal_state::Withdrawn { reason })
             }
             State::Finished { outcome } => {
                 pb::proposal_state::State::Finished(pb::proposal_state::Finished {
@@ -39,8 +52,8 @@ impl TryFrom<pb::ProposalState> for State {
                 .ok_or_else(|| anyhow::anyhow!("missing proposal state"))?
             {
                 pb::proposal_state::State::Voting(pb::proposal_state::Voting {}) => State::Voting,
-                pb::proposal_state::State::Withdrawn(pb::proposal_state::Withdrawn {}) => {
-                    State::Withdrawn
+                pb::proposal_state::State::Withdrawn(pb::proposal_state::Withdrawn { reason }) => {
+                    State::Withdrawn { reason }
                 }
                 pb::proposal_state::State::Finished(pb::proposal_state::Finished { outcome }) => {
                     State::Finished {
@@ -54,13 +67,36 @@ impl TryFrom<pb::ProposalState> for State {
     }
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::ProposalOutcome", into = "pb::ProposalOutcome")]
 pub enum Outcome {
     Passed,
-    Failed { withdrawn: bool },
-    Vetoed { withdrawn: bool },
-    WithdrawnBeforeVote,
+    Failed { withdrawn: Withdrawn },
+    Vetoed { withdrawn: Withdrawn },
+}
+
+#[derive(Debug, Clone)]
+pub enum Withdrawn {
+    No,
+    WithReason { reason: String },
+}
+
+impl From<Option<String>> for Withdrawn {
+    fn from(reason: Option<String>) -> Self {
+        match reason {
+            Some(reason) => Withdrawn::WithReason { reason },
+            None => Withdrawn::No,
+        }
+    }
+}
+
+impl From<Withdrawn> for Option<String> {
+    fn from(withdrawn: Withdrawn) -> Self {
+        match withdrawn {
+            Withdrawn::No => None,
+            Withdrawn::WithReason { reason } => Some(reason),
+        }
+    }
 }
 
 impl Protobuf<pb::ProposalOutcome> for Outcome {}
@@ -72,14 +108,15 @@ impl From<Outcome> for pb::ProposalOutcome {
                 pb::proposal_outcome::Outcome::Passed(pb::proposal_outcome::Passed {})
             }
             Outcome::Failed { withdrawn } => {
-                pb::proposal_outcome::Outcome::Failed(pb::proposal_outcome::Failed { withdrawn })
+                pb::proposal_outcome::Outcome::Failed(pb::proposal_outcome::Failed {
+                    withdrawn_with_reason: withdrawn.into(),
+                })
             }
             Outcome::Vetoed { withdrawn } => {
-                pb::proposal_outcome::Outcome::Vetoed(pb::proposal_outcome::Vetoed { withdrawn })
+                pb::proposal_outcome::Outcome::Vetoed(pb::proposal_outcome::Vetoed {
+                    withdrawn_with_reason: withdrawn.into(),
+                })
             }
-            Outcome::WithdrawnBeforeVote => pb::proposal_outcome::Outcome::WithdrawnBeforeVote(
-                pb::proposal_outcome::WithdrawnBeforeVote {},
-            ),
         };
         pb::ProposalOutcome {
             outcome: Some(outcome),
@@ -100,14 +137,15 @@ impl TryFrom<pb::ProposalOutcome> for Outcome {
                     Outcome::Passed
                 }
                 pb::proposal_outcome::Outcome::Failed(pb::proposal_outcome::Failed {
-                    withdrawn,
-                }) => Outcome::Failed { withdrawn },
+                    withdrawn_with_reason,
+                }) => Outcome::Failed {
+                    withdrawn: withdrawn_with_reason.into(),
+                },
                 pb::proposal_outcome::Outcome::Vetoed(pb::proposal_outcome::Vetoed {
-                    withdrawn,
-                }) => Outcome::Vetoed { withdrawn },
-                pb::proposal_outcome::Outcome::WithdrawnBeforeVote(
-                    pb::proposal_outcome::WithdrawnBeforeVote {},
-                ) => Outcome::WithdrawnBeforeVote,
+                    withdrawn_with_reason,
+                }) => Outcome::Vetoed {
+                    withdrawn: withdrawn_with_reason.into(),
+                },
             },
         )
     }

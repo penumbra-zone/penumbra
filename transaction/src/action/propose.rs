@@ -79,6 +79,24 @@ pub enum ProposalPayload {
     },
 }
 
+impl ProposalPayload {
+    pub fn is_signaling(&self) -> bool {
+        matches!(self, ProposalPayload::Signaling { .. })
+    }
+
+    pub fn is_emergency(&self) -> bool {
+        matches!(self, ProposalPayload::Emergency { .. })
+    }
+
+    pub fn is_parameter_change(&self) -> bool {
+        matches!(self, ProposalPayload::ParameterChange { .. })
+    }
+
+    pub fn is_dao_spend(&self) -> bool {
+        matches!(self, ProposalPayload::DaoSpend { .. })
+    }
+}
+
 impl Protobuf<pb::proposal::Payload> for ProposalPayload {}
 
 impl From<ProposalPayload> for pb::proposal::Payload {
