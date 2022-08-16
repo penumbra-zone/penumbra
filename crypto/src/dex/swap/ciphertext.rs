@@ -27,6 +27,9 @@ impl SwapCiphertext {
             .decrypt(swap_ciphertext.to_vec(), PayloadKind::Swap)
             .map_err(|_| anyhow::anyhow!("unable to decrypt swap ciphertext"))?;
 
+        // TODO: encapsulate plaintext encoding by making this a
+        // pub(super) parse_decryption method on SwapPlaintext
+        // and removing the TryFrom impls
         let plaintext: [u8; SWAP_LEN_BYTES] = decryption_result
             .try_into()
             .map_err(|_| anyhow::anyhow!("swap decryption result did not fit in plaintext len"))?;

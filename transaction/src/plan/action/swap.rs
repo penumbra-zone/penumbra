@@ -1,6 +1,11 @@
 use ark_ff::UniformRand;
 use decaf377_rdsa::{Signature, SpendAuth};
-use penumbra_crypto::{proofs::transparent::SpendProof, FieldExt, Fr, FullViewingKey, Note};
+use penumbra_crypto::{
+    dex::TradingPair,
+    proofs::transparent::{SpendProof, SwapProof},
+    transaction::Fee,
+    value, FieldExt, Fr, FullViewingKey, Note, NotePayload,
+};
 use penumbra_proto::{transaction as pb, Protobuf};
 use penumbra_tct as tct;
 use rand_core::{CryptoRng, RngCore};
@@ -8,43 +13,52 @@ use serde::{Deserialize, Serialize};
 
 use crate::action::{swap, Swap};
 
-// TODO: copied directly from `SpendPlan` right now, needs to be updated
-// for `Swap`
 /// A planned [`Swap`](Swap).
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(try_from = "pb::SwapPlan", into = "pb::SwapPlan")]
 pub struct SwapPlan {
-    pub note: Note,
-    pub position: tct::Position,
-    pub randomizer: Fr,
-    pub value_blinding: Fr,
+    pub trading_pair: TradingPair,
+    // No commitments for the values, as they're plaintext
+    // until flow encryption is available
+    // pub asset_1_commitment: value::Commitment,
+    // pub asset_2_commitment: value::Commitment,
+    pub delta_1: u64,
+    pub delta_2: u64,
+    pub fee_commitment: value::Commitment,
+    pub fee: Fee,
+    pub swap_nft: NotePayload,
+    pub note_1: Note,
+    pub note_1_position: tct::Position,
+    pub note_1_randomizer: Fr,
+    pub note_1_value_blinding: Fr,
+    pub note_2: Note,
+    pub note_2_position: tct::Position,
+    pub note_2_randomizer: Fr,
+    pub note_2_value_blinding: Fr,
 }
 
 impl SwapPlan {
-    /// Create a new [`SwapPlan`] that spends the given `position`ed `note`.
+    /// Create a new [`SwapPlan`] that requests a swap between the given assets and input amounts.
     pub fn new<R: CryptoRng + RngCore>(
         rng: &mut R,
-        note: Note,
+        fee_commitment: value::Commitment,
+        fee: Fee,
         position: tct::Position,
     ) -> SwapPlan {
         SwapPlan {
-            note,
-            position,
-            randomizer: Fr::rand(rng),
-            value_blinding: Fr::rand(rng),
+            trading_pair: todo!(),
+            delta_1: todo!(),
+            delta_2: todo!(),
+            fee_commitment,
+            swap_nft: todo!(),
+            fee,
         }
     }
 
     /// Convenience method to construct the [`Swap`] described by this [`SwapPlan`].
-    pub fn swap(
-        &self,
-        fvk: &FullViewingKey,
-        auth_sig: Signature<SpendAuth>,
-        auth_path: tct::Proof,
-    ) -> Swap {
+    pub fn swap(&self, fvk: &FullViewingKey, auth_path: tct::Proof) -> Swap {
         Swap {
             body: self.swap_body(fvk),
-            auth_sig,
             proof: self.swap_proof(fvk, auth_path),
         }
     }
@@ -52,24 +66,28 @@ impl SwapPlan {
     /// Construct the [`swap::Body`] described by this [`SwapPlan`].
     pub fn swap_body(&self, fvk: &FullViewingKey) -> swap::Body {
         swap::Body {
-            value_commitment: self.note.value().commit(self.value_blinding),
-            nullifier: fvk.derive_nullifier(self.position, &self.note.commit()),
-            rk: fvk.spend_verification_key().randomize(&self.randomizer),
+            trading_pair: todo!(),
+            delta_1: todo!(),
+            delta_2: todo!(),
+            fee_commitment: todo!(),
+            swap_nft: todo!(),
+            swap_ciphertext: todo!(),
         }
     }
 
     /// Construct the [`SwapProof`] required by the [`swap::Body`] described by this [`SwapPlan`].
     pub fn swap_proof(&self, fvk: &FullViewingKey, note_commitment_proof: tct::Proof) -> SwapProof {
         SwapProof {
-            note_commitment_proof,
-            g_d: self.note.diversified_generator(),
+            b_d: self.note.diversified_generator(),
             pk_d: self.note.transmission_key(),
-            value: self.note.value(),
-            v_blinding: self.value_blinding,
             note_blinding: self.note.note_blinding(),
-            spend_auth_randomizer: self.randomizer,
-            ak: *fvk.spend_verification_key(),
-            nk: *fvk.nullifier_key(),
+            fee_delta: self.fee_commitment.value(),
+            value_t1: self.delta_1,
+            value_t2: self.delta_2,
+            swap_nft_asset_id: self.swap_nft.asset_id(),
+            esk: fvk.esk(),
+            delta_1_blinding: self.delta_1_blinding(),
+            delta_2_blinding: self.delta_2_blinding(),
         }
     }
 }
@@ -91,13 +109,11 @@ impl TryFrom<pb::SwapPlan> for SwapPlan {
     type Error = anyhow::Error;
     fn try_from(msg: pb::SwapPlan) -> Result<Self, Self::Error> {
         Ok(Self {
-            note: msg
-                .note
-                .ok_or_else(|| anyhow::anyhow!("missing note"))?
-                .try_into()?,
-            position: msg.position.into(),
-            randomizer: Fr::from_bytes(msg.randomizer.as_ref().try_into()?)?,
-            value_blinding: Fr::from_bytes(msg.value_blinding.as_ref().try_into()?)?,
+            trading_pair: msg.trading_pair.try_into()?,
+            delta_1: msg.delta_1,
+            delta_2: msg.delta_2,
+            fee_commitment: msg.fee_commitment.try_into()?,
+            swap_nft: msg.swap_nft.try_into()?,
         })
     }
 }

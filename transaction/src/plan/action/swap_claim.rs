@@ -73,12 +73,21 @@ impl SwapClaimPlan {
     /// by this plan.
     pub fn swap_claim_proof(&self) -> SwapClaimProof {
         SwapClaimProof {
-            g_d: self.output_note().diversified_generator(),
+            swap_nft_asset_id: self.dest_address.asset_id().clone(),
+            b_d: self.output_note().diversified_generator(),
             pk_d: self.dest_address.transmission_key().clone(),
-            value: self.value,
-            v_blinding: self.value_blinding,
+            nk: todo!(),
+            note_commitment_proof: todo!(),
+            trading_pair: todo!(),
             note_blinding: self.note_blinding,
-            esk: self.esk.clone(),
+            delta_1: todo!(),
+            delta_2: todo!(),
+            lambda_1: todo!(),
+            lambda_2: todo!(),
+            note_blinding_1: todo!(),
+            note_blinding_2: todo!(),
+            esk_1: todo!(),
+            esk_2: todo!(),
         }
     }
 
@@ -101,14 +110,13 @@ impl SwapClaimPlan {
         let ovk_wrapped_key = note.encrypt_key(&self.esk, ovk, value_commitment);
 
         swap_claim::Body {
-            note_payload: NotePayload {
-                note_commitment,
-                ephemeral_key,
-                encrypted_note,
-            },
-            value_commitment,
-            encrypted_memo,
-            ovk_wrapped_key,
+            nullifier: todo!(),
+            fee: todo!(),
+            output_1: todo!(),
+            output_2: todo!(),
+            output_data: todo!(),
+            anchor: todo!(),
+            trading_pair: todo!(),
         }
     }
 

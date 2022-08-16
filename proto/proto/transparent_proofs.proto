@@ -103,7 +103,6 @@ message SwapProof {
   */
   bytes delta_1_blinding = 20;
   bytes delta_2_blinding = 21;
-  bytes fee_blinding = 22;
 
   /**
    * @exclude

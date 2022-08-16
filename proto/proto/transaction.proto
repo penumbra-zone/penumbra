@@ -275,14 +275,36 @@ message OutputPlan {
 }
 
 message SwapPlan {
-    // The plaintext note we plan to spend.
-    crypto.Note note = 1;
-    // The position of the note we plan to spend.
-    uint64 position = 2;
-    // The randomizer to use for the spend.
-    bytes randomizer = 3;
-    // The blinding factor to use for the value commitment.
-    bytes value_blinding = 4;
+    // The trading pair to swap.
+    dex.TradingPair trading_pair = 1;
+    // The amount for asset 1.
+    uint64 delta_1 = 2;
+    // The amount for asset 2.
+    uint64 delta_2 = 3;
+    // A commitment to a prepaid fee for the future SwapClaim.
+    bytes fee_commitment = 4;
+    // The fee to be pre-paid for the SwapClaim.
+    crypto.Fee fee = 5;
+    // Swap NFT recording the user's contribution to the Swap to be added to the TCT.
+    crypto.NotePayload swap_nft = 6;
+    
+    // A note to be spent for the input amount of asset 1.
+    crypto.Note note_1 = 10;
+    // The position of the asset 1 note we plan to burn as input.
+    uint64 note_1_position = 11;
+    // The randomizer to use for the burn of note 1.
+    bytes note_1_randomizer = 12;
+    // The blinding factor to use for the value commitment of note 1.
+    bytes note_1_value_blinding = 13;
+    
+    // A note to be spent for the input amount of asset 2.
+    crypto.Note note_2 = 20;
+    // The position of the asset 2 note we plan to burn as input.
+    uint64 note_2_position = 21;
+    // The randomizer to use for the burn of note 2.
+    bytes note_2_randomizer = 22;
+    // The blinding factor to use for the value commitment of note 2.
+    bytes note_2_value_blinding = 23;
 }
 
 message SwapClaimPlan {
