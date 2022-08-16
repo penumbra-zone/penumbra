@@ -345,16 +345,21 @@ message Proposal {
   string description = 1;
 
   // The kind of the proposal and details relevant only to that kind of proposal.
-  oneof payload {
-    // A signaling proposal.
-    Signaling signaling = 2;
-    // An emergency proposal.
-    Emergency emergency = 3;
-    // A parameter change proposal.
-    ParameterChange parameter_change = 4;
-    // A DAO spend proposal.
-    DaoSpend dao_spend = 5;
+  message Payload {
+    oneof payload {
+      // A signaling proposal.
+      Signaling signaling = 2;
+      // An emergency proposal.
+      Emergency emergency = 3;
+      // A parameter change proposal.
+      ParameterChange parameter_change = 4;
+      // A DAO spend proposal.
+      DaoSpend dao_spend = 5;
+    }
   }
+
+  // The payload of the proposal.
+  Payload payload = 2;
 
   // A signaling proposal is meant to register a vote on-chain, but does not have an automatic
   // effect when passed.
