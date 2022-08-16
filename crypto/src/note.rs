@@ -18,7 +18,7 @@ pub use penumbra_tct::Commitment;
 use crate::{
     asset, ka,
     keys::{Diversifier, IncomingViewingKey, OutgoingViewingKey},
-    symmetric::{PayloadKey, NOTE_ENCRYPTION_NONCE},
+    symmetric::{PayloadKey, PayloadKind},
     value, Fq, Value,
 };
 
@@ -132,7 +132,7 @@ impl Note {
 
         let key = PayloadKey::derive(&shared_secret, &epk);
         let note_plaintext: Vec<u8> = self.into();
-        let encryption_result = key.encrypt(note_plaintext, *NOTE_ENCRYPTION_NONCE);
+        let encryption_result = key.encrypt(note_plaintext, PayloadKind::Note);
 
         let ciphertext: [u8; NOTE_CIPHERTEXT_BYTES] = encryption_result
             .try_into()
@@ -168,7 +168,9 @@ impl Note {
         // References:
         // * Section 5.4.3 of the ZCash protocol spec
         // * Section 2.3 RFC 7539
-        let nonce = Nonce::from_slice(&*NOTE_ENCRYPTION_NONCE);
+        let payload_kind = PayloadKind::Note;
+        let nonce_bytes = payload_kind.nonce();
+        let nonce = Nonce::from_slice(&nonce_bytes);
 
         let encryption_result = cipher
             .encrypt(nonce, op.as_ref())
@@ -193,7 +195,9 @@ impl Note {
         let ock = Key::from_slice(kdf_output.as_bytes());
 
         let cipher = ChaCha20Poly1305::new(ock);
-        let nonce = Nonce::from_slice(&*NOTE_ENCRYPTION_NONCE);
+        let payload_kind = PayloadKind::Note;
+        let nonce_bytes = payload_kind.nonce();
+        let nonce = Nonce::from_slice(&nonce_bytes);
 
         let plaintext = cipher
             .decrypt(nonce, wrapped_ovk.as_ref())
@@ -230,7 +234,7 @@ impl Note {
             .map_err(|_| Error::DecryptionError)?;
         let key = PayloadKey::derive(&shared_secret, &epk);
         let plaintext = key
-            .decrypt(ciphertext.to_vec(), *NOTE_ENCRYPTION_NONCE)
+            .decrypt(ciphertext.to_vec(), PayloadKind::Note)
             .map_err(|_| Error::DecryptionError)?;
         let plaintext_bytes: [u8; NOTE_LEN_BYTES] =
             plaintext.try_into().map_err(|_| Error::DecryptionError)?;
@@ -256,7 +260,7 @@ impl Note {
 
         let key = PayloadKey::derive(&shared_secret, &epk);
         let plaintext = key
-            .decrypt(ciphertext.to_vec(), *NOTE_ENCRYPTION_NONCE)
+            .decrypt(ciphertext.to_vec(), PayloadKind::Note)
             .map_err(|_| Error::DecryptionError)?;
 
         let plaintext_bytes: [u8; NOTE_LEN_BYTES] =
