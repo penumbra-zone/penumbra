@@ -2,7 +2,7 @@ use std::io::{Cursor, Read, Write};
 
 use ark_serialize::CanonicalDeserialize;
 use f4jumble::{f4jumble, f4jumble_inv};
-use penumbra_proto::{crypto as pb, serializers::bech32str};
+use penumbra_proto::{crypto as pb, serializers::bech32str, Protobuf};
 use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
 
@@ -112,6 +112,8 @@ impl Address {
         .expect("generated dummy address")
     }
 }
+
+impl Protobuf<pb::Address> for Address {}
 
 impl From<Address> for pb::Address {
     fn from(a: Address) -> Self {

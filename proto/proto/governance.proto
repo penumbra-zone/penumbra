@@ -72,3 +72,8 @@ message ProposalOutcome {
         WithdrawnBeforeVote withdrawn_before_vote = 4;
     }
 }
+
+// A list of proposal ids.
+message ProposalList {
+    repeated uint64 proposals = 1;
+}

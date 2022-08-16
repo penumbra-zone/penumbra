@@ -16,8 +16,8 @@ pub fn proposal_state(proposal_id: u64) -> String {
     format!("governance/proposal/{}/state", proposal_id)
 }
 
-pub fn proposal_voting_start(proposal_id: u64) -> String {
-    format!("governance/proposal/{}/voting_start", proposal_id)
+pub fn proposal_deposit_refund_address(proposal_id: u64) -> String {
+    format!("governance/proposal/{}/deposit_refund_address", proposal_id)
 }
 
 pub fn proposal_voting_end(proposal_id: u64) -> String {
@@ -28,7 +28,7 @@ pub fn unfinished_proposals() -> &'static str {
     "governance/unfinished_proposals"
 }
 
-pub fn proposal_withdraw_key(proposal_id: u64) -> String {
+pub fn proposal_withdrawal_key(proposal_id: u64) -> String {
     format!("governance/proposal/{}/withdraw_key", proposal_id)
 }
 

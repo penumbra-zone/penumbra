@@ -135,7 +135,7 @@ pub mod stateful {
         state: &State,
         ProposalWithdraw { body, auth_sig }: &ProposalWithdraw,
     ) -> Result<()> {
-        if let Some(withdraw_proposal_key) = state.proposal_withdraw_key(body.proposal).await? {
+        if let Some(withdraw_proposal_key) = state.proposal_withdrawal_key(body.proposal).await? {
             // Check the signature using the verification key submitted when the proposal was submitted:
             let body_bytes = body.encode_to_vec();
             withdraw_proposal_key
