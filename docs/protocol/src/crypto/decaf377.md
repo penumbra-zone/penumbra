@@ -31,8 +31,13 @@ following parameters:
 * Elliptic curve equation: $ax^2 + y^2 = 1 + dx^2y^2$ with $a=-1$ and $d=3021$
 * Curve order: $4r$ where $r=2111115437357092606062206234695386632838870926408408195193685246394721360383$
 
-We use a conventional generator basepoint selected to have a convenient hex encoding: 0x080000000000000000000000000000000
-0000000000000000000000000000000. In affine coordinates this generator point has coordinates:
+We use a conventional generator basepoint selected to have a convenient hex encoding: 
+
+```
+0x0800000000000000000000000000000000000000000000000000000000000000
+``` 
+
+In affine coordinates this generator point has coordinates:
 
 * $x=4959445789346820725352484487855828915252512307947624787834978378872129235627$
 * $y=6060471950081851567114691557659790004756535011754163002297540472747064943288$
