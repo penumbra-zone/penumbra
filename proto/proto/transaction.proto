@@ -306,6 +306,22 @@ message SwapClaimPlan {
     dex.TradingPair trading_pair = 7;
     // The address that is claiming the swap NFT and receiving the new output notes.
     crypto.Address claim_address = 8;
+    // The blinding factor used for the first output note.
+    bytes output_1_blinding = 9;
+    // The blinding factor used for the second output note.
+    bytes output_2_blinding = 10;
+    // The ephemeral secret key used for the first output note encryption.
+    bytes esk_1 = 11;
+    // The ephemeral secret key used for the second output note encryption.
+    bytes esk_2 = 12;
+    // The asset ID of the swap NFT.
+    crypto.AssetId swap_nft_asset_id = 13;
+    // The nullifier key for the swap NFT.
+    bytes nk = 14;
+    // The blinding factor used for the swap NFT.
+    bytes note_blinding = 15;
+    // The proof that the swap NFT was included in the TCT.
+    crypto.NoteCommitmentProof note_commitment_proof = 16;
 }
 
 

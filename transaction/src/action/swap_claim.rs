@@ -1,7 +1,12 @@
+use ark_ff::Zero;
+use decaf377::Fr;
 use penumbra_crypto::dex::BatchSwapOutputData;
 use penumbra_crypto::dex::TradingPair;
 use penumbra_crypto::transaction::Fee;
+use penumbra_crypto::value;
 use penumbra_crypto::Nullifier;
+use penumbra_crypto::Value;
+use penumbra_crypto::STAKING_TOKEN_ASSET_ID;
 use penumbra_crypto::{proofs::transparent::SwapClaimProof, NotePayload};
 use penumbra_proto::{dex as pb, Protobuf};
 use penumbra_tct as tct;
@@ -10,6 +15,20 @@ use penumbra_tct as tct;
 pub struct SwapClaim {
     pub zkproof: SwapClaimProof,
     pub body: Body,
+}
+
+impl SwapClaim {
+    /// Compute a commitment to the value contributed to a transaction by this swap claim.
+    /// Will add (f,fee_token)
+    pub fn value_commitment(&self) -> value::Commitment {
+        let fee_commitment = Value {
+            amount: self.body.fee.0,
+            asset_id: *STAKING_TOKEN_ASSET_ID,
+        }
+        .commit(Fr::zero());
+
+        fee_commitment
+    }
 }
 
 impl Protobuf<pb::SwapClaim> for SwapClaim {}

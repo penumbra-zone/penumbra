@@ -78,7 +78,6 @@ pub struct Body {
     // TODO: rename to note_payload
     pub swap_nft: NotePayload,
     pub swap_ciphertext: SwapCiphertext,
-    pub ovk_wrapped_key: [u8; note::OVK_WRAPPED_LEN_BYTES],
 }
 
 impl Protobuf<pb::SwapBody> for Body {}

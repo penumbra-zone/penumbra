@@ -147,6 +147,7 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.crypto.Fee", SERIALIZE),
     (".penumbra.crypto.Clue", SERIALIZE),
     (".penumbra.crypto.Clue", SERDE_TRANSPARENT),
+    (".penumbra.crypto.NoteCommitmentProof", SERIALIZE),
     (".penumbra.chain.ChainParameters", SERIALIZE),
     (".penumbra.chain.FmdParameters", SERIALIZE),
     (".penumbra.chain.CompactBlock", SERIALIZE),
