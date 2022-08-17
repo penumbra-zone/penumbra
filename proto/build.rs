@@ -147,7 +147,6 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.crypto.Fee", SERIALIZE),
     (".penumbra.crypto.Clue", SERIALIZE),
     (".penumbra.crypto.Clue", SERDE_TRANSPARENT),
-    (".penumbra.crypto.NoteCommitmentProof", SERIALIZE),
     (".penumbra.chain.ChainParameters", SERIALIZE),
     (".penumbra.chain.FmdParameters", SERIALIZE),
     (".penumbra.chain.CompactBlock", SERIALIZE),
@@ -280,6 +279,10 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         AS_HEX_FOR_BYTES,
     ),
     (".penumbra.transaction.SwapClaimPlan.esk", AS_HEX_FOR_BYTES),
+    (
+        ".penumbra.transaction.SwapClaimPlan.note_commitment_proof",
+        AS_BASE64_FOR_BYTES,
+    ),
     // Transaction formatting
     (
         ".penumbra.transaction.Transaction.binding_sig",
