@@ -4,7 +4,7 @@ use penumbra_proto::{dex as pb, Protobuf};
 
 use crate::asset;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TradingPair {
     pub(crate) asset_1: asset::Id,
     pub(crate) asset_2: asset::Id,

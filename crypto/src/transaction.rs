@@ -2,7 +2,7 @@ use blake2b_simd::Hash;
 
 use penumbra_proto::{crypto as pb, Protobuf};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Fee(pub u64);
 
 impl Protobuf<pb::Fee> for Fee {}
