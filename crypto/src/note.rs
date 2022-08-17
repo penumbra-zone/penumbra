@@ -2,10 +2,6 @@ use std::convert::{TryFrom, TryInto};
 
 use ark_ff::{PrimeField, UniformRand};
 use blake2b_simd;
-use chacha20poly1305::{
-    aead::{Aead, NewAead},
-    ChaCha20Poly1305, Key, Nonce,
-};
 use decaf377::FieldExt;
 use once_cell::sync::Lazy;
 use penumbra_proto::crypto as pb;
@@ -18,7 +14,7 @@ pub use penumbra_tct::Commitment;
 use crate::{
     asset, ka,
     keys::{Diversifier, IncomingViewingKey, OutgoingViewingKey},
-    symmetric::{PayloadKey, PayloadKind},
+    symmetric::{OutgoingCipherKey, PayloadKey, PayloadKind},
     value, Fq, Value,
 };
 
@@ -149,32 +145,13 @@ impl Note {
         cv: value::Commitment,
     ) -> [u8; OVK_WRAPPED_LEN_BYTES] {
         let epk = esk.diversified_public(&self.diversified_generator());
-        let kdf_output = derive_ock(ovk, cv, self.commit(), &epk);
-
-        let ock = Key::from_slice(kdf_output.as_bytes());
+        let ock = OutgoingCipherKey::derive(ovk, cv, self.commit(), &epk);
 
         let mut op = Vec::new();
         op.extend_from_slice(&self.transmission_key().0);
         op.extend_from_slice(&esk.to_bytes());
 
-        let cipher = ChaCha20Poly1305::new(ock);
-
-        // Note: Here we use the same nonce as note encryption, however the keys are different.
-        // For note encryption we derive a symmetric key from the shared secret and epk.
-        // However, for encrypting the outgoing cipher key, we derive a symmetric key from the
-        // sender's OVK, value commitment, note commitment, and the epk. Since the keys are
-        // different, it is safe to use the same nonce.
-        //
-        // References:
-        // * Section 5.4.3 of the ZCash protocol spec
-        // * Section 2.3 RFC 7539
-        let payload_kind = PayloadKind::Note;
-        let nonce_bytes = payload_kind.nonce();
-        let nonce = Nonce::from_slice(&nonce_bytes);
-
-        let encryption_result = cipher
-            .encrypt(nonce, op.as_ref())
-            .expect("OVK encryption succeeded");
+        let encryption_result = ock.encrypt(op, PayloadKind::Note);
 
         let wrapped_ovk: [u8; OVK_WRAPPED_LEN_BYTES] = encryption_result
             .try_into()
@@ -191,16 +168,10 @@ impl Note {
         ovk: &OutgoingViewingKey,
         epk: &ka::Public,
     ) -> Result<(ka::Secret, ka::Public), Error> {
-        let kdf_output = derive_ock(ovk, cv, cm, epk);
-        let ock = Key::from_slice(kdf_output.as_bytes());
+        let ock = OutgoingCipherKey::derive(ovk, cv, cm, epk);
 
-        let cipher = ChaCha20Poly1305::new(ock);
-        let payload_kind = PayloadKind::Note;
-        let nonce_bytes = payload_kind.nonce();
-        let nonce = Nonce::from_slice(&nonce_bytes);
-
-        let plaintext = cipher
-            .decrypt(nonce, wrapped_ovk.as_ref())
+        let plaintext = ock
+            .decrypt(wrapped_ovk.to_vec(), PayloadKind::Note)
             .expect("OVK decryption succeeded");
 
         let transmission_key_bytes: [u8; 32] = plaintext[0..32]
@@ -232,7 +203,7 @@ impl Note {
         let shared_secret = esk
             .key_agreement_with(&transmission_key)
             .map_err(|_| Error::DecryptionError)?;
-        let key = PayloadKey::derive(&shared_secret, &epk);
+        let key = PayloadKey::derive(&shared_secret, epk);
         let plaintext = key
             .decrypt(ciphertext.to_vec(), PayloadKind::Note)
             .map_err(|_| Error::DecryptionError)?;
@@ -305,27 +276,6 @@ pub fn commitment(
     );
 
     Commitment(commit)
-}
-
-/// Use Blake2b-256 to derive an encryption key `ock` from the OVK and public fields.
-pub(crate) fn derive_ock(
-    ovk: &OutgoingViewingKey,
-    cv: value::Commitment,
-    cm: Commitment,
-    epk: &ka::Public,
-) -> blake2b_simd::Hash {
-    let cv_bytes: [u8; 32] = cv.into();
-    let cm_bytes: [u8; 32] = cm.into();
-
-    let mut kdf_params = blake2b_simd::Params::new();
-    kdf_params.hash_length(32);
-    let mut kdf = kdf_params.to_state();
-    kdf.update(&ovk.0);
-    kdf.update(&cv_bytes);
-    kdf.update(&cm_bytes);
-    kdf.update(&epk.0);
-
-    kdf.finalize()
 }
 
 impl std::fmt::Debug for Note {
