@@ -1,16 +1,15 @@
+use crate::symmetric::OutgoingCipherKey;
 use crate::transaction::Fee;
 use crate::{ka, Address};
 use anyhow::{anyhow, Error, Result};
-use chacha20poly1305::{
-    aead::{Aead, NewAead},
-    ChaCha20Poly1305, Key, Nonce,
-};
 use penumbra_proto::{crypto as pb_crypto, dex as pb, Protobuf};
 
 use crate::dex::TradingPair;
 use crate::{
     keys::OutgoingViewingKey,
+    note,
     symmetric::{PayloadKey, PayloadKind},
+    value,
 };
 
 use super::{SwapCiphertext, OVK_WRAPPED_LEN_BYTES, SWAP_CIPHERTEXT_BYTES, SWAP_LEN_BYTES};
@@ -38,57 +37,22 @@ impl SwapPlaintext {
         self.claim_address.transmission_key()
     }
 
-    /// Use Blake2b-256 to derive an encryption key `ock` from the OVK and public fields.
-    pub fn derive_ock(ovk: &OutgoingViewingKey, epk: &ka::Public) -> blake2b_simd::Hash {
-        // let cv_bytes: [u8; 32] = cv.into();
-        // let cm_bytes: [u8; 32] = cm.into();
-
-        let mut kdf_params = blake2b_simd::Params::new();
-        kdf_params.hash_length(32);
-        let mut kdf = kdf_params.to_state();
-        kdf.update(&ovk.0);
-        // TODO: should we be using the public fields e.g. t1, t2, trading_pair here?
-        // Note implementation uses value commitments...
-        // kdf.update(&cv_bytes);
-        // kdf.update(&cm_bytes);
-        kdf.update(&epk.0);
-
-        kdf.finalize()
-    }
-
     /// Generate encrypted outgoing cipher key for use with this swap.
     pub fn encrypt_key(
         &self,
         esk: &ka::Secret,
         ovk: &OutgoingViewingKey,
+        cv: value::Commitment,
+        cm: note::Commitment,
     ) -> [u8; OVK_WRAPPED_LEN_BYTES] {
         let epk = esk.diversified_public(self.diversified_generator());
-        let kdf_output = SwapPlaintext::derive_ock(ovk, &epk);
-
-        let ock = Key::from_slice(kdf_output.as_bytes());
+        let ock = OutgoingCipherKey::derive(ovk, cv, cm, &epk);
 
         let mut op = Vec::new();
         op.extend_from_slice(&self.transmission_key().0);
         op.extend_from_slice(&esk.to_bytes());
 
-        let cipher = ChaCha20Poly1305::new(ock);
-
-        // Note: Here we use the same nonce as swap encryption, however the keys are different.
-        // For swap encryption we derive a symmetric key from the shared secret and epk.
-        // However, for encrypting the outgoing cipher key, we derive a symmetric key from the
-        // sender's OVK, and the epk. Since the keys are
-        // different, it is safe to use the same nonce.
-        //
-        // References:
-        // * Section 5.4.3 of the ZCash protocol spec
-        // * Section 2.3 RFC 7539
-        let payload_kind = PayloadKind::Swap;
-        let nonce_bytes = payload_kind.nonce();
-        let nonce = Nonce::from_slice(&nonce_bytes);
-
-        let encryption_result = cipher
-            .encrypt(nonce, op.as_ref())
-            .expect("OVK encryption succeeded");
+        let encryption_result = ock.encrypt(op, PayloadKind::Swap);
 
         let wrapped_ovk: [u8; OVK_WRAPPED_LEN_BYTES] = encryption_result
             .try_into()
