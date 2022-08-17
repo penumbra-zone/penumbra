@@ -1,0 +1,16 @@
+# Ingress (HTTPS load balancer)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: testnet-rpc-ingress
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: testnet-rpc-ip
+    networking.gke.io/managed-certificates: testnet-rpc-cert
+    kubernetes.io/ingress.class: "gce"
+    networking.gke.io/v1beta1.FrontendConfig: testnet-ingress-frontend-config
+spec:
+  defaultBackend:
+    service:
+      name: testnet
+      port:
+        number: 26657
