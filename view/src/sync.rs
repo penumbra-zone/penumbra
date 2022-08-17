@@ -54,6 +54,7 @@ pub async fn scan_block(
         quarantined,
         slashed,
         fmd_parameters,
+        proposal_started,
     }: CompactBlock,
     epoch_duration: u64,
     storage: &Storage,

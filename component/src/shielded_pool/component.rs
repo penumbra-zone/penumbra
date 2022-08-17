@@ -232,6 +232,12 @@ impl Component for ShieldedPool {
                 ctx.record(event::spend(spent_nullifier));
             }
         }
+
+        // If there was any proposal submitted in the block, ensure we track this so that clients
+        // can retain state needed to vote as delegators
+        if tx.proposal_submits().next().is_some() {
+            self.compact_block.proposal_started = true;
+        }
     }
 
     #[instrument(name = "shielded_pool", skip(self, _ctx, _end_block))]
