@@ -1,55 +1,42 @@
-mod addr;
-mod balance;
-mod chain;
+mod keys;
 mod query;
-mod stake;
 mod tx;
 mod validator;
-mod wallet;
+mod view;
 
-pub use addr::AddrCmd;
-pub use balance::BalanceCmd;
-pub use chain::ChainCmd;
+pub use keys::KeysCmd;
 pub use query::QueryCmd;
-pub use stake::StakeCmd;
 pub use tx::TxCmd;
 pub use validator::ValidatorCmd;
-pub use wallet::WalletCmd;
+pub use view::ViewCmd;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum Command {
-    /// Creates a transaction.
+    /// Create and broadcast a transaction.
     #[clap(subcommand)]
     Tx(TxCmd),
-    /// Manages the wallet state.
+    /// View your private state.
     #[clap(subcommand)]
-    Wallet(WalletCmd),
-    /// Manages addresses.
+    View(ViewCmd),
+    /// Manage your wallet's keys.
     #[clap(subcommand)]
-    Addr(AddrCmd),
-    /// Synchronizes the client, privately scanning the chain state.
-    ///
-    /// `pcli` syncs automatically prior to any action requiring chain state,
-    /// but this command can be used to "pre-sync" before interactive use.
-    Sync,
-    /// Displays the current wallet balance.
-    Balance(BalanceCmd),
-    /// Manages a validator.
-    #[clap(subcommand)]
-    Validator(ValidatorCmd),
-    /// Manages delegations and undelegations.
-    #[clap(subcommand)]
-    Stake(StakeCmd),
-    /// Queries the public chain state.
+    Keys(KeysCmd),
+    /// Query the public chain state.
     ///
     /// This command has two modes: it can be used to query raw bytes of
     /// arbitrary keys with the `key` subcommand, or it can be used to query
     /// typed data with a subcommand for a particular component.
     #[clap(subcommand)]
-    Q(QueryCmd),
-    /// View chain data.
+    Query(QueryCmd),
+    ///
+    /// Synchronizes the client, privately scanning the chain state.
+    ///
+    /// `pcli` syncs automatically prior to any action requiring chain state,
+    /// but this command can be used to "pre-sync" before interactive use.
+    Sync,
+    /// Manage a validator.
     #[clap(subcommand)]
-    Chain(ChainCmd),
+    Validator(ValidatorCmd),
 }
 
 impl Command {
@@ -57,14 +44,11 @@ impl Command {
     pub fn needs_sync(&self) -> bool {
         match self {
             Command::Tx(cmd) => cmd.needs_sync(),
-            Command::Wallet(cmd) => cmd.needs_sync(),
-            Command::Addr(cmd) => cmd.needs_sync(),
+            Command::View(cmd) => cmd.needs_sync(),
+            Command::Keys(cmd) => cmd.needs_sync(),
             Command::Sync => true,
-            Command::Balance(cmd) => cmd.needs_sync(),
             Command::Validator(cmd) => cmd.needs_sync(),
-            Command::Stake(cmd) => cmd.needs_sync(),
-            Command::Chain(cmd) => cmd.needs_sync(),
-            Command::Q(_) => false,
+            Command::Query(_) => false,
         }
     }
 }
