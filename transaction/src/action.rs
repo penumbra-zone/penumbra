@@ -60,9 +60,7 @@ impl Action {
             Action::Delegate(delegate) => delegate.value_commitment(),
             Action::Undelegate(undelegate) => undelegate.value_commitment(),
             Action::Swap(swap) => swap.value_commitment(),
-            // A SwapClaim action has no impact on the transaction's value balance as the
-            // outputs are handled internally to the action.
-            Action::SwapClaim(_) => value::Commitment::default(),
+            Action::SwapClaim(swap_claim) => swap_claim.value_commitment(),
             // These actions just post data to the chain, and leave the value balance
             // unchanged.
             Action::ValidatorDefinition(_) => value::Commitment::default(),

@@ -32,8 +32,6 @@ pub struct SwapClaimPlan {
     pub output_2_blinding: Fq,
     pub esk_1: ka::Secret,
     pub esk_2: ka::Secret,
-    pub ovk_wrapped_key_1: [u8; note::OVK_WRAPPED_LEN_BYTES],
-    pub ovk_wrapped_key_2: [u8; note::OVK_WRAPPED_LEN_BYTES],
 }
 
 impl SwapClaimPlan {

@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use blake2b_simd::Hash;
 use decaf377::FieldExt;
 use penumbra_proto::{dex as pb, Protobuf};
 
@@ -43,6 +44,12 @@ impl TradingPair {
             asset_1: pair.1,
             asset_2: pair.0,
         })
+    }
+
+    pub fn auth_hash(&self) -> Hash {
+        blake2b_simd::Params::default()
+            .personal(b"PAH:trading_pair")
+            .hash(&self.to_bytes())
     }
 
     /// Convert the trading pair to bytes.

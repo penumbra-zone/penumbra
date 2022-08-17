@@ -8,7 +8,7 @@ use penumbra_tct as tct;
 
 #[derive(Debug, Clone)]
 pub struct SwapClaim {
-    zkproof: SwapClaimProof,
+    pub zkproof: SwapClaimProof,
     pub body: Body,
 }
 

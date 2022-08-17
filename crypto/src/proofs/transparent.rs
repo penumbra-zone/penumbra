@@ -745,10 +745,9 @@ impl SwapProof {
         //     return Err(anyhow!("value commitment mismatch"));
         // }
 
-        let pen_denom = asset::REGISTRY.parse_denom("upenumbra").unwrap();
         let value_fee = Value {
             amount: self.fee_delta,
-            asset_id: asset::Id::from(pen_denom),
+            asset_id: *STAKING_TOKEN_ASSET_ID,
         };
         let fee_blinding = Fr::zero();
         if value_fee_commitment != -value_fee.commit(fee_blinding) {

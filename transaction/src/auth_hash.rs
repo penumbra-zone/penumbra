@@ -226,7 +226,7 @@ impl swap::Body {
         // in the hash one after the other.
         // TODO: actually the trading pair isn't necessarily fixed-length
         // right now, does this have implications?
-        state.update(&self.trading_pair.encode_to_vec());
+        state.update(&self.trading_pair.auth_hash().as_bytes());
         state.update(&self.delta_1.to_le_bytes());
         state.update(&self.delta_2.to_le_bytes());
         state.update(&self.fee_commitment.to_bytes());

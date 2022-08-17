@@ -279,8 +279,6 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         AS_HEX_FOR_BYTES,
     ),
     (".penumbra.transaction.SwapClaimPlan.esk", AS_HEX_FOR_BYTES),
-    // TODO: replace if we use UTF-8 memos
-    (".penumbra.transaction.SwapClaimPlan.memo", AS_HEX_FOR_BYTES),
     // Transaction formatting
     (
         ".penumbra.transaction.Transaction.binding_sig",
