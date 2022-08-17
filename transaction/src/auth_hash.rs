@@ -259,9 +259,7 @@ impl swap_claim::Body {
         state.update(&self.output_2.encrypted_note);
         state.update(&self.output_data.encode_to_vec());
         state.update(&self.anchor.encode_to_vec());
-        // TODO: actually the trading pair isn't necessarily fixed-length
-        // right now, does this have implications?
-        state.update(&self.trading_pair.encode_to_vec());
+        state.update(&self.trading_pair.auth_hash().as_bytes());
 
         state.finalize()
     }
