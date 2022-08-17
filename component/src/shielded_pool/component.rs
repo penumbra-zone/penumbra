@@ -319,12 +319,7 @@ impl ShieldedPool {
                 .as_bytes(),
         );
 
-        let note = Note::from_parts(
-            *address.diversifier(),
-            *address.transmission_key(),
-            value,
-            blinding_factor,
-        )?;
+        let note = Note::from_parts(*address, value, blinding_factor)?;
         let note_commitment = note.commit();
 
         // Scanning assumes that notes are encrypted, so we need to create

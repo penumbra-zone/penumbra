@@ -12,4 +12,7 @@ pub enum Error {
     /// A detection key encoding was invalid.
     #[error("Invalid detection key.")]
     InvalidDetectionKey,
+    /// A clue key encoding was invalid.
+    #[error("Invalid clue key.")]
+    InvalidClueKey,
 }

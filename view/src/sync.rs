@@ -149,14 +149,15 @@ pub async fn scan_block(
 
                     let nullifier = fvk.derive_nullifier(position, &note_commitment);
 
-                    let diversifier = &note.diversifier();
+                    let diversifier = note.diversifier();
+                    let address_index = fvk.incoming().index_for_diversifier(diversifier);
 
                     let record = NoteRecord {
                         note_commitment,
                         height_spent: None,
                         height_created: height,
                         note,
-                        address_index: fvk.incoming().index_for_diversifier(diversifier),
+                        address_index,
                         nullifier,
                         position,
                         source,

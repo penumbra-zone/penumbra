@@ -56,15 +56,8 @@ impl OutputPlan {
     }
 
     pub fn output_note(&self) -> Note {
-        let diversifier = self.dest_address.diversifier().clone();
-        let transmission_key = self.dest_address.transmission_key().clone();
-        Note::from_parts(
-            diversifier,
-            transmission_key,
-            self.value,
-            self.note_blinding,
-        )
-        .expect("transmission key in address is always valid")
+        Note::from_parts(self.dest_address, self.value, self.note_blinding)
+            .expect("transmission key in address is always valid")
     }
 
     /// Construct the [`OutputProof`] required by the [`output::Body`] described

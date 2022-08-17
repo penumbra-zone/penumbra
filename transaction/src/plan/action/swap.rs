@@ -84,13 +84,9 @@ impl SwapPlan {
             asset_id: swap_nft_asset_id,
         };
 
-        let swap_nft_note = Note::from_parts(
-            self.claim_address.diversifier().clone(),
-            self.claim_address.transmission_key().clone(),
-            swap_nft_value,
-            self.note_blinding,
-        )
-        .expect("unable to create swap nft note");
+        let swap_nft_note =
+            Note::from_parts(self.claim_address, swap_nft_value, self.note_blinding)
+                .expect("unable to create swap nft note");
         let note_commitment = swap_nft_note.commit();
 
         let encrypted_note = swap_nft_note.encrypt(&self.esk);

@@ -12,14 +12,14 @@ use thiserror;
 pub use penumbra_tct::Commitment;
 
 use crate::{
-    asset, ka,
+    asset, fmd, ka,
     keys::{Diversifier, IncomingViewingKey, OutgoingViewingKey},
     symmetric::{OutgoingCipherKey, OvkWrappedKey, PayloadKey, PayloadKind},
-    value, Fq, Value,
+    value, Address, Fq, Value,
 };
 
-pub const NOTE_LEN_BYTES: usize = 120;
-pub const NOTE_CIPHERTEXT_BYTES: usize = 136;
+pub const NOTE_LEN_BYTES: usize = 152;
+pub const NOTE_CIPHERTEXT_BYTES: usize = 168;
 
 /// A plaintext Penumbra note.
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -29,10 +29,8 @@ pub struct Note {
     value: Value,
     /// A blinding factor that acts as a commitment trapdoor.
     note_blinding: Fq,
-    /// The diversifier of the address controlling this note.
-    diversifier: Diversifier,
-    /// The diversified transmission key of the address controlling this note.
-    transmission_key: ka::Public,
+    /// The address controlling this note.
+    address: Address,
     /// The s-component of the transmission key of the destination address.
     /// We store this separately to ensure that every `Note` is constructed
     /// with a valid transmission key (the `ka::Public` does not validate
@@ -60,46 +58,46 @@ pub enum Error {
 }
 
 impl Note {
-    pub fn from_parts(
-        diversifier: Diversifier,
-        transmission_key: ka::Public,
-        value: Value,
-        note_blinding: Fq,
-    ) -> Result<Self, Error> {
+    pub fn from_parts(address: Address, value: Value, note_blinding: Fq) -> Result<Self, Error> {
         Ok(Note {
             value,
             note_blinding,
-            diversifier,
-            transmission_key,
-            transmission_key_s: Fq::from_bytes(transmission_key.0)
+            address,
+            transmission_key_s: Fq::from_bytes(address.transmission_key().0)
                 .map_err(|_| Error::InvalidTransmissionKey)?,
         })
     }
 
     /// Generate a fresh note representing the given value for the given destination address, with a
     /// random blinding factor.
-    pub fn generate(rng: &mut impl Rng, address: &crate::Address, value: Value) -> Self {
-        let diversifier = *address.diversifier();
-        let transmission_key = *address.transmission_key();
+    pub fn generate(rng: &mut impl Rng, address: &Address, value: Value) -> Self {
         let note_blinding = Fq::rand(rng);
-        Note::from_parts(diversifier, transmission_key, value, note_blinding)
+        Note::from_parts(address.clone(), value, note_blinding)
             .expect("transmission key in address is always valid")
     }
 
-    pub fn diversified_generator(&self) -> decaf377::Element {
-        self.diversifier.diversified_generator()
+    pub fn address(&self) -> Address {
+        self.address
     }
 
-    pub fn transmission_key(&self) -> ka::Public {
-        self.transmission_key
+    pub fn diversified_generator(&self) -> decaf377::Element {
+        self.address.diversifier().diversified_generator()
+    }
+
+    pub fn transmission_key(&self) -> &ka::Public {
+        self.address.transmission_key()
     }
 
     pub fn transmission_key_s(&self) -> Fq {
         self.transmission_key_s
     }
 
-    pub fn diversifier(&self) -> Diversifier {
-        self.diversifier
+    pub fn clue_key(&self) -> &fmd::ClueKey {
+        self.address.clue_key()
+    }
+
+    pub fn diversifier(&self) -> &Diversifier {
+        self.address.diversifier()
     }
 
     pub fn note_blinding(&self) -> Fq {
@@ -122,7 +120,7 @@ impl Note {
     pub fn encrypt(&self, esk: &ka::Secret) -> [u8; NOTE_CIPHERTEXT_BYTES] {
         let epk = esk.diversified_public(&self.diversified_generator());
         let shared_secret = esk
-            .key_agreement_with(&self.transmission_key())
+            .key_agreement_with(self.transmission_key())
             .expect("key agreement succeeded");
 
         let key = PayloadKey::derive(&shared_secret, &epk);
@@ -146,7 +144,7 @@ impl Note {
         let epk = esk.diversified_public(&self.diversified_generator());
         let ock = OutgoingCipherKey::derive(ovk, cv, self.commit(), &epk);
         let shared_secret = esk
-            .key_agreement_with(&self.transmission_key())
+            .key_agreement_with(self.transmission_key())
             .expect("key agreement succeeded");
 
         let encryption_result = ock.encrypt(shared_secret.0.to_vec(), PayloadKind::Note);
@@ -281,8 +279,7 @@ impl std::fmt::Debug for Note {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Note")
             .field("value", &self.value)
-            .field("diversifier", &self.diversifier())
-            .field("transmission_key", &self.transmission_key())
+            .field("address", &self.address())
             .field("note_blinding", &self.note_blinding())
             .finish()
     }
@@ -291,31 +288,24 @@ impl std::fmt::Debug for Note {
 impl TryFrom<pb::Note> for Note {
     type Error = anyhow::Error;
     fn try_from(msg: pb::Note) -> Result<Self, Self::Error> {
-        let diversifier = msg
-            .diversifier
-            .ok_or_else(|| anyhow::anyhow!("missing diversifier"))?
+        let address = msg
+            .address
+            .ok_or_else(|| anyhow::anyhow!("missing value"))?
             .try_into()?;
-        let transmission_key = ka::Public::try_from(msg.transmission_key.as_slice())?;
         let value = msg
             .value
             .ok_or_else(|| anyhow::anyhow!("missing value"))?
             .try_into()?;
         let note_blinding = Fq::from_bytes(msg.note_blinding.as_slice().try_into()?)?;
 
-        Ok(Note::from_parts(
-            diversifier,
-            transmission_key,
-            value,
-            note_blinding,
-        )?)
+        Ok(Note::from_parts(address, value, note_blinding)?)
     }
 }
 
 impl From<Note> for pb::Note {
     fn from(msg: Note) -> Self {
         pb::Note {
-            diversifier: Some(msg.diversifier().into()),
-            transmission_key: msg.transmission_key().0.to_vec(),
+            address: Some(msg.address().into()),
             value: Some(msg.value().into()),
             note_blinding: msg.note_blinding().to_bytes().to_vec(),
         }
@@ -325,11 +315,10 @@ impl From<Note> for pb::Note {
 impl From<&Note> for [u8; NOTE_LEN_BYTES] {
     fn from(note: &Note) -> [u8; NOTE_LEN_BYTES] {
         let mut bytes = [0u8; NOTE_LEN_BYTES];
-        bytes[0..16].copy_from_slice(&note.diversifier.0);
-        bytes[16..24].copy_from_slice(&note.value.amount.to_le_bytes());
-        bytes[24..56].copy_from_slice(&note.value.asset_id.0.to_bytes());
-        bytes[56..88].copy_from_slice(&note.note_blinding.to_bytes());
-        bytes[88..120].copy_from_slice(&note.transmission_key.0);
+        bytes[0..80].copy_from_slice(&note.address.to_bytes());
+        bytes[80..88].copy_from_slice(&note.value.amount.to_le_bytes());
+        bytes[88..120].copy_from_slice(&note.value.asset_id.0.to_bytes());
+        bytes[120..152].copy_from_slice(&note.note_blinding.to_bytes());
         bytes
     }
 }
@@ -343,11 +332,10 @@ impl From<Note> for [u8; NOTE_LEN_BYTES] {
 impl From<&Note> for Vec<u8> {
     fn from(note: &Note) -> Vec<u8> {
         let mut bytes = vec![];
-        bytes.extend_from_slice(&note.diversifier.0);
+        bytes.extend_from_slice(&note.address().to_bytes());
         bytes.extend_from_slice(&note.value.amount.to_le_bytes());
         bytes.extend_from_slice(&note.value.asset_id.0.to_bytes());
         bytes.extend_from_slice(&note.note_blinding.to_bytes());
-        bytes.extend_from_slice(&note.transmission_key.0);
         bytes
     }
 }
@@ -360,21 +348,18 @@ impl TryFrom<&[u8]> for Note {
             return Err(Error::NoteDeserializationError);
         }
 
-        let amount_bytes: [u8; 8] = bytes[16..24]
+        let amount_bytes: [u8; 8] = bytes[80..88]
             .try_into()
             .map_err(|_| Error::NoteDeserializationError)?;
-        let asset_id_bytes: [u8; 32] = bytes[24..56]
+        let asset_id_bytes: [u8; 32] = bytes[88..120]
             .try_into()
             .map_err(|_| Error::NoteDeserializationError)?;
-        let note_blinding_bytes: [u8; 32] = bytes[56..88]
+        let note_blinding_bytes: [u8; 32] = bytes[120..152]
             .try_into()
             .map_err(|_| Error::NoteDeserializationError)?;
 
         Note::from_parts(
-            bytes[0..16]
-                .try_into()
-                .map_err(|_| Error::NoteDeserializationError)?,
-            bytes[88..120]
+            bytes[0..80]
                 .try_into()
                 .map_err(|_| Error::NoteDeserializationError)?,
             Value {

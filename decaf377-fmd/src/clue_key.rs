@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::{cell::RefCell, convert::TryFrom};
 
 use ark_ff::{Field, UniformRand};
 use bitvec::{array::BitArray, order};
@@ -123,5 +123,19 @@ impl ExpandedClueKey {
         buf[65..68].copy_from_slice(ctxts.as_buffer());
 
         Ok(Clue(buf))
+    }
+}
+
+impl TryFrom<&[u8]> for ClueKey {
+    type Error = Error;
+
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+        if bytes.len() == 32 {
+            let mut arr = [0u8; 32];
+            arr.copy_from_slice(&bytes[0..32]);
+            Ok(ClueKey(arr))
+        } else {
+            Err(Error::InvalidClueKey)
+        }
     }
 }
