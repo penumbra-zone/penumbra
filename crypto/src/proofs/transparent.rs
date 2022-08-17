@@ -443,10 +443,10 @@ impl SwapClaimProof {
         // Value commitment to the fees for the swap claim
         value_commitment: value::Commitment,
         nullifier: Nullifier,
-        clearing_price_1: u64,
-        clearing_price_2: u64,
+        _clearing_price_1: u64,
+        _clearing_price_2: u64,
         clearing_price_height: u64,
-        success: bool,
+        _success: bool,
         epoch_duration: u64,
         fee: u64,
     ) -> anyhow::Result<()> {

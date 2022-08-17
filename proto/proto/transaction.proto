@@ -294,34 +294,35 @@ message SwapPlan {
 }
 
 message SwapClaimPlan {
-    // The nullifier of the input swap NFT note.
-    bytes nullifier = 1;
+    /*
+     * @exclude
+     * Fields describing the swap NFT note to be redeemed.
+     */
+    // The input swap NFT note to be spent.
+    crypto.Note swap_nft_note = 1;
+    // The position of the input swap NFT note.
+    uint64 swap_nft_position = 2;
+
     // The fee that was pre-paid for the SwapClaim.
-    crypto.Fee fee = 2;
+    crypto.Fee fee = 10;
     // Input and output amounts for the Swap.
-    dex.BatchSwapOutputData output_data = 5;
+    dex.BatchSwapOutputData output_data = 11;
     // The root anchor for the block the Swap occurred in.
-    crypto.MerkleRoot anchor = 6;
+    crypto.MerkleRoot anchor = 12;
     // The trading pair associated with the SwapClaim.
-    dex.TradingPair trading_pair = 7;
+    dex.TradingPair trading_pair = 13;
     // The address that is claiming the swap NFT and receiving the new output notes.
-    crypto.Address claim_address = 8;
+    crypto.Address claim_address = 14;
     // The blinding factor used for the first output note.
-    bytes output_1_blinding = 9;
+    bytes output_1_blinding = 15;
     // The blinding factor used for the second output note.
-    bytes output_2_blinding = 10;
+    bytes output_2_blinding = 16;
     // The ephemeral secret key used for the first output note encryption.
-    bytes esk_1 = 11;
+    bytes esk_1 = 17;
     // The ephemeral secret key used for the second output note encryption.
-    bytes esk_2 = 12;
+    bytes esk_2 = 18;
     // The asset ID of the swap NFT.
-    crypto.AssetId swap_nft_asset_id = 13;
-    // The nullifier key for the swap NFT.
-    bytes nk = 14;
-    // The blinding factor used for the swap NFT.
-    bytes note_blinding = 15;
-    // The proof that the swap NFT was included in the TCT.
-    crypto.NoteCommitmentProof note_commitment_proof = 16;
+    crypto.AssetId swap_nft_asset_id = 19;
 }
 
 

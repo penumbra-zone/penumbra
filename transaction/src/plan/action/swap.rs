@@ -107,7 +107,7 @@ impl SwapPlan {
             self.trading_pair,
             self.delta_1,
             self.delta_2,
-            self.fee,
+            self.fee.clone(),
             self.claim_address,
         )
         .expect("unable to create swap plaintext")
@@ -149,7 +149,7 @@ impl SwapPlan {
                 asset_id: self.trading_pair.asset_2(),
             },
             swap_nft_asset_id,
-            esk: self.esk,
+            esk: self.esk.clone(),
             // TODO: no blinding factors for deltas yet, they're plaintext
             // until flow encryption is available
             // delta_1_blinding: self.delta_1_blinding(),

@@ -13,6 +13,7 @@ use penumbra_proto::{transaction as pb, Protobuf};
 use penumbra_tct as tct;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
+use tct::Position;
 
 use crate::action::{swap_claim, SwapClaim};
 
@@ -22,7 +23,8 @@ use crate::action::{swap_claim, SwapClaim};
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(try_from = "pb::SwapClaimPlan", into = "pb::SwapClaimPlan")]
 pub struct SwapClaimPlan {
-    pub nullifier: Nullifier,
+    pub swap_nft_note: Note,
+    pub swap_nft_position: Position,
     pub fee: Fee,
     pub output_data: BatchSwapOutputData,
     pub anchor: tct::Root,
@@ -33,11 +35,6 @@ pub struct SwapClaimPlan {
     pub esk_1: ka::Secret,
     pub esk_2: ka::Secret,
     pub swap_nft_asset_id: asset::Id,
-    pub nk: NullifierKey,
-    // Blinding factor used for Swap NFT
-    pub note_blinding: Fq,
-    // TODO: rename "note inclusion proof"
-    pub note_commitment_proof: tct::Proof,
 }
 
 impl SwapClaimPlan {
@@ -45,15 +42,13 @@ impl SwapClaimPlan {
     /// the associated swap NFT.
     pub fn new<R: RngCore + CryptoRng>(
         rng: &mut R,
-        nullifier: Nullifier,
+        swap_nft_note: Note,
+        swap_nft_position: Position,
         claim_address: Address,
         fee: Fee,
         output_data: BatchSwapOutputData,
         anchor: tct::Root,
         trading_pair: TradingPair,
-        nk: NullifierKey,
-        note_blinding: Fq,
-        note_commitment_proof: tct::Proof,
     ) -> SwapClaimPlan {
         let output_1_blinding = Fq::rand(rng);
         let output_2_blinding = Fq::rand(rng);
@@ -71,7 +66,7 @@ impl SwapClaimPlan {
         .expect("bad public key when generating swap asset id");
 
         Self {
-            nullifier,
+            swap_nft_note,
             claim_address,
             esk_1,
             esk_2,
@@ -82,40 +77,49 @@ impl SwapClaimPlan {
             anchor,
             trading_pair,
             swap_nft_asset_id,
-            nk,
-            note_blinding,
-            note_commitment_proof,
+            swap_nft_position,
         }
     }
 
     /// Convenience method to construct the [`SwapClaim`] described by this
     /// [`SwapClaimPlan`].
-    pub fn swap_claim(&self, fvk: &FullViewingKey) -> SwapClaim {
+    pub fn swap_claim(
+        &self,
+        fvk: &FullViewingKey,
+        note_commitment_proof: tct::Proof,
+        nk: NullifierKey,
+        note_blinding: Fq,
+    ) -> SwapClaim {
         SwapClaim {
             body: self.swap_claim_body(fvk),
-            zkproof: self.swap_claim_proof(),
+            zkproof: self.swap_claim_proof(note_commitment_proof, nk, note_blinding),
         }
     }
 
     /// Construct the [`SwapClaimProof`] required by the [`swap_claim::Body`] described
     /// by this plan.
-    pub fn swap_claim_proof(&self) -> SwapClaimProof {
+    pub fn swap_claim_proof(
+        &self,
+        note_commitment_proof: tct::Proof,
+        nk: NullifierKey,
+        note_blinding: Fq,
+    ) -> SwapClaimProof {
         SwapClaimProof {
             swap_nft_asset_id: self.swap_nft_asset_id,
             b_d: *self.claim_address.diversified_generator(),
             pk_d: *self.claim_address.transmission_key(),
-            nk: self.nk,
-            note_commitment_proof: self.note_commitment_proof,
+            nk,
+            note_commitment_proof,
             trading_pair: self.trading_pair,
-            note_blinding: self.note_blinding,
+            note_blinding,
             delta_1: self.output_data.delta_1,
             delta_2: self.output_data.delta_2,
             lambda_1: self.output_data.lambda_1,
             lambda_2: self.output_data.lambda_2,
             note_blinding_1: self.output_1_blinding,
             note_blinding_2: self.output_2_blinding,
-            esk_1: self.esk_1,
-            esk_2: self.esk_2,
+            esk_1: self.esk_1.clone(),
+            esk_2: self.esk_2.clone(),
         }
     }
 
@@ -156,9 +160,11 @@ impl SwapClaimPlan {
             encrypted_note: output_2_note.encrypt(&self.esk_2),
         };
 
+        let nullifier = fvk.derive_nullifier(self.swap_nft_position, &self.swap_nft_note.commit());
+
         swap_claim::Body {
-            nullifier: self.nullifier,
-            fee: self.fee,
+            nullifier,
+            fee: self.fee.clone(),
             output_1,
             output_2,
             output_data: self.output_data,
@@ -178,7 +184,8 @@ impl Protobuf<pb::SwapClaimPlan> for SwapClaimPlan {}
 impl From<SwapClaimPlan> for pb::SwapClaimPlan {
     fn from(msg: SwapClaimPlan) -> Self {
         Self {
-            nullifier: msg.nullifier.to_bytes().to_vec().into(),
+            swap_nft_note: Some(msg.swap_nft_note.into()),
+            swap_nft_position: msg.swap_nft_position.into(),
             claim_address: Some(msg.claim_address.into()),
             fee: Some(msg.fee.into()),
             output_data: Some(msg.output_data.into()),
@@ -189,9 +196,6 @@ impl From<SwapClaimPlan> for pb::SwapClaimPlan {
             esk_1: msg.esk_1.to_bytes().to_vec().into(),
             esk_2: msg.esk_2.to_bytes().to_vec().into(),
             swap_nft_asset_id: Some(msg.swap_nft_asset_id.into()),
-            nk: msg.nk.0.to_bytes().to_vec().into(),
-            note_blinding: msg.note_blinding.to_bytes().to_vec().into(),
-            note_commitment_proof: msg.note_commitment_proof.into(),
         }
     }
 }
@@ -200,20 +204,39 @@ impl TryFrom<pb::SwapClaimPlan> for SwapClaimPlan {
     type Error = anyhow::Error;
     fn try_from(msg: pb::SwapClaimPlan) -> Result<Self, Self::Error> {
         Ok(Self {
-            nullifier: msg.nullifier.try_into()?,
-            fee: todo!(),
-            output_data: todo!(),
-            anchor: todo!(),
-            trading_pair: todo!(),
-            claim_address: todo!(),
-            output_1_blinding: todo!(),
-            output_2_blinding: todo!(),
-            esk_1: todo!(),
-            esk_2: todo!(),
-            swap_nft_asset_id: todo!(),
-            nk: todo!(),
-            note_blinding: todo!(),
-            note_commitment_proof: todo!(),
+            swap_nft_note: msg
+                .swap_nft_note
+                .ok_or_else(|| anyhow::anyhow!("missing swap_nft_note"))?
+                .try_into()?,
+            swap_nft_position: msg.swap_nft_position.try_into()?,
+            fee: msg
+                .fee
+                .ok_or_else(|| anyhow::anyhow!("missing fee"))?
+                .try_into()?,
+            output_data: msg
+                .output_data
+                .ok_or_else(|| anyhow::anyhow!("missing output_data"))?
+                .try_into()?,
+            anchor: msg
+                .anchor
+                .ok_or_else(|| anyhow::anyhow!("missing anchor"))?
+                .try_into()?,
+            trading_pair: msg
+                .trading_pair
+                .ok_or_else(|| anyhow::anyhow!("missing trading_pair"))?
+                .try_into()?,
+            claim_address: msg
+                .claim_address
+                .ok_or_else(|| anyhow::anyhow!("missing claim_address"))?
+                .try_into()?,
+            output_1_blinding: Fq::from_bytes(msg.output_1_blinding.as_ref().try_into()?)?,
+            output_2_blinding: Fq::from_bytes(msg.output_2_blinding.as_ref().try_into()?)?,
+            esk_1: msg.esk_1.as_ref().try_into()?,
+            esk_2: msg.esk_2.as_ref().try_into()?,
+            swap_nft_asset_id: msg
+                .swap_nft_asset_id
+                .ok_or_else(|| anyhow::anyhow!("missing swap_nft_asset_id"))?
+                .try_into()?,
         })
     }
 }

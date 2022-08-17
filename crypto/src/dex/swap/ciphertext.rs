@@ -18,9 +18,9 @@ impl SwapCiphertext {
         diversified_basepoint: &decaf377::Element,
     ) -> Result<SwapPlaintext> {
         let shared_secret = esk
-            .key_agreement_with(&transmission_key)
+            .key_agreement_with(transmission_key)
             .expect("key agreement succeeds");
-        let epk = esk.diversified_public(&diversified_basepoint);
+        let epk = esk.diversified_public(diversified_basepoint);
         let key = PayloadKey::derive(&shared_secret, &epk);
         let swap_ciphertext = self.0;
         let decryption_result = key
