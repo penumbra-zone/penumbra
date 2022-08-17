@@ -14,7 +14,7 @@ use crate::{
 
 use super::{SwapCiphertext, OVK_WRAPPED_LEN_BYTES, SWAP_CIPHERTEXT_BYTES, SWAP_LEN_BYTES};
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SwapPlaintext {
     // Trading pair for the swap
     pub trading_pair: TradingPair,
@@ -197,5 +197,49 @@ impl TryFrom<[u8; SWAP_LEN_BYTES]> for SwapPlaintext {
 
     fn try_from(bytes: [u8; SWAP_LEN_BYTES]) -> Result<SwapPlaintext, Self::Error> {
         (&bytes[..]).try_into()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rand_core::OsRng;
+
+    use super::*;
+    use crate::{
+        asset,
+        keys::{SeedPhrase, SpendKey},
+    };
+
+    #[test]
+    fn swap_encryption_and_decryption() {
+        let mut rng = OsRng;
+
+        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let sk = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let fvk = sk.full_viewing_key();
+        let ivk = fvk.incoming();
+        let (dest, _dtk_d) = ivk.payment_address(0u64.into());
+        let trading_pair = TradingPair {
+            asset_1: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            asset_2: asset::REGISTRY.parse_denom("nala").unwrap().id(),
+        };
+
+        let swap = SwapPlaintext {
+            trading_pair,
+            delta_1: 100000,
+            delta_2: 1,
+            fee: Fee(3),
+            claim_address: dest,
+        };
+        let esk = ka::Secret::new(&mut rng);
+
+        let ciphertext = swap.encrypt(&esk);
+        let diversified_basepoint = dest.diversified_generator();
+        let transmission_key = swap.transmission_key();
+        let plaintext =
+            SwapCiphertext::decrypt(&ciphertext, &esk, transmission_key, diversified_basepoint)
+                .expect("can decrypt swap");
+
+        assert_eq!(plaintext, swap);
     }
 }

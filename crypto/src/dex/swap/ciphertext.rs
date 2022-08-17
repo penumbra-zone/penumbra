@@ -14,8 +14,8 @@ impl SwapCiphertext {
     pub fn decrypt(
         &self,
         esk: &ka::Secret,
-        transmission_key: ka::Public,
-        diversified_basepoint: decaf377::Element,
+        transmission_key: &ka::Public,
+        diversified_basepoint: &decaf377::Element,
     ) -> Result<SwapPlaintext> {
         let shared_secret = esk
             .key_agreement_with(&transmission_key)
