@@ -87,6 +87,8 @@ message CompactBlock {
   Quarantined quarantined = 6;
   // Validators slashed in this block.
   repeated crypto.IdentityKey slashed = 16;
+  // If a proposal started voting in this block, this is set to `true`.
+  bool proposal_started = 20;
   // Latest Fuzzy Message Detection parameters.
   FmdParameters fmd_parameters = 100;
 }

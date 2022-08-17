@@ -39,9 +39,12 @@ pub struct CompactBlock {
     pub slashed: Vec<IdentityKey>,
     // Latest FMD parameters. `None` if unchanged.
     pub fmd_parameters: Option<FmdParameters>,
+    // If the block indicated a proposal was being started.
+    pub proposal_started: bool,
     // **IMPORTANT NOTE FOR FUTURE HUMANS**: if you want to add new fields to the `CompactBlock`,
-    // you must update `CompactBlock::requires_scanning` to check for the emptiness of those fields, because
-    // the client will skip processing any compact block that is marked as not requiring scanning.
+    // you must update `CompactBlock::requires_scanning` to check for the emptiness of those fields,
+    // because the client will skip processing any compact block that is marked as not requiring
+    // scanning.
 }
 
 impl Default for CompactBlock {
@@ -55,6 +58,7 @@ impl Default for CompactBlock {
             quarantined: Quarantined::default(),
             slashed: Vec::new(),
             fmd_parameters: None,
+            proposal_started: false,
         }
     }
 }
@@ -67,6 +71,7 @@ impl CompactBlock {
             || !self.quarantined.is_empty() // need to scan quarantined notes
             || !self.slashed.is_empty() // need to process slashing
             || self.fmd_parameters.is_some() // need to save latest FMD parameters
+            || self.proposal_started // need to process proposal start
     }
 }
 
@@ -120,6 +125,7 @@ impl From<CompactBlock> for pb::CompactBlock {
             },
             slashed: cb.slashed.into_iter().map(Into::into).collect(),
             fmd_parameters: cb.fmd_parameters.map(Into::into),
+            proposal_started: cb.proposal_started,
         }
     }
 }
@@ -160,6 +166,7 @@ impl TryFrom<pb::CompactBlock> for CompactBlock {
                 .map(IdentityKey::try_from)
                 .collect::<Result<Vec<_>>>()?,
             fmd_parameters: value.fmd_parameters.map(TryInto::try_into).transpose()?,
+            proposal_started: value.proposal_started,
         })
     }
 }
