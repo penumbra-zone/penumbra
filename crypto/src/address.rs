@@ -7,6 +7,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{fmd, ka, keys::Diversifier, Fq};
 
+pub const ADDRESS_LEN_BYTES: usize = 80;
+
 /// A valid payment address.
 #[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "pb::Address", into = "pb::Address")]
@@ -67,6 +69,14 @@ impl Address {
 
     pub fn clue_key(&self) -> &fmd::ClueKey {
         &self.ck_d
+    }
+
+    pub fn to_bytes(&self) -> [u8; ADDRESS_LEN_BYTES] {
+        let mut bytes = [0u8; ADDRESS_LEN_BYTES];
+        bytes[0..16].copy_from_slice(&self.diversifier().0);
+        bytes[16..48].copy_from_slice(&self.transmission_key().0);
+        bytes[48..80].copy_from_slice(&self.clue_key().0);
+        bytes
     }
 
     pub fn to_vec(&self) -> Vec<u8> {
@@ -143,6 +153,43 @@ impl std::str::FromStr for Address {
             inner: bech32str::decode(s, bech32str::address::BECH32_PREFIX, bech32str::Bech32m)?,
         }
         .try_into()
+    }
+}
+
+impl TryFrom<&[u8]> for Address {
+    type Error = anyhow::Error;
+
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+        if bytes.len() != ADDRESS_LEN_BYTES {
+            return Err(anyhow::anyhow!("address malformed"));
+        }
+
+        let diversifier_bytes: [u8; 16] = bytes[0..16]
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("address malformed"))?;
+
+        let pk_d_bytes: [u8; 32] = bytes[16..48]
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("address malformed"))?;
+
+        let clue_key_bytes: [u8; 32] = bytes[48..80]
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("address malformed"))?;
+
+        let diversifier = Diversifier(diversifier_bytes);
+
+        let address = Address::from_components(
+            diversifier,
+            diversifier.diversified_generator(),
+            ka::Public(pk_d_bytes),
+            fmd::ClueKey(clue_key_bytes),
+        );
+
+        if address.is_none() {
+            return Err(anyhow::anyhow!("address malformed"));
+        }
+
+        Ok(address.unwrap())
     }
 }
 

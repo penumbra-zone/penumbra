@@ -126,12 +126,8 @@ impl SwapClaimPlan {
 
     /// Construct the [`swap_claim::Body`] described by this plan.
     pub fn swap_claim_body(&self, fvk: &FullViewingKey) -> swap_claim::Body {
-        let diversifier = self.claim_address.diversifier().clone();
-        let transmission_key = self.claim_address.transmission_key().clone();
-
         let output_1_note = Note::from_parts(
-            diversifier,
-            transmission_key,
+            self.claim_address,
             Value {
                 amount: self.output_data.lambda_1,
                 asset_id: self.trading_pair.asset_1(),
@@ -140,8 +136,7 @@ impl SwapClaimPlan {
         )
         .expect("transmission key in address is always valid");
         let output_2_note = Note::from_parts(
-            diversifier,
-            transmission_key,
+            self.claim_address,
             Value {
                 amount: self.output_data.lambda_2,
                 asset_id: self.trading_pair.asset_2(),

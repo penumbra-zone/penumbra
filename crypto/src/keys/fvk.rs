@@ -32,7 +32,7 @@ pub struct FullViewingKeyHash(pub [u8; 32]);
 
 impl FullViewingKey {
     pub fn controls(&self, note: &Note) -> bool {
-        note.transmission_key()
+        *note.transmission_key()
             == self
                 .incoming()
                 .diversified_public(&note.diversified_generator())

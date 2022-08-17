@@ -61,8 +61,7 @@ impl Allocation {
     /// already public.
     pub fn note(&self) -> Result<Note, anyhow::Error> {
         Note::from_parts(
-            *self.address.diversifier(),
-            *self.address.transmission_key(),
+            self.address,
             Value {
                 amount: self.amount,
                 asset_id: asset::REGISTRY

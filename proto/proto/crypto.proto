@@ -74,8 +74,7 @@ message ConsensusKey {
 message Note {
     Value value = 1;
     bytes note_blinding = 2;
-    Diversifier diversifier = 3;
-    bytes transmission_key = 4;
+    Address address = 3;
 }
 
 message Nullifier {
