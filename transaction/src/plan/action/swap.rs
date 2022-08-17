@@ -163,14 +163,14 @@ impl Protobuf<pb::SwapPlan> for SwapPlan {}
 impl From<SwapPlan> for pb::SwapPlan {
     fn from(msg: SwapPlan) -> Self {
         Self {
-            trading_pair: todo!(),
-            delta_1: todo!(),
-            delta_2: todo!(),
-            fee: todo!(),
-            fee_blinding: todo!(),
-            claim_address: todo!(),
-            note_blinding: todo!(),
-            esk: todo!(),
+            trading_pair: Some(msg.trading_pair.into()),
+            delta_1: msg.delta_1,
+            delta_2: msg.delta_2,
+            fee: Some(msg.fee.into()),
+            fee_blinding: msg.fee_blinding.to_bytes().to_vec().into(),
+            claim_address: Some(msg.claim_address.into()),
+            note_blinding: msg.note_blinding.to_bytes().to_vec().into(),
+            esk: msg.esk.to_bytes().to_vec().into(),
         }
     }
 }
