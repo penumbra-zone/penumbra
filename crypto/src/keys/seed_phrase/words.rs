@@ -1,3 +1,19 @@
+/// Maximum length of any BIP39 word, for use in formatting.
+pub static BIP39_MAX_WORD_LENGTH: usize = {
+    // The non-idiomatic style here ensures that this is const code (since we can't use traits yet
+    // in const code, we can't do map, maximum, etc.)
+    let mut max_length = 0;
+    let mut i = 0;
+    while i < BIP39_WORDS.len() {
+        let word_length = BIP39_WORDS[i].len();
+        if word_length > max_length {
+            max_length = word_length;
+        }
+        i += 1;
+    }
+    max_length
+};
+
 /// English words for generating seed phrases.
 ///
 /// Taken from: https://github.com/bitcoin/bips/blob/master/bip-0039/english.txt

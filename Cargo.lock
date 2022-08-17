@@ -839,6 +839,7 @@ dependencies = [
  "libc",
  "once_cell",
  "terminal_size",
+ "unicode-width",
  "winapi",
 ]
 
@@ -2824,6 +2825,7 @@ dependencies = [
  "clap 3.2.17",
  "colored_json",
  "comfy-table",
+ "console",
  "decaf377",
  "directories",
  "ed25519-consensus 1.2.1",

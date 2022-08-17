@@ -1,10 +1,10 @@
-use std::fmt;
+use std::fmt::{self, Display};
 
 use rand_core::{CryptoRng, RngCore};
 use sha2::Digest;
 
 mod words;
-use words::BIP39_WORDS;
+use words::{BIP39_MAX_WORD_LENGTH, BIP39_WORDS};
 
 pub const NUM_PBKDF2_ROUNDS: u32 = 2048;
 pub const NUM_WORDS: usize = 24;
@@ -85,15 +85,49 @@ impl SeedPhrase {
             Ok(())
         }
     }
+
+    /// Format a "redacted" seed phrase, with the words replaced with censor-bars.
+    pub fn format_redacted() -> String {
+        let mut censored_words = Vec::with_capacity(NUM_WORDS);
+        for _ in 0..NUM_WORDS {
+            let mut censored_word = String::with_capacity(BIP39_MAX_WORD_LENGTH);
+            for _ in 0..BIP39_MAX_WORD_LENGTH {
+                censored_word.push('█');
+            }
+            censored_words.push(censored_word.clone());
+        }
+
+        let fake_seed_phrase = SeedPhrase(censored_words.try_into().unwrap());
+        fake_seed_phrase.to_string()
+    }
 }
 
 impl fmt::Display for SeedPhrase {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for (i, word) in self.0.iter().enumerate() {
+        const WORDS_PER_LINE: usize = 4;
+
+        let words_per_column: usize = self.0.len() / WORDS_PER_LINE;
+
+        for i in 0..self.0.len() {
+            let line = i / WORDS_PER_LINE;
+            let column = i % WORDS_PER_LINE;
+
             if i > 0 {
-                f.write_str(" ")?;
+                if column != 0 {
+                    f.write_str(" ")?;
+                } else {
+                    f.write_str("\n")?;
+                }
             }
-            f.write_str(word)?;
+
+            let number = column * words_per_column + line;
+            let number_1_indexed = number + 1;
+            let word = self.0[number].as_str();
+
+            f.write_str(&format!(
+                "{number_1_indexed:>2}. {:1$}",
+                word, BIP39_MAX_WORD_LENGTH
+            ))?;
         }
         Ok(())
     }

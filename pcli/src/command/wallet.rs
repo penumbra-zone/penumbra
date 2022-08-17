@@ -62,14 +62,44 @@ impl WalletCmd {
         match self {
             WalletCmd::Generate => {
                 let seed_phrase = SeedPhrase::generate(&mut OsRng);
+                let formatted_seed_phrase = seed_phrase.to_string();
+                let confirmation_phrase = "I have written down my private seed phrase.";
 
-                // xxx: Something better should be done here, this is in danger of being
-                // shared by users accidentally in log output.
-                println!(
-                    "YOUR PRIVATE SEED PHRASE: {}\nDO NOT SHARE WITH ANYONE!",
-                    seed_phrase
-                );
+                let stdout = console::Term::stdout();
 
+                stdout.write_str(&format!(
+                    "\n        Welcome to Penumbra. 🌘 \n\n  Below is your private seed phrase.\n    No other person should ever read it.\n  It cannot be recovered if lost.\n    It will never be displayed again.\n\nWrite it down right now and keep it safe!\n\n{}\n\nTo continue, type:\n\n  {}\n> ",
+                    formatted_seed_phrase,
+                    confirmation_phrase)
+                )?;
+
+                stdout.flush()?;
+
+                // Require the user to type a confirmation phrase to proceed
+                let mut remaining_chars = confirmation_phrase.chars().peekable();
+
+                while let Some(next) = remaining_chars.peek() {
+                    let typed = stdout.read_char()?;
+                    if typed == *next {
+                        let next = remaining_chars.next().unwrap();
+                        stdout.move_cursor_up(1)?;
+                        stdout.write_str(" ")?;
+                        stdout.move_cursor_down(1)?;
+                        stdout.move_cursor_left(1)?;
+                        stdout.write_str(&format!("{next}"))?;
+                        stdout.flush()?;
+                    }
+                }
+
+                // Clear the seed phrase from the screen by replacing it with a "redacted" version
+                stdout.move_cursor_up(10)?;
+                stdout.clear_line()?;
+                stdout.write_str(&SeedPhrase::format_redacted())?;
+                stdout.write_str("\n")?;
+                stdout.clear_line()?;
+                stdout.write_str("\n")?;
+
+                // Actually save the wallet and its backup
                 let wallet = KeyStore::from_seed_phrase(seed_phrase);
                 wallet.save(data_dir.join(crate::CUSTODY_FILE_NAME))?;
                 self.archive_wallet(&wallet)?;
