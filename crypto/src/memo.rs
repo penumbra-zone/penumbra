@@ -6,8 +6,7 @@ use crate::{
     ka,
     keys::{IncomingViewingKey, OutgoingViewingKey},
     note,
-    note::OVK_WRAPPED_LEN_BYTES,
-    symmetric::{PayloadKey, PayloadKind},
+    symmetric::{OvkWrappedKey, PayloadKey, PayloadKind},
     value, Address, Note,
 };
 
@@ -83,7 +82,7 @@ impl MemoPlaintext {
     /// Decrypt a `MemoCiphertext` using the wrapped OVK to generate a plaintext `Memo`.
     pub fn decrypt_outgoing(
         ciphertext: MemoCiphertext,
-        wrapped_ovk: [u8; OVK_WRAPPED_LEN_BYTES],
+        wrapped_ovk: OvkWrappedKey,
         cm: note::Commitment,
         cv: value::Commitment,
         ovk: &OutgoingViewingKey,

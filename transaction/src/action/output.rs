@@ -3,7 +3,8 @@ use std::convert::{TryFrom, TryInto};
 use anyhow::Error;
 use bytes::Bytes;
 use penumbra_crypto::{
-    memo::MemoCiphertext, note, proofs::transparent::OutputProof, value, NotePayload,
+    memo::MemoCiphertext, proofs::transparent::OutputProof, symmetric::OvkWrappedKey, value,
+    NotePayload,
 };
 use penumbra_proto::{transaction as pb, Protobuf};
 
@@ -18,7 +19,7 @@ pub struct Body {
     pub note_payload: NotePayload,
     pub value_commitment: value::Commitment,
     pub encrypted_memo: MemoCiphertext,
-    pub ovk_wrapped_key: [u8; note::OVK_WRAPPED_LEN_BYTES],
+    pub ovk_wrapped_key: OvkWrappedKey,
 }
 
 impl Protobuf<pb::Output> for Output {}
@@ -57,7 +58,7 @@ impl From<Body> for pb::OutputBody {
             note_payload: Some(output.note_payload.into()),
             value_commitment: Some(output.value_commitment.into()),
             encrypted_memo: Bytes::copy_from_slice(&output.encrypted_memo.0),
-            ovk_wrapped_key: Bytes::copy_from_slice(&output.ovk_wrapped_key),
+            ovk_wrapped_key: Bytes::copy_from_slice(&output.ovk_wrapped_key.0),
         }
     }
 }
@@ -78,7 +79,7 @@ impl TryFrom<pb::OutputBody> for Body {
                 .map_err(|_| anyhow::anyhow!("output malformed"))?,
         );
 
-        let ovk_wrapped_key: [u8; note::OVK_WRAPPED_LEN_BYTES] = proto.ovk_wrapped_key[..]
+        let ovk_wrapped_key: OvkWrappedKey = proto.ovk_wrapped_key[..]
             .try_into()
             .map_err(|_| anyhow::anyhow!("output malformed"))?;
 
