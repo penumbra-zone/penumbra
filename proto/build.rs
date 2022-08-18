@@ -261,27 +261,30 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.transaction.OutputPlan.esk", AS_HEX_FOR_BYTES),
     // TODO: replace if we use UTF-8 memos
     (".penumbra.transaction.OutputPlan.memo", AS_HEX_FOR_BYTES),
-    // TODO: these aren't right yet, the Swap/SwapClaim proto messages don't have the correct fields
     (
-        ".penumbra.transaction.SwapPlan.randomizer",
+        ".penumbra.transaction.SwapPlan.note_blinding",
         AS_HEX_FOR_BYTES,
     ),
     (
-        ".penumbra.transaction.SwapPlan.value_blinding",
+        ".penumbra.transaction.SwapPlan.fee_blinding",
+        AS_HEX_FOR_BYTES,
+    ),
+    (".penumbra.transaction.SwapPlan.esk", AS_HEX_FOR_BYTES),
+    (
+        ".penumbra.transaction.SwapClaimPlan.output_1_blinding",
         AS_HEX_FOR_BYTES,
     ),
     (
-        ".penumbra.transaction.SwapClaimPlan.note_blinding",
+        ".penumbra.transaction.SwapClaimPlan.output_2_blinding",
         AS_HEX_FOR_BYTES,
     ),
     (
-        ".penumbra.transaction.SwapClaimPlan.value_blinding",
+        ".penumbra.transaction.SwapClaimPlan.esk_1",
         AS_HEX_FOR_BYTES,
     ),
-    (".penumbra.transaction.SwapClaimPlan.esk", AS_HEX_FOR_BYTES),
     (
-        ".penumbra.transaction.SwapClaimPlan.note_commitment_proof",
-        AS_BASE64_FOR_BYTES,
+        ".penumbra.transaction.SwapClaimPlan.esk_2",
+        AS_HEX_FOR_BYTES,
     ),
     // Transaction formatting
     (
