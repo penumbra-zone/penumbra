@@ -13,7 +13,10 @@ use crate::KeyStore;
 #[derive(Debug, clap::Subcommand)]
 pub enum WalletCmd {
     /// Import from an existing seed phrase.
-    ImportFromPhrase,
+    ImportFromPhrase {
+        #[clap(long)]
+        seed_phrase: Option<String>,
+    },
     /// Export the full viewing key for the wallet.
     ExportFvk,
     /// Generate a new seed phrase.
@@ -103,12 +106,20 @@ impl WalletCmd {
                 wallet.save(data_dir.join(crate::CUSTODY_FILE_NAME))?;
                 self.archive_wallet(&wallet)?;
             }
-            WalletCmd::ImportFromPhrase => {
-                let stdout = console::Term::stdout();
-                stdout.write_str("\n        Welcome to Penumbra. 🌘 \n\nTo import your seed phrase, type or paste it here:\n\n")?;
+            WalletCmd::ImportFromPhrase { seed_phrase } => {
+                // If the seed phrase was specified on the command line, don't prompt for it
+                let seed_phrase = if let Some(seed_phrase) = seed_phrase {
+                    seed_phrase.clone()
+                } else {
+                    // Otherwise, interactively receive the seed phrase
+                    let stdout = console::Term::stdout();
+                    stdout.write_str("\n        Welcome to Penumbra. 🌘 \n\nTo import your seed phrase, type or paste it here:\n\n")?;
 
-                let seed_phrase = import::interactive()?;
-                stdout.write_str("\n\n")?;
+                    let seed_phrase = import::interactive()?;
+                    stdout.write_str("\n\n")?;
+
+                    seed_phrase
+                };
 
                 let wallet = KeyStore::from_seed_phrase(SeedPhrase::from_str(&seed_phrase)?);
                 wallet.save(data_dir.join(crate::CUSTODY_FILE_NAME))?;
