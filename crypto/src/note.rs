@@ -203,16 +203,9 @@ impl Note {
         let shared_secret = esk
             .key_agreement_with(&transmission_key)
             .map_err(|_| Error::DecryptionError)?;
-        let key = PayloadKey::derive(&shared_secret, epk);
-        let plaintext = key
-            .decrypt(ciphertext.to_vec(), PayloadKind::Note)
-            .map_err(|_| Error::DecryptionError)?;
-        let plaintext_bytes: [u8; NOTE_LEN_BYTES] =
-            plaintext.try_into().map_err(|_| Error::DecryptionError)?;
 
-        plaintext_bytes
-            .try_into()
-            .map_err(|_| Error::DecryptionError)
+        let key = PayloadKey::derive(&shared_secret, epk);
+        Note::decrypt_with_payload_key(ciphertext, &key)
     }
 
     /// Decrypt a note ciphertext using the IVK and ephemeral public key to generate a plaintext `Note`.
@@ -229,8 +222,20 @@ impl Note {
             .key_agreement_with(epk)
             .map_err(|_| Error::DecryptionError)?;
 
-        let key = PayloadKey::derive(&shared_secret, &epk);
-        let plaintext = key
+        let key = PayloadKey::derive(&shared_secret, epk);
+        Note::decrypt_with_payload_key(ciphertext, &key)
+    }
+
+    /// Decrypt a note ciphertext using the [`PayloadKey`].
+    pub fn decrypt_with_payload_key(
+        ciphertext: &[u8],
+        payload_key: &PayloadKey,
+    ) -> Result<Note, Error> {
+        if ciphertext.len() != NOTE_CIPHERTEXT_BYTES {
+            return Err(Error::DecryptionError);
+        }
+
+        let plaintext = payload_key
             .decrypt(ciphertext.to_vec(), PayloadKind::Note)
             .map_err(|_| Error::DecryptionError)?;
 
