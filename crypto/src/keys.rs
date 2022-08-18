@@ -5,7 +5,10 @@ mod nullifier;
 pub use nullifier::{NullifierKey, NK_LEN_BYTES};
 
 mod seed_phrase;
-pub use seed_phrase::SeedPhrase;
+pub use seed_phrase::{
+    SeedPhrase, BIP39_MAX_WORD_LENGTH, BIP39_WORDS, NUM_WORDS as SEED_PHRASE_NUM_WORDS,
+    WORDS_PER_LINE as SEED_PHRASE_WORDS_PER_LINE,
+};
 
 mod spend;
 pub use spend::{SpendKey, SpendKeyBytes, SPENDKEY_LEN_BYTES};

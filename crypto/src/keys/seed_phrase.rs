@@ -4,8 +4,9 @@ use rand_core::{CryptoRng, RngCore};
 use sha2::Digest;
 
 mod words;
-use words::{BIP39_MAX_WORD_LENGTH, BIP39_WORDS};
+pub use words::{BIP39_MAX_WORD_LENGTH, BIP39_WORDS};
 
+pub const WORDS_PER_LINE: usize = 4;
 pub const NUM_PBKDF2_ROUNDS: u32 = 2048;
 pub const NUM_WORDS: usize = 24;
 pub const NUM_ENTROPY_BITS: usize = 256;
@@ -87,12 +88,12 @@ impl SeedPhrase {
     }
 
     /// Format a "redacted" seed phrase, with the words replaced with censor-bars.
-    pub fn format_redacted() -> String {
+    pub fn format_redacted(redact_character: char) -> String {
         let mut censored_words = Vec::with_capacity(NUM_WORDS);
         for _ in 0..NUM_WORDS {
             let mut censored_word = String::with_capacity(BIP39_MAX_WORD_LENGTH);
             for _ in 0..BIP39_MAX_WORD_LENGTH {
-                censored_word.push('█');
+                censored_word.push(redact_character);
             }
             censored_words.push(censored_word.clone());
         }
@@ -104,8 +105,6 @@ impl SeedPhrase {
 
 impl fmt::Display for SeedPhrase {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        const WORDS_PER_LINE: usize = 4;
-
         let words_per_column: usize = self.0.len() / WORDS_PER_LINE;
 
         for i in 0..self.0.len() {

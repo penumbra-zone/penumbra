@@ -6,15 +6,14 @@ use penumbra_crypto::keys::SeedPhrase;
 use rand_core::OsRng;
 use sha2::{Digest, Sha256};
 
+mod import;
+
 use crate::KeyStore;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum WalletCmd {
     /// Import from an existing seed phrase.
-    ImportFromPhrase {
-        /// A 24 word phrase in quotes.
-        seed_phrase: String,
-    },
+    ImportFromPhrase,
     /// Export the full viewing key for the wallet.
     ExportFvk,
     /// Generate a new seed phrase.
@@ -94,7 +93,7 @@ impl WalletCmd {
                 // Clear the seed phrase from the screen by replacing it with a "redacted" version
                 stdout.move_cursor_up(10)?;
                 stdout.clear_line()?;
-                stdout.write_str(&SeedPhrase::format_redacted())?;
+                stdout.write_str(&SeedPhrase::format_redacted('█'))?;
                 stdout.write_str("\n")?;
                 stdout.clear_line()?;
                 stdout.write_str("\n")?;
@@ -104,8 +103,14 @@ impl WalletCmd {
                 wallet.save(data_dir.join(crate::CUSTODY_FILE_NAME))?;
                 self.archive_wallet(&wallet)?;
             }
-            WalletCmd::ImportFromPhrase { seed_phrase } => {
-                let wallet = KeyStore::from_seed_phrase(SeedPhrase::from_str(seed_phrase)?);
+            WalletCmd::ImportFromPhrase => {
+                let stdout = console::Term::stdout();
+                stdout.write_str("\n        Welcome to Penumbra. 🌘 \n\nTo import your seed phrase, type or paste it here:\n\n")?;
+
+                let seed_phrase = import::interactive()?;
+                stdout.write_str("\n\n")?;
+
+                let wallet = KeyStore::from_seed_phrase(SeedPhrase::from_str(&seed_phrase)?);
                 wallet.save(data_dir.join(crate::CUSTODY_FILE_NAME))?;
                 self.archive_wallet(&wallet)?;
             }
