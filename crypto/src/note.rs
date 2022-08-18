@@ -145,12 +145,11 @@ impl Note {
     ) -> OvkWrappedKey {
         let epk = esk.diversified_public(&self.diversified_generator());
         let ock = OutgoingCipherKey::derive(ovk, cv, self.commit(), &epk);
+        let shared_secret = esk
+            .key_agreement_with(&self.transmission_key())
+            .expect("key agreement succeeded");
 
-        let mut op = Vec::new();
-        op.extend_from_slice(&self.transmission_key().0);
-        op.extend_from_slice(&esk.to_bytes());
-
-        let encryption_result = ock.encrypt(op, PayloadKind::Note);
+        let encryption_result = ock.encrypt(shared_secret.0.to_vec(), PayloadKind::Note);
 
         OvkWrappedKey(
             encryption_result
@@ -166,22 +165,21 @@ impl Note {
         cv: value::Commitment,
         ovk: &OutgoingViewingKey,
         epk: &ka::Public,
-    ) -> Result<(ka::Secret, ka::Public), Error> {
+    ) -> Result<ka::SharedSecret, Error> {
         let ock = OutgoingCipherKey::derive(ovk, cv, cm, epk);
 
         let plaintext = ock
             .decrypt(wrapped_ovk.to_vec(), PayloadKind::Note)
             .expect("OVK decryption succeeded");
 
-        let transmission_key_bytes: [u8; 32] = plaintext[0..32]
+        let shared_secret_bytes: [u8; 32] = plaintext[0..32]
             .try_into()
             .map_err(|_| Error::DecryptionError)?;
-        let esk_bytes: [u8; 32] = plaintext[32..64]
+        let shared_secret: ka::SharedSecret = shared_secret_bytes
             .try_into()
             .map_err(|_| Error::DecryptionError)?;
-        let esk: ka::Secret = esk_bytes.try_into().map_err(|_| Error::DecryptionError)?;
 
-        Ok((esk, ka::Public(transmission_key_bytes)))
+        Ok(shared_secret)
     }
 
     /// Decrypt a note ciphertext using the wrapped OVK to generate a plaintext `Note`.
@@ -197,11 +195,8 @@ impl Note {
             return Err(Error::DecryptionError);
         }
 
-        let (esk, transmission_key) =
+        let shared_secret =
             Note::decrypt_key(wrapped_ovk, cm, cv, ovk, epk).map_err(|_| Error::DecryptionError)?;
-        let shared_secret = esk
-            .key_agreement_with(&transmission_key)
-            .map_err(|_| Error::DecryptionError)?;
 
         let key = PayloadKey::derive(&shared_secret, epk);
         Note::decrypt_with_payload_key(ciphertext, &key)

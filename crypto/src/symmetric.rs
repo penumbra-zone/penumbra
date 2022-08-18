@@ -6,7 +6,7 @@ use chacha20poly1305::{
 
 use crate::{ka, keys::OutgoingViewingKey, note, value};
 
-pub const OVK_WRAPPED_LEN_BYTES: usize = 80;
+pub const OVK_WRAPPED_LEN_BYTES: usize = 48;
 
 /// Represents the item to be encrypted/decrypted with the [`PayloadKey`].
 pub enum PayloadKind {

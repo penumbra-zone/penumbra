@@ -139,6 +139,17 @@ impl TryFrom<[u8; 32]> for Secret {
     }
 }
 
+impl TryFrom<[u8; 32]> for SharedSecret {
+    type Error = Error;
+    fn try_from(bytes: [u8; 32]) -> Result<SharedSecret, Error> {
+        decaf377::Encoding(bytes)
+            .vartime_decompress()
+            .map_err(|_| Error::InvalidSecret)?;
+
+        Ok(SharedSecret(bytes))
+    }
+}
+
 impl From<&Secret> for [u8; 32] {
     fn from(s: &Secret) -> Self {
         s.0.to_bytes()
