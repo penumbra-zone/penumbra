@@ -194,7 +194,7 @@ impl output::Body {
         state.update(&self.note_payload.encrypted_note);
         state.update(&self.value_commitment.to_bytes());
         state.update(&self.encrypted_memo.0);
-        state.update(&self.ovk_wrapped_key);
+        state.update(&self.ovk_wrapped_key.0);
 
         state.finalize()
     }

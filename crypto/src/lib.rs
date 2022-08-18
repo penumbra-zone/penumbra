@@ -19,7 +19,7 @@ mod note_payload;
 mod nullifier;
 mod prf;
 pub mod proofs;
-mod symmetric;
+pub mod symmetric;
 pub mod transaction;
 pub mod value;
 

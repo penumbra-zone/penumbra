@@ -6,6 +6,8 @@ use chacha20poly1305::{
 
 use crate::{ka, keys::OutgoingViewingKey, note, value};
 
+pub const OVK_WRAPPED_LEN_BYTES: usize = 80;
+
 /// Represents the item to be encrypted/decrypted with the [`PayloadKey`].
 pub enum PayloadKind {
     Note,
@@ -66,7 +68,7 @@ impl PayloadKey {
 
 /// Represents a symmetric `ChaCha20Poly1305` key.
 ///
-/// Used for encrypting and decrypting `OVK_WRAPPED_KEY` material used to decrypt
+/// Used for encrypting and decrypting [`OvkWrappedKey`] material used to decrypt
 /// outgoing swaps, notes, and memos.
 pub struct OutgoingCipherKey(Key);
 
@@ -123,5 +125,37 @@ impl OutgoingCipherKey {
         cipher
             .decrypt(nonce, ciphertext.as_ref())
             .map_err(|_| anyhow::anyhow!("decryption error"))
+    }
+}
+
+/// Represents encrypted key material used to reconstruct a `PayloadKey`.
+#[derive(Clone, Debug)]
+pub struct OvkWrappedKey(pub [u8; OVK_WRAPPED_LEN_BYTES]);
+
+impl OvkWrappedKey {
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.0.to_vec()
+    }
+}
+
+impl TryFrom<Vec<u8>> for OvkWrappedKey {
+    type Error = anyhow::Error;
+
+    fn try_from(vector: Vec<u8>) -> Result<Self, Self::Error> {
+        let bytes: [u8; OVK_WRAPPED_LEN_BYTES] = vector
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("wrapped OVK malformed"))?;
+        Ok(Self(bytes))
+    }
+}
+
+impl TryFrom<&[u8]> for OvkWrappedKey {
+    type Error = anyhow::Error;
+
+    fn try_from(arr: &[u8]) -> Result<Self, Self::Error> {
+        let bytes: [u8; OVK_WRAPPED_LEN_BYTES] = arr
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("wrapped OVK malformed"))?;
+        Ok(Self(bytes))
     }
 }

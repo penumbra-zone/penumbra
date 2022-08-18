@@ -14,13 +14,12 @@ pub use penumbra_tct::Commitment;
 use crate::{
     asset, ka,
     keys::{Diversifier, IncomingViewingKey, OutgoingViewingKey},
-    symmetric::{OutgoingCipherKey, PayloadKey, PayloadKind},
+    symmetric::{OutgoingCipherKey, OvkWrappedKey, PayloadKey, PayloadKind},
     value, Fq, Value,
 };
 
 pub const NOTE_LEN_BYTES: usize = 120;
 pub const NOTE_CIPHERTEXT_BYTES: usize = 136;
-pub const OVK_WRAPPED_LEN_BYTES: usize = 80;
 
 /// A plaintext Penumbra note.
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -143,7 +142,7 @@ impl Note {
         esk: &ka::Secret,
         ovk: &OutgoingViewingKey,
         cv: value::Commitment,
-    ) -> [u8; OVK_WRAPPED_LEN_BYTES] {
+    ) -> OvkWrappedKey {
         let epk = esk.diversified_public(&self.diversified_generator());
         let ock = OutgoingCipherKey::derive(ovk, cv, self.commit(), &epk);
 
@@ -153,16 +152,16 @@ impl Note {
 
         let encryption_result = ock.encrypt(op, PayloadKind::Note);
 
-        let wrapped_ovk: [u8; OVK_WRAPPED_LEN_BYTES] = encryption_result
-            .try_into()
-            .expect("OVK encryption result fits in ciphertext len");
-
-        wrapped_ovk
+        OvkWrappedKey(
+            encryption_result
+                .try_into()
+                .expect("OVK encryption result fits in ciphertext len"),
+        )
     }
 
     /// Decrypt wrapped OVK to generate the transmission key and ephemeral secret
     pub(crate) fn decrypt_key(
-        wrapped_ovk: [u8; OVK_WRAPPED_LEN_BYTES],
+        wrapped_ovk: OvkWrappedKey,
         cm: Commitment,
         cv: value::Commitment,
         ovk: &OutgoingViewingKey,
@@ -188,7 +187,7 @@ impl Note {
     /// Decrypt a note ciphertext using the wrapped OVK to generate a plaintext `Note`.
     pub fn decrypt_outgoing(
         ciphertext: &[u8],
-        wrapped_ovk: [u8; OVK_WRAPPED_LEN_BYTES],
+        wrapped_ovk: OvkWrappedKey,
         cm: Commitment,
         cv: value::Commitment,
         ovk: &OutgoingViewingKey,
