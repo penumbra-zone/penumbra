@@ -14,7 +14,9 @@ use ibc::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use ibc::core::ics04_channel::msgs::timeout::MsgTimeout;
 use ibc::core::ics04_channel::Version;
 use penumbra_crypto::Value;
-use penumbra_storage::State;
+use penumbra_proto::{ibc::FungibleTokenPacketData, Protobuf};
+use penumbra_storage::{State, StateExt};
+use prost::Message;
 use tracing::instrument;
 
 #[allow(dead_code)]
@@ -95,47 +97,33 @@ impl AppHandlerCheck for ICS20Transfer {
     }
     async fn recv_packet_check(&self, _ctx: Context, msg: &MsgRecvPacket) -> Result<()> {
         // 1. parse a FungibleTokenPacketData from msg.packet.data
-        // 2. check of we are the source chain for the denom. (check packet path to see if it is a penumbra path)
-        // 3. implement logic to check value balance if we are the source chain for the denom.
+        let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
 
-        /*
-        let value_balance = self
-            .state
-            .get_domain::<Value>(format!(
-                "ics20-value-balance/{}",
-                msg.packet.destination_channel
-            ))
-            .await?;
-        */
+        // 2. check if we are the source chain for the denom. (check packet path to see if it is a penumbra path)
+        let prefix = format!("{}/{}/", msg.packet.source_port, msg.packet.source_channel);
+        let is_source = packet_data.denom.starts_with(&prefix);
 
-        /*
-                from ICS-20 spec
-                function onRecvPacket(packet: Packet) {
-          FungibleTokenPacketData data = packet.data
-          // construct default acknowledgement of success
-          FungibleTokenPacketAcknowledgement ack = FungibleTokenPacketAcknowledgement{true, null}
-          prefix = "{packet.sourcePort}/{packet.sourceChannel}/"
-          // we are the source if the packets were prefixed by the sending chain
-          source = data.denom.slice(0, len(prefix)) === prefix
-          if source {
-            // receiver is source chain: unescrow tokens
-            // determine escrow account
-            escrowAccount = channelEscrowAddresses[packet.destChannel]
-            // unescrow tokens to receiver (assumed to fail if balance insufficient)
-            err = bank.TransferCoins(escrowAccount, data.receiver, data.denom.slice(len(prefix)), data.amount)
-            if (err !== nil)
-              ack = FungibleTokenPacketAcknowledgement{false, "transfer coins failed"}
-          } else {
-            prefix = "{packet.destPort}/{packet.destChannel}/"
-            prefixedDenomination = prefix + data.denom
-            // sender was source, mint vouchers to receiver (assumed to fail if balance insufficient)
-            err = bank.MintCoins(data.receiver, prefixedDenomination, data.amount)
-            if (err !== nil)
-              ack = FungibleTokenPacketAcknowledgement{false, "mint coins failed"}
-          }
-          return ack
+        if is_source {
+            // check if we have enough balance to unescrow tokens to receiver
+            let value_balance: u64 = self
+                .state
+                .get_proto::<u64>(
+                    format!("ics20-value-balance/{}", msg.packet.destination_channel).into(),
+                )
+                .await?
+                .ok_or(anyhow::anyhow!("value balance not found"))?;
+
+            // convert the amount to a u64 from u256.
+            //  TODO: the amount is given by the ICS20 spec to be a u256, but we parse it to u64
+            //  for now. should we round, or error, or something else in this conversion?
+            let amount_penumbra = packet_data.amount.parse::<u64>()?;
+            if value_balance < amount_penumbra {
+                return Err(anyhow::anyhow!(
+                    "insufficient balance to unescrow tokens to receiver"
+                ));
+            }
         }
-                 */
+
         Ok(())
     }
     async fn timeout_packet_check(&self, _ctx: Context, _msg: &MsgTimeout) -> Result<()> {
@@ -152,24 +140,18 @@ impl AppHandlerCheck for ICS20Transfer {
 
 #[async_trait]
 impl AppHandlerExecute for ICS20Transfer {
-    async fn chan_open_init_execute(&mut self, _ctx: Context, _msg: &MsgChannelOpenInit) {
-        /*
-        self
-        .state
-        .put_domain::<Value>(format!("ics20-value-balance/{}", msg.channel_id), 0)
-        .await?
-        */
+    async fn chan_open_init_execute(&mut self, _ctx: Context, _msg: &MsgChannelOpenInit) {}
+    async fn chan_open_try_execute(&mut self, _ctx: Context, _msg: &MsgChannelOpenTry) {}
+    async fn chan_open_ack_execute(&mut self, _ctx: Context, msg: &MsgChannelOpenAck) {
+        self.state
+            .put_proto::<u64>(format!("ics20-value-balance/{}", msg.channel_id).into(), 0)
+            .await;
     }
-    async fn chan_open_try_execute(&mut self, _ctx: Context, _msg: &MsgChannelOpenTry) {
-        /*
-        self
-        .state
-        .put_domain::<Value>(format!("ics20-value-balance/{}", msg.channel_id), 0)
-        .await?
-        */
+    async fn chan_open_confirm_execute(&mut self, _ctx: Context, msg: &MsgChannelOpenConfirm) {
+        self.state
+            .put_proto::<u64>(format!("ics20-value-balance/{}", msg.channel_id).into(), 0)
+            .await;
     }
-    async fn chan_open_ack_execute(&mut self, _ctx: Context, _msg: &MsgChannelOpenAck) {}
-    async fn chan_open_confirm_execute(&mut self, _ctx: Context, _msg: &MsgChannelOpenConfirm) {}
     async fn chan_close_confirm_execute(&mut self, _ctx: Context, _msg: &MsgChannelCloseConfirm) {}
     async fn chan_close_init_execute(&mut self, _ctx: Context, _msg: &MsgChannelCloseInit) {}
     async fn recv_packet_execute(&mut self, _ctx: Context, _msg: &MsgRecvPacket) {
