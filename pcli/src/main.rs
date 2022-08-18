@@ -120,7 +120,6 @@ async fn main() -> Result<()> {
         Command::Balance(balance_cmd) => balance_cmd.exec(&app.fvk, &mut app.view).await?,
         Command::Validator(cmd) => cmd.exec(&mut app).await?,
         Command::Stake(cmd) => cmd.exec(&mut app).await?,
-        Command::Swap(cmd) => cmd.exec(&mut app).await?,
         Command::Chain(cmd) => cmd.exec(&mut app).await?,
         Command::Q(cmd) => cmd.exec(&mut app).await?,
     }

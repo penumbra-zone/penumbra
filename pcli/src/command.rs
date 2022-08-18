@@ -3,7 +3,6 @@ mod balance;
 mod chain;
 mod query;
 mod stake;
-mod swap;
 mod tx;
 mod validator;
 mod wallet;
@@ -13,7 +12,6 @@ pub use balance::BalanceCmd;
 pub use chain::ChainCmd;
 pub use query::QueryCmd;
 pub use stake::StakeCmd;
-pub use swap::SwapCmd;
 pub use tx::TxCmd;
 pub use validator::ValidatorCmd;
 pub use wallet::WalletCmd;
@@ -42,9 +40,6 @@ pub enum Command {
     /// Manages delegations and undelegations.
     #[clap(subcommand)]
     Stake(StakeCmd),
-    /// Manages swaps and swap claims.
-    #[clap(subcommand)]
-    Swap(SwapCmd),
     /// Queries the public chain state.
     ///
     /// This command has two modes: it can be used to query raw bytes of
@@ -68,7 +63,6 @@ impl Command {
             Command::Balance(cmd) => cmd.needs_sync(),
             Command::Validator(cmd) => cmd.needs_sync(),
             Command::Stake(cmd) => cmd.needs_sync(),
-            Command::Swap(cmd) => cmd.needs_sync(),
             Command::Chain(cmd) => cmd.needs_sync(),
             Command::Q(_) => false,
         }
