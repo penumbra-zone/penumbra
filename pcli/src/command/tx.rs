@@ -33,6 +33,25 @@ pub enum TxCmd {
     ///
     /// Currently, only zero-fee sweep transactions are implemented.
     Sweep,
+    /// Submit a new Swap to the chain which will burn input assets and allow a future SwapClaim for the given Swap NFT.
+    /// Only the first asset has an input amount specified, as in typical usage, the second asset is always
+    /// the asset that the submitter wants to swap the first for.
+    ///
+    /// Swaps are automatically claimed.
+    Swap {
+        /// Asset ID of the first input asset.
+        asset_1_id: String,
+        /// The amount of asset 1 to burn as part of the swap.
+        asset_1_input_amount: String,
+        /// Asset ID of the second input asset.
+        asset_2_id: String,
+        /// The transaction fee (paid in upenumbra).
+        #[clap(long, default_value = "0")]
+        fee: u64,
+        /// Optional. Only spend funds originally received by the given address index.
+        #[clap(long)]
+        source: Option<u64>,
+    },
 }
 
 impl TxCmd {
@@ -41,6 +60,7 @@ impl TxCmd {
         match self {
             TxCmd::Send { .. } => true,
             TxCmd::Sweep { .. } => true,
+            TxCmd::Swap { .. } => true,
         }
     }
 
@@ -92,6 +112,15 @@ impl TxCmd {
                     tokio::time::sleep(std::time::Duration::from_secs(6)).await;
                 }
             },
+            TxCmd::Swap {
+                asset_1_id,
+                asset_1_input_amount,
+                asset_2_id,
+                fee,
+                source,
+            } => {
+                println!("Sorry, this command is not yet implemented");
+            }
         }
         Ok(())
     }
