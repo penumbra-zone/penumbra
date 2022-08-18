@@ -17,6 +17,7 @@ pub const MEMO_CIPHERTEXT_LEN_BYTES: usize = 528;
 pub const MEMO_LEN_BYTES: usize = 512;
 
 // The memo is stored separately from the `Note`.
+// TODO: MemoPlaintext should just be a fixed-length string, drop this type entirely
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MemoPlaintext(pub [u8; MEMO_LEN_BYTES]);
 

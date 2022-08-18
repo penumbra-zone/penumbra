@@ -33,6 +33,7 @@ pub fn generate_swap_asset_id(
     delta_1: u64,
     delta_2: u64,
     fee: u64,
+    // TODO: try passing Address type here instead of the parts
     b_d: Element,
     pk_d: Public,
     trading_pair: TradingPair,
@@ -52,6 +53,7 @@ pub fn generate_swap_asset_id(
             trading_pair.asset_2().0,
             packed_values,
             b_d.compress_to_field(),
+            // TODO: if we use Address type there's a method to get the field element infallibly
             Fq::from_bytes(pk_d.0)?,
         ),
     );

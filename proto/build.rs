@@ -166,6 +166,8 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.transaction.ActionPlan", SERIALIZE),
     (".penumbra.transaction.SpendPlan", SERIALIZE),
     (".penumbra.transaction.OutputPlan", SERIALIZE),
+    (".penumbra.transaction.SwapPlan", SERIALIZE),
+    (".penumbra.transaction.SwapClaimPlan", SERIALIZE),
     (".penumbra.transaction.Transaction", SERIALIZE),
     (".penumbra.transaction.TransactionBody", SERIALIZE),
     (".penumbra.transaction.Action", SERIALIZE),
@@ -198,6 +200,11 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.dex.PositionClose", SERIALIZE),
     (".penumbra.dex.PositionWithdraw", SERIALIZE),
     (".penumbra.dex.PositionRewardClaim", SERIALIZE),
+    (".penumbra.dex.Swap", SERIALIZE),
+    (".penumbra.dex.SwapBody", SERIALIZE),
+    (".penumbra.dex.SwapClaim", SERIALIZE),
+    (".penumbra.dex.SwapClaimBody", SERIALIZE),
+    (".penumbra.dex.BatchSwapOutputData", SERIALIZE),
 ];
 
 static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
@@ -254,6 +261,31 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.transaction.OutputPlan.esk", AS_HEX_FOR_BYTES),
     // TODO: replace if we use UTF-8 memos
     (".penumbra.transaction.OutputPlan.memo", AS_HEX_FOR_BYTES),
+    (
+        ".penumbra.transaction.SwapPlan.note_blinding",
+        AS_HEX_FOR_BYTES,
+    ),
+    (
+        ".penumbra.transaction.SwapPlan.fee_blinding",
+        AS_HEX_FOR_BYTES,
+    ),
+    (".penumbra.transaction.SwapPlan.esk", AS_HEX_FOR_BYTES),
+    (
+        ".penumbra.transaction.SwapClaimPlan.output_1_blinding",
+        AS_HEX_FOR_BYTES,
+    ),
+    (
+        ".penumbra.transaction.SwapClaimPlan.output_2_blinding",
+        AS_HEX_FOR_BYTES,
+    ),
+    (
+        ".penumbra.transaction.SwapClaimPlan.esk_1",
+        AS_HEX_FOR_BYTES,
+    ),
+    (
+        ".penumbra.transaction.SwapClaimPlan.esk_2",
+        AS_HEX_FOR_BYTES,
+    ),
     // Transaction formatting
     (
         ".penumbra.transaction.Transaction.binding_sig",

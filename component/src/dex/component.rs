@@ -39,11 +39,15 @@ impl Component for Dex {
                 | Action::PositionRewardClaim { .. } => {
                     return Err(anyhow::anyhow!("lp actions not supported yet"));
                 }
+                // TODO: Swap/SwapClaim actions are currently always rejected
+                // until implementation is complete
+                Action::Swap(..) | Action::SwapClaim(..) => {
+                    return Err(anyhow::anyhow!("swap actions not supported yet"));
+                }
                 _ => {}
             }
         }
 
-        // TODO: implement for Swap/SwapClaim
         Ok(())
     }
 

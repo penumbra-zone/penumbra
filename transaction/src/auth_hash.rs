@@ -5,9 +5,9 @@ use penumbra_proto::{transaction as pb, Message, Protobuf};
 
 use crate::{
     action::{
-        output, spend, Delegate, ICS20Withdrawal, PositionClose, PositionOpen, PositionRewardClaim,
-        PositionWithdraw, ProposalSubmit, ProposalWithdraw, ProposalWithdrawBody, Undelegate,
-        ValidatorVote, ValidatorVoteBody, Vote,
+        output, spend, swap, swap_claim, Delegate, ICS20Withdrawal, PositionClose, PositionOpen,
+        PositionRewardClaim, PositionWithdraw, ProposalSubmit, ProposalWithdraw,
+        ProposalWithdrawBody, Undelegate, ValidatorVote, ValidatorVoteBody, Vote,
     },
     plan::TransactionPlan,
     Action, Transaction, TransactionBody,
@@ -161,6 +161,8 @@ impl Action {
             Action::ProposalSubmit(submit) => submit.auth_hash(),
             Action::ProposalWithdraw(withdraw) => withdraw.auth_hash(),
             Action::ValidatorVote(vote) => vote.auth_hash(),
+            Action::SwapClaim(swap_claim) => swap_claim.body.auth_hash(),
+            Action::Swap(swap) => swap.body.auth_hash(),
             // These are data payloads, so just hash them directly,
             // since we consider them authorizing data.
             Action::ValidatorDefinition(payload) => Params::default()
@@ -209,6 +211,55 @@ impl spend::Body {
         state.update(&self.value_commitment.to_bytes());
         state.update(&self.nullifier.0.to_bytes());
         state.update(&self.rk.to_bytes());
+
+        state.finalize()
+    }
+}
+
+impl swap::Body {
+    fn auth_hash(&self) -> Hash {
+        let mut state = blake2b_simd::Params::default()
+            .personal(b"PAH:swap_body")
+            .to_state();
+
+        // All of these fields are fixed-length, so we can just throw them
+        // in the hash one after the other.
+        // TODO: actually the trading pair isn't necessarily fixed-length
+        // right now, does this have implications?
+        state.update(&self.trading_pair.auth_hash().as_bytes());
+        state.update(&self.delta_1.to_le_bytes());
+        state.update(&self.delta_2.to_le_bytes());
+        state.update(&self.fee_commitment.to_bytes());
+        // TODO: use common NotePayload auth_hash here
+        state.update(&self.swap_nft.encode_to_vec());
+        state.update(&self.swap_ciphertext.0);
+
+        state.finalize()
+    }
+}
+
+impl swap_claim::Body {
+    fn auth_hash(&self) -> Hash {
+        let mut state = blake2b_simd::Params::default()
+            .personal(b"PAH:swap_claim_body")
+            .to_state();
+
+        // All of these fields are fixed-length, so we can just throw them
+        // in the hash one after the other.
+        state.update(&self.nullifier.0.to_bytes());
+        state.update(&self.fee.auth_hash().as_bytes());
+        // TODO: write an `auth_hash` method for `NotePayload` et al
+        // to ensure fixed-length encoding as well as non-usage of protobuf
+        // encoding in auth hashes
+        state.update(&self.output_1.note_commitment.0.to_bytes());
+        state.update(&self.output_1.ephemeral_key.0);
+        state.update(&self.output_1.encrypted_note);
+        state.update(&self.output_2.note_commitment.0.to_bytes());
+        state.update(&self.output_2.ephemeral_key.0);
+        state.update(&self.output_2.encrypted_note);
+        state.update(&self.output_data.encode_to_vec());
+        state.update(&self.anchor.encode_to_vec());
+        state.update(&self.trading_pair.auth_hash().as_bytes());
 
         state.finalize()
     }

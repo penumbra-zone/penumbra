@@ -443,10 +443,10 @@ impl SwapClaimProof {
         // Value commitment to the fees for the swap claim
         value_commitment: value::Commitment,
         nullifier: Nullifier,
-        clearing_price_1: u64,
-        clearing_price_2: u64,
+        _clearing_price_1: u64,
+        _clearing_price_2: u64,
         clearing_price_height: u64,
-        success: bool,
+        _success: bool,
         epoch_duration: u64,
         fee: u64,
     ) -> anyhow::Result<()> {
@@ -527,6 +527,7 @@ impl SwapClaimProof {
         // TODO:
         // The address should be the same for the Swap NFT and SwapClaim outputs
         // Need output notes here, and to validate the amounts and addresses.
+        // instructions here: https://github.com/penumbra-zone/penumbra/issues/1126
         // let lambda_1 = success.into() * (clearing_price_1 * self.delta_2)
         //     + (1 - success.into()) * self.delta_1;
         // let lambda_2 = success.into() * (clearing_price_2 * self.delta_1)
@@ -680,22 +681,19 @@ pub struct SwapProof {
     pub value_t1: Value,
     // The value of asset 2 in the swap.
     pub value_t2: Value,
-    // The fee value associated with the swap.
-    // TODO: should always be of penumbra token type, maybe this should
-    // be uint64 or a hardcoded value?
-    pub value_fee: Value,
+    // The fee amount associated with the swap.
+    pub fee_delta: u64,
     // The asset ID of the Swap NFT.
     pub swap_nft_asset_id: asset::Id,
     // The blinding factor used for generating the note commitment for the Swap NFT.
     pub note_blinding: Fq,
     // The ephemeral secret key that corresponds to the public key.
     pub esk: ka::Secret,
-    // The blinding factor used for generating the value commitment for delta 1.
-    pub delta_1_blinding: Fr,
-    // The blinding factor used for generating the value commitment for delta 2.
-    pub delta_2_blinding: Fr,
-    // The blinding factor used for generating the value commitment for fee.
-    pub fee_blinding: Fr,
+    // TODO: no value commitments for delta 1/delta 2 until flow encryption is available
+    // // The blinding factor used for generating the value commitment for delta 1.
+    // pub delta_1_blinding: Fr,
+    // // The blinding factor used for generating the value commitment for delta 2.
+    // pub delta_2_blinding: Fr,
 }
 
 impl SwapProof {
@@ -737,16 +735,22 @@ impl SwapProof {
             return Err(anyhow!("transmission key mismatch"));
         }
 
-        // Value commitment integrity.
-        if value_1_commitment != -self.value_t1.commit(self.delta_1_blinding) {
-            return Err(anyhow!("value commitment mismatch"));
-        }
+        // TODO: no value commitment checks until flow encryption is available
+        // // Value commitment integrity.
+        // if value_1_commitment != -self.value_t1.commit(self.delta_1_blinding) {
+        //     return Err(anyhow!("value commitment mismatch"));
+        // }
 
-        if value_2_commitment != -self.value_t2.commit(self.delta_2_blinding) {
-            return Err(anyhow!("value commitment mismatch"));
-        }
+        // if value_2_commitment != -self.value_t2.commit(self.delta_2_blinding) {
+        //     return Err(anyhow!("value commitment mismatch"));
+        // }
 
-        if value_fee_commitment != -self.value_fee.commit(self.fee_blinding) {
+        let value_fee = Value {
+            amount: self.fee_delta,
+            asset_id: *STAKING_TOKEN_ASSET_ID,
+        };
+        let fee_blinding = Fr::zero();
+        if value_fee_commitment != -value_fee.commit(fee_blinding) {
             return Err(anyhow!("value commitment mismatch"));
         }
 
@@ -777,11 +781,11 @@ impl From<SwapProof> for transparent_proofs::SwapProof {
             t1: msg.value_t1.asset_id.0.to_bytes().to_vec(),
             delta_2: msg.value_t2.amount,
             t2: msg.value_t2.asset_id.0.to_bytes().to_vec(),
-            fee: msg.value_fee.amount,
+            fee: msg.fee_delta,
             swap_nft_asset_id: msg.swap_nft_asset_id.0.to_bytes().to_vec(),
-            delta_1_blinding: msg.delta_1_blinding.to_bytes().to_vec(),
-            delta_2_blinding: msg.delta_2_blinding.to_bytes().to_vec(),
-            fee_blinding: msg.fee_blinding.to_bytes().to_vec(),
+            // TODO: no value commitments for delta 1/delta 2 until flow encryption is available
+            // delta_1_blinding: msg.delta_1_blinding.to_bytes().to_vec(),
+            // delta_2_blinding: msg.delta_2_blinding.to_bytes().to_vec(),
             note_blinding: msg.note_blinding.to_bytes().to_vec(),
             esk: msg.esk.to_bytes().to_vec(),
         }
@@ -798,15 +802,12 @@ impl TryFrom<transparent_proofs::SwapProof> for SwapProof {
             .map_err(|_| anyhow!("proto malformed"))?;
         let b_d_encoding = decaf377::Encoding(b_d_bytes);
 
-        let delta_1_blinding_bytes: [u8; 32] = proto.delta_1_blinding[..]
-            .try_into()
-            .map_err(|_| anyhow!("proto malformed"))?;
-        let delta_2_blinding_bytes: [u8; 32] = proto.delta_2_blinding[..]
-            .try_into()
-            .map_err(|_| anyhow!("proto malformed"))?;
-        let fee_blinding_bytes: [u8; 32] = proto.fee_blinding[..]
-            .try_into()
-            .map_err(|_| anyhow!("proto malformed"))?;
+        // let delta_1_blinding_bytes: [u8; 32] = proto.delta_1_blinding[..]
+        //     .try_into()
+        //     .map_err(|_| anyhow!("proto malformed"))?;
+        // let delta_2_blinding_bytes: [u8; 32] = proto.delta_2_blinding[..]
+        //     .try_into()
+        //     .map_err(|_| anyhow!("proto malformed"))?;
 
         let esk_bytes: [u8; 32] = proto.esk[..]
             .try_into()
@@ -851,10 +852,7 @@ impl TryFrom<transparent_proofs::SwapProof> for SwapProof {
                     .map_err(|_| anyhow!("proto malformed"))?,
                 ),
             },
-            value_fee: Value {
-                amount: proto.fee,
-                asset_id: asset::Id::from(pen_denom),
-            },
+            fee_delta: proto.fee,
             swap_nft_asset_id: asset::Id(
                 Fq::from_bytes(
                     proto
@@ -864,12 +862,11 @@ impl TryFrom<transparent_proofs::SwapProof> for SwapProof {
                 )
                 .map_err(|_| anyhow!("proto malformed"))?,
             ),
-            delta_1_blinding: Fr::from_bytes(delta_1_blinding_bytes)
-                .map_err(|_| anyhow!("proto malformed"))?,
-            delta_2_blinding: Fr::from_bytes(delta_2_blinding_bytes)
-                .map_err(|_| anyhow!("proto malformed"))?,
-            fee_blinding: Fr::from_bytes(fee_blinding_bytes)
-                .map_err(|_| anyhow!("proto malformed"))?,
+            // TODO: no value commitment checks until flow encryption is available
+            // delta_1_blinding: Fr::from_bytes(delta_1_blinding_bytes)
+            //     .map_err(|_| anyhow!("proto malformed"))?,
+            // delta_2_blinding: Fr::from_bytes(delta_2_blinding_bytes)
+            //     .map_err(|_| anyhow!("proto malformed"))?,
             note_blinding: Fq::from_bytes(
                 proto.note_blinding[..]
                     .try_into()

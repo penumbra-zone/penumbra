@@ -18,15 +18,18 @@ impl SwapCiphertext {
         diversified_basepoint: &decaf377::Element,
     ) -> Result<SwapPlaintext> {
         let shared_secret = esk
-            .key_agreement_with(&transmission_key)
+            .key_agreement_with(transmission_key)
             .expect("key agreement succeeds");
-        let epk = esk.diversified_public(&diversified_basepoint);
+        let epk = esk.diversified_public(diversified_basepoint);
         let key = PayloadKey::derive(&shared_secret, &epk);
         let swap_ciphertext = self.0;
         let decryption_result = key
             .decrypt(swap_ciphertext.to_vec(), PayloadKind::Swap)
             .map_err(|_| anyhow::anyhow!("unable to decrypt swap ciphertext"))?;
 
+        // TODO: encapsulate plaintext encoding by making this a
+        // pub(super) parse_decryption method on SwapPlaintext
+        // and removing the TryFrom impls
         let plaintext: [u8; SWAP_LEN_BYTES] = decryption_result
             .try_into()
             .map_err(|_| anyhow::anyhow!("swap decryption result did not fit in plaintext len"))?;
