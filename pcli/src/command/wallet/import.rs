@@ -147,6 +147,7 @@ impl State {
                 }
             }
             console::Key::Char(c) => {
+                let c = c.to_ascii_lowercase();
                 match c {
                     // Digit characters initiate an immediate jump to another cell, and multiple
                     // digits in a row jump to the combined value of the digits, unless it exceeds
