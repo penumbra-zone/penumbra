@@ -2,7 +2,7 @@
 
 Elligator can be applied to map a field element to a curve point. The map can be applied once to derive a curve point suitable for use with computational Diffie-Hellman (CDH) challenges, and twice to derive a curve point indistinguishable from random. 
 
-In the following section, $a$ and $d$ are the curve parameters as described [here](../decaf377.md#curve-parameters). $\zeta$ is a constant and `sqrt_ratio_zeta(n,d)` is a function, both defined in the [Inverse Square Roots](./invsqrt.md) section.
+In the following section, $a$ and $d$ are the curve parameters as described [here](../decaf377.md#curve-parameters). $\zeta$ is a constant and `sqrt_ratio_zeta(v_1,v_2)` is a function, both defined in the [Inverse Square Roots](./invsqrt.md) section.
 
 The Elligator map is applied as follows to a field element $r_0$:
 
