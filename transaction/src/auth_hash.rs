@@ -501,6 +501,7 @@ mod tests {
                 SpendPlan::new(&mut OsRng, note0, 0u64.into()).into(),
                 SpendPlan::new(&mut OsRng, note1, 1u64.into()).into(),
             ],
+            clue_plans: vec![],
         };
 
         println!("{}", serde_json::to_string_pretty(&plan).unwrap());

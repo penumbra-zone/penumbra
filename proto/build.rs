@@ -168,6 +168,7 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.transaction.OutputPlan", SERIALIZE),
     (".penumbra.transaction.SwapPlan", SERIALIZE),
     (".penumbra.transaction.SwapClaimPlan", SERIALIZE),
+    (".penumbra.transaction.CluePlan", SERIALIZE),
     (".penumbra.transaction.Transaction", SERIALIZE),
     (".penumbra.transaction.TransactionBody", SERIALIZE),
     (".penumbra.transaction.Action", SERIALIZE),

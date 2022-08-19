@@ -51,6 +51,18 @@ service ViewProtocol {
 
     // Query for whether a nullifier has been spent, optionally waiting until it is spent.
     rpc NullifierStatus(NullifierStatusRequest) returns (NullifierStatusResponse);
+    
+    // Query for the transaction hashes in a range of blocks
+    rpc Transactions(TransactionsRequest) returns (stream transaction.Transaction);
+}
+
+message TransactionsRequest {
+    // Identifies the FVK for the notes to query.
+    crypto.FullViewingKeyHash fvk_hash = 1;
+    // If present, return only transactions after this height.
+    uint64 start_height = 2;
+    // If present, return only transactions before this height.
+    uint64 end_height = 3;
 }
 
 message NoteByCommitmentRequest {

@@ -212,6 +212,7 @@ message TransactionPlan {
     uint64 expiry_height = 2;
     string chain_id = 3;
     crypto.Fee fee = 4;
+    repeated CluePlan clue_plans = 5;
 }
 
 // Describes a planned transaction action.
@@ -246,6 +247,14 @@ message ActionPlan {
         SwapPlan swap = 40;
         SwapClaimPlan swap_claim = 41;
     }
+}
+
+// Describes a plan for forming a `Clue`.
+message CluePlan {
+  // The address.
+  crypto.Address address = 1;
+  // The random seed to use for the clue plan.
+  bytes rseed = 2;
 }
 
 message SpendPlan {

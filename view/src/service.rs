@@ -430,6 +430,34 @@ impl ViewProtocol for ViewService {
         ))
     }
 
+     async fn transactions(
+        &self,
+        request: tonic::Request<pb::TransactionsRequest>,
+    ) -> Result<tonic::Response<Self::TransactionsStream>, tonic::Status> {
+        self.check_worker().await?;
+
+        // Fetch transactions from storage.
+        let txs = self
+            .storage
+            .transactions(request.get_ref().start_height, request.get_ref().end_height)
+            .await
+            .map_err(|e| tonic::Status::unavailable(format!("error fetching transactions: {}", e)))?;
+
+        let stream = try_stream! {
+            for tx in txs {
+                yield tx.into()
+            }
+        };
+
+        Ok(tonic::Response::new(
+            stream
+                .map_err(|e: anyhow::Error| {
+                    tonic::Status::unavailable(format!("error getting transactions: {}", e))
+                })
+                .boxed(),
+        ))
+    }
+
     async fn witness(
         &self,
         request: tonic::Request<pb::WitnessRequest>,

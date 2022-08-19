@@ -346,6 +346,29 @@ impl Storage {
         Ok(output)
     }
 
+    pub async fn transactions(&self, start_height: u64, end_height: u64) -> anyhow::Result<Vec<(Transaction)>> {
+        let result = sqlx::query!(
+            "SELECT n.height_created, t.tx_hash
+            FROM notes n,
+            JOIN tx_by_nullifier t ON n.nullifier = t.nullifier
+            WHERE n.height_created BETWEEN ? AND ?",
+            start_height, end_height
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        let mut output: Vec<Transaction> = Vec::new();
+
+        for record in result {
+            let tx = Transaction {
+           
+            };
+            output.push(tx);
+        }
+
+        Ok(output)
+    }
+
     pub async fn notes(
         &self,
         include_spent: bool,
