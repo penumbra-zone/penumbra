@@ -13,8 +13,10 @@ use crate::action::{
 mod action;
 mod auth;
 mod build;
+mod clue;
 
 pub use action::{ActionPlan, DelegatorVotePlan, OutputPlan, SpendPlan, SwapClaimPlan, SwapPlan};
+pub use clue::CluePlan;
 
 /// A declaration of a planned [`Transaction`](crate::Transaction),
 /// for use in transaction authorization and creation.
@@ -26,6 +28,7 @@ pub struct TransactionPlan {
     pub expiry_height: u64,
     pub chain_id: String,
     pub fee: Fee,
+    pub clue_plans: Vec<CluePlan>,
 }
 
 impl Default for TransactionPlan {
@@ -35,6 +38,7 @@ impl Default for TransactionPlan {
             expiry_height: 0,
             chain_id: String::new(),
             fee: Fee(0),
+            clue_plans: vec![],
         }
     }
 }
@@ -170,6 +174,7 @@ impl From<TransactionPlan> for pb::TransactionPlan {
             expiry_height: msg.expiry_height,
             chain_id: msg.chain_id,
             fee: Some(msg.fee.into()),
+            clue_plans: msg.clue_plans.into_iter().map(Into::into).collect(),
         }
     }
 }
@@ -189,6 +194,11 @@ impl TryFrom<pb::TransactionPlan> for TransactionPlan {
                 .fee
                 .ok_or_else(|| anyhow::anyhow!("missing fee"))?
                 .try_into()?,
+            clue_plans: value
+                .clue_plans
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<_, _>>()?,
         })
     }
 }
