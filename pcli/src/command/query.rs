@@ -4,6 +4,10 @@ mod shielded_pool;
 use shielded_pool::ShieldedPool;
 mod tx;
 use tx::Tx;
+mod chain;
+use chain::ChainCmd;
+mod validator;
+use validator::ValidatorCmd;
 
 use crate::App;
 
@@ -19,6 +23,12 @@ pub enum QueryCmd {
     ShieldedPool(ShieldedPool),
     /// Queries a transaction by hash.
     Tx(Tx),
+    /// Queries information about the chain.
+    #[clap(subcommand)]
+    Chain(ChainCmd),
+    /// Queries information about validators.
+    #[clap(subcommand)]
+    Validator(ValidatorCmd),
 }
 
 impl QueryCmd {
@@ -28,9 +38,17 @@ impl QueryCmd {
             return tx.exec(app).await;
         }
 
+        if let QueryCmd::Chain(chain) = self {
+            return chain.print_chain_params(app.view()).await;
+        }
+
+        if let QueryCmd::Validator(validator) = self {
+            return validator.exec(app).await;
+        }
+
         let key = match self {
-            QueryCmd::Tx(_) => {
-                unreachable!("tx query handled in guard");
+            QueryCmd::Tx(_) | QueryCmd::Chain(_) | QueryCmd::Validator(_) => {
+                unreachable!("query handled in guard");
             }
             QueryCmd::ShieldedPool(p) => p.key().as_bytes().to_vec(),
             QueryCmd::Key { key } => key.as_bytes().to_vec(),
@@ -56,7 +74,9 @@ impl QueryCmd {
                 println!("{}", hex::encode(bytes));
             }
             QueryCmd::ShieldedPool(sp) => sp.display_value(bytes)?,
-            QueryCmd::Tx { .. } => unreachable!("query tx is special cased"),
+            QueryCmd::Tx { .. } | QueryCmd::Chain { .. } | QueryCmd::Validator { .. } => {
+                unreachable!("query is special cased")
+            }
         }
 
         Ok(())
