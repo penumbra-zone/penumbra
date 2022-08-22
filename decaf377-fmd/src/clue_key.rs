@@ -40,7 +40,7 @@ impl ExpandedClueKey {
     pub fn new(clue_key: &ClueKey) -> Result<Self, Error> {
         let root_pub_enc = decaf377::Encoding(clue_key.0);
         let root_pub = root_pub_enc
-            .decompress()
+            .vartime_decompress()
             .map_err(|_| Error::InvalidAddress)?;
 
         Ok(ExpandedClueKey {
@@ -99,15 +99,15 @@ impl ExpandedClueKey {
         let z = Fr::rand(&mut rng);
 
         let P = r * decaf377::basepoint();
-        let P_encoding = P.compress();
+        let P_encoding = P.vartime_compress();
         let Q = z * decaf377::basepoint();
-        let Q_encoding = Q.compress();
+        let Q_encoding = Q.vartime_compress();
 
         let mut ctxts = BitArray::<order::Lsb0, [u8; 3]>::zeroed();
         let Xs = self.subkeys.borrow();
 
         for i in 0..precision_bits {
-            let rXi = (r * Xs[i]).compress();
+            let rXi = (r * Xs[i]).vartime_compress();
             let key_i = hash::to_bit(&P_encoding.0, &rXi.0, &Q_encoding.0);
             let ctxt_i = key_i ^ 1u8;
             ctxts.set(i, ctxt_i != 0);

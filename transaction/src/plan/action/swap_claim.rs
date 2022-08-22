@@ -7,7 +7,7 @@ use penumbra_crypto::{
     keys::{IncomingViewingKey, NullifierKey},
     proofs::transparent::SwapClaimProof,
     transaction::Fee,
-    Address, Fq, Fr, FullViewingKey, Note, NotePayload, Nullifier, Value,
+    Address, Fq, Fr, FullViewingKey, Note, NotePayload, Value,
 };
 use penumbra_proto::{transaction as pb, Protobuf};
 use penumbra_tct as tct;
@@ -52,7 +52,7 @@ impl SwapClaimPlan {
     ) -> SwapClaimPlan {
         let output_1_blinding = Fq::rand(rng);
         let output_2_blinding = Fq::rand(rng);
-        let value_blinding = Fr::rand(rng);
+        let _value_blinding = Fr::rand(rng);
         let esk_1 = ka::Secret::new(rng);
         let esk_2 = ka::Secret::new(rng);
         let swap_nft_asset_id = generate_swap_asset_id(

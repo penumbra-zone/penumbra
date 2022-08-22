@@ -47,19 +47,19 @@ impl Ciphertext {
         let decryption3 = self.c3.decrypt(limb3_shares);
 
         let value0 = table
-            .lookup(decryption0.compress().0)
+            .lookup(decryption0.vartime_compress().0)
             .await?
             .ok_or(TableLookupError {})?;
         let value1 = table
-            .lookup(decryption1.compress().0)
+            .lookup(decryption1.vartime_compress().0)
             .await?
             .ok_or(TableLookupError {})?;
         let value2 = table
-            .lookup(decryption2.compress().0)
+            .lookup(decryption2.vartime_compress().0)
             .await?
             .ok_or(TableLookupError {})?;
         let value3 = table
-            .lookup(decryption3.compress().0)
+            .lookup(decryption3.vartime_compress().0)
             .await?
             .ok_or(TableLookupError {})?;
 

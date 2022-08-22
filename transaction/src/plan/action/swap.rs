@@ -1,14 +1,11 @@
 use anyhow::{anyhow, Result};
 use ark_ff::UniformRand;
 use decaf377::Fq;
-use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_crypto::dex::swap::{generate_swap_asset_id, SwapPlaintext};
 use penumbra_crypto::Address;
 use penumbra_crypto::{
-    dex::TradingPair,
-    proofs::transparent::{SpendProof, SwapProof},
-    transaction::Fee,
-    value, FieldExt, Fr, FullViewingKey, Note, NotePayload, Value,
+    dex::TradingPair, proofs::transparent::SwapProof, transaction::Fee, FieldExt, Fr,
+    FullViewingKey, Note, NotePayload, Value,
 };
 use penumbra_proto::{transaction as pb, Protobuf};
 use penumbra_tct as tct;
@@ -69,7 +66,7 @@ impl SwapPlan {
     }
 
     /// Construct the [`swap::Body`] described by this [`SwapPlan`].
-    pub fn swap_body(&self, fvk: &FullViewingKey) -> swap::Body {
+    pub fn swap_body(&self, _fvk: &FullViewingKey) -> swap::Body {
         let fee_commitment = self.fee.value().commit(self.fee_blinding);
 
         let swap_nft_asset_id = generate_swap_asset_id(
@@ -124,7 +121,11 @@ impl SwapPlan {
     }
 
     /// Construct the [`SwapProof`] required by the [`swap::Body`] described by this [`SwapPlan`].
-    pub fn swap_proof(&self, fvk: &FullViewingKey, note_commitment_proof: tct::Proof) -> SwapProof {
+    pub fn swap_proof(
+        &self,
+        _fvk: &FullViewingKey,
+        _note_commitment_proof: tct::Proof,
+    ) -> SwapProof {
         let swap_nft_asset_id = generate_swap_asset_id(
             self.delta_1,
             self.delta_2,

@@ -139,7 +139,7 @@ impl std::ops::Neg for Commitment {
 
 impl From<Commitment> for [u8; 32] {
     fn from(commitment: Commitment) -> [u8; 32] {
-        commitment.0.compress().0
+        commitment.0.vartime_compress().0
     }
 }
 
@@ -148,7 +148,7 @@ impl TryFrom<[u8; 32]> for Commitment {
 
     fn try_from(bytes: [u8; 32]) -> Result<Commitment, Self::Error> {
         let inner = decaf377::Encoding(bytes)
-            .decompress()
+            .vartime_decompress()
             .map_err(|_| Error::InvalidValueCommitment)?;
 
         Ok(Commitment(inner))
@@ -164,7 +164,7 @@ impl TryFrom<&[u8]> for Commitment {
             .map_err(|_| Error::InvalidValueCommitment)?;
 
         let inner = decaf377::Encoding(bytes)
-            .decompress()
+            .vartime_decompress()
             .map_err(|_| Error::InvalidValueCommitment)?;
 
         Ok(Commitment(inner))

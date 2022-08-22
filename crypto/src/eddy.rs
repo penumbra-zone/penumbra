@@ -33,11 +33,11 @@ impl EncryptedValue {
         let res_hash = blake2b_simd::Params::default()
             .personal(b"elgenc")
             .to_state()
-            .update(&self.c1.compress().0)
-            .update(&self.c2.compress().0)
-            .update(&for_pubkey.compress().0)
-            .update(&alpha.compress().0)
-            .update(&gamma.compress().0)
+            .update(&self.c1.vartime_compress().0)
+            .update(&self.c2.vartime_compress().0)
+            .update(&for_pubkey.vartime_compress().0)
+            .update(&alpha.vartime_compress().0)
+            .update(&gamma.vartime_compress().0)
             .finalize();
         let res = Fr::from_le_bytes_mod_order(res_hash.as_bytes());
 
@@ -73,11 +73,11 @@ pub fn encrypt_value(value: decaf377::Fr, for_pubkey: decaf377::Element) -> Encr
     let challenge_hash = blake2b_simd::Params::default()
         .personal(b"elgenc")
         .to_state()
-        .update(&c1.compress().0)
-        .update(&c2.compress().0)
-        .update(&for_pubkey.compress().0)
-        .update(&alpha.compress().0)
-        .update(&gamma.compress().0)
+        .update(&c1.vartime_compress().0)
+        .update(&c2.vartime_compress().0)
+        .update(&for_pubkey.vartime_compress().0)
+        .update(&alpha.vartime_compress().0)
+        .update(&gamma.vartime_compress().0)
         .finalize();
     let t = Fr::from_le_bytes_mod_order(challenge_hash.as_bytes());
     let r = k1 - e * t;
@@ -133,7 +133,7 @@ fn compute_lut(maxval: u64) -> BTreeMap<[u8; 32], u64> {
     let mut res = BTreeMap::new();
     for i in 1..maxval {
         let ge = Fr::from(i) * decaf377::basepoint();
-        res.insert(ge.compress().0, i);
+        res.insert(ge.vartime_compress().0, i);
     }
     res
 }
@@ -192,12 +192,12 @@ impl DecryptionShare {
         let res_hash = blake2b_simd::Params::default()
             .personal(b"elgdec")
             .to_state()
-            .update(&spi.compress().0)
-            .update(&c1.compress().0)
+            .update(&spi.vartime_compress().0)
+            .update(&c1.vartime_compress().0)
             .update(&participant_index.to_le_bytes())
-            .update(&participant_commitment.compress().0)
-            .update(&alpha.compress().0)
-            .update(&gamma.compress().0)
+            .update(&participant_commitment.vartime_compress().0)
+            .update(&alpha.vartime_compress().0)
+            .update(&gamma.vartime_compress().0)
             .finalize();
         let t = Fr::from_le_bytes_mod_order(res_hash.as_bytes());
         let r = k - private_key * t;
@@ -220,12 +220,12 @@ impl DecryptionShare {
         let res_hash = blake2b_simd::Params::default()
             .personal(b"elgdec")
             .to_state()
-            .update(&self.share.compress().0)
-            .update(&c1.compress().0)
+            .update(&self.share.vartime_compress().0)
+            .update(&c1.vartime_compress().0)
             .update(&self.participant_index.to_le_bytes())
-            .update(&dkg_commitment.compress().0)
-            .update(&alpha.compress().0)
-            .update(&gamma.compress().0)
+            .update(&dkg_commitment.vartime_compress().0)
+            .update(&alpha.vartime_compress().0)
+            .update(&gamma.vartime_compress().0)
             .finalize();
         let res = Fr::from_le_bytes_mod_order(res_hash.as_bytes());
 
@@ -260,8 +260,10 @@ mod tests {
 
         let decrypted = -privkey * encrypted.c1 + encrypted.c2;
         assert_eq!(
-            (value_to_encrypt * decaf377::basepoint()).compress().0,
-            decrypted.compress().0
+            (value_to_encrypt * decaf377::basepoint())
+                .vartime_compress()
+                .0,
+            decrypted.vartime_compress().0
         );
     }
     #[test]
@@ -284,7 +286,7 @@ mod tests {
         let encrypted_aggregate = aggregate_values(&encrypted_values, pubkey).unwrap();
 
         let decrypted = -privkey * encrypted_aggregate.c1 + encrypted_aggregate.c2;
-        assert_eq!(lut.get(&decrypted.compress().0).unwrap(), &600u64);
+        assert_eq!(lut.get(&decrypted.vartime_compress().0).unwrap(), &600u64);
     }
     #[test]
     fn test_threshold_decryption() {
@@ -356,7 +358,11 @@ mod tests {
             &pubkey_commitments,
         );
 
-        assert!(lut.get(&decrypted_value.unwrap().compress().0).unwrap() == &600u64);
+        assert!(
+            lut.get(&decrypted_value.unwrap().vartime_compress().0)
+                .unwrap()
+                == &600u64
+        );
 
         // randomly select t/n shares
         let mut subset = Vec::new();
@@ -382,7 +388,7 @@ mod tests {
             decrypt_value(&aggregate_value, &subset, &subset_pubkey_commitments);
 
         assert!(
-            lut.get(&decrypted_value_rand_subset.unwrap().compress().0)
+            lut.get(&decrypted_value_rand_subset.unwrap().vartime_compress().0)
                 .unwrap()
                 == &600u64
         );

@@ -1,11 +1,9 @@
 use ark_ff::Zero;
 use decaf377::Fr;
-use penumbra_crypto::dex::swap;
 use penumbra_crypto::dex::TradingPair;
-use penumbra_crypto::note;
 use penumbra_crypto::proofs::transparent::SwapProof;
-use penumbra_crypto::{asset, NotePayload, Value};
 use penumbra_crypto::{dex::swap::SwapCiphertext, value};
+use penumbra_crypto::{NotePayload, Value};
 use penumbra_proto::{dex as pb, Protobuf};
 
 #[derive(Clone, Debug)]

@@ -270,7 +270,7 @@ pub fn commitment(
             note_blinding,
             value.amount.into(),
             value.asset_id.0,
-            diversified_generator.compress_to_field(),
+            diversified_generator.vartime_compress_to_field(),
             transmission_key_s,
         ),
     );

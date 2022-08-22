@@ -63,7 +63,7 @@ impl Secret {
     /// key and the public key, a single secret key can correspond to many
     /// different (unlinkable) public keys.
     pub fn diversified_public(&self, diversified_generator: &decaf377::Element) -> Public {
-        Public((self.0 * diversified_generator).compress().into())
+        Public((self.0 * diversified_generator).vartime_compress().into())
     }
 
     /// Perform key agreement with the provided public key.
@@ -71,10 +71,10 @@ impl Secret {
     /// Fails if the provided public key is invalid.
     pub fn key_agreement_with(&self, other: &Public) -> Result<SharedSecret, Error> {
         let pk = decaf377::Encoding(other.0)
-            .decompress()
+            .vartime_decompress()
             .map_err(|_| Error::InvalidPublic(*other))?;
 
-        Ok(SharedSecret((self.0 * pk).compress().into()))
+        Ok(SharedSecret((self.0 * pk).vartime_compress().into()))
     }
 
     /// Convert this shared secret to bytes.
