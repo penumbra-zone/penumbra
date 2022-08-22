@@ -33,13 +33,6 @@ pub struct Stats {
 }
 
 impl ChainCmd {
-    /// Determine if this command requires a network sync before it executes.
-    pub fn needs_sync(&self) -> bool {
-        // Always true, though strictly not necessary until chain parameters are
-        // determined by consensus.
-        true
-    }
-
     pub async fn print_chain_params<V: ViewClient>(&self, view: &mut V) -> Result<()> {
         let params = view.chain_params().await?;
 

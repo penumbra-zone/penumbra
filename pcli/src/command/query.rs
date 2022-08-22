@@ -39,7 +39,7 @@ impl QueryCmd {
         }
 
         if let QueryCmd::Chain(chain) = self {
-            return chain.print_chain_params(app.view()).await;
+            return chain.exec(app).await;
         }
 
         if let QueryCmd::Validator(validator) = self {
