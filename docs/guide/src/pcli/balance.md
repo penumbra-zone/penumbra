@@ -14,12 +14,12 @@ invocations of `pcli` commands don't need to wait.
 If someone sent you testnet assets, you should be able to see them now by running:
 
 ```bash
-cargo run --quiet --release --bin pcli balance
+cargo run --quiet --release --bin pcli view balance
 ```
 
 This will print a table of assets by balance in each.  The `balance` view just
 shows asset amounts. To see more information about delegation tokens and the stake they represent, use
 
 ```bash
-cargo run --quiet --release --bin pcli stake show
+cargo run --quiet --release --bin pcli view staked
 ```

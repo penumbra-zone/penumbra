@@ -21,7 +21,6 @@ the `#testnet-feedback` channel on our [Discord]. We would love to know about bu
 confusing error messages, or any of the many other things that inevitably won't quite work yet. Have
 fun! :)
 
-
 ### Diagnostics and Warnings
 
 By default, `pcli` prints a warning message to the terminal, to be sure that people understand that this is *unstable, unfinished, pre-release software*.

@@ -20,17 +20,20 @@ To join a testnet as a fullnode, check out the tag for the current testnet, run
 
 First, reset the testnet data from any prior testnet you may have joined:
 
-```
+```shell
 cargo run --bin pd --release -- testnet unsafe-reset-all
 ```
+
 This will delete the entire testnet data directory.
 
 ### Generating configs
 
 Next, generate a set of configs for the current testnet:
-```
+
+```shell
 cargo run --bin pd --release -- testnet join
 ```
+
 This command fetches the genesis file for the current testnet, and writes
 configs to a testnet data directory (by default, `~/.penumbra/testnet_data`).
 
@@ -42,21 +45,26 @@ the section below on resetting node state.
 Next, run `pd` with the `--home` parameter pointed at the correct part of the
 testnet data directory.  It's useful to set the `RUST_LOG` environment variable
 to get information about what it's doing:
-```
+
+```shell
 export RUST_LOG="warn,pd=debug,penumbra=debug" # or some other logging level
+```
+
+```shell
 cargo run --bin pd --release -- start --home ~/.penumbra/testnet_data/node0/pd
 ```
 
 Then (perhaps in another terminal), run Tendermint, also specifying `--home`:
-```
+
+```shell
 tendermint start --home ~/.penumbra/testnet_data/node0/tendermint
 ```
 
 Alternatively, `pd` and `tendermint` can be orchestrated with `docker-compose`:
-```
+
+```shell
 docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
-
 
 ## Joining as a validator
 
@@ -78,8 +86,9 @@ update the configuration for a validator.
 #### Creating a template definition
 
 To create a template configuration, use `pcli validator template-definition`:
+
 ```console
-\$ cargo run --release --bin pcli -- validator template-definition --file validator.json
+\$ cargo run --release --bin pcli -- validator definition template --file validator.json
 \$ cat validator.json
 {
   "identity_key": "penumbravalid1g2huds8klwypzczfgx67j7zp6ntq2m5fxmctkf7ja96zn49d6s9qz72hu3",
@@ -97,16 +106,17 @@ To create a template configuration, use `pcli validator template-definition`:
   "sequence_number": 0
 }
 ```
+
 and adjust the data like the name, website, description, etc as desired.
 
-The `enabled` field can be used to enable/disable your validator without facing slashing 
-penalties. Disabled validators can not appear in the active validator set and are ineligible for 
-rewards. 
+The `enabled` field can be used to enable/disable your validator without facing slashing
+penalties. Disabled validators can not appear in the active validator set and are ineligible for
+rewards.
 
-This is useful if, for example, you know your validator will not be online for a period of time, 
-and you want to avoid an uptime violation penalty. If you are uploading your validator for the 
-first time, you will likely want to start with it disabled until your Tendermint & `pd` 
-instances have caught up to the consensus block height. 
+This is useful if, for example, you know your validator will not be online for a period of time,
+and you want to avoid an uptime violation penalty. If you are uploading your validator for the
+first time, you will likely want to start with it disabled until your Tendermint & `pd`
+instances have caught up to the consensus block height.
 
 Note that by default the `enabled` field is set to false and will need to be
 enabled in order to activate one's validator.
@@ -142,13 +152,13 @@ After setting up metadata, funding streams, and the correct consensus key in
 your `validator.json`, you can upload it to the chain:
 
 ```console
-cargo run --release --bin pcli -- validator upload-definition --file validator.json
+cargo run --release --bin pcli -- validator definition upload --file validator.json
 ```
 
 And verify that it's known to the chain:
 
 ```console
-cargo run --release --bin pcli -- stake list-validators -i
+cargo run --release --bin pcli -- query validator list -i
 ```
 
 However your validator doesn't have anything delegated to it and will remain in
@@ -160,7 +170,7 @@ active set of validators.
 First find your validator's identity key:
 
 ```console
-cargo run --release --bin pcli -- stake list-validators -i
+cargo run --release --bin pcli -- validator identity
 ```
 
 And then delegate some amount of `penumbra` to it:
@@ -188,7 +198,7 @@ deployment.  You can find the values in use for the current chain in its
 First fetch your existing validator definition from the chain:
 
 ```console
-cargo run --release --bin pcli -- validator fetch-definition penumbravalid1dj3mgmje7z9mwu6rl9rplue2neqlc4zwls9a7w88vscwv88ltyqs8v6g9x --file validator.json
+cargo run --release --bin pcli -- validator definition fetch --file validator.json
 ```
 
 Then make any changes desired and **make sure to increase by `sequence_number` by at least 1!**
@@ -197,5 +207,5 @@ The `sequence_number` is a unique, increasing identifier for the version of the 
 After updating the validator definition you can upload it again to update your validator metadata on-chain:
 
 ```console
-cargo run --release --bin pcli -- validator upload-definition --file validator.json
+cargo run --release --bin pcli -- validator definition upload --file validator.json
 ```

@@ -27,30 +27,31 @@ application, which must be driven by Tendermint, so a Penumbra full node
 consists of both a `pd` instance and a `tendermint` instance.
 
 The basic architecture of Penumbra is as follows:
-```
-          ╭   ┌───────┐                
-  spending│   │custody│                
-capability│   │service│                
-          ╰   └───────┘                
-               ▲     │                 
-               │tx   │auth             
-               │plan │data             
-               │     ▼                 
-          ╭   ┌───────┐                
-   viewing│   │wallet │ tx submission  
-capability│   │logic  │────────┐       
-          │   └───────┘        │       
-          │    ▲               │       
-          │    │view private state     
-          │    │               │       
-          │    │               │       
-          │   ┌───────┐        │       
-          │   │view   │        │       
-          │   │service│        │       
-          ╰   └───────┘        │       
-               ▲               │       
-               │sync private state     
-               │               │       
+
+```text
+          ╭   ┌───────┐
+  spending│   │custody│
+capability│   │service│
+          ╰   └───────┘
+               ▲     │
+               │tx   │auth
+               │plan │data
+               │     ▼
+          ╭   ┌───────┐
+   viewing│   │wallet │ tx submission
+capability│   │logic  │────────┐
+          │   └───────┘        │
+          │    ▲               │
+          │    │view private state
+          │    │               │
+          │    │               │
+          │   ┌───────┐        │
+          │   │view   │        │
+          │   │service│        │
+          ╰   └───────┘        │
+               ▲               │
+               │sync private state
+               │               │
           ╭ ┌──┼───────────────┼──────┐
     public│ │  │     Penumbra Fullnode│
      chain│ │  │               │      │
@@ -60,17 +61,17 @@ capability│   │logic  │────────┐
           │ │ └──┘ sync  └──────────┘ │
           │ │               ▲         │
           ╰ └───────────────┼─────────┘
-                         .──│.         
-                       ,'   │ `.       
-                  .───;     │consensus 
-                 ;          │sync      
-               .─┤          │   ├──.   
-             ,'             │       `. 
+                         .──│.
+                       ,'   │ `.
+                  .───;     │consensus
+                 ;          │sync
+               .─┤          │   ├──.
+             ,'             │       `.
             ;   Penumbra    │         :
             :   Network  ◀──┘         ;
-             ╲                       ╱ 
-              `.     `.     `.     ,'  
-                `───'  `───'  `───'    
+             ╲                       ╱
+              `.     `.     `.     ,'
+                `───'  `───'  `───'
 ```
 
 The custody service holds signing keys and is responsible for authorizing
