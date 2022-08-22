@@ -12,6 +12,7 @@ use crate::App;
 // TODO: replace this with something more standard for the `query` subcommand
 #[derive(Debug, clap::Subcommand)]
 pub enum ValidatorCmd {
+    /// List all the validators in the network.
     List {
         /// Whether to show validators that are not currently part of the consensus set.
         #[clap(short = 'i', long)]
@@ -20,6 +21,7 @@ pub enum ValidatorCmd {
         #[clap(short, long)]
         detailed: bool,
     },
+    /// Fetch the current definition for a particular validator.
     Definition {
         /// The JSON file to write the definition to [default: stdout].
         #[clap(long)]
