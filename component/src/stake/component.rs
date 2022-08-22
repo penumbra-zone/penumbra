@@ -400,8 +400,7 @@ impl Staking {
                 .expect("delegation token should be known");
 
             // Calculate the voting power in the newly beginning epoch
-            let voting_power =
-                current_rate.voting_power(delegation_token_supply, &current_base_rate);
+            let voting_power = current_rate.voting_power(delegation_token_supply);
             tracing::debug!(?voting_power);
 
             // Update the state of the validator within the validator set
@@ -715,7 +714,7 @@ impl Staking {
             .get(&delegation_denom)
             .copied()
             .unwrap_or(0);
-        let power = cur_rate_data.voting_power(total_delegation_tokens, genesis_base_rate);
+        let power = cur_rate_data.voting_power(total_delegation_tokens);
 
         self.state
             .add_validator_inner(

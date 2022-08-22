@@ -130,11 +130,10 @@ impl RateData {
 
     /// Computes the validator's voting power at this epoch given the total supply of the
     /// validator's delegation tokens.
-    pub fn voting_power(&self, total_delegation_tokens: u64, base_rate_data: &BaseRateData) -> u64 {
-        ((total_delegation_tokens as u128 * self.validator_exchange_rate as u128)
-            / base_rate_data.base_exchange_rate as u128)
-            .try_into()
-            .unwrap()
+    pub fn voting_power(&self, total_delegation_tokens: u64) -> u64 {
+        total_delegation_tokens
+            .checked_mul(self.validator_exchange_rate)
+            .expect("voting power in possible range")
     }
 
     /// Uses this `RateData` to build a `Delegate` transaction action that
