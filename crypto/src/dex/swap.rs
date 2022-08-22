@@ -52,7 +52,7 @@ pub fn generate_swap_asset_id(
             trading_pair.asset_1().0,
             trading_pair.asset_2().0,
             packed_values,
-            b_d.compress_to_field(),
+            b_d.vartime_compress_to_field(),
             // TODO: if we use Address type there's a method to get the field element infallibly
             Fq::from_bytes(pk_d.0)?,
         ),

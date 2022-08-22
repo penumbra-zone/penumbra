@@ -34,7 +34,7 @@ impl DetectionKey {
     /// correctly.
     pub fn from_field(dtk: Fr) -> Self {
         let root_pub = dtk * decaf377::basepoint();
-        let root_pub_enc = root_pub.compress();
+        let root_pub_enc = root_pub.vartime_compress();
 
         let xs: [_; MAX_PRECISION] = (0..MAX_PRECISION)
             .into_iter()
@@ -67,7 +67,7 @@ impl DetectionKey {
 
     /// Obtain the clue key corresponding to this detection key.
     pub fn clue_key(&self) -> ClueKey {
-        ClueKey((self.dtk * decaf377::basepoint()).compress().0)
+        ClueKey((self.dtk * decaf377::basepoint()).vartime_compress().0)
     }
 
     /// Use this detection key to examine the given `clue`, returning `true` if the
@@ -81,7 +81,7 @@ impl DetectionKey {
     pub fn examine(&self, clue: &Clue) -> bool {
         let P_encoding = decaf377::Encoding::try_from(&clue.0[0..32]).expect("slice is right len");
 
-        let P = if let Ok(P) = P_encoding.decompress() {
+        let P = if let Ok(P) = P_encoding.vartime_decompress() {
             P
         } else {
             // Invalid P encoding => not a match
@@ -108,10 +108,10 @@ impl DetectionKey {
             .expect("slice len = 3 is not long enough to overflow");
 
         let m = hash::to_scalar(&P_encoding.0, precision_bits, &clue.0[65..68]);
-        let Q_bytes = ((y * P) + (m * decaf377::basepoint())).compress();
+        let Q_bytes = ((y * P) + (m * decaf377::basepoint())).vartime_compress();
 
         for i in 0..(precision_bits as usize) {
-            let Px_i = (P * self.xs[i]).compress();
+            let Px_i = (P * self.xs[i]).vartime_compress();
             let key_i = hash::to_bit(&P_encoding.0, &Px_i.0, &Q_bytes.0);
             let msg_i = (ciphertexts[i] as u8) ^ key_i;
             // Short-circuit if we get a zero; this branch is dependent on the

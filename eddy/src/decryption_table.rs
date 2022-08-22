@@ -66,7 +66,7 @@ pub trait DecryptionTable: Send + Sync {
 
             let bound = 1 << k;
             while x < bound {
-                self.store(xB.compress().0, x).await?;
+                self.store(xB.vartime_compress().0, x).await?;
                 x += 1;
                 xB += B;
             }

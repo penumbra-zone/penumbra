@@ -14,6 +14,7 @@ use ibc::core::ics04_channel::msgs::timeout::MsgTimeout;
 use penumbra_storage::State;
 use tracing::instrument;
 
+#[allow(dead_code)]
 pub struct ICS20Transfer {
     state: State,
 }

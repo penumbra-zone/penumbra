@@ -190,7 +190,7 @@ impl From<SpendProof> for transparent_proofs::SpendProof {
         let nk_bytes: [u8; 32] = msg.nk.0.to_bytes();
         transparent_proofs::SpendProof {
             note_commitment_proof: Some(msg.note_commitment_proof.into()),
-            g_d: msg.g_d.compress().0.to_vec(),
+            g_d: msg.g_d.vartime_compress().0.to_vec(),
             pk_d: msg.pk_d.0.to_vec(),
             value_amount: msg.value.amount,
             value_asset_id: msg.value.asset_id.0.to_bytes().to_vec(),
@@ -231,7 +231,7 @@ impl TryFrom<transparent_proofs::SpendProof> for SpendProof {
                 .try_into()
                 .map_err(|_| anyhow!("proto malformed"))?,
             g_d: g_d_encoding
-                .decompress()
+                .vartime_decompress()
                 .map_err(|_| anyhow!("proto malformed"))?,
             pk_d: ka::Public(
                 proto
@@ -282,7 +282,7 @@ impl Protobuf<transparent_proofs::OutputProof> for OutputProof {}
 impl From<OutputProof> for transparent_proofs::OutputProof {
     fn from(msg: OutputProof) -> Self {
         transparent_proofs::OutputProof {
-            g_d: msg.g_d.compress().0.to_vec(),
+            g_d: msg.g_d.vartime_compress().0.to_vec(),
             pk_d: msg.pk_d.0.to_vec(),
             value_amount: msg.value.amount,
             value_asset_id: msg.value.asset_id.0.to_bytes().to_vec(),
@@ -316,7 +316,7 @@ impl TryFrom<transparent_proofs::OutputProof> for OutputProof {
 
         Ok(OutputProof {
             g_d: g_d_encoding
-                .decompress()
+                .vartime_decompress()
                 .map_err(|_| anyhow!("proto malformed"))?,
             pk_d: ka::Public(
                 proto
@@ -571,7 +571,7 @@ impl From<SwapClaimProof> for transparent_proofs::SwapClaimProof {
         let nk_bytes: [u8; 32] = msg.nk.0.to_bytes();
         transparent_proofs::SwapClaimProof {
             note_commitment_proof: Some(msg.note_commitment_proof.into()),
-            b_d: msg.b_d.compress().0.to_vec(),
+            b_d: msg.b_d.vartime_compress().0.to_vec(),
             pk_d: msg.pk_d.0.to_vec(),
             trading_pair: Some(msg.trading_pair.into()),
             delta_1: msg.delta_1,
@@ -631,7 +631,7 @@ impl TryFrom<transparent_proofs::SwapClaimProof> for SwapClaimProof {
                 .try_into()
                 .map_err(|_| anyhow!("proto malformed"))?,
             b_d: b_d_encoding
-                .decompress()
+                .vartime_decompress()
                 .map_err(|_| anyhow!("proto malformed"))?,
             pk_d: ka::Public(
                 proto
@@ -707,8 +707,8 @@ impl SwapProof {
     /// * the ephemeral public key used to generate the new swap NFT note.
     pub fn verify(
         &self,
-        value_1_commitment: value::Commitment,
-        value_2_commitment: value::Commitment,
+        _value_1_commitment: value::Commitment,
+        _value_2_commitment: value::Commitment,
         value_fee_commitment: value::Commitment,
         note_commitment: note::Commitment,
         epk: ka::Public,
@@ -775,7 +775,7 @@ impl Protobuf<transparent_proofs::SwapProof> for SwapProof {}
 impl From<SwapProof> for transparent_proofs::SwapProof {
     fn from(msg: SwapProof) -> Self {
         transparent_proofs::SwapProof {
-            b_d: msg.b_d.compress().0.to_vec(),
+            b_d: msg.b_d.vartime_compress().0.to_vec(),
             pk_d: msg.pk_d.0.to_vec(),
             delta_1: msg.value_t1.amount,
             t1: msg.value_t1.asset_id.0.to_bytes().to_vec(),
@@ -816,11 +816,11 @@ impl TryFrom<transparent_proofs::SwapProof> for SwapProof {
             Fr::from_bytes(esk_bytes).map_err(|_| anyhow!("proto malformed"))?,
         );
 
-        let pen_denom = asset::REGISTRY.parse_denom("upenumbra").unwrap();
+        let _pen_denom = asset::REGISTRY.parse_denom("upenumbra").unwrap();
 
         Ok(SwapProof {
             b_d: b_d_encoding
-                .decompress()
+                .vartime_decompress()
                 .map_err(|_| anyhow!("proto malformed"))?,
             pk_d: ka::Public(
                 proto

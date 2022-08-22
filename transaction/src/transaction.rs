@@ -139,7 +139,7 @@ impl Transaction {
         value_commitments -= fee_value_commitment.0;
 
         let binding_verification_key_bytes: VerificationKeyBytes<Binding> =
-            value_commitments.compress().0.into();
+            value_commitments.vartime_compress().0.into();
 
         binding_verification_key_bytes
             .try_into()
