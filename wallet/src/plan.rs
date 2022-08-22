@@ -1,3 +1,4 @@
+use rand_core::OsRng;
 use std::collections::{BTreeMap, HashMap};
 
 use anyhow::Result;
@@ -442,6 +443,9 @@ where
         return Ok(plan);
     }
 
+    // Use a random ephemeral address for claiming the swap.
+    let (claim_address, _dtk) = fvk.incoming().ephemeral_address(OsRng);
+
     // Add a `SwapPlan` action:
     plan.actions.push(
         SwapPlan::new(
@@ -450,9 +454,7 @@ where
             delta_1,
             delta_2,
             Fee(fee),
-            // The `fvk` is always the claim address.
-            // TODO: this should probably select a random address index.
-            fvk.incoming().payment_address(0u64.into()).0,
+            claim_address,
         )
         .into(),
     );
