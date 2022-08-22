@@ -81,6 +81,7 @@ fn transaction_send_from_addr_0_to_addr_1() {
         .args(&[
             "--data-path",
             tmpdir.path().to_str().unwrap(),
+            "view",
             "balance",
             "--by-address",
         ])
