@@ -14,10 +14,13 @@ use staked::StakedCmd;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum ViewCmd {
-    /// Show one of your addresses, either by numerical index, or a random ephemeral one.
+    /// View one of your addresses, either by numerical index, or a random ephemeral one.
     Address(AddressCmd),
+    /// View your account balances.
     Balance(BalanceCmd),
+    /// View your staked delegation tokens.
     Staked(StakedCmd),
+    /// Deletes all scanned data and local state, while leaving keys untouched.
     Reset,
     /// Synchronizes the client, privately scanning the chain state.
     ///

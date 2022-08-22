@@ -9,7 +9,8 @@ use crate::App;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum TxCmd {
-    /// Send transaction to the node.
+    /// Send funds to a Penumbra address.
+    #[clap(display_order = 100)]
     Send {
         /// The destination address to send funds to.
         #[clap(long)]
@@ -26,35 +27,8 @@ pub enum TxCmd {
         #[clap(long)]
         memo: Option<String>,
     },
-    /// Sweeps small notes of the same denomination into a few larger notes.
-    ///
-    /// Since Penumbra transactions reveal their arity (how many spends,
-    /// outputs, etc), but transactions are unlinkable from each other, it is
-    /// slightly preferable to sweep small notes into larger ones in an isolated
-    /// "sweep" transaction, rather than at the point that they should be spent.
-    ///
-    /// Currently, only zero-fee sweep transactions are implemented.
-    Sweep,
-    /// Submit a new Swap to the chain which will burn input assets and allow a future SwapClaim for the given Swap NFT.
-    /// Only the first asset has an input amount specified, as in typical usage, the second asset is always
-    /// the asset that the submitter wants to swap the first for.
-    ///
-    /// Swaps are automatically claimed.
-    Swap {
-        /// Asset ID of the first input asset.
-        asset_1_id: String,
-        /// The amount of asset 1 to burn as part of the swap.
-        asset_1_input_amount: String,
-        /// Asset ID of the second input asset.
-        asset_2_id: String,
-        /// The transaction fee (paid in upenumbra).
-        #[clap(long, default_value = "0")]
-        fee: u64,
-        /// Optional. Only spend funds originally received by the given address index.
-        #[clap(long)]
-        source: Option<u64>,
-    },
     /// Deposit stake into a validator's delegation pool.
+    #[clap(display_order = 200)]
     Delegate {
         /// The identity key of the validator to delegate to.
         #[clap(long)]
@@ -69,6 +43,7 @@ pub enum TxCmd {
         source: Option<u64>,
     },
     /// Withdraw stake from a validator's delegation pool.
+    #[clap(display_order = 200)]
     Undelegate {
         /// The amount of delegation tokens to undelegate.
         amount: String,
@@ -80,6 +55,7 @@ pub enum TxCmd {
         source: Option<u64>,
     },
     /// Redelegate stake from one validator's delegation pool to another.
+    #[clap(display_order = 200)]
     Redelegate {
         /// The identity key of the validator to withdraw delegation from.
         #[clap(long)]
@@ -96,6 +72,32 @@ pub enum TxCmd {
         #[clap(long)]
         source: Option<u64>,
     },
+    /// Swap tokens of one denomination for another using the DEX.
+    #[clap(display_order = 300)]
+    Swap {
+        /// Asset ID of the first input asset.
+        asset_1_id: String,
+        /// The amount of asset 1 to burn as part of the swap.
+        asset_1_input_amount: String,
+        /// Asset ID of the second input asset.
+        asset_2_id: String,
+        /// The transaction fee (paid in upenumbra).
+        #[clap(long, default_value = "0")]
+        fee: u64,
+        /// Optional. Only spend funds originally received by the given address index.
+        #[clap(long)]
+        source: Option<u64>,
+    },
+    /// Consolidate many small notes into a few larger notes.
+    ///
+    /// Since Penumbra transactions reveal their arity (how many spends,
+    /// outputs, etc), but transactions are unlinkable from each other, it is
+    /// slightly preferable to sweep small notes into larger ones in an isolated
+    /// "sweep" transaction, rather than at the point that they should be spent.
+    ///
+    /// Currently, only zero-fee sweep transactions are implemented.
+    #[clap(display_order = 990)]
+    Sweep,
 }
 
 impl TxCmd {
