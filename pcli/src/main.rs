@@ -95,11 +95,12 @@ async fn main() -> Result<()> {
     // The wallet command takes the data dir directly, since it may need to
     // create the client state, so handle it specially here so that we can have
     // common code for the other subcommands.
-    if let Command::Wallet(wallet_cmd) = &opt.cmd {
-        wallet_cmd.exec(opt.data_path.as_path())?;
+    if let Command::Keys(keys_cmd) = &opt.cmd {
+        keys_cmd.exec(opt.data_path.as_path())?;
         return Ok(());
     }
 
+    let data_path = opt.data_path.clone();
     let (mut app, cmd) = opt.into_app().await?;
 
     if cmd.needs_sync() {
@@ -111,17 +112,20 @@ async fn main() -> Result<()> {
     // concrete type
 
     match &cmd {
-        Command::Wallet(_) => unreachable!("wallet command already executed"),
+        Command::Keys(_) => unreachable!("wallet command already executed"),
         Command::Sync => {
             // We have already synchronized the wallet above, so we can just return.
         }
         Command::Tx(tx_cmd) => tx_cmd.exec(&mut app).await?,
-        Command::Addr(addr_cmd) => addr_cmd.exec(&app.fvk)?,
-        Command::Balance(balance_cmd) => balance_cmd.exec(&app.fvk, &mut app.view).await?,
+        Command::View(view_cmd) => {
+            let mut oblivious_client = app.oblivious_client().await?;
+
+            view_cmd
+                .exec(&app.fvk, &mut app.view, &mut oblivious_client, &data_path)
+                .await?
+        }
         Command::Validator(cmd) => cmd.exec(&mut app).await?,
-        Command::Stake(cmd) => cmd.exec(&mut app).await?,
-        Command::Chain(cmd) => cmd.exec(&mut app).await?,
-        Command::Q(cmd) => cmd.exec(&mut app).await?,
+        Command::Query(cmd) => cmd.exec(&mut app).await?,
     }
 
     Ok(())
