@@ -11,7 +11,7 @@ All integer values should be interpreted as unsigned 64-bit integers, with the
 exception of the validator's commission rate, which is a `u16` specified in
 terms of basis points (one one-hundredth of a percent, or in other words, an
 implicit denominator of $10^{4}$). All integer values, with the exception of the
-validator's commission rate, have an implicit denominator of $10^8$. 
+validator's commission rate, have an implicit denominator of $10^8$.
 
 Throughout this spec *representations* are referred to as $\mathtt x$, where
 $\mathtt x = x \cdot 10^{8}$, and the *value* represented by representations is
@@ -19,7 +19,7 @@ $x = \mathtt x \cdot 10^{-8}$.
 
 As an example, let's take a starting value $\mathtt x$ represented in our scheme (so,
 $x \cdot 10^8$) and compute its product with $y$, also represented by our fixed point
-scheme, so $y \cdot 10^8$. The product $\mathtt x \mathtt y$ is computed as 
+scheme, so $y \cdot 10^8$. The product $\mathtt x \mathtt y$ is computed as
 
 $$\left\lfloor \frac{(x 10^8)(y 10^8)}{10^{8}} \right\rfloor = \left\lfloor \frac{\mathtt x \mathtt y}{10^{8}} \right\rfloor$$
 
@@ -78,4 +78,4 @@ $$\mathtt {psi}_v(e) = \left\lfloor \frac {\mathtt {psi}_v(e-1) \cdot (10^8 + \m
 
 Finally, to compute the validator's voting power, take:
 
-$$\mathtt {iota}_v(e) = \left\lfloor \mathtt y_v \cdot \frac{ \mathtt {psi}_v(e)}{\mathtt {psi}(e)} \right\rfloor$$
+$$\mathtt {iota}_v(e) = \left\lfloor \mathtt y_v \cdot \mathtt {psi}_v(e) \right\rfloor$$
