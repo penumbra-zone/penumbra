@@ -28,12 +28,6 @@ pub enum Command {
     /// typed data with a subcommand for a particular component.
     #[clap(subcommand)]
     Query(QueryCmd),
-    ///
-    /// Synchronizes the client, privately scanning the chain state.
-    ///
-    /// `pcli` syncs automatically prior to any action requiring chain state,
-    /// but this command can be used to "pre-sync" before interactive use.
-    Sync,
     /// Manage a validator.
     #[clap(subcommand)]
     Validator(ValidatorCmd),
@@ -46,7 +40,6 @@ impl Command {
             Command::Tx(cmd) => cmd.needs_sync(),
             Command::View(cmd) => cmd.needs_sync(),
             Command::Keys(cmd) => cmd.needs_sync(),
-            Command::Sync => true,
             Command::Validator(cmd) => cmd.needs_sync(),
             Command::Query(_) => false,
         }

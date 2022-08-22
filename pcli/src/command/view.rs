@@ -19,6 +19,11 @@ pub enum ViewCmd {
     Balance(BalanceCmd),
     Staked(StakedCmd),
     Reset,
+    /// Synchronizes the client, privately scanning the chain state.
+    ///
+    /// `pcli` syncs automatically prior to any action requiring chain state,
+    /// but this command can be used to "pre-sync" before interactive use.
+    Sync,
 }
 
 impl ViewCmd {
@@ -28,6 +33,7 @@ impl ViewCmd {
             ViewCmd::Balance(balance_cmd) => balance_cmd.needs_sync(),
             ViewCmd::Staked(staked_cmd) => staked_cmd.needs_sync(),
             ViewCmd::Reset => false,
+            ViewCmd::Sync => true,
         }
     }
 
@@ -39,6 +45,10 @@ impl ViewCmd {
         data_path: impl AsRef<camino::Utf8Path>,
     ) -> Result<()> {
         match self {
+            ViewCmd::Sync => {
+                // We set needs_sync() -> true, so by this point, we have
+                // already synchronized the wallet above, so we can just return.
+            }
             ViewCmd::Reset => {
                 tracing::info!("resetting client state");
                 let view_path = data_path.as_ref().join(crate::VIEW_FILE_NAME);
