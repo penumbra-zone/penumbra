@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Context, Result};
 use penumbra_component::stake::rate::RateData;
-use penumbra_crypto::{DelegationToken, IdentityKey, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_crypto::{asset, DelegationToken, IdentityKey, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_view::ViewClient;
 use penumbra_wallet::plan;
 use rand_core::OsRng;
@@ -73,15 +73,23 @@ pub enum TxCmd {
         source: Option<u64>,
     },
     /// Swap tokens of one denomination for another using the DEX.
+    ///
+    /// Swaps are batched and executed at the market-clearing price.
+    ///
+    /// A swap generates two transactions: an initial "swap" transaction that
+    /// submits the swap, and a "swap claim" transaction that privately mints
+    /// the output funds once the batch has executed.  The second transaction
+    /// will be created and submitted automatically.
     #[clap(display_order = 300)]
     Swap {
-        /// Asset ID of the first input asset.
-        asset_1_id: String,
-        /// The amount of asset 1 to burn as part of the swap.
-        asset_1_input_amount: String,
-        /// Asset ID of the second input asset.
-        asset_2_id: String,
+        /// The input amount to swap, written as a typed value 1.87penumbra, 12cubes, etc.
+        input: String,
+        /// The denomination to swap the input into.
+        #[clap(long)]
+        into: String,
         /// The transaction fee (paid in upenumbra).
+        ///
+        /// A swap generates two transactions; the fee will be split equally over both.
         #[clap(long, default_value = "0")]
         fee: u64,
         /// Optional. Only spend funds originally received by the given address index.
@@ -161,13 +169,9 @@ impl TxCmd {
                     tokio::time::sleep(std::time::Duration::from_secs(6)).await;
                 }
             },
-            TxCmd::Swap {
-                asset_1_id: _,
-                asset_1_input_amount: _,
-                asset_2_id: _,
-                fee: _,
-                source: _,
-            } => {
+            TxCmd::Swap { input, into, .. } => {
+                let _input = input.parse::<Value>()?;
+                let _into = asset::REGISTRY.parse_unit(into.as_str());
                 println!("Sorry, this command is not yet implemented");
             }
             TxCmd::Delegate {
