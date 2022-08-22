@@ -40,6 +40,7 @@ pub struct SwapClaimPlan {
 impl SwapClaimPlan {
     /// Create a new [`SwapClaimPlan`] that redeems output notes to `claim_address` using
     /// the associated swap NFT.
+    #[allow(clippy::too_many_arguments)]
     pub fn new<R: RngCore + CryptoRng>(
         rng: &mut R,
         swap_nft_note: Note,

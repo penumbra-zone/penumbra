@@ -71,6 +71,18 @@ impl From<OutputPlan> for ActionPlan {
     }
 }
 
+impl From<SwapPlan> for ActionPlan {
+    fn from(inner: SwapPlan) -> ActionPlan {
+        ActionPlan::Swap(inner)
+    }
+}
+
+impl From<SwapClaimPlan> for ActionPlan {
+    fn from(inner: SwapClaimPlan) -> ActionPlan {
+        ActionPlan::SwapClaim(inner)
+    }
+}
+
 impl From<Delegate> for ActionPlan {
     fn from(inner: Delegate) -> ActionPlan {
         ActionPlan::Delegate(inner)
