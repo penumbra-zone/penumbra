@@ -21,7 +21,7 @@ pub enum ValidatorCmd {
         detailed: bool,
     },
     Definition {
-        /// The JSON file to write the template to [default: stdout].
+        /// The JSON file to write the definition to [default: stdout].
         #[clap(long)]
         file: Option<String>,
         /// The identity key of the validator to fetch.
