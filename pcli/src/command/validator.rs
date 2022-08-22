@@ -1,7 +1,6 @@
 use std::{fs::File, io::Write};
 
 use anyhow::{Context, Result};
-use futures::TryStreamExt;
 use penumbra_component::stake::{validator, validator::Validator, FundingStream, FundingStreams};
 use penumbra_crypto::IdentityKey;
 use penumbra_proto::{stake::Validator as ProtoValidator, Message};
@@ -14,9 +13,16 @@ use crate::App;
 pub enum ValidatorCmd {
     /// Display the validator identity key derived from this wallet's spend seed.
     Identity,
+    /// Manage your validator's definition.
+    #[clap(subcommand)]
+    Definition(DefinitionCmd),
+}
+
+#[derive(Debug, clap::Subcommand)]
+pub enum DefinitionCmd {
     /// Create a ValidatorDefinition transaction to create or update a validator.
-    UploadDefinition {
-        /// The JSON file containing the ValidatorDefinition to upload
+    Upload {
+        /// The JSON file containing the ValidatorDefinition to upload.
         #[clap(long)]
         file: String,
         /// The transaction fee (paid in upenumbra).
@@ -30,18 +36,16 @@ pub enum ValidatorCmd {
     ///
     /// The validator identity field will be prepopulated with the validator
     /// identity key derived from this wallet's seed phrase.
-    TemplateDefinition {
-        /// The JSON file to write the template to.
+    Template {
+        /// The JSON file to write the template to [default: stdout].
         #[clap(long)]
-        file: String,
+        file: Option<String>,
     },
-    /// Fetches a validator's current definition and saves it to a file.
-    FetchDefinition {
-        /// The JSON file to write the template to.
+    /// Fetches the definition for your validator.
+    Fetch {
+        /// The JSON file to write the definition to [default: stdout].
         #[clap(long)]
-        file: String,
-        /// The identity key of the validator to fetch.
-        identity_key: String,
+        file: Option<String>,
     },
 }
 
@@ -49,9 +53,10 @@ impl ValidatorCmd {
     pub fn needs_sync(&self) -> bool {
         match self {
             ValidatorCmd::Identity => false,
-            ValidatorCmd::UploadDefinition { .. } => true,
-            ValidatorCmd::TemplateDefinition { .. } => false,
-            ValidatorCmd::FetchDefinition { .. } => false,
+            ValidatorCmd::Definition(DefinitionCmd::Upload { .. }) => true,
+            ValidatorCmd::Definition(
+                DefinitionCmd::Template { .. } | DefinitionCmd::Fetch { .. },
+            ) => false,
         }
     }
 
@@ -65,7 +70,7 @@ impl ValidatorCmd {
 
                 println!("{}", ik);
             }
-            ValidatorCmd::UploadDefinition { file, fee, source } => {
+            ValidatorCmd::Definition(DefinitionCmd::Upload { file, fee, source }) => {
                 // The definitions are stored in a JSON document,
                 // however for ease of use it's best for us to generate
                 // the signature here based on the configured wallet.
@@ -98,7 +103,7 @@ impl ValidatorCmd {
                 // never appear on-chain.
                 println!("Uploaded validator definition");
             }
-            ValidatorCmd::TemplateDefinition { file } => {
+            ValidatorCmd::Definition(DefinitionCmd::Template { file }) => {
                 let (address, _dtk) = fvk.incoming().payment_address(0u64.into());
                 let identity_key = IdentityKey(fvk.spend_verification_key().clone());
                 // Generate a random consensus key.
@@ -123,61 +128,23 @@ impl ValidatorCmd {
                     sequence_number: 0,
                 };
 
-                File::create(file)
-                    .with_context(|| format!("cannot create file {:?}", file))?
-                    .write_all(&serde_json::to_vec_pretty(&template)?)
-                    .context("could not write file")?;
+                if let Some(file) = file {
+                    File::create(file)
+                        .with_context(|| format!("cannot create file {:?}", file))?
+                        .write_all(&serde_json::to_vec_pretty(&template)?)
+                        .context("could not write file")?;
+                } else {
+                    println!("{}", serde_json::to_string_pretty(&template)?);
+                }
             }
-            ValidatorCmd::FetchDefinition { file, identity_key } => {
-                let identity_key = identity_key.parse::<IdentityKey>()?;
-
-                /*
-                use penumbra_proto::client::specific::ValidatorStatusRequest;
-
-                let mut client = opt.specific_client().await?;
-                let status: ValidatorStatus = client
-                    .validator_status(ValidatorStatusRequest {
-                        chain_id: "".to_string(), // TODO: fill in
-                        identity_key: Some(identity_key.into()),
-                    })
-                    .await?
-                    .into_inner()
-                    .try_into()?;
-
-                // why isn't the validator definition part of the status?
-                // why do we have all these different validator messages?
-                // do we need them?
-                status.state.
-                */
-
-                // Intsead just download everything
-                let mut client = app.oblivious_client().await?;
-
-                use penumbra_proto::client::oblivious::ValidatorInfoRequest;
-                let validators = client
-                    .validator_info(ValidatorInfoRequest {
-                        show_inactive: true,
-                        ..Default::default()
-                    })
-                    .await?
-                    .into_inner()
-                    .try_collect::<Vec<_>>()
-                    .await?
-                    .into_iter()
-                    .map(TryInto::try_into)
-                    .collect::<Result<Vec<validator::Info>, _>>()?;
-
-                let validator = validators
-                    .iter()
-                    .map(|info| &info.validator)
-                    .find(|v| v.identity_key == identity_key)
-                    .cloned()
-                    .ok_or_else(|| anyhow::anyhow!("Could not find validator {}", identity_key))?;
-
-                File::create(file)
-                    .with_context(|| format!("cannot create file {:?}", file))?
-                    .write_all(&serde_json::to_vec_pretty(&validator)?)
-                    .context("could not write file")?;
+            ValidatorCmd::Definition(DefinitionCmd::Fetch { file }) => {
+                let identity_key = IdentityKey(fvk.spend_verification_key().clone());
+                super::query::ValidatorCmd::Definition {
+                    file: file.clone(),
+                    identity_key: identity_key.to_string(),
+                }
+                .exec(app)
+                .await?;
             }
         }
 

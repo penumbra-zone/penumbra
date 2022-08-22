@@ -7,7 +7,7 @@ use tx::Tx;
 mod chain;
 use chain::ChainCmd;
 mod validator;
-use validator::ValidatorCmd;
+pub(super) use validator::ValidatorCmd;
 
 use crate::App;
 
