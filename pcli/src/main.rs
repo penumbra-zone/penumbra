@@ -113,7 +113,7 @@ async fn main() -> Result<()> {
 
     match &cmd {
         Command::Keys(_) => unreachable!("wallet command already executed"),
-        Command::Tx(tx_cmd) => tx_cmd.exec(&mut app).await?,
+        Command::Transaction(tx_cmd) => tx_cmd.exec(&mut app).await?,
         Command::View(view_cmd) => {
             let mut oblivious_client = app.oblivious_client().await?;
 
