@@ -128,6 +128,12 @@ pub enum AddressIndex {
     Random([u8; 16]),
 }
 
+impl Default for AddressIndex {
+    fn default() -> Self {
+        AddressIndex::Numeric(0)
+    }
+}
+
 // Workaround for https://github.com/mcarton/rust-derivative/issues/91
 impl Debug for AddressIndex {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

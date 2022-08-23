@@ -1,7 +1,10 @@
+use std::fs::File;
+
 use anyhow::{anyhow, Context, Result};
 use penumbra_component::stake::rate::RateData;
 use penumbra_crypto::{asset, DelegationToken, IdentityKey, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_proto::view::NotesRequest;
+use penumbra_transaction::action::Proposal;
 use penumbra_view::SpendableNoteRecord;
 use penumbra_view::ViewClient;
 use penumbra_wallet::plan;
@@ -98,6 +101,19 @@ pub enum TxCmd {
         #[clap(long)]
         source: Option<u64>,
     },
+    /// Propose a new governance vote, escrowing a proposal deposit until voting concludes.
+    #[clap(display_order = 400)]
+    Propose {
+        /// The proposal to vote on, in JSON format.
+        #[clap(long)]
+        file: camino::Utf8PathBuf,
+        /// The transaction fee (paid in upenumbra).
+        #[clap(long, default_value = "0")]
+        fee: u64,
+        /// Optional. Only spend funds originally received by the given address index.
+        #[clap(long)]
+        source: Option<u64>,
+    },
     /// Consolidate many small notes into a few larger notes.
     ///
     /// Since Penumbra transactions reveal their arity (how many spends,
@@ -120,6 +136,7 @@ impl TxCmd {
             TxCmd::Delegate { .. } => true,
             TxCmd::Undelegate { .. } => true,
             TxCmd::Redelegate { .. } => true,
+            TxCmd::Propose { .. } => true,
         }
     }
 
@@ -359,6 +376,12 @@ impl TxCmd {
             }
             TxCmd::Redelegate { .. } => {
                 println!("Sorry, this command is not yet implemented");
+            }
+            TxCmd::Propose { file, fee, source } => {
+                let proposal: Proposal = serde_json::from_reader(File::open(&file)?)?;
+                let plan =
+                    plan::propose(&app.fvk, &mut app.view, OsRng, proposal, *fee, *source).await?;
+                app.build_and_submit_transaction(plan).await?;
             }
         }
         Ok(())
