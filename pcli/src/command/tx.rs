@@ -169,10 +169,23 @@ impl TxCmd {
                     tokio::time::sleep(std::time::Duration::from_secs(6)).await;
                 }
             },
-            TxCmd::Swap { input, into, .. } => {
-                let _input = input.parse::<Value>()?;
-                let _into = asset::REGISTRY.parse_unit(into.as_str());
-                println!("Sorry, this command is not yet implemented");
+            TxCmd::Swap {
+                input,
+                into,
+                fee,
+                source,
+            } => {
+                let input = input.parse::<Value>()?;
+                // TODO: should we swap with specific units or the base denom only?
+                // This is unclear until the dex is further along.
+                let into = asset::REGISTRY.parse_unit(into.as_str()).base();
+
+                let plan =
+                    plan::swap(&app.fvk, &mut app.view, OsRng, input, into, *fee, *source).await?;
+
+                app.build_and_submit_transaction(plan).await?;
+
+                // TODO: wait until the swap is confirmed and then perform a SwapClaim automatically
             }
             TxCmd::Delegate {
                 to,
