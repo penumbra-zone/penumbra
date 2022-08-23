@@ -14,7 +14,7 @@ mod action;
 mod auth;
 mod build;
 
-pub use action::{ActionPlan, DelegatorVotePlan, OutputPlan, SpendPlan};
+pub use action::{ActionPlan, DelegatorVotePlan, OutputPlan, SpendPlan, SwapClaimPlan, SwapPlan};
 
 /// A declaration of a planned [`Transaction`](crate::Transaction),
 /// for use in transaction authorization and creation.
@@ -133,6 +133,26 @@ impl TransactionPlan {
     pub fn validator_votes(&self) -> impl Iterator<Item = &ValidatorVoteBody> {
         self.actions.iter().filter_map(|action| {
             if let ActionPlan::ValidatorVote(v) = action {
+                Some(v)
+            } else {
+                None
+            }
+        })
+    }
+
+    pub fn swaps(&self) -> impl Iterator<Item = &SwapPlan> {
+        self.actions.iter().filter_map(|action| {
+            if let ActionPlan::Swap(v) = action {
+                Some(v)
+            } else {
+                None
+            }
+        })
+    }
+
+    pub fn swap_claims(&self) -> impl Iterator<Item = &SwapClaimPlan> {
+        self.actions.iter().filter_map(|action| {
+            if let ActionPlan::SwapClaim(v) = action {
                 Some(v)
             } else {
                 None
