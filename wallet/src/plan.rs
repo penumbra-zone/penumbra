@@ -6,12 +6,13 @@ use penumbra_component::stake::rate::RateData;
 use penumbra_component::stake::validator;
 use penumbra_crypto::{
     asset::Denom, dex::swap::SwapPlaintext, dex::TradingPair, keys::AddressIndex,
-    memo::MemoPlaintext, transaction::Fee, Address, DelegationToken, FullViewingKey, Note, Value,
-    STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
+    memo::MemoPlaintext, transaction::Fee, Address, DelegationToken, FieldExt, Fr, FullViewingKey,
+    Note, Value, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
 };
 use penumbra_proto::view::NotesRequest;
-use penumbra_transaction::plan::{
-    ActionPlan, OutputPlan, SpendPlan, SwapClaimPlan, SwapPlan, TransactionPlan,
+use penumbra_transaction::{
+    action::{Proposal, ProposalSubmit},
+    plan::{ActionPlan, OutputPlan, SpendPlan, SwapClaimPlan, SwapPlan, TransactionPlan},
 };
 use penumbra_view::{SpendableNoteRecord, ViewClient};
 use rand_core::{CryptoRng, RngCore};
@@ -764,4 +765,149 @@ where
     }
 
     Ok(plans)
+}
+
+#[instrument(skip(fvk, view, rng))]
+pub async fn propose<V, R>(
+    fvk: &FullViewingKey,
+    view: &mut V,
+    mut rng: R,
+    proposal: Proposal,
+    fee: u64,
+    source_address: Option<u64>,
+) -> anyhow::Result<TransactionPlan>
+where
+    V: ViewClient,
+    R: RngCore + CryptoRng,
+{
+    let chain_params = view.chain_params().await?;
+    let chain_id = chain_params.chain_id;
+    let deposit_amount = chain_params.proposal_deposit_amount;
+
+    tracing::debug!(?proposal, ?fee, ?source_address);
+
+    let mut plan = TransactionPlan {
+        chain_id,
+        fee: Fee(fee),
+        ..Default::default()
+    };
+
+    // The deposit refund address should be an ephemeral address
+    let deposit_refund_address = fvk.incoming().ephemeral_address(&mut rng).0;
+
+    // The proposal withdraw verification key is the spend auth verification key randomized by the
+    // deposit refund address's address index
+    let withdraw_proposal_key = {
+        // Use the fvk to get the original address index of the diversifier
+        let deposit_refund_address_index = fvk
+            .incoming()
+            .index_for_diversifier(deposit_refund_address.diversifier());
+
+        // Convert this to a vector
+        let mut deposit_refund_address_index_bytes =
+            deposit_refund_address_index.to_bytes().to_vec();
+
+        // Pad it with zeros to be 32 bytes long (the size expected by a randomizer)
+        deposit_refund_address_index_bytes.extend([0; 16]);
+
+        // Convert it back to exactly 32 bytes
+        let deposit_refund_address_index_bytes = deposit_refund_address_index_bytes
+            .try_into()
+            .expect("exactly 32 bytes");
+
+        // Get the scalar `Fr` element derived from these bytes
+        let withdraw_proposal_key_randomizer = Fr::from_bytes(deposit_refund_address_index_bytes)?;
+
+        // Randomize the spend verification key for the fvk using this randomizer
+        fvk.spend_verification_key()
+            .randomize(&withdraw_proposal_key_randomizer)
+    };
+
+    // Add the proposal submit action to the plan
+    plan.actions
+        .push(ActionPlan::ProposalSubmit(ProposalSubmit {
+            proposal,
+            deposit_amount,
+            deposit_refund_address,
+            withdraw_proposal_key,
+        }));
+
+    // Track totals of the output values rather than just processing
+    // them individually, so we can plan the required spends.
+    let mut output_value = HashMap::<Denom, u64>::new();
+    output_value.insert(STAKING_TOKEN_DENOM.clone(), deposit_amount);
+
+    // The value we need to spend is the output value, plus fees.
+    let mut value_to_spend = output_value;
+    if fee > 0 {
+        *value_to_spend
+            .entry(STAKING_TOKEN_DENOM.clone())
+            .or_default() += fee;
+    }
+
+    // Add the required spends (this is copied from the implementation of `send`):
+    for (denom, spend_amount) in value_to_spend {
+        // Only produce an output if the amount is greater than zero
+        if spend_amount == 0 {
+            continue;
+        }
+
+        let source_index: Option<AddressIndex> = source_address.map(Into::into);
+        // Select a list of notes that provides at least the required amount.
+        let notes_to_spend = view
+            .notes(NotesRequest {
+                account_id: Some(fvk.hash().into()),
+                asset_id: Some(denom.id().into()),
+                address_index: source_index.map(Into::into),
+                amount_to_spend: spend_amount,
+                include_spent: false,
+            })
+            .await?;
+        if notes_to_spend.is_empty() {
+            // Shouldn't happen because the other side checks this, but just in case...
+            return Err(anyhow::anyhow!("not enough notes to spend",));
+        }
+
+        let change_address_index: u64 = fvk
+            .incoming()
+            .index_for_diversifier(
+                &notes_to_spend
+                    .last()
+                    .expect("notes_to_spend should never be empty")
+                    .note
+                    .diversifier(),
+            )
+            .try_into()?;
+
+        let (change_address, _dtk) = fvk.incoming().payment_address(change_address_index.into());
+        let spent: u64 = notes_to_spend
+            .iter()
+            .map(|note_record| note_record.note.amount())
+            .sum();
+
+        // Spend each of the notes we selected.
+        for note_record in notes_to_spend {
+            plan.actions
+                .push(SpendPlan::new(&mut rng, note_record.note, note_record.position).into());
+        }
+
+        // Find out how much change we have and whether to add a change output.
+        let change = spent - spend_amount;
+        if change > 0 {
+            plan.actions.push(
+                OutputPlan::new(
+                    &mut rng,
+                    Value {
+                        amount: change,
+                        asset_id: denom.id(),
+                    },
+                    change_address,
+                    MemoPlaintext::default(),
+                )
+                .into(),
+            );
+        }
+    }
+
+    Ok(plan)
 }
