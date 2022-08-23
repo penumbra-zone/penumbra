@@ -439,7 +439,7 @@ where
     };
 
     // If there is no input, then there is no swap.
-    if delta_1 == 0 && delta_1 == 0 {
+    if delta_1 == 0 && delta_2 == 0 {
         return Ok(plan);
     }
 
