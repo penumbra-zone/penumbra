@@ -69,6 +69,7 @@
     - [Commission Descriptions]()
     - [Proposal Descriptions]()
     - [Vote Descriptions]()
+  - [Transaction Cryptography](./protocol/transaction_crypto.md)
   - [Flow Encryption and Consensus](./protocol/flow-consensus.md)
 - [Chain State]()
   - [Ledger Invariants]()

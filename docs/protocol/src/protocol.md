@@ -7,6 +7,8 @@ described in more detail in the following sections:
 
 - The [Notes](./protocol/notes.md) section describes Penumbra's private notes and their contents.
 
+- The [Transaction Cryptography][../protocol/transaction_crypto.md] section describes the symmetric keys used at the level of an individual transaction.
+
 ## Notation
 
 We use the following notation in this chapter:
