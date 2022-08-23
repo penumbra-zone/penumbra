@@ -537,7 +537,11 @@ impl Storage {
                 .to_bytes()
                 .to_vec();
             let height_created = filtered_block.height as i64;
-            let address = quarantined_note_record.note.address().to_bytes().to_vec();
+            let address = quarantined_note_record
+                .note
+                .address()
+                .to_unjumbled_bytes()
+                .to_vec();
             let amount = quarantined_note_record.note.amount() as i64;
             let asset_id = quarantined_note_record.note.asset_id().to_bytes().to_vec();
             let blinding_factor = quarantined_note_record
@@ -588,7 +592,7 @@ impl Storage {
             // https://github.com/penumbra-zone/penumbra/blob/e857a7ae2b11b36514a5ac83f8e0b174fa10a65f/pd/src/state/writer.rs#L201-L207
             let note_commitment = note_record.note_commitment.0.to_bytes().to_vec();
             let height_created = filtered_block.height as i64;
-            let address = note_record.note.address().to_bytes().to_vec();
+            let address = note_record.note.address().to_unjumbled_bytes().to_vec();
             let amount = note_record.note.amount() as i64;
             let asset_id = note_record.note.asset_id().to_bytes().to_vec();
             let blinding_factor = note_record.note.note_blinding().to_bytes().to_vec();

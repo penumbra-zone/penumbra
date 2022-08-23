@@ -71,7 +71,7 @@ impl Address {
         &self.ck_d
     }
 
-    pub fn to_bytes(&self) -> [u8; ADDRESS_LEN_BYTES] {
+    pub fn to_unjumbled_bytes(&self) -> [u8; ADDRESS_LEN_BYTES] {
         let mut bytes = [0u8; ADDRESS_LEN_BYTES];
         bytes[0..16].copy_from_slice(&self.diversifier().0);
         bytes[16..48].copy_from_slice(&self.transmission_key().0);
