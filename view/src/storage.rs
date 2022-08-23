@@ -537,10 +537,9 @@ impl Storage {
                 .to_bytes()
                 .to_vec();
             let height_created = filtered_block.height as i64;
-            let diversifier = quarantined_note_record.note.diversifier().0.to_vec();
+            let address = quarantined_note_record.note.address().to_bytes().to_vec();
             let amount = quarantined_note_record.note.amount() as i64;
             let asset_id = quarantined_note_record.note.asset_id().to_bytes().to_vec();
-            let transmission_key = quarantined_note_record.note.transmission_key().0.to_vec();
             let blinding_factor = quarantined_note_record
                 .note
                 .note_blinding()
@@ -555,23 +554,21 @@ impl Storage {
                     (
                         note_commitment,
                         height_created,
-                        diversifier,
+                        address,
                         amount,
                         asset_id,
-                        transmission_key,
                         blinding_factor,
                         address_index,
                         unbonding_epoch,
                         identity_key,
                         source
                     )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 note_commitment,
                 height_created,
-                diversifier,
+                address,
                 amount,
                 asset_id,
-                transmission_key,
                 blinding_factor,
                 address_index,
                 unbonding_epoch,
@@ -591,10 +588,9 @@ impl Storage {
             // https://github.com/penumbra-zone/penumbra/blob/e857a7ae2b11b36514a5ac83f8e0b174fa10a65f/pd/src/state/writer.rs#L201-L207
             let note_commitment = note_record.note_commitment.0.to_bytes().to_vec();
             let height_created = filtered_block.height as i64;
-            let diversifier = note_record.note.diversifier().0.to_vec();
+            let address = note_record.note.address().to_bytes().to_vec();
             let amount = note_record.note.amount() as i64;
             let asset_id = note_record.note.asset_id().to_bytes().to_vec();
-            let transmission_key = note_record.note.transmission_key().0.to_vec();
             let blinding_factor = note_record.note.note_blinding().to_bytes().to_vec();
             let address_index = note_record.address_index.to_bytes().to_vec();
             let nullifier = note_record.nullifier.to_bytes().to_vec();
@@ -606,10 +602,9 @@ impl Storage {
                         note_commitment,
                         height_spent,
                         height_created,
-                        diversifier,
+                        address,
                         amount,
                         asset_id,
-                        transmission_key,
                         blinding_factor,
                         address_index,
                         nullifier,
@@ -628,16 +623,14 @@ impl Storage {
                         ?,
                         ?,
                         ?,
-                        ?,
                         ?
                     )",
                 note_commitment,
                 // height_spent is NULL
                 height_created,
-                diversifier,
+                address,
                 amount,
                 asset_id,
-                transmission_key,
                 blinding_factor,
                 address_index,
                 nullifier,

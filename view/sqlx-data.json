@@ -250,6 +250,16 @@
     },
     "query": "INSERT INTO nct_commitments (position, commitment) VALUES (?, ?) ON CONFLICT DO NOTHING"
   },
+  "75cfbf952c4166f5657ab656a3c69af071d2a39d70bf046e27db79295e711e3b": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 10
+      }
+    },
+    "query": "INSERT INTO quarantined_notes\n                    (\n                        note_commitment,\n                        height_created,\n                        address,\n                        amount,\n                        asset_id,\n                        blinding_factor,\n                        address_index,\n                        unbonding_epoch,\n                        identity_key,\n                        source\n                    )\n                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+  },
   "8ecf6591d5fcf8d364e7457ef4b5d927d9c079c23e633dc4475d6c2c60192c8f": {
     "describe": {
       "columns": [
@@ -267,16 +277,6 @@
       }
     },
     "query": "DELETE FROM quarantined_nullifiers WHERE identity_key = ? RETURNING nullifier"
-  },
-  "8f6f14b608be9945961176979850f294d683172a650aa415f80384d05a603c23": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 11
-      }
-    },
-    "query": "INSERT INTO notes\n                    (\n                        note_commitment,\n                        height_spent,\n                        height_created,\n                        diversifier,\n                        amount,\n                        asset_id,\n                        transmission_key,\n                        blinding_factor,\n                        address_index,\n                        nullifier,\n                        position,\n                        source\n                    )\n                    VALUES\n                    (\n                        ?,\n                        NULL,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?\n                    )"
   },
   "916844d5f99c975bd2bfcac3956625f040ea91697c4f0c0a9cb4f48e472b302d": {
     "describe": {
@@ -352,6 +352,16 @@
     },
     "query": "UPDATE nct_position SET position = ?"
   },
+  "aa078bbca8cc3df51eb9c6f8e14e0b7d835f5bd009f0320b400628efcd56948d": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 10
+      }
+    },
+    "query": "INSERT INTO notes\n                    (\n                        note_commitment,\n                        height_spent,\n                        height_created,\n                        address,\n                        amount,\n                        asset_id,\n                        blinding_factor,\n                        address_index,\n                        nullifier,\n                        position,\n                        source\n                    )\n                    VALUES\n                    (\n                        ?,\n                        NULL,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?,\n                        ?\n                    )"
+  },
   "b8c80b31e23d061d621a5486b84e80b4a4b4fa409bf4510b5ad301ef54a66101": {
     "describe": {
       "columns": [],
@@ -361,16 +371,6 @@
       }
     },
     "query": "DELETE FROM quarantined_notes WHERE identity_key = ?"
-  },
-  "b92550dfe6ac64f68c1a8c33f680b28c2eb4d6ba5ea3e16768647b9e50e92397": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 11
-      }
-    },
-    "query": "INSERT INTO quarantined_notes\n                    (\n                        note_commitment,\n                        height_created,\n                        diversifier,\n                        amount,\n                        asset_id,\n                        transmission_key,\n                        blinding_factor,\n                        address_index,\n                        unbonding_epoch,\n                        identity_key,\n                        source\n                    )\n                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
   },
   "ccf9c7b45b2a68b2323a357b9780e79e359cf0de78da122ac8db978f9d834471": {
     "describe": {

@@ -1,9 +1,6 @@
 use penumbra_chain::NoteSource;
 use penumbra_crypto::{
-    asset,
-    ka::Public,
-    keys::{AddressIndex, Diversifier},
-    note, FieldExt, Fq, Note, Nullifier, Value,
+    asset, keys::AddressIndex, note, Address, FieldExt, Fq, Note, Nullifier, Value,
 };
 use penumbra_proto::{view as pb, Protobuf};
 use penumbra_tct as tct;
@@ -77,28 +74,18 @@ impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for NoteRecord {
         // This is not a fun time.
         // Mostly on account of sqlx::Error.
 
-        let diversifier =
-            Diversifier::try_from(row.get::<'r, &[u8], _>("diversifier")).map_err(|e| {
-                sqlx::Error::ColumnDecode {
-                    index: "diversifier".to_string(),
-                    source: e.into(),
-                }
-            })?;
+        let address = Address::try_from(row.get::<'r, &[u8], _>("address")).map_err(|e| {
+            sqlx::Error::ColumnDecode {
+                index: "address".to_string(),
+                source: e.into(),
+            }
+        })?;
 
         let address_index = AddressIndex::try_from(row.get::<'r, &[u8], _>("address_index"))
             .map_err(|e| sqlx::Error::ColumnDecode {
                 index: "address_index".to_string(),
                 source: e.into(),
             })?;
-
-        let transmission_key = Public(
-            <[u8; 32]>::try_from(row.get::<'r, &[u8], _>("transmission_key")).map_err(|e| {
-                sqlx::Error::ColumnDecode {
-                    index: "transmission_key".to_string(),
-                    source: e.into(),
-                }
-            })?,
-        );
 
         let amount = row.get::<'r, i64, _>("amount") as u64;
 
@@ -152,13 +139,12 @@ impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for NoteRecord {
         let position = (row.get::<'r, i64, _>("position") as u64).into();
 
         let value = Value { amount, asset_id };
-        let note =
-            Note::from_parts(diversifier, transmission_key, value, note_blinding).map_err(|e| {
-                sqlx::Error::ColumnDecode {
-                    index: "note".to_string(),
-                    source: e.into(),
-                }
-            })?;
+        let note = Note::from_parts(address, value, note_blinding).map_err(|e| {
+            sqlx::Error::ColumnDecode {
+                index: "note".to_string(),
+                source: e.into(),
+            }
+        })?;
 
         let source = NoteSource::try_from(row.get::<'r, &[u8], _>("source")).map_err(|e| {
             sqlx::Error::ColumnDecode {

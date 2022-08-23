@@ -12,10 +12,9 @@ CREATE TABLE notes (
     height_spent            BIGINT, --null if unspent, otherwise spent at height_spent 
     height_created          BIGINT NOT NULL,
     -- note contents themselves:
-    diversifier             BLOB NOT NULL,
+    address                 BLOB NOT NULL,
     amount                  BIGINT NOT NULL,
     asset_id                BLOB NOT NULL,
-    transmission_key        BLOB NOT NULL,
     blinding_factor         BLOB NOT NULL,
     -- precomputed decryption of the diversifier
     address_index       BLOB NOT NULL,
@@ -52,10 +51,9 @@ CREATE TABLE quarantined_notes (
     note_commitment         BLOB PRIMARY KEY NOT NULL,
     height_created          BIGINT NOT NULL,
     -- note contents themselves:
-    diversifier             BLOB NOT NULL,
+    address             BLOB NOT NULL,
     amount                  BIGINT NOT NULL,
     asset_id                BLOB NOT NULL,
-    transmission_key        BLOB NOT NULL,
     blinding_factor         BLOB NOT NULL,
     -- precomputed decryption of the diversifier
     address_index       BLOB NOT NULL,
