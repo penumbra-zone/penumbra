@@ -37,6 +37,16 @@ where
         })
         .await?;
 
+    // Get the current FMD parameters from the view service...
+    let fmd_params = view.fmd_parameters().await?;
+    let precision_bits = fmd_params.precision_bits;
+
     // ... and then build the transaction:
-    plan.build(&mut rng, fvk, auth_data, witness_data)
+    plan.build(
+        &mut rng,
+        fvk,
+        auth_data,
+        witness_data,
+        precision_bits.into(),
+    )
 }

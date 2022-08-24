@@ -12,7 +12,8 @@ impl TransactionPlan {
     ///
     /// - `fvk`, the [`FullViewingKey`] for the source funds;
     /// - `auth_data`, the [`AuthorizationData`] authorizing the transaction;
-    /// - `witness_data`, the [`WitnessData`] used for proving.
+    /// - `witness_data`, the [`WitnessData`] used for proving;
+    /// - `precision_bits`, the current FMD precision.
     ///
     pub fn build<R: CryptoRng + RngCore>(
         self,
@@ -20,6 +21,7 @@ impl TransactionPlan {
         fvk: &FullViewingKey,
         auth_data: AuthorizationData,
         witness_data: WitnessData,
+        precision_bits: usize,
     ) -> Result<Transaction> {
         // Do some basic input sanity-checking.
         let spend_count = self.spend_plans().count();
@@ -39,6 +41,7 @@ impl TransactionPlan {
         }
 
         let mut actions = Vec::new();
+        let mut fmd_clues = Vec::new();
         let mut synthetic_blinding_factor = Fr::zero();
 
         // We build the actions sorted by type, with all spends first, then all
@@ -89,6 +92,11 @@ impl TransactionPlan {
         //     )));
         // }
 
+        // Build the clue plans.
+        for clue_plan in self.clue_plans() {
+            fmd_clues.push(clue_plan.clue(precision_bits));
+        }
+
         // We don't have anything more to build, but iterate through the rest of
         // the action plans by type so that the transaction will have them in a
         // defined order.
@@ -122,7 +130,7 @@ impl TransactionPlan {
                 expiry_height: self.expiry_height,
                 chain_id: self.chain_id,
                 fee: self.fee,
-                fmd_clues: vec![],
+                fmd_clues,
             },
             anchor: witness_data.anchor,
             binding_sig,
