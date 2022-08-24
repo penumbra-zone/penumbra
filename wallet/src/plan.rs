@@ -83,6 +83,8 @@ where
         );
     }
 
+    // Add clue plans for `Output`s.
+    plan.add_all_clue_plans(&mut rng);
     Ok(plan)
 }
 
@@ -182,6 +184,8 @@ where
         );
     }
 
+    // Add clue plans for `Output`s.
+    plan.add_all_clue_plans(&mut rng);
     Ok(plan)
 }
 
@@ -265,6 +269,8 @@ where
         ))?;
     }
 
+    // Add clue plans for `Output`s.
+    plan.add_all_clue_plans(&mut rng);
     Ok(plan)
 }
 
@@ -386,6 +392,8 @@ where
         }
     }
 
+    // Add clue plans for `Output`s.
+    plan.add_all_clue_plans(&mut rng);
     Ok(plan)
 }
 
@@ -527,6 +535,8 @@ where
         }
     }
 
+    // Add clue plans for `Output`s.
+    plan.add_all_clue_plans(&mut rng);
     Ok(plan)
 }
 
@@ -660,6 +670,8 @@ where
         }
     }
 
+    // Add clue plans for `Output`s.
+    plan.add_all_clue_plans(&mut rng);
     Ok(plan)
 }
 
@@ -733,6 +745,9 @@ where
                 );
 
                 tracing::debug!(?plan);
+
+                // Add clue plans for `Output`s.
+                plan.add_all_clue_plans(&mut rng);
                 plans.push(plan);
             }
         }

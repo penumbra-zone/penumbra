@@ -521,8 +521,9 @@ mod tests {
                 .map(|spend| nct.witness(spend.note.commit()).unwrap())
                 .collect(),
         };
+        let precision_bits = 1;
         let transaction = plan
-            .build(&mut OsRng, fvk, auth_data, witness_data)
+            .build(&mut OsRng, fvk, auth_data, witness_data, precision_bits)
             .unwrap();
 
         let transaction_auth_hash = transaction.auth_hash();

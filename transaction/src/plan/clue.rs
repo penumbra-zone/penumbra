@@ -1,5 +1,7 @@
+use decaf377_fmd::{Clue, ExpandedClueKey};
 use penumbra_crypto::Address;
 use penumbra_proto::{transaction as pb, Protobuf};
+
 use rand::{CryptoRng, RngCore};
 
 #[derive(Clone, Debug)]
@@ -14,6 +16,15 @@ impl CluePlan {
         let mut rseed = [0u8; 32];
         rng.fill_bytes(&mut rseed);
         CluePlan { address, rseed }
+    }
+
+    /// Create a [`Clue`] from the [`CluePlan`].
+    pub fn clue(&self, precision_bits: usize) -> Clue {
+        let clue_key = self.address.clue_key();
+        let expanded_clue_key = ExpandedClueKey::new(clue_key).expect("valid address");
+        expanded_clue_key
+            .create_clue_deterministic(precision_bits, self.rseed)
+            .expect("can construct clue key")
     }
 }
 

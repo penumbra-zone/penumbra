@@ -1,6 +1,6 @@
 use std::{cell::RefCell, convert::TryFrom};
 
-use ark_ff::{Field, PrimeField, UniformRand};
+use ark_ff::{Field, PrimeField};
 use bitvec::{array::BitArray, order};
 use decaf377::{FieldExt, Fr};
 use rand_core::{CryptoRng, RngCore};

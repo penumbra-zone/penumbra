@@ -3,6 +3,7 @@ use std::io::{Cursor, Read, Write};
 use ark_serialize::CanonicalDeserialize;
 use f4jumble::{f4jumble, f4jumble_inv};
 use penumbra_proto::{crypto as pb, serializers::bech32str};
+use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
 
 use crate::{fmd, ka, keys::Diversifier, Fq};
@@ -88,6 +89,27 @@ impl Address {
             .expect("can write clue key into vec");
 
         f4jumble(bytes.get_ref()).expect("can jumble")
+    }
+
+    /// A randomized dummy address for dummy `Clue` generation.
+    pub fn dummy<R: CryptoRng + Rng>(mut rng: R) -> Self {
+        let mut diversifier_bytes = [0u8; 16];
+        rng.fill_bytes(&mut diversifier_bytes);
+
+        let mut pk_d_bytes = [0u8; 32];
+        rng.fill_bytes(&mut pk_d_bytes);
+
+        let mut clue_key_bytes = [0; 32];
+        rng.fill_bytes(&mut clue_key_bytes);
+
+        let diversifier = Diversifier(diversifier_bytes);
+        Address::from_components(
+            diversifier,
+            diversifier.diversified_generator(),
+            ka::Public(pk_d_bytes),
+            fmd::ClueKey(clue_key_bytes),
+        )
+        .expect("generated dummy address")
     }
 }
 
