@@ -315,7 +315,7 @@ impl From<Note> for pb::Note {
 impl From<&Note> for [u8; NOTE_LEN_BYTES] {
     fn from(note: &Note) -> [u8; NOTE_LEN_BYTES] {
         let mut bytes = [0u8; NOTE_LEN_BYTES];
-        bytes[0..80].copy_from_slice(&note.address.to_unjumbled_bytes());
+        bytes[0..80].copy_from_slice(&note.address.to_vec());
         bytes[80..88].copy_from_slice(&note.value.amount.to_le_bytes());
         bytes[88..120].copy_from_slice(&note.value.asset_id.0.to_bytes());
         bytes[120..152].copy_from_slice(&note.note_blinding.to_bytes());
@@ -332,7 +332,7 @@ impl From<Note> for [u8; NOTE_LEN_BYTES] {
 impl From<&Note> for Vec<u8> {
     fn from(note: &Note) -> Vec<u8> {
         let mut bytes = vec![];
-        bytes.extend_from_slice(&note.address().to_unjumbled_bytes());
+        bytes.extend_from_slice(&note.address().to_vec());
         bytes.extend_from_slice(&note.value.amount.to_le_bytes());
         bytes.extend_from_slice(&note.value.asset_id.0.to_bytes());
         bytes.extend_from_slice(&note.note_blinding.to_bytes());

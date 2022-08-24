@@ -71,14 +71,6 @@ impl Address {
         &self.ck_d
     }
 
-    pub fn to_unjumbled_bytes(&self) -> [u8; ADDRESS_LEN_BYTES] {
-        let mut bytes = [0u8; ADDRESS_LEN_BYTES];
-        bytes[0..16].copy_from_slice(&self.diversifier().0);
-        bytes[16..48].copy_from_slice(&self.transmission_key().0);
-        bytes[48..80].copy_from_slice(&self.clue_key().0);
-        bytes
-    }
-
     pub fn to_vec(&self) -> Vec<u8> {
         let mut bytes = std::io::Cursor::new(Vec::new());
         bytes
@@ -103,28 +95,9 @@ impl From<Address> for pb::Address {
 
 impl TryFrom<pb::Address> for Address {
     type Error = anyhow::Error;
+
     fn try_from(value: pb::Address) -> Result<Self, Self::Error> {
-        let unjumbled_bytes =
-            f4jumble_inv(&value.inner).ok_or_else(|| anyhow::anyhow!("invalid address"))?;
-        let mut bytes = Cursor::new(unjumbled_bytes);
-
-        let mut diversifier_bytes = [0u8; 16];
-        bytes.read_exact(&mut diversifier_bytes)?;
-
-        let mut pk_d_bytes = [0u8; 32];
-        bytes.read_exact(&mut pk_d_bytes)?;
-
-        let mut clue_key_bytes = [0; 32];
-        bytes.read_exact(&mut clue_key_bytes)?;
-
-        let diversifier = Diversifier(diversifier_bytes);
-        Address::from_components(
-            diversifier,
-            diversifier.diversified_generator(),
-            ka::Public(pk_d_bytes),
-            fmd::ClueKey(clue_key_bytes),
-        )
-        .ok_or_else(|| anyhow::anyhow!("invalid address"))
+        (&value.inner).try_into()
     }
 }
 
@@ -156,24 +129,47 @@ impl std::str::FromStr for Address {
     }
 }
 
+impl TryFrom<Vec<u8>> for Address {
+    type Error = anyhow::Error;
+
+    fn try_from(jumbled_vec: Vec<u8>) -> Result<Self, Self::Error> {
+        (&jumbled_vec[..]).try_into()
+    }
+}
+
+impl TryFrom<&Vec<u8>> for Address {
+    type Error = anyhow::Error;
+
+    fn try_from(jumbled_vec: &Vec<u8>) -> Result<Self, Self::Error> {
+        (jumbled_vec[..]).try_into()
+    }
+}
+
 impl TryFrom<&[u8]> for Address {
     type Error = anyhow::Error;
 
-    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
-        if bytes.len() != ADDRESS_LEN_BYTES {
+    fn try_from(jumbled_bytes: &[u8]) -> Result<Self, Self::Error> {
+        if jumbled_bytes.len() != ADDRESS_LEN_BYTES {
             return Err(anyhow::anyhow!("address malformed"));
         }
 
-        let diversifier_bytes: [u8; 16] = bytes[0..16]
-            .try_into()
+        let unjumbled_bytes =
+            f4jumble_inv(jumbled_bytes).ok_or_else(|| anyhow::anyhow!("invalid address"))?;
+        let mut bytes = Cursor::new(unjumbled_bytes);
+
+        let mut diversifier_bytes = [0u8; 16];
+        bytes
+            .read_exact(&mut diversifier_bytes)
             .map_err(|_| anyhow::anyhow!("address malformed"))?;
 
-        let pk_d_bytes: [u8; 32] = bytes[16..48]
-            .try_into()
+        let mut pk_d_bytes = [0u8; 32];
+        bytes
+            .read_exact(&mut pk_d_bytes)
             .map_err(|_| anyhow::anyhow!("address malformed"))?;
 
-        let clue_key_bytes: [u8; 32] = bytes[48..80]
-            .try_into()
+        let mut clue_key_bytes = [0; 32];
+        bytes
+            .read_exact(&mut clue_key_bytes)
             .map_err(|_| anyhow::anyhow!("address malformed"))?;
 
         let diversifier = Diversifier(diversifier_bytes);
@@ -214,6 +210,21 @@ mod tests {
         let encoded_addr = format!("{}", dest);
 
         let addr = Address::from_str(&encoded_addr).expect("can decode valid address");
+
+        assert_eq!(addr, dest);
+    }
+
+    #[test]
+    fn test_bytes_roundtrip() {
+        let mut rng = OsRng;
+        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let sk = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let fvk = sk.full_viewing_key();
+        let ivk = fvk.incoming();
+        let (dest, _dtk_d) = ivk.payment_address(0u64.into());
+
+        let bytes = dest.to_vec();
+        let addr: Address = bytes.try_into().expect("can decode valid address");
 
         assert_eq!(addr, dest);
     }
