@@ -45,8 +45,7 @@ message SwapClaimProof {
    * Describes the input note with the Swap NFT
    */
   bytes swap_nft_asset_id = 1;
-  bytes b_d = 2;
-  bytes pk_d = 3;
+  crypto.Address claim_address = 2;
   // Inclusion proof for the Swap NFT
   crypto.NoteCommitmentProof note_commitment_proof = 4;
   bytes note_blinding = 5;

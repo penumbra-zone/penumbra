@@ -71,6 +71,10 @@ impl Address {
         &self.ck_d
     }
 
+    pub fn cached_s(&self) -> &Fq {
+        &self.cached_s
+    }
+
     pub fn to_vec(&self) -> Vec<u8> {
         let mut bytes = std::io::Cursor::new(Vec::new());
         bytes

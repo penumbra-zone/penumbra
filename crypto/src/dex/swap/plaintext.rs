@@ -1,8 +1,11 @@
 use crate::symmetric::OutgoingCipherKey;
 use crate::transaction::Fee;
-use crate::{ka, Address};
+use crate::{asset, ka, Address};
 use anyhow::{anyhow, Error, Result};
+use ark_ff::PrimeField;
+use decaf377::Fq;
 use penumbra_proto::{crypto as pb_crypto, dex as pb, Protobuf};
+use poseidon377::hash_5;
 
 use crate::dex::TradingPair;
 use crate::{
@@ -12,7 +15,9 @@ use crate::{
     value,
 };
 
-use super::{SwapCiphertext, OVK_WRAPPED_LEN_BYTES, SWAP_CIPHERTEXT_BYTES, SWAP_LEN_BYTES};
+use super::{
+    SwapCiphertext, DOMAIN_SEPARATOR, OVK_WRAPPED_LEN_BYTES, SWAP_CIPHERTEXT_BYTES, SWAP_LEN_BYTES,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SwapPlaintext {
@@ -29,6 +34,34 @@ pub struct SwapPlaintext {
 }
 
 impl SwapPlaintext {
+    // Constructs the unique asset ID for a swap as a poseidon hash of the input data for the swap.
+    //
+    // https://protocol.penumbra.zone/main/zswap/swap.html#swap-actions
+    pub fn generate_swap_asset_id(&self) -> asset::Id {
+        let packed_values = {
+            let mut bytes = [0u8; 24];
+            bytes[0..8].copy_from_slice(&self.delta_1.to_le_bytes());
+            bytes[8..16].copy_from_slice(&self.delta_2.to_le_bytes());
+            bytes[16..24].copy_from_slice(&self.fee.0.to_le_bytes());
+            Fq::from_le_bytes_mod_order(&bytes)
+        };
+
+        let asset_id_hash = hash_5(
+            &DOMAIN_SEPARATOR,
+            (
+                self.trading_pair.asset_1().0,
+                self.trading_pair.asset_2().0,
+                packed_values,
+                self.claim_address
+                    .diversified_generator()
+                    .vartime_compress_to_field(),
+                *self.claim_address.cached_s(),
+            ),
+        );
+
+        asset::Id(asset_id_hash)
+    }
+
     pub fn diversified_generator(&self) -> &decaf377::Element {
         self.claim_address.diversified_generator()
     }

@@ -11,8 +11,10 @@ use penumbra_tct as tct;
 
 use crate::{
     asset,
-    dex::{swap, TradingPair},
-    ka, keys, note, value, Fq, Fr, Nullifier, Value, STAKING_TOKEN_ASSET_ID,
+    dex::{swap::SwapPlaintext, TradingPair},
+    ka, keys, note,
+    transaction::Fee,
+    value, Address, Fq, Fr, Nullifier, Value, STAKING_TOKEN_ASSET_ID,
 };
 
 /// Transparent proof for spending existing notes.
@@ -399,10 +401,8 @@ pub struct SwapClaimProof {
 
     // The asset ID of the swap NFT.
     pub swap_nft_asset_id: asset::Id,
-    // The diversified base for the address associated with the swap NFT and outputs.
-    pub b_d: decaf377::Element,
-    // The transmission key for the address associated with the swap NFT and outputs.
-    pub pk_d: ka::Public,
+    // The address associated with the swap NFT and outputs.
+    pub claim_address: Address,
     // Proves the note commitment was included in the TCT.
     pub note_commitment_proof: tct::Proof,
     // The blinding factor used for generating the note commitment for the Swap NFT.
@@ -455,12 +455,12 @@ impl SwapClaimProof {
             amount: 1,
             asset_id: self.swap_nft_asset_id,
         };
-        let s_component_transmission_key = Fq::from_bytes(self.pk_d.0);
+        let s_component_transmission_key = Fq::from_bytes(self.claim_address.transmission_key().0);
         if let Ok(transmission_key_s) = s_component_transmission_key {
             let note_commitment_test = note::commitment(
                 self.note_blinding,
                 swap_nft_value.clone(),
-                self.b_d,
+                *self.claim_address.diversified_generator(),
                 transmission_key_s,
             );
 
@@ -473,15 +473,15 @@ impl SwapClaimProof {
 
         // check the swap NFT Asset ID is properly constructed
         let asset_id = self.swap_nft_asset_id;
-        let expected_asset_id = swap::generate_swap_asset_id(
+        let expected_plaintext = SwapPlaintext::from_parts(
+            self.trading_pair.clone(),
             self.delta_1,
             self.delta_2,
-            fee,
-            self.b_d,
-            self.pk_d,
-            self.trading_pair,
+            Fee(fee),
+            self.claim_address,
         )
-        .map_err(|_| anyhow!("error generating expected swap asset ID"))?;
+        .map_err(|_| anyhow!("error generating expected swap plaintext"))?;
+        let expected_asset_id = expected_plaintext.generate_swap_asset_id();
         if expected_asset_id != asset_id {
             return Err(anyhow!("improper swap NFT asset id"));
         }
@@ -571,8 +571,7 @@ impl From<SwapClaimProof> for transparent_proofs::SwapClaimProof {
         let nk_bytes: [u8; 32] = msg.nk.0.to_bytes();
         transparent_proofs::SwapClaimProof {
             note_commitment_proof: Some(msg.note_commitment_proof.into()),
-            b_d: msg.b_d.vartime_compress().0.to_vec(),
-            pk_d: msg.pk_d.0.to_vec(),
+            claim_address: Some(msg.claim_address.into()),
             trading_pair: Some(msg.trading_pair.into()),
             delta_1: msg.delta_1,
             delta_2: msg.delta_2,
@@ -593,11 +592,6 @@ impl TryFrom<transparent_proofs::SwapClaimProof> for SwapClaimProof {
     type Error = Error;
 
     fn try_from(proto: transparent_proofs::SwapClaimProof) -> anyhow::Result<Self, Self::Error> {
-        let b_d_bytes: [u8; 32] = proto
-            .b_d
-            .try_into()
-            .map_err(|_| anyhow!("proto malformed"))?;
-        let b_d_encoding = decaf377::Encoding(b_d_bytes);
         let esk_1_bytes: [u8; 32] = proto.esk_1[..]
             .try_into()
             .map_err(|_| anyhow!("proto malformed"))?;
@@ -630,15 +624,11 @@ impl TryFrom<transparent_proofs::SwapClaimProof> for SwapClaimProof {
                 .ok_or_else(|| anyhow!("proto malformed"))?
                 .try_into()
                 .map_err(|_| anyhow!("proto malformed"))?,
-            b_d: b_d_encoding
-                .vartime_decompress()
+            claim_address: proto
+                .claim_address
+                .ok_or_else(|| anyhow!("proto malformed"))?
+                .try_into()
                 .map_err(|_| anyhow!("proto malformed"))?,
-            pk_d: ka::Public(
-                proto
-                    .pk_d
-                    .try_into()
-                    .map_err(|_| anyhow!("proto malformed"))?,
-            ),
             swap_nft_asset_id: asset::Id(
                 Fq::from_bytes(
                     proto
