@@ -55,7 +55,7 @@ impl SwapPlaintext {
                 self.claim_address
                     .diversified_generator()
                     .vartime_compress_to_field(),
-                *self.claim_address.cached_s(),
+                *self.claim_address.transmission_key_s(),
             ),
         );
 

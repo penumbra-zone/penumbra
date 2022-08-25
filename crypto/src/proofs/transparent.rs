@@ -455,20 +455,16 @@ impl SwapClaimProof {
             amount: 1,
             asset_id: self.swap_nft_asset_id,
         };
-        let s_component_transmission_key = Fq::from_bytes(self.claim_address.transmission_key().0);
-        if let Ok(transmission_key_s) = s_component_transmission_key {
-            let note_commitment_test = note::commitment(
-                self.note_blinding,
-                swap_nft_value.clone(),
-                *self.claim_address.diversified_generator(),
-                transmission_key_s,
-            );
+        let transmission_key_s = self.claim_address.transmission_key_s();
+        let note_commitment_test = note::commitment(
+            self.note_blinding,
+            swap_nft_value.clone(),
+            *self.claim_address.diversified_generator(),
+            *transmission_key_s,
+        );
 
-            if self.note_commitment_proof.commitment() != note_commitment_test {
-                return Err(anyhow!("note commitment mismatch"));
-            }
-        } else {
-            return Err(anyhow!("transmission key mismatch"));
+        if self.note_commitment_proof.commitment() != note_commitment_test {
+            return Err(anyhow!("note commitment mismatch"));
         }
 
         // check the swap NFT Asset ID is properly constructed
