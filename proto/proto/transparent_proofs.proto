@@ -119,10 +119,8 @@ message SwapProof {
    * @exclude
    * Data about the output note recording the Swap NFT.
   */
-  // Diversified basepoint
-  bytes b_d = 40;
-  // Diversified public key
-  bytes pk_d = 41;
+  // Address associated with the swap.
+  crypto.Address claim_address = 40;
   // Note blinding factor
   bytes note_blinding = 42;
   // Ephemeral secret key

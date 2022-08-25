@@ -659,10 +659,8 @@ impl TryFrom<transparent_proofs::SwapClaimProof> for SwapClaimProof {
 /// This structure keeps track of the auxiliary (private) inputs.
 #[derive(Clone, Debug)]
 pub struct SwapProof {
-    // The diversified base for the destination address.
-    pub b_d: decaf377::Element,
-    // The transmission key for the destination address.
-    pub pk_d: ka::Public,
+    // The address associated with the swap.
+    pub claim_address: Address,
     // The value of asset 1 in the swap.
     pub value_t1: Value,
     // The value of asset 2 in the swap.
@@ -700,25 +698,21 @@ impl SwapProof {
         epk: ka::Public,
     ) -> anyhow::Result<(), Error> {
         // Note commitment integrity.
-        let s_component_transmission_key = Fq::from_bytes(self.pk_d.0);
-        if let Ok(transmission_key_s) = s_component_transmission_key {
-            // Checks the note commitment of the Swap NFT.
-            let note_commitment_test = note::commitment(
-                self.note_blinding,
-                Value {
-                    // The swap NFT is always amount 1.
-                    amount: 1,
-                    asset_id: self.swap_nft_asset_id,
-                },
-                self.b_d,
-                transmission_key_s,
-            );
+        let transmission_key_s = self.claim_address.transmission_key_s();
+        // Checks the note commitment of the Swap NFT.
+        let note_commitment_test = note::commitment(
+            self.note_blinding,
+            Value {
+                // The swap NFT is always amount 1.
+                amount: 1,
+                asset_id: self.swap_nft_asset_id,
+            },
+            *self.claim_address.diversified_generator(),
+            *transmission_key_s,
+        );
 
-            if note_commitment != note_commitment_test {
-                return Err(anyhow!("note commitment mismatch"));
-            }
-        } else {
-            return Err(anyhow!("transmission key mismatch"));
+        if note_commitment != note_commitment_test {
+            return Err(anyhow!("note commitment mismatch"));
         }
 
         // TODO: no value commitment checks until flow encryption is available
@@ -741,14 +735,18 @@ impl SwapProof {
         }
 
         // Ephemeral public key integrity.
-        if self.esk.diversified_public(&self.b_d) != epk {
+        if self
+            .esk
+            .diversified_public(self.claim_address.diversified_generator())
+            != epk
+        {
             return Err(anyhow!("ephemeral public key mismatch"));
         }
 
         // The use of decaf means that we do not need to check that the
         // diversified basepoint is of small order. However we instead
         // check it is not identity.
-        if self.b_d.is_identity() {
+        if self.claim_address.diversified_generator().is_identity() {
             return Err(anyhow!("unexpected identity"));
         }
 
@@ -761,8 +759,7 @@ impl Protobuf<transparent_proofs::SwapProof> for SwapProof {}
 impl From<SwapProof> for transparent_proofs::SwapProof {
     fn from(msg: SwapProof) -> Self {
         transparent_proofs::SwapProof {
-            b_d: msg.b_d.vartime_compress().0.to_vec(),
-            pk_d: msg.pk_d.0.to_vec(),
+            claim_address: Some(msg.claim_address.into()),
             delta_1: msg.value_t1.amount,
             t1: msg.value_t1.asset_id.0.to_bytes().to_vec(),
             delta_2: msg.value_t2.amount,
@@ -782,12 +779,6 @@ impl TryFrom<transparent_proofs::SwapProof> for SwapProof {
     type Error = Error;
 
     fn try_from(proto: transparent_proofs::SwapProof) -> anyhow::Result<Self, Self::Error> {
-        let b_d_bytes: [u8; 32] = proto
-            .b_d
-            .try_into()
-            .map_err(|_| anyhow!("proto malformed"))?;
-        let b_d_encoding = decaf377::Encoding(b_d_bytes);
-
         // let delta_1_blinding_bytes: [u8; 32] = proto.delta_1_blinding[..]
         //     .try_into()
         //     .map_err(|_| anyhow!("proto malformed"))?;
@@ -805,15 +796,11 @@ impl TryFrom<transparent_proofs::SwapProof> for SwapProof {
         let _pen_denom = asset::REGISTRY.parse_denom("upenumbra").unwrap();
 
         Ok(SwapProof {
-            b_d: b_d_encoding
-                .vartime_decompress()
+            claim_address: proto
+                .claim_address
+                .ok_or(anyhow!("proto malformed"))?
+                .try_into()
                 .map_err(|_| anyhow!("proto malformed"))?,
-            pk_d: ka::Public(
-                proto
-                    .pk_d
-                    .try_into()
-                    .map_err(|_| anyhow!("proto malformed"))?,
-            ),
             value_t1: Value {
                 amount: proto.delta_1,
                 asset_id: asset::Id(

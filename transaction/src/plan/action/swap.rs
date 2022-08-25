@@ -95,12 +95,7 @@ impl SwapPlan {
         let swap_nft_asset_id = self.swap_plaintext.asset_id();
 
         SwapProof {
-            b_d: self
-                .swap_plaintext
-                .claim_address
-                .diversified_generator()
-                .clone(),
-            pk_d: self.swap_plaintext.claim_address.transmission_key().clone(),
+            claim_address: self.swap_plaintext.claim_address,
             note_blinding: self.note_blinding,
             fee_delta: self.swap_plaintext.fee.0,
             value_t1: Value {
