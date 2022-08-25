@@ -13,7 +13,6 @@ impl TransactionPlan {
     /// - `fvk`, the [`FullViewingKey`] for the source funds;
     /// - `auth_data`, the [`AuthorizationData`] authorizing the transaction;
     /// - `witness_data`, the [`WitnessData`] used for proving;
-    /// - `precision_bits`, the current FMD precision.
     ///
     pub fn build<R: CryptoRng + RngCore>(
         self,
@@ -21,7 +20,6 @@ impl TransactionPlan {
         fvk: &FullViewingKey,
         auth_data: AuthorizationData,
         witness_data: WitnessData,
-        precision_bits: usize,
     ) -> Result<Transaction> {
         // Do some basic input sanity-checking.
         let spend_count = self.spend_plans().count();
@@ -94,7 +92,7 @@ impl TransactionPlan {
 
         // Build the clue plans.
         for clue_plan in self.clue_plans() {
-            fmd_clues.push(clue_plan.clue(precision_bits));
+            fmd_clues.push(clue_plan.clue());
         }
 
         // We don't have anything more to build, but iterate through the rest of
