@@ -1,5 +1,6 @@
 mod commission;
 mod component;
+mod consensus_rules;
 mod delible;
 pub(crate) mod event;
 mod metrics;

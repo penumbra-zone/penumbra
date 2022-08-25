@@ -25,7 +25,7 @@ use penumbra_transaction::{action::Undelegate, Action, Transaction};
 use tendermint::abci;
 use tracing::instrument;
 
-use crate::shielded_pool::{event, state_key, CommissionAmounts};
+use crate::shielded_pool::{consensus_rules, event, state_key, CommissionAmounts};
 
 use super::Delible;
 
@@ -164,6 +164,8 @@ impl Component for ShieldedPool {
             }
         }
 
+        consensus_rules::stateless::num_clues_equal_to_num_outputs(&tx)?;
+
         Ok(())
     }
 
@@ -177,6 +179,8 @@ impl Component for ShieldedPool {
         }
 
         // TODO: handle quarantine
+        consensus_rules::stateful::fmd_precision_within_grace_period(&tx)?;
+
         Ok(())
     }
 
