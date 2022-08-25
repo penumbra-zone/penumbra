@@ -126,7 +126,32 @@ impl AppHandlerCheck for ICS20Transfer {
 
         Ok(())
     }
-    async fn timeout_packet_check(&self, _ctx: Context, _msg: &MsgTimeout) -> Result<()> {
+    async fn timeout_packet_check(&self, _ctx: Context, msg: &MsgTimeout) -> Result<()> {
+        let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
+
+        let prefix = format!("{}/{}/", msg.packet.source_port, msg.packet.source_channel);
+        let is_source = packet_data.denom.starts_with(&prefix);
+        if is_source {
+            // check if we have enough balance to refund tokens to sender
+            let value_balance: u64 = self
+                .state
+                .get_proto::<u64>(
+                    format!("ics20-value-balance/{}", msg.packet.destination_channel).into(),
+                )
+                .await?
+                .ok_or(anyhow::anyhow!("value balance not found"))?;
+
+            // convert the amount to a u64 from u256.
+            //  TODO: the amount is given by the ICS20 spec to be a u256, but we parse it to u64
+            //  for now. should we round, or error, or something else in this conversion?
+            let amount_penumbra = packet_data.amount.parse::<u64>()?;
+            if value_balance < amount_penumbra {
+                return Err(anyhow::anyhow!(
+                    "insufficient balance to refund tokens to sender"
+                ));
+            }
+        }
+
         Ok(())
     }
     async fn acknowledge_packet_check(
