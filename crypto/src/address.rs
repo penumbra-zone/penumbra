@@ -22,8 +22,8 @@ pub struct Address {
     /// this ensures we can use a PaymentAddress to form a note commitment,
     /// which involves hashing s as a field element.
     pk_d: ka::Public,
-    /// cached s value
-    cached_s: Fq,
+    /// transmission key s value
+    transmission_key_s: Fq,
 
     ck_d: fmd::ClueKey,
 }
@@ -41,14 +41,14 @@ impl Address {
     ) -> Option<Self> {
         // XXX ugly -- better way to get our hands on the s value?
         // add to decaf377::Encoding? there's compress_to_field already...
-        if let Ok(cached_s) = Fq::deserialize(&pk_d.0[..]) {
+        if let Ok(transmission_key_s) = Fq::deserialize(&pk_d.0[..]) {
             // don't need an error type here, caller will probably .expect anyways
             Some(Self {
                 d,
                 g_d,
                 pk_d,
                 ck_d,
-                cached_s,
+                transmission_key_s,
             })
         } else {
             None
@@ -69,6 +69,10 @@ impl Address {
 
     pub fn clue_key(&self) -> &fmd::ClueKey {
         &self.ck_d
+    }
+
+    pub fn transmission_key_s(&self) -> &Fq {
+        &self.transmission_key_s
     }
 
     pub fn to_vec(&self) -> Vec<u8> {

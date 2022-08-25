@@ -39,7 +39,7 @@ message SwapClaimBody {
   // Note output for asset 2.
   crypto.NotePayload output_2 = 4;
   // Block root for the associated `Swap` action, identifying the block the `Swap` was included in.
-  crypto.MerkleRoot anchor = 5;
+  // crypto.MerkleRoot anchor = 5;
   // Input and output amounts for the assets in the swap.
   BatchSwapOutputData output_data = 6;
   // The trading pair to swap.

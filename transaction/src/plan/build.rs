@@ -64,6 +64,31 @@ impl TransactionPlan {
             actions.push(Action::Output(output_plan.output(fvk.outgoing())));
         }
 
+        // Build the transaction's swaps.
+        // TODO: figure this out
+        //         the swap plans shouldn't require pulling in spend auth signatures, because the Swap just draws from the transaction's value balance. but we'll need to figure out how we handle the authentication paths (note commitment proofs) -- in the existing WitnessData struct, there's just one for each spend, in order, because (now-broken assumption) the only place they were needed was for spends.
+
+        // wondering if we should change the WitnessData domain type to store a BTreeMap<note::Commitment, tct::Proof>, and when deserializing from the proto, instead of just deserializing a list of proofs, call .commitment() on each one and use it as the key for the BTreeMap.
+
+        // then instead of having to do zips or whatever, or figure out how to maintain a brittle order dependency, we can just query for exactly the proof we want.
+        // for ((swap_plan, auth_sig), auth_path) in self
+        //     .swap_plans()
+        //     .zip(auth_data.spend_auths.into_iter())
+        //     .zip(witness_data.note_commitment_proofs.into_iter())
+        // {
+        //     actions.push(Action::Swap(swap_plan.swap(fvk, witness_data.anchor)));
+        // }
+
+        // Build the transaction's swap claims.
+        // for swap_claim_plan in self.swap_claim_plans().cloned() {
+        //     actions.push(Action::SwapClaim(swap_claim_plan.swap_claim(
+        //         fvk,
+        //         note_commitment_proof,
+        //         nk,
+        //         note_blinding,
+        //     )));
+        // }
+
         // We don't have anything more to build, but iterate through the rest of
         // the action plans by type so that the transaction will have them in a
         // defined order.

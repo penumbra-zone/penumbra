@@ -67,7 +67,7 @@ impl MemoPlaintext {
             .key_agreement_with(epk)
             .map_err(|_| anyhow!("could not perform key agreement"))?;
 
-        let key = PayloadKey::derive(&shared_secret, &epk);
+        let key = PayloadKey::derive(&shared_secret, epk);
         let plaintext = key
             .decrypt(ciphertext.0.to_vec(), PayloadKind::Memo)
             .map_err(|_| anyhow!("decryption error"))?;

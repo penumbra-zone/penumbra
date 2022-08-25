@@ -284,18 +284,10 @@ message OutputPlan {
 }
 
 message SwapPlan {
-    // The trading pair to swap.
-    dex.TradingPair trading_pair = 1;
-    // The amount for asset 1.
-    uint64 delta_1 = 2;
-    // The amount for asset 2.
-    uint64 delta_2 = 3;
-    // The fee to be pre-paid for the SwapClaim.
-    crypto.Fee fee = 4;
+    // The plaintext version of the swap to be performed.
+    dex.SwapPlaintext swap_plaintext = 1;
     // The blinding factor for the fee commitment. The fee in the SwapPlan is private to prevent linkability with the SwapClaim.
     bytes fee_blinding = 5;
-    // The address that can claim the swap NFT and receive the outputs.
-    crypto.Address claim_address = 6;
     // The blinding factor to use for the new swap NFT note.
     bytes note_blinding = 7;
     // The ephemeral secret key to use for the swap NFT note encryption.
@@ -311,17 +303,11 @@ message SwapClaimPlan {
     crypto.Note swap_nft_note = 1;
     // The position of the input swap NFT note.
     uint64 swap_nft_position = 2;
+    // The plaintext version of the swap to be performed.
+    dex.SwapPlaintext swap_plaintext = 3;
 
-    // The fee that was pre-paid for the SwapClaim.
-    crypto.Fee fee = 10;
     // Input and output amounts for the Swap.
     dex.BatchSwapOutputData output_data = 11;
-    // The root anchor for the block the Swap occurred in.
-    crypto.MerkleRoot anchor = 12;
-    // The trading pair associated with the SwapClaim.
-    dex.TradingPair trading_pair = 13;
-    // The address that is claiming the swap NFT and receiving the new output notes.
-    crypto.Address claim_address = 14;
     // The blinding factor used for the first output note.
     bytes output_1_blinding = 15;
     // The blinding factor used for the second output note.
@@ -330,8 +316,6 @@ message SwapClaimPlan {
     bytes esk_1 = 17;
     // The ephemeral secret key used for the second output note encryption.
     bytes esk_2 = 18;
-    // The asset ID of the swap NFT.
-    crypto.AssetId swap_nft_asset_id = 19;
 }
 
 

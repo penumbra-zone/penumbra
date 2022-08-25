@@ -4,17 +4,12 @@ mod plaintext;
 use anyhow::Result;
 use ark_ff::PrimeField;
 pub use ciphertext::SwapCiphertext;
-use decaf377::{Element, FieldExt, Fq};
-use decaf377_ka::Public;
+use decaf377::Fq;
 pub use plaintext::SwapPlaintext;
 
 use once_cell::sync::Lazy;
-use poseidon377::hash_5;
 
-use crate::asset;
 use penumbra_proto::{dex as pb, Protobuf};
-
-use super::TradingPair;
 
 // Swap ciphertext byte length
 pub const SWAP_CIPHERTEXT_BYTES: usize = 184;
@@ -25,41 +20,6 @@ pub const OVK_WRAPPED_LEN_BYTES: usize = 80;
 
 pub static DOMAIN_SEPARATOR: Lazy<Fq> =
     Lazy::new(|| Fq::from_le_bytes_mod_order(blake2b_simd::blake2b(b"penumbra.swap").as_bytes()));
-
-// Constructs the unique asset ID for a swap as a poseidon hash of the input data for the swap.
-//
-// https://protocol.penumbra.zone/main/zswap/swap.html#swap-actions
-pub fn generate_swap_asset_id(
-    delta_1: u64,
-    delta_2: u64,
-    fee: u64,
-    // TODO: try passing Address type here instead of the parts
-    b_d: Element,
-    pk_d: Public,
-    trading_pair: TradingPair,
-) -> Result<asset::Id> {
-    let packed_values = {
-        let mut bytes = [0u8; 24];
-        bytes[0..8].copy_from_slice(&delta_1.to_le_bytes());
-        bytes[8..16].copy_from_slice(&delta_2.to_le_bytes());
-        bytes[16..24].copy_from_slice(&fee.to_le_bytes());
-        Fq::from_le_bytes_mod_order(&bytes)
-    };
-
-    let asset_id_hash = hash_5(
-        &DOMAIN_SEPARATOR,
-        (
-            trading_pair.asset_1().0,
-            trading_pair.asset_2().0,
-            packed_values,
-            b_d.vartime_compress_to_field(),
-            // TODO: if we use Address type there's a method to get the field element infallibly
-            Fq::from_bytes(pk_d.0)?,
-        ),
-    );
-
-    Ok(asset::Id(asset_id_hash))
-}
 
 #[derive(Clone, Debug, Copy)]
 pub struct BatchSwapOutputData {

@@ -1,13 +1,13 @@
 use rand_core::OsRng;
 use std::collections::{BTreeMap, HashMap};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use penumbra_component::stake::rate::RateData;
 use penumbra_component::stake::validator;
 use penumbra_crypto::{
-    asset::Denom, dex::TradingPair, keys::AddressIndex, memo::MemoPlaintext, transaction::Fee,
-    Address, DelegationToken, FullViewingKey, Note, Value, STAKING_TOKEN_ASSET_ID,
-    STAKING_TOKEN_DENOM,
+    asset::Denom, dex::swap::SwapPlaintext, dex::TradingPair, keys::AddressIndex,
+    memo::MemoPlaintext, transaction::Fee, Address, DelegationToken, FullViewingKey, Note, Value,
+    STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
 };
 use penumbra_proto::view::NotesRequest;
 use penumbra_transaction::plan::{
@@ -446,18 +446,14 @@ where
     // Use a random ephemeral address for claiming the swap.
     let (claim_address, _dtk) = fvk.incoming().ephemeral_address(OsRng);
 
+    // Create the `SwapPlaintext` representing the swap to be performed:
+    let swap_plaintext =
+        SwapPlaintext::from_parts(trading_pair, delta_1, delta_2, Fee(fee), claim_address)
+            .map_err(|_| anyhow!("error generating swap plaintext"))?;
+
     // Add a `SwapPlan` action:
-    plan.actions.push(
-        SwapPlan::new(
-            &mut rng,
-            trading_pair,
-            delta_1,
-            delta_2,
-            Fee(fee),
-            claim_address,
-        )
-        .into(),
-    );
+    plan.actions
+        .push(SwapPlan::new(&mut rng, swap_plaintext).into());
 
     // The value we need to spend is the input value, plus fees.
     let mut value_to_spend: HashMap<Denom, u64> = HashMap::new();

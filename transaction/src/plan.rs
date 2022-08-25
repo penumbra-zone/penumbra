@@ -144,7 +144,7 @@ impl TransactionPlan {
         })
     }
 
-    pub fn swaps(&self) -> impl Iterator<Item = &SwapPlan> {
+    pub fn swap_plans(&self) -> impl Iterator<Item = &SwapPlan> {
         self.actions.iter().filter_map(|action| {
             if let ActionPlan::Swap(v) = action {
                 Some(v)
@@ -154,7 +154,7 @@ impl TransactionPlan {
         })
     }
 
-    pub fn swap_claims(&self) -> impl Iterator<Item = &SwapClaimPlan> {
+    pub fn swap_claim_plans(&self) -> impl Iterator<Item = &SwapClaimPlan> {
         self.actions.iter().filter_map(|action| {
             if let ActionPlan::SwapClaim(v) = action {
                 Some(v)

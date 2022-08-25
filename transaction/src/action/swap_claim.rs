@@ -9,7 +9,6 @@ use penumbra_crypto::Value;
 use penumbra_crypto::STAKING_TOKEN_ASSET_ID;
 use penumbra_crypto::{proofs::transparent::SwapClaimProof, NotePayload};
 use penumbra_proto::{dex as pb, Protobuf};
-use penumbra_tct as tct;
 
 #[derive(Debug, Clone)]
 pub struct SwapClaim {
@@ -21,13 +20,11 @@ impl SwapClaim {
     /// Compute a commitment to the value contributed to a transaction by this swap claim.
     /// Will add (f,fee_token)
     pub fn value_commitment(&self) -> value::Commitment {
-        let fee_commitment = Value {
+        Value {
             amount: self.body.fee.0,
             asset_id: *STAKING_TOKEN_ASSET_ID,
         }
-        .commit(Fr::zero());
-
-        fee_commitment
+        .commit(Fr::zero())
     }
 }
 
@@ -64,7 +61,6 @@ pub struct Body {
     pub output_1: NotePayload,
     pub output_2: NotePayload,
     pub output_data: BatchSwapOutputData,
-    pub anchor: tct::Root,
     pub trading_pair: TradingPair,
 }
 
@@ -78,7 +74,6 @@ impl From<Body> for pb::SwapClaimBody {
             fee: Some(s.fee.into()),
             output_1: Some(s.output_1.into()),
             output_2: Some(s.output_2.into()),
-            anchor: Some(s.anchor.into()),
             output_data: Some(s.output_data.into()),
         }
     }
@@ -100,10 +95,6 @@ impl TryFrom<pb::SwapClaimBody> for Body {
             output_2: sc
                 .output_2
                 .ok_or_else(|| anyhow::anyhow!("missing output_2"))?
-                .try_into()?,
-            anchor: sc
-                .anchor
-                .ok_or_else(|| anyhow::anyhow!("missing anchor"))?
                 .try_into()?,
             output_data: sc
                 .output_data

@@ -108,6 +108,12 @@ impl TransactionPlan {
         for output in self.output_plans() {
             state.update(output.output_body(fvk.outgoing()).auth_hash().as_bytes());
         }
+        for swap in self.swap_plans() {
+            state.update(swap.swap_body(fvk).auth_hash().as_bytes());
+        }
+        for swap_claim in self.swap_claim_plans() {
+            state.update(swap_claim.swap_claim_body(fvk).auth_hash().as_bytes());
+        }
         for delegation in self.delegations() {
             state.update(delegation.auth_hash().as_bytes());
         }
@@ -226,7 +232,7 @@ impl swap::Body {
         // in the hash one after the other.
         // TODO: actually the trading pair isn't necessarily fixed-length
         // right now, does this have implications?
-        state.update(&self.trading_pair.auth_hash().as_bytes());
+        state.update(self.trading_pair.auth_hash().as_bytes());
         state.update(&self.delta_1.to_le_bytes());
         state.update(&self.delta_2.to_le_bytes());
         state.update(&self.fee_commitment.to_bytes());
@@ -247,7 +253,7 @@ impl swap_claim::Body {
         // All of these fields are fixed-length, so we can just throw them
         // in the hash one after the other.
         state.update(&self.nullifier.0.to_bytes());
-        state.update(&self.fee.auth_hash().as_bytes());
+        state.update(self.fee.auth_hash().as_bytes());
         // TODO: write an `auth_hash` method for `NotePayload` et al
         // to ensure fixed-length encoding as well as non-usage of protobuf
         // encoding in auth hashes
@@ -258,8 +264,7 @@ impl swap_claim::Body {
         state.update(&self.output_2.ephemeral_key.0);
         state.update(&self.output_2.encrypted_note);
         state.update(&self.output_data.encode_to_vec());
-        state.update(&self.anchor.encode_to_vec());
-        state.update(&self.trading_pair.auth_hash().as_bytes());
+        state.update(self.trading_pair.auth_hash().as_bytes());
 
         state.finalize()
     }
