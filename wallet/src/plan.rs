@@ -84,7 +84,9 @@ where
     }
 
     // Add clue plans for `Output`s.
-    plan.add_all_clue_plans(&mut rng);
+    let fmd_params = view.fmd_parameters().await?;
+    let precision_bits = fmd_params.precision_bits;
+    plan.add_all_clue_plans(&mut rng, precision_bits.into());
     Ok(plan)
 }
 
@@ -185,7 +187,9 @@ where
     }
 
     // Add clue plans for `Output`s.
-    plan.add_all_clue_plans(&mut rng);
+    let fmd_params = view.fmd_parameters().await?;
+    let precision_bits = fmd_params.precision_bits;
+    plan.add_all_clue_plans(&mut rng, precision_bits.into());
     Ok(plan)
 }
 
@@ -270,7 +274,9 @@ where
     }
 
     // Add clue plans for `Output`s.
-    plan.add_all_clue_plans(&mut rng);
+    let fmd_params = view.fmd_parameters().await?;
+    let precision_bits = fmd_params.precision_bits;
+    plan.add_all_clue_plans(&mut rng, precision_bits.into());
     Ok(plan)
 }
 
@@ -393,7 +399,9 @@ where
     }
 
     // Add clue plans for `Output`s.
-    plan.add_all_clue_plans(&mut rng);
+    let fmd_params = view.fmd_parameters().await?;
+    let precision_bits = fmd_params.precision_bits;
+    plan.add_all_clue_plans(&mut rng, precision_bits.into());
     Ok(plan)
 }
 
@@ -536,7 +544,9 @@ where
     }
 
     // Add clue plans for `Output`s.
-    plan.add_all_clue_plans(&mut rng);
+    let fmd_params = view.fmd_parameters().await?;
+    let precision_bits = fmd_params.precision_bits;
+    plan.add_all_clue_plans(&mut rng, precision_bits.into());
     Ok(plan)
 }
 
@@ -671,7 +681,9 @@ where
     }
 
     // Add clue plans for `Output`s.
-    plan.add_all_clue_plans(&mut rng);
+    let fmd_params = view.fmd_parameters().await?;
+    let precision_bits = fmd_params.precision_bits;
+    plan.add_all_clue_plans(&mut rng, precision_bits.into());
     Ok(plan)
 }
 
@@ -747,7 +759,9 @@ where
                 tracing::debug!(?plan);
 
                 // Add clue plans for `Output`s.
-                plan.add_all_clue_plans(&mut rng);
+                let fmd_params = view.fmd_parameters().await?;
+                let precision_bits = fmd_params.precision_bits;
+                plan.add_all_clue_plans(&mut rng, precision_bits.into());
                 plans.push(plan);
             }
         }

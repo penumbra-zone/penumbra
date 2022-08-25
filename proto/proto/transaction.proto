@@ -255,6 +255,8 @@ message CluePlan {
   crypto.Address address = 1;
   // The random seed to use for the clue plan.
   bytes rseed = 2;
+  // The bits of precision.
+  uint64 precision_bits = 3;
 }
 
 message SpendPlan {

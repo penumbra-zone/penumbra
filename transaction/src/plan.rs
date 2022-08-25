@@ -183,18 +183,18 @@ impl TransactionPlan {
     }
 
     /// Method to add `CluePlan`s to a `TransactionPlan`.
-    pub fn add_all_clue_plans<R: CryptoRng + Rng>(&mut self, mut rng: R) {
+    pub fn add_all_clue_plans<R: CryptoRng + Rng>(&mut self, mut rng: R, precision_bits: usize) {
         // Add one clue per recipient.
         let mut clue_plans = vec![];
         for dest_address in self.dest_addresses() {
-            clue_plans.push(CluePlan::new(&mut rng, dest_address));
+            clue_plans.push(CluePlan::new(&mut rng, dest_address, precision_bits));
         }
 
         // Now add dummy clues until we have one clue per output.
         let num_dummy_clues = self.num_outputs() - clue_plans.len();
         for _ in 0..num_dummy_clues {
             let dummy_address = Address::dummy(&mut rng);
-            clue_plans.push(CluePlan::new(&mut rng, dummy_address));
+            clue_plans.push(CluePlan::new(&mut rng, dummy_address, precision_bits));
         }
 
         self.clue_plans = clue_plans;
