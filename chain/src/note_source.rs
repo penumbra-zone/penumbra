@@ -8,6 +8,7 @@ pub enum NoteSource {
     Transaction { id: [u8; 32] },
     Genesis,
     FundingStreamReward { epoch_index: u64 },
+    ProposalDepositRefund { proposal_id: u64 },
 }
 
 const CODE_INDEX: usize = 23;
@@ -27,6 +28,12 @@ impl NoteSource {
                 bytes[24..].copy_from_slice(&epoch_index.to_le_bytes());
                 bytes
             }
+            Self::ProposalDepositRefund { proposal_id } => {
+                let mut bytes = [0u8; 32];
+                bytes[CODE_INDEX] = 3;
+                bytes[24..].copy_from_slice(&proposal_id.to_le_bytes());
+                bytes
+            }
         }
     }
 }
@@ -43,6 +50,12 @@ impl TryFrom<[u8; 32]> for NoteSource {
                     let epoch_index =
                         u64::from_le_bytes(epoch_bytes.try_into().expect("slice is of length 8"));
                     Ok(Self::FundingStreamReward { epoch_index })
+                }
+                (3, proposal_id_bytes) => {
+                    let proposal_id = u64::from_le_bytes(
+                        proposal_id_bytes.try_into().expect("slice is of length 8"),
+                    );
+                    Ok(Self::ProposalDepositRefund { proposal_id })
                 }
                 (code, data) => Err(anyhow!(
                     "unknown note source with code {} and data {:?}",
@@ -90,6 +103,10 @@ impl std::fmt::Debug for NoteSource {
             NoteSource::FundingStreamReward { epoch_index } => f.write_fmt(format_args!(
                 "NoteSource::FundingStreamReward({})",
                 epoch_index
+            )),
+            NoteSource::ProposalDepositRefund { proposal_id } => f.write_fmt(format_args!(
+                "NoteSource::ProposalDepositRefund({})",
+                proposal_id
             )),
         }
     }
