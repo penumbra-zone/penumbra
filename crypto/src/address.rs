@@ -228,4 +228,19 @@ mod tests {
 
         assert_eq!(addr, dest);
     }
+
+    #[test]
+    fn test_address_keys_are_diversified() {
+        let mut rng = OsRng;
+        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let sk = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let fvk = sk.full_viewing_key();
+        let ivk = fvk.incoming();
+        let (dest1, dtk_d1) = ivk.payment_address(0u64.into());
+        let (dest2, dtk_d2) = ivk.payment_address(1u64.into());
+
+        assert!(dest1.transmission_key() != dest2.transmission_key());
+        assert!(dest1.clue_key() != dest2.clue_key());
+        assert!(dtk_d1.to_bytes() != dtk_d2.to_bytes());
+    }
 }
