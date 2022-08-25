@@ -52,7 +52,7 @@ impl SwapPlan {
     pub fn swap_body(&self, _fvk: &FullViewingKey) -> swap::Body {
         let fee_commitment = self.swap_plaintext.fee.value().commit(self.fee_blinding);
 
-        let swap_nft_asset_id = self.swap_plaintext.generate_swap_asset_id();
+        let swap_nft_asset_id = self.swap_plaintext.asset_id();
 
         let swap_nft_value = Value {
             amount: 1,
@@ -92,7 +92,7 @@ impl SwapPlan {
         _fvk: &FullViewingKey,
         _note_commitment_proof: tct::Proof,
     ) -> SwapProof {
-        let swap_nft_asset_id = self.swap_plaintext.generate_swap_asset_id();
+        let swap_nft_asset_id = self.swap_plaintext.asset_id();
 
         SwapProof {
             b_d: self

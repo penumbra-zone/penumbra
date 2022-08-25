@@ -92,7 +92,7 @@ impl SwapClaimPlan {
         note_blinding: Fq,
     ) -> SwapClaimProof {
         SwapClaimProof {
-            swap_nft_asset_id: self.swap_plaintext.generate_swap_asset_id(),
+            swap_nft_asset_id: self.swap_plaintext.asset_id(),
             claim_address: self.swap_nft_note.address(),
             note_commitment_proof,
             trading_pair: self.swap_plaintext.trading_pair,

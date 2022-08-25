@@ -481,7 +481,7 @@ impl SwapClaimProof {
             self.claim_address,
         )
         .map_err(|_| anyhow!("error generating expected swap plaintext"))?;
-        let expected_asset_id = expected_plaintext.generate_swap_asset_id();
+        let expected_asset_id = expected_plaintext.asset_id();
         if expected_asset_id != asset_id {
             return Err(anyhow!("improper swap NFT asset id"));
         }

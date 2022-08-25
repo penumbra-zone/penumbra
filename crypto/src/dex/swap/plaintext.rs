@@ -37,7 +37,7 @@ impl SwapPlaintext {
     // Constructs the unique asset ID for a swap as a poseidon hash of the input data for the swap.
     //
     // https://protocol.penumbra.zone/main/zswap/swap.html#swap-actions
-    pub fn generate_swap_asset_id(&self) -> asset::Id {
+    pub fn asset_id(&self) -> asset::Id {
         let packed_values = {
             let mut bytes = [0u8; 24];
             bytes[0..8].copy_from_slice(&self.delta_1.to_le_bytes());
