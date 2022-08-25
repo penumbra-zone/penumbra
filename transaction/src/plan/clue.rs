@@ -6,9 +6,9 @@ use rand::{CryptoRng, RngCore};
 
 #[derive(Clone, Debug)]
 pub struct CluePlan {
-    address: Address,
-    precision_bits: usize,
-    rseed: [u8; 32],
+    pub address: Address,
+    pub precision_bits: usize,
+    pub rseed: [u8; 32],
 }
 
 impl CluePlan {

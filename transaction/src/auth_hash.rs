@@ -1,5 +1,6 @@
 use blake2b_simd::{Hash, Params};
 use decaf377::FieldExt;
+use decaf377_fmd::Clue;
 use penumbra_crypto::FullViewingKey;
 use penumbra_proto::{transaction as pb, Message, Protobuf};
 
@@ -12,6 +13,10 @@ use crate::{
     plan::TransactionPlan,
     Action, Transaction, TransactionBody,
 };
+
+pub trait AuthorizingData {
+    fn auth_hash(&self) -> Hash;
+}
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub struct AuthHash([u8; 64]);
@@ -69,6 +74,13 @@ impl TransactionBody {
         state.update(&num_actions.to_le_bytes());
         for action in &self.actions {
             state.update(action.auth_hash().as_bytes());
+        }
+
+        // Hash the clues.
+        let num_clues = self.fmd_clues.len() as u32;
+        state.update(&num_clues.to_le_bytes());
+        for fmd_clue in &self.fmd_clues {
+            state.update(fmd_clue.auth_hash().as_bytes());
         }
 
         AuthHash(*state.finalize().as_array())
@@ -146,6 +158,11 @@ impl TransactionPlan {
                 .hash(&payload.encode_to_vec());
             state.update(auth_hash.as_bytes());
         }
+        let num_clues = self.clue_plans.len() as u32;
+        state.update(&num_clues.to_le_bytes());
+        for clue_plan in self.clue_plans() {
+            state.update(clue_plan.clue().auth_hash().as_bytes());
+        }
 
         AuthHash(*state.finalize().as_array())
     }
@@ -157,7 +174,7 @@ fn chain_id_auth_hash(chain_id: &str) -> Hash {
         .hash(chain_id.as_bytes())
 }
 
-impl Action {
+impl AuthorizingData for Action {
     fn auth_hash(&self) -> Hash {
         match self {
             Action::Output(output) => output.body.auth_hash(),
@@ -187,7 +204,7 @@ impl Action {
     }
 }
 
-impl output::Body {
+impl AuthorizingData for output::Body {
     fn auth_hash(&self) -> Hash {
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:output_body")
@@ -206,7 +223,7 @@ impl output::Body {
     }
 }
 
-impl spend::Body {
+impl AuthorizingData for spend::Body {
     fn auth_hash(&self) -> Hash {
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:spend_body")
@@ -222,7 +239,7 @@ impl spend::Body {
     }
 }
 
-impl swap::Body {
+impl AuthorizingData for swap::Body {
     fn auth_hash(&self) -> Hash {
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:swap_body")
@@ -244,7 +261,7 @@ impl swap::Body {
     }
 }
 
-impl swap_claim::Body {
+impl AuthorizingData for swap_claim::Body {
     fn auth_hash(&self) -> Hash {
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:swap_claim_body")
@@ -270,7 +287,7 @@ impl swap_claim::Body {
     }
 }
 
-impl Delegate {
+impl AuthorizingData for Delegate {
     fn auth_hash(&self) -> Hash {
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:delegate")
@@ -287,7 +304,7 @@ impl Delegate {
     }
 }
 
-impl Undelegate {
+impl AuthorizingData for Undelegate {
     fn auth_hash(&self) -> Hash {
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:undelegate")
@@ -304,8 +321,8 @@ impl Undelegate {
     }
 }
 
-impl ProposalSubmit {
-    pub fn auth_hash(&self) -> Hash {
+impl AuthorizingData for ProposalSubmit {
+    fn auth_hash(&self) -> Hash {
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:prop_submit")
             .to_state();
@@ -314,14 +331,14 @@ impl ProposalSubmit {
     }
 }
 
-impl ProposalWithdraw {
-    pub fn auth_hash(&self) -> Hash {
+impl AuthorizingData for ProposalWithdraw {
+    fn auth_hash(&self) -> Hash {
         self.body.auth_hash()
     }
 }
 
-impl ProposalWithdrawBody {
-    pub fn auth_hash(&self) -> Hash {
+impl AuthorizingData for ProposalWithdrawBody {
+    fn auth_hash(&self) -> Hash {
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:prop_withdrw")
             .to_state();
@@ -330,14 +347,14 @@ impl ProposalWithdrawBody {
     }
 }
 
-impl ValidatorVote {
-    pub fn auth_hash(&self) -> Hash {
+impl AuthorizingData for ValidatorVote {
+    fn auth_hash(&self) -> Hash {
         self.body.auth_hash()
     }
 }
 
-impl ValidatorVoteBody {
-    pub fn auth_hash(&self) -> Hash {
+impl AuthorizingData for ValidatorVoteBody {
+    fn auth_hash(&self) -> Hash {
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:val_vote")
             .to_state();
@@ -358,8 +375,8 @@ impl ValidatorVoteBody {
     }
 }
 
-impl PositionOpen {
-    pub fn auth_hash(&self) -> Hash {
+impl AuthorizingData for PositionOpen {
+    fn auth_hash(&self) -> Hash {
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:pos_open")
             .to_state();
@@ -374,8 +391,8 @@ impl PositionOpen {
     }
 }
 
-impl PositionClose {
-    pub fn auth_hash(&self) -> Hash {
+impl AuthorizingData for PositionClose {
+    fn auth_hash(&self) -> Hash {
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:pos_close")
             .to_state();
@@ -386,8 +403,8 @@ impl PositionClose {
     }
 }
 
-impl PositionWithdraw {
-    pub fn auth_hash(&self) -> Hash {
+impl AuthorizingData for PositionWithdraw {
+    fn auth_hash(&self) -> Hash {
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:pos_withdraw")
             .to_state();
@@ -399,8 +416,8 @@ impl PositionWithdraw {
     }
 }
 
-impl PositionRewardClaim {
-    pub fn auth_hash(&self) -> Hash {
+impl AuthorizingData for PositionRewardClaim {
+    fn auth_hash(&self) -> Hash {
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:pos_rewrdclm")
             .to_state();
@@ -412,8 +429,8 @@ impl PositionRewardClaim {
     }
 }
 
-impl ICS20Withdrawal {
-    pub fn auth_hash(&self) -> Hash {
+impl AuthorizingData for ICS20Withdrawal {
+    fn auth_hash(&self) -> Hash {
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:ics20wthdrwl")
             .to_state();
@@ -431,6 +448,17 @@ impl ICS20Withdrawal {
         state.update(&self.return_address.to_vec());
         state.update(&self.timeout_height.to_le_bytes());
         state.update(&self.timeout_time.to_le_bytes());
+        state.finalize()
+    }
+}
+
+impl AuthorizingData for Clue {
+    fn auth_hash(&self) -> Hash {
+        let mut state = blake2b_simd::Params::default()
+            .personal(b"PAH:decaffmdclue")
+            .to_state();
+
+        state.update(&self.0.to_vec());
         state.finalize()
     }
 }
