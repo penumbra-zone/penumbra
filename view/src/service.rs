@@ -223,7 +223,7 @@ impl ViewService {
 #[async_trait]
 impl ViewProtocol for ViewService {
     type NotesStream =
-        Pin<Box<dyn futures::Stream<Item = Result<pb::NoteRecord, tonic::Status>> + Send>>;
+        Pin<Box<dyn futures::Stream<Item = Result<pb::SpendableNoteRecord, tonic::Status>> + Send>>;
     type QuarantinedNotesStream = Pin<
         Box<dyn futures::Stream<Item = Result<pb::QuarantinedNoteRecord, tonic::Status>> + Send>,
     >;
@@ -236,7 +236,7 @@ impl ViewProtocol for ViewService {
     async fn note_by_commitment(
         &self,
         request: tonic::Request<pb::NoteByCommitmentRequest>,
-    ) -> Result<tonic::Response<pb::NoteRecord>, tonic::Status> {
+    ) -> Result<tonic::Response<pb::SpendableNoteRecord>, tonic::Status> {
         self.check_worker().await?;
         self.check_fvk(request.get_ref().fvk_hash.as_ref()).await?;
 
@@ -252,7 +252,7 @@ impl ViewProtocol for ViewService {
                 tonic::Status::failed_precondition("Invalid note commitment in request")
             })?;
 
-        Ok(tonic::Response::new(pb::NoteRecord::from(
+        Ok(tonic::Response::new(pb::SpendableNoteRecord::from(
             self.storage
                 .note_by_commitment(note_commitment, request.await_detection)
                 .await

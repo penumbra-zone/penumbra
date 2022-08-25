@@ -19,7 +19,7 @@ use std::{num::NonZeroU64, sync::Arc};
 use tct::Commitment;
 use tokio::sync::broadcast;
 
-use crate::{sync::FilteredBlock, NoteRecord, QuarantinedNoteRecord};
+use crate::{sync::FilteredBlock, QuarantinedNoteRecord, SpendableNoteRecord};
 
 mod nct;
 use nct::TreeStore;
@@ -37,7 +37,7 @@ pub struct Storage {
     /// Using a `NonZeroU64` ensures that `Option<NonZeroU64>` fits in 8 bytes.
     uncommitted_height: Arc<Mutex<Option<NonZeroU64>>>,
 
-    scanned_notes_tx: tokio::sync::broadcast::Sender<NoteRecord>,
+    scanned_notes_tx: tokio::sync::broadcast::Sender<SpendableNoteRecord>,
     scanned_nullifiers_tx: tokio::sync::broadcast::Sender<Nullifier>,
 }
 
@@ -162,7 +162,7 @@ impl Storage {
         &self,
         note_commitment: tct::Commitment,
         await_detection: bool,
-    ) -> impl Future<Output = anyhow::Result<NoteRecord>> {
+    ) -> impl Future<Output = anyhow::Result<SpendableNoteRecord>> {
         // Start subscribing now, before querying for whether we already
         // have the record, so that we can't miss it if we race a write.
         let mut rx = self.scanned_notes_tx.subscribe();
@@ -171,10 +171,10 @@ impl Storage {
         let pool = self.pool.clone();
         async move {
             // Check if we already have the note
-            if let Some(record) = sqlx::query_as::<_, NoteRecord>(
+            if let Some(record) = sqlx::query_as::<_, SpendableNoteRecord>(
                 format!(
                     "SELECT *
-                    FROM notes
+                    FROM spendable_notes
                     WHERE note_commitment = x'{}'",
                     hex::encode(note_commitment.0.to_bytes())
                 )
@@ -220,7 +220,7 @@ impl Storage {
         async move {
             // Check if we already have the nullifier in the set of spent notes
             if let Some(record) = sqlx::query!(
-                "SELECT nullifier, height_spent FROM notes WHERE nullifier = ?",
+                "SELECT nullifier, height_spent FROM spendable_notes WHERE nullifier = ?",
                 nullifier_bytes,
             )
             .fetch_optional(&pool)
@@ -352,7 +352,7 @@ impl Storage {
         asset_id: Option<asset::Id>,
         address_index: Option<penumbra_crypto::keys::AddressIndex>,
         amount_to_spend: u64,
-    ) -> anyhow::Result<Vec<NoteRecord>> {
+    ) -> anyhow::Result<Vec<SpendableNoteRecord>> {
         // If set, return spent notes as well as unspent notes.
         // bool include_spent = 2;
         let spent_clause = match include_spent {
@@ -373,10 +373,10 @@ impl Storage {
             .map(|d| format!("x'{}'", hex::encode(&d.to_bytes())))
             .unwrap_or_else(|| "address_index".to_string());
 
-        let result = sqlx::query_as::<_, NoteRecord>(
+        let result = sqlx::query_as::<_, SpendableNoteRecord>(
             format!(
                 "SELECT *
-            FROM notes
+            FROM spendable_notes
             WHERE height_spent IS {}
             AND asset_id IS {}
             AND address_index IS {}",
@@ -395,7 +395,7 @@ impl Storage {
         let amount_cutoff = (amount_to_spend != 0) && !(include_spent || asset_id.is_none());
         let mut amount_total = 0;
 
-        let mut output: Vec<NoteRecord> = Vec::new();
+        let mut output: Vec<SpendableNoteRecord> = Vec::new();
 
         for record in result.into_iter() {
             let amount = record.note.amount();
@@ -484,10 +484,10 @@ impl Storage {
             return Ok(Vec::new());
         }
 
-        Ok(sqlx::query_as::<_, NoteRecord>(
+        Ok(sqlx::query_as::<_, SpendableNoteRecord>(
             format!(
                 "SELECT *
-                    FROM notes
+                    FROM spendable_notes
                     WHERE nullifier IN ({})",
                 nullifiers
                     .iter()
@@ -597,7 +597,7 @@ impl Storage {
             let position = (u64::from(note_record.position)) as i64;
             let source = note_record.source.to_bytes().to_vec();
             sqlx::query!(
-                "INSERT INTO notes
+                "INSERT INTO spendable_notes
                     (
                         note_commitment,
                         height_spent,
@@ -674,7 +674,7 @@ impl Storage {
 
                 // Mark the note as spent
                 sqlx::query!(
-                    "UPDATE notes SET height_spent = ? WHERE nullifier = ?",
+                    "UPDATE spendable_notes SET height_spent = ? WHERE nullifier = ?",
                     height_spent,
                     nullifier,
                 )
@@ -693,7 +693,7 @@ impl Storage {
             let height_spent = filtered_block.height as i64;
             let nullifier = nullifier.to_bytes().to_vec();
             let spent_commitment_bytes = sqlx::query!(
-                "UPDATE notes SET height_spent = ? WHERE nullifier = ? RETURNING note_commitment",
+                "UPDATE spendable_notes SET height_spent = ? WHERE nullifier = ? RETURNING note_commitment",
                 height_spent,
                 nullifier,
             )
@@ -744,7 +744,7 @@ impl Storage {
             for rolled_back_nullifier in rolled_back_nullifiers {
                 let rolled_back_nullifier = rolled_back_nullifier.nullifier.to_vec();
                 sqlx::query!(
-                    "UPDATE notes SET height_spent = NULL WHERE nullifier = ?",
+                    "UPDATE spendable_notes SET height_spent = NULL WHERE nullifier = ?",
                     rolled_back_nullifier,
                 )
                 .execute(&mut dbtx)
@@ -811,7 +811,7 @@ impl Storage {
         self.uncommitted_height.lock().take();
 
         // Broadcast all committed note records to channel
-        // Done following tx.commit() to avoid notifying of a new NoteRecord before it is actually committed to the database
+        // Done following tx.commit() to avoid notifying of a new SpendableNoteRecord before it is actually committed to the database
 
         for note_record in &filtered_block.new_notes {
             // This will fail to be broadcast if there is no active receiver (such as on initial sync)

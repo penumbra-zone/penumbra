@@ -375,7 +375,7 @@ func (x *StatusStreamResponse) GetSyncHeight() uint64 {
 }
 
 // A note plaintext with associated metadata about its status.
-type NoteRecord struct {
+type SpendableNoteRecord struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -396,8 +396,8 @@ type NoteRecord struct {
 	Position uint64 `protobuf:"varint,7,opt,name=position,proto3" json:"position,omitempty"`
 }
 
-func (x *NoteRecord) Reset() {
-	*x = NoteRecord{}
+func (x *SpendableNoteRecord) Reset() {
+	*x = SpendableNoteRecord{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_view_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -405,13 +405,13 @@ func (x *NoteRecord) Reset() {
 	}
 }
 
-func (x *NoteRecord) String() string {
+func (x *SpendableNoteRecord) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*NoteRecord) ProtoMessage() {}
+func (*SpendableNoteRecord) ProtoMessage() {}
 
-func (x *NoteRecord) ProtoReflect() protoreflect.Message {
+func (x *SpendableNoteRecord) ProtoReflect() protoreflect.Message {
 	mi := &file_view_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -423,54 +423,54 @@ func (x *NoteRecord) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use NoteRecord.ProtoReflect.Descriptor instead.
-func (*NoteRecord) Descriptor() ([]byte, []int) {
+// Deprecated: Use SpendableNoteRecord.ProtoReflect.Descriptor instead.
+func (*SpendableNoteRecord) Descriptor() ([]byte, []int) {
 	return file_view_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *NoteRecord) GetNoteCommitment() *NoteCommitment {
+func (x *SpendableNoteRecord) GetNoteCommitment() *NoteCommitment {
 	if x != nil {
 		return x.NoteCommitment
 	}
 	return nil
 }
 
-func (x *NoteRecord) GetNote() *Note {
+func (x *SpendableNoteRecord) GetNote() *Note {
 	if x != nil {
 		return x.Note
 	}
 	return nil
 }
 
-func (x *NoteRecord) GetAddressIndex() *AddressIndex {
+func (x *SpendableNoteRecord) GetAddressIndex() *AddressIndex {
 	if x != nil {
 		return x.AddressIndex
 	}
 	return nil
 }
 
-func (x *NoteRecord) GetNullifier() *Nullifier {
+func (x *SpendableNoteRecord) GetNullifier() *Nullifier {
 	if x != nil {
 		return x.Nullifier
 	}
 	return nil
 }
 
-func (x *NoteRecord) GetHeightCreated() uint64 {
+func (x *SpendableNoteRecord) GetHeightCreated() uint64 {
 	if x != nil {
 		return x.HeightCreated
 	}
 	return 0
 }
 
-func (x *NoteRecord) GetHeightSpent() uint64 {
+func (x *SpendableNoteRecord) GetHeightSpent() uint64 {
 	if x != nil && x.HeightSpent != nil {
 		return *x.HeightSpent
 	}
 	return 0
 }
 
-func (x *NoteRecord) GetPosition() uint64 {
+func (x *SpendableNoteRecord) GetPosition() uint64 {
 	if x != nil {
 		return x.Position
 	}
@@ -960,7 +960,7 @@ var file_view_proto_goTypes = []interface{}{
 	(*StatusResponse)(nil),          // 4: penumbra.view.StatusResponse
 	(*StatusStreamRequest)(nil),     // 5: penumbra.view.StatusStreamRequest
 	(*StatusStreamResponse)(nil),    // 6: penumbra.view.StatusStreamResponse
-	(*NoteRecord)(nil),              // 7: penumbra.view.NoteRecord
+	(*SpendableNoteRecord)(nil),              // 7: penumbra.view.SpendableNoteRecord
 	(*NotesRequest)(nil),            // 8: penumbra.view.NotesRequest
 	(*WitnessRequest)(nil),          // 9: penumbra.view.WitnessRequest
 	(*QuarantinedNoteRecord)(nil),   // 10: penumbra.view.QuarantinedNoteRecord
@@ -981,10 +981,10 @@ var file_view_proto_depIdxs = []int32{
 	13, // 1: penumbra.view.NoteByCommitmentRequest.note_commitment:type_name -> penumbra.crypto.NoteCommitment
 	12, // 2: penumbra.view.StatusRequest.fvk_hash:type_name -> penumbra.crypto.FullViewingKeyHash
 	12, // 3: penumbra.view.StatusStreamRequest.fvk_hash:type_name -> penumbra.crypto.FullViewingKeyHash
-	13, // 4: penumbra.view.NoteRecord.note_commitment:type_name -> penumbra.crypto.NoteCommitment
-	14, // 5: penumbra.view.NoteRecord.note:type_name -> penumbra.crypto.Note
-	15, // 6: penumbra.view.NoteRecord.address_index:type_name -> penumbra.crypto.AddressIndex
-	16, // 7: penumbra.view.NoteRecord.nullifier:type_name -> penumbra.crypto.Nullifier
+	13, // 4: penumbra.view.SpendableNoteRecord.note_commitment:type_name -> penumbra.crypto.NoteCommitment
+	14, // 5: penumbra.view.SpendableNoteRecord.note:type_name -> penumbra.crypto.Note
+	15, // 6: penumbra.view.SpendableNoteRecord.address_index:type_name -> penumbra.crypto.AddressIndex
+	16, // 7: penumbra.view.SpendableNoteRecord.nullifier:type_name -> penumbra.crypto.Nullifier
 	12, // 8: penumbra.view.NotesRequest.fvk_hash:type_name -> penumbra.crypto.FullViewingKeyHash
 	17, // 9: penumbra.view.NotesRequest.asset_id:type_name -> penumbra.crypto.AssetId
 	15, // 10: penumbra.view.NotesRequest.address_index:type_name -> penumbra.crypto.AddressIndex
@@ -1005,12 +1005,12 @@ var file_view_proto_depIdxs = []int32{
 	0,  // 25: penumbra.view.ViewProtocol.NoteByCommitment:input_type -> penumbra.view.NoteByCommitmentRequest
 	4,  // 26: penumbra.view.ViewProtocol.Status:output_type -> penumbra.view.StatusResponse
 	6,  // 27: penumbra.view.ViewProtocol.StatusStream:output_type -> penumbra.view.StatusStreamResponse
-	7,  // 28: penumbra.view.ViewProtocol.Notes:output_type -> penumbra.view.NoteRecord
+	7,  // 28: penumbra.view.ViewProtocol.Notes:output_type -> penumbra.view.SpendableNoteRecord
 	10, // 29: penumbra.view.ViewProtocol.QuarantinedNotes:output_type -> penumbra.view.QuarantinedNoteRecord
 	19, // 30: penumbra.view.ViewProtocol.Witness:output_type -> penumbra.transaction.WitnessData
 	20, // 31: penumbra.view.ViewProtocol.Assets:output_type -> penumbra.crypto.Asset
 	21, // 32: penumbra.view.ViewProtocol.ChainParameters:output_type -> penumbra.chain.ChainParameters
-	7,  // 33: penumbra.view.ViewProtocol.NoteByCommitment:output_type -> penumbra.view.NoteRecord
+	7,  // 33: penumbra.view.ViewProtocol.NoteByCommitment:output_type -> penumbra.view.SpendableNoteRecord
 	26, // [26:34] is the sub-list for method output_type
 	18, // [18:26] is the sub-list for method input_type
 	18, // [18:18] is the sub-list for extension type_name
@@ -1112,7 +1112,7 @@ func file_view_proto_init() {
 			}
 		}
 		file_view_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*NoteRecord); i {
+			switch v := v.(*SpendableNoteRecord); i {
 			case 0:
 				return &v.state
 			case 1:

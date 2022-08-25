@@ -7,7 +7,7 @@ CREATE TABLE note_commitment_tree (bytes BLOB NOT NULL);
 
 -- Minimal data required for balance tracking
 -- Meant to represent notes which have been accepted into the note set
-CREATE TABLE notes (
+CREATE TABLE spendable_notes (
     note_commitment         BLOB PRIMARY KEY NOT NULL,
     height_spent            BIGINT, --null if unspent, otherwise spent at height_spent 
     height_created          BIGINT NOT NULL,
@@ -27,7 +27,7 @@ CREATE TABLE notes (
 );
 
 -- general purpose note queries
-CREATE INDEX notes_idx ON notes (
+CREATE INDEX spendable_notes_idx ON spendable_notes (
     height_spent,       -- null if unspent, so spent/unspent is first
     address_index,  -- then filter by account
     asset_id,           -- then by asset
@@ -36,10 +36,10 @@ CREATE INDEX notes_idx ON notes (
 );
 
 -- used to detect spends
-CREATE INDEX nullifier_idx on notes ( nullifier );
+CREATE INDEX nullifier_idx on spendable_notes ( nullifier );
 
 -- used to crossreference transactions
-CREATE INDEX notes_source_index on notes ( source );
+CREATE INDEX spendable_notes_source_index on spendable_notes ( source );
 
 -- used for storing a cache of known assets
 CREATE TABLE assets (
