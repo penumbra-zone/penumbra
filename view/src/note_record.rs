@@ -8,10 +8,10 @@ use penumbra_tct as tct;
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
 
-/// Corresponds to the NoteRecord proto
+/// Corresponds to the SpendableNoteRecord proto
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(try_from = "pb::NoteRecord", into = "pb::NoteRecord")]
-pub struct NoteRecord {
+#[serde(try_from = "pb::SpendableNoteRecord", into = "pb::SpendableNoteRecord")]
+pub struct SpendableNoteRecord {
     pub note_commitment: note::Commitment,
     pub note: Note,
     pub address_index: AddressIndex,
@@ -22,10 +22,10 @@ pub struct NoteRecord {
     pub source: NoteSource,
 }
 
-impl Protobuf<pb::NoteRecord> for NoteRecord {}
-impl From<NoteRecord> for pb::NoteRecord {
-    fn from(v: NoteRecord) -> Self {
-        pb::NoteRecord {
+impl Protobuf<pb::SpendableNoteRecord> for SpendableNoteRecord {}
+impl From<SpendableNoteRecord> for pb::SpendableNoteRecord {
+    fn from(v: SpendableNoteRecord) -> Self {
+        pb::SpendableNoteRecord {
             note_commitment: Some(v.note_commitment.into()),
             note: Some(v.note.into()),
             address_index: Some(v.address_index.into()),
@@ -38,10 +38,10 @@ impl From<NoteRecord> for pb::NoteRecord {
     }
 }
 
-impl TryFrom<pb::NoteRecord> for NoteRecord {
+impl TryFrom<pb::SpendableNoteRecord> for SpendableNoteRecord {
     type Error = anyhow::Error;
-    fn try_from(v: pb::NoteRecord) -> Result<Self, Self::Error> {
-        Ok(NoteRecord {
+    fn try_from(v: pb::SpendableNoteRecord) -> Result<Self, Self::Error> {
+        Ok(SpendableNoteRecord {
             note_commitment: v
                 .note_commitment
                 .ok_or_else(|| anyhow::anyhow!("missing note commitment"))?
@@ -69,7 +69,7 @@ impl TryFrom<pb::NoteRecord> for NoteRecord {
     }
 }
 
-impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for NoteRecord {
+impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for SpendableNoteRecord {
     fn from_row(row: &'r sqlx::sqlite::SqliteRow) -> Result<Self, sqlx::Error> {
         // This is not a fun time.
         // Mostly on account of sqlx::Error.
@@ -153,7 +153,7 @@ impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for NoteRecord {
             }
         })?;
 
-        Ok(NoteRecord {
+        Ok(SpendableNoteRecord {
             note_commitment,
             note,
             address_index,

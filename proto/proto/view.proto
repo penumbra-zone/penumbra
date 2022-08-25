@@ -24,7 +24,7 @@ service ViewProtocol {
     rpc StatusStream(StatusStreamRequest) returns (stream StatusStreamResponse);
 
     // Queries for notes that have been accepted by the chain.
-    rpc Notes(NotesRequest) returns (stream NoteRecord);
+    rpc Notes(NotesRequest) returns (stream SpendableNoteRecord);
 
     // Queries for notes that have been quarantined until the end of an unbonding period.
     rpc QuarantinedNotes(QuarantinedNotesRequest) returns (stream QuarantinedNoteRecord);
@@ -47,7 +47,7 @@ service ViewProtocol {
     rpc FMDParameters(FMDParametersRequest) returns (chain.FmdParameters);
 
     // Query for a note by its note commitment, optionally waiting until the note is detected.
-    rpc NoteByCommitment(NoteByCommitmentRequest) returns (NoteRecord);
+    rpc NoteByCommitment(NoteByCommitmentRequest) returns (SpendableNoteRecord);
 
     // Query for whether a nullifier has been spent, optionally waiting until it is spent.
     rpc NullifierStatus(NullifierStatusRequest) returns (NullifierStatusResponse);
@@ -99,7 +99,7 @@ message StatusStreamResponse {
 }
 
 // A note plaintext with associated metadata about its status.
-message NoteRecord {
+message SpendableNoteRecord {
     // The note commitment, identifying the note.
     crypto.NoteCommitment note_commitment = 1;
     // The note plaintext itself.

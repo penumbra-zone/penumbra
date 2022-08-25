@@ -15,7 +15,7 @@ use worker::Worker;
 
 pub use crate::metrics::register_metrics;
 pub use client::ViewClient;
-pub use note_record::NoteRecord;
+pub use note_record::SpendableNoteRecord;
 pub use quarantined_note_record::QuarantinedNoteRecord;
 pub use service::ViewService;
 pub use status::StatusStreamResponse;

@@ -13,7 +13,7 @@ use penumbra_proto::view::NotesRequest;
 use penumbra_transaction::plan::{
     ActionPlan, OutputPlan, SpendPlan, SwapClaimPlan, SwapPlan, TransactionPlan,
 };
-use penumbra_view::{NoteRecord, ViewClient};
+use penumbra_view::{SpendableNoteRecord, ViewClient};
 use rand_core::{CryptoRng, RngCore};
 use tracing::instrument;
 
@@ -199,7 +199,7 @@ pub async fn undelegate<V, R>(
     view: &mut V,
     mut rng: R,
     rate_data: RateData,
-    delegation_notes: Vec<NoteRecord>,
+    delegation_notes: Vec<SpendableNoteRecord>,
     fee: u64,
     source_address: Option<u64>,
 ) -> Result<TransactionPlan>
@@ -708,7 +708,7 @@ where
         })
         .await?;
 
-    let mut notes_by_addr_and_denom: BTreeMap<AddressIndex, BTreeMap<_, Vec<NoteRecord>>> =
+    let mut notes_by_addr_and_denom: BTreeMap<AddressIndex, BTreeMap<_, Vec<SpendableNoteRecord>>> =
         BTreeMap::new();
 
     for record in all_notes {

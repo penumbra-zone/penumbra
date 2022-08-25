@@ -6,12 +6,12 @@ use penumbra_chain::{
 use penumbra_crypto::{FullViewingKey, IdentityKey, Note, NotePayload, Nullifier};
 use penumbra_tct as tct;
 
-use crate::{NoteRecord, QuarantinedNoteRecord, Storage};
+use crate::{QuarantinedNoteRecord, SpendableNoteRecord, Storage};
 
 /// Contains the results of scanning a single block.
 #[derive(Debug, Clone)]
 pub struct FilteredBlock {
-    pub new_notes: Vec<NoteRecord>,
+    pub new_notes: Vec<SpendableNoteRecord>,
     pub new_quarantined_notes: Vec<QuarantinedNoteRecord>,
     pub spent_nullifiers: Vec<Nullifier>,
     pub spent_quarantined_nullifiers: BTreeMap<IdentityKey, Vec<Nullifier>>,
@@ -67,7 +67,7 @@ pub async fn scan_block(
     };
 
     // Notes we've found in this block that are meant for us
-    let new_notes: Vec<NoteRecord>;
+    let new_notes: Vec<SpendableNoteRecord>;
     let mut new_quarantined_notes: Vec<QuarantinedNoteRecord> = Vec::new();
 
     // Nullifiers we've found in this block
@@ -152,7 +152,7 @@ pub async fn scan_block(
                     let diversifier = note.diversifier();
                     let address_index = fvk.incoming().index_for_diversifier(diversifier);
 
-                    let record = NoteRecord {
+                    let record = SpendableNoteRecord {
                         note_commitment,
                         height_spent: None,
                         height_created: height,

@@ -11,7 +11,7 @@ use penumbra_transaction::WitnessData;
 use tonic::async_trait;
 use tracing::instrument;
 
-use crate::{NoteRecord, QuarantinedNoteRecord, StatusStreamResponse};
+use crate::{QuarantinedNoteRecord, SpendableNoteRecord, StatusStreamResponse};
 
 /// The view protocol is used by a view client, who wants to do some
 /// transaction-related actions, to request data from a view service, which is
@@ -43,7 +43,7 @@ pub trait ViewClient {
     async fn fmd_parameters(&mut self) -> Result<FmdParameters>;
 
     /// Queries for notes.
-    async fn notes(&mut self, request: pb::NotesRequest) -> Result<Vec<NoteRecord>>;
+    async fn notes(&mut self, request: pb::NotesRequest) -> Result<Vec<SpendableNoteRecord>>;
 
     /// Queries for quarantined notes.
     async fn quarantined_notes(
@@ -56,7 +56,7 @@ pub trait ViewClient {
         &mut self,
         fvk_hash: FullViewingKeyHash,
         note_commitment: note::Commitment,
-    ) -> Result<NoteRecord>;
+    ) -> Result<SpendableNoteRecord>;
 
     /// Queries for a specific nullifier's status, returning immediately if it is not found.
     async fn nullifier_status(
@@ -80,7 +80,7 @@ pub trait ViewClient {
         &mut self,
         fvk_hash: FullViewingKeyHash,
         note_commitment: note::Commitment,
-    ) -> Result<NoteRecord>;
+    ) -> Result<SpendableNoteRecord>;
 
     /// Returns authentication paths for the given note commitments.
     ///
@@ -98,7 +98,7 @@ pub trait ViewClient {
     async fn unspent_notes_by_address_and_asset(
         &mut self,
         fvk_hash: FullViewingKeyHash,
-    ) -> Result<BTreeMap<AddressIndex, BTreeMap<asset::Id, Vec<NoteRecord>>>> {
+    ) -> Result<BTreeMap<AddressIndex, BTreeMap<asset::Id, Vec<SpendableNoteRecord>>>> {
         let notes = self
             .notes(pb::NotesRequest {
                 fvk_hash: Some(fvk_hash.into()),
@@ -128,7 +128,7 @@ pub trait ViewClient {
     async fn unspent_notes_by_asset_and_address(
         &mut self,
         fvk_hash: FullViewingKeyHash,
-    ) -> Result<BTreeMap<asset::Id, BTreeMap<AddressIndex, Vec<NoteRecord>>>> {
+    ) -> Result<BTreeMap<asset::Id, BTreeMap<AddressIndex, Vec<SpendableNoteRecord>>>> {
         let notes = self
             .notes(pb::NotesRequest {
                 fvk_hash: Some(fvk_hash.into()),
@@ -278,7 +278,7 @@ where
         Ok(params)
     }
 
-    async fn notes(&mut self, request: pb::NotesRequest) -> Result<Vec<NoteRecord>> {
+    async fn notes(&mut self, request: pb::NotesRequest) -> Result<Vec<SpendableNoteRecord>> {
         let pb_notes: Vec<_> = self
             .notes(tonic::Request::new(request))
             .await?
@@ -307,7 +307,7 @@ where
         &mut self,
         fvk_hash: FullViewingKeyHash,
         note_commitment: note::Commitment,
-    ) -> Result<NoteRecord> {
+    ) -> Result<SpendableNoteRecord> {
         ViewProtocolClient::note_by_commitment(
             self,
             tonic::Request::new(pb::NoteByCommitmentRequest {
@@ -328,7 +328,7 @@ where
         &mut self,
         fvk_hash: FullViewingKeyHash,
         note_commitment: note::Commitment,
-    ) -> Result<NoteRecord> {
+    ) -> Result<SpendableNoteRecord> {
         ViewProtocolClient::note_by_commitment(
             self,
             tonic::Request::new(pb::NoteByCommitmentRequest {

@@ -137,7 +137,7 @@ func (x *StatusResponse) GetSyncHeight() uint64 {
 }
 
 // A note plaintext with associated metadata about its status.
-type NoteRecord struct {
+type SpendableNoteRecord struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -156,8 +156,8 @@ type NoteRecord struct {
 	HeightSpent *uint64 `protobuf:"varint,6,opt,name=height_spent,json=heightSpent,proto3,oneof" json:"height_spent,omitempty"`
 }
 
-func (x *NoteRecord) Reset() {
-	*x = NoteRecord{}
+func (x *SpendableNoteRecord) Reset() {
+	*x = SpendableNoteRecord{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_wallet_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -165,13 +165,13 @@ func (x *NoteRecord) Reset() {
 	}
 }
 
-func (x *NoteRecord) String() string {
+func (x *SpendableNoteRecord) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*NoteRecord) ProtoMessage() {}
+func (*SpendableNoteRecord) ProtoMessage() {}
 
-func (x *NoteRecord) ProtoReflect() protoreflect.Message {
+func (x *SpendableNoteRecord) ProtoReflect() protoreflect.Message {
 	mi := &file_wallet_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -183,47 +183,47 @@ func (x *NoteRecord) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use NoteRecord.ProtoReflect.Descriptor instead.
-func (*NoteRecord) Descriptor() ([]byte, []int) {
+// Deprecated: Use SpendableNoteRecord.ProtoReflect.Descriptor instead.
+func (*SpendableNoteRecord) Descriptor() ([]byte, []int) {
 	return file_wallet_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *NoteRecord) GetNoteCommitment() *NoteCommitment {
+func (x *SpendableNoteRecord) GetNoteCommitment() *NoteCommitment {
 	if x != nil {
 		return x.NoteCommitment
 	}
 	return nil
 }
 
-func (x *NoteRecord) GetNote() *Note {
+func (x *SpendableNoteRecord) GetNote() *Note {
 	if x != nil {
 		return x.Note
 	}
 	return nil
 }
 
-func (x *NoteRecord) GetAddressIndex() *AddressIndex {
+func (x *SpendableNoteRecord) GetAddressIndex() *AddressIndex {
 	if x != nil {
 		return x.AddressIndex
 	}
 	return nil
 }
 
-func (x *NoteRecord) GetNullifier() *Nullifier {
+func (x *SpendableNoteRecord) GetNullifier() *Nullifier {
 	if x != nil {
 		return x.Nullifier
 	}
 	return nil
 }
 
-func (x *NoteRecord) GetHeightCreated() uint64 {
+func (x *SpendableNoteRecord) GetHeightCreated() uint64 {
 	if x != nil {
 		return x.HeightCreated
 	}
 	return 0
 }
 
-func (x *NoteRecord) GetHeightSpent() uint64 {
+func (x *SpendableNoteRecord) GetHeightSpent() uint64 {
 	if x != nil && x.HeightSpent != nil {
 		return *x.HeightSpent
 	}
@@ -549,7 +549,7 @@ var file_wallet_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_wallet_proto_goTypes = []interface{}{
 	(*StatusRequest)(nil),      // 0: penumbra.wallet.StatusRequest
 	(*StatusResponse)(nil),     // 1: penumbra.wallet.StatusResponse
-	(*NoteRecord)(nil),         // 2: penumbra.wallet.NoteRecord
+	(*SpendableNoteRecord)(nil),         // 2: penumbra.wallet.SpendableNoteRecord
 	(*NotesRequest)(nil),       // 3: penumbra.wallet.NotesRequest
 	(*AuthPathsRequest)(nil),   // 4: penumbra.wallet.AuthPathsRequest
 	(*AuthPathsResponse)(nil),  // 5: penumbra.wallet.AuthPathsResponse
@@ -564,10 +564,10 @@ var file_wallet_proto_goTypes = []interface{}{
 }
 var file_wallet_proto_depIdxs = []int32{
 	6,  // 0: penumbra.wallet.StatusRequest.fvk_hash:type_name -> penumbra.crypto.FullViewingKeyHash
-	7,  // 1: penumbra.wallet.NoteRecord.note_commitment:type_name -> penumbra.crypto.NoteCommitment
-	8,  // 2: penumbra.wallet.NoteRecord.note:type_name -> penumbra.crypto.Note
-	9,  // 3: penumbra.wallet.NoteRecord.address_index:type_name -> penumbra.crypto.AddressIndex
-	10, // 4: penumbra.wallet.NoteRecord.nullifier:type_name -> penumbra.crypto.Nullifier
+	7,  // 1: penumbra.wallet.SpendableNoteRecord.note_commitment:type_name -> penumbra.crypto.NoteCommitment
+	8,  // 2: penumbra.wallet.SpendableNoteRecord.note:type_name -> penumbra.crypto.Note
+	9,  // 3: penumbra.wallet.SpendableNoteRecord.address_index:type_name -> penumbra.crypto.AddressIndex
+	10, // 4: penumbra.wallet.SpendableNoteRecord.nullifier:type_name -> penumbra.crypto.Nullifier
 	6,  // 5: penumbra.wallet.NotesRequest.fvk_hash:type_name -> penumbra.crypto.FullViewingKeyHash
 	11, // 6: penumbra.wallet.NotesRequest.asset_id:type_name -> penumbra.crypto.AssetId
 	9,  // 7: penumbra.wallet.NotesRequest.address_index:type_name -> penumbra.crypto.AddressIndex
@@ -579,7 +579,7 @@ var file_wallet_proto_depIdxs = []int32{
 	3,  // 13: penumbra.wallet.WalletProtocol.Notes:input_type -> penumbra.wallet.NotesRequest
 	4,  // 14: penumbra.wallet.WalletProtocol.AuthPaths:input_type -> penumbra.wallet.AuthPathsRequest
 	1,  // 15: penumbra.wallet.WalletProtocol.Status:output_type -> penumbra.wallet.StatusResponse
-	2,  // 16: penumbra.wallet.WalletProtocol.Notes:output_type -> penumbra.wallet.NoteRecord
+	2,  // 16: penumbra.wallet.WalletProtocol.Notes:output_type -> penumbra.wallet.SpendableNoteRecord
 	5,  // 17: penumbra.wallet.WalletProtocol.AuthPaths:output_type -> penumbra.wallet.AuthPathsResponse
 	15, // [15:18] is the sub-list for method output_type
 	12, // [12:15] is the sub-list for method input_type
@@ -621,7 +621,7 @@ func file_wallet_proto_init() {
 			}
 		}
 		file_wallet_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*NoteRecord); i {
+			switch v := v.(*SpendableNoteRecord); i {
 			case 0:
 				return &v.state
 			case 1:
