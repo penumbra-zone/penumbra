@@ -179,7 +179,22 @@ impl Component for ShieldedPool {
         }
 
         // TODO: handle quarantine
-        consensus_rules::stateful::fmd_precision_within_grace_period(&tx)?;
+
+        let previous_fmd_parameters = self
+            .state
+            .get_previous_fmd_parameters()
+            .await
+            .expect("chain params request must succeed");
+        let current_fmd_parameters = self
+            .state
+            .get_current_fmd_parameters()
+            .await
+            .expect("chain params request must succeed");
+        consensus_rules::stateful::fmd_precision_within_grace_period(
+            &tx,
+            previous_fmd_parameters,
+            current_fmd_parameters,
+        )?;
 
         Ok(())
     }
