@@ -75,6 +75,25 @@ pub enum Outcome {
     Vetoed { withdrawn: Withdrawn },
 }
 
+impl Outcome {
+    /// Determines if the outcome should be refunded (i.e. it was not vetoed).
+    pub fn should_be_refunded(&self) -> bool {
+        !self.is_vetoed()
+    }
+
+    pub fn is_vetoed(&self) -> bool {
+        matches!(self, Outcome::Vetoed { .. })
+    }
+
+    pub fn is_failed(&self) -> bool {
+        matches!(self, Outcome::Failed { .. } | Outcome::Vetoed { .. })
+    }
+
+    pub fn is_passed(&self) -> bool {
+        matches!(self, Outcome::Passed)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum Withdrawn {
     No,

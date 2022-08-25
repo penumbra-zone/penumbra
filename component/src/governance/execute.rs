@@ -9,7 +9,7 @@ pub async fn proposal_submit(
     state: &State,
     ProposalSubmit {
         proposal,
-        deposit_amount: _, // We don't need to do anything with the deposit amount, it's paid by a Spend
+        deposit_amount,
         deposit_refund_address,
         withdraw_proposal_key,
     }: &ProposalSubmit,
@@ -24,6 +24,9 @@ pub async fn proposal_submit(
     state
         .put_refund_address(proposal_id, *deposit_refund_address)
         .await;
+
+    // Set the deposit amount for the proposal
+    state.put_deposit_amount(proposal_id, *deposit_amount).await;
 
     // Set the withdrawal key for the proposal
     state

@@ -1,6 +1,7 @@
 use std::collections::BTreeSet;
 
 use crate::{
+    governance::View as _,
     stake::{validator, View as _},
     Component, Context,
 };
@@ -285,6 +286,9 @@ impl Component for ShieldedPool {
 
         // Process all unquarantining scheduled for this block
         self.process_unquarantine().await;
+
+        // Refund any proposals from this block which are pending refund
+        self.process_proposal_refunds().await;
 
         // Close the block in the NCT
         self.finish_nct_block().await;
@@ -660,6 +664,26 @@ impl ShieldedPool {
                     self.spend_nullifier(nullifier, note_source).await;
                 }
             }
+        }
+    }
+
+    #[instrument(skip(self))]
+    async fn process_proposal_refunds(&mut self) {
+        let block_height = self.height().await;
+
+        for (proposal_id, address, value) in self
+            .state
+            .proposal_refunds(block_height)
+            .await
+            .expect("proposal refunds can be fetched")
+        {
+            self.mint_note(
+                value,
+                &address,
+                NoteSource::ProposalDepositRefund { proposal_id },
+            )
+            .await
+            .expect("can mint proposal deposit refund");
         }
     }
 }

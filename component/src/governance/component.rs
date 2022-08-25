@@ -1,11 +1,11 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
 use penumbra_chain::genesis;
 use penumbra_crypto::{
     rdsa::{SpendAuth, VerificationKey},
-    Address, IdentityKey,
+    Address, IdentityKey, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_storage::{State, StateExt};
 use penumbra_transaction::{
@@ -89,11 +89,13 @@ impl Component for Governance {
         // }
     }
 
-    #[instrument(name = "governance", skip(self, _ctx, _end_block))]
-    async fn end_block(&mut self, _ctx: Context, _end_block: &abci::request::EndBlock) {
+    #[instrument(name = "governance", skip(self, _ctx, end_block))]
+    async fn end_block(&mut self, _ctx: Context, end_block: &abci::request::EndBlock) {
         let parameters = tally::Parameters::new(&self.state)
             .await
             .expect("can generate tally parameters");
+
+        let height = end_block.height as u64;
 
         let circumstance = tally::Circumstance::new(&self.state)
             .await
@@ -112,6 +114,16 @@ impl Component for Governance {
                 .await
                 .expect("can tally proposal")
             {
+                // If the outcome was not vetoed, issue a refund of the proposal deposit --
+                // otherwise, the deposit will never be refunded, and therefore is burned
+                if outcome.should_be_refunded() {
+                    self.state
+                        .add_proposal_refund(height, proposal_id)
+                        .await
+                        .expect("can add proposal refund");
+                }
+
+                // Record the outcome of the proposal
                 self.state
                     .put_proposal_state(proposal_id, proposal::State::Finished { outcome })
                     .await
@@ -185,6 +197,82 @@ pub trait View: StateExt {
     async fn put_withdrawal_key(&self, proposal_id: u64, key: VerificationKey<SpendAuth>) {
         self.put_domain(state_key::proposal_withdrawal_key(proposal_id).into(), key)
             .await
+    }
+
+    /// Get the proposal deposit refund address for a proposal.
+    async fn proposal_deposit_refund_address(&self, proposal_id: u64) -> Result<Option<Address>> {
+        self.get_domain(state_key::proposal_deposit_refund_address(proposal_id).into())
+            .await
+    }
+
+    /// Get the proposal deposit amount for a proposal.
+    async fn proposal_deposit_amount(&self, proposal_id: u64) -> Result<Option<u64>> {
+        self.get_proto(state_key::proposal_deposit_amount(proposal_id).into())
+            .await
+    }
+
+    /// Store the proposal deposit amount.
+    async fn put_deposit_amount(&self, proposal_id: u64, amount: u64) {
+        self.put_proto(
+            state_key::proposal_deposit_amount(proposal_id).into(),
+            amount,
+        )
+        .await
+    }
+
+    /// Mark a proposal as to-be-refunded in this block.
+    async fn add_proposal_refund(&self, block_height: u64, proposal_id: u64) -> Result<()> {
+        let mut refunded_in_this_block = self
+            .get_domain::<proposal::ProposalList, _>(
+                state_key::proposal_refunds(block_height).into(),
+            )
+            .await?
+            .unwrap_or_default();
+        refunded_in_this_block.proposals.insert(proposal_id);
+        self.put_domain(
+            state_key::proposal_refunds(block_height).into(),
+            refunded_in_this_block,
+        )
+        .await;
+        Ok(())
+    }
+
+    /// Get the proposals to be refunded in this block, along with their addresses and deposit
+    /// amounts.
+    ///
+    /// This is meant to be called from within the shielded pool component, which will actually mint
+    /// the notes.
+    async fn proposal_refunds(&self, block_height: u64) -> Result<Vec<(u64, Address, Value)>> {
+        let proposals = self
+            .get_domain::<proposal::ProposalList, _>(
+                state_key::proposal_refunds(block_height).into(),
+            )
+            .await?
+            .unwrap_or_default()
+            .proposals;
+
+        let mut result = Vec::new();
+
+        for proposal_id in proposals {
+            let address = self
+                .proposal_deposit_refund_address(proposal_id)
+                .await?
+                .expect("address must exist for proposal");
+            let amount: u64 = self
+                .get_proto(state_key::proposal_deposit_amount(proposal_id).into())
+                .await?
+                .expect("deposit amount must exist for proposal");
+            result.push((
+                proposal_id,
+                address,
+                Value {
+                    asset_id: *STAKING_TOKEN_ASSET_ID,
+                    amount,
+                },
+            ));
+        }
+
+        Ok(result)
     }
 
     /// Get the state of a proposal.
