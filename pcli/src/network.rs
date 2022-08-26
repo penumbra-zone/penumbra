@@ -110,10 +110,10 @@ impl App {
         if let Some(nullifier) = await_detection_of {
             // putting two spaces in makes the ellipsis line up with the above
             println!("confirming transaction  ...");
-            let fvk_hash = self.fvk.hash();
+            let account_id = self.fvk.hash();
             tokio::time::timeout(
                 std::time::Duration::from_secs(20),
-                self.view().await_nullifier(fvk_hash, nullifier),
+                self.view().await_nullifier(account_id, nullifier),
             )
             .await
             .context("timeout waiting to detect outputs of submitted transaction")?

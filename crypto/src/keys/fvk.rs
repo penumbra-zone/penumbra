@@ -4,6 +4,7 @@ use ark_serialize::CanonicalDeserialize;
 use decaf377::FieldExt;
 use once_cell::sync::Lazy;
 use penumbra_proto::{crypto as pb, serializers::bech32str, Protobuf};
+use poseidon377::hash_2;
 use serde::{Deserialize, Serialize};
 
 use super::{DiversifierKey, IncomingViewingKey, NullifierKey, OutgoingViewingKey};
@@ -14,6 +15,10 @@ use crate::{
 };
 
 static IVK_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| Fq::from_le_bytes_mod_order(b"penumbra.derive.ivk"));
+
+static ACCOUNT_ID_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
+    Fq::from_le_bytes_mod_order(blake2b_simd::blake2b(b"Penumbra_HashFVK").as_bytes())
+});
 
 /// The root viewing capability for all data related to a given spend authority.
 #[derive(Clone, Serialize, Deserialize)]
@@ -27,8 +32,8 @@ pub struct FullViewingKey {
 
 /// The hash of a full viewing key, used as an account identifier.
 #[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
-#[serde(try_from = "pb::FullViewingKeyHash", into = "pb::FullViewingKeyHash")]
-pub struct FullViewingKeyHash(pub [u8; 32]);
+#[serde(try_from = "pb::AccountId", into = "pb::AccountId")]
+pub struct AccountID(pub [u8; 32]);
 
 impl FullViewingKey {
     pub fn controls(&self, note: &Note) -> bool {
@@ -97,13 +102,19 @@ impl FullViewingKey {
         &self.ak
     }
 
-    /// Hashes the full viewing key into a [`FullViewingKeyHash`].
-    pub fn hash(&self) -> FullViewingKeyHash {
-        let hash_result = prf::expand(b"Penumbra_HashFVK", &self.nk.0.to_bytes(), self.ak.as_ref());
-        let hash = hash_result.as_bytes()[..32]
+    /// Hashes the full viewing key into an [`AccountID`].
+    pub fn hash(&self) -> AccountID {
+        let hash_result = hash_2(
+            &ACCOUNT_ID_DOMAIN_SEP,
+            (
+                self.nk.0,
+                Fq::from_le_bytes_mod_order(&self.ak.to_bytes()[..]),
+            ),
+        );
+        let hash = hash_result.to_bytes()[..32]
             .try_into()
             .expect("hash is 32 bytes");
-        FullViewingKeyHash(hash)
+        AccountID(hash)
     }
 }
 
@@ -173,11 +184,11 @@ impl std::str::FromStr for FullViewingKey {
     }
 }
 
-impl TryFrom<pb::FullViewingKeyHash> for FullViewingKeyHash {
+impl TryFrom<pb::AccountId> for AccountID {
     type Error = anyhow::Error;
 
-    fn try_from(value: pb::FullViewingKeyHash) -> Result<Self, Self::Error> {
-        Ok(FullViewingKeyHash(
+    fn try_from(value: pb::AccountId) -> Result<Self, Self::Error> {
+        Ok(AccountID(
             value
                 .inner
                 .try_into()
@@ -186,23 +197,23 @@ impl TryFrom<pb::FullViewingKeyHash> for FullViewingKeyHash {
     }
 }
 
-impl From<FullViewingKeyHash> for pb::FullViewingKeyHash {
-    fn from(value: FullViewingKeyHash) -> pb::FullViewingKeyHash {
-        pb::FullViewingKeyHash {
+impl From<AccountID> for pb::AccountId {
+    fn from(value: AccountID) -> pb::AccountId {
+        pb::AccountId {
             inner: value.0.to_vec(),
         }
     }
 }
 
-impl std::fmt::Debug for FullViewingKeyHash {
+impl std::fmt::Debug for AccountID {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.debug_tuple("FullViewingKeyHash")
+        f.debug_tuple("AccountID")
             .field(&hex::encode(&self.0))
             .finish()
     }
 }
 
-impl std::fmt::Display for FullViewingKeyHash {
+impl std::fmt::Display for AccountID {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         f.write_str(&hex::encode(&self.0))
     }

@@ -14,6 +14,6 @@ mod fvk;
 mod ivk;
 mod ovk;
 
-pub use fvk::{FullViewingKey, FullViewingKeyHash};
+pub use fvk::{AccountID, FullViewingKey};
 pub use ivk::{IncomingViewingKey, IVK_LEN_BYTES};
 pub use ovk::{OutgoingViewingKey, OVK_LEN_BYTES};

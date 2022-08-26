@@ -3,7 +3,7 @@ use std::{collections::BTreeMap, pin::Pin};
 use anyhow::Result;
 use futures::{Stream, StreamExt, TryStreamExt};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
-use penumbra_crypto::keys::FullViewingKeyHash;
+use penumbra_crypto::keys::AccountID;
 use penumbra_crypto::{asset, keys::AddressIndex, note, Asset, Nullifier};
 use penumbra_proto::view as pb;
 use penumbra_proto::view::view_protocol_client::ViewProtocolClient;
@@ -28,12 +28,12 @@ use crate::{QuarantinedNoteRecord, SpendableNoteRecord, StatusStreamResponse};
 #[async_trait(?Send)]
 pub trait ViewClient {
     /// Get the current status of chain sync.
-    async fn status(&mut self, fvk_hash: FullViewingKeyHash) -> Result<pb::StatusResponse>;
+    async fn status(&mut self, account_id: AccountID) -> Result<pb::StatusResponse>;
 
     /// Stream status updates on chain sync until it completes.
     async fn status_stream(
         &mut self,
-        fvk_hash: FullViewingKeyHash,
+        account_id: AccountID,
     ) -> Result<Pin<Box<dyn Stream<Item = Result<StatusStreamResponse>> + Send + 'static>>>;
 
     /// Get a copy of the chain parameters.
@@ -54,31 +54,27 @@ pub trait ViewClient {
     /// Queries for a specific note by commitment, returning immediately if it is not found.
     async fn note_by_commitment(
         &mut self,
-        fvk_hash: FullViewingKeyHash,
+        account_id: AccountID,
         note_commitment: note::Commitment,
     ) -> Result<SpendableNoteRecord>;
 
     /// Queries for a specific nullifier's status, returning immediately if it is not found.
     async fn nullifier_status(
         &mut self,
-        fvk_hash: FullViewingKeyHash,
+        account_id: AccountID,
         nullifier: Nullifier,
     ) -> Result<bool>;
 
     /// Waits for a specific nullifier to be detected, returning immediately if it is already
     /// present, but waiting otherwise.
-    async fn await_nullifier(
-        &mut self,
-        fvk_hash: FullViewingKeyHash,
-        nullifier: Nullifier,
-    ) -> Result<()>;
+    async fn await_nullifier(&mut self, account_id: AccountID, nullifier: Nullifier) -> Result<()>;
 
     /// Queries for a specific note by commitment, waiting until the note is detected if it is not found.
     ///
     /// This is useful for waiting for a note to be detected by the view service.
     async fn await_note_by_commitment(
         &mut self,
-        fvk_hash: FullViewingKeyHash,
+        account_id: AccountID,
         note_commitment: note::Commitment,
     ) -> Result<SpendableNoteRecord>;
 
@@ -94,14 +90,14 @@ pub trait ViewClient {
     async fn assets(&mut self) -> Result<asset::Cache>;
 
     /// Return unspent notes, grouped by address index and then by asset id.
-    #[instrument(skip(self, fvk_hash))]
+    #[instrument(skip(self, account_id))]
     async fn unspent_notes_by_address_and_asset(
         &mut self,
-        fvk_hash: FullViewingKeyHash,
+        account_id: AccountID,
     ) -> Result<BTreeMap<AddressIndex, BTreeMap<asset::Id, Vec<SpendableNoteRecord>>>> {
         let notes = self
             .notes(pb::NotesRequest {
-                fvk_hash: Some(fvk_hash.into()),
+                account_id: Some(account_id.into()),
                 include_spent: false,
                 ..Default::default()
             })
@@ -124,14 +120,14 @@ pub trait ViewClient {
     }
 
     /// Return unspent notes, grouped by denom and then by address index.
-    #[instrument(skip(self, fvk_hash))]
+    #[instrument(skip(self, account_id))]
     async fn unspent_notes_by_asset_and_address(
         &mut self,
-        fvk_hash: FullViewingKeyHash,
+        account_id: AccountID,
     ) -> Result<BTreeMap<asset::Id, BTreeMap<AddressIndex, Vec<SpendableNoteRecord>>>> {
         let notes = self
             .notes(pb::NotesRequest {
-                fvk_hash: Some(fvk_hash.into()),
+                account_id: Some(account_id.into()),
                 include_spent: false,
                 ..Default::default()
             })
@@ -154,14 +150,14 @@ pub trait ViewClient {
     }
 
     /// Return quarantined notes, grouped by address index and then by asset id.
-    #[instrument(skip(self, fvk_hash))]
+    #[instrument(skip(self, account_id))]
     async fn quarantined_notes_by_address_and_asset(
         &mut self,
-        fvk_hash: FullViewingKeyHash,
+        account_id: AccountID,
     ) -> Result<BTreeMap<AddressIndex, BTreeMap<asset::Id, Vec<QuarantinedNoteRecord>>>> {
         let notes = self
             .quarantined_notes(pb::QuarantinedNotesRequest {
-                fvk_hash: Some(fvk_hash.into()),
+                account_id: Some(account_id.into()),
             })
             .await?;
         tracing::trace!(?notes);
@@ -182,14 +178,14 @@ pub trait ViewClient {
     }
 
     /// Return quarantined notes, grouped by denom and then by address index.
-    #[instrument(skip(self, fvk_hash))]
+    #[instrument(skip(self, account_id))]
     async fn quarantined_notes_by_asset_and_address(
         &mut self,
-        fvk_hash: FullViewingKeyHash,
+        account_id: AccountID,
     ) -> Result<BTreeMap<asset::Id, BTreeMap<AddressIndex, Vec<QuarantinedNoteRecord>>>> {
         let notes = self
             .quarantined_notes(pb::QuarantinedNotesRequest {
-                fvk_hash: Some(fvk_hash.into()),
+                account_id: Some(account_id.into()),
             })
             .await?;
         tracing::trace!(?notes);
@@ -224,10 +220,10 @@ where
     T::Error: Into<tonic::codegen::StdError>,
     <T::ResponseBody as tonic::codegen::Body>::Error: Into<tonic::codegen::StdError> + Send,
 {
-    async fn status(&mut self, fvk_hash: FullViewingKeyHash) -> Result<pb::StatusResponse> {
+    async fn status(&mut self, account_id: AccountID) -> Result<pb::StatusResponse> {
         let status = self
             .status(tonic::Request::new(pb::StatusRequest {
-                fvk_hash: Some(fvk_hash.into()),
+                account_id: Some(account_id.into()),
             }))
             .await?
             .into_inner();
@@ -237,11 +233,11 @@ where
 
     async fn status_stream(
         &mut self,
-        fvk_hash: FullViewingKeyHash,
+        account_id: AccountID,
     ) -> Result<Pin<Box<dyn Stream<Item = Result<StatusStreamResponse>> + Send + 'static>>> {
         let stream = self
             .status_stream(tonic::Request::new(pb::StatusStreamRequest {
-                fvk_hash: Some(fvk_hash.into()),
+                account_id: Some(account_id.into()),
             }))
             .await?
             .into_inner();
@@ -305,13 +301,13 @@ where
 
     async fn note_by_commitment(
         &mut self,
-        fvk_hash: FullViewingKeyHash,
+        account_id: AccountID,
         note_commitment: note::Commitment,
     ) -> Result<SpendableNoteRecord> {
         ViewProtocolClient::note_by_commitment(
             self,
             tonic::Request::new(pb::NoteByCommitmentRequest {
-                fvk_hash: Some(fvk_hash.into()),
+                account_id: Some(account_id.into()),
                 note_commitment: Some(note_commitment.into()),
                 await_detection: false,
             }),
@@ -326,13 +322,13 @@ where
     /// This is useful for waiting for a note to be detected by the view service.
     async fn await_note_by_commitment(
         &mut self,
-        fvk_hash: FullViewingKeyHash,
+        account_id: AccountID,
         note_commitment: note::Commitment,
     ) -> Result<SpendableNoteRecord> {
         ViewProtocolClient::note_by_commitment(
             self,
             tonic::Request::new(pb::NoteByCommitmentRequest {
-                fvk_hash: Some(fvk_hash.into()),
+                account_id: Some(account_id.into()),
                 note_commitment: Some(note_commitment.into()),
                 await_detection: true,
             }),
@@ -345,13 +341,13 @@ where
     /// Queries for a specific nullifier's status, returning immediately if it is not found.
     async fn nullifier_status(
         &mut self,
-        fvk_hash: FullViewingKeyHash,
+        account_id: AccountID,
         nullifier: Nullifier,
     ) -> Result<bool> {
         Ok(ViewProtocolClient::nullifier_status(
             self,
             tonic::Request::new(pb::NullifierStatusRequest {
-                fvk_hash: Some(fvk_hash.into()),
+                account_id: Some(account_id.into()),
                 nullifier: Some(nullifier.into()),
                 await_detection: false,
             }),
@@ -363,15 +359,11 @@ where
 
     /// Waits for a specific nullifier to be detected, returning immediately if it is already
     /// present, but waiting otherwise.
-    async fn await_nullifier(
-        &mut self,
-        fvk_hash: FullViewingKeyHash,
-        nullifier: Nullifier,
-    ) -> Result<()> {
+    async fn await_nullifier(&mut self, account_id: AccountID, nullifier: Nullifier) -> Result<()> {
         ViewProtocolClient::nullifier_status(
             self,
             tonic::Request::new(pb::NullifierStatusRequest {
-                fvk_hash: Some(fvk_hash.into()),
+                account_id: Some(account_id.into()),
                 nullifier: Some(nullifier.into()),
                 await_detection: true,
             }),

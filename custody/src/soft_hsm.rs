@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use penumbra_crypto::keys::{FullViewingKeyHash, SpendKey};
+use penumbra_crypto::keys::{AccountID, SpendKey};
 use penumbra_proto::{custody as pb, transaction as pb_transaction};
 use penumbra_transaction::AuthorizationData;
 use rand_core::OsRng;
@@ -10,8 +10,8 @@ use crate::AuthorizeRequest;
 
 /// A basic "SoftHSM" that stores keys in memory but presents as an asynchronous signer.
 pub struct SoftHSM {
-    /// Store keys in a BTreeMap so we can identify them by FVK hash.
-    keys: BTreeMap<FullViewingKeyHash, SpendKey>,
+    /// Store keys in a BTreeMap so we can identify them by account ID.
+    keys: BTreeMap<AccountID, SpendKey>,
 }
 
 impl SoftHSM {
@@ -27,8 +27,8 @@ impl SoftHSM {
 
     #[tracing::instrument(skip(self, request), name = "softhsm_sign")]
     pub fn sign(&self, request: &AuthorizeRequest) -> anyhow::Result<AuthorizationData> {
-        let sk = self.keys.get(&request.fvk_hash).ok_or_else(|| {
-            anyhow::anyhow!("Missing signing key for FVK hash {}", request.fvk_hash)
+        let sk = self.keys.get(&request.account_id).ok_or_else(|| {
+            anyhow::anyhow!("Missing signing key for account ID {}", request.account_id)
         })?;
 
         tracing::debug!(?request.plan);

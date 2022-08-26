@@ -52,7 +52,7 @@ where
     let source_index: Option<AddressIndex> = source_address.map(Into::into);
     let notes_to_spend = view
         .notes(NotesRequest {
-            fvk_hash: Some(fvk.hash().into()),
+            account_id: Some(fvk.hash().into()),
             asset_id: Some((*STAKING_TOKEN_ASSET_ID).into()),
             address_index: source_index.map(Into::into),
             amount_to_spend: spend_amount,
@@ -142,7 +142,7 @@ where
     let source_index: Option<AddressIndex> = source_address.map(Into::into);
     let notes_to_spend = view
         .notes(NotesRequest {
-            fvk_hash: Some(fvk.hash().into()),
+            account_id: Some(fvk.hash().into()),
             asset_id: Some((*STAKING_TOKEN_ASSET_ID).into()),
             address_index: source_index.map(Into::into),
             amount_to_spend: spend_amount,
@@ -345,7 +345,7 @@ where
         // Select a list of notes that provides at least the required amount.
         let notes_to_spend = view
             .notes(NotesRequest {
-                fvk_hash: Some(fvk.hash().into()),
+                account_id: Some(fvk.hash().into()),
                 asset_id: Some(denom.id().into()),
                 address_index: source_index.map(Into::into),
                 amount_to_spend: spend_amount,
@@ -490,7 +490,7 @@ where
         // Select a list of notes that provides at least the required amount.
         let notes_to_spend = view
             .notes(NotesRequest {
-                fvk_hash: Some(fvk.hash().into()),
+                account_id: Some(fvk.hash().into()),
                 asset_id: Some(denom.id().into()),
                 address_index: source_index.map(Into::into),
                 amount_to_spend: spend_amount,
@@ -627,7 +627,7 @@ where
         // Select a list of notes that provides at least the required amount.
         let notes_to_spend = view
             .notes(NotesRequest {
-                fvk_hash: Some(fvk.hash().into()),
+                account_id: Some(fvk.hash().into()),
                 asset_id: Some(denom.id().into()),
                 address_index: source_index.map(Into::into),
                 amount_to_spend: spend_amount,
@@ -703,7 +703,7 @@ where
 
     let all_notes = view
         .notes(NotesRequest {
-            fvk_hash: Some(fvk.hash().into()),
+            account_id: Some(fvk.hash().into()),
             ..Default::default()
         })
         .await?;
