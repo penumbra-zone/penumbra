@@ -42,9 +42,9 @@ impl StakedCmd {
             .map(TryInto::try_into)
             .collect::<Result<Vec<validator::Info>, _>>()?;
 
-        let fvk_hash = full_viewing_key.hash();
+        let account_id = full_viewing_key.hash();
         let notes = view_client
-            .unspent_notes_by_asset_and_address(fvk_hash)
+            .unspent_notes_by_asset_and_address(account_id)
             .await?;
         let mut total = 0;
 

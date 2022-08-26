@@ -20,7 +20,7 @@ message FullViewingKey {
     bytes inner = 1;
 }
 
-message FullViewingKeyHash {
+message AccountID {
     bytes inner = 1;
 }
 

@@ -9,7 +9,7 @@ use camino::Utf8Path;
 use futures::stream::{StreamExt, TryStreamExt};
 use penumbra_crypto::{
     asset,
-    keys::{AddressIndex, FullViewingKey, FullViewingKeyHash},
+    keys::{AccountID, AddressIndex, FullViewingKey},
 };
 use penumbra_proto::{
     chain as pbp,
@@ -40,7 +40,7 @@ pub struct ViewService {
     // A shared error slot for errors bubbled up by the worker. This is a regular Mutex
     // rather than a Tokio Mutex because it should be uncontended.
     error_slot: Arc<Mutex<Option<anyhow::Error>>>,
-    fvk_hash: FullViewingKeyHash,
+    account_id: AccountID,
     // A copy of the NCT used by the worker task.
     note_commitment_tree: Arc<RwLock<penumbra_tct::Tree>>,
     // The address of the pd+tendermint node.
@@ -84,11 +84,11 @@ impl ViewService {
         tokio::spawn(worker.run());
 
         let fvk = storage.full_viewing_key().await?;
-        let fvk_hash = fvk.hash();
+        let account_id = fvk.hash();
 
         Ok(Self {
             storage,
-            fvk_hash,
+            account_id,
             error_slot,
             sync_height_rx,
             note_commitment_tree: nct,
@@ -97,15 +97,15 @@ impl ViewService {
         })
     }
 
-    async fn check_fvk(&self, fvk: Option<&pbc::FullViewingKeyHash>) -> Result<(), tonic::Status> {
+    async fn check_fvk(&self, fvk: Option<&pbc::AccountId>) -> Result<(), tonic::Status> {
         // Takes an Option to avoid making the caller handle missing fields,
-        // should error on None or wrong FVK hash
+        // should error on None or wrong account ID
         match fvk {
             Some(fvk) => {
-                if fvk != &self.fvk_hash.into() {
+                if fvk != &self.account_id.into() {
                     return Err(tonic::Status::new(
                         tonic::Code::InvalidArgument,
-                        "Invalid FVK hash",
+                        "Invalid account ID",
                     ));
                 }
 
@@ -238,7 +238,8 @@ impl ViewProtocol for ViewService {
         request: tonic::Request<pb::NoteByCommitmentRequest>,
     ) -> Result<tonic::Response<pb::SpendableNoteRecord>, tonic::Status> {
         self.check_worker().await?;
-        self.check_fvk(request.get_ref().fvk_hash.as_ref()).await?;
+        self.check_fvk(request.get_ref().account_id.as_ref())
+            .await?;
 
         let request = request.into_inner();
 
@@ -265,7 +266,8 @@ impl ViewProtocol for ViewService {
         request: tonic::Request<pb::NullifierStatusRequest>,
     ) -> Result<tonic::Response<pb::NullifierStatusResponse>, tonic::Status> {
         self.check_worker().await?;
-        self.check_fvk(request.get_ref().fvk_hash.as_ref()).await?;
+        self.check_fvk(request.get_ref().account_id.as_ref())
+            .await?;
 
         let request = request.into_inner();
 
@@ -289,7 +291,8 @@ impl ViewProtocol for ViewService {
         request: tonic::Request<pb::StatusRequest>,
     ) -> Result<tonic::Response<pb::StatusResponse>, tonic::Status> {
         self.check_worker().await?;
-        self.check_fvk(request.get_ref().fvk_hash.as_ref()).await?;
+        self.check_fvk(request.get_ref().account_id.as_ref())
+            .await?;
 
         Ok(tonic::Response::new(self.status().await.map_err(|e| {
             tonic::Status::internal(format!("error: {}", e))
@@ -301,7 +304,8 @@ impl ViewProtocol for ViewService {
         request: tonic::Request<pb::StatusStreamRequest>,
     ) -> Result<tonic::Response<Self::StatusStreamStream>, tonic::Status> {
         self.check_worker().await?;
-        self.check_fvk(request.get_ref().fvk_hash.as_ref()).await?;
+        self.check_fvk(request.get_ref().account_id.as_ref())
+            .await?;
 
         let (latest_known_block_height, _) =
             self.latest_known_block_height().await.map_err(|e| {
@@ -334,7 +338,8 @@ impl ViewProtocol for ViewService {
         request: tonic::Request<pb::NotesRequest>,
     ) -> Result<tonic::Response<Self::NotesStream>, tonic::Status> {
         self.check_worker().await?;
-        self.check_fvk(request.get_ref().fvk_hash.as_ref()).await?;
+        self.check_fvk(request.get_ref().account_id.as_ref())
+            .await?;
 
         let include_spent = request.get_ref().include_spent;
         let asset_id = request
@@ -379,7 +384,8 @@ impl ViewProtocol for ViewService {
         request: tonic::Request<pb::QuarantinedNotesRequest>,
     ) -> Result<tonic::Response<Self::QuarantinedNotesStream>, tonic::Status> {
         self.check_worker().await?;
-        self.check_fvk(request.get_ref().fvk_hash.as_ref()).await?;
+        self.check_fvk(request.get_ref().account_id.as_ref())
+            .await?;
 
         let notes = self
             .storage
@@ -435,7 +441,8 @@ impl ViewProtocol for ViewService {
         request: tonic::Request<pb::WitnessRequest>,
     ) -> Result<tonic::Response<pbt::WitnessData>, tonic::Status> {
         self.check_worker().await?;
-        self.check_fvk(request.get_ref().fvk_hash.as_ref()).await?;
+        self.check_fvk(request.get_ref().account_id.as_ref())
+            .await?;
 
         // Acquire a read lock for the NCT that will live for the entire request,
         // so that all auth paths are relative to the same NCT root.

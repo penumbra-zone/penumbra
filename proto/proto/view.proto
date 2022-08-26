@@ -54,7 +54,7 @@ service ViewProtocol {
 }
 
 message NoteByCommitmentRequest {
-  crypto.FullViewingKeyHash fvk_hash = 1;
+  crypto.AccountID account_id = 1;
   crypto.NoteCommitment note_commitment = 2;
   // If set to true, waits to return until the requested note is detected.
   bool await_detection = 3;
@@ -75,7 +75,7 @@ message AssetRequest {
 // Requests sync status of the view service.
 message StatusRequest {
     // Identifies the FVK for the notes to query.
-    crypto.FullViewingKeyHash fvk_hash = 1;
+    crypto.AccountID account_id = 1;
 }
 
 // Returns the status of the view service and whether it is synchronized with the chain state.
@@ -89,7 +89,7 @@ message StatusResponse {
 // Requests streaming updates on the sync height until the view service is synchronized.
 message StatusStreamRequest {
     // Identifies the FVK for the notes to query.
-    crypto.FullViewingKeyHash fvk_hash = 1;
+    crypto.AccountID account_id = 1;
 }
 
 // A streaming sync status update
@@ -124,7 +124,7 @@ message SpendableNoteRecord {
 // to allow various filtering on the returned notes.
 message NotesRequest {
     // Identifies the FVK for the notes to query.
-    crypto.FullViewingKeyHash fvk_hash = 1;
+    crypto.AccountID account_id = 1;
 
     // If set, return spent notes as well as unspent notes.
     bool include_spent = 2;
@@ -143,7 +143,7 @@ message NotesRequest {
 
 message WitnessRequest {
     // Identifies the FVK for the note commitments to query.
-    crypto.FullViewingKeyHash fvk_hash = 1;
+    crypto.AccountID account_id = 1;
 
     // The note commitments to obtain auth paths for.
     repeated crypto.NoteCommitment note_commitments = 2;
@@ -170,11 +170,11 @@ message QuarantinedNoteRecord {
 // A query for quarantined notes known by the view service.
 message QuarantinedNotesRequest {
     // Identifies the FVK for the notes to query.
-    crypto.FullViewingKeyHash fvk_hash = 1;
+    crypto.AccountID account_id = 1;
 }
 
 message NullifierStatusRequest {
-  crypto.FullViewingKeyHash fvk_hash = 1;
+  crypto.AccountID account_id = 1;
   crypto.Nullifier nullifier = 2;
   bool await_detection = 3;
 }

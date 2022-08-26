@@ -1,4 +1,4 @@
-use penumbra_crypto::keys::FullViewingKeyHash;
+use penumbra_crypto::keys::AccountID;
 use penumbra_proto::{custody as pb, Protobuf};
 use penumbra_transaction::plan::TransactionPlan;
 
@@ -8,7 +8,7 @@ pub struct AuthorizeRequest {
     /// The transaction plan to authorize.
     pub plan: TransactionPlan,
     /// Identifies the FVK (and hence the spend authorization key) to use for signing.
-    pub fvk_hash: FullViewingKeyHash,
+    pub account_id: AccountID,
 }
 
 impl Protobuf<pb::AuthorizeRequest> for AuthorizeRequest {}
@@ -21,9 +21,9 @@ impl TryFrom<pb::AuthorizeRequest> for AuthorizeRequest {
                 .plan
                 .ok_or_else(|| anyhow::anyhow!("missing plan"))?
                 .try_into()?,
-            fvk_hash: value
-                .fvk_hash
-                .ok_or_else(|| anyhow::anyhow!("missing fvk_hash"))?
+            account_id: value
+                .account_id
+                .ok_or_else(|| anyhow::anyhow!("missing account ID"))?
                 .try_into()?,
         })
     }
@@ -33,7 +33,7 @@ impl From<AuthorizeRequest> for pb::AuthorizeRequest {
     fn from(value: AuthorizeRequest) -> pb::AuthorizeRequest {
         Self {
             plan: Some(value.plan.into()),
-            fvk_hash: Some(value.fvk_hash.into()),
+            account_id: Some(value.account_id.into()),
         }
     }
 }

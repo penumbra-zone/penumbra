@@ -28,5 +28,5 @@ message AuthorizeRequest {
     // The transaction plan to authorize.
     transaction.TransactionPlan plan = 1;
     // Identifies the FVK (and hence the spend authorization key) to use for signing.
-    crypto.FullViewingKeyHash fvk_hash = 2;
+    crypto.AccountID account_id = 2;
 }
