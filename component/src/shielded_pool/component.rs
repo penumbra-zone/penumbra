@@ -190,10 +190,12 @@ impl Component for ShieldedPool {
             .get_current_fmd_parameters()
             .await
             .expect("chain params request must succeed");
+        let height = self.state.get_block_height().await?;
         consensus_rules::stateful::fmd_precision_within_grace_period(
             &tx,
             previous_fmd_parameters,
             current_fmd_parameters,
+            height,
         )?;
 
         Ok(())

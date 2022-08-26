@@ -1,4 +1,3 @@
-use penumbra_crypto::NotePayload;
 use penumbra_transaction::Transaction;
 
 pub fn num_clues_equal_to_num_outputs(tx: &Transaction) -> anyhow::Result<()> {
