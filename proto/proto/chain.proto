@@ -38,6 +38,7 @@ message ChainParameters {
 // Parameters for Fuzzy Message Detection
 message FmdParameters {
   uint32 precision_bits = 1;
+  uint64 as_of_block_height = 2;
 }
 
 // TODO: delete with legacy code
