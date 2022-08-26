@@ -5,8 +5,8 @@ use futures::{Stream, StreamExt, TryStreamExt};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_crypto::keys::AccountID;
 use penumbra_crypto::{asset, keys::AddressIndex, note, Asset, Nullifier};
-use penumbra_proto::view as pb;
 use penumbra_proto::view::view_protocol_client::ViewProtocolClient;
+use penumbra_proto::view::{self as pb};
 use penumbra_transaction::WitnessData;
 use tonic::async_trait;
 use tracing::instrument;
@@ -88,6 +88,14 @@ pub trait ViewClient {
 
     /// Queries for all known assets.
     async fn assets(&mut self) -> Result<asset::Cache>;
+
+    /// Queries for transaction hashes in a range of block heights
+    async fn transactions(
+        &mut self,
+        account_id: AccountID,
+        start_height: Option<u64>,
+        end_height: Option<u64>,
+    ) -> Result<Vec<(u64, Vec<u8>)>>;
 
     /// Return unspent notes, grouped by address index and then by asset id.
     #[instrument(skip(self, account_id))]
@@ -399,5 +407,30 @@ where
             .collect::<Result<Vec<Asset>, anyhow::Error>>()?;
 
         Ok(assets.into_iter().map(|asset| asset.denom).collect())
+    }
+
+    async fn transactions(
+        &mut self,
+        account_id: AccountID,
+        start_height: Option<u64>,
+        end_height: Option<u64>,
+    ) -> Result<Vec<(u64, Vec<u8>)>> {
+        let pb_txs: Vec<_> = self
+            .transactions(tonic::Request::new(pb::TransactionsRequest {
+                account_id: Some(account_id.into()),
+                start_height,
+                end_height,
+            }))
+            .await?
+            .into_inner()
+            .try_collect()
+            .await?;
+
+        let txs = pb_txs
+            .into_iter()
+            .map(|x| (x.block_height, x.tx_hash))
+            .collect();
+
+        Ok(txs)
     }
 }

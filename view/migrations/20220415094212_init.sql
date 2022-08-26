@@ -17,7 +17,7 @@ CREATE TABLE spendable_notes (
     asset_id                BLOB NOT NULL,
     blinding_factor         BLOB NOT NULL,
     -- precomputed decryption of the diversifier
-    address_index       BLOB NOT NULL,
+    address_index           BLOB NOT NULL,
     -- the nullifier for this note, used to detect when it is spent
     nullifier               BLOB NOT NULL,
     -- the position of the note in the note commitment tree
@@ -29,7 +29,7 @@ CREATE TABLE spendable_notes (
 -- general purpose note queries
 CREATE INDEX spendable_notes_idx ON spendable_notes (
     height_spent,       -- null if unspent, so spent/unspent is first
-    address_index,  -- then filter by account
+    address_index,      -- then filter by account
     asset_id,           -- then by asset
     amount,             -- then by amount
     height_created      -- we don't really care about this, except informationally
@@ -43,15 +43,15 @@ CREATE INDEX spendable_notes_source_index on spendable_notes ( source );
 
 -- used for storing a cache of known assets
 CREATE TABLE assets (
-    asset_id BLOB PRIMARY KEY NOT NULL,
-    denom    TEXT NOT NULL
+    asset_id                BLOB PRIMARY KEY NOT NULL,
+    denom                   TEXT NOT NULL
 );
 
 CREATE TABLE quarantined_notes (
     note_commitment         BLOB PRIMARY KEY NOT NULL,
     height_created          BIGINT NOT NULL,
     -- note contents themselves:
-    address             BLOB NOT NULL,
+    address                 BLOB NOT NULL,
     amount                  BIGINT NOT NULL,
     asset_id                BLOB NOT NULL,
     blinding_factor         BLOB NOT NULL,
