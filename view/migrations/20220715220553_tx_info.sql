@@ -7,5 +7,6 @@ CREATE TABLE tx_by_nullifier (
 
 CREATE TABLE tx (
     tx_hash                 BLOB PRIMARY KEY NOT NULL,
-    tx_bytes                BLOB NOT NULL
+    tx_bytes                BLOB NOT NULL,
+    block_height            BIGINT NOT NULL
 );

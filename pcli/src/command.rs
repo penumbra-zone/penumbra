@@ -8,6 +8,7 @@ pub use keys::KeysCmd;
 pub use query::QueryCmd;
 pub use tx::TxCmd;
 pub use validator::ValidatorCmd;
+pub use view::transactions::TransactionsCmd;
 pub use view::ViewCmd;
 
 // Note on display_order:

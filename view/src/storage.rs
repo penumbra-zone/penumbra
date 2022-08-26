@@ -9,6 +9,7 @@ use penumbra_crypto::{
 };
 use penumbra_proto::{
     client::oblivious::{oblivious_query_client::ObliviousQueryClient, ChainParamsRequest},
+    view::TransactionHashStreamResponse,
     Protobuf,
 };
 use penumbra_tct as tct;
@@ -321,6 +322,37 @@ impl Storage {
         let tree = tct::Tree::deserialize(&mut TreeStore(&mut tx)).await?;
         tx.commit().await?;
         Ok(tree)
+    }
+
+    pub async fn transactions(
+        &self,
+        start_height: Option<u64>,
+        end_height: Option<u64>,
+    ) -> anyhow::Result<Vec<TransactionHashStreamResponse>> {
+        let starting_block = start_height.unwrap_or(0) as i64;
+        let ending_block = end_height.unwrap_or(self.last_sync_height().await?.unwrap_or(0)) as i64;
+
+        let result = sqlx::query!(
+            "SELECT block_height, tx_hash
+            FROM tx
+            WHERE block_height BETWEEN ? AND ?",
+            starting_block,
+            ending_block
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        let mut output: Vec<TransactionHashStreamResponse> = Vec::new();
+
+        for record in result {
+            let tx_hash_response = TransactionHashStreamResponse {
+                block_height: record.block_height as u64,
+                tx_hash: record.tx_hash,
+            };
+            output.push(tx_hash_response);
+        }
+
+        Ok(output)
     }
 
     pub async fn assets(&self) -> anyhow::Result<Vec<Asset>> {
@@ -761,13 +793,15 @@ impl Storage {
             // We have to create an explicit temporary borrow, because the sqlx api is bad (see above)
             let tx_hash_owned = sha2::Sha256::digest(&tx_bytes);
             let tx_hash = tx_hash_owned.as_slice();
+            let tx_block_height = filtered_block.height as i64;
 
             tracing::debug!(tx_hash = ?hex::encode(tx_hash), "recording extended transaction");
 
             sqlx::query!(
-                "INSERT INTO tx (tx_hash, tx_bytes) VALUES (?, ?)",
+                "INSERT INTO tx (tx_hash, tx_bytes, block_height) VALUES (?, ?, ?)",
                 tx_hash,
                 tx_bytes,
+                tx_block_height,
             )
             .execute(&mut dbtx)
             .await?;

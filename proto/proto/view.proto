@@ -51,6 +51,24 @@ service ViewProtocol {
 
     // Query for whether a nullifier has been spent, optionally waiting until it is spent.
     rpc NullifierStatus(NullifierStatusRequest) returns (NullifierStatusResponse);
+
+    // Query for the transaction hashes in the given range of blocks.
+    rpc Transactions(TransactionsRequest) returns (stream TransactionHashStreamResponse);
+}
+
+message TransactionsRequest {
+    // Identifies the FVK for the notes to query.
+    crypto.AccountID account_id = 1;
+    // If present, return only transactions after this height.
+    optional uint64 start_height = 2;
+    // If present, return only transactions before this height.
+    optional uint64 end_height = 3;
+}
+
+// A streaming sync status update
+message TransactionHashStreamResponse {
+    uint64 block_height = 1;
+    bytes tx_hash = 2;
 }
 
 message NoteByCommitmentRequest {

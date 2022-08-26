@@ -11,6 +11,8 @@ mod address;
 use address::AddressCmd;
 mod staked;
 use staked::StakedCmd;
+pub mod transactions;
+use transactions::TransactionsCmd;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum ViewCmd {
@@ -27,6 +29,8 @@ pub enum ViewCmd {
     /// `pcli` syncs automatically prior to any action requiring chain state,
     /// but this command can be used to "pre-sync" before interactive use.
     Sync,
+    /// Get transaction hashes and block heights of spendable notes.
+    ListTransactions(TransactionsCmd),
 }
 
 impl ViewCmd {
@@ -37,6 +41,7 @@ impl ViewCmd {
             ViewCmd::Staked(staked_cmd) => staked_cmd.needs_sync(),
             ViewCmd::Reset(_) => false,
             ViewCmd::Sync => true,
+            ViewCmd::ListTransactions(transactions_cmd) => transactions_cmd.needs_sync(),
         }
     }
 
@@ -47,6 +52,9 @@ impl ViewCmd {
         oblivious_client: &mut ObliviousQueryClient<Channel>,
     ) -> Result<()> {
         match self {
+            ViewCmd::ListTransactions(transactions_cmd) => {
+                transactions_cmd.exec(full_viewing_key, view_client).await?;
+            }
             ViewCmd::Sync => {
                 // We set needs_sync() -> true, so by this point, we have
                 // already synchronized the wallet above, so we can just return.

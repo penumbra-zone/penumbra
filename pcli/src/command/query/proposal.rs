@@ -122,7 +122,7 @@ impl ProposalCmd {
 }
 
 fn json<T: Serialize>(value: &T) -> Result<()> {
-    let mut writer = stdout().lock();
+    let mut writer = stdout();
     serde_json::to_writer_pretty(&mut writer, value)?;
     writer.write_all(b"\n")?;
     Ok(())
