@@ -9,6 +9,7 @@ use penumbra_crypto::{
 };
 use penumbra_proto::{
     client::oblivious::{oblivious_query_client::ObliviousQueryClient, ChainParamsRequest},
+    view::TransactionHashStreamResponse,
     Protobuf,
 };
 use penumbra_tct as tct;
@@ -346,24 +347,33 @@ impl Storage {
         Ok(output)
     }
 
-    pub async fn transactions(&self, start_height: u64, end_height: u64) -> anyhow::Result<Vec<(Transaction)>> {
+    pub async fn transactions(
+        &self,
+        start_height: u64,
+        end_height: u64,
+    ) -> anyhow::Result<Vec<TransactionHashStreamResponse>> {
+        let starting_block = start_height as i64;
+        let ending_block = end_height as i64;
+
         let result = sqlx::query!(
-            "SELECT n.height_created, t.tx_hash
-            FROM notes n,
-            JOIN tx_by_nullifier t ON n.nullifier = t.nullifier
-            WHERE n.height_created BETWEEN ? AND ?",
-            start_height, end_height
+            "SELECT notes.height_created, tx_by_nullifier.tx_hash
+            FROM notes
+            JOIN tx_by_nullifier ON notes.nullifier = tx_by_nullifier.nullifier
+            WHERE notes.height_created BETWEEN ? AND ?",
+            starting_block,
+            ending_block
         )
         .fetch_all(&self.pool)
         .await?;
 
-        let mut output: Vec<Transaction> = Vec::new();
+        let mut output: Vec<TransactionHashStreamResponse> = Vec::new();
 
         for record in result {
-            let tx = Transaction {
-           
+            let tx_hash_response = TransactionHashStreamResponse {
+                block_height: record.height_created as u64,
+                tx_hash: record.tx_hash,
             };
-            output.push(tx);
+            output.push(tx_hash_response);
         }
 
         Ok(output)

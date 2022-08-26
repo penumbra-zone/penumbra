@@ -15,7 +15,10 @@ use penumbra_proto::{
     chain as pbp,
     crypto::{self as pbc},
     transaction as pbt,
-    view::{self as pb, view_protocol_server::ViewProtocol, StatusResponse},
+    view::{
+        self as pb, view_protocol_server::ViewProtocol, StatusResponse,
+        TransactionHashStreamResponse,
+    },
 };
 use penumbra_tct::{Commitment, Proof};
 use penumbra_transaction::WitnessData;
@@ -233,6 +236,12 @@ impl ViewProtocol for ViewService {
         Box<dyn futures::Stream<Item = Result<pb::StatusStreamResponse, tonic::Status>> + Send>,
     >;
 
+    type TransactionsStream = Pin<
+        Box<
+            dyn futures::Stream<Item = Result<TransactionHashStreamResponse, tonic::Status>> + Send,
+        >,
+    >;
+
     async fn note_by_commitment(
         &self,
         request: tonic::Request<pb::NoteByCommitmentRequest>,
@@ -430,7 +439,7 @@ impl ViewProtocol for ViewService {
         ))
     }
 
-     async fn transactions(
+    async fn transactions(
         &self,
         request: tonic::Request<pb::TransactionsRequest>,
     ) -> Result<tonic::Response<Self::TransactionsStream>, tonic::Status> {
@@ -441,7 +450,9 @@ impl ViewProtocol for ViewService {
             .storage
             .transactions(request.get_ref().start_height, request.get_ref().end_height)
             .await
-            .map_err(|e| tonic::Status::unavailable(format!("error fetching transactions: {}", e)))?;
+            .map_err(|e| {
+                tonic::Status::unavailable(format!("error fetching transactions: {}", e))
+            })?;
 
         let stream = try_stream! {
             for tx in txs {

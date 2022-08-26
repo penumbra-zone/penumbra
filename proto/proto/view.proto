@@ -53,7 +53,7 @@ service ViewProtocol {
     rpc NullifierStatus(NullifierStatusRequest) returns (NullifierStatusResponse);
     
     // Query for the transaction hashes in a range of blocks
-    rpc Transactions(TransactionsRequest) returns (stream transaction.Transaction);
+    rpc Transactions(TransactionsRequest) returns (stream TransactionHashStreamResponse);
 }
 
 message TransactionsRequest {
@@ -63,6 +63,12 @@ message TransactionsRequest {
     uint64 start_height = 2;
     // If present, return only transactions before this height.
     uint64 end_height = 3;
+}
+
+// A streaming sync status update
+message TransactionHashStreamResponse {
+    uint64 block_height = 1;
+    bytes tx_hash = 2;
 }
 
 message NoteByCommitmentRequest {
