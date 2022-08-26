@@ -39,7 +39,7 @@ impl Default for TransactionPlan {
             actions: Default::default(),
             expiry_height: 0,
             chain_id: String::new(),
-            fee: Fee(0),
+            fee: Default::default(),
             clue_plans: vec![],
         }
     }

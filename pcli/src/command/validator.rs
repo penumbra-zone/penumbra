@@ -2,7 +2,7 @@ use std::{fs::File, io::Write};
 
 use anyhow::{Context, Result};
 use penumbra_component::stake::{validator, validator::Validator, FundingStream, FundingStreams};
-use penumbra_crypto::{GovernanceKey, IdentityKey};
+use penumbra_crypto::{transaction::Fee, GovernanceKey, IdentityKey};
 use penumbra_proto::{stake::Validator as ProtoValidator, Message, Protobuf};
 use penumbra_transaction::action::{ValidatorVote, ValidatorVoteBody, Vote};
 use penumbra_wallet::plan;
@@ -43,9 +43,9 @@ pub enum DefinitionCmd {
         /// The JSON file containing the ValidatorDefinition to upload.
         #[clap(long)]
         file: String,
-        /// The transaction fee (paid in upenumbra).
-        #[clap(long, default_value = "0")]
-        fee: u64,
+        /// The transaction fee, written as a typed value, e.g. 1upenumbra.
+        #[clap(long, default_value = "0upenumbra")]
+        fee: String,
         /// Optional. Only spend funds originally received by the given address index.
         #[clap(long)]
         source: Option<u64>,
@@ -103,6 +103,7 @@ impl ValidatorCmd {
                     File::open(&file).with_context(|| format!("cannot open file {:?}", file))?;
                 let new_validator: Validator = serde_json::from_reader(definition_file)
                     .map_err(|_| anyhow::anyhow!("Unable to parse validator definition"))?;
+                let fee: Fee = Fee(fee.parse()?);
 
                 // Sign the validator definition with the wallet's spend key.
                 let protobuf_serialized: ProtoValidator = new_validator.clone().into();
@@ -114,7 +115,7 @@ impl ValidatorCmd {
                 };
                 // Construct a new transaction and include the validator definition.
                 let plan =
-                    plan::validator_definition(&app.fvk, &mut app.view, OsRng, vd, *fee, *source)
+                    plan::validator_definition(&app.fvk, &mut app.view, OsRng, vd, fee, *source)
                         .await?;
                 app.build_and_submit_transaction(plan).await?;
                 // Only commit the state if the transaction was submitted

@@ -12,9 +12,9 @@ use once_cell::sync::Lazy;
 use penumbra_proto::{dex as pb, Protobuf};
 
 // Swap ciphertext byte length
-pub const SWAP_CIPHERTEXT_BYTES: usize = 184;
+pub const SWAP_CIPHERTEXT_BYTES: usize = 216;
 // Swap plaintext byte length
-pub const SWAP_LEN_BYTES: usize = 168;
+pub const SWAP_LEN_BYTES: usize = 200;
 
 pub const OVK_WRAPPED_LEN_BYTES: usize = 80;
 

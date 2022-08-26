@@ -100,7 +100,7 @@ message SwapProof {
   bytes t2 = 4;
 
   // Fee
-  uint64 fee = 10;
+  crypto.Fee fee = 10;
 
   /**
    * @exclude

@@ -3,10 +3,12 @@ use std::{fs::File, io::Write};
 use anyhow::{anyhow, Context, Result};
 use penumbra_component::stake::rate::RateData;
 use penumbra_crypto::{
-    asset, Address, DelegationToken, IdentityKey, Value, STAKING_TOKEN_ASSET_ID,
+    asset, transaction::Fee, Address, DelegationToken, IdentityKey, Value, STAKING_TOKEN_ASSET_ID,
 };
+use penumbra_proto::view::NotesRequest;
 use penumbra_proto::{client::specific::KeyValueRequest, Protobuf};
 use penumbra_transaction::action::Proposal;
+use penumbra_view::SpendableNoteRecord;
 use penumbra_view::ViewClient;
 use penumbra_wallet::plan;
 use rand_core::OsRng;
@@ -26,9 +28,9 @@ pub enum TxCmd {
         to: String,
         /// The amounts to send, written as typed values 1.87penumbra, 12cubes, etc.
         values: Vec<String>,
-        /// The transaction fee (paid in upenumbra).
-        #[clap(long, default_value = "0")]
-        fee: u64,
+        /// The transaction fee, written as a typed value, e.g. 1upenumbra.
+        #[clap(long, default_value = "0upenumbra")]
+        fee: String,
         /// Optional. Only spend funds originally received by the given address index.
         #[clap(long)]
         source: Option<u64>,
@@ -44,9 +46,9 @@ pub enum TxCmd {
         to: String,
         /// The amount of stake to delegate.
         amount: String,
-        /// The transaction fee (paid in upenumbra).
-        #[clap(long, default_value = "0")]
-        fee: u64,
+        /// The transaction fee, written as a typed value, e.g. 1upenumbra.
+        #[clap(long, default_value = "0upenumbra")]
+        fee: String,
         /// Optional. Only spend funds originally received by the given address index.
         #[clap(long)]
         source: Option<u64>,
@@ -56,9 +58,9 @@ pub enum TxCmd {
     Undelegate {
         /// The amount of delegation tokens to undelegate.
         amount: String,
-        /// The transaction fee (paid in upenumbra).
-        #[clap(long, default_value = "0")]
-        fee: u64,
+        /// The transaction fee, written as a typed value, e.g. 1upenumbra.
+        #[clap(long, default_value = "0upenumbra")]
+        fee: String,
         /// Optional. Only spend funds originally received by the given address index.
         #[clap(long)]
         source: Option<u64>,
@@ -74,9 +76,9 @@ pub enum TxCmd {
         to: String,
         /// The amount of stake to delegate.
         amount: String,
-        /// The transaction fee (paid in upenumbra).
-        #[clap(long, default_value = "0")]
-        fee: u64,
+        /// The transaction fee, written as a typed value, e.g. 1upenumbra.
+        #[clap(long, default_value = "0upenumbra")]
+        fee: String,
         /// Optional. Only spend funds originally received by the given address index.
         #[clap(long)]
         source: Option<u64>,
@@ -99,8 +101,8 @@ pub enum TxCmd {
         /// The transaction fee (paid in upenumbra).
         ///
         /// A swap generates two transactions; the fee will be split equally over both.
-        #[clap(long, default_value = "0")]
-        fee: u64,
+        #[clap(long, default_value = "0upenumbra")]
+        fee: String,
         /// Optional. Only spend funds originally received by the given address index.
         #[clap(long)]
         source: Option<u64>,
@@ -148,6 +150,7 @@ impl TxCmd {
                     .iter()
                     .map(|v| v.parse())
                     .collect::<Result<Vec<Value>, _>>()?;
+                let fee: Fee = Fee(fee.parse()?);
                 let to = to
                     .parse()
                     .map_err(|_| anyhow::anyhow!("address is invalid"))?;
@@ -157,7 +160,7 @@ impl TxCmd {
                     &mut app.view,
                     OsRng,
                     &values,
-                    *fee,
+                    fee,
                     to,
                     *from,
                     memo.clone(),
@@ -190,9 +193,17 @@ impl TxCmd {
             } => {
                 let input = input.parse::<Value>()?;
                 let into = asset::REGISTRY.parse_unit(into.as_str()).base();
-
-                let swap_plan =
-                    plan::swap(&app.fvk, &mut app.view, OsRng, input, into, *fee, *source).await?;
+                let fee: Fee = Fee(fee.parse()?);
+                let swap_plan = plan::swap(
+                    &app.fvk,
+                    &mut app.view,
+                    OsRng,
+                    input,
+                    into,
+                    fee.clone(),
+                    *source,
+                )
+                .await?;
                 let swap_plan_inner = swap_plan
                     .swap_plans()
                     .next()
@@ -224,7 +235,7 @@ impl TxCmd {
                     &mut app.view,
                     OsRng,
                     swap_nft_note.note.clone(),
-                    *fee,
+                    fee,
                     *source,
                 )
                 .await?;
@@ -255,6 +266,7 @@ impl TxCmd {
                     .await?
                     .into_inner()
                     .try_into()?;
+                let fee: Fee = Fee(fee.parse()?);
 
                 let plan = plan::delegate(
                     &app.fvk,
@@ -262,7 +274,7 @@ impl TxCmd {
                     OsRng,
                     rate_data,
                     unbonded_amount,
-                    *fee,
+                    fee,
                     *source,
                 )
                 .await?;
@@ -283,6 +295,7 @@ impl TxCmd {
                     amount: _,
                     asset_id,
                 } = amount.parse::<Value>()?;
+                let fee: Fee = Fee(fee.parse()?);
 
                 let delegation_token: DelegationToken = app
                     .view()
@@ -309,7 +322,7 @@ impl TxCmd {
                     &mut app.view,
                     OsRng,
                     &[delegation_value],
-                    *fee,
+                    fee.clone(),
                     self_address,
                     *source,
                     None,
@@ -358,7 +371,7 @@ impl TxCmd {
                     OsRng,
                     rate_data,
                     delegation_notes,
-                    *fee,
+                    fee,
                     *source,
                 )
                 .await?;
