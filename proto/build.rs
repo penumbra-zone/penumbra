@@ -79,7 +79,10 @@ static SERIALIZE: &str = r#"#[derive(::serde::Deserialize, ::serde::Serialize)]"
 static SERDE_TRANSPARENT: &str = r#"#[serde(transparent)]"#;
 static SERDE_FLATTEN: &str = r#"#[serde(flatten)]"#;
 static SERDE_TAG_KIND: &str = r#"#[serde(tag = "kind")]"#;
+static SERDE_TAG_STATE: &str = r#"#[serde(tag = "state")]"#;
+static SERDE_TAG_OUTCOME: &str = r#"#[serde(tag = "outcome")]"#;
 static SERDE_SNAKE_CASE: &str = r#"#[serde(rename_all = "snake_case")]"#;
+static SERDE_SKIP_NONE: &str = r#"#[serde(skip_serializing_if = "Option::is_none", default)]"#;
 
 static AS_HEX: &str = r#"#[serde(with = "crate::serializers::hexstr")]"#;
 static AS_HEX_FOR_BYTES: &str = r#"#[serde(with = "crate::serializers::hexstr_bytes")]"#;
@@ -222,6 +225,16 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.governance.Vote", SERIALIZE),
     (".penumbra.governance.ProposalState", SERIALIZE),
     (".penumbra.governance.ProposalOutcome", SERIALIZE),
+    (".penumbra.governance.ProposalState.state", SERDE_SNAKE_CASE),
+    (".penumbra.governance.ProposalState.state", SERDE_TAG_STATE),
+    (
+        ".penumbra.governance.ProposalOutcome.outcome",
+        SERDE_SNAKE_CASE,
+    ),
+    (
+        ".penumbra.governance.ProposalOutcome.outcome",
+        SERDE_TAG_OUTCOME,
+    ),
     (".penumbra.transaction.AuthHash", SERDE_TRANSPARENT),
 ];
 
@@ -333,6 +346,29 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         // https://github.com/tokio-rs/prost/issues/504
         "penumbra.transaction.Proposal.Payload.payload",
         SERDE_FLATTEN,
+    ),
+    (
+        // see above re: prost issue #504
+        "penumbra.governance.ProposalState.state",
+        SERDE_FLATTEN,
+    ),
+    (
+        // see above re: prost issue #504
+        "penumbra.governance.ProposalState.Finished.outcome",
+        SERDE_FLATTEN,
+    ),
+    (
+        // see above re: prost issue #504
+        "penumbra.governance.ProposalOutcome.outcome",
+        SERDE_FLATTEN,
+    ),
+    (
+        ".penumbra.governance.ProposalOutcome.Failed.withdrawn_with_reason",
+        SERDE_SKIP_NONE,
+    ),
+    (
+        ".penumbra.governance.ProposalOutcome.Vetoed.withdrawn_with_reason",
+        SERDE_SKIP_NONE,
     ),
     (".penumbra.transaction.AuthHash.inner", AS_HEX_FOR_BYTES),
 ];
