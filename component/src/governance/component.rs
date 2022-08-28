@@ -116,6 +116,8 @@ impl Component for Governance {
                 .await
                 .expect("can tally proposal")
             {
+                tracing::debug!(proposal = %proposal_id, outcome = ?outcome, "proposal voting finished");
+
                 // If the outcome was not vetoed, issue a refund of the proposal deposit --
                 // otherwise, the deposit will never be refunded, and therefore is burned
                 if outcome.should_be_refunded() {
@@ -125,11 +127,15 @@ impl Component for Governance {
                         .expect("can add proposal refund");
                 }
 
+                tracing::debug!(proposal = %proposal_id, "issuing proposal deposit refund");
+
                 // Record the outcome of the proposal
                 self.state
                     .put_proposal_state(proposal_id, proposal::State::Finished { outcome })
                     .await
                     .expect("can put finished proposal outcome");
+            } else {
+                tracing::debug!(proposal = %proposal_id, "burning proposal deposit for vetoed proposal");
             }
         }
 
