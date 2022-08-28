@@ -109,6 +109,12 @@ impl TransactionPlan {
         for undelegation in self.undelegations().cloned() {
             actions.push(Action::Undelegate(undelegation))
         }
+        for proposal_submit in self.proposal_submits().cloned() {
+            actions.push(Action::ProposalSubmit(proposal_submit))
+        }
+        // TODO: proposal withdraw
+        // TODO: validator vote
+        // TODO: delegator vote
         for vd in self.validator_definitions().cloned() {
             actions.push(Action::ValidatorDefinition(vd))
         }
