@@ -22,7 +22,7 @@ spec:
             claimName: pvc-testnet-pd-node-1
         - name: pv-testnet-tm-node-1
           persistentVolumeClaim:
-            claimName: pv-testnet-tm-node-1
+            claimName: pvc-testnet-tm-node-1
         - name: tm-config
           configMap:
             name: tm-config
@@ -37,7 +37,7 @@ spec:
             - -c
             - chown -R 1025:1025 /home/heighliner
           volumeMounts:
-            - name: pv-testnet-node-1
+            - name: pv-testnet-tm-node-1
               mountPath: /home/heighliner
         - name: config-init
           image: ghcr.io/strangelove-ventures/heighliner/tendermint:v0.35.9
@@ -58,7 +58,7 @@ spec:
                 rm -rf $TMP_DIR
               fi
           volumeMounts:
-            - name: pv-testnet-node-1
+            - name: pv-testnet-tm-node-1
               mountPath: /home/heighliner
         - name: config-merge
           image: ghcr.io/strangelove-ventures/infra-toolkit
@@ -67,7 +67,7 @@ spec:
             - -c
             - |
               set -eux
-              CONFIG_DIR=/home/heighliner/.agoric/config
+              CONFIG_DIR=/home/heighliner/.tendermint/config
               MERGE_DIR=/tmp/configMerge
               OVERLAY_DIR=/config
               mkdir $MERGE_DIR
@@ -79,7 +79,7 @@ spec:
             runAsUser: 1025
             runAsGroup: 1025
           volumeMounts:
-            - name: pv-testnet-node-1
+            - name: pv-testnet-tm-node-1
               mountPath: /home/heighliner
             - name: tm-config
               mountPath: "/config"
