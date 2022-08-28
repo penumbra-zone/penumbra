@@ -4,7 +4,9 @@ use penumbra_storage::State;
 use penumbra_transaction::action::{
     ProposalSubmit, ProposalWithdraw, ProposalWithdrawBody, ValidatorVote, ValidatorVoteBody,
 };
+use tracing::instrument;
 
+#[instrument(skip(state))]
 pub async fn proposal_submit(
     state: &State,
     ProposalSubmit {
@@ -58,6 +60,7 @@ pub async fn proposal_submit(
     tracing::debug!(proposal = %proposal_id, "created proposal");
 }
 
+#[instrument(skip(state))]
 pub async fn proposal_withdraw(
     state: &State,
     ProposalWithdraw {
@@ -74,8 +77,11 @@ pub async fn proposal_withdraw(
         )
         .await
         .expect("proposal withdraw succeeds");
+
+    tracing::debug!(proposal = %proposal, "withdrew proposal");
 }
 
+#[instrument(skip(state))]
 pub async fn validator_vote(
     state: &State,
     ValidatorVote {
@@ -91,6 +97,8 @@ pub async fn validator_vote(
     state
         .cast_validator_vote(*proposal, *identity_key, *vote)
         .await;
+
+    tracing::debug!(proposal = %proposal, "cast validator vote");
 }
 
 // TODO: fill in when delegator votes happen

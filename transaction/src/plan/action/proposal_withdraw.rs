@@ -1,8 +1,9 @@
 use decaf377::{FieldExt, Fr};
+use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_proto::{transaction as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
-use crate::action::ProposalWithdrawBody;
+use crate::action::{ProposalWithdraw, ProposalWithdrawBody};
 
 /// A plan to vote as a delegator.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -15,6 +16,16 @@ pub struct ProposalWithdrawPlan {
     pub body: ProposalWithdrawBody,
     /// The randomizer to use for the signature.
     pub randomizer: Fr,
+}
+
+impl ProposalWithdrawPlan {
+    /// Create a proposal withdraw action from a plan, given the fvk and the authorization signature.
+    pub fn withdraw(self, auth_sig: Signature<SpendAuth>) -> ProposalWithdraw {
+        ProposalWithdraw {
+            body: self.body,
+            auth_sig,
+        }
+    }
 }
 
 impl Protobuf<pb::ProposalWithdrawPlan> for ProposalWithdrawPlan {}

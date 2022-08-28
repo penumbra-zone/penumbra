@@ -55,11 +55,13 @@ impl Component for Governance {
 
     #[instrument(name = "governance", skip(self, _ctx, tx))]
     async fn check_tx_stateful(&self, _ctx: Context, tx: &Transaction) -> Result<()> {
+        let auth_hash = tx.transaction_body().auth_hash();
+
         for proposal_submit in tx.proposal_submits() {
             check::stateful::proposal_submit(&self.state, proposal_submit).await?;
         }
         for proposal_withdraw in tx.proposal_withdraws() {
-            check::stateful::proposal_withdraw(&self.state, proposal_withdraw).await?;
+            check::stateful::proposal_withdraw(&self.state, &auth_hash, proposal_withdraw).await?;
         }
         for validator_vote in tx.validator_votes() {
             check::stateful::validator_vote(&self.state, validator_vote).await?;

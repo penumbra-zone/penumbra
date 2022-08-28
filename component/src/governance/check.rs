@@ -68,8 +68,8 @@ pub mod stateful {
     use super::*;
     use penumbra_chain::View as _;
     use penumbra_crypto::{IdentityKey, STAKING_TOKEN_DENOM};
-    use penumbra_proto::Protobuf;
     use penumbra_storage::State;
+    use penumbra_transaction::AuthHash;
 
     pub async fn proposal_submit(
         state: &State,
@@ -97,6 +97,7 @@ pub mod stateful {
 
     pub async fn proposal_withdraw(
         state: &State,
+        auth_hash: &AuthHash,
         proposal_withdraw @ ProposalWithdraw {
             body:
                 ProposalWithdrawBody {
@@ -107,7 +108,7 @@ pub mod stateful {
         }: &ProposalWithdraw,
     ) -> Result<()> {
         proposal_withdrawable(state, *proposal).await?;
-        proposal_withdraw_key_verifies(state, proposal_withdraw).await?;
+        proposal_withdraw_key_verifies(state, auth_hash, proposal_withdraw).await?;
         Ok(())
     }
 
@@ -134,13 +135,12 @@ pub mod stateful {
 
     async fn proposal_withdraw_key_verifies(
         state: &State,
+        auth_hash: &AuthHash,
         ProposalWithdraw { body, auth_sig }: &ProposalWithdraw,
     ) -> Result<()> {
         if let Some(withdraw_proposal_key) = state.proposal_withdrawal_key(body.proposal).await? {
-            // Check the signature using the verification key submitted when the proposal was submitted:
-            let body_bytes = body.encode_to_vec();
             withdraw_proposal_key
-                .verify(&body_bytes, auth_sig)
+                .verify(auth_hash.as_ref(), auth_sig)
                 .context("proposal withdraw signature failed to verify")?;
         } else {
             anyhow::bail!("proposal {} does not exist", body.proposal);
