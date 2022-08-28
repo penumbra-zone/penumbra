@@ -24,6 +24,10 @@ pub fn proposal_deposit_amount(proposal_id: u64) -> String {
     format!("governance/proposal/{}/deposit_amount", proposal_id)
 }
 
+pub fn proposal_voting_start(proposal_id: u64) -> String {
+    format!("governance/proposal/{}/voting_start", proposal_id)
+}
+
 pub fn proposal_voting_end(proposal_id: u64) -> String {
     format!("governance/proposal/{}/voting_end", proposal_id)
 }
@@ -38,10 +42,6 @@ pub fn proposal_refunds(block_height: u64) -> String {
 
 pub fn proposal_withdrawal_key(proposal_id: u64) -> String {
     format!("governance/proposal/{}/withdraw_key", proposal_id)
-}
-
-pub fn proposal_withdrawal_reason(proposal_id: u64) -> String {
-    format!("governance/proposal/{}/withdraw_reason", proposal_id)
 }
 
 pub fn voting_validators(proposal_id: u64) -> String {
