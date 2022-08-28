@@ -16,7 +16,7 @@ use tendermint::abci;
 use tracing::instrument;
 
 use crate::{
-    stake::{self, View as _},
+    stake::{self, validator, View as _},
     Component, Context,
 };
 
@@ -171,6 +171,13 @@ pub trait View: StateExt {
         self.put_domain(
             state_key::proposal_payload(proposal_id).into(),
             proposal.payload.clone(),
+        )
+        .await;
+
+        // Set the list of validators who have voted to the empty list
+        self.put_domain(
+            state_key::voting_validators(proposal_id).into(),
+            validator::List::default(),
         )
         .await;
 
@@ -382,6 +389,22 @@ pub trait View: StateExt {
             voting_validators,
         )
         .await;
+    }
+
+    /// Get the proposal voting end block for a given proposal.
+    async fn proposal_voting_start(&self, proposal_id: u64) -> Result<Option<u64>> {
+        Ok(self
+            .get_proto::<u64>(state_key::proposal_voting_start(proposal_id).into())
+            .await?)
+    }
+
+    /// Set the proposal voting end block height for a proposal.
+    async fn put_proposal_voting_start(&self, proposal_id: u64, end_block: u64) {
+        self.put_proto(
+            state_key::proposal_voting_start(proposal_id).into(),
+            end_block,
+        )
+        .await
     }
 
     /// Get the proposal voting end block for a given proposal.

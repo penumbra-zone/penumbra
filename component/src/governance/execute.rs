@@ -39,8 +39,8 @@ pub async fn proposal_submit(
         .await
         .expect("can set proposal state");
 
-    // Determine what block it is currently, and calculate when the proposal should finish voting,
-    // then write that into the state
+    // Determine what block it is currently, and calculate when the proposal should start voting
+    // (now!) and finish voting (later...), then write that into the state
     let chain_params = state
         .get_chain_params()
         .await
@@ -50,6 +50,9 @@ pub async fn proposal_submit(
         .await
         .expect("can get block height");
     let voting_end = current_block + chain_params.proposal_voting_blocks;
+    state
+        .put_proposal_voting_start(proposal_id, current_block)
+        .await;
     state.put_proposal_voting_end(proposal_id, voting_end).await;
 
     tracing::debug!(proposal = %proposal_id, "created proposal");
