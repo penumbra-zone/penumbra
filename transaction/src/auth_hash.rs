@@ -330,8 +330,8 @@ impl AuthorizingData for Undelegate {
     }
 }
 
-impl Proposal {
-    pub fn auth_hash(&self) -> Hash {
+impl AuthorizingData for Proposal {
+    fn auth_hash(&self) -> Hash {
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:proposal")
             .to_state();
@@ -340,8 +340,8 @@ impl Proposal {
     }
 }
 
-impl ProposalSubmit {
-    pub fn auth_hash(&self) -> Hash {
+impl AuthorizingData for ProposalSubmit {
+    fn auth_hash(&self) -> Hash {
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:prop_submit")
             .to_state();

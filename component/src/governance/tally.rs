@@ -96,12 +96,13 @@ impl Tally {
         self.yes + self.no + self.no_with_veto + self.abstain
     }
 
+    pub fn total_without_abstain(&self) -> u64 {
+        self.yes + self.no + self.no_with_veto
+    }
+
     pub fn evaluate(self, parameters: &Parameters) -> Option<Outcome> {
         // Are we before the end of normal voting?
         let before_end = self.circumstance.current_block < self.ending_block;
-
-        // Calculate the current yes/no ratio
-        let yes_to_no = Ratio::new(self.yes, self.no + self.no_with_veto);
 
         // Check to see if proposal is an emergency proposal or if it's at the right height to
         // render an outcome
@@ -124,16 +125,23 @@ impl Tally {
             });
         }
 
+        // Calculate the current yes/total-without-abstain ratio, which will be used to determine if
+        // the proposal has yet passed
+        let ratio_without_abstain = Ratio::new(self.yes, self.total_without_abstain().min(1));
+        // ^ in the above, the `.min(1)` is to prevent a divide-by-zero error when the only votes
+        // cast are abstains -- this results in a 0:1 ratio in that case, which will never pass, as
+        // desired in that situation
+
         // Different logic is used to determine pass threshold depending on emergency/not
         if self.emergency && before_end {
             // A 2/3 supermajority is required to pass an emergency proposal before it ends normally
-            if Ratio::new(2, 3) < yes_to_no {
+            if Ratio::new(2, 3) < ratio_without_abstain {
                 // We might yet reach 2/3 supermajority, but we're not there yet
                 return None;
             }
         } else {
             // Otherwise, the ratio is whatever is specified in the parameters
-            if parameters.pass_threshold < yes_to_no {
+            if parameters.pass_threshold < ratio_without_abstain {
                 // The proposal has failed at this point because it's non-emergency, so we are not
                 // evaluating it mid-proposal
                 return Some(Outcome::Failed {
