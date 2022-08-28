@@ -16,17 +16,17 @@ module "gke" {
     module.project_services,
     resource.google_compute_subnetwork.subnetwork,
   ]
-  source                     = "terraform-google-modules/kubernetes-engine/google//modules/private-cluster"
-  version                    = "22.1.0"
-  project_id                 = var.project_id
-  name                       = var.cluster_name
-  region                     = var.region
-  zones                      = var.cluster_zones
-  network                    = google_compute_network.vpc_network.name
-  subnetwork                 = "subnetwork-${var.cluster_name}"
-  ip_range_pods              = "pods-${var.cluster_name}"
-  ip_range_services          = "services-${var.cluster_name}"
-  http_load_balancing        = true
+  source              = "terraform-google-modules/kubernetes-engine/google//modules/private-cluster"
+  version             = "22.1.0"
+  project_id          = var.project_id
+  name                = var.cluster_name
+  region              = var.region
+  zones               = var.cluster_zones
+  network             = google_compute_network.vpc_network.name
+  subnetwork          = "subnetwork-${var.cluster_name}"
+  ip_range_pods       = "pods-${var.cluster_name}"
+  ip_range_services   = "services-${var.cluster_name}"
+  http_load_balancing = true
   # config_connector           = true
   horizontal_pod_autoscaling = false
   network_policy             = false

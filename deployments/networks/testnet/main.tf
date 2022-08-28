@@ -14,5 +14,5 @@ module "gke_testnet" {
   cluster_name  = "testnet"
   region        = "us-central1"
   cluster_zones = ["us-central1-a", "us-central1-b"]
-  machine_type = "n2d-standard-4"
+  machine_type  = "n2d-standard-4"
 }

@@ -129,7 +129,7 @@ spec:
             # - "1000"
             - pd
             - start
-            - --home 
+            - --home
             - /home/heighliner/pd
         - name: health-check
           image: ghcr.io/strangelove-ventures/ignite-health-check:latest
