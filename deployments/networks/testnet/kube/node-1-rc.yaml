@@ -29,16 +29,22 @@ spec:
             items:
               - key: "config.toml"
                 path: "config.toml"
+
       initContainers:
         - name: heighliner-ownership
           image: busybox
           command:
             - sh
             - -c
-            - chown -R 1025:1025 /home/heighliner
+            - |
+                chown -R 1025:1025 /home/pv-testnet-tm-node-1
+                chown -R 1025:1025 /home/pv-testnet-pd-node-1
           volumeMounts:
             - name: pv-testnet-tm-node-1
-              mountPath: /home/heighliner
+              mountPath: /home/pv-testnet-tm-node-1
+            - name: pv-testnet-pd-node-1
+              mountPath: /home/pv-testnet-pd-node-1
+
         - name: config-init
           image: ghcr.io/strangelove-ventures/heighliner/tendermint:v0.35.9
           command:
@@ -60,6 +66,7 @@ spec:
           volumeMounts:
             - name: pv-testnet-tm-node-1
               mountPath: /home/heighliner
+
         - name: config-merge
           image: ghcr.io/strangelove-ventures/infra-toolkit
           command:
@@ -68,11 +75,11 @@ spec:
             - |
               set -eux
               CONFIG_DIR=/home/heighliner/.tendermint/config
+              curl -X GET "http://testnet.penumbra.zone:26657/genesis" -H "accept: application/json" | jq '.result.genesis' > $CONFIG_DIR/genesis.json
               MERGE_DIR=/tmp/configMerge
               OVERLAY_DIR=/config
               mkdir $MERGE_DIR
               config-merge -f toml $CONFIG_DIR/config.toml $OVERLAY_DIR/config.toml > $MERGE_DIR/config.toml
-              config-merge -f toml $CONFIG_DIR/app.toml $OVERLAY_DIR/app.toml > $MERGE_DIR/app.toml
               dasel put string -f $MERGE_DIR/config.toml -p toml ".p2p.external_address" $(curl -s ifconfig.me):26656
               mv $MERGE_DIR/* $CONFIG_DIR/
           securityContext:
@@ -99,6 +106,8 @@ spec:
             - name: pv-testnet-tm-node-1
               mountPath: /home/heighliner
           command:
+            # - sleep
+            # - "1000"
             - tendermint
             - start
             - --proxy-app=tcp://localhost:26658
@@ -116,6 +125,8 @@ spec:
             - name: pv-testnet-pd-node-1
               mountPath: /home/heighliner
           command:
+            # - sleep
+            # - "1000"
             - pd
             - start
             - --home 
