@@ -38,7 +38,10 @@ impl IncomingViewingKey {
         mut rng: R,
     ) -> (Address, fmd::DetectionKey) {
         let mut random_index = [0u8; 16];
-        rng.fill_bytes(&mut random_index);
+        // ensure that the index is outside the range of u64 with rejection sampling
+        while u128::from_le_bytes(random_index) <= 2u128.pow(64) {
+            rng.fill_bytes(&mut random_index);
+        }
         let index = AddressIndex::Random(random_index);
         self.payment_address(index)
     }
