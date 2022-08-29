@@ -1,6 +1,8 @@
 use anyhow::{anyhow, Context, Result};
 use penumbra_component::stake::rate::RateData;
 use penumbra_crypto::{asset, DelegationToken, IdentityKey, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_proto::view::NotesRequest;
+use penumbra_view::SpendableNoteRecord;
 use penumbra_view::ViewClient;
 use penumbra_wallet::plan;
 use rand_core::OsRng;
@@ -178,13 +180,58 @@ impl TxCmd {
                 let input = input.parse::<Value>()?;
                 let into = asset::REGISTRY.parse_unit(into.as_str()).base();
 
-                let plan =
+                let swap_plan =
                     plan::swap(&app.fvk, &mut app.view, OsRng, input, into, *fee, *source).await?;
 
-                // Submit the `Swap` transaction and wait for detection of the output note containing the Swap NFT.
-                app.build_and_submit_transaction(plan).await?;
+                let swap_nft_asset_id = swap_plan
+                    .swap_plans()
+                    .next()
+                    .map(|swap_plan| swap_plan.swap_plaintext.asset_id())
+                    .ok_or(anyhow::anyhow!("unable to find expected swap plan"))?;
 
-                // TODO: wait until the swap is confirmed and then perform a SwapClaim automatically
+                // Submit the `Swap` transaction and wait for detection of the output note containing the Swap NFT.
+                app.build_and_submit_transaction(swap_plan).await?;
+
+                // `build_and_submit_transaction` will wait for confirmation of the Swap NFT note commitment to sync to the view.
+                // After that, we can submit the `SwapClaim` transaction.
+
+                // Find the swap NFT note associated with the swap plan.
+                let account_id = app.fvk.clone().hash();
+                let swap_nft_notes: Vec<SpendableNoteRecord> = app
+                    .view()
+                    .notes(NotesRequest {
+                        account_id: Some(account_id.into()),
+                        asset_id: Some(swap_nft_asset_id.into()),
+                        amount_to_spend: 1,
+                        include_spent: false,
+                        // The address index is not specified because we want to get the swap NFT associated with
+                        // *any* address index (because a random one will be selected).
+                        ..Default::default()
+                    })
+                    .await?;
+
+                if swap_nft_notes.len() != 1 {
+                    return Err(anyhow::anyhow!(
+                        "expected 1 swap NFT note after submitting Swap, found {}",
+                        swap_nft_notes.len()
+                    ));
+                }
+
+                let swap_nft_note = &swap_nft_notes[0];
+
+                let claim_plan = plan::swap_claim(
+                    &app.fvk,
+                    &mut app.view,
+                    OsRng,
+                    swap_nft_note.note.clone(),
+                    *fee,
+                    *source,
+                )
+                .await?;
+
+                // Submit the `SwapClaim` transaction. TODO: should probably have `build_and_submit_transaction` wait for the output notes
+                // of a SwapClaim to sync.
+                app.build_and_submit_transaction(claim_plan).await?;
             }
             TxCmd::Delegate {
                 to,
