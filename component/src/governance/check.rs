@@ -49,9 +49,9 @@ pub mod stateless {
     }
 
     pub fn validator_vote(ValidatorVote { body, auth_sig }: &ValidatorVote) -> Result<()> {
-        // Check the signature:
+        // Check the signature using the GOVERNANCE KEY:
         let body_bytes = body.encode_to_vec();
-        body.identity_key
+        body.governance_key
             .0
             .verify(&body_bytes, auth_sig)
             .context("validator vote signature failed to verify")?;
