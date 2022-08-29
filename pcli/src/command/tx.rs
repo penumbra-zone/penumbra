@@ -1,6 +1,8 @@
 use anyhow::{anyhow, Context, Result};
 use penumbra_component::stake::rate::RateData;
 use penumbra_crypto::{asset, DelegationToken, IdentityKey, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_proto::view::NotesRequest;
+use penumbra_view::SpendableNoteRecord;
 use penumbra_view::ViewClient;
 use penumbra_wallet::plan;
 use rand_core::OsRng;
@@ -178,13 +180,47 @@ impl TxCmd {
                 let input = input.parse::<Value>()?;
                 let into = asset::REGISTRY.parse_unit(into.as_str()).base();
 
-                let plan =
+                let swap_plan =
                     plan::swap(&app.fvk, &mut app.view, OsRng, input, into, *fee, *source).await?;
+                let swap_plan_inner = swap_plan
+                    .swap_plans()
+                    .next()
+                    .expect("expected swap plan")
+                    .clone();
 
-                // Submit the `Swap` transaction and wait for detection of the output note containing the Swap NFT.
-                app.build_and_submit_transaction(plan).await?;
+                let swap_nft_asset_id = swap_plan_inner.swap_plaintext.asset_id();
 
-                // TODO: wait until the swap is confirmed and then perform a SwapClaim automatically
+                // Submit the `Swap` transaction.
+                app.build_and_submit_transaction(swap_plan).await?;
+
+                // Wait for detection of the note commitment containing the Swap NFT.
+                let account_id = app.fvk.hash();
+                let note_commitment = swap_plan_inner.swap_body(&app.fvk).swap_nft.note_commitment;
+                // Find the swap NFT note associated with the swap plan.
+                let swap_nft_note = tokio::time::timeout(
+                    std::time::Duration::from_secs(20),
+                    app.view()
+                        .await_note_by_commitment(account_id, note_commitment),
+                )
+                .await
+                .context("timeout waiting to detect commitment of submitted transaction")?
+                .context("error while waiting for detection of submitted transaction")?;
+
+                // Now that the note commitment is detected, we can submit the `SwapClaim` transaction.
+
+                let claim_plan = plan::swap_claim(
+                    &app.fvk,
+                    &mut app.view,
+                    OsRng,
+                    swap_nft_note.note.clone(),
+                    *fee,
+                    *source,
+                )
+                .await?;
+
+                // Submit the `SwapClaim` transaction. TODO: should probably have `build_and_submit_transaction` wait for the output notes
+                // of a SwapClaim to sync.
+                app.build_and_submit_transaction(claim_plan).await?;
             }
             TxCmd::Delegate {
                 to,
@@ -319,7 +355,7 @@ impl TxCmd {
                 // Pass None as the change to await, since the change will be quarantined, so we won't detect it.
                 // But it's not spendable anyways, so we don't need to detect it.
                 let tx = app.build_transaction(undelegate_plan).await?;
-                app.submit_transaction(&tx, None, None).await?;
+                app.submit_transaction(&tx, None).await?;
             }
             TxCmd::Redelegate { .. } => {
                 println!("Sorry, this command is not yet implemented");
