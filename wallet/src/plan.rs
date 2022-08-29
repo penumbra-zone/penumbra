@@ -11,7 +11,7 @@ use penumbra_crypto::{
 };
 use penumbra_proto::view::NotesRequest;
 use penumbra_transaction::{
-    action::{Proposal, ProposalSubmit, ProposalWithdrawBody},
+    action::{Proposal, ProposalSubmit, ProposalWithdrawBody, ValidatorVote},
     plan::{
         ActionPlan, OutputPlan, ProposalWithdrawPlan, SpendPlan, SwapClaimPlan, SwapPlan,
         TransactionPlan,
@@ -57,6 +57,78 @@ where
     let notes_to_spend = view
         .notes(NotesRequest {
             account_id: Some(fvk.hash().into()),
+            asset_id: Some((*STAKING_TOKEN_ASSET_ID).into()),
+            address_index: source_index.map(Into::into),
+            amount_to_spend: spend_amount,
+            include_spent: false,
+        })
+        .await?;
+    for note_record in notes_to_spend {
+        spent_amount += note_record.note.amount();
+        plan.actions
+            .push(SpendPlan::new(&mut rng, note_record.note, note_record.position).into());
+    }
+    // Add a change note if we have change left over:
+    let change_amount = spent_amount - spend_amount;
+    // TODO: support dummy notes, and produce a change output unconditionally.
+    // let change_note = if change_amount > 0 { ... } else { /* dummy note */}
+    if change_amount > 0 {
+        plan.actions.push(
+            OutputPlan::new(
+                &mut rng,
+                Value {
+                    amount: change_amount,
+                    asset_id: *STAKING_TOKEN_ASSET_ID,
+                },
+                self_address,
+                MemoPlaintext::default(),
+            )
+            .into(),
+        );
+    }
+
+    // Add clue plans for `Output`s.
+    let fmd_params = view.fmd_parameters().await?;
+    let precision_bits = fmd_params.precision_bits;
+    plan.add_all_clue_plans(&mut rng, precision_bits.into());
+    Ok(plan)
+}
+
+pub async fn validator_vote<V, R>(
+    fvk: &FullViewingKey,
+    view: &mut V,
+    mut rng: R,
+    vote: ValidatorVote,
+    fee: u64,
+    source_address: Option<u64>,
+) -> Result<TransactionPlan>
+where
+    V: ViewClient,
+    R: RngCore + CryptoRng,
+{
+    // If the source address is set, send fee change to the same
+    // address; otherwise, send it to the default address.
+    let (self_address, _dtk) = fvk
+        .incoming()
+        .payment_address(source_address.unwrap_or(0).into());
+
+    let chain_params = view.chain_params().await?;
+
+    let mut plan = TransactionPlan {
+        chain_id: chain_params.chain_id,
+        fee: Fee(fee),
+        ..Default::default()
+    };
+
+    plan.actions.push(ActionPlan::ValidatorVote(vote));
+
+    // Add the required spends, and track change:
+    let spend_amount = fee;
+    let mut spent_amount = 0;
+    let source_index: Option<AddressIndex> = source_address.map(Into::into);
+    let notes_to_spend = view
+        .notes(NotesRequest {
+            fvk_hash: Some(fvk.hash().into()),
             asset_id: Some((*STAKING_TOKEN_ASSET_ID).into()),
             address_index: source_index.map(Into::into),
             amount_to_spend: spend_amount,
@@ -806,6 +878,10 @@ where
     )
     .await?;
 
+    // Add clue plans for `Output`s.
+    let fmd_params = view.fmd_parameters().await?;
+    let precision_bits = fmd_params.precision_bits;
+    plan.add_all_clue_plans(&mut rng, precision_bits.into());
     Ok(plan)
 }
 
@@ -889,6 +965,10 @@ where
     )
     .await?;
 
+    // Add clue plans for `Output`s.
+    let fmd_params = view.fmd_parameters().await?;
+    let precision_bits = fmd_params.precision_bits;
+    plan.add_all_clue_plans(&mut rng, precision_bits.into());
     Ok(plan)
 }
 

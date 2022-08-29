@@ -91,7 +91,7 @@ static AS_BASE64_FOR_BYTES: &str = r#"#[serde(with = "crate::serializers::base64
 static AS_BECH32_IDENTITY_KEY: &str =
     r#"#[serde(with = "crate::serializers::bech32str::validator_identity_key")]"#;
 static AS_BECH32_GOVERNANCE_KEY: &str =
-    r#"#[serde(with = "crate::serializers::bech32str::validator_identity_key")]"#;
+    r#"#[serde(with = "crate::serializers::bech32str::validator_governance_key")]"#;
 static AS_BECH32_ADDRESS: &str = r#"#[serde(with = "crate::serializers::bech32str::address")]"#;
 static AS_BECH32_ASSET_ID: &str = r#"#[serde(with = "crate::serializers::bech32str::asset_id")]"#;
 static AS_BECH32_SPEND_KEY: &str = r#"#[serde(with = "crate::serializers::bech32str::spend_key")]"#;
