@@ -121,7 +121,9 @@ impl TransactionPlan {
                 proposal_withdraw_plan.withdraw(auth_sig),
             ));
         }
-        // TODO: validator vote
+        for validator_vote in self.validator_votes().cloned() {
+            actions.push(Action::ValidatorVote(validator_vote))
+        }
         // TODO: delegator vote
         for vd in self.validator_definitions().cloned() {
             actions.push(Action::ValidatorDefinition(vd))

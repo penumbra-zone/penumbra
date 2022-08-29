@@ -13,7 +13,7 @@ use crate::{
         PositionRewardClaim, PositionWithdraw, Proposal, ProposalSubmit, ProposalWithdraw,
         ProposalWithdrawBody, Undelegate, ValidatorVote, ValidatorVoteBody, Vote,
     },
-    plan::{ProposalWithdrawPlan, TransactionPlan, ValidatorVotePlan},
+    plan::{ProposalWithdrawPlan, TransactionPlan},
     Action, Transaction, TransactionBody,
 };
 
@@ -382,12 +382,6 @@ impl AuthorizingData for ProposalWithdrawBody {
 }
 
 impl AuthorizingData for ValidatorVote {
-    fn auth_hash(&self) -> Hash {
-        self.body.auth_hash()
-    }
-}
-
-impl AuthorizingData for ValidatorVotePlan {
     fn auth_hash(&self) -> Hash {
         self.body.auth_hash()
     }

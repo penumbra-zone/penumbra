@@ -7,7 +7,7 @@ use penumbra_proto::{ibc as pb_ibc, stake as pb_stake, transaction as pb, Protob
 use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
 
-use crate::action::{Delegate, ProposalSubmit, Undelegate};
+use crate::action::{Delegate, ProposalSubmit, Undelegate, ValidatorVote};
 
 mod action;
 mod auth;
@@ -16,7 +16,7 @@ mod clue;
 
 pub use action::{
     ActionPlan, DelegatorVotePlan, OutputPlan, ProposalWithdrawPlan, SpendPlan, SwapClaimPlan,
-    SwapPlan, ValidatorVotePlan,
+    SwapPlan,
 };
 pub use clue::CluePlan;
 
@@ -140,7 +140,7 @@ impl TransactionPlan {
         })
     }
 
-    pub fn validator_votes(&self) -> impl Iterator<Item = &ValidatorVotePlan> {
+    pub fn validator_votes(&self) -> impl Iterator<Item = &ValidatorVote> {
         self.actions.iter().filter_map(|action| {
             if let ActionPlan::ValidatorVote(v) = action {
                 Some(v)
