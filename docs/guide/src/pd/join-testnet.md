@@ -176,13 +176,13 @@ cargo run --release --bin pcli -- validator identity
 And then delegate some amount of `penumbra` to it:
 
 ```console
-cargo run --release --bin pcli -- stake delegate 1penumbra --to penumbravalid1g2huds8klwypzczfgx67j7zp6ntq2m5fxmctkf7ja96zn49d6s9qz72hu3
+cargo run --release --bin pcli -- tx delegate 1penumbra --to penumbravalid1g2huds8klwypzczfgx67j7zp6ntq2m5fxmctkf7ja96zn49d6s9qz72hu3
 ```
 
 You should then see your balance of `penumbra` decreased and that you have received some amount of delegation tokens for your validator:
 
 ```console
-cargo run --release --bin pcli -- balance
+cargo run --release --bin pcli view balance
 ```
 
 Voting power will be calculated on the next epoch transition after your
