@@ -1,4 +1,7 @@
-use std::str::FromStr;
+use std::{
+    fmt::{self, Display},
+    str::FromStr,
+};
 
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_crypto::{GovernanceKey, IdentityKey};
@@ -6,8 +9,9 @@ use penumbra_proto::{governance as pb_g, transaction as pb_t, Protobuf};
 use serde::{Deserialize, Serialize};
 
 /// A vote on a proposal.
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(try_from = "pb_g::Vote", into = "pb_g::Vote")]
+#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub enum Vote {
     /// The vote is to approve the proposal.
     Yes,
@@ -23,38 +27,44 @@ impl FromStr for Vote {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s
-            .replace('-', "")
-            .replace('_', "")
-            .replace(' ', "")
-            .to_lowercase()
-            .as_str()
-        {
-            "yes" => Ok(Vote::Yes),
-            "no" => Ok(Vote::No),
-            "abstain" => Ok(Vote::Abstain),
-            "veto" | "noveto" | "nowithveto" => Ok(Vote::NoWithVeto),
-            _ => Err(anyhow::anyhow!("invalid vote: {}", s)),
+        let pb_vote = pb_g::vote::Vote::from_str(s)?;
+        let vote = pb_g::Vote {
+            vote: pb_vote as i32,
         }
+        .try_into()?;
+        Ok(vote)
+    }
+}
+
+impl Display for Vote {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        pb_g::vote::Vote::from_i32(pb_g::Vote::from(*self).vote)
+            .unwrap()
+            .fmt(f)
     }
 }
 
 impl From<Vote> for pb_g::Vote {
     fn from(value: Vote) -> Self {
-        match value {
-            Vote::Yes => pb_g::Vote {
-                vote: Some(pb_g::vote::Vote::Yes(pb_g::vote::Yes {})),
-            },
-            Vote::No => pb_g::Vote {
-                vote: Some(pb_g::vote::Vote::No(pb_g::vote::No {})),
-            },
-            Vote::Abstain => pb_g::Vote {
-                vote: Some(pb_g::vote::Vote::Abstain(pb_g::vote::Abstain {})),
-            },
-            Vote::NoWithVeto => pb_g::Vote {
-                vote: Some(pb_g::vote::Vote::NoWithVeto(pb_g::vote::NoWithVeto {})),
-            },
-        }
+        pb_from_vote(value)
+    }
+}
+
+// Factored out so it can be used in a const
+const fn pb_from_vote(vote: Vote) -> pb_g::Vote {
+    match vote {
+        Vote::Yes => pb_g::Vote {
+            vote: pb_g::vote::Vote::Yes as i32,
+        },
+        Vote::No => pb_g::Vote {
+            vote: pb_g::vote::Vote::No as i32,
+        },
+        Vote::Abstain => pb_g::Vote {
+            vote: pb_g::vote::Vote::Abstain as i32,
+        },
+        Vote::NoWithVeto => pb_g::Vote {
+            vote: pb_g::vote::Vote::NoWithVeto as i32,
+        },
     }
 }
 
@@ -62,12 +72,29 @@ impl TryFrom<pb_g::Vote> for Vote {
     type Error = anyhow::Error;
 
     fn try_from(msg: pb_g::Vote) -> Result<Self, Self::Error> {
-        match msg.vote {
-            Some(pb_g::vote::Vote::Yes(_)) => Ok(Vote::Yes),
-            Some(pb_g::vote::Vote::No(_)) => Ok(Vote::No),
-            Some(pb_g::vote::Vote::Abstain(_)) => Ok(Vote::Abstain),
-            Some(pb_g::vote::Vote::NoWithVeto(_)) => Ok(Vote::NoWithVeto),
-            None => Err(anyhow::anyhow!("missing vote in `Vote`")),
+        Ok(
+            match pb_g::vote::Vote::from_i32(msg.vote)
+                .ok_or_else(|| anyhow::anyhow!("invalid vote"))?
+            {
+                pb_g::vote::Vote::Abstain => Vote::Abstain,
+                pb_g::vote::Vote::Yes => Vote::Yes,
+                pb_g::vote::Vote::No => Vote::No,
+                pb_g::vote::Vote::NoWithVeto => Vote::NoWithVeto,
+            },
+        )
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use proptest::proptest;
+
+    proptest! {
+        #[test]
+        fn vote_roundtrip_serialize(vote: super::Vote) {
+            let pb_vote: super::pb_g::Vote = vote.into();
+            let vote2 = super::Vote::try_from(pb_vote).unwrap();
+            assert_eq!(vote, vote2);
         }
     }
 }

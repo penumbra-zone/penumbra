@@ -98,6 +98,7 @@ static AS_BECH32_SPEND_KEY: &str = r#"#[serde(with = "crate::serializers::bech32
 static AS_BECH32_FULL_VIEWING_KEY: &str =
     r#"#[serde(with = "crate::serializers::bech32str::full_viewing_key")]"#;
 static AS_BECH32_LP_ID: &str = r#"#[serde(with = "crate::serializers::bech32str::lp_id")]"#;
+static AS_VOTE: &str = r#"#[serde(with = "crate::serializers::vote")]"#;
 
 static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.stake.Validator", SERIALIZE),
@@ -226,7 +227,8 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.dex.SwapClaimBody", SERIALIZE),
     (".penumbra.dex.SwapPlaintext", SERIALIZE),
     (".penumbra.dex.BatchSwapOutputData", SERIALIZE),
-    (".penumbra.governance.Vote", SERIALIZE),
+    ("penumbra.governance.Vote", SERIALIZE),
+    ("penumbra.governance.Vote", SERDE_TRANSPARENT),
     (".penumbra.governance.ProposalState", SERIALIZE),
     (".penumbra.governance.ProposalOutcome", SERIALIZE),
     (".penumbra.governance.ProposalState.state", SERDE_SNAKE_CASE),
@@ -378,5 +380,6 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
         ".penumbra.governance.ProposalOutcome.Vetoed.withdrawn_with_reason",
         SERDE_SKIP_NONE,
     ),
+    ("penumbra.governance.Vote.vote", AS_VOTE),
     (".penumbra.transaction.AuthHash.inner", AS_HEX_FOR_BYTES),
 ];

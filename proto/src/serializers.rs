@@ -11,3 +11,5 @@ pub mod base64str;
 pub mod base64str_bytes;
 
 pub mod bech32str;
+
+pub mod vote;
