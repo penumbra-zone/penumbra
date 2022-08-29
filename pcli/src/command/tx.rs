@@ -176,13 +176,12 @@ impl TxCmd {
                 source,
             } => {
                 let input = input.parse::<Value>()?;
-                // TODO: should we swap with specific units or the base denom only?
-                // This is unclear until the dex is further along.
                 let into = asset::REGISTRY.parse_unit(into.as_str()).base();
 
                 let plan =
                     plan::swap(&app.fvk, &mut app.view, OsRng, input, into, *fee, *source).await?;
 
+                // Submit the `Swap` transaction and wait for detection of the output note containing the Swap NFT.
                 app.build_and_submit_transaction(plan).await?;
 
                 // TODO: wait until the swap is confirmed and then perform a SwapClaim automatically
@@ -320,7 +319,7 @@ impl TxCmd {
                 // Pass None as the change to await, since the change will be quarantined, so we won't detect it.
                 // But it's not spendable anyways, so we don't need to detect it.
                 let tx = app.build_transaction(undelegate_plan).await?;
-                app.submit_transaction(&tx, None).await?;
+                app.submit_transaction(&tx, None, None).await?;
             }
             TxCmd::Redelegate { .. } => {
                 println!("Sorry, this command is not yet implemented");

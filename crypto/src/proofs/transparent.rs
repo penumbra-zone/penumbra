@@ -474,6 +474,8 @@ impl SwapClaimProof {
             self.delta_1,
             self.delta_2,
             Fee(fee),
+            // This should ensure that the claim address matches the address
+            // used to construct the Swap NFT.
             self.claim_address,
         )
         .map_err(|_| anyhow!("error generating expected swap plaintext"))?;
