@@ -4,7 +4,7 @@ On first installation of `pcli`, you will need to generate a fresh wallet to use
 should see something like this:
 
 ```bash
-\$ cargo run --quiet --release --bin pcli wallet generate
+\$ cargo run --quiet --release --bin pcli keys generate
 Saving wallet to /home/\$USER/.local/share/pcli/penumbra_wallet.json
 Saving backup wallet to /home/\$USER/.local/share/penumbra-testnet-archive/penumbra-euporie/.../penumbra_wallet.json
 ```
@@ -14,7 +14,7 @@ correspond to your own wallet. When you first created your wallet above, `pcli` 
 of your wallet addresses, which you can view like this:
 
 ```bash
-\$ cargo run --quiet --release --bin pcli addr show 0
+\$ cargo run --quiet --release --bin pcli view address 0
  Index  Address
  0      penumbrav1t1...
 ```
@@ -22,7 +22,7 @@ of your wallet addresses, which you can view like this:
 ### Getting testnet tokens on the [Discord] in the `#testnet-faucet` channel
 
 In order to use the testnet, it's first necessary for you to get some testnet tokens. The current
-way to do this is to join our [Discord] and post your address in the `#testnet-faucet` channel.
+way to do this is to join our [Discord](https://discord.gg/hKvkrqa3zC) and post your address in the `#testnet-faucet` channel.
 We'll send your address some tokens on the testnet for you to send to your friends! :)
 
 Just keep in mind: **testnet tokens do not have monetary value**, and in order to keep the
