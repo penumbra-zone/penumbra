@@ -18,7 +18,7 @@ possible to run the view service as a standalone `pviewd` daemon:
 ### Please submit any feedback and bug reports
 
 Thank you for helping us test the Penumbra network! If you have any feedback, please let us know in
-the `#testnet-feedback` channel on our [Discord]. We would love to know about bugs, crashes,
+the `#testnet-feedback` channel on our [Discord](https://discord.gg/hKvkrqa3zC). We would love to know about bugs, crashes,
 confusing error messages, or any of the many other things that inevitably won't quite work yet. Have
 fun! :)
 
