@@ -2,7 +2,7 @@ use std::{fs::File, io::Write};
 
 use anyhow::{Context, Result};
 use penumbra_component::stake::{validator, validator::Validator, FundingStream, FundingStreams};
-use penumbra_crypto::IdentityKey;
+use penumbra_crypto::{GovernanceKey, IdentityKey};
 use penumbra_proto::{stake::Validator as ProtoValidator, Message};
 use penumbra_wallet::plan;
 use rand_core::OsRng;
@@ -106,6 +106,10 @@ impl ValidatorCmd {
             ValidatorCmd::Definition(DefinitionCmd::Template { file }) => {
                 let (address, _dtk) = fvk.incoming().payment_address(0u64.into());
                 let identity_key = IdentityKey(fvk.spend_verification_key().clone());
+                // By default, the template sets the governance key to the same verification key as
+                // the identity key, but a validator can change this if they want to use different
+                // key material.
+                let governance_key = GovernanceKey(identity_key.0);
                 // Generate a random consensus key.
                 // TODO: not great because the private key is discarded here and this isn't obvious to the user
                 let consensus_key =
@@ -114,6 +118,7 @@ impl ValidatorCmd {
 
                 let template = Validator {
                     identity_key,
+                    governance_key,
                     consensus_key,
                     name: String::new(),
                     website: String::new(),

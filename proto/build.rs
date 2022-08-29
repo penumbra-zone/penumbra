@@ -90,6 +90,8 @@ static AS_BASE64: &str = r#"#[serde(with = "crate::serializers::base64str")]"#;
 static AS_BASE64_FOR_BYTES: &str = r#"#[serde(with = "crate::serializers::base64str_bytes")]"#;
 static AS_BECH32_IDENTITY_KEY: &str =
     r#"#[serde(with = "crate::serializers::bech32str::validator_identity_key")]"#;
+static AS_BECH32_GOVERNANCE_KEY: &str =
+    r#"#[serde(with = "crate::serializers::bech32str::validator_identity_key")]"#;
 static AS_BECH32_ADDRESS: &str = r#"#[serde(with = "crate::serializers::bech32str::address")]"#;
 static AS_BECH32_ASSET_ID: &str = r#"#[serde(with = "crate::serializers::bech32str::asset_id")]"#;
 static AS_BECH32_SPEND_KEY: &str = r#"#[serde(with = "crate::serializers::bech32str::spend_key")]"#;
@@ -118,6 +120,8 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.stake.CurrentConsensusKeys", SERIALIZE),
     (".penumbra.crypto.IdentityKey", SERIALIZE),
     (".penumbra.crypto.IdentityKey", SERDE_TRANSPARENT),
+    (".penumbra.crypto.GovernanceKey", SERIALIZE),
+    (".penumbra.crypto.GovernanceKey", SERDE_TRANSPARENT),
     (".penumbra.crypto.ConsensusKey", SERIALIZE),
     (".penumbra.crypto.ConsensusKey", SERDE_TRANSPARENT),
     (".penumbra.crypto.Address", SERIALIZE),
@@ -258,6 +262,10 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.crypto.Diversifier.inner", AS_HEX),
     (".penumbra.crypto.AddressIndex.inner", AS_HEX),
     (".penumbra.crypto.IdentityKey.ik", AS_BECH32_IDENTITY_KEY),
+    (
+        ".penumbra.crypto.GovernanceKey.gk",
+        AS_BECH32_GOVERNANCE_KEY,
+    ),
     (".penumbra.crypto.ConsensusKey.inner", AS_BASE64),
     (".penumbra.crypto.Note.note_blinding", AS_HEX),
     (".penumbra.crypto.Note.transmission_key", AS_HEX),

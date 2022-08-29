@@ -26,6 +26,8 @@ message Validator {
   // prevents replay attacks.  The chain only accepts new validator definitions
   // with increasing sequence numbers.
   uint32 sequence_number = 7;
+  // The validator's governance key.
+  crypto.GovernanceKey governance_key = 9;
 }
 
 // For storing the list of keys of known validators.

@@ -71,6 +71,11 @@ message IdentityKey {
   bytes ik = 1;
 }
 
+// A validator's governance key (decaf377-rdsa spendauth verification key).
+message GovernanceKey {
+  bytes gk = 1;
+}
+
 message ConsensusKey {
     bytes inner = 1;
 }
