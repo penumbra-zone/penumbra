@@ -29,10 +29,10 @@ Find a validator to stake to:
 cargo run --release --bin pcli view validator list
 ```
 
-Copy and paste the address of one of the validators to stake to, then construct the staking tx:
+Copy and paste the identity key of one of the validators to stake to, then construct the staking tx:
 
 ```
-cargo run --release --bin pcli tx delegate 10penumbra --to penumbrav1t...
+cargo run --release --bin pcli tx delegate 10penumbra --to penumbravalid1t...
 ```
 
 
