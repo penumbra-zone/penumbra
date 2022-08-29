@@ -242,7 +242,7 @@ message ActionPlan {
         // Governance:
         ProposalSubmit proposal_submit = 18;
         ProposalWithdrawPlan proposal_withdraw = 19;
-        ValidatorVotePlan validator_vote = 20;
+        ValidatorVote validator_vote = 20;
         DelegatorVotePlan delegator_vote = 21;
 
         dex.PositionOpen position_open = 30;
@@ -330,13 +330,6 @@ message ProposalWithdrawPlan {
     // The body of the proposal withdrawal.
     ProposalWithdrawBody body = 1;
     // The randomizer to use for signing the proposal withdrawal.
-    bytes randomizer = 2;
-}
-
-message ValidatorVotePlan {
-    // The body of the validator vote.
-    ValidatorVoteBody body = 1;
-    // The randomizer to use for signing the validator vote.
     bytes randomizer = 2;
 }
 

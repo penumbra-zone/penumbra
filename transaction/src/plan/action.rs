@@ -7,7 +7,6 @@ mod proposal_withdraw;
 mod spend;
 mod swap;
 mod swap_claim;
-mod validator_vote;
 
 pub use delegator_vote::DelegatorVotePlan;
 pub use output::OutputPlan;
@@ -15,11 +14,10 @@ pub use proposal_withdraw::ProposalWithdrawPlan;
 pub use spend::SpendPlan;
 pub use swap::SwapPlan;
 pub use swap_claim::SwapClaimPlan;
-pub use validator_vote::ValidatorVotePlan;
 
 use crate::action::{
     Delegate, PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw, ProposalSubmit,
-    Undelegate,
+    Undelegate, ValidatorVote,
 };
 
 /// A declaration of a planned [`Action`], for use in transaction creation.
@@ -53,7 +51,7 @@ pub enum ActionPlan {
     /// Vote on a proposal as a delegator.
     DelegatorVote(DelegatorVotePlan),
     /// Vote on a proposal as a validator.
-    ValidatorVote(ValidatorVotePlan),
+    ValidatorVote(ValidatorVote),
 
     PositionOpen(PositionOpen),
     PositionClose(PositionClose),
@@ -129,8 +127,8 @@ impl From<DelegatorVotePlan> for ActionPlan {
     }
 }
 
-impl From<ValidatorVotePlan> for ActionPlan {
-    fn from(inner: ValidatorVotePlan) -> ActionPlan {
+impl From<ValidatorVote> for ActionPlan {
+    fn from(inner: ValidatorVote) -> ActionPlan {
         ActionPlan::ValidatorVote(inner)
     }
 }
