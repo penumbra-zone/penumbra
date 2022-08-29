@@ -66,8 +66,9 @@ pub mod stateless {
 pub mod stateful {
     use super::super::View as _;
     use super::*;
+    use crate::stake::View as _;
     use penumbra_chain::View as _;
-    use penumbra_crypto::{IdentityKey, STAKING_TOKEN_DENOM};
+    use penumbra_crypto::{GovernanceKey, IdentityKey, STAKING_TOKEN_DENOM};
     use penumbra_storage::State;
     use penumbra_transaction::AuthHash;
 
@@ -157,12 +158,14 @@ pub mod stateful {
                     proposal,
                     vote: _, // All votes are valid, so we don't need to do anything with this
                     identity_key,
+                    governance_key,
                 },
             auth_sig: _, // We already checked this in stateless verification
         }: &ValidatorVote,
     ) -> Result<()> {
         proposal_voteable(state, *proposal).await?;
-        validator_has_not_voted(state, *proposal, *identity_key).await?;
+        validator_has_not_voted(state, *proposal, identity_key).await?;
+        governance_key_matches_validator(state, identity_key, governance_key).await?;
         Ok(())
     }
 
@@ -190,14 +193,34 @@ pub mod stateful {
     async fn validator_has_not_voted(
         state: &State,
         proposal_id: u64,
-        identity_key: IdentityKey,
+        identity_key: &IdentityKey,
     ) -> Result<()> {
-        if let Some(_vote) = state.validator_vote(proposal_id, identity_key).await? {
+        if let Some(_vote) = state.validator_vote(proposal_id, *identity_key).await? {
             anyhow::bail!(
                 "validator {} has already voted on proposal {}",
                 identity_key,
                 proposal_id
             );
+        }
+
+        Ok(())
+    }
+
+    async fn governance_key_matches_validator(
+        state: &State,
+        identity_key: &IdentityKey,
+        governance_key: &GovernanceKey,
+    ) -> Result<()> {
+        if let Some(validator) = state.validator(identity_key).await? {
+            if validator.governance_key != *governance_key {
+                anyhow::bail!(
+                    "governance key {} does not match validator {}",
+                    governance_key,
+                    identity_key
+                );
+            }
+        } else {
+            anyhow::bail!("validator {} does not exist", identity_key);
         }
 
         Ok(())

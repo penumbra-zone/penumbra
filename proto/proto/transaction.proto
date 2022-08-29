@@ -153,6 +153,8 @@ message ValidatorVoteBody {
   governance.Vote vote = 2;
   // The validator identity.
   crypto.IdentityKey identity_key = 3;
+  // The validator governance key.
+  crypto.GovernanceKey governance_key = 4;
 }
 
 message DelegatorVote {

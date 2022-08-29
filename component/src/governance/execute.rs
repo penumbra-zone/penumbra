@@ -91,6 +91,7 @@ pub async fn validator_vote(
                 proposal,
                 vote,
                 identity_key,
+                governance_key: _, // This is only used for checks so that stateless verification can be done on the signature
             },
     }: &ValidatorVote,
 ) {
