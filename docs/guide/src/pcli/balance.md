@@ -4,7 +4,7 @@ Once you've received your first tokens, you can scan the chain to import them
 into your local wallet (this may take a few minutes the first time you run it):
 
 ```bash
-cargo run --quiet --release --bin pcli sync
+cargo run --quiet --release --bin pcli view sync
 ```
 
 Syncing is performed automatically, but running the `sync` subcommand will
