@@ -3262,6 +3262,7 @@ dependencies = [
  "penumbra-tct",
  "poseidon377",
  "proptest",
+ "proptest-derive",
  "rand",
  "rand_core",
  "regex",
