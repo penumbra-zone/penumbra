@@ -4,6 +4,7 @@ This section describes how to use `pcli`, the command line client for Penumbra:
 
 - [Installation](./pcli/install.md) describes how to compile and run `pcli`;
 - [Generating a Wallet](./pcli/wallet.md) describes how to generate a wallet and use the testnet faucet;
+- Updating pcli describes how to update to a newly released testnet;
 - [Viewing Balances](./pcli/balance.md) describes how to view balances;
 - [Sending Transactions](./pcli/send.md) describes how to send funds.
 
