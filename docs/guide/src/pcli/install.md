@@ -36,7 +36,7 @@ Once you have installed the above tools, you can clone the repository:
 git clone https://github.com/penumbra-zone/penumbra
 ```
 
-To build the version of `pcli` compatible with the current testnet, navigate to the penumbra folder, fetch the latest from the repostiroy, and check out the latest tag for the current [testnet](https://github.com/penumbra-zone/penumbra/releases):
+To build the version of `pcli` compatible with the current testnet, navigate to the penumbra folder, fetch the latest from the repository, and check out the latest tag for the current [testnet](https://github.com/penumbra-zone/penumbra/releases):
 
 ```bash
 cd penumbra && git fetch && git checkout 026-hermippe && cargo update
