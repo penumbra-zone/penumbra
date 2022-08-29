@@ -98,7 +98,7 @@ pub mod validator_identity_key {
 pub mod validator_governance_key {
     use super::*;
 
-    /// The Bech32 prefix used for validator identity keys.
+    /// The Bech32 prefix used for validator governance keys.
     pub const BECH32_PREFIX: &str = "penumbragovern";
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>

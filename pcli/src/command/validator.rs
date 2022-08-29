@@ -3,7 +3,8 @@ use std::{fs::File, io::Write};
 use anyhow::{Context, Result};
 use penumbra_component::stake::{validator, validator::Validator, FundingStream, FundingStreams};
 use penumbra_crypto::{GovernanceKey, IdentityKey};
-use penumbra_proto::{stake::Validator as ProtoValidator, Message};
+use penumbra_proto::{stake::Validator as ProtoValidator, Message, Protobuf};
+use penumbra_transaction::action::{ValidatorVote, ValidatorVoteBody, Vote};
 use penumbra_wallet::plan;
 use rand_core::OsRng;
 
@@ -16,6 +17,23 @@ pub enum ValidatorCmd {
     /// Manage your validator's definition.
     #[clap(subcommand)]
     Definition(DefinitionCmd),
+    /// Cast a vote on a proposal in your capacity as a validator.
+    ///
+    /// This is distinct from casting a vote as a delegator, which can be done using `pcli tx
+    /// proposal vote`.
+    Vote {
+        /// The transaction fee (paid in upenumbra).
+        #[clap(long, default_value = "0")]
+        fee: u64,
+        /// The proposal id to vote on.
+        #[clap(long = "on")]
+        proposal_id: u64,
+        /// The vote to cast.
+        vote: Vote,
+        /// Optional. Only spend funds originally received by the given address index.
+        #[clap(long)]
+        source: Option<u64>,
+    },
 }
 
 #[derive(Debug, clap::Subcommand)]
@@ -57,6 +75,7 @@ impl ValidatorCmd {
             ValidatorCmd::Definition(
                 DefinitionCmd::Template { .. } | DefinitionCmd::Fetch { .. },
             ) => false,
+            ValidatorCmd::Vote { .. } => true,
         }
     }
 
@@ -102,6 +121,42 @@ impl ValidatorCmd {
                 // successfully, so that we don't store pending notes that will
                 // never appear on-chain.
                 println!("Uploaded validator definition");
+            }
+            ValidatorCmd::Vote {
+                fee,
+                proposal_id,
+                source,
+                vote,
+            } => {
+                // TODO: support submitting a separate governance key.
+                let identity_key = IdentityKey(*sk.full_viewing_key().spend_verification_key());
+                // Currently this is always just copied from the identity key
+                let governance_key = GovernanceKey(identity_key.0);
+
+                // Construct the vote body
+                let body = ValidatorVoteBody {
+                    proposal: *proposal_id,
+                    vote: *vote,
+                    identity_key,
+                    governance_key,
+                };
+
+                // TODO: support signing with a separate governance key
+                let governance_auth_key = sk.spend_auth_key();
+
+                // Generate an authorizing signature with the governance key for the vote body
+                let body_bytes = body.encode_to_vec();
+                let auth_sig = governance_auth_key.sign(&mut OsRng, &body_bytes);
+
+                let vote = ValidatorVote { body, auth_sig };
+
+                // Construct a new transaction and include the validator definition.
+                let plan =
+                    plan::validator_vote(&app.fvk, &mut app.view, OsRng, vote, *fee, *source)
+                        .await?;
+                app.build_and_submit_transaction(plan).await?;
+
+                println!("Cast validator vote");
             }
             ValidatorCmd::Definition(DefinitionCmd::Template { file }) => {
                 let (address, _dtk) = fvk.incoming().payment_address(0u64.into());
