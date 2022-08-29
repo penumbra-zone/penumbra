@@ -1,5 +1,6 @@
 //! Penumbra validators and related structures.
 
+use penumbra_crypto::GovernanceKey;
 use penumbra_proto::{stake as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
@@ -29,6 +30,9 @@ pub use status::Status;
 pub struct Validator {
     /// The validator's identity verification key.
     pub identity_key: IdentityKey,
+
+    /// The validator's governance verification key.
+    pub governance_key: GovernanceKey,
 
     /// The validator's consensus key, used by Tendermint for signing blocks and
     /// other consensus operations.
@@ -69,6 +73,7 @@ impl From<Validator> for pb::Validator {
     fn from(v: Validator) -> Self {
         pb::Validator {
             identity_key: Some(v.identity_key.into()),
+            governance_key: Some(v.governance_key.into()),
             consensus_key: v.consensus_key.to_bytes(),
             name: v.name,
             website: v.website,
@@ -87,6 +92,10 @@ impl TryFrom<pb::Validator> for Validator {
             identity_key: v
                 .identity_key
                 .ok_or_else(|| anyhow::anyhow!("missing identity key"))?
+                .try_into()?,
+            governance_key: v
+                .governance_key
+                .ok_or_else(|| anyhow::anyhow!("missing governance key"))?
                 .try_into()?,
             consensus_key: tendermint::PublicKey::from_raw_ed25519(&v.consensus_key)
                 .ok_or_else(|| anyhow::anyhow!("invalid ed25519 consensus pubkey"))?,
