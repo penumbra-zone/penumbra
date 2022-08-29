@@ -1,6 +1,6 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
-use anyhow::{Context as _, Result};
+use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::genesis;
 use penumbra_crypto::{
@@ -20,7 +20,7 @@ use crate::{
     Component, Context,
 };
 
-use super::{check, event, execute, metrics, proposal, state_key, tally};
+use super::{check, execute, proposal, state_key, tally};
 
 pub struct Governance {
     state: State,

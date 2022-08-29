@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use decaf377_rdsa::{Signature, SpendAuth};
-use penumbra_crypto::IdentityKey;
+use penumbra_crypto::{GovernanceKey, IdentityKey};
 use penumbra_proto::{governance as pb_g, transaction as pb_t, Protobuf};
 use serde::{Deserialize, Serialize};
 
@@ -80,7 +80,7 @@ impl Protobuf<pb_g::Vote> for Vote {}
 pub struct ValidatorVote {
     /// The body of the validator vote.
     pub body: ValidatorVoteBody,
-    /// The signature authorizing the vote.
+    /// The signature authorizing the vote (signed with governance key over the body).
     pub auth_sig: Signature<SpendAuth>,
 }
 
@@ -120,6 +120,8 @@ pub struct ValidatorVoteBody {
     pub vote: Vote,
     /// The identity of the validator who is voting.
     pub identity_key: IdentityKey,
+    /// The governance key for the validator who is voting.
+    pub governance_key: GovernanceKey,
 }
 
 impl From<ValidatorVoteBody> for pb_t::ValidatorVoteBody {
@@ -128,6 +130,7 @@ impl From<ValidatorVoteBody> for pb_t::ValidatorVoteBody {
             proposal: value.proposal,
             vote: Some(value.vote.into()),
             identity_key: Some(value.identity_key.into()),
+            governance_key: Some(value.governance_key.into()),
         }
     }
 }
@@ -145,6 +148,12 @@ impl TryFrom<pb_t::ValidatorVoteBody> for ValidatorVoteBody {
             identity_key: msg
                 .identity_key
                 .ok_or_else(|| anyhow::anyhow!("missing validator identity in `ValidatorVote`"))?
+                .try_into()?,
+            governance_key: msg
+                .governance_key
+                .ok_or_else(|| {
+                    anyhow::anyhow!("missing validator governance key in `ValidatorVote`")
+                })?
                 .try_into()?,
         })
     }
