@@ -301,9 +301,6 @@ where
 
     let chain_params = view.chain_params().await?;
 
-    // TODO: need to fetch clearing price (`BatchSwapOutputData`) for the
-    // swap.
-
     let mut plan = TransactionPlan {
         chain_id: chain_params.chain_id,
         fee: Fee(fee),
@@ -320,7 +317,6 @@ where
     //         fvk.address(),
     //         fee,
     //         output_data,
-    //         anchor,
     //         trading_pair,
     //     )
     //     .into(),

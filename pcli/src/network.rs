@@ -29,28 +29,11 @@ impl App {
             self.fvk
                 .derive_nullifier(spend_plan.position, &spend_plan.note.commit())
         });
-        let swap_commitments: Vec<note::Commitment> = plan
-            .swap_plans()
-            .map(|swap_plan| {
-                // If we perform a swap, then we should await detecting the note commitment for the swap NFT.
-                // This allows claims to be submitted immediately.
-                swap_plan.swap_body(&self.fvk).swap_nft.note_commitment
-            })
-            .collect();
-        let await_detection_of_commitments = if swap_commitments.len() == 0 {
-            None
-        } else {
-            Some(swap_commitments)
-        };
 
         let tx = self.build_transaction(plan).await?;
 
-        self.submit_transaction(
-            &tx,
-            await_detection_of_nullifier,
-            await_detection_of_commitments,
-        )
-        .await
+        self.submit_transaction(&tx, await_detection_of_nullifier)
+            .await
     }
 
     pub fn build_transaction(
@@ -72,20 +55,11 @@ impl App {
     ///
     /// - if `await_detection_of_nullifier` is `Some`, returns `Ok` after the specified note has been detected by the view service, implying transaction finality.
     /// - if `await_detection_of_nullifier` is `None`, returns `Ok` after the transaction has been accepted by the node it was sent to.
-    ///
-    /// - if `await_detection_of_commitments` is `Some`, returns `Ok` after the specified note commitments have been detected by the view service, implying transaction finality.
-    /// - if `await_detection_of_commitments` is `None`, returns `Ok` after the transaction has been accepted by the node it was sent to.
-    #[instrument(skip(
-        self,
-        transaction,
-        await_detection_of_nullifier,
-        await_detection_of_commitments
-    ))]
+    #[instrument(skip(self, transaction, await_detection_of_nullifier))]
     pub async fn submit_transaction(
         &mut self,
         transaction: &Transaction,
         await_detection_of_nullifier: Option<Nullifier>,
-        await_detection_of_commitments: Option<Vec<note::Commitment>>,
     ) -> Result<(), anyhow::Error> {
         println!("pre-checking transaction...");
         use penumbra_component::Component;
@@ -134,13 +108,12 @@ impl App {
             ));
         }
 
-        if await_detection_of_commitments.is_none() && await_detection_of_nullifier.is_none() {
+        if await_detection_of_nullifier.is_none() {
             println!("transaction submitted successfully");
             return Ok(());
         }
 
-        // Either we are waiting for a nullifier to be detected, or we are waiting for a commitment to be detected,
-        // or both.
+        // We are waiting for a nullifier to be detected.
         //
         // putting two spaces in makes the ellipsis line up with the above
         println!("confirming transaction  ...");
@@ -154,18 +127,6 @@ impl App {
             .await
             .context("timeout waiting to detect nullifier of submitted transaction")?
             .context("error while waiting for detection of submitted transaction")?;
-        }
-        if let Some(note_commitments) = await_detection_of_commitments {
-            for note_commitment in note_commitments {
-                tokio::time::timeout(
-                    std::time::Duration::from_secs(20),
-                    self.view()
-                        .await_note_by_commitment(account_id, note_commitment),
-                )
-                .await
-                .context("timeout waiting to detect commitment of submitted transaction")?
-                .context("error while waiting for detection of submitted transaction")?;
-            }
         }
 
         println!("transaction confirmed and detected");

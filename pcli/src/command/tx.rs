@@ -182,42 +182,31 @@ impl TxCmd {
 
                 let swap_plan =
                     plan::swap(&app.fvk, &mut app.view, OsRng, input, into, *fee, *source).await?;
-
-                let swap_nft_asset_id = swap_plan
+                let swap_plan_inner = swap_plan
                     .swap_plans()
                     .next()
-                    .map(|swap_plan| swap_plan.swap_plaintext.asset_id())
-                    .ok_or(anyhow::anyhow!("unable to find expected swap plan"))?;
+                    .expect("expected swap plan")
+                    .clone();
 
-                // Submit the `Swap` transaction and wait for detection of the output note containing the Swap NFT.
+                let swap_nft_asset_id = swap_plan_inner.swap_plaintext.asset_id();
+
+                // Submit the `Swap` transaction.
                 app.build_and_submit_transaction(swap_plan).await?;
 
-                // `build_and_submit_transaction` will wait for confirmation of the Swap NFT note commitment to sync to the view.
-                // After that, we can submit the `SwapClaim` transaction.
-
+                // Wait for detection of the note commitment containing the Swap NFT.
+                let account_id = app.fvk.hash();
+                let note_commitment = swap_plan_inner.swap_body(&app.fvk).swap_nft.note_commitment;
                 // Find the swap NFT note associated with the swap plan.
-                let account_id = app.fvk.clone().hash();
-                let swap_nft_notes: Vec<SpendableNoteRecord> = app
-                    .view()
-                    .notes(NotesRequest {
-                        account_id: Some(account_id.into()),
-                        asset_id: Some(swap_nft_asset_id.into()),
-                        amount_to_spend: 1,
-                        include_spent: false,
-                        // The address index is not specified because we want to get the swap NFT associated with
-                        // *any* address index (because a random one will be selected).
-                        ..Default::default()
-                    })
-                    .await?;
+                let swap_nft_note = tokio::time::timeout(
+                    std::time::Duration::from_secs(20),
+                    app.view()
+                        .await_note_by_commitment(account_id, note_commitment),
+                )
+                .await
+                .context("timeout waiting to detect commitment of submitted transaction")?
+                .context("error while waiting for detection of submitted transaction")?;
 
-                if swap_nft_notes.len() != 1 {
-                    return Err(anyhow::anyhow!(
-                        "expected 1 swap NFT note after submitting Swap, found {}",
-                        swap_nft_notes.len()
-                    ));
-                }
-
-                let swap_nft_note = &swap_nft_notes[0];
+                // Now that the note commitment is detected, we can submit the `SwapClaim` transaction.
 
                 let claim_plan = plan::swap_claim(
                     &app.fvk,
@@ -366,7 +355,7 @@ impl TxCmd {
                 // Pass None as the change to await, since the change will be quarantined, so we won't detect it.
                 // But it's not spendable anyways, so we don't need to detect it.
                 let tx = app.build_transaction(undelegate_plan).await?;
-                app.submit_transaction(&tx, None, None).await?;
+                app.submit_transaction(&tx, None).await?;
             }
             TxCmd::Redelegate { .. } => {
                 println!("Sorry, this command is not yet implemented");
