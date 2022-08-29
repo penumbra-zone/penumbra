@@ -4,9 +4,9 @@ This section describes how to use `pcli`, the command line client for Penumbra:
 
 - [Installation](./pcli/install.md) describes how to compile and run `pcli`;
 - [Generating a Wallet](./pcli/wallet.md) describes how to generate a wallet and use the testnet faucet;
-- Updating pcli describes how to update to a newly released testnet;
+- [Updating pcli](./pcli/update.md) describes how to update to a newly released testnet from a previous testnet;
 - [Viewing Balances](./pcli/balance.md) describes how to view balances;
-- [Sending Transactions](./pcli/send.md) describes how to send funds.
+- [Sending Transactions](./pcli/transaction.md) describes how to send funds.
 
 Penumbra is a private blockchain, so the public chain state does not reveal any
 private user data.  By default, `pcli` includes a _view service_ that
