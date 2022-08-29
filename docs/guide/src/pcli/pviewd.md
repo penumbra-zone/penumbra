@@ -3,7 +3,7 @@
 First, export a viewing key from `pcli`:
 
 ```shell
-pcli wallet export full-viewing-key
+pcli keys export full-viewing-key
 ```
 
 Next, use the FVK it prints to initialize the `pviewd` state:
