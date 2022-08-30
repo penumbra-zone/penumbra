@@ -193,7 +193,7 @@ impl<R: RngCore + CryptoRng> Builder<R> {
         &mut self,
         view: &mut V,
         fvk: &FullViewingKey,
-        source: Option<u64>,
+        source: Option<AddressIndex>,
     ) -> anyhow::Result<TransactionPlan> {
         tracing::debug!(plan = ?self.plan, balance = ?self.balance, "finalizing transaction");
 
