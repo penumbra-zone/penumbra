@@ -15,7 +15,7 @@ use penumbra_view::ViewClient;
 use rand::{CryptoRng, RngCore};
 use tracing::instrument;
 
-use super::balance::Balance;
+pub use super::balance::Balance;
 
 /// A builder for a [`TransactionPlan`] that can fill in the required spends and change outputs upon
 /// finalization to make a transaction balance.
@@ -42,6 +42,11 @@ impl<R: RngCore + CryptoRng> Builder<R> {
             balance: Balance::default(),
             plan: TransactionPlan::default(),
         }
+    }
+
+    /// Get the current transaction balance of the builder.
+    pub fn balance(&self) -> &Balance {
+        &self.balance
     }
 
     /// Set the expiry height for the transaction plan.
