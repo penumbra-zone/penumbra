@@ -246,6 +246,7 @@ impl Note {
             self.value,
             self.diversified_generator(),
             self.transmission_key_s,
+            self.address.clue_key(),
         )
     }
 
@@ -260,8 +261,9 @@ pub fn commitment(
     value: Value,
     diversified_generator: decaf377::Element,
     transmission_key_s: Fq,
+    clue_key: &fmd::ClueKey,
 ) -> Commitment {
-    let commit = poseidon377::hash_5(
+    let commit = poseidon377::hash_6(
         &NOTECOMMIT_DOMAIN_SEP,
         (
             note_blinding,
@@ -269,6 +271,7 @@ pub fn commitment(
             value.asset_id.0,
             diversified_generator.vartime_compress_to_field(),
             transmission_key_s,
+            Fq::from_le_bytes_mod_order(&clue_key.0[..]),
         ),
     );
 

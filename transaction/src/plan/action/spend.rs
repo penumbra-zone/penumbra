@@ -66,6 +66,7 @@ impl SpendPlan {
             note_commitment_proof,
             g_d: self.note.diversified_generator(),
             pk_d: *self.note.transmission_key(),
+            ck_d: *self.note.clue_key(),
             value: self.note.value(),
             v_blinding: self.value_blinding,
             note_blinding: self.note.note_blinding(),
