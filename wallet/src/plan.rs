@@ -37,7 +37,7 @@ where
     Builder::new(rng)
         .fee(fee)
         .validator_definition(new_validator)
-        .finish(view, fvk, source_address)
+        .finish(view, fvk, source_address.map(Into::into))
         .await
         .context("can't build validator definition plan")
 }
@@ -132,7 +132,7 @@ where
     Builder::new(rng)
         .fee(fee)
         .delegate(unbonded_amount, rate_data)
-        .finish(view, fvk, source_address)
+        .finish(view, fvk, source_address.map(Into::into))
         .await
         .context("can't build delegate plan")
 }
@@ -163,7 +163,7 @@ where
     }
 
     builder
-        .finish(view, fvk, source_address)
+        .finish(view, fvk, source_address.map(Into::into))
         .await
         .context("can't build undelegate plan")
 }
@@ -463,7 +463,7 @@ where
         builder.output(value, dest_address, memo.clone());
     }
     builder
-        .finish(view, fvk, source_address)
+        .finish(view, fvk, source_address.map(Into::into))
         .await
         .context("can't build send transaction")
 }
@@ -479,8 +479,6 @@ where
     R: RngCore + CryptoRng,
 {
     const SWEEP_COUNT: usize = 8;
-
-    let chain_id = view.chain_params().await?.chain_id;
 
     let all_notes = view
         .notes(NotesRequest {
@@ -505,44 +503,27 @@ where
 
     for (index, notes_by_denom) in notes_by_addr_and_denom {
         tracing::info!(?index, "processing address");
-        let (addr, _dtk) = fvk.incoming().payment_address(index);
 
         for (asset_id, mut records) in notes_by_denom {
+            tracing::debug!(?asset_id, "processing asset");
+
             // Sort notes by amount, ascending, so the biggest notes are at the end...
             records.sort_by(|a, b| a.note.value().amount.cmp(&b.note.value().amount));
             // ... so that when we use chunks_exact, we get SWEEP_COUNT sized
             // chunks, ignoring the biggest notes in the remainder.
             for group in records.chunks_exact(SWEEP_COUNT) {
-                let mut plan = TransactionPlan {
-                    chain_id: chain_id.clone(),
-                    fee: Fee(0),
-                    ..Default::default()
-                };
+                let mut builder = Builder::new(&mut rng);
 
                 for record in group {
-                    plan.actions.push(
-                        SpendPlan::new(&mut rng, record.note.clone(), record.position).into(),
-                    );
+                    builder.spend(record.note.clone(), record.position);
                 }
-                plan.actions.push(
-                    OutputPlan::new(
-                        &mut rng,
-                        Value {
-                            amount: group.iter().map(|record| record.note.amount()).sum(),
-                            asset_id,
-                        },
-                        addr,
-                        MemoPlaintext::default(),
-                    )
-                    .into(),
-                );
+
+                let plan = builder
+                    .finish(view, fvk, Some(index))
+                    .await
+                    .context("can't build sweep transaction")?;
 
                 tracing::debug!(?plan);
-
-                // Add clue plans for `Output`s.
-                let fmd_params = view.fmd_parameters().await?;
-                let precision_bits = fmd_params.precision_bits;
-                plan.add_all_clue_plans(&mut rng, precision_bits.into());
                 plans.push(plan);
             }
         }
