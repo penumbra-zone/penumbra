@@ -165,7 +165,7 @@ impl Component for ShieldedPool {
             }
         }
 
-        consensus_rules::stateless::num_clues_equal_to_num_outputs(&tx)?;
+        consensus_rules::stateless::num_clues_equal_to_num_outputs(tx)?;
 
         Ok(())
     }
@@ -193,7 +193,7 @@ impl Component for ShieldedPool {
             .expect("chain params request must succeed");
         let height = self.state.get_block_height().await?;
         consensus_rules::stateful::fmd_precision_within_grace_period(
-            &tx,
+            tx,
             previous_fmd_parameters,
             current_fmd_parameters,
             height,

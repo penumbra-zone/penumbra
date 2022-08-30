@@ -13,6 +13,9 @@ use crate::{plan::TransactionPlan, AuthHash};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::Proposal", into = "pb::Proposal")]
 pub struct Proposal {
+    /// A short title describing the intent of the proposal.
+    pub title: String,
+
     /// A natural-language description of the effect of the proposal and its justification.
     pub description: String,
 
@@ -23,6 +26,7 @@ pub struct Proposal {
 impl From<Proposal> for pb::Proposal {
     fn from(inner: Proposal) -> pb::Proposal {
         pb::Proposal {
+            title: inner.title,
             description: inner.description,
             payload: Some(inner.payload.into()),
         }
@@ -34,6 +38,7 @@ impl TryFrom<pb::Proposal> for Proposal {
 
     fn try_from(inner: pb::Proposal) -> Result<Proposal, Self::Error> {
         Ok(Proposal {
+            title: inner.title,
             description: inner.description,
             payload: inner
                 .payload
@@ -93,6 +98,7 @@ impl Proposal {
 impl ProposalKind {
     /// Generate a default proposal of a particular kind.
     pub fn template_proposal(&self, chain_id: String) -> Proposal {
+        let title = "A short title describing the intent of the proposal.".to_string();
         let description = "A human readable description of the proposal.".to_string();
         let payload = match self {
             ProposalKind::Signaling => ProposalPayload::Signaling { commit: None },
@@ -120,6 +126,7 @@ impl ProposalKind {
             },
         };
         Proposal {
+            title,
             description,
             payload,
         }
