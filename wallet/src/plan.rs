@@ -21,6 +21,10 @@ use penumbra_view::{SpendableNoteRecord, ViewClient};
 use rand_core::{CryptoRng, RngCore};
 use tracing::instrument;
 
+pub mod balance;
+mod builder;
+pub use builder::Builder;
+
 pub async fn validator_definition<V, R>(
     fvk: &FullViewingKey,
     view: &mut V,
