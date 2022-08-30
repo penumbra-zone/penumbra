@@ -46,7 +46,7 @@ impl From<ICS20Withdrawal> for pb::Ics20Withdrawal {
             value: Some(w.value.into()),
             destination_chain_address: w.destination_chain_address,
             return_address: Some(w.return_address.into()),
-            timeout_height: w.timeout_height.into(),
+            timeout_height: w.timeout_height,
             timeout_time: w.timeout_time,
         }
     }

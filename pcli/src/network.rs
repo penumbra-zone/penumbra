@@ -1,6 +1,6 @@
 use anyhow::{Context as _, Result};
 use penumbra_component::Context;
-use penumbra_crypto::{note, Nullifier};
+use penumbra_crypto::{Nullifier};
 use penumbra_proto::{
     client::{
         oblivious::oblivious_query_client::ObliviousQueryClient,

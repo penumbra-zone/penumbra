@@ -5,10 +5,8 @@ use penumbra_component::stake::rate::RateData;
 use penumbra_crypto::{
     asset, Address, DelegationToken, IdentityKey, Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_proto::view::NotesRequest;
 use penumbra_proto::{client::specific::KeyValueRequest, Protobuf};
 use penumbra_transaction::action::Proposal;
-use penumbra_view::SpendableNoteRecord;
 use penumbra_view::ViewClient;
 use penumbra_wallet::plan;
 use rand_core::OsRng;
@@ -201,7 +199,7 @@ impl TxCmd {
                     .expect("expected swap plan")
                     .clone();
 
-                let swap_nft_asset_id = swap_plan_inner.swap_plaintext.asset_id();
+                let _swap_nft_asset_id = swap_plan_inner.swap_plaintext.asset_id();
 
                 // Submit the `Swap` transaction.
                 app.build_and_submit_transaction(swap_plan).await?;
