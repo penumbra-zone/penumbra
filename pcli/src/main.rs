@@ -92,7 +92,7 @@ async fn main() -> Result<()> {
     // that tracing is set up even for wallet commands that don't build the `App`.
     opt.init_tracing();
 
-    // The wallet command takes the data dir directly, since it may need to
+    // The keys command takes the data dir directly, since it may need to
     // create the client state, so handle it specially here so that we can have
     // common code for the other subcommands.
     if let Command::Keys(keys_cmd) = &opt.cmd {
@@ -100,7 +100,13 @@ async fn main() -> Result<()> {
         return Ok(());
     }
 
-    let data_path = opt.data_path.clone();
+    // The view reset command takes the data dir directly, and should not be invoked when there's a
+    // view service running.
+    if let Command::View(ViewCmd::Reset(reset)) = &opt.cmd {
+        reset.exec(opt.data_path.as_path())?;
+        return Ok(());
+    }
+
     let (mut app, cmd) = opt.into_app().await?;
 
     if cmd.needs_sync() {
@@ -118,7 +124,7 @@ async fn main() -> Result<()> {
             let mut oblivious_client = app.oblivious_client().await?;
 
             view_cmd
-                .exec(&app.fvk, &mut app.view, &mut oblivious_client, &data_path)
+                .exec(&app.fvk, &mut app.view, &mut oblivious_client)
                 .await?
         }
         Command::Validator(cmd) => cmd.exec(&mut app).await?,

@@ -11,8 +11,11 @@ use penumbra_crypto::{
 };
 use penumbra_proto::view::NotesRequest;
 use penumbra_transaction::{
-    action::{Proposal, ProposalSubmit},
-    plan::{ActionPlan, OutputPlan, SpendPlan, SwapClaimPlan, SwapPlan, TransactionPlan},
+    action::{Proposal, ProposalSubmit, ProposalWithdrawBody},
+    plan::{
+        ActionPlan, OutputPlan, ProposalWithdrawPlan, SpendPlan, SwapClaimPlan, SwapPlan,
+        TransactionPlan,
+    },
 };
 use penumbra_view::{SpendableNoteRecord, ViewClient};
 use rand_core::{CryptoRng, RngCore};
@@ -613,69 +616,16 @@ where
             .or_default() += fee;
     }
 
-    // Add the required spends:
-    for (denom, spend_amount) in value_to_spend {
-        // Only produce an output if the amount is greater than zero
-        if spend_amount == 0 {
-            continue;
-        }
-
-        let source_index: Option<AddressIndex> = source_address.map(Into::into);
-        // Select a list of notes that provides at least the required amount.
-        let notes_to_spend = view
-            .notes(NotesRequest {
-                account_id: Some(fvk.hash().into()),
-                asset_id: Some(denom.id().into()),
-                address_index: source_index.map(Into::into),
-                amount_to_spend: spend_amount,
-                include_spent: false,
-            })
-            .await?;
-        if notes_to_spend.is_empty() {
-            // Shouldn't happen because the other side checks this, but just in case...
-            return Err(anyhow::anyhow!("not enough notes to spend",));
-        }
-
-        let change_address_index: u64 = fvk
-            .incoming()
-            .index_for_diversifier(
-                &notes_to_spend
-                    .last()
-                    .expect("notes_to_spend should never be empty")
-                    .note
-                    .diversifier(),
-            )
-            .try_into()?;
-
-        let (change_address, _dtk) = fvk.incoming().payment_address(change_address_index.into());
-        let spent: u64 = notes_to_spend
-            .iter()
-            .map(|note_record| note_record.note.amount())
-            .sum();
-
-        // Spend each of the notes we selected.
-        for note_record in notes_to_spend {
-            plan.actions
-                .push(SpendPlan::new(&mut rng, note_record.note, note_record.position).into());
-        }
-
-        // Find out how much change we have and whether to add a change output.
-        let change = spent - spend_amount;
-        if change > 0 {
-            plan.actions.push(
-                OutputPlan::new(
-                    &mut rng,
-                    Value {
-                        amount: change,
-                        asset_id: denom.id(),
-                    },
-                    change_address,
-                    MemoPlaintext::default(),
-                )
-                .into(),
-            );
-        }
-    }
+    // Add the required spends and any needed change output:
+    add_spends_and_change(
+        fvk,
+        view,
+        &mut rng,
+        &value_to_spend,
+        source_address,
+        &mut plan,
+    )
+    .await?;
 
     // Add clue plans for `Output`s.
     let fmd_params = view.fmd_parameters().await?;
@@ -768,7 +718,7 @@ where
 }
 
 #[instrument(skip(fvk, view, rng))]
-pub async fn propose<V, R>(
+pub async fn proposal_submit<V, R>(
     fvk: &FullViewingKey,
     view: &mut V,
     mut rng: R,
@@ -845,10 +795,118 @@ where
             .or_default() += fee;
     }
 
-    // Add the required spends (this is copied from the implementation of `send`):
+    // Add the required spends and any change necessary:
+    add_spends_and_change(
+        fvk,
+        view,
+        &mut rng,
+        &value_to_spend,
+        source_address,
+        &mut plan,
+    )
+    .await?;
+
+    Ok(plan)
+}
+
+#[instrument(skip(fvk, view, rng))]
+pub async fn proposal_withdraw<V, R>(
+    fvk: &FullViewingKey,
+    view: &mut V,
+    mut rng: R,
+    proposal_id: u64,
+    deposit_refund_address: Address,
+    reason: String,
+    fee: u64,
+    source_address: Option<u64>,
+) -> Result<TransactionPlan>
+where
+    V: ViewClient,
+    R: RngCore + CryptoRng,
+{
+    let chain_params = view.chain_params().await?;
+    let chain_id = chain_params.chain_id;
+
+    let mut plan = TransactionPlan {
+        chain_id,
+        fee: Fee(fee),
+        ..Default::default()
+    };
+
+    // Check to make sure that the fvk controls the address; if not, then the derived withdraw
+    // proposal key will not be the
+    if !fvk.incoming().views_address(&deposit_refund_address) {
+        return Err(anyhow::anyhow!(
+            "can't withdraw proposal because deposit refund address {} is not controlled by the full viewing key",
+            deposit_refund_address
+        ));
+    }
+
+    // The proposal withdraw verification key is the spend auth verification key randomized by the
+    // deposit refund address's address index
+    let randomizer = {
+        // Use the fvk to get the original address index of the diversifier
+        let deposit_refund_address_index = fvk
+            .incoming()
+            .index_for_diversifier(deposit_refund_address.diversifier());
+
+        // Convert this to a vector
+        let mut deposit_refund_address_index_bytes =
+            deposit_refund_address_index.to_bytes().to_vec();
+
+        // Pad it with zeros to be 32 bytes long (the size expected by a randomizer)
+        deposit_refund_address_index_bytes.extend([0; 16]);
+
+        // Convert it back to exactly 32 bytes
+        let deposit_refund_address_index_bytes = deposit_refund_address_index_bytes
+            .try_into()
+            .expect("exactly 32 bytes");
+
+        // Get the scalar `Fr` element derived from these bytes
+        Fr::from_bytes(deposit_refund_address_index_bytes)?
+    };
+
+    // Add the withdraw proposal action plan to the actions
+    plan.actions
+        .push(ActionPlan::ProposalWithdraw(ProposalWithdrawPlan {
+            randomizer,
+            body: ProposalWithdrawBody {
+                proposal: proposal_id,
+                reason,
+            },
+        }));
+
+    // Add appropriate spends for the fee (there's no other spent value in this tx)
+    let mut value_to_spend = HashMap::new();
+    value_to_spend.insert(STAKING_TOKEN_DENOM.clone(), fee);
+    add_spends_and_change(
+        fvk,
+        view,
+        &mut rng,
+        &value_to_spend,
+        source_address,
+        &mut plan,
+    )
+    .await?;
+
+    Ok(plan)
+}
+
+async fn add_spends_and_change<V, R>(
+    fvk: &FullViewingKey,
+    view: &mut V,
+    rng: &mut R,
+    value_to_spend: &HashMap<Denom, u64>,
+    source_address: Option<u64>,
+    plan: &mut TransactionPlan,
+) -> Result<()>
+where
+    V: ViewClient,
+    R: RngCore + CryptoRng,
+{
     for (denom, spend_amount) in value_to_spend {
         // Only produce an output if the amount is greater than zero
-        if spend_amount == 0 {
+        if *spend_amount == 0 {
             continue;
         }
 
@@ -859,7 +917,7 @@ where
                 account_id: Some(fvk.hash().into()),
                 asset_id: Some(denom.id().into()),
                 address_index: source_index.map(Into::into),
-                amount_to_spend: spend_amount,
+                amount_to_spend: *spend_amount,
                 include_spent: false,
             })
             .await?;
@@ -888,7 +946,7 @@ where
         // Spend each of the notes we selected.
         for note_record in notes_to_spend {
             plan.actions
-                .push(SpendPlan::new(&mut rng, note_record.note, note_record.position).into());
+                .push(SpendPlan::new(rng, note_record.note, note_record.position).into());
         }
 
         // Find out how much change we have and whether to add a change output.
@@ -896,7 +954,7 @@ where
         if change > 0 {
             plan.actions.push(
                 OutputPlan::new(
-                    &mut rng,
+                    rng,
                     Value {
                         amount: change,
                         asset_id: denom.id(),
@@ -909,5 +967,5 @@ where
         }
     }
 
-    Ok(plan)
+    Ok(())
 }

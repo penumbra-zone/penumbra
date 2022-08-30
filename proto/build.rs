@@ -77,6 +77,9 @@ fn main() -> Result<()> {
 static SERIALIZE: &str = r#"#[derive(::serde::Deserialize, ::serde::Serialize)]"#;
 /// Serializes newtype structs as if the inner field were serialized on its own.
 static SERDE_TRANSPARENT: &str = r#"#[serde(transparent)]"#;
+static SERDE_FLATTEN: &str = r#"#[serde(flatten)]"#;
+static SERDE_TAG_KIND: &str = r#"#[serde(tag = "kind")]"#;
+static SERDE_SNAKE_CASE: &str = r#"#[serde(rename_all = "snake_case")]"#;
 
 static AS_HEX: &str = r#"#[serde(with = "crate::serializers::hexstr")]"#;
 static AS_HEX_FOR_BYTES: &str = r#"#[serde(with = "crate::serializers::hexstr_bytes")]"#;
@@ -179,11 +182,18 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.transaction.Output", SERIALIZE),
     (".penumbra.transaction.OutputBody", SERIALIZE),
     (".penumbra.transaction.Proposal", SERIALIZE),
+    (".penumbra.transaction.Proposal.Payload", SERDE_SNAKE_CASE),
+    (
+        ".penumbra.transaction.Proposal.Payload.payload",
+        SERDE_TAG_KIND,
+    ),
     (".penumbra.transaction.Vote", SERIALIZE),
     (".penumbra.transaction.ProposalSubmit", SERIALIZE),
     (".penumbra.transaction.ProposalWithdraw", SERIALIZE),
+    (".penumbra.transaction.ProposalWithdrawPlan", SERIALIZE),
     (".penumbra.transaction.ProposalWithdrawBody", SERIALIZE),
     (".penumbra.transaction.ValidatorVote", SERIALIZE),
+    (".penumbra.transaction.ValidatorVotePlan", SERIALIZE),
     (".penumbra.transaction.ValidatorVoteBody", SERIALIZE),
     (".penumbra.transaction.DelegatorVote", SERIALIZE),
     (".penumbra.transaction.DelegatorVotePlan", SERIALIZE),
@@ -212,6 +222,7 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.governance.Vote", SERIALIZE),
     (".penumbra.governance.ProposalState", SERIALIZE),
     (".penumbra.governance.ProposalOutcome", SERIALIZE),
+    (".penumbra.transaction.AuthHash", SERDE_TRANSPARENT),
 ];
 
 static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
@@ -315,4 +326,13 @@ static FIELD_ATTRIBUTES: &[(&str, &str)] = &[
     ),
     (".penumbra.dex.Position.nonce", AS_HEX),
     (".penumbra.dex.PositionId.inner", AS_BECH32_LP_ID),
+    // Proposal JSON formatting
+    (".penumbra.transaction.Proposal.payload", SERDE_FLATTEN),
+    (
+        // IMPORTANT: this *lacks* a leading dot, to work around a bug in prost-build:
+        // https://github.com/tokio-rs/prost/issues/504
+        "penumbra.transaction.Proposal.Payload.payload",
+        SERDE_FLATTEN,
+    ),
+    (".penumbra.transaction.AuthHash.inner", AS_HEX_FOR_BYTES),
 ];

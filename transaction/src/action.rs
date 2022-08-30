@@ -19,7 +19,7 @@ pub use delegate::Delegate;
 pub use output::Output;
 pub use position::{PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw};
 pub use propose::{
-    Proposal, ProposalPayload, ProposalSubmit, ProposalWithdraw, ProposalWithdrawBody,
+    Proposal, ProposalKind, ProposalPayload, ProposalSubmit, ProposalWithdraw, ProposalWithdrawBody,
 };
 pub use spend::Spend;
 pub use swap::Swap;

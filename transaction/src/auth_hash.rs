@@ -2,7 +2,10 @@ use blake2b_simd::{Hash, Params};
 use decaf377::FieldExt;
 use decaf377_fmd::Clue;
 use penumbra_crypto::FullViewingKey;
-use penumbra_proto::{transaction as pb, Message, Protobuf};
+use penumbra_proto::{
+    transaction::{self as pb},
+    Message, Protobuf,
+};
 
 use crate::{
     action::{
@@ -10,7 +13,7 @@ use crate::{
         PositionRewardClaim, PositionWithdraw, Proposal, ProposalSubmit, ProposalWithdraw,
         ProposalWithdrawBody, Undelegate, ValidatorVote, ValidatorVoteBody, Vote,
     },
-    plan::TransactionPlan,
+    plan::{ProposalWithdrawPlan, TransactionPlan, ValidatorVotePlan},
     Action, Transaction, TransactionBody,
 };
 
@@ -20,6 +23,12 @@ pub trait AuthorizingData {
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub struct AuthHash([u8; 64]);
+
+impl Default for AuthHash {
+    fn default() -> Self {
+        Self([0u8; 64])
+    }
+}
 
 impl std::fmt::Debug for AuthHash {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -356,6 +365,12 @@ impl AuthorizingData for ProposalWithdraw {
     }
 }
 
+impl AuthorizingData for ProposalWithdrawPlan {
+    fn auth_hash(&self) -> Hash {
+        self.body.auth_hash()
+    }
+}
+
 impl AuthorizingData for ProposalWithdrawBody {
     fn auth_hash(&self) -> Hash {
         let mut state = blake2b_simd::Params::default()
@@ -372,6 +387,30 @@ impl AuthorizingData for ValidatorVote {
     }
 }
 
+impl AuthorizingData for ValidatorVotePlan {
+    fn auth_hash(&self) -> Hash {
+        self.body.auth_hash()
+    }
+}
+
+impl AuthorizingData for Vote {
+    fn auth_hash(&self) -> Hash {
+        let mut state = blake2b_simd::Params::default()
+            .personal(b"PAH:vote")
+            .to_state();
+
+        state.update(match self {
+            // Manually choose a distinct byte for each vote type
+            Vote::Yes => b"Y",
+            Vote::No => b"N",
+            Vote::Abstain => b"A",
+            Vote::NoWithVeto => b"V",
+        });
+
+        state.finalize()
+    }
+}
+
 impl AuthorizingData for ValidatorVoteBody {
     fn auth_hash(&self) -> Hash {
         let mut state = blake2b_simd::Params::default()
@@ -384,21 +423,6 @@ impl AuthorizingData for ValidatorVoteBody {
         state.update(self.vote.auth_hash().as_bytes());
         state.update(&self.identity_key.0.to_bytes());
 
-        state.finalize()
-    }
-}
-
-impl AuthorizingData for Vote {
-    fn auth_hash(&self) -> Hash {
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:vote")
-            .to_state();
-        state.update(match self {
-            Vote::Yes => b"Y",
-            Vote::No => b"N",
-            Vote::Abstain => b"A",
-            Vote::NoWithVeto => b"V",
-        });
         state.finalize()
     }
 }

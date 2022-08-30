@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_crypto::IdentityKey;
 use penumbra_proto::{governance as pb_g, transaction as pb_t, Protobuf};
@@ -15,6 +17,26 @@ pub enum Vote {
     Abstain,
     /// The vote is to reject the proposal, and burn the deposit of the proposer.
     NoWithVeto,
+}
+
+impl FromStr for Vote {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s
+            .replace('-', "")
+            .replace('_', "")
+            .replace(' ', "")
+            .to_lowercase()
+            .as_str()
+        {
+            "yes" => Ok(Vote::Yes),
+            "no" => Ok(Vote::No),
+            "abstain" => Ok(Vote::Abstain),
+            "veto" | "noveto" | "nowithveto" => Ok(Vote::NoWithVeto),
+            _ => Err(anyhow::anyhow!("invalid vote: {}", s)),
+        }
+    }
 }
 
 impl From<Vote> for pb_g::Vote {
