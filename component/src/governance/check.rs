@@ -20,9 +20,21 @@ pub mod stateless {
         }: &ProposalSubmit,
     ) -> Result<()> {
         let Proposal {
+            title,
             description: _, // the description can be anything
             payload,
         } = proposal;
+
+        // This is enough room to print "Proposal #999,999: $TITLE" in 99 characters (and the
+        // proposal title itself in 80), a decent line width for a modern terminal, as well as a
+        // reasonable length for other interfaces
+        const PROPOSAL_TITLE_LIMIT: usize = 80;
+
+        if title.len() > PROPOSAL_TITLE_LIMIT {
+            return Err(anyhow::anyhow!(
+                "proposal title must fit within {PROPOSAL_TITLE_LIMIT} characters"
+            ));
+        }
 
         use penumbra_transaction::action::ProposalPayload::*;
         match payload {

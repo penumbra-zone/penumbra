@@ -4,6 +4,10 @@ pub fn latest_proposal_id() -> &'static str {
     "governance/latest_proposal_id"
 }
 
+pub fn proposal_title(proposal_id: u64) -> String {
+    format!("governance/proposal/{}/title", proposal_id)
+}
+
 pub fn proposal_description(proposal_id: u64) -> String {
     format!("governance/proposal/{}/description", proposal_id)
 }

@@ -352,8 +352,10 @@ message DelegatorVotePlan {
 
 // A proposal to be voted upon.
 message Proposal {
+  string title = 1;
+
   // A natural-language description of the effect of the proposal and its justification.
-  string description = 1;
+  string description = 2;
 
   // The kind of the proposal and details relevant only to that kind of proposal.
   message Payload {
@@ -370,7 +372,7 @@ message Proposal {
   }
 
   // The payload of the proposal.
-  Payload payload = 2;
+  Payload payload = 3;
 
   // A signaling proposal is meant to register a vote on-chain, but does not have an automatic
   // effect when passed.

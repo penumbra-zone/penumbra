@@ -32,7 +32,7 @@ pub enum QueryCmd {
     #[clap(subcommand)]
     Validator(ValidatorCmd),
     /// Queries information about governance proposals.
-    #[clap(subcommand)]
+    #[clap(flatten)]
     Proposal(ProposalCmd),
 }
 

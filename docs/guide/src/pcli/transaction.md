@@ -79,16 +79,18 @@ proposal` subcommand.
 To list all the active proposals by their ID, use:
 
 ```bash
-cargo run --release --bin pcli query proposal list
+cargo run --release --bin pcli query proposals
 ```
 
 Other proposal query commands all follow the form:
 
 ```bash
-cargo run --release --bin pcli query proposal [COMMAND] [ID]
+cargo run --release --bin pcli query proposal [PROPOSAL_ID] [QUERY]
 ```
 
-- `fetch` gets the details of a proposal, as the submitted JSON;
+These are the queries currently defined:
+
+- `definition` gets the details of a proposal, as the submitted JSON;
 - `state` gets information about the current state of a proposal (voting, withdrawn, or finished,
   along with the reason for withdrawal if any, and the outcome of finished proposals);
 - `period` gets the voting start and end block heights of a proposal;
