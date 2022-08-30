@@ -5,27 +5,35 @@ use std::{
 
 use penumbra_component::stake::{rate::RateData, validator};
 use penumbra_crypto::{
-    keys::AddressIndex, memo::MemoPlaintext, Address, DelegationToken, FullViewingKey, Note, Value,
-    STAKING_TOKEN_ASSET_ID,
+    keys::AddressIndex,
+    memo::MemoPlaintext,
+    rdsa::{SpendAuth, VerificationKey},
+    Address, DelegationToken, FieldExt, Fr, FullViewingKey, Note, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_proto::view::NotesRequest;
 use penumbra_tct as tct;
-use penumbra_transaction::plan::{ActionPlan, OutputPlan, SpendPlan, TransactionPlan};
+use penumbra_transaction::{
+    action::{Proposal, ProposalSubmit, ProposalWithdrawBody, ValidatorVote},
+    plan::{ActionPlan, OutputPlan, ProposalWithdrawPlan, SpendPlan, TransactionPlan},
+};
 use penumbra_view::ViewClient;
 use rand::{CryptoRng, RngCore};
 use tracing::instrument;
 
 pub use super::balance::Balance;
 
-/// A builder for a [`TransactionPlan`] that can fill in the required spends and change outputs upon
+/// A planner for a [`TransactionPlan`] that can fill in the required spends and change outputs upon
 /// finalization to make a transaction balance.
-pub struct Builder<R: RngCore + CryptoRng> {
+pub struct Planner<R: RngCore + CryptoRng> {
     rng: R,
     balance: Balance,
     plan: TransactionPlan,
+    proposal_submits: Vec<Proposal>,
+    proposal_withdraws: Vec<(Address, ProposalWithdrawBody)>,
+    // IMPORTANT: if you add more fields here, make sure to clear them when the planner is finished
 }
 
-impl<R: RngCore + CryptoRng> Debug for Builder<R> {
+impl<R: RngCore + CryptoRng> Debug for Planner<R> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.debug_struct("Builder")
             .field("balance", &self.balance)
@@ -34,17 +42,19 @@ impl<R: RngCore + CryptoRng> Debug for Builder<R> {
     }
 }
 
-impl<R: RngCore + CryptoRng> Builder<R> {
-    /// Create a new builder.
+impl<R: RngCore + CryptoRng> Planner<R> {
+    /// Create a new planner.
     pub fn new(rng: R) -> Self {
         Self {
             rng,
             balance: Balance::default(),
             plan: TransactionPlan::default(),
+            proposal_submits: Vec::new(),
+            proposal_withdraws: Vec::new(),
         }
     }
 
-    /// Get the current transaction balance of the builder.
+    /// Get the current transaction balance of the planner.
     pub fn balance(&self) -> &Balance {
         &self.balance
     }
@@ -113,7 +123,7 @@ impl<R: RngCore + CryptoRng> Builder<R> {
     /// probably explicitly add the precisely correct spends to the transaction, after having
     /// generated those exact notes by splitting notes in a previous transaction, if necessary.
     ///
-    /// The conditions imposed by the consensus rules are more permissive, but the builder will
+    /// The conditions imposed by the consensus rules are more permissive, but the planner will
     /// protect you from shooting yourself in the foot by throwing an error, should the built
     /// transaction fail these conditions.
     #[instrument(skip(self))]
@@ -130,13 +140,45 @@ impl<R: RngCore + CryptoRng> Builder<R> {
         self
     }
 
+    /// Submit a new governance proposal in this transaction.
+    #[instrument(skip(self))]
+    pub fn proposal_submit(&mut self, proposal: Proposal) -> &mut Self {
+        self.proposal_submits.push(proposal);
+        self
+    }
+
+    /// Withdraw a governance proposal in this transaction.
+    #[instrument(skip(self))]
+    pub fn proposal_withdraw(
+        &mut self,
+        proposal_id: u64,
+        deposit_refund_address: Address,
+        reason: String,
+    ) -> &mut Self {
+        self.proposal_withdraws.push((
+            deposit_refund_address,
+            ProposalWithdrawBody {
+                proposal: proposal_id,
+                reason,
+            },
+        ));
+        self
+    }
+
+    /// Cast a validator vote in this transaction.
+    #[instrument(skip(self))]
+    pub fn validator_vote(&mut self, vote: ValidatorVote) -> &mut Self {
+        self.action(ActionPlan::ValidatorVote(vote));
+        self
+    }
+
     fn action(&mut self, action: ActionPlan) -> &mut Self {
         use ActionPlan::*;
 
         // Track this action's contribution to the value balance of the transaction: this must match
         // the actual contribution to the value commitment, but this isn't checked, so make sure
         // that when you're adding a new action, you correctly match this up to the calculation of
-        // the value commitment for the transaction, or else the builder will submit transactions
+        // the value commitment for the transaction, or else the planner will submit transactions
         // that are not balanced!
         match &action {
             Spend(spend) => self.balance.provide(spend.note.value()),
@@ -187,9 +229,9 @@ impl<R: RngCore + CryptoRng> Builder<R> {
     /// Add spends and change outputs as required to balance the transaction, using the view service
     /// provided to supply the notes and other information.
     ///
-    /// Clears the contents of the builder, which can be re-used to save on allocations.
+    /// Clears the contents of the planner, which can be re-used.
     #[instrument(skip(self, view, fvk))]
-    pub async fn finish<V: ViewClient>(
+    pub async fn plan<V: ViewClient>(
         &mut self,
         view: &mut V,
         fvk: &FullViewingKey,
@@ -198,9 +240,33 @@ impl<R: RngCore + CryptoRng> Builder<R> {
         tracing::debug!(plan = ?self.plan, balance = ?self.balance, "finalizing transaction");
 
         // Fill in the chain id based on the view service
-        self.plan.chain_id = view.chain_params().await?.chain_id;
+        let chain_params = view.chain_params().await?;
+        self.plan.chain_id = chain_params.chain_id;
 
-        let source: Option<AddressIndex> = source.map(Into::into);
+        // Proposals aren't actually turned into action plans until now, because we need the view
+        // service to fill in the details. Now we have the chain parameters and the FVK, so we can
+        // automatically fill in the rest of the action plan without asking the user for anything:
+        for proposal in mem::take(&mut self.proposal_submits) {
+            let (deposit_refund_address, withdraw_proposal_key) =
+                self.proposal_address_and_withdraw_key(fvk);
+
+            self.action(
+                ProposalSubmit {
+                    proposal,
+                    deposit_amount: chain_params.proposal_deposit_amount,
+                    deposit_refund_address,
+                    withdraw_proposal_key,
+                }
+                .into(),
+            );
+        }
+
+        // Similarly, proposal withdrawals need the FVK to convert the address into the original
+        // randomizer, so we delay adding it to the transaction plan until now
+        for (address, body) in mem::take(&mut self.proposal_withdraws) {
+            let randomizer = self.proposal_withdraw_randomizer(fvk, &address);
+            self.action(ProposalWithdrawPlan { body, randomizer }.into());
+        }
 
         // Get all notes required to fulfill needed spends
         let mut spends = Vec::new();
@@ -217,7 +283,7 @@ impl<R: RngCore + CryptoRng> Builder<R> {
             );
         }
 
-        // Add the required spends to the builder
+        // Add the required spends to the planner
         for record in spends {
             self.spend(record.note, record.position);
         }
@@ -254,7 +320,7 @@ impl<R: RngCore + CryptoRng> Builder<R> {
 
         tracing::debug!(plan = ?self.plan, "finished balancing transaction");
 
-        // Clear the builder and pull out the plan to return
+        // Clear the planner and pull out the plan to return
         self.balance = Balance::new();
         let plan = mem::take(&mut self.plan);
 
@@ -320,5 +386,66 @@ impl<R: RngCore + CryptoRng> Builder<R> {
         }
 
         Ok(())
+    }
+
+    /// Get a random address/withdraw key pair for proposals.
+    fn proposal_address_and_withdraw_key(
+        &mut self,
+        fvk: &FullViewingKey,
+    ) -> (Address, VerificationKey<SpendAuth>) {
+        // The deposit refund address should be an ephemeral address
+        let deposit_refund_address = fvk.incoming().ephemeral_address(&mut self.rng).0;
+
+        // The proposal withdraw verification key is the spend auth verification key randomized by the
+        // deposit refund address's address index
+        let withdraw_proposal_key = {
+            // Use the fvk to get the original address index of the diversifier
+            let deposit_refund_address_index = fvk
+                .incoming()
+                .index_for_diversifier(deposit_refund_address.diversifier());
+
+            // Convert this to a vector
+            let mut deposit_refund_address_index_bytes =
+                deposit_refund_address_index.to_bytes().to_vec();
+
+            // Pad it with zeros to be 32 bytes long (the size expected by a randomizer)
+            deposit_refund_address_index_bytes.extend([0; 16]);
+
+            // Convert it back to exactly 32 bytes
+            let deposit_refund_address_index_bytes = deposit_refund_address_index_bytes
+                .try_into()
+                .expect("exactly 32 bytes");
+
+            // Get the scalar `Fr` element derived from these bytes
+            let withdraw_proposal_key_randomizer =
+                Fr::from_bytes(deposit_refund_address_index_bytes)
+                    .expect("bytes are within range for `Fr`");
+
+            // Randomize the spend verification key for the fvk using this randomizer
+            fvk.spend_verification_key()
+                .randomize(&withdraw_proposal_key_randomizer)
+        };
+
+        (deposit_refund_address, withdraw_proposal_key)
+    }
+
+    /// Get the randomizer from an address using the FVK.
+    fn proposal_withdraw_randomizer(&self, fvk: &FullViewingKey, address: &Address) -> Fr {
+        // Use the fvk to get the original address index of the diversifier
+        let deposit_refund_address_index =
+            fvk.incoming().index_for_diversifier(address.diversifier());
+
+        // Convert this to a vector
+        let mut deposit_refund_address_index_bytes =
+            deposit_refund_address_index.to_bytes().to_vec();
+        // Pad it with zeros to be 32 bytes long (the size expected by a randomizer)
+        deposit_refund_address_index_bytes.extend([0; 16]);
+        // Convert it back to exactly 32 bytes
+        let deposit_refund_address_index_bytes = deposit_refund_address_index_bytes
+            .try_into()
+            .expect("exactly 32 bytes");
+
+        // Get the scalar `Fr` element derived from these bytes
+        Fr::from_bytes(deposit_refund_address_index_bytes).expect("bytes are within range for `Fr`")
     }
 }
