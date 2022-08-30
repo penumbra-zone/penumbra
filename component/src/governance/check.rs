@@ -39,9 +39,7 @@ pub mod stateless {
         use penumbra_transaction::action::ProposalPayload::*;
         match payload {
             Signaling { commit: _ } => { /* all signaling proposals are valid */ }
-            Emergency { halt_chain: _ } => {
-                anyhow::bail!("emergency proposals are not yet supported")
-            }
+            Emergency { halt_chain: _ } => { /* all emergency proposals are valid */ }
             ParameterChange {
                 effective_height: _,
                 new_parameters: _,
