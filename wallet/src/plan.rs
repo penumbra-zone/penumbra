@@ -20,7 +20,7 @@ use tracing::instrument;
 
 pub mod balance;
 mod builder;
-pub use builder::Builder;
+pub use builder::{Balance, Builder};
 
 pub async fn validator_definition<V, R>(
     fvk: &FullViewingKey,

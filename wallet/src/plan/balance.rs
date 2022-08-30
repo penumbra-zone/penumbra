@@ -7,13 +7,13 @@ use std::{
     ops::{Add, AddAssign, Neg, Sub, SubAssign},
 };
 
+use tracing::instrument;
+
 use penumbra_crypto::{asset, Value};
 
 mod imbalance;
 mod iter;
 use imbalance::Imbalance;
-pub use iter::{IntoIter, Iter};
-use tracing::instrument;
 
 #[derive(Clone, Eq, Default)]
 pub struct Balance {

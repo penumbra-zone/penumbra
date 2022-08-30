@@ -10,7 +10,7 @@ use penumbra_crypto::{asset, Value};
 use super::{Balance, Imbalance};
 
 impl Balance {
-    pub fn iter(&self) -> Iter<'_> {
+    pub(super) fn iter(&self) -> Iter<'_> {
         Iter {
             negated: self.negated,
             iter: self.balance.iter(),
