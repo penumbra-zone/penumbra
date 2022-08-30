@@ -1,6 +1,6 @@
 use std::{
     collections::{btree_map, BTreeMap},
-    fmt::Debug,
+    fmt::{self, Debug, Formatter},
     iter::FusedIterator,
     mem,
     num::NonZeroU64,
@@ -14,10 +14,19 @@ mod iter;
 use imbalance::Imbalance;
 pub use iter::{IntoIter, Iter};
 
-#[derive(Debug, Clone, Eq, Default)]
+#[derive(Clone, Eq, Default)]
 pub struct Balance {
     negated: bool,
     balance: BTreeMap<asset::Id, Imbalance<NonZeroU64>>,
+}
+
+impl Debug for Balance {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Balance")
+            .field("required", &self.required())
+            .field("provided", &self.provided())
+            .finish()
+    }
 }
 
 impl Balance {
@@ -43,13 +52,13 @@ impl Balance {
 
     pub fn required(
         &self,
-    ) -> impl Iterator<Item = Value> + DoubleEndedIterator + FusedIterator + '_ {
+    ) -> impl Iterator<Item = Value> + DoubleEndedIterator + FusedIterator + Debug + '_ {
         self.iter().filter_map(Imbalance::required)
     }
 
     pub fn provided(
         &self,
-    ) -> impl Iterator<Item = Value> + DoubleEndedIterator + FusedIterator + '_ {
+    ) -> impl Iterator<Item = Value> + DoubleEndedIterator + FusedIterator + Debug + '_ {
         self.iter().filter_map(Imbalance::provided)
     }
 }

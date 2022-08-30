@@ -5,7 +5,7 @@ use penumbra_proto::{stake as pb, Protobuf};
 use serde::{Deserialize, Serialize};
 
 /// A transaction action withdrawing stake from a validator's delegation pool.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "pb::Undelegate", into = "pb::Undelegate")]
 pub struct Undelegate {
     /// The identity key of the validator to undelegate from.

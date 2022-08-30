@@ -162,10 +162,15 @@ impl<R: RngCore + CryptoRng> Builder<R> {
             self.output(value, self_address, MemoPlaintext::default());
         }
 
+        // Ensure that the transaction won't cause excessive quarantining
+        self.check_undelegate_rules()?;
+
         // TODO: dummy change outputs
 
-        // Now the transaction should be fully balanced
-        assert!(self.balance.is_zero());
+        // Now the transaction should be fully balanced, unless we didn't have enough to spend
+        if !self.balance.is_zero() {
+            anyhow::bail!("not enough balance available for required spends");
+        }
 
         // Add clue plans for `Output`s.
         let fmd_params = view.fmd_parameters().await?;
@@ -174,5 +179,66 @@ impl<R: RngCore + CryptoRng> Builder<R> {
             .add_all_clue_plans(&mut self.rng, precision_bits.into());
 
         Ok(mem::take(&mut self.plan))
+    }
+
+    /// Undelegations should have a very particular form to avoid excessive quarantining: all
+    /// their spends should be of the delegation token being undelegated, and all their outputs
+    /// should be of the staking token, and they should contain no other actions.
+    fn check_undelegate_rules(&self) -> anyhow::Result<()> {
+        match self
+            .plan
+            .actions
+            .iter()
+            .filter_map(|action| {
+                if let ActionPlan::Undelegate(undelegate) = action {
+                    Some(undelegate)
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>()
+            .as_slice()
+        {
+            [] => {
+                // No undelegations
+            }
+            [undelegate] => {
+                let delegation_asset_id = DelegationToken::new(undelegate.validator_identity).id();
+                for action in self.plan.actions.iter() {
+                    match action {
+                        ActionPlan::Spend(spend) => {
+                            if spend.note.value().asset_id != delegation_asset_id {
+                                return Err(anyhow::anyhow!(
+                                    "undelegation transaction must spend only delegation tokens"
+                                ));
+                            }
+                        }
+                        ActionPlan::Output(output) => {
+                            if output.value.asset_id != *STAKING_TOKEN_ASSET_ID {
+                                return Err(anyhow::anyhow!(
+                                    "undelegation transaction must output only staking tokens"
+                                ));
+                            }
+                        }
+                        ActionPlan::Undelegate(_) => {
+                            // There's only one undelegate action, so this is the one we already
+                            // know about, so we don't have to do anything with it
+                        }
+                        _ => {
+                            return Err(anyhow::anyhow!(
+                                "undelegation transaction must not contain extraneous actions"
+                            ))
+                        }
+                    }
+                }
+            }
+            _ => {
+                return Err(anyhow::anyhow!(
+                    "undelegation transaction must not contain multiple undelegations"
+                ))
+            }
+        }
+
+        Ok(())
     }
 }
