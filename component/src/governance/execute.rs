@@ -1,8 +1,9 @@
-use super::{proposal, View as _};
+use super::{proposal, tally, View as _};
 use penumbra_chain::View as _;
 use penumbra_storage::State;
 use penumbra_transaction::action::{
-    ProposalSubmit, ProposalWithdraw, ProposalWithdrawBody, ValidatorVote, ValidatorVoteBody,
+    ProposalPayload, ProposalSubmit, ProposalWithdraw, ProposalWithdrawBody, ValidatorVote,
+    ValidatorVoteBody,
 };
 use tracing::instrument;
 
@@ -104,3 +105,92 @@ pub async fn validator_vote(
 
 // TODO: fill in when delegator votes happen
 // pub async fn delegator_vote(state: &State, delegator_vote: &DelegatorVote) {}
+
+#[instrument(skip(state))]
+pub async fn enact_all_passed_proposals(state: &State) {
+    let parameters = tally::Parameters::new(state)
+        .await
+        .expect("can generate tally parameters");
+
+    let height = state
+        .get_block_height()
+        .await
+        .expect("can get block height");
+
+    let circumstance = tally::Circumstance::new(state)
+        .await
+        .expect("can generate tally circumstance");
+
+    // For every unfinished proposal, conclude those that finish in this block
+    for proposal_id in state
+        .unfinished_proposals()
+        .await
+        .expect("can get unfinished proposals")
+    {
+        // TODO: tally delegator votes
+        if let Some(outcome) = parameters
+            .tally(state, circumstance, proposal_id)
+            .await
+            .expect("can tally proposal")
+        {
+            tracing::debug!(proposal = %proposal_id, outcome = ?outcome, "proposal voting finished");
+
+            // If the outcome was not vetoed, issue a refund of the proposal deposit --
+            // otherwise, the deposit will never be refunded, and therefore is burned
+            if outcome.should_be_refunded() {
+                tracing::debug!(proposal = %proposal_id, "issuing proposal deposit refund");
+                state
+                    .add_proposal_refund(height, proposal_id)
+                    .await
+                    .expect("can add proposal refund");
+            } else {
+                tracing::debug!(proposal = %proposal_id, "burning proposal deposit for vetoed proposal");
+            }
+
+            // If the proposal passes, enact it now
+            if outcome.is_passed() {
+                enact_proposal(state, proposal_id).await;
+            }
+
+            // Record the outcome of the proposal
+            state
+                .put_proposal_state(proposal_id, proposal::State::Finished { outcome })
+                .await
+                .expect("can put finished proposal outcome");
+        }
+    }
+}
+
+#[instrument(skip(state))]
+async fn enact_proposal(state: &State, proposal_id: u64) {
+    let payload = state
+        .proposal_payload(proposal_id)
+        .await
+        .expect("can get proposal payload")
+        .expect("proposal payload is present");
+
+    match payload {
+        ProposalPayload::Signaling { .. } => {
+            // Nothing to do for signaling proposals
+        }
+        ProposalPayload::Emergency { halt_chain } => {
+            let height = state
+                .get_block_height()
+                .await
+                .expect("can get block height");
+
+            if halt_chain {
+                tracing::error!(proposal = %proposal_id, %height, "emergency proposal passed, calling for immediate chain halt");
+                std::process::exit(0);
+            }
+        }
+        ProposalPayload::ParameterChange {
+            effective_height: _,
+            new_parameters: _,
+        } => todo!("implement parameter change execution"),
+        ProposalPayload::DaoSpend {
+            schedule_transactions: _,
+            cancel_transactions: _,
+        } => todo!("implement daospend execution"),
+    }
+}

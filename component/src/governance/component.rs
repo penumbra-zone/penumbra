@@ -8,10 +8,16 @@ use tracing::instrument;
 
 use crate::{Component, Context};
 
-use super::{check, execute, proposal, tally, View as _};
+use super::{check, execute};
 
 pub struct Governance {
     state: State,
+}
+
+impl Governance {
+    pub async fn new(state: State) -> Self {
+        Self { state }
+    }
 }
 
 #[async_trait]
@@ -79,60 +85,9 @@ impl Component for Governance {
         // }
     }
 
-    #[instrument(name = "governance", skip(self, _ctx, end_block))]
-    async fn end_block(&mut self, _ctx: Context, end_block: &abci::request::EndBlock) {
-        let parameters = tally::Parameters::new(&self.state)
-            .await
-            .expect("can generate tally parameters");
-
-        let height = end_block.height as u64;
-
-        let circumstance = tally::Circumstance::new(&self.state)
-            .await
-            .expect("can generate tally circumstance");
-
-        // For every unfinished proposal, conclude those that finish in this block
-        for proposal_id in self
-            .state
-            .unfinished_proposals()
-            .await
-            .expect("can get unfinished proposals")
-        {
-            // TODO: tally delegator votes
-            if let Some(outcome) = parameters
-                .tally(&self.state, circumstance, proposal_id)
-                .await
-                .expect("can tally proposal")
-            {
-                tracing::debug!(proposal = %proposal_id, outcome = ?outcome, "proposal voting finished");
-
-                // If the outcome was not vetoed, issue a refund of the proposal deposit --
-                // otherwise, the deposit will never be refunded, and therefore is burned
-                if outcome.should_be_refunded() {
-                    self.state
-                        .add_proposal_refund(height, proposal_id)
-                        .await
-                        .expect("can add proposal refund");
-                }
-
-                tracing::debug!(proposal = %proposal_id, "issuing proposal deposit refund");
-
-                // Record the outcome of the proposal
-                self.state
-                    .put_proposal_state(proposal_id, proposal::State::Finished { outcome })
-                    .await
-                    .expect("can put finished proposal outcome");
-            } else {
-                tracing::debug!(proposal = %proposal_id, "burning proposal deposit for vetoed proposal");
-            }
-        }
-
+    #[instrument(name = "governance", skip(self, _ctx, _end_block))]
+    async fn end_block(&mut self, _ctx: Context, _end_block: &abci::request::EndBlock) {
+        execute::enact_all_passed_proposals(&self.state).await;
         // TODO: Compute intermediate tallies at epoch boundaries (with threshold delegator voting)
-    }
-}
-
-impl Governance {
-    pub async fn new(state: State) -> Self {
-        Self { state }
     }
 }
