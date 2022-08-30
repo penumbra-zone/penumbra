@@ -189,9 +189,24 @@ async fn enact_proposal(state: &State, proposal_id: u64) {
                 .await
                 .expect("can get block height");
 
+            // If the proposal calls to halt the chain...
             if halt_chain {
-                tracing::error!(proposal = %proposal_id, %height, "emergency proposal passed, calling for immediate chain halt");
-                std::process::exit(0);
+                // Check to see if the operator has set the environment variable indicating they
+                // wish to resume from this particular chain halt, i.e. the chain has already halted
+                // and they are bringing it back up again
+                if std::env::var("PD_RESUME_FROM_EMERGENCY_HALT_PROPOSAL")
+                    .ok()
+                    .and_then(|v| v.parse::<u64>().ok()) // value of var must be number
+                    .filter(|&resume_from| resume_from == proposal_id) // number must be this proposal's id (to prevent an always-on resume functionality)
+                    .is_some()
+                {
+                    // If so, just print an information message, and don't halt the chain
+                    tracing::info!(proposal = %proposal_id, %height, "resuming from emergency chain halt");
+                } else {
+                    // If not, print an informational message and immediately exit the process
+                    tracing::error!(proposal = %proposal_id, %height, "emergency proposal passed, calling for immediate chain halt");
+                    std::process::exit(0);
+                }
             }
         }
         ProposalPayload::ParameterChange {
