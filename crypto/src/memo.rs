@@ -1,4 +1,7 @@
-use std::convert::{TryFrom, TryInto};
+use std::{
+    convert::{TryFrom, TryInto},
+    fmt::{self, Debug, Formatter},
+};
 
 use anyhow::anyhow;
 
@@ -17,8 +20,14 @@ pub const MEMO_LEN_BYTES: usize = 512;
 
 // The memo is stored separately from the `Note`.
 // TODO: MemoPlaintext should just be a fixed-length string, drop this type entirely
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct MemoPlaintext(pub [u8; MEMO_LEN_BYTES]);
+
+impl Debug for MemoPlaintext {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "MemoPlaintext({})", hex::encode(self.0))
+    }
+}
 
 impl Default for MemoPlaintext {
     fn default() -> MemoPlaintext {
