@@ -44,7 +44,7 @@ impl From<CluePlan> for pb::CluePlan {
         Self {
             address: Some(msg.address.into()),
             rseed: msg.rseed.to_vec().into(),
-            precision_bits: (msg.precision_bits as u64).into(),
+            precision_bits: msg.precision_bits as u64,
         }
     }
 }
