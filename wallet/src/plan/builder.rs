@@ -1,4 +1,7 @@
-use std::mem;
+use std::{
+    fmt::{self, Debug, Formatter},
+    mem,
+};
 
 use penumbra_component::stake::{rate::RateData, validator};
 use penumbra_crypto::{
@@ -10,6 +13,7 @@ use penumbra_tct as tct;
 use penumbra_transaction::plan::{ActionPlan, OutputPlan, SpendPlan, TransactionPlan};
 use penumbra_view::ViewClient;
 use rand::{CryptoRng, RngCore};
+use tracing::instrument;
 
 use super::balance::Balance;
 
@@ -17,6 +21,15 @@ pub struct Builder<R: RngCore + CryptoRng> {
     rng: R,
     balance: Balance,
     plan: TransactionPlan,
+}
+
+impl<R: RngCore + CryptoRng> Debug for Builder<R> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Builder")
+            .field("balance", &self.balance)
+            .field("plan", &self.plan)
+            .finish()
+    }
 }
 
 impl<R: RngCore + CryptoRng> Builder<R> {
@@ -28,11 +41,13 @@ impl<R: RngCore + CryptoRng> Builder<R> {
         }
     }
 
+    #[instrument(skip(self))]
     pub fn expiry_height(&mut self, expiry_height: u64) -> &mut Self {
         self.plan.expiry_height = expiry_height;
         self
     }
 
+    #[instrument(skip(self))]
     pub fn fee(&mut self, fee: u64) -> &mut Self {
         self.balance.require(Value {
             amount: fee,
@@ -42,30 +57,35 @@ impl<R: RngCore + CryptoRng> Builder<R> {
         self
     }
 
+    #[instrument(skip(self))]
     pub fn spend(&mut self, note: Note, position: tct::Position) -> &mut Self {
         let spend = SpendPlan::new(&mut self.rng, note, position).into();
         self.action(spend);
         self
     }
 
+    #[instrument(skip(self, memo))]
     pub fn output(&mut self, value: Value, address: Address, memo: MemoPlaintext) -> &mut Self {
         let output = OutputPlan::new(&mut self.rng, value, address, memo).into();
         self.action(output);
         self
     }
 
+    #[instrument(skip(self))]
     pub fn delegate(&mut self, unbonded_amount: u64, rate_data: RateData) -> &mut Self {
         let delegation = rate_data.build_delegate(unbonded_amount).into();
         self.action(delegation);
         self
     }
 
+    #[instrument(skip(self))]
     pub fn undelegate(&mut self, delegation_amount: u64, rate_data: RateData) -> &mut Self {
         let undelegation = rate_data.build_undelegate(delegation_amount).into();
         self.action(undelegation);
         self
     }
 
+    #[instrument(skip(self))]
     pub fn validator_definition(&mut self, new_validator: validator::Definition) -> &mut Self {
         self.action(ActionPlan::ValidatorDefinition(new_validator.into()));
         self
@@ -76,8 +96,8 @@ impl<R: RngCore + CryptoRng> Builder<R> {
 
         // Track this action's contribution to the value balance of the transaction
         match &action {
-            Spend(spend) => self.balance.require(spend.note.value()),
-            Output(output) => self.balance.provide(output.value),
+            Spend(spend) => self.balance.provide(spend.note.value()),
+            Output(output) => self.balance.require(output.value),
             Delegate(delegate) => {
                 self.balance.require(Value {
                     amount: delegate.unbonded_amount,
@@ -121,12 +141,15 @@ impl<R: RngCore + CryptoRng> Builder<R> {
         self
     }
 
+    #[instrument(skip(self, view, fvk))]
     pub async fn finish<V: ViewClient>(
         &mut self,
         view: &mut V,
         fvk: &FullViewingKey,
         source: Option<u64>,
     ) -> anyhow::Result<TransactionPlan> {
+        tracing::debug!(balance = ?self.balance, "finalizing transaction");
+
         // Fill in the chain id based on the view service
         self.plan.chain_id = view.chain_params().await?.chain_id;
 
@@ -167,16 +190,18 @@ impl<R: RngCore + CryptoRng> Builder<R> {
 
         // TODO: dummy change outputs
 
-        // Now the transaction should be fully balanced, unless we didn't have enough to spend
-        if !self.balance.is_zero() {
-            anyhow::bail!("not enough balance available for required spends");
-        }
-
         // Add clue plans for `Output`s.
         let fmd_params = view.fmd_parameters().await?;
         let precision_bits = fmd_params.precision_bits;
         self.plan
             .add_all_clue_plans(&mut self.rng, precision_bits.into());
+
+        tracing::debug!(balance = ?self.balance, "finished balancing transaction");
+
+        // Now the transaction should be fully balanced, unless we didn't have enough to spend
+        if !self.balance.is_zero() {
+            anyhow::bail!("not enough balance available for required spends");
+        }
 
         Ok(mem::take(&mut self.plan))
     }

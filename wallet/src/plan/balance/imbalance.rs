@@ -2,7 +2,7 @@ use std::{
     cmp::Ordering,
     fmt::Debug,
     num::NonZeroU64,
-    ops::{Add, AddAssign, Neg, Sub, SubAssign},
+    ops::{Add, Neg, Sub},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -54,27 +54,11 @@ impl Add for Imbalance<NonZeroU64> {
     }
 }
 
-impl AddAssign for Imbalance<NonZeroU64> {
-    fn add_assign(&mut self, other: Self) {
-        if let Some(new) = *self + other {
-            *self = new;
-        }
-    }
-}
-
 impl Sub for Imbalance<NonZeroU64> {
     type Output = <Self as Add>::Output;
 
     fn sub(self, other: Self) -> Self::Output {
         self + -other
-    }
-}
-
-impl SubAssign for Imbalance<NonZeroU64> {
-    fn sub_assign(&mut self, other: Self) {
-        if let Some(new) = *self - other {
-            *self = new;
-        }
     }
 }
 
@@ -143,5 +127,170 @@ impl Sign {
             Sign::Required => Imbalance::Required(t),
             Sign::Provided => Imbalance::Provided(t),
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn add_provided_provided() {
+        let a = Imbalance::Provided(NonZeroU64::new(1).unwrap());
+        let b = Imbalance::Provided(NonZeroU64::new(2).unwrap());
+        let c = a + b;
+        assert_eq!(c, Some(Imbalance::Provided(NonZeroU64::new(3).unwrap())));
+    }
+
+    #[test]
+    fn add_provided_required_greater() {
+        let a = Imbalance::Provided(NonZeroU64::new(2).unwrap());
+        let b = Imbalance::Required(NonZeroU64::new(1).unwrap());
+        let c = a + b;
+        assert_eq!(c, Some(Imbalance::Provided(NonZeroU64::new(1).unwrap())));
+    }
+
+    #[test]
+    fn add_provided_required_equal() {
+        let a = Imbalance::Provided(NonZeroU64::new(1).unwrap());
+        let b = Imbalance::Required(NonZeroU64::new(1).unwrap());
+        let c = a + b;
+        assert_eq!(c, None);
+    }
+
+    #[test]
+    fn add_provided_required_less() {
+        let a = Imbalance::Provided(NonZeroU64::new(1).unwrap());
+        let b = Imbalance::Required(NonZeroU64::new(2).unwrap());
+        let c = a + b;
+        assert_eq!(c, Some(Imbalance::Required(NonZeroU64::new(1).unwrap())));
+    }
+
+    #[test]
+    fn add_required_required() {
+        let a = Imbalance::Required(NonZeroU64::new(1).unwrap());
+        let b = Imbalance::Required(NonZeroU64::new(2).unwrap());
+        let c = a + b;
+        assert_eq!(c, Some(Imbalance::Required(NonZeroU64::new(3).unwrap())));
+    }
+
+    #[test]
+    fn add_required_provided_greater() {
+        let a = Imbalance::Required(NonZeroU64::new(2).unwrap());
+        let b = Imbalance::Provided(NonZeroU64::new(1).unwrap());
+        let c = a + b;
+        assert_eq!(c, Some(Imbalance::Required(NonZeroU64::new(1).unwrap())));
+    }
+
+    #[test]
+    fn add_required_provided_equal() {
+        let a = Imbalance::Required(NonZeroU64::new(1).unwrap());
+        let b = Imbalance::Provided(NonZeroU64::new(1).unwrap());
+        let c = a + b;
+        assert_eq!(c, None);
+    }
+
+    #[test]
+    fn add_required_provided_less() {
+        let a = Imbalance::Required(NonZeroU64::new(1).unwrap());
+        let b = Imbalance::Provided(NonZeroU64::new(2).unwrap());
+        let c = a + b;
+        assert_eq!(c, Some(Imbalance::Provided(NonZeroU64::new(1).unwrap())));
+    }
+
+    #[test]
+    fn sub_provided_provided_greater() {
+        let a = Imbalance::Provided(NonZeroU64::new(2).unwrap());
+        let b = Imbalance::Provided(NonZeroU64::new(1).unwrap());
+        let c = a - b;
+        assert_eq!(c, Some(Imbalance::Provided(NonZeroU64::new(1).unwrap())));
+    }
+
+    #[test]
+    fn sub_provided_provided_equal() {
+        let a = Imbalance::Provided(NonZeroU64::new(1).unwrap());
+        let b = Imbalance::Provided(NonZeroU64::new(1).unwrap());
+        let c = a - b;
+        assert_eq!(c, None);
+    }
+
+    #[test]
+    fn sub_provided_provided_less() {
+        let a = Imbalance::Provided(NonZeroU64::new(1).unwrap());
+        let b = Imbalance::Provided(NonZeroU64::new(2).unwrap());
+        let c = a - b;
+        assert_eq!(c, Some(Imbalance::Required(NonZeroU64::new(1).unwrap())));
+    }
+
+    #[test]
+    fn sub_provided_required_greater() {
+        let a = Imbalance::Provided(NonZeroU64::new(2).unwrap());
+        let b = Imbalance::Required(NonZeroU64::new(1).unwrap());
+        let c = a - b;
+        assert_eq!(c, Some(Imbalance::Provided(NonZeroU64::new(3).unwrap())));
+    }
+
+    #[test]
+    fn sub_provided_required_equal() {
+        let a = Imbalance::Provided(NonZeroU64::new(1).unwrap());
+        let b = Imbalance::Required(NonZeroU64::new(1).unwrap());
+        let c = a - b;
+        assert_eq!(c, Some(Imbalance::Provided(NonZeroU64::new(2).unwrap())));
+    }
+
+    #[test]
+    fn sub_provided_required_less() {
+        let a = Imbalance::Provided(NonZeroU64::new(1).unwrap());
+        let b = Imbalance::Required(NonZeroU64::new(2).unwrap());
+        let c = a - b;
+        assert_eq!(c, Some(Imbalance::Provided(NonZeroU64::new(3).unwrap())));
+    }
+
+    #[test]
+    fn sub_required_provided_greater() {
+        let a = Imbalance::Required(NonZeroU64::new(2).unwrap());
+        let b = Imbalance::Provided(NonZeroU64::new(1).unwrap());
+        let c = a - b;
+        assert_eq!(c, Some(Imbalance::Required(NonZeroU64::new(3).unwrap())));
+    }
+
+    #[test]
+    fn sub_required_provided_equal() {
+        let a = Imbalance::Required(NonZeroU64::new(1).unwrap());
+        let b = Imbalance::Provided(NonZeroU64::new(1).unwrap());
+        let c = a - b;
+        assert_eq!(c, Some(Imbalance::Required(NonZeroU64::new(2).unwrap())));
+    }
+
+    #[test]
+    fn sub_required_provided_less() {
+        let a = Imbalance::Required(NonZeroU64::new(1).unwrap());
+        let b = Imbalance::Provided(NonZeroU64::new(2).unwrap());
+        let c = a - b;
+        assert_eq!(c, Some(Imbalance::Required(NonZeroU64::new(3).unwrap())));
+    }
+
+    #[test]
+    fn sub_required_required_greater() {
+        let a = Imbalance::Required(NonZeroU64::new(2).unwrap());
+        let b = Imbalance::Required(NonZeroU64::new(1).unwrap());
+        let c = a - b;
+        assert_eq!(c, Some(Imbalance::Required(NonZeroU64::new(1).unwrap())));
+    }
+
+    #[test]
+    fn sub_required_required_equal() {
+        let a = Imbalance::Required(NonZeroU64::new(1).unwrap());
+        let b = Imbalance::Required(NonZeroU64::new(1).unwrap());
+        let c = a - b;
+        assert_eq!(c, None);
+    }
+
+    #[test]
+    fn sub_required_required_less() {
+        let a = Imbalance::Required(NonZeroU64::new(1).unwrap());
+        let b = Imbalance::Required(NonZeroU64::new(2).unwrap());
+        let c = a - b;
+        assert_eq!(c, Some(Imbalance::Provided(NonZeroU64::new(1).unwrap())));
     }
 }

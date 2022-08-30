@@ -6,16 +6,13 @@ use penumbra_component::stake::rate::RateData;
 use penumbra_component::stake::validator;
 use penumbra_crypto::{
     asset::Denom, dex::swap::SwapPlaintext, dex::TradingPair, keys::AddressIndex,
-    memo::MemoPlaintext, transaction::Fee, Address, DelegationToken, FieldExt, Fr, FullViewingKey,
-    Note, Value, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
+    memo::MemoPlaintext, transaction::Fee, Address, FieldExt, Fr, FullViewingKey, Note, Value,
+    STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM,
 };
 use penumbra_proto::view::NotesRequest;
 use penumbra_transaction::{
     action::{Proposal, ProposalSubmit, ProposalWithdrawBody, ValidatorVote},
-    plan::{
-        ActionPlan, OutputPlan, ProposalWithdrawPlan, SpendPlan, SwapClaimPlan, SwapPlan,
-        TransactionPlan,
-    },
+    plan::{ActionPlan, OutputPlan, ProposalWithdrawPlan, SpendPlan, SwapPlan, TransactionPlan},
 };
 use penumbra_view::{SpendableNoteRecord, ViewClient};
 use rand_core::{CryptoRng, RngCore};

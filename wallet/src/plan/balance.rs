@@ -13,6 +13,7 @@ mod imbalance;
 mod iter;
 use imbalance::Imbalance;
 pub use iter::{IntoIter, Iter};
+use tracing::instrument;
 
 #[derive(Clone, Eq, Default)]
 pub struct Balance {
@@ -23,8 +24,8 @@ pub struct Balance {
 impl Debug for Balance {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.debug_struct("Balance")
-            .field("required", &self.required())
-            .field("provided", &self.provided())
+            .field("required", &self.required().collect::<Vec<_>>())
+            .field("provided", &self.provided().collect::<Vec<_>>())
             .finish()
     }
 }
@@ -42,23 +43,27 @@ impl Balance {
         self.balance.len()
     }
 
+    #[instrument(skip(self))]
     pub fn require(&mut self, value: Value) {
+        tracing::trace!("requiring balance");
         *self -= Balance::from(value);
     }
 
+    #[instrument(skip(self))]
     pub fn provide(&mut self, value: Value) {
+        tracing::trace!("providing balance");
         *self += Balance::from(value);
     }
 
     pub fn required(
         &self,
-    ) -> impl Iterator<Item = Value> + DoubleEndedIterator + FusedIterator + Debug + '_ {
+    ) -> impl Iterator<Item = Value> + DoubleEndedIterator + FusedIterator + '_ {
         self.iter().filter_map(Imbalance::required)
     }
 
     pub fn provided(
         &self,
-    ) -> impl Iterator<Item = Value> + DoubleEndedIterator + FusedIterator + Debug + '_ {
+    ) -> impl Iterator<Item = Value> + DoubleEndedIterator + FusedIterator + '_ {
         self.iter().filter_map(Imbalance::provided)
     }
 }
@@ -96,6 +101,12 @@ impl Neg for Balance {
 impl Add for Balance {
     type Output = Self;
 
+    // This is a tricky function, because the representation of a `Balance` has a `negated` flag
+    // which inverts the meaning of the stored entry (this is so that you can negate balances in
+    // constant time, which makes subtraction fast to implement). As a consequence, however, we have
+    // to take care that when we access the raw storage, we negate the imbalance we retrieve if and
+    // only if we are in negated mode, and when we write back a value, we negate it again on writing
+    // it back if we are in negated mode.
     fn add(mut self, mut other: Self) -> Self {
         // Always iterate through the smaller of the two
         if other.dimension() > self.dimension() {
@@ -105,7 +116,7 @@ impl Add for Balance {
         for imbalance in other.into_iter() {
             // Convert back into an asset id key and imbalance value
             let (sign, Value { asset_id, amount }) = imbalance.into_inner();
-            let (asset_id, imbalance) = if let Some(amount) = NonZeroU64::new(amount) {
+            let (asset_id, mut imbalance) = if let Some(amount) = NonZeroU64::new(amount) {
                 (asset_id, sign.imbalance(amount))
             } else {
                 unreachable!("values stored in balance are always nonzero")
@@ -113,11 +124,27 @@ impl Add for Balance {
 
             match self.balance.entry(asset_id) {
                 btree_map::Entry::Vacant(entry) => {
+                    // Important: if we are currently negated, we have to negate the imbalance
+                    // before we store it!
+                    if self.negated {
+                        imbalance = -imbalance;
+                    }
                     entry.insert(imbalance);
                 }
                 btree_map::Entry::Occupied(mut entry) => {
-                    if let Some(new_imbalance) = *entry.get() + imbalance {
-                        // If there's still an imbalance, update the map entry
+                    // Important: if we are currently negated, we have to negate the entry we just
+                    // pulled out!
+                    let mut existing_imbalance = *entry.get();
+                    if self.negated {
+                        existing_imbalance = -existing_imbalance;
+                    }
+
+                    if let Some(mut new_imbalance) = existing_imbalance + imbalance {
+                        // If there's still an imbalance, update the map entry, making sure to
+                        // negate the new imbalance if we are negated
+                        if self.negated {
+                            new_imbalance = -new_imbalance;
+                        }
                         entry.insert(new_imbalance);
                     } else {
                         // If adding this imbalance zeroed out the balance for this asset, remove
@@ -162,5 +189,68 @@ impl From<Value> for Balance {
             negated: false,
             balance,
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use penumbra_crypto::STAKING_TOKEN_ASSET_ID;
+
+    use super::*;
+
+    #[test]
+    fn provide_then_require() {
+        let mut balance = Balance::new();
+        balance.provide(Value {
+            amount: 1,
+            asset_id: *STAKING_TOKEN_ASSET_ID,
+        });
+        balance.require(Value {
+            amount: 1,
+            asset_id: *STAKING_TOKEN_ASSET_ID,
+        });
+        assert!(balance.is_zero());
+    }
+
+    #[test]
+    fn require_then_provide() {
+        let mut balance = Balance::new();
+        balance.require(Value {
+            amount: 1,
+            asset_id: *STAKING_TOKEN_ASSET_ID,
+        });
+        balance.provide(Value {
+            amount: 1,
+            asset_id: *STAKING_TOKEN_ASSET_ID,
+        });
+        assert!(balance.is_zero());
+    }
+
+    #[test]
+    fn provide_then_require_negative_zero() {
+        let mut balance = -Balance::new();
+        balance.provide(Value {
+            amount: 1,
+            asset_id: *STAKING_TOKEN_ASSET_ID,
+        });
+        balance.require(Value {
+            amount: 1,
+            asset_id: *STAKING_TOKEN_ASSET_ID,
+        });
+        assert!(balance.is_zero());
+    }
+
+    #[test]
+    fn require_then_provide_negative_zero() {
+        let mut balance = -Balance::new();
+        balance.require(Value {
+            amount: 1,
+            asset_id: *STAKING_TOKEN_ASSET_ID,
+        });
+        balance.provide(Value {
+            amount: 1,
+            asset_id: *STAKING_TOKEN_ASSET_ID,
+        });
+        assert!(balance.is_zero());
     }
 }
