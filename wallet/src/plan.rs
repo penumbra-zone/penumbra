@@ -1,3 +1,4 @@
+use penumbra_tct::Position;
 use rand_core::OsRng;
 use std::collections::{BTreeMap, HashMap};
 
@@ -282,12 +283,15 @@ where
 
 #[allow(clippy::too_many_arguments)]
 #[allow(dead_code)]
-#[instrument(skip(fvk, view, rng, swap_nft_note, fee, source_address))]
+#[instrument(skip(_fvk, view, rng, swap_nft_note, fee, source_address))]
 pub async fn swap_claim<V, R>(
-    fvk: &FullViewingKey,
+    _fvk: &FullViewingKey,
     view: &mut V,
     mut rng: R,
     swap_nft_note: Note,
+    swap_nft_position: Position,
+    swap_height: u64,
+    trading_pair: TradingPair,
     fee: u64,
     source_address: Option<u64>,
 ) -> Result<TransactionPlan, anyhow::Error>
@@ -297,8 +301,6 @@ where
 {
     tracing::debug!(?swap_nft_note, ?fee, ?source_address);
 
-    return Err(anyhow::anyhow!("not implemented"));
-
     let chain_params = view.chain_params().await?;
 
     let mut plan = TransactionPlan {
@@ -307,97 +309,37 @@ where
         ..Default::default()
     };
 
+    // The swap claim output notes must go to the same address associated with
+    // the swap action.
+    let claim_address = swap_nft_note.address();
+
+    // Fetch the batch swap output data associated with the block height
+    // and trading pair of the swap action.
+    // TODO: this batch swap output data comes from the client, it's necessary because
+    // the client has to encrypt the SwapPlaintext, however the validators *must*
+    // validate that the BatchSwapOutputData is correct when processing the SwapClaim!
+    let output_data = view
+        .batch_swap_output_data(swap_height, trading_pair)
+        .await?;
+
     // Add a `SwapClaimPlan` action:
-    // plan.actions.push(
-    //     SwapClaimPlan::new(
-    //         &mut rng,
-    //         swap_nft_note,
-    //         swap_nft_position,
-    //         // The `fvk` is always the claim address.
-    //         fvk.address(),
-    //         fee,
-    //         output_data,
-    //         trading_pair,
-    //     )
-    //     .into(),
-    // );
+    plan.actions.push(
+        SwapClaimPlan::new(
+            &mut rng,
+            swap_nft_note,
+            swap_nft_position,
+            claim_address,
+            Fee(fee),
+            output_data,
+            trading_pair,
+        )
+        .into(),
+    );
 
-    // The value we need to spend is 1 unit of the swap NFT, plus fees.
-    let mut value_to_spend: HashMap<Denom, u64> = HashMap::new();
-    // *value_to_spend.entry(swap_nft_note.denom()).or_default() += input_value;
-    // if fee > 0 {
-    //     *value_to_spend
-    //         .entry(STAKING_TOKEN_DENOM.clone())
-    //         .or_default() += fee;
-    // }
+    // Nothing needs to be spent, since the fee is pre-paid and the
+    // swap NFT will be automatically consumed when the SwapClaim action
+    // is processed by the validators.
 
-    // Add the required spends:
-    for (denom, spend_amount) in value_to_spend {
-        if spend_amount == 0 {
-            continue;
-        }
-
-        let source_index: Option<AddressIndex> = source_address.map(Into::into);
-        // Select a list of notes that provides at least the required amount.
-        let notes_to_spend = view
-            .notes(NotesRequest {
-                account_id: Some(fvk.hash().into()),
-                asset_id: Some(denom.id().into()),
-                address_index: source_index.map(Into::into),
-                amount_to_spend: spend_amount,
-                include_spent: false,
-            })
-            .await?;
-        if notes_to_spend.is_empty() {
-            // Shouldn't happen because the other side checks this, but just in case...
-            return Err(anyhow::anyhow!("not enough notes to spend",));
-        }
-
-        let change_address_index: u64 = fvk
-            .incoming()
-            .index_for_diversifier(
-                &notes_to_spend
-                    .last()
-                    .expect("notes_to_spend should never be empty")
-                    .note
-                    .diversifier(),
-            )
-            .try_into()?;
-
-        let (change_address, _dtk) = fvk.incoming().payment_address(change_address_index.into());
-        let spent: u64 = notes_to_spend
-            .iter()
-            .map(|note_record| note_record.note.amount())
-            .sum();
-
-        // Spend each of the notes we selected.
-        for note_record in notes_to_spend {
-            plan.actions
-                .push(SpendPlan::new(&mut rng, note_record.note, note_record.position).into());
-        }
-
-        // Find out how much change we have and whether to add a change output.
-        let change = spent - spend_amount;
-        if change > 0 {
-            plan.actions.push(
-                OutputPlan::new(
-                    &mut rng,
-                    Value {
-                        amount: change,
-                        asset_id: denom.id(),
-                    },
-                    change_address,
-                    MemoPlaintext::default(),
-                )
-                .into(),
-            );
-        }
-    }
-
-    // Add clue plans for `Output`s.
-    let fmd_params = view.fmd_parameters().await?;
-    let precision_bits = fmd_params.precision_bits;
-    plan.add_all_clue_plans(&mut rng, precision_bits.into());
     Ok(plan)
 }
 
@@ -501,7 +443,7 @@ where
         let change_address_index: u64 = fvk
             .incoming()
             .index_for_diversifier(
-                &notes_to_spend
+                notes_to_spend
                     .last()
                     .expect("notes_to_spend should never be empty")
                     .note
@@ -638,7 +580,7 @@ where
         let change_address_index: u64 = fvk
             .incoming()
             .index_for_diversifier(
-                &notes_to_spend
+                notes_to_spend
                     .last()
                     .expect("notes_to_spend should never be empty")
                     .note

@@ -6,6 +6,7 @@ option go_package = "github.com/penumbra-zone/penumbra/proto/go-proto";
 import "transaction.proto";
 import "crypto.proto";
 import "chain.proto";
+import "dex.proto";
 
 // The view protocol is used by a view client, who wants to do some
 // transaction-related actions, to request data from a view service, which is
@@ -46,6 +47,9 @@ service ViewProtocol {
     // Query for the current FMD parameters.
     rpc FMDParameters(FMDParametersRequest) returns (chain.FmdParameters);
 
+    // Query for batch swap data associated with a height and trading pair.
+    rpc BatchSwapOutputData(BatchSwapOutputDataRequest) returns (dex.BatchSwapOutputData);
+
     // Query for a note by its note commitment, optionally waiting until the note is detected.
     rpc NoteByCommitment(NoteByCommitmentRequest) returns (SpendableNoteRecord);
 
@@ -66,6 +70,12 @@ message ChainParamsRequest {
 
 // Requests the current FMD parameters from the view service.
 message FMDParametersRequest {
+}
+
+// Requests batch swap data associated with a given height and trading pair from the view service.
+message BatchSwapOutputDataRequest {
+    uint64 height = 1;
+    dex.TradingPair trading_pair = 2;
 }
 
 // Requests all assets known to the view service.

@@ -280,6 +280,7 @@ impl AuthorizingData for swap_claim::Body {
         state.update(&self.output_2.note_commitment.0.to_bytes());
         state.update(&self.output_2.ephemeral_key.0);
         state.update(&self.output_2.encrypted_note);
+        // TODO: should *not* call encode_to_vec here as it's not constant-length
         state.update(&self.output_data.encode_to_vec());
         state.update(self.trading_pair.auth_hash().as_bytes());
 
