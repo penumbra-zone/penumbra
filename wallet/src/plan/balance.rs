@@ -15,6 +15,8 @@ mod imbalance;
 mod iter;
 use imbalance::Imbalance;
 
+/// A `Balance` is a "vector of [`Value`]s", where some values may be required, while others may be
+/// provided. For a transaction to be valid, its balance must be zero.
 #[derive(Clone, Eq, Default)]
 pub struct Balance {
     negated: bool,
@@ -31,36 +33,45 @@ impl Debug for Balance {
 }
 
 impl Balance {
+    /// Make a new, zero balance.
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Check if this balance is zero.
     pub fn is_zero(&self) -> bool {
         self.balance.is_empty()
     }
 
+    /// Find out how many distinct assets are represented in this balance.
     pub fn dimension(&self) -> usize {
         self.balance.len()
     }
 
+    /// Add a new requirement to the balance, which must be cancelled by an equal provision for the
+    /// balance to be zero.
     #[instrument(skip(self))]
     pub fn require(&mut self, value: Value) {
         tracing::trace!("requiring balance");
         *self -= Balance::from(value);
     }
 
+    /// Add a new provision to the balance, which must be cancelled by an equal requirement for the
+    /// balance to be zero.
     #[instrument(skip(self))]
     pub fn provide(&mut self, value: Value) {
         tracing::trace!("providing balance");
         *self += Balance::from(value);
     }
 
+    /// Iterate over all the requirements of the balance, as [`Value`]s.
     pub fn required(
         &self,
     ) -> impl Iterator<Item = Value> + DoubleEndedIterator + FusedIterator + '_ {
         self.iter().filter_map(Imbalance::required)
     }
 
+    // Iterate over all the provisions of the balance, as [`Value`]s.
     pub fn provided(
         &self,
     ) -> impl Iterator<Item = Value> + DoubleEndedIterator + FusedIterator + '_ {

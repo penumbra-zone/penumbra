@@ -5,9 +5,14 @@ use std::{
     ops::{Add, Neg, Sub},
 };
 
+/// An imbalance is either a required amount or a provided amount.
+///
+/// This is used exclusively when the type contained is non-zero.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Imbalance<T> {
+    /// Something is required, i.e. it must be cancelled out by a provided thing.
     Required(T),
+    /// Something is provided, i.e. it must be cancelled out by a required thing.
     Provided(T),
 }
 
@@ -63,6 +68,7 @@ impl Sub for Imbalance<NonZeroU64> {
 }
 
 impl<T> Imbalance<T> {
+    /// Split an imbalance into its sign and the thing contained in it.
     pub fn into_inner(self) -> (Sign, T) {
         match self {
             Imbalance::Required(t) => (Sign::Required, t),
@@ -70,6 +76,7 @@ impl<T> Imbalance<T> {
         }
     }
 
+    /// Map a function over both required or provided possibilities.
     pub fn map<S>(self, f: impl FnOnce(T) -> S) -> Imbalance<S> {
         match self {
             Imbalance::Required(t) => Imbalance::Required(f(t)),
@@ -77,6 +84,7 @@ impl<T> Imbalance<T> {
         }
     }
 
+    /// Filter an imbalance to get only the `T` out if it is a required thing.
     pub fn required(self) -> Option<T> {
         match self {
             Imbalance::Required(t) => Some(t),
@@ -84,6 +92,7 @@ impl<T> Imbalance<T> {
         }
     }
 
+    /// Filter an imbalance to get only the `T` out if it is a provided thing.
     pub fn provided(self) -> Option<T> {
         match self {
             Imbalance::Required(_) => None,
@@ -91,14 +100,17 @@ impl<T> Imbalance<T> {
         }
     }
 
+    /// Check if an imbalance is required.
     pub fn is_required(&self) -> bool {
         matches!(self, Imbalance::Required(_))
     }
 
+    /// Check if an imbalance is provided.
     pub fn is_provided(&self) -> bool {
         !self.is_required()
     }
 
+    /// Get the sign of an imbalance.
     pub fn sign(&self) -> Sign {
         match self {
             Imbalance::Required(_) => Sign::Required,
@@ -107,6 +119,7 @@ impl<T> Imbalance<T> {
     }
 }
 
+/// The sign of an imbalance is whether it is required or provided.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Sign {
     Required,
@@ -114,14 +127,17 @@ pub enum Sign {
 }
 
 impl Sign {
+    /// Check if the sign is required.
     pub fn is_required(&self) -> bool {
         matches!(self, Sign::Required)
     }
 
+    /// Check if the sign if provided.
     pub fn is_provided(&self) -> bool {
         !self.is_required()
     }
 
+    /// Form a new [`Imbalance`] by using the sign as a constructor for some value.
     pub fn imbalance<T>(&self, t: T) -> Imbalance<T> {
         match self {
             Sign::Required => Imbalance::Required(t),
