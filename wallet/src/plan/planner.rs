@@ -1,526 +1,449 @@
-use rand_core::OsRng;
-use std::collections::{BTreeMap, HashMap};
+use std::{
+    fmt::{self, Debug, Formatter},
+    mem,
+};
 
-use anyhow::{anyhow, Context, Result};
-use penumbra_component::stake::rate::RateData;
-use penumbra_component::stake::validator;
+use penumbra_component::stake::{rate::RateData, validator};
 use penumbra_crypto::{
-    asset::Denom, dex::swap::SwapPlaintext, dex::TradingPair, keys::AddressIndex,
-    memo::MemoPlaintext, transaction::Fee, Address, FullViewingKey, Note, Value,
-    STAKING_TOKEN_DENOM,
+    keys::AddressIndex,
+    memo::MemoPlaintext,
+    rdsa::{SpendAuth, VerificationKey},
+    transaction::Fee,
+    Address, DelegationToken, FieldExt, Fr, FullViewingKey, Note, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_proto::view::NotesRequest;
+use penumbra_tct as tct;
 use penumbra_transaction::{
-    action::{Proposal, ValidatorVote},
-    plan::{OutputPlan, SpendPlan, SwapPlan, TransactionPlan},
+    action::{Proposal, ProposalSubmit, ProposalWithdrawBody, ValidatorVote},
+    plan::{ActionPlan, OutputPlan, ProposalWithdrawPlan, SpendPlan, TransactionPlan},
 };
-use penumbra_view::{SpendableNoteRecord, ViewClient};
-use rand_core::{CryptoRng, RngCore};
+use penumbra_view::ViewClient;
+use rand::{CryptoRng, RngCore};
 use tracing::instrument;
 
-pub mod balance;
-mod planner;
-pub use planner::{Balance, Planner};
+pub use super::balance::Balance;
 
-pub async fn validator_definition<V, R>(
-    fvk: &FullViewingKey,
-    view: &mut V,
+/// A planner for a [`TransactionPlan`] that can fill in the required spends and change outputs upon
+/// finalization to make a transaction balance.
+pub struct Planner<R: RngCore + CryptoRng> {
     rng: R,
-    new_validator: validator::Definition,
-    fee: u64,
-    source_address: Option<u64>,
-) -> Result<TransactionPlan>
-where
-    V: ViewClient,
-    R: RngCore + CryptoRng,
-{
-    Planner::new(rng)
-        .fee(fee)
-        .validator_definition(new_validator)
-        .plan(view, fvk, source_address.map(Into::into))
-        .await
-        .context("can't build validator definition plan")
+    balance: Balance,
+    plan: TransactionPlan,
+    proposal_submits: Vec<Proposal>,
+    proposal_withdraws: Vec<(Address, ProposalWithdrawBody)>,
+    // IMPORTANT: if you add more fields here, make sure to clear them when the planner is finished
 }
 
-pub async fn validator_vote<V, R>(
-    fvk: &FullViewingKey,
-    view: &mut V,
-    rng: R,
-    vote: ValidatorVote,
-    fee: u64,
-    source_address: Option<u64>,
-) -> Result<TransactionPlan>
-where
-    V: ViewClient,
-    R: RngCore + CryptoRng,
-{
-    Planner::new(rng)
-        .fee(fee)
-        .validator_vote(vote)
-        .plan(view, fvk, source_address.map(Into::into))
-        .await
-        .context("can't build validator vote plan")
-}
-
-/// Generate a new transaction plan delegating stake
-#[instrument(skip(fvk, view, rng, rate_data, unbonded_amount, fee, source_address))]
-pub async fn delegate<V, R>(
-    fvk: &FullViewingKey,
-    view: &mut V,
-    rng: R,
-    rate_data: RateData,
-    unbonded_amount: u64,
-    fee: u64,
-    source_address: Option<u64>,
-) -> Result<TransactionPlan>
-where
-    V: ViewClient,
-    R: RngCore + CryptoRng,
-{
-    Planner::new(rng)
-        .fee(fee)
-        .delegate(unbonded_amount, rate_data)
-        .plan(view, fvk, source_address.map(Into::into))
-        .await
-        .context("can't build delegate plan")
-}
-
-/// Generate a new transaction plan undelegating stake
-pub async fn undelegate<V, R>(
-    fvk: &FullViewingKey,
-    view: &mut V,
-    rng: R,
-    rate_data: RateData,
-    delegation_notes: Vec<SpendableNoteRecord>,
-    fee: u64,
-    source_address: Option<u64>,
-) -> Result<TransactionPlan>
-where
-    V: ViewClient,
-    R: RngCore + CryptoRng,
-{
-    let delegation_amount = delegation_notes
-        .iter()
-        .map(|record| record.note.amount())
-        .sum();
-
-    let mut planner = Planner::new(rng);
-    planner.fee(fee).undelegate(delegation_amount, rate_data);
-    for record in delegation_notes {
-        planner.spend(record.note, record.position);
+impl<R: RngCore + CryptoRng> Debug for Planner<R> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Builder")
+            .field("balance", &self.balance)
+            .field("plan", &self.plan)
+            .finish()
     }
-
-    planner
-        .plan(view, fvk, source_address.map(Into::into))
-        .await
-        .context("can't build undelegate plan")
 }
 
-#[allow(clippy::too_many_arguments)]
-#[allow(dead_code)]
-#[instrument(skip(fvk, view, rng, swap_nft_note, fee, source_address))]
-pub async fn swap_claim<V, R>(
-    fvk: &FullViewingKey,
-    view: &mut V,
-    mut rng: R,
-    swap_nft_note: Note,
-    fee: u64,
-    source_address: Option<u64>,
-) -> Result<TransactionPlan, anyhow::Error>
-where
-    V: ViewClient,
-    R: RngCore + CryptoRng,
-{
-    tracing::debug!(?swap_nft_note, ?fee, ?source_address);
-
-    return Err(anyhow::anyhow!("not implemented"));
-
-    let chain_params = view.chain_params().await?;
-
-    let mut plan = TransactionPlan {
-        chain_id: chain_params.chain_id,
-        fee: Fee(fee),
-        ..Default::default()
-    };
-
-    // Add a `SwapClaimPlan` action:
-    // plan.actions.push(
-    //     SwapClaimPlan::new(
-    //         &mut rng,
-    //         swap_nft_note,
-    //         swap_nft_position,
-    //         // The `fvk` is always the claim address.
-    //         fvk.address(),
-    //         fee,
-    //         output_data,
-    //         trading_pair,
-    //     )
-    //     .into(),
-    // );
-
-    // The value we need to spend is 1 unit of the swap NFT, plus fees.
-    let mut value_to_spend: HashMap<Denom, u64> = HashMap::new();
-    // *value_to_spend.entry(swap_nft_note.denom()).or_default() += input_value;
-    // if fee > 0 {
-    //     *value_to_spend
-    //         .entry(STAKING_TOKEN_DENOM.clone())
-    //         .or_default() += fee;
-    // }
-
-    // Add the required spends:
-    for (denom, spend_amount) in value_to_spend {
-        if spend_amount == 0 {
-            continue;
-        }
-
-        let source_index: Option<AddressIndex> = source_address.map(Into::into);
-        // Select a list of notes that provides at least the required amount.
-        let notes_to_spend = view
-            .notes(NotesRequest {
-                account_id: Some(fvk.hash().into()),
-                asset_id: Some(denom.id().into()),
-                address_index: source_index.map(Into::into),
-                amount_to_spend: spend_amount,
-                include_spent: false,
-            })
-            .await?;
-        if notes_to_spend.is_empty() {
-            // Shouldn't happen because the other side checks this, but just in case...
-            return Err(anyhow::anyhow!("not enough notes to spend",));
-        }
-
-        let change_address_index: u64 = fvk
-            .incoming()
-            .index_for_diversifier(
-                &notes_to_spend
-                    .last()
-                    .expect("notes_to_spend should never be empty")
-                    .note
-                    .diversifier(),
-            )
-            .try_into()?;
-
-        let (change_address, _dtk) = fvk.incoming().payment_address(change_address_index.into());
-        let spent: u64 = notes_to_spend
-            .iter()
-            .map(|note_record| note_record.note.amount())
-            .sum();
-
-        // Spend each of the notes we selected.
-        for note_record in notes_to_spend {
-            plan.actions
-                .push(SpendPlan::new(&mut rng, note_record.note, note_record.position).into());
-        }
-
-        // Find out how much change we have and whether to add a change output.
-        let change = spent - spend_amount;
-        if change > 0 {
-            plan.actions.push(
-                OutputPlan::new(
-                    &mut rng,
-                    Value {
-                        amount: change,
-                        asset_id: denom.id(),
-                    },
-                    change_address,
-                    MemoPlaintext::default(),
-                )
-                .into(),
-            );
+impl<R: RngCore + CryptoRng> Planner<R> {
+    /// Create a new planner.
+    pub fn new(rng: R) -> Self {
+        Self {
+            rng,
+            balance: Balance::default(),
+            plan: TransactionPlan::default(),
+            proposal_submits: Vec::new(),
+            proposal_withdraws: Vec::new(),
         }
     }
 
-    // Add clue plans for `Output`s.
-    let fmd_params = view.fmd_parameters().await?;
-    let precision_bits = fmd_params.precision_bits;
-    plan.add_all_clue_plans(&mut rng, precision_bits.into());
-    Ok(plan)
-}
-
-#[allow(clippy::too_many_arguments)]
-#[instrument(skip(fvk, view, rng, input_value, fee, source_address))]
-pub async fn swap<V, R>(
-    fvk: &FullViewingKey,
-    view: &mut V,
-    mut rng: R,
-    input_value: Value,
-    into_denom: Denom,
-    fee: u64,
-    source_address: Option<u64>,
-) -> Result<TransactionPlan, anyhow::Error>
-where
-    V: ViewClient,
-    R: RngCore + CryptoRng,
-{
-    tracing::debug!(?input_value, ?fee, ?source_address);
-
-    let chain_params = view.chain_params().await?;
-
-    let mut plan = TransactionPlan {
-        chain_id: chain_params.chain_id,
-        fee: Fee(fee),
-        ..Default::default()
-    };
-
-    let assets = view.assets().await?;
-    let input_denom = assets.get(&input_value.asset_id).ok_or_else(|| {
-        anyhow::anyhow!("unknown denomination for asset id {}", input_value.asset_id)
-    })?;
-
-    // Determine the canonical order for the assets being swapped.
-    // This will determine whether the input amount is assigned to delta_1 or delta_2.
-    let trading_pair = TradingPair::canonical_order_for((input_value.asset_id, into_denom.id()))?;
-
-    // If `trading_pair.asset_1` is the input asset, then `delta_1` is the input amount,
-    // and `delta_2` is 0.
-    //
-    // Otherwise, `delta_1` is 0, and `delta_2` is the input amount.
-    let delta_1 = if trading_pair.asset_1() == input_value.asset_id {
-        input_value.amount
-    } else {
-        0
-    };
-    let delta_2 = if trading_pair.asset_1() == input_value.asset_id {
-        0
-    } else {
-        input_value.amount
-    };
-
-    // If there is no input, then there is no swap.
-    if delta_1 == 0 && delta_2 == 0 {
-        return Ok(plan);
+    /// Get the current transaction balance of the planner.
+    pub fn balance(&self) -> &Balance {
+        &self.balance
     }
 
-    // Use a random ephemeral address for claiming the swap.
-    let (claim_address, _dtk) = fvk.incoming().ephemeral_address(OsRng);
-
-    // Create the `SwapPlaintext` representing the swap to be performed:
-    let swap_plaintext =
-        SwapPlaintext::from_parts(trading_pair, delta_1, delta_2, Fee(fee), claim_address)
-            .map_err(|_| anyhow!("error generating swap plaintext"))?;
-
-    // Add a `SwapPlan` action:
-    plan.actions
-        .push(SwapPlan::new(&mut rng, swap_plaintext).into());
-
-    // The value we need to spend is the input value, plus fees.
-    let mut value_to_spend: HashMap<Denom, u64> = HashMap::new();
-    *value_to_spend.entry(input_denom.clone()).or_default() += input_value.amount;
-    if fee > 0 {
-        *value_to_spend
-            .entry(STAKING_TOKEN_DENOM.clone())
-            .or_default() += fee;
+    /// Set the expiry height for the transaction plan.
+    #[instrument(skip(self))]
+    pub fn expiry_height(&mut self, expiry_height: u64) -> &mut Self {
+        self.plan.expiry_height = expiry_height;
+        self
     }
 
-    // Add the required spends:
-    for (denom, spend_amount) in value_to_spend {
-        if spend_amount == 0 {
-            continue;
-        }
-
-        let source_index: Option<AddressIndex> = source_address.map(Into::into);
-        // Select a list of notes that provides at least the required amount.
-        let notes_to_spend = view
-            .notes(NotesRequest {
-                account_id: Some(fvk.hash().into()),
-                asset_id: Some(denom.id().into()),
-                address_index: source_index.map(Into::into),
-                amount_to_spend: spend_amount,
-                include_spent: false,
-            })
-            .await?;
-        if notes_to_spend.is_empty() {
-            // Shouldn't happen because the other side checks this, but just in case...
-            return Err(anyhow::anyhow!("not enough notes to spend",));
-        }
-
-        let change_address_index: u64 = fvk
-            .incoming()
-            .index_for_diversifier(
-                &notes_to_spend
-                    .last()
-                    .expect("notes_to_spend should never be empty")
-                    .note
-                    .diversifier(),
-            )
-            .try_into()?;
-
-        let (change_address, _dtk) = fvk.incoming().payment_address(change_address_index.into());
-        let spent: u64 = notes_to_spend
-            .iter()
-            .map(|note_record| note_record.note.amount())
-            .sum();
-
-        // Spend each of the notes we selected.
-        for note_record in notes_to_spend {
-            plan.actions
-                .push(SpendPlan::new(&mut rng, note_record.note, note_record.position).into());
-        }
-
-        // Find out how much change we have and whether to add a change output.
-        let change = spent - spend_amount;
-        if change > 0 {
-            plan.actions.push(
-                OutputPlan::new(
-                    &mut rng,
-                    Value {
-                        amount: change,
-                        asset_id: denom.id(),
-                    },
-                    change_address,
-                    MemoPlaintext::default(),
-                )
-                .into(),
-            );
-        }
+    /// Add a fee to the transaction plan.
+    ///
+    /// This function should be called once.
+    #[instrument(skip(self))]
+    pub fn fee(&mut self, fee: Fee) -> &mut Self {
+        self.balance += fee.0;
+        self.plan.fee = fee;
+        self
     }
 
-    // Add clue plans for `Output`s.
-    let fmd_params = view.fmd_parameters().await?;
-    let precision_bits = fmd_params.precision_bits;
-    plan.add_all_clue_plans(&mut rng, precision_bits.into());
-    Ok(plan)
-}
-
-#[allow(clippy::too_many_arguments)]
-#[instrument(skip(fvk, view, rng, values, fee, dest_address, source_address, tx_memo))]
-pub async fn send<V, R>(
-    fvk: &FullViewingKey,
-    view: &mut V,
-    rng: R,
-    values: &[Value],
-    fee: u64,
-    dest_address: Address,
-    source_address: Option<u64>,
-    tx_memo: Option<String>,
-) -> Result<TransactionPlan, anyhow::Error>
-where
-    V: ViewClient,
-    R: RngCore + CryptoRng,
-{
-    tracing::debug!(?values, ?fee, ?dest_address, ?source_address, ?tx_memo);
-    let memo = if let Some(input_memo) = tx_memo {
-        input_memo.as_bytes().try_into()?
-    } else {
-        MemoPlaintext::default()
-    };
-
-    let mut planner = Planner::new(rng);
-    planner.fee(fee);
-    for value in values.iter().cloned() {
-        planner.output(value, dest_address, memo.clone());
-    }
-    planner
-        .plan(view, fvk, source_address.map(Into::into))
-        .await
-        .context("can't build send transaction")
-}
-
-#[instrument(skip(fvk, view, rng))]
-pub async fn sweep<V, R>(
-    fvk: &FullViewingKey,
-    view: &mut V,
-    mut rng: R,
-) -> Result<Vec<TransactionPlan>, anyhow::Error>
-where
-    V: ViewClient,
-    R: RngCore + CryptoRng,
-{
-    const SWEEP_COUNT: usize = 8;
-
-    let all_notes = view
-        .notes(NotesRequest {
-            account_id: Some(fvk.hash().into()),
-            ..Default::default()
-        })
-        .await?;
-
-    let mut notes_by_addr_and_denom: BTreeMap<AddressIndex, BTreeMap<_, Vec<SpendableNoteRecord>>> =
-        BTreeMap::new();
-
-    for record in all_notes {
-        notes_by_addr_and_denom
-            .entry(record.address_index)
-            .or_default()
-            .entry(record.note.asset_id())
-            .or_default()
-            .push(record);
+    /// Spend a specific positioned note in the transaction.
+    ///
+    /// If you don't use this method to specify spends, they will be filled in automatically from
+    /// the view service when the plan is [`finish`](Builder::finish)ed.
+    #[instrument(skip(self))]
+    pub fn spend(&mut self, note: Note, position: tct::Position) -> &mut Self {
+        let spend = SpendPlan::new(&mut self.rng, note, position).into();
+        self.action(spend);
+        self
     }
 
-    let mut plans = Vec::new();
+    /// Add an output note from this transaction.
+    ///
+    /// Any unused output value will be redirected back to the originating address as change notes
+    /// when the plan is [`finish`](Builder::finish)ed.
+    #[instrument(skip(self, memo))]
+    pub fn output(&mut self, value: Value, address: Address, memo: MemoPlaintext) -> &mut Self {
+        let output = OutputPlan::new(&mut self.rng, value, address, memo).into();
+        self.action(output);
+        self
+    }
 
-    for (index, notes_by_denom) in notes_by_addr_and_denom {
-        tracing::info!(?index, "processing address");
+    /// Add a delegation to this transaction.
+    ///
+    /// If you don't specify spends or outputs as well, they will be filled in automatically.
+    #[instrument(skip(self))]
+    pub fn delegate(&mut self, unbonded_amount: u64, rate_data: RateData) -> &mut Self {
+        let delegation = rate_data.build_delegate(unbonded_amount).into();
+        self.action(delegation);
+        self
+    }
 
-        for (asset_id, mut records) in notes_by_denom {
-            tracing::debug!(?asset_id, "processing asset");
+    /// Add an undelegation to this transaction.
+    ///
+    /// Undelegations have special rules to prevent you from accidentally locking up funds while the
+    /// transaction is unbonding: any transaction containing an undelegation must contain exactly
+    /// one undelegation, must spend only delegation tokens matching the validator from which the
+    /// undelegation is being performed, and must output only staking tokens. This means that it
+    /// must be an "exact change" transaction with no other actions.
+    ///
+    /// In order to ensure that the transaction is an "exact change" transaction, you should
+    /// probably explicitly add the precisely correct spends to the transaction, after having
+    /// generated those exact notes by splitting notes in a previous transaction, if necessary.
+    ///
+    /// The conditions imposed by the consensus rules are more permissive, but the planner will
+    /// protect you from shooting yourself in the foot by throwing an error, should the built
+    /// transaction fail these conditions.
+    #[instrument(skip(self))]
+    pub fn undelegate(&mut self, delegation_amount: u64, rate_data: RateData) -> &mut Self {
+        let undelegation = rate_data.build_undelegate(delegation_amount).into();
+        self.action(undelegation);
+        self
+    }
 
-            // Sort notes by amount, ascending, so the biggest notes are at the end...
-            records.sort_by(|a, b| a.note.value().amount.cmp(&b.note.value().amount));
-            // ... so that when we use chunks_exact, we get SWEEP_COUNT sized
-            // chunks, ignoring the biggest notes in the remainder.
-            for group in records.chunks_exact(SWEEP_COUNT) {
-                let mut planner = Planner::new(&mut rng);
+    /// Upload a validator definition in this transaction.
+    #[instrument(skip(self))]
+    pub fn validator_definition(&mut self, new_validator: validator::Definition) -> &mut Self {
+        self.action(ActionPlan::ValidatorDefinition(new_validator.into()));
+        self
+    }
 
-                for record in group {
-                    planner.spend(record.note.clone(), record.position);
+    /// Submit a new governance proposal in this transaction.
+    #[instrument(skip(self))]
+    pub fn proposal_submit(&mut self, proposal: Proposal) -> &mut Self {
+        self.proposal_submits.push(proposal);
+        self
+    }
+
+    /// Withdraw a governance proposal in this transaction.
+    #[instrument(skip(self))]
+    pub fn proposal_withdraw(
+        &mut self,
+        proposal_id: u64,
+        deposit_refund_address: Address,
+        reason: String,
+    ) -> &mut Self {
+        self.proposal_withdraws.push((
+            deposit_refund_address,
+            ProposalWithdrawBody {
+                proposal: proposal_id,
+                reason,
+            },
+        ));
+        self
+    }
+
+    /// Cast a validator vote in this transaction.
+    #[instrument(skip(self))]
+    pub fn validator_vote(&mut self, vote: ValidatorVote) -> &mut Self {
+        self.action(ActionPlan::ValidatorVote(vote));
+        self
+    }
+
+    fn action(&mut self, action: ActionPlan) -> &mut Self {
+        use ActionPlan::*;
+
+        // Track this action's contribution to the value balance of the transaction: this must match
+        // the actual contribution to the value commitment, but this isn't checked, so make sure
+        // that when you're adding a new action, you correctly match this up to the calculation of
+        // the value commitment for the transaction, or else the planner will submit transactions
+        // that are not balanced!
+        match &action {
+            Spend(spend) => self.balance += spend.note.value(),
+            Output(output) => self.balance -= output.value,
+            Delegate(delegate) => {
+                self.balance -= Value {
+                    amount: delegate.unbonded_amount,
+                    asset_id: *STAKING_TOKEN_ASSET_ID,
+                };
+                self.balance += Value {
+                    amount: delegate.delegation_amount,
+                    asset_id: DelegationToken::new(delegate.validator_identity).id(),
+                };
+            }
+            Undelegate(undelegate) => {
+                self.balance += Value {
+                    amount: undelegate.unbonded_amount,
+                    asset_id: *STAKING_TOKEN_ASSET_ID,
+                };
+                self.balance -= Value {
+                    amount: undelegate.delegation_amount,
+                    asset_id: DelegationToken::new(undelegate.validator_identity).id(),
+                };
+            }
+            ProposalSubmit(proposal_submit) => {
+                self.balance -= Value {
+                    amount: proposal_submit.deposit_amount,
+                    asset_id: *STAKING_TOKEN_ASSET_ID,
+                };
+            }
+            PositionOpen(_) => todo!(),
+            PositionClose(_) => todo!(),
+            PositionWithdraw(_) => todo!(),
+            PositionRewardClaim(_) => todo!(),
+            Swap(_) => todo!(),
+            SwapClaim(_) => todo!(),
+            IBCAction(_) => todo!(),
+            ValidatorDefinition(_) | ProposalWithdraw(_) | DelegatorVote(_) | ValidatorVote(_) => {
+                // No contribution to the value balance of the transaction
+            }
+        };
+
+        // Add the action to the plan
+        self.plan.actions.push(action);
+        self
+    }
+
+    /// Add spends and change outputs as required to balance the transaction, using the view service
+    /// provided to supply the notes and other information.
+    ///
+    /// Clears the contents of the planner, which can be re-used.
+    #[instrument(skip(self, view, fvk))]
+    pub async fn plan<V: ViewClient>(
+        &mut self,
+        view: &mut V,
+        fvk: &FullViewingKey,
+        source: Option<AddressIndex>,
+    ) -> anyhow::Result<TransactionPlan> {
+        tracing::debug!(plan = ?self.plan, balance = ?self.balance, "finalizing transaction");
+
+        // Fill in the chain id based on the view service
+        let chain_params = view.chain_params().await?;
+        self.plan.chain_id = chain_params.chain_id;
+
+        // Proposals aren't actually turned into action plans until now, because we need the view
+        // service to fill in the details. Now we have the chain parameters and the FVK, so we can
+        // automatically fill in the rest of the action plan without asking the user for anything:
+        for proposal in mem::take(&mut self.proposal_submits) {
+            let (deposit_refund_address, withdraw_proposal_key) =
+                self.proposal_address_and_withdraw_key(fvk);
+
+            self.action(
+                ProposalSubmit {
+                    proposal,
+                    deposit_amount: chain_params.proposal_deposit_amount,
+                    deposit_refund_address,
+                    withdraw_proposal_key,
                 }
+                .into(),
+            );
+        }
 
-                let plan = planner
-                    .plan(view, fvk, Some(index))
-                    .await
-                    .context("can't build sweep transaction")?;
+        // Similarly, proposal withdrawals need the FVK to convert the address into the original
+        // randomizer, so we delay adding it to the transaction plan until now
+        for (address, body) in mem::take(&mut self.proposal_withdraws) {
+            let randomizer = self.proposal_withdraw_randomizer(fvk, &address);
+            self.action(ProposalWithdrawPlan { body, randomizer }.into());
+        }
 
-                tracing::debug!(?plan);
-                plans.push(plan);
+        // Get all notes required to fulfill needed spends
+        let mut spends = Vec::new();
+        for Value { amount, asset_id } in self.balance.required() {
+            spends.extend(
+                view.notes(NotesRequest {
+                    account_id: Some(fvk.hash().into()),
+                    asset_id: Some(asset_id.into()),
+                    address_index: source.map(Into::into),
+                    amount_to_spend: amount,
+                    include_spent: false,
+                })
+                .await?,
+            );
+        }
+
+        // Add the required spends to the planner
+        for record in spends {
+            self.spend(record.note, record.position);
+        }
+
+        // For any remaining provided balance, make a single change note for each
+        let self_address = fvk
+            .incoming()
+            .payment_address(source.unwrap_or(AddressIndex::Numeric(0)))
+            .0;
+
+        for value in self.balance.provided().collect::<Vec<_>>() {
+            self.output(value, self_address, MemoPlaintext::default());
+        }
+
+        // TODO: add dummy change outputs in the staking token denomination (this means they'll pass
+        // the undelegate rules check)
+
+        // Ensure that the transaction won't cause excessive quarantining
+        self.check_undelegate_rules()?;
+
+        // Add clue plans for `Output`s.
+        let fmd_params = view.fmd_parameters().await?;
+        let precision_bits = fmd_params.precision_bits;
+        self.plan
+            .add_all_clue_plans(&mut self.rng, precision_bits.into());
+
+        // Now the transaction should be fully balanced, unless we didn't have enough to spend
+        if !self.balance.is_zero() {
+            anyhow::bail!(
+                "balance is non-zero after attempting to balance transaction: {:?}",
+                self.balance
+            );
+        }
+
+        tracing::debug!(plan = ?self.plan, "finished balancing transaction");
+
+        // Clear the planner and pull out the plan to return
+        self.balance = Balance::zero();
+        let plan = mem::take(&mut self.plan);
+
+        Ok(plan)
+    }
+
+    /// Undelegations should have a very particular form to avoid excessive quarantining: all
+    /// their spends should be of the delegation token being undelegated, and all their outputs
+    /// should be of the staking token, and they should contain no other actions.
+    fn check_undelegate_rules(&self) -> anyhow::Result<()> {
+        match self
+            .plan
+            .actions
+            .iter()
+            .filter_map(|action| {
+                if let ActionPlan::Undelegate(undelegate) = action {
+                    Some(undelegate)
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>()
+            .as_slice()
+        {
+            [] => {
+                // No undelegations
+            }
+            [undelegate] => {
+                let delegation_asset_id = DelegationToken::new(undelegate.validator_identity).id();
+                for action in self.plan.actions.iter() {
+                    match action {
+                        ActionPlan::Spend(spend) => {
+                            if spend.note.value().asset_id != delegation_asset_id {
+                                return Err(anyhow::anyhow!(
+                                    "undelegation transaction must spend only delegation tokens"
+                                ));
+                            }
+                        }
+                        ActionPlan::Output(output) => {
+                            if output.value.asset_id != *STAKING_TOKEN_ASSET_ID {
+                                return Err(anyhow::anyhow!(
+                                    "undelegation transaction must output only staking tokens"
+                                ));
+                            }
+                        }
+                        ActionPlan::Undelegate(_) => {
+                            // There's only one undelegate action, so this is the one we already
+                            // know about, so we don't have to do anything with it
+                        }
+                        _ => {
+                            return Err(anyhow::anyhow!(
+                                "undelegation transaction must not contain extraneous actions"
+                            ))
+                        }
+                    }
+                }
+            }
+            _ => {
+                return Err(anyhow::anyhow!(
+                    "undelegation transaction must not contain multiple undelegations"
+                ))
             }
         }
+
+        Ok(())
     }
 
-    Ok(plans)
-}
+    /// Get a random address/withdraw key pair for proposals.
+    fn proposal_address_and_withdraw_key(
+        &mut self,
+        fvk: &FullViewingKey,
+    ) -> (Address, VerificationKey<SpendAuth>) {
+        // The deposit refund address should be an ephemeral address
+        let deposit_refund_address = fvk.incoming().ephemeral_address(&mut self.rng).0;
 
-#[instrument(skip(fvk, view, rng))]
-pub async fn proposal_submit<V, R>(
-    fvk: &FullViewingKey,
-    view: &mut V,
-    rng: R,
-    proposal: Proposal,
-    fee: u64,
-    source_address: Option<u64>,
-) -> anyhow::Result<TransactionPlan>
-where
-    V: ViewClient,
-    R: RngCore + CryptoRng,
-{
-    Planner::new(rng)
-        .fee(fee)
-        .proposal_submit(proposal)
-        .plan(view, fvk, source_address.map(Into::into))
-        .await
-        .context("can't build proposal submit transaction")
-}
+        // The proposal withdraw verification key is the spend auth verification key randomized by the
+        // deposit refund address's address index
+        let withdraw_proposal_key = {
+            // Use the fvk to get the original address index of the diversifier
+            let deposit_refund_address_index = fvk
+                .incoming()
+                .index_for_diversifier(deposit_refund_address.diversifier());
 
-#[allow(clippy::too_many_arguments)]
-#[instrument(skip(fvk, view, rng))]
-pub async fn proposal_withdraw<V, R>(
-    fvk: &FullViewingKey,
-    view: &mut V,
-    rng: R,
-    proposal_id: u64,
-    deposit_refund_address: Address,
-    reason: String,
-    fee: u64,
-    source_address: Option<u64>,
-) -> Result<TransactionPlan>
-where
-    V: ViewClient,
-    R: RngCore + CryptoRng,
-{
-    Planner::new(rng)
-        .fee(fee)
-        .proposal_withdraw(proposal_id, deposit_refund_address, reason)
-        .plan(view, fvk, source_address.map(Into::into))
-        .await
-        .context("can't build proposal withdraw transaction")
+            // Convert this to a vector
+            let mut deposit_refund_address_index_bytes =
+                deposit_refund_address_index.to_bytes().to_vec();
+
+            // Pad it with zeros to be 32 bytes long (the size expected by a randomizer)
+            deposit_refund_address_index_bytes.extend([0; 16]);
+
+            // Convert it back to exactly 32 bytes
+            let deposit_refund_address_index_bytes = deposit_refund_address_index_bytes
+                .try_into()
+                .expect("exactly 32 bytes");
+
+            // Get the scalar `Fr` element derived from these bytes
+            let withdraw_proposal_key_randomizer =
+                Fr::from_bytes(deposit_refund_address_index_bytes)
+                    .expect("bytes are within range for `Fr`");
+
+            // Randomize the spend verification key for the fvk using this randomizer
+            fvk.spend_verification_key()
+                .randomize(&withdraw_proposal_key_randomizer)
+        };
+
+        (deposit_refund_address, withdraw_proposal_key)
+    }
+
+    /// Get the randomizer from an address using the FVK.
+    fn proposal_withdraw_randomizer(&self, fvk: &FullViewingKey, address: &Address) -> Fr {
+        // Use the fvk to get the original address index of the diversifier
+        let deposit_refund_address_index =
+            fvk.incoming().index_for_diversifier(address.diversifier());
+
+        // Convert this to a vector
+        let mut deposit_refund_address_index_bytes =
+            deposit_refund_address_index.to_bytes().to_vec();
+        // Pad it with zeros to be 32 bytes long (the size expected by a randomizer)
+        deposit_refund_address_index_bytes.extend([0; 16]);
+        // Convert it back to exactly 32 bytes
+        let deposit_refund_address_index_bytes = deposit_refund_address_index_bytes
+            .try_into()
+            .expect("exactly 32 bytes");
+
+        // Get the scalar `Fr` element derived from these bytes
+        Fr::from_bytes(deposit_refund_address_index_bytes).expect("bytes are within range for `Fr`")
+    }
 }

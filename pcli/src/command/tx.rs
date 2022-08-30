@@ -5,10 +5,8 @@ use penumbra_component::stake::rate::RateData;
 use penumbra_crypto::{
     asset, transaction::Fee, Address, DelegationToken, IdentityKey, Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_proto::view::NotesRequest;
 use penumbra_proto::{client::specific::KeyValueRequest, Protobuf};
 use penumbra_transaction::action::Proposal;
-use penumbra_view::SpendableNoteRecord;
 use penumbra_view::ViewClient;
 use penumbra_wallet::plan;
 use rand_core::OsRng;
@@ -28,9 +26,9 @@ pub enum TxCmd {
         to: String,
         /// The amounts to send, written as typed values 1.87penumbra, 12cubes, etc.
         values: Vec<String>,
-        /// The transaction fee, written as a typed value, e.g. 1upenumbra.
-        #[clap(long, default_value = "0upenumbra")]
-        fee: String,
+        /// The transaction fee (paid in upenumbra).
+        #[clap(long, default_value = "0")]
+        fee: u64,
         /// Optional. Only spend funds originally received by the given address index.
         #[clap(long)]
         source: Option<u64>,
@@ -46,9 +44,9 @@ pub enum TxCmd {
         to: String,
         /// The amount of stake to delegate.
         amount: String,
-        /// The transaction fee, written as a typed value, e.g. 1upenumbra.
-        #[clap(long, default_value = "0upenumbra")]
-        fee: String,
+        /// The transaction fee (paid in upenumbra).
+        #[clap(long, default_value = "0")]
+        fee: u64,
         /// Optional. Only spend funds originally received by the given address index.
         #[clap(long)]
         source: Option<u64>,
@@ -58,9 +56,9 @@ pub enum TxCmd {
     Undelegate {
         /// The amount of delegation tokens to undelegate.
         amount: String,
-        /// The transaction fee, written as a typed value, e.g. 1upenumbra.
-        #[clap(long, default_value = "0upenumbra")]
-        fee: String,
+        /// The transaction fee (paid in upenumbra).
+        #[clap(long, default_value = "0")]
+        fee: u64,
         /// Optional. Only spend funds originally received by the given address index.
         #[clap(long)]
         source: Option<u64>,
@@ -76,9 +74,9 @@ pub enum TxCmd {
         to: String,
         /// The amount of stake to delegate.
         amount: String,
-        /// The transaction fee, written as a typed value, e.g. 1upenumbra.
-        #[clap(long, default_value = "0upenumbra")]
-        fee: String,
+        /// The transaction fee (paid in upenumbra).
+        #[clap(long, default_value = "0")]
+        fee: u64,
         /// Optional. Only spend funds originally received by the given address index.
         #[clap(long)]
         source: Option<u64>,
@@ -101,8 +99,8 @@ pub enum TxCmd {
         /// The transaction fee (paid in upenumbra).
         ///
         /// A swap generates two transactions; the fee will be split equally over both.
-        #[clap(long, default_value = "0upenumbra")]
-        fee: String,
+        #[clap(long, default_value = "0")]
+        fee: u64,
         /// Optional. Only spend funds originally received by the given address index.
         #[clap(long)]
         source: Option<u64>,
@@ -150,7 +148,7 @@ impl TxCmd {
                     .iter()
                     .map(|v| v.parse())
                     .collect::<Result<Vec<Value>, _>>()?;
-                let fee: Fee = Fee(fee.parse()?);
+                let fee = Fee::from_staking_token_amount(*fee);
                 let to = to
                     .parse()
                     .map_err(|_| anyhow::anyhow!("address is invalid"))?;
@@ -193,7 +191,7 @@ impl TxCmd {
             } => {
                 let input = input.parse::<Value>()?;
                 let into = asset::REGISTRY.parse_unit(into.as_str()).base();
-                let fee: Fee = Fee(fee.parse()?);
+                let fee = Fee::from_staking_token_amount(*fee);
                 let swap_plan = plan::swap(
                     &app.fvk,
                     &mut app.view,
@@ -266,7 +264,7 @@ impl TxCmd {
                     .await?
                     .into_inner()
                     .try_into()?;
-                let fee: Fee = Fee(fee.parse()?);
+                let fee = Fee::from_staking_token_amount(*fee);
 
                 let plan = plan::delegate(
                     &app.fvk,
@@ -295,7 +293,7 @@ impl TxCmd {
                     amount: _,
                     asset_id,
                 } = amount.parse::<Value>()?;
-                let fee: Fee = Fee(fee.parse()?);
+                let fee = Fee::from_staking_token_amount(*fee);
 
                 let delegation_token: DelegationToken = app
                     .view()
@@ -386,8 +384,9 @@ impl TxCmd {
             }
             TxCmd::Proposal(ProposalCmd::Submit { file, fee, source }) => {
                 let proposal: Proposal = serde_json::from_reader(File::open(&file)?)?;
+                let fee = Fee::from_staking_token_amount(*fee);
                 let plan =
-                    plan::proposal_submit(&app.fvk, &mut app.view, OsRng, proposal, *fee, *source)
+                    plan::proposal_submit(&app.fvk, &mut app.view, OsRng, proposal, fee, *source)
                         .await?;
                 app.build_and_submit_transaction(plan).await?;
             }
@@ -418,6 +417,7 @@ impl TxCmd {
                         .value[..],
                 )?;
 
+                let fee = Fee::from_staking_token_amount(*fee);
                 let plan = plan::proposal_withdraw(
                     &app.fvk,
                     &mut app.view,
@@ -425,7 +425,7 @@ impl TxCmd {
                     *proposal_id,
                     deposit_refund_address,
                     reason.clone(),
-                    *fee,
+                    fee,
                     *source,
                 )
                 .await?;

@@ -7,7 +7,6 @@ use penumbra_component::stake::validator;
 use penumbra_crypto::{
     asset::Denom, dex::swap::SwapPlaintext, dex::TradingPair, keys::AddressIndex,
     memo::MemoPlaintext, transaction::Fee, Address, FullViewingKey, Note, Value,
-    STAKING_TOKEN_DENOM,
 };
 use penumbra_proto::view::NotesRequest;
 use penumbra_transaction::{
@@ -27,7 +26,7 @@ pub async fn validator_definition<V, R>(
     view: &mut V,
     rng: R,
     new_validator: validator::Definition,
-    fee: u64,
+    fee: Fee,
     source_address: Option<u64>,
 ) -> Result<TransactionPlan>
 where
@@ -47,7 +46,7 @@ pub async fn validator_vote<V, R>(
     view: &mut V,
     rng: R,
     vote: ValidatorVote,
-    fee: u64,
+    fee: Fee,
     source_address: Option<u64>,
 ) -> Result<TransactionPlan>
 where
@@ -70,7 +69,7 @@ pub async fn delegate<V, R>(
     rng: R,
     rate_data: RateData,
     unbonded_amount: u64,
-    fee: u64,
+    fee: Fee,
     source_address: Option<u64>,
 ) -> Result<TransactionPlan>
 where
@@ -92,7 +91,7 @@ pub async fn undelegate<V, R>(
     rng: R,
     rate_data: RateData,
     delegation_notes: Vec<SpendableNoteRecord>,
-    fee: u64,
+    fee: Fee,
     source_address: Option<u64>,
 ) -> Result<TransactionPlan>
 where
@@ -122,9 +121,9 @@ where
 pub async fn swap_claim<V, R>(
     fvk: &FullViewingKey,
     view: &mut V,
-    mut rng: R,
+    rng: R,
     swap_nft_note: Note,
-    fee: u64,
+    fee: Fee,
     source_address: Option<u64>,
 ) -> Result<TransactionPlan, anyhow::Error>
 where
@@ -139,7 +138,7 @@ where
 
     let mut plan = TransactionPlan {
         chain_id: chain_params.chain_id,
-        fee: Fee(fee),
+        fee,
         ..Default::default()
     };
 
@@ -245,7 +244,7 @@ pub async fn swap<V, R>(
     mut rng: R,
     input_value: Value,
     into_denom: Denom,
-    fee: u64,
+    fee: Fee,
     source_address: Option<u64>,
 ) -> Result<TransactionPlan, anyhow::Error>
 where
@@ -258,7 +257,7 @@ where
 
     let mut plan = TransactionPlan {
         chain_id: chain_params.chain_id,
-        fee: Fee(fee),
+        fee: fee.clone(),
         ..Default::default()
     };
 
@@ -266,6 +265,9 @@ where
     let input_denom = assets.get(&input_value.asset_id).ok_or_else(|| {
         anyhow::anyhow!("unknown denomination for asset id {}", input_value.asset_id)
     })?;
+    let fee_denom = assets
+        .get(&fee.asset_id())
+        .ok_or_else(|| anyhow::anyhow!("unknown denomination for asset id {}", fee.asset_id()))?;
 
     // Determine the canonical order for the assets being swapped.
     // This will determine whether the input amount is assigned to delta_1 or delta_2.
@@ -296,7 +298,7 @@ where
 
     // Create the `SwapPlaintext` representing the swap to be performed:
     let swap_plaintext =
-        SwapPlaintext::from_parts(trading_pair, delta_1, delta_2, Fee(fee), claim_address)
+        SwapPlaintext::from_parts(trading_pair, delta_1, delta_2, fee.clone(), claim_address)
             .map_err(|_| anyhow!("error generating swap plaintext"))?;
 
     // Add a `SwapPlan` action:
@@ -306,10 +308,8 @@ where
     // The value we need to spend is the input value, plus fees.
     let mut value_to_spend: HashMap<Denom, u64> = HashMap::new();
     *value_to_spend.entry(input_denom.clone()).or_default() += input_value.amount;
-    if fee > 0 {
-        *value_to_spend
-            .entry(STAKING_TOKEN_DENOM.clone())
-            .or_default() += fee;
+    if fee.amount() > 0 {
+        *value_to_spend.entry(fee_denom.clone()).or_default() += fee.amount();
     }
 
     // Add the required spends:
@@ -389,7 +389,7 @@ pub async fn send<V, R>(
     view: &mut V,
     rng: R,
     values: &[Value],
-    fee: u64,
+    fee: Fee,
     dest_address: Address,
     source_address: Option<u64>,
     tx_memo: Option<String>,
@@ -486,7 +486,7 @@ pub async fn proposal_submit<V, R>(
     view: &mut V,
     rng: R,
     proposal: Proposal,
-    fee: u64,
+    fee: Fee,
     source_address: Option<u64>,
 ) -> anyhow::Result<TransactionPlan>
 where
@@ -510,7 +510,7 @@ pub async fn proposal_withdraw<V, R>(
     proposal_id: u64,
     deposit_refund_address: Address,
     reason: String,
-    fee: u64,
+    fee: Fee,
     source_address: Option<u64>,
 ) -> Result<TransactionPlan>
 where

@@ -9,14 +9,18 @@ pub struct Fee(pub Value);
 
 impl Default for Fee {
     fn default() -> Self {
-        Self(Value {
-            amount: 0,
-            asset_id: *STAKING_TOKEN_ASSET_ID,
-        })
+        Fee::from_staking_token_amount(0)
     }
 }
 
 impl Fee {
+    pub fn from_staking_token_amount(amount: u64) -> Self {
+        Self(Value {
+            amount,
+            asset_id: *STAKING_TOKEN_ASSET_ID,
+        })
+    }
+
     pub fn amount(&self) -> u64 {
         self.0.amount
     }

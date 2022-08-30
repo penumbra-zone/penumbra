@@ -43,9 +43,9 @@ pub enum DefinitionCmd {
         /// The JSON file containing the ValidatorDefinition to upload.
         #[clap(long)]
         file: String,
-        /// The transaction fee, written as a typed value, e.g. 1upenumbra.
-        #[clap(long, default_value = "0upenumbra")]
-        fee: String,
+        /// The transaction fee (paid in upenumbra).
+        #[clap(long, default_value = "0")]
+        fee: u64,
         /// Optional. Only spend funds originally received by the given address index.
         #[clap(long)]
         source: Option<u64>,
@@ -103,7 +103,7 @@ impl ValidatorCmd {
                     File::open(&file).with_context(|| format!("cannot open file {:?}", file))?;
                 let new_validator: Validator = serde_json::from_reader(definition_file)
                     .map_err(|_| anyhow::anyhow!("Unable to parse validator definition"))?;
-                let fee: Fee = Fee(fee.parse()?);
+                let fee = Fee::from_staking_token_amount(*fee);
 
                 // Sign the validator definition with the wallet's spend key.
                 let protobuf_serialized: ProtoValidator = new_validator.clone().into();
@@ -152,9 +152,9 @@ impl ValidatorCmd {
                 let vote = ValidatorVote { body, auth_sig };
 
                 // Construct a new transaction and include the validator definition.
-                let plan =
-                    plan::validator_vote(&app.fvk, &mut app.view, OsRng, vote, *fee, *source)
-                        .await?;
+                let fee = Fee::from_staking_token_amount(*fee);
+                let plan = plan::validator_vote(&app.fvk, &mut app.view, OsRng, vote, fee, *source)
+                    .await?;
                 app.build_and_submit_transaction(plan).await?;
 
                 println!("Cast validator vote");
