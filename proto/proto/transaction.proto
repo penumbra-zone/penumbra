@@ -196,6 +196,9 @@ message AuthorizationData {
     // The required spend authorizations, returned in the same order as the
     // Spend actions in the original request.
     repeated crypto.SpendAuthSignature spend_auths = 2;
+    // The required withdraw proposal authorizations, returned in the same order as the
+    // ProposalWithdraw actions in the original request.
+    repeated crypto.SpendAuthSignature withdraw_proposal_auths = 3;
 }
 
 // The data required for proving when building a transaction from a plan.
@@ -236,8 +239,8 @@ message ActionPlan {
         ibc.IBCAction ibc_action = 17;
         // Governance:
         ProposalSubmit proposal_submit = 18;
-        ProposalWithdrawBody proposal_withdraw = 19;
-        ValidatorVoteBody validator_vote = 20;
+        ProposalWithdrawPlan proposal_withdraw = 19;
+        ValidatorVotePlan validator_vote = 20;
         DelegatorVotePlan delegator_vote = 21;
 
         dex.PositionOpen position_open = 30;
@@ -321,6 +324,19 @@ message SwapClaimPlan {
     bytes esk_2 = 18;
 }
 
+message ProposalWithdrawPlan {
+    // The body of the proposal withdrawal.
+    ProposalWithdrawBody body = 1;
+    // The randomizer to use for signing the proposal withdrawal.
+    bytes randomizer = 2;
+}
+
+message ValidatorVotePlan {
+    // The body of the validator vote.
+    ValidatorVoteBody body = 1;
+    // The randomizer to use for signing the validator vote.
+    bytes randomizer = 2;
+}
 
 message DelegatorVotePlan {
     // The proposal to vote on.

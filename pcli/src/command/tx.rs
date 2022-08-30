@@ -1,9 +1,12 @@
-use std::fs::File;
+use std::{fs::File, io::Write};
 
 use anyhow::{anyhow, Context, Result};
 use penumbra_component::stake::rate::RateData;
-use penumbra_crypto::{asset, DelegationToken, IdentityKey, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_crypto::{
+    asset, Address, DelegationToken, IdentityKey, Value, STAKING_TOKEN_ASSET_ID,
+};
 use penumbra_proto::view::NotesRequest;
+use penumbra_proto::{client::specific::KeyValueRequest, Protobuf};
 use penumbra_transaction::action::Proposal;
 use penumbra_view::SpendableNoteRecord;
 use penumbra_view::ViewClient;
@@ -11,6 +14,9 @@ use penumbra_wallet::plan;
 use rand_core::OsRng;
 
 use crate::App;
+
+mod proposal;
+use proposal::ProposalCmd;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum TxCmd {
@@ -101,19 +107,9 @@ pub enum TxCmd {
         #[clap(long)]
         source: Option<u64>,
     },
-    /// Propose a new governance vote, escrowing a proposal deposit until voting concludes.
-    #[clap(display_order = 400)]
-    Propose {
-        /// The proposal to vote on, in JSON format.
-        #[clap(long)]
-        file: camino::Utf8PathBuf,
-        /// The transaction fee (paid in upenumbra).
-        #[clap(long, default_value = "0")]
-        fee: u64,
-        /// Optional. Only spend funds originally received by the given address index.
-        #[clap(long)]
-        source: Option<u64>,
-    },
+    /// Submit or withdraw a governance proposal.
+    #[clap(display_order = 400, subcommand)]
+    Proposal(ProposalCmd),
     /// Consolidate many small notes into a few larger notes.
     ///
     /// Since Penumbra transactions reveal their arity (how many spends,
@@ -136,7 +132,7 @@ impl TxCmd {
             TxCmd::Delegate { .. } => true,
             TxCmd::Undelegate { .. } => true,
             TxCmd::Redelegate { .. } => true,
-            TxCmd::Propose { .. } => true,
+            TxCmd::Proposal(proposal_cmd) => proposal_cmd.needs_sync(),
         }
     }
 
@@ -377,11 +373,86 @@ impl TxCmd {
             TxCmd::Redelegate { .. } => {
                 println!("Sorry, this command is not yet implemented");
             }
-            TxCmd::Propose { file, fee, source } => {
+            TxCmd::Proposal(ProposalCmd::Submit { file, fee, source }) => {
                 let proposal: Proposal = serde_json::from_reader(File::open(&file)?)?;
                 let plan =
-                    plan::propose(&app.fvk, &mut app.view, OsRng, proposal, *fee, *source).await?;
+                    plan::proposal_submit(&app.fvk, &mut app.view, OsRng, proposal, *fee, *source)
+                        .await?;
                 app.build_and_submit_transaction(plan).await?;
+            }
+            TxCmd::Proposal(ProposalCmd::Withdraw {
+                proposal_id,
+                fee,
+                reason,
+                source,
+            }) => {
+                // Download the refund address for the proposal to be withdrawn, so we can derive
+                // the address index (if it's one of ours), which is used to form the randomizer for
+                // the signature
+                let chain_id = app.view().chain_params().await?.chain_id;
+                let mut client = app.specific_client().await?;
+                // TODO: convert this into an actual query method?
+                // Alternatively, store proposals locally, avoiding the remote query?
+                let deposit_refund_address = Address::decode(
+                    &client
+                        .key_value(KeyValueRequest {
+                            chain_id,
+                            key: penumbra_component::governance::state_key::proposal_deposit_refund_address(
+                                *proposal_id,
+                            ).into(),
+                            proof: false,
+                        })
+                        .await?
+                        .into_inner()
+                        .value[..],
+                )?;
+
+                let plan = plan::proposal_withdraw(
+                    &app.fvk,
+                    &mut app.view,
+                    OsRng,
+                    *proposal_id,
+                    deposit_refund_address,
+                    reason.clone(),
+                    *fee,
+                    *source,
+                )
+                .await?;
+
+                app.build_and_submit_transaction(plan).await?;
+            }
+            TxCmd::Proposal(ProposalCmd::Template { file, kind }) => {
+                let chain_id = app.view().chain_params().await?.chain_id;
+                let template = kind.template_proposal(chain_id);
+
+                if let Some(file) = file {
+                    File::create(file)
+                        .with_context(|| format!("cannot create file {:?}", file))?
+                        .write_all(&serde_json::to_vec_pretty(&template)?)
+                        .context("could not write file")?;
+                } else {
+                    println!("{}", serde_json::to_string_pretty(&template)?);
+                }
+            }
+            TxCmd::Proposal(ProposalCmd::Vote {
+                proposal_id: _,
+                vote: _,
+                fee: _,
+                source: _,
+            }) => {
+                println!("Sorry, delegator voting is not yet implemented");
+                // TODO: fill this in for delegator votes
+                // let plan = plan::delegator_vote(
+                //     &app.fvk,
+                //     &mut app.view,
+                //     OsRng,
+                //     *proposal_id,
+                //     *vote,
+                //     *fee,
+                //     *source,
+                // )
+                // .await?;
+                // app.build_and_submit_transaction(plan).await?;
             }
         }
         Ok(())

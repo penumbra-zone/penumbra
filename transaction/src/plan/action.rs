@@ -3,19 +3,23 @@ use serde::{Deserialize, Serialize};
 
 mod delegator_vote;
 mod output;
+mod proposal_withdraw;
 mod spend;
 mod swap;
 mod swap_claim;
+mod validator_vote;
 
 pub use delegator_vote::DelegatorVotePlan;
 pub use output::OutputPlan;
+pub use proposal_withdraw::ProposalWithdrawPlan;
 pub use spend::SpendPlan;
 pub use swap::SwapPlan;
 pub use swap_claim::SwapClaimPlan;
+pub use validator_vote::ValidatorVotePlan;
 
 use crate::action::{
     Delegate, PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw, ProposalSubmit,
-    ProposalWithdrawBody, Undelegate, ValidatorVoteBody,
+    Undelegate,
 };
 
 /// A declaration of a planned [`Action`], for use in transaction creation.
@@ -45,11 +49,11 @@ pub enum ActionPlan {
     /// Propose a governance vote.
     ProposalSubmit(ProposalSubmit),
     /// Withdraw a proposed vote.
-    ProposalWithdraw(ProposalWithdrawBody),
+    ProposalWithdraw(ProposalWithdrawPlan),
     /// Vote on a proposal as a delegator.
     DelegatorVote(DelegatorVotePlan),
     /// Vote on a proposal as a validator.
-    ValidatorVote(ValidatorVoteBody),
+    ValidatorVote(ValidatorVotePlan),
 
     PositionOpen(PositionOpen),
     PositionClose(PositionClose),
@@ -113,8 +117,8 @@ impl From<ProposalSubmit> for ActionPlan {
     }
 }
 
-impl From<ProposalWithdrawBody> for ActionPlan {
-    fn from(inner: ProposalWithdrawBody) -> ActionPlan {
+impl From<ProposalWithdrawPlan> for ActionPlan {
+    fn from(inner: ProposalWithdrawPlan) -> ActionPlan {
         ActionPlan::ProposalWithdraw(inner)
     }
 }
@@ -125,8 +129,8 @@ impl From<DelegatorVotePlan> for ActionPlan {
     }
 }
 
-impl From<ValidatorVoteBody> for ActionPlan {
-    fn from(inner: ValidatorVoteBody) -> ActionPlan {
+impl From<ValidatorVotePlan> for ActionPlan {
+    fn from(inner: ValidatorVotePlan) -> ActionPlan {
         ActionPlan::ValidatorVote(inner)
     }
 }

@@ -14,9 +14,7 @@ use penumbra_tct as tct;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    action::{
-        Delegate, DelegatorVote, ProposalSubmit, ProposalWithdraw, Undelegate, ValidatorVote,
-    },
+    action::{Delegate, ProposalSubmit, ProposalWithdraw, Undelegate, ValidatorVote},
     Action,
 };
 

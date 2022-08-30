@@ -2,7 +2,7 @@ use ark_ff::Zero;
 use decaf377::Fr;
 use decaf377_rdsa::{Signature, SpendAuth, VerificationKey};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, str::FromStr};
 
 use penumbra_crypto::{value, Address, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_proto::{transaction as pb, Protobuf};
@@ -37,13 +37,94 @@ impl TryFrom<pb::Proposal> for Proposal {
             description: inner.description,
             payload: inner
                 .payload
-                .ok_or_else(|| anyhow::anyhow!("missing proposal kind"))?
+                .ok_or_else(|| anyhow::anyhow!("missing proposal payload"))?
                 .try_into()?,
         })
     }
 }
 
 impl Protobuf<pb::Proposal> for Proposal {}
+
+/// The specific kind of a proposal.
+#[derive(Debug, Clone)]
+pub enum ProposalKind {
+    /// A signaling proposal.
+    Signaling,
+    /// An emergency proposal.
+    Emergency,
+    /// A parameter change proposal.
+    ParameterChange,
+    /// A DAO spend proposal.
+    DaoSpend,
+}
+
+impl FromStr for ProposalKind {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s
+            .replace('-', "")
+            .replace('_', "")
+            .replace(' ', "")
+            .to_lowercase()
+            .as_str()
+        {
+            "signaling" => Ok(ProposalKind::Signaling),
+            "emergency" => Ok(ProposalKind::Emergency),
+            "parameterchange" => Ok(ProposalKind::ParameterChange),
+            "daospend" => Ok(ProposalKind::DaoSpend),
+            _ => Err(anyhow::anyhow!("invalid proposal kind: {}", s)),
+        }
+    }
+}
+
+impl Proposal {
+    /// Get the kind of a proposal.
+    pub fn kind(&self) -> ProposalKind {
+        match self.payload {
+            ProposalPayload::Signaling { .. } => ProposalKind::Signaling,
+            ProposalPayload::Emergency { .. } => ProposalKind::Emergency,
+            ProposalPayload::ParameterChange { .. } => ProposalKind::ParameterChange,
+            ProposalPayload::DaoSpend { .. } => ProposalKind::DaoSpend,
+        }
+    }
+}
+
+impl ProposalKind {
+    /// Generate a default proposal of a particular kind.
+    pub fn template_proposal(&self, chain_id: String) -> Proposal {
+        let description = "A human readable description of the proposal.".to_string();
+        let payload = match self {
+            ProposalKind::Signaling => ProposalPayload::Signaling { commit: None },
+            ProposalKind::Emergency => ProposalPayload::Emergency { halt_chain: false },
+            ProposalKind::ParameterChange => {
+                let mut new_parameters = BTreeMap::new();
+                new_parameters.insert(
+                    "parameter name".to_string(),
+                    "new parameter value".to_string(),
+                );
+                ProposalPayload::ParameterChange {
+                    effective_height: 0,
+                    new_parameters,
+                }
+            }
+            ProposalKind::DaoSpend => ProposalPayload::DaoSpend {
+                schedule_transactions: vec![(
+                    0,
+                    TransactionPlan {
+                        chain_id,
+                        ..Default::default()
+                    },
+                )],
+                cancel_transactions: vec![(0, AuthHash::default())],
+            },
+        };
+        Proposal {
+            description,
+            payload,
+        }
+    }
+}
 
 /// The machine-interpretable body of a proposal.
 #[derive(Debug, Clone, Serialize, Deserialize)]
