@@ -277,6 +277,8 @@ impl Component for ShieldedPool {
             .unwrap();
         }
 
+        // TODO: execute any scheduled DAO spend transactions for this block
+
         // Schedule all unquarantining that was set up in this block
         self.schedule_unquarantine().await;
 
