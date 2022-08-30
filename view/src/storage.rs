@@ -174,9 +174,21 @@ impl Storage {
             // Check if we already have the note
             if let Some(record) = sqlx::query_as::<_, SpendableNoteRecord>(
                 format!(
-                    "SELECT *
-                    FROM spendable_notes
-                    WHERE note_commitment = x'{}'",
+                    "SELECT 
+                        notes.note_commitment,
+                        notes.height_created,
+                        notes.address,
+                        notes.amount,
+                        notes.asset_id,
+                        notes.blinding_factor,
+                        notes.address_index,
+                        notes.source,
+                        spendable_notes.height_spent,
+                        spendable_notes.nullifier,
+                        spendable_notes.position
+                    FROM notes
+                    JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
+                    WHERE notes.note_commitment = x'{}'",
                     hex::encode(note_commitment.0.to_bytes())
                 )
                 .as_str(),
@@ -407,11 +419,22 @@ impl Storage {
 
         let result = sqlx::query_as::<_, SpendableNoteRecord>(
             format!(
-                "SELECT *
-            FROM spendable_notes
-            WHERE height_spent IS {}
-            AND asset_id IS {}
-            AND address_index IS {}",
+                "SELECT notes.note_commitment,
+                        notes.height_created,
+                        notes.address,
+                        notes.amount,
+                        notes.asset_id,
+                        notes.blinding_factor,
+                        notes.address_index,
+                        notes.source,
+                        spendable_notes.height_spent,
+                        spendable_notes.nullifier,
+                        spendable_notes.position
+            FROM notes
+            JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
+            WHERE spendable_notes.height_spent IS {}
+            AND notes.asset_id IS {}
+            AND notes.address_index IS {}",
                 spent_clause, asset_clause, address_clause
             )
             .as_str(),
@@ -455,9 +478,23 @@ impl Storage {
     }
 
     pub async fn quarantined_notes(&self) -> anyhow::Result<Vec<QuarantinedNoteRecord>> {
-        let result = sqlx::query_as::<_, QuarantinedNoteRecord>("SELECT * FROM quarantined_notes")
-            .fetch_all(&self.pool)
-            .await?;
+        let result = sqlx::query_as::<_, QuarantinedNoteRecord>(
+            "SELECT notes.note_commitment,
+                        notes.height_created,
+                        notes.address,
+                        notes.amount,
+                        notes.asset_id,
+                        notes.blinding_factor,
+                        notes.address_index,
+                        notes.source,
+                        quarantined_notes.unbonding_epoch,
+                        quarantined_notes.identity_key
+                        FROM notes 
+                        JOIN quarantined_notes 
+                        ON quarantined_notes.note_commitment = notes.note_commitment",
+        )
+        .fetch_all(&self.pool)
+        .await?;
 
         Ok(result)
     }
@@ -515,12 +552,30 @@ impl Storage {
         if nullifiers.is_empty() {
             return Ok(Vec::new());
         }
-
+        // pub note_commitment: note::Commitment,
+        //     pub note: Note,
+        //     pub address_index: AddressIndex,
+        //     pub nullifier: Nullifier,
+        //     pub height_created: u64,
+        //     pub height_spent: Option<u64>,
+        //     pub position: tct::Position,
+        //     pub source: NoteSource,
         Ok(sqlx::query_as::<_, SpendableNoteRecord>(
             format!(
-                "SELECT *
-                    FROM spendable_notes
-                    WHERE nullifier IN ({})",
+                "SELECT notes.note_commitment,
+                        notes.height_created,
+                        notes.address,
+                        notes.amount,
+                        notes.asset_id,
+                        notes.blinding_factor,
+                        notes.address_index,
+                        notes.source,
+                        spendable_notes.height_spent,
+                        spendable_notes.nullifier,
+                        spendable_notes.position
+                FROM notes
+                JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
+                WHERE spendable_notes.nullifier IN ({})",
                 nullifiers
                     .iter()
                     .map(|x| format!("x'{}'", hex::encode(x.0.to_bytes())))
@@ -581,8 +636,9 @@ impl Storage {
             let unbonding_epoch = quarantined_note_record.unbonding_epoch as i64;
             let identity_key = quarantined_note_record.identity_key.encode_to_vec();
             let source = quarantined_note_record.source.to_bytes().to_vec();
+
             sqlx::query!(
-                "INSERT INTO quarantined_notes
+                "INSERT INTO notes
                     (
                         note_commitment,
                         height_created,
@@ -591,11 +647,9 @@ impl Storage {
                         asset_id,
                         blinding_factor,
                         address_index,
-                        unbonding_epoch,
-                        identity_key,
                         source
                     )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 note_commitment,
                 height_created,
                 address,
@@ -603,9 +657,22 @@ impl Storage {
                 asset_id,
                 blinding_factor,
                 address_index,
+                source,
+            )
+            .execute(&mut dbtx)
+            .await?;
+
+            sqlx::query!(
+                "INSERT INTO quarantined_notes
+                    (
+                        note_commitment,
+                        unbonding_epoch,
+                        identity_key
+                    )
+                VALUES (?, ?, ?)",
+                note_commitment,
                 unbonding_epoch,
                 identity_key,
-                source,
             )
             .execute(&mut dbtx)
             .await?;
@@ -628,46 +695,51 @@ impl Storage {
             let nullifier = note_record.nullifier.to_bytes().to_vec();
             let position = (u64::from(note_record.position)) as i64;
             let source = note_record.source.to_bytes().to_vec();
+
             sqlx::query!(
-                "INSERT INTO spendable_notes
+                "INSERT INTO notes
                     (
                         note_commitment,
-                        height_spent,
                         height_created,
                         address,
                         amount,
                         asset_id,
                         blinding_factor,
                         address_index,
-                        nullifier,
-                        position,
                         source
                     )
-                    VALUES
-                    (
-                        ?,
-                        NULL,
-                        ?,
-                        ?,
-                        ?,
-                        ?,
-                        ?,
-                        ?,
-                        ?,
-                        ?,
-                        ?
-                    )",
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 note_commitment,
-                // height_spent is NULL
                 height_created,
                 address,
                 amount,
                 asset_id,
                 blinding_factor,
                 address_index,
+                source,
+            )
+            .execute(&mut dbtx)
+            .await?;
+
+            sqlx::query!(
+                "INSERT INTO spendable_notes
+                    (
+                        note_commitment,
+                        height_spent,
+                        nullifier,
+                        position
+                    )
+                    VALUES
+                    (
+                        ?,
+                        NULL,
+                        ?,
+                        ?
+                    )",
+                note_commitment,
+                // height_spent is NULL
                 nullifier,
-                position,
-                source
+                position
             )
             .execute(&mut dbtx)
             .await?;
