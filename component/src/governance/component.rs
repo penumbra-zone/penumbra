@@ -87,7 +87,8 @@ impl Component for Governance {
 
     #[instrument(name = "governance", skip(self, _ctx, _end_block))]
     async fn end_block(&mut self, _ctx: Context, _end_block: &abci::request::EndBlock) {
+        // TODO: compute intermediate tallies at epoch boundaries (with threshold delegator voting)
         execute::enact_all_passed_proposals(&self.state).await;
-        // TODO: Compute intermediate tallies at epoch boundaries (with threshold delegator voting)
+        execute::enact_pending_parameter_changes(&self.state).await;
     }
 }

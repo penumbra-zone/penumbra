@@ -212,10 +212,26 @@ async fn enact_proposal(state: &State, proposal_id: u64) {
         ProposalPayload::ParameterChange {
             effective_height: _,
             new_parameters: _,
-        } => todo!("implement parameter change execution"),
+        } => {
+            // TODO: schedule the parameter change for the effective height
+            todo!("implement parameter change execution")
+        }
         ProposalPayload::DaoSpend {
             schedule_transactions: _,
             cancel_transactions: _,
-        } => todo!("implement daospend execution"),
+        } => {
+            // TODO: schedule transaction cancellations by removing the first matching one from the
+            // front of the schedule for their effective block
+            // TODO: schedule new transactions by appending them to the end of the schedule for their
+            // effective block
+            // TODO: don't forget to fill in the part in the shielded pool where the transactions
+            // actually get included in a block
+            todo!("implement daospend execution")
+        }
     }
+}
+
+pub async fn enact_pending_parameter_changes(_state: &State) {
+    // TODO: read the new parameters for this block, if any, and change the chain params to reflect
+    // them. Parameters should be stored in the state as a map from name to value string.
 }

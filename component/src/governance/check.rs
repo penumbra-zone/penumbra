@@ -43,11 +43,17 @@ pub mod stateless {
             ParameterChange {
                 effective_height: _,
                 new_parameters: _,
-            } => anyhow::bail!("parameter change proposals are not yet supported"),
+            } => {
+                // TODO: check that new parameters are marked as mutable and within valid bounds
+                anyhow::bail!("parameter change proposals are not yet supported")
+            }
             DaoSpend {
                 schedule_transactions: _,
                 cancel_transactions: _,
-            } => anyhow::bail!("DAO spend proposals are not yet supported"),
+            } => {
+                // TODO: check that scheduled transactions are valid without any witness or auth data
+                anyhow::bail!("DAO spend proposals are not yet supported")
+            }
         }
 
         Ok(())
@@ -80,13 +86,13 @@ pub mod stateful {
     use penumbra_chain::View as _;
     use penumbra_crypto::{GovernanceKey, IdentityKey, STAKING_TOKEN_DENOM};
     use penumbra_storage::State;
-    use penumbra_transaction::AuthHash;
+    use penumbra_transaction::{action::ProposalPayload, AuthHash};
 
     pub async fn proposal_submit(
         state: &State,
         ProposalSubmit {
             deposit_amount,
-            proposal: _,               // statelessly verified
+            proposal,                  // statelessly verified
             deposit_refund_address: _, // can be anything
             withdraw_proposal_key: _,  // can be any valid key
         }: &ProposalSubmit,
@@ -103,6 +109,44 @@ pub mod stateful {
             );
         }
 
+        match &proposal.payload {
+            ProposalPayload::Signaling { .. } => { /* no stateful checks for signaling */ }
+            ProposalPayload::Emergency { .. } => { /* no stateful checks for emergency */ }
+            ProposalPayload::ParameterChange {
+                effective_height,
+                new_parameters: _,
+            } => {
+                height_in_future_of_voting_end(state, *effective_height).await?;
+            }
+            ProposalPayload::DaoSpend {
+                schedule_transactions,
+                cancel_transactions,
+            } => {
+                for (effective_height, _) in schedule_transactions.iter() {
+                    height_in_future_of_voting_end(state, *effective_height).await?;
+                }
+                for (scheduled_height, _) in cancel_transactions.iter() {
+                    height_in_future_of_voting_end(state, *scheduled_height).await?;
+                }
+                // TODO: check that all transactions to cancel exist already and match auth hash
+            }
+        }
+
+        Ok(())
+    }
+
+    async fn height_in_future_of_voting_end(state: &State, height: u64) -> Result<()> {
+        let block_height = state.get_block_height().await?;
+        let voting_blocks = state.get_chain_params().await?.proposal_voting_blocks;
+        let voting_end_height = block_height + voting_blocks;
+
+        if height < voting_end_height {
+            anyhow::bail!(
+                "effective height {} is less than the block height {} for the end of the voting period",
+                height,
+                voting_end_height
+            );
+        }
         Ok(())
     }
 
