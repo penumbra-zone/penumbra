@@ -14,7 +14,7 @@ use penumbra_crypto::{
 use penumbra_proto::{
     chain as pbp,
     crypto::{self as pbc},
-    transaction as pbt,
+    dex as pbd, transaction as pbt, transaction as pbt,
     view::{
         self as pb, view_protocol_server::ViewProtocol, StatusResponse,
         TransactionHashStreamResponse,
@@ -546,5 +546,38 @@ impl ViewProtocol for ViewService {
             })?;
 
         Ok(tonic::Response::new(params.into()))
+    }
+
+    async fn batch_swap_output_data(
+        &self,
+        request: tonic::Request<pb::BatchSwapOutputDataRequest>,
+    ) -> Result<tonic::Response<pbd::BatchSwapOutputData>, tonic::Status> {
+        self.check_worker().await?;
+
+        let output_data = self
+            .storage
+            .batch_swap_output_data(
+                request.get_ref().height,
+                request
+                    .get_ref()
+                    .trading_pair
+                    .clone()
+                    .ok_or_else(|| {
+                        tonic::Status::new(
+                            tonic::Code::InvalidArgument,
+                            "Trading pair not provided",
+                        )
+                    })?
+                    .try_into()
+                    .map_err(|_e| {
+                        tonic::Status::new(tonic::Code::InvalidArgument, "Trading pair invalid")
+                    })?,
+            )
+            .await
+            .map_err(|e| {
+                tonic::Status::unavailable(format!("error getting batch swap output data: {}", e))
+            })?;
+
+        Ok(tonic::Response::new(output_data.into()))
     }
 }

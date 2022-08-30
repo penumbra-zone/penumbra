@@ -5,6 +5,7 @@ use penumbra_component::stake::rate::RateData;
 use penumbra_crypto::{
     asset, transaction::Fee, Address, DelegationToken, IdentityKey, Value, STAKING_TOKEN_ASSET_ID,
 };
+use penumbra_crypto::{asset, DelegationToken, IdentityKey, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_proto::{client::specific::KeyValueRequest, Protobuf};
 use penumbra_transaction::action::Proposal;
 use penumbra_view::ViewClient;
@@ -208,8 +209,6 @@ impl TxCmd {
                     .expect("expected swap plan")
                     .clone();
 
-                let _swap_nft_asset_id = swap_plan_inner.swap_plaintext.asset_id();
-
                 // Submit the `Swap` transaction.
                 app.build_and_submit_transaction(swap_plan).await?;
 
@@ -227,6 +226,9 @@ impl TxCmd {
                 .context("error while waiting for detection of submitted transaction")?;
 
                 // Now that the note commitment is detected, we can submit the `SwapClaim` transaction.
+                let position = swap_nft_note.position;
+                let swap_height = swap_nft_note.height_created;
+                let trading_pair = swap_plan_inner.swap_plaintext.trading_pair;
 
                 let claim_plan = plan::swap_claim(
                     &app.fvk,
@@ -238,7 +240,7 @@ impl TxCmd {
                 )
                 .await?;
 
-                // Submit the `SwapClaim` transaction. TODO: should probably have `build_and_submit_transaction` wait for the output notes
+                // Submit the `SwapClaim` transaction. TODO: should probably wait for the output notes
                 // of a SwapClaim to sync.
                 app.build_and_submit_transaction(claim_plan).await?;
             }
