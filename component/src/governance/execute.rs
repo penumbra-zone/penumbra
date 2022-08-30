@@ -1,3 +1,5 @@
+use crate::governance::proposal::Outcome;
+
 use super::{proposal, tally, View as _};
 use penumbra_chain::View as _;
 use penumbra_storage::State;
@@ -152,7 +154,15 @@ pub async fn enact_all_passed_proposals(state: &State) {
                 enact_proposal(state, proposal_id).await;
             }
 
-            // Record the outcome of the proposal
+            // Log the result
+            tracing::info!(proposal = %proposal_id, outcome = match outcome {
+                Outcome::Passed => "passed",
+                Outcome::Failed { .. } => "failed",
+                Outcome::Vetoed {.. } => "vetoed",
+            }, "voting concluded");
+
+            // Record the outcome of the proposal: this is especially important for emergency
+            // proposals, because it prevents the vote from continuing after they are passed
             state
                 .put_proposal_state(proposal_id, proposal::State::Finished { outcome })
                 .await
