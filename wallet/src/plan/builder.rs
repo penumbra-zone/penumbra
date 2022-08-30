@@ -17,6 +17,8 @@ use tracing::instrument;
 
 use super::balance::Balance;
 
+/// A builder for a [`TransactionPlan`] that can fill in the required spends and change outputs upon
+/// finalization to make a transaction balance.
 pub struct Builder<R: RngCore + CryptoRng> {
     rng: R,
     balance: Balance,
@@ -33,6 +35,7 @@ impl<R: RngCore + CryptoRng> Debug for Builder<R> {
 }
 
 impl<R: RngCore + CryptoRng> Builder<R> {
+    /// Create a new builder.
     pub fn new(rng: R) -> Self {
         Self {
             rng,
@@ -41,12 +44,16 @@ impl<R: RngCore + CryptoRng> Builder<R> {
         }
     }
 
+    /// Set the expiry height for the transaction plan.
     #[instrument(skip(self))]
     pub fn expiry_height(&mut self, expiry_height: u64) -> &mut Self {
         self.plan.expiry_height = expiry_height;
         self
     }
 
+    /// Add a fee to the transaction plan.
+    ///
+    /// Calling this function more than once will add to the fee, not replace it.
     #[instrument(skip(self))]
     pub fn fee(&mut self, fee: u64) -> &mut Self {
         self.balance.require(Value {
@@ -57,6 +64,10 @@ impl<R: RngCore + CryptoRng> Builder<R> {
         self
     }
 
+    /// Spend a specific positioned note in the transaction.
+    ///
+    /// If you don't use this method to specify spends, they will be filled in automatically from
+    /// the view service when the plan is [`finish`](Builder::finish)ed.
     #[instrument(skip(self))]
     pub fn spend(&mut self, note: Note, position: tct::Position) -> &mut Self {
         let spend = SpendPlan::new(&mut self.rng, note, position).into();
@@ -64,6 +75,10 @@ impl<R: RngCore + CryptoRng> Builder<R> {
         self
     }
 
+    /// Add an output note from this transaction.
+    ///
+    /// Any unused output value will be redirected back to the originating address as change notes
+    /// when the plan is [`finish`](Builder::finish)ed.
     #[instrument(skip(self, memo))]
     pub fn output(&mut self, value: Value, address: Address, memo: MemoPlaintext) -> &mut Self {
         let output = OutputPlan::new(&mut self.rng, value, address, memo).into();
@@ -71,6 +86,9 @@ impl<R: RngCore + CryptoRng> Builder<R> {
         self
     }
 
+    /// Add a delegation to this transaction.
+    ///
+    /// If you don't specify spends or outputs as well, they will be filled in automatically.
     #[instrument(skip(self))]
     pub fn delegate(&mut self, unbonded_amount: u64, rate_data: RateData) -> &mut Self {
         let delegation = rate_data.build_delegate(unbonded_amount).into();
@@ -78,6 +96,21 @@ impl<R: RngCore + CryptoRng> Builder<R> {
         self
     }
 
+    /// Add an undelegation to this transaction.
+    ///
+    /// Undelegations have special rules to prevent you from accidentally locking up funds while the
+    /// transaction is unbonding: any transaction containing an undelegation must contain exactly
+    /// one undelegation, must spend only delegation tokens matching the validator from which the
+    /// undelegation is being performed, and must output only staking tokens. This means that it
+    /// must be an "exact change" transaction with no other actions.
+    ///
+    /// In order to ensure that the transaction is an "exact change" transaction, you should
+    /// probably explicitly add the precisely correct spends to the transaction, after having
+    /// generated those exact notes by splitting notes in a previous transaction, if necessary.
+    ///
+    /// The conditions imposed by the consensus rules are more permissive, but the builder will
+    /// protect you from shooting yourself in the foot by throwing an error, should the built
+    /// transaction fail these conditions.
     #[instrument(skip(self))]
     pub fn undelegate(&mut self, delegation_amount: u64, rate_data: RateData) -> &mut Self {
         let undelegation = rate_data.build_undelegate(delegation_amount).into();
@@ -85,6 +118,7 @@ impl<R: RngCore + CryptoRng> Builder<R> {
         self
     }
 
+    /// Upload a validator definition in this transaction.
     #[instrument(skip(self))]
     pub fn validator_definition(&mut self, new_validator: validator::Definition) -> &mut Self {
         self.action(ActionPlan::ValidatorDefinition(new_validator.into()));
@@ -94,7 +128,11 @@ impl<R: RngCore + CryptoRng> Builder<R> {
     fn action(&mut self, action: ActionPlan) -> &mut Self {
         use ActionPlan::*;
 
-        // Track this action's contribution to the value balance of the transaction
+        // Track this action's contribution to the value balance of the transaction: this must match
+        // the actual contribution to the value commitment, but this isn't checked, so make sure
+        // that when you're adding a new action, you correctly match this up to the calculation of
+        // the value commitment for the transaction, or else the builder will submit transactions
+        // that are not balanced!
         match &action {
             Spend(spend) => self.balance.provide(spend.note.value()),
             Output(output) => self.balance.require(output.value),
@@ -141,6 +179,10 @@ impl<R: RngCore + CryptoRng> Builder<R> {
         self
     }
 
+    /// Add spends and change outputs as required to balance the transaction, using the view service
+    /// provided to supply the notes and other information.
+    ///
+    /// Clears the contents of the builder, which can be re-used to save on allocations.
     #[instrument(skip(self, view, fvk))]
     pub async fn finish<V: ViewClient>(
         &mut self,
@@ -148,7 +190,7 @@ impl<R: RngCore + CryptoRng> Builder<R> {
         fvk: &FullViewingKey,
         source: Option<u64>,
     ) -> anyhow::Result<TransactionPlan> {
-        tracing::debug!(balance = ?self.balance, "finalizing transaction");
+        tracing::debug!(plan = ?self.plan, balance = ?self.balance, "finalizing transaction");
 
         // Fill in the chain id based on the view service
         self.plan.chain_id = view.chain_params().await?.chain_id;
@@ -185,10 +227,11 @@ impl<R: RngCore + CryptoRng> Builder<R> {
             self.output(value, self_address, MemoPlaintext::default());
         }
 
+        // TODO: add dummy change outputs in the staking token denomination (this means they'll pass
+        // the undelegate rules check)
+
         // Ensure that the transaction won't cause excessive quarantining
         self.check_undelegate_rules()?;
-
-        // TODO: dummy change outputs
 
         // Add clue plans for `Output`s.
         let fmd_params = view.fmd_parameters().await?;
@@ -196,14 +239,21 @@ impl<R: RngCore + CryptoRng> Builder<R> {
         self.plan
             .add_all_clue_plans(&mut self.rng, precision_bits.into());
 
-        tracing::debug!(balance = ?self.balance, "finished balancing transaction");
-
         // Now the transaction should be fully balanced, unless we didn't have enough to spend
         if !self.balance.is_zero() {
-            anyhow::bail!("not enough balance available for required spends");
+            anyhow::bail!(
+                "balance is non-zero after attempting to balance transaction: {:?}",
+                self.balance
+            );
         }
 
-        Ok(mem::take(&mut self.plan))
+        tracing::debug!(plan = ?self.plan, "finished balancing transaction");
+
+        // Clear the builder and pull out the plan to return
+        self.balance = Balance::new();
+        let plan = mem::take(&mut self.plan);
+
+        Ok(plan)
     }
 
     /// Undelegations should have a very particular form to avoid excessive quarantining: all
