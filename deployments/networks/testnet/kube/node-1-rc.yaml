@@ -112,7 +112,7 @@ spec:
             - start
             - --proxy-app=tcp://localhost:26658
         - name: pd
-          image: ghcr.io/strangelove-ventures/heighliner/penumbra:025-helike
+          image: ghcr.io/strangelove-ventures/heighliner/penumbra:026-hermippe
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
