@@ -71,10 +71,10 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// Calling this function more than once will add to the fee, not replace it.
     #[instrument(skip(self))]
     pub fn fee(&mut self, fee: u64) -> &mut Self {
-        self.balance.require(Value {
+        self.balance += Value {
             amount: fee,
             asset_id: *STAKING_TOKEN_ASSET_ID,
-        });
+        };
         self.plan.fee.0 += fee;
         self
     }
@@ -181,33 +181,33 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         // the value commitment for the transaction, or else the planner will submit transactions
         // that are not balanced!
         match &action {
-            Spend(spend) => self.balance.provide(spend.note.value()),
-            Output(output) => self.balance.require(output.value),
+            Spend(spend) => self.balance += spend.note.value(),
+            Output(output) => self.balance -= output.value,
             Delegate(delegate) => {
-                self.balance.require(Value {
+                self.balance -= Value {
                     amount: delegate.unbonded_amount,
                     asset_id: *STAKING_TOKEN_ASSET_ID,
-                });
-                self.balance.provide(Value {
+                };
+                self.balance += Value {
                     amount: delegate.delegation_amount,
                     asset_id: DelegationToken::new(delegate.validator_identity).id(),
-                })
+                };
             }
             Undelegate(undelegate) => {
-                self.balance.provide(Value {
+                self.balance += Value {
                     amount: undelegate.unbonded_amount,
                     asset_id: *STAKING_TOKEN_ASSET_ID,
-                });
-                self.balance.require(Value {
+                };
+                self.balance -= Value {
                     amount: undelegate.delegation_amount,
                     asset_id: DelegationToken::new(undelegate.validator_identity).id(),
-                })
+                };
             }
             ProposalSubmit(proposal_submit) => {
-                self.balance.require(Value {
+                self.balance -= Value {
                     amount: proposal_submit.deposit_amount,
                     asset_id: *STAKING_TOKEN_ASSET_ID,
-                });
+                };
             }
             PositionOpen(_) => todo!(),
             PositionClose(_) => todo!(),
@@ -321,7 +321,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         tracing::debug!(plan = ?self.plan, "finished balancing transaction");
 
         // Clear the planner and pull out the plan to return
-        self.balance = Balance::new();
+        self.balance = Balance::zero();
         let plan = mem::take(&mut self.plan);
 
         Ok(plan)
