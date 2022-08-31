@@ -28,7 +28,7 @@ In addition, to sending an asset, one may also stake penumbra tokens to validato
 Find a validator to stake to:
 
 ```bash
-cargo run --release --bin pcli view validator list
+cargo run --release --bin pcli query validator list
 ```
 
 Copy and paste the identity key of one of the validators to stake to, then construct the staking tx:
