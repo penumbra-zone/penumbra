@@ -7,8 +7,6 @@ use std::{
     ops::{Add, AddAssign, Neg, Sub, SubAssign},
 };
 
-use tracing::instrument;
-
 use penumbra_crypto::{asset, Value};
 
 mod imbalance;
@@ -34,7 +32,7 @@ impl Debug for Balance {
 
 impl Balance {
     /// Make a new, zero balance.
-    pub fn new() -> Self {
+    pub fn zero() -> Self {
         Self::default()
     }
 
@@ -46,22 +44,6 @@ impl Balance {
     /// Find out how many distinct assets are represented in this balance.
     pub fn dimension(&self) -> usize {
         self.balance.len()
-    }
-
-    /// Add a new requirement to the balance, which must be cancelled by an equal provision for the
-    /// balance to be zero.
-    #[instrument(skip(self))]
-    pub fn require(&mut self, value: Value) {
-        tracing::trace!("requiring balance");
-        *self -= Balance::from(value);
-    }
-
-    /// Add a new provision to the balance, which must be cancelled by an equal requirement for the
-    /// balance to be zero.
-    #[instrument(skip(self))]
-    pub fn provide(&mut self, value: Value) {
-        tracing::trace!("providing balance");
-        *self += Balance::from(value);
     }
 
     /// Iterate over all the requirements of the balance, as [`Value`]s.
@@ -170,9 +152,23 @@ impl Add for Balance {
     }
 }
 
+impl Add<Value> for Balance {
+    type Output = Balance;
+
+    fn add(self, value: Value) -> Self::Output {
+        self + Balance::from(value)
+    }
+}
+
 impl AddAssign for Balance {
     fn add_assign(&mut self, other: Self) {
         *self = mem::take(self) + other;
+    }
+}
+
+impl AddAssign<Value> for Balance {
+    fn add_assign(&mut self, other: Value) {
+        *self += Balance::from(other);
     }
 }
 
@@ -184,9 +180,23 @@ impl Sub for Balance {
     }
 }
 
+impl Sub<Value> for Balance {
+    type Output = Balance;
+
+    fn sub(self, value: Value) -> Self::Output {
+        self - Balance::from(value)
+    }
+}
+
 impl SubAssign for Balance {
     fn sub_assign(&mut self, other: Self) {
         *self = mem::take(self) - other;
+    }
+}
+
+impl SubAssign<Value> for Balance {
+    fn sub_assign(&mut self, other: Value) {
+        *self -= Balance::from(other);
     }
 }
 
@@ -205,63 +215,153 @@ impl From<Value> for Balance {
 
 #[cfg(test)]
 mod test {
-    use penumbra_crypto::STAKING_TOKEN_ASSET_ID;
+    use once_cell::sync::Lazy;
+    use penumbra_crypto::{value, Fr, Zero, STAKING_TOKEN_ASSET_ID};
+    use proptest::prelude::*;
 
     use super::*;
 
     #[test]
     fn provide_then_require() {
-        let mut balance = Balance::new();
-        balance.provide(Value {
+        let mut balance = Balance::zero();
+        balance += Value {
             amount: 1,
             asset_id: *STAKING_TOKEN_ASSET_ID,
-        });
-        balance.require(Value {
+        };
+        balance -= Value {
             amount: 1,
             asset_id: *STAKING_TOKEN_ASSET_ID,
-        });
+        };
         assert!(balance.is_zero());
     }
 
     #[test]
     fn require_then_provide() {
-        let mut balance = Balance::new();
-        balance.require(Value {
+        let mut balance = Balance::zero();
+        balance -= Value {
             amount: 1,
             asset_id: *STAKING_TOKEN_ASSET_ID,
-        });
-        balance.provide(Value {
+        };
+        balance += Value {
             amount: 1,
             asset_id: *STAKING_TOKEN_ASSET_ID,
-        });
+        };
         assert!(balance.is_zero());
     }
 
     #[test]
     fn provide_then_require_negative_zero() {
-        let mut balance = -Balance::new();
-        balance.provide(Value {
+        let mut balance = -Balance::zero();
+        balance += Value {
             amount: 1,
             asset_id: *STAKING_TOKEN_ASSET_ID,
-        });
-        balance.require(Value {
+        };
+        balance -= Value {
             amount: 1,
             asset_id: *STAKING_TOKEN_ASSET_ID,
-        });
+        };
         assert!(balance.is_zero());
     }
 
     #[test]
     fn require_then_provide_negative_zero() {
-        let mut balance = -Balance::new();
-        balance.require(Value {
+        let mut balance = -Balance::zero();
+        balance -= Value {
             amount: 1,
             asset_id: *STAKING_TOKEN_ASSET_ID,
-        });
-        balance.provide(Value {
+        };
+        balance += Value {
             amount: 1,
             asset_id: *STAKING_TOKEN_ASSET_ID,
-        });
+        };
         assert!(balance.is_zero());
+    }
+
+    #[derive(Debug, Clone)]
+    enum Expression {
+        Value(Value),
+        Neg(Box<Expression>),
+        Add(Box<Expression>, Box<Expression>),
+        Sub(Box<Expression>, Box<Expression>),
+    }
+
+    impl Expression {
+        fn transparent_value_commitment(&self) -> value::Commitment {
+            match self {
+                Expression::Value(value) => value.commit(Fr::zero()),
+                Expression::Neg(expr) => -expr.transparent_value_commitment(),
+                Expression::Add(lhs, rhs) => {
+                    lhs.transparent_value_commitment() + rhs.transparent_value_commitment()
+                }
+                Expression::Sub(lhs, rhs) => {
+                    lhs.transparent_value_commitment() - rhs.transparent_value_commitment()
+                }
+            }
+        }
+
+        fn balance(&self) -> Balance {
+            match self {
+                Expression::Value(value) => Balance::from(*value),
+                Expression::Neg(expr) => -expr.balance(),
+                Expression::Add(lhs, rhs) => lhs.balance() + rhs.balance(),
+                Expression::Sub(lhs, rhs) => lhs.balance() - rhs.balance(),
+            }
+        }
+    }
+
+    // Two sample denom/asset id pairs, for testing
+    static DENOM_1: Lazy<asset::Denom> = Lazy::new(|| asset::REGISTRY.parse_denom("a").unwrap());
+    static ASSET_ID_1: Lazy<asset::Id> = Lazy::new(|| DENOM_1.id());
+
+    static DENOM_2: Lazy<asset::Denom> = Lazy::new(|| asset::REGISTRY.parse_denom("b").unwrap());
+    static ASSET_ID_2: Lazy<asset::Id> = Lazy::new(|| DENOM_2.id());
+
+    fn gen_expression() -> impl proptest::strategy::Strategy<Value = Expression> {
+        (
+            (0u64..u32::MAX as u64), // limit amounts so that there is no overflow
+            prop_oneof![Just(*ASSET_ID_1), Just(*ASSET_ID_2)],
+        )
+            .prop_map(|(amount, asset_id)| Expression::Value(Value { amount, asset_id }))
+            .prop_recursive(8, 256, 2, |inner| {
+                prop_oneof![
+                    inner
+                        .clone()
+                        .prop_map(|beneath| Expression::Neg(Box::new(beneath))),
+                    (inner.clone(), inner.clone()).prop_map(|(left, right)| {
+                        Expression::Add(Box::new(left), Box::new(right))
+                    }),
+                    (inner.clone(), inner).prop_map(|(left, right)| {
+                        Expression::Sub(Box::new(left), Box::new(right))
+                    }),
+                ]
+            })
+    }
+
+    proptest! {
+        /// Checks to make sure that any possible expression made of negation, addition, and
+        /// subtraction is a homomorphism with regard to the resultant value commitment, which
+        /// should provide assurance that these operations are implemented correctly on the balance
+        /// type itself.
+        #[test]
+        fn all_expressions_correct_commitment(
+            expr in gen_expression()
+        ) {
+            // Compute the balance for the expression
+            let balance = expr.balance();
+
+            // Compute the transparent commitment for the expression
+            let commitment = expr.transparent_value_commitment();
+
+            // Compute the transparent commitment for the balance
+            let mut balance_commitment = value::Commitment::default();
+            for required in balance.required() {
+                balance_commitment = balance_commitment - required.commit(Fr::zero());
+            }
+            for provided in balance.provided() {
+                balance_commitment = balance_commitment + provided.commit(Fr::zero());
+            }
+
+            assert_eq!(commitment, balance_commitment);
+        }
     }
 }

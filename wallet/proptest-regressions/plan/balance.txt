@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc e2c3d46f5aabac020b08acb3311bea7a42479d771bd42fd84dbd5970214edab9 # shrinks to expr = Neg(Sub(Neg(Add(Value(Value { amount: 1841740982369725172, asset_id: passet1vhga2czmpk76hsu3t7usjj2a2qga0u29vqlcp3hky8lwkfz30qrqy6gaae }), Value(Value { amount: 16605003091339826444, asset_id: passet1vhga2czmpk76hsu3t7usjj2a2qga0u29vqlcp3hky8lwkfz30qrqy6gaae }))), Sub(Sub(Add(Value(Value { amount: 763075987303429954, asset_id: passet1hdr369c3mfqg0lp94anh7cll9dzgel5afg4j3dxn6epe2ehmuggqvz9jyl }), Value(Value { amount: 4966766620515965923, asset_id: passet1hdr369c3mfqg0lp94anh7cll9dzgel5afg4j3dxn6epe2ehmuggqvz9jyl })), Neg(Value(Value { amount: 10895028536073861916, asset_id: passet1hdr369c3mfqg0lp94anh7cll9dzgel5afg4j3dxn6epe2ehmuggqvz9jyl }))), Value(Value { amount: 16463390601648053313, asset_id: passet1vhga2czmpk76hsu3t7usjj2a2qga0u29vqlcp3hky8lwkfz30qrqy6gaae }))))
