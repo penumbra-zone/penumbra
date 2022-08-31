@@ -75,7 +75,7 @@ spec:
             - |
               set -eux
               CONFIG_DIR=/home/heighliner/.tendermint/config
-              curl -X GET "http://testnet.penumbra.zone:26657/genesis" -H "accept: application/json" | jq '.result.genesis' > $CONFIG_DIR/genesis.json
+              # curl -X GET "http://testnet.penumbra.zone:26657/genesis" -H "accept: application/json" | jq '.result.genesis' > $CONFIG_DIR/genesis.json
               MERGE_DIR=/tmp/configMerge
               OVERLAY_DIR=/config
               mkdir $MERGE_DIR
