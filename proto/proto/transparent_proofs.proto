@@ -24,6 +24,7 @@ message SpendProof {
   bytes spend_auth_randomizer = 9;
   bytes ak = 10;
   bytes nk = 11;
+  bytes ck_d = 12;
 }
 
 // A Penumbra transparent output proof.
@@ -36,6 +37,7 @@ message OutputProof {
   bytes v_blinding = 5;
   bytes note_blinding = 6;
   bytes esk = 7;
+  bytes ck_d = 8;
 }
 
 // A Penumbra transparent SwapClaimProof.

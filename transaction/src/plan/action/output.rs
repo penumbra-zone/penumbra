@@ -66,6 +66,7 @@ impl OutputPlan {
         OutputProof {
             g_d: self.output_note().diversified_generator(),
             pk_d: self.dest_address.transmission_key().clone(),
+            ck_d: self.dest_address.clue_key().clone(),
             value: self.value,
             v_blinding: self.value_blinding,
             note_blinding: self.note_blinding,

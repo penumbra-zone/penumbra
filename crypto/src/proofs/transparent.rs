@@ -12,7 +12,7 @@ use penumbra_tct as tct;
 use crate::{
     asset,
     dex::{swap::SwapPlaintext, TradingPair},
-    ka, keys, note,
+    fmd, ka, keys, note,
     transaction::Fee,
     value, Address, Fq, Fr, Nullifier, Value, STAKING_TOKEN_ASSET_ID,
 };
@@ -28,6 +28,8 @@ pub struct SpendProof {
     pub g_d: decaf377::Element,
     // The transmission key for the address.
     pub pk_d: ka::Public,
+    // The clue key for the address.
+    pub ck_d: fmd::ClueKey,
     // The value of the note.
     pub value: Value,
     // The blinding factor used for generating the value commitment.
@@ -60,8 +62,13 @@ impl SpendProof {
         // Note commitment integrity.
         let s_component_transmission_key = Fq::from_bytes(self.pk_d.0);
         if let Ok(transmission_key_s) = s_component_transmission_key {
-            let note_commitment_test =
-                note::commitment(self.note_blinding, self.value, self.g_d, transmission_key_s);
+            let note_commitment_test = note::commitment(
+                self.note_blinding,
+                self.value,
+                self.g_d,
+                transmission_key_s,
+                &self.ck_d,
+            );
 
             if self.note_commitment_proof.commitment() != note_commitment_test {
                 return Err(anyhow!("note commitment mismatch"));
@@ -125,6 +132,8 @@ pub struct OutputProof {
     pub g_d: decaf377::Element,
     // The transmission key for the destination address.
     pub pk_d: ka::Public,
+    // The clue key for the address.
+    pub ck_d: fmd::ClueKey,
     // The value of the newly created note.
     pub value: Value,
     // The blinding factor used for generating the value commitment.
@@ -151,8 +160,13 @@ impl OutputProof {
         // Note commitment integrity.
         let s_component_transmission_key = Fq::from_bytes(self.pk_d.0);
         if let Ok(transmission_key_s) = s_component_transmission_key {
-            let note_commitment_test =
-                note::commitment(self.note_blinding, self.value, self.g_d, transmission_key_s);
+            let note_commitment_test = note::commitment(
+                self.note_blinding,
+                self.value,
+                self.g_d,
+                transmission_key_s,
+                &self.ck_d,
+            );
 
             if note_commitment != note_commitment_test {
                 return Err(anyhow!("note commitment mismatch"));
@@ -190,6 +204,7 @@ impl From<SpendProof> for transparent_proofs::SpendProof {
     fn from(msg: SpendProof) -> Self {
         let ak_bytes: [u8; 32] = msg.ak.into();
         let nk_bytes: [u8; 32] = msg.nk.0.to_bytes();
+        let ck_d_bytes: [u8; 32] = msg.ck_d.0;
         transparent_proofs::SpendProof {
             note_commitment_proof: Some(msg.note_commitment_proof.into()),
             g_d: msg.g_d.vartime_compress().0.to_vec(),
@@ -201,6 +216,7 @@ impl From<SpendProof> for transparent_proofs::SpendProof {
             spend_auth_randomizer: msg.spend_auth_randomizer.to_bytes().to_vec(),
             ak: ak_bytes.into(),
             nk: nk_bytes.into(),
+            ck_d: ck_d_bytes.into(),
         }
     }
 }
@@ -214,6 +230,11 @@ impl TryFrom<transparent_proofs::SpendProof> for SpendProof {
             .try_into()
             .map_err(|_| anyhow!("proto malformed"))?;
         let g_d_encoding = decaf377::Encoding(g_d_bytes);
+
+        let ck_d_bytes: [u8; 32] = proto
+            .ck_d
+            .try_into()
+            .map_err(|_| anyhow!("proto malformed"))?;
 
         let v_blinding_bytes: [u8; 32] = proto.v_blinding[..]
             .try_into()
@@ -241,6 +262,7 @@ impl TryFrom<transparent_proofs::SpendProof> for SpendProof {
                     .try_into()
                     .map_err(|_| anyhow!("proto malformed"))?,
             ),
+            ck_d: fmd::ClueKey(ck_d_bytes),
             value: Value {
                 amount: proto.value_amount,
                 asset_id: asset::Id(
@@ -286,6 +308,7 @@ impl From<OutputProof> for transparent_proofs::OutputProof {
         transparent_proofs::OutputProof {
             g_d: msg.g_d.vartime_compress().0.to_vec(),
             pk_d: msg.pk_d.0.to_vec(),
+            ck_d: msg.ck_d.0.to_vec(),
             value_amount: msg.value.amount,
             value_asset_id: msg.value.asset_id.0.to_bytes().to_vec(),
             v_blinding: msg.v_blinding.to_bytes().to_vec(),
@@ -316,6 +339,10 @@ impl TryFrom<transparent_proofs::OutputProof> for OutputProof {
             Fr::from_bytes(esk_bytes).map_err(|_| anyhow!("proto malformed"))?,
         );
 
+        let ck_bytes: [u8; 32] = proto.ck_d[..]
+            .try_into()
+            .map_err(|_| anyhow!("proto malformed"))?;
+
         Ok(OutputProof {
             g_d: g_d_encoding
                 .vartime_decompress()
@@ -326,6 +353,7 @@ impl TryFrom<transparent_proofs::OutputProof> for OutputProof {
                     .try_into()
                     .map_err(|_| anyhow!("proto malformed"))?,
             ),
+            ck_d: fmd::ClueKey(ck_bytes),
             value: Value {
                 amount: proto.value_amount,
                 asset_id: asset::Id(
@@ -461,6 +489,7 @@ impl SwapClaimProof {
             swap_nft_value.clone(),
             *self.claim_address.diversified_generator(),
             *transmission_key_s,
+            &self.claim_address.clue_key(),
         );
 
         if self.note_commitment_proof.commitment() != note_commitment_test {
@@ -711,6 +740,7 @@ impl SwapProof {
             },
             *self.claim_address.diversified_generator(),
             *transmission_key_s,
+            &self.claim_address.clue_key(),
         );
 
         if note_commitment != note_commitment_test {
@@ -905,6 +935,7 @@ mod tests {
         let proof = OutputProof {
             g_d: *dest.diversified_generator(),
             pk_d: *dest.transmission_key(),
+            ck_d: *dest.clue_key(),
             value: value_to_send,
             v_blinding,
             note_blinding: note.note_blinding(),
@@ -938,6 +969,7 @@ mod tests {
         let proof = OutputProof {
             g_d: *dest.diversified_generator(),
             pk_d: *dest.transmission_key(),
+            ck_d: *dest.clue_key(),
             value: value_to_send,
             v_blinding,
             note_blinding: note.note_blinding(),
@@ -949,6 +981,7 @@ mod tests {
             value_to_send,
             note.diversified_generator(),
             note.transmission_key_s(),
+            note.clue_key(),
         );
 
         assert!(proof
@@ -982,6 +1015,7 @@ mod tests {
         let proof = OutputProof {
             g_d: *dest.diversified_generator(),
             pk_d: *dest.transmission_key(),
+            ck_d: *dest.clue_key(),
             value: value_to_send,
             v_blinding,
             note_blinding: note.note_blinding(),
@@ -1015,6 +1049,7 @@ mod tests {
         let proof = OutputProof {
             g_d: *dest.diversified_generator(),
             pk_d: *dest.transmission_key(),
+            ck_d: *dest.clue_key(),
             value: value_to_send,
             v_blinding,
             note_blinding: note.note_blinding(),
@@ -1054,6 +1089,7 @@ mod tests {
         let proof = OutputProof {
             g_d: decaf377::Element::default(),
             pk_d: *dest.transmission_key(),
+            ck_d: *dest.clue_key(),
             value: value_to_send,
             v_blinding,
             note_blinding: note.note_blinding(),
@@ -1096,6 +1132,7 @@ mod tests {
             note_commitment_proof,
             g_d: *sender.diversified_generator(),
             pk_d: *sender.transmission_key(),
+            ck_d: *sender.clue_key(),
             value: value_to_send,
             v_blinding,
             note_blinding: note.note_blinding(),
@@ -1141,6 +1178,7 @@ mod tests {
             note_commitment_proof,
             g_d: *sender.diversified_generator(),
             pk_d: *sender.transmission_key(),
+            ck_d: *sender.clue_key(),
             value: value_to_send,
             v_blinding,
             note_blinding: note.note_blinding(),
@@ -1185,6 +1223,7 @@ mod tests {
             note_commitment_proof,
             g_d: *sender.diversified_generator(),
             pk_d: *sender.transmission_key(),
+            ck_d: *sender.clue_key(),
             value: value_to_send,
             v_blinding,
             note_blinding: note.note_blinding(),
@@ -1229,6 +1268,7 @@ mod tests {
             note_commitment_proof,
             g_d: *sender.diversified_generator(),
             pk_d: *sender.transmission_key(),
+            ck_d: *sender.clue_key(),
             value: value_to_send,
             v_blinding,
             note_blinding: note.note_blinding(),
