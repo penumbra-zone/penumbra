@@ -1290,6 +1290,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fea41bba32d969b513997752735605054bc0dfa92b4c56bf1189f2e174be7a10"
 
 [[package]]
+name = "dot"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a74b6c4d4a1cff5f454164363c16b72fa12463ca6b31f4b5f2035a65fa3d5906"
+
+[[package]]
 name = "dotenv"
 version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3196,6 +3202,7 @@ dependencies = [
 name = "penumbra-tct"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "ark-ed-on-bls12-377",
  "ark-ff",
  "ark-serialize",
@@ -3203,8 +3210,10 @@ dependencies = [
  "async-trait",
  "bincode",
  "blake2b_simd 1.0.0",
+ "clap 3.2.18",
  "decaf377",
  "derivative",
+ "dot",
  "futures",
  "hash_hasher",
  "hex",
