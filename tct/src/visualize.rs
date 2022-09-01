@@ -8,7 +8,7 @@ use crate::{
 };
 
 const FRONTIER_EDGE_COLOR: &str = "#E800FF";
-const FRONTIER_TERMINUS_COLOR: &str = "#F5BAFB";
+const FRONTIER_TERMINUS_COLOR: &str = "#FBD1FF";
 
 fn hash_shape(bytes: &[u8]) -> &'static str {
     match bytes[3] % 16 {
@@ -54,7 +54,18 @@ impl crate::Tree {
     pub fn render_dot<W: Write>(&self, writer: &mut W) -> io::Result<()> {
         DotWriter::digraph(writer, |w| {
             let root = self.structure();
-            w.nodes_and_edges(root)
+            w.nodes_and_edges(root)?;
+
+            // Connect the commitments with invisible edges to align them
+            let mut left = None;
+            for (right, _) in self.commitments_ordered() {
+                if let Some(left) = left {
+                    w.commitment_commitment_edge(left, right)?;
+                }
+                left = Some(right);
+            }
+
+            Ok(())
         })
     }
 }
@@ -67,7 +78,7 @@ struct DotWriter<W: Write> {
 impl<W: Write> DotWriter<W> {
     fn digraph(mut writer: W, graph: impl FnOnce(&mut Self) -> io::Result<()>) -> io::Result<()> {
         writeln!(writer, "digraph {{")?;
-        writeln!(writer, "  fontsize=\"20\";")?;
+        writeln!(writer, "  fontsize=\"24\";")?;
         writeln!(writer, "  fontname=\"Courier New\";")?;
         let mut dot_writer = DotWriter { indent: 1, writer };
         graph(&mut dot_writer)?;
@@ -91,10 +102,15 @@ impl<W: Write> DotWriter<W> {
         Ok(())
     }
 
-    fn line(&mut self, line: impl FnOnce(&mut W) -> io::Result<()>) -> io::Result<()> {
+    fn indent(&mut self) -> io::Result<()> {
         for _ in 0..self.indent {
             write!(self.writer, "  ")?;
         }
+        Ok(())
+    }
+
+    fn line(&mut self, line: impl FnOnce(&mut W) -> io::Result<()>) -> io::Result<()> {
+        self.indent()?;
         line(&mut self.writer)?;
         writeln!(self.writer, ";")
     }
@@ -113,7 +129,7 @@ impl<W: Write> DotWriter<W> {
         // Epochs, blocks, and commitments are clusters
         let cluster = if let Some(16) | Some(8) | None = height {
             "cluster_"
-        } else if focus {
+        } else if focus && height != None {
             "cluster_"
         } else {
             ""
@@ -130,6 +146,7 @@ impl<W: Write> DotWriter<W> {
             ),
             _ => Ok(()),
         };
+        self.indent()?;
         writeln!(
             self.writer,
             "subgraph {cluster}SUBGRAPH_height_{}_epoch_{}_block_{}_commitment_{} {{",
@@ -170,6 +187,7 @@ impl<W: Write> DotWriter<W> {
         // Decrease the indent when exiting
         self.indent -= 1;
 
+        self.indent()?;
         writeln!(self.writer, "}}")
     }
 
@@ -191,7 +209,7 @@ impl<W: Write> DotWriter<W> {
             write!(w, "[label=\"{}\"]", node_label(&node))?;
             write!(w, "[shape=\"{}\"]", node_shape(&node))?;
             write!(w, "[style=\"{}\"]", node_style(&node))?;
-            write!(w, "[color=\"black\"]")?;
+            write!(w, "[color=\"{}\"]", node_border_color(&node))?;
             write!(w, "[fillcolor=\"{}\"]", node_color(&node))?;
             write!(w, "[gradientangle=\"{}\"]", node_gradient_angle(&node))?;
             write!(w, "[width=\"{}\"]", node_width(&node))?;
@@ -205,7 +223,7 @@ impl<W: Write> DotWriter<W> {
             commitment: Some(commitment),
         } = node.kind()
         {
-            self.subgraph(None, node.position(), node.place(), true, |w| {
+            self.subgraph(None, node.position(), node.place(), false, |w| {
                 w.line(|w| {
                     // The node identifier
                     write!(
@@ -243,15 +261,15 @@ impl<W: Write> DotWriter<W> {
     }
 
     fn outgoing_edges(&mut self, node: Node) -> io::Result<()> {
+        self.node_commitment_edge(node)?;
         let mut left = None;
         for child in node.children() {
-            self.parent_child_edge(node, child)?;
             if let Some(left) = left {
                 self.sibling_sibling_edge(left, child)?;
             }
+            self.parent_child_edge(node, child)?;
             left = Some(child);
         }
-        self.node_commitment_edge(node)?;
         Ok(())
     }
 
@@ -311,6 +329,30 @@ impl<W: Write> DotWriter<W> {
         })
     }
 
+    fn commitment_commitment_edge(&mut self, left: Position, right: Position) -> io::Result<()> {
+        self.line(|w| {
+            write!(
+                w,
+                "COMMITMENT_epoch_{}_block_{}_commitment_{}",
+                left.epoch(),
+                left.block(),
+                left.commitment()
+            )?;
+            write!(w, " -> ")?;
+            write!(
+                w,
+                "COMMITMENT_epoch_{}_block_{}_commitment_{}",
+                right.epoch(),
+                right.block(),
+                right.commitment()
+            )?;
+            write!(w, "[label=\"\"]",)?;
+            write!(w, "[dir=\"none\"]")?;
+            write!(w, "[style=\"invis\"]")?;
+            write!(w, "[constraint=false]")
+        })
+    }
+
     fn node_commitment_edge(&mut self, node: Node) -> io::Result<()> {
         if let Kind::Leaf {
             commitment: Some(_),
@@ -336,10 +378,7 @@ impl<W: Write> DotWriter<W> {
                 write!(w, "[label=\"\"]",)?;
                 write!(w, "[dir=\"none\"]")?;
                 write!(w, "[style=\"bold\"]")?;
-                let color = match node.place() {
-                    Place::Frontier => format!("{FRONTIER_EDGE_COLOR}:invis:{FRONTIER_EDGE_COLOR}"),
-                    Place::Complete => "black".to_string(),
-                };
+                let color = "black";
                 write!(w, "[color=\"{}\"]", color)
             })?;
         }
@@ -372,7 +411,11 @@ fn node_label(node: &Node) -> &'static str {
     }
 }
 
-fn node_style(_node: &Node) -> &'static str {
+fn node_style(node: &Node) -> &'static str {
+    if node.cached_hash().is_none() {
+        return "filled,bold";
+    }
+
     "filled"
 }
 
@@ -394,7 +437,7 @@ fn node_color(node: &Node) -> String {
     let hash = if let Some(hash) = node.cached_hash() {
         hash
     } else {
-        return "lightgray".to_string();
+        return FRONTIER_TERMINUS_COLOR.to_string();
     };
 
     // The "empty block"/"empty epoch" color is black
@@ -408,6 +451,14 @@ fn node_color(node: &Node) -> String {
     }
 
     hash_color(&hash.to_bytes())
+}
+
+fn node_border_color(node: &Node) -> &'static str {
+    if node.cached_hash().is_none() {
+        return FRONTIER_EDGE_COLOR;
+    }
+
+    "black"
 }
 
 fn node_gradient_angle(node: &Node) -> String {
