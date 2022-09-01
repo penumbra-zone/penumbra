@@ -36,6 +36,9 @@ struct Args {
     /// Don't write SVG files.
     #[clap(long)]
     no_svg: bool,
+    /// Don't write DOT files.
+    #[clap(long)]
+    no_dot: bool,
     /// Only write the final tree, not the intermediate stages.
     #[clap(long)]
     only_final: bool,
@@ -52,29 +55,20 @@ fn main() -> anyhow::Result<()> {
     let mut tree = Tree::new();
 
     for ((epoch, block), count) in schedule {
-        // TODO: something isn't right about this counting logic
-
-        // Finish all the epochs leading up to this one
-        while epoch > tree.position().unwrap().epoch() {
-            // Finish all the empty remaining blocks in this epoch
-            for _ in block..args.epoch_size {
-                if !args.only_final {
-                    write_to_file(&tree, &args)?;
-                }
-                tree.end_block()?;
-            }
-            // Finish the epoch
-            if !args.only_final {
-                write_to_file(&tree, &args)?;
-            }
-            tree.end_epoch()?;
-        }
-        // Finish all empty blocks leading up to this one
-        while block > tree.position().unwrap().block() {
+        // Finish all empty blocks and epochs leading up to this one
+        while (epoch, block)
+            > (
+                tree.position().unwrap().epoch(),
+                tree.position().unwrap().block(),
+            )
+        {
             if !args.only_final {
                 write_to_file(&tree, &args)?;
             }
             tree.end_block()?;
+            if tree.position().unwrap().block() == args.epoch_size {
+                tree.end_epoch()?;
+            }
         }
         assert_eq!(epoch, tree.position().unwrap().epoch());
         assert_eq!(block, tree.position().unwrap().block());
@@ -133,7 +127,7 @@ fn write_to_file(tree: &Tree, args: &Args) -> Result<()> {
     );
 
     let base_path = args.output.join(format!(
-        "{}-{}-{}",
+        "{:0>5}-{:0>5}-{:0>5}",
         position.epoch(),
         position.block(),
         position.commitment(),
@@ -141,14 +135,31 @@ fn write_to_file(tree: &Tree, args: &Args) -> Result<()> {
 
     let svg_path = base_path.with_extension("svg");
     let dot_path = base_path.with_extension("dot");
-    let mut dot_file = File::create(dot_path)?;
 
-    let mut dot = Vec::new();
-    tree.render_dot(&mut dot)?;
+    if args.no_svg {
+        if !args.no_dot {
+            // Serialize the dot representation directly to the dot file
+            println!("Writing {} ...", dot_path.display());
+            let mut dot_file = File::create(dot_path)?;
+            tree.render_dot(&mut dot_file)?;
+        }
+    } else if args.no_dot {
+        // Serialize the dot representation directly into the dot subprocess
+        println!("Writing {} ...", svg_path.display());
+        let mut svg_file = File::create(svg_path)?;
+        write_svg_direct(tree, &mut svg_file)?;
+    } else {
+        // Allocate an intermediate dot file in memory
+        let mut dot = Vec::new();
+        tree.render_dot(&mut dot)?;
 
-    dot_file.write_all(&dot)?;
+        // Write the dot file
+        println!("Writing {} ...", dot_path.display());
+        let mut dot_file = File::create(dot_path)?;
+        dot_file.write_all(&dot)?;
 
-    if !args.no_svg {
+        // Generate an svg from the dot file
+        println!("Writing {} ...", svg_path.display());
         let mut svg_file = File::create(svg_path)?;
         write_svg(&dot, &mut svg_file)?;
     }
@@ -167,6 +178,27 @@ fn write_svg<W: Write>(dot: &[u8], writer: &mut W) -> Result<()> {
     thread::scope(|scope| {
         let render_thread = scope.spawn(move || {
             stdin.write_all(dot)?;
+            stdin.flush()?;
+            Ok::<_, io::Error>(())
+        });
+        io::copy(&mut stdout, writer)?;
+        render_thread.join().unwrap()?;
+        Ok::<_, anyhow::Error>(())
+    })?;
+    Ok(())
+}
+
+fn write_svg_direct<W: Write>(tree: &Tree, writer: &mut W) -> Result<()> {
+    let mut child = Command::new("dot")
+        .args(&["-Tsvg"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()?;
+    let mut stdin = child.stdin.take().unwrap();
+    let mut stdout = child.stdout.take().unwrap();
+    thread::scope(|scope| {
+        let render_thread = scope.spawn(move || {
+            tree.render_dot(&mut stdin)?;
             stdin.flush()?;
             Ok::<_, io::Error>(())
         });
