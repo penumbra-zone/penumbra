@@ -59,9 +59,10 @@ personalization `label`, key `key`, and input `input`.  Define
 `to_le_bytes(input)` as the function that encodes an input integer in
 little-endian byte order.  Define `decaf377_encode(element)` as the function
 that produces the canonical encoding of a `decaf377` element. Then
+
 ```
 ovk  = prf_expand(b"Penumbra_DeriOVK", to_le_bytes(nk), decaf377_encode(ak))[0..32]
-dk = prf_expand(b"Penumbra_DerivDK", to_le_bytes(nk), decaf377_encode(ak))[32..48]
+dk = prf_expand(b"Penumbra_DerivDK", to_le_bytes(nk), decaf377_encode(ak))[0..16]
 ```
 
 The $\mathsf {ivk}$ is intended to be derived in a circuit.  Define
