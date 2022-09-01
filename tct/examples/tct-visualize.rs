@@ -119,13 +119,6 @@ fn write_to_file(tree: &Tree, args: &Args) -> Result<()> {
         tree.root();
     }
 
-    println!(
-        "visualizing epoch {}, block {}, commitment {} ...",
-        position.epoch(),
-        position.block(),
-        position.commitment()
-    );
-
     let base_path = args.output.join(format!(
         "{:0>5}-{:0>5}-{:0>5}",
         position.epoch(),
