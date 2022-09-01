@@ -3,7 +3,7 @@
 use std::{
     collections::BTreeMap,
     fs::File,
-    io::{self, BufRead, Write},
+    io::{self, Write},
     path::PathBuf,
     process::{Command, Stdio},
     thread,
@@ -140,23 +140,16 @@ fn write_to_file(tree: &Tree, args: &Args) -> Result<()> {
     ));
 
     let svg_path = base_path.with_extension("svg");
-    let mut svg_file = File::create(svg_path)?;
-
     let dot_path = base_path.with_extension("dot");
     let mut dot_file = File::create(dot_path)?;
 
     let mut dot = Vec::new();
     tree.render_dot(&mut dot)?;
 
-    for (i, line) in dot.lines().enumerate() {
-        // Patch the output graph so that it includes an ordering directive
-        if i == 1 {
-            writeln!(dot_file, "    graph [ordering=out];")?;
-        }
-        writeln!(dot_file, "{}", line?)?;
-    }
+    dot_file.write_all(&dot)?;
 
     if !args.no_svg {
+        let mut svg_file = File::create(svg_path)?;
         write_svg(&dot, &mut svg_file)?;
     }
 
