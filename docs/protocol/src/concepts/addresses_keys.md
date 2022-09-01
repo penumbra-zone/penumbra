@@ -18,10 +18,13 @@ flowchart BT
     end;
     subgraph SK[Spending Key]
     end;
+    subgraph SeedPhrase[Seed Phrase]
+    end;
 
     index(address index);
     div{ };
 
+    SeedPhrase --> SK;
     SK --> FVK;
     FVK --> OVK;
     FVK --> IVK;
@@ -34,12 +37,14 @@ flowchart BT
 
 From bottom to top:
 
-- the *spending key* is the root capability, representing spending authority;
-- the *full viewing key* represents the capability to view all transactions related to the spending authority;
+- the *seed phrase* is the root key material. Multiple *accounts* - each with
+separate spend authority - can be derived from this root seed phrase.
+- the *spending key* is the capability representing spending authority for a given account;
+- the *full viewing key* represents the capability to view all transactions related to the account;
 - the *outgoing viewing key* represents the capability to view only outgoing transactions, and is used to recover information about previously sent transactions;
 - the *incoming viewing key* represents the capability to view only incoming transactions, and is used to scan the block chain for incoming transactions.
 
-Penumbra allows the same spending authority to present multiple, publicly
+Penumbra allows the same account to present multiple, publicly
 unlinkable addresses, keyed by an 16-byte *address index*.  Each choice of
 address index gives a distinct shielded payment address. Because these
 addresses share a common incoming viewing key, the cost of scanning the
@@ -53,6 +58,7 @@ detection has false positives but no false negatives, so detection will find all
 relevant transactions, as well as some amount of unrelated cover traffic.
 Unlike incoming viewing keys, detection keys are not shared between diversified
 addresses, allowing fine-grained control of delegation.
+
 
 This diagram shows only the user-visible parts of the key hierarchy.
 Internally, each of these keys has different components, described in detail in

@@ -16,9 +16,8 @@ use crate::{
 
 static IVK_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| Fq::from_le_bytes_mod_order(b"penumbra.derive.ivk"));
 
-static ACCOUNT_ID_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
-    Fq::from_le_bytes_mod_order(blake2b_simd::blake2b(b"Penumbra_HashFVK").as_bytes())
-});
+static ACCOUNT_ID_DOMAIN_SEP: Lazy<Fq> =
+    Lazy::new(|| Fq::from_le_bytes_mod_order(b"Penumbra_HashFVK"));
 
 /// The root viewing capability for all data related to a given spend authority.
 #[derive(Clone, Serialize, Deserialize)]

@@ -6,14 +6,14 @@ BLS12-381, that it uses Poseidon as a hash and PRF, `decaf377` as the embedded
 group, and that it includes support for [fuzzy message
 detection](../crypto/fmd.md).
 
-All key material within a particular spend authority is ultimately derived from
+All key material within a particular spend authority - an *account* - is ultimately derived from
 a single root secret.  The internal key components and their derivations are
 described in the following sections:
 
 * [Spending Keys](./addresses_keys/spend_key.md) describes derivation of the
   spending key from the root key material;
 * [Viewing Keys](./addresses_keys/viewing_keys.md) describes derivation of the full, incoming, and outgoing viewing keys;
-* [Addresses and Detection Keys](./addresses_keys/addresses.md) describes derivation of multiple, publicly unlinkable addresses for a single spending authority, each with their own detection key.
+* [Addresses and Detection Keys](./addresses_keys/addresses.md) describes derivation of multiple, publicly unlinkable addresses for a single account, each with their own detection key.
 
 The diagram in the [Overview](../concepts/addresses_keys.md) section describes
 the key hierarchy from an external, functional point of view.  Here, we zoom in

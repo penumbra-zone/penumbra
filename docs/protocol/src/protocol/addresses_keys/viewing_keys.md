@@ -33,7 +33,25 @@ from the contents of a note, so that the sender of a note cannot learn when the
 recipient spent it.
 
 The full viewing key can be used to create transaction proofs, as well as to
-view all activity related to its spending authority.
+view all activity related to its account. The hash of a full viewing key is referred
+to as an *Account ID* and is derived as follows.
+
+Define
+`poseidon_hash_2(label, x1, x2)` to be rate-2 Poseidon hashing of inputs `x1`,
+`x2` with the capacity initialized to the domain separator `label`.  Define
+`from_le_bytes(bytes)` as the function that interprets its input bytes as an
+integer in little-endian order. Define
+`element.to_le_bytes()` as the function that encodes an input element in
+little-endian byte order. Define `decaf377_s(element)` as the function
+that produces the $s$-value used to encode the provided `decaf377` element.
+Then
+
+```
+hash_output = poseidon_hash_2(from_le_bytes(b"Penumbra_HashFVK"), nk, decaf377_s(ak))
+account_id = hash_output.to_le_bytes()[0:32]
+```
+
+i.e. we take the 32-bytes of the hash output as the account ID.
 
 ## Incoming and Outgoing Viewing Keys
 
@@ -65,13 +83,7 @@ ovk  = prf_expand(b"Penumbra_DeriOVK", to_le_bytes(nk), decaf377_encode(ak))[0..
 dk = prf_expand(b"Penumbra_DerivDK", to_le_bytes(nk), decaf377_encode(ak))[0..16]
 ```
 
-The $\mathsf {ivk}$ is intended to be derived in a circuit.  Define
-`poseidon_hash_2(label, x1, x2)` to be rate-2 Poseidon hashing of inputs `x1`,
-`x2` with the capacity initialized to the domain separator `label`.  Define
-`from_le_bytes(bytes)` as the function that interprets its input bytes as an
-integer in little-endian order.  Define `decaf377_s(element)` as the function
-that produces the $s$-value used to encode the provided `decaf377` element.
-Then
+The $\mathsf {ivk}$ is intended to be derived in a circuit.  Then
 ```
 ivk = poseidon_hash_2(from_le_bytes(b"penumbra.derive.ivk"), nk, decaf377_s(ak)) mod r
 ```
