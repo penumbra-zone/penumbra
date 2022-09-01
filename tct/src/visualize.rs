@@ -61,6 +61,7 @@ impl crate::Tree {
             for (right, _) in self.commitments_ordered() {
                 if let Some(left) = left {
                     w.commitment_commitment_edge(left, right)?;
+                    // w.commitment_commitment_edge(right, left)?;
                 }
                 left = Some(right);
             }
@@ -80,6 +81,7 @@ impl<W: Write> DotWriter<W> {
         writeln!(writer, "digraph {{")?;
         writeln!(writer, "  fontsize=\"24\";")?;
         writeln!(writer, "  fontname=\"Courier New\";")?;
+        writeln!(writer, "  ordering=\"out\";")?;
         let mut dot_writer = DotWriter { indent: 1, writer };
         graph(&mut dot_writer)?;
         writeln!(dot_writer.writer, "}}")
@@ -127,9 +129,7 @@ impl<W: Write> DotWriter<W> {
         let focus = terminal && place == Place::Frontier;
 
         // Epochs, blocks, and commitments are clusters
-        let cluster = if let Some(16) | Some(8) | None = height {
-            "cluster_"
-        } else if focus && height != None {
+        let cluster = if let Some(16) | Some(8) | Some(0) | None = height {
             "cluster_"
         } else {
             ""
@@ -174,6 +174,8 @@ impl<W: Write> DotWriter<W> {
             (FRONTIER_TERMINUS_COLOR, "black", "")
         } else if height.is_none() {
             ("lightyellow", "black", "")
+        } else if height == Some(0) {
+            ("none", "none", "")
         } else {
             ("none", "grey", ",dashed")
         };
@@ -205,7 +207,7 @@ impl<W: Write> DotWriter<W> {
             // The node attributes
             write!(w, "[fontsize=\"20\"]")?;
             write!(w, "[fontname=\"Courier New\"]")?;
-            write!(w, "[ordering=out]")?;
+            write!(w, "[ordering=\"out\"]")?;
             write!(w, "[label=\"{}\"]", node_label(&node))?;
             write!(w, "[shape=\"{}\"]", node_shape(&node))?;
             write!(w, "[style=\"{}\"]", node_style(&node))?;
@@ -255,6 +257,8 @@ impl<W: Write> DotWriter<W> {
                     )
                 })
             })?;
+        } else if let Kind::Leaf { commitment: None } = node.kind() {
+            // TODO: fake invisible commitment here to help layout?
         }
 
         Ok(())
@@ -266,6 +270,7 @@ impl<W: Write> DotWriter<W> {
         for child in node.children() {
             if let Some(left) = left {
                 self.sibling_sibling_edge(left, child)?;
+                // self.sibling_sibling_edge(child, left)?;
             }
             self.parent_child_edge(node, child)?;
             left = Some(child);
