@@ -99,11 +99,17 @@ impl<W: Write> DotWriter<W> {
         self.node_commitment(node)?; // Its commitment below, if any
         for child in node.children() {
             // All its children, as subgraphs
-            self.subgraph(
-                Some(child.height()),
+            self.subtree(
+                child.height(),
                 child.position(),
                 child.place(),
-                child.children().is_empty(),
+                !child.children().is_empty(),
+                matches!(
+                    child.kind(),
+                    Kind::Leaf {
+                        commitment: Some(_)
+                    }
+                ),
                 |w| w.nodes_and_edges(child),
             )?;
         }
@@ -126,69 +132,27 @@ impl<W: Write> DotWriter<W> {
 
     fn subgraph(
         &mut self,
-        height: Option<u8>,
-        position: Position,
-        place: Place,
-        terminal: bool,
+        id: impl Fn(&mut W) -> io::Result<()>,
+        cluster: bool,
         graph: impl FnOnce(&mut Self) -> io::Result<()>,
     ) -> io::Result<()> {
-        // The node is the focus if it is the terminus of the frontier
-        let focus = terminal && place == Place::Frontier && (height == None || height == Some(0));
-
-        // Epochs, blocks, and commitments are clusters
-        let cluster = if let Some(16) | Some(8) | Some(0) | None = height {
-            "cluster_"
-        } else {
-            ""
-        };
-        let label = |w: &mut W| match height {
-            Some(16) => write!(w, "{}", position.epoch()),
-            Some(8) => write!(w, "{}/{}", position.epoch(), position.block()),
-            None => write!(
-                w,
-                "{}/{}/{}",
-                position.epoch(),
-                position.block(),
-                position.commitment()
-            ),
-            _ => Ok(()),
-        };
         self.indent()?;
-        writeln!(
+        write!(
             self.writer,
-            "subgraph {cluster}SUBGRAPH_height_{}_epoch_{}_block_{}_commitment_{} {{",
-            height
-                .map(|h| h.to_string())
-                .unwrap_or_else(|| "none".to_string()),
-            position.epoch(),
-            position.block(),
-            position.commitment()
+            "subgraph {cluster}SUBGRAPH_",
+            cluster = if cluster { "cluster_" } else { "" }
         )?;
+        id(&mut self.writer)?;
+        writeln!(self.writer, " {{")?;
 
         // Increase the indent for everything inside
         self.indent += 1;
 
-        // Write the subgraph label
-        self.line(|w| write!(w, "labelloc=\"b\""))?;
-        self.line(|w| {
-            write!(w, "label=\"")?;
-            label(w)?;
-            write!(w, "\"")
-        })?;
-
-        // Attributes
-        let (fill_color, color, dashed) = if focus {
-            (FRONTIER_TERMINUS_COLOR, "black", "")
-        } else if height.is_none() {
-            ("lightyellow", "black", "")
-        } else if height == Some(0) {
-            ("none", "none", "")
-        } else {
-            ("none", "grey", ",dashed")
-        };
-        self.line(|w| write!(w, "color=\"{color}\""))?;
-        self.line(|w| write!(w, "style=\"rounded,filled,bold{dashed}\""))?;
-        self.line(|w| write!(w, "fillcolor=\"{fill_color}\""))?;
+        // Write the id for the subgraph
+        self.indent()?;
+        write!(self.writer, "id=\"")?;
+        id(&mut self.writer)?;
+        writeln!(self.writer, "\";")?;
 
         // Write the full subgraph
         graph(self)?;
@@ -198,6 +162,85 @@ impl<W: Write> DotWriter<W> {
 
         self.indent()?;
         writeln!(self.writer, "}}")
+    }
+
+    fn subtree(
+        &mut self,
+        height: u8,
+        position: Position,
+        place: Place,
+        terminal: bool,
+        has_commitment: bool,
+        tree: impl FnOnce(&mut Self) -> io::Result<()>,
+    ) -> io::Result<()> {
+        // The node is the focus if it is the terminus of the frontier
+        let focus = terminal && place == Place::Frontier && height == 0;
+
+        let id = |w: &mut W| {
+            write!(
+                w,
+                "SUBTREE_height_{}_epoch_{}_block_{}_commitment_{}",
+                height,
+                position.epoch(),
+                position.block(),
+                position.commitment()
+            )
+        };
+
+        let label = |w: &mut W| {
+            // Don't label subtrees with commitments directly beneath, it's cleaner
+            if has_commitment {
+                return Ok(());
+            }
+            match height {
+                16 => write!(w, "{}", position.epoch()),
+                8 => write!(w, "{}/{}", position.epoch(), position.block()),
+                0 => write!(
+                    w,
+                    "{}/{}/{}",
+                    position.epoch(),
+                    position.block(),
+                    position.commitment()
+                ),
+                _ => Ok(()),
+            }
+        };
+
+        self.subgraph(id, height % 8 == 0, |w| {
+            // Write the subgraph label
+            w.line(|w| write!(w, "labelloc=\"b\""))?;
+            w.line(|w| {
+                write!(w, "label=\"")?;
+                label(w)?;
+                write!(w, "\"")
+            })?;
+
+            tree(w)?;
+
+            // Attributes
+            let (fill_color, color, dashed) = if focus {
+                (FRONTIER_TERMINUS_COLOR, "black", "")
+            } else if height == 8 || height == 16 {
+                ("none", "grey", ",dashed")
+            } else {
+                ("none", "none", "")
+            };
+            let tooltip = match height {
+                16 => format!("Epoch {}", position.epoch()),
+                8 => format!("Epoch {}, Block {}", position.epoch(), position.block()),
+                0 => format!(
+                    "Epoch {}, Block {}, Commitment {}",
+                    position.epoch(),
+                    position.block(),
+                    position.commitment()
+                ),
+                _ => "".to_string(),
+            };
+            w.line(|w| write!(w, "color=\"{color}\""))?;
+            w.line(|w| write!(w, "style=\"rounded,filled,bold{dashed}\""))?;
+            w.line(|w| write!(w, "tooltip=\"{tooltip}\""))?;
+            w.line(|w| write!(w, "fillcolor=\"{fill_color}\""))
+        })
     }
 
     fn node(&mut self, node: Node) -> io::Result<()> {
@@ -223,6 +266,13 @@ impl<W: Write> DotWriter<W> {
             write!(w, "[gradientangle=\"{}\"]", node_gradient_angle(&node))?;
             write!(w, "[width=\"{}\"]", node_width(&node))?;
             write!(w, "[height=\"{}\"]", node_height(&node))?;
+            write!(
+                w,
+                "[tooltip=\"Hash: {}\"]",
+                node.cached_hash()
+                    .map(|h| format!("{:?}", h))
+                    .unwrap_or_else(|| "?".to_string())
+            )?;
             write!(w, "[orientation=\"{}\"]", node_orientation(&node))
         })
     }
@@ -232,20 +282,47 @@ impl<W: Write> DotWriter<W> {
             commitment: Some(commitment),
         } = node.kind()
         {
-            self.subgraph(None, node.position(), node.place(), false, |w| {
+            let id = |w: &mut W| {
+                write!(
+                    w,
+                    "COMMITMENT_epoch_{}_block_{}_commitment_{}",
+                    node.position().epoch(),
+                    node.position().block(),
+                    node.position().commitment()
+                )
+            };
+
+            self.subgraph(id, true, |w| {
+                w.line(|w| write!(w, "style=\"filled\""))?;
+                w.line(|w| write!(w, "color=\"black\""))?;
+                w.line(|w| write!(w, "fillcolor=\"lightyellow\""))?;
+                w.line(|w| write!(w, "style=\"rounded,filled,bold\""))?;
                 w.line(|w| {
-                    // The node identifier
                     write!(
                         w,
-                        "COMMITMENT_epoch_{}_block_{}_commitment_{}",
+                        "tooltip=\"Epoch {}, Block {}, Commitment {}\"",
+                        node.position().epoch(),
+                        node.position().block(),
+                        node.position().commitment()
+                    )
+                })?;
+                w.line(|w| {
+                    write!(w, "label=\"")?;
+                    write!(
+                        w,
+                        "{}/{}/{}",
                         node.position().epoch(),
                         node.position().block(),
                         node.position().commitment()
                     )?;
-                    // No label
+                    write!(w, "\"")
+                })?;
+                w.line(|w| {
+                    // The node identifier
+                    id(w)?;
                     write!(w, "[label=\"\"]")?;
                     write!(w, "[shape=\"{}\"]", hash_shape(&commitment.0.to_bytes()))?;
-                    write!(w, "[style=\"filled\"]")?;
+                    write!(w, "[style=\"filled,bold\"]")?;
                     write!(w, "[color=\"black\"]")?;
                     write!(w, "[width=\"1\"]")?;
                     write!(w, "[height=\"1\"]")?;
@@ -263,7 +340,8 @@ impl<W: Write> DotWriter<W> {
                         w,
                         "[orientation=\"{}\"]",
                         hash_orientation(&commitment.0.to_bytes())
-                    )
+                    )?;
+                    write!(w, "[tooltip=\"Commitment: {}\"]", commitment)
                 })
             })?;
         }
@@ -399,6 +477,13 @@ impl<W: Write> DotWriter<W> {
                 write!(w, "[label=\"\"]",)?;
                 write!(w, "[dir=\"none\"]")?;
                 write!(w, "[style=\"bold\"]")?;
+                write!(
+                    w,
+                    "[lhead=\"cluster_SUBGRAPH_COMMITMENT_epoch_{}_block_{}_commitment_{}\"]",
+                    node.position().epoch(),
+                    node.position().block(),
+                    node.position().commitment()
+                )?;
                 let color = "black";
                 write!(w, "[color=\"{}\"]", color)
             })?;
@@ -432,12 +517,8 @@ fn node_label(node: &Node) -> &'static str {
     }
 }
 
-fn node_style(node: &Node) -> &'static str {
-    if node.cached_hash().is_none() {
-        return "filled,bold";
-    }
-
-    "filled"
+fn node_style(_node: &Node) -> &'static str {
+    "filled,bold"
 }
 
 fn node_width(node: &Node) -> &'static str {
