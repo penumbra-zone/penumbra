@@ -43,9 +43,9 @@ struct Args {
     /// Don't write SVG files.
     #[clap(long)]
     no_svg: bool,
-    /// Don't write DOT files.
+    /// Write intermediate DOT files (slower than just going directly to SVG).
     #[clap(long)]
-    no_dot: bool,
+    dot: bool,
     /// Only write the final tree, not the intermediate stages.
     #[clap(long)]
     only_final: bool,
@@ -215,13 +215,13 @@ fn write_to_file(tree: &Tree, args: &Args) -> Result<()> {
     let dot_path = base_path.with_extension("dot");
 
     if args.no_svg {
-        if !args.no_dot {
+        if args.dot {
             // Serialize the dot representation directly to the dot file
             println!("Writing {} ...", dot_path.display());
             let mut dot_file = File::create(dot_path)?;
             tree.render_dot(&mut dot_file)?;
         }
-    } else if args.no_dot {
+    } else if !args.dot {
         // Serialize the dot representation directly into the dot subprocess
         println!("Writing {} ...", svg_path.display());
         let mut svg_file = File::create(svg_path)?;
