@@ -11,7 +11,7 @@ use penumbra_crypto::{
 use penumbra_proto::view::NotesRequest;
 use penumbra_transaction::{
     action::{Proposal, ValidatorVote},
-    plan::{OutputPlan, SpendPlan, SwapPlan, TransactionPlan},
+    plan::{MemoPlan, OutputPlan, SpendPlan, SwapPlan, TransactionPlan},
 };
 use penumbra_view::{SpendableNoteRecord, ViewClient};
 use rand_core::{CryptoRng, RngCore};
@@ -139,6 +139,8 @@ where
     let mut plan = TransactionPlan {
         chain_id: chain_params.chain_id,
         fee,
+        // SwapClaim will create outputs, so we add a memo.
+        memo_plan: Some(MemoPlan::new(&mut rng, MemoPlaintext::default())),
         ..Default::default()
     };
 
@@ -222,7 +224,6 @@ where
                         asset_id: denom.id(),
                     },
                     change_address,
-                    MemoPlaintext::default(),
                 )
                 .into(),
             );
@@ -258,6 +259,8 @@ where
     let mut plan = TransactionPlan {
         chain_id: chain_params.chain_id,
         fee: fee.clone(),
+        // Swap will create outputs, so we add a memo.
+        memo_plan: Some(MemoPlan::new(&mut rng, MemoPlaintext::default())),
         ..Default::default()
     };
 
@@ -368,7 +371,6 @@ where
                         asset_id: denom.id(),
                     },
                     change_address,
-                    MemoPlaintext::default(),
                 )
                 .into(),
             );
@@ -408,9 +410,10 @@ where
     let mut planner = Planner::new(rng);
     planner.fee(fee);
     for value in values.iter().cloned() {
-        planner.output(value, dest_address, memo.clone());
+        planner.output(value, dest_address);
     }
     planner
+        .memo(memo)
         .plan(view, fvk, source_address.map(Into::into))
         .await
         .context("can't build send transaction")

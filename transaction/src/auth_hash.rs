@@ -1,7 +1,7 @@
 use blake2b_simd::{Hash, Params};
 use decaf377::FieldExt;
 use decaf377_fmd::Clue;
-use penumbra_crypto::FullViewingKey;
+use penumbra_crypto::{FullViewingKey, PayloadKey};
 use penumbra_proto::{
     transaction::{self as pb},
     Message, Protobuf,
@@ -77,6 +77,10 @@ impl TransactionBody {
         state.update(chain_id_auth_hash(&self.chain_id).as_bytes());
         state.update(&self.expiry_height.to_le_bytes());
         state.update(self.fee.auth_hash().as_bytes());
+        if self.memo.is_some() {
+            let memo = self.memo.clone();
+            state.update(&memo.unwrap().0);
+        }
 
         // Hash the actions.
         let num_actions = self.actions.len() as u32;
@@ -118,6 +122,14 @@ impl TransactionPlan {
         state.update(&self.expiry_height.to_le_bytes());
         state.update(self.fee.auth_hash().as_bytes());
 
+        // Hash the memo and save the memo key for use with outputs later.
+        let mut memo_key: Option<PayloadKey> = None;
+        if self.memo_plan.is_some() {
+            let memo_plan = self.memo_plan.clone().unwrap();
+            state.update(&memo_plan.memo().0);
+            memo_key = Some(memo_plan.key);
+        }
+
         let num_actions = self.actions.len() as u32;
         state.update(&num_actions.to_le_bytes());
 
@@ -127,7 +139,12 @@ impl TransactionPlan {
             state.update(spend.spend_body(fvk).auth_hash().as_bytes());
         }
         for output in self.output_plans() {
-            state.update(output.output_body(fvk.outgoing()).auth_hash().as_bytes());
+            state.update(
+                output
+                    .output_body(fvk.outgoing(), &memo_key.clone().unwrap())
+                    .auth_hash()
+                    .as_bytes(),
+            );
         }
         for swap in self.swap_plans() {
             state.update(swap.swap_body(fvk).auth_hash().as_bytes());
@@ -225,7 +242,7 @@ impl AuthorizingData for output::Body {
         state.update(&self.note_payload.ephemeral_key.0);
         state.update(&self.note_payload.encrypted_note);
         state.update(&self.value_commitment.to_bytes());
-        state.update(&self.encrypted_memo.0);
+        state.update(&self.wrapped_memo_key.0);
         state.update(&self.ovk_wrapped_key.0);
 
         state.finalize()
@@ -521,7 +538,7 @@ mod tests {
     use rand_core::OsRng;
 
     use crate::{
-        plan::{OutputPlan, SpendPlan, TransactionPlan},
+        plan::{MemoPlan, OutputPlan, SpendPlan, TransactionPlan},
         WitnessData,
     };
 
@@ -574,13 +591,13 @@ mod tests {
                         asset_id: *STAKING_TOKEN_ASSET_ID,
                     },
                     addr.clone(),
-                    MemoPlaintext::default(),
                 )
                 .into(),
                 SpendPlan::new(&mut OsRng, note0, 0u64.into()).into(),
                 SpendPlan::new(&mut OsRng, note1, 1u64.into()).into(),
             ],
             clue_plans: vec![],
+            memo_plan: Some(MemoPlan::new(&mut OsRng, MemoPlaintext::default())),
         };
 
         println!("{}", serde_json::to_string_pretty(&plan).unwrap());

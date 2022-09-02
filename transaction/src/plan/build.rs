@@ -1,5 +1,7 @@
 use anyhow::Result;
-use penumbra_crypto::{rdsa, Fr, FullViewingKey, Zero};
+use penumbra_crypto::{
+    memo::MemoCiphertext, rdsa, symmetric::PayloadKey, Fr, FullViewingKey, Zero,
+};
 use rand_core::{CryptoRng, RngCore};
 
 use super::TransactionPlan;
@@ -42,6 +44,15 @@ impl TransactionPlan {
         let mut fmd_clues = Vec::new();
         let mut synthetic_blinding_factor = Fr::zero();
 
+        // Add the memo.
+        let mut memo: Option<MemoCiphertext> = None;
+        let mut memo_key: Option<PayloadKey> = None;
+        if self.memo_plan.is_some() {
+            let memo_plan = self.memo_plan.clone().unwrap();
+            memo = Some(memo_plan.memo());
+            memo_key = Some(memo_plan.key);
+        }
+
         // We build the actions sorted by type, with all spends first, then all
         // outputs, etc.  This order has to align with the ordering in
         // TransactionPlan::auth_hash, which computes the auth hash of the
@@ -62,7 +73,9 @@ impl TransactionPlan {
         for output_plan in self.output_plans() {
             // Outputs subtract from the transaction's value balance.
             synthetic_blinding_factor -= output_plan.value_blinding;
-            actions.push(Action::Output(output_plan.output(fvk.outgoing())));
+            actions.push(Action::Output(
+                output_plan.output(fvk.outgoing(), &memo_key.clone().unwrap()),
+            ));
         }
 
         // Build the transaction's swaps.
@@ -145,6 +158,7 @@ impl TransactionPlan {
                 chain_id: self.chain_id,
                 fee: self.fee,
                 fmd_clues,
+                memo,
             },
             anchor: witness_data.anchor,
             binding_sig,

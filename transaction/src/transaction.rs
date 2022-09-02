@@ -5,6 +5,7 @@ use ark_ff::Zero;
 use bytes::Bytes;
 use decaf377_fmd::Clue;
 use penumbra_crypto::{
+    memo::MemoCiphertext,
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
     transaction::Fee,
     Fr, NotePayload, Nullifier,
@@ -25,6 +26,7 @@ pub struct TransactionBody {
     pub chain_id: String,
     pub fee: Fee,
     pub fmd_clues: Vec<Clue>,
+    pub memo: Option<MemoCiphertext>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -200,6 +202,7 @@ impl From<TransactionBody> for pbt::TransactionBody {
             chain_id: msg.chain_id,
             fee: Some(msg.fee.into()),
             fmd_clues: msg.fmd_clues.into_iter().map(|x| x.into()).collect(),
+            encrypted_memo: msg.memo.map(|x| bytes::Bytes::copy_from_slice(&x.0)),
         }
     }
 }
@@ -236,12 +239,22 @@ impl TryFrom<pbt::TransactionBody> for TransactionBody {
             );
         }
 
+        let memo = match proto.encrypted_memo {
+            Some(bytes) => Some(
+                bytes[..]
+                    .try_into()
+                    .map_err(|_| anyhow::anyhow!("memo malformed"))?,
+            ),
+            None => None,
+        };
+
         Ok(TransactionBody {
             actions,
             expiry_height,
             chain_id,
             fee,
             fmd_clues,
+            memo,
         })
     }
 }
