@@ -42,7 +42,7 @@ impl Protobuf<pb::Swap> for Swap {}
 impl From<Swap> for pb::Swap {
     fn from(s: Swap) -> Self {
         pb::Swap {
-            zkproof: s.proof.into(),
+            proof: s.proof.into(),
             body: Some(s.body.into()),
         }
     }
@@ -52,7 +52,7 @@ impl TryFrom<pb::Swap> for Swap {
     type Error = anyhow::Error;
     fn try_from(s: pb::Swap) -> Result<Self, Self::Error> {
         Ok(Self {
-            proof: s.zkproof[..]
+            proof: s.proof[..]
                 .try_into()
                 .map_err(|_| anyhow::anyhow!("Swap proof malformed"))?,
             body: s

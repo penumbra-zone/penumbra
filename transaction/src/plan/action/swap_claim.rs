@@ -28,6 +28,7 @@ pub struct SwapClaimPlan {
     pub output_2_blinding: Fq,
     pub esk_1: ka::Secret,
     pub esk_2: ka::Secret,
+    pub epoch_duration: u64,
 }
 
 impl SwapClaimPlan {
@@ -41,14 +42,14 @@ impl SwapClaimPlan {
         claim_address: Address,
         fee: Fee,
         output_data: BatchSwapOutputData,
-        trading_pair: TradingPair,
+        epoch_duration: u64,
     ) -> SwapClaimPlan {
         let output_1_blinding = Fq::rand(rng);
         let output_2_blinding = Fq::rand(rng);
         let esk_1 = ka::Secret::new(rng);
         let esk_2 = ka::Secret::new(rng);
         let swap_plaintext = SwapPlaintext::from_parts(
-            trading_pair,
+            output_data.trading_pair,
             output_data.delta_1,
             output_data.delta_2,
             fee,
@@ -65,6 +66,7 @@ impl SwapClaimPlan {
             output_data,
             swap_plaintext,
             swap_nft_position,
+            epoch_duration,
         }
     }
 
@@ -79,7 +81,7 @@ impl SwapClaimPlan {
     ) -> SwapClaim {
         SwapClaim {
             body: self.swap_claim_body(fvk),
-            zkproof: self.swap_claim_proof(note_commitment_proof, nk, note_blinding),
+            proof: self.swap_claim_proof(note_commitment_proof, nk, note_blinding),
         }
     }
 
@@ -145,11 +147,11 @@ impl SwapClaimPlan {
 
         swap_claim::Body {
             nullifier,
-            fee: self.swap_plaintext.fee.clone(),
+            fee: self.swap_plaintext.claim_fee.clone(),
             output_1,
             output_2,
             output_data: self.output_data,
-            trading_pair: self.swap_plaintext.trading_pair,
+            epoch_duration: self.epoch_duration,
         }
     }
 
@@ -172,6 +174,7 @@ impl From<SwapClaimPlan> for pb::SwapClaimPlan {
             output_2_blinding: msg.output_2_blinding.to_bytes().to_vec().into(),
             esk_1: msg.esk_1.to_bytes().to_vec().into(),
             esk_2: msg.esk_2.to_bytes().to_vec().into(),
+            epoch_duration: msg.epoch_duration,
         }
     }
 }
@@ -197,6 +200,7 @@ impl TryFrom<pb::SwapClaimPlan> for SwapClaimPlan {
             output_2_blinding: Fq::from_bytes(msg.output_2_blinding.as_ref().try_into()?)?,
             esk_1: msg.esk_1.as_ref().try_into()?,
             esk_2: msg.esk_2.as_ref().try_into()?,
+            epoch_duration: msg.epoch_duration,
         })
     }
 }

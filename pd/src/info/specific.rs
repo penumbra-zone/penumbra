@@ -9,8 +9,10 @@ use penumbra_proto::{
         ValidatorStatusRequest,
     },
     crypto::NoteCommitment,
+    dex::BatchSwapOutputData,
 };
 
+use proto::client::specific::BatchSwapOutputDataRequest;
 use tonic::Status;
 use tracing::instrument;
 
@@ -66,6 +68,15 @@ impl SpecificQuery for Info {
             .ok_or_else(|| Status::not_found("validator not found"))?;
 
         Ok(tonic::Response::new(status.into()))
+    }
+
+    #[instrument(skip(self, request))]
+    /// Get the batch swap data associated with a given trading pair and height.
+    async fn batch_swap_output_data(
+        &self,
+        request: tonic::Request<BatchSwapOutputDataRequest>,
+    ) -> Result<tonic::Response<BatchSwapOutputData>, Status> {
+        Err(Status::unimplemented("batch_swap_output_data"))
     }
 
     #[instrument(skip(self, request))]

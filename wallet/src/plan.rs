@@ -6,13 +6,19 @@ use anyhow::{anyhow, Context, Result};
 use penumbra_component::stake::rate::RateData;
 use penumbra_component::stake::validator;
 use penumbra_crypto::{
-    asset::Denom, dex::swap::SwapPlaintext, dex::TradingPair, keys::AddressIndex,
-    memo::MemoPlaintext, transaction::Fee, Address, FullViewingKey, Note, Value,
+    asset::Denom,
+    dex::swap::SwapPlaintext,
+    dex::TradingPair,
+    dex::{swap::SwapPlaintext, BatchSwapOutputData},
+    keys::AddressIndex,
+    memo::MemoPlaintext,
+    transaction::Fee,
+    Address, FullViewingKey, Note, Value, STAKING_TOKEN_DENOM,
 };
 use penumbra_proto::view::NotesRequest;
 use penumbra_transaction::{
     action::{Proposal, ValidatorVote},
-    plan::{OutputPlan, SpendPlan, SwapPlan, TransactionPlan},
+    plan::{OutputPlan, SpendPlan, SwapClaimPlan, SwapPlan, TransactionPlan},
 };
 use penumbra_view::{SpendableNoteRecord, ViewClient};
 use rand_core::{CryptoRng, RngCore};
@@ -118,20 +124,21 @@ where
 
 #[allow(clippy::too_many_arguments)]
 #[allow(dead_code)]
-#[instrument(skip(_fvk, view, rng, swap_nft_note, fee, source_address))]
+#[instrument(skip(_fvk, view, rng, swap_nft_note, swap_nft_position, fee, output_data))]
 pub async fn swap_claim<V, R>(
     _fvk: &FullViewingKey,
     view: &mut V,
     rng: R,
     swap_nft_note: Note,
-    fee: Fee,
-    source_address: Option<u64>,
+    swap_nft_position: Position,
+    fee: u64,
+    output_data: BatchSwapOutputData,
 ) -> Result<TransactionPlan, anyhow::Error>
 where
     V: ViewClient,
     R: RngCore + CryptoRng,
 {
-    tracing::debug!(?swap_nft_note, ?fee, ?source_address);
+    tracing::debug!(?swap_nft_note, ?fee);
 
     let chain_params = view.chain_params().await?;
 
@@ -145,14 +152,7 @@ where
     // the swap action.
     let claim_address = swap_nft_note.address();
 
-    // Fetch the batch swap output data associated with the block height
-    // and trading pair of the swap action.
-    // TODO: this batch swap output data comes from the client, it's necessary because
-    // the client has to encrypt the SwapPlaintext, however the validators *must*
-    // validate that the BatchSwapOutputData is correct when processing the SwapClaim!
-    let output_data = view
-        .batch_swap_output_data(swap_height, trading_pair)
-        .await?;
+    let epoch_duration = chain_params.epoch_duration;
 
     // Add a `SwapClaimPlan` action:
     plan.actions.push(
@@ -163,7 +163,7 @@ where
             claim_address,
             Fee(fee),
             output_data,
-            trading_pair,
+            epoch_duration,
         )
         .into(),
     );
@@ -176,27 +176,28 @@ where
 }
 
 #[allow(clippy::too_many_arguments)]
-#[instrument(skip(fvk, view, rng, input_value, fee, source_address))]
+#[instrument(skip(fvk, view, rng, input_value, swap_fee, swap_claim_fee, source_address))]
 pub async fn swap<V, R>(
     fvk: &FullViewingKey,
     view: &mut V,
     mut rng: R,
     input_value: Value,
     into_denom: Denom,
-    fee: Fee,
+    swap_fee: u64,
+    swap_claim_fee: u64,
     source_address: Option<u64>,
 ) -> Result<TransactionPlan, anyhow::Error>
 where
     V: ViewClient,
     R: RngCore + CryptoRng,
 {
-    tracing::debug!(?input_value, ?fee, ?source_address);
+    tracing::debug!(?input_value, ?swap_fee, ?swap_claim_fee, ?source_address);
 
     let chain_params = view.chain_params().await?;
 
     let mut plan = TransactionPlan {
         chain_id: chain_params.chain_id,
-        fee: fee.clone(),
+        fee: Fee(swap_fee),
         ..Default::default()
     };
 
@@ -229,16 +230,21 @@ where
 
     // If there is no input, then there is no swap.
     if delta_1 == 0 && delta_2 == 0 {
-        return Ok(plan);
+        return Err(anyhow!("No input value for swap"));
     }
 
     // Use a random ephemeral address for claiming the swap.
     let (claim_address, _dtk) = fvk.incoming().ephemeral_address(OsRng);
 
     // Create the `SwapPlaintext` representing the swap to be performed:
-    let swap_plaintext =
-        SwapPlaintext::from_parts(trading_pair, delta_1, delta_2, fee.clone(), claim_address)
-            .map_err(|_| anyhow!("error generating swap plaintext"))?;
+    let swap_plaintext = SwapPlaintext::from_parts(
+        trading_pair,
+        delta_1,
+        delta_2,
+        Fee(swap_claim_fee),
+        claim_address,
+    )
+    .map_err(|_| anyhow!("error generating swap plaintext"))?;
 
     // Add a `SwapPlan` action:
     plan.actions
@@ -247,8 +253,16 @@ where
     // The value we need to spend is the input value, plus fees.
     let mut value_to_spend: HashMap<Denom, u64> = HashMap::new();
     *value_to_spend.entry(input_denom.clone()).or_default() += input_value.amount;
-    if fee.amount() > 0 {
-        *value_to_spend.entry(fee_denom.clone()).or_default() += fee.amount();
+    if swap_fee > 0 {
+        *value_to_spend
+            .entry(STAKING_TOKEN_DENOM.clone())
+            .or_default() += swap_fee;
+    }
+    // The fee for the swap claim is pre-paid at this time.
+    if swap_claim_fee > 0 {
+        *value_to_spend
+            .entry(STAKING_TOKEN_DENOM.clone())
+            .or_default() += swap_claim_fee;
     }
 
     // Add the required spends:

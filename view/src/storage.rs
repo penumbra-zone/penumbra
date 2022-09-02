@@ -304,38 +304,6 @@ impl Storage {
         FmdParameters::decode(result.bytes.as_slice())
     }
 
-    pub async fn batch_swap_output_data(
-        &self,
-        height: u64,
-        trading_pair: TradingPair,
-    ) -> anyhow::Result<BatchSwapOutputData> {
-        // TODO: aren't these unchecked u64 -> i64 conversions a little dangerous?
-        let height = height as i64;
-        let asset_1 = trading_pair.asset_1().to_bytes().to_vec();
-        let asset_2 = trading_pair.asset_2().to_bytes().to_vec();
-        let result = query!(
-            r#"
-            SELECT delta_1, delta_2, lambda_1, lambda_2, success
-            FROM batch_swap_output_data
-            WHERE height = ? AND asset_1 = ? AND asset_2 = ?
-            LIMIT 1
-        "#,
-            height,
-            asset_1,
-            asset_2,
-        )
-        .fetch_one(&self.pool)
-        .await?;
-
-        Ok(BatchSwapOutputData {
-            delta_1: result.delta_1 as u64,
-            delta_2: result.delta_2 as u64,
-            lambda_1: result.lambda_1 as u64,
-            lambda_2: result.lambda_2 as u64,
-            success: result.success,
-        })
-    }
-
     pub async fn full_viewing_key(&self) -> anyhow::Result<FullViewingKey> {
         let result = query!(
             r#"

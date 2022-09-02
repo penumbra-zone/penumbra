@@ -192,14 +192,20 @@ impl TxCmd {
             } => {
                 let input = input.parse::<Value>()?;
                 let into = asset::REGISTRY.parse_unit(into.as_str()).base();
-                let fee = Fee::from_staking_token_amount(*fee);
+
+                // Since the swap command consists of two transactions (the swap and the swap claim),
+                // the fee is split equally over both for now.
+                let swap_fee = fee / 2;
+                let swap_claim_fee = fee / 2;
+
                 let swap_plan = plan::swap(
                     &app.fvk,
                     &mut app.view,
                     OsRng,
                     input,
                     into,
-                    fee.clone(),
+                    swap_fee,
+                    swap_claim_fee,
                     *source,
                 )
                 .await?;
@@ -230,13 +236,30 @@ impl TxCmd {
                 let swap_height = swap_nft_note.height_created;
                 let trading_pair = swap_plan_inner.swap_plaintext.trading_pair;
 
+                // Fetch the batch swap output data associated with the block height
+                // and trading pair of the swap action.
+                //
+                // This batch swap output data comes from the client, it's necessary because
+                // the client has to encrypt the SwapPlaintext, however the validators *must*
+                // validate that the BatchSwapOutputData is correct when processing the SwapClaim!
+                let mut client = app.specific_client().await?;
+                let output_data = client
+                    .batch_swap_output_data(BatchSwapOutputDataRequest {
+                        height: swap_height,
+                        trading_pair: Some(trading_pair.into()),
+                    })
+                    .await?
+                    .get_ref()
+                    .clone();
+
                 let claim_plan = plan::swap_claim(
                     &app.fvk,
                     &mut app.view,
                     OsRng,
                     swap_nft_note.note.clone(),
-                    fee,
-                    *source,
+                    position,
+                    swap_claim_fee,
+                    output_data.try_into()?,
                 )
                 .await?;
 

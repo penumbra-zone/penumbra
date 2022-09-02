@@ -24,7 +24,7 @@ impl From<Spend> for transaction::Spend {
         transaction::Spend {
             body: Some(msg.body.into()),
             auth_sig: Some(msg.auth_sig.into()),
-            zkproof: proof.into(),
+            proof: proof.into(),
         }
     }
 }
@@ -42,7 +42,7 @@ impl TryFrom<transaction::Spend> for Spend {
             .ok_or_else(|| anyhow::anyhow!("spend body malformed"))?
             .try_into()?;
 
-        let proof = (proto.zkproof[..])
+        let proof = (proto.proof[..])
             .try_into()
             .map_err(|_| anyhow::anyhow!("spend body malformed"))?;
 

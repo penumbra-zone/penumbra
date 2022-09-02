@@ -29,7 +29,7 @@ impl From<Output> for pb::Output {
         let proof: Vec<u8> = output.proof.into();
         pb::Output {
             body: Some(output.body.into()),
-            zkproof: proof.into(),
+            proof: proof.into(),
         }
     }
 }
@@ -43,7 +43,7 @@ impl TryFrom<pb::Output> for Output {
                 .body
                 .ok_or_else(|| anyhow::anyhow!("missing output body"))?
                 .try_into()?,
-            proof: proto.zkproof[..]
+            proof: proto.proof[..]
                 .try_into()
                 .map_err(|_| anyhow::anyhow!("output body malformed"))?,
         })

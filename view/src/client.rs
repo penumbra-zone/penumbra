@@ -43,13 +43,6 @@ pub trait ViewClient {
     /// Get a copy of the FMD parameters.
     async fn fmd_parameters(&mut self) -> Result<FmdParameters>;
 
-    /// Get the batch swap data associated with a given trading pair and height.
-    async fn batch_swap_output_data(
-        &mut self,
-        swap_height: u64,
-        trading_pair: TradingPair,
-    ) -> Result<BatchSwapOutputData>;
-
     /// Queries for notes.
     async fn notes(&mut self, request: pb::NotesRequest) -> Result<Vec<SpendableNoteRecord>>;
 
@@ -288,25 +281,6 @@ where
         .try_into()?;
 
         Ok(params)
-    }
-
-    async fn batch_swap_output_data(
-        &mut self,
-        swap_height: u64,
-        trading_pair: TradingPair,
-    ) -> Result<BatchSwapOutputData> {
-        let data = ViewProtocolClient::batch_swap_output_data(
-            self,
-            tonic::Request::new(pb::BatchSwapOutputDataRequest {
-                height: swap_height,
-                trading_pair: Some(trading_pair.into()),
-            }),
-        )
-        .await?
-        .into_inner()
-        .try_into()?;
-
-        Ok(data)
     }
 
     async fn notes(&mut self, request: pb::NotesRequest) -> Result<Vec<SpendableNoteRecord>> {

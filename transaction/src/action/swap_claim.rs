@@ -10,13 +10,13 @@ use penumbra_proto::{dex as pb, Protobuf};
 
 #[derive(Debug, Clone)]
 pub struct SwapClaim {
-    pub zkproof: SwapClaimProof,
+    pub proof: SwapClaimProof,
     pub body: Body,
 }
 
 impl SwapClaim {
     /// Compute a commitment to the value contributed to a transaction by this swap claim.
-    /// Will add (f,fee_token)
+    /// Will add (f,fee_token) representing the pre-paid fee
     pub fn value_commitment(&self) -> value::Commitment {
         self.body.fee.commit(Fr::zero())
     }
@@ -27,7 +27,7 @@ impl Protobuf<pb::SwapClaim> for SwapClaim {}
 impl From<SwapClaim> for pb::SwapClaim {
     fn from(sc: SwapClaim) -> Self {
         pb::SwapClaim {
-            zkproof: sc.zkproof.into(),
+            proof: sc.proof.into(),
             body: Some(sc.body.into()),
         }
     }
@@ -37,7 +37,7 @@ impl TryFrom<pb::SwapClaim> for SwapClaim {
     type Error = anyhow::Error;
     fn try_from(sc: pb::SwapClaim) -> Result<Self, Self::Error> {
         Ok(Self {
-            zkproof: sc.zkproof[..]
+            proof: sc.proof[..]
                 .try_into()
                 .map_err(|_| anyhow::anyhow!("SwapClaim proof malformed"))?,
             body: sc
@@ -55,7 +55,7 @@ pub struct Body {
     pub output_1: NotePayload,
     pub output_2: NotePayload,
     pub output_data: BatchSwapOutputData,
-    pub trading_pair: TradingPair,
+    pub epoch_duration: u64,
 }
 
 impl Protobuf<pb::SwapClaimBody> for Body {}
@@ -63,12 +63,12 @@ impl Protobuf<pb::SwapClaimBody> for Body {}
 impl From<Body> for pb::SwapClaimBody {
     fn from(s: Body) -> Self {
         pb::SwapClaimBody {
-            trading_pair: Some(s.trading_pair.into()),
             nullifier: Some(s.nullifier.into()),
             fee: Some(s.fee.into()),
             output_1: Some(s.output_1.into()),
             output_2: Some(s.output_2.into()),
             output_data: Some(s.output_data.into()),
+            epoch_duration: s.epoch_duration,
         }
     }
 }
@@ -97,10 +97,7 @@ impl TryFrom<pb::SwapClaimBody> for Body {
                 .output_data
                 .ok_or_else(|| anyhow::anyhow!("missing anchor"))?
                 .try_into()?,
-            trading_pair: sc
-                .trading_pair
-                .ok_or_else(|| anyhow::anyhow!("missing anchor"))?
-                .try_into()?,
+            epoch_duration: sc.epoch_duration,
         })
     }
 }

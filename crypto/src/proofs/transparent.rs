@@ -11,7 +11,7 @@ use penumbra_tct as tct;
 
 use crate::{
     asset,
-    dex::{swap::SwapPlaintext, TradingPair},
+    dex::{swap::SwapPlaintext, BatchSwapOutputData, TradingPair},
     fmd, ka, keys, note,
     transaction::Fee,
     value, Address, Fq, Fr, Nullifier, Value,
@@ -468,13 +468,8 @@ impl SwapClaimProof {
     pub fn verify(
         &self,
         anchor: tct::Root,
-        // Value commitment to the fees for the swap claim
-        value_commitment: value::Commitment,
         nullifier: Nullifier,
-        _clearing_price_1: u64,
-        _clearing_price_2: u64,
-        clearing_price_height: u64,
-        _success: bool,
+        output_data: BatchSwapOutputData,
         epoch_duration: u64,
         fee: Fee,
     ) -> anyhow::Result<()> {
@@ -524,7 +519,7 @@ impl SwapClaimProof {
         let epoch = position.epoch();
         let note_commitment_block_height: u64 =
             epoch_duration * u64::from(epoch) + u64::from(block);
-        if note_commitment_block_height != clearing_price_height {
+        if note_commitment_block_height != output_data.height {
             return Err(anyhow::anyhow!(
                 "note commitment was not for clearing price height"
             ));
@@ -538,7 +533,7 @@ impl SwapClaimProof {
             return Err(anyhow!("fee value commitment mismatch"));
         }
 
-        // Nullifier integrity.
+        // Swap NFT nullifier integrity.
         if nullifier
             != self
                 .nk
