@@ -191,11 +191,12 @@ fn main() -> anyhow::Result<()> {
 fn schedule<R: Rng>(rng: &mut R, args: &Args) -> BTreeMap<u16, BTreeMap<u16, u16>> {
     let mut schedule: BTreeMap<u16, BTreeMap<u16, u16>> = BTreeMap::new();
 
-    let total_commitments = args.epochs * args.epoch_size * args.block_mean;
+    let total_commitments: u64 =
+        args.epochs as u64 * args.epoch_size as u64 * args.block_mean as u64;
 
     for _ in 0..total_commitments {
-        let epoch = rng.gen_range(0u16..args.epochs);
-        let block = rng.gen_range(0u16..args.epoch_size);
+        let epoch = rng.gen_range(0..args.epochs);
+        let block = rng.gen_range(0..args.epoch_size);
         *schedule.entry(epoch).or_default().entry(block).or_default() += 1;
     }
 
