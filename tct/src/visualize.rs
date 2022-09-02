@@ -8,7 +8,9 @@ use crate::{
 };
 
 const FONT_SIZE: usize = 40;
-const FRONTIER_EDGE_COLOR: &str = "#E800FF";
+const BLOCK_FONT_SIZE: usize = 60;
+const EPOCH_FONT_SIZE: usize = 80;
+const FRONTIER_EDGE_COLOR: &str = "#E800FF:invis:#E800FF";
 const FRONTIER_TERMINUS_COLOR: &str = "#FBD1FF";
 
 fn hash_shape(bytes: &[u8]) -> &'static str {
@@ -230,7 +232,7 @@ impl<W: Write> DotWriter<W> {
             // The node is the focus if it is the terminus of the frontier
             let focus = terminal && place == Some(Place::Frontier) && height == 0;
             let (fill_color, color, dashed) = if focus {
-                (FRONTIER_TERMINUS_COLOR, "black", "")
+                (FRONTIER_TERMINUS_COLOR, FRONTIER_EDGE_COLOR, "")
             } else if height == 8 || height == 16 {
                 ("none", "grey", ",dashed")
             } else {
@@ -247,9 +249,19 @@ impl<W: Write> DotWriter<W> {
                 ),
                 _ => "".to_string(),
             };
+            let font_size = if terminal {
+                FONT_SIZE
+            } else {
+                match height {
+                    16 => EPOCH_FONT_SIZE,
+                    8 => BLOCK_FONT_SIZE,
+                    _ => FONT_SIZE,
+                }
+            };
             w.line(|w| write!(w, "color=\"{color}\""))?;
             w.line(|w| write!(w, "style=\"rounded,filled,bold{dashed}\""))?;
             w.line(|w| write!(w, "tooltip=\"{tooltip}\""))?;
+            w.line(|w| write!(w, "fontsize=\"{font_size}\""))?;
             w.line(|w| write!(w, "fillcolor=\"{fill_color}\""))
         })
     }
@@ -314,8 +326,6 @@ impl<W: Write> DotWriter<W> {
             write!(w, "[id=\"")?;
             id(w)?;
             write!(w, "\"]")?;
-            write!(w, "[fontsize=\"{FONT_SIZE}\"]")?;
-            write!(w, "[fontname=\"Courier New\"]")?;
             write!(w, "[ordering=\"out\"]")?;
             write!(w, "[label=\"\"]")?;
             write!(w, "[shape=\"circle\"]")?;
@@ -495,7 +505,7 @@ impl<W: Write> DotWriter<W> {
                         "black".to_string()
                     }
                     _ if child.height() > 0 && child.children().is_empty() => "black".to_string(),
-                    _ => format!("{FRONTIER_EDGE_COLOR}:invis:{FRONTIER_EDGE_COLOR}"),
+                    _ => FRONTIER_EDGE_COLOR.to_string(),
                 },
                 _ => "black".to_string(),
             };
