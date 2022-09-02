@@ -525,14 +525,6 @@ impl SwapClaimProof {
             ));
         }
 
-        // Confirms that `value_commitment` is a commitment to `fee` tokens of the specified asset ID
-        // Fees are public and use a 0 blinding factor
-        let fee_v_blinding = Fr::zero();
-        let expected_fee_value_commitment = fee.0.commit(fee_v_blinding);
-        if expected_fee_value_commitment != value_commitment {
-            return Err(anyhow!("fee value commitment mismatch"));
-        }
-
         // Swap NFT nullifier integrity.
         if nullifier
             != self

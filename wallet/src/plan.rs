@@ -7,7 +7,6 @@ use penumbra_component::stake::rate::RateData;
 use penumbra_component::stake::validator;
 use penumbra_crypto::{
     asset::Denom,
-    dex::swap::SwapPlaintext,
     dex::TradingPair,
     dex::{swap::SwapPlaintext, BatchSwapOutputData},
     keys::AddressIndex,
@@ -128,7 +127,7 @@ where
 pub async fn swap_claim<V, R>(
     _fvk: &FullViewingKey,
     view: &mut V,
-    rng: R,
+    mut rng: R,
     swap_nft_note: Note,
     swap_nft_position: Position,
     fee: u64,
@@ -144,7 +143,7 @@ where
 
     let mut plan = TransactionPlan {
         chain_id: chain_params.chain_id,
-        fee,
+        fee: Fee::from_staking_token_amount(fee),
         ..Default::default()
     };
 
@@ -161,7 +160,7 @@ where
             swap_nft_note,
             swap_nft_position,
             claim_address,
-            Fee(fee),
+            Fee::from_staking_token_amount(fee),
             output_data,
             epoch_duration,
         )
@@ -183,8 +182,8 @@ pub async fn swap<V, R>(
     mut rng: R,
     input_value: Value,
     into_denom: Denom,
-    swap_fee: u64,
-    swap_claim_fee: u64,
+    swap_fee: Fee,
+    swap_claim_fee: Fee,
     source_address: Option<u64>,
 ) -> Result<TransactionPlan, anyhow::Error>
 where
@@ -197,7 +196,7 @@ where
 
     let mut plan = TransactionPlan {
         chain_id: chain_params.chain_id,
-        fee: Fee(swap_fee),
+        fee: swap_fee.clone(),
         ..Default::default()
     };
 
@@ -205,9 +204,15 @@ where
     let input_denom = assets.get(&input_value.asset_id).ok_or_else(|| {
         anyhow::anyhow!("unknown denomination for asset id {}", input_value.asset_id)
     })?;
-    let fee_denom = assets
-        .get(&fee.asset_id())
-        .ok_or_else(|| anyhow::anyhow!("unknown denomination for asset id {}", fee.asset_id()))?;
+    let swap_fee_denom = assets.get(&swap_fee.asset_id()).ok_or_else(|| {
+        anyhow::anyhow!("unknown denomination for asset id {}", swap_fee.asset_id())
+    })?;
+    let swap_claim_fee_denom = assets.get(&swap_claim_fee.asset_id()).ok_or_else(|| {
+        anyhow::anyhow!(
+            "unknown denomination for asset id {}",
+            swap_claim_fee.asset_id()
+        )
+    })?;
 
     // Determine the canonical order for the assets being swapped.
     // This will determine whether the input amount is assigned to delta_1 or delta_2.
@@ -241,7 +246,7 @@ where
         trading_pair,
         delta_1,
         delta_2,
-        Fee(swap_claim_fee),
+        swap_claim_fee.clone(),
         claim_address,
     )
     .map_err(|_| anyhow!("error generating swap plaintext"))?;
@@ -253,16 +258,14 @@ where
     // The value we need to spend is the input value, plus fees.
     let mut value_to_spend: HashMap<Denom, u64> = HashMap::new();
     *value_to_spend.entry(input_denom.clone()).or_default() += input_value.amount;
-    if swap_fee > 0 {
-        *value_to_spend
-            .entry(STAKING_TOKEN_DENOM.clone())
-            .or_default() += swap_fee;
+    if swap_fee.amount() > 0 {
+        *value_to_spend.entry(swap_fee_denom.clone()).or_default() += swap_fee.amount();
     }
     // The fee for the swap claim is pre-paid at this time.
-    if swap_claim_fee > 0 {
+    if swap_claim_fee.amount() > 0 {
         *value_to_spend
-            .entry(STAKING_TOKEN_DENOM.clone())
-            .or_default() += swap_claim_fee;
+            .entry(swap_claim_fee_denom.clone())
+            .or_default() += swap_claim_fee.amount();
     }
 
     // Add the required spends:

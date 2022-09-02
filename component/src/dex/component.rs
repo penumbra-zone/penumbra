@@ -123,7 +123,7 @@ impl Component for Dex {
                             swap_claim.body.nullifier,
                             swap_claim.body.output_data,
                             swap_claim.body.epoch_duration,
-                            fee.0,
+                            fee,
                         )
                         .is_err()
                     {

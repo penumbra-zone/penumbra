@@ -101,7 +101,7 @@ impl SwapPlan {
         SwapProof {
             claim_address: self.swap_plaintext.claim_address,
             note_blinding: self.note_blinding,
-            fee_delta: self.swap_plaintext.claim_fee.0,
+            fee_delta: self.swap_plaintext.claim_fee.clone(),
             value_t1: Value {
                 amount: self.swap_plaintext.delta_1,
                 asset_id: self.swap_plaintext.trading_pair.asset_1(),

@@ -143,7 +143,7 @@ impl TryFrom<pb::SwapPlaintext> for SwapPlaintext {
                 .try_into()
                 .map_err(|_| anyhow::anyhow!("invalid claim address in SwapPlaintext"))?,
             claim_fee: plaintext
-                .fee
+                .claim_fee
                 .ok_or_else(|| anyhow::anyhow!("missing SwapPlaintext claim_fee"))?
                 .try_into()?,
             trading_pair: plaintext
@@ -159,7 +159,7 @@ impl From<SwapPlaintext> for pb::SwapPlaintext {
         Self {
             delta_1: plaintext.delta_1,
             delta_2: plaintext.delta_2,
-            claim_fee: Some(plaintext.fee.into()),
+            claim_fee: Some(plaintext.claim_fee.into()),
             claim_address: Some(plaintext.claim_address.into()),
             trading_pair: Some(plaintext.trading_pair.into()),
         }

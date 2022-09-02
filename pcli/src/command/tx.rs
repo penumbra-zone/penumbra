@@ -5,8 +5,10 @@ use penumbra_component::stake::rate::RateData;
 use penumbra_crypto::{
     asset, transaction::Fee, Address, DelegationToken, IdentityKey, Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_crypto::{asset, DelegationToken, IdentityKey, Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_proto::{client::specific::KeyValueRequest, Protobuf};
+use penumbra_proto::{
+    client::specific::{BatchSwapOutputDataRequest, KeyValueRequest},
+    Protobuf,
+};
 use penumbra_transaction::action::Proposal;
 use penumbra_view::ViewClient;
 use penumbra_wallet::plan;
@@ -204,8 +206,8 @@ impl TxCmd {
                     OsRng,
                     input,
                     into,
-                    swap_fee,
-                    swap_claim_fee,
+                    Fee::from_staking_token_amount(swap_fee),
+                    Fee::from_staking_token_amount(swap_claim_fee),
                     *source,
                 )
                 .await?;
