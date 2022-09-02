@@ -3,7 +3,7 @@ use std::io::{self, Write};
 use decaf377::FieldExt;
 
 use crate::{
-    structure::{Kind, Node, Place},
+    structure::{Any, Kind, Node, Place},
     Position,
 };
 
@@ -27,7 +27,7 @@ fn hash_shape(bytes: &[u8]) -> &'static str {
         12 => "invtrapezium",
         13 => "invhouse",
         14 => "square",
-        15 => "star",
+        15 => "oval",
         _ => unreachable!("x % 16 < 16"),
     }
 }
@@ -46,7 +46,14 @@ fn hash_color(bytes: &[u8]) -> String {
         _ => unreachable!("x % 8 < 8"),
     };
 
-    format!("{}:{}", nibble_color(bytes[0]), nibble_color(bytes[1]))
+    // Get two colors that aren't the same, so no color looks "flat"
+    let nibble_1 = bytes[0] % 8;
+    let mut nibble_2 = bytes[1] % 7;
+    if nibble_2 >= nibble_1 {
+        nibble_2 += 1;
+    }
+
+    format!("{}:{}", nibble_color(nibble_1), nibble_color(nibble_2))
 }
 
 impl crate::Tree {
@@ -126,7 +133,7 @@ impl<W: Write> DotWriter<W> {
         graph: impl FnOnce(&mut Self) -> io::Result<()>,
     ) -> io::Result<()> {
         // The node is the focus if it is the terminus of the frontier
-        let focus = terminal && place == Place::Frontier;
+        let focus = terminal && place == Place::Frontier && (height == None || height == Some(0));
 
         // Epochs, blocks, and commitments are clusters
         let cluster = if let Some(16) | Some(8) | Some(0) | None = height {
@@ -240,6 +247,8 @@ impl<W: Write> DotWriter<W> {
                     write!(w, "[shape=\"{}\"]", hash_shape(&commitment.0.to_bytes()))?;
                     write!(w, "[style=\"filled\"]")?;
                     write!(w, "[color=\"black\"]")?;
+                    write!(w, "[width=\"1\"]")?;
+                    write!(w, "[height=\"1\"]")?;
                     write!(
                         w,
                         "[fillcolor=\"{}\"]",
@@ -257,8 +266,6 @@ impl<W: Write> DotWriter<W> {
                     )
                 })
             })?;
-        } else if let Kind::Leaf { commitment: None } = node.kind() {
-            // TODO: fake invisible commitment here to help layout?
         }
 
         Ok(())
@@ -301,8 +308,17 @@ impl<W: Write> DotWriter<W> {
             write!(w, "[dir=\"none\"]")?;
             write!(w, "[style=\"bold\"]")?;
             let color = match child.place() {
-                Place::Frontier => format!("{FRONTIER_EDGE_COLOR}:invis:{FRONTIER_EDGE_COLOR}"),
-                Place::Complete => "black".to_string(),
+                Place::Frontier => match child.height() {
+                    8 if parent.global_position().unwrap().commitment() == 0 => "black".to_string(),
+                    16 if parent.global_position().unwrap().block() == 0
+                        && parent.global_position().unwrap().commitment() == 0 =>
+                    {
+                        "black".to_string()
+                    }
+                    _ if child.height() > 0 && child.children().is_empty() => "black".to_string(),
+                    _ => format!("{FRONTIER_EDGE_COLOR}:invis:{FRONTIER_EDGE_COLOR}"),
+                },
+                _ => "black".to_string(),
             };
             write!(w, "[color=\"{}\"]", color)
         })
@@ -431,7 +447,7 @@ fn node_width(node: &Node) -> &'static str {
         }
     }
 
-    "0.75"
+    "0.9"
 }
 
 fn node_height(node: &Node) -> &'static str {
