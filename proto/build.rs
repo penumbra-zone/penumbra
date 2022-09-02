@@ -225,6 +225,8 @@ static TYPE_ATTRIBUTES: &[(&str, &str)] = &[
     (".penumbra.dex.SwapBody", SERIALIZE),
     (".penumbra.dex.SwapClaim", SERIALIZE),
     (".penumbra.dex.SwapClaimBody", SERIALIZE),
+    (".penumbra.dex.ClaimedSwap", SERIALIZE),
+    (".penumbra.dex.ClaimedSwapList", SERIALIZE),
     (".penumbra.dex.SwapPlaintext", SERIALIZE),
     (".penumbra.dex.BatchSwapOutputData", SERIALIZE),
     ("penumbra.governance.Vote", SERIALIZE),

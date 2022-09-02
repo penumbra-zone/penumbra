@@ -3,7 +3,6 @@ use std::{collections::BTreeMap, pin::Pin};
 use anyhow::Result;
 use futures::{Stream, StreamExt, TryStreamExt};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
-use penumbra_crypto::dex::{BatchSwapOutputData, TradingPair};
 use penumbra_crypto::keys::AccountID;
 use penumbra_crypto::{asset, keys::AddressIndex, note, Asset, Nullifier};
 use penumbra_proto::view::view_protocol_client::ViewProtocolClient;

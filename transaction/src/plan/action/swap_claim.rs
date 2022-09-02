@@ -1,7 +1,7 @@
 use ark_ff::UniformRand;
 use decaf377::FieldExt;
 use penumbra_crypto::{
-    dex::{swap::SwapPlaintext, BatchSwapOutputData, TradingPair},
+    dex::{swap::SwapPlaintext, BatchSwapOutputData},
     ka,
     keys::{IncomingViewingKey, NullifierKey},
     proofs::transparent::SwapClaimProof,

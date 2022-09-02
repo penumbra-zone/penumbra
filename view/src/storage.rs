@@ -5,7 +5,6 @@ use parking_lot::Mutex;
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_crypto::{
     asset::{self, Id},
-    dex::{BatchSwapOutputData, TradingPair},
     Asset, FieldExt, FullViewingKey, Nullifier,
 };
 use penumbra_proto::{

@@ -1,5 +1,6 @@
-use std::sync::Arc;
+use std::collections::BTreeMap;
 
+use crate::shielded_pool::View as _;
 use crate::{Component, Context};
 use anyhow::Result;
 use ark_ff::Zero;
@@ -8,10 +9,11 @@ use decaf377::Fr;
 use penumbra_chain::{genesis, View as _};
 use penumbra_crypto::{
     dex::{BatchSwapOutputData, TradingPair},
-    Value, STAKING_TOKEN_ASSET_ID,
+    MockFlowCiphertext, SwapFlow, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_storage::{State, StateExt};
-use penumbra_transaction::{Action, Transaction};
+use penumbra_transaction::action::swap_claim::ClaimedSwap;
+use penumbra_transaction::{action::swap_claim::List as SwapClaimBodyList, Action, Transaction};
 use tendermint::abci;
 use tracing::instrument;
 
@@ -19,12 +21,20 @@ use super::state_key;
 
 pub struct Dex {
     state: State,
+    // Represents swaps taking place in the current block.
+    swaps: BTreeMap<TradingPair, SwapFlow>,
+    // Represents swaps that have been claimed in the current block.
+    claims: Vec<ClaimedSwap>,
 }
 
 impl Dex {
     #[instrument(name = "dex", skip(state))]
     pub async fn new(state: State) -> Self {
-        Self { state }
+        Self {
+            state,
+            swaps: Default::default(),
+            claims: Default::default(),
+        }
     }
 }
 
@@ -145,7 +155,7 @@ impl Component for Dex {
                 | Action::PositionRewardClaim { .. } => {
                     return Err(anyhow::anyhow!("lp actions not supported yet"));
                 }
-                Action::Swap(swap) => {
+                Action::Swap(_swap) => {
                     // TODO: are any other checks necessary?
 
                     return Ok(());
@@ -169,6 +179,8 @@ impl Component for Dex {
                         .state
                         .output_data(provided_output_height, provided_trading_pair)
                         .await?
+                        // This check also ensures that the height for the swap is in the past, otherwise
+                        // the output data would not be present in the JMT.
                         .ok_or_else(|| anyhow::anyhow!("output data not found"))?;
 
                     if output_data != swap_claim.body.output_data {
@@ -185,14 +197,71 @@ impl Component for Dex {
         Ok(())
     }
 
-    #[instrument(name = "dex", skip(self, _ctx, _tx))]
-    async fn execute_tx(&mut self, _ctx: Context, _tx: &Transaction) {
-        // TODO: implement
+    #[instrument(name = "dex", skip(self, _ctx, tx))]
+    async fn execute_tx(&mut self, _ctx: Context, tx: &Transaction) {
+        for action in tx.transaction_body.actions.iter() {
+            match action {
+                Action::PositionOpen { .. }
+                | Action::PositionClose { .. }
+                | Action::PositionWithdraw { .. }
+                | Action::PositionRewardClaim { .. } => {}
+                Action::Swap(swap) => {
+                    // All swaps will be tallied for the block so the
+                    // BatchSwapOutputData for the trading pair/block height can
+                    // be set during `end_block`.
+                    let mut swap_flows = self
+                        .swaps
+                        .get_mut(&swap.body.trading_pair)
+                        .cloned()
+                        .unwrap_or_default();
+
+                    // Add the amount of each asset being swapped to the batch swap flow.
+                    swap_flows.0 += MockFlowCiphertext::new(swap.body.delta_1);
+                    swap_flows.1 += MockFlowCiphertext::new(swap.body.delta_2);
+
+                    // Set the batch swap flow for the trading pair.
+                    self.swaps.insert(swap.body.trading_pair, swap_flows);
+
+                    // TODO: tell the shielded pool to mark the Swap NFT nullifier as spent
+                }
+                Action::SwapClaim(swap_claim) => {
+                    // Each swap claim gets their portion of the swap based on their contribution.
+                    self.claims
+                        .push(ClaimedSwap(swap_claim.body.clone(), tx.id()));
+                }
+                _ => {}
+            }
+        }
     }
 
-    #[instrument(name = "dex", skip(self, _ctx, _end_block))]
-    async fn end_block(&mut self, _ctx: Context, _end_block: &abci::request::EndBlock) {
-        // TODO: implement
+    #[instrument(name = "dex", skip(self, _ctx, end_block))]
+    async fn end_block(&mut self, _ctx: Context, end_block: &abci::request::EndBlock) {
+        // For each batch swap during the block, calculate clearing prices and set in the JMT.
+        // TODO: since there are no liquidity providers right now, we'll consider all
+        // batch swaps to fail
+        for (trading_pair, swap_flows) in self.swaps.iter() {
+            let (delta_1, delta_2) = (swap_flows.0.mock_decrypt(), swap_flows.1.mock_decrypt());
+            let lambda_1 = 0;
+            let lambda_2 = 0;
+            let output_data = BatchSwapOutputData {
+                height: end_block.height.try_into().unwrap(),
+                trading_pair: *trading_pair,
+                delta_1,
+                delta_2,
+                lambda_1,
+                lambda_2,
+                success: false,
+            };
+            self.state.set_output_data(output_data).await;
+        }
+
+        // Tell the shielded pool component to include the claimed output notes in the NCT.
+        self.state
+            .set_claimed_swap_outputs(
+                self.state.get_block_height().await.unwrap(),
+                SwapClaimBodyList(self.claims.clone()),
+            )
+            .await;
     }
 }
 
@@ -208,6 +277,16 @@ pub trait View: StateExt {
     ) -> Result<Option<BatchSwapOutputData>> {
         self.get_domain(state_key::output_data(height, trading_pair).into())
             .await
+    }
+
+    async fn set_output_data(&mut self, output_data: BatchSwapOutputData) {
+        let height = output_data.height;
+        let trading_pair = output_data.trading_pair;
+        self.put_domain(
+            state_key::output_data(height, trading_pair).into(),
+            output_data,
+        )
+        .await;
     }
 }
 

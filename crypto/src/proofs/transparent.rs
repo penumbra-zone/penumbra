@@ -484,7 +484,7 @@ impl SwapClaimProof {
             swap_nft_value.clone(),
             *self.claim_address.diversified_generator(),
             *transmission_key_s,
-            &self.claim_address.clue_key(),
+            self.claim_address.clue_key(),
         );
 
         if self.note_commitment_proof.commitment() != note_commitment_test {
@@ -550,14 +550,42 @@ impl SwapClaimProof {
         //     + (1 - success.into()) * self.delta_1;
         // let lambda_2 = success.into() * (clearing_price_2 * self.delta_1)
         //     + (1 - success.into()) * self.delta_2;
-        // let proof_1 = OutputProof {
-        //     g_d: self.b_d,
-        //     pk_d: self.pk_d,
-        //     value: lambda_1,
-        //     v_blinding,
-        //     note_blinding: self.note_blinding_1,
-        //     esk,
-        // };
+        // TODO: currently treating all swaps as failed, so delta == lambda
+        let proof_1 = OutputProof {
+            value: Value {
+                amount: self.delta_1,
+                asset_id: self.trading_pair.asset_1(),
+            },
+            // TODO: i don't think a zero blinding factor is the thing to use here, but where else would it come from
+            v_blinding: Fr::zero(),
+            note_blinding: self.note_blinding_1,
+            esk: self.esk_1.clone(),
+            g_d: *self.claim_address.diversified_generator(),
+            pk_d: *self.claim_address.transmission_key(),
+            ck_d: *self.claim_address.clue_key(),
+        };
+        // TODO: unclear how to call verify here
+        // proof_1
+        //     .verify()
+        //     .map_err(|_| anyhow!("output proof 1 failed"))?;
+
+        let proof_2 = OutputProof {
+            value: Value {
+                amount: self.delta_2,
+                asset_id: self.trading_pair.asset_2(),
+            },
+            // TODO: i don't think a zero blinding factor is the thing to use here, but where else would it come from
+            v_blinding: Fr::zero(),
+            note_blinding: self.note_blinding_2,
+            esk: self.esk_2.clone(),
+            g_d: *self.claim_address.diversified_generator(),
+            pk_d: *self.claim_address.transmission_key(),
+            ck_d: *self.claim_address.clue_key(),
+        };
+        // TODO: unclear how to call verify here
+        // proof_2
+        //     .verify()
+        //     .map_err(|_| anyhow!("output proof 2 failed"))?;
 
         Ok(())
     }

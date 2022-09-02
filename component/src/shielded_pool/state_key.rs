@@ -57,6 +57,10 @@ pub fn commission_amounts(height: u64) -> String {
     format!("staking/commission_amounts/{}", height)
 }
 
+pub fn claimed_swap_outputs(height: u64) -> String {
+    format!("dex/claimed_swap_outputs/{}", height)
+}
+
 pub fn scheduled_to_apply(epoch: u64) -> String {
     format!("shielded_pool/quarantined_to_apply_in_epoch/{}", epoch)
 }

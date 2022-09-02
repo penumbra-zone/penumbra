@@ -1,4 +1,5 @@
 use penumbra_chain::View as _;
+use penumbra_component::dex::View as _;
 use penumbra_component::shielded_pool::View as _;
 use penumbra_component::stake::View as _;
 use penumbra_proto::{
@@ -76,7 +77,24 @@ impl SpecificQuery for Info {
         &self,
         request: tonic::Request<BatchSwapOutputDataRequest>,
     ) -> Result<tonic::Response<BatchSwapOutputData>, Status> {
-        Err(Status::unimplemented("batch_swap_output_data"))
+        let state = self.state_tonic().await?;
+        let request_inner = request.into_inner();
+        let height = request_inner.height;
+        let trading_pair = request_inner
+            .trading_pair
+            .ok_or_else(|| Status::invalid_argument("missing trading_pair"))?
+            .try_into()
+            .map_err(|_| Status::invalid_argument("invalid trading_pair"))?;
+
+        let output_data = state
+            .output_data(height, trading_pair)
+            .await
+            .map_err(|e| tonic::Status::internal(e.to_string()))?;
+
+        match output_data {
+            Some(o) => Ok(tonic::Response::new(o.into())),
+            None => Err(Status::not_found("batch swap output data not found")),
+        }
     }
 
     #[instrument(skip(self, request))]
