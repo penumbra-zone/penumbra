@@ -3,8 +3,9 @@ use std::convert::{TryFrom, TryInto};
 use anyhow::Error;
 use bytes::Bytes;
 use penumbra_crypto::{
-    memo::MemoCiphertext, proofs::transparent::OutputProof, symmetric::OvkWrappedKey, value,
-    NotePayload,
+    proofs::transparent::OutputProof,
+    symmetric::{OvkWrappedKey, WrappedMemoKey},
+    value, NotePayload,
 };
 use penumbra_proto::{transaction as pb, Protobuf};
 
@@ -18,8 +19,8 @@ pub struct Output {
 pub struct Body {
     pub note_payload: NotePayload,
     pub value_commitment: value::Commitment,
-    pub encrypted_memo: MemoCiphertext,
     pub ovk_wrapped_key: OvkWrappedKey,
+    pub wrapped_memo_key: WrappedMemoKey,
 }
 
 impl Protobuf<pb::Output> for Output {}
@@ -57,7 +58,7 @@ impl From<Body> for pb::OutputBody {
         pb::OutputBody {
             note_payload: Some(output.note_payload.into()),
             value_commitment: Some(output.value_commitment.into()),
-            encrypted_memo: Bytes::copy_from_slice(&output.encrypted_memo.0),
+            wrapped_memo_key: Bytes::copy_from_slice(&output.wrapped_memo_key.0),
             ovk_wrapped_key: Bytes::copy_from_slice(&output.ovk_wrapped_key.0),
         }
     }
@@ -73,11 +74,9 @@ impl TryFrom<pb::OutputBody> for Body {
             .try_into()
             .map_err(|e: Error| e.context("output body malformed"))?;
 
-        let encrypted_memo = MemoCiphertext(
-            proto.encrypted_memo[..]
-                .try_into()
-                .map_err(|_| anyhow::anyhow!("output malformed"))?,
-        );
+        let wrapped_memo_key = proto.wrapped_memo_key[..]
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("output malformed"))?;
 
         let ovk_wrapped_key: OvkWrappedKey = proto.ovk_wrapped_key[..]
             .try_into()
@@ -90,7 +89,7 @@ impl TryFrom<pb::OutputBody> for Body {
 
         Ok(Body {
             note_payload,
-            encrypted_memo,
+            wrapped_memo_key,
             ovk_wrapped_key,
             value_commitment,
         })

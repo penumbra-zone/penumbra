@@ -13,12 +13,14 @@ mod action;
 mod auth;
 mod build;
 mod clue;
+mod memo;
 
 pub use action::{
     ActionPlan, DelegatorVotePlan, OutputPlan, ProposalWithdrawPlan, SpendPlan, SwapClaimPlan,
     SwapPlan,
 };
 pub use clue::CluePlan;
+pub use memo::MemoPlan;
 
 /// A declaration of a planned [`Transaction`](crate::Transaction),
 /// for use in transaction authorization and creation.
@@ -31,6 +33,7 @@ pub struct TransactionPlan {
     pub chain_id: String,
     pub fee: Fee,
     pub clue_plans: Vec<CluePlan>,
+    pub memo_plan: Option<MemoPlan>,
 }
 
 impl Default for TransactionPlan {
@@ -41,6 +44,7 @@ impl Default for TransactionPlan {
             chain_id: String::new(),
             fee: Default::default(),
             clue_plans: vec![],
+            memo_plan: None,
         }
     }
 }
@@ -212,6 +216,7 @@ impl From<TransactionPlan> for pb::TransactionPlan {
             chain_id: msg.chain_id,
             fee: Some(msg.fee.into()),
             clue_plans: msg.clue_plans.into_iter().map(Into::into).collect(),
+            memo_plan: msg.memo_plan.map(Into::into),
         }
     }
 }
@@ -219,6 +224,11 @@ impl From<TransactionPlan> for pb::TransactionPlan {
 impl TryFrom<pb::TransactionPlan> for TransactionPlan {
     type Error = anyhow::Error;
     fn try_from(value: pb::TransactionPlan) -> Result<Self, Self::Error> {
+        let memo_plan = match value.memo_plan {
+            Some(plan) => Some(plan.try_into()?),
+            None => None,
+        };
+
         Ok(Self {
             actions: value
                 .actions
@@ -236,6 +246,7 @@ impl TryFrom<pb::TransactionPlan> for TransactionPlan {
                 .into_iter()
                 .map(TryInto::try_into)
                 .collect::<Result<_, _>>()?,
+            memo_plan,
         })
     }
 }

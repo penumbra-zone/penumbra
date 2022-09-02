@@ -15,7 +15,7 @@ use penumbra_proto::view::NotesRequest;
 use penumbra_tct as tct;
 use penumbra_transaction::{
     action::{Proposal, ProposalSubmit, ProposalWithdrawBody, ValidatorVote},
-    plan::{ActionPlan, OutputPlan, ProposalWithdrawPlan, SpendPlan, TransactionPlan},
+    plan::{ActionPlan, MemoPlan, OutputPlan, ProposalWithdrawPlan, SpendPlan, TransactionPlan},
 };
 use penumbra_view::ViewClient;
 use rand::{CryptoRng, RngCore};
@@ -67,6 +67,13 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         self
     }
 
+    /// Set a memo for this transaction plan.
+    #[instrument(skip(self))]
+    pub fn memo(&mut self, memo: MemoPlaintext) -> &mut Self {
+        self.plan.memo_plan = Some(MemoPlan::new(&mut self.rng, memo));
+        self
+    }
+
     /// Add a fee to the transaction plan.
     ///
     /// This function should be called once.
@@ -92,9 +99,9 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     ///
     /// Any unused output value will be redirected back to the originating address as change notes
     /// when the plan is [`finish`](Builder::finish)ed.
-    #[instrument(skip(self, memo))]
-    pub fn output(&mut self, value: Value, address: Address, memo: MemoPlaintext) -> &mut Self {
-        let output = OutputPlan::new(&mut self.rng, value, address, memo).into();
+    #[instrument(skip(self))]
+    pub fn output(&mut self, value: Value, address: Address) -> &mut Self {
+        let output = OutputPlan::new(&mut self.rng, value, address).into();
         self.action(output);
         self
     }
@@ -293,7 +300,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             .0;
 
         for value in self.balance.provided().collect::<Vec<_>>() {
-            self.output(value, self_address, MemoPlaintext::default());
+            self.output(value, self_address);
         }
 
         // TODO: add dummy change outputs in the staking token denomination (this means they'll pass
