@@ -97,13 +97,14 @@ impl<W: Write> DotWriter<W> {
     fn nodes_and_edges(&mut self, node: Node) -> io::Result<()> {
         self.node(node)?; // The node itself
         self.node_commitment(node)?; // Its commitment below, if any
-        for child in node.children() {
+        let children = node.children();
+        for &child in children.iter() {
             // All its children, as subgraphs
             self.subtree(
                 child.height(),
                 child.position(),
-                child.place(),
-                !child.children().is_empty(),
+                Some(child.place()),
+                child.children().is_empty(),
                 matches!(
                     child.kind(),
                     Kind::Leaf {
@@ -112,6 +113,16 @@ impl<W: Write> DotWriter<W> {
                 ),
                 |w| w.nodes_and_edges(child),
             )?;
+        }
+        if !children.is_empty() {
+            for phantom_index in children.len() as u64..4u64 {
+                let height = node.height() - 1;
+                let position =
+                    (u64::from(node.position()) + (node.stride() * phantom_index) / 4).into();
+                self.subtree(height, position, None, true, false, |w| {
+                    w.phantom_node(height, position)
+                })?;
+            }
         }
         self.outgoing_edges(node)?; // Connect it to its children
         Ok(())
@@ -168,14 +179,11 @@ impl<W: Write> DotWriter<W> {
         &mut self,
         height: u8,
         position: Position,
-        place: Place,
+        place: Option<Place>,
         terminal: bool,
         has_commitment: bool,
         tree: impl FnOnce(&mut Self) -> io::Result<()>,
     ) -> io::Result<()> {
-        // The node is the focus if it is the terminus of the frontier
-        let focus = terminal && place == Place::Frontier && height == 0;
-
         let id = |w: &mut W| {
             write!(
                 w,
@@ -217,7 +225,8 @@ impl<W: Write> DotWriter<W> {
 
             tree(w)?;
 
-            // Attributes
+            // The node is the focus if it is the terminus of the frontier
+            let focus = terminal && place == Some(Place::Frontier);
             let (fill_color, color, dashed) = if focus {
                 (FRONTIER_TERMINUS_COLOR, "black", "")
             } else if height == 8 || height == 16 {
@@ -274,6 +283,32 @@ impl<W: Write> DotWriter<W> {
                     .unwrap_or_else(|| "?".to_string())
             )?;
             write!(w, "[orientation=\"{}\"]", node_orientation(&node))
+        })
+    }
+
+    fn phantom_node(&mut self, height: u8, position: Position) -> io::Result<()> {
+        self.line(|w| {
+            // The node identifier
+            write!(
+                w,
+                "NODE_height_{}_epoch_{}_block_{}_commitment_{}",
+                height,
+                position.epoch(),
+                position.block(),
+                position.commitment(),
+            )?;
+            // The node attributes
+            write!(w, "[fontsize=\"20\"]")?;
+            write!(w, "[fontname=\"Courier New\"]")?;
+            write!(w, "[ordering=\"out\"]")?;
+            write!(w, "[label=\"\"]")?;
+            write!(w, "[shape=\"circle\"]")?;
+            write!(w, "[style=\"filled,bold\"]")?;
+            write!(w, "[color=\"gray\"]")?;
+            write!(w, "[fillcolor=\"gray\"]")?;
+            write!(w, "[tooltip=\"Hash: 0\"]")?;
+            write!(w, "[width=\"0.15\"]")?;
+            write!(w, "[height=\"0.15\"]")
         })
     }
 
@@ -351,14 +386,37 @@ impl<W: Write> DotWriter<W> {
 
     fn outgoing_edges(&mut self, node: Node) -> io::Result<()> {
         self.node_commitment_edge(node)?;
-        let mut left = None;
-        for child in node.children() {
+        let children = node.children();
+        let mut left: Option<Node> = None;
+        for &child in children.iter() {
             if let Some(left) = left {
-                self.sibling_sibling_edge(left, child)?;
-                // self.sibling_sibling_edge(child, left)?;
+                self.sibling_sibling_edge(
+                    left.height(),
+                    left.position(),
+                    child.height(),
+                    child.position(),
+                )?;
             }
             self.parent_child_edge(node, child)?;
             left = Some(child);
+        }
+        if !children.is_empty() {
+            for phantom_index in children.len() as u64..4 {
+                let child_height = node.height() - 1;
+                let left_position: Position =
+                    (u64::from(node.position()) + (node.stride() * phantom_index) / 4).into();
+                let right_position: Position =
+                    (u64::from(node.position()) + (node.stride() * phantom_index + 1) / 4).into();
+                if phantom_index < 3 {
+                    self.sibling_sibling_edge(
+                        child_height,
+                        left_position,
+                        child_height,
+                        right_position,
+                    )?;
+                }
+                self.parent_phantom_edge(node, left_position)?;
+            }
         }
         Ok(())
     }
@@ -383,6 +441,12 @@ impl<W: Write> DotWriter<W> {
                 child.position().commitment()
             )?;
             write!(w, "[label=\"\"]",)?;
+            // Allow more vertical space above blocks and epochs
+            write!(
+                w,
+                "[weight=\"{weight}\"]",
+                weight = if child.height() % 8 == 0 { 1 } else { 4 }
+            )?;
             write!(w, "[dir=\"none\"]")?;
             write!(w, "[style=\"bold\"]")?;
             let color = match child.place() {
@@ -402,24 +466,56 @@ impl<W: Write> DotWriter<W> {
         })
     }
 
-    fn sibling_sibling_edge(&mut self, left: Node, right: Node) -> io::Result<()> {
+    fn parent_phantom_edge(&mut self, parent: Node, child_position: Position) -> io::Result<()> {
         self.line(|w| {
             write!(
                 w,
-                "NODE_height_{}_epoch_{}_block_{}_commitment_{}",
-                left.height(),
-                left.position().epoch(),
-                left.position().block(),
-                left.position().commitment()
+                "NODE_height_{}_epoch_{}_block_{}_commitment_{}", // write!(w, "[tooltip=\"Hash: 0\"]")
+                parent.height(),
+                parent.position().epoch(),
+                parent.position().block(),
+                parent.position().commitment()
             )?;
             write!(w, " -> ")?;
             write!(
                 w,
                 "NODE_height_{}_epoch_{}_block_{}_commitment_{}",
-                right.height(),
-                right.position().epoch(),
-                right.position().block(),
-                right.position().commitment()
+                parent.height() - 1,
+                child_position.epoch(),
+                child_position.block(),
+                child_position.commitment()
+            )?;
+            write!(w, "[label=\"\"]",)?;
+            write!(w, "[dir=\"none\"]")?;
+            write!(w, "[style=\"bold\"]")?;
+            write!(w, "[color=\"gray\"]")
+        })
+    }
+
+    fn sibling_sibling_edge(
+        &mut self,
+        left_height: u8,
+        left_position: Position,
+        right_height: u8,
+        right_position: Position,
+    ) -> io::Result<()> {
+        self.line(|w| {
+            write!(
+                w,
+                "NODE_height_{}_epoch_{}_block_{}_commitment_{}",
+                left_height,
+                left_position.epoch(),
+                left_position.block(),
+                left_position.commitment()
+            )?;
+            write!(w, " -> ")?;
+            write!(
+                w,
+                "NODE_height_{}_epoch_{}_block_{}_commitment_{}",
+                right_height,
+                right_position.epoch(),
+                right_position.block(),
+                right_position.commitment()
             )?;
             write!(w, "[label=\"\"]",)?;
             write!(w, "[dir=\"none\"]")?;
