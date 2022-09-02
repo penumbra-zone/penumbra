@@ -82,7 +82,7 @@ impl Display for Seed {
 }
 
 fn main() -> anyhow::Result<()> {
-    let args = Args::parse();
+    let mut args = Args::parse();
     let mut rng = if let Some(Seed(seed)) = args.seed {
         rand_chacha::ChaCha20Rng::from_seed(seed)
     } else {
@@ -113,9 +113,7 @@ fn main() -> anyhow::Result<()> {
 
             // Shortcut when going fast and the epoch won't contain anything we'll remember
             if args.fast && total_kept == 0 {
-                if !args.only_final {
-                    write_to_file(&tree, &args)?;
-                }
+                write_to_file(&tree, &args)?;
 
                 if total_count == 0 {
                     // If the total count in the epoch is zero, it's the empty epoch
@@ -136,15 +134,11 @@ fn main() -> anyhow::Result<()> {
 
                 if count == 0 {
                     // End the block immediately because the count is zero
-                    if !args.only_final {
-                        write_to_file(&tree, &args)?;
-                    }
+                    write_to_file(&tree, &args)?;
                     tree.end_block().unwrap();
                 } else if args.fast && kept == 0 {
                     // Shortcut when going fast and the block won't contain anything we'll remember
-                    if !args.only_final {
-                        write_to_file(&tree, &args)?;
-                    }
+                    write_to_file(&tree, &args)?;
                     tree.insert_block(tct::builder::block::Root(gen_hash(&mut rng)))
                         .unwrap();
                 } else {
@@ -159,29 +153,24 @@ fn main() -> anyhow::Result<()> {
                     }
                     witnesses.shuffle(&mut rng);
                     for witness in witnesses {
-                        if !args.only_final {
-                            write_to_file(&tree, &args)?;
-                        }
+                        write_to_file(&tree, &args)?;
                         tree.insert(witness, gen_commitment(&mut rng)).unwrap();
                     }
 
                     // End the block now we're done with it
-                    if !args.only_final {
-                        write_to_file(&tree, &args)?;
-                    }
+                    write_to_file(&tree, &args)?;
                     tree.end_block().unwrap();
                 }
             }
         }
 
         // End the epoch now we're done with it
-        if !args.only_final {
-            write_to_file(&tree, &args)?;
-        }
+        write_to_file(&tree, &args)?;
         tree.end_epoch().unwrap();
     }
 
     // Write the final tree
+    args.only_final = false;
     write_to_file(&tree, &args)?;
 
     Ok(())
@@ -204,6 +193,10 @@ fn schedule<R: Rng>(rng: &mut R, args: &Args) -> BTreeMap<u16, BTreeMap<u16, u16
 }
 
 fn write_to_file(tree: &Tree, args: &Args) -> Result<()> {
+    if args.only_final {
+        return Ok(());
+    }
+
     let position = tree.position().unwrap();
 
     // Evaluate the root if in strict mode
