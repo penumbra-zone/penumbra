@@ -5,8 +5,6 @@ use penumbra_crypto::dex::TradingPair;
 use penumbra_crypto::transaction::Fee;
 use penumbra_crypto::value;
 use penumbra_crypto::Nullifier;
-use penumbra_crypto::Value;
-use penumbra_crypto::STAKING_TOKEN_ASSET_ID;
 use penumbra_crypto::{proofs::transparent::SwapClaimProof, NotePayload};
 use penumbra_proto::{dex as pb, Protobuf};
 
@@ -20,11 +18,7 @@ impl SwapClaim {
     /// Compute a commitment to the value contributed to a transaction by this swap claim.
     /// Will add (f,fee_token)
     pub fn value_commitment(&self) -> value::Commitment {
-        Value {
-            amount: self.body.fee.0,
-            asset_id: *STAKING_TOKEN_ASSET_ID,
-        }
-        .commit(Fr::zero())
+        self.body.fee.commit(Fr::zero())
     }
 }
 
@@ -87,7 +81,10 @@ impl TryFrom<pb::SwapClaimBody> for Body {
                 .nullifier
                 .ok_or_else(|| anyhow::anyhow!("missing nullifier"))?
                 .try_into()?,
-            fee: sc.fee.ok_or_else(|| anyhow::anyhow!("missing fee"))?.into(),
+            fee: sc
+                .fee
+                .ok_or_else(|| anyhow::anyhow!("missing fee"))?
+                .try_into()?,
             output_1: sc
                 .output_1
                 .ok_or_else(|| anyhow::anyhow!("missing output_1"))?

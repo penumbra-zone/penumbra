@@ -5,7 +5,11 @@ package penumbra.crypto;
 
 // Specifies fees paid by a transaction.
 message Fee {
+    // The amount of the token used to pay fees.
     uint64 amount = 1;
+    // If present, the asset ID of the token used to pay fees.
+    // If absent, specifies the staking token implicitly.
+    crypto.AssetId asset_id = 2;
 }
 
 message Address {

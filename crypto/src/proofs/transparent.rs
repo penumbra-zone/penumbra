@@ -14,7 +14,7 @@ use crate::{
     dex::{swap::SwapPlaintext, TradingPair},
     fmd, ka, keys, note,
     transaction::Fee,
-    value, Address, Fq, Fr, Nullifier, Value, STAKING_TOKEN_ASSET_ID,
+    value, Address, Fq, Fr, Nullifier, Value,
 };
 
 /// Transparent proof for spending existing notes.
@@ -476,7 +476,7 @@ impl SwapClaimProof {
         clearing_price_height: u64,
         _success: bool,
         epoch_duration: u64,
-        fee: u64,
+        fee: Fee,
     ) -> anyhow::Result<()> {
         // Swap NFT note commitment integrity.
         let swap_nft_value = Value {
@@ -502,7 +502,7 @@ impl SwapClaimProof {
             self.trading_pair.clone(),
             self.delta_1,
             self.delta_2,
-            Fee(fee),
+            fee.clone(),
             // This should ensure that the claim address matches the address
             // used to construct the Swap NFT.
             self.claim_address,
@@ -530,14 +530,10 @@ impl SwapClaimProof {
             ));
         }
 
-        // Confirms that `value_commitment` is a commitment to `fee` penumbra tokens
-        let fee_value = Value {
-            amount: fee,
-            asset_id: *STAKING_TOKEN_ASSET_ID,
-        };
+        // Confirms that `value_commitment` is a commitment to `fee` tokens of the specified asset ID
         // Fees are public and use a 0 blinding factor
         let fee_v_blinding = Fr::zero();
-        let expected_fee_value_commitment = fee_value.commit(fee_v_blinding);
+        let expected_fee_value_commitment = fee.0.commit(fee_v_blinding);
         if expected_fee_value_commitment != value_commitment {
             return Err(anyhow!("fee value commitment mismatch"));
         }
@@ -697,7 +693,7 @@ pub struct SwapProof {
     // The value of asset 2 in the swap.
     pub value_t2: Value,
     // The fee amount associated with the swap.
-    pub fee_delta: u64,
+    pub fee_delta: Fee,
     // The asset ID of the Swap NFT.
     pub swap_nft_asset_id: asset::Id,
     // The blinding factor used for generating the note commitment for the Swap NFT.
@@ -757,12 +753,8 @@ impl SwapProof {
         //     return Err(anyhow!("value commitment mismatch"));
         // }
 
-        let value_fee = Value {
-            amount: self.fee_delta,
-            asset_id: *STAKING_TOKEN_ASSET_ID,
-        };
         let fee_blinding = Fr::zero();
-        if value_fee_commitment != -value_fee.commit(fee_blinding) {
+        if value_fee_commitment != -self.fee_delta.commit(fee_blinding) {
             return Err(anyhow!("value commitment mismatch"));
         }
 
@@ -796,7 +788,7 @@ impl From<SwapProof> for transparent_proofs::SwapProof {
             t1: msg.value_t1.asset_id.0.to_bytes().to_vec(),
             delta_2: msg.value_t2.amount,
             t2: msg.value_t2.asset_id.0.to_bytes().to_vec(),
-            fee: msg.fee_delta,
+            fee: Some(msg.fee_delta.into()),
             swap_nft_asset_id: msg.swap_nft_asset_id.0.to_bytes().to_vec(),
             // TODO: no value commitments for delta 1/delta 2 until flow encryption is available
             // delta_1_blinding: msg.delta_1_blinding.to_bytes().to_vec(),
@@ -857,7 +849,11 @@ impl TryFrom<transparent_proofs::SwapProof> for SwapProof {
                     .map_err(|_| anyhow!("proto malformed"))?,
                 ),
             },
-            fee_delta: proto.fee,
+            fee_delta: proto
+                .fee
+                .ok_or_else(|| anyhow::anyhow!("proto malformed"))?
+                .try_into()
+                .map_err(|_| anyhow!("proto malformed"))?,
             swap_nft_asset_id: asset::Id(
                 Fq::from_bytes(
                     proto

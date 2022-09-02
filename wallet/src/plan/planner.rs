@@ -8,6 +8,7 @@ use penumbra_crypto::{
     keys::AddressIndex,
     memo::MemoPlaintext,
     rdsa::{SpendAuth, VerificationKey},
+    transaction::Fee,
     Address, DelegationToken, FieldExt, Fr, FullViewingKey, Note, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_proto::view::NotesRequest;
@@ -68,14 +69,11 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
     /// Add a fee to the transaction plan.
     ///
-    /// Calling this function more than once will add to the fee, not replace it.
+    /// This function should be called once.
     #[instrument(skip(self))]
-    pub fn fee(&mut self, fee: u64) -> &mut Self {
-        self.balance += Value {
-            amount: fee,
-            asset_id: *STAKING_TOKEN_ASSET_ID,
-        };
-        self.plan.fee.0 += fee;
+    pub fn fee(&mut self, fee: Fee) -> &mut Self {
+        self.balance += fee.0;
+        self.plan.fee = fee;
         self
     }
 

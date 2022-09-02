@@ -2,7 +2,7 @@ use std::{fs::File, io::Write};
 
 use anyhow::{Context, Result};
 use penumbra_component::stake::{validator, validator::Validator, FundingStream, FundingStreams};
-use penumbra_crypto::{GovernanceKey, IdentityKey};
+use penumbra_crypto::{transaction::Fee, GovernanceKey, IdentityKey};
 use penumbra_proto::{stake::Validator as ProtoValidator, Message, Protobuf};
 use penumbra_transaction::action::{ValidatorVote, ValidatorVoteBody, Vote};
 use penumbra_wallet::plan;
@@ -103,6 +103,7 @@ impl ValidatorCmd {
                     File::open(&file).with_context(|| format!("cannot open file {:?}", file))?;
                 let new_validator: Validator = serde_json::from_reader(definition_file)
                     .map_err(|_| anyhow::anyhow!("Unable to parse validator definition"))?;
+                let fee = Fee::from_staking_token_amount(*fee);
 
                 // Sign the validator definition with the wallet's spend key.
                 let protobuf_serialized: ProtoValidator = new_validator.clone().into();
@@ -114,7 +115,7 @@ impl ValidatorCmd {
                 };
                 // Construct a new transaction and include the validator definition.
                 let plan =
-                    plan::validator_definition(&app.fvk, &mut app.view, OsRng, vd, *fee, *source)
+                    plan::validator_definition(&app.fvk, &mut app.view, OsRng, vd, fee, *source)
                         .await?;
                 app.build_and_submit_transaction(plan).await?;
                 // Only commit the state if the transaction was submitted
@@ -151,9 +152,9 @@ impl ValidatorCmd {
                 let vote = ValidatorVote { body, auth_sig };
 
                 // Construct a new transaction and include the validator definition.
-                let plan =
-                    plan::validator_vote(&app.fvk, &mut app.view, OsRng, vote, *fee, *source)
-                        .await?;
+                let fee = Fee::from_staking_token_amount(*fee);
+                let plan = plan::validator_vote(&app.fvk, &mut app.view, OsRng, vote, fee, *source)
+                    .await?;
                 app.build_and_submit_transaction(plan).await?;
 
                 println!("Cast validator vote");

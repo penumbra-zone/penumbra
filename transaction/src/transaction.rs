@@ -7,7 +7,7 @@ use decaf377_fmd::Clue;
 use penumbra_crypto::{
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
     transaction::Fee,
-    Fr, NotePayload, Nullifier, Value, STAKING_TOKEN_ASSET_ID,
+    Fr, NotePayload, Nullifier,
 };
 use penumbra_proto::{ibc as pb_ibc, stake as pbs, transaction as pbt, Message, Protobuf};
 use penumbra_tct as tct;
@@ -170,12 +170,8 @@ impl Transaction {
         }
 
         // Add fee into binding verification key computation.
-        let fee_value = Value {
-            amount: self.transaction_body.fee.0,
-            asset_id: *STAKING_TOKEN_ASSET_ID,
-        };
         let fee_v_blinding = Fr::zero();
-        let fee_value_commitment = fee_value.commit(fee_v_blinding);
+        let fee_value_commitment = self.transaction_body.fee.commit(fee_v_blinding);
         value_commitments -= fee_value_commitment.0;
 
         let binding_verification_key_bytes: VerificationKeyBytes<Binding> =
@@ -228,7 +224,8 @@ impl TryFrom<pbt::TransactionBody> for TransactionBody {
         let fee: Fee = proto
             .fee
             .ok_or_else(|| anyhow::anyhow!("transaction body malformed"))?
-            .into();
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("clue malformed"))?;
 
         let mut fmd_clues = Vec::<Clue>::new();
         for fmd_clue in proto.fmd_clues {

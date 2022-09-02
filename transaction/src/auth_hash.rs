@@ -562,7 +562,7 @@ mod tests {
 
         let plan = TransactionPlan {
             expiry_height: 0,
-            fee: Fee(0),
+            fee: Fee::default(),
             chain_id: "penumbra-test".to_string(),
             // Put outputs first to check that the auth hash
             // computation is not affected by plan ordering.

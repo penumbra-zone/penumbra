@@ -1,6 +1,6 @@
 use crate::symmetric::OutgoingCipherKey;
 use crate::transaction::Fee;
-use crate::{asset, ka, Address};
+use crate::{asset, ka, Address, Value};
 use anyhow::{anyhow, Error, Result};
 use ark_ff::PrimeField;
 use decaf377::Fq;
@@ -39,10 +39,11 @@ impl SwapPlaintext {
     // https://protocol.penumbra.zone/main/zswap/swap.html#swap-actions
     pub fn asset_id(&self) -> asset::Id {
         let packed_values = {
-            let mut bytes = [0u8; 24];
+            let mut bytes = [0u8; 56];
             bytes[0..8].copy_from_slice(&self.delta_1.to_le_bytes());
             bytes[8..16].copy_from_slice(&self.delta_2.to_le_bytes());
-            bytes[16..24].copy_from_slice(&self.fee.0.to_le_bytes());
+            bytes[16..24].copy_from_slice(&self.fee.0.amount.to_le_bytes());
+            bytes[24..56].copy_from_slice(&self.fee.0.asset_id.to_bytes());
             Fq::from_le_bytes_mod_order(&bytes)
         };
 
@@ -141,10 +142,10 @@ impl TryFrom<pb::SwapPlaintext> for SwapPlaintext {
                 .ok_or_else(|| anyhow::anyhow!("missing SwapPlaintext claim address"))?
                 .try_into()
                 .map_err(|_| anyhow::anyhow!("invalid claim address in SwapPlaintext"))?,
-            fee: Fee(plaintext
+            fee: plaintext
                 .fee
                 .ok_or_else(|| anyhow::anyhow!("missing SwapPlaintext fee"))?
-                .amount),
+                .try_into()?,
             trading_pair: plaintext
                 .trading_pair
                 .ok_or_else(|| anyhow::anyhow!("missing trading pair in SwapPlaintext"))?
@@ -158,9 +159,7 @@ impl From<SwapPlaintext> for pb::SwapPlaintext {
         Self {
             delta_1: plaintext.delta_1,
             delta_2: plaintext.delta_2,
-            fee: Some(pb_crypto::Fee {
-                amount: plaintext.fee.0,
-            }),
+            fee: Some(plaintext.fee.into()),
             claim_address: Some(plaintext.claim_address.into()),
             trading_pair: Some(plaintext.trading_pair.into()),
         }
@@ -173,9 +172,10 @@ impl From<&SwapPlaintext> for [u8; SWAP_LEN_BYTES] {
         bytes[0..64].copy_from_slice(&swap.trading_pair.to_bytes());
         bytes[64..72].copy_from_slice(&swap.delta_1.to_le_bytes());
         bytes[72..80].copy_from_slice(&swap.delta_2.to_le_bytes());
-        bytes[80..88].copy_from_slice(&swap.fee.0.to_le_bytes());
+        bytes[80..88].copy_from_slice(&swap.fee.0.amount.to_le_bytes());
+        bytes[88..120].copy_from_slice(&swap.fee.0.asset_id.to_bytes());
         let pb_address = pb_crypto::Address::from(swap.claim_address);
-        bytes[88..168].copy_from_slice(&pb_address.inner);
+        bytes[120..200].copy_from_slice(&pb_address.inner);
         bytes
     }
 }
@@ -203,10 +203,13 @@ impl TryFrom<&[u8]> for SwapPlaintext {
         let delta_2_bytes: [u8; 8] = bytes[72..80]
             .try_into()
             .map_err(|_| anyhow!("error fetching delta2 bytes"))?;
-        let fee_bytes: [u8; 8] = bytes[80..88]
+        let fee_amount_bytes: [u8; 8] = bytes[80..88]
             .try_into()
-            .map_err(|_| anyhow!("error fetching fee bytes"))?;
-        let address_bytes: [u8; 80] = bytes[88..168]
+            .map_err(|_| anyhow!("error fetching fee amount bytes"))?;
+        let fee_asset_id_bytes: [u8; 32] = bytes[88..120]
+            .try_into()
+            .map_err(|_| anyhow!("error fetching fee asset ID bytes"))?;
+        let address_bytes: [u8; 80] = bytes[120..200]
             .try_into()
             .map_err(|_| anyhow!("error fetching address bytes"))?;
         let pb_address = pb_crypto::Address {
@@ -219,7 +222,10 @@ impl TryFrom<&[u8]> for SwapPlaintext {
                 .map_err(|_| anyhow!("error deserializing trading pair"))?,
             u64::from_le_bytes(delta_1_bytes),
             u64::from_le_bytes(delta_2_bytes),
-            Fee(u64::from_le_bytes(fee_bytes)),
+            Fee(Value {
+                amount: u64::from_le_bytes(fee_amount_bytes),
+                asset_id: asset::Id::try_from(fee_asset_id_bytes)?,
+            }),
             pb_address.try_into()?,
         )
     }
@@ -241,6 +247,7 @@ mod tests {
     use crate::{
         asset,
         keys::{SeedPhrase, SpendKey},
+        Value,
     };
 
     #[test]
@@ -261,7 +268,10 @@ mod tests {
             trading_pair,
             delta_1: 100000,
             delta_2: 1,
-            fee: Fee(3),
+            fee: Fee(Value {
+                amount: 3,
+                asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            }),
             claim_address: dest,
         };
         let esk = ka::Secret::new(&mut rng);

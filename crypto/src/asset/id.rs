@@ -58,6 +58,14 @@ impl TryFrom<&[u8]> for Id {
     }
 }
 
+impl TryFrom<[u8; 32]> for Id {
+    type Error = anyhow::Error;
+
+    fn try_from(bytes: [u8; 32]) -> Result<Id, Self::Error> {
+        Ok(Id(Fq::from_bytes(bytes)?))
+    }
+}
+
 impl std::fmt::Debug for Id {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&bech32str::encode(

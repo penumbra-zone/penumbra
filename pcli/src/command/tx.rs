@@ -3,7 +3,7 @@ use std::{fs::File, io::Write};
 use anyhow::{anyhow, Context, Result};
 use penumbra_component::stake::rate::RateData;
 use penumbra_crypto::{
-    asset, Address, DelegationToken, IdentityKey, Value, STAKING_TOKEN_ASSET_ID,
+    asset, transaction::Fee, Address, DelegationToken, IdentityKey, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_proto::{client::specific::KeyValueRequest, Protobuf};
 use penumbra_transaction::action::Proposal;
@@ -148,6 +148,7 @@ impl TxCmd {
                     .iter()
                     .map(|v| v.parse())
                     .collect::<Result<Vec<Value>, _>>()?;
+                let fee = Fee::from_staking_token_amount(*fee);
                 let to = to
                     .parse()
                     .map_err(|_| anyhow::anyhow!("address is invalid"))?;
@@ -157,7 +158,7 @@ impl TxCmd {
                     &mut app.view,
                     OsRng,
                     &values,
-                    *fee,
+                    fee,
                     to,
                     *from,
                     memo.clone(),
@@ -190,9 +191,17 @@ impl TxCmd {
             } => {
                 let input = input.parse::<Value>()?;
                 let into = asset::REGISTRY.parse_unit(into.as_str()).base();
-
-                let swap_plan =
-                    plan::swap(&app.fvk, &mut app.view, OsRng, input, into, *fee, *source).await?;
+                let fee = Fee::from_staking_token_amount(*fee);
+                let swap_plan = plan::swap(
+                    &app.fvk,
+                    &mut app.view,
+                    OsRng,
+                    input,
+                    into,
+                    fee.clone(),
+                    *source,
+                )
+                .await?;
                 let swap_plan_inner = swap_plan
                     .swap_plans()
                     .next()
@@ -224,7 +233,7 @@ impl TxCmd {
                     &mut app.view,
                     OsRng,
                     swap_nft_note.note.clone(),
-                    *fee,
+                    fee,
                     *source,
                 )
                 .await?;
@@ -255,6 +264,7 @@ impl TxCmd {
                     .await?
                     .into_inner()
                     .try_into()?;
+                let fee = Fee::from_staking_token_amount(*fee);
 
                 let plan = plan::delegate(
                     &app.fvk,
@@ -262,7 +272,7 @@ impl TxCmd {
                     OsRng,
                     rate_data,
                     unbonded_amount,
-                    *fee,
+                    fee,
                     *source,
                 )
                 .await?;
@@ -283,6 +293,7 @@ impl TxCmd {
                     amount: _,
                     asset_id,
                 } = amount.parse::<Value>()?;
+                let fee = Fee::from_staking_token_amount(*fee);
 
                 let delegation_token: DelegationToken = app
                     .view()
@@ -309,7 +320,7 @@ impl TxCmd {
                     &mut app.view,
                     OsRng,
                     &[delegation_value],
-                    *fee,
+                    fee.clone(),
                     self_address,
                     *source,
                     None,
@@ -358,7 +369,7 @@ impl TxCmd {
                     OsRng,
                     rate_data,
                     delegation_notes,
-                    *fee,
+                    fee,
                     *source,
                 )
                 .await?;
@@ -373,8 +384,9 @@ impl TxCmd {
             }
             TxCmd::Proposal(ProposalCmd::Submit { file, fee, source }) => {
                 let proposal: Proposal = serde_json::from_reader(File::open(&file)?)?;
+                let fee = Fee::from_staking_token_amount(*fee);
                 let plan =
-                    plan::proposal_submit(&app.fvk, &mut app.view, OsRng, proposal, *fee, *source)
+                    plan::proposal_submit(&app.fvk, &mut app.view, OsRng, proposal, fee, *source)
                         .await?;
                 app.build_and_submit_transaction(plan).await?;
             }
@@ -405,6 +417,7 @@ impl TxCmd {
                         .value[..],
                 )?;
 
+                let fee = Fee::from_staking_token_amount(*fee);
                 let plan = plan::proposal_withdraw(
                     &app.fvk,
                     &mut app.view,
@@ -412,7 +425,7 @@ impl TxCmd {
                     *proposal_id,
                     deposit_refund_address,
                     reason.clone(),
-                    *fee,
+                    fee,
                     *source,
                 )
                 .await?;
