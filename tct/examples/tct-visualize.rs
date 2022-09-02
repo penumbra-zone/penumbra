@@ -39,6 +39,9 @@ struct Args {
     /// Don't write DOT files.
     #[clap(long)]
     no_dot: bool,
+    /// Farm out SVG render jobs to this many parallel processes.
+    #[clap(long)]
+    parallel: Option<usize>,
     /// Only write the final tree, not the intermediate stages.
     #[clap(long)]
     only_final: bool,
@@ -129,7 +132,8 @@ fn write_to_file(tree: &Tree, args: &Args) -> Result<()> {
     let svg_path = base_path.with_extension("svg");
     let dot_path = base_path.with_extension("dot");
 
-    if args.no_svg {
+    if let Some(jobs) = args.parallel {
+    } else if args.no_svg {
         if !args.no_dot {
             // Serialize the dot representation directly to the dot file
             println!("Writing {} ...", dot_path.display());
