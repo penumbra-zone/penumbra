@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- <title>{title}</title> -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- <meta name="description" content="{description}"> -->
+  <!-- <link rel="stylesheet" href="{stylesheet}"> -->
+</head>
+<body>
+
+<button id="activate">Swap!</button>
+
+<div id="view" style="position: absolute; z-index: -1">
+</div>
+<div id="overlay" style="background-color: white; position: absolute; z-index: 0">
+</div>
+
+<div style="display: none">
+<svg height="200" width="200" id="frame0">
+  <circle id="A" key="A" cx="50" cy="50" r="40" stroke="black" stroke-width="3" fill="#FF0000" />
+  <circle id="B" key="B" cx="150" cy="150" r="40" stroke="black" stroke-width="3" fill="#0000FF" />
+</svg>
+
+<svg height="200" width="200" id="frame1">
+  <circle id="A" key="A" cx="150" cy="50" r="40" stroke="black" stroke-width="3" fill="#FFFF00" />
+  <circle id="B" key="B" cx="50" cy="150" r="40" stroke="black" stroke-width="3" fill="#FF00FF" />
+</svg>
+</div>
+
+<script type="module">
+  import { innerHTML, addTransitionState } from 'https://diffhtml.org/core';
+  import anime from 'https://unpkg.com/animejs/lib/anime.es.js';
+
+  let frame = "frame0";
+  let queuedAnimations = [];
+  let startedAnimations = 0;
+
+  function camelCase(text) {
+    text = text.replace(/[-_\s.]+(.)?/g, (_, c) => c ? c.toUpperCase() : '');
+    return text.substring(0, 1).toLowerCase() + text.substring(1);
+  }
+
+  function clearOverlay() {
+    innerHTML(document.getElementById("overlay"), "")
+  }
+
+  addTransitionState('attributeChanged', (element, attrName, oldValue, newValue) => {
+    // Don't animate outside the view div
+    if (!element.matches("#view *")) {
+      return;
+    }
+    switch (attrName) {
+      case "id": return;
+      case "style": return;
+    }
+    console.log(element, attrName, oldValue, newValue);
+    let params = {
+      targets: element,
+      easing: "linear",
+      autoplay: "false",
+      // Only once every animation has begun, clear the overlay to reveal the animations in progress
+      begin: (anim) => {
+        startedAnimations += 1;
+        if (startedAnimations == queuedAnimations.length) {
+          clearOverlay();
+        }
+      },
+    };
+    params[camelCase(attrName)] = newValue;
+    queuedAnimations.push(anime(params));
+  });
+
+  function set() {
+    queuedAnimations = [];
+    startedAnimations = 0;
+    // Set the overlay to contain the exact same diagram as the view
+    innerHTML(document.getElementById("overlay"), document.getElementById("view").innerHTML);
+    // Set the view to the new frame
+    innerHTML(document.getElementById("view"), document.getElementById(frame).outerHTML);
+    console.log("Finished setting frame");
+    // Start the animation
+    queuedAnimations.forEach((animation) => animation.play());
+  }
+
+  function swap() {
+    if (frame === "frame0") {
+      frame = "frame1";
+    } else {
+      frame = "frame0";
+    }
+    set();
+  }
+
+  set();
+
+  document.getElementById("activate").addEventListener("click", swap);
+</script>
+
+</body>
+</html>
