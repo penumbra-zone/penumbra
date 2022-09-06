@@ -22,8 +22,15 @@ which you can safely ignore.
 
 ### Installing tendermint
 
-You'll need to have [tendermint installed](https://docs.tendermint.com/v0.35/introduction/install.html) on your system to join your node to the testnet.
+You'll need to have [Tendermint installed](https://docs.tendermint.com/v0.34/introduction/install.html) on your system to join your node to the testnet.
 
-**NOTE**: be sure to install the correct version of Tendermint (`v0.35.9`).
+**NOTE**: We are currently dependent on `v0.35.39` of Tendermint, even though it has been [officially depracted](https://interchain-io.medium.com/discontinuing-tendermint-v0-35-a-postmortem-on-the-new-networking-layer-3696c811dabc) by the Tendermint Council. We are in the process of [rolling back to v0.34](https://github.com/penumbra-zone/penumbra/issues/1271).
+In the mean time, be sure to install the correct version of Tendermint (`v0.35.9`).
 **Do not use** Tendermint `0.35.8` or earlier, which has bugs in the p2p layer
 that can prevent nodes from staying online.
+
+```bash
+git clone https://github.com/tendermint/tendermint.git && cd tendermint
+git checkout v0.35.9
+make install
+```
