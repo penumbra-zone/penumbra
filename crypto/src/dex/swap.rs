@@ -3,6 +3,7 @@ mod plaintext;
 
 use anyhow::{anyhow, Result};
 use ark_ff::PrimeField;
+use blake2b_simd::Hash;
 pub use ciphertext::SwapCiphertext;
 use decaf377::Fq;
 pub use plaintext::SwapPlaintext;
@@ -32,6 +33,22 @@ pub struct BatchSwapOutputData {
     pub height: u64,
     pub trading_pair: TradingPair,
     pub success: bool,
+}
+
+impl BatchSwapOutputData {
+    pub fn auth_hash(&self) -> Hash {
+        blake2b_simd::Params::default()
+            .personal(b"PAH:batch_swap_output_data")
+            .to_state()
+            .update(&self.delta_1.to_le_bytes())
+            .update(&self.delta_2.to_le_bytes())
+            .update(&self.lambda_1.to_le_bytes())
+            .update(&self.lambda_2.to_le_bytes())
+            .update(&self.height.to_le_bytes())
+            .update(self.trading_pair.auth_hash().as_bytes())
+            .update(&(self.success as i64).to_le_bytes())
+            .finalize()
+    }
 }
 
 impl Protobuf<pb::BatchSwapOutputData> for BatchSwapOutputData {}
