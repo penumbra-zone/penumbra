@@ -44,7 +44,7 @@ bytes = { version = "1.2", optional = true }
 [features]
 internal = []
 arbitrary = ["proptest", "proptest-derive", "rand", "rand_chacha", "rand_distr"]
-live-view = ["tokio", "tokio-util", "axum", "serde_json", "include-flate"]
+live-view = ["tokio", "tokio-util", "axum", "serde_json", "include-flate", "rand"]
 
 [dev-dependencies]
 static_assertions = "1"
