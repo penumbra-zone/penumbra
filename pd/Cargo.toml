@@ -84,7 +84,9 @@ ibc-proto = { git = "https://github.com/penumbra-zone/ibc-rs.git", branch = "wit
 tendermint-light-client-verifier = "0.24.0-pre.1"
 tempfile = "3.3.0"
 base64 = "0.13.0"
-console-subscriber = "0.1.6"
+# Temporarily pin due to https://github.com/penumbra-zone/penumbra/issues/1355 since 0.1.8 contains
+# a fix that only works with tokio 1.21.0
+console-subscriber = "=0.1.7"
 metrics-tracing-context = "0.11.0"
 metrics-util = "0.13"
 clap = { version = "3", features = ["derive"] }
