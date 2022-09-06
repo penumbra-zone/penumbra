@@ -1,6 +1,7 @@
 #![recursion_limit = "256"]
 
 use std::{
+    borrow::Cow,
     collections::BTreeMap,
     fmt::Display,
     fs::File,
@@ -9,6 +10,7 @@ use std::{
     process::{Command, Stdio},
     str::FromStr,
     thread,
+    time::Instant,
 };
 
 use anyhow::Result;
@@ -59,6 +61,12 @@ struct Args {
     /// Accelerate tree construction, skipping frames for epochs and blocks with no remembered commitments.
     #[clap(long)]
     fast: bool,
+    /// Render the dot file "prettily", i.e. in a human-intelligible format.
+    #[clap(long)]
+    pretty_dot: bool,
+    /// Clone the tree before rendering it (for performance testing).
+    #[clap(long)]
+    clone_tree: bool,
 }
 
 #[derive(Debug)]
@@ -215,32 +223,63 @@ fn write_to_file(tree: &Tree, args: &Args) -> Result<()> {
     let svg_path = base_path.with_extension("svg");
     let dot_path = base_path.with_extension("dot");
 
+    // If the tree is supposed to be cloned, clone it now
+    let tree = if args.clone_tree {
+        print!("Cloning tree ... ");
+        let start = Instant::now();
+        let tree = Cow::Owned(tree.clone());
+        println!("({:?})", start.elapsed());
+        tree
+    } else {
+        Cow::Borrowed(tree)
+    };
+    let tree = &tree;
+
     if args.no_svg {
         if args.dot {
             // Serialize the dot representation directly to the dot file
-            println!("Writing {} ...", dot_path.display());
+            print!("Writing {} ... ", dot_path.display());
+            let start = Instant::now();
             let mut dot_file = File::create(dot_path)?;
-            tree.render_dot(&mut dot_file)?;
+            if args.pretty_dot {
+                tree.render_dot_pretty(&mut dot_file)?;
+            } else {
+                tree.render_dot(&mut dot_file)?;
+            }
+            println!("({:?})", start.elapsed());
         }
     } else if !args.dot {
         // Serialize the dot representation directly into the dot subprocess
-        println!("Writing {} ...", svg_path.display());
+        print!("Writing {} ... ", svg_path.display());
+        let start = Instant::now();
         let mut svg_file = File::create(svg_path)?;
         write_svg_direct(tree, &mut svg_file)?;
+        println!("({:?})", start.elapsed());
     } else {
         // Allocate an intermediate dot file in memory
+        print!("Creating dot representation in memory ... ");
+        let start = Instant::now();
         let mut dot = Vec::new();
-        tree.render_dot(&mut dot)?;
+        if args.pretty_dot {
+            tree.render_dot_pretty(&mut dot)?;
+        } else {
+            tree.render_dot(&mut dot)?;
+        }
+        println!("({:?})", start.elapsed());
 
         // Write the dot file
-        println!("Writing {} ...", dot_path.display());
+        let start = Instant::now();
+        print!("Writing {} ... ", dot_path.display());
         let mut dot_file = File::create(dot_path)?;
         dot_file.write_all(&dot)?;
+        println!("({:?})", start.elapsed());
 
         // Generate an svg from the dot file
-        println!("Writing {} ...", svg_path.display());
+        print!("Writing {} ... ", svg_path.display());
+        let start = Instant::now();
         let mut svg_file = File::create(svg_path)?;
         write_svg(&dot, &mut svg_file)?;
+        println!("({:?})", start.elapsed());
     }
 
     Ok(())
